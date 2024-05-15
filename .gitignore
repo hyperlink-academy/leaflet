@@ -1,0 +1,9 @@
+# Supabase
+.branches
+.temp
+.env
+
+.next
+node_modules
+.env.local
+.wrangler

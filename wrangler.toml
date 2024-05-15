@@ -1,0 +1,16 @@
+name = "hyperlink-minilink"
+account_id = "81c1ee2e102b2279be9311f73c01ec7f"
+workers_dev = true
+
+usage_model = 'unbound'
+compatibility_flags = []
+
+compatibility_date = "2024-05-15"
+
+kv_namespaces = []
+
+main = "backend/index.ts"
+
+[[rules]]
+type = "ESModule"
+globs = ["**/*.mjs"]
