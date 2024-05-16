@@ -1,3 +1,56 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+html,
+body {
+  @apply bg-bg-page;
+  @apply h-full;
+  @apply p-0;
+  @apply text-grey-15;
+  @apply overscroll-y-none;
+  min-height: -webkit-fill-available;
+  @apply font-sans;
+}
+
+#__next {
+  height: 100%;
+}
+
+/* START FONT STYLING */
+h1 {
+  @apply text-2xl;
+  @apply font-bold;
+}
+
+h2 {
+  @apply text-xl;
+  @apply font-bold;
+}
+
+h3 {
+  @apply text-lg;
+  @apply font-bold;
+}
+
+h4 {
+  @apply text-base;
+  @apply font-bold;
+}
+
+p {
+  @apply text-base;
+}
+
+small {
+  @apply text-sm;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+pre {
+  font-family: "Quattro" !important;
+}
