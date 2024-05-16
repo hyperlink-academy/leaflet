@@ -15,10 +15,16 @@ export default function Index() {
 
       <div className="pageContentWrapper w-full overflow-x-scroll snap-mandatory snap-x grow items-stretch flex ">
         <div className="pageContent flex">
-          <div style={{ width: `calc((100vw - ${cardWidth}px)/2)` }} />
+          <div
+            className="bg-test"
+            style={{ width: `calc((100vw - ${cardWidth}px)/2)` }}
+          />
 
           {cards.map((card, index) => (
-            <div className="flex items-stretch" ref={cardRef}>
+            <div
+              className="flex items-stretch"
+              ref={index === 0 ? cardRef : null}
+            >
               <Card first={index === 0} key={index} id={index.toString()}>
                 Card {card}
                 <ButtonPrimary
@@ -27,9 +33,16 @@ export default function Index() {
                     setCards([...cards, card + 1]);
 
                     //scroll the new card into view
-                    document
-                      .getElementById((index + 1).toString())
-                      ?.scrollIntoView();
+
+                    setTimeout(() => {
+                      let newCardID = document.getElementById(
+                        (index + 1).toString(),
+                      );
+                      newCardID?.scrollIntoView({
+                        behavior: "smooth",
+                        inline: "center",
+                      });
+                    }, 100);
                   }}
                 >
                   add card
@@ -52,6 +65,7 @@ export default function Index() {
           ))}
 
           <div
+            className="bg-test"
             style={{ width: `calc((100vw / 2) - ${cardWidth}px + 12px )` }}
           />
         </div>
