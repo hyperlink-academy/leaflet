@@ -3,8 +3,12 @@
 import { Home } from "../../components/Icons";
 import { ButtonPrimary } from "../../components/Buttons";
 import { useState } from "react";
+import useMeasure from "react-use-measure";
 
 export default function Index() {
+  let [cardRef, { width: cardWidth }] = useMeasure();
+  let [spacerRef, { width: spacerWidth }] = useMeasure();
+
   let [cardTwo, setCardTwo] = useState(false);
   let [cardMany, setCardMany] = useState(false);
 
@@ -23,24 +27,26 @@ export default function Index() {
       </div>
 
       <div className="pageContentWrapper w-full overflow-x-scroll snap-mandatory snap-x grow items-stretch flex ">
-        <div className="pageContent flex mx-auto px-4">
-          <div className="w-[600px]" />
-          <Card first>
-            <ButtonPrimary
-              onClick={() => {
-                setCardTwo(!cardTwo);
-              }}
-            >
-              toggle card 2
-            </ButtonPrimary>
-            <ButtonPrimary
-              onClick={() => {
-                setCardMany(!cardMany);
-              }}
-            >
-              toggle card many
-            </ButtonPrimary>
-          </Card>
+        <div className="pageContent flex mx-auto">
+          <div style={{ width: `calc((100vw - ${cardWidth}px)/2)` }} />
+          <div className="h-full flex items-stretch" ref={cardRef}>
+            <Card first>
+              <ButtonPrimary
+                onClick={() => {
+                  setCardTwo(!cardTwo);
+                }}
+              >
+                toggle card 2
+              </ButtonPrimary>
+              <ButtonPrimary
+                onClick={() => {
+                  setCardMany(!cardMany);
+                }}
+              >
+                toggle card many
+              </ButtonPrimary>
+            </Card>
+          </div>
           {cardTwo && <Card>Card 2</Card>}
           {cardMany && (
             <>
@@ -52,7 +58,10 @@ export default function Index() {
               <Card>Card 7</Card>
             </>
           )}
-          <div className="w-[600px]" />
+          <div
+            ref={spacerRef}
+            style={{ width: `calc((100vw / 2) - ${cardWidth}px)` }}
+          />
         </div>
       </div>
     </div>

@@ -13,7 +13,8 @@
   "dependencies": {
     "next": "^14.2.3",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-use-measure": "^2.1.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240512.0",
