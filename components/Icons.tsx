@@ -1,3 +1,7 @@
+import { SVGProps } from "react";
+
+type Props = SVGProps<SVGSVGElement>;
+
 export const Home = (props: Props) => {
   return (
     <svg

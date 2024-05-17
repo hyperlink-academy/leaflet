@@ -8,39 +8,57 @@ import { PageHeader } from "./header";
 export default function Index() {
   let [cardRef, { width: cardWidth }] = useMeasure();
   let [cards, setCards] = useState([0]);
+  let [focusedCardIndex, setFocusedCardIndex] = useState(0);
+  let [focusedCard, { left: focusedCardPosition }] = useMeasure();
 
   return (
     <div className="pageWrapper h-screen flex flex-col gap-4 py-4">
       <PageHeader />
 
-      <div className="pageContentWrapper w-full overflow-x-scroll snap-mandatory snap-x grow items-stretch flex ">
-        <div className="pageContent flex">
+      <div
+        className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory grow items-stretch flex "
+        id="card-carousel"
+      >
+        <div className="pageContent flex ">
           <div
-            className="bg-test"
+            // className="bg-test"
             style={{ width: `calc((100vw - ${cardWidth}px)/2)` }}
           />
 
           {cards.map((card, index) => (
             <div
               className="flex items-stretch"
-              ref={index === 0 ? cardRef : null}
+              ref={
+                index === 0
+                  ? cardRef
+                  : index === focusedCardIndex
+                    ? focusedCard
+                    : undefined
+              }
             >
-              <Card first={index === 0} key={index} id={index.toString()}>
+              <Card
+                first={index === 0}
+                focused={index === focusedCardIndex}
+                id={index.toString()}
+                key={index}
+              >
                 Card {card}
                 <ButtonPrimary
                   onClick={() => {
                     //add a new card after this one
                     setCards([...cards, card + 1]);
 
-                    //scroll the new card into view
+                    // focus the new card
+                    setFocusedCardIndex(index + 1);
 
+                    //scroll the new card into view
                     setTimeout(() => {
                       let newCardID = document.getElementById(
                         (index + 1).toString(),
                       );
                       newCardID?.scrollIntoView({
                         behavior: "smooth",
-                        inline: "center",
+                        inline: "nearest",
                       });
                     }, 100);
                   }}
@@ -57,15 +75,42 @@ export default function Index() {
                     remove card
                   </ButtonPrimary>
                 )}
-                {/* <ButtonPrimary onClick={() => {}}>
+                <ButtonPrimary
+                  onClick={() => {
+                    //set the focused card to this one
+                    setFocusedCardIndex(index);
+
+                    // check if the card is off screen to the right or left
+                    let cardPosition =
+                      document
+                        .getElementById(index.toString())
+                        ?.getBoundingClientRect().left || 0;
+                    let isOffScreenLeft = cardPosition < 0;
+                    let isOffScreenRight =
+                      cardPosition + cardWidth > window.innerWidth;
+
+                    //if card is off screen, scroll one card width to the left or right so that the card is in view
+                    setTimeout(() => {
+                      document.getElementById("card-carousel")?.scrollBy({
+                        top: 0,
+                        left: isOffScreenLeft
+                          ? -cardWidth
+                          : isOffScreenRight
+                            ? cardWidth
+                            : 0,
+                        behavior: "smooth",
+                      });
+                    }, 100);
+                  }}
+                >
                   focus this card
-                </ButtonPrimary> */}
+                </ButtonPrimary>
               </Card>
             </div>
           ))}
 
           <div
-            className="bg-test"
+            // className="bg-test"
             style={{ width: `calc((100vw / 2) - ${cardWidth}px + 12px )` }}
           />
         </div>
@@ -77,15 +122,22 @@ export default function Index() {
 const Card = (props: {
   children: React.ReactNode;
   first?: boolean;
+  focused?: boolean;
   id: string;
 }) => {
   return (
     <>
       {/* if the card is the first one in the list, remove this div... can we do with :before? */}
-      {!props.first && <div className="w-6 snap-center" />}
+      {!props.first && <div className="w-6 snap-center " />}
       <div
         id={props.id}
-        className={`p-3 w-[calc(50vw-24px)] max-w-prose bg-bg-card border border-grey-80 rounded-lg grow flex flex-col gap-2 ${props.first && "snap-center"}`}
+        className={`
+          scroll-m-4
+          p-3 w-[calc(50vw-24px)] max-w-[200px]
+          bg-bg-card border border-grey-80 rounded-lg
+          grow flex flex-col gap-2
+          ${props.first && "snap-center"}
+          ${props.focused && "border-4"}`}
       >
         {props.children}
       </div>
