@@ -9,7 +9,6 @@ export default function Index() {
   let [cardRef, { width: cardWidth }] = useMeasure();
   let [cards, setCards] = useState([0]);
   let [focusedCardIndex, setFocusedCardIndex] = useState(0);
-  let [focusedCard, { left: focusedCardPosition }] = useMeasure();
 
   return (
     <div className="pageWrapper h-screen flex flex-col gap-4 py-4">
@@ -20,21 +19,12 @@ export default function Index() {
         id="card-carousel"
       >
         <div className="pageContent flex ">
-          <div
-            // className="bg-test"
-            style={{ width: `calc((100vw - ${cardWidth}px)/2)` }}
-          />
+          <div style={{ width: `calc((100vw - ${cardWidth}px)/2)` }} />
 
           {cards.map((card, index) => (
             <div
               className="flex items-stretch"
-              ref={
-                index === 0
-                  ? cardRef
-                  : index === focusedCardIndex
-                    ? focusedCard
-                    : undefined
-              }
+              ref={index === 0 ? cardRef : null}
             >
               <Card
                 first={index === 0}
@@ -110,8 +100,9 @@ export default function Index() {
           ))}
 
           <div
-            // className="bg-test"
-            style={{ width: `calc((100vw / 2) - ${cardWidth}px + 12px )` }}
+            style={{
+              width: `max(calc((100vw / 2) - ${cardWidth}px + 12px ), 32px)`,
+            }}
           />
         </div>
       </div>
@@ -128,16 +119,16 @@ const Card = (props: {
   return (
     <>
       {/* if the card is the first one in the list, remove this div... can we do with :before? */}
-      {!props.first && <div className="w-6 snap-center " />}
+      {!props.first && <div className="w-6 sm:snap-center" />}
       <div
         id={props.id}
         className={`
-          scroll-m-4
-          p-3 w-[calc(50vw-24px)] max-w-[200px]
-          bg-bg-card border border-grey-80 rounded-lg
+          p-3 w-[calc(100vw-12px)] sm:w-[calc(50vw-24px)] max-w-prose
+          bg-bg-card border rounded-lg
           grow flex flex-col gap-2
+          snap-center sm:snap-align-none
           ${props.first && "snap-center"}
-          ${props.focused && "border-4"}`}
+          ${props.focused ? "drop-shadow-lg border-grey-80" : "border-grey-90 "}`}
       >
         {props.children}
       </div>
