@@ -50,6 +50,10 @@ module.exports = {
     },
 
     extend: {
+      boxShadow: {
+        md: "0.5px 0.9px 1px hsl(0deg 0% 0% / 0.11), 1.1px 2.1px 2.3px -1.1px hsl(0deg 0% 0% / 0.09), 3px 5.8px 6.4px -2.3px hsl(0deg 0% 0% / 0.08), 7.8px 14.9px 16.5px -3.4px hsl(0deg 0% 0% / 0.06);"
+      },
+
       fontFamily: {
         sans: ['var(--font-quattro)'],
       },

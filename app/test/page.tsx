@@ -12,14 +12,14 @@ export default function Index() {
   let [focusedCardIndex, setFocusedCardIndex] = useState(0);
 
   return (
-    <div className="pageWrapper h-screen flex flex-col gap-4 py-4 !text">
+    <div className="pageWrapper h-screen flex flex-col pt-4">
       <PageHeader />
 
       <div
         className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory grow items-stretch flex "
         id="card-carousel"
       >
-        <div className="pageContent flex  ">
+        <div className="pageContent flex py-4">
           <div style={{ width: `calc((100vw - ${cardWidth}px)/2)` }} />
 
           {cards.map((card, index) => (

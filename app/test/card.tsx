@@ -20,10 +20,10 @@ export const Card = (props: {
         id={props.id}
         className={`
           p-3 w-[calc(100vw-12px)] md:w-[calc(50vw-24px)] max-w-prose
-          bg-bg-card border rounded-lg
+          bg-bg-card rounded-lg border
           grow flex flex-col gap-2
           snap-center
-          ${props.focused ? "drop-shadow-lg border-grey-80" : "border-grey-90 "}`}
+          ${props.focused ? "shadow-md border-grey-80" : "border-grey-90"}`}
       >
         {props.children}
         <AddCardButton
