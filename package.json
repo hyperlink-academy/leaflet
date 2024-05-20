@@ -13,19 +13,24 @@
   "dependencies": {
     "@adobe/react-spectrum": "^3.35.0",
     "@radix-ui/react-popover": "^1.0.7",
-    "@react-spectrum/color": "^3.0.0-beta.33",
     "@react-stately/color": "^3.6.0",
     "@spectrum-css/colorarea": "^5.1.0",
     "@spectrum-css/colorhandle": "^8.1.0",
+    "@supabase/supabase-js": "^2.43.2",
+    "@vercel/kv": "^1.0.1",
+    "drizzle-orm": "^0.30.10",
     "next": "^14.2.3",
+    "postgres": "^3.4.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-use-measure": "^2.1.1"
+    "react-use-measure": "^2.1.1",
+    "replicache": "^14.2.2"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240512.0",
     "@types/react": "18.3.2",
     "autoprefixer": "^10.4.19",
+    "drizzle-kit": "^0.21.2",
     "postcss": "^8.4.38",
     "prettier": "3.2.5",
     "supabase": "^1.167.4",
