@@ -16,7 +16,7 @@ export default function Index() {
       <PageHeader />
 
       <div
-        className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory grow items-stretch flex "
+        className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex "
         id="card-carousel"
       >
         <div className="pageContent flex py-4">

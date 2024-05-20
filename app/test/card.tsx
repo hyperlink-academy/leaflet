@@ -23,6 +23,7 @@ export const Card = (props: {
           bg-bg-card rounded-lg border
           grow flex flex-col gap-2
           snap-center
+          overflow-y-scroll no-scrollbar
           ${props.focused ? "shadow-md border-grey-80" : "border-grey-90"}`}
       >
         {props.children}
@@ -51,6 +52,55 @@ export const Card = (props: {
             index={props.index}
             cardWidth={props.cardWidth}
           />
+        </div>
+
+        <div>
+          {" "}
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis ac quam
+          in tortor sollicitudin lobortis. Quisque vitae massa sit amet quam
+          tristique maximus. Aliquam cursus bibendum nunc eu tempor. Ut metus
+          orci, ornare quis rutrum in, pulvinar in nulla. Morbi sapien lectus,
+          consectetur quis ultricies at, porttitor sit amet mi. Donec ex lectus,
+          condimentum in ligula ut, luctus sodales magna. Vivamus porta pulvinar
+          sapien vel sagittis. Aliquam vel sem scelerisque, bibendum lectus et,
+          dignissim dolor. Fusce ullamcorper ante in purus pellentesque, quis
+          iaculis ex egestas. Vestibulum vel leo in orci commodo ultricies quis
+          a elit. Etiam vehicula magna in turpis iaculis efficitur. Aliquam
+          massa tortor, dapibus et tellus a, volutpat tempus leo. Cras ac nisl
+          semper, porttitor ante eget, feugiat quam. Nulla nibh nulla,
+          vestibulum in dolor eu, dapibus sodales nisl. Proin lacus orci, congue
+          id accumsan ut, lobortis in libero. Integer eget massa dictum, ornare
+          lacus et, aliquam enim. Ut ornare urna vel pharetra dictum. Nullam
+          fermentum, purus ac faucibus fringilla, elit enim posuere massa,
+          volutpat porta lacus arcu vel eros. Integer sagittis dolor nec velit
+          vulputate pulvinar. Quisque vel orci orci. Donec augue ipsum, lobortis
+          in sapien aliquam, interdum cursus ipsum. Donec consectetur tristique
+          elit. Sed volutpat congue luctus. Mauris vitae arcu eu ex congue
+          molestie. Aliquam erat volutpat. Fusce sed ipsum eros. Donec semper
+          neque ut dolor aliquam hendrerit. Praesent et tincidunt nisi. Integer
+          sollicitudin urna eros, non aliquam neque semper in. Nulla eu nunc at
+          urna auctor bibendum ut eu mauris. Nullam ultricies lorem ut nibh
+          tristique, vitae euismod tellus placerat. Aliquam euismod, augue ac
+          sollicitudin molestie, neque tellus bibendum arcu, quis sollicitudin
+          ipsum risus eget dolor. Phasellus consectetur pellentesque urna in
+          maximus. Curabitur dignissim tortor quis lorem elementum scelerisque.
+          Vestibulum ac rutrum nisl. Sed neque turpis, commodo a augue a,
+          hendrerit pretium dui. Cras ut augue vehicula, scelerisque sem ac,
+          dictum justo. Phasellus egestas lorem sed est elementum finibus. Proin
+          ultrices rutrum neque, at varius arcu pellentesque in. Quisque
+          suscipit elit eu ante viverra bibendum et quis mauris. Sed
+          pellentesque aliquet dolor at tempus. Donec eu nulla in ligula cursus
+          ultrices. Sed quis tristique purus. Duis semper, urna in facilisis
+          dapibus, leo ligula gravida tortor, vitae dignissim lorem orci vitae
+          ante. Integer auctor ipsum vitae risus scelerisque facilisis. Vivamus
+          molestie in purus eu hendrerit. Ut laoreet tortor ut vestibulum
+          gravida. Curabitur in orci a quam lacinia iaculis id ut ipsum. Ut nec
+          lorem sed mauris condimentum semper eget vitae lorem. Aenean pretium
+          ipsum sit amet massa auctor feugiat. Maecenas malesuada imperdiet leo,
+          non tempus nibh suscipit eget. Fusce eu diam ligula. Quisque at ornare
+          massa. Suspendisse potenti. Fusce convallis, dolor rutrum elementum
+          commodo, lacus dui vestibulum lectus, non maximus quam metus finibus
+          libero.
         </div>
       </div>
     </>
