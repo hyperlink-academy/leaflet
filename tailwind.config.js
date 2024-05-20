@@ -30,8 +30,9 @@ module.exports = {
       "accent": "#0000FF",
 
       //BG COLORS
-      "bg-page": "floralwhite",
-      "bg-card": "white",
+      "bg-page": "rgb(var(--bg-page) / <alpha-value>)",
+      "bg-card": "rgb(var(--bg-card) / <alpha-value>)",
+      "bg-accent": "#F0F7FA",
 
       //DO NOT USE IN PRODUCTION. Test colors to aid development, ie, setting bg color on element to see edges of div. DO. NOT. USE. IN. PRODUCTION
       "test": "#E18181",

@@ -2,55 +2,81 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
-body {
-  @apply bg-bg-page;
-  @apply h-full;
-  @apply p-0;
-  @apply text-grey-15;
-  @apply overscroll-y-none;
-  min-height: -webkit-fill-available;
-  @apply font-sans;
-}
+@layer base {
+  :root {
+    --bg-page: 240 247 250;
+    --bg-card: 255 255 255;
+    --accent: 0 0 225;
+  }
 
-#__next {
-  height: 100%;
-}
+  html,
+  body {
+    @apply bg-bg-page;
+    @apply h-full;
+    @apply p-0;
+    @apply text-grey-15;
+    @apply overscroll-y-none;
+    min-height: -webkit-fill-available;
+    @apply font-sans;
+  }
 
-/* START FONT STYLING */
-h1 {
-  @apply text-2xl;
-  @apply font-bold;
-}
+  #__next {
+    height: 100%;
+  }
 
-h2 {
-  @apply text-xl;
-  @apply font-bold;
-}
+  /* START FONT STYLING */
+  h1 {
+    @apply text-2xl;
+    @apply font-bold;
+  }
 
-h3 {
-  @apply text-lg;
-  @apply font-bold;
-}
+  h2 {
+    @apply text-xl;
+    @apply font-bold;
+  }
 
-h4 {
-  @apply text-base;
-  @apply font-bold;
-}
+  h3 {
+    @apply text-lg;
+    @apply font-bold;
+  }
 
-p {
-  @apply text-base;
-}
+  h4 {
+    @apply text-base;
+    @apply font-bold;
+  }
 
-small {
-  @apply text-sm;
-}
+  p {
+    @apply text-base;
+  }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+  small {
+    @apply text-sm;
+  }
 
-pre {
-  font-family: "Quattro" !important;
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  pre {
+    font-family: "Quattro" !important;
+  }
+  /*END FONT STYLING*/
+
+  /* START GLOBAL STYLING */
+  input,
+  textarea {
+    @apply bg-white;
+    @apply rounded-md;
+    @apply border;
+    @apply border-grey-80;
+    @apply px-2 py-0.5;
+    @apply box-border !important;
+  }
+
+  ::placeholder {
+    @apply !text-grey-80;
+    @apply italic;
+  }
+  /* END GLOBAL STYLING */
 }
