@@ -1,8 +1,11 @@
 import { Fact } from ".";
+import { Attributes } from "./attributes";
 
-type MutationContext = {
+export type MutationContext = {
   createEntity: (entityID: string) => Promise<boolean>;
-  assertFact: (f: Omit<Fact, "id"> & { id?: string }) => Promise<void>;
+  assertFact: <A extends keyof typeof Attributes>(
+    f: Omit<Fact<A>, "id"> & { id?: string },
+  ) => Promise<void>;
 };
 
 type Mutation<T> = (args: T, ctx: MutationContext) => Promise<void>;
@@ -11,21 +14,18 @@ const addBlock: Mutation<{ parent: string; newEntityID: string }> = async (
   args,
   ctx,
 ) => {
-  //How do we create the new entity?
-  // We don't actually sync the entities to the client yet, but maybe we should
-  // Should I keep the mutation id on a parent or
+  console.log(args.parent);
   await ctx.createEntity(args.newEntityID);
   await ctx.assertFact({
     entity: args.parent,
     data: { type: "reference", value: args.newEntityID },
-    attribute: "block/card",
+    attribute: "card/block",
   });
 };
 
-const assertFact: Mutation<Omit<Fact, "id"> & { id?: string }> = async (
-  args,
-  ctx,
-) => {
+const assertFact: Mutation<
+  Omit<Fact<keyof typeof Attributes>, "id"> & { id?: string }
+> = async (args, ctx) => {
   await ctx.assertFact(args);
 };
 

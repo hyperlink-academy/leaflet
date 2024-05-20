@@ -1,20 +1,27 @@
 "use client";
+import * as base64 from "base64-js";
+import * as Y from "yjs";
 import { createContext, useContext, useEffect, useState } from "react";
 import { DeepReadonlyObject, Replicache, WriteTransaction } from "replicache";
 import { Pull } from "./pull";
-import { mutations } from "./mutations";
+import { MutationContext, mutations } from "./mutations";
 import { Attributes } from "./attributes";
 import { Push } from "./push";
 import { FactWithIndexes } from "./utils";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../supabase/database.types";
 
-export type Fact = {
+export type Fact<A extends keyof typeof Attributes> = {
   id: string;
   entity: string;
-  attribute: keyof typeof Attributes;
-  data: { type: "reference"; value: string } | { type: "text"; value: string };
+  attribute: A;
+  data: Data<A>;
 };
+
+type Data<A extends keyof typeof Attributes> = {
+  text: { type: "text"; value: string };
+  reference: { type: "reference"; value: string };
+}[(typeof Attributes)[A]["type"]];
 
 let ReplicacheContext = createContext({
   rep: null as null | Replicache<ReplicacheMutators>,
@@ -53,18 +60,36 @@ export function ReplicacheProvider(props: {
                     Attributes[f.attribute as keyof typeof Attributes];
                   if (!attribute) return;
                   let id = f.id || crypto.randomUUID();
+                  let data = { ...f.data };
                   if (attribute.cardinality === "one") {
                     let existingFact = await tx
-                      .scan<Fact>({
+                      .scan<Fact<typeof f.attribute>>({
                         indexName: "eav",
                         prefix: `${f.entity}-${f.attribute}`,
                       })
                       .toArray();
-                    if (existingFact[0]) id = existingFact[0].id;
+                    if (existingFact[0]) {
+                      id = existingFact[0].id;
+                      if (attribute.type === "text") {
+                        const oldUpdate = base64.toByteArray(
+                          (
+                            existingFact[0]?.data as Fact<
+                              typeof f.attribute
+                            >["data"]
+                          ).value,
+                        );
+                        const newUpdate = base64.toByteArray(f.data.value);
+                        const updateBytes = Y.mergeUpdatesV2([
+                          oldUpdate,
+                          newUpdate,
+                        ]);
+                        data.value = base64.fromByteArray(updateBytes);
+                      }
+                    }
                   }
-                  await tx.set(id, FactWithIndexes({ id, ...f }));
+                  await tx.set(id, FactWithIndexes({ id, ...f, data }));
                 },
-              });
+              } as MutationContext);
             },
           ];
         }),
@@ -101,7 +126,7 @@ export function ReplicacheProvider(props: {
       setRep(null);
       channel.unsubscribe();
     };
-  }, []);
+  }, [props.name]);
   return (
     <ReplicacheContext.Provider value={{ rep }}>
       {props.children}
@@ -109,15 +134,19 @@ export function ReplicacheProvider(props: {
   );
 }
 
-export function useEntity(entity: string, attribute: string) {
-  let [data, setData] = useState<null | DeepReadonlyObject<Fact>[]>(null);
+export function useEntity(entity: string, attribute: keyof typeof Attributes) {
+  let [data, setData] = useState<
+    null | DeepReadonlyObject<Fact<typeof attribute>>[]
+  >(null);
   let { rep } = useReplicache();
   useEffect(() => {
     if (!rep) return;
     return rep.subscribe(
       (tx) => {
         return tx
-          .scan<Fact>({ indexName: "eav", prefix: `${entity}-${attribute}` })
+          .scan<
+            Fact<typeof attribute>
+          >({ indexName: "eav", prefix: `${entity}-${attribute}` })
           .toArray();
       },
       { onData: setData },

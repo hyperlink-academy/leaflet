@@ -1,5 +1,7 @@
 "use server";
 import { PushRequest, PushResponse } from "replicache";
+import * as base64 from "base64-js";
+import * as Y from "yjs";
 import { mutations } from "./mutations";
 import { drizzle } from "drizzle-orm/postgres-js";
 import * as driz from "drizzle-orm";
@@ -9,6 +11,7 @@ import { Attributes } from "./attributes";
 import { getClientGroup } from "./utils";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../supabase/database.types";
+import { Fact } from ".";
 
 const client = postgres(process.env.DB_URL as string);
 let supabase = createClient<Database>(
@@ -31,22 +34,25 @@ export async function Push(
     if (!mutations[name]) {
       continue;
     }
-    try {
-      db.transaction(async (tx) => {
+    db.transaction(async (tx) => {
+      try {
         await mutations[name](mutation.args as any, {
           async createEntity(entity) {
-            tx.insert(entities).values({
-              id: entity,
-            });
-            return false;
+            console.log(
+              await tx.insert(entities).values({
+                id: entity,
+              }),
+            );
+            return true;
           },
           async assertFact(f) {
             let attribute = Attributes[f.attribute as keyof typeof Attributes];
             if (!attribute) return;
             let id = f.id || crypto.randomUUID();
+            let data = { ...f.data };
             if (attribute.cardinality === "one") {
               let existingFact = await tx
-                .select({ id: facts.id })
+                .select({ id: facts.id, data: facts.data })
                 .from(facts)
                 .where(
                   driz.and(
@@ -54,44 +60,61 @@ export async function Push(
                     driz.eq(facts.entity, f.entity),
                   ),
                 );
-              if (existingFact[0]) id = existingFact[0].id;
+              if (existingFact[0]) {
+                id = existingFact[0].id;
+                if (attribute.type === "text") {
+                  const oldUpdate = base64.toByteArray(
+                    (existingFact[0]?.data as Fact<typeof f.attribute>["data"])
+                      .value,
+                  );
+                  console.log("mergin updates");
+                  const newUpdate = base64.toByteArray(f.data.value);
+                  const updateBytes = Y.mergeUpdatesV2([oldUpdate, newUpdate]);
+                  data.value = base64.fromByteArray(updateBytes);
+                }
+              }
             }
-            await tx
-              .insert(facts)
-              .values({
-                id: id,
-                entity: f.entity,
-                data: driz.sql`${f.data}::jsonb`,
-                attribute: f.attribute,
-              })
-              .onConflictDoUpdate({
-                target: facts.id,
-                set: { data: driz.sql`${f.data}::jsonb` },
-              });
+            await tx.transaction(
+              async (tx2) =>
+                await tx2
+                  .insert(facts)
+                  .values({
+                    id: id,
+                    entity: f.entity,
+                    data: driz.sql`${data}::jsonb`,
+                    attribute: f.attribute,
+                  })
+                  .onConflictDoUpdate({
+                    target: facts.id,
+                    set: { data: driz.sql`${f.data}::jsonb` },
+                  })
+                  .catch((e) => {
+                    console.log(`error on inserting fact: `, JSON.stringify(e));
+                  }),
+            );
           },
         });
-        await tx
-          .insert(replicache_clients)
-          .values({
-            client_group: pushRequest.clientGroupID,
-            client_id: mutation.clientID,
-            last_mutation: mutation.id,
-          })
-          .onConflictDoUpdate({
-            target: replicache_clients.client_id,
-            set: { last_mutation: mutation.id },
-          });
-      });
-    } catch (e) {
-      console.log(
-        `Error occured while running mutation: ${name}`,
-        JSON.stringify(e),
-      );
-    }
+      } catch (e) {
+        console.log(
+          `Error occured while running mutation: ${name}`,
+          JSON.stringify(e),
+        );
+      }
+      await tx
+        .insert(replicache_clients)
+        .values({
+          client_group: pushRequest.clientGroupID,
+          client_id: mutation.clientID,
+          last_mutation: mutation.id,
+        })
+        .onConflictDoUpdate({
+          target: replicache_clients.client_id,
+          set: { last_mutation: mutation.id },
+        });
+    });
   }
 
   let channel = supabase.channel(`rootEntity:${rootEntity}`);
-  console.log(channel);
   await channel.send({
     type: "broadcast",
     event: "poke",
