@@ -11,7 +11,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@adobe/react-spectrum": "^3.35.0",
     "@radix-ui/react-popover": "^1.0.7",
+    "@react-spectrum/color": "^3.0.0-beta.33",
+    "@react-stately/color": "^3.6.0",
+    "@spectrum-css/colorarea": "^5.1.0",
+    "@spectrum-css/colorhandle": "^8.1.0",
     "next": "^14.2.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

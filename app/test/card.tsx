@@ -24,7 +24,7 @@ export const Card = (props: {
           grow flex flex-col gap-2
           snap-center
           overflow-y-scroll no-scrollbar
-          ${props.focused ? "shadow-md border-grey-80" : "border-grey-90"}`}
+          ${props.focused ? "shadow-md border-border" : "border-border-light"}`}
       >
         {props.children}
         <AddCardButton

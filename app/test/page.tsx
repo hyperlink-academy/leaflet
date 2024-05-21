@@ -1,6 +1,5 @@
 "use client";
 
-import { ButtonPrimary } from "../../components/Buttons";
 import { useState } from "react";
 import useMeasure from "react-use-measure";
 import { PageHeader } from "./header";
@@ -14,7 +13,6 @@ export default function Index() {
   return (
     <div className="pageWrapper h-screen flex flex-col pt-4">
       <PageHeader />
-
       <div
         className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex "
         id="card-carousel"

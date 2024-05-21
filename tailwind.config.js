@@ -1,4 +1,3 @@
-/** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
@@ -18,21 +17,23 @@ module.exports = {
       transparent: "transparent",
       current: "currentColor",
 
-      //TEXT COLORS. # refers to lightness value. 95 = lightest, 15 = darkest
-      "grey-15": "#272727",
-      "grey-35": "#595959",
-      "grey-55": "#8C8C8C",
-      "grey-80": "#CCCCCC",
-      "grey-90": "#E6E6E6",
+      //TEXT COLORS.
+      "primary" : "var(--primary)",
+      "secondary": "#595959",
+      "tertiary": "#8C8C8C",
+      "border": "#CCCCCC",
+      "border-light": "#E6E6E6",
+
       white: "#FFFFFF",
 
       //ACCENT COLORS
-      "accent": "#0000FF",
+      "accent": "var(--accent)",
+      "accentText": "var(--accent-text)",
 
-      //BG COLORS
-      "bg-page": "rgb(var(--bg-page) / <alpha-value>)",
-      "bg-card": "rgb(var(--bg-card) / <alpha-value>)",
-      "bg-accent": "#F0F7FA",
+
+      //BG COLORS (defined as css variables in global.css)
+      "bg-page": "var(--bg-page)",
+      "bg-card": "var(--bg-card)",
 
       //DO NOT USE IN PRODUCTION. Test colors to aid development, ie, setting bg color on element to see edges of div. DO. NOT. USE. IN. PRODUCTION
       "test": "#E18181",
