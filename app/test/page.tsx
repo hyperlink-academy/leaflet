@@ -23,10 +23,10 @@ export default function Index() {
           {cards.map((card, index) => (
             <div
               className="flex items-stretch"
+              key={index}
               ref={index === 0 ? cardRef : null}
             >
               <Card
-                key={index}
                 first={index === 0}
                 focused={index === focusedCardIndex}
                 id={index.toString()}
