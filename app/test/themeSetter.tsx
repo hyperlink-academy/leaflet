@@ -7,13 +7,17 @@ import {
 } from "@react-spectrum/color";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Provider, defaultTheme } from "@adobe/react-spectrum";
+import { imageArgs } from "./page";
 
 function setCSSVariableToColor(name: string, value: Color) {
   let root = document.querySelector(":root") as HTMLElement;
   root?.style.setProperty(name, value.toString("hsl"));
 }
 
-export const ThemePopover = () => {
+export const ThemePopover = (props: {
+  pageBGImage: imageArgs;
+  setPageBGImage: (imageArgs: Partial<imageArgs>) => void;
+}) => {
   let [pageValue, setPageValue] = useState(parseColor("hsl(198, 100%, 96%)"));
   let [cardValue, setCardValue] = useState(parseColor("hsl(0, 100%, 100%)"));
   let [textValue, setTextValue] = useState(parseColor("hsl(0, 100%, 15%)"));
@@ -52,7 +56,65 @@ export const ThemePopover = () => {
             </div>
             <ColorPicker value={pageValue} setValue={setPageValue} />
           </div>
-          <div>page bg image</div>
+          <div className="flex flex-col gap-1">
+            <strong>bg image</strong>
+            <input
+              type="text"
+              id="url"
+              name="url"
+              value={props.pageBGImage.url}
+              onChange={(e) => {
+                props.setPageBGImage({
+                  url: e.currentTarget.value,
+                });
+              }}
+            />
+            <input
+              type="number"
+              id="size"
+              name="size"
+              value={props.pageBGImage.size}
+              min="100"
+              onChange={(e) => {
+                props.setPageBGImage({
+                  size: e.currentTarget.valueAsNumber,
+                });
+              }}
+            />
+
+            <div className="flex gap-2">
+              <label htmlFor="repeat">
+                <input
+                  type="radio"
+                  id="repeat"
+                  name="repeat"
+                  value="repeat"
+                  checked={props.pageBGImage.repeat === true}
+                  onChange={() => {
+                    props.setPageBGImage({
+                      repeat: true,
+                    });
+                  }}
+                />
+                repeat
+              </label>
+              <label htmlFor="cover">
+                <input
+                  type="radio"
+                  id="no-repeat"
+                  name="repeat"
+                  value="no-repeat"
+                  checked={props.pageBGImage.repeat === false}
+                  onChange={() => {
+                    props.setPageBGImage({
+                      repeat: false,
+                    });
+                  }}
+                />
+                cover
+              </label>
+            </div>
+          </div>
 
           <div className="flex flex-col gap-1">
             <div className="flex justify-between">

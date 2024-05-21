@@ -1,8 +1,12 @@
 import { HomeMedium } from "../../components/Icons";
 import * as Popover from "@radix-ui/react-popover";
 import { ThemePopover } from "./themeSetter";
+import { imageArgs } from "./page";
 
-export const PageHeader = () => {
+export const PageHeader = (props: {
+  pageBGImage: imageArgs;
+  setPageBGImage: (imageArgs: Partial<imageArgs>) => void;
+}) => {
   return (
     <div className="pageHeader shrink-0 flex justify-between gap-4 grow-0 mx-4">
       <div className="flex gap-4 items-center w-fit grow-0 shrink-0">
@@ -12,7 +16,10 @@ export const PageHeader = () => {
       </div>
 
       <div className="flex gap-3 items-center ">
-        <ThemePopover />
+        <ThemePopover
+          pageBGImage={props.pageBGImage}
+          setPageBGImage={props.setPageBGImage}
+        />
         <InvitePopover />
       </div>
     </div>
