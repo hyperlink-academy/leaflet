@@ -12,11 +12,12 @@
   "license": "ISC",
   "dependencies": {
     "@adobe/react-spectrum": "^3.35.0",
+    "@nytimes/react-prosemirror": "^0.6.1",
     "@radix-ui/react-popover": "^1.0.7",
+    "@react-spectrum/color": "^3.0.0-beta.34",
     "@react-stately/color": "^3.6.0",
     "@spectrum-css/colorarea": "^5.1.0",
     "@spectrum-css/colorhandle": "^8.1.0",
-    "@nytimes/react-prosemirror": "^0.6.1",
     "@supabase/supabase-js": "^2.43.2",
     "@vercel/kv": "^1.0.1",
     "base64-js": "^1.5.1",
