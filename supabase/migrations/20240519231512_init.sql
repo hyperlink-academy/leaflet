@@ -32,7 +32,7 @@ CREATE UNIQUE INDEX client_pkey ON public.replicache_clients USING btree (client
 
 CREATE UNIQUE INDEX entities_pkey ON public.entities USING btree (id);
 
-CREATE INDEX facts_expr_idx ON public.facts USING btree (((data ->> 'value'::text))) WHERE ((data ->> 'type'::text) = 'reference'::text);
+CREATE INDEX facts_reference_idx ON public.facts USING btree (((data ->> 'value'::text))) WHERE (((data ->> 'type'::text) = 'reference'::text) OR ((data ->> 'type'::text) = 'ordered-reference'::text));
 
 CREATE UNIQUE INDEX facts_pkey ON public.facts USING btree (id);
 
@@ -51,8 +51,7 @@ set check_function_bodies = off;
 CREATE OR REPLACE FUNCTION public.get_facts(root uuid)
  RETURNS SETOF facts
  LANGUAGE sql
-AS $function$
- WITH RECURSIVE all_facts as (
+AS $function$WITH RECURSIVE all_facts as (
     select
       *
     from
@@ -66,13 +65,12 @@ AS $function$
       facts f
       inner join all_facts f1 on (
          uuid(f1.data ->> 'value') = f.entity
-      ) where f1.data ->> 'type' = 'reference'
+      ) where f1.data ->> 'type' = 'reference' or f1.data ->> 'type' = 'ordered-reference'
   )
 select
   *
 from
-  all_facts;
-  $function$
+  all_facts;$function$
 ;
 
 grant delete on table "public"."entities" to "anon";

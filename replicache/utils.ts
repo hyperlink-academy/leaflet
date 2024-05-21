@@ -2,8 +2,9 @@ import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as driz from "drizzle-orm";
 import { Fact } from ".";
 import { replicache_clients } from "../drizzle/schema";
+import { Attributes } from "./attributes";
 
-export function FactWithIndexes(f: Fact) {
+export function FactWithIndexes(f: Fact<keyof typeof Attributes>) {
   let indexes: {
     eav: string;
     aev: string;
@@ -12,7 +13,7 @@ export function FactWithIndexes(f: Fact) {
     eav: `${f.entity}-${f.attribute}-${f.id}`,
     aev: `${f.attribute}-${f.entity}-${f.id}`,
   };
-  if (f.data.type === "reference")
+  if (f.data.type === "reference" || f.data.type === "ordered-reference")
     indexes.vae = `${f.data.value}-${f.attribute}`;
   return { ...f, indexes };
 }

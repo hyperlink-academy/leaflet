@@ -1,6 +1,6 @@
 export const Attributes = {
   "card/block": {
-    type: "reference",
+    type: "ordered-reference",
     cardinality: "many",
   },
   "block/position": {

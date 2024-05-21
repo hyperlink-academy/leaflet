@@ -10,7 +10,8 @@ import { Database } from "../supabase/database.types";
 import { Fact } from ".";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { getClientGroup } from "./utils";
+import { FactWithIndexes, getClientGroup } from "./utils";
+import { Attributes } from "./attributes";
 let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
@@ -29,7 +30,6 @@ export async function Pull(
 
   return {
     cookie: Date.now(),
-    //TODO When we implement push
     lastMutationIDChanges: clientGroup,
     patch: [
       { op: "clear" },
@@ -37,7 +37,7 @@ export async function Pull(
         return {
           op: "put",
           key: f.id,
-          value: FactWithIndexes(f as unknown as Fact),
+          value: FactWithIndexes(f as unknown as Fact<keyof typeof Attributes>),
         } as const;
       }),
     ],
@@ -48,17 +48,3 @@ const versionNotSupported: VersionNotSupportedResponse = {
   error: "VersionNotSupported",
   versionType: "pull",
 };
-
-function FactWithIndexes(f: Fact) {
-  let indexes: {
-    eav: string;
-    aev: string;
-    vae?: string;
-  } = {
-    eav: `${f.entity}-${f.attribute}-${f.id}`,
-    aev: `${f.attribute}-${f.entity}-${f.id}`,
-  };
-  if (f.data.type === "reference")
-    indexes.vae = `${f.data.value}-${f.attribute}`;
-  return { ...f, indexes };
-}
