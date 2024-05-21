@@ -1,0 +1,33 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    name: typecheck
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 17
+          cache: "npm"
+      - run: "npm i"
+      - run: "npx tsc"
+  deploy-supabase:
+    needs: [typecheck]
+    runs-on: ubuntu-latest
+    name: Deploy Supabase
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PRODUCTION_PROJECT_ID: bdefzwcumgzjwllsnaej
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: supabase/setup-cli@v1
+      - run: supabase link --project-ref $PRODUCTION_PROJECT_ID
+      - run: supabase db push
