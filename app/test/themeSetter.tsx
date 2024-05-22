@@ -50,7 +50,7 @@ export const ThemePopover = (props: {
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className="w-64 py-2 px-3 bg-bg-page rounded-md border border-border flex flex-col gap-4"
+          className="w-64 max-h-[800px] overflow-y-scroll py-2 px-3 bg-bg-page rounded-md border border-border flex flex-col gap-4 "
           align="center"
           sideOffset={4}
           collisionPadding={16}
@@ -168,7 +168,7 @@ const ColorPicker = (props: {
         <div className="flex justify-between items-center">
           <strong>{props.label}</strong>
           <ColorField defaultValue={props.value} className="w-fit">
-            <Input className="w-[88px]" />
+            <Input className="w-[88px]  " />
           </ColorField>
         </div>
 
