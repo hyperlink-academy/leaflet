@@ -6,6 +6,8 @@ export const metadata = {
   description: "tiny interconnected social documents",
 };
 
+export const preferredRegion = ["sfo1"];
+
 const quattro = localFont({
   src: "../public/fonts/iAWriterQuattroV.ttf",
   display: "swap",
