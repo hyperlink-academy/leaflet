@@ -30,7 +30,7 @@ export async function Push(
     if (!mutations[name]) {
       continue;
     }
-    db.transaction(async (tx) => {
+    await db.transaction(async (tx) => {
       try {
         await mutations[name](mutation.args as any, serverMutationContext(tx));
       } catch (e) {
