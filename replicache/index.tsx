@@ -49,6 +49,7 @@ export function ReplicacheProvider(props: {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
     );
     let newRep = new Replicache({
+      pushDelay: 500,
       mutators: Object.fromEntries(
         Object.keys(mutations).map((m) => {
           return [
