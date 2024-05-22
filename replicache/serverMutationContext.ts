@@ -10,13 +10,14 @@ import { DeepReadonly } from "replicache";
 export function serverMutationContext(tx: PgTransaction<any, any, any>) {
   let ctx: MutationContext = {
     async createEntity(entity) {
-      await tx.transaction((tx2) =>
-        tx2
-          .insert(entities)
-          .values({
-            id: entity,
-          })
-          .catch(console.log),
+      await tx.transaction(
+        async (tx2) =>
+          await tx2
+            .insert(entities)
+            .values({
+              id: entity,
+            })
+            .catch(console.log),
       );
       return true;
     },
