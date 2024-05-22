@@ -1,10 +1,16 @@
 import * as Popover from "@radix-ui/react-popover";
 import {
-  ColorArea,
+  ColorPicker as SpectrumColorPicker,
   parseColor,
   Color,
+  ColorArea,
+  ColorThumb,
   ColorSlider,
-} from "@react-spectrum/color";
+  Input,
+  ColorField,
+  SliderTrack,
+} from "react-aria-components";
+
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Provider, defaultTheme } from "@adobe/react-spectrum";
 import { imageArgs } from "./page";
@@ -44,18 +50,16 @@ export const ThemePopover = (props: {
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className="w-64 py-2 px-3 bg-bg-page rounded-md border border-border flex flex-col gap-1"
+          className="w-64 py-2 px-3 bg-bg-page rounded-md border border-border flex flex-col gap-4"
           align="center"
           sideOffset={4}
           collisionPadding={16}
         >
-          <div className="flex flex-col gap-1">
-            <div className="flex justify-between">
-              <strong>page bg</strong>
-              <p> {pageValue.toString("hex")} </p>
-            </div>
-            <ColorPicker value={pageValue} setValue={setPageValue} />
-          </div>
+          <ColorPicker
+            value={pageValue}
+            setValue={setPageValue}
+            label="page bg"
+          />
           <div className="flex flex-col gap-1">
             <strong>bg image</strong>
             <input
@@ -116,40 +120,29 @@ export const ThemePopover = (props: {
             </div>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <div className="flex justify-between">
-              <strong>card bg</strong>
-              <p> {cardValue.toString("hex")} </p>
-            </div>
-            <ColorPicker value={cardValue} setValue={setCardValue} />
-          </div>
+          <ColorPicker
+            value={cardValue}
+            setValue={setCardValue}
+            label="card bg"
+          />
 
-          <div className="flex flex-col gap-1">
-            <div className="flex justify-between">
-              <strong>text color</strong>
-              <p> {textValue.toString("hex")} </p>
-            </div>
-            <ColorPicker value={textValue} setValue={setTextValue} />
-          </div>
+          <ColorPicker
+            value={textValue}
+            setValue={setTextValue}
+            label="text color"
+          />
 
-          <div className="flex flex-col gap-1">
-            <div className="flex justify-between">
-              <strong>accent color</strong>
-              <p> {accentValue.toString("hex")} </p>
-            </div>
-            <ColorPicker value={accentValue} setValue={setAccentValue} />
-          </div>
+          <ColorPicker
+            value={accentValue}
+            setValue={setAccentValue}
+            label="accent color"
+          />
 
-          <div className="flex flex-col gap-1">
-            <div className="flex justify-between">
-              <strong>text on accent</strong>
-              <p> {accentTextValue.toString("hex")} </p>
-            </div>
-            <ColorPicker
-              value={accentTextValue}
-              setValue={setAccentTextValue}
-            />
-          </div>
+          <ColorPicker
+            value={accentTextValue}
+            setValue={setAccentTextValue}
+            label="text on accent"
+          />
 
           <Popover.Arrow />
         </Popover.Content>
@@ -159,27 +152,45 @@ export const ThemePopover = (props: {
 };
 
 const ColorPicker = (props: {
+  label?: string;
   value: Color;
   setValue: Dispatch<SetStateAction<Color>>;
 }) => {
+  let thumbStyle =
+    "w-4 h-4 rounded-full border-2 border-white shadow-[0_0_0_1px_black,_inset_0_0_0_1px_black]";
   return (
-    <Provider theme={defaultTheme}>
-      <ColorArea
-        defaultValue={props.value}
-        xChannel="saturation"
-        yChannel="lightness"
-        value={props.value}
-        onChange={props.setValue}
-        size={"400px"}
-        maxWidth={"100%"}
-        maxHeight={"100px"}
-      />
-      <ColorSlider
-        channel="hue"
-        value={props.value}
-        onChange={props.setValue}
-        label={null}
-      />
-    </Provider>
+    <SpectrumColorPicker
+      defaultValue={props.value}
+      value={props.value}
+      onChange={props.setValue}
+    >
+      <div className="flex flex-col gap-1">
+        <div className="flex justify-between items-center">
+          <strong>{props.label}</strong>
+          <ColorField defaultValue={props.value} className="w-fit">
+            <Input className="w-[88px]" />
+          </ColorField>
+        </div>
+
+        <ColorArea
+          defaultValue={props.value}
+          className="w-full h-[100px] rounded-md"
+          colorSpace="hsb"
+          xChannel="saturation"
+          yChannel="brightness"
+        >
+          <ColorThumb className={thumbStyle} />
+        </ColorArea>
+        <ColorSlider
+          defaultValue={props.value}
+          className="w-full h-6 "
+          channel="hue"
+        >
+          <SliderTrack className="h-6 w-full rounded-md">
+            <ColorThumb className={`${thumbStyle} mt-[11px]`} />
+          </SliderTrack>
+        </ColorSlider>
+      </div>
+    </SpectrumColorPicker>
   );
 };

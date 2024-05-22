@@ -4,13 +4,13 @@
 
 @layer base {
   :root {
-    --bg-page: hsl(198 50 96);
-    --bg-card: hsl(0 0 100);
+    --bg-page: hsb(198 4 98);
+    --bg-card: hsb(0 0 100);
 
-    --primary: hsl(0 0 15);
+    --primary: hsb(0 0 15);
 
-    --accent: hsl(240 100 50);
-    --accent-text: hsl(0 0 100);
+    --accent: hsb(240 100 100);
+    --accent-text: hsb(0 0 100);
   }
 
   html,
