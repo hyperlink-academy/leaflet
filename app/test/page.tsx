@@ -13,7 +13,7 @@ export type imageArgs = {
 
 export default function Index() {
   let [cardRef, { width: cardWidth }] = useMeasure();
-  let [cards, setCards] = useState([0]);
+  let [cards, setCards] = useState([0, 1]);
   let [focusedCardIndex, setFocusedCardIndex] = useState(0);
   let [pageBGImage, setPageBGImage] = useState({
     url: "./test-image.jpg",

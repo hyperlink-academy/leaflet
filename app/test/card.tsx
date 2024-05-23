@@ -1,4 +1,6 @@
+import React from "react";
 import { ButtonPrimary } from "../../components/Buttons";
+import { TextBlock, ImageBlock } from "./blocks";
 
 export const Card = (props: {
   children: React.ReactNode;
@@ -19,15 +21,19 @@ export const Card = (props: {
       <div
         id={props.id}
         className={`
-          p-3 w-[calc(100vw-12px)] md:w-[calc(50vw-24px)] max-w-prose
-          bg-bg-card rounded-lg border
-          grow flex flex-col gap-2
-          snap-center
+          cardWrapper w-[calc(100vw-12px)] md:w-[calc(50vw-24px)] max-w-prose
+          relative
+          grow flex flex-col
           overflow-y-scroll no-scrollbar
-          ${props.focused ? "shadow-md border-border" : "border-border-light"}`}
+          snap-center
+          bg-bg-card rounded-lg border
+          ${props.focused ? "shadow-md border-border" : "border-border-light"}
+
+        `}
       >
-        {props.children}
-        <AddCardButton
+        <CardContent />
+      </div>
+      {/* <AddCardButton
           setCards={props.setCards}
           cards={props.cards}
           card={props.card}
@@ -41,7 +47,7 @@ export const Card = (props: {
             index={props.index}
           />
         )}
-        <div className="flex justify-between">
+       <div className="flex justify-between">
           <FocusCardButton
             setFocusedCardIndex={props.setFocusedCardIndex}
             index={props.index}
@@ -52,57 +58,7 @@ export const Card = (props: {
             index={props.index}
             cardWidth={props.cardWidth}
           />
-        </div>
-
-        <div>
-          {" "}
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis ac quam
-          in tortor sollicitudin lobortis. Quisque vitae massa sit amet quam
-          tristique maximus. Aliquam cursus bibendum nunc eu tempor. Ut metus
-          orci, ornare quis rutrum in, pulvinar in nulla. Morbi sapien lectus,
-          consectetur quis ultricies at, porttitor sit amet mi. Donec ex lectus,
-          condimentum in ligula ut, luctus sodales magna. Vivamus porta pulvinar
-          sapien vel sagittis. Aliquam vel sem scelerisque, bibendum lectus et,
-          dignissim dolor. Fusce ullamcorper ante in purus pellentesque, quis
-          iaculis ex egestas. Vestibulum vel leo in orci commodo ultricies quis
-          a elit. Etiam vehicula magna in turpis iaculis efficitur. Aliquam
-          massa tortor, dapibus et tellus a, volutpat tempus leo. Cras ac nisl
-          semper, porttitor ante eget, feugiat quam. Nulla nibh nulla,
-          vestibulum in dolor eu, dapibus sodales nisl. Proin lacus orci, congue
-          id accumsan ut, lobortis in libero. Integer eget massa dictum, ornare
-          lacus et, aliquam enim. Ut ornare urna vel pharetra dictum. Nullam
-          fermentum, purus ac faucibus fringilla, elit enim posuere massa,
-          volutpat porta lacus arcu vel eros. Integer sagittis dolor nec velit
-          vulputate pulvinar. Quisque vel orci orci. Donec augue ipsum, lobortis
-          in sapien aliquam, interdum cursus ipsum. Donec consectetur tristique
-          elit. Sed volutpat congue luctus. Mauris vitae arcu eu ex congue
-          molestie. Aliquam erat volutpat. Fusce sed ipsum eros. Donec semper
-          neque ut dolor aliquam hendrerit. Praesent et tincidunt nisi. Integer
-          sollicitudin urna eros, non aliquam neque semper in. Nulla eu nunc at
-          urna auctor bibendum ut eu mauris. Nullam ultricies lorem ut nibh
-          tristique, vitae euismod tellus placerat. Aliquam euismod, augue ac
-          sollicitudin molestie, neque tellus bibendum arcu, quis sollicitudin
-          ipsum risus eget dolor. Phasellus consectetur pellentesque urna in
-          maximus. Curabitur dignissim tortor quis lorem elementum scelerisque.
-          Vestibulum ac rutrum nisl. Sed neque turpis, commodo a augue a,
-          hendrerit pretium dui. Cras ut augue vehicula, scelerisque sem ac,
-          dictum justo. Phasellus egestas lorem sed est elementum finibus. Proin
-          ultrices rutrum neque, at varius arcu pellentesque in. Quisque
-          suscipit elit eu ante viverra bibendum et quis mauris. Sed
-          pellentesque aliquet dolor at tempus. Donec eu nulla in ligula cursus
-          ultrices. Sed quis tristique purus. Duis semper, urna in facilisis
-          dapibus, leo ligula gravida tortor, vitae dignissim lorem orci vitae
-          ante. Integer auctor ipsum vitae risus scelerisque facilisis. Vivamus
-          molestie in purus eu hendrerit. Ut laoreet tortor ut vestibulum
-          gravida. Curabitur in orci a quam lacinia iaculis id ut ipsum. Ut nec
-          lorem sed mauris condimentum semper eget vitae lorem. Aenean pretium
-          ipsum sit amet massa auctor feugiat. Maecenas malesuada imperdiet leo,
-          non tempus nibh suscipit eget. Fusce eu diam ligula. Quisque at ornare
-          massa. Suspendisse potenti. Fusce convallis, dolor rutrum elementum
-          commodo, lacus dui vestibulum lectus, non maximus quam metus finibus
-          libero.
-        </div>
-      </div>
+        </div> */}
     </>
   );
 };
@@ -191,5 +147,48 @@ const FocusCardButton = (props: {
     >
       focus this card
     </ButtonPrimary>
+  );
+};
+
+const CardContent = () => {
+  return (
+    <div className=" p-3 sm:p-4 flex flex-col gap-1 z-10">
+      <h3>Card Title</h3>
+
+      <div className="flex flex-col">
+        <TextBlock
+          lines={6}
+          defaultValue="It is a truth universally acknowledged, that a single man in possession of a good fortune must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters."
+        />
+        <TextBlock
+          lines={2}
+          defaultValue="“My dear Mr. Bennet,” said his lady to him one day, “have you heard that Netherfield Park is let at last?”"
+        />
+        <TextBlock
+          lines={1}
+          defaultValue="Mr. Bennet replied that he had not."
+        />
+        <TextBlock
+          lines={2}
+          defaultValue="“But it is,” returned she; “for Mrs. Long has just been here, and she told me all about it.”"
+        />
+        <TextBlock lines={1} defaultValue="Mr. Bennet made no answer." />
+        <TextBlock
+          lines={2}
+          defaultValue="“Do not you want to know who has taken it?” cried his wife, impatiently."
+        />
+        <TextBlock
+          lines={1}
+          defaultValue="“You want to tell me, and I have no objection to hearing it.”"
+        />
+        <TextBlock lines={1} defaultValue="" />
+        <ImageBlock>
+          <img src="./test-image.jpg" alt="An image" />
+        </ImageBlock>
+        <ImageBlock>
+          <img src="./test-image-2.jpg" alt="An image" />
+        </ImageBlock>
+      </div>
+    </div>
   );
 };
