@@ -1,6 +1,6 @@
 import { HomeMedium } from "../../components/Icons";
 import * as Popover from "@radix-ui/react-popover";
-import { ThemePopover } from "./themeSetter";
+import { ThemePopover } from "./ThemeSetter";
 import { imageArgs } from "./page";
 
 export const PageHeader = (props: {

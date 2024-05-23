@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import useMeasure from "react-use-measure";
-import { PageHeader } from "./header";
-import { Card } from "./card";
+import { PageHeader } from "./Header";
+import { Card } from "./Card";
 
 export type imageArgs = {
   url: string;

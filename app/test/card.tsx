@@ -1,6 +1,6 @@
 import React from "react";
 import { ButtonPrimary } from "../../components/Buttons";
-import { TextBlock, ImageBlock } from "./blocks";
+import { TextBlock, ImageBlock } from "./Blocks";
 
 export const Card = (props: {
   children: React.ReactNode;
