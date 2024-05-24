@@ -1,6 +1,6 @@
 import React from "react";
 import { ButtonPrimary } from "../../components/Buttons";
-import { TextBlock, ImageBlock } from "./Blocks";
+import { TextBlock, ImageBlock, CardBlock } from "./Blocks";
 
 export const Card = (props: {
   children: React.ReactNode;
@@ -13,6 +13,7 @@ export const Card = (props: {
   cards: number[];
   card: number;
   cardWidth: number;
+  cardHeight: number;
 }) => {
   return (
     <>
@@ -21,7 +22,7 @@ export const Card = (props: {
       <div
         id={props.id}
         className={`
-          cardWrapper w-[calc(100vw-12px)] md:w-[calc(50vw-24px)] max-w-prose
+          cardWrapper w-[calc(100vw-12px)] md:w-[calc(50vw-32px)] max-w-prose
           relative
           grow flex flex-col
           overflow-y-scroll no-scrollbar
@@ -31,7 +32,7 @@ export const Card = (props: {
 
         `}
       >
-        <CardContent />
+        <CardContent cardHeight={props.cardHeight} />
       </div>
       {/* <AddCardButton
           setCards={props.setCards}
@@ -150,45 +151,52 @@ const FocusCardButton = (props: {
   );
 };
 
-const CardContent = () => {
+const CardContent = (props: { cardHeight: number }) => {
   return (
-    <div className=" p-3 sm:p-4 flex flex-col gap-1 z-10">
-      <h3>Card Title</h3>
+    <div className=" p-3 sm:p-4  flex flex-col">
+      <h2>Chapter 1</h2>
 
-      <div className="flex flex-col">
-        <TextBlock
-          lines={6}
-          defaultValue="It is a truth universally acknowledged, that a single man in possession of a good fortune must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters."
-        />
-        <TextBlock
-          lines={2}
-          defaultValue="“My dear Mr. Bennet,” said his lady to him one day, “have you heard that Netherfield Park is let at last?”"
-        />
-        <TextBlock
-          lines={1}
-          defaultValue="Mr. Bennet replied that he had not."
-        />
-        <TextBlock
-          lines={2}
-          defaultValue="“But it is,” returned she; “for Mrs. Long has just been here, and she told me all about it.”"
-        />
-        <TextBlock lines={1} defaultValue="Mr. Bennet made no answer." />
-        <TextBlock
-          lines={2}
-          defaultValue="“Do not you want to know who has taken it?” cried his wife, impatiently."
-        />
-        <TextBlock
-          lines={1}
-          defaultValue="“You want to tell me, and I have no objection to hearing it.”"
-        />
-        <TextBlock lines={1} defaultValue="" />
-        <ImageBlock>
-          <img src="./test-image.jpg" alt="An image" />
-        </ImageBlock>
-        <ImageBlock>
-          <img src="./test-image-2.jpg" alt="An image" />
-        </ImageBlock>
-      </div>
+      <TextBlock
+        lines={6}
+        defaultValue="It is a truth universally acknowledged, that a single man in possession of a good fortune must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters."
+      />
+      <TextBlock
+        lines={2}
+        defaultValue="“My dear Mr. Bennet,” said his lady to him one day, “have you heard that Netherfield Park is let at last?”"
+      />
+      <TextBlock lines={1} defaultValue="Mr. Bennet replied that he had not." />
+      <TextBlock
+        lines={2}
+        defaultValue="“But it is,” returned she; “for Mrs. Long has just been here, and she told me all about it.”"
+      />
+      <TextBlock lines={1} defaultValue="Mr. Bennet made no answer." />
+      <TextBlock
+        lines={2}
+        defaultValue="“Do not you want to know who has taken it?” cried his wife, impatiently."
+      />
+      <TextBlock
+        lines={1}
+        defaultValue="“You want to tell me, and I have no objection to hearing it.”"
+      />
+      <TextBlock lines={1} defaultValue="" />
+      <h3>Related Images</h3>
+      <ImageBlock src="./test-image.jpg" cardHeight={props.cardHeight} />
+      <ImageBlock src="./test-image-2.jpg" cardHeight={props.cardHeight} />
+
+      <CardBlock fontSize="h1" imgSrc="./test-image-2.jpg">
+        Chapter 2
+      </CardBlock>
+      <CardBlock fontSize="h2">Notes</CardBlock>
+      <CardBlock fontSize="h3">Footnote #3</CardBlock>
+
+      <CardBlock fontSize="p" imgSrc="./test-image.jpg">
+        This was invitation enough. “Why, my dear, you must know, Mrs. Long says
+        that Netherfield is taken by a young man of large fortune from the north
+        of England; that he came down on Monday in a chaise and four to see the
+        place, and was so much delighted with it that he agreed with Mr. Morris
+        immediately; that he is to take possession before Michaelmas, and some
+        of his servants are to be in the house by the end of next week.”
+      </CardBlock>
     </div>
   );
 };

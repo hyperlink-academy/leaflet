@@ -12,7 +12,7 @@ export type imageArgs = {
 };
 
 export default function Index() {
-  let [cardRef, { width: cardWidth }] = useMeasure();
+  let [cardRef, { width: cardWidth, height: cardHeight }] = useMeasure();
   let [cards, setCards] = useState([0, 1]);
   let [focusedCardIndex, setFocusedCardIndex] = useState(0);
   let [pageBGImage, setPageBGImage] = useState({
@@ -59,6 +59,7 @@ export default function Index() {
                 cards={cards}
                 card={card}
                 cardWidth={cardWidth}
+                cardHeight={cardHeight}
               >
                 Card {card}
               </Card>
