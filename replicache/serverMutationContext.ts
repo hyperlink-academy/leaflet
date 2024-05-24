@@ -86,17 +86,14 @@ export function serverMutationContext(tx: PgTransaction<any, any, any>) {
       );
     },
     async deleteEntity(entity) {
-      console.log(entity);
-      console.log(
-        await Promise.all([
-          tx.delete(entities).where(driz.eq(entities.id, entity)),
-          tx
-            .delete(facts)
-            .where(
-              driz.sql`(data->>'type' = 'ordered-reference' or data ->>'type' = 'reference') and data->>'value' = ${entity}`,
-            ),
-        ]),
-      );
+      await Promise.all([
+        tx.delete(entities).where(driz.eq(entities.id, entity)),
+        tx
+          .delete(facts)
+          .where(
+            driz.sql`(data->>'type' = 'ordered-reference' or data ->>'type' = 'reference') and data->>'value' = ${entity}`,
+          ),
+      ]);
     },
   };
   return ctx;

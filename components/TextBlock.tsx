@@ -57,14 +57,13 @@ export function TextBlock(props: {
                   ?.focus();
                 let previousBlockEditor =
                   useEditorStates.getState()[prevBlock]?.editor;
-                console.log(previousBlockEditor);
                 if (previousBlockEditor) {
                   let tr = previousBlockEditor.tr;
-                  let endPos = previousBlockEditor.doc.content.size;
+                  let endPos = tr.doc.content.size;
 
                   let newState = previousBlockEditor.apply(
                     tr.setSelection(
-                      TextSelection.create(previousBlockEditor.doc, endPos),
+                      TextSelection.create(tr.doc, endPos - 1, endPos - 1),
                     ),
                   );
                   useEditorStates.setState((s) => ({
