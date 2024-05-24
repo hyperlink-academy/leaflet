@@ -10,6 +10,7 @@ export type MutationContext = {
       attribute: A,
     ) => Promise<DeepReadonly<Fact<A>[]>>;
   };
+  deleteEntity: (entity: string) => Promise<void>;
   assertFact: <A extends keyof typeof Attributes>(
     f: Omit<Fact<A>, "id"> & { id?: string },
   ) => Promise<void>;
@@ -34,6 +35,11 @@ const addBlock: Mutation<{
   });
 };
 
+const removeBlock: Mutation<{ blockEntity: string }> = async (args, ctx) => {
+  console.log(args);
+  await ctx.deleteEntity(args.blockEntity);
+};
+
 const assertFact: Mutation<
   Omit<Fact<keyof typeof Attributes>, "id"> & { id?: string }
 > = async (args, ctx) => {
@@ -43,4 +49,5 @@ const assertFact: Mutation<
 export const mutations = {
   addBlock,
   assertFact,
+  removeBlock,
 };

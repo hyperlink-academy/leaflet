@@ -34,7 +34,8 @@
     "react-use-measure": "^2.1.1",
     "replicache": "^14.2.2",
     "y-prosemirror": "^1.2.5",
-    "yjs": "^13.6.15"
+    "yjs": "^13.6.15",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240512.0",

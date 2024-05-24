@@ -16,7 +16,7 @@ export function clientMutationContext(tx: WriteTransaction) {
         let existingFact = await tx
           .scan<Fact<typeof attribute>>({
             indexName: "eav",
-            prefix: `${entity}-${attribute}`,
+            prefix: attribute ? `${entity}-${attribute}` : entity,
           })
           .toArray();
         return existingFact;
@@ -47,6 +47,23 @@ export function clientMutationContext(tx: WriteTransaction) {
         }
       }
       await tx.set(id, FactWithIndexes({ id, ...f, data }));
+    },
+    async deleteEntity(entity) {
+      let existingFacts = await tx
+        .scan<Fact<keyof typeof Attributes>>({
+          indexName: "eav",
+          prefix: `${entity}`,
+        })
+        .toArray();
+      let references = await tx
+        .scan<Fact<keyof typeof Attributes>>({
+          indexName: "vae",
+          prefix: entity,
+        })
+        .toArray();
+      await Promise.all(
+        [...existingFacts, ...references].map((f) => tx.del(f.id)),
+      );
     },
   };
   return ctx;

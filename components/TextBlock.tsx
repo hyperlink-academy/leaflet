@@ -7,16 +7,23 @@ import { ProseMirror } from "@nytimes/react-prosemirror";
 import * as base64 from "base64-js";
 import { useReplicache, useEntity, ReplicacheMutators } from "../replicache";
 
-import { EditorState } from "prosemirror-state";
+import { EditorState, TextSelection } from "prosemirror-state";
 import { schema } from "prosemirror-schema-basic";
 import { ySyncPlugin } from "y-prosemirror";
 import { Replicache } from "replicache";
 import { generateKeyBetween } from "fractional-indexing";
+import { create } from "zustand";
+
+let useEditorStates = create(
+  () =>
+    ({}) as { [entity: string]: { editor: InstanceType<typeof EditorState> } },
+);
 
 export function TextBlock(props: {
   entityID: string;
   parent: string;
   position: string;
+  previousBlock: { value: string; position: string } | null;
   nextPosition: string | null;
 }) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
@@ -38,7 +45,38 @@ export function TextBlock(props: {
         keymap({
           "Meta-b": toggleMark(schema.marks.strong),
           "Meta-i": toggleMark(schema.marks.em),
-          Enter: () => {
+          Backspace: (state) => {
+            if (state.doc.textContent.length === 0) {
+              repRef.current?.mutate.removeBlock({
+                blockEntity: props.entityID,
+              });
+              if (propsRef.current.previousBlock) {
+                let prevBlock = propsRef.current.previousBlock.value;
+                document
+                  .getElementById(elementId.block(prevBlock).text)
+                  ?.focus();
+                let previousBlockEditor =
+                  useEditorStates.getState()[prevBlock]?.editor;
+                console.log(previousBlockEditor);
+                if (previousBlockEditor) {
+                  let tr = previousBlockEditor.tr;
+                  let endPos = previousBlockEditor.doc.content.size;
+
+                  let newState = previousBlockEditor.apply(
+                    tr.setSelection(
+                      TextSelection.create(previousBlockEditor.doc, endPos),
+                    ),
+                  );
+                  useEditorStates.setState((s) => ({
+                    ...s,
+                    [prevBlock]: { editor: newState },
+                  }));
+                }
+              }
+            }
+            return false;
+          },
+          "Shift-Enter": () => {
             let newEntityID = crypto.randomUUID();
             repRef.current?.mutate.addBlock({
               newEntityID,
@@ -60,6 +98,16 @@ export function TextBlock(props: {
       ],
     }),
   );
+  useEffect(() => {
+    useEditorStates.setState((s) => {
+      return { ...s, [props.entityID]: { editor: editorState } };
+    });
+  }, [editorState, props.entityID]);
+
+  let editorStateFromZustand = useEditorStates((s) => s[props.entityID]);
+  useEffect(() => {
+    if (editorStateFromZustand) setEditorState(editorStateFromZustand.editor);
+  }, [editorStateFromZustand]);
 
   return (
     <ProseMirror
@@ -71,17 +119,18 @@ export function TextBlock(props: {
     >
       <pre
         id={elementId.block(props.entityID).text}
-        className="w-full whitespace-pre-wrap"
+        className="w-full whitespace-pre-wrap outline-none"
         ref={setMount}
       />
     </ProseMirror>
   );
 }
 
+//I need to get *and* set the value to zustand?
+// This will mean that the value is undefined for a second... Maybe I could use a ref to figure that out?
 function useYJSValue(entityID: string) {
   const [ydoc] = useState(new Y.Doc());
   const docStateFromReplicache = useEntity(entityID, "block/text");
-  console.log(docStateFromReplicache?.data.value);
   let rep = useReplicache();
   const yText = ydoc.getXmlFragment("prosemirror");
 

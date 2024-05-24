@@ -26,7 +26,7 @@ export function Blocks(props: { entityID: string }) {
   let blocks = useEntity(props.entityID, "card/block");
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-3xl flex flex-col gap-1 p-2">
       {blocks
         ?.sort((a, b) => {
           return a.data.position > b.data.position ? 1 : -1;
@@ -34,10 +34,11 @@ export function Blocks(props: { entityID: string }) {
         .map((f, index, arr) => {
           return (
             <Block
-              key={f.id}
+              key={f.data.value}
               entityID={f.data.value}
               parent={props.entityID}
               position={f.data.position}
+              previousBlock={arr[index - 1]?.data || null}
               nextPosition={arr[index + 1]?.data.position || null}
             />
           );
@@ -50,6 +51,7 @@ function Block(props: {
   entityID: string;
   parent: string;
   position: string;
+  previousBlock: { position: string; value: string } | null;
   nextPosition: string | null;
 }) {
   return (
