@@ -36,7 +36,6 @@ const addBlock: Mutation<{
 };
 
 const removeBlock: Mutation<{ blockEntity: string }> = async (args, ctx) => {
-  console.log(args);
   await ctx.deleteEntity(args.blockEntity);
 };
 

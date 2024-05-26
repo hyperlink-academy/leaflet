@@ -1,5 +1,6 @@
 "use client";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useSubscribe } from "replicache-react";
 import { DeepReadonlyObject, Replicache, WriteTransaction } from "replicache";
 import { Pull } from "./pull";
 import { mutations } from "./mutations";
@@ -116,24 +117,27 @@ export function useEntity<A extends keyof typeof Attributes>(
   attribute: A,
 ): CardinalityResult<A> {
   let { rep, initialFacts } = useReplicache();
-  let fallbackData = initialFacts.filter(
-    (f) => f.entity === entity && f.attribute === attribute,
+  let fallbackData = useMemo(
+    () =>
+      initialFacts.filter(
+        (f) => f.entity === entity && f.attribute === attribute,
+      ),
+    [entity, attribute, initialFacts],
   );
-  let [data, setData] = useState<DeepReadonlyObject<Fact<A>[]>>(
-    fallbackData as DeepReadonlyObject<Fact<A>>[],
+  let data = useSubscribe(
+    rep,
+    (tx) => {
+      return tx
+        .scan<Fact<A>>({ indexName: "eav", prefix: `${entity}-${attribute}` })
+        .toArray();
+    },
+    {
+      default: null,
+      dependencies: [entity, attribute],
+    },
   );
-  useEffect(() => {
-    if (!rep) return;
-    return rep.subscribe(
-      (tx) => {
-        return tx
-          .scan<Fact<A>>({ indexName: "eav", prefix: `${entity}-${attribute}` })
-          .toArray();
-      },
-      { onData: setData },
-    );
-  }, [entity, attribute, rep]);
+  let d = data || (attribute === "card/block" ? fallbackData : []);
   return Attributes[attribute].cardinality === "many"
-    ? (data as CardinalityResult<A>)
-    : (data[0] as CardinalityResult<A>);
+    ? (d as CardinalityResult<A>)
+    : (d[0] as CardinalityResult<A>);
 }

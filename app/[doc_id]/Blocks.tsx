@@ -9,7 +9,7 @@ export function AddBlock(props: { entityID: string }) {
   });
   return (
     <button
-      onClick={() => {
+      onMouseDown={() => {
         rep?.rep?.mutate.addBlock({
           parent: props.entityID,
           position: generateKeyBetween(null, blocks[0]?.data.position || null),

@@ -61,7 +61,7 @@ export function serverMutationContext(tx: PgTransaction<any, any, any>) {
               (existingFact[0]?.data as Fact<typeof f.attribute>["data"]).value,
             );
             const newUpdate = base64.toByteArray(f.data.value);
-            const updateBytes = Y.mergeUpdatesV2([oldUpdate, newUpdate]);
+            const updateBytes = Y.mergeUpdates([oldUpdate, newUpdate]);
             data.value = base64.fromByteArray(updateBytes);
           }
         }
