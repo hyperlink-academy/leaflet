@@ -1,3 +1,4 @@
+import { InitialPageLoad } from "../components/InitialPageLoadProvider";
 import "./globals.css";
 import localFont from "next/font/local";
 
@@ -21,7 +22,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${quattro.variable}`}>
-      <body>{children}</body>
+      <body>
+        <InitialPageLoad>{children}</InitialPageLoad>
+      </body>
     </html>
   );
 }

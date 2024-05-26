@@ -28,6 +28,7 @@ type Data<A extends keyof typeof Attributes> = {
 
 let ReplicacheContext = createContext({
   rep: null as null | Replicache<ReplicacheMutators>,
+  initialFacts: [] as Fact<keyof typeof Attributes>[],
 });
 export function useReplicache() {
   return useContext(ReplicacheContext);
@@ -39,6 +40,7 @@ export type ReplicacheMutators = {
   ) => Promise<void>;
 };
 export function ReplicacheProvider(props: {
+  initialFacts: Fact<keyof typeof Attributes>[];
   name: string;
   children: React.ReactNode;
 }) {
@@ -97,7 +99,9 @@ export function ReplicacheProvider(props: {
     };
   }, [props.name]);
   return (
-    <ReplicacheContext.Provider value={{ rep }}>
+    <ReplicacheContext.Provider
+      value={{ rep, initialFacts: props.initialFacts }}
+    >
       {props.children}
     </ReplicacheContext.Provider>
   );
@@ -111,8 +115,13 @@ export function useEntity<A extends keyof typeof Attributes>(
   entity: string,
   attribute: A,
 ): CardinalityResult<A> {
-  let [data, setData] = useState<DeepReadonlyObject<Fact<A>[]>>([]);
-  let { rep } = useReplicache();
+  let { rep, initialFacts } = useReplicache();
+  let fallbackData = initialFacts.filter(
+    (f) => f.entity === entity && f.attribute === attribute,
+  );
+  let [data, setData] = useState<DeepReadonlyObject<Fact<A>[]>>(
+    fallbackData as DeepReadonlyObject<Fact<A>>[],
+  );
   useEffect(() => {
     if (!rep) return;
     return rep.subscribe(

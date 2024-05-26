@@ -34,6 +34,7 @@
     "react-dom": "^18.3.1",
     "react-use-measure": "^2.1.1",
     "replicache": "^14.2.2",
+    "replicache-react": "^5.0.1",
     "y-prosemirror": "^1.2.5",
     "yjs": "^13.6.15",
     "zustand": "^4.5.2"
@@ -49,7 +50,7 @@
     "prettier": "3.2.5",
     "supabase": "^1.167.4",
     "tailwindcss": "^3.4.3",
-    "typescript": "5.4.5",
+    "typescript": "^5.4.5",
     "wrangler": "^3.56.0"
   }
 }
