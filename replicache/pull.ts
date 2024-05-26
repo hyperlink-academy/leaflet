@@ -33,6 +33,7 @@ export async function Pull(
     lastMutationIDChanges: clientGroup,
     patch: [
       { op: "clear" },
+      { op: "put", key: "initialized", value: true },
       ...facts.map((f) => {
         return {
           op: "put",

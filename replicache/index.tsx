@@ -126,7 +126,9 @@ export function useEntity<A extends keyof typeof Attributes>(
   );
   let data = useSubscribe(
     rep,
-    (tx) => {
+    async (tx) => {
+      let initialized = await tx.get("initialized");
+      if (!initialized) return null;
       return tx
         .scan<Fact<A>>({ indexName: "eav", prefix: `${entity}-${attribute}` })
         .toArray();
@@ -136,7 +138,7 @@ export function useEntity<A extends keyof typeof Attributes>(
       dependencies: [entity, attribute],
     },
   );
-  let d = data || (attribute === "card/block" ? fallbackData : []);
+  let d = data || fallbackData;
   return Attributes[attribute].cardinality === "many"
     ? (d as CardinalityResult<A>)
     : (d[0] as CardinalityResult<A>);
