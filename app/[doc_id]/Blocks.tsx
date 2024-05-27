@@ -4,6 +4,8 @@ import NextImage from "next/image";
 import { TextBlock } from "../../components/TextBlock";
 import { generateKeyBetween } from "fractional-indexing";
 import { supabaseBrowserClient } from "../../supabase/browserClient";
+import { useMemo } from "react";
+import { addImage } from "../../utils/addImage";
 export function AddBlock(props: { entityID: string }) {
   let rep = useReplicache();
   let blocks = useEntity(props.entityID, "card/block")?.sort((a, b) => {
@@ -35,65 +37,14 @@ export function AddImageBlock(props: { entityID: string }) {
       accept="image/*"
       onChange={async (e) => {
         let file = e.currentTarget.files?.[0];
-        if (!file) return;
-        let client = supabaseBrowserClient();
-        let cache = await caches.open("minilink-user-assets");
-        let hash = await computeHash(file);
-        let url = client.storage.from("minilink-user-assets").getPublicUrl(hash)
-          .data.publicUrl;
-        let dimensions = await getImageDimensions(file);
-        await cache.put(
-          url,
-          new Response(file, {
-            headers: {
-              "Content-Type": file.type,
-              "Content-Length": file.size.toString(),
-            },
-          }),
-        );
-        let newBlockEntity = crypto.randomUUID();
-        await rep?.rep?.mutate.addBlock({
+        if (!file || !rep?.rep) return;
+        await addImage(file, rep.rep, {
           parent: props.entityID,
           position: generateKeyBetween(null, blocks[0]?.data.position || null),
-          newEntityID: newBlockEntity,
         });
-        await rep?.rep?.mutate.assertFact({
-          entity: newBlockEntity,
-          attribute: "block/image",
-          data: {
-            type: "image",
-            src: url,
-            height: dimensions.height,
-            width: dimensions.width,
-          },
-        });
-        await client.storage.from("minilink-user-assets").upload(hash, file);
       }}
     />
   );
-}
-
-function getImageDimensions(
-  file: File,
-): Promise<{ width: number; height: number }> {
-  let url = URL.createObjectURL(file);
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = function () {
-      resolve({ width: img.width, height: img.height });
-      URL.revokeObjectURL(url);
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
-}
-
-async function computeHash(data: File): Promise<string> {
-  let buffer = await data.arrayBuffer();
-  const buf = await crypto.subtle.digest("SHA-256", new Uint8Array(buffer));
-  return Array.from(new Uint8Array(buf), (b) =>
-    b.toString(16).padStart(2, "0"),
-  ).join("");
 }
 
 export function Blocks(props: { entityID: string }) {
@@ -129,16 +80,31 @@ function Block(props: {
   nextPosition: string | null;
 }) {
   let image = useEntity(props.entityID, "block/image");
+  let virtualBlock = useMemo(() => {
+    return crypto.randomUUID();
+  }, []);
+
   if (image)
     return (
-      <div className="border p-2 w-full">
-        <img
-          alt={""}
-          src={image.data.src}
-          height={image.data.height}
-          width={image.data.width}
-        />
-      </div>
+      <>
+        <div className="border p-2 w-full">
+          <img
+            alt={""}
+            src={image.data.src}
+            height={image.data.height}
+            width={image.data.width}
+          />
+        </div>
+        <div className="border p-2 w-full">
+          <TextBlock
+            parent={props.parent}
+            previousBlock={{ value: props.entityID, position: props.position }}
+            entityID={virtualBlock}
+            nextPosition={props.nextPosition}
+            position={generateKeyBetween(props.position, props.nextPosition)}
+          />
+        </div>
+      </>
     );
   return (
     <div className="border p-2 w-full">

@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import { elementId } from "../utils/elementId";
 import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
+import { Schema } from "prosemirror-model";
 import * as Y from "yjs";
 import { ProseMirror, useEditorState } from "@nytimes/react-prosemirror";
 import * as base64 from "base64-js";
@@ -12,14 +13,23 @@ import {
   Fact,
 } from "../replicache";
 
+let schema = new Schema({
+  marks: {
+    strong: marks.strong,
+    em: marks.em,
+  },
+  nodes: { doc: nodes.doc, paragraph: nodes.paragraph, text: nodes.text },
+});
+
 import { EditorState, TextSelection } from "prosemirror-state";
-import { schema } from "prosemirror-schema-basic";
+import { marks, nodes } from "prosemirror-schema-basic";
 import { ySyncPlugin } from "y-prosemirror";
 import { Replicache } from "replicache";
 import { generateKeyBetween } from "fractional-indexing";
 import { create } from "zustand";
 import { RenderYJSFragment } from "./RenderYJSFragment";
 import { useInitialPageLoad } from "./InitialPageLoadProvider";
+import { addImage } from "../utils/addImage";
 
 let useEditorStates = create(
   () =>
@@ -176,6 +186,25 @@ export function BaseTextBlock(props: {
       }}
     >
       <pre
+        onPaste={(e) => {
+          if (!rep.rep) return;
+          for (let item of e.clipboardData.items) {
+            if (item?.type.includes("image")) {
+              let file = item.getAsFile();
+              if (file)
+                addImage(file, rep.rep, {
+                  parent: props.parent,
+                  position: generateKeyBetween(
+                    props.position,
+                    props.nextPosition,
+                  ),
+                });
+              return;
+            }
+          }
+          e.preventDefault();
+          e.stopPropagation();
+        }}
         id={elementId.block(props.entityID).text}
         className="w-full whitespace-pre-wrap outline-none"
         ref={setMount}
