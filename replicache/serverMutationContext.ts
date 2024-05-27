@@ -4,7 +4,7 @@ import * as base64 from "base64-js";
 import * as Y from "yjs";
 import { MutationContext } from "./mutations";
 import { entities, facts } from "../drizzle/schema";
-import { Attributes } from "./attributes";
+import { Attributes, FilterAttributes } from "./attributes";
 import { Fact } from ".";
 import { DeepReadonly } from "replicache";
 export function serverMutationContext(tx: PgTransaction<any, any, any>) {
@@ -58,11 +58,19 @@ export function serverMutationContext(tx: PgTransaction<any, any, any>) {
           id = existingFact[0].id;
           if (attribute.type === "text") {
             const oldUpdate = base64.toByteArray(
-              (existingFact[0]?.data as Fact<typeof f.attribute>["data"]).value,
+              (
+                existingFact[0]?.data as Fact<
+                  keyof FilterAttributes<{ type: "text" }>
+                >["data"]
+              ).value,
             );
-            const newUpdate = base64.toByteArray(f.data.value);
+
+            let textData = data as Fact<
+              keyof FilterAttributes<{ type: "text" }>
+            >["data"];
+            const newUpdate = base64.toByteArray(textData.value);
             const updateBytes = Y.mergeUpdates([oldUpdate, newUpdate]);
-            data.value = base64.fromByteArray(updateBytes);
+            textData.value = base64.fromByteArray(updateBytes);
           }
         }
       }

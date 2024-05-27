@@ -5,7 +5,12 @@ import { keymap } from "prosemirror-keymap";
 import * as Y from "yjs";
 import { ProseMirror, useEditorState } from "@nytimes/react-prosemirror";
 import * as base64 from "base64-js";
-import { useReplicache, useEntity, ReplicacheMutators } from "../replicache";
+import {
+  useReplicache,
+  useEntity,
+  ReplicacheMutators,
+  Fact,
+} from "../replicache";
 
 import { EditorState, TextSelection } from "prosemirror-state";
 import { schema } from "prosemirror-schema-basic";
@@ -47,7 +52,7 @@ function RenderedTextBlock(props: { entityID: string }) {
   let { initialFacts } = useReplicache();
   let initialFact = initialFacts.find(
     (f) => f.entity === props.entityID && f.attribute === "block/text",
-  );
+  ) as Fact<"block/text"> | undefined;
   if (!initialFact) return <pre className="min-h-6" />;
   let doc = new Y.Doc();
   const update = base64.toByteArray(initialFact.data.value);

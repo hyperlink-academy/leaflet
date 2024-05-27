@@ -20,3 +20,8 @@ export const Attributes = {
     cardinality: "one",
   },
 } as const;
+
+type Attribute = typeof Attributes;
+export type FilterAttributes<F extends Partial<Attribute[keyof Attribute]>> = {
+  [A in keyof Attribute as Attribute[A] extends F ? A : never]: Attribute[A];
+};
