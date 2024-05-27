@@ -1,15 +1,16 @@
-import { createClient } from "@supabase/supabase-js";
 import { Fact, ReplicacheProvider } from "../../replicache";
 import { Database } from "../../supabase/database.types";
-import { AddBlock, Blocks } from "./Blocks";
+import { AddBlock, AddImageBlock, Blocks } from "./Blocks";
 import { Attributes } from "../../replicache/attributes";
+import { createServerClient } from "@supabase/ssr";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
 
-let supabase = createClient<Database>(
+let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+  { cookies: {} },
 );
 export default async function DocumentPage(props: {
   params: { doc_id: string };
@@ -20,6 +21,7 @@ export default async function DocumentPage(props: {
     <ReplicacheProvider name={props.params.doc_id} initialFacts={initialFacts}>
       <div className="text-blue-400">doc_id: {props.params.doc_id}</div>
       <AddBlock entityID={props.params.doc_id} />
+      <AddImageBlock entityID={props.params.doc_id} />
       <Blocks entityID={props.params.doc_id} />
     </ReplicacheProvider>
   );

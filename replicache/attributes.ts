@@ -11,6 +11,10 @@ export const Attributes = {
     type: "text",
     cardinality: "one",
   },
+  "block/image": {
+    type: "image",
+    cardinality: "one",
+  },
   "block/card": {
     type: "reference",
     cardinality: "one",

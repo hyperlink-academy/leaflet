@@ -6,9 +6,8 @@ import { Pull } from "./pull";
 import { mutations } from "./mutations";
 import { Attributes } from "./attributes";
 import { Push } from "./push";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "../supabase/database.types";
 import { clientMutationContext } from "./clientMutationContext";
+import { supabaseBrowserClient } from "../supabase/browserClient";
 
 export type Fact<A extends keyof typeof Attributes> = {
   id: string;
@@ -24,6 +23,7 @@ type Data<A extends keyof typeof Attributes> = {
     position: string;
     value: string;
   };
+  image: { type: "image"; src: string; height: number; width: number };
   reference: { type: "reference"; value: string };
 }[(typeof Attributes)[A]["type"]];
 
@@ -47,10 +47,7 @@ export function ReplicacheProvider(props: {
 }) {
   let [rep, setRep] = useState<null | Replicache<ReplicacheMutators>>(null);
   useEffect(() => {
-    let supabase = createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
-    );
+    let supabase = supabaseBrowserClient();
     let newRep = new Replicache({
       pushDelay: 500,
       mutators: Object.fromEntries(
