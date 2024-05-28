@@ -1,9 +1,7 @@
 "use client";
 import { useEntity, useReplicache } from "../../replicache";
-import NextImage from "next/image";
 import { TextBlock } from "../../components/TextBlock";
 import { generateKeyBetween } from "fractional-indexing";
-import { supabaseBrowserClient } from "../../supabase/browserClient";
 import { useMemo } from "react";
 import { addImage } from "../../utils/addImage";
 export function AddBlock(props: { entityID: string }) {
@@ -64,6 +62,7 @@ export function Blocks(props: { entityID: string }) {
               parent={props.entityID}
               position={f.data.position}
               previousBlock={arr[index - 1]?.data || null}
+              nextBlock={arr[index + 1]?.data || null}
               nextPosition={arr[index + 1]?.data.position || null}
             />
           );
@@ -77,6 +76,7 @@ function Block(props: {
   parent: string;
   position: string;
   previousBlock: { position: string; value: string } | null;
+  nextBlock: { position: string; value: string } | null;
   nextPosition: string | null;
 }) {
   let image = useEntity(props.entityID, "block/image");
@@ -97,6 +97,7 @@ function Block(props: {
         </div>
         <div className="border p-2 w-full">
           <TextBlock
+            nextBlock={props.nextBlock}
             parent={props.parent}
             previousBlock={{ value: props.entityID, position: props.position }}
             entityID={virtualBlock}
