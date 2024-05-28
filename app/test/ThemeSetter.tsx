@@ -12,7 +12,6 @@ import {
 } from "react-aria-components";
 
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { Provider, defaultTheme } from "@adobe/react-spectrum";
 import { imageArgs } from "./page";
 
 function setCSSVariableToColor(name: string, value: Color) {
