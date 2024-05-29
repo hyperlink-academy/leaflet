@@ -5,7 +5,10 @@ import postgres from "postgres";
 const client = postgres(process.env.DB_URL as string);
 const db = drizzle(client);
 
+export const dynamic = "force-dynamic";
+
 export default async function RootPage() {
   let rows = await db.insert(entities).values({}).returning();
+  console.log(rows);
   return redirect(`/${rows[0].id}`);
 }
