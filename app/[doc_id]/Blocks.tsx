@@ -225,14 +225,16 @@ export function focusBlock(
   nextBlock.view.focus();
   let nextBlockViewClientRect = nextBlock.view.dom.getBoundingClientRect();
   let tr = nextBlock.editor.tr;
-  if (left === "end") left = tr.doc.content.size - 1;
-  let pos = nextBlock.view.posAtCoords({
-    top:
-      top === "top"
-        ? nextBlockViewClientRect.top + 5
-        : nextBlockViewClientRect.bottom - 5,
-    left,
-  });
+  let pos =
+    left === "end"
+      ? { pos: tr.doc.content.size - 1 }
+      : nextBlock.view.posAtCoords({
+          top:
+            top === "top"
+              ? nextBlockViewClientRect.top + 5
+              : nextBlockViewClientRect.bottom - 5,
+          left,
+        });
 
   let newState = nextBlock.editor.apply(
     tr.setSelection(TextSelection.create(tr.doc, pos?.pos || 0)),
