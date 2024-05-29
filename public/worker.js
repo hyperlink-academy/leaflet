@@ -7,11 +7,14 @@ self.addEventListener("fetch", (event) => {
         .match(event.request)
         .then((response) => {
           if (response) {
+            console.log("cache match");
             return response;
           }
+          console.log("cache miss");
           return fetch(event.request.clone());
         })
         .catch((error) => {
+          console.log(error);
           throw error;
         });
     }),
