@@ -20,6 +20,7 @@ type Mutation<T> = (args: T, ctx: MutationContext) => Promise<void>;
 
 const addBlock: Mutation<{
   parent: string;
+  type: Fact<"block/type">["data"]["value"];
   newEntityID: string;
   position: string;
 }> = async (args, ctx) => {
@@ -32,6 +33,11 @@ const addBlock: Mutation<{
       position: args.position,
     },
     attribute: "card/block",
+  });
+  await ctx.assertFact({
+    entity: args.newEntityID,
+    data: { type: "block-type-union", value: args.type },
+    attribute: "block/type",
   });
 };
 

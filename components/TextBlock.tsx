@@ -4,11 +4,7 @@ import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
 import * as Y from "yjs";
-import {
-  ProseMirror,
-  useEditorEffect,
-  useEditorState,
-} from "@nytimes/react-prosemirror";
+import { ProseMirror, useEditorEffect } from "@nytimes/react-prosemirror";
 import * as base64 from "base64-js";
 import {
   useReplicache,
@@ -25,7 +21,7 @@ let schema = new Schema({
   nodes: { doc: nodes.doc, paragraph: nodes.paragraph, text: nodes.text },
 });
 
-import { EditorState, TextSelection, Transaction } from "prosemirror-state";
+import { EditorState, TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { marks, nodes } from "prosemirror-schema-basic";
 import { ySyncPlugin } from "y-prosemirror";
@@ -35,39 +31,38 @@ import { create } from "zustand";
 import { RenderYJSFragment } from "./RenderYJSFragment";
 import { useInitialPageLoad } from "./InitialPageLoadProvider";
 import { addImage } from "../utils/addImage";
+import { BlockProps, focusBlock, useUIState } from "../app/[doc_id]/Blocks";
 
-let useEditorStates = create(
-  () =>
-    ({}) as {
-      [entity: string]:
-        | {
-            editor: InstanceType<typeof EditorState>;
-            view?: InstanceType<typeof EditorView>;
-          }
-        | undefined;
-    },
-);
+export let useEditorStates = create(() => ({
+  lastXPosition: 0,
+  editorStates: {} as {
+    [entity: string]:
+      | {
+          editor: InstanceType<typeof EditorState>;
+          view?: InstanceType<typeof EditorView>;
+        }
+      | undefined;
+  },
+}));
 
-const setEditorState = (
+export const setEditorState = (
   entityID: string,
   s: {
     editor: InstanceType<typeof EditorState>;
   },
 ) => {
   useEditorStates.setState((oldState) => {
-    let existingState = oldState[entityID];
-    return { ...oldState, [entityID]: { ...existingState, ...s } };
+    let existingState = oldState.editorStates[entityID];
+    return {
+      editorStates: {
+        ...oldState.editorStates,
+        [entityID]: { ...existingState, ...s },
+      },
+    };
   });
 };
 
-export function TextBlock(props: {
-  entityID: string;
-  parent: string;
-  position: string;
-  previousBlock: { value: string; position: string } | null;
-  nextBlock: { value: string; position: string } | null;
-  nextPosition: string | null;
-}) {
+export function TextBlock(props: BlockProps) {
   let initialized = useInitialPageLoad();
   return (
     <>
@@ -99,14 +94,7 @@ function RenderedTextBlock(props: { entityID: string }) {
     </pre>
   );
 }
-export function BaseTextBlock(props: {
-  entityID: string;
-  parent: string;
-  position: string;
-  nextBlock: { value: string; position: string } | null;
-  previousBlock: { value: string; position: string } | null;
-  nextPosition: string | null;
-}) {
+export function BaseTextBlock(props: BlockProps) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
   let value = useYJSValue(props.entityID);
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
@@ -119,7 +107,9 @@ export function BaseTextBlock(props: {
     repRef.current = rep.rep;
   }, [rep?.rep]);
 
-  let editorState = useEditorStates((s) => s[props.entityID])?.editor;
+  let editorState = useEditorStates(
+    (s) => s.editorStates[props.entityID],
+  )?.editor;
   useEffect(() => {
     if (!editorState)
       setEditorState(props.entityID, {
@@ -130,72 +120,30 @@ export function BaseTextBlock(props: {
             keymap({
               "Meta-b": toggleMark(schema.marks.strong),
               "Meta-i": toggleMark(schema.marks.em),
-              ArrowUp: (state, tr, view) => {
+              ArrowUp: (_state, _tr, view) => {
                 if (!view) return false;
                 const viewClientRect = view.dom.getBoundingClientRect();
                 const coords = view.coordsAtPos(view.state.selection.anchor);
                 if (coords.top - viewClientRect.top < 5) {
                   let block = propsRef.current.previousBlock;
                   if (block) {
-                    let nextBlockID = block.value;
-                    document
-                      .getElementById(elementId.block(nextBlockID).text)
-                      ?.focus();
-                    let nextBlock = useEditorStates.getState()[nextBlockID];
-                    if (nextBlock && nextBlock.view) {
-                      // I need to somehow get the view here
-                      let nextBlockViewClientRect =
-                        nextBlock.view.dom.getBoundingClientRect();
-                      let pos = nextBlock.view.posAtCoords({
-                        top: nextBlockViewClientRect.bottom - 8,
-                        left: coords.left,
-                      });
-                      let tr = nextBlock.editor.tr;
-
-                      let newState = nextBlock.editor.apply(
-                        tr.setSelection(
-                          TextSelection.create(tr.doc, pos?.pos || 0),
-                        ),
-                      );
-
-                      setEditorState(nextBlockID, { editor: newState });
-                    }
+                    view.dom.blur();
+                    focusBlock(block, coords.left, "bottom");
                   }
                   return true;
                 }
                 return false;
               },
               ArrowDown: (state, tr, view) => {
-                if (!view) return false;
+                if (!view) return true;
                 const viewClientRect = view.dom.getBoundingClientRect();
                 const coords = view.coordsAtPos(view.state.selection.anchor);
                 let isBottom = viewClientRect.bottom - coords.bottom < 5;
                 if (isBottom) {
                   let block = propsRef.current.nextBlock;
                   if (block) {
-                    let nextBlockID = block.value;
-                    document
-                      .getElementById(elementId.block(nextBlockID).text)
-                      ?.focus();
-                    let nextBlock = useEditorStates.getState()[nextBlockID];
-                    if (nextBlock && nextBlock.view) {
-                      // I need to somehow get the view here
-                      let nextBlockViewClientRect =
-                        nextBlock.view.dom.getBoundingClientRect();
-                      let pos = nextBlock.view.posAtCoords({
-                        top: nextBlockViewClientRect.top,
-                        left: coords.left,
-                      });
-                      let tr = nextBlock.editor.tr;
-
-                      let newState = nextBlock.editor.apply(
-                        tr.setSelection(
-                          TextSelection.create(tr.doc, pos?.pos || 0),
-                        ),
-                      );
-
-                      setEditorState(nextBlockID, { editor: newState });
-                    }
+                    view.dom.blur();
+                    focusBlock(block, coords.left, "top");
                   }
                   return true;
                 }
@@ -207,23 +155,7 @@ export function BaseTextBlock(props: {
                     blockEntity: props.entityID,
                   });
                   if (propsRef.current.previousBlock) {
-                    let prevBlock = propsRef.current.previousBlock.value;
-                    document
-                      .getElementById(elementId.block(prevBlock).text)
-                      ?.focus();
-                    let previousBlockEditor =
-                      useEditorStates.getState()[prevBlock]?.editor;
-                    if (previousBlockEditor) {
-                      let tr = previousBlockEditor.tr;
-                      let endPos = tr.doc.content.size;
-
-                      let newState = previousBlockEditor.apply(
-                        tr.setSelection(
-                          TextSelection.create(tr.doc, endPos - 1, endPos - 1),
-                        ),
-                      );
-                      setEditorState(prevBlock, { editor: newState });
-                    }
+                    focusBlock(propsRef.current.previousBlock, "end", "bottom");
                   }
                 }
                 return false;
@@ -233,6 +165,7 @@ export function BaseTextBlock(props: {
                 repRef.current?.mutate.addBlock({
                   newEntityID,
                   parent: props.parent,
+                  type: "text",
                   position: generateKeyBetween(
                     propsRef.current.position,
                     propsRef.current.nextPosition,
@@ -259,19 +192,25 @@ export function BaseTextBlock(props: {
       state={editorState}
       dispatchTransaction={(tr) => {
         useEditorStates.setState((s) => {
-          let existingState = s[props.entityID];
+          let existingState = s.editorStates[props.entityID];
           if (!existingState) return s;
           return {
-            ...s,
-            [props.entityID]: {
-              ...existingState,
-              editor: existingState.editor.apply(tr),
+            editorStates: {
+              ...s.editorStates,
+              [props.entityID]: {
+                ...existingState,
+                editor: existingState.editor.apply(tr),
+              },
             },
           };
         });
       }}
     >
       <pre
+        onFocus={() => {
+          useUIState.getState().setSelectedBlock(props.entityID);
+        }}
+        onKeyDown={(e) => {}}
         onPaste={(e) => {
           if (!rep.rep) return;
           for (let item of e.clipboardData.items) {
@@ -301,14 +240,21 @@ export function BaseTextBlock(props: {
 }
 
 let SyncView = (props: { entityID: string }) => {
+  useEditorEffect((view) => {
+    if (!view.hasFocus()) return;
+    const coords = view.coordsAtPos(view.state.selection.anchor);
+    useEditorStates.setState({ lastXPosition: coords.left });
+  });
   useEditorEffect(
     (view) => {
       useEditorStates.setState((s) => {
-        let existingEditor = s[props.entityID];
+        let existingEditor = s.editorStates[props.entityID];
         if (!existingEditor) return s;
         return {
-          ...s,
-          [props.entityID]: { ...existingEditor, view },
+          editorStates: {
+            ...s.editorStates,
+            [props.entityID]: { ...existingEditor, view },
+          },
         };
       });
     },

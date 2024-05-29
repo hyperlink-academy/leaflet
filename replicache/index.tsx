@@ -25,6 +25,7 @@ type Data<A extends keyof typeof Attributes> = {
   };
   image: { type: "image"; src: string; height: number; width: number };
   reference: { type: "reference"; value: string };
+  "block-type-union": { type: "block-type-union"; value: "text" | "image" };
 }[(typeof Attributes)[A]["type"]];
 
 let ReplicacheContext = createContext({

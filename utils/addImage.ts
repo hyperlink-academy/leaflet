@@ -24,6 +24,7 @@ export async function addImage(
   );
   let newBlockEntity = crypto.randomUUID();
   await rep.mutate.addBlock({
+    type: "image",
     parent: args.parent,
     position: args.position,
     newEntityID: newBlockEntity,

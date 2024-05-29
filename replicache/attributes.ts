@@ -3,6 +3,10 @@ export const Attributes = {
     type: "ordered-reference",
     cardinality: "many",
   },
+  "block/type": {
+    type: "block-type-union",
+    cardinality: "one",
+  },
   "block/position": {
     type: "text",
     cardinality: "one",
