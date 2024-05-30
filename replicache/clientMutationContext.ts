@@ -5,10 +5,17 @@ import { FactWithIndexes } from "./utils";
 import { Attributes, FilterAttributes } from "./attributes";
 import { Fact } from ".";
 import { MutationContext } from "./mutations";
+import { supabaseBrowserClient } from "../supabase/browserClient";
 
 export function clientMutationContext(tx: WriteTransaction) {
   let ctx: MutationContext = {
+    async runOnServer(cb) {},
+    async runOnClient(cb) {
+      let supabase = supabaseBrowserClient();
+      return cb({ supabase });
+    },
     async createEntity(_entityID) {
+      tx.set(_entityID, true);
       return true;
     },
     scanIndex: {

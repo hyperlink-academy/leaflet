@@ -178,6 +178,11 @@ function ImageBlock(props: BlockProps) {
           focusBlock(block, useEditorStates.getState().lastXPosition, "bottom");
         if (!block) return;
       }
+      if (e.key === "Backspace") {
+        r.mutate.removeBlock({ blockEntity: props.entityID });
+        let block = props.previousBlock;
+        if (block) focusBlock(block, "end", "bottom");
+      }
       if (e.key === "Enter") {
         let newEntityID = crypto.randomUUID();
         r.mutate.addBlock({

@@ -1,6 +1,8 @@
 import { DeepReadonly } from "replicache";
 import { Fact } from ".";
 import { Attributes } from "./attributes";
+import { SupabaseClient } from "@supabase/supabase-js";
+import { Database } from "../supabase/database.types";
 
 export type MutationContext = {
   createEntity: (entityID: string) => Promise<boolean>;
@@ -14,6 +16,12 @@ export type MutationContext = {
   assertFact: <A extends keyof typeof Attributes>(
     f: Omit<Fact<A>, "id"> & { id?: string },
   ) => Promise<void>;
+  runOnServer(
+    cb: (ctx: { supabase: SupabaseClient<Database> }) => Promise<void>,
+  ): Promise<void>;
+  runOnClient(
+    cb: (ctx: { supabase: SupabaseClient<Database> }) => Promise<void>,
+  ): Promise<void>;
 };
 
 type Mutation<T> = (args: T, ctx: MutationContext) => Promise<void>;
@@ -42,6 +50,21 @@ const addBlock: Mutation<{
 };
 
 const removeBlock: Mutation<{ blockEntity: string }> = async (args, ctx) => {
+  let images = await ctx.scanIndex.eav(args.blockEntity, "block/image");
+  ctx.runOnServer(async ({ supabase }) => {
+    for (let image of images) {
+      let paths = image.data.src.split("/");
+      await supabase.storage
+        .from("minilink-user-assets")
+        .remove([paths[paths.length - 1]]);
+    }
+  });
+  ctx.runOnClient(async () => {
+    let cache = await caches.open("minilink-user-assets");
+    for (let image of images) {
+      await cache.delete(image.data.src);
+    }
+  });
   await ctx.deleteEntity(args.blockEntity);
 };
 

@@ -7,8 +7,18 @@ import { entities, facts } from "../drizzle/schema";
 import { Attributes, FilterAttributes } from "./attributes";
 import { Fact } from ".";
 import { DeepReadonly } from "replicache";
+import { createClient } from "@supabase/supabase-js";
+import { Database } from "../supabase/database.types";
 export function serverMutationContext(tx: PgTransaction<any, any, any>) {
   let ctx: MutationContext = {
+    async runOnServer(cb) {
+      let supabase = createClient<Database>(
+        process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
+        process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+      );
+      return cb({ supabase });
+    },
+    async runOnClient(_cb) {},
     async createEntity(entity) {
       await tx.transaction(
         async (tx2) =>
