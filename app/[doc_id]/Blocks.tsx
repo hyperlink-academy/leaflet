@@ -140,7 +140,10 @@ export type BlockProps = {
 function Block(props: Block & BlockProps) {
   let selected = useUIState((s) => s.selectedBlock === props.entityID);
   return (
-    <div className={`border w-full`}>
+    <div
+      id={elementId.block(props.entityID).container}
+      className={`border w-full scroll-my-2`}
+    >
       <div className={`p-2 border ${!selected ? "border-transparent" : ""}`}>
         {props.type === "text" ? (
           <TextBlock {...props} />
@@ -202,6 +205,7 @@ function ImageBlock(props: BlockProps) {
 
   return (
     <img
+      onClick={() => useUIState.getState().setSelectedBlock(props.entityID)}
       alt={""}
       src={image?.data.src}
       height={image?.data.height}
@@ -219,6 +223,9 @@ export function focusBlock(
     useUIState.getState().setSelectedBlock(block.value);
     return true;
   }
+  document
+    .getElementById(elementId.block(block.value).container)
+    ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   let nextBlockID = block.value;
   let nextBlock = useEditorStates.getState().editorStates[nextBlockID];
   if (!nextBlock || !nextBlock.view) return;
