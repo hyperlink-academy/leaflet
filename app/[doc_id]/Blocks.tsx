@@ -71,18 +71,25 @@ export type Block = {
 };
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
-  let initialValue = rep.initialFacts
-    .filter((f) => f.attribute === "card/block")
-    .map((_f) => {
-      let block = _f as Fact<"card/block">;
-      let type = rep.initialFacts.find(
-        (f) => f.entity === block.data.value && f.attribute === "block/type",
-      ) as Fact<"block/type"> | undefined;
-      if (!type) return null;
-      return { ...block.data, type: type.data.value };
-    });
-  let blocks =
+  let initialValue = useMemo(
+    () =>
+      rep.initialFacts
+        .filter((f) => f.attribute === "card/block")
+        .map((_f) => {
+          let block = _f as Fact<"card/block">;
+          let type = rep.initialFacts.find(
+            (f) =>
+              f.entity === block.data.value && f.attribute === "block/type",
+          ) as Fact<"block/type"> | undefined;
+          if (!type) return null;
+          return { ...block.data, type: type.data.value };
+        }),
+    [rep.initialFacts],
+  );
+  let data =
     useSubscribe(rep?.rep, async (tx) => {
+      let initialized = tx.get("initialized");
+      if (!initialized) return null;
       let blocks = await tx
         .scan<
           Fact<"card/block">
@@ -103,27 +110,27 @@ export function Blocks(props: { entityID: string }) {
         }),
       );
     }) || initialValue;
+  let blocks = data
+    .flatMap((f) => (!f ? [] : [f]))
+    .sort((a, b) => {
+      return a.position > b.position ? 1 : -1;
+    });
 
   return (
     <div className="mx-auto max-w-3xl flex flex-col gap-1 p-2">
-      {blocks
-        ?.flatMap((f) => (!f ? [] : [f]))
-        ?.sort((a, b) => {
-          return a.position > b.position ? 1 : -1;
-        })
-        .map((f, index, arr) => {
-          return (
-            <Block
-              {...f}
-              key={f.value}
-              entityID={f.value}
-              parent={props.entityID}
-              previousBlock={arr[index - 1] || null}
-              nextBlock={arr[index + 1] || null}
-              nextPosition={arr[index + 1]?.position || null}
-            />
-          );
-        })}
+      {blocks.map((f, index, arr) => {
+        return (
+          <Block
+            {...f}
+            key={f.value}
+            entityID={f.value}
+            parent={props.entityID}
+            previousBlock={arr[index - 1] || null}
+            nextBlock={arr[index + 1] || null}
+            nextPosition={arr[index + 1]?.position || null}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -179,6 +186,7 @@ function ImageBlock(props: BlockProps) {
         if (!block) return;
       }
       if (e.key === "Backspace") {
+        e.preventDefault();
         r.mutate.removeBlock({ blockEntity: props.entityID });
         let block = props.previousBlock;
         if (block) focusBlock(block, "end", "bottom");
@@ -200,6 +208,7 @@ function ImageBlock(props: BlockProps) {
     return () => window.removeEventListener("keydown", listener);
   }, [
     selected,
+    props.entityID,
     props.nextBlock,
     props.previousBlock,
     props.position,
@@ -218,7 +227,6 @@ function ImageBlock(props: BlockProps) {
     />
   );
 }
-
 export function focusBlock(
   block: Block,
   left: number | "end",

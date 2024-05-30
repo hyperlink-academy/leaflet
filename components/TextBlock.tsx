@@ -211,19 +211,30 @@ export function BaseTextBlock(props: BlockProps) {
           useUIState.getState().setSelectedBlock(props.entityID);
         }}
         onKeyDown={(e) => {}}
-        onPaste={(e) => {
+        onPaste={async (e) => {
           if (!rep.rep) return;
           for (let item of e.clipboardData.items) {
             if (item?.type.includes("image")) {
               let file = item.getAsFile();
-              if (file)
-                addImage(file, rep.rep, {
+              if (file) {
+                let editorState =
+                  useEditorStates.getState().editorStates[props.entityID];
+                if (
+                  editorState &&
+                  editorState.editor.doc.textContent.length === 0
+                ) {
+                  await rep.rep.mutate.removeBlock({
+                    blockEntity: props.entityID,
+                  });
+                }
+                await addImage(file, rep.rep, {
                   parent: props.parent,
                   position: generateKeyBetween(
                     props.position,
                     props.nextPosition,
                   ),
                 });
+              }
               return;
             }
           }
