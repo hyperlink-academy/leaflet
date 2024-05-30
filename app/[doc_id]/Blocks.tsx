@@ -116,6 +116,7 @@ export function Blocks(props: { entityID: string }) {
       return a.position > b.position ? 1 : -1;
     });
 
+  let lastBlock = blocks[blocks.length - 1];
   return (
     <div className="mx-auto max-w-3xl flex flex-col gap-1 p-2">
       {blocks.map((f, index, arr) => {
@@ -131,7 +132,40 @@ export function Blocks(props: { entityID: string }) {
           />
         );
       })}
+      <NewBlockButton lastBlock={lastBlock || null} entityID={props.entityID} />
     </div>
+  );
+}
+
+function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
+  let { rep } = useReplicache();
+  let textContent = useEntity(
+    props.lastBlock?.type === "text" ? props.lastBlock.value : null,
+    "block/text",
+  );
+  if (
+    props.lastBlock?.type === "text" &&
+    (!textContent || textContent.data.value === "")
+  )
+    return null;
+  return (
+    <button
+      onMouseDown={async () => {
+        let newEntityID = crypto.randomUUID();
+        await rep?.mutate.addBlock({
+          parent: props.entityID,
+          type: "text",
+          position: generateKeyBetween(props.lastBlock?.position || null, null),
+          newEntityID,
+        });
+
+        setTimeout(() => {
+          document.getElementById(elementId.block(newEntityID).text)?.focus();
+        }, 10);
+      }}
+    >
+      new block
+    </button>
   );
 }
 

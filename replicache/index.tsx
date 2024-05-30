@@ -111,7 +111,7 @@ type CardinalityResult<A extends keyof typeof Attributes> =
     ? DeepReadonlyObject<Fact<A>>
     : DeepReadonlyObject<Fact<A>>[];
 export function useEntity<A extends keyof typeof Attributes>(
-  entity: string,
+  entity: string | null,
   attribute: A,
 ): CardinalityResult<A> {
   let { rep, initialFacts } = useReplicache();
@@ -125,6 +125,7 @@ export function useEntity<A extends keyof typeof Attributes>(
   let data = useSubscribe(
     rep,
     async (tx) => {
+      if (entity === null) return null;
       let initialized = await tx.get("initialized");
       if (!initialized) return null;
       return tx
