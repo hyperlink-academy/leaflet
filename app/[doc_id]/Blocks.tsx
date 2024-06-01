@@ -250,6 +250,18 @@ function ImageBlock(props: BlockProps) {
     rep,
     props.parent,
   ]);
+  if (image.data.local && image.data.local !== rep.rep?.clientID)
+    return (
+      <div
+        style={{
+          height: image?.data.height,
+          width: image?.data.width,
+        }}
+        className="flex content-center text-center"
+      >
+        loading
+      </div>
+    );
 
   return (
     <img

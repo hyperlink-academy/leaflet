@@ -29,6 +29,21 @@ export async function addImage(
     position: args.position,
     newEntityID: newBlockEntity,
   });
+  //This may reach other clients before the image has been uploaded.
+  // Maybe we should set the state to uploaded-by (client_ID) or something
+  // and then set the real one after.
+  await rep.mutate.assertFact({
+    entity: newBlockEntity,
+    attribute: "block/image",
+    data: {
+      type: "image",
+      local: rep.clientID,
+      src: url,
+      height: dimensions.height,
+      width: dimensions.width,
+    },
+  });
+  await client.storage.from("minilink-user-assets").upload(fileID, file);
   await rep.mutate.assertFact({
     entity: newBlockEntity,
     attribute: "block/image",
@@ -39,7 +54,6 @@ export async function addImage(
       width: dimensions.width,
     },
   });
-  await client.storage.from("minilink-user-assets").upload(fileID, file);
 }
 
 function getImageDimensions(
