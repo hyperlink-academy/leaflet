@@ -1,5 +1,6 @@
 "use client";
 import { Fact, useEntity, useReplicache } from "src/replicache";
+
 import {
   TextBlock,
   setEditorState,
@@ -275,7 +276,7 @@ function ImageBlock(props: BlockProps) {
 }
 export function focusBlock(
   block: Block,
-  left: number | "end",
+  left: number | "end" | "start",
   top: "top" | "bottom",
 ) {
   if (block.type === "image") {
@@ -294,13 +295,15 @@ export function focusBlock(
   let pos =
     left === "end"
       ? { pos: tr.doc.content.size - 1 }
-      : nextBlock.view.posAtCoords({
-          top:
-            top === "top"
-              ? nextBlockViewClientRect.top + 5
-              : nextBlockViewClientRect.bottom - 5,
-          left,
-        });
+      : left === "start"
+        ? { pos: 0 }
+        : nextBlock.view.posAtCoords({
+            top:
+              top === "top"
+                ? nextBlockViewClientRect.top + 5
+                : nextBlockViewClientRect.bottom - 5,
+            left,
+          });
 
   let newState = nextBlock.editor.apply(
     tr.setSelection(TextSelection.create(tr.doc, pos?.pos || 0)),

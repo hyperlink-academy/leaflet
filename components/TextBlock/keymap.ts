@@ -46,6 +46,26 @@ export const TextBlockKeymap = (
       }
       return false;
     },
+    ArrowLeft: (state, tr, view) => {
+      if (state.selection.content().size > 0) return false;
+      if (state.selection.anchor > 1) return false;
+      let block = propsRef.current.previousBlock;
+      if (block) {
+        view?.dom.blur();
+        focusBlock(block, "end", "top");
+      }
+      return true;
+    },
+    ArrowRight: (state, tr, view) => {
+      if (state.selection.content().size > 0) return false;
+      if (state.doc.content.size - state.selection.anchor > 1) return false;
+      let block = propsRef.current.nextBlock;
+      if (block) {
+        view?.dom.blur();
+        focusBlock(block, "start", "top");
+      }
+      return true;
+    },
     Backspace: (state) => {
       if (!propsRef.current.previousBlock) {
         return false;
