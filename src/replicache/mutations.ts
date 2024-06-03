@@ -2,7 +2,7 @@ import { DeepReadonly } from "replicache";
 import { Fact } from ".";
 import { Attributes } from "./attributes";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { Database } from "../supabase/database.types";
+import { Database } from "supabase/database.types";
 
 export type MutationContext = {
   createEntity: (entityID: string) => Promise<boolean>;

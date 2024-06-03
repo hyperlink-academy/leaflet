@@ -1,7 +1,7 @@
-import { Fact, ReplicacheProvider } from "../../replicache";
+import { Fact, ReplicacheProvider } from "src/replicache";
 import { Database } from "../../supabase/database.types";
 import { AddBlock, AddImageBlock, Blocks } from "./Blocks";
-import { Attributes } from "../../replicache/attributes";
+import { Attributes } from "src/replicache/attributes";
 import { createServerClient } from "@supabase/ssr";
 
 export const preferredRegion = ["sfo1"];

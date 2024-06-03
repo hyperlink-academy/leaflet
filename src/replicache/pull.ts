@@ -6,7 +6,7 @@ import {
   PullResponseV1,
   VersionNotSupportedResponse,
 } from "replicache";
-import { Database } from "../supabase/database.types";
+import { Database } from "supabase/database.types";
 import { Fact } from ".";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";

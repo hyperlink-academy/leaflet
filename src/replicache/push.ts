@@ -4,10 +4,10 @@ import { serverMutationContext } from "./serverMutationContext";
 import { mutations } from "./mutations";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { replicache_clients } from "../drizzle/schema";
+import { replicache_clients } from "drizzle/schema";
 import { getClientGroup } from "./utils";
 import { createClient } from "@supabase/supabase-js";
-import { Database } from "../supabase/database.types";
+import { Database } from "supabase/database.types";
 
 const client = postgres(process.env.DB_URL as string);
 let supabase = createClient<Database>(

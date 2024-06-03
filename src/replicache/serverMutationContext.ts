@@ -3,12 +3,12 @@ import * as driz from "drizzle-orm";
 import * as base64 from "base64-js";
 import * as Y from "yjs";
 import { MutationContext } from "./mutations";
-import { entities, facts } from "../drizzle/schema";
+import { entities, facts } from "drizzle/schema";
 import { Attributes, FilterAttributes } from "./attributes";
 import { Fact } from ".";
 import { DeepReadonly } from "replicache";
 import { createClient } from "@supabase/supabase-js";
-import { Database } from "../supabase/database.types";
+import { Database } from "supabase/database.types";
 export function serverMutationContext(tx: PgTransaction<any, any, any>) {
   let ctx: MutationContext = {
     async runOnServer(cb) {

@@ -1,6 +1,6 @@
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "../replicache";
-import { supabaseBrowserClient } from "../supabase/browserClient";
+import { supabaseBrowserClient } from "supabase/browserClient";
 
 export async function addImage(
   file: File,

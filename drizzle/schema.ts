@@ -8,9 +8,8 @@ import {
   foreignKey,
   jsonb,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
-import { Fact } from "../replicache";
-import { Attributes } from "../replicache/attributes";
+import { Fact } from "src/replicache";
+import { Attributes } from "src/replicache/attributes";
 
 export const aal_level = pgEnum("aal_level", ["aal1", "aal2", "aal3"]);
 export const code_challenge_method = pgEnum("code_challenge_method", [

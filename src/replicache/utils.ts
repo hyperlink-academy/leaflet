@@ -1,7 +1,7 @@
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as driz from "drizzle-orm";
 import { Fact } from ".";
-import { replicache_clients } from "../drizzle/schema";
+import { replicache_clients } from "drizzle/schema";
 import { Attributes } from "./attributes";
 
 export function FactWithIndexes(f: Fact<keyof typeof Attributes>) {

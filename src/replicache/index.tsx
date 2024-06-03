@@ -7,7 +7,7 @@ import { mutations } from "./mutations";
 import { Attributes } from "./attributes";
 import { Push } from "./push";
 import { clientMutationContext } from "./clientMutationContext";
-import { supabaseBrowserClient } from "../supabase/browserClient";
+import { supabaseBrowserClient } from "supabase/browserClient";
 
 export type Fact<A extends keyof typeof Attributes> = {
   id: string;

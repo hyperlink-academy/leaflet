@@ -1,17 +1,17 @@
 "use client";
-import { Fact, useEntity, useReplicache } from "../../replicache";
+import { Fact, useEntity, useReplicache } from "src/replicache";
 import {
   TextBlock,
   setEditorState,
   useEditorStates,
-} from "../../components/TextBlock";
+} from "components/TextBlock";
 import { generateKeyBetween } from "fractional-indexing";
 import { useEffect, useMemo } from "react";
-import { addImage } from "../../utils/addImage";
+import { addImage } from "src/utils/addImage";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
 import { useSubscribe } from "replicache-react";
-import { elementId } from "../../utils/elementId";
+import { elementId } from "src/utils/elementId";
 import { TextSelection } from "prosemirror-state";
 export const useUIState = create(
   combine({ selectedBlock: null as null | string }, (set) => ({

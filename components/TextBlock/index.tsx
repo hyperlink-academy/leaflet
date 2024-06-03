@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { elementId } from "../utils/elementId";
+import { elementId } from "src/utils/elementId";
 import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
@@ -11,7 +11,7 @@ import {
   useEntity,
   ReplicacheMutators,
   Fact,
-} from "../replicache";
+} from "src/replicache";
 
 let schema = new Schema({
   marks: {
@@ -29,9 +29,9 @@ import { Replicache } from "replicache";
 import { generateKeyBetween } from "fractional-indexing";
 import { create } from "zustand";
 import { RenderYJSFragment } from "./RenderYJSFragment";
-import { useInitialPageLoad } from "./InitialPageLoadProvider";
-import { addImage } from "../utils/addImage";
-import { BlockProps, focusBlock, useUIState } from "../app/[doc_id]/Blocks";
+import { useInitialPageLoad } from "components/InitialPageLoadProvider";
+import { addImage } from "src/utils/addImage";
+import { BlockProps, focusBlock, useUIState } from "app/[doc_id]/Blocks";
 
 export let useEditorStates = create(() => ({
   lastXPosition: 0,
