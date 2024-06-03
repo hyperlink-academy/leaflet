@@ -1,4 +1,4 @@
-import { BlockProps, focusBlock } from "app/[doc_id]/Blocks";
+import { BlockProps, focusBlock, useUIState } from "app/[doc_id]/Blocks";
 import { generateKeyBetween } from "fractional-indexing";
 import { toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
@@ -7,6 +7,7 @@ import { MutableRefObject } from "react";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { elementId } from "src/utils/elementId";
+import * as Y from "yjs";
 import { schema, setEditorState, useEditorStates } from ".";
 
 export const TextBlockKeymap = (
@@ -46,8 +47,12 @@ export const TextBlockKeymap = (
       return false;
     },
     Backspace: (state) => {
-      if (!propsRef.current.previousBlock) return false;
-      if (!state.selection.eq(Selection.atStart(state.doc))) return false;
+      if (!propsRef.current.previousBlock) {
+        return false;
+      }
+      if (state.selection.anchor > 1 || state.selection.content().size > 0) {
+        return false;
+      }
 
       if (state.doc.textContent.length === 0) {
         repRef.current?.mutate.removeBlock({
@@ -74,7 +79,7 @@ export const TextBlockKeymap = (
       block.view?.dom.focus();
       let firstChild = state.doc.content.firstChild?.content;
       if (firstChild) {
-        tr.insert(tr.doc.content.size - 1, firstChild);
+        tr.insert(tr.doc.content.size, firstChild);
         tr.setSelection(
           TextSelection.create(
             tr.doc,
@@ -90,7 +95,11 @@ export const TextBlockKeymap = (
 
       return false;
     },
-    "Shift-Enter": () => {
+    "Shift-Enter": (state, dispatch) => {
+      let tr = state.tr;
+      let newContent = tr.doc.slice(state.selection.anchor);
+      tr.delete(state.selection.anchor, state.doc.content.size);
+      dispatch?.(tr);
       let newEntityID = crypto.randomUUID();
       repRef.current?.mutate.addBlock({
         newEntityID,
@@ -102,6 +111,16 @@ export const TextBlockKeymap = (
         ),
       });
       setTimeout(() => {
+        let block = useEditorStates.getState().editorStates[newEntityID];
+        if (block) {
+          let tr = block.editor.tr;
+          tr.replaceWith(0, tr.doc.content.size, newContent.content);
+          tr.setSelection(TextSelection.create(tr.doc, 0));
+          let newState = block.editor.apply(tr);
+          setEditorState(newEntityID, {
+            editor: newState,
+          });
+        }
         document.getElementById(elementId.block(newEntityID).text)?.focus();
       }, 10);
       return true;
