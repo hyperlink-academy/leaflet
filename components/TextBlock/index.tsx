@@ -13,7 +13,7 @@ import {
   Fact,
 } from "src/replicache";
 
-let schema = new Schema({
+export const schema = new Schema({
   marks: {
     strong: marks.strong,
     em: marks.em,
@@ -31,7 +31,8 @@ import { create } from "zustand";
 import { RenderYJSFragment } from "./RenderYJSFragment";
 import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 import { addImage } from "src/utils/addImage";
-import { BlockProps, focusBlock, useUIState } from "app/[doc_id]/Blocks";
+import { BlockProps, useUIState } from "app/[doc_id]/Blocks";
+import { TextBlockKeymap } from "./keymap";
 
 export let useEditorStates = create(() => ({
   lastXPosition: 0,
@@ -117,68 +118,7 @@ export function BaseTextBlock(props: BlockProps) {
           schema,
           plugins: [
             ySyncPlugin(value),
-            keymap({
-              "Meta-b": toggleMark(schema.marks.strong),
-              "Meta-i": toggleMark(schema.marks.em),
-              ArrowUp: (_state, _tr, view) => {
-                if (!view) return false;
-                const viewClientRect = view.dom.getBoundingClientRect();
-                const coords = view.coordsAtPos(view.state.selection.anchor);
-                if (coords.top - viewClientRect.top < 5) {
-                  let block = propsRef.current.previousBlock;
-                  if (block) {
-                    view.dom.blur();
-                    focusBlock(block, coords.left, "bottom");
-                  }
-                  return true;
-                }
-                return false;
-              },
-              ArrowDown: (state, tr, view) => {
-                if (!view) return true;
-                const viewClientRect = view.dom.getBoundingClientRect();
-                const coords = view.coordsAtPos(view.state.selection.anchor);
-                let isBottom = viewClientRect.bottom - coords.bottom < 5;
-                if (isBottom) {
-                  let block = propsRef.current.nextBlock;
-                  if (block) {
-                    view.dom.blur();
-                    focusBlock(block, coords.left, "top");
-                  }
-                  return true;
-                }
-                return false;
-              },
-              Backspace: (state) => {
-                if (state.doc.textContent.length === 0) {
-                  repRef.current?.mutate.removeBlock({
-                    blockEntity: props.entityID,
-                  });
-                  if (propsRef.current.previousBlock) {
-                    focusBlock(propsRef.current.previousBlock, "end", "bottom");
-                  }
-                }
-                return false;
-              },
-              "Shift-Enter": () => {
-                let newEntityID = crypto.randomUUID();
-                repRef.current?.mutate.addBlock({
-                  newEntityID,
-                  parent: props.parent,
-                  type: "text",
-                  position: generateKeyBetween(
-                    propsRef.current.position,
-                    propsRef.current.nextPosition,
-                  ),
-                });
-                setTimeout(() => {
-                  document
-                    .getElementById(elementId.block(newEntityID).text)
-                    ?.focus();
-                }, 10);
-                return true;
-              },
-            }),
+            TextBlockKeymap(propsRef, repRef),
             keymap(baseKeymap),
           ],
         }),
