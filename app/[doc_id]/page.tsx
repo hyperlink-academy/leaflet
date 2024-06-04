@@ -3,6 +3,7 @@ import { Database } from "../../supabase/database.types";
 import { AddBlock, AddImageBlock, Blocks } from "./Blocks";
 import { Attributes } from "src/replicache/attributes";
 import { createServerClient } from "@supabase/ssr";
+import { SelectionManager } from "components/SelectionManager";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ export default async function DocumentPage(props: {
     <ReplicacheProvider name={props.params.doc_id} initialFacts={initialFacts}>
       <div className="text-blue-400">doc_id: {props.params.doc_id}</div>
       <AddBlock entityID={props.params.doc_id} />
+      <SelectionManager />
       <AddImageBlock entityID={props.params.doc_id} />
       <Blocks entityID={props.params.doc_id} />
     </ReplicacheProvider>

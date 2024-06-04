@@ -1,6 +1,5 @@
 "use client";
 import { Fact, useEntity, useReplicache } from "src/replicache";
-
 import {
   TextBlock,
   setEditorState,
@@ -14,13 +13,31 @@ import { combine } from "zustand/middleware";
 import { useSubscribe } from "replicache-react";
 import { elementId } from "src/utils/elementId";
 import { TextSelection } from "prosemirror-state";
+import { useSelectingMouse } from "components/SelectionManager";
 export const useUIState = create(
-  combine({ selectedBlock: null as null | string }, (set) => ({
-    setSelectedBlock: (block: string) =>
-      set((state) => {
-        return { ...state, selectedBlock: block };
-      }),
-  })),
+  combine(
+    {
+      selectedBlock: [] as string[],
+    },
+    (set) => ({
+      setSelectedBlock: (block: string) =>
+        set((state) => {
+          return { ...state, selectedBlock: [block] };
+        }),
+      addBlockToSelection: (block: string) =>
+        set((state) => {
+          if (state.selectedBlock.includes(block)) return state;
+          return { ...state, selectedBlock: [...state.selectedBlock, block] };
+        }),
+      removeBlockFromSelection: (block: string) =>
+        set((state) => {
+          return {
+            ...state,
+            selectedBlock: state.selectedBlock.filter((f) => f !== block),
+          };
+        }),
+    }),
+  ),
 );
 
 export function AddBlock(props: { entityID: string }) {
@@ -151,6 +168,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
     return null;
   return (
     <button
+      className="border italic text-left p-2"
       onMouseDown={async () => {
         let newEntityID = crypto.randomUUID();
         await rep?.mutate.addBlock({
@@ -180,11 +198,37 @@ export type BlockProps = {
 };
 
 function Block(props: Block & BlockProps) {
-  let selected = useUIState((s) => s.selectedBlock === props.entityID);
+  let selected = useUIState((s) => s.selectedBlock.includes(props.entityID));
   return (
     <div
+      onMouseDown={(e) => {
+        if (e.shiftKey) {
+          e.preventDefault();
+          useUIState.getState().addBlockToSelection(props.entityID);
+        } else useUIState.getState().setSelectedBlock(props.entityID);
+      }}
+      onMouseEnter={(e) => {
+        let selection = useSelectingMouse.getState();
+        if (!selection.start) return;
+        useUIState.getState().addBlockToSelection(props.entityID);
+      }}
+      onMouseLeave={(e) => {
+        let selection = useSelectingMouse.getState();
+        if (!selection.start) return;
+        let rect = e.currentTarget.getBoundingClientRect();
+        let topMin = Math.min(selection.start.top, e.clientY);
+        let topMax = Math.max(selection.start.top, e.clientY);
+        if (rect.top >= topMin && rect.top < topMax) {
+          return;
+        }
+
+        if (rect.bottom > topMin && rect.bottom <= topMax) {
+          return;
+        }
+        useUIState.getState().removeBlockFromSelection(props.entityID);
+      }}
       id={elementId.block(props.entityID).container}
-      className={`border w-full scroll-my-2`}
+      className={`border w-full`}
     >
       <div className={`p-2 border ${!selected ? "border-transparent" : ""}`}>
         {props.type === "text" ? (
@@ -200,7 +244,7 @@ function Block(props: Block & BlockProps) {
 function ImageBlock(props: BlockProps) {
   let rep = useReplicache();
   let image = useEntity(props.entityID, "block/image");
-  let selected = useUIState((s) => s.selectedBlock === props.entityID);
+  let selected = useUIState((s) => s.selectedBlock.includes(props.entityID));
   useEffect(() => {
     if (!selected || !rep.rep) return;
     let r = rep.rep;
