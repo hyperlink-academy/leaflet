@@ -107,13 +107,24 @@ export const CardBlock = (props: {
   return (
     <div
       ref={blockRef}
-      className="cardBlockWrapper w-full h-[104px] mb-3 border bg-bg-card border-border outline outline-1 outline-transparent hover:outline-border rounded-lg flex overflow-hidden"
+      className="cardBlockWrapper relative group w-full h-[104px] mb-3 border bg-bg-card border-border outline outline-1 outline-transparent hover:outline-border rounded-lg flex overflow-hidden"
     >
       {/*
         all headers are reduced to h3 styling to keep the card block consistent and legible
         the card block will render as much text as can fit in the block without overflowing
         if the text overflows, it will be truncated and an ellipsis will be added to the end of the text
+
+        what happens in there is no text content at all?
+        what happens if the title spans two lines, how much space is left for the body?
+
+        I think the logic i used is flawed and won't stand up to reality so let's figure this out in earnest later
         */}
+
+      {/* TODO: implement long press to select and bring up options (such as remove)*/}
+      <div className="absolute top-0.5 right-0.5 group-hover:block hidden text-border hover:text-accent ">
+        <CloseTiny />
+      </div>
+
       <div className="cardBlockContent grow p-2">
         {props.title && (
           <div className={`w-full grow text-base font-bold line-clamp-3`}>
@@ -146,9 +157,11 @@ export const ExternalLinkBlock = () => {
   return (
     <a
       href="www.google.com"
-      className="externalLinkBlock group h-[104px]  mb-3  flex  border border-border hover:border-accent
-      outline outline-1 outline-transparent hover:outline-accent rounded-lg overflow-hidden"
+      className="externalLinkBlock relative group h-[104px]  mb-3  flex  border border-border hover:border-accent outline outline-1 outline-transparent hover:outline-accent rounded-lg overflow-hidden"
     >
+      <div className="absolute top-0.5 right-0.5 group-hover:block hidden text-accent">
+        <CloseTiny />
+      </div>
       <div className="pt-2 pb-2 px-2 grow min-w-0">
         <div className="flex flex-col w-full min-w-0 h-full grow ">
           <textarea
@@ -156,7 +169,7 @@ export const ExternalLinkBlock = () => {
             // make it such that the text area is only as wide as it's contents
             // such that click anything but the literaly words of the title and description will nav you to the link
             // and clicking the title or description will allow you to edit them
-            className={`linkBlockTitle -mb-0.5  border-none text-base font-bold outline-none resize-none align-top border h-[24px] line-clamp-1`}
+            className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-none resize-none align-top border h-[24px] line-clamp-1`}
             defaultValue={title}
             onClick={(e) => {
               e.preventDefault();
@@ -168,7 +181,7 @@ export const ExternalLinkBlock = () => {
           />
 
           <textarea
-            className={`linkBlockDescription text-sm border-none outline-none resize-none align-top  grow line-clamp-2`}
+            className={`linkBlockDescription text-sm bg-transparent border-none outline-none resize-none align-top  grow line-clamp-2`}
             defaultValue={description}
             onClick={(e) => {
               e.preventDefault();

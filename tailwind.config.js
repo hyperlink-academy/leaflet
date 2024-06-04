@@ -32,7 +32,7 @@ module.exports = {
 
 
       //BG COLORS (defined as css variables in global.css)
-      "bg-page": "var(--bg-page)",
+      "bg-page": "hsb(var(--bg-page))",
       "bg-card": "var(--bg-card)",
 
       //DO NOT USE IN PRODUCTION. Test colors to aid development, ie, setting bg color on element to see edges of div. DO. NOT. USE. IN. PRODUCTION
