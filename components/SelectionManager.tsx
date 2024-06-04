@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { useUIState } from "app/[doc_id]/Blocks";
+import { useUIState } from "components/Blocks";
 import { create } from "zustand";
 export const useSelectingMouse = create(() => ({
   start: null as null | { top: number; left: number },

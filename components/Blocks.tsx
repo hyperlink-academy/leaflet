@@ -6,14 +6,14 @@ import {
   useEditorStates,
 } from "components/TextBlock";
 import { generateKeyBetween } from "fractional-indexing";
-import { useEffect, useMemo } from "react";
-import { addImage } from "src/utils/addImage";
+import { useMemo } from "react";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
 import { useSubscribe } from "replicache-react";
 import { elementId } from "src/utils/elementId";
 import { TextSelection } from "prosemirror-state";
 import { useSelectingMouse } from "components/SelectionManager";
+import { ImageBlock } from "./ImageBlock";
 export const useUIState = create(
   combine(
     {
@@ -39,48 +39,6 @@ export const useUIState = create(
     }),
   ),
 );
-
-export function AddBlock(props: { entityID: string }) {
-  let rep = useReplicache();
-  let blocks = useEntity(props.entityID, "card/block")?.sort((a, b) => {
-    return a.data.position > b.data.position ? 1 : -1;
-  });
-  return (
-    <button
-      onMouseDown={() => {
-        rep?.rep?.mutate.addBlock({
-          parent: props.entityID,
-          type: "text",
-          position: generateKeyBetween(null, blocks[0]?.data.position || null),
-          newEntityID: crypto.randomUUID(),
-        });
-      }}
-    >
-      add block
-    </button>
-  );
-}
-
-export function AddImageBlock(props: { entityID: string }) {
-  let rep = useReplicache();
-  let blocks = useEntity(props.entityID, "card/block")?.sort((a, b) => {
-    return a.data.position > b.data.position ? 1 : -1;
-  });
-  return (
-    <input
-      type="file"
-      accept="image/*"
-      onChange={async (e) => {
-        let file = e.currentTarget.files?.[0];
-        if (!file || !rep?.rep) return;
-        await addImage(file, rep.rep, {
-          parent: props.entityID,
-          position: generateKeyBetween(null, blocks[0]?.data.position || null),
-        });
-      }}
-    />
-  );
-}
 
 export type Block = {
   position: string;
@@ -241,83 +199,6 @@ function Block(props: Block & BlockProps) {
   );
 }
 
-function ImageBlock(props: BlockProps) {
-  let rep = useReplicache();
-  let image = useEntity(props.entityID, "block/image");
-  let selected = useUIState((s) => s.selectedBlock.includes(props.entityID));
-  useEffect(() => {
-    if (!selected || !rep.rep) return;
-    let r = rep.rep;
-    let listener = (e: KeyboardEvent) => {
-      if (e.defaultPrevented) return;
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        let block = props.nextBlock;
-        if (block)
-          focusBlock(block, useEditorStates.getState().lastXPosition, "top");
-        if (!block) return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        let block = props.previousBlock;
-        if (block)
-          focusBlock(block, useEditorStates.getState().lastXPosition, "bottom");
-        if (!block) return;
-      }
-      if (e.key === "Backspace") {
-        e.preventDefault();
-        r.mutate.removeBlock({ blockEntity: props.entityID });
-        let block = props.previousBlock;
-        if (block) focusBlock(block, "end", "bottom");
-      }
-      if (e.key === "Enter") {
-        let newEntityID = crypto.randomUUID();
-        r.mutate.addBlock({
-          newEntityID,
-          parent: props.parent,
-          type: "text",
-          position: generateKeyBetween(props.position, props.nextPosition),
-        });
-        setTimeout(() => {
-          document.getElementById(elementId.block(newEntityID).text)?.focus();
-        }, 10);
-      }
-    };
-    window.addEventListener("keydown", listener);
-    return () => window.removeEventListener("keydown", listener);
-  }, [
-    selected,
-    props.entityID,
-    props.nextBlock,
-    props.previousBlock,
-    props.position,
-    props.nextPosition,
-    rep,
-    props.parent,
-  ]);
-  if (image.data.local && image.data.local !== rep.rep?.clientID)
-    return (
-      <div
-        style={{
-          height: image?.data.height,
-          width: image?.data.width,
-        }}
-        className="flex content-center text-center"
-      >
-        loading
-      </div>
-    );
-
-  return (
-    <img
-      onClick={() => useUIState.getState().setSelectedBlock(props.entityID)}
-      alt={""}
-      src={image?.data.src}
-      height={image?.data.height}
-      width={image?.data.width}
-    />
-  );
-}
 export function focusBlock(
   block: Block,
   left: number | "end" | "start",

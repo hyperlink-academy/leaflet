@@ -1,13 +1,12 @@
-import { BlockProps, focusBlock, useUIState } from "app/[doc_id]/Blocks";
+import { BlockProps, focusBlock } from "components/Blocks";
 import { generateKeyBetween } from "fractional-indexing";
 import { toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
-import { Selection, TextSelection } from "prosemirror-state";
+import { TextSelection } from "prosemirror-state";
 import { MutableRefObject } from "react";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { elementId } from "src/utils/elementId";
-import * as Y from "yjs";
 import { schema, setEditorState, useEditorStates } from ".";
 
 export const TextBlockKeymap = (
