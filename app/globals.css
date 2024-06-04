@@ -46,7 +46,7 @@
 
   h4 {
     @apply text-base;
-    @apply font-bold;
+    @apply font-bold italic;
   }
 
   p {
@@ -68,20 +68,7 @@
   /*END FONT STYLING*/
 
   /* START GLOBAL STYLING */
-  input,
-  textarea {
-    @apply bg-bg-card;
-    @apply rounded-md;
-    @apply border;
-    @apply border-border;
-    @apply px-2 py-0.5;
-    @apply box-border !important;
-  }
 
-  ::placeholder {
-    @apply !text-tertiary;
-    @apply italic;
-  }
   /* END GLOBAL STYLING */
 }
 

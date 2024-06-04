@@ -1,6 +1,6 @@
 import React from "react";
 import { ButtonPrimary } from "../../components/Buttons";
-import { TextBlock, ImageBlock, CardBlock } from "./Blocks";
+import { TextBlock, ImageBlock, CardBlock, ExternalLinkBlock } from "./Blocks";
 
 export const Card = (props: {
   children: React.ReactNode;
@@ -155,7 +155,6 @@ const CardContent = (props: { cardHeight: number }) => {
   return (
     <div className=" p-3 sm:p-4  flex flex-col">
       <h2>Chapter 1</h2>
-
       <TextBlock
         lines={6}
         defaultValue="It is a truth universally acknowledged, that a single man in possession of a good fortune must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters."
@@ -179,24 +178,33 @@ const CardContent = (props: { cardHeight: number }) => {
         defaultValue="“You want to tell me, and I have no objection to hearing it.”"
       />
       <TextBlock lines={1} defaultValue="" />
+      {/* <h4>Related Links</h4>
       <h3>Related Images</h3>
       <ImageBlock src="./test-image.jpg" cardHeight={props.cardHeight} />
-      <ImageBlock src="./test-image-2.jpg" cardHeight={props.cardHeight} />
+      <ImageBlock src="./test-image-2.jpg" cardHeight={props.cardHeight} /> */}
+      <ExternalLinkBlock />
 
-      <CardBlock fontSize="h1" imgSrc="./test-image-2.jpg">
-        Chapter 2
-      </CardBlock>
-      <CardBlock fontSize="h2">Notes</CardBlock>
-      <CardBlock fontSize="h3">Footnote #3</CardBlock>
+      <CardBlock screenshot="./card1.png" title="Chapter 2" />
 
-      <CardBlock fontSize="p" imgSrc="./test-image.jpg">
-        This was invitation enough. “Why, my dear, you must know, Mrs. Long says
-        that Netherfield is taken by a young man of large fortune from the north
-        of England; that he came down on Monday in a chaise and four to see the
-        place, and was so much delighted with it that he agreed with Mr. Morris
-        immediately; that he is to take possession before Michaelmas, and some
-        of his servants are to be in the house by the end of next week.”
-      </CardBlock>
+      <CardBlock
+        screenshot="./card2.png"
+        title="Notes"
+        body="This is me just sort of blabbing on and on and on so that i can make htis thing wrap enough lines and see what it looks like. indeed blah blah blah thats what i have to say about it big yada yada energy"
+      />
+      <CardBlock
+        screenshot="./card3.png"
+        title="Footnote #3"
+        body="what if first block very short?"
+      />
+      <CardBlock
+        screenshot="./card5.png"
+        body="This was invitation enough. “Why, my dear, you must know, Mrs. Long says
+      that Netherfield is taken by a young man of large fortune from the north
+      of England; that he came down on Monday in a chaise and four to see the
+      place, and was so much delighted with it that he agreed with Mr. Morris
+      immediately; that he is to take possession before Michaelmas, and some
+      of his servants are to be in the house by the end of next week.”"
+      />
     </div>
   );
 };

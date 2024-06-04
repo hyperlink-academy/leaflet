@@ -20,7 +20,7 @@ module.exports = {
       //TEXT COLORS.
       "primary" : "var(--primary)",
       "secondary": "#595959",
-      "tertiary": "#8C8C8C",
+      "tertiary": "var(--primary)",
       "border": "#CCCCCC",
       "border-light": "#E6E6E6",
 
@@ -52,6 +52,9 @@ module.exports = {
 
     extend: {
       boxShadow: {
+
+       sm:"0px 0.5px 0.5px 0.25px rgba(0, 0, 0, 0.25), 0px 2px 3px 1.5px rgba(0, 0, 0, 0.15);",
+        //sm: "0px 0.5px 0.5px 0.25px rgba(0, 0, 0, 0.25), 0px 1px 2.5px 1px rgba(0, 0, 0, 0.15);",
         md: "0.5px 0.9px 1px hsl(0deg 0% 0% / 0.11), 1.1px 2.1px 2.3px -1.1px hsl(0deg 0% 0% / 0.09), 3px 5.8px 6.4px -2.3px hsl(0deg 0% 0% / 0.08), 7.8px 14.9px 16.5px -3.4px hsl(0deg 0% 0% / 0.06);"
       },
 
