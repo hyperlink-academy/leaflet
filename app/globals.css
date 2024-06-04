@@ -5,7 +5,7 @@
 @layer base {
   :root {
     --bg-page: hsb(198 4 98);
-    --bg-card: 0 0 100;
+    --bg-card: hsb(0 0 100);
 
     --primary: hsb(0 0 15);
 

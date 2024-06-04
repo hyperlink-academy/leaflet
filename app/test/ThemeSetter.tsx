@@ -167,7 +167,14 @@ const ColorPicker = (props: {
         <div className="flex justify-between items-center">
           <strong>{props.label}</strong>
           <ColorField defaultValue={props.value} className="w-fit">
-            <Input className="w-[88px]  " />
+            <Input
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.currentTarget.blur();
+                } else return;
+              }}
+              className="w-[88px]  "
+            />
           </ColorField>
         </div>
 
@@ -182,6 +189,7 @@ const ColorPicker = (props: {
         </ColorArea>
         <ColorSlider
           defaultValue={props.value}
+          colorSpace="hsb"
           className="w-full h-6 "
           channel="hue"
         >
