@@ -33,7 +33,6 @@ export const schema = new Schema({
   },
   nodes: { doc: nodes.doc, paragraph: nodes.paragraph, text: nodes.text },
 });
-import { AddImageBlock } from "components/ImageBlock";
 
 export let useEditorStates = create(() => ({
   lastXPosition: 0,
@@ -231,7 +230,6 @@ function BlockOptions(props: { entityID: string; factID: string | undefined }) {
               });
             }}
           />
-          <AddImageBlock entityID={props.entityID} />
         </div>
       </label>
       <button className="bg-[red]">card</button>
