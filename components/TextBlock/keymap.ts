@@ -7,7 +7,8 @@ import { MutableRefObject } from "react";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { elementId } from "src/utils/elementId";
-import { schema, setEditorState, useEditorStates } from ".";
+import { setEditorState, useEditorStates } from ".";
+import { schema } from "./schema";
 
 export const TextBlockKeymap = (
   propsRef: MutableRefObject<BlockProps>,
@@ -98,7 +99,7 @@ export const TextBlockKeymap = (
       block.view?.dom.focus();
       let firstChild = state.doc.content.firstChild?.content;
       if (firstChild) {
-        tr.insert(tr.doc.content.size, firstChild);
+        tr.insert(tr.doc.content.size - 1, firstChild);
         tr.setSelection(
           TextSelection.create(
             tr.doc,
@@ -112,9 +113,9 @@ export const TextBlockKeymap = (
         editor: newState,
       });
 
-      return false;
+      return true;
     },
-    "Shift-Enter": (state, dispatch) => {
+    Enter: (state, dispatch) => {
       let tr = state.tr;
       let newContent = tr.doc.slice(state.selection.anchor);
       tr.delete(state.selection.anchor, state.doc.content.size);

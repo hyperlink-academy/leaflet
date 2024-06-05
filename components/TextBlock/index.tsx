@@ -2,7 +2,6 @@ import { useRef, useEffect, useState } from "react";
 import { elementId } from "src/utils/elementId";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
-import { Schema } from "prosemirror-model";
 import * as Y from "yjs";
 import { ProseMirror, useEditorEffect } from "@nytimes/react-prosemirror";
 import * as base64 from "base64-js";
@@ -15,7 +14,6 @@ import {
 
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
-import { marks, nodes } from "prosemirror-schema-basic";
 import { ySyncPlugin } from "y-prosemirror";
 import { Replicache } from "replicache";
 import { generateKeyBetween } from "fractional-indexing";
@@ -25,14 +23,7 @@ import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 import { addImage } from "src/utils/addImage";
 import { BlockProps } from "components/Blocks";
 import { TextBlockKeymap } from "./keymap";
-
-export const schema = new Schema({
-  marks: {
-    strong: marks.strong,
-    em: marks.em,
-  },
-  nodes: { doc: nodes.doc, paragraph: nodes.paragraph, text: nodes.text },
-});
+import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
 
 export let useEditorStates = create(() => ({
