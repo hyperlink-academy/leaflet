@@ -5,7 +5,7 @@ import { supabaseBrowserClient } from "supabase/browserClient";
 export async function addImage(
   file: File,
   rep: Replicache<ReplicacheMutators>,
-  args: { parent: string; position: string },
+  args: { entityID: string },
 ) {
   let client = supabaseBrowserClient();
   let cache = await caches.open("minilink-user-assets");
@@ -22,18 +22,11 @@ export async function addImage(
       },
     }),
   );
-  let newBlockEntity = crypto.randomUUID();
-  await rep.mutate.addBlock({
-    type: "image",
-    parent: args.parent,
-    position: args.position,
-    newEntityID: newBlockEntity,
-  });
   //This may reach other clients before the image has been uploaded.
   // Maybe we should set the state to uploaded-by (client_ID) or something
   // and then set the real one after.
   await rep.mutate.assertFact({
-    entity: newBlockEntity,
+    entity: args.entityID,
     attribute: "block/image",
     data: {
       type: "image",
@@ -45,7 +38,7 @@ export async function addImage(
   });
   await client.storage.from("minilink-user-assets").upload(fileID, file);
   await rep.mutate.assertFact({
-    entity: newBlockEntity,
+    entity: args.entityID,
     attribute: "block/image",
     data: {
       type: "image",

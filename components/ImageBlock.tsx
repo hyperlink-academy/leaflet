@@ -62,7 +62,8 @@ export function ImageBlock(props: BlockProps) {
     rep,
     props.parent,
   ]);
-  if (image.data.local && image.data.local !== rep.rep?.clientID)
+  console.log(image);
+  if (image?.data.local && image.data.local !== rep.rep?.clientID)
     return (
       <div
         style={{
@@ -82,27 +83,6 @@ export function ImageBlock(props: BlockProps) {
       src={image?.data.src}
       height={image?.data.height}
       width={image?.data.width}
-    />
-  );
-}
-
-export function AddImageBlock(props: { entityID: string }) {
-  let rep = useReplicache();
-  let blocks = useEntity(props.entityID, "card/block")?.sort((a, b) => {
-    return a.data.position > b.data.position ? 1 : -1;
-  });
-  return (
-    <input
-      type="file"
-      accept="image/*"
-      onChange={async (e) => {
-        let file = e.currentTarget.files?.[0];
-        if (!file || !rep?.rep) return;
-        await addImage(file, rep.rep, {
-          parent: props.entityID,
-          position: generateKeyBetween(null, blocks[0]?.data.position || null),
-        });
-      }}
     />
   );
 }

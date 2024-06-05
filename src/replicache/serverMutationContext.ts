@@ -103,6 +103,9 @@ export function serverMutationContext(tx: PgTransaction<any, any, any>) {
             }),
       );
     },
+    async retractFact(id) {
+      await tx.delete(facts).where(driz.eq(facts.id, id));
+    },
     async deleteEntity(entity) {
       await Promise.all([
         tx.delete(entities).where(driz.eq(entities.id, entity)),

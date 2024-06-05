@@ -62,6 +62,9 @@ export function clientMutationContext(tx: WriteTransaction) {
       }
       await tx.set(id, FactWithIndexes({ id, ...f, data }));
     },
+    async retractFact(id) {
+      await tx.del(id);
+    },
     async deleteEntity(entity) {
       let existingFacts = await tx
         .scan<Fact<keyof typeof Attributes>>({

@@ -16,6 +16,7 @@ export type MutationContext = {
   assertFact: <A extends keyof typeof Attributes>(
     f: Omit<Fact<A>, "id"> & { id?: string },
   ) => Promise<void>;
+  retractFact: (id: string) => Promise<void>;
   runOnServer(
     cb: (ctx: { supabase: SupabaseClient<Database> }) => Promise<void>,
   ): Promise<void>;
@@ -49,6 +50,10 @@ const addBlock: Mutation<{
   });
 };
 
+const retractFact: Mutation<{ factID: string }> = async (args, ctx) => {
+  await ctx.retractFact(args.factID);
+};
+
 const removeBlock: Mutation<{ blockEntity: string }> = async (args, ctx) => {
   let images = await ctx.scanIndex.eav(args.blockEntity, "block/image");
   ctx.runOnServer(async ({ supabase }) => {
@@ -77,5 +82,6 @@ const assertFact: Mutation<
 export const mutations = {
   addBlock,
   assertFact,
+  retractFact,
   removeBlock,
 };

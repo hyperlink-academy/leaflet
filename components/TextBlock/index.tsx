@@ -33,6 +33,7 @@ export const schema = new Schema({
   },
   nodes: { doc: nodes.doc, paragraph: nodes.paragraph, text: nodes.text },
 });
+import { AddImageBlock } from "components/ImageBlock";
 
 export let useEditorStates = create(() => ({
   lastXPosition: 0,
@@ -68,7 +69,7 @@ export function TextBlock(props: BlockProps) {
   return (
     <>
       {!initialized && <RenderedTextBlock entityID={props.entityID} />}
-      <div className={`${!initialized ? "hidden" : ""}`}>
+      <div className={`relative ${!initialized ? "hidden" : ""}`}>
         <BaseTextBlock {...props} />
       </div>
     </>
@@ -97,7 +98,8 @@ function RenderedTextBlock(props: { entityID: string }) {
 }
 export function BaseTextBlock(props: BlockProps) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
-  let value = useYJSValue(props.entityID);
+  let selected = useUIState((s) => s.selectedBlock.includes(props.entityID));
+  let [value, factID] = useYJSValue(props.entityID);
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
   let propsRef = useRef(props);
   useEffect(() => {
@@ -159,20 +161,33 @@ export function BaseTextBlock(props: BlockProps) {
               if (file) {
                 let editorState =
                   useEditorStates.getState().editorStates[props.entityID];
+                let entity: string;
                 if (
                   editorState &&
                   editorState.editor.doc.textContent.length === 0
                 ) {
-                  await rep.rep.mutate.removeBlock({
-                    blockEntity: props.entityID,
+                  entity = props.entityID;
+                  await rep.rep.mutate.assertFact({
+                    entity: props.entityID,
+                    attribute: "block/type",
+                    data: { type: "block-type-union", value: "image" },
+                  });
+                  if (factID)
+                    await rep.rep.mutate.retractFact({ factID: factID });
+                } else {
+                  entity = crypto.randomUUID();
+                  await rep.rep.mutate.addBlock({
+                    type: "image",
+                    newEntityID: entity,
+                    parent: props.parent,
+                    position: generateKeyBetween(
+                      props.position,
+                      props.nextPosition,
+                    ),
                   });
                 }
                 await addImage(file, rep.rep, {
-                  parent: props.parent,
-                  position: generateKeyBetween(
-                    props.position,
-                    props.nextPosition,
-                  ),
+                  entityID: entity,
                 });
               }
               return;
@@ -185,8 +200,42 @@ export function BaseTextBlock(props: BlockProps) {
         className="w-full whitespace-pre-wrap outline-none"
         ref={setMount}
       />
+
+      {editorState.doc.textContent.length === 0 && selected && (
+        <BlockOptions factID={factID} entityID={props.entityID} />
+      )}
       <SyncView entityID={props.entityID} />
     </ProseMirror>
+  );
+}
+
+function BlockOptions(props: { entityID: string; factID: string | undefined }) {
+  let { rep } = useReplicache();
+  return (
+    <div className="absolute top-0 right-0 flex flex-row gap-1">
+      <label className="hover:cursor-pointer">
+        <div className="bg-[red]">image</div>
+        <div className="hidden">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={async (e) => {
+              let file = e.currentTarget.files?.[0];
+              if (!file || !rep) return;
+              if (props.factID)
+                await rep.mutate.retractFact({ factID: props.factID });
+              await rep.mutate.assertFact({
+                entity: props.entityID,
+                attribute: "block/type",
+                data: { type: "block-type-union", value: "image" },
+              });
+            }}
+          />
+          <AddImageBlock entityID={props.entityID} />
+        </div>
+      </label>
+      <button className="bg-[red]">card</button>
+    </div>
   );
 }
 
@@ -245,5 +294,5 @@ function useYJSValue(entityID: string) {
       yText.unobserveDeep(f);
     };
   }, [yText, entityID, rep, ydoc]);
-  return yText;
+  return [yText, docStateFromReplicache?.id] as const;
 }
