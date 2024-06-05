@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { useUIState } from "components/Blocks";
 import { create } from "zustand";
+import { useReplicache } from "src/replicache";
+import { useUIState } from "src/useUIState";
 export const useSelectingMouse = create(() => ({
   start: null as null | { top: number; left: number },
 }));

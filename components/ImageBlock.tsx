@@ -1,12 +1,12 @@
 "use client";
 
 import { useEntity, useReplicache } from "src/replicache";
-import { BlockProps, focusBlock, useUIState } from "./Blocks";
+import { BlockProps, focusBlock } from "./Blocks";
 import { useEffect } from "react";
-import { addImage } from "src/utils/addImage";
 import { generateKeyBetween } from "fractional-indexing";
 import { useEditorStates } from "./TextBlock";
 import { elementId } from "src/utils/elementId";
+import { useUIState } from "src/useUIState";
 
 export function ImageBlock(props: BlockProps) {
   let rep = useReplicache();

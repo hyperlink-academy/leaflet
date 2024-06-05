@@ -23,7 +23,7 @@ import { create } from "zustand";
 import { RenderYJSFragment } from "./RenderYJSFragment";
 import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 import { addImage } from "src/utils/addImage";
-import { BlockProps, useUIState } from "components/Blocks";
+import { BlockProps } from "components/Blocks";
 import { TextBlockKeymap } from "./keymap";
 
 export const schema = new Schema({
@@ -33,6 +33,7 @@ export const schema = new Schema({
   },
   nodes: { doc: nodes.doc, paragraph: nodes.paragraph, text: nodes.text },
 });
+import { useUIState } from "src/useUIState";
 
 export let useEditorStates = create(() => ({
   lastXPosition: 0,
