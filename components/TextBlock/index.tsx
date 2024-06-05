@@ -228,6 +228,7 @@ function BlockOptions(props: { entityID: string; factID: string | undefined }) {
                 attribute: "block/type",
                 data: { type: "block-type-union", value: "image" },
               });
+              await addImage(file, rep, { entityID: props.entityID });
             }}
           />
         </div>
