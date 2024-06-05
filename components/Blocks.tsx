@@ -64,7 +64,7 @@ export function Blocks(props: { entityID: string }) {
   );
   let data =
     useSubscribe(rep?.rep, async (tx) => {
-      let initialized = tx.get("initialized");
+      let initialized = await tx.get("initialized");
       if (!initialized) return null;
       let blocks = await tx
         .scan<
