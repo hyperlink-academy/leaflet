@@ -16,7 +16,8 @@ export default function Index() {
   let [cards, setCards] = useState([0, 1]);
   let [focusedCardIndex, setFocusedCardIndex] = useState(0);
   let [pageBGImage, setPageBGImage] = useState({
-    url: "./test-image.jpg",
+    // url: "./test-image.jpg"
+    url: "",
     repeat: true,
     size: 500,
   });
