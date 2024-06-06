@@ -4,6 +4,7 @@ import { Blocks } from "components/Blocks";
 import { Attributes } from "src/replicache/attributes";
 import { createServerClient } from "@supabase/ssr";
 import { SelectionManager } from "components/SelectionManager";
+import { Cards } from "components/Cards";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export default async function DocumentPage(props: {
   return (
     <ReplicacheProvider name={props.params.doc_id} initialFacts={initialFacts}>
       <SelectionManager />
-      <Blocks entityID={props.params.doc_id} />
+      <Cards rootCard={props.params.doc_id} />
     </ReplicacheProvider>
   );
 }

@@ -31,7 +31,10 @@ type Data<A extends keyof typeof Attributes> = {
     local?: string;
   };
   reference: { type: "reference"; value: string };
-  "block-type-union": { type: "block-type-union"; value: "text" | "image" };
+  "block-type-union": {
+    type: "block-type-union";
+    value: "text" | "image" | "card";
+  };
 }[(typeof Attributes)[A]["type"]];
 
 let ReplicacheContext = createContext({
@@ -114,7 +117,7 @@ export function ReplicacheProvider(props: {
 
 type CardinalityResult<A extends keyof typeof Attributes> =
   (typeof Attributes)[A]["cardinality"] extends "one"
-    ? DeepReadonlyObject<Fact<A>>
+    ? DeepReadonlyObject<Fact<A>> | null
     : DeepReadonlyObject<Fact<A>>[];
 export function useEntity<A extends keyof typeof Attributes>(
   entity: string | null,

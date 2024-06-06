@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { combine } from "zustand/middleware";
+import { combine, createJSONStorage, persist } from "zustand/middleware";
 
 export const useUIState = create(
   combine(
@@ -8,6 +8,16 @@ export const useUIState = create(
       selectedBlock: [] as string[],
     },
     (set) => ({
+      openCard: (parent: string, card: string) =>
+        set((state) => {
+          let parentPosition = state.openCards.findIndex((s) => s == parent);
+          return {
+            openCards:
+              parentPosition === -1
+                ? [card]
+                : [...state.openCards.slice(0, parentPosition + 1), card],
+          };
+        }),
       setSelectedBlock: (block: string) =>
         set((state) => {
           return { ...state, selectedBlock: [block] };

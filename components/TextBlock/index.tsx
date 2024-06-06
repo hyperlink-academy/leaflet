@@ -60,7 +60,7 @@ export function TextBlock(props: BlockProps) {
   return (
     <>
       {!initialized && <RenderedTextBlock entityID={props.entityID} />}
-      <div className={`relative ${!initialized ? "hidden" : ""}`}>
+      <div className={`relative group/text ${!initialized ? "hidden" : ""}`}>
         <BaseTextBlock {...props} />
       </div>
     </>
@@ -188,44 +188,95 @@ export function BaseTextBlock(props: BlockProps) {
           e.stopPropagation();
         }}
         id={elementId.block(props.entityID).text}
-        className="w-full whitespace-pre-wrap outline-none"
+        className={`textBlock w-full p-0 border-none outline-none resize-none align-top bg-transparent whitespace-pre-wrap`}
         ref={setMount}
       />
 
       {editorState.doc.textContent.length === 0 && selected && (
-        <BlockOptions factID={factID} entityID={props.entityID} />
+        <BlockOptions
+          factID={factID}
+          entityID={props.entityID}
+          parent={props.parent}
+          position={props.position}
+          nextPosition={props.nextPosition}
+        />
       )}
       <SyncView entityID={props.entityID} />
     </ProseMirror>
   );
 }
 
-function BlockOptions(props: { entityID: string; factID: string | undefined }) {
+export function BlockOptions(props: {
+  parent: string;
+  entityID: string | null;
+  position: string | null;
+  nextPosition: string | null;
+  factID?: string | undefined;
+}) {
   let { rep } = useReplicache();
   return (
-    <div className="absolute top-0 right-0 flex flex-row gap-1">
-      <label className="hover:cursor-pointer">
-        <div className="bg-[red]">image</div>
-        <div className="hidden">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={async (e) => {
-              let file = e.currentTarget.files?.[0];
-              if (!file || !rep) return;
-              if (props.factID)
-                await rep.mutate.retractFact({ factID: props.factID });
-              await rep.mutate.assertFact({
-                entity: props.entityID,
-                attribute: "block/type",
-                data: { type: "block-type-union", value: "image" },
+    <div className="absolute top-0 right-0  hidden group-hover/text:block group-focus-within/text:block">
+      <div className="flex flex-row gap-1">
+        <label className="hover:cursor-pointer ">
+          <div className="bg-[red]">image</div>
+          <div className="hidden">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                let file = e.currentTarget.files?.[0];
+                if (!file || !rep) return;
+                if (props.factID)
+                  await rep.mutate.retractFact({ factID: props.factID });
+                let entity = props.entityID;
+                if (!entity) {
+                  entity = crypto.randomUUID();
+                  await rep?.mutate.addBlock({
+                    parent: props.parent,
+                    type: "text",
+                    position: generateKeyBetween(
+                      props.position,
+                      props.nextPosition,
+                    ),
+                    newEntityID: entity,
+                  });
+                }
+                await rep.mutate.assertFact({
+                  entity,
+                  attribute: "block/type",
+                  data: { type: "block-type-union", value: "image" },
+                });
+                await addImage(file, rep, { entityID: entity });
+              }}
+            />
+          </div>
+        </label>
+        <button
+          className="bg-[red]"
+          onClick={async () => {
+            let entity = props.entityID;
+            if (!entity) {
+              entity = crypto.randomUUID();
+              await rep?.mutate.addBlock({
+                parent: props.parent,
+                type: "text",
+                position: generateKeyBetween(
+                  props.position,
+                  props.nextPosition,
+                ),
+                newEntityID: entity,
               });
-              await addImage(file, rep, { entityID: props.entityID });
-            }}
-          />
-        </div>
-      </label>
-      <button className="bg-[red]">card</button>
+            }
+            await rep?.mutate.assertFact({
+              entity,
+              attribute: "block/type",
+              data: { type: "block-type-union", value: "card" },
+            });
+          }}
+        >
+          card
+        </button>
+      </div>
     </div>
   );
 }
