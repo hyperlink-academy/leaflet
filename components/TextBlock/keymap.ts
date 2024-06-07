@@ -81,7 +81,7 @@ export const TextBlockKeymap = (
         if (propsRef.current.previousBlock) {
           focusBlock(propsRef.current.previousBlock, "end", "bottom");
         }
-        return false;
+        return true;
       }
 
       let block =
