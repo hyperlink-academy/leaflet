@@ -39,7 +39,7 @@ export const ThemePopover = (props: {
   let [accentTextValue, setAccentTextValue] = useState(
     parseColor("hsl(1, 100%, 100%)"),
   );
-  let [openPicker, setOpenPicker] = useState<pickers>("null");
+  let [openPicker, setOpenPicker] = useState<pickers>("page");
 
   useEffect(() => {
     setCSSVariableToColor("--bg-page", pageValue);
@@ -56,12 +56,12 @@ export const ThemePopover = (props: {
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className="w-80 max-h-[800px] overflow-y-scroll bg-bg-card rounded-md border border-border flex"
+          className="w-80 max-h-[800px] overflow-y-scroll bg-white rounded-md border border-border flex"
           align="center"
           sideOffset={4}
           collisionPadding={16}
         >
-          <div className="flex flex-col w-full">
+          <div className="flex flex-col w-full ">
             <div className="themeBGPage flex mt-3 pr-2 pl-3 items-start ">
               <ColorLabel
                 label="Background"
@@ -74,95 +74,92 @@ export const ThemePopover = (props: {
                 }
                 closePicker={() => setOpenPicker("null")}
               />
-              <div className="w-2 h-full border-t border-r border-border rounded-tr-md mt-3" />
+              <div className="w-2 h-full border-t-2 border-r-2 border-border rounded-tr-md mt-3" />
             </div>
             <div className="bg-bg-page p-3 pb-0 flex flex-col rounded-md">
-              <div className="themeAccentSection">
-                <div className="themeAccentControls flex flex-col h-full">
-                  <div className="themeAccent flex w-full pr-2 items-start ">
+              <div className="themeAccentControls flex flex-col h-full">
+                <div className="themeAccentColor flex w-full pr-2 items-start ">
+                  <ColorLabel
+                    label="Accent"
+                    value={accentValue}
+                    setValue={(newAccentValue) =>
+                      setAccentValue(newAccentValue)
+                    }
+                    thisPicker={"accent"}
+                    openPicker={openPicker}
+                    setOpenPicker={(thisPicker: pickers) =>
+                      setOpenPicker(thisPicker)
+                    }
+                    closePicker={() => setOpenPicker("null")}
+                  />
+                  <div className="w-4 h-full border-t-2 border-r-2 border-accent rounded-tr-md mt-3 pb-[52px] -mb-[52px]" />
+                </div>
+                <div className="themeTextAccentColor w-full flex pr-2 items-start ">
+                  <div className="flex w-full  gap-2 items-center place-self-end">
                     <ColorLabel
-                      label="Accent"
-                      value={accentValue}
-                      setValue={(newAccentValue) =>
-                        setAccentValue(newAccentValue)
+                      label="Text on Accent"
+                      value={accentTextValue}
+                      setValue={(newAccentTextValue) =>
+                        setAccentTextValue(newAccentTextValue)
                       }
-                      thisPicker={"accent"}
+                      thisPicker={"accentText"}
                       openPicker={openPicker}
                       setOpenPicker={(thisPicker: pickers) =>
                         setOpenPicker(thisPicker)
                       }
                       closePicker={() => setOpenPicker("null")}
                     />
-                    <div className="w-4 h-full border-t border-r border-border rounded-tr-md mt-3 pb-[52px] -mb-[52px]" />
                   </div>
-                  <div className="themeTextAccentColor flex pr-4 items-start place-self-end">
-                    <div className="flex gap-2 items-center">
-                      <ColorLabel
-                        label="Text on Accent"
-                        value={accentTextValue}
-                        setValue={(newAccentTextValue) =>
-                          setAccentTextValue(newAccentTextValue)
-                        }
-                        thisPicker={"accentText"}
-                        openPicker={openPicker}
-                        setOpenPicker={(thisPicker: pickers) =>
-                          setOpenPicker(thisPicker)
-                        }
-                        closePicker={() => setOpenPicker("null")}
-                      />
-                    </div>
-                    <div className="w-2 h-full border-b border-r border-t border-border rounded-r-md mt-3 z-10" />
-                  </div>
-                  <div className="font-bold text-center text-lg py-2  rounded-md bg-accent text-accentText shadow-md">
-                    Button
-                  </div>
+                  <div className="w-2 h-full  border-r-2 border-t-2 border-border rounded-tr-md mt-[11px] z-10" />
+                  <div className="w-2 h-full border-r-2 border-accent " />
+                </div>
+                <div className="font-bold relative text-center text-lg py-2  rounded-md bg-accent text-accentText shadow-md">
+                  Button
+                  <div className="absolute h-[26px] w-[92px] top-0 right-[15.5px] border-b-2 border-r-2 rounded-br-md border-border" />
                 </div>
               </div>
               <hr className="my-3" />
 
-              <div className="themePageSection">
-                <div className="flex flex-col">
-                  <div className="themePageColor flex pr-2 items-start place-self-end">
-                    <div className="flex gap-2 items-center">
-                      <ColorLabel
-                        label="Page"
-                        value={cardValue}
-                        setValue={(newCardValue) => setCardValue(newCardValue)}
-                        thisPicker={"card"}
-                        openPicker={openPicker}
-                        setOpenPicker={(thisPicker: pickers) =>
-                          setOpenPicker(thisPicker)
-                        }
-                        closePicker={() => setOpenPicker("null")}
-                      />
-                    </div>
-                    <div className="w-4 h-14 border-t border-r border-border rounded-tr-md mt-3 -mb-9" />
-                  </div>
-                  <div className="themePageText flex pr-4 items-start place-self-end">
-                    <div className="flex gap-2 items-center">
-                      <ColorLabel
-                        label="Text"
-                        value={textValue}
-                        setValue={(newTextValue) => setTextValue(newTextValue)}
-                        thisPicker={"text"}
-                        openPicker={openPicker}
-                        setOpenPicker={(thisPicker: pickers) =>
-                          setOpenPicker(thisPicker)
-                        }
-                        closePicker={() => setOpenPicker("null")}
-                      />
-                    </div>
-                    <div className="w-2 h-12 border-b border-r border-t border-border rounded-r-md mt-3 -mb-6" />
-                  </div>
+              <div className="themePageControls flex flex-col h-full">
+                <div className="themePageColor flex pr-2 items-start ">
+                  <ColorLabel
+                    label="Page"
+                    value={cardValue}
+                    setValue={(newCardValue) => setCardValue(newCardValue)}
+                    thisPicker={"card"}
+                    openPicker={openPicker}
+                    setOpenPicker={(thisPicker: pickers) =>
+                      setOpenPicker(thisPicker)
+                    }
+                    closePicker={() => setOpenPicker("null")}
+                  />
+                  <div className="w-4 h-full border-t border-r border-border rounded-tr-md mt-3" />
                 </div>
+                <div className="themePageTextColor w-full flex pr-2 items-start">
+                  <div className="flex w-full gap-2 items-center place-self-end">
+                    <ColorLabel
+                      label="Text"
+                      value={textValue}
+                      setValue={(newTextValue) => setTextValue(newTextValue)}
+                      thisPicker={"text"}
+                      openPicker={openPicker}
+                      setOpenPicker={(thisPicker: pickers) =>
+                        setOpenPicker(thisPicker)
+                      }
+                      closePicker={() => setOpenPicker("null")}
+                    />
+                  </div>
+                  <div className="w-2 h-full border-b border-r border-t border-border rounded-r-md mt-3 z-10 " />
+                  <div className="w-2 h-full border-r border-border " />
+                </div>
+              </div>
 
-                <div className="bg-bg-card rounded-t-lg p-2  border border-border border-b-transparent shadow-md">
-                  <p className="font-bold">Hello!</p>
-                  <small className="">
-                    Welcome to Leaflet. It&apos;s a super easy and fun way to
-                    make, share, and collab on little bits of paper
-                  </small>
-                </div>
+              <div className="bg-bg-card rounded-t-lg p-2  border border-border border-b-transparent shadow-md">
+                <p className="font-bold">Hello!</p>
+                <small className="">
+                  Welcome to Leaflet. It&apos;s a super easy and fun way to
+                  make, share, and collab on little bits of paper
+                </small>
               </div>
             </div>
           </div>
@@ -194,12 +191,12 @@ const ColorLabel = (props: {
           <div className="flex">
             <ColorField className="w-fit" defaultValue={props.value}>
               <Input
-                onFocus={() => {
-                  if (props.openPicker === props.thisPicker) {
-                    props.closePicker();
-                  } else {
-                    props.setOpenPicker(props.thisPicker);
-                  }
+                onFocus={(e) => {
+                  e.currentTarget.setSelectionRange(
+                    1,
+                    e.currentTarget.value.length,
+                  );
+                  props.setOpenPicker(props.thisPicker);
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -215,16 +212,12 @@ const ColorLabel = (props: {
           </div>
           <button
             onClick={() => {
-              if (props.openPicker === props.thisPicker) {
-                props.closePicker();
-              } else {
-                props.setOpenPicker(props.thisPicker);
-              }
+              props.setOpenPicker(props.thisPicker);
             }}
           >
             <ColorSwatch
               color={props.value}
-              className={`w-6 h-6 rounded-full  border border-border`}
+              className={`w-6 h-6 rounded-full  border-2 border-border`}
             />
           </button>
         </div>
@@ -247,114 +240,5 @@ const ColorLabel = (props: {
         )}
       </div>
     </SpectrumColorPicker>
-  );
-};
-
-const ColorPicker = (props: {
-  label?: string;
-  value: Color;
-  setValue: Dispatch<SetStateAction<Color>>;
-}) => {
-  let thumbStyle =
-    "w-4 h-4 rounded-full border-2 border-white shadow-[0_0_0_1px_black,_inset_0_0_0_1px_black]";
-  return (
-    <SpectrumColorPicker value={props.value} onChange={props.setValue}>
-      <div className="flex flex-col gap-1">
-        <div className="flex justify-between items-center">
-          <strong>{props.label}</strong>
-          <ColorField className="w-fit">
-            <Input
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.currentTarget.blur();
-                } else return;
-              }}
-              className="w-[88px]  "
-            />
-          </ColorField>
-        </div>
-
-        <ColorArea
-          className="w-full h-[300px] rounded-md"
-          colorSpace="hsb"
-          xChannel="saturation"
-          yChannel="brightness"
-        >
-          <ColorThumb className={thumbStyle} />
-        </ColorArea>
-        <ColorSlider colorSpace="hsb" className="w-full h-6 " channel="hue">
-          <SliderTrack className="h-6 w-full rounded-md">
-            <ColorThumb className={`${thumbStyle} mt-[11px]`} />
-          </SliderTrack>
-        </ColorSlider>
-      </div>
-    </SpectrumColorPicker>
-  );
-};
-
-const BGPicker = (props: {
-  pageBGImage: imageArgs;
-  setPageBGImage: (imageArgs: Partial<imageArgs>) => void;
-}) => {
-  return (
-    <div className="flex flex-col gap-1">
-      <strong>bg image</strong>
-      <input
-        type="text"
-        id="url"
-        name="url"
-        value={props.pageBGImage.url}
-        onChange={(e) => {
-          props.setPageBGImage({
-            url: e.currentTarget.value,
-          });
-        }}
-      />
-      <input
-        type="number"
-        id="size"
-        name="size"
-        value={props.pageBGImage.size}
-        min="100"
-        onChange={(e) => {
-          props.setPageBGImage({
-            size: e.currentTarget.valueAsNumber,
-          });
-        }}
-      />
-
-      <div className="flex gap-2">
-        <label htmlFor="repeat">
-          <input
-            type="radio"
-            id="repeat"
-            name="repeat"
-            value="repeat"
-            checked={props.pageBGImage.repeat === true}
-            onChange={() => {
-              props.setPageBGImage({
-                repeat: true,
-              });
-            }}
-          />
-          repeat
-        </label>
-        <label htmlFor="cover">
-          <input
-            type="radio"
-            id="no-repeat"
-            name="repeat"
-            value="no-repeat"
-            checked={props.pageBGImage.repeat === false}
-            onChange={() => {
-              props.setPageBGImage({
-                repeat: false,
-              });
-            }}
-          />
-          cover
-        </label>
-      </div>
-    </div>
   );
 };
