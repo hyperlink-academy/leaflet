@@ -31,18 +31,22 @@ export default function Index() {
         backgroundSize: !pageBGImage.repeat ? "cover" : pageBGImage.size,
       }}
     >
-      <PageHeader
-        pageBGImage={pageBGImage}
-        setPageBGImage={(imageArgs) =>
-          setPageBGImage((s) => ({ ...s, ...imageArgs }))
-        }
-      />
       <div
         className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex "
         id="card-carousel"
       >
         <div className="pageContent flex py-4">
-          <div style={{ width: `calc((100vw - ${cardWidth}px)/2)` }} />
+          <div
+            className="flex justify-end items-start"
+            style={{ width: `calc((100vw - ${cardWidth}px)/2)` }}
+          >
+            <PageHeader
+              pageBGImage={pageBGImage}
+              setPageBGImage={(imageArgs) =>
+                setPageBGImage((s) => ({ ...s, ...imageArgs }))
+              }
+            />
+          </div>
 
           {cards.map((card, index) => (
             <div

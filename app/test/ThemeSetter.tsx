@@ -12,7 +12,14 @@ import {
   ColorSwatch,
 } from "react-aria-components";
 
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import {
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { imageArgs } from "./page";
 
 function setCSSVariableToColor(name: string, value: Color) {
@@ -26,6 +33,7 @@ export type pickers =
   | "accent"
   | "accentText"
   | "text";
+
 export const ThemePopover = (props: {
   pageBGImage: imageArgs;
   setPageBGImage: (imageArgs: Partial<imageArgs>) => void;
@@ -49,125 +57,151 @@ export const ThemePopover = (props: {
     setCSSVariableToColor("--accent-text", accentTextValue);
   }, [pageValue, cardValue, textValue, accentValue, accentTextValue]);
 
+  let randomPositions = useMemo(() => {
+    let values = [] as string[];
+    for (let i = 0; i < 3; i++) {
+      values.push(
+        `${Math.floor(Math.random() * 100)}% ${Math.floor(Math.random() * 100)}%`,
+      );
+    }
+    return values;
+  }, []);
+
+  let gradient = [
+    `radial-gradient(at ${randomPositions[0]}, ${accentValue.toString("hex")}80 2px, transparent 70%)`,
+    `radial-gradient(at ${randomPositions[1]}, ${cardValue.toString("hex")}66 2px, transparent 60%)`,
+    `radial-gradient(at ${randomPositions[2]}, ${textValue.toString("hex")}B3 2px, transparent 100%)`,
+  ].join(", ");
+
   return (
-    <Popover.Root>
-      <Popover.Trigger>
-        <div className="rounded-full w-6 h-6 border" />
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          className="w-80 max-h-[800px] overflow-y-scroll bg-white rounded-md border border-border flex"
-          align="center"
-          sideOffset={4}
-          collisionPadding={16}
-        >
-          <div className="flex flex-col w-full ">
-            <div className="themeBGPage flex mt-3 pr-2 pl-3 items-start ">
-              <ColorLabel
-                label="Background"
-                value={pageValue}
-                setValue={(newPageValue) => setPageValue(newPageValue)}
-                thisPicker={"page"}
-                openPicker={openPicker}
-                setOpenPicker={(thisPicker: pickers) =>
-                  setOpenPicker(thisPicker)
-                }
-                closePicker={() => setOpenPicker("null")}
-              />
-              <div className="w-2 h-full border-t-2 border-r-2 border-border rounded-tr-md mt-3" />
-            </div>
-            <div className="bg-bg-page p-3 pb-0 flex flex-col rounded-md">
-              <div className="themeAccentControls flex flex-col h-full">
-                <div className="themeAccentColor flex w-full pr-2 items-start ">
-                  <ColorLabel
-                    label="Accent"
-                    value={accentValue}
-                    setValue={(newAccentValue) =>
-                      setAccentValue(newAccentValue)
-                    }
-                    thisPicker={"accent"}
-                    openPicker={openPicker}
-                    setOpenPicker={(thisPicker: pickers) =>
-                      setOpenPicker(thisPicker)
-                    }
-                    closePicker={() => setOpenPicker("null")}
-                  />
-                  <div className="w-4 h-full border-t-2 border-r-2 border-accent rounded-tr-md mt-3 pb-[52px] -mb-[52px]" />
-                </div>
-                <div className="themeTextAccentColor w-full flex pr-2 items-start ">
-                  <div className="flex w-full  gap-2 items-center place-self-end">
+    <>
+      <Popover.Root>
+        <Popover.Trigger>
+          <div
+            className="rounded-full w-7 h-7 border border-border"
+            style={{
+              backgroundColor: pageValue.toString("hex"),
+              backgroundImage: gradient,
+            }}
+          />
+
+          <div className="relative z-10"></div>
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Content
+            className="w-80 max-h-[800px] overflow-y-scroll bg-white rounded-md border border-border flex"
+            align="center"
+            sideOffset={4}
+            collisionPadding={16}
+          >
+            <div className="flex flex-col w-full ">
+              <div className="themeBGPage flex mt-3 pr-2 pl-3 items-start ">
+                <ColorLabel
+                  label="Background"
+                  value={pageValue}
+                  setValue={(newPageValue) => setPageValue(newPageValue)}
+                  thisPicker={"page"}
+                  openPicker={openPicker}
+                  setOpenPicker={(thisPicker: pickers) =>
+                    setOpenPicker(thisPicker)
+                  }
+                  closePicker={() => setOpenPicker("null")}
+                />
+                <div className="w-2 h-full border-t-2 border-r-2 border-border rounded-tr-md mt-3" />
+              </div>
+              <div className="bg-bg-page p-3 pb-0 flex flex-col rounded-md">
+                <div className="themeAccentControls flex flex-col h-full">
+                  <div className="themeAccentColor flex w-full pr-2 items-start ">
                     <ColorLabel
-                      label="Text on Accent"
-                      value={accentTextValue}
-                      setValue={(newAccentTextValue) =>
-                        setAccentTextValue(newAccentTextValue)
+                      label="Accent"
+                      value={accentValue}
+                      setValue={(newAccentValue) =>
+                        setAccentValue(newAccentValue)
                       }
-                      thisPicker={"accentText"}
+                      thisPicker={"accent"}
                       openPicker={openPicker}
                       setOpenPicker={(thisPicker: pickers) =>
                         setOpenPicker(thisPicker)
                       }
                       closePicker={() => setOpenPicker("null")}
                     />
+                    <div className="w-4 h-full border-t-2 border-r-2 border-accent rounded-tr-md mt-3 pb-[52px] -mb-[52px]" />
                   </div>
-                  <div className="w-2 h-full  border-r-2 border-t-2 border-border rounded-tr-md mt-[11px] z-10" />
-                  <div className="w-2 h-full border-r-2 border-accent " />
+                  <div className="themeTextAccentColor w-full flex pr-2 items-start ">
+                    <div className="flex w-full  gap-2 items-center place-self-end">
+                      <ColorLabel
+                        label="Text on Accent"
+                        value={accentTextValue}
+                        setValue={(newAccentTextValue) =>
+                          setAccentTextValue(newAccentTextValue)
+                        }
+                        thisPicker={"accentText"}
+                        openPicker={openPicker}
+                        setOpenPicker={(thisPicker: pickers) =>
+                          setOpenPicker(thisPicker)
+                        }
+                        closePicker={() => setOpenPicker("null")}
+                      />
+                    </div>
+                    <div className="w-2 h-full  border-r-2 border-t-2 border-border rounded-tr-md mt-[11px] z-10" />
+                    <div className="w-2 h-full border-r-2 border-accent " />
+                  </div>
+                  <div className="font-bold relative text-center text-lg py-2  rounded-md bg-accent text-accentText shadow-md">
+                    Button
+                    <div className="absolute h-[26px] w-[92px] top-0 right-[15.5px] border-b-2 border-r-2 rounded-br-md border-border" />
+                  </div>
                 </div>
-                <div className="font-bold relative text-center text-lg py-2  rounded-md bg-accent text-accentText shadow-md">
-                  Button
-                  <div className="absolute h-[26px] w-[92px] top-0 right-[15.5px] border-b-2 border-r-2 rounded-br-md border-border" />
-                </div>
-              </div>
-              <hr className="my-3" />
+                <hr className="my-3" />
 
-              <div className="themePageControls flex flex-col h-full">
-                <div className="themePageColor flex pr-2 items-start ">
-                  <ColorLabel
-                    label="Page"
-                    value={cardValue}
-                    setValue={(newCardValue) => setCardValue(newCardValue)}
-                    thisPicker={"card"}
-                    openPicker={openPicker}
-                    setOpenPicker={(thisPicker: pickers) =>
-                      setOpenPicker(thisPicker)
-                    }
-                    closePicker={() => setOpenPicker("null")}
-                  />
-                  <div className="w-4 h-full border-t border-r border-border rounded-tr-md mt-3" />
-                </div>
-                <div className="themePageTextColor w-full flex pr-2 items-start">
-                  <div className="flex w-full gap-2 items-center place-self-end">
+                <div className="themePageControls flex flex-col h-full">
+                  <div className="themePageColor flex pr-2 items-start ">
                     <ColorLabel
-                      label="Text"
-                      value={textValue}
-                      setValue={(newTextValue) => setTextValue(newTextValue)}
-                      thisPicker={"text"}
+                      label="Page"
+                      value={cardValue}
+                      setValue={(newCardValue) => setCardValue(newCardValue)}
+                      thisPicker={"card"}
                       openPicker={openPicker}
                       setOpenPicker={(thisPicker: pickers) =>
                         setOpenPicker(thisPicker)
                       }
                       closePicker={() => setOpenPicker("null")}
                     />
+                    <div className="w-4 h-full border-t border-r border-border rounded-tr-md mt-3" />
                   </div>
-                  <div className="w-2 h-full border-b border-r border-t border-border rounded-r-md mt-3 z-10 " />
-                  <div className="w-2 h-full border-r border-border " />
+                  <div className="themePageTextColor w-full flex pr-2 items-start">
+                    <div className="flex w-full gap-2 items-center place-self-end">
+                      <ColorLabel
+                        label="Text"
+                        value={textValue}
+                        setValue={(newTextValue) => setTextValue(newTextValue)}
+                        thisPicker={"text"}
+                        openPicker={openPicker}
+                        setOpenPicker={(thisPicker: pickers) =>
+                          setOpenPicker(thisPicker)
+                        }
+                        closePicker={() => setOpenPicker("null")}
+                      />
+                    </div>
+                    <div className="w-2 h-full border-b border-r border-t border-border rounded-r-md mt-3 z-10 " />
+                    <div className="w-2 h-full border-r border-border " />
+                  </div>
+                </div>
+
+                <div className="bg-bg-card rounded-t-lg p-2  border border-border border-b-transparent shadow-md">
+                  <p className="font-bold">Hello!</p>
+                  <small className="">
+                    Welcome to Leaflet. It&apos;s a super easy and fun way to
+                    make, share, and collab on little bits of paper
+                  </small>
                 </div>
               </div>
-
-              <div className="bg-bg-card rounded-t-lg p-2  border border-border border-b-transparent shadow-md">
-                <p className="font-bold">Hello!</p>
-                <small className="">
-                  Welcome to Leaflet. It&apos;s a super easy and fun way to
-                  make, share, and collab on little bits of paper
-                </small>
-              </div>
             </div>
-          </div>
 
-          <Popover.Arrow />
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+            <Popover.Arrow />
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
+    </>
   );
 };
 
