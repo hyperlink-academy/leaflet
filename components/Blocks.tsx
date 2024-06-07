@@ -145,7 +145,11 @@ export type BlockProps = {
 };
 
 function Block(props: Block & BlockProps) {
-  let selected = useUIState((s) => s.selectedBlock.includes(props.entityID));
+  let selected = useUIState(
+    (s) =>
+      (props.type !== "text" || s.selectedBlock.length > 1) &&
+      s.selectedBlock.includes(props.entityID),
+  );
   let { rep } = useReplicache();
 
   useEffect(() => {
