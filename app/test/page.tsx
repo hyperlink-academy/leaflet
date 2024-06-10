@@ -34,7 +34,7 @@ export default function Index() {
         backgroundSize: !pageBGImage.repeat ? "cover" : pageBGImage.size,
       }}
     >
-      {isMobile ?? <div>hi</div>}
+      {isMobile && <div>hi</div>}
       <div
         className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex "
         id="card-carousel"

@@ -38,15 +38,11 @@ export const ThemePopover = (props: {
   pageBGImage: imageArgs;
   setPageBGImage: (imageArgs: Partial<imageArgs>) => void;
 }) => {
-  let [pageValue, setPageValue] = useState(parseColor("hsl(198, 100%, 96%)"));
-  let [cardValue, setCardValue] = useState(parseColor("hsl(0, 100%, 100%)"));
-  let [textValue, setTextValue] = useState(parseColor("hsl(0, 100%, 15%)"));
-  let [accentValue, setAccentValue] = useState(
-    parseColor("hsl(240, 100%, 50%)"),
-  );
-  let [accentTextValue, setAccentTextValue] = useState(
-    parseColor("hsl(1, 100%, 100%)"),
-  );
+  let [pageValue, setPageValue] = useState(parseColor("#F0F7FA"));
+  let [cardValue, setCardValue] = useState(parseColor("#FFFFFF"));
+  let [textValue, setTextValue] = useState(parseColor("#272727"));
+  let [accentValue, setAccentValue] = useState(parseColor("#0000FF"));
+  let [accentTextValue, setAccentTextValue] = useState(parseColor("#FFFFFF"));
   let [openPicker, setOpenPicker] = useState<pickers>("page");
 
   useEffect(() => {
