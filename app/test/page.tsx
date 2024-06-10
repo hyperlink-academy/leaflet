@@ -22,41 +22,44 @@ export default function Index() {
     repeat: true,
     size: 500,
   });
+  let [optionsOpen, setOptionsOpen] = useState(false);
 
   let isMobile = useIsMobile();
+  let isKeyboardUp = false;
 
   return (
     <div
-      className="pageWrapper h-screen flex flex-col bg-cover bg-center bg-no-repeat"
+      className="pageWrapper h-screen flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
       style={{
         backgroundImage: `url(${pageBGImage.url})`,
         backgroundRepeat: pageBGImage.repeat ? "repeat" : "no-repeat",
         backgroundSize: !pageBGImage.repeat ? "cover" : pageBGImage.size,
       }}
     >
-      {isMobile && <div>hi</div>}
       <div
-        className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex "
+        className="pageContentWrapper w-full relative overflow-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex "
         id="card-carousel"
       >
-        <div className="pageContent flex py-2 sm:py-6">
+        <div className="pageContent flex pt-2 pb-8 sm:py-6">
           <div
             className="flex justify-end items-start"
             style={{ width: `calc((100vw - ${cardWidth}px)/2)` }}
           >
             {!isMobile && (
-              <PageHeader
-                pageBGImage={pageBGImage}
-                setPageBGImage={(imageArgs) =>
-                  setPageBGImage((s) => ({ ...s, ...imageArgs }))
-                }
-              />
+              <div className="flex flex-col gap-2 mr-4 mt-2">
+                <PageHeader
+                  pageBGImage={pageBGImage}
+                  setPageBGImage={(imageArgs) =>
+                    setPageBGImage((s) => ({ ...s, ...imageArgs }))
+                  }
+                />
+              </div>
             )}
           </div>
 
           {cards.map((card, index) => (
             <div
-              className="flex items-stretch"
+              className="flex items-stretch "
               key={index}
               ref={index === 0 ? cardRef : null}
             >
@@ -79,6 +82,21 @@ export default function Index() {
           <div style={{ width: `calc((100vw - ${cardWidth}px)/2)` }} />
         </div>
       </div>
+      {/* can we remove this if keyboard is up??? */}
+      {isMobile && !isKeyboardUp && (
+        <div className="w-full pb-2 px-2 -mt-6 flex gap-2 flex-row-reverse items-center z-10">
+          <PageHeader
+            pageBGImage={pageBGImage}
+            setPageBGImage={(imageArgs) =>
+              setPageBGImage((s) => ({ ...s, ...imageArgs }))
+            }
+          />
+        </div>
+      )}
+
+      {isMobile && isKeyboardUp && (
+        <div>bold italic underline, link, h1, h2, h3, list options</div>
+      )}
     </div>
   );
 }

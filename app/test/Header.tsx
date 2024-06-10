@@ -1,4 +1,4 @@
-import { HomeMedium, ShareSmall } from "../../components/Icons";
+import { ShareSmall } from "../../components/Icons";
 import * as Popover from "@radix-ui/react-popover";
 import { ThemePopover } from "./ThemeSetter";
 import { imageArgs } from "./page";
@@ -8,14 +8,14 @@ export const PageHeader = (props: {
   setPageBGImage: (imageArgs: Partial<imageArgs>) => void;
 }) => {
   return (
-    <div className="pageHeader p-1.5 flex flex-col gap-1.5 place-items-center rounded-full mr-4 bg-accentText border border-border">
+    <>
       <InvitePopover />
 
       <ThemePopover
         pageBGImage={props.pageBGImage}
         setPageBGImage={props.setPageBGImage}
       />
-    </div>
+    </>
   );
 };
 
