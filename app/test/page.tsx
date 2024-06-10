@@ -4,6 +4,7 @@ import { useState } from "react";
 import useMeasure from "react-use-measure";
 import { PageHeader } from "./Header";
 import { Card } from "./Card";
+import useIsMobile from "src/hooks/isMobile";
 
 export type imageArgs = {
   url: string;
@@ -22,30 +23,35 @@ export default function Index() {
     size: 500,
   });
 
+  let isMobile = useIsMobile();
+
   return (
     <div
-      className="pageWrapper h-screen flex flex-col pt-4 bg-cover bg-center bg-no-repeat"
+      className="pageWrapper h-screen flex flex-col bg-cover bg-center bg-no-repeat"
       style={{
         backgroundImage: `url(${pageBGImage.url})`,
         backgroundRepeat: pageBGImage.repeat ? "repeat" : "no-repeat",
         backgroundSize: !pageBGImage.repeat ? "cover" : pageBGImage.size,
       }}
     >
+      {isMobile ?? <div>hi</div>}
       <div
         className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex "
         id="card-carousel"
       >
-        <div className="pageContent flex py-4">
+        <div className="pageContent flex py-2 sm:py-6">
           <div
             className="flex justify-end items-start"
             style={{ width: `calc((100vw - ${cardWidth}px)/2)` }}
           >
-            <PageHeader
-              pageBGImage={pageBGImage}
-              setPageBGImage={(imageArgs) =>
-                setPageBGImage((s) => ({ ...s, ...imageArgs }))
-              }
-            />
+            {!isMobile && (
+              <PageHeader
+                pageBGImage={pageBGImage}
+                setPageBGImage={(imageArgs) =>
+                  setPageBGImage((s) => ({ ...s, ...imageArgs }))
+                }
+              />
+            )}
           </div>
 
           {cards.map((card, index) => (

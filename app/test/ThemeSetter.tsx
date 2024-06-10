@@ -89,13 +89,13 @@ export const ThemePopover = (props: {
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content
-            className="w-80 max-h-[800px] overflow-y-scroll bg-white rounded-md border border-border flex"
+            className="w-80 max-h-[800px] p-2 overflow-y-scroll bg-white rounded-md border border-border flex"
             align="center"
             sideOffset={4}
             collisionPadding={16}
           >
-            <div className="flex flex-col w-full ">
-              <div className="themeBGPage flex mt-3 pr-2 pl-3 items-start ">
+            <div className="flex flex-col w-full overflow-hidden ">
+              <div className="themeBGPage flex pt-1 pr-2 pl-3 items-start">
                 <ColorLabel
                   label="Background"
                   value={pageValue}
@@ -219,7 +219,12 @@ const ColorLabel = (props: {
     "w-4 h-4 rounded-full border-2 border-white shadow-[0_0_0_1px_black,_inset_0_0_0_1px_black]";
   return (
     <SpectrumColorPicker value={props.value} onChange={props.setValue}>
-      <div className="flex flex-col w-full">
+      <button
+        className="flex flex-col w-full"
+        onClick={() => {
+          props.setOpenPicker(props.thisPicker);
+        }}
+      >
         <div className="flex gap-1 items-center place-self-end pb-2">
           <strong className="text-primary">{props.label}</strong>
           <div className="flex">
@@ -256,7 +261,7 @@ const ColorLabel = (props: {
           </button>
         </div>
         {props.openPicker === props.thisPicker && (
-          <div className="flex flex-col gap-2 pb-3">
+          <div className="w-full flex flex-col gap-2 pb-3">
             <ColorArea
               className="w-full h-[128px] rounded-md"
               colorSpace="hsb"
@@ -272,7 +277,7 @@ const ColorLabel = (props: {
             </ColorSlider>
           </div>
         )}
-      </div>
+      </button>
     </SpectrumColorPicker>
   );
 };
