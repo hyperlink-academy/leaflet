@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   CardSmall,
+  CloseConstrastSmall,
   CloseTiny,
   ImageSmall,
   LinkSmall,
@@ -58,9 +59,12 @@ const BlockTypeSelector = (props: { focus: boolean; empty: boolean }) => {
 export const ImageBlock = (props: { src: string; cardHeight: number }) => {
   return (
     <div className="pb-4 pt-2 relative group/image flex w-fit place-self-center justify-center">
-      <div className="absolute right-2 top-6 z-10 hidden group-hover/image:block">
-        <ImageRemoveButton />
-      </div>
+      <button className="absolute right-2 top-6 z-10 hidden group-hover/image:block">
+        <CloseConstrastSmall
+          fill={theme.colors.primary}
+          outline={theme.colors["bg-card"]}
+        />{" "}
+      </button>
       <img
         src={props.src}
         alt="image"
@@ -107,7 +111,7 @@ export const CardBlock = (props: {
   return (
     <div
       ref={blockRef}
-      className="cardBlockWrapper relative group w-full h-[104px] mb-3 border bg-bg-card border-border outline outline-1 outline-transparent hover:outline-border rounded-lg flex overflow-hidden"
+      className="cardBlockWrapper relative group w-full h-[104px] mb-3 border  border-border outline outline-1 outline-transparent hover:outline-border rounded-lg flex overflow-hidden"
     >
       {/*
         all headers are reduced to h3 styling to keep the card block consistent and legible
@@ -204,125 +208,3 @@ export const ExternalLinkBlock = () => {
     </a>
   );
 };
-
-// export const CardBlockLarge = (props: {
-//   children: React.ReactNode;
-//   fontSize: string;
-//   imgSrc?: string;
-//   cardHeight?: number;
-// }) => {
-//   let [blockRef, { width: blockWidth }] = useMeasure();
-
-//   return (
-//     <div
-//       ref={blockRef}
-//       className="cardBlockWrapper w-full mb-3 border bg-bg-card border-border outline outline-1 outline-transparent hover:outline-border rounded-lg flex flex-col overflow-hidden"
-//       style={{ maxHeight: blockWidth }}
-//     >
-//       {props.imgSrc && (
-//         <div className="w-full h-fit max-h-full flex overflow-hidden">
-//           <img
-//             src={props.imgSrc}
-//             className={`w-max relative place-self-center`}
-//           />
-//         </div>
-//       )}
-
-//       <div className="flex items-center p-2">
-//         <div
-//           className={`w-full grow ${
-//             props.fontSize === "h1"
-//               ? "text-lg font-bold line-clamp-1"
-//               : props.fontSize === "h2"
-//                 ? "text-base font-bold line-clamp-1"
-//                 : props.fontSize === "h3"
-//                   ? "text-sm font-bold italic line-clamp-2"
-//                   : props.fontSize === "p"
-//                     ? "text-sm line-clamp-2"
-//                     : ""
-//           }`}
-//         >
-//           {props.children}
-//         </div>
-
-//         <div className="shrink-0 opacity-30 hover:text-accent hover:opacity-100">
-//           <CloseTiny />
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export const ExternalLinkBlockLarge = () => {
-//   let [title, setTitle] = useState("Title");
-//   let [description, setDescription] = useState(
-//     "hello, this is a little description. I want it to be a little bit long so that I can see if it wrapping around",
-//   );
-
-//   return (
-//     <a
-//       href="www.google.com"
-//       className="externalLinkBlock group flex flex-col rounded-lg  mb-4 mt-1"
-//     >
-//       <div className="flex justify-between items-center">
-//         <div className="group-hover:font-bold text-sm text-accent italic">
-//           https://www.flickr.com/photos/biodivlibrary/
-//         </div>
-//         <div className="flex gap-2 justify-end text-sm text-primary">
-//           <button
-//             className="hover:opacity-100 hover:text-accent opacity-30"
-//             style={{ display: title === "" ? "block" : "none" }}
-//           >
-//             + title
-//           </button>
-//           <button
-//             className="hover:opacity-100 hover:text-accent opacity-30"
-//             style={{ display: description === "" ? "block" : "none" }}
-//           >
-//             + description
-//           </button>
-//         </div>
-//       </div>
-//       <div
-//         className={`
-//           mb-1
-//           border border-border hover:border-accent
-//           outline outline-1 outline-transparent group-hover:outline-accent
-//           flex flex-col
-//           rounded-lg
-//           overflow-hidden
-//           `}
-//       >
-//         <img src="./test-link.png" className="linkBlockPreviewImg" />
-
-//         <textarea
-//           // when this textarea is replaced a  responsive one,
-//           // make it such that the text area is only as wide as it's contents
-//           // such that click anything but the literaly words of the title and description will nav you to the link
-//           // and clicking the title or description will allow you to edit them
-//           className={`linkBlockTitle mt-2 p-0 px-2 border-none text-base font-bold outline-none resize-none align-top border h-[24px]`}
-//           defaultValue={title}
-//           onClick={(e) => {
-//             e.preventDefault();
-//             e.stopPropagation();
-//           }}
-//           onChange={(e) => {
-//             setTitle(e.target.value);
-//           }}
-//         />
-
-//         <textarea
-//           className={`linkBlockDescription pt-0 px-2 mb-2 text-sm border-none outline-none resize-none align-top h-[40px]`}
-//           defaultValue={description}
-//           onClick={(e) => {
-//             e.preventDefault();
-//             e.stopPropagation();
-//           }}
-//           onChange={(e) => {
-//             setDescription(e.target.value);
-//           }}
-//         />
-//       </div>
-//     </a>
-//   );
-// };

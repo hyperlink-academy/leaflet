@@ -4,13 +4,14 @@
 
 @layer base {
   :root {
-    --bg-page: #f0f7fa;
-    --bg-card: #ffffff;
+    --bg-page: 240, 247, 250;
+    --bg-card: 255, 255, 255;
+    --bg-card-alpha: 1;
 
-    --primary: #272727;
+    --primary: 39, 39, 39;
 
-    --accent: #0000ff;
-    --accent-text: #ffffff;
+    --accent: 0, 0, 225;
+    --accent-text: 255, 255, 255;
   }
 
   html,

@@ -27,10 +27,13 @@ export const Card = (props: {
           grow flex flex-col
           overflow-y-scroll no-scrollbar
           snap-center
-          bg-bg-card rounded-lg border
+          rounded-lg border
           ${props.focused ? "shadow-md border-border" : "border-border-light"}
 
         `}
+        style={{
+          backgroundColor: "rgba(var(--bg-card), var(--bg-card-alpha))",
+        }}
       >
         <CardContent cardHeight={props.cardHeight} />
       </div>

@@ -18,22 +18,22 @@ module.exports = {
       current: "currentColor",
 
       //TEXT COLORS.
-      "primary" : "var(--primary)",
+      "primary" : "rgb(var(--primary))",
       "secondary": "#595959",
-      "tertiary": "var(--primary)",
+      "tertiary": "rgb(var(--primary))",
       "border": "#CCCCCC",
       "border-light": "#E6E6E6",
 
       white: "#FFFFFF",
 
       //ACCENT COLORS
-      "accent": "var(--accent)",
-      "accentText": "var(--accent-text)",
+      "accent": "rgb(var(--accent))",
+      "accentText": "rgb(var(--accent-text))",
 
 
       //BG COLORS (defined as css variables in global.css)
-      "bg-page": "var(--bg-page)",
-      "bg-card": "var(--bg-card)",
+      "bg-page": "rgb(var(--bg-page))",
+      "bg-card": "rgb(var(--bg-card))",
 
       //DO NOT USE IN PRODUCTION. Test colors to aid development, ie, setting bg color on element to see edges of div. DO. NOT. USE. IN. PRODUCTION
       "test": "#E18181",

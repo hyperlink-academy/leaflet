@@ -14,6 +14,7 @@
     "@baselime/node-opentelemetry": "^0.5.8",
     "@nytimes/react-prosemirror": "^0.6.1",
     "@radix-ui/react-popover": "^1.0.7",
+    "@radix-ui/react-slider": "^1.1.2",
     "@supabase/ssr": "^0.3.0",
     "@supabase/supabase-js": "^2.43.2",
     "@vercel/kv": "^1.0.1",
