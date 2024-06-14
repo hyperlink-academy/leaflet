@@ -219,9 +219,9 @@ export function BlockOptions(props: {
     <div className="absolute top-0 right-0  hidden group-hover/text:block group-focus-within/text:block">
       <div className="flex gap-1">
         <label className="hover:cursor-pointer ">
-          <button className="opacity-30 hover:opacity-100 hover:text-accent">
+          <div className="opacity-30 hover:opacity-100 hover:text-accent">
             <ImageSmall />
-          </button>
+          </div>
           <div className="hidden">
             <input
               type="file"
