@@ -22,6 +22,10 @@ export const useUIState = create(
         set((state) => {
           return { ...state, selectedBlock: [block] };
         }),
+      setSelectedBlocks: (blocks: string[]) =>
+        set((state) => {
+          return { ...state, selectedBlock: blocks };
+        }),
       addBlockToSelection: (block: string) =>
         set((state) => {
           if (state.selectedBlock.includes(block)) return state;

@@ -11,8 +11,6 @@ export function SelectionManager() {
   let moreThanOneSelected = useUIState((s) => s.selectedBlock.length > 1);
   useEffect(() => {
     if (moreThanOneSelected) {
-      (document.activeElement as HTMLElement | null)?.blur();
-      window.getSelection()?.removeAllRanges();
     }
   }, [moreThanOneSelected]);
   let dragStart = useSelectingMouse((s) => s.start);
@@ -74,7 +72,7 @@ export function SelectionManager() {
   }, [dragStart]);
   return null;
 }
-function saveSelection() {
+export function saveSelection() {
   let selection = window.getSelection();
   if (selection && selection.rangeCount > 0) {
     let ranges: Range[] = [];
@@ -85,7 +83,7 @@ function saveSelection() {
   }
   return [];
 }
-function restoreSelection(savedRanges: Range[]) {
+export function restoreSelection(savedRanges: Range[]) {
   if (savedRanges) {
     let selection = window.getSelection() || new Selection();
     selection.removeAllRanges();

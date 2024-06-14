@@ -22,7 +22,6 @@ export default async function DocumentPage(props: {
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
   return (
     <ReplicacheProvider name={props.params.doc_id} initialFacts={initialFacts}>
-      <SelectionManager />
       <Cards rootCard={props.params.doc_id} />
     </ReplicacheProvider>
   );

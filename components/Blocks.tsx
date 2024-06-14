@@ -7,11 +7,15 @@ import {
   useEditorStates,
 } from "components/TextBlock";
 import { generateKeyBetween } from "fractional-indexing";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSubscribe } from "replicache-react";
 import { elementId } from "src/utils/elementId";
 import { TextSelection } from "prosemirror-state";
-import { useSelectingMouse } from "components/SelectionManager";
+import {
+  restoreSelection,
+  saveSelection,
+  useSelectingMouse,
+} from "components/SelectionManager";
 import { ImageBlock } from "./ImageBlock";
 import { useUIState } from "src/useUIState";
 import { focusCard } from "./Cards";
@@ -23,6 +27,47 @@ export type Block = {
 };
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
+  let ref = useRef<HTMLDivElement | null>(null);
+  let previous = useRef("none");
+  useEffect(() => {
+    let cb = () => {
+      let selection = window.getSelection();
+      if (previous.current !== selection?.type) {
+        let ranges = saveSelection();
+        requestAnimationFrame(() => {
+          restoreSelection(ranges);
+        });
+      }
+      if (selection?.type === "Range") {
+        if (ref.current) ref.current.contentEditable = "true";
+        let range = selection.getRangeAt(0);
+        if (range.startContainer !== range.endContainer) {
+          let contents = range.cloneContents();
+          let entityIDs: string[] = [];
+          for (let child of contents.children) {
+            let entityID = child.getAttribute("entityID");
+            if (entityID) entityIDs.push(entityID);
+          }
+          useUIState.getState().setSelectedBlocks(entityIDs);
+        } else {
+          useUIState.getState().setSelectedBlocks([]);
+        }
+      } else {
+        if (ref.current) ref.current.contentEditable = "false";
+      }
+      previous.current = selection?.type || "None";
+    };
+    document.addEventListener("selectionchange", cb);
+    let pointerUp = () => {
+      if (useUIState.getState().selectedBlock.length > 1)
+        window.getSelection()?.removeAllRanges();
+    };
+    window.addEventListener("pointerup", pointerUp);
+    return () => {
+      window.removeEventListener("pointerup", pointerUp);
+      document.removeEventListener("selectionchange", cb);
+    };
+  }, []);
   let initialValue = useMemo(
     () =>
       rep.initialFacts
@@ -72,7 +117,7 @@ export function Blocks(props: { entityID: string }) {
 
   let lastBlock = blocks[blocks.length - 1];
   return (
-    <div className="w-full flex flex-col gap-1 p-2">
+    <div ref={ref} className="w-full flex flex-col gap-1 p-2 outline-none">
       {blocks.map((f, index, arr) => {
         return (
           <Block
@@ -206,6 +251,7 @@ function Block(props: Block & BlockProps) {
   ]);
   return (
     <div
+      entityID={props.entityID}
       onMouseDown={(e) => {
         if (e.shiftKey) {
           e.preventDefault();
