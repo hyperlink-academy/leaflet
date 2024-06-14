@@ -45,7 +45,7 @@ export function Blocks(props: { entityID: string }) {
           let contents = range.cloneContents();
           let entityIDs: string[] = [];
           for (let child of contents.children) {
-            let entityID = child.getAttribute("entityID");
+            let entityID = child.getAttribute("data-entityID");
             if (entityID) entityIDs.push(entityID);
           }
           useUIState.getState().setSelectedBlocks(entityIDs);
@@ -251,7 +251,7 @@ function Block(props: Block & BlockProps) {
   ]);
   return (
     <div
-      entityID={props.entityID}
+      data-entityID={props.entityID}
       onMouseDown={(e) => {
         if (e.shiftKey) {
           e.preventDefault();
