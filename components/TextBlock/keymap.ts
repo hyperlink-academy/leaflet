@@ -2,7 +2,7 @@ import { BlockProps, focusBlock } from "components/Blocks";
 import { generateKeyBetween } from "fractional-indexing";
 import { toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
-import { TextSelection } from "prosemirror-state";
+import { EditorState, TextSelection, Transaction } from "prosemirror-state";
 import { MutableRefObject } from "react";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
@@ -66,83 +66,100 @@ export const TextBlockKeymap = (
       }
       return true;
     },
-    Backspace: (state) => {
-      if (!propsRef.current.previousBlock) {
-        return false;
-      }
-      if (state.selection.anchor > 1 || state.selection.content().size > 0) {
-        return false;
-      }
+    Backspace: backspace(propsRef, repRef),
+    "Shift-Backspace": backspace(propsRef, repRef),
+    Enter: enter(propsRef, repRef),
+    "Shift-Enter": enter(propsRef, repRef),
+  });
 
-      if (state.doc.textContent.length === 0) {
-        repRef.current?.mutate.removeBlock({
-          blockEntity: propsRef.current.entityID,
-        });
-        if (propsRef.current.previousBlock) {
-          focusBlock(propsRef.current.previousBlock, "end", "bottom");
-        }
-        return true;
-      }
+const backspace =
+  (
+    propsRef: MutableRefObject<BlockProps>,
+    repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+  ) =>
+  (state: EditorState) => {
+    console.log("yo");
+    if (!propsRef.current.previousBlock) {
+      return false;
+    }
+    if (state.selection.anchor > 1 || state.selection.content().size > 0) {
+      return false;
+    }
 
-      let block =
-        useEditorStates.getState().editorStates[
-          propsRef.current.previousBlock.value
-        ];
-      if (!block) return false;
-
+    if (state.doc.textContent.length === 0) {
       repRef.current?.mutate.removeBlock({
         blockEntity: propsRef.current.entityID,
       });
-
-      let tr = block.editor.tr;
-
-      block.view?.dom.focus();
-      let firstChild = state.doc.content.firstChild?.content;
-      if (firstChild) {
-        tr.insert(tr.doc.content.size - 1, firstChild);
-        tr.setSelection(
-          TextSelection.create(
-            tr.doc,
-            tr.doc.content.size - firstChild?.size - 1,
-          ),
-        );
+      if (propsRef.current.previousBlock) {
+        focusBlock(propsRef.current.previousBlock, "end", "bottom");
       }
-
-      let newState = block.editor.apply(tr);
-      setEditorState(propsRef.current.previousBlock.value, {
-        editor: newState,
-      });
-
       return true;
-    },
-    Enter: (state, dispatch) => {
-      let tr = state.tr;
-      let newContent = tr.doc.slice(state.selection.anchor);
-      tr.delete(state.selection.anchor, state.doc.content.size);
-      dispatch?.(tr);
-      let newEntityID = crypto.randomUUID();
-      repRef.current?.mutate.addBlock({
-        newEntityID,
-        parent: propsRef.current.parent,
-        type: "text",
-        position: generateKeyBetween(
-          propsRef.current.position,
-          propsRef.current.nextPosition,
+    }
+
+    let block =
+      useEditorStates.getState().editorStates[
+        propsRef.current.previousBlock.value
+      ];
+    if (!block) return false;
+
+    repRef.current?.mutate.removeBlock({
+      blockEntity: propsRef.current.entityID,
+    });
+
+    let tr = block.editor.tr;
+
+    block.view?.dom.focus();
+    let firstChild = state.doc.content.firstChild?.content;
+    if (firstChild) {
+      tr.insert(tr.doc.content.size - 1, firstChild);
+      tr.setSelection(
+        TextSelection.create(
+          tr.doc,
+          tr.doc.content.size - firstChild?.size - 1,
         ),
-      });
-      setTimeout(() => {
-        let block = useEditorStates.getState().editorStates[newEntityID];
-        if (block) {
-          let tr = block.editor.tr;
-          tr.replaceWith(0, tr.doc.content.size, newContent.content);
-          tr.setSelection(TextSelection.create(tr.doc, 0));
-          let newState = block.editor.apply(tr);
-          setEditorState(newEntityID, {
-            editor: newState,
-          });
-        }
-        document.getElementById(elementId.block(newEntityID).text)?.focus();
-      }, 10);
-      return true;
-    },
-  });
+      );
+    }
+
+    let newState = block.editor.apply(tr);
+    setEditorState(propsRef.current.previousBlock.value, {
+      editor: newState,
+    });
+
+    return true;
+  };
+
+const enter =
+  (
+    propsRef: MutableRefObject<BlockProps>,
+    repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+  ) =>
+  (state: EditorState, dispatch?: (tr: Transaction) => void) => {
+    let tr = state.tr;
+    let newContent = tr.doc.slice(state.selection.anchor);
+    tr.delete(state.selection.anchor, state.doc.content.size);
+    dispatch?.(tr);
+    let newEntityID = crypto.randomUUID();
+    repRef.current?.mutate.addBlock({
+      newEntityID,
+      parent: propsRef.current.parent,
+      type: "text",
+      position: generateKeyBetween(
+        propsRef.current.position,
+        propsRef.current.nextPosition,
+      ),
+    });
+    setTimeout(() => {
+      let block = useEditorStates.getState().editorStates[newEntityID];
+      if (block) {
+        let tr = block.editor.tr;
+        tr.replaceWith(0, tr.doc.content.size, newContent.content);
+        tr.setSelection(TextSelection.create(tr.doc, 0));
+        let newState = block.editor.apply(tr);
+        setEditorState(newEntityID, {
+          editor: newState,
+        });
+      }
+      document.getElementById(elementId.block(newEntityID).text)?.focus();
+    }, 10);
+    return true;
+  };
