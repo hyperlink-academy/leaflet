@@ -9,10 +9,23 @@ export const useSelectingMouse = create(() => ({
 
 export function SelectionManager() {
   let moreThanOneSelected = useUIState((s) => s.selectedBlock.length > 1);
+  let { rep } = useReplicache();
   useEffect(() => {
     if (moreThanOneSelected) {
+      let listener = async (e: KeyboardEvent) => {
+        console.log(e);
+        if (e.key === "Backspace" || e.key === "Delete") {
+          for (let entity of useUIState.getState().selectedBlock) {
+            await rep?.mutate.removeBlock({ blockEntity: entity });
+          }
+        }
+      };
+      window.addEventListener("keydown", listener);
+      return () => {
+        window.removeEventListener("keydown", listener);
+      };
     }
-  }, [moreThanOneSelected]);
+  }, [moreThanOneSelected, rep]);
   let dragStart = useSelectingMouse((s) => s.start);
   let initialContentEditableParent = useRef<null | Node>(null);
   let savedSelection = useRef<Range[] | null>();
@@ -72,6 +85,7 @@ export function SelectionManager() {
   }, [dragStart]);
   return null;
 }
+
 export function saveSelection() {
   let selection = window.getSelection();
   if (selection && selection.rangeCount > 0) {
@@ -83,6 +97,7 @@ export function saveSelection() {
   }
   return [];
 }
+
 export function restoreSelection(savedRanges: Range[]) {
   if (savedRanges) {
     let selection = window.getSelection() || new Selection();
