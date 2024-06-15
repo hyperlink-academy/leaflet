@@ -25,18 +25,19 @@ export type Block = {
   value: string;
   type: Fact<"block/type">["data"]["value"];
 };
+interface ReplayedKeyboardEvent extends KeyboardEvent {
+  replayed: boolean;
+}
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
   let ref = useRef<HTMLDivElement | null>(null);
   let previous = useRef("none");
   useEffect(() => {
-    let cb = () => {
+    let selectionChangeHandler = () => {
       let selection = window.getSelection();
+      let ranges;
       if (previous.current !== selection?.type) {
-        let ranges = saveSelection();
-        requestAnimationFrame(() => {
-          restoreSelection(ranges);
-        });
+        ranges = saveSelection();
       }
       if (selection?.type === "Range") {
         if (ref.current) ref.current.contentEditable = "true";
@@ -55,9 +56,30 @@ export function Blocks(props: { entityID: string }) {
       } else {
         if (ref.current) ref.current.contentEditable = "false";
       }
+      if (previous.current !== selection?.type) {
+        if (ranges) restoreSelection(ranges);
+      }
       previous.current = selection?.type || "None";
     };
-    document.addEventListener("selectionchange", cb);
+    let keyDownHandler = (e: KeyboardEvent) => {
+      let selection = window.getSelection();
+      if (selection?.type !== "Range") return;
+      if ((e as ReplayedKeyboardEvent).replayed) {
+        return;
+      }
+      e.stopPropagation();
+
+      let ranges = saveSelection();
+      if (ref.current) ref.current.contentEditable = "false";
+      restoreSelection(ranges);
+      let newEvent = new KeyboardEvent(e.type, {
+        ...e,
+      }) as ReplayedKeyboardEvent;
+      newEvent.replayed = true;
+      e.target?.dispatchEvent(newEvent);
+    };
+    document.addEventListener("selectionchange", selectionChangeHandler);
+    document.addEventListener("keydown", keyDownHandler, true);
     let pointerUp = () => {
       if (useUIState.getState().selectedBlock.length > 1)
         window.getSelection()?.removeAllRanges();
@@ -65,7 +87,8 @@ export function Blocks(props: { entityID: string }) {
     window.addEventListener("pointerup", pointerUp);
     return () => {
       window.removeEventListener("pointerup", pointerUp);
-      document.removeEventListener("selectionchange", cb);
+      document.removeEventListener("keydown", keyDownHandler, true);
+      document.removeEventListener("selectionchange", selectionChangeHandler);
     };
   }, []);
   let initialValue = useMemo(
