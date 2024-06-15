@@ -78,7 +78,6 @@ const backspace =
     repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
   (state: EditorState) => {
-    console.log("yo");
     if (!propsRef.current.previousBlock) {
       return false;
     }

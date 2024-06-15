@@ -136,13 +136,11 @@ export function BaseTextBlock(props: BlockProps) {
         let currentPosition = propsRef.current.position;
         nodes.content.forEach((node, _, index) => {
           if (index === 0) return;
-          console.log(node);
           let newEntityID = crypto.randomUUID();
           currentPosition = generateKeyBetween(
             propsRef.current.position,
             propsRef.current.nextPosition,
           );
-          console.log(repRef.current);
           repRef.current?.mutate.addBlock({
             newEntityID,
             parent: propsRef.current.parent,
@@ -154,7 +152,6 @@ export function BaseTextBlock(props: BlockProps) {
             if (block) {
               let tr = block.editor.tr;
               let newNode = schema.nodeFromJSON(node.toJSON());
-              console.log(newNode);
               tr.replaceWith(0, tr.doc.content.size, newNode.content);
               let newState = block.editor.apply(tr);
               setEditorState(newEntityID, {

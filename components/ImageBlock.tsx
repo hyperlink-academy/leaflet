@@ -7,7 +7,6 @@ import { useUIState } from "src/useUIState";
 export function ImageBlock(props: BlockProps) {
   let rep = useReplicache();
   let image = useEntity(props.entityID, "block/image");
-  console.log(image);
   if (image?.data.local && image.data.local !== rep.rep?.clientID)
     return (
       <div
