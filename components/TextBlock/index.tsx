@@ -23,9 +23,10 @@ import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 import { addImage } from "src/utils/addImage";
 import { BlockProps } from "components/Blocks";
 import { TextBlockKeymap } from "./keymap";
-import { schema } from "./schema";
+import { multiBlockSchema, schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { CardSmall, ImageSmall } from "components/Icons";
+import { DOMParser as ProsemirrorDOMParser } from "prosemirror-model";
 
 export let useEditorStates = create(() => ({
   lastXPosition: 0,
@@ -122,6 +123,83 @@ export function BaseTextBlock(props: BlockProps) {
 
   return (
     <ProseMirror
+      handlePaste={(view, e) => {
+        if (!rep.rep) return;
+        if (!e.clipboardData) return;
+        let text = e.clipboardData.getData("text/html");
+        let editorState =
+          useEditorStates.getState().editorStates[props.entityID];
+        if (!editorState) return;
+        const parser = ProsemirrorDOMParser.fromSchema(multiBlockSchema);
+        let xml = new DOMParser().parseFromString(text, "text/html");
+        let nodes = parser.parse(xml);
+        let currentPosition = propsRef.current.position;
+        nodes.content.forEach((node, _, index) => {
+          if (index === 0) return;
+          console.log(node);
+          let newEntityID = crypto.randomUUID();
+          currentPosition = generateKeyBetween(
+            propsRef.current.position,
+            propsRef.current.nextPosition,
+          );
+          console.log(repRef.current);
+          repRef.current?.mutate.addBlock({
+            newEntityID,
+            parent: propsRef.current.parent,
+            type: "text",
+            position: currentPosition,
+          });
+          setTimeout(() => {
+            let block = useEditorStates.getState().editorStates[newEntityID];
+            if (block) {
+              let tr = block.editor.tr;
+              let newNode = schema.nodeFromJSON(node.toJSON());
+              console.log(newNode);
+              tr.replaceWith(0, tr.doc.content.size, newNode.content);
+              let newState = block.editor.apply(tr);
+              setEditorState(newEntityID, {
+                editor: newState,
+              });
+            }
+          }, 10);
+        });
+
+        for (let item of e.clipboardData.items) {
+          if (item?.type.includes("image")) {
+            let file = item.getAsFile();
+            if (file) {
+              let entity: string;
+              if (editorState.editor.doc.textContent.length === 0) {
+                entity = props.entityID;
+                rep.rep.mutate.assertFact({
+                  entity: props.entityID,
+                  attribute: "block/type",
+                  data: { type: "block-type-union", value: "image" },
+                });
+                if (factID) rep.rep.mutate.retractFact({ factID: factID });
+              } else {
+                entity = crypto.randomUUID();
+                rep.rep.mutate.addBlock({
+                  type: "image",
+                  newEntityID: entity,
+                  parent: props.parent,
+                  position: generateKeyBetween(
+                    props.position,
+                    props.nextPosition,
+                  ),
+                });
+              }
+              addImage(file, rep.rep, {
+                entityID: entity,
+              });
+            }
+            return;
+          }
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       mount={mount}
       state={editorState}
       dispatchTransaction={(tr) => {
@@ -144,50 +222,7 @@ export function BaseTextBlock(props: BlockProps) {
         onFocus={() => {
           useUIState.getState().setSelectedBlock(props.entityID);
         }}
-        onKeyDown={(e) => {}}
-        onPaste={async (e) => {
-          if (!rep.rep) return;
-          for (let item of e.clipboardData.items) {
-            if (item?.type.includes("image")) {
-              let file = item.getAsFile();
-              if (file) {
-                let editorState =
-                  useEditorStates.getState().editorStates[props.entityID];
-                let entity: string;
-                if (
-                  editorState &&
-                  editorState.editor.doc.textContent.length === 0
-                ) {
-                  entity = props.entityID;
-                  await rep.rep.mutate.assertFact({
-                    entity: props.entityID,
-                    attribute: "block/type",
-                    data: { type: "block-type-union", value: "image" },
-                  });
-                  if (factID)
-                    await rep.rep.mutate.retractFact({ factID: factID });
-                } else {
-                  entity = crypto.randomUUID();
-                  await rep.rep.mutate.addBlock({
-                    type: "image",
-                    newEntityID: entity,
-                    parent: props.parent,
-                    position: generateKeyBetween(
-                      props.position,
-                      props.nextPosition,
-                    ),
-                  });
-                }
-                await addImage(file, rep.rep, {
-                  entityID: entity,
-                });
-              }
-              return;
-            }
-          }
-          e.preventDefault();
-          e.stopPropagation();
-        }}
+        onPaste={async (e) => {}}
         id={elementId.block(props.entityID).text}
         className={`textBlock w-full p-0 border-none outline-none resize-none align-top bg-transparent whitespace-pre-wrap`}
         ref={setMount}

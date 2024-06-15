@@ -1,7 +1,7 @@
 import { Schema } from "prosemirror-model";
 import { marks } from "prosemirror-schema-basic";
 
-export const schema = new Schema({
+let baseSchema = {
   marks: {
     strong: marks.strong,
     em: marks.em,
@@ -12,10 +12,16 @@ export const schema = new Schema({
       content: "inline*",
       group: "block",
       parseDOM: [{ tag: "p" }],
-      toDOM: () => ["p", 0],
+      toDOM: () => ["p", 0] as const,
     },
     text: {
       group: "inline",
     },
   },
+};
+export const schema = new Schema(baseSchema);
+
+export const multiBlockSchema = new Schema({
+  marks: baseSchema.marks,
+  nodes: { ...baseSchema.nodes, doc: { content: "block+" } },
 });
