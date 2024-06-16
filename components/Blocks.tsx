@@ -19,6 +19,7 @@ import {
 import { ImageBlock } from "./ImageBlock";
 import { useUIState } from "src/useUIState";
 import { focusCard } from "./Cards";
+import { CardBlock } from "./CardBlock";
 
 export type Block = {
   position: string;
@@ -210,9 +211,9 @@ export type BlockProps = {
   nextBlock: Block | null;
   previousBlock: Block | null;
   nextPosition: string | null;
-};
+} & Block;
 
-function Block(props: Block & BlockProps) {
+function Block(props: BlockProps) {
   let selected = useUIState(
     (s) =>
       (props.type !== "text" || s.selectedBlock.length > 1) &&
@@ -305,19 +306,7 @@ function Block(props: Block & BlockProps) {
       id={elementId.block(props.entityID).container}
     >
       {props.type === "card" ? (
-        <div
-          className={`border w-full rounded-[4px]`}
-          onClick={() => {
-            useUIState.getState().openCard(props.parent, props.entityID);
-            focusCard(props.entityID);
-          }}
-        >
-          <div
-            className={`p-2 rounded-[3px] border ${!selected ? "border-transparent" : ""}`}
-          >
-            a card{" "}
-          </div>
-        </div>
+        <CardBlock {...props} />
       ) : props.type === "text" ? (
         <TextBlock {...props} />
       ) : props.type === "image" ? (
@@ -332,13 +321,13 @@ export function focusBlock(
   left: number | "end" | "start",
   top: "top" | "bottom",
 ) {
-  if (block.type === "image") {
-    useUIState.getState().setSelectedBlock(block.value);
-    return true;
-  }
   document
     .getElementById(elementId.block(block.value).container)
     ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  if (block.type === "image" || block.type === "card") {
+    useUIState.getState().setSelectedBlock(block.value);
+    return true;
+  }
   let nextBlockID = block.value;
   let nextBlock = useEditorStates.getState().editorStates[nextBlockID];
   if (!nextBlock || !nextBlock.view) return;

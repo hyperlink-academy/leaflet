@@ -69,11 +69,8 @@ export function TextBlock(props: BlockProps) {
   );
 }
 
-function RenderedTextBlock(props: { entityID: string }) {
-  let { initialFacts } = useReplicache();
-  let initialFact = initialFacts.find(
-    (f) => f.entity === props.entityID && f.attribute === "block/text",
-  ) as Fact<"block/text"> | undefined;
+export function RenderedTextBlock(props: { entityID: string }) {
+  let initialFact = useEntity(props.entityID, "block/text");
   if (!initialFact) return <pre className="min-h-6" />;
   let doc = new Y.Doc();
   const update = base64.toByteArray(initialFact.data.value);
