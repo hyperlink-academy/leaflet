@@ -21,6 +21,7 @@ import {
   BlockLinkSmall,
   BlockCardSmall,
   BlockSmall,
+  CheckTiny,
 } from "components/Icons";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
@@ -52,7 +53,7 @@ let useTextState = create(
         set(() => ({ header: newHeader })),
       setList: (newList: "ordered" | "unordered" | "none") =>
         set(() => ({ list: newList })),
-      setLink: (newLink: string) => set(() => ({ link: newLink })),
+      setLink: (newLink: string | undefined) => set(() => ({ link: newLink })),
     }),
   ),
 );
@@ -148,24 +149,7 @@ export const TextToolbar = () => {
           </ToolbarButton>
         </>
       ) : toolbarState === "link" ? (
-        <>
-          <ToolbarButton
-            active={state.link !== undefined && state.link !== ""}
-            onClick={() => setToolbarState("default")}
-          >
-            <LinkTextToolbarSmall />
-          </ToolbarButton>
-          <Separator />
-          <input
-            className="w-full grow bg-transparent border-none outline-none "
-            placeholder="www.leafl.et"
-            value={state.link}
-            onChange={(e) => state.setLink(e.target.value)}
-          />
-          <button onClick={() => setToolbarState("default")}>
-            <CloseTiny />
-          </button>
-        </>
+        <LinkToolbar onClose={() => setToolbarState("default")} />
       ) : toolbarState === "header" ? (
         <HeaderToolbar onClose={() => setToolbarState("default")} />
       ) : toolbarState === "list" ? (
@@ -174,6 +158,42 @@ export const TextToolbar = () => {
         <BlockToolbar onClose={() => setToolbarState("default")} />
       ) : null}
     </>
+  );
+};
+
+const LinkToolbar = (props: { onClose: () => void }) => {
+  let state = useTextState();
+  let [linkValue, setLinkValue] = useState(state.link);
+  return (
+    <div className=" w-full flex items-center gap-[6px]">
+      <ToolbarButton
+        active={state.link !== undefined && state.link !== ""}
+        onClick={() => props.onClose}
+      >
+        <LinkTextToolbarSmall />
+      </ToolbarButton>
+      <Separator />
+      <input
+        className="w-full grow bg-transparent border-none outline-none "
+        placeholder="www.leafl.et"
+        value={linkValue}
+        onChange={(e) => setLinkValue(e.target.value)}
+      />
+      <div className="flex items-center gap-3">
+        <button
+          className="hover:text-accent"
+          onClick={() => {
+            state.setLink(linkValue);
+            props.onClose();
+          }}
+        >
+          <CheckTiny />
+        </button>
+        <button className="hover:text-accent" onClick={() => props.onClose()}>
+          <CloseTiny />
+        </button>
+      </div>
+    </div>
   );
 };
 
@@ -200,34 +220,44 @@ const HeaderToolbar = (props: { onClose: () => void }) => {
         </ToolbarButton>
         <Separator />
         <ToolbarButton
-          onClick={() => state.setHeader("h1")}
+          onClick={() => {
+            state.setHeader("h1");
+            props.onClose();
+          }}
           active={state.header === "h1"}
         >
           <Header1Small />
         </ToolbarButton>
         <ToolbarButton
-          onClick={() => state.setHeader("h2")}
+          onClick={() => {
+            state.setHeader("h2");
+            props.onClose();
+          }}
           active={state.header === "h2"}
         >
           <Header2Small />
         </ToolbarButton>
         <ToolbarButton
-          onClick={() => state.setHeader("h3")}
+          onClick={() => {
+            state.setHeader("h3");
+            props.onClose();
+          }}
           active={state.header === "h3"}
         >
           <Header3Small />
         </ToolbarButton>
         <ToolbarButton
-          onClick={() => state.setHeader("p")}
+          onClick={() => {
+            state.setHeader("p");
+            props.onClose();
+          }}
           active={state.header === "p"}
           className="px-[6px]"
         >
           Paragraph
         </ToolbarButton>
       </div>
-      <button onClick={() => props.onClose()}>
-        <CloseTiny />
-      </button>
+      <CloseToolbarButton onClose={props.onClose} />
     </div>
   );
 };
@@ -250,13 +280,19 @@ const ListToolbar = (props: { onClose: () => void }) => {
         </ToolbarButton>
         <Separator />
         <ToolbarButton
-          onClick={() => state.setList("unordered")}
+          onClick={() => {
+            state.setList("unordered");
+            props.onClose();
+          }}
           active={state.list === "unordered"}
         >
           <ListUnorderedSmall />
         </ToolbarButton>
         <ToolbarButton
-          onClick={() => state.setList("ordered")}
+          onClick={() => {
+            state.setList("ordered");
+            props.onClose();
+          }}
           active={state.list === "ordered"}
         >
           <ListOrderedSmall />
@@ -270,9 +306,7 @@ const ListToolbar = (props: { onClose: () => void }) => {
           <ListIndentDecreaseSmall />
         </ToolbarButton>
       </div>
-      <button onClick={() => props.onClose()}>
-        <CloseTiny />
-      </button>
+      <CloseToolbarButton onClose={props.onClose} />
     </div>
   );
 };
@@ -295,9 +329,7 @@ const BlockToolbar = (props: { onClose: () => void }) => {
           <BlockCardSmall />
         </ToolbarButton>
       </div>
-      <button onClick={() => props.onClose()}>
-        <CloseTiny />
-      </button>
+      <CloseToolbarButton onClose={props.onClose} />
     </div>
   );
 };
@@ -324,4 +356,12 @@ const ToolbarButton = (props: {
 
 const Separator = () => {
   return <div className="h-6 border-r border-border" />;
+};
+
+const CloseToolbarButton = (props: { onClose: () => void }) => {
+  return (
+    <button className="hover:text-accent" onClick={() => props.onClose()}>
+      <CloseTiny />
+    </button>
+  );
 };
