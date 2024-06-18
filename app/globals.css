@@ -66,6 +66,11 @@
   pre {
     font-family: "Quattro" !important;
   }
+
+  ::placeholder {
+    @apply text-tertiary;
+    @apply italic;
+  }
   /*END FONT STYLING*/
 
   /* START GLOBAL STYLING */

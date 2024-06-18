@@ -24,7 +24,7 @@ import {
   useState,
 } from "react";
 import { imageArgs } from "./page";
-import { CloseConstrastSmall, ImageSmall } from "components/Icons";
+import { CloseConstrastSmall, BlockImageSmall } from "components/Icons";
 
 function setCSSVariableToColor(name: string, value: Color) {
   let colorStringLength = value.toString("rgb").length;
@@ -372,7 +372,7 @@ const BGImagePicker = (props: {
   return !bgImageExists ? (
     //replace this with a file picker button
     <div className="flex gap-2 w-full text-border items-center">
-      <ImageSmall />
+      <BlockImageSmall />
       <input
         className="w-full text-primary bg-transparent border border-border rounded-md"
         type="text"

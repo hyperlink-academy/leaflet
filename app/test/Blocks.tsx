@@ -1,9 +1,9 @@
 import { useState } from "react";
 import {
-  CardSmall,
+  BlockCardSmall,
   CloseConstrastSmall,
   CloseTiny,
-  ImageSmall,
+  BlockImageSmall,
   LinkSmall,
 } from "../../components/Icons";
 import { theme } from "../../tailwind.config";
@@ -42,11 +42,11 @@ const BlockTypeSelector = (props: { focus: boolean; empty: boolean }) => {
     >
       <div className="flex gap-1 ">
         <button className="opacity-30 hover:opacity-100 hover:text-accent">
-          <ImageSmall />
+          <BlockImageSmall />
         </button>
 
         <button className="opacity-30 hover:opacity-100 hover:text-accent">
-          <CardSmall />
+          <BlockCardSmall />
         </button>
 
         <button className="opacity-30 hover:opacity-100 hover:text-accent">

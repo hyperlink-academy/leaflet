@@ -25,8 +25,8 @@ import { BlockProps } from "components/Blocks";
 import { TextBlockKeymap } from "./keymap";
 import { multiBlockSchema, schema } from "./schema";
 import { useUIState } from "src/useUIState";
-import { CardSmall, ImageSmall } from "components/Icons";
 import { DOMParser as ProsemirrorDOMParser } from "prosemirror-model";
+import { BlockCardSmall, BlockImageSmall } from "components/Icons";
 
 export let useEditorStates = create(() => ({
   lastXPosition: 0,
@@ -248,9 +248,9 @@ export function BlockOptions(props: {
     <div className="absolute top-0 right-0  hidden group-hover/text:block group-focus-within/text:block">
       <div className="flex gap-1">
         <label className="hover:cursor-pointer ">
-          <div className="opacity-30 hover:opacity-100 hover:text-accent">
-            <ImageSmall />
-          </div>
+          <button className="opacity-30 hover:opacity-100 hover:text-accent">
+            <BlockImageSmall />
+          </button>
           <div className="hidden">
             <input
               type="file"
@@ -306,7 +306,7 @@ export function BlockOptions(props: {
             }
           }}
         >
-          <CardSmall />
+          <BlockCardSmall />
         </button>
       </div>
     </div>
