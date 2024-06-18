@@ -1,6 +1,8 @@
 import React from "react";
 import { ButtonPrimary } from "../../components/Buttons";
 import { TextBlock, ImageBlock, CardBlock, ExternalLinkBlock } from "./Blocks";
+import { useIsMobile, useIsInitialRender } from "src/hooks/isMobile";
+import { TextToolbar } from "./TextToolbar";
 
 export const Card = (props: {
   children: React.ReactNode;
@@ -15,6 +17,10 @@ export const Card = (props: {
   cardWidth: number;
   cardHeight: number;
 }) => {
+  let isMobile = useIsMobile();
+  let isInitialRender = useIsInitialRender();
+
+  if (isInitialRender) return null;
   return (
     <>
       {/* if the card is the first one in the list, remove this div... can we do with :before? */}
@@ -36,33 +42,18 @@ export const Card = (props: {
         }}
       >
         <CardContent cardHeight={props.cardHeight} />
+
+        {!isMobile && props.focused ? (
+          <div className=" sticky bottom-3 w-fit flex gap-[6px] items-center py-2 px-3 mx-auto  bg-bg-card border border-border rounded-full shadow-md">
+            <TextToolbar />
+          </div>
+        ) : null}
+        {/* {!isMobile && props.focused ? (
+          <div className=" sticky bottom-0 w-full flex gap-[6px] px-3 pb-3 pt-1 bg-bg-card border-t border-border">
+            <TextToolbar />
+          </div>
+        ) : null} */}
       </div>
-      {/* <AddCardButton
-          setCards={props.setCards}
-          cards={props.cards}
-          card={props.card}
-          setFocusedCardIndex={props.setFocusedCardIndex}
-          index={props.index}
-        />
-        {props.index !== 0 && (
-          <RemoveCardButton
-            setCards={props.setCards}
-            cards={props.cards}
-            index={props.index}
-          />
-        )}
-       <div className="flex justify-between">
-          <FocusCardButton
-            setFocusedCardIndex={props.setFocusedCardIndex}
-            index={props.index}
-            cardWidth={props.cardWidth}
-          />
-          <FocusCardButton
-            setFocusedCardIndex={props.setFocusedCardIndex}
-            index={props.index}
-            cardWidth={props.cardWidth}
-          />
-        </div> */}
     </>
   );
 };

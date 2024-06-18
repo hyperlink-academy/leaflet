@@ -65,10 +65,9 @@ export const TextToolbar = () => {
   let state = useTextState();
 
   return (
-    <div className="-mt-6 z-10 bg-bg-card px-2 py-2 flex gap-[6px] items-center">
+    <>
       {toolbarState === "default" ? (
         <>
-          {" "}
           <ToolbarButton onClick={() => {}}>
             <UndoSmall />
           </ToolbarButton>
@@ -158,7 +157,7 @@ export const TextToolbar = () => {
           </ToolbarButton>
           <Separator />
           <input
-            className="w-full grow"
+            className="w-full grow bg-transparent border-none outline-none "
             placeholder="www.leafl.et"
             value={state.link}
             onChange={(e) => state.setLink(e.target.value)}
@@ -174,7 +173,7 @@ export const TextToolbar = () => {
       ) : toolbarState === "block" ? (
         <BlockToolbar onClose={() => setToolbarState("default")} />
       ) : null}
-    </div>
+    </>
   );
 };
 
@@ -182,7 +181,7 @@ const HeaderToolbar = (props: { onClose: () => void }) => {
   let state = useTextState();
 
   return (
-    <div className="flex w-full justify-between items-center">
+    <div className="flex w-full justify-between items-center gap-4">
       <div className="flex items-center gap-[6px]">
         <ToolbarButton
           className="w-10 flex justify-center"
@@ -237,7 +236,7 @@ const ListToolbar = (props: { onClose: () => void }) => {
   let state = useTextState();
 
   return (
-    <div className="flex w-full justify-between items-center">
+    <div className="flex w-full justify-between items-center gap-4">
       <div className="flex items-center gap-[6px]">
         <ToolbarButton
           onClick={() => props.onClose()}
@@ -280,7 +279,7 @@ const ListToolbar = (props: { onClose: () => void }) => {
 
 const BlockToolbar = (props: { onClose: () => void }) => {
   return (
-    <div className="flex w-full justify-between items-center">
+    <div className="flex w-full justify-between items-center gap-4">
       <div className="flex items-center gap-[6px]">
         <ToolbarButton onClick={() => props.onClose()}>
           <BlockSmall />

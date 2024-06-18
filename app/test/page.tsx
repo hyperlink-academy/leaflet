@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useMeasure from "react-use-measure";
 import { PageHeader } from "./Header";
 import { Card } from "./Card";
 import { TextToolbar } from "./TextToolbar";
-import useIsMobile from "src/hooks/isMobile";
+import { useIsMobile, useIsInitialRender } from "src/hooks/isMobile";
 
 export type imageArgs = {
   url: string;
@@ -22,9 +22,11 @@ export default function Index() {
     repeat: true,
     size: 500,
   });
-
+  let isFirstRender = useIsInitialRender();
   let isMobile = useIsMobile();
   let isKeyboardUp = true;
+
+  if (isFirstRender) return null;
 
   return (
     <div
@@ -92,7 +94,11 @@ export default function Index() {
           />
         </div>
       )}
-      {isMobile && isKeyboardUp && <TextToolbar />}
+      {isMobile && isKeyboardUp && (
+        <div className="-mt-6 z-10 bg-bg-card px-2 py-2 flex gap-[6px] items-center">
+          <TextToolbar />
+        </div>
+      )}
     </div>
   );
 }

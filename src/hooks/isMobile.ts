@@ -1,8 +1,14 @@
 import { useState, useEffect } from "react";
 
-export default function useIsMobile() {
+export function useIsMobile() {
   const { width } = useWindowDimensions();
   return width < 640 || width === 0;
+}
+
+export function useIsInitialRender() {
+  let [state, setState] = useState(true);
+  useEffect(() => setState(false), []);
+  return state;
 }
 
 function getWindowDimensions() {
