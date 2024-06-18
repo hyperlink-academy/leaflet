@@ -201,6 +201,7 @@ const HeaderToolbar = (props: { onClose: () => void }) => {
   let state = useTextState();
 
   return (
+    // This Toolbar should close once the user starts typing again
     <div className="flex w-full justify-between items-center gap-4">
       <div className="flex items-center gap-[6px]">
         <ToolbarButton
@@ -222,7 +223,6 @@ const HeaderToolbar = (props: { onClose: () => void }) => {
         <ToolbarButton
           onClick={() => {
             state.setHeader("h1");
-            props.onClose();
           }}
           active={state.header === "h1"}
         >
@@ -231,7 +231,6 @@ const HeaderToolbar = (props: { onClose: () => void }) => {
         <ToolbarButton
           onClick={() => {
             state.setHeader("h2");
-            props.onClose();
           }}
           active={state.header === "h2"}
         >
@@ -240,7 +239,6 @@ const HeaderToolbar = (props: { onClose: () => void }) => {
         <ToolbarButton
           onClick={() => {
             state.setHeader("h3");
-            props.onClose();
           }}
           active={state.header === "h3"}
         >
@@ -265,6 +263,7 @@ const HeaderToolbar = (props: { onClose: () => void }) => {
 const ListToolbar = (props: { onClose: () => void }) => {
   let state = useTextState();
 
+  // This Toolbar should close once the user starts typing again
   return (
     <div className="flex w-full justify-between items-center gap-4">
       <div className="flex items-center gap-[6px]">
@@ -281,8 +280,9 @@ const ListToolbar = (props: { onClose: () => void }) => {
         <Separator />
         <ToolbarButton
           onClick={() => {
-            state.setList("unordered");
-            props.onClose();
+            state.list === "unordered"
+              ? state.setList("none")
+              : state.setList("unordered");
           }}
           active={state.list === "unordered"}
         >
@@ -290,8 +290,9 @@ const ListToolbar = (props: { onClose: () => void }) => {
         </ToolbarButton>
         <ToolbarButton
           onClick={() => {
-            state.setList("ordered");
-            props.onClose();
+            state.list === "ordered"
+              ? state.setList("none")
+              : state.setList("ordered");
           }}
           active={state.list === "ordered"}
         >
