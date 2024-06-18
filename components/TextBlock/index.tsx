@@ -184,6 +184,7 @@ export function BaseTextBlock(props: BlockProps) {
                 });
               }
               addImage(file, rep.rep, {
+                attribute: "block/image",
                 entityID: entity,
               });
             }
@@ -278,7 +279,10 @@ export function BlockOptions(props: {
                   attribute: "block/type",
                   data: { type: "block-type-union", value: "image" },
                 });
-                await addImage(file, rep, { entityID: entity });
+                await addImage(file, rep, {
+                  entityID: entity,
+                  attribute: "block/image",
+                });
               }}
             />
           </div>

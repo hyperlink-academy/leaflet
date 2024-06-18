@@ -1,10 +1,10 @@
 import { Fact, ReplicacheProvider } from "src/replicache";
 import { Database } from "../../supabase/database.types";
-import { Blocks } from "components/Blocks";
 import { Attributes } from "src/replicache/attributes";
 import { createServerClient } from "@supabase/ssr";
 import { SelectionManager } from "components/SelectionManager";
 import { Cards } from "components/Cards";
+import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -22,8 +22,15 @@ export default async function DocumentPage(props: {
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
   return (
     <ReplicacheProvider name={props.params.doc_id} initialFacts={initialFacts}>
-      <SelectionManager />
-      <Cards rootCard={props.params.doc_id} />
+      <ThemeProvider entityID={props.params.doc_id}>
+        <SelectionManager />
+        <div
+          className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full"
+          id="card-carousel"
+        >
+          <Cards rootCard={props.params.doc_id} />
+        </div>
+      </ThemeProvider>
     </ReplicacheProvider>
   );
 }

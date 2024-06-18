@@ -4,7 +4,7 @@ import { useSubscribe } from "replicache-react";
 import { DeepReadonlyObject, Replicache, WriteTransaction } from "replicache";
 import { Pull } from "./pull";
 import { mutations } from "./mutations";
-import { Attributes } from "./attributes";
+import { Attributes, Data } from "./attributes";
 import { Push } from "./push";
 import { clientMutationContext } from "./clientMutationContext";
 import { supabaseBrowserClient } from "supabase/browserClient";
@@ -15,27 +15,6 @@ export type Fact<A extends keyof typeof Attributes> = {
   attribute: A;
   data: Data<A>;
 };
-
-type Data<A extends keyof typeof Attributes> = {
-  text: { type: "text"; value: string };
-  "ordered-reference": {
-    type: "ordered-reference";
-    position: string;
-    value: string;
-  };
-  image: {
-    type: "image";
-    src: string;
-    height: number;
-    width: number;
-    local?: string;
-  };
-  reference: { type: "reference"; value: string };
-  "block-type-union": {
-    type: "block-type-union";
-    value: "text" | "image" | "card";
-  };
-}[(typeof Attributes)[A]["type"]];
 
 let ReplicacheContext = createContext({
   rep: null as null | Replicache<ReplicacheMutators>,

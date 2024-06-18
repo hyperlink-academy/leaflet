@@ -1,4 +1,4 @@
-import { Schema } from "prosemirror-model";
+import { Schema, Node } from "prosemirror-model";
 import { marks } from "prosemirror-schema-basic";
 
 let baseSchema = {

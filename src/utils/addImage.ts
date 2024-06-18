@@ -1,11 +1,15 @@
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "../replicache";
 import { supabaseBrowserClient } from "supabase/browserClient";
+import { FilterAttributes } from "src/replicache/attributes";
 
 export async function addImage(
   file: File,
   rep: Replicache<ReplicacheMutators>,
-  args: { entityID: string },
+  args: {
+    entityID: string;
+    attribute: keyof FilterAttributes<{ type: "image" }>;
+  },
 ) {
   let client = supabaseBrowserClient();
   let cache = await caches.open("minilink-user-assets");
@@ -39,7 +43,7 @@ export async function addImage(
   await client.storage.from("minilink-user-assets").upload(fileID, file);
   await rep.mutate.assertFact({
     entity: args.entityID,
-    attribute: "block/image",
+    attribute: args.attribute,
     data: {
       type: "image",
       src: url,
