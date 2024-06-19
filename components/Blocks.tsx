@@ -20,6 +20,7 @@ import { ImageBlock } from "./ImageBlock";
 import { useUIState } from "src/useUIState";
 import { focusCard } from "./Cards";
 import { CardBlock } from "./CardBlock";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export type Block = {
   position: string;
@@ -32,8 +33,10 @@ interface ReplayedKeyboardEvent extends KeyboardEvent {
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
   let ref = useRef<HTMLDivElement | null>(null);
-  let previous = useRef("none");
+  let previous = useRef("None");
+  let isMobile = useIsMobile();
   useEffect(() => {
+    if (!isMobile) return;
     let selectionChangeHandler = () => {
       let selection = window.getSelection();
       let ranges;
@@ -90,7 +93,7 @@ export function Blocks(props: { entityID: string }) {
       document.removeEventListener("keydown", keyDownHandler, true);
       document.removeEventListener("selectionchange", selectionChangeHandler);
     };
-  }, []);
+  }, [isMobile]);
   let initialValue = useMemo(
     () =>
       rep.initialFacts
