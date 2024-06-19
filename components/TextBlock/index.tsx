@@ -246,49 +246,47 @@ export function BlockOptions(props: {
 }) {
   let { rep } = useReplicache();
   return (
-    <div className="absolute top-0 right-0  hidden group-hover/text:block group-focus-within/text:block">
-      <div className="flex gap-1">
-        <label className="hover:cursor-pointer ">
-          <button className="opacity-30 hover:opacity-100 hover:text-accent">
-            <BlockImageSmall />
-          </button>
-          <div className="hidden">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={async (e) => {
-                let file = e.currentTarget.files?.[0];
-                if (!file || !rep) return;
-                if (props.factID)
-                  await rep.mutate.retractFact({ factID: props.factID });
-                let entity = props.entityID;
-                if (!entity) {
-                  entity = crypto.randomUUID();
-                  await rep?.mutate.addBlock({
-                    parent: props.parent,
-                    type: "text",
-                    position: generateKeyBetween(
-                      props.position,
-                      props.nextPosition,
-                    ),
-                    newEntityID: entity,
-                  });
-                }
-                await rep.mutate.assertFact({
-                  entity,
-                  attribute: "block/type",
-                  data: { type: "block-type-union", value: "image" },
+    <div className="absolute top-0 right-0  group-hover/text:block group-focus-within/text:block">
+      <div className="flex gap-1 items-center">
+        <button className="text-tertiary hover:text-accent">
+          <BlockImageSmall />
+        </button>
+        <div className="hidden">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={async (e) => {
+              let file = e.currentTarget.files?.[0];
+              if (!file || !rep) return;
+              if (props.factID)
+                await rep.mutate.retractFact({ factID: props.factID });
+              let entity = props.entityID;
+              if (!entity) {
+                entity = crypto.randomUUID();
+                await rep?.mutate.addBlock({
+                  parent: props.parent,
+                  type: "text",
+                  position: generateKeyBetween(
+                    props.position,
+                    props.nextPosition,
+                  ),
+                  newEntityID: entity,
                 });
-                await addImage(file, rep, {
-                  entityID: entity,
-                  attribute: "block/image",
-                });
-              }}
-            />
-          </div>
-        </label>
+              }
+              await rep.mutate.assertFact({
+                entity,
+                attribute: "block/type",
+                data: { type: "block-type-union", value: "image" },
+              });
+              await addImage(file, rep, {
+                entityID: entity,
+                attribute: "block/image",
+              });
+            }}
+          />
+        </div>
         <button
-          className="opacity-30 hover:opacity-100 hover:text-accent"
+          className="text-tertiary hover:text-accent"
           onClick={async () => {
             if (!props.entityID) {
               let entity = crypto.randomUUID();

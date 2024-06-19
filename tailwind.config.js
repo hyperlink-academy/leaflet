@@ -19,10 +19,10 @@ module.exports = {
 
       //TEXT COLORS.
       "primary" : "rgb(var(--primary))",
-      "secondary": "#595959",
-      "tertiary": "rgb(var(--primary))",
-      "border": "#CCCCCC",
-      "border-light": "#E6E6E6",
+      "secondary": "color-mix(in lch, rgb(var(--primary)), rgb(var(--bg-card)) 15%)",
+      "tertiary": "color-mix(in lch, rgb(var(--primary)), rgb(var(--bg-card)) 55%)",
+      "border": "color-mix(in lch, rgb(var(--primary)), rgb(var(--bg-card)) 75%)",
+      "border-light": "color-mix(in lch, rgb(var(--primary)), rgb(var(--bg-card)) 90%)",
 
       white: "#FFFFFF",
 

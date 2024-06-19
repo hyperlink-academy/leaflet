@@ -378,7 +378,7 @@ const BGPicker = (props: {
           </ColorField>
 
           <label className="hover:cursor-pointer ">
-            <div className="opacity-30 hover:opacity-100 hover:text-accent">
+            <div className="text-tertiary hover:text-accent">
               <BlockImageSmall />
             </div>
             <div className="hidden">
@@ -455,7 +455,7 @@ const ImageSettings = (props: { entityID: string }) => {
         className="themeBGImagePreview flex gap-2 place-items-center justify-center w-full h-[128px]  bg-cover bg-center bg-no-repeat"
       >
         <label className="hover:cursor-pointer ">
-          <div className="opacity-30 hover:opacity-100 hover:text-accent">
+          <div className="text-tertiary hover:text-accent">
             <BlockImageSmall />
           </div>
           <div className="hidden">

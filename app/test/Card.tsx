@@ -5,7 +5,6 @@ import { useIsMobile, useIsInitialRender } from "src/hooks/isMobile";
 import { TextToolbar } from "./TextToolbar";
 
 export const Card = (props: {
-  children: React.ReactNode;
   first?: boolean;
   focused?: boolean;
   id: string;
@@ -44,17 +43,70 @@ export const Card = (props: {
         <CardContent cardHeight={props.cardHeight} />
 
         {!isMobile && props.focused ? (
-          <div className=" sticky bottom-3 w-fit flex gap-[6px] items-center py-2 px-3 mx-auto  bg-bg-card border border-border rounded-full shadow-md">
+          <div className="textToolbarWrapper sticky bottom-3 w-fit flex gap-[6px] items-center py-2 px-3 mx-auto  bg-bg-card border border-border rounded-full shadow-md">
             <TextToolbar />
           </div>
         ) : null}
-        {/* {!isMobile && props.focused ? (
-          <div className=" sticky bottom-0 w-full flex gap-[6px] px-3 pb-3 pt-1 bg-bg-card border-t border-border">
-            <TextToolbar />
-          </div>
-        ) : null} */}
       </div>
     </>
+  );
+};
+
+const CardContent = (props: { cardHeight: number }) => {
+  return (
+    <div className=" p-3 sm:p-4  flex flex-col">
+      <h2>Chapter 1</h2>
+      <TextBlock
+        lines={6}
+        defaultValue="It is a truth universally acknowledged, that a single man in possession of a good fortune must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters."
+      />
+      <TextBlock
+        lines={2}
+        defaultValue="“My dear Mr. Bennet,” said his lady to him one day, “have you heard that Netherfield Park is let at last?”"
+      />
+      <TextBlock lines={1} defaultValue="Mr. Bennet replied that he had not." />
+      <TextBlock
+        lines={2}
+        defaultValue="“But it is,” returned she; “for Mrs. Long has just been here, and she told me all about it.”"
+      />
+      <TextBlock lines={1} defaultValue="Mr. Bennet made no answer." />
+      <TextBlock
+        lines={2}
+        defaultValue="“Do not you want to know who has taken it?” cried his wife, impatiently."
+      />
+      <TextBlock
+        lines={1}
+        defaultValue="“You want to tell me, and I have no objection to hearing it.”"
+      />
+      <TextBlock lines={1} defaultValue="" />
+      {/* <h4>Related Links</h4>
+      <h3>Related Images</h3>
+      <ImageBlock src="./test-image.jpg" cardHeight={props.cardHeight} />
+      <ImageBlock src="./test-image-2.jpg" cardHeight={props.cardHeight} /> */}
+      <ExternalLinkBlock />
+
+      <CardBlock screenshot="./card1.png" title="Chapter 2" />
+
+      <CardBlock
+        screenshot="./card2.png"
+        title="Notes"
+        body="This is me just sort of blabbing on and on and on so that i can make htis thing wrap enough lines and see what it looks like. indeed blah blah blah thats what i have to say about it big yada yada energy"
+      />
+      <CardBlock
+        screenshot="./card3.png"
+        title="Footnote #3"
+        body="what if first block very short?"
+      />
+      <CardBlock
+        screenshot="./card5.png"
+        body="This was invitation enough. “Why, my dear, you must know, Mrs. Long says
+      that Netherfield is taken by a young man of large fortune from the north
+      of England; that he came down on Monday in a chaise and four to see the
+      place, and was so much delighted with it that he agreed with Mr. Morris
+      immediately; that he is to take possession before Michaelmas, and some
+      of his servants are to be in the house by the end of next week.”"
+      />
+    </div>
   );
 };
 
@@ -142,63 +194,5 @@ const FocusCardButton = (props: {
     >
       focus this card
     </ButtonPrimary>
-  );
-};
-
-const CardContent = (props: { cardHeight: number }) => {
-  return (
-    <div className=" p-3 sm:p-4  flex flex-col">
-      <h2>Chapter 1</h2>
-      <TextBlock
-        lines={6}
-        defaultValue="It is a truth universally acknowledged, that a single man in possession of a good fortune must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters."
-      />
-      <TextBlock
-        lines={2}
-        defaultValue="“My dear Mr. Bennet,” said his lady to him one day, “have you heard that Netherfield Park is let at last?”"
-      />
-      <TextBlock lines={1} defaultValue="Mr. Bennet replied that he had not." />
-      <TextBlock
-        lines={2}
-        defaultValue="“But it is,” returned she; “for Mrs. Long has just been here, and she told me all about it.”"
-      />
-      <TextBlock lines={1} defaultValue="Mr. Bennet made no answer." />
-      <TextBlock
-        lines={2}
-        defaultValue="“Do not you want to know who has taken it?” cried his wife, impatiently."
-      />
-      <TextBlock
-        lines={1}
-        defaultValue="“You want to tell me, and I have no objection to hearing it.”"
-      />
-      <TextBlock lines={1} defaultValue="" />
-      {/* <h4>Related Links</h4>
-      <h3>Related Images</h3>
-      <ImageBlock src="./test-image.jpg" cardHeight={props.cardHeight} />
-      <ImageBlock src="./test-image-2.jpg" cardHeight={props.cardHeight} /> */}
-      <ExternalLinkBlock />
-
-      <CardBlock screenshot="./card1.png" title="Chapter 2" />
-
-      <CardBlock
-        screenshot="./card2.png"
-        title="Notes"
-        body="This is me just sort of blabbing on and on and on so that i can make htis thing wrap enough lines and see what it looks like. indeed blah blah blah thats what i have to say about it big yada yada energy"
-      />
-      <CardBlock
-        screenshot="./card3.png"
-        title="Footnote #3"
-        body="what if first block very short?"
-      />
-      <CardBlock
-        screenshot="./card5.png"
-        body="This was invitation enough. “Why, my dear, you must know, Mrs. Long says
-      that Netherfield is taken by a young man of large fortune from the north
-      of England; that he came down on Monday in a chaise and four to see the
-      place, and was so much delighted with it that he agreed with Mr. Morris
-      immediately; that he is to take possession before Michaelmas, and some
-      of his servants are to be in the house by the end of next week.”"
-      />
-    </div>
   );
 };

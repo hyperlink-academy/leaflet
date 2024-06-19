@@ -6,6 +6,8 @@ import { PageHeader } from "./Header";
 import { Card } from "./Card";
 import { TextToolbar } from "./TextToolbar";
 import { useIsMobile, useIsInitialRender } from "src/hooks/isMobile";
+import { DeleteSmall, MoreOptionsTiny } from "components/Icons";
+import * as Popover from "@radix-ui/react-popover";
 
 export type imageArgs = {
   url: string;
@@ -60,7 +62,7 @@ export default function Index() {
 
           {cards.map((card, index) => (
             <div
-              className="flex items-stretch "
+              className="flex items-stretch relative"
               key={index}
               ref={index === 0 ? cardRef : null}
             >
@@ -75,9 +77,8 @@ export default function Index() {
                 card={card}
                 cardWidth={cardWidth}
                 cardHeight={cardHeight}
-              >
-                Card {card}
-              </Card>
+              />
+              {index === focusedCardIndex && <CardOptions />}
             </div>
           ))}
           <div style={{ width: `calc((100vw - ${cardWidth}px)/2)` }} />
@@ -102,3 +103,32 @@ export default function Index() {
     </div>
   );
 }
+
+const CardOptions = () => {
+  return (
+    <Popover.Root>
+      <Popover.Trigger className="px-2 py-1 w-fit absolute top-0 right-3 bg-border text-bg-card rounded-b-md">
+        <MoreOptionsTiny />
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          align="end"
+          className="bg-bg-card flex flex-col py-1 gap-0.5 border border-border rounded-md"
+        >
+          <CardMenuItem>
+            Delete Page <DeleteSmall />
+          </CardMenuItem>
+          <Popover.Arrow />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+};
+
+const CardMenuItem = (props: { children: React.ReactNode }) => {
+  return (
+    <div className="py-1 px-2 flex gap-2 font-bold hover:bg-accent hover:text-accentText ">
+      {props.children}
+    </div>
+  );
+};

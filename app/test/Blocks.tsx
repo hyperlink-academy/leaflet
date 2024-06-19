@@ -41,15 +41,15 @@ const BlockTypeSelector = (props: { focus: boolean; empty: boolean }) => {
         ${props.empty && "group-hover/text:block"}`}
     >
       <div className="flex gap-1 ">
-        <button className="opacity-30 hover:opacity-100 hover:text-accent">
+        <button className="text-tertiary hover:text-accent">
           <BlockImageSmall />
         </button>
 
-        <button className="opacity-30 hover:opacity-100 hover:text-accent">
+        <button className="text-tertiary hover:text-accent">
           <BlockCardSmall />
         </button>
 
-        <button className="opacity-30 hover:opacity-100 hover:text-accent">
+        <button className="text-tertiary hover:text-accent">
           <LinkSmall />
         </button>
       </div>
@@ -195,7 +195,7 @@ export const ExternalLinkBlock = () => {
               setDescription(e.target.value);
             }}
           />
-          <div className="inline-block place-self-end w-full text-xs opacity-30 italic line-clamp-1 truncate group-hover:text-accent group-hover:opacity-100">
+          <div className="inline-block place-self-end w-full text-xs text-tertiary italic line-clamp-1 truncate group-hover:text-accent">
             https://www.flickr.com/photos/biodivlibrary/https://www.flickr.com/photos/biodivlibrary/https://www.flickr.com/photos/biodivlibrary/
           </div>
         </div>
