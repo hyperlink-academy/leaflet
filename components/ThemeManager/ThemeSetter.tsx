@@ -1,3 +1,4 @@
+"use client";
 import * as Popover from "@radix-ui/react-popover";
 import * as Slider from "@radix-ui/react-slider";
 import { theme } from "../../tailwind.config";
@@ -251,6 +252,9 @@ const ColorPicker = (props: {
         <button
           onClick={() => {
             props.setOpenPicker(props.thisPicker);
+          }}
+          style={{
+            backgroundColor: "rgba(var(--bg-card), .6)",
           }}
           className="colorPickerLabel flex gap-1 items-center place-self-end py-[2px] pl-1 mb-1 rounded-md"
         >
