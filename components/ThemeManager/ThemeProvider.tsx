@@ -57,7 +57,7 @@ export function ThemeProvider(props: {
       className="pageWrapper w-full bg-bg-page text-primary h-screen flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
       style={
         {
-          backgroundImage: `url(${backgroundImage?.data.src})`,
+          backgroundImage: `url(${backgroundImage?.data.src}), url(${backgroundImage?.data.fallback})`,
           backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
           backgroundSize: !backgroundImageRepeat
             ? "cover"

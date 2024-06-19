@@ -78,6 +78,7 @@ export type Data<A extends keyof typeof Attributes> = {
   };
   image: {
     type: "image";
+    fallback: string;
     src: string;
     height: number;
     width: number;
