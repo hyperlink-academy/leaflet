@@ -48,11 +48,10 @@ export function Blocks(props: { entityID: string }) {
           let entityIDs: string[] = [];
           for (let child of contents.children) {
             let entityID = child.getAttribute("data-entityid");
-            if (entityID) entityIDs.push(entityID);
+            if (entityID && child.textContent !== "") entityIDs.push(entityID);
           }
           useUIState.getState().setSelectedBlocks(entityIDs);
         } else {
-          useUIState.getState().setSelectedBlocks([]);
         }
       } else {
         if (ref.current) ref.current.contentEditable = "false";
