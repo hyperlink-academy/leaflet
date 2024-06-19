@@ -5,6 +5,7 @@ import { createServerClient } from "@supabase/ssr";
 import { SelectionManager } from "components/SelectionManager";
 import { Cards } from "components/Cards";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { MobileFooter } from "components/MobileFooter";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -30,6 +31,7 @@ export default async function DocumentPage(props: {
         >
           <Cards rootCard={props.params.doc_id} />
         </div>
+        <MobileFooter entityID={props.params.doc_id} />
       </ThemeProvider>
     </ReplicacheProvider>
   );

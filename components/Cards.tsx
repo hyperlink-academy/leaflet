@@ -4,6 +4,7 @@ import { Blocks } from "./Blocks";
 import useMeasure from "react-use-measure";
 import { elementId } from "src/utils/elementId";
 import { ThemePopover } from "./ThemeManager/ThemeSetter";
+import { Media } from "./Media";
 
 export function Cards(props: { rootCard: string }) {
   let cards = useUIState((s) => s.openCards);
@@ -15,9 +16,9 @@ export function Cards(props: { rootCard: string }) {
         className="flex justify-end items-start"
         style={{ width: `calc((100vw - ${cardWidth}px)/2)` }}
       >
-        <div className="flex flex-col gap-2 mr-4 mt-2">
+        <Media mobile={false} className="flex flex-col gap-2 mr-4 mt-2">
           <PageOptions entityID={props.rootCard} />
-        </div>
+        </Media>
       </div>
       <Card entityID={props.rootCard} first />
       {cards.map((card, index) => (
