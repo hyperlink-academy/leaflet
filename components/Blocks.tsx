@@ -30,6 +30,7 @@ export type Block = {
 interface ReplayedKeyboardEvent extends KeyboardEvent {
   replayed: boolean;
 }
+let skip = false;
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
   let ref = useRef<HTMLDivElement | null>(null);
@@ -38,6 +39,7 @@ export function Blocks(props: { entityID: string }) {
   useEffect(() => {
     if (!isMobile) return;
     let selectionChangeHandler = () => {
+      if (skip == true) return;
       let selection = window.getSelection();
       let ranges;
       if (previous.current !== selection?.type) {
@@ -65,9 +67,11 @@ export function Blocks(props: { entityID: string }) {
       previous.current = selection?.type || "None";
     };
     let keyDownHandler = (e: KeyboardEvent) => {
+      skip = true;
       let selection = window.getSelection();
       if (selection?.type !== "Range") return;
       if ((e as ReplayedKeyboardEvent).replayed) {
+        skip = false;
         return;
       }
       e.stopPropagation();

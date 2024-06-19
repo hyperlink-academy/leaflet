@@ -28,7 +28,7 @@ export function SelectionManager() {
   }, [moreThanOneSelected, rep]);
   let dragStart = useSelectingMouse((s) => s.start);
   let initialContentEditableParent = useRef<null | Node>(null);
-  let savedSelection = useRef<Range[] | null>();
+  let savedSelection = useRef<SavedRange[] | null>();
   useEffect(() => {
     let mouseDownListener = (e: MouseEvent) => {
       initialContentEditableParent.current = getContentEditableParent(
@@ -47,7 +47,7 @@ export function SelectionManager() {
       ) {
         setTimeout(() => {
           window.getSelection()?.removeAllRanges();
-        }, 10);
+        }, 5);
       }
       savedSelection.current = null;
       useSelectingMouse.setState({ start: null });
@@ -86,24 +86,56 @@ export function SelectionManager() {
   return null;
 }
 
+type SavedRange = {
+  startContainer: Node;
+  startOffset: number;
+  endContainer: Node;
+  endOffset: number;
+  direction: "forward" | "backward";
+};
 export function saveSelection() {
   let selection = window.getSelection();
   if (selection && selection.rangeCount > 0) {
-    let ranges: Range[] = [];
+    let ranges: SavedRange[] = [];
     for (let i = 0; i < selection.rangeCount; i++) {
-      ranges.push(selection.getRangeAt(i));
+      let range = selection.getRangeAt(i);
+      ranges.push({
+        startContainer: range.startContainer,
+        startOffset: range.startOffset,
+        endContainer: range.endContainer,
+        endOffset: range.endOffset,
+        direction:
+          selection.anchorNode === range.startContainer &&
+          selection.anchorOffset === range.startOffset
+            ? "forward"
+            : "backward",
+      });
     }
     return ranges;
   }
   return [];
 }
 
-export function restoreSelection(savedRanges: Range[]) {
-  if (savedRanges) {
-    let selection = window.getSelection() || new Selection();
+export function restoreSelection(savedRanges: SavedRange[]) {
+  if (savedRanges && savedRanges.length > 0) {
+    let selection = window.getSelection();
+    if (!selection) return;
     selection.removeAllRanges();
     for (let i = 0; i < savedRanges.length; i++) {
-      selection.addRange(savedRanges[i]);
+      let range = document.createRange();
+      range.setStart(savedRanges[i].startContainer, savedRanges[i].startOffset);
+      range.setEnd(savedRanges[i].endContainer, savedRanges[i].endOffset);
+
+      selection.addRange(range);
+
+      // If the direction is backward, collapse the selection to the end and then extend it backward
+      if (savedRanges[i].direction === "backward") {
+        selection.collapseToEnd();
+        selection.extend(
+          savedRanges[i].startContainer,
+          savedRanges[i].startOffset,
+        );
+      }
     }
   }
 }
