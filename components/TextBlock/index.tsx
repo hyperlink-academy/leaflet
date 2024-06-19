@@ -246,7 +246,7 @@ export function BlockOptions(props: {
 }) {
   let { rep } = useReplicache();
   return (
-    <div className="absolute top-0 right-0  group-hover/text:block group-focus-within/text:block">
+    <div className="absolute top-0 right-0 hidden group-hover/text:block group-focus-within/text:block">
       <div className="flex gap-1 items-center">
         <button className="text-tertiary hover:text-accent">
           <BlockImageSmall />
