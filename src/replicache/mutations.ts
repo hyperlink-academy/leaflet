@@ -79,9 +79,39 @@ const assertFact: Mutation<
   await ctx.assertFact(args);
 };
 
+const increaseHeadingLevel: Mutation<{ entityID: string }> = async (
+  args,
+  ctx,
+) => {
+  let blockType = (await ctx.scanIndex.eav(args.entityID, "block/type"))[0];
+  let headinglevel = (
+    await ctx.scanIndex.eav(args.entityID, "block/heading-level")
+  )[0];
+  if (blockType?.data.value !== "heading")
+    await ctx.assertFact({
+      entity: args.entityID,
+      attribute: "block/type",
+      data: { type: "block-type-union", value: "heading" },
+    });
+  if (!headinglevel)
+    await ctx.assertFact({
+      entity: args.entityID,
+      attribute: "block/heading-level",
+      data: { type: "number", value: 1 },
+    });
+  else if (headinglevel?.data.value === 4) return;
+  else
+    return await ctx.assertFact({
+      entity: args.entityID,
+      attribute: "block/heading-level",
+      data: { type: "number", value: headinglevel.data.value + 1 },
+    });
+};
+
 export const mutations = {
   addBlock,
   assertFact,
   retractFact,
   removeBlock,
+  increaseHeadingLevel,
 };

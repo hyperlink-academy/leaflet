@@ -17,6 +17,23 @@ export const TextBlockKeymap = (
   keymap({
     "Meta-b": toggleMark(schema.marks.strong),
     "Meta-i": toggleMark(schema.marks.em),
+    "#": (state, dispatch, view) => {
+      if (state.selection.content().size > 0) return false;
+      if (state.selection.anchor > 1) return false;
+      repRef.current?.mutate.increaseHeadingLevel({
+        entityID: propsRef.current.entityID,
+      });
+      setTimeout(
+        () =>
+          focusBlock(
+            { value: propsRef.current.entityID, type: "heading" },
+            "start",
+            "bottom",
+          ),
+        10,
+      );
+      return true;
+    },
     ArrowUp: (_state, _tr, view) => {
       if (!view) return false;
       const viewClientRect = view.dom.getBoundingClientRect();

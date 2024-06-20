@@ -57,11 +57,16 @@ export const setEditorState = (
   });
 };
 
-export function TextBlock(props: BlockProps) {
+export function TextBlock(props: BlockProps & { className: string }) {
   let initialized = useInitialPageLoad();
   return (
     <>
-      {!initialized && <RenderedTextBlock entityID={props.entityID} />}
+      {!initialized && (
+        <RenderedTextBlock
+          entityID={props.entityID}
+          className={props.className}
+        />
+      )}
       <div className={`relative group/text ${!initialized ? "hidden" : ""}`}>
         <BaseTextBlock {...props} />
       </div>
@@ -69,14 +74,19 @@ export function TextBlock(props: BlockProps) {
   );
 }
 
-export function RenderedTextBlock(props: { entityID: string }) {
+export function RenderedTextBlock(props: {
+  entityID: string;
+  className: string;
+}) {
   let initialFact = useEntity(props.entityID, "block/text");
   if (!initialFact) return <pre className="min-h-6" />;
   let doc = new Y.Doc();
   const update = base64.toByteArray(initialFact.data.value);
   Y.applyUpdate(doc, update);
   return (
-    <pre className="w-full whitespace-pre-wrap outline-none min-h-6">
+    <pre
+      className={`w-full whitespace-pre-wrap outline-none min-h-6 ${props.className}`}
+    >
       {doc
         .getXmlElement("prosemirror")
         .toArray()
@@ -86,7 +96,7 @@ export function RenderedTextBlock(props: { entityID: string }) {
     </pre>
   );
 }
-export function BaseTextBlock(props: BlockProps) {
+export function BaseTextBlock(props: BlockProps & { className: string }) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
   let selected = useUIState((s) => s.selectedBlock.includes(props.entityID));
   let [value, factID] = useYJSValue(props.entityID);
@@ -219,7 +229,7 @@ export function BaseTextBlock(props: BlockProps) {
         }}
         onPaste={async (e) => {}}
         id={elementId.block(props.entityID).text}
-        className={`textBlock w-full p-0 border-none outline-none resize-none align-top bg-transparent whitespace-pre-wrap`}
+        className={`textBlock w-full p-0 border-none outline-none resize-none align-top bg-transparent whitespace-pre-wrap ${props.className}`}
         ref={setMount}
       />
 

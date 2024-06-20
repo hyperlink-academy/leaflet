@@ -18,6 +18,10 @@ const BlockAttributes = {
     type: "text",
     cardinality: "one",
   },
+  "block/heading-level": {
+    type: "number",
+    cardinality: "one",
+  },
   "block/image": {
     type: "image",
     cardinality: "one",
@@ -91,7 +95,7 @@ export type Data<A extends keyof typeof Attributes> = {
   reference: { type: "reference"; value: string };
   "block-type-union": {
     type: "block-type-union";
-    value: "text" | "image" | "card";
+    value: "text" | "image" | "card" | "heading";
   };
   color: { type: "color"; value: string };
 }[(typeof Attributes)[A]["type"]];

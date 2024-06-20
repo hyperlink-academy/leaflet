@@ -219,10 +219,15 @@ export type BlockProps = {
   nextPosition: string | null;
 } & Block;
 
+let textBlocks: { [k in Fact<"block/type">["data"]["value"]]?: boolean } = {
+  text: true,
+  heading: true,
+};
+
 function Block(props: BlockProps) {
   let selected = useUIState(
     (s) =>
-      (props.type !== "text" || s.selectedBlock.length > 1) &&
+      (!textBlocks[props.type] || s.selectedBlock.length > 1) &&
       s.selectedBlock.includes(props.entityID),
   );
   let { rep } = useReplicache();
@@ -247,7 +252,7 @@ function Block(props: BlockProps) {
         if (!block) return;
       }
       if (e.key === "Backspace") {
-        if (props.type === "text") return;
+        if (textBlocks[props.type]) return;
         e.preventDefault();
         r.mutate.removeBlock({ blockEntity: props.entityID });
         let block = props.previousBlock;
@@ -314,7 +319,9 @@ function Block(props: BlockProps) {
       {props.type === "card" ? (
         <CardBlock {...props} />
       ) : props.type === "text" ? (
-        <TextBlock {...props} />
+        <TextBlock {...props} className="" />
+      ) : props.type === "heading" ? (
+        <HeadingBlock {...props} />
       ) : props.type === "image" ? (
         <ImageBlock {...props} />
       ) : null}
@@ -322,8 +329,24 @@ function Block(props: BlockProps) {
   );
 }
 
+const HeadingStyle = {
+  1: "text-2xl  font-bold",
+  2: "text-xl font-bold",
+  3: "text-lg font-bold",
+  4: "text-base font-bold italic",
+} as { [level: number]: string };
+export function HeadingBlock(props: BlockProps) {
+  let headingLevel = useEntity(props.entityID, "block/heading-level");
+  return (
+    <TextBlock
+      {...props}
+      className={HeadingStyle[headingLevel?.data.value || 1]}
+    />
+  );
+}
+
 export function focusBlock(
-  block: Block,
+  block: Omit<Block, "position">,
   left: number | "end" | "start",
   top: "top" | "bottom",
 ) {
