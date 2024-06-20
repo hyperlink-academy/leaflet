@@ -25,6 +25,7 @@ import {
 } from "components/Icons";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
+import { Separator } from "components/Layout";
 
 type textState = {
   bold: boolean;
@@ -353,10 +354,6 @@ const ToolbarButton = (props: {
       {props.children}
     </button>
   );
-};
-
-const Separator = () => {
-  return <div className="h-6 border-r border-border" />;
 };
 
 const CloseToolbarButton = (props: { onClose: () => void }) => {
