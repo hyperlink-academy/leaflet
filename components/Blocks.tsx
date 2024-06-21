@@ -30,6 +30,10 @@ export type Block = {
 interface ReplayedKeyboardEvent extends KeyboardEvent {
   replayed: boolean;
 }
+
+interface ReplayedPointerEvent extends PointerEvent {
+  replayed: boolean;
+}
 let skip = false;
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
@@ -57,6 +61,12 @@ export function Blocks(props: { entityID: string }) {
           }
           useUIState.getState().setSelectedBlocks(entityIDs);
         } else {
+          let entityid =
+            range.startContainer.parentElement?.parentElement?.parentElement?.parentElement?.getAttribute(
+              "data-entityid",
+            );
+          if (entityid)
+            useUIState.setState((s) => ({ focusedTextBlock: entityid }));
         }
       } else {
         if (ref.current) ref.current.contentEditable = "false";
@@ -85,8 +95,29 @@ export function Blocks(props: { entityID: string }) {
       newEvent.replayed = true;
       e.target?.dispatchEvent(newEvent);
     };
+
+    let pointerDownHandler = (e: PointerEvent) => {
+      skip = true;
+      let selection = window.getSelection();
+      if (selection?.type !== "Range") return;
+      if ((e as ReplayedPointerEvent).replayed) {
+        skip = false;
+        return;
+      }
+      e.stopPropagation();
+
+      let ranges = saveSelection();
+      if (ref.current) ref.current.contentEditable = "false";
+      restoreSelection(ranges);
+      let newEvent = new PointerEvent(e.type, {
+        ...e,
+      }) as ReplayedPointerEvent;
+      newEvent.replayed = true;
+      e.target?.dispatchEvent(newEvent);
+    };
     document.addEventListener("selectionchange", selectionChangeHandler);
     document.addEventListener("keydown", keyDownHandler, true);
+    document.addEventListener("pointerdown", pointerDownHandler, true);
     let pointerUp = () => {
       if (useUIState.getState().selectedBlock.length > 1)
         window.getSelection()?.removeAllRanges();
@@ -95,6 +126,7 @@ export function Blocks(props: { entityID: string }) {
     return () => {
       window.removeEventListener("pointerup", pointerUp);
       document.removeEventListener("keydown", keyDownHandler, true);
+      document.removeEventListener("pointerdown", pointerDownHandler, true);
       document.removeEventListener("selectionchange", selectionChangeHandler);
     };
   }, [isMobile]);
@@ -372,14 +404,15 @@ export function focusBlock(
     left === "end"
       ? { pos: tr.doc.content.size - 1 }
       : left === "start"
-        ? { pos: 0 }
+        ? { pos: 1 }
         : nextBlock.view.posAtCoords({
             top:
               top === "top"
-                ? nextBlockViewClientRect.top + 5
-                : nextBlockViewClientRect.bottom - 5,
+                ? nextBlockViewClientRect.top + 2
+                : nextBlockViewClientRect.bottom - 2,
             left,
           });
+  console.log(pos);
 
   let newState = nextBlock.editor.apply(
     tr.setSelection(TextSelection.create(tr.doc, pos?.pos || 0)),

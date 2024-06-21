@@ -1,9 +1,13 @@
 import { useRef, useEffect, useState } from "react";
 import { elementId } from "src/utils/elementId";
-import { baseKeymap } from "prosemirror-commands";
+import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import * as Y from "yjs";
-import { ProseMirror, useEditorEffect } from "@nytimes/react-prosemirror";
+import {
+  ProseMirror,
+  useEditorEffect,
+  useEditorEventCallback,
+} from "@nytimes/react-prosemirror";
 import * as base64 from "base64-js";
 import {
   useReplicache,
@@ -25,8 +29,9 @@ import { BlockProps } from "components/Blocks";
 import { TextBlockKeymap } from "./keymap";
 import { multiBlockSchema, schema } from "./schema";
 import { useUIState } from "src/useUIState";
-import { DOMParser as ProsemirrorDOMParser } from "prosemirror-model";
+import { MarkType, DOMParser as ProsemirrorDOMParser } from "prosemirror-model";
 import { BlockCardSmall, BlockImageSmall } from "components/Icons";
+import { useAppEventListener } from "src/eventBus";
 
 export let useEditorStates = create(() => ({
   lastXPosition: 0,
@@ -234,6 +239,16 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
       <pre
         onFocus={() => {
           useUIState.getState().setSelectedBlock(props.entityID);
+          useUIState.setState((s) => ({
+            ...s,
+            focusedTextBlock: props.entityID,
+          }));
+        }}
+        onSelect={() => {
+          useUIState.setState((s) => ({
+            ...s,
+            focusedTextBlock: props.entityID,
+          }));
         }}
         onPaste={async (e) => {}}
         id={elementId.block(props.entityID).text}
@@ -251,8 +266,17 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
         />
       )}
       <SyncView entityID={props.entityID} />
+      <CommandHandler entityID={props.entityID} />
     </ProseMirror>
   );
+}
+
+function CommandHandler(props: { entityID: string }) {
+  let cb = useEditorEventCallback((view, args: { mark: MarkType }) => {
+    toggleMark(args.mark)(view.state, view.dispatch);
+  });
+  useAppEventListener(props.entityID, "toggleMark", cb, []);
+  return null;
 }
 
 export function BlockOptions(props: {

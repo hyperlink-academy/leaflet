@@ -4,6 +4,7 @@ import { combine, createJSONStorage, persist } from "zustand/middleware";
 export const useUIState = create(
   combine(
     {
+      focusedTextBlock: null as string | null,
       openCards: [] as string[],
       selectedBlock: [] as string[],
     },

@@ -1,10 +1,25 @@
-import { Schema, Node } from "prosemirror-model";
+import { Schema, Node, MarkSpec } from "prosemirror-model";
 import { marks } from "prosemirror-schema-basic";
 
 let baseSchema = {
   marks: {
     strong: marks.strong,
     em: marks.em,
+    underline: {
+      parseDOM: [
+        { tag: "u" },
+        {
+          style: "text-decoration=underline",
+        },
+        {
+          style: "text-decoration=none",
+          clearMark: (m) => m.type.name == "underline",
+        },
+      ],
+      toDOM() {
+        return ["u", { class: "underline" }, 0];
+      },
+    } as MarkSpec,
   },
   nodes: {
     doc: { content: "block" },

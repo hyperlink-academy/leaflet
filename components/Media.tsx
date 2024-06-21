@@ -1,3 +1,4 @@
+"use client";
 import { useIsInitialRender, useIsMobile } from "src/hooks/isMobile";
 
 export function Media(props: {
