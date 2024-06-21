@@ -93,19 +93,20 @@ const increaseHeadingLevel: Mutation<{ entityID: string }> = async (
       attribute: "block/type",
       data: { type: "block-type-union", value: "heading" },
     });
-  if (!headinglevel)
-    await ctx.assertFact({
+
+  if (!headinglevel || blockType?.data.value !== "heading") {
+    return await ctx.assertFact({
       entity: args.entityID,
       attribute: "block/heading-level",
       data: { type: "number", value: 1 },
     });
-  else if (headinglevel?.data.value === 4) return;
-  else
-    return await ctx.assertFact({
-      entity: args.entityID,
-      attribute: "block/heading-level",
-      data: { type: "number", value: headinglevel.data.value + 1 },
-    });
+  }
+  if (headinglevel?.data.value === 4) return;
+  return await ctx.assertFact({
+    entity: args.entityID,
+    attribute: "block/heading-level",
+    data: { type: "number", value: headinglevel.data.value + 1 },
+  });
 };
 
 export const mutations = {

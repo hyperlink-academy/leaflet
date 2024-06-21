@@ -1,6 +1,6 @@
 import { BlockProps, focusBlock } from "components/Blocks";
 import { generateKeyBetween } from "fractional-indexing";
-import { toggleMark } from "prosemirror-commands";
+import { setBlockType, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { EditorState, TextSelection, Transaction } from "prosemirror-state";
 import { MutableRefObject } from "react";
@@ -16,6 +16,7 @@ export const TextBlockKeymap = (
 ) =>
   keymap({
     "Meta-b": toggleMark(schema.marks.strong),
+    "Meta-u": toggleMark(schema.marks.underline),
     "Meta-i": toggleMark(schema.marks.em),
     "#": (state, dispatch, view) => {
       if (state.selection.content().size > 0) return false;
@@ -95,10 +96,26 @@ const backspace =
     repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
   (state: EditorState) => {
-    if (!propsRef.current.previousBlock) {
+    if (state.selection.anchor > 1 || state.selection.content().size > 0) {
       return false;
     }
-    if (state.selection.anchor > 1 || state.selection.content().size > 0) {
+    if (!propsRef.current.previousBlock) {
+      if (propsRef.current.type === "heading") {
+        repRef.current?.mutate.assertFact({
+          entity: propsRef.current.entityID,
+          attribute: "block/type",
+          data: { type: "block-type-union", value: "text" },
+        });
+        setTimeout(
+          () =>
+            focusBlock(
+              { value: propsRef.current.entityID, type: "heading" },
+              "start",
+              "bottom",
+            ),
+          10,
+        );
+      }
       return false;
     }
 
@@ -168,12 +185,14 @@ const enter =
       let block = useEditorStates.getState().editorStates[newEntityID];
       if (block) {
         let tr = block.editor.tr;
-        tr.replaceWith(0, tr.doc.content.size, newContent.content);
-        tr.setSelection(TextSelection.create(tr.doc, 0));
-        let newState = block.editor.apply(tr);
-        setEditorState(newEntityID, {
-          editor: newState,
-        });
+        if (newContent.content.size > 2) {
+          tr.replaceWith(0, tr.doc.content.size, newContent.content);
+          tr.setSelection(TextSelection.create(tr.doc, 0));
+          let newState = block.editor.apply(tr);
+          setEditorState(newEntityID, {
+            editor: newState,
+          });
+        }
       }
       document.getElementById(elementId.block(newEntityID).text)?.focus();
     }, 10);
