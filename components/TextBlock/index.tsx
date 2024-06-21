@@ -76,7 +76,7 @@ export function TextBlock(props: BlockProps & { className: string }) {
 
 export function RenderedTextBlock(props: {
   entityID: string;
-  className: string;
+  className?: string;
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
   if (!initialFact) return <pre className="min-h-6" />;
