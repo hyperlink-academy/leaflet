@@ -5,21 +5,29 @@ import { BlockProps } from "./Blocks";
 import { useUIState } from "src/useUIState";
 import { theme } from "tailwind.config";
 import { CloseContrastSmall } from "./Icons";
+import useMeasure from "react-use-measure";
 
 export function ImageBlock(props: BlockProps) {
   let { rep } = useReplicache();
+  let [ref, { width }] = useMeasure();
   let image = useEntity(props.entityID, "block/image");
-
+  let imageHeight = image?.data.height;
+  let imageWidth = image?.data.width;
+  console.log(imageWidth && width < imageWidth);
   if (image?.data.local && image.data.local !== rep?.clientID)
     return (
       <div
+        ref={ref}
         style={{
-          height: image?.data.height,
+          height:
+            imageWidth && imageHeight && width < imageWidth
+              ? imageHeight * (width / imageWidth)
+              : imageHeight,
           width: image?.data.width,
         }}
-        className="flex content-center text-center"
+        className="flex place-items-center justify-center bg-border-light italic text-tertiary rounded-md min-w-full max-w-full"
       >
-        loading
+        loading...
       </div>
     );
 
