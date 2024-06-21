@@ -9,7 +9,6 @@ export function useColorAttribute(
   attribute: keyof FilterAttributes<{ type: "color"; cardinality: "one" }>,
 ) {
   let color = useEntity(entity, attribute);
-  console.log(attribute, color?.attribute);
   return useMemo(() => {
     return parseColor(
       color ? `hsba(${color.data.value})` : ThemeDefaults[attribute],

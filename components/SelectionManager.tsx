@@ -13,7 +13,6 @@ export function SelectionManager() {
   useEffect(() => {
     if (moreThanOneSelected) {
       let listener = async (e: KeyboardEvent) => {
-        console.log(e);
         if (e.key === "Backspace" || e.key === "Delete") {
           for (let entity of useUIState.getState().selectedBlock) {
             await rep?.mutate.removeBlock({ blockEntity: entity });
