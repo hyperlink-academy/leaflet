@@ -236,7 +236,7 @@ export const ThemePopover = (props: { entityID: string }) => {
 };
 
 let thumbStyle =
-  "w-4 h-4 rounded-full border-2 border-white shadow-[0_0_0_1px_black,_inset_0_0_0_1px_black]";
+  "w-4 h-4 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C,_inset_0_0_0_1px_#8C8C8C]";
 
 const ColorPicker = (props: {
   label?: string;
@@ -375,8 +375,8 @@ const BGPicker = (props: {
   let { rep } = useReplicache();
 
   return (
-    <div className="flex flex-col gap-0 -mb-[6px] z-10 w-full px-2 pt-3">
-      <div className="bgPicker w-full  flex flex-col gap-2 p-2 border border-bg-page rounded-md shadow-[0_0_0_1px_#CCCCCC]">
+    <div className="bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full px-2 pt-3">
+      <div className="bgPickerBody w-full flex flex-col gap-2 p-2 border border-[#CCCCCC] rounded-md">
         <div className="bgPickerLabel flex justify-between place-items-center ">
           <button
             onClick={() => {
@@ -446,7 +446,7 @@ const BGPicker = (props: {
           </label>
         </div>
         {open && (
-          <div className="w-full flex flex-col gap-2 pb-2">
+          <div className="bgImageAndColorPicker w-full flex flex-col gap-2 pb-2">
             {bgImage ? (
               <ImageSettings entityID={props.entityID} />
             ) : (
@@ -479,11 +479,7 @@ const BGPicker = (props: {
           </div>
         )}
       </div>
-      <SectionArrow
-        fill={theme.colors["bg-page"]}
-        stroke="#CCCCCC"
-        className="ml-2"
-      />
+      <SectionArrow fill="white" stroke="#CCCCCC" className="ml-2 -mt-[1px]" />
     </div>
   );
 };
@@ -594,11 +590,9 @@ const ImageSettings = (props: { entityID: string }) => {
               });
             }}
           >
-            <Slider.Track className="bg-accent relative grow rounded-full h-[3px]">
-              {/* <Slider.Range className="absolute bg-accentText rounded-full h-full" /> */}
-            </Slider.Track>
+            <Slider.Track className="bg-accent relative grow rounded-full h-[3px]"></Slider.Track>
             <Slider.Thumb
-              className="flex w-4 h-4 rounded-full border-2 border-white bg-accent shadow-[0_0_0_1px_black,_inset_0_0_0_1px_black] cursor-pointer"
+              className="flex w-4 h-4 rounded-full border-2 border-white bg-accent shadow-[0_0_0_1px_#8C8C8C,_inset_0_0_0_1px_#8C8C8C] cursor-pointer"
               aria-label="Volume"
             />
           </Slider.Root>
