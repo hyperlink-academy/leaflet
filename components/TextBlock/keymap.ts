@@ -53,7 +53,7 @@ export const TextBlockKeymap = (
       if (!view) return true;
       const viewClientRect = view.dom.getBoundingClientRect();
       const coords = view.coordsAtPos(view.state.selection.anchor);
-      let isBottom = viewClientRect.bottom - coords.bottom < 5;
+      let isBottom = viewClientRect.bottom - coords.bottom < 12;
       if (isBottom) {
         let block = propsRef.current.nextBlock;
         if (block) {
