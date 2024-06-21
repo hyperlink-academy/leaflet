@@ -5,6 +5,7 @@ import {
   CloseTiny,
   BlockImageSmall,
   LinkSmall,
+  BlockLinkSmall,
 } from "../../components/Icons";
 import { theme } from "../../tailwind.config";
 import useMeasure from "react-use-measure";
@@ -50,7 +51,7 @@ const BlockTypeSelector = (props: { focus: boolean; empty: boolean }) => {
         </button>
 
         <button className="text-tertiary hover:text-accent">
-          <LinkSmall />
+          <BlockLinkSmall />
         </button>
       </div>
     </div>
