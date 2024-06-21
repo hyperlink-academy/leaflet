@@ -104,7 +104,7 @@ export const BlockImageSmall = (props: Props) => {
   );
 };
 
-export const CloseConstrastSmall = (props: {
+export const CloseContrastSmall = (props: {
   fill: string;
   outline: string;
 }) => {

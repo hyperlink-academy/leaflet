@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   BlockCardSmall,
-  CloseConstrastSmall,
+  CloseContrastSmall,
   CloseTiny,
   BlockImageSmall,
   LinkSmall,
@@ -60,7 +60,7 @@ export const ImageBlock = (props: { src: string; cardHeight: number }) => {
   return (
     <div className="pb-4 pt-2 relative group/image flex w-fit place-self-center justify-center">
       <button className="absolute right-2 top-6 z-10 hidden group-hover/image:block">
-        <CloseConstrastSmall
+        <CloseContrastSmall
           fill={theme.colors.primary}
           outline={theme.colors["bg-card"]}
         />{" "}
