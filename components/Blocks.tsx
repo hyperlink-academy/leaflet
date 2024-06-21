@@ -147,7 +147,7 @@ export function Blocks(props: { entityID: string }) {
 
   let lastBlock = blocks[blocks.length - 1];
   return (
-    <div ref={ref} className="w-full flex flex-col gap-1 p-2 outline-none">
+    <div ref={ref} className="w-full flex flex-col p-3 sm:p-4 outline-none">
       {blocks.map((f, index, arr) => {
         return (
           <Block
@@ -313,7 +313,13 @@ function Block(props: BlockProps) {
         }
         useUIState.getState().removeBlockFromSelection(props.entityID);
       }}
-      className={`border ${!selected ? "border-transparent" : ""}`}
+      className={`border  first:mt-0 ${!selected ? "border-transparent" : ""} ${
+        props.type === "text"
+          ? "mb-3"
+          : props.type === "heading"
+            ? "mt-2 mb-1"
+            : "mb-3"
+      }`}
       id={elementId.block(props.entityID).container}
     >
       {props.type === "card" ? (
@@ -330,10 +336,9 @@ function Block(props: BlockProps) {
 }
 
 const HeadingStyle = {
-  1: "text-2xl  font-bold",
-  2: "text-xl font-bold",
-  3: "text-lg font-bold",
-  4: "text-base font-bold italic",
+  1: "text-xl font-bold",
+  2: "text-lg font-bold ",
+  3: "text-base font-bold italic text-secondary ",
 } as { [level: number]: string };
 export function HeadingBlock(props: BlockProps) {
   let headingLevel = useEntity(props.entityID, "block/heading-level");

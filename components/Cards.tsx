@@ -11,7 +11,7 @@ export function Cards(props: { rootCard: string }) {
   let [cardRef, { width: cardWidth }] = useMeasure();
 
   return (
-    <div className="pageContent flex py-4">
+    <div className="pageContent flex pt-2 pb-8 sm:py-6">
       <div
         className="flex justify-end items-start"
         style={{ width: `calc((100vw - ${cardWidth}px)/2)` }}
