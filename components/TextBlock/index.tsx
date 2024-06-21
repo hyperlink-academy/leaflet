@@ -126,6 +126,14 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
         }),
       });
   }, [editorState, props.entityID, props.parent, value]);
+  useEffect(() => {
+    return () => {
+      useEditorStates.setState((s) => ({
+        ...s,
+        editorStates: { ...s.editorStates, [props.entityID]: undefined },
+      }));
+    };
+  }, []);
   if (!editorState) return null;
 
   return (
