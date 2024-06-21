@@ -102,7 +102,7 @@ export const ThemePopover = (props: { entityID: string }) => {
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content
-            className="w-80 max-h-[800px] px-2 py-3 overflow-y-scroll bg-white rounded-md border border-border flex"
+            className="w-80 max-h-[800px] overflow-y-scroll bg-white rounded-md border border-border flex"
             align="center"
             sideOffset={4}
             collisionPadding={16}
@@ -126,11 +126,11 @@ export const ThemePopover = (props: { entityID: string }) => {
                     ? "cover"
                     : `calc(${backgroundRepeat.data.value}px / 2 )`,
                 }}
-                className="bg-bg-page p-3 pb-0 flex flex-col rounded-md"
+                className="bg-bg-page mx-2 mb-3 p-3 pb-0 flex flex-col rounded-md overflow-hidden border border-border"
               >
-                <div className="flex flex-col mt-4 -mb-[4px] z-10">
+                <div className="flex flex-col mt-4 -mb-[6px] z-10">
                   <div
-                    className="themePageControls text-accentText flex flex-col gap-1 h-full  bg-bg-page p-2 rounded-md border border-accentText"
+                    className="themePageControls text-accentText flex flex-col gap-2 h-full  bg-bg-page p-2 rounded-md border border-accentText shadow-[0_0_0_1px_rgb(var(--accent))]"
                     style={{ backgroundColor: "rgba(var(--accent), 0.6)" }}
                   >
                     <ColorPicker
@@ -154,8 +154,8 @@ export const ThemePopover = (props: { entityID: string }) => {
                   </div>
                   <SectionArrow
                     fill={theme.colors["accentText"]}
-                    stroke={theme.colors["accentText"]}
-                    className="-mt-[1px] ml-2"
+                    stroke={theme.colors["accent"]}
+                    className="ml-2"
                   />
                 </div>
 
@@ -163,9 +163,9 @@ export const ThemePopover = (props: { entityID: string }) => {
                   Button
                 </div>
                 {/* <hr className="my-3" /> */}
-                <div className="flex flex-col pt-8 -mb-[4px] z-10">
+                <div className="flex flex-col pt-8 -mb-[6px] z-10">
                   <div
-                    className="themePageControls flex flex-col gap-2 h-full text-primary bg-bg-page p-2 rounded-md border border-primary "
+                    className="themePageControls flex flex-col gap-2 h-full text-primary bg-bg-page p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-card))]"
                     style={{ backgroundColor: "rgba(var(--bg-card), 0.6)" }}
                   >
                     <div className="themePageColor flex items-start ">
@@ -204,8 +204,8 @@ export const ThemePopover = (props: { entityID: string }) => {
                   </div>
                   <SectionArrow
                     fill={theme.colors["primary"]}
-                    stroke={theme.colors["primary"]}
-                    className="-mt-[1px] ml-3"
+                    stroke={theme.colors["bg-card"]}
+                    className=" ml-2"
                   />
                 </div>
 
@@ -361,23 +361,6 @@ const ColorPicker = (props: {
   );
 };
 
-const TransparentBG = () => {
-  return (
-    <svg
-      width="8"
-      height="8"
-      viewBox="0 0 8 8"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect width="4" height="4" fill="#D9D9D9" />
-      <rect y="4" width="4" height="4" fill="white" />
-      <rect x="4" width="4" height="4" fill="white" />
-      <rect x="4" y="4" width="4" height="4" fill="#D9D9D9" />
-    </svg>
-  );
-};
-
 const BGPicker = (props: {
   entityID: string;
   openPicker: pickers;
@@ -392,9 +375,9 @@ const BGPicker = (props: {
   let { rep } = useReplicache();
 
   return (
-    <div className="flex flex-col gap-0 -mb-[6px] z-10 w-full">
-      <div className="bgPicker w-full  flex flex-col gap-2 px-2 py-1 border border-bg-page rounded-md">
-        <div className="bgPickerLabel flex justify-between place-items-center py-[2px] ">
+    <div className="flex flex-col gap-0 -mb-[6px] z-10 w-full px-2 pt-3">
+      <div className="bgPicker w-full  flex flex-col gap-2 p-2 border border-bg-page rounded-md shadow-[0_0_0_1px_#CCCCCC]">
+        <div className="bgPickerLabel flex justify-between place-items-center ">
           <button
             onClick={() => {
               if (props.openPicker === props.thisPicker) {
@@ -497,9 +480,9 @@ const BGPicker = (props: {
         )}
       </div>
       <SectionArrow
-        fill="white"
-        stroke={theme.colors["bg-page"]}
-        className="-mt-[1px] mx-auto"
+        fill={theme.colors["bg-page"]}
+        stroke="#CCCCCC"
+        className="ml-2"
       />
     </div>
   );
