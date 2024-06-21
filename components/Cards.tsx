@@ -70,6 +70,9 @@ function Card(props: { entityID: string; first?: boolean }) {
 }
 
 export function focusCard(id: string) {
+  {
+    /* TODO: focus into the first text block on the page */
+  }
   setTimeout(() => {
     let newCardID = document.getElementById(elementId.card(id).container);
     newCardID?.scrollIntoView({
