@@ -24,7 +24,7 @@ import {
   useState,
 } from "react";
 import { imageArgs } from "./page";
-import { CloseConstrastSmall, BlockImageSmall } from "components/Icons";
+import { CloseContrastSmall, BlockImageSmall } from "components/Icons";
 
 function setCSSVariableToColor(name: string, value: Color) {
   let colorStringLength = value.toString("rgb").length;
@@ -412,7 +412,7 @@ const BGImagePicker = (props: {
           }}
         />
         <button onClick={() => props.setPageBGImage({ url: "" })}>
-          <CloseConstrastSmall
+          <CloseContrastSmall
             fill={theme.colors.primary}
             outline={theme.colors["bg-card"]}
           />

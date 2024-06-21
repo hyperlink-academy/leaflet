@@ -116,9 +116,11 @@ export function useEntity<A extends keyof typeof Attributes>(
       if (entity === null) return null;
       let initialized = await tx.get("initialized");
       if (!initialized) return null;
-      return tx
-        .scan<Fact<A>>({ indexName: "eav", prefix: `${entity}-${attribute}` })
-        .toArray();
+      return (
+        await tx
+          .scan<Fact<A>>({ indexName: "eav", prefix: `${entity}-${attribute}` })
+          .toArray()
+      ).filter((f) => f.attribute === attribute);
     },
     {
       default: null,

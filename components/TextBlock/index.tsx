@@ -258,43 +258,45 @@ export function BlockOptions(props: {
   return (
     <div className="absolute top-0 right-0 hidden group-hover/text:block group-focus-within/text:block">
       <div className="flex gap-1 items-center">
-        <button className="text-tertiary hover:text-accent">
-          <BlockImageSmall />
-        </button>
-        <div className="hidden">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={async (e) => {
-              let file = e.currentTarget.files?.[0];
-              if (!file || !rep) return;
-              if (props.factID)
-                await rep.mutate.retractFact({ factID: props.factID });
-              let entity = props.entityID;
-              if (!entity) {
-                entity = crypto.randomUUID();
-                await rep?.mutate.addBlock({
-                  parent: props.parent,
-                  type: "text",
-                  position: generateKeyBetween(
-                    props.position,
-                    props.nextPosition,
-                  ),
-                  newEntityID: entity,
+        <label className="hover:cursor-pointer flex place-items-center">
+          <button className="text-tertiary hover:text-accent">
+            <BlockImageSmall />
+          </button>
+          <div className="hidden">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                let file = e.currentTarget.files?.[0];
+                if (!file || !rep) return;
+                if (props.factID)
+                  await rep.mutate.retractFact({ factID: props.factID });
+                let entity = props.entityID;
+                if (!entity) {
+                  entity = crypto.randomUUID();
+                  await rep?.mutate.addBlock({
+                    parent: props.parent,
+                    type: "text",
+                    position: generateKeyBetween(
+                      props.position,
+                      props.nextPosition,
+                    ),
+                    newEntityID: entity,
+                  });
+                }
+                await rep.mutate.assertFact({
+                  entity,
+                  attribute: "block/type",
+                  data: { type: "block-type-union", value: "image" },
                 });
-              }
-              await rep.mutate.assertFact({
-                entity,
-                attribute: "block/type",
-                data: { type: "block-type-union", value: "image" },
-              });
-              await addImage(file, rep, {
-                entityID: entity,
-                attribute: "block/image",
-              });
-            }}
-          />
-        </div>
+                await addImage(file, rep, {
+                  entityID: entity,
+                  attribute: "block/image",
+                });
+              }}
+            />
+          </div>
+        </label>
         <button
           className="text-tertiary hover:text-accent"
           onClick={async () => {

@@ -16,17 +16,17 @@ import {
   ColorSwatch,
 } from "react-aria-components";
 
-import { useMemo, useState } from "react";
-import { BlockImageSmall, CloseConstrastSmall } from "components/Icons";
+import { useEffect, useMemo, useState } from "react";
+import { BlockImageSmall, CloseContrastSmall } from "components/Icons";
 import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { Replicache } from "replicache";
 import { FilterAttributes } from "src/replicache/attributes";
-import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
+import {
+  colorToString,
+  useColorAttribute,
+} from "components/ThemeManager/useColorAttribute";
 import { addImage } from "src/utils/addImage";
-
-function colorToString(value: Color) {
-  return value.toString("rgb").slice(4, -1);
-}
+import { Separator } from "components/Layout";
 
 export type pickers =
   | "null"
@@ -45,7 +45,7 @@ function setColorAttribute(
       rep?.mutate.assertFact({
         entity,
         attribute,
-        data: { type: "color", value: colorToString(color) },
+        data: { type: "color", value: colorToString(color, "hsba") },
       });
 }
 export const ThemePopover = (props: { entityID: string }) => {
@@ -65,7 +65,7 @@ export const ThemePopover = (props: { entityID: string }) => {
     "theme/background-image-repeat",
   );
   let accentTextValue = useColorAttribute(props.entityID, "theme/accent-text");
-  let [openPicker, setOpenPicker] = useState<pickers>("page");
+  let [openPicker, setOpenPicker] = useState<pickers>("null");
   let set = useMemo(() => {
     return setColorAttribute(rep, props.entityID);
   }, [rep, props.entityID]);
@@ -102,21 +102,21 @@ export const ThemePopover = (props: { entityID: string }) => {
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content
-            className="w-80 max-h-[800px] p-2 overflow-y-scroll bg-white rounded-md border border-border flex"
+            className="w-80 max-h-[800px] px-2 py-3 overflow-y-scroll bg-white rounded-md border border-border flex"
             align="center"
             sideOffset={4}
             collisionPadding={16}
           >
             <div className="flex flex-col w-full overflow-hidden ">
-              <div className="themeBGPage flex pt-1 pr-2 pl-0 items-start">
+              <div className="themeBGPage flex">
                 <BGPicker
                   entityID={props.entityID}
                   thisPicker={"page"}
                   openPicker={openPicker}
                   setOpenPicker={setOpenPicker}
                   closePicker={() => setOpenPicker("null")}
+                  setValue={set("theme/page-background")}
                 />
-                <div className="w-2 h-full border-t-2 border-r-2 border-border rounded-tr-md mt-[13px]" />
               </div>
               <div
                 style={{
@@ -128,8 +128,11 @@ export const ThemePopover = (props: { entityID: string }) => {
                 }}
                 className="bg-bg-page p-3 pb-0 flex flex-col rounded-md"
               >
-                <div className="themeAccentControls flex flex-col h-full">
-                  <div className="themeAccentColor flex w-full pr-2 items-start ">
+                <div className="flex flex-col mt-4 -mb-[4px] z-10">
+                  <div
+                    className="themePageControls text-accentText flex flex-col gap-1 h-full  bg-bg-page p-2 rounded-md border border-accentText"
+                    style={{ backgroundColor: "rgba(var(--accent), 0.6)" }}
+                  >
                     <ColorPicker
                       label="Accent"
                       value={accentBGValue}
@@ -139,56 +142,55 @@ export const ThemePopover = (props: { entityID: string }) => {
                       setOpenPicker={setOpenPicker}
                       closePicker={() => setOpenPicker("null")}
                     />
-                    <div className="w-4 h-full border-t-2 border-r-2 border-accent rounded-tr-md mt-[13px] pb-[52px] -mb-[52px]" />
+                    <ColorPicker
+                      label="Text on Accent"
+                      value={accentTextValue}
+                      setValue={set("theme/accent-text")}
+                      thisPicker={"accentText"}
+                      openPicker={openPicker}
+                      setOpenPicker={setOpenPicker}
+                      closePicker={() => setOpenPicker("null")}
+                    />
                   </div>
-                  <div className="themeTextAccentColor w-full flex pr-2 pb-1 items-start ">
-                    <div className="flex w-full  gap-2 items-center place-self-end">
+                  <SectionArrow
+                    fill={theme.colors["accentText"]}
+                    stroke={theme.colors["accentText"]}
+                    className="-mt-[1px] ml-2"
+                  />
+                </div>
+
+                <div className="font-bold relative text-center text-lg py-2  rounded-md bg-accent text-accentText shadow-md">
+                  Button
+                </div>
+                {/* <hr className="my-3" /> */}
+                <div className="flex flex-col pt-8 -mb-[4px] z-10">
+                  <div
+                    className="themePageControls flex flex-col gap-2 h-full text-primary bg-bg-page p-2 rounded-md border border-primary "
+                    style={{ backgroundColor: "rgba(var(--bg-card), 0.6)" }}
+                  >
+                    <div className="themePageColor flex items-start ">
                       <ColorPicker
-                        label="Text on Accent"
-                        value={accentTextValue}
-                        setValue={set("theme/accent-text")}
-                        thisPicker={"accentText"}
+                        label="Page"
+                        value={cardValue}
+                        alpha={{
+                          value: cardBGAlpha?.data.value || 1,
+                          onChange: (a) => {
+                            if (!rep) return;
+                            rep.mutate.assertFact({
+                              entity: props.entityID,
+                              attribute: "theme/card-background-alpha",
+                              data: { type: "number", value: a },
+                            });
+                          },
+                        }}
+                        setValue={set("theme/card-background")}
+                        thisPicker={"card"}
                         openPicker={openPicker}
                         setOpenPicker={setOpenPicker}
                         closePicker={() => setOpenPicker("null")}
                       />
                     </div>
-                    <div className="w-2 h-full  border-r-2 border-t-2 border-border rounded-tr-md mt-[13px] z-10" />
-                    <div className="w-2 h-full border-r-2 border-accent " />
-                  </div>
-                  <div className="font-bold relative text-center text-lg py-2  rounded-md bg-accent text-accentText shadow-md">
-                    Button
-                    <div className="absolute h-[26px] w-[92px] top-0 right-[15.5px] border-b-2 border-r-2 rounded-br-md border-border" />
-                  </div>
-                </div>
-                <hr className="my-3" />
-
-                <div className="themePageControls flex flex-col h-full pb-1">
-                  <div className="themePageColor flex pr-2 items-start ">
-                    <ColorPicker
-                      label="Page"
-                      value={cardValue}
-                      alpha={{
-                        value: cardBGAlpha?.data.value || 1,
-                        onChange: (a) => {
-                          if (!rep) return;
-                          rep.mutate.assertFact({
-                            entity: props.entityID,
-                            attribute: "theme/card-background-alpha",
-                            data: { type: "number", value: a },
-                          });
-                        },
-                      }}
-                      setValue={set("theme/card-background")}
-                      thisPicker={"card"}
-                      openPicker={openPicker}
-                      setOpenPicker={setOpenPicker}
-                      closePicker={() => setOpenPicker("null")}
-                    />
-                    <div className="w-4 h-full border-t border-r border-border rounded-tr-md mt-3" />
-                  </div>
-                  <div className="themePageTextColor w-full flex pr-2 items-start">
-                    <div className="flex w-full gap-2 items-center place-self-end">
+                    <div className="themePageTextColor w-full flex pr-2 items-start">
                       <ColorPicker
                         label="Text"
                         value={primaryValue}
@@ -199,9 +201,12 @@ export const ThemePopover = (props: { entityID: string }) => {
                         closePicker={() => setOpenPicker("null")}
                       />
                     </div>
-                    <div className="w-2 h-full border-b border-r border-t border-border rounded-r-md mt-3 z-10 " />
-                    <div className="w-2 h-full border-r border-border " />
                   </div>
+                  <SectionArrow
+                    fill={theme.colors["primary"]}
+                    stroke={theme.colors["primary"]}
+                    className="-mt-[1px] ml-3"
+                  />
                 </div>
 
                 <div
@@ -213,8 +218,10 @@ export const ThemePopover = (props: { entityID: string }) => {
                 >
                   <p className="font-bold">Hello!</p>
                   <small className="">
-                    Welcome to Leaflet. It&apos;s a super easy and fun way to
-                    make, share, and collab on little bits of paper
+                    Welcome to{" "}
+                    <span className="font-bold text-accent">Leaflet</span>.
+                    It&apos;s a super easy and fun way to make, share, and
+                    collab on little bits of paper
                   </small>
                 </div>
               </div>
@@ -230,6 +237,7 @@ export const ThemePopover = (props: { entityID: string }) => {
 
 let thumbStyle =
   "w-4 h-4 rounded-full border-2 border-white shadow-[0_0_0_1px_black,_inset_0_0_0_1px_black]";
+
 const ColorPicker = (props: {
   label?: string;
   value: Color;
@@ -240,27 +248,34 @@ const ColorPicker = (props: {
   setOpenPicker: (thisPicker: pickers) => void;
   closePicker: () => void;
 }) => {
-  let value = useMemo(() => {
-    if (!props.alpha) return props.value;
-    return props.value
-      .toFormat("rgba")
-      .withChannelValue("alpha", props.alpha.value);
-  }, [props.value, props.alpha]);
   return (
-    <SpectrumColorPicker value={value} onChange={props.setValue}>
-      <div className="flex flex-col w-full">
+    <SpectrumColorPicker value={props.value} onChange={props.setValue}>
+      <div className="flex flex-col w-full gap-2">
         <button
           onClick={() => {
-            props.setOpenPicker(props.thisPicker);
+            if (props.openPicker === props.thisPicker) {
+              props.setOpenPicker("null");
+            } else {
+              props.setOpenPicker(props.thisPicker);
+            }
           }}
-          style={{
-            backgroundColor: "rgba(var(--bg-card), .6)",
-          }}
-          className="colorPickerLabel flex gap-1 items-center place-self-end py-[2px] pl-1 mb-1 rounded-md"
+          style={
+            {
+              // backgroundColor: "rgba(var(--bg-card), .6)",
+            }
+          }
+          className="colorPickerLabel flex gap-2 items-center "
         >
-          <strong className="text-primary">{props.label}</strong>
-          <div className="flex">
-            <ColorField className="w-fit" defaultValue={value}>
+          <ColorSwatch
+            color={props.value}
+            className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
+            style={{
+              backgroundSize: "cover",
+            }}
+          />
+          <strong className="">{props.label}</strong>
+          <div className="flex gap-1">
+            <ColorField className="w-fit gap-1">
               <Input
                 onFocus={(e) => {
                   e.currentTarget.setSelectionRange(
@@ -277,25 +292,188 @@ const ColorPicker = (props: {
                 onBlur={(e) => {
                   props.setValue(parseColor(e.currentTarget.value));
                 }}
-                className="w-[72px] bg-transparent outline-none text-primary"
+                className="w-[72px] bg-transparent outline-none"
               />
             </ColorField>
-          </div>
-          <div className="flex items-center">
-            <ColorSwatch
-              color={value}
-              className={`w-6 h-6 rounded-full  border-2 border-border`}
-              style={{
-                backgroundSize: "cover",
-              }}
-            />
-            <div className="border border-border w-1" />
+            {props.alpha && (
+              <>
+                <Separator classname="my-1" />
+                <ColorField className="w-fit pl-[6px]" channel="alpha">
+                  <Input
+                    onFocus={(e) => {
+                      e.currentTarget.setSelectionRange(
+                        0,
+                        e.currentTarget.value.length - 1,
+                      );
+                      props.setOpenPicker(props.thisPicker);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.currentTarget.blur();
+                      } else return;
+                    }}
+                    className="w-[72px] bg-transparent outline-none text-primary"
+                  />
+                </ColorField>
+              </>
+            )}
           </div>
         </button>
         {props.openPicker === props.thisPicker && (
-          <div className="w-full flex flex-col gap-2 pb-3">
+          <div className="w-full flex flex-col gap-2 px-1">
             {
               <>
+                <ColorArea
+                  className="w-full h-[128px] rounded-md"
+                  colorSpace="hsb"
+                  xChannel="saturation"
+                  yChannel="brightness"
+                >
+                  <ColorThumb className={thumbStyle} />
+                </ColorArea>
+                <ColorSlider colorSpace="hsb" className="w-full" channel="hue">
+                  <SliderTrack className="h-2 w-full rounded-md">
+                    <ColorThumb className={`${thumbStyle} mt-[4px]`} />
+                  </SliderTrack>
+                </ColorSlider>
+                {props.alpha && (
+                  <ColorSlider
+                    colorSpace="hsb"
+                    className="w-full mt-1 rounded-full"
+                    style={{
+                      backgroundImage: `url(./transparent-bg.png)`,
+                      backgroundRepeat: "repeat",
+                      backgroundSize: "8px",
+                    }}
+                    channel="alpha"
+                  >
+                    <SliderTrack className="h-2 w-full rounded-md">
+                      <ColorThumb className={`${thumbStyle} mt-[4px]`} />
+                    </SliderTrack>
+                  </ColorSlider>
+                )}
+              </>
+            }
+          </div>
+        )}
+      </div>
+    </SpectrumColorPicker>
+  );
+};
+
+const TransparentBG = () => {
+  return (
+    <svg
+      width="8"
+      height="8"
+      viewBox="0 0 8 8"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect width="4" height="4" fill="#D9D9D9" />
+      <rect y="4" width="4" height="4" fill="white" />
+      <rect x="4" width="4" height="4" fill="white" />
+      <rect x="4" y="4" width="4" height="4" fill="#D9D9D9" />
+    </svg>
+  );
+};
+
+const BGPicker = (props: {
+  entityID: string;
+  openPicker: pickers;
+  thisPicker: pickers;
+  setOpenPicker: (thisPicker: pickers) => void;
+  closePicker: () => void;
+  setValue: (c: Color) => void;
+}) => {
+  let bgImage = useEntity(props.entityID, "theme/background-image");
+  let bgColor = useColorAttribute(props.entityID, "theme/page-background");
+  let open = props.openPicker == props.thisPicker;
+  let { rep } = useReplicache();
+
+  return (
+    <div className="flex flex-col gap-0 -mb-[6px] z-10 w-full">
+      <div className="bgPicker w-full  flex flex-col gap-2 px-2 py-1 border border-bg-page rounded-md">
+        <div className="bgPickerLabel flex justify-between place-items-center py-[2px] ">
+          <button
+            onClick={() => {
+              if (props.openPicker === props.thisPicker) {
+                props.setOpenPicker("null");
+              } else {
+                props.setOpenPicker(props.thisPicker);
+              }
+            }}
+            className="bgPickerColorLabel flex gap-2 items-center"
+          >
+            <ColorSwatch
+              color={bgColor}
+              className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
+              style={{
+                backgroundImage: `url(${bgImage?.data.src})`,
+                backgroundSize: "cover",
+              }}
+            />
+            <strong className="text-[#595959]">Background</strong>
+            <div className="flex">
+              {bgImage ? (
+                <div>Image</div>
+              ) : (
+                <ColorField className="w-fit gap-1" value={bgColor}>
+                  <Input
+                    onFocus={(e) => {
+                      e.currentTarget.setSelectionRange(
+                        1,
+                        e.currentTarget.value.length,
+                      );
+                      props.setOpenPicker(props.thisPicker);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.currentTarget.blur();
+                      } else return;
+                    }}
+                    onBlur={(e) => {
+                      props.setValue(parseColor(e.currentTarget.value));
+                    }}
+                    className="w-[72px] bg-transparent outline-none text-[#595959]"
+                  />
+                </ColorField>
+              )}
+            </div>
+          </button>
+          <label className="hover:cursor-pointer h-fit">
+            <div className="text-[#8C8C8C] hover:text-accent">
+              <BlockImageSmall />
+            </div>
+            <div className="hidden">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  let file = e.currentTarget.files?.[0];
+                  if (!file || !rep) return;
+                  await addImage(file, rep, {
+                    entityID: props.entityID,
+                    attribute: "theme/background-image",
+                  });
+                  props.setOpenPicker(props.thisPicker);
+                }}
+              />
+            </div>
+          </label>
+        </div>
+        {open && (
+          <div className="w-full flex flex-col gap-2 pb-2">
+            {bgImage ? (
+              <ImageSettings entityID={props.entityID} />
+            ) : (
+              <SpectrumColorPicker
+                value={bgColor}
+                onChange={setColorAttribute(
+                  rep,
+                  props.entityID,
+                )("theme/page-background")}
+              >
                 <ColorArea
                   className="w-full h-[128px] rounded-md"
                   colorSpace="hsb"
@@ -313,131 +491,16 @@ const ColorPicker = (props: {
                     <ColorThumb className={`${thumbStyle} mt-[4px]`} />
                   </SliderTrack>
                 </ColorSlider>
-                {props.alpha && (
-                  <ColorSlider
-                    value={value}
-                    colorSpace="hsb"
-                    className="w-full pt-1"
-                    channel="alpha"
-                    onChange={(value) => {
-                      props.alpha?.onChange(value.getChannelValue("alpha"));
-                    }}
-                  >
-                    <SliderTrack className="h-2 w-full rounded-md">
-                      <ColorThumb className={`${thumbStyle} mt-[4px]`} />
-                    </SliderTrack>
-                  </ColorSlider>
-                )}
-              </>
-            }
+              </SpectrumColorPicker>
+            )}
           </div>
         )}
       </div>
-    </SpectrumColorPicker>
-  );
-};
-
-const BGPicker = (props: {
-  entityID: string;
-  openPicker: pickers;
-  thisPicker: pickers;
-  setOpenPicker: (thisPicker: pickers) => void;
-  closePicker: () => void;
-}) => {
-  let bgImage = useEntity(props.entityID, "theme/background-image");
-  let bgColor = useColorAttribute(props.entityID, "theme/page-background");
-  let open = props.openPicker == props.thisPicker;
-  let { rep } = useReplicache();
-
-  return (
-    <div>
-      <button
-        onClick={() => {
-          props.setOpenPicker(props.thisPicker);
-        }}
-        className="colorPickerLabel flex gap-1 items-center place-self-end py-[2px] pl-1 mb-1 rounded-md"
-      >
-        <strong className="text-primary">Background</strong>
-        <div className="flex">
-          <ColorField className="w-fit" defaultValue={bgColor}>
-            <Input
-              onFocus={(e) => {
-                e.currentTarget.setSelectionRange(
-                  1,
-                  e.currentTarget.value.length,
-                );
-                props.setOpenPicker(props.thisPicker);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.currentTarget.blur();
-                } else return;
-              }}
-              className="w-[72px] bg-transparent outline-none text-primary"
-            />
-          </ColorField>
-
-          <label className="hover:cursor-pointer ">
-            <div className="text-tertiary hover:text-accent">
-              <BlockImageSmall />
-            </div>
-            <div className="hidden">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-                  let file = e.currentTarget.files?.[0];
-                  if (!file || !rep) return;
-                  await addImage(file, rep, {
-                    entityID: props.entityID,
-                    attribute: "theme/background-image",
-                  });
-                }}
-              />
-            </div>
-          </label>
-        </div>
-        <div className="flex items-center">
-          <ColorSwatch
-            color={bgColor}
-            className={`w-6 h-6 rounded-full  border-2 border-border`}
-            style={{
-              backgroundImage: `url(${bgImage?.data.src})`,
-              backgroundSize: "cover",
-            }}
-          />
-          <div className="border border-border w-1" />
-        </div>
-      </button>
-      {open && (
-        <div className="w-full flex flex-col gap-2 pb-3">
-          {props.thisPicker === "page" && bgImage ? (
-            <ImageSettings entityID={props.entityID} />
-          ) : (
-            <SpectrumColorPicker
-              value={bgColor}
-              onChange={setColorAttribute(
-                rep,
-                props.entityID,
-              )("theme/page-background")}
-            >
-              <ColorArea
-                className="w-full h-[128px] rounded-md"
-                colorSpace="hsb"
-                xChannel="saturation"
-                yChannel="brightness"
-              >
-                <ColorThumb className={thumbStyle} />
-              </ColorArea>
-              <ColorSlider colorSpace="hsb" className="w-full  " channel="hue">
-                <SliderTrack className="h-2 w-full rounded-md">
-                  <ColorThumb className={`${thumbStyle} mt-[4px]`} />
-                </SliderTrack>
-              </ColorSlider>
-            </SpectrumColorPicker>
-          )}
-        </div>
-      )}
+      <SectionArrow
+        fill="white"
+        stroke={theme.colors["bg-page"]}
+        className="-mt-[1px] mx-auto"
+      />
     </div>
   );
 };
@@ -455,8 +518,11 @@ const ImageSettings = (props: { entityID: string }) => {
         className="themeBGImagePreview flex gap-2 place-items-center justify-center w-full h-[128px]  bg-cover bg-center bg-no-repeat"
       >
         <label className="hover:cursor-pointer ">
-          <div className="text-tertiary hover:text-accent">
-            <BlockImageSmall />
+          <div
+            className="flex gap-2 rounded-md px-2 py-1 text-accent font-bold"
+            style={{ backgroundColor: "rgba(var(--bg-card), .6" }}
+          >
+            <BlockImageSmall /> Change Image
           </div>
           <div className="hidden">
             <input
@@ -479,13 +545,13 @@ const ImageSettings = (props: { entityID: string }) => {
             if (repeat) rep?.mutate.retractFact({ factID: repeat.id });
           }}
         >
-          <CloseConstrastSmall
-            fill={theme.colors.primary}
-            outline={theme.colors["bg-card"]}
+          <CloseContrastSmall
+            fill={theme.colors.accent}
+            outline={theme.colors["accentText"]}
           />
         </button>
       </div>
-      <div className="themeBGImageControls p-2 flex gap-2 items-center">
+      <div className="themeBGImageControls font-bold flex gap-2 items-center">
         <label htmlFor="cover" className="flex shrink-0">
           <input
             className="appearance-none"
@@ -525,7 +591,7 @@ const ImageSettings = (props: { entityID: string }) => {
             }}
           />
           <div
-            className={`border border-accent rounded-md px-1 py-0.5 cursor-pointer ${repeat ? "bg-accent text-accentText" : "bg-transparent text-accent"}`}
+            className={`z-10 border border-accent rounded-md px-1 py-0.5 cursor-pointer ${repeat ? "bg-accent text-accentText" : "bg-transparent text-accent"}`}
           >
             repeat
           </div>
@@ -556,5 +622,30 @@ const ImageSettings = (props: { entityID: string }) => {
         )}
       </div>
     </>
+  );
+};
+
+const SectionArrow = (props: {
+  fill: string;
+  stroke: string;
+  className: string;
+}) => {
+  return (
+    <svg
+      width="24"
+      height="12"
+      viewBox="0 0 24 12"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={props.className}
+    >
+      <path d="M11.9999 12L24 0H0L11.9999 12Z" fill={props.fill} />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M1.33552 0L12 10.6645L22.6645 0H24L12 12L0 0H1.33552Z"
+        fill={props.stroke}
+      />
+    </svg>
   );
 };

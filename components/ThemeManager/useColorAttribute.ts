@@ -9,13 +9,14 @@ export function useColorAttribute(
   attribute: keyof FilterAttributes<{ type: "color"; cardinality: "one" }>,
 ) {
   let color = useEntity(entity, attribute);
+  console.log(attribute, color?.attribute);
   return useMemo(() => {
     return parseColor(
-      color ? `rgb(${color.data.value})` : ThemeDefaults[attribute],
+      color ? `hsba(${color.data.value})` : ThemeDefaults[attribute],
     );
   }, [color, attribute]);
 }
 
-export function colorToString(value: Color) {
-  return value.toString("rgb").slice(4, -1);
+export function colorToString(value: Color, space: "rgb" | "hsba") {
+  return value.toString(space).slice(space.length + 1, -1);
 }

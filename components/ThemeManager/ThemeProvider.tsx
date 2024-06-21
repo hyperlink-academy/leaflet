@@ -22,7 +22,7 @@ export const ThemeDefaults = {
 };
 
 function setCSSVariableToColor(el: HTMLElement, name: string, value: Color) {
-  el?.style.setProperty(name, colorToString(value));
+  el?.style.setProperty(name, colorToString(value, "rgb"));
 }
 export function ThemeProvider(props: {
   entityID: string;
@@ -62,12 +62,12 @@ export function ThemeProvider(props: {
           backgroundSize: !backgroundImageRepeat
             ? "cover"
             : backgroundImageRepeat?.data.value,
-          "--bg-page": colorToString(bgPage),
-          "--bg-card": colorToString(bgCard),
-          "--bg-card-alpha": bgCardAlpha?.data.value || 1,
-          "--primary": colorToString(primary),
-          "--accent": colorToString(accentBG),
-          "--accent-text": colorToString(accentText),
+          "--bg-page": colorToString(bgPage, "rgb"),
+          "--bg-card": colorToString(bgCard, "rgb"),
+          "--bg-card-alpha": bgCard.getChannelValue("alpha"),
+          "--primary": colorToString(primary, "rgb"),
+          "--accent": colorToString(accentBG, "rgb"),
+          "--accent-text": colorToString(accentText, "rgb"),
         } as CSSProperties
       }
     >
