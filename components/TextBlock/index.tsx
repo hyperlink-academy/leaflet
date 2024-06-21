@@ -32,6 +32,7 @@ import { useUIState } from "src/useUIState";
 import { MarkType, DOMParser as ProsemirrorDOMParser } from "prosemirror-model";
 import { BlockCardSmall, BlockImageSmall } from "components/Icons";
 import { useAppEventListener } from "src/eventBus";
+import { focusCard } from "components/Cards";
 
 export let useEditorStates = create(() => ({
   lastXPosition: 0,
@@ -82,22 +83,22 @@ export function TextBlock(props: BlockProps & { className: string }) {
 export function RenderedTextBlock(props: {
   entityID: string;
   className?: string;
+  placeholder?: string;
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
   if (!initialFact) return <pre className="min-h-6" />;
   let doc = new Y.Doc();
   const update = base64.toByteArray(initialFact.data.value);
   Y.applyUpdate(doc, update);
+  let nodes = doc.getXmlElement("prosemirror").toArray();
+
   return (
     <pre
       className={`w-full whitespace-pre-wrap outline-none min-h-6 ${props.className}`}
     >
-      {doc
-        .getXmlElement("prosemirror")
-        .toArray()
-        .map((node, index) => (
-          <RenderYJSFragment key={index} node={node} />
-        ))}
+      {nodes.map((node, index) => (
+        <RenderYJSFragment key={index} node={node} />
+      ))}
     </pre>
   );
 }
@@ -288,9 +289,9 @@ export function BlockOptions(props: {
 }) {
   let { rep } = useReplicache();
   return (
-    <div className="absolute top-0 right-0 hidden group-hover/text:block group-focus-within/text:block">
-      <div className="flex gap-1 items-center">
-        <label className="hover:cursor-pointer flex place-items-center">
+    <div className="blockOptionsWrapper absolute top-0 right-0 hidden group-hover/text:block group-focus-within/text:block">
+      <div className="blockOptionsContent flex gap-1 items-center">
+        <label className="blockOptionsImage hover:cursor-pointer flex place-items-center">
           <div className="text-tertiary hover:text-accent ">
             <BlockImageSmall />
           </div>
@@ -330,10 +331,11 @@ export function BlockOptions(props: {
           </div>
         </label>
         <button
-          className="text-tertiary hover:text-accent"
+          className="blockOptionsCard text-tertiary hover:text-accent"
           onClick={async () => {
             if (!props.entityID) {
               let entity = crypto.randomUUID();
+
               await rep?.mutate.addBlock({
                 parent: props.parent,
                 type: "card",
@@ -343,12 +345,16 @@ export function BlockOptions(props: {
                 ),
                 newEntityID: entity,
               });
+              useUIState.getState().openCard(props.parent, entity);
+              focusCard(entity);
             } else {
               await rep?.mutate.assertFact({
                 entity: props.entityID,
                 attribute: "block/type",
                 data: { type: "block-type-union", value: "card" },
               });
+              useUIState.getState().openCard(props.parent, props.entityID);
+              focusCard(props.entityID);
             }
           }}
         >
