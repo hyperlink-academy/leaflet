@@ -13,7 +13,6 @@ export function ImageBlock(props: BlockProps) {
   let image = useEntity(props.entityID, "block/image");
   let imageHeight = image?.data.height;
   let imageWidth = image?.data.width;
-  console.log(imageWidth && width < imageWidth);
   if (image?.data.local && image.data.local !== rep?.clientID)
     return (
       <div
