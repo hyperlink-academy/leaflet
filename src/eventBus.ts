@@ -22,7 +22,7 @@ export function useAppEventListener<T extends keyof AppEvent>(
     return () => {
       listeners = listeners.filter((f) => f.cb !== listener);
     };
-  }, [...deps, listener, event]);
+  }, [...deps, listener, event, key]);
 }
 
 export function publishAppEvent<T extends keyof AppEvent>(
