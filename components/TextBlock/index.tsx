@@ -139,7 +139,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
         editorStates: { ...s.editorStates, [props.entityID]: undefined },
       }));
     };
-  }, []);
+  }, [props.entityID]);
   if (!editorState) return null;
 
   return (
@@ -240,9 +240,8 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
       <pre
         onFocus={() => {
           useUIState.getState().setSelectedBlock(props.entityID);
-          useUIState.setState((s) => ({
-            ...s,
-            focusedTextBlock: props.entityID,
+          useUIState.setState(() => ({
+            focusedBlock: { type: "block", entityID: props.entityID },
           }));
         }}
         onSelect={() => {

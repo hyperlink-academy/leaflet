@@ -45,6 +45,7 @@ export function Blocks(props: { entityID: string }) {
     let selectionChangeHandler = () => {
       if (skip == true) return;
       let selection = window.getSelection();
+
       let ranges;
       if (previous.current !== selection?.type) {
         ranges = saveSelection();
@@ -179,7 +180,16 @@ export function Blocks(props: { entityID: string }) {
 
   let lastBlock = blocks[blocks.length - 1];
   return (
-    <div ref={ref} className="w-full flex flex-col p-3 sm:p-4 outline-none">
+    <div
+      ref={ref}
+      className="w-full flex flex-col p-3 sm:p-4 outline-none h-full"
+      onClick={(e) => {
+        if (e.target === e.currentTarget)
+          useUIState.setState(() => ({
+            focusedBlock: { type: "card", entityID: props.entityID },
+          }));
+      }}
+    >
       {blocks.map((f, index, arr) => {
         return (
           <Block

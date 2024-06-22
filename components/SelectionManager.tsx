@@ -11,19 +11,22 @@ export function SelectionManager() {
   let moreThanOneSelected = useUIState((s) => s.selectedBlock.length > 1);
   let { rep } = useReplicache();
   useEffect(() => {
-    if (moreThanOneSelected) {
-      let listener = async (e: KeyboardEvent) => {
-        if (e.key === "Backspace" || e.key === "Delete") {
+    let listener = async (e: KeyboardEvent) => {
+      if (e.key === "Backspace" || e.key === "Delete") {
+        if (moreThanOneSelected) {
           for (let entity of useUIState.getState().selectedBlock) {
             await rep?.mutate.removeBlock({ blockEntity: entity });
           }
         }
-      };
-      window.addEventListener("keydown", listener);
-      return () => {
-        window.removeEventListener("keydown", listener);
-      };
-    }
+      }
+      if (e.key === "Escape") {
+        useUIState.setState(() => ({ focusedBlock: null }));
+      }
+    };
+    window.addEventListener("keydown", listener);
+    return () => {
+      window.removeEventListener("keydown", listener);
+    };
   }, [moreThanOneSelected, rep]);
   let dragStart = useSelectingMouse((s) => s.start);
   let initialContentEditableParent = useRef<null | Node>(null);
