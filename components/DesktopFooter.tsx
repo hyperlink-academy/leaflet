@@ -3,7 +3,7 @@ import { useUIState } from "src/useUIState";
 import { Media } from "./Media";
 import { TextToolbar } from "./Toolbar";
 
-export function DesktopFooter(props: { parentID: string }) {
+export function DesktopCardFooter(props: { parentID: string }) {
   let focusedTextBlock = useUIState((s) => s.focusedBlock);
   let focusedBlockParent =
     focusedTextBlock?.type === "card" ? null : focusedTextBlock?.parent;

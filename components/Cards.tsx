@@ -5,7 +5,7 @@ import useMeasure from "react-use-measure";
 import { elementId } from "src/utils/elementId";
 import { ThemePopover } from "./ThemeManager/ThemeSetter";
 import { Media } from "./Media";
-import { DesktopFooter } from "./DesktopFooter";
+import { DesktopCardFooter } from "./DesktopFooter";
 import { TextToolbar } from "./Toolbar";
 
 export function Cards(props: { rootCard: string }) {
@@ -65,7 +65,7 @@ function Card(props: { entityID: string; first?: boolean }) {
 
     `}
         >
-          <DesktopFooter parentID={props.entityID} />
+          <DesktopCardFooter parentID={props.entityID} />
           <Blocks entityID={props.entityID} />
         </div>
       </div>
