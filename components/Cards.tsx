@@ -6,7 +6,6 @@ import { elementId } from "src/utils/elementId";
 import { ThemePopover } from "./ThemeManager/ThemeSetter";
 import { Media } from "./Media";
 import { DesktopCardFooter } from "./DesktopFooter";
-import { TextToolbar } from "./Toolbar";
 
 export function Cards(props: { rootCard: string }) {
   let cards = useUIState((s) => s.openCards);
