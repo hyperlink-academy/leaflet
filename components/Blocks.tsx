@@ -90,28 +90,8 @@ export function Blocks(props: { entityID: string }) {
       e.target?.dispatchEvent(newEvent);
     };
 
-    let pointerDownHandler = (e: PointerEvent) => {
-      skip = true;
-      let selection = window.getSelection();
-      if (selection?.type !== "Range") return;
-      if ((e as ReplayedPointerEvent).replayed) {
-        skip = false;
-        return;
-      }
-      e.stopPropagation();
-
-      let ranges = saveSelection();
-      if (ref.current) ref.current.contentEditable = "false";
-      restoreSelection(ranges);
-      let newEvent = new PointerEvent(e.type, {
-        ...e,
-      }) as ReplayedPointerEvent;
-      newEvent.replayed = true;
-      e.target?.dispatchEvent(newEvent);
-    };
     document.addEventListener("selectionchange", selectionChangeHandler);
     document.addEventListener("keydown", keyDownHandler, true);
-    document.addEventListener("pointerdown", pointerDownHandler, true);
     let pointerUp = () => {
       if (useUIState.getState().selectedBlock.length > 1)
         window.getSelection()?.removeAllRanges();
@@ -120,7 +100,6 @@ export function Blocks(props: { entityID: string }) {
     return () => {
       window.removeEventListener("pointerup", pointerUp);
       document.removeEventListener("keydown", keyDownHandler, true);
-      document.removeEventListener("pointerdown", pointerDownHandler, true);
       document.removeEventListener("selectionchange", selectionChangeHandler);
     };
   }, [isMobile]);

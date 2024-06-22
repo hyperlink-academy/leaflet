@@ -54,7 +54,7 @@ export function ThemeProvider(props: {
   }, [bgPage, bgCard, primary, accentBG, accentText, bgCardAlpha]);
   return (
     <div
-      className="pageWrapper w-full bg-bg-page text-primary h-screen flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
+      className="pageWrapper w-full bg-bg-page text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
       style={
         {
           backgroundImage: `url(${backgroundImage?.data.src}), url(${backgroundImage?.data.fallback})`,

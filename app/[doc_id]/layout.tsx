@@ -1,26 +1,12 @@
 "use client";
 import { isIOS, useViewportSize } from "@react-aria/utils";
-import { usePreventScroll } from "@react-aria/overlays";
 import { useEffect, useState } from "react";
 
 export default function Layout(props: { children: React.ReactNode }) {
   let viewheight = useViewportSize().height;
   let difference = useViewportDifference();
 
-  usePreventScroll();
-  return (
-    <div
-      style={
-        !isIOS()
-          ? undefined
-          : difference === 0
-            ? undefined
-            : { height: viewheight }
-      }
-    >
-      {props.children}
-    </div>
-  );
+  return <div style={{ height: viewheight || "100%" }}>{props.children}</div>;
 }
 
 function useViewportDifference(): number {
