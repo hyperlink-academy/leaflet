@@ -61,13 +61,6 @@ export function Blocks(props: { entityID: string }) {
             if (entityID && child.textContent !== "") entityIDs.push(entityID);
           }
           useUIState.getState().setSelectedBlocks(entityIDs);
-        } else {
-          let entityid =
-            range.startContainer.parentElement?.parentElement?.parentElement?.parentElement?.getAttribute(
-              "data-entityid",
-            );
-          if (entityid)
-            useUIState.setState((s) => ({ focusedTextBlock: entityid }));
         }
       } else {
         if (ref.current) ref.current.contentEditable = "false";
