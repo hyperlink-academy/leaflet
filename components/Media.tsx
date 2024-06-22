@@ -4,7 +4,7 @@ import { useIsInitialRender, useIsMobile } from "src/hooks/isMobile";
 export function Media(props: {
   mobile: boolean;
   children: React.ReactNode;
-  className: string;
+  className?: string;
 }) {
   let initialRender = useIsInitialRender();
   let isMobile = useIsMobile();

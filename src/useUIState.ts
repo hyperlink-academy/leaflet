@@ -4,7 +4,10 @@ import { combine, createJSONStorage, persist } from "zustand/middleware";
 export const useUIState = create(
   combine(
     {
-      focusedBlock: null as { type: "block" | "card"; entityID: string } | null,
+      focusedBlock: null as
+        | { type: "card"; entityID: string }
+        | { type: "block"; entityID: string; parent: string }
+        | null,
       openCards: [] as string[],
       selectedBlock: [] as string[],
     },

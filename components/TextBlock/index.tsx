@@ -249,7 +249,11 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
         onFocus={() => {
           useUIState.getState().setSelectedBlock(props.entityID);
           useUIState.setState(() => ({
-            focusedBlock: { type: "block", entityID: props.entityID },
+            focusedBlock: {
+              type: "block",
+              entityID: props.entityID,
+              parent: props.parent,
+            },
           }));
         }}
         onSelect={() => {
