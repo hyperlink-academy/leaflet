@@ -27,6 +27,7 @@ import { create } from "zustand";
 import { combine } from "zustand/middleware";
 import { schema } from "components/TextBlock/schema";
 import { TextDecorationButton } from "./TextDecorationButton";
+import { TextBlockTypeButtons } from "./TextBlockTypeButtons";
 
 type textState = {
   bold: boolean;
@@ -138,7 +139,7 @@ export const TextToolbar = () => {
       ) : toolbarState === "link" ? (
         <LinkToolbar onClose={() => setToolbarState("default")} />
       ) : toolbarState === "header" ? (
-        <HeaderToolbar onClose={() => setToolbarState("default")} />
+        <TextBlockTypeButtons onClose={() => setToolbarState("default")} />
       ) : toolbarState === "list" ? (
         <ListToolbar onClose={() => setToolbarState("default")} />
       ) : toolbarState === "block" ? (
@@ -180,69 +181,6 @@ const LinkToolbar = (props: { onClose: () => void }) => {
           <CloseTiny />
         </button>
       </div>
-    </div>
-  );
-};
-
-const HeaderToolbar = (props: { onClose: () => void }) => {
-  let state = useTextState();
-
-  return (
-    // This Toolbar should close once the user starts typing again
-    <div className="flex w-full justify-between items-center gap-4">
-      <div className="flex items-center gap-[6px]">
-        <ToolbarButton
-          className="w-10 flex justify-center"
-          active
-          onClick={() => props.onClose()}
-        >
-          {state.header === "h1" ? (
-            <Header1Small />
-          ) : state.header === "h2" ? (
-            <Header2Small />
-          ) : state.header === "h3" ? (
-            <Header3Small />
-          ) : (
-            <ParagraphSmall />
-          )}{" "}
-        </ToolbarButton>
-        <Separator />
-        <ToolbarButton
-          onClick={() => {
-            state.setHeader("h1");
-          }}
-          active={state.header === "h1"}
-        >
-          <Header1Small />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => {
-            state.setHeader("h2");
-          }}
-          active={state.header === "h2"}
-        >
-          <Header2Small />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => {
-            state.setHeader("h3");
-          }}
-          active={state.header === "h3"}
-        >
-          <Header3Small />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => {
-            state.setHeader("p");
-            props.onClose();
-          }}
-          active={state.header === "p"}
-          className="px-[6px]"
-        >
-          Paragraph
-        </ToolbarButton>
-      </div>
-      <CloseToolbarButton onClose={props.onClose} />
     </div>
   );
 };
@@ -334,6 +272,7 @@ export const ToolbarButton = (props: {
     <button
       className={`rounded-md shrink-0  p-0.5 active:bg-accent active:text-accentText ${props.className} ${props.active ? "bg-accent text-accentText" : ""}`}
       onMouseDown={(e) => {
+        e.preventDefault();
         props.onClick && props.onClick(e);
       }}
     >
@@ -346,7 +285,7 @@ const Separator = () => {
   return <div className="h-6 border-r border-border" />;
 };
 
-const CloseToolbarButton = (props: { onClose: () => void }) => {
+export const CloseToolbarButton = (props: { onClose: () => void }) => {
   return (
     <button className="hover:text-accent" onClick={() => props.onClose()}>
       <CloseTiny />
