@@ -422,14 +422,14 @@ const BlockLinkButton = () => {
           <input
             id="block-link-input"
             className="w-full grow border-none outline-none "
-            placeholder="www.leafl.et"
+            placeholder="www.leaflet.pub"
             value={linkValue}
             onChange={(e) => setLinkValue(e.target.value)}
             onBlur={() => setLinkOpen(false)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                setLinkValue(linkValue);
                 setLinkOpen(false);
+                setLinkValue("");
               }
             }}
           />
@@ -437,8 +437,8 @@ const BlockLinkButton = () => {
             <button
               className="hover:text-accent"
               onClick={() => {
-                setLinkValue(linkValue);
                 setLinkOpen(false);
+                setLinkValue("");
               }}
             >
               <CheckTiny />

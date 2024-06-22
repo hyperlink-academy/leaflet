@@ -176,7 +176,7 @@ const LinkToolbar = (props: { onClose: () => void }) => {
       <Separator />
       <input
         className="w-full grow bg-transparent border-none outline-none "
-        placeholder="www.leafl.et"
+        placeholder="www.leaflet.pub"
         value={linkValue}
         onChange={(e) => setLinkValue(e.target.value)}
       />
