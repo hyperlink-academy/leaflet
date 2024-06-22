@@ -3,22 +3,20 @@ import { useUIState } from "src/useUIState";
 import { Media } from "./Media";
 import { ThemePopover } from "./ThemeManager/ThemeSetter";
 import { TextToolbar } from "components/Toolbar";
-import { useEditorStates } from "./TextBlock";
 
 export function MobileFooter(props: { entityID: string }) {
   let focusedTextBlock = useUIState((s) => s.focusedBlock);
   return (
-    <Media
-      mobile
-      className="w-full flex gap-2 flex-row-reverse items-center z-10"
-    >
-      <div className="z-10 bg-bg-card py-2 flex gap-[6px] items-center w-full">
-        {focusedTextBlock && focusedTextBlock.type == "block" ? (
+    <Media mobile className="w-full z-10 -mt-6">
+      {focusedTextBlock && focusedTextBlock.type == "block" ? (
+        <div className="z-10 p-2 flex gap-[6px] items-center bg-bg-card ">
           <TextToolbar />
-        ) : (
+        </div>
+      ) : (
+        <div className="z-10 pb-2 px-2 flex gap-[6px] items-center justify-end">
           <ThemePopover entityID={props.entityID} />
-        )}
-      </div>
+        </div>
+      )}
     </Media>
   );
 }

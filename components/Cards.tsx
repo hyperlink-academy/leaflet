@@ -47,9 +47,6 @@ export const PageOptions = (props: { entityID: string }) => {
 };
 
 function Card(props: { entityID: string; first?: boolean }) {
-  let focusedTextBlock = useUIState((s) => s.focusedBlock);
-  let focusedBlockParent =
-    focusedTextBlock?.type === "card" ? null : focusedTextBlock?.parent;
   return (
     <>
       {!props.first && <div className="w-6 md:snap-center" />}
@@ -68,15 +65,7 @@ function Card(props: { entityID: string; first?: boolean }) {
 
     `}
         >
-          <Media mobile={false} className="absolute bottom-4 w-full z-10 ">
-            {focusedTextBlock &&
-              focusedTextBlock.type === "block" &&
-              focusedBlockParent === props.entityID && (
-                <div className="w-fit mx-auto py-1 px-4 flex gap-2 items-center bg-bg-card border border-border rounded-full shadow-md">
-                  <TextToolbar />
-                </div>
-              )}
-          </Media>
+          <DesktopFooter parentID={props.entityID} />
           <Blocks entityID={props.entityID} />
         </div>
       </div>
