@@ -287,7 +287,13 @@ const Separator = () => {
 
 export const CloseToolbarButton = (props: { onClose: () => void }) => {
   return (
-    <button className="hover:text-accent" onClick={() => props.onClose()}>
+    <button
+      className="hover:text-accent"
+      onMouseDown={(e) => {
+        e.preventDefault();
+        props.onClose();
+      }}
+    >
       <CloseTiny />
     </button>
   );

@@ -5,7 +5,9 @@ import {
   ParagraphSmall,
 } from "components/Icons";
 import { Separator } from "components/Layout";
+import { setEditorState, useEditorStates } from "components/TextBlock";
 import { CloseToolbarButton, ToolbarButton } from "components/Toolbar";
+import { TextSelection } from "prosemirror-state";
 import { useCallback } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
@@ -28,6 +30,7 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
         return;
       }
       if (blockType.data.value === "text") {
+        keepFocus(focusedBlock.entityID);
         rep?.mutate.assertFact({
           entity: focusedBlock.entityID,
           attribute: "block/type",
@@ -102,13 +105,14 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
             if (headingLevel)
               rep?.mutate.retractFact({ factID: headingLevel.id });
             if (!focusedBlock || !blockType) return;
-            if (blockType.data.value !== "text")
+            if (blockType.data.value !== "text") {
+              keepFocus(focusedBlock.entityID);
               rep?.mutate.assertFact({
                 entity: focusedBlock?.entityID,
                 attribute: "block/type",
                 data: { type: "block-type-union", value: "text" },
               });
-            props.onClose();
+            }
           }}
           active={blockType?.data.value === "text"}
           className="px-[6px]"
@@ -120,3 +124,20 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
     </div>
   );
 };
+
+function keepFocus(entityID: string) {
+  let existingEditor = useEditorStates.getState().editorStates[entityID];
+  let selection = existingEditor?.editor.selection;
+  setTimeout(() => {
+    let existingEditor = useEditorStates.getState().editorStates[entityID];
+    if (!selection || !existingEditor) return;
+    existingEditor.view?.focus();
+    setEditorState(entityID, {
+      editor: existingEditor.editor.apply(
+        existingEditor.editor.tr.setSelection(
+          TextSelection.create(existingEditor.editor.doc, selection.anchor),
+        ),
+      ),
+    });
+  }, 10);
+}
