@@ -414,7 +414,7 @@ const BGImagePicker = (props: {
         <button onClick={() => props.setPageBGImage({ url: "" })}>
           <CloseContrastSmall
             fill={theme.colors.primary}
-            outline={theme.colors["bg-card"]}
+            stroke={theme.colors["bg-card"]}
           />
         </button>
       </div>

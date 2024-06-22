@@ -41,7 +41,7 @@ export function ImageBlock(props: BlockProps) {
       >
         <CloseContrastSmall
           fill={theme.colors.primary}
-          outline={theme.colors["bg-card"]}
+          stroke={theme.colors["bg-card"]}
         />
       </button>
       <img

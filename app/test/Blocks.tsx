@@ -61,9 +61,10 @@ export const ImageBlock = (props: { src: string; cardHeight: number }) => {
   return (
     <div className="pb-4 pt-2 relative group/image flex w-fit place-self-center justify-center">
       <button className="absolute right-2 top-6 z-10 hidden group-hover/image:block">
+        pt-2 pb-2 px-2 grow min-w-0{" "}
         <CloseContrastSmall
           fill={theme.colors.primary}
-          outline={theme.colors["bg-card"]}
+          stroke={theme.colors["bg-card"]}
         />{" "}
       </button>
       <img

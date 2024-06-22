@@ -526,7 +526,7 @@ const ImageSettings = (props: { entityID: string }) => {
         >
           <CloseContrastSmall
             fill={theme.colors.accent}
-            outline={theme.colors["accentText"]}
+            stroke={theme.colors["accentText"]}
           />
         </button>
       </div>
