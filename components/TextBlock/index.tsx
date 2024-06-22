@@ -15,6 +15,7 @@ import {
   ReplicacheMutators,
   Fact,
 } from "src/replicache";
+import * as Popover from "@radix-ui/react-popover";
 
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
@@ -30,9 +31,16 @@ import { TextBlockKeymap } from "./keymap";
 import { multiBlockSchema, schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { MarkType, DOMParser as ProsemirrorDOMParser } from "prosemirror-model";
-import { BlockCardSmall, BlockImageSmall } from "components/Icons";
+import {
+  BlockCardSmall,
+  BlockImageSmall,
+  BlockLinkSmall,
+  CheckTiny,
+  CloseTiny,
+} from "components/Icons";
 import { useAppEventListener } from "src/eventBus";
 import { focusCard } from "components/Cards";
+import { Separator } from "components/Layout";
 
 export let useEditorStates = create(() => ({
   lastXPosition: 0,
@@ -329,6 +337,8 @@ export function BlockOptions(props: {
             />
           </div>
         </label>
+        <BlockLinkButton />
+
         <button
           className="blockOptionsCard text-tertiary hover:text-accent"
           onClick={async () => {
@@ -386,6 +396,64 @@ let SyncView = (props: { entityID: string }) => {
     [props.entityID],
   );
   return null;
+};
+
+const BlockLinkButton = () => {
+  let [linkOpen, setLinkOpen] = useState(false);
+  let [linkValue, setLinkValue] = useState("");
+
+  return (
+    <div
+      className={`max-w-sm flex gap-2 rounded-md ${linkOpen ? "text-secondary" : " text-tertiary"}`}
+    >
+      <button
+        onClick={() => {
+          setLinkOpen(!linkOpen);
+          setTimeout(() => {
+            document.getElementById("block-link-input")?.focus();
+          }, 100);
+        }}
+      >
+        <BlockLinkSmall />
+      </button>
+      {linkOpen && (
+        <>
+          <Separator />
+          <input
+            id="block-link-input"
+            className="w-full grow border-none outline-none "
+            placeholder="www.leafl.et"
+            value={linkValue}
+            onChange={(e) => setLinkValue(e.target.value)}
+            onBlur={() => setLinkOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setLinkValue(linkValue);
+                setLinkOpen(false);
+              }
+            }}
+          />
+          <div className="flex items-center gap-3 ">
+            <button
+              className="hover:text-accent"
+              onClick={() => {
+                setLinkValue(linkValue);
+                setLinkOpen(false);
+              }}
+            >
+              <CheckTiny />
+            </button>
+            <button
+              className="hover:text-accent"
+              onClick={() => setLinkOpen(false)}
+            >
+              <CloseTiny />
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 };
 
 //I need to get *and* set the value to zustand?
