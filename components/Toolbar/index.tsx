@@ -270,7 +270,7 @@ export const ToolbarButton = (props: {
 }) => {
   return (
     <button
-      className={`rounded-md shrink-0  p-0.5 active:bg-accent active:text-accentText ${props.className} ${props.active ? "bg-accent text-accentText" : ""}`}
+      className={`rounded-md text-secondary shrink-0  p-0.5 active:bg-border active:text-primary ${props.className} ${props.active ? "bg-border text-primary" : ""}`}
       onMouseDown={(e) => {
         e.preventDefault();
         props.onClick && props.onClick(e);
