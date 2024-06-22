@@ -154,7 +154,7 @@ export function Blocks(props: { entityID: string }) {
   return (
     <div
       ref={ref}
-      className="w-full flex flex-col p-3 sm:p-4 outline-none h-full"
+      className="blocks w-full flex flex-col p-2 sm:p-3 outline-none h-full"
       onClick={(e) => {
         if (e.target === e.currentTarget)
           useUIState.setState(() => ({
@@ -327,12 +327,12 @@ function Block(props: BlockProps) {
         }
         useUIState.getState().removeBlockFromSelection(props.entityID);
       }}
-      className={`border  first:mt-0 ${!selected ? "border-transparent" : ""} ${
+      className={`rounded-md p-1 first:mt-0 ${!selected ? "" : "bg-border  "} ${
         props.type === "text"
-          ? "mb-3"
+          ? "mb-2"
           : props.type === "heading"
-            ? "mt-2 mb-1"
-            : "mb-3"
+            ? "mt-1"
+            : "mb-2"
       }`}
       id={elementId.block(props.entityID).container}
     >

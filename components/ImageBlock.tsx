@@ -25,7 +25,7 @@ export function ImageBlock(props: BlockProps) {
               : imageHeight,
           width: image?.data.width,
         }}
-        className="flex place-items-center justify-center bg-border-light italic text-tertiary rounded-md min-w-full max-w-full"
+        className="flex place-items-center justify-center bg-border italic text-tertiary rounded-md min-w-full max-w-full"
       >
         loading...
       </div>
