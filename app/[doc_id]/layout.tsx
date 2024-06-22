@@ -2,7 +2,6 @@
 import { isIOS, useViewportSize } from "@react-aria/utils";
 import { usePreventScroll } from "@react-aria/overlays";
 import { useEffect, useState } from "react";
-import { TextToolbar } from "app/test/TextToolbar";
 
 export default function Layout(props: { children: React.ReactNode }) {
   let viewheight = useViewportSize().height;
@@ -24,7 +23,7 @@ export default function Layout(props: { children: React.ReactNode }) {
   );
 }
 
-export function useViewportDifference(): number {
+function useViewportDifference(): number {
   let [difference, setDifference] = useState(0);
 
   useEffect(() => {
