@@ -49,22 +49,8 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
     // This Toolbar should close once the user starts typing again
     <div className="flex w-full justify-between items-center gap-4">
       <div className="flex items-center gap-[6px]">
-        <ToolbarButton
-          className="w-10 flex justify-center"
-          active
-          onClick={() => props.onClose()}
-        >
-          {blockType?.data.value === "text" ? (
-            <ParagraphSmall />
-          ) : blockType?.data.value === "heading" ? (
-            headingLevel?.data.value === 1 ? (
-              <Header1Small />
-            ) : headingLevel?.data.value === 2 ? (
-              <Header2Small />
-            ) : headingLevel?.data.value === 3 ? (
-              <Header3Small />
-            ) : null
-          ) : null}{" "}
+        <ToolbarButton className="w-10 flex justify-center" active>
+          <BlockTypeIcon entityID={focusedBlock?.entityID} />
         </ToolbarButton>
         <Separator />
         <ToolbarButton
@@ -140,4 +126,33 @@ function keepFocus(entityID: string) {
       ),
     });
   }, 10);
+}
+
+export function TextBlockTypeButton(props: {
+  setToolbarState: (s: "header") => void;
+}) {
+  let focusedBlock = useUIState((s) => s.focusedBlock);
+  return (
+    <ToolbarButton
+      active
+      onClick={() => {
+        props.setToolbarState("header");
+      }}
+    >
+      <BlockTypeIcon entityID={focusedBlock?.entityID} />
+    </ToolbarButton>
+  );
+}
+
+function BlockTypeIcon(props: { entityID?: string }) {
+  let blockType = useEntity(props.entityID || null, "block/type");
+  let headingLevel =
+    useEntity(props.entityID || null, "block/heading-level")?.data.value || 1;
+  if (blockType?.data.value === "text") return <ParagraphSmall />;
+  if (blockType?.data.value === "heading") {
+    if (headingLevel === 1) return <Header1Small />;
+    if (headingLevel === 2) return <Header2Small />;
+    if (headingLevel === 3) return <Header3Small />;
+  }
+  return null;
 }

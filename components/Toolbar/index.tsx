@@ -27,7 +27,10 @@ import { create } from "zustand";
 import { combine } from "zustand/middleware";
 import { schema } from "components/TextBlock/schema";
 import { TextDecorationButton } from "./TextDecorationButton";
-import { TextBlockTypeButtons } from "./TextBlockTypeButtons";
+import {
+  TextBlockTypeButton,
+  TextBlockTypeButtons,
+} from "./TextBlockTypeButtons";
 
 type textState = {
   bold: boolean;
@@ -98,22 +101,7 @@ export const TextToolbar = () => {
             <LinkTextToolbarSmall />
           </ToolbarButton>
           <Separator />
-          <ToolbarButton
-            active
-            onClick={() => {
-              setToolbarState("header");
-            }}
-          >
-            {state.header === "h1" ? (
-              <Header1Small />
-            ) : state.header === "h2" ? (
-              <Header2Small />
-            ) : state.header === "h3" ? (
-              <Header3Small />
-            ) : (
-              <ParagraphSmall />
-            )}
-          </ToolbarButton>
+          <TextBlockTypeButton setToolbarState={setToolbarState} />
           <Separator />
           <ToolbarButton
             active={state.list !== "none"}
