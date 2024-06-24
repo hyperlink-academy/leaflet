@@ -31,6 +31,7 @@ import {
   TextBlockTypeButton,
   TextBlockTypeButtons,
 } from "./TextBlockTypeButtons";
+import { LinkButton, LinkEditor } from "./LinkButton";
 
 type textState = {
   bold: boolean;
@@ -92,14 +93,7 @@ export const TextToolbar = () => {
             icon={<UnderlineSmall />}
           />
           {/* possibly link is only available if text is actively selected  */}
-          <ToolbarButton
-            active={state.link !== undefined && state.link !== ""}
-            onClick={() => {
-              setToolbarState("link");
-            }}
-          >
-            <LinkTextToolbarSmall />
-          </ToolbarButton>
+          <LinkButton setToolBarState={setToolbarState} />
           <Separator />
           <TextBlockTypeButton setToolbarState={setToolbarState} />
           <Separator />
@@ -125,7 +119,7 @@ export const TextToolbar = () => {
           </ToolbarButton>
         </>
       ) : toolbarState === "link" ? (
-        <LinkToolbar onClose={() => setToolbarState("default")} />
+        <LinkEditor onClose={() => setToolbarState("default")} />
       ) : toolbarState === "header" ? (
         <TextBlockTypeButtons onClose={() => setToolbarState("default")} />
       ) : toolbarState === "list" ? (
@@ -134,42 +128,6 @@ export const TextToolbar = () => {
         <BlockToolbar onClose={() => setToolbarState("default")} />
       ) : null}
     </>
-  );
-};
-
-const LinkToolbar = (props: { onClose: () => void }) => {
-  let state = useTextState();
-  let [linkValue, setLinkValue] = useState(state.link);
-  return (
-    <div className=" w-full flex items-center gap-[6px]">
-      <ToolbarButton
-        active={state.link !== undefined && state.link !== ""}
-        onClick={() => props.onClose}
-      >
-        <LinkTextToolbarSmall />
-      </ToolbarButton>
-      <Separator />
-      <input
-        className="w-full grow bg-transparent border-none outline-none "
-        placeholder="www.leafl.et"
-        value={linkValue}
-        onChange={(e) => setLinkValue(e.target.value)}
-      />
-      <div className="flex items-center gap-3">
-        <button
-          className="hover:text-accent"
-          onClick={() => {
-            state.setLink(linkValue);
-            props.onClose();
-          }}
-        >
-          <CheckTiny />
-        </button>
-        <button className="hover:text-accent" onClick={() => props.onClose()}>
-          <CloseTiny />
-        </button>
-      </div>
-    </div>
   );
 };
 

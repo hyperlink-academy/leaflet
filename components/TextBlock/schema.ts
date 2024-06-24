@@ -20,6 +20,26 @@ let baseSchema = {
         return ["u", { class: "underline" }, 0];
       },
     } as MarkSpec,
+    link: {
+      attrs: {
+        href: {},
+      },
+      inclusive: false,
+      parseDOM: [
+        {
+          tag: "a[href]",
+          getAttrs(dom: HTMLElement) {
+            return {
+              href: dom.getAttribute("href"),
+            };
+          },
+        },
+      ],
+      toDOM(node) {
+        let { href } = node.attrs;
+        return ["a", { href }, 0];
+      },
+    } as MarkSpec,
   },
   nodes: {
     doc: { content: "block" },
