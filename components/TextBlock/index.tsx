@@ -155,40 +155,74 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
       handlePaste={(view, e) => {
         if (!rep.rep) return;
         if (!e.clipboardData) return;
-        let text = e.clipboardData.getData("text/html");
+        let textHTML = e.clipboardData.getData("text/html");
         let editorState =
           useEditorStates.getState().editorStates[props.entityID];
         if (!editorState) return;
-        const parser = ProsemirrorDOMParser.fromSchema(multiBlockSchema);
-        let xml = new DOMParser().parseFromString(text, "text/html");
-        let nodes = parser.parse(xml);
-        let currentPosition = propsRef.current.position;
-        nodes.content.forEach((node, _, index) => {
-          if (index === 0) return;
-          let newEntityID = crypto.randomUUID();
-          currentPosition = generateKeyBetween(
-            propsRef.current.position,
-            propsRef.current.nextPosition,
-          );
-          repRef.current?.mutate.addBlock({
-            newEntityID,
-            parent: propsRef.current.parent,
-            type: "text",
-            position: currentPosition,
+        if (textHTML) {
+          const parser = ProsemirrorDOMParser.fromSchema(multiBlockSchema);
+          let xml = new DOMParser().parseFromString(textHTML, "text/html");
+          let nodes = parser.parse(xml);
+          let currentPosition = propsRef.current.position;
+          nodes.content.forEach((node, _, index) => {
+            if (index === 0) return;
+            let newEntityID = crypto.randomUUID();
+            currentPosition = generateKeyBetween(
+              currentPosition,
+              propsRef.current.nextPosition,
+            );
+            repRef.current?.mutate.addBlock({
+              newEntityID,
+              parent: propsRef.current.parent,
+              type: "text",
+              position: currentPosition,
+            });
+            setTimeout(() => {
+              let block = useEditorStates.getState().editorStates[newEntityID];
+              if (block) {
+                let tr = block.editor.tr;
+                let newNode = schema.nodeFromJSON(node.toJSON());
+                tr.replaceWith(0, tr.doc.content.size, newNode.content);
+                let newState = block.editor.apply(tr);
+                setEditorState(newEntityID, {
+                  editor: newState,
+                });
+              }
+            }, 10);
           });
-          setTimeout(() => {
-            let block = useEditorStates.getState().editorStates[newEntityID];
-            if (block) {
-              let tr = block.editor.tr;
-              let newNode = schema.nodeFromJSON(node.toJSON());
-              tr.replaceWith(0, tr.doc.content.size, newNode.content);
-              let newState = block.editor.apply(tr);
-              setEditorState(newEntityID, {
-                editor: newState,
-              });
-            }
-          }, 10);
-        });
+        } else {
+          let text = e.clipboardData.getData("text");
+          let paragraphs = text
+            .split("\n")
+            .slice(1)
+            .filter((f) => !!f);
+          let currentPosition = propsRef.current.position;
+          for (let p of paragraphs) {
+            let newEntityID = crypto.randomUUID();
+            currentPosition = generateKeyBetween(
+              currentPosition,
+              propsRef.current.nextPosition,
+            );
+            repRef.current?.mutate.addBlock({
+              newEntityID,
+              parent: propsRef.current.parent,
+              type: "text",
+              position: currentPosition,
+            });
+            setTimeout(() => {
+              let block = useEditorStates.getState().editorStates[newEntityID];
+              if (block) {
+                let tr = block.editor.tr;
+                console.log(p);
+                tr.insertText(p, 1);
+                let newState = block.editor.apply(tr);
+                setEditorState(newEntityID, {
+                  editor: newState,
+                });
+              }
+            }, 10);
+          }
+        }
 
         for (let item of e.clipboardData.items) {
           if (item?.type.includes("image")) {
