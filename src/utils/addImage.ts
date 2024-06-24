@@ -15,11 +15,8 @@ export async function addImage(
   let client = supabaseBrowserClient();
   let cache = await caches.open("minilink-user-assets");
   let fileID = crypto.randomUUID();
-  let url = client.storage.from("minilink-user-assets").getPublicUrl(fileID, {
-    transform: {
-      quality: 80,
-    },
-  }).data.publicUrl;
+  let url = client.storage.from("minilink-user-assets").getPublicUrl(fileID)
+    .data.publicUrl;
   let dimensions = await getImageDimensions(file);
   await cache.put(
     url,
