@@ -157,12 +157,15 @@ export function Blocks(props: { entityID: string }) {
       className="blocks w-full flex flex-col p-2 sm:p-3 outline-none h-full pb-8"
       onClick={async (e) => {
         if (e.target === e.currentTarget) {
-          if (!lastBlock) {
+          if (
+            !lastBlock ||
+            (lastBlock.type !== "text" && lastBlock.type !== "heading")
+          ) {
             let newEntityID = crypto.randomUUID();
             await rep.rep?.mutate.addBlock({
               parent: props.entityID,
               type: "text",
-              position: generateKeyBetween(null, null),
+              position: generateKeyBetween(lastBlock.position || null, null),
               newEntityID,
             });
 
