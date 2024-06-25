@@ -99,14 +99,20 @@ export async function focusCard(
   }
 
   // if this card is already focused,
+  let focusedBlock = useUIState.getState().focusedBlock;
 
   // else this this card as focused
-  useUIState.setState(() => ({
-    focusedBlock: {
-      type: "card",
-      entityID: cardID,
-    },
-  }));
+  if (
+    (focusedBlock?.type == "card" && focusedBlock.entityID !== cardID) ||
+    (focusedBlock?.type === "block" && focusedBlock.parent !== cardID) ||
+    !focusedBlock
+  )
+    useUIState.setState(() => ({
+      focusedBlock: {
+        type: "card",
+        entityID: cardID,
+      },
+    }));
 
   setTimeout(async () => {
     // if we asked that the function focus the first block, do that
