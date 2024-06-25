@@ -33,8 +33,11 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
       </div>
 
       <div
-        className={`linkBlockPreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border group-hover:border-accent`}
-        style={{ backgroundImage: `url(${previewImage?.data.src})` }}
+        className={`linkBlockPreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border group-hover:border-accent `}
+        style={{
+          backgroundImage: `url(${previewImage?.data.src})`,
+          backgroundPosition: "center",
+        }}
       />
     </a>
   );
