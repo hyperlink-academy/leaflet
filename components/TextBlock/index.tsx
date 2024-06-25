@@ -200,7 +200,6 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
               let block = useEditorStates.getState().editorStates[newEntityID];
               if (block) {
                 let tr = block.editor.tr;
-                console.log(p);
                 tr.insertText(p, 1);
                 let newState = block.editor.apply(tr);
                 setEditorState(newEntityID, {
@@ -268,7 +267,6 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
     >
       <pre
         onBlur={async () => {
-          console.log(editorState.doc.textContent);
           if (editorState.doc.textContent.startsWith("http")) {
             await addLinkBlock(
               editorState.doc.textContent,
@@ -299,7 +297,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
       />
 
       {editorState.doc.textContent.length === 0 && props.position === "a0" && (
-        <div className="pointer-events-none absolute top-0 left-0 italic">
+        <div className="pointer-events-none absolute top-0 left-0 italic text-tertiary">
           write something...
         </div>
       )}

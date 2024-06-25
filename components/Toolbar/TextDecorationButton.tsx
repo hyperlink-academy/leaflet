@@ -29,7 +29,6 @@ export function TextDecorationButton(props: {
       active={hasMark}
       onClick={(e) => {
         e.preventDefault();
-        console.log("yo?");
         toggleMarkInFocusedBlock(props.mark);
       }}
     >

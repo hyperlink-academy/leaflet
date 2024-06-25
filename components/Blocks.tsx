@@ -209,7 +209,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
   return (
     <div className="relative w-full group/text">
       <div
-        className="w-full h-full hover:cursor-text italic p-1"
+        className="w-full h-full hover:cursor-text italic p-1 text-tertiary"
         onMouseDown={async () => {
           let newEntityID = crypto.randomUUID();
           await rep?.mutate.addBlock({
@@ -408,7 +408,6 @@ export function focusBlock(
                 : nextBlockViewClientRect.bottom - 2,
             left,
           });
-  console.log(pos);
 
   let newState = nextBlock.editor.apply(
     tr.setSelection(TextSelection.create(tr.doc, pos?.pos || 0)),

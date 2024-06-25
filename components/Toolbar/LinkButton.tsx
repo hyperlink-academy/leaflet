@@ -65,7 +65,6 @@ export function LinkEditor(props: { onClose: () => void }) {
       }
     }
   }
-  console.log(content);
   let [linkValue, setLinkValue] = useState(content);
   return (
     <div className=" w-full flex items-center gap-[6px]">

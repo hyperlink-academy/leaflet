@@ -65,8 +65,7 @@ function Card(props: { entityID: string; first?: boolean }) {
           onClick={() => {
             if (rep) {
               focusCard(props.entityID, focusedCardID, rep);
-              console.log("focusing card");
-            } else console.log("already focused");
+            }
           }}
           id={elementId.card(props.entityID).container}
           style={{
@@ -148,7 +147,6 @@ export async function focusCard(
       if (firstBlock) {
         focusBlock(firstBlock, "start", "top");
       }
-      console.log("focusing first block");
     }
 
     //scroll to card
@@ -159,7 +157,6 @@ export async function focusCard(
           behavior: "smooth",
           inline: "nearest",
         });
-      console.log("scrolling to card");
     }
   }, 100);
 }

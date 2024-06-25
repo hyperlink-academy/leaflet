@@ -9,6 +9,5 @@ export const dynamic = "force-dynamic";
 
 export default async function RootPage() {
   let rows = await db.insert(entities).values({}).returning();
-  console.log(rows);
   return redirect(`/${rows[0].id}`);
 }
