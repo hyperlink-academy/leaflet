@@ -8,6 +8,9 @@ import { Media } from "./Media";
 import { DesktopCardFooter } from "./DesktopFooter";
 import { Replicache } from "replicache";
 import { Fact, ReplicacheMutators, useReplicache } from "src/replicache";
+import * as Popover from "@radix-ui/react-popover";
+import { MoreOptionsTiny, DeleteSmall } from "./Icons";
+import { useToaster } from "./Toast";
 
 export function Cards(props: { rootCard: string }) {
   let cards = useUIState((s) => s.openCards);
@@ -64,7 +67,7 @@ function Card(props: { entityID: string; first?: boolean }) {
         <div
           onClick={() => {
             if (rep) {
-              focusCard(props.entityID, focusedCardID, rep);
+              focusCard(props.entityID, rep);
             }
           }}
           id={elementId.card(props.entityID).container}
@@ -79,6 +82,7 @@ function Card(props: { entityID: string; first?: boolean }) {
       ${isFocused ? "shadow-md border-border" : "border-border-light"}
     `}
         >
+          <CardOptions />
           <DesktopCardFooter parentID={props.entityID} />
           <Blocks entityID={props.entityID} />
         </div>
@@ -87,9 +91,69 @@ function Card(props: { entityID: string; first?: boolean }) {
   );
 }
 
+const CardOptions = () => {
+  let toaster = useToaster();
+  return (
+    <Popover.Root>
+      <Popover.Trigger className="cardOptionsTrigger px-2 py-1 w-fit absolute top-0 right-3 bg-border text-bg-card rounded-b-md">
+        <MoreOptionsTiny />
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          align="end"
+          className="cardOptionsMenu bg-bg-card flex flex-col py-1 gap-0.5 border border-border rounded-md shadow-md"
+        >
+          <CardMenuItem
+            onClick={() => {
+              // TODO: Wire up delete card
+              toaster(DeleteCardToast);
+            }}
+          >
+            Delete Page <DeleteSmall />
+          </CardMenuItem>
+          <Popover.Arrow />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+};
+
+const CardMenuItem = (props: {
+  children: React.ReactNode;
+  onClick: () => void;
+}) => {
+  return (
+    <button
+      className="cardOptionsMenuItem text-left text-secondary py-1 px-2 flex gap-2 font-bold hover:bg-accent hover:text-accentText "
+      onClick={() => {
+        props.onClick();
+      }}
+    >
+      {props.children}
+    </button>
+  );
+};
+
+const DeleteCardToast = {
+  content: (
+    <div className="flex gap-2">
+      You deleted a card.{" "}
+      <button
+        className="underline hover:font-bold italic"
+        onClick={() => {
+          // TODO: WIRE UP UNDO DELETE
+        }}
+      >
+        Undo?
+      </button>
+    </div>
+  ),
+  type: "info",
+  duration: 5000,
+} as const;
+
 export async function focusCard(
   cardID: string,
-  focusedCardID: string | undefined,
   rep: Replicache<ReplicacheMutators>,
   focusFirstBlock?: "focusFirstBlock",
 ) {
