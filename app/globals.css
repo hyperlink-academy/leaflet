@@ -84,3 +84,8 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+a {
+  @apply text-accent;
+  text-decoration: underline;
+}
