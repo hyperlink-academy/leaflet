@@ -27,82 +27,8 @@ export type Block = {
   value: string;
   type: Fact<"block/type">["data"]["value"];
 };
-interface ReplayedKeyboardEvent extends KeyboardEvent {
-  replayed: boolean;
-}
-
-interface ReplayedPointerEvent extends PointerEvent {
-  replayed: boolean;
-}
-let skip = false;
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
-  let ref = useRef<HTMLDivElement | null>(null);
-  let previous = useRef("None");
-  let isMobile = useIsMobile();
-  useEffect(() => {
-    if (!isMobile) return;
-    let selectionChangeHandler = () => {
-      if (skip == true) return;
-      let selection = window.getSelection();
-
-      let ranges;
-      if (previous.current !== selection?.type) {
-        ranges = saveSelection();
-      }
-      if (selection?.type === "Range") {
-        if (ref.current) ref.current.contentEditable = "true";
-        let range = selection.getRangeAt(0);
-        if (range.startContainer !== range.endContainer) {
-          let contents = range.cloneContents();
-          let entityIDs: string[] = [];
-          for (let child of contents.children) {
-            let entityID = child.getAttribute("data-entityid");
-            if (entityID && child.textContent !== "") entityIDs.push(entityID);
-          }
-          useUIState.getState().setSelectedBlocks(entityIDs);
-        }
-      } else {
-        if (ref.current) ref.current.contentEditable = "false";
-      }
-      if (previous.current !== selection?.type) {
-        if (ranges) restoreSelection(ranges);
-      }
-      previous.current = selection?.type || "None";
-    };
-    let keyDownHandler = (e: KeyboardEvent) => {
-      skip = true;
-      let selection = window.getSelection();
-      if (selection?.type !== "Range") return;
-      if ((e as ReplayedKeyboardEvent).replayed) {
-        skip = false;
-        return;
-      }
-      e.stopPropagation();
-
-      let ranges = saveSelection();
-      if (ref.current) ref.current.contentEditable = "false";
-      restoreSelection(ranges);
-      let newEvent = new KeyboardEvent(e.type, {
-        ...e,
-      }) as ReplayedKeyboardEvent;
-      newEvent.replayed = true;
-      e.target?.dispatchEvent(newEvent);
-    };
-
-    document.addEventListener("selectionchange", selectionChangeHandler);
-    document.addEventListener("keydown", keyDownHandler, true);
-    let pointerUp = () => {
-      if (useUIState.getState().selectedBlock.length > 1)
-        window.getSelection()?.removeAllRanges();
-    };
-    window.addEventListener("pointerup", pointerUp);
-    return () => {
-      window.removeEventListener("pointerup", pointerUp);
-      document.removeEventListener("keydown", keyDownHandler, true);
-      document.removeEventListener("selectionchange", selectionChangeHandler);
-    };
-  }, [isMobile]);
   let initialValue = useMemo(
     () =>
       rep.initialFacts
@@ -153,7 +79,6 @@ export function Blocks(props: { entityID: string }) {
   let lastBlock = blocks[blocks.length - 1];
   return (
     <div
-      ref={ref}
       className="blocks w-full flex flex-col p-2 sm:p-3 outline-none h-full pb-8"
       onClick={async (e) => {
         if (e.target === e.currentTarget) {
