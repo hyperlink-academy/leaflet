@@ -153,12 +153,27 @@ export function Blocks(props: { entityID: string }) {
   return (
     <div
       ref={ref}
-      className="blocks w-full flex flex-col p-2 sm:p-3 outline-none h-full"
-      onClick={(e) => {
-        if (e.target === e.currentTarget)
-          useUIState.setState(() => ({
-            focusedBlock: { type: "card", entityID: props.entityID },
-          }));
+      className="blocks w-full flex flex-col p-2 sm:p-3 outline-none h-full pb-8"
+      onClick={async (e) => {
+        if (e.target === e.currentTarget) {
+          if (!lastBlock) {
+            let newEntityID = crypto.randomUUID();
+            await rep.rep?.mutate.addBlock({
+              parent: props.entityID,
+              type: "text",
+              position: generateKeyBetween(null, null),
+              newEntityID,
+            });
+
+            setTimeout(() => {
+              document
+                .getElementById(elementId.block(newEntityID).text)
+                ?.focus();
+            }, 10);
+          } else {
+            focusBlock(lastBlock, "end", "bottom");
+          }
+        }
       }}
     >
       {blocks.map((f, index, arr) => {
@@ -211,7 +226,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
           }, 10);
         }}
       >
-        {!props.lastBlock ? "write something..." : "&nbsp"}
+        {!props.lastBlock ? "write something..." : " "}
       </div>
       <BlockOptions
         parent={props.entityID}
