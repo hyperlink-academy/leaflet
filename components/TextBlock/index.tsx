@@ -302,6 +302,9 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
         ref={setMount}
       />
 
+      {editorState.doc.textContent.length === 0 && props.position === "a0" && (
+        <div className="absolute top-0 left-0 italic">write something...</div>
+      )}
       {editorState.doc.textContent.length === 0 && selected && (
         <BlockOptions
           factID={factID}

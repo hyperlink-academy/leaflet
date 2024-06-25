@@ -194,7 +194,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
   return (
     <div className="relative w-full group/text">
       <div
-        className="w-full h-full hover:cursor-text"
+        className="w-full h-full hover:cursor-text italic p-1"
         onMouseDown={async () => {
           let newEntityID = crypto.randomUUID();
           await rep?.mutate.addBlock({
@@ -212,7 +212,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
           }, 10);
         }}
       >
-        &nbsp;
+        {!props.lastBlock ? "write something..." : "&nbsp"}
       </div>
       <BlockOptions
         parent={props.entityID}
