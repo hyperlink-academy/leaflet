@@ -139,6 +139,15 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
 
   return (
     <ProseMirror
+      handleClickOn={(view, _pos, node, _nodePos) => {
+        let mark = node
+          .resolve(_pos)
+          .marks()
+          .find((f) => f.type === schema.marks.link);
+        if (mark) {
+          window.open(mark.attrs.href, "_blank");
+        }
+      }}
       handlePaste={(view, e) => {
         if (!rep.rep) return;
         if (!e.clipboardData) return;

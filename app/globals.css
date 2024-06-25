@@ -87,5 +87,6 @@
 
 a {
   @apply text-accent;
+  @apply hover:cursor-pointer;
   text-decoration: underline;
 }
