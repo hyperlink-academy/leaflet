@@ -81,6 +81,7 @@ export function Blocks(props: { entityID: string }) {
     <div
       className="blocks w-full flex flex-col p-2 sm:p-3 outline-none h-full pb-8"
       onClick={async (e) => {
+        if (useUIState.getState().selectedBlock.length > 1) return;
         if (e.target === e.currentTarget) {
           if (
             !lastBlock ||
