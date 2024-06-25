@@ -386,7 +386,7 @@ export function focusBlock(
   left: number | "end" | "start",
   top: "top" | "bottom",
 ) {
-  if (block.type !== "text") {
+  if (block.type !== "text" && block.type !== "heading") {
     useUIState.getState().setSelectedBlock(block.value);
     return true;
   }
