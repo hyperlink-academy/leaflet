@@ -163,7 +163,8 @@ const BlockLinkButton = (props: Props) => {
           <div className="flex items-center gap-3 ">
             <button
               className="hover:text-accent"
-              onClick={() => {
+              onMouseDown={(e) => {
+                e.preventDefault();
                 submit();
               }}
             >

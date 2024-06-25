@@ -8,13 +8,21 @@ export async function addLinkBlock(
   rep?: Replicache<ReplicacheMutators> | null,
 ) {
   if (!rep) return;
+  await rep.mutate.assertFact({
+    entity: entityID,
+    attribute: "block/type",
+    data: { type: "block-type-union", value: "link" },
+  });
+  await rep?.mutate.assertFact({
+    entity: entityID,
+    attribute: "link/url",
+    data: {
+      type: "text",
+      value: url,
+    },
+  });
   let data = await addLinkCard({ link: url });
   if (data.success) {
-    await rep.mutate.assertFact({
-      entity: entityID,
-      attribute: "block/type",
-      data: { type: "block-type-union", value: "link" },
-    });
     await rep?.mutate.assertFact({
       entity: entityID,
       attribute: "link/preview",
@@ -40,14 +48,6 @@ export async function addLinkBlock(
       data: {
         type: "text",
         value: data.data.data.description || "",
-      },
-    });
-    await rep?.mutate.assertFact({
-      entity: entityID,
-      attribute: "link/url",
-      data: {
-        type: "text",
-        value: url,
       },
     });
   }
