@@ -1,7 +1,6 @@
 "use client";
 import { Fact, useEntity, useReplicache } from "src/replicache";
 import {
-  BlockOptions,
   TextBlock,
   setEditorState,
   useEditorStates,
@@ -20,6 +19,8 @@ import { ImageBlock } from "./ImageBlock";
 import { useUIState } from "src/useUIState";
 import { CardBlock } from "./CardBlock";
 import { useIsMobile } from "src/hooks/isMobile";
+import { ExternalLinkBlock } from "./ExternalLinkBlock";
+import { BlockOptions } from "./BlockOptions";
 
 export type Block = {
   position: string;
@@ -358,6 +359,8 @@ function Block(props: BlockProps) {
         <HeadingBlock {...props} />
       ) : props.type === "image" ? (
         <ImageBlock {...props} />
+      ) : props.type === "link" ? (
+        <ExternalLinkBlock {...props} />
       ) : null}
     </div>
   );
@@ -383,7 +386,7 @@ export function focusBlock(
   left: number | "end" | "start",
   top: "top" | "bottom",
 ) {
-  if (block.type === "image" || block.type === "card") {
+  if (block.type !== "text") {
     useUIState.getState().setSelectedBlock(block.value);
     return true;
   }

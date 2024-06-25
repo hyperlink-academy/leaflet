@@ -9,13 +9,7 @@ import {
   useEditorEventCallback,
 } from "@nytimes/react-prosemirror";
 import * as base64 from "base64-js";
-import {
-  useReplicache,
-  useEntity,
-  ReplicacheMutators,
-  Fact,
-} from "src/replicache";
-import * as Popover from "@radix-ui/react-popover";
+import { useReplicache, useEntity, ReplicacheMutators } from "src/replicache";
 
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
@@ -31,16 +25,9 @@ import { TextBlockKeymap } from "./keymap";
 import { multiBlockSchema, schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { MarkType, DOMParser as ProsemirrorDOMParser } from "prosemirror-model";
-import {
-  BlockCardSmall,
-  BlockImageSmall,
-  BlockLinkSmall,
-  CheckTiny,
-  CloseTiny,
-} from "components/Icons";
 import { useAppEventListener } from "src/eventBus";
-import { focusCard } from "components/Cards";
-import { Separator } from "components/Layout";
+import { addLinkBlock } from "src/utils/addLinkBlock";
+import { BlockOptions } from "components/BlockOptions";
 
 export let useEditorStates = create(() => ({
   lastXPosition: 0,
@@ -280,6 +267,16 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
       }}
     >
       <pre
+        onBlur={async () => {
+          console.log(editorState.doc.textContent);
+          if (editorState.doc.textContent.startsWith("http")) {
+            await addLinkBlock(
+              editorState.doc.textContent,
+              props.entityID,
+              rep.rep,
+            );
+          }
+        }}
         onFocus={() => {
           useUIState.getState().setSelectedBlock(props.entityID);
           useUIState.setState(() => ({
@@ -296,7 +293,6 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
             focusedTextBlock: props.entityID,
           }));
         }}
-        onPaste={async (e) => {}}
         id={elementId.block(props.entityID).text}
         className={`textBlock w-full p-0 border-none outline-none resize-none align-top bg-transparent whitespace-pre-wrap ${props.className}`}
         ref={setMount}
@@ -330,100 +326,6 @@ function CommandHandler(props: { entityID: string }) {
   return null;
 }
 
-export function BlockOptions(props: {
-  parent: string;
-  entityID: string | null;
-  position: string | null;
-  nextPosition: string | null;
-  factID?: string | undefined;
-}) {
-  let { rep } = useReplicache();
-
-  let focusedElement = useUIState((s) => s.focusedBlock);
-  let focusedCardID =
-    focusedElement?.type === "card"
-      ? focusedElement.entityID
-      : focusedElement?.parent;
-
-  return (
-    <div className="blockOptionsWrapper absolute top-0 right-0 hidden group-hover/text:block group-focus-within/text:block">
-      <div className="blockOptionsContent flex gap-1 items-center">
-        <label className="blockOptionsImage hover:cursor-pointer flex place-items-center">
-          <div className="text-tertiary hover:text-accent ">
-            <BlockImageSmall />
-          </div>
-          <div className="hidden">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={async (e) => {
-                let file = e.currentTarget.files?.[0];
-                if (!file || !rep) return;
-                if (props.factID)
-                  await rep.mutate.retractFact({ factID: props.factID });
-                let entity = props.entityID;
-                if (!entity) {
-                  entity = crypto.randomUUID();
-                  await rep?.mutate.addBlock({
-                    parent: props.parent,
-                    type: "text",
-                    position: generateKeyBetween(
-                      props.position,
-                      props.nextPosition,
-                    ),
-                    newEntityID: entity,
-                  });
-                }
-                await rep.mutate.assertFact({
-                  entity,
-                  attribute: "block/type",
-                  data: { type: "block-type-union", value: "image" },
-                });
-                await addImage(file, rep, {
-                  entityID: entity,
-                  attribute: "block/image",
-                });
-              }}
-            />
-          </div>
-        </label>
-        <BlockLinkButton />
-
-        <button
-          className="blockOptionsCard text-tertiary hover:text-accent"
-          onClick={async () => {
-            if (!props.entityID) {
-              let entity = crypto.randomUUID();
-
-              await rep?.mutate.addBlock({
-                parent: props.parent,
-                type: "card",
-                position: generateKeyBetween(
-                  props.position,
-                  props.nextPosition,
-                ),
-                newEntityID: entity,
-              });
-              useUIState.getState().openCard(props.parent, entity);
-              if (rep) focusCard(entity, focusedCardID, rep);
-            } else {
-              await rep?.mutate.assertFact({
-                entity: props.entityID,
-                attribute: "block/type",
-                data: { type: "block-type-union", value: "card" },
-              });
-              useUIState.getState().openCard(props.parent, props.entityID);
-              if (rep) focusCard(props.entityID, focusedCardID, rep);
-            }
-          }}
-        >
-          <BlockCardSmall />
-        </button>
-      </div>
-    </div>
-  );
-}
-
 let SyncView = (props: { entityID: string }) => {
   useEditorEffect((view) => {
     if (!view.hasFocus()) return;
@@ -446,64 +348,6 @@ let SyncView = (props: { entityID: string }) => {
     [props.entityID],
   );
   return null;
-};
-
-const BlockLinkButton = () => {
-  let [linkOpen, setLinkOpen] = useState(false);
-  let [linkValue, setLinkValue] = useState("");
-
-  return (
-    <div
-      className={`max-w-sm flex gap-2 rounded-md ${linkOpen ? "text-secondary" : " text-tertiary"}`}
-    >
-      <button
-        onClick={() => {
-          setLinkOpen(!linkOpen);
-          setTimeout(() => {
-            document.getElementById("block-link-input")?.focus();
-          }, 100);
-        }}
-      >
-        <BlockLinkSmall />
-      </button>
-      {linkOpen && (
-        <>
-          <Separator />
-          <input
-            id="block-link-input"
-            className="w-full grow border-none outline-none "
-            placeholder="www.leaflet.pub"
-            value={linkValue}
-            onChange={(e) => setLinkValue(e.target.value)}
-            onBlur={() => setLinkOpen(false)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                setLinkOpen(false);
-                setLinkValue("");
-              }
-            }}
-          />
-          <div className="flex items-center gap-3 ">
-            <button
-              className="hover:text-accent"
-              onClick={() => {
-                setLinkOpen(false);
-                setLinkValue("");
-              }}
-            >
-              <CheckTiny />
-            </button>
-            <button
-              className="hover:text-accent"
-              onClick={() => setLinkOpen(false)}
-            >
-              <CloseTiny />
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
 };
 
 //I need to get *and* set the value to zustand?

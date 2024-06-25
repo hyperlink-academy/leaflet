@@ -10,14 +10,11 @@ const BlockAttributes = {
     type: "block-type-union",
     cardinality: "one",
   },
-  "block/position": {
-    type: "text",
-    cardinality: "one",
-  },
   "block/text": {
     type: "text",
     cardinality: "one",
   },
+  "page/awareness": { type: "awareness", cardinality: "one" },
   "block/heading-level": {
     type: "number",
     cardinality: "one",
@@ -28,6 +25,25 @@ const BlockAttributes = {
   },
   "block/card": {
     type: "reference",
+    cardinality: "one",
+  },
+} as const;
+
+const LinkBlockAttributes = {
+  "link/preview": {
+    type: "image",
+    cardinality: "one",
+  },
+  "link/url": {
+    type: "string",
+    cardinality: "one",
+  },
+  "link/description": {
+    type: "string",
+    cardinality: "one",
+  },
+  "link/title": {
+    type: "string",
     cardinality: "one",
   },
 } as const;
@@ -70,11 +86,13 @@ const ThemeAttributes = {
 export const Attributes = {
   ...CardAttributes,
   ...BlockAttributes,
+  ...LinkBlockAttributes,
   ...ThemeAttributes,
 };
 type Attribute = typeof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
   text: { type: "text"; value: string };
+  string: { type: "string"; value: string };
   "ordered-reference": {
     type: "ordered-reference";
     position: string;
@@ -92,10 +110,14 @@ export type Data<A extends keyof typeof Attributes> = {
     type: "number";
     value: number;
   };
+  awareness: {
+    type: "awareness";
+    value: string;
+  };
   reference: { type: "reference"; value: string };
   "block-type-union": {
     type: "block-type-union";
-    value: "text" | "image" | "card" | "heading";
+    value: "text" | "image" | "card" | "heading" | "link";
   };
   color: { type: "color"; value: string };
 }[(typeof Attributes)[A]["type"]];
