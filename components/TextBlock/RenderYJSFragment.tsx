@@ -31,6 +31,16 @@ export function RenderYJSFragment({
     return (
       <>
         {(node.toDelta() as Delta[]).map((d, index) => {
+          if (d.attributes?.link)
+            return (
+              <a
+                href={d.attributes.link.href}
+                key={index}
+                className={attributesToClassName(d)}
+              >
+                {d.insert}
+              </a>
+            );
           return (
             <span key={index} className={attributesToClassName(d)}>
               {d.insert}
@@ -48,6 +58,7 @@ type Delta = {
   attributes?: {
     strong?: {};
     em?: {};
+    link?: { href: string };
   };
 };
 
