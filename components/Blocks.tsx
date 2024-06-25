@@ -18,7 +18,6 @@ import {
 } from "components/SelectionManager";
 import { ImageBlock } from "./ImageBlock";
 import { useUIState } from "src/useUIState";
-import { focusCard } from "./Cards";
 import { CardBlock } from "./CardBlock";
 import { useIsMobile } from "src/hooks/isMobile";
 
@@ -369,9 +368,6 @@ export function focusBlock(
   left: number | "end" | "start",
   top: "top" | "bottom",
 ) {
-  document
-    .getElementById(elementId.block(block.value).container)
-    ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   if (block.type === "image" || block.type === "card") {
     useUIState.getState().setSelectedBlock(block.value);
     return true;

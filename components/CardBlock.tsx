@@ -3,10 +3,8 @@ import { focusCard } from "components/Cards";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "./TextBlock";
-import { CloseTiny } from "./Icons";
-export function CardBlock(props: BlockProps) {
-  let { rep } = useReplicache();
 
+export function CardBlock(props: BlockProps) {
   let selected = useUIState(
     (s) =>
       (props.type !== "text" || s.selectedBlock.length > 1) &&
@@ -16,12 +14,23 @@ export function CardBlock(props: BlockProps) {
   let firstBlock = blocks.sort((a, b) => {
     return a.data.position > b.data.position ? 1 : -1;
   })[0];
+
+  let focusedElement = useUIState((s) => s.focusedBlock);
+  let focusedCardID =
+    focusedElement?.type === "card"
+      ? focusedElement.entityID
+      : focusedElement?.parent;
+
+  let { rep } = useReplicache();
+
   return (
     <div
       className={`cardBlockWrapper relative group w-full h-[104px] border border-border outline outline-1 outline-transparent hover:outline-border rounded-lg flex overflow-hidden ${!selected ? "outline-1" : ""}`}
-      onClick={() => {
+      onClick={(e) => {
+        e.stopPropagation();
         useUIState.getState().openCard(props.parent, props.entityID);
-        focusCard(props.entityID);
+        if (rep)
+          focusCard(props.entityID, focusedCardID, rep, "focusFirstBlock");
       }}
     >
       <div className={`p-2 grow`}>

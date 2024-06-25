@@ -336,6 +336,13 @@ export function BlockOptions(props: {
   factID?: string | undefined;
 }) {
   let { rep } = useReplicache();
+
+  let focusedElement = useUIState((s) => s.focusedBlock);
+  let focusedCardID =
+    focusedElement?.type === "card"
+      ? focusedElement.entityID
+      : focusedElement?.parent;
+
   return (
     <div className="blockOptionsWrapper absolute top-0 right-0 hidden group-hover/text:block group-focus-within/text:block">
       <div className="blockOptionsContent flex gap-1 items-center">
@@ -396,7 +403,7 @@ export function BlockOptions(props: {
                 newEntityID: entity,
               });
               useUIState.getState().openCard(props.parent, entity);
-              focusCard(entity);
+              if (rep) focusCard(entity, focusedCardID, rep);
             } else {
               await rep?.mutate.assertFact({
                 entity: props.entityID,
@@ -404,7 +411,7 @@ export function BlockOptions(props: {
                 data: { type: "block-type-union", value: "card" },
               });
               useUIState.getState().openCard(props.parent, props.entityID);
-              focusCard(props.entityID);
+              if (rep) focusCard(props.entityID, focusedCardID, rep);
             }
           }}
         >
