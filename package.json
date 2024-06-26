@@ -43,6 +43,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240512.0",
     "@types/react": "18.3.2",
+    "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.19",
     "drizzle-kit": "^0.21.2",
     "eslint": "8.57.0",
