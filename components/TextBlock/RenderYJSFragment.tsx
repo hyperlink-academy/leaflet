@@ -2,15 +2,17 @@ import { XmlElement, XmlHook, XmlText } from "yjs";
 import { nodes, marks } from "prosemirror-schema-basic";
 export function RenderYJSFragment({
   node,
+  wrapper,
 }: {
   node: XmlElement | XmlText | XmlHook;
+  wrapper?: "h1" | "h2" | "h3";
 }) {
   if (node.constructor === XmlElement) {
     switch (node.nodeName as keyof typeof nodes) {
       case "paragraph": {
         let children = node.toArray();
         return (
-          <p>
+          <BlockWrapper wrapper={wrapper}>
             {children.length === 0 ? (
               <br />
             ) : (
@@ -18,7 +20,7 @@ export function RenderYJSFragment({
                 .toArray()
                 .map((f, index) => <RenderYJSFragment node={f} key={index} />)
             )}
-          </p>
+          </BlockWrapper>
         );
       }
       case "hard_break":
@@ -52,6 +54,21 @@ export function RenderYJSFragment({
   }
   return null;
 }
+
+const BlockWrapper = (props: {
+  wrapper?: "h1" | "h2" | "h3";
+  children: React.ReactNode;
+}) => {
+  if (!props.wrapper) return <p>{props.children}</p>;
+  switch (props.wrapper) {
+    case "h1":
+      return <h1>{props.children}</h1>;
+    case "h2":
+      return <h2>{props.children}</h2>;
+    case "h3":
+      return <h3>{props.children}</h3>;
+  }
+};
 
 type Delta = {
   insert: string;

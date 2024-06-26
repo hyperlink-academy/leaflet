@@ -9,7 +9,12 @@ import {
   useEditorEventCallback,
 } from "@nytimes/react-prosemirror";
 import * as base64 from "base64-js";
-import { useReplicache, useEntity, ReplicacheMutators } from "src/replicache";
+import {
+  useReplicache,
+  useEntity,
+  ReplicacheMutators,
+  Fact,
+} from "src/replicache";
 
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
@@ -140,6 +145,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
   return (
     <ProseMirror
       handleClickOn={(view, _pos, node, _nodePos) => {
+        if (node.nodeSize > _pos) return;
         let mark = node
           .resolve(_pos)
           .marks()
@@ -156,36 +162,86 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
           useEditorStates.getState().editorStates[props.entityID];
         if (!editorState) return;
         if (textHTML) {
-          const parser = ProsemirrorDOMParser.fromSchema(multiBlockSchema);
+          const parser = ProsemirrorDOMParser.fromSchema(schema);
           let xml = new DOMParser().parseFromString(textHTML, "text/html");
-          let nodes = parser.parse(xml);
           let currentPosition = propsRef.current.position;
-          nodes.content.forEach((node, _, index) => {
-            if (index === 0) return;
-            let newEntityID = crypto.randomUUID();
-            currentPosition = generateKeyBetween(
-              currentPosition,
-              propsRef.current.nextPosition,
-            );
-            repRef.current?.mutate.addBlock({
-              newEntityID,
-              parent: propsRef.current.parent,
-              type: "text",
-              position: currentPosition,
-            });
+          let children = [...xml.body.children];
+          if (
+            !children.find((c) => ["P", "H1", "H2", "H3"].includes(c.tagName))
+          )
+            return;
+          children.forEach((child, index) => {
+            let content = parser.parse(child);
+            let type: Fact<"block/type">["data"]["value"] | null;
+            let headingLevel: number | null = null;
+            switch (child.tagName) {
+              case "SPAN": {
+                type = "text";
+                break;
+              }
+              case "P": {
+                type = "text";
+                break;
+              }
+              case "H1": {
+                headingLevel = 1;
+                type = "heading";
+                break;
+              }
+              case "H2": {
+                headingLevel = 2;
+                type = "heading";
+                break;
+              }
+              case "H3": {
+                headingLevel = 3;
+                type = "heading";
+                break;
+              }
+              default:
+                type = null;
+            }
+            console.log(child);
+            if (!type) return;
+
+            let entityID: string;
+            console.log(index, type, props.type);
+            if (index === 0 && type === props.type) entityID = props.entityID;
+            else {
+              entityID = crypto.randomUUID();
+              currentPosition = generateKeyBetween(
+                currentPosition,
+                propsRef.current.nextPosition,
+              );
+              repRef.current?.mutate.addBlock({
+                newEntityID: entityID,
+                parent: propsRef.current.parent,
+                type: type,
+                position: currentPosition,
+              });
+              if (type === "heading" && headingLevel) {
+                repRef.current?.mutate.assertFact({
+                  entity: entityID,
+                  attribute: "block/heading-level",
+                  data: { type: "number", value: headingLevel },
+                });
+              }
+            }
+
             setTimeout(() => {
-              let block = useEditorStates.getState().editorStates[newEntityID];
+              let block = useEditorStates.getState().editorStates[entityID];
               if (block) {
                 let tr = block.editor.tr;
-                let newNode = schema.nodeFromJSON(node.toJSON());
-                tr.replaceWith(0, tr.doc.content.size, newNode.content);
+                console.log(content.content);
+                tr.insert(block.editor.selection.from || 0, content.content);
                 let newState = block.editor.apply(tr);
-                setEditorState(newEntityID, {
+                setEditorState(entityID, {
                   editor: newState,
                 });
               }
             }, 10);
           });
+          return true;
         } else {
           let text = e.clipboardData.getData("text");
           let paragraphs = text

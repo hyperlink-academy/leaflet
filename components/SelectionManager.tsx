@@ -3,6 +3,8 @@ import { useEffect, useRef } from "react";
 import { create } from "zustand";
 import { useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
+import { scanIndex } from "src/replicache/utils";
+import { getBlocksAsHTML } from "src/utils/getBlocksAsHTML";
 export const useSelectingMouse = create(() => ({
   start: null as null | { top: number; left: number },
 }));
@@ -21,7 +23,16 @@ export function SelectionManager() {
         }
       }
       if (e.key === "Escape") {
-        useUIState.setState(() => ({ focusedBlock: null }));
+        useUIState.setState(() => ({ focusedBlock: null, selectedBlock: [] }));
+      }
+      if ((e.key === "c" && e.metaKey) || e.ctrlKey) {
+        if (!rep) return;
+        let selectedBlocks = useUIState.getState().selectedBlock;
+        let html = await getBlocksAsHTML(rep, selectedBlocks);
+        const type = "text/html";
+        const blob = new Blob([html.join("\n")], { type });
+        const data = [new ClipboardItem({ [type]: blob })];
+        await navigator.clipboard.write(data);
       }
     };
     window.addEventListener("keydown", listener);
