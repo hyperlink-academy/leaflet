@@ -405,13 +405,13 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
     let cursorPosY = coords.top;
     let bottomScrollPadding = 100;
     if (cursorPosY && parentHeight) {
-      if (cursorPosY > parentHeight - bottomScrollPadding) {
+      if (cursorPosY + 10 > parentHeight - bottomScrollPadding) {
         parentID?.scrollBy({
           top: bottomScrollPadding - (parentHeight - cursorPosY),
           behavior: "smooth",
         });
       }
-      if (cursorPosY < 50) {
+      if (cursorPosY < 40) {
         parentID?.scrollBy({
           top: cursorPosY - 50,
           behavior: "smooth",

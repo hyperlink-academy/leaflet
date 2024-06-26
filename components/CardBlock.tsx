@@ -26,10 +26,10 @@ export function CardBlock(props: BlockProps) {
         w-full h-[104px]
         bg-bg-card border shadow-sm outline outline-1 hover:outline-border-light rounded-lg
         flex overflow-hidden
+        cursor-pointer
         ${isSelected || isOpen ? "outline-border border-border" : "outline-transparent border-border-light"}
         `}
-      onClick={(e) => {
-        e.stopPropagation();
+      onClick={() => {
         useUIState.getState().openCard(props.parent, props.entityID);
         if (rep) focusCard(props.entityID, rep, "focusFirstBlock");
       }}
