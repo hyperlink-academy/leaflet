@@ -6,6 +6,7 @@ import { useUIState } from "src/useUIState";
 import { getBlocksAsHTML } from "src/utils/getBlocksAsHTML";
 import { scanIndex } from "src/replicache/utils";
 import { useEditorStates } from "./TextBlock";
+import { focusBlock } from "./Blocks";
 export const useSelectingMouse = create(() => ({
   start: null as null | { top: number; left: number },
 }));
@@ -47,12 +48,25 @@ export function SelectionManager() {
         }
       }
       if (e.key === "ArrowUp") {
-        if (e.defaultPrevented) return;
         let selectedBlocks = useUIState
           .getState()
           .selectedBlock.sort((a, b) => (a.position > b.position ? 1 : -1));
         let focusedBlock = useUIState.getState().focusedBlock;
-        if (e.shiftKey) {
+        if (!e.shiftKey) {
+          if (selectedBlocks.length === 1) return;
+          let firstBlock = selectedBlocks[0];
+          if (!firstBlock) return;
+          let type = await rep?.query((tx) =>
+            scanIndex(tx).eav(firstBlock.value, "block/type"),
+          );
+          if (!type?.[0]) return;
+          useUIState.getState().setSelectedBlock(firstBlock);
+          focusBlock(
+            { ...firstBlock, type: type[0].data.value },
+            "start",
+            "top",
+          );
+        } else {
           if (
             selectedBlocks.length <= 1 ||
             !focusedBlock ||
@@ -105,11 +119,21 @@ export function SelectionManager() {
         }
       }
       if (e.key === "ArrowDown") {
-        if (e.defaultPrevented) return;
         let selectedBlocks = useUIState
           .getState()
           .selectedBlock.sort((a, b) => (a.position > b.position ? 1 : -1));
         let focusedBlock = useUIState.getState().focusedBlock;
+        if (!e.shiftKey) {
+          if (selectedBlocks.length === 1) return;
+          let lastBlock = selectedBlocks[selectedBlocks.length - 1];
+          if (!lastBlock) return;
+          let type = await rep?.query((tx) =>
+            scanIndex(tx).eav(lastBlock.value, "block/type"),
+          );
+          if (!type?.[0]) return;
+          useUIState.getState().setSelectedBlock(lastBlock);
+          focusBlock({ ...lastBlock, type: type[0].data.value }, "end", "top");
+        }
         if (e.shiftKey) {
           if (
             selectedBlocks.length <= 1 ||
