@@ -10,7 +10,7 @@ export const useUIState = create(
         | { type: "block"; entityID: string; parent: string }
         | null,
       openCards: [] as string[],
-      selectedBlock: [] as Block[],
+      selectedBlock: [] as Omit<Block, "type">[],
     },
     (set) => ({
       openCard: (parent: string, card: string) =>
@@ -31,15 +31,15 @@ export const useUIState = create(
           | { type: "block"; entityID: string; parent: string }
           | null,
       ) => set(() => ({ focusedBlock: b })),
-      setSelectedBlock: (block: Block) =>
+      setSelectedBlock: (block: Omit<Block, "type">) =>
         set((state) => {
           return { ...state, selectedBlock: [block] };
         }),
-      setSelectedBlocks: (blocks: Block[]) =>
+      setSelectedBlocks: (blocks: Omit<Block, "type">[]) =>
         set((state) => {
           return { ...state, selectedBlock: blocks };
         }),
-      addBlockToSelection: (block: Block) =>
+      addBlockToSelection: (block: Omit<Block, "type">) =>
         set((state) => {
           if (state.selectedBlock.find((b) => b.value === block.value))
             return state;

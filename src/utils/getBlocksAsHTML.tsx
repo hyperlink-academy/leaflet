@@ -9,7 +9,7 @@ import { Block } from "components/Blocks";
 
 export async function getBlocksAsHTML(
   rep: Replicache<ReplicacheMutators>,
-  selectedBlocks: Block[],
+  selectedBlocks: Omit<Block, "type">[],
 ) {
   let data = await rep?.query(async (tx) => {
     let types = await Promise.all(

@@ -18,6 +18,7 @@ import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { BlockOptions } from "./BlockOptions";
 
 export type Block = {
+  parent: string;
   position: string;
   value: string;
   type: Fact<"block/type">["data"]["value"];
@@ -37,7 +38,7 @@ export function Blocks(props: { entityID: string }) {
               f.entity === block.data.value && f.attribute === "block/type",
           ) as Fact<"block/type"> | undefined;
           if (!type) return null;
-          return { ...block.data, type: type.data.value };
+          return { ...block.data, type: type.data.value, parent: block.entity };
         }),
     [rep.initialFacts, props.entityID],
   );
@@ -61,7 +62,11 @@ export function Blocks(props: { entityID: string }) {
               .toArray()
           )[0];
           if (!type) return null;
-          return { ...b.data, type: type.data.value } as Block;
+          return {
+            ...b.data,
+            type: type.data.value,
+            parent: b.entity,
+          } as Block;
         }),
       );
     }) || initialValue;

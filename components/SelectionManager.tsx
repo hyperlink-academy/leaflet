@@ -20,14 +20,31 @@ export function SelectionManager() {
     let listener = async (e: KeyboardEvent) => {
       if (e.key === "Backspace" || e.key === "Delete") {
         if (moreThanOneSelected) {
-          for (let block of useUIState.getState().selectedBlock) {
+          let selectedBlocks = useUIState.getState().selectedBlock;
+          for (let block of selectedBlocks) {
             useUIState.getState().closeCard(block.value);
             await rep?.mutate.removeBlock({ blockEntity: block.value });
           }
+          let firstBlock = selectedBlocks.sort((a, b) =>
+            a.position > b.position ? 1 : -1,
+          )[0];
+          let siblings = (
+            await rep?.query((tx) =>
+              scanIndex(tx).eav(firstBlock.parent, "card/block"),
+            )
+          )?.sort((a, b) => (a.data.position > b.data.position ? 1 : -1));
+          let nextBlock =
+            siblings?.[
+              siblings.findIndex((s) => s.data.value === firstBlock.value) - 1
+            ];
+          if (nextBlock) {
+            useUIState.getState().setSelectedBlock({
+              value: nextBlock.data.value,
+              position: nextBlock.data.position,
+              parent: nextBlock.entity,
+            });
+          }
         }
-      }
-      if (e.key === "Escape") {
-        useUIState.setState(() => ({ focusedBlock: null, selectedBlock: [] }));
       }
       if (e.key === "ArrowUp") {
         if (e.defaultPrevented) return;
@@ -60,13 +77,9 @@ export function SelectionManager() {
             let nextSelectedBlock = sortedSiblings[index - 1];
             if (!nextSelectedBlock) return;
 
-            let nextSelectedBlockType = await rep?.query((tx) =>
-              scanIndex(tx).eav(nextSelectedBlock.data.value, "block/type"),
-            );
-            if (!nextSelectedBlockType?.[0]) return;
             useUIState.getState().addBlockToSelection({
               ...nextSelectedBlock.data,
-              type: nextSelectedBlockType[0].data.value,
+              parent: nextSelectedBlock.entity,
             });
             useUIState.getState().setFocusedBlock({
               type: "block",
@@ -121,13 +134,9 @@ export function SelectionManager() {
             );
             let nextSelectedBlock = sortedSiblings[index + 1];
             if (!nextSelectedBlock) return;
-            let nextSelectedBlockType = await rep?.query((tx) =>
-              scanIndex(tx).eav(nextSelectedBlock.data.value, "block/type"),
-            );
-            if (!nextSelectedBlockType?.[0]) return;
             useUIState.getState().addBlockToSelection({
               ...nextSelectedBlock.data,
-              type: nextSelectedBlockType[0].data.value,
+              parent: nextSelectedBlock.entity,
             });
             useUIState.getState().setFocusedBlock({
               type: "block",
