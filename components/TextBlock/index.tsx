@@ -25,7 +25,7 @@ import { create } from "zustand";
 import { RenderYJSFragment } from "./RenderYJSFragment";
 import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 import { addImage } from "src/utils/addImage";
-import { BlockProps } from "components/Blocks";
+import { BlockProps, focusBlock } from "components/Blocks";
 import { TextBlockKeymap } from "./keymap";
 import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
@@ -203,11 +203,9 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
               default:
                 type = null;
             }
-            console.log(child);
             if (!type) return;
 
             let entityID: string;
-            console.log(index, type, props.type);
             if (index === 0 && type === props.type) entityID = props.entityID;
             else {
               entityID = crypto.randomUUID();
@@ -229,6 +227,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
                 });
               }
             }
+            let p = currentPosition;
 
             setTimeout(() => {
               let block = useEditorStates.getState().editorStates[entityID];
@@ -240,6 +239,18 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
                 setEditorState(entityID, {
                   editor: newState,
                 });
+              }
+              if (index === children.length - 1) {
+                focusBlock(
+                  {
+                    value: entityID,
+                    type: type,
+                    parent: propsRef.current.parent,
+                    position: p,
+                  },
+                  "end",
+                  "bottom",
+                );
               }
             }, 10);
           });
