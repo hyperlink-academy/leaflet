@@ -90,7 +90,7 @@ export function BlockOptions(props: Props) {
                 newEntityID: entity,
               });
               useUIState.getState().openCard(props.parent, entity);
-              if (rep) focusCard(entity, focusedCardID, rep);
+              if (rep) focusCard(entity, rep);
             } else {
               await rep?.mutate.assertFact({
                 entity: props.entityID,
@@ -98,7 +98,7 @@ export function BlockOptions(props: Props) {
                 data: { type: "block-type-union", value: "card" },
               });
               useUIState.getState().openCard(props.parent, props.entityID);
-              if (rep) focusCard(props.entityID, focusedCardID, rep);
+              if (rep) focusCard(props.entityID, rep);
             }
           }}
         >
