@@ -405,13 +405,16 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
     let cursorPosY = coords.top;
     let bottomScrollPadding = 100;
     if (cursorPosY && parentHeight) {
-      if (cursorPosY + 10 > parentHeight - bottomScrollPadding) {
+      if (cursorPosY > parentHeight - bottomScrollPadding) {
+        // BUG: cursor is at wrong poistion on first click into page
         parentID?.scrollBy({
           top: bottomScrollPadding - (parentHeight - cursorPosY),
           behavior: "smooth",
         });
       }
-      if (cursorPosY < 40) {
+      if (cursorPosY < 50) {
+        console.log("scrolling up");
+        if (parentID?.scrollTop === 0) return;
         parentID?.scrollBy({
           top: cursorPosY - 50,
           behavior: "smooth",

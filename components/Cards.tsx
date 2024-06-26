@@ -67,7 +67,6 @@ function Card(props: { entityID: string; first?: boolean }) {
         <div
           onMouseDown={() => {
             if (rep) {
-              focusCard(props.entityID, rep);
             }
           }}
           id={elementId.card(props.entityID).container}
@@ -163,13 +162,14 @@ export async function focusCard(
     (focusedBlock?.type == "card" && focusedBlock.entityID === cardID) ||
     (focusedBlock?.type === "block" && focusedBlock.parent === cardID)
   )
-    // else set this card as focused
-    useUIState.setState(() => ({
-      focusedBlock: {
-        type: "card",
-        entityID: cardID,
-      },
-    }));
+    return;
+  // else set this card as focused
+  useUIState.setState(() => ({
+    focusedBlock: {
+      type: "card",
+      entityID: cardID,
+    },
+  }));
 
   setTimeout(async () => {
     // if we asked that the function focus the first block, do that
@@ -211,6 +211,8 @@ export async function focusCard(
       }
     }
 
+    console.log("are we getting here");
+    console.log(document.getElementById(elementId.card(cardID).container));
     //scroll to card
     document.getElementById(elementId.card(cardID).container)?.scrollIntoView({
       behavior: "smooth",
