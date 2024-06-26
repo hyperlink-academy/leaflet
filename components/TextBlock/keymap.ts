@@ -93,8 +93,9 @@ export const TextBlockKeymap = (
         if (block) {
           view.dom.blur();
           focusBlock(block, coords.left, "bottom");
+          return true;
         }
-        return true;
+        return false;
       }
       return false;
     },
@@ -108,8 +109,9 @@ export const TextBlockKeymap = (
         if (block) {
           view.dom.blur();
           focusBlock(block, coords.left, "top");
+          return true;
         }
-        return true;
+        return false;
       }
       return false;
     },
