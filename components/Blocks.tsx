@@ -193,15 +193,16 @@ function Block(props: BlockProps) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
         let block = props.nextBlock;
-        if (block)
+        if (block && useUIState.getState().selectedBlock.length <= 1)
           focusBlock(block, useEditorStates.getState().lastXPosition, "top");
         if (!block) return;
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
         let block = props.previousBlock;
-        if (block)
+        if (block && useUIState.getState().selectedBlock.length <= 1) {
           focusBlock(block, useEditorStates.getState().lastXPosition, "bottom");
+        }
         if (!block) return;
       }
       if (e.key === "Backspace") {

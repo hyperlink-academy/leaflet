@@ -9,6 +9,7 @@ import { ReplicacheMutators } from "src/replicache";
 import { elementId } from "src/utils/elementId";
 import { setEditorState, useEditorStates } from ".";
 import { schema } from "./schema";
+import { useUIState } from "src/useUIState";
 
 export const TextBlockKeymap = (
   propsRef: MutableRefObject<BlockProps>,
@@ -39,7 +40,51 @@ export const TextBlockKeymap = (
       );
       return true;
     },
-    ArrowUp: (_state, _tr, view) => {
+    "Shift-ArrowDown": (state, _dispatch, view) => {
+      if (
+        state.doc.content.size - 1 === state.selection.from ||
+        state.doc.content.size - 1 === state.selection.to
+      ) {
+        if (propsRef.current.nextBlock) {
+          useUIState
+            .getState()
+            .setSelectedBlocks([propsRef.current, propsRef.current.nextBlock]);
+          useUIState.getState().setFocusedBlock({
+            type: "block",
+            entityID: propsRef.current.nextBlock.value,
+            parent: propsRef.current.parent,
+          });
+
+          document.getSelection()?.removeAllRanges();
+          view?.dom.blur();
+          return true;
+        }
+      }
+      return false;
+    },
+    "Shift-ArrowUp": (state, _dispatch, view) => {
+      if (state.selection.from <= 1 || state.selection.to <= 1) {
+        if (propsRef.current.previousBlock) {
+          useUIState
+            .getState()
+            .setSelectedBlocks([
+              propsRef.current,
+              propsRef.current.previousBlock,
+            ]);
+          useUIState.getState().setFocusedBlock({
+            type: "block",
+            entityID: propsRef.current.previousBlock.value,
+            parent: propsRef.current.parent,
+          });
+
+          document.getSelection()?.removeAllRanges();
+          view?.dom.blur();
+          return true;
+        }
+      }
+      return false;
+    },
+    ArrowUp: (state, _tr, view) => {
       if (!view) return false;
       const viewClientRect = view.dom.getBoundingClientRect();
       const coords = view.coordsAtPos(view.state.selection.anchor);

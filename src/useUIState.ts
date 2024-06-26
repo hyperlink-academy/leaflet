@@ -25,6 +25,12 @@ export const useUIState = create(
         }),
       closeCard: (card: string) =>
         set((s) => ({ openCards: s.openCards.filter((c) => c !== card) })),
+      setFocusedBlock: (
+        b:
+          | { type: "card"; entityID: string }
+          | { type: "block"; entityID: string; parent: string }
+          | null,
+      ) => set(() => ({ focusedBlock: b })),
       setSelectedBlock: (block: Block) =>
         set((state) => {
           return { ...state, selectedBlock: [block] };
@@ -39,7 +45,7 @@ export const useUIState = create(
             return state;
           return { ...state, selectedBlock: [...state.selectedBlock, block] };
         }),
-      removeBlockFromSelection: (block: Block) =>
+      removeBlockFromSelection: (block: { value: string }) =>
         set((state) => {
           return {
             ...state,
