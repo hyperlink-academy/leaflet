@@ -308,8 +308,6 @@ export function focusBlock(
   left: number | "end" | "start",
   top: "top" | "bottom",
 ) {
-  console.log("focusin block");
-  // if the block is below a certain y position, scroll it to that y position
   if (block.type !== "text" && block.type !== "heading") {
     useUIState.getState().setSelectedBlock(block);
     return true;

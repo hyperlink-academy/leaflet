@@ -377,7 +377,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
           nextPosition={props.nextPosition}
         />
       )}
-      <SyncView entityID={props.entityID} />
+      <SyncView entityID={props.entityID} parentID={props.parent} />
       <CommandHandler entityID={props.entityID} />
     </ProseMirror>
   );
@@ -391,11 +391,33 @@ function CommandHandler(props: { entityID: string }) {
   return null;
 }
 
-let SyncView = (props: { entityID: string }) => {
+let SyncView = (props: { entityID: string; parentID: string }) => {
   useEditorEffect((view) => {
     if (!view.hasFocus()) return;
     const coords = view.coordsAtPos(view.state.selection.anchor);
     useEditorStates.setState({ lastXPosition: coords.left });
+
+    // scroll card if cursor is at the very top or very bottom of the card
+    let parentID = document.getElementById(
+      elementId.card(props.parentID).container,
+    );
+    let parentHeight = parentID?.clientHeight;
+    let cursorPosY = coords.top;
+    let bottomScrollPadding = 100;
+    if (cursorPosY && parentHeight) {
+      if (cursorPosY > parentHeight - bottomScrollPadding) {
+        parentID?.scrollBy({
+          top: bottomScrollPadding - (parentHeight - cursorPosY),
+          behavior: "smooth",
+        });
+      }
+      if (cursorPosY < 50) {
+        parentID?.scrollBy({
+          top: cursorPosY - 50,
+          behavior: "smooth",
+        });
+      }
+    }
   });
   useEditorEffect(
     (view) => {
