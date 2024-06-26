@@ -3,6 +3,7 @@ import * as driz from "drizzle-orm";
 import { Fact } from ".";
 import { replicache_clients } from "drizzle/schema";
 import { Attributes } from "./attributes";
+import { ReadTransaction, WriteTransaction } from "replicache";
 
 export function FactWithIndexes(f: Fact<keyof typeof Attributes>) {
   let indexes: {
@@ -35,3 +36,13 @@ export async function getClientGroup(
     {} as { [clientID: string]: number },
   );
 }
+
+export const scanIndex = (tx: ReadTransaction) => ({
+  async eav<A extends keyof typeof Attributes>(entity: string, attribute: A) {
+    return (
+      await tx
+        .scan<Fact<A>>({ indexName: "eav", prefix: `${entity}-${attribute}` })
+        .toArray()
+    ).filter((f) => f.attribute === attribute);
+  },
+});
