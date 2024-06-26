@@ -213,6 +213,7 @@ function Block(props: BlockProps) {
         if (textBlocks[props.type]) return;
         e.preventDefault();
         r.mutate.removeBlock({ blockEntity: props.entityID });
+        useUIState.getState().closeCard(props.entityID);
         let block = props.previousBlock;
         if (block) focusBlock(block, "end", "bottom");
       }

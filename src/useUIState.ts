@@ -22,6 +22,8 @@ export const useUIState = create(
                 : [...state.openCards.slice(0, parentPosition + 1), card],
           };
         }),
+      closeCard: (card: string) =>
+        set((s) => ({ openCards: s.openCards.filter((c) => c !== card) })),
       setSelectedBlock: (block: string) =>
         set((state) => {
           return { ...state, selectedBlock: [block] };
