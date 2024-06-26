@@ -27,7 +27,7 @@ import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 import { addImage } from "src/utils/addImage";
 import { BlockProps } from "components/Blocks";
 import { TextBlockKeymap } from "./keymap";
-import { multiBlockSchema, schema } from "./schema";
+import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { MarkType, DOMParser as ProsemirrorDOMParser } from "prosemirror-model";
 import { useAppEventListener } from "src/eventBus";
@@ -147,7 +147,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
   return (
     <ProseMirror
       handleClickOn={(view, _pos, node, _nodePos) => {
-        if (node.nodeSize < _pos) return;
+        if (node.nodeSize - 1 <= _pos) return;
         let mark = node
           .resolve(_pos)
           .marks()
