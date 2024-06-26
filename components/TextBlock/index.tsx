@@ -145,7 +145,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
   return (
     <ProseMirror
       handleClickOn={(view, _pos, node, _nodePos) => {
-        if (node.nodeSize > _pos) return;
+        if (node.nodeSize < _pos) return;
         let mark = node
           .resolve(_pos)
           .marks()
