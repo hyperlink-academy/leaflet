@@ -180,7 +180,6 @@ export function SelectionManager() {
       });
     };
     let mouseUpListener = (e: MouseEvent) => {
-      e.preventDefault();
       if (
         initialContentEditableParent.current &&
         getContentEditableParent(e.target as Node) !==
