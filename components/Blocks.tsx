@@ -10,15 +10,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSubscribe } from "replicache-react";
 import { elementId } from "src/utils/elementId";
 import { TextSelection } from "prosemirror-state";
-import {
-  restoreSelection,
-  saveSelection,
-  useSelectingMouse,
-} from "components/SelectionManager";
+import { useSelectingMouse } from "components/SelectionManager";
 import { ImageBlock } from "./ImageBlock";
 import { useUIState } from "src/useUIState";
 import { CardBlock } from "./CardBlock";
-import { useIsMobile } from "src/hooks/isMobile";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { BlockOptions } from "./BlockOptions";
 
@@ -79,7 +74,7 @@ export function Blocks(props: { entityID: string }) {
   let lastBlock = blocks[blocks.length - 1];
   return (
     <div
-      className="blocks w-full flex flex-col pt-2 sm:pt-3 outline-none h-full "
+      className="blocks w-full flex flex-col pt-2 sm:pt-3 outline-none h-fit pb-32"
       onClick={async (e) => {
         if (useUIState.getState().selectedBlock.length > 1) return;
         if (e.target === e.currentTarget) {
@@ -312,6 +307,8 @@ export function focusBlock(
   left: number | "end" | "start",
   top: "top" | "bottom",
 ) {
+  console.log("focusin block");
+  // if the block is below a certain y position, scroll it to that y position
   if (block.type !== "text" && block.type !== "heading") {
     useUIState.getState().setSelectedBlock(block.value);
     return true;

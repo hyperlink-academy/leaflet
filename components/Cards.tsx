@@ -65,7 +65,7 @@ function Card(props: { entityID: string; first?: boolean }) {
       {!props.first && <div className="w-6 md:snap-center" />}
       <div className="cardWrapper w-fit flex relative snap-center">
         <div
-          onClick={() => {
+          onMouseDown={() => {
             if (rep) {
               focusCard(props.entityID, rep);
             }
@@ -157,25 +157,22 @@ export async function focusCard(
   rep: Replicache<ReplicacheMutators>,
   focusFirstBlock?: "focusFirstBlock",
 ) {
-  {
-    /* TODO: focus into the first text block on the page */
-  }
-
   // if this card is already focused,
   let focusedBlock = useUIState.getState().focusedBlock;
-
-  // else this this card as focused
   if (
-    (focusedBlock?.type == "card" && focusedBlock.entityID !== cardID) ||
-    (focusedBlock?.type === "block" && focusedBlock.parent !== cardID) ||
+    (focusedBlock?.type == "card" && focusedBlock.entityID === cardID) ||
+    (focusedBlock?.type === "block" && focusedBlock.parent === cardID) ||
     !focusedBlock
   )
-    useUIState.setState(() => ({
-      focusedBlock: {
-        type: "card",
-        entityID: cardID,
-      },
-    }));
+    return;
+
+  // else this this card as focused
+  useUIState.setState(() => ({
+    focusedBlock: {
+      type: "card",
+      entityID: cardID,
+    },
+  }));
 
   setTimeout(async () => {
     // if we asked that the function focus the first block, do that
@@ -214,13 +211,9 @@ export async function focusCard(
     }
 
     //scroll to card
-    {
-      document
-        .getElementById(elementId.card(cardID).container)
-        ?.scrollIntoView({
-          behavior: "smooth",
-          inline: "nearest",
-        });
-    }
+    document.getElementById(elementId.card(cardID).container)?.scrollIntoView({
+      behavior: "smooth",
+      inline: "nearest",
+    });
   }, 100);
 }
