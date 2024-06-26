@@ -392,35 +392,44 @@ function CommandHandler(props: { entityID: string }) {
 }
 
 let SyncView = (props: { entityID: string; parentID: string }) => {
+  let debounce = useRef<number | null>(null);
   useEditorEffect((view) => {
-    if (!view.hasFocus()) return;
-    const coords = view.coordsAtPos(view.state.selection.anchor);
-    useEditorStates.setState({ lastXPosition: coords.left });
-
-    // scroll card if cursor is at the very top or very bottom of the card
-    let parentID = document.getElementById(
-      elementId.card(props.parentID).container,
-    );
-    let parentHeight = parentID?.clientHeight;
-    let cursorPosY = coords.top;
-    let bottomScrollPadding = 100;
-    if (cursorPosY && parentHeight) {
-      if (cursorPosY > parentHeight - bottomScrollPadding) {
-        // BUG: cursor is at wrong poistion on first click into page
-        parentID?.scrollBy({
-          top: bottomScrollPadding - (parentHeight - cursorPosY),
-          behavior: "smooth",
-        });
-      }
-      if (cursorPosY < 50) {
-        console.log("scrolling up");
-        if (parentID?.scrollTop === 0) return;
-        parentID?.scrollBy({
-          top: cursorPosY - 50,
-          behavior: "smooth",
-        });
-      }
+    if (debounce.current) {
+      window.clearInterval(debounce.current);
+      debounce.current = null;
     }
+    if (!view.hasFocus()) return;
+    debounce.current = window.setTimeout(() => {
+      debounce.current = null;
+
+      const coords = view.coordsAtPos(view.state.selection.anchor);
+      useEditorStates.setState({ lastXPosition: coords.left });
+
+      // scroll card if cursor is at the very top or very bottom of the card
+      let parentID = document.getElementById(
+        elementId.card(props.parentID).container,
+      );
+      let parentHeight = parentID?.clientHeight;
+      let cursorPosY = coords.top;
+      let bottomScrollPadding = 100;
+      if (cursorPosY && parentHeight) {
+        if (cursorPosY > parentHeight - bottomScrollPadding) {
+          // BUG: cursor is at wrong poistion on first click into page
+          parentID?.scrollBy({
+            top: bottomScrollPadding - (parentHeight - cursorPosY),
+            behavior: "smooth",
+          });
+        }
+        if (cursorPosY < 50) {
+          console.log("scrolling up");
+          if (parentID?.scrollTop === 0) return;
+          parentID?.scrollBy({
+            top: cursorPosY - 50,
+            behavior: "smooth",
+          });
+        }
+      }
+    }, 10);
   });
   useEditorEffect(
     (view) => {
