@@ -5,7 +5,7 @@ import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "./TextBlock";
 
 export function CardBlock(props: BlockProps) {
-  let selected = useUIState(
+  let isSelected = useUIState(
     (s) =>
       (props.type !== "text" || s.selectedBlock.length > 1) &&
       s.selectedBlock.includes(props.entityID),
@@ -15,22 +15,23 @@ export function CardBlock(props: BlockProps) {
     return a.data.position > b.data.position ? 1 : -1;
   })[0];
 
-  let focusedElement = useUIState((s) => s.focusedBlock);
-  let focusedCardID =
-    focusedElement?.type === "card"
-      ? focusedElement.entityID
-      : focusedElement?.parent;
+  let isOpen = useUIState((s) => s.openCards).includes(props.entityID);
 
   let { rep } = useReplicache();
 
   return (
     <div
-      className={`cardBlockWrapper relative group w-full h-[104px] border border-border outline outline-1 outline-transparent hover:outline-border rounded-lg flex overflow-hidden ${!selected ? "outline-1" : ""}`}
+      className={`
+        cardBlockWrapper relative group
+        w-full h-[104px]
+        bg-bg-card border shadow-sm outline outline-1 hover:outline-border-light rounded-lg
+        flex overflow-hidden
+        ${isSelected || isOpen ? "outline-border border-border" : "outline-transparent border-border-light"}
+        `}
       onClick={(e) => {
         e.stopPropagation();
         useUIState.getState().openCard(props.parent, props.entityID);
-        if (rep)
-          focusCard(props.entityID, focusedCardID, rep, "focusFirstBlock");
+        if (rep) focusCard(props.entityID, rep, "focusFirstBlock");
       }}
     >
       <div className={`p-2 grow`}>

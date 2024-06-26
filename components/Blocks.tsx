@@ -79,7 +79,7 @@ export function Blocks(props: { entityID: string }) {
   let lastBlock = blocks[blocks.length - 1];
   return (
     <div
-      className="blocks w-full flex flex-col p-2 sm:p-3 outline-none h-full pb-8"
+      className="blocks w-full flex flex-col pt-2 sm:pt-3 outline-none h-full "
       onClick={async (e) => {
         if (useUIState.getState().selectedBlock.length > 1) return;
         if (e.target === e.currentTarget) {
@@ -136,9 +136,9 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
   )
     return null;
   return (
-    <div className="relative w-full group/text">
+    <div className="relative group/text mx-2 sm:mx-3">
       <div
-        className="w-full h-full hover:cursor-text italic p-1 text-tertiary"
+        className="h-full hover:cursor-text italic p-1 text-tertiary"
         onMouseDown={async () => {
           let newEntityID = crypto.randomUUID();
           await rep?.mutate.addBlock({
@@ -271,13 +271,9 @@ function Block(props: BlockProps) {
         }
         useUIState.getState().removeBlockFromSelection(props.entityID);
       }}
-      className={`rounded-md p-1 first:mt-0 ${!selected ? "" : "bg-border  "} ${
-        props.type === "text"
-          ? "mb-2"
-          : props.type === "heading"
-            ? "mt-1"
-            : "mb-2"
-      }`}
+      className={`rounded-md p-1 first:mt-0 mx-1 sm:mx-2 ${
+        !selected ? "" : "bg-border-light"
+      } ${props.type === "heading" ? "mt-1 mb-0" : "mb-2"}`}
       id={elementId.block(props.entityID).container}
     >
       {props.type === "card" ? (

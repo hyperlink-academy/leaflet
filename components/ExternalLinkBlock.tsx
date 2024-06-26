@@ -11,7 +11,7 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
     <a
       href={url?.data.value}
       target="_blank"
-      className="externalLinkBlock relative group h-[104px]  mb-3  flex  border border-border hover:border-accent outline outline-1 outline-transparent hover:outline-accent rounded-lg overflow-hidden text-primary no-underline"
+      className="externalLinkBlock relative group h-[104px]  bg-bg-card shadow-sm flex  border border-border-light hover:border-accent outline outline-1 outline-transparent hover:outline-accent rounded-lg overflow-hidden text-primary no-underline"
     >
       <div className="pt-2 pb-2 px-2 grow min-w-0">
         <div className="flex flex-col w-full min-w-0 h-full grow ">

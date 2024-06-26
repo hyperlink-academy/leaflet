@@ -22,7 +22,7 @@ module.exports = {
       "secondary": "color-mix(in lch, rgb(var(--primary)), rgb(var(--bg-card)) 15%)",
       "tertiary": "color-mix(in lch, rgb(var(--primary)), rgb(var(--bg-card)) 55%)",
       "border": "color-mix(in lch, rgb(var(--primary)), rgb(var(--bg-card)) 75%)",
-      "border-light": "color-mix(in lch, rgb(var(--primary)), rgb(var(--bg-card)) 90%)",
+      "border-light": "color-mix(in lch, rgb(var(--primary)), rgb(var(--bg-card)) 85%)",
 
       white: "#FFFFFF",
 
@@ -53,9 +53,12 @@ module.exports = {
     extend: {
       boxShadow: {
 
-       sm:"0px 0.5px 0.5px 0.25px rgba(0, 0, 0, 0.25), 0px 2px 3px 1.5px rgba(0, 0, 0, 0.15);",
-        //sm: "0px 0.5px 0.5px 0.25px rgba(0, 0, 0, 0.25), 0px 1px 2.5px 1px rgba(0, 0, 0, 0.15);",
-        md: "0.5px 0.9px 1px hsl(0deg 0% 0% / 0.11), 1.1px 2.1px 2.3px -1.1px hsl(0deg 0% 0% / 0.09), 3px 5.8px 6.4px -2.3px hsl(0deg 0% 0% / 0.08), 7.8px 14.9px 16.5px -3.4px hsl(0deg 0% 0% / 0.06);"
+       sm:"0.9px 1.5px 1.7px -1.8px rgba(var(--primary), 0.2), 4.2px 6.9px 7.8px -3.5px rgba(var(--primary), 0.15);",
+       md:"1.2px 2.5px 2.7px -1.8px rgba(var(--primary), 0.1), 5.6px 11.6px 12.5px -3.5px rgba(var(--primary), 0.15);"
+
+
+
+
       },
 
       fontFamily: {
