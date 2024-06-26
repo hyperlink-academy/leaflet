@@ -118,6 +118,34 @@ export function SelectionManager() {
           }
         }
       }
+      if (e.key === "ArrowLeft") {
+        let selectedBlocks = useUIState
+          .getState()
+          .selectedBlock.sort((a, b) => (a.position > b.position ? 1 : -1));
+        if (selectedBlocks.length === 1) return;
+        let firstBlock = selectedBlocks[0];
+        if (!firstBlock) return;
+        let type = await rep?.query((tx) =>
+          scanIndex(tx).eav(firstBlock.value, "block/type"),
+        );
+        if (!type?.[0]) return;
+        useUIState.getState().setSelectedBlock(firstBlock);
+        focusBlock({ ...firstBlock, type: type[0].data.value }, "start", "top");
+      }
+      if (e.key === "ArrowRight") {
+        let selectedBlocks = useUIState
+          .getState()
+          .selectedBlock.sort((a, b) => (a.position > b.position ? 1 : -1));
+        if (selectedBlocks.length === 1) return;
+        let lastBlock = selectedBlocks[selectedBlocks.length - 1];
+        if (!lastBlock) return;
+        let type = await rep?.query((tx) =>
+          scanIndex(tx).eav(lastBlock.value, "block/type"),
+        );
+        if (!type?.[0]) return;
+        useUIState.getState().setSelectedBlock(lastBlock);
+        focusBlock({ ...lastBlock, type: type[0].data.value }, "end", "top");
+      }
       if (e.key === "ArrowDown") {
         let selectedBlocks = useUIState
           .getState()
