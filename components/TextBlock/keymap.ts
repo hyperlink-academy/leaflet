@@ -86,6 +86,7 @@ export const TextBlockKeymap = (
     },
     ArrowUp: (state, _tr, view) => {
       if (!view) return false;
+      if (view.state.selection.from !== view.state.selection.to) return false;
       const viewClientRect = view.dom.getBoundingClientRect();
       const coords = view.coordsAtPos(view.state.selection.anchor);
       if (coords.top - viewClientRect.top < 5) {
@@ -101,6 +102,7 @@ export const TextBlockKeymap = (
     },
     ArrowDown: (state, tr, view) => {
       if (!view) return true;
+      if (view.state.selection.from !== view.state.selection.to) return false;
       const viewClientRect = view.dom.getBoundingClientRect();
       const coords = view.coordsAtPos(view.state.selection.anchor);
       let isBottom = viewClientRect.bottom - coords.bottom < 12;
