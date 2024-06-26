@@ -8,7 +8,7 @@ export function CardBlock(props: BlockProps) {
   let isSelected = useUIState(
     (s) =>
       (props.type !== "text" || s.selectedBlock.length > 1) &&
-      s.selectedBlock.includes(props.entityID),
+      s.selectedBlock.find((b) => b.value === props.entityID),
   );
   let blocks = useEntity(props.entityID, "card/block");
   let firstBlock = blocks.sort((a, b) => {

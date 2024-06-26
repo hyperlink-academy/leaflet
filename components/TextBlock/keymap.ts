@@ -27,7 +27,11 @@ export const TextBlockKeymap = (
       setTimeout(
         () =>
           focusBlock(
-            { value: propsRef.current.entityID, type: "heading" },
+            {
+              value: propsRef.current.entityID,
+              type: "heading",
+              position: propsRef.current.position,
+            },
             "start",
             "bottom",
           ),
@@ -109,7 +113,11 @@ const backspace =
         setTimeout(
           () =>
             focusBlock(
-              { value: propsRef.current.entityID, type: "heading" },
+              {
+                value: propsRef.current.entityID,
+                type: "heading",
+                position: propsRef.current.position,
+              },
               "start",
               "bottom",
             ),

@@ -104,7 +104,9 @@ export function RenderedTextBlock(props: {
 }
 export function BaseTextBlock(props: BlockProps & { className: string }) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
-  let selected = useUIState((s) => s.selectedBlock.includes(props.entityID));
+  let selected = useUIState((s) =>
+    s.selectedBlock.find((b) => b.value === props.entityID),
+  );
   let [value, factID] = useYJSValue(props.entityID);
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
   let propsRef = useRef(props);
@@ -341,7 +343,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
           }
         }}
         onFocus={() => {
-          useUIState.getState().setSelectedBlock(props.entityID);
+          useUIState.getState().setSelectedBlock(props);
           useUIState.setState(() => ({
             focusedBlock: {
               type: "block",

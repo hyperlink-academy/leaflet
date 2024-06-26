@@ -181,7 +181,7 @@ function Block(props: BlockProps) {
   let selected = useUIState(
     (s) =>
       (!textBlocks[props.type] || s.selectedBlock.length > 1) &&
-      s.selectedBlock.includes(props.entityID),
+      s.selectedBlock.find((b) => b.value === props.entityID),
   );
   let { rep } = useReplicache();
 
@@ -244,13 +244,13 @@ function Block(props: BlockProps) {
       onMouseDown={(e) => {
         if (e.shiftKey) {
           e.preventDefault();
-          useUIState.getState().addBlockToSelection(props.entityID);
-        } else useUIState.getState().setSelectedBlock(props.entityID);
+          useUIState.getState().addBlockToSelection(props);
+        } else useUIState.getState().setSelectedBlock(props);
       }}
       onMouseEnter={(e) => {
         let selection = useSelectingMouse.getState();
         if (!selection.start) return;
-        useUIState.getState().addBlockToSelection(props.entityID);
+        useUIState.getState().addBlockToSelection(props);
       }}
       onMouseLeave={(e) => {
         let selection = useSelectingMouse.getState();
@@ -265,7 +265,7 @@ function Block(props: BlockProps) {
         if (rect.bottom > topMin && rect.bottom <= topMax) {
           return;
         }
-        useUIState.getState().removeBlockFromSelection(props.entityID);
+        useUIState.getState().removeBlockFromSelection(props);
       }}
       className={`rounded-md p-1 first:mt-0 mx-1 sm:mx-2 ${
         !selected ? "" : "bg-border-light"
@@ -303,14 +303,14 @@ export function HeadingBlock(props: BlockProps) {
 }
 
 export function focusBlock(
-  block: Omit<Block, "position">,
+  block: Block,
   left: number | "end" | "start",
   top: "top" | "bottom",
 ) {
   console.log("focusin block");
   // if the block is below a certain y position, scroll it to that y position
   if (block.type !== "text" && block.type !== "heading") {
-    useUIState.getState().setSelectedBlock(block.value);
+    useUIState.getState().setSelectedBlock(block);
     return true;
   }
   let nextBlockID = block.value;

@@ -16,9 +16,9 @@ export function SelectionManager() {
     let listener = async (e: KeyboardEvent) => {
       if (e.key === "Backspace" || e.key === "Delete") {
         if (moreThanOneSelected) {
-          for (let entity of useUIState.getState().selectedBlock) {
-            useUIState.getState().closeCard(entity);
-            await rep?.mutate.removeBlock({ blockEntity: entity });
+          for (let block of useUIState.getState().selectedBlock) {
+            useUIState.getState().closeCard(block.value);
+            await rep?.mutate.removeBlock({ blockEntity: block.value });
           }
         }
       }

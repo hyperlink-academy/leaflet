@@ -5,14 +5,19 @@ import { renderToStaticMarkup } from "react-dom/server";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { RenderYJSFragment } from "components/TextBlock/RenderYJSFragment";
+import { Block } from "components/Blocks";
 
 export async function getBlocksAsHTML(
   rep: Replicache<ReplicacheMutators>,
-  selectedBlocks: string[],
+  selectedBlocks: Block[],
 ) {
   let data = await rep?.query(async (tx) => {
     let types = await Promise.all(
-      selectedBlocks.map((b) => scanIndex(tx).eav(b, "block/type")),
+      selectedBlocks
+        .sort((a, b) => {
+          return a.position > b.position ? 1 : -1;
+        })
+        .map((b) => scanIndex(tx).eav(b.value, "block/type")),
     );
     let blocksWithData = Promise.all(
       types.flat().map(async (b) => {

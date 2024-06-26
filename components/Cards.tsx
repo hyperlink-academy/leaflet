@@ -202,7 +202,11 @@ export async function focusCard(
 
         if (!blockType) return null;
 
-        return { value: firstBlock.data.value, type: blockType.data.value };
+        return {
+          value: firstBlock.data.value,
+          type: blockType.data.value,
+          position: firstBlock.data.position,
+        };
       });
 
       if (firstBlock) {

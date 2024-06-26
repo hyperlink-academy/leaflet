@@ -44,7 +44,7 @@ export function ImageBlock(props: BlockProps) {
         />
       </button>
       <img
-        onClick={() => useUIState.getState().setSelectedBlock(props.entityID)}
+        onClick={() => useUIState.getState().setSelectedBlock(props)}
         alt={""}
         src={image?.data.src}
         height={image?.data.height}
