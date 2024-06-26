@@ -65,8 +65,9 @@ function Card(props: { entityID: string; first?: boolean }) {
       {!props.first && <div className="w-6 md:snap-center" />}
       <div className="cardWrapper w-fit flex relative snap-center">
         <div
-          onMouseDown={() => {
+          onMouseDown={(e) => {
             if (rep) {
+              focusCard(props.entityID, rep);
             }
           }}
           id={elementId.card(props.entityID).container}
@@ -202,6 +203,7 @@ export async function focusCard(
         return {
           value: firstBlock.data.value,
           type: blockType.data.value,
+          parent: firstBlock.entity,
           position: firstBlock.data.position,
         };
       });
@@ -211,8 +213,6 @@ export async function focusCard(
       }
     }
 
-    console.log("are we getting here");
-    console.log(document.getElementById(elementId.card(cardID).container));
     //scroll to card
     document.getElementById(elementId.card(cardID).container)?.scrollIntoView({
       behavior: "smooth",
