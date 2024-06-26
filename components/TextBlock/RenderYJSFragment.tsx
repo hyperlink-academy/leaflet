@@ -1,5 +1,6 @@
 import { XmlElement, XmlHook, XmlText } from "yjs";
 import { nodes, marks } from "prosemirror-schema-basic";
+import { CSSProperties } from "react";
 export function RenderYJSFragment({
   node,
   wrapper,
@@ -38,13 +39,13 @@ export function RenderYJSFragment({
               <a
                 href={d.attributes.link.href}
                 key={index}
-                className={attributesToClassName(d)}
+                style={attributesToStyle(d)}
               >
                 {d.insert}
               </a>
             );
           return (
-            <span key={index} className={attributesToClassName(d)}>
+            <span key={index} style={attributesToStyle(d)}>
               {d.insert}
             </span>
           );
@@ -79,9 +80,9 @@ type Delta = {
   };
 };
 
-function attributesToClassName(d: Delta) {
-  let className = "";
-  if (d.attributes?.strong) className += "font-bold ";
-  if (d.attributes?.em) className += "italic";
-  return className;
+function attributesToStyle(d: Delta) {
+  let style: CSSProperties = {};
+  if (d.attributes?.strong) style.fontWeight = "700";
+  if (d.attributes?.em) style.fontStyle = "italic";
+  return style;
 }
