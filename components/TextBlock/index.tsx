@@ -65,12 +65,15 @@ export const setEditorState = (
 
 export function TextBlock(props: BlockProps & { className: string }) {
   let initialized = useInitialPageLoad();
+  let first = props.previousBlock === null;
   return (
     <>
       {!initialized && (
         <RenderedTextBlock
           entityID={props.entityID}
           className={props.className}
+          type={props.type}
+          first={first}
         />
       )}
       <div className={`relative group/text ${!initialized ? "hidden" : ""}`}>
@@ -84,9 +87,12 @@ export function RenderedTextBlock(props: {
   entityID: string;
   className?: string;
   placeholder?: string;
+  type?: string;
+  first?: boolean;
+  preview?: boolean;
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
-  if (!initialFact) return <pre className="min-h-6" />;
+  if (!initialFact) return <pre className="min-h-9 " />;
   let doc = new Y.Doc();
   const update = base64.toByteArray(initialFact.data.value);
   Y.applyUpdate(doc, update);
@@ -94,7 +100,14 @@ export function RenderedTextBlock(props: {
 
   return (
     <pre
-      className={`w-full whitespace-pre-wrap outline-none ${props.className}`}
+      className={`
+        w-full  whitespace-pre-wrap outline-none  ${props.className} ${
+          props.preview
+            ? "p-0"
+            : `px-2 sm:px-3  ${
+                props.type === "heading" ? "pt-1 pb-0 " : "pt-1 pb-2"
+              } ${props.first ? "pt-0" : "pt-1"}`
+        }`}
     >
       {nodes.map((node, index) => (
         <RenderYJSFragment key={index} node={node} />
@@ -107,6 +120,8 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
   let selected = useUIState((s) =>
     s.selectedBlock.find((b) => b.value === props.entityID),
   );
+  let first = props.previousBlock === null;
+
   let [value, factID] = useYJSValue(props.entityID);
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
   let propsRef = useRef(props);
@@ -370,15 +385,23 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
           }));
         }}
         id={elementId.block(props.entityID).text}
-        className={`textBlock w-full p-0 border-none outline-none resize-none align-top bg-transparent whitespace-pre-wrap ${props.className}`}
+        className={`
+          textBlock
+          w-full pl-1 pr-2 sm:pl-2 sm:pr-3 pt-1
+          border-l-4 outline-none
+          resize-none align-top whitespace-pre-wrap bg-transparent ${
+            selected ? " border-border" : "border-transparent"
+          } ${first ? "pt-0" : "pt-1"} ${props.type === "heading" ? "pb-0" : "pb-2"} ${props.className}`}
         ref={setMount}
       />
 
-      {editorState.doc.textContent.length === 0 && props.position === "a0" && (
-        <div className="pointer-events-none absolute top-0 left-0 italic text-tertiary">
-          write something...
-        </div>
-      )}
+      {editorState.doc.textContent.length === 0 &&
+        props.position === "a0" &&
+        props.nextBlock === null && (
+          <div className="pointer-events-none absolute top-0 left-0 px-2 sm:px-3 pt-1 pb-2 italic text-tertiary">
+            write something...
+          </div>
+        )}
       {editorState.doc.textContent.length === 0 && selected && (
         <BlockOptions
           factID={factID}

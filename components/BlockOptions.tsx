@@ -31,7 +31,7 @@ export function BlockOptions(props: Props) {
       : focusedElement?.parent;
 
   return (
-    <div className="blockOptionsWrapper absolute top-0 right-0 hidden group-hover/text:block group-focus-within/text:block">
+    <div className="blockOptionsWrapper absolute top-0 right-2 sm:right-3 hidden group-hover/text:block group-focus-within/text:block">
       <div className="blockOptionsContent flex gap-1 items-center">
         <label className="blockOptionsImage hover:cursor-pointer flex place-items-center">
           <div className="text-tertiary hover:text-accent ">

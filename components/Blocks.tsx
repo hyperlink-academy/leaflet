@@ -224,9 +224,13 @@ function Block(props: BlockProps) {
         }
         useUIState.getState().removeBlockFromSelection(props);
       }}
-      className={`rounded-md p-1 first:mt-0 mx-1 sm:mx-2 ${
-        !selected ? "" : "bg-border-light"
-      } ${props.type === "heading" ? "mt-1 mb-0" : "mb-2"}`}
+      // text and heading blocks handle thier own padding so that
+      // clicking anywhere on them (even the padding between blocks) will focus the textarea
+      className={`${
+        props.type !== "heading" &&
+        props.type !== "text" &&
+        `border-l-4 first:pt-0 pl-1 sm:pl-2 pr-2 sm:pr-3 pt-1 pb-2 ${selected ? "border-tertiary" : "border-transparent"}`
+      }`}
       id={elementId.block(props.entityID).container}
     >
       {props.type === "card" ? (
@@ -270,6 +274,7 @@ export function focusBlock(
   }
   let nextBlockID = block.value;
   let nextBlock = useEditorStates.getState().editorStates[nextBlockID];
+  console.log("yo?");
   if (!nextBlock || !nextBlock.view) return;
   nextBlock.view.focus();
   let nextBlockViewClientRect = nextBlock.view.dom.getBoundingClientRect();
@@ -282,11 +287,11 @@ export function focusBlock(
         : nextBlock.view.posAtCoords({
             top:
               top === "top"
-                ? nextBlockViewClientRect.top + 2
-                : nextBlockViewClientRect.bottom - 2,
+                ? nextBlockViewClientRect.top + 12
+                : nextBlockViewClientRect.bottom - 12,
             left,
           });
-
+  console.log(pos);
   let newState = nextBlock.editor.apply(
     tr.setSelection(TextSelection.create(tr.doc, pos?.pos || 0)),
   );

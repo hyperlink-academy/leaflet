@@ -73,7 +73,7 @@ function CardPreview(props: { entityID: string }) {
   let blocks = useEntity(props.entityID, "card/block");
   return (
     <div
-      className={`cardBlockPreview w-[120px] p-1 m-2 -mb-2 bg-bg-card border shrink-0 border-border-light flex flex-col gap-1 rotate-6 origin-center`}
+      className={`cardBlockPreview w-[120px] p-1 mx-3 mt-3 -mb-2 bg-bg-card border rounded-md shrink-0 border-border-light flex flex-col gap-1 rotate-[4deg] origin-center`}
     >
       {blocks
         .sort((a, b) => (a.data.position > b.data.position ? 1 : -1))
@@ -89,8 +89,8 @@ function PreviewBlock(props: { entityID: string }) {
   switch (type?.data.value) {
     case "text": {
       return (
-        <div style={{ fontSize: "3px" }}>
-          <RenderedTextBlock entityID={props.entityID} />
+        <div style={{ fontSize: "4px" }}>
+          <RenderedTextBlock entityID={props.entityID} preview />
         </div>
       );
     }
@@ -111,15 +111,15 @@ function HeadingPreviewBlock(props: { entityID: string }) {
   let headingLevel = useEntity(props.entityID, "block/heading-level");
   return (
     <div className={HeadingStyle[headingLevel?.data.value || 1]}>
-      <RenderedTextBlock entityID={props.entityID} />
+      <RenderedTextBlock entityID={props.entityID} preview />
     </div>
   );
 }
 
 const HeadingStyle = {
-  1: "text-[5px] font-bold",
-  2: "text-[4px] font-bold ",
-  3: "text-[3px] font-bold italic text-secondary ",
+  1: "text-[6px] font-bold",
+  2: "text-[5px] font-bold ",
+  3: "text-[4px] font-bold italic text-secondary ",
 } as { [level: number]: string };
 
 function ImagePreviewBlock(props: { entityID: string }) {
