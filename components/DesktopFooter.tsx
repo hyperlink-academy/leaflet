@@ -8,11 +8,14 @@ export function DesktopCardFooter(props: { parentID: string }) {
   let focusedBlockParent =
     focusedTextBlock?.type === "card" ? null : focusedTextBlock?.parent;
   return (
-    <Media mobile={false} className="absolute bottom-4 w-full z-10 ">
+    <Media
+      mobile={false}
+      className="absolute bottom-4 w-full z-10 pointer-events-none"
+    >
       {focusedTextBlock &&
         focusedTextBlock.type === "block" &&
         focusedBlockParent === props.parentID && (
-          <div className="w-fit mx-auto py-1 px-4 flex gap-2 items-center bg-bg-card border border-border rounded-full shadow-sm">
+          <div className="pointer-events-auto w-fit mx-auto py-1 px-4 flex gap-2 items-center bg-bg-card border border-border rounded-full shadow-sm">
             <TextToolbar />
           </div>
         )}
