@@ -86,3 +86,22 @@ function attributesToStyle(d: Delta) {
   if (d.attributes?.em) style.fontStyle = "italic";
   return style;
 }
+
+export function YJSFragmentToString(
+  node: XmlElement | XmlText | XmlHook,
+): string {
+  if (node.constructor === XmlElement) {
+    return node
+      .toArray()
+      .map((f) => YJSFragmentToString(f))
+      .join("");
+  }
+  if (node.constructor === XmlText) {
+    return (node.toDelta() as Delta[])
+      .map((d) => {
+        return d.insert;
+      })
+      .join(" ");
+  }
+  return "";
+}
