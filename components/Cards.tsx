@@ -95,7 +95,7 @@ const CardOptions = () => {
   let toaster = useToaster();
   return (
     <Popover.Root>
-      <Popover.Trigger className="cardOptionsTrigger px-2 py-1 w-fit absolute top-0 right-3 bg-border text-bg-card rounded-b-md">
+      <Popover.Trigger className="cardOptionsTrigger z-10 px-2 py-1 w-fit absolute top-0 right-3 bg-border text-bg-card rounded-b-md">
         <MoreOptionsTiny />
       </Popover.Trigger>
       <Popover.Portal>

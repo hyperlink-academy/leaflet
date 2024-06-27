@@ -77,7 +77,7 @@ export const ExternalLinkBlock = () => {
       </div>
 
       <div
-        className={`linkBlockPreview w-[120px] m-2 -mb-2 bg-test shrink-0 rounded-t-md border border-border group-hover:border-accent`}
+        className={`linkBlockPreview w-[120px] m-2 -mb-2  shrink-0 rounded-t-md border border-border group-hover:border-accent`}
       />
     </a>
   );
