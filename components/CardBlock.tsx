@@ -88,6 +88,8 @@ function PreviewBlock(props: { entityID: string }) {
       return <HeadingPreviewBlock entityID={props.entityID} />;
     case "card":
       return <div className="w-full h-4 rounded-md bg-border-light" />;
+    case "image":
+      return <ImagePreviewBlock entityID={props.entityID} />;
     default:
       null;
   }
@@ -107,3 +109,18 @@ const HeadingStyle = {
   2: "text-[4px] font-bold ",
   3: "text-[3px] font-bold italic text-secondary ",
 } as { [level: number]: string };
+
+function ImagePreviewBlock(props: { entityID: string }) {
+  let image = useEntity(props.entityID, "block/image");
+  return (
+    <div className="relative group/image flex w-full justify-center">
+      <img
+        alt={""}
+        src={image?.data.src}
+        height={image?.data.height}
+        width={image?.data.width}
+        className=""
+      />
+    </div>
+  );
+}
