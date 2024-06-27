@@ -3,6 +3,7 @@ import { focusCard } from "components/Cards";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "./TextBlock";
+import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
 
 export function CardBlock(props: BlockProps) {
   let isSelected = useUIState(
@@ -10,10 +11,7 @@ export function CardBlock(props: BlockProps) {
       (props.type !== "text" || s.selectedBlock.length > 1) &&
       s.selectedBlock.find((b) => b.value === props.entityID),
   );
-  let blocks = useEntity(props.entityID, "card/block");
-  let firstBlock = blocks.sort((a, b) => {
-    return a.data.position > b.data.position ? 1 : -1;
-  })[0];
+  let docMetadata = useDocMetadata(props.entityID);
 
   let isOpen = useUIState((s) => s.openCards).includes(props.entityID);
 
@@ -35,7 +33,7 @@ export function CardBlock(props: BlockProps) {
         if (rep) focusCard(props.entityID, rep, "focusFirstBlock");
       }}
     >
-      <div className={`p-2 grow`}>
+      <div className="pt-2 pb-2 px-2 grow min-w-0">
         {/* TODO:
         if the document is completely empty (no blocks, no text) show placeholder text
         the placeholder should be classname= "text-tertiary italic font-bold"  */}
@@ -51,8 +49,20 @@ export function CardBlock(props: BlockProps) {
 
         {/* TODO:
         the cardBlockPreview image should be screenshot of the page it links to */}
-
-        <RenderedTextBlock entityID={firstBlock?.data.value} />
+        {docMetadata.heading && (
+          <div
+            className={`cardBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-none resize-none align-top border h-[24px] line-clamp-1`}
+          >
+            <RenderedTextBlock entityID={docMetadata.heading} />
+          </div>
+        )}
+        {docMetadata.content && (
+          <div
+            className={`cardBlockDescription text-sm bg-transparent border-none outline-none resize-none align-top  ${docMetadata.heading ? "line-clamp-3" : "line-clamp-4"}`}
+          >
+            <RenderedTextBlock entityID={docMetadata.content} />
+          </div>
+        )}
       </div>
       <CardPreview entityID={props.entityID} />
     </div>
@@ -63,7 +73,7 @@ function CardPreview(props: { entityID: string }) {
   let blocks = useEntity(props.entityID, "card/block");
   return (
     <div
-      className={`cardBlockPreview w-[120px] p-1 m-2 -mb-2 bg-bg-card border border-border-light flex flex-col gap-1 rotate-6 origin-center`}
+      className={`cardBlockPreview w-[120px] p-1 m-2 -mb-2 bg-bg-card border shrink-0 border-border-light flex flex-col gap-1 rotate-6 origin-center`}
     >
       {blocks
         .sort((a, b) => (a.data.position > b.data.position ? 1 : -1))
