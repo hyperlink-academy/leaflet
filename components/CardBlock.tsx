@@ -97,7 +97,9 @@ function PreviewBlock(props: { entityID: string }) {
     case "heading":
       return <HeadingPreviewBlock entityID={props.entityID} />;
     case "card":
-      return <div className="w-full h-4 rounded-md bg-border-light" />;
+      return (
+        <div className="w-full h-4 shrink-0 rounded-md border border-border-light" />
+      );
     case "image":
       return <ImagePreviewBlock entityID={props.entityID} />;
     default:
@@ -115,7 +117,7 @@ function HeadingPreviewBlock(props: { entityID: string }) {
 }
 
 const HeadingStyle = {
-  1: "text-[6px] font-bold",
+  1: "text-[5px] font-bold",
   2: "text-[4px] font-bold ",
   3: "text-[3px] font-bold italic text-secondary ",
 } as { [level: number]: string };
