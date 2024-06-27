@@ -94,7 +94,7 @@ export function RenderedTextBlock(props: {
 
   return (
     <pre
-      className={`w-full whitespace-pre-wrap outline-none min-h-6 ${props.className}`}
+      className={`w-full whitespace-pre-wrap outline-none ${props.className}`}
     >
       {nodes.map((node, index) => (
         <RenderYJSFragment key={index} node={node} />
