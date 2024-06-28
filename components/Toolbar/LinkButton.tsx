@@ -7,6 +7,7 @@ import { CheckTiny, CloseTiny, LinkTextToolbarSmall } from "components/Icons";
 import { useState } from "react";
 import { Separator } from "components/Layout";
 import { MarkType } from "prosemirror-model";
+
 export function LinkButton(props: { setToolBarState: (s: "link") => void }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);
   let focusedEditor = useEditorStates((s) =>
@@ -66,6 +67,7 @@ export function LinkEditor(props: { onClose: () => void }) {
     }
   }
   let [linkValue, setLinkValue] = useState(content);
+
   return (
     <div className=" w-full flex items-center gap-[6px]">
       <ToolbarButton onClick={() => props.onClose}>
@@ -73,12 +75,12 @@ export function LinkEditor(props: { onClose: () => void }) {
       </ToolbarButton>
       <Separator />
       <input
+        autoFocus
         className="w-full grow bg-transparent border-none outline-none "
-        placeholder="www.leafl.et"
+        placeholder="www.leaflet.pub"
         value={linkValue}
         onChange={(e) => setLinkValue(e.target.value)}
       />
-      {start},{end}
       <div className="flex items-center gap-3">
         <button
           className="hover:text-accent"

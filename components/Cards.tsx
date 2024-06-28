@@ -139,7 +139,7 @@ const DeleteCardToast = {
     <div className="flex gap-2">
       You deleted a card.{" "}
       <button
-        className="underline hover:font-bold italic"
+        className="underline font-bold sm:font-normal sm:hover:font-bold italic"
         onClick={() => {
           // TODO: WIRE UP UNDO DELETE
         }}

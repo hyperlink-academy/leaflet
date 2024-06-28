@@ -248,7 +248,6 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
               let block = useEditorStates.getState().editorStates[entityID];
               if (block) {
                 let tr = block.editor.tr;
-                console.log(content.content);
                 tr.insert(block.editor.selection.from || 0, content.content);
                 let newState = block.editor.apply(tr);
                 setEditorState(entityID, {
@@ -336,7 +335,6 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
             return;
           }
         }
-
         e.preventDefault();
         e.stopPropagation();
       }}
@@ -387,18 +385,17 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
         id={elementId.block(props.entityID).text}
         className={`
           textBlock
-          w-full pl-1 pr-2 sm:pl-2 sm:pr-3 pt-1
+          w-full pl-1 pr-2 sm:pl-2 sm:pr-3
           border-l-4 outline-none
           resize-none align-top whitespace-pre-wrap bg-transparent ${
-            selected ? " border-border" : "border-transparent"
+            selected ? " border-tertiary" : "border-transparent"
           } ${first ? "pt-0" : "pt-1"} ${props.type === "heading" ? "pb-0" : "pb-2"} ${props.className}`}
         ref={setMount}
       />
-
       {editorState.doc.textContent.length === 0 &&
         props.position === "a0" &&
         props.nextBlock === null && (
-          <div className="pointer-events-none absolute top-0 left-0 px-2 sm:px-3 pt-1 pb-2 italic text-tertiary">
+          <div className="pointer-events-none absolute top-0 left-0 px-2 sm:px-3  pb-2 italic text-tertiary">
             write something...
           </div>
         )}
@@ -448,14 +445,12 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
       let bottomScrollPadding = 100;
       if (cursorPosY && parentHeight) {
         if (cursorPosY > parentHeight - bottomScrollPadding) {
-          // BUG: cursor is at wrong poistion on first click into page
           parentID?.scrollBy({
             top: bottomScrollPadding - (parentHeight - cursorPosY),
             behavior: "smooth",
           });
         }
         if (cursorPosY < 50) {
-          console.log("scrolling up");
           if (parentID?.scrollTop === 0) return;
           parentID?.scrollBy({
             top: cursorPosY - 50,

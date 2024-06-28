@@ -30,7 +30,7 @@ export function Blocks(props: { entityID: string }) {
   let lastBlock = blocks[blocks.length - 1];
   return (
     <div
-      className="blocks w-full flex flex-col pt-2 sm:pt-3 outline-none h-fit pb-32"
+      className="blocks w-full flex flex-col pt-2 sm:pt-3 outline-none h-fit min-h-full pb-32"
       onClick={async (e) => {
         if (useUIState.getState().selectedBlock.length > 1) return;
         if (e.target === e.currentTarget) {
@@ -87,9 +87,9 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
   )
     return null;
   return (
-    <div className="relative group/text mx-2 sm:mx-3">
+    <div className="relative group/text px-2  sm:px-3">
       <div
-        className="h-full hover:cursor-text italic p-1 text-tertiary"
+        className="h-6 hover:cursor-text italic text-tertiary"
         onMouseDown={async () => {
           let newEntityID = crypto.randomUUID();
           await rep?.mutate.addBlock({
@@ -274,7 +274,6 @@ export function focusBlock(
   }
   let nextBlockID = block.value;
   let nextBlock = useEditorStates.getState().editorStates[nextBlockID];
-  console.log("yo?");
   if (!nextBlock || !nextBlock.view) return;
   nextBlock.view.focus();
   let nextBlockViewClientRect = nextBlock.view.dom.getBoundingClientRect();
@@ -291,7 +290,6 @@ export function focusBlock(
                 : nextBlockViewClientRect.bottom - 12,
             left,
           });
-  console.log(pos);
   let newState = nextBlock.editor.apply(
     tr.setSelection(TextSelection.create(tr.doc, pos?.pos || 0)),
   );
