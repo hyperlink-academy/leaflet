@@ -21,6 +21,7 @@
     @apply overscroll-y-none;
     min-height: -webkit-fill-available;
     @apply font-sans;
+    font-synthesis: none;
   }
 
   #__next {

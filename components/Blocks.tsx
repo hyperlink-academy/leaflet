@@ -250,8 +250,8 @@ function Block(props: BlockProps) {
 
 const HeadingStyle = {
   1: "text-xl font-bold",
-  2: "text-lg font-bold ",
-  3: "text-base font-bold italic text-secondary ",
+  2: "text-lg font-bold",
+  3: "text-base font-bold text-secondary ",
 } as { [level: number]: string };
 export function HeadingBlock(props: BlockProps) {
   let headingLevel = useEntity(props.entityID, "block/heading-level");
