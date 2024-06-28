@@ -60,14 +60,18 @@ export function IOSBS(props: BlockProps) {
   let selected = useUIState((s) =>
     s.selectedBlock.find((b) => b.value === props.entityID),
   );
-  if (selected) return null;
+  let [initialRender, setInitialRender] = useState(true);
+  useEffect(() => {
+    setInitialRender(false);
+  }, []);
+  if (selected || initialRender || !isIOS()) return null;
   return (
     <div
-      style={{ display: isIOS() ? "none" : undefined }}
       className="h-full w-full absolute cursor-text"
       onMouseDown={(e) => {
         e.preventDefault();
         let target = e.target;
+        console.log("what");
         focusBlock(props, {
           type: "coord",
           top: e.clientY,

@@ -49,7 +49,7 @@ export function Blocks(props: { entityID: string }) {
                 ?.focus();
             }, 10);
           } else {
-            focusBlock(lastBlock, "end", "bottom");
+            focusBlock(lastBlock, { type: "end" });
           }
         }
       }}
@@ -68,6 +68,7 @@ export function Blocks(props: { entityID: string }) {
         );
       })}
       <NewBlockButton lastBlock={lastBlock || null} entityID={props.entityID} />
+      <div className="shrink-0 h-[50vh]" />
     </div>
   );
 }
@@ -147,14 +148,20 @@ function Block(props: BlockProps) {
         e.preventDefault();
         let block = props.nextBlock;
         if (block && useUIState.getState().selectedBlock.length <= 1)
-          focusBlock(block, useEditorStates.getState().lastXPosition, "top");
+          focusBlock(block, {
+            type: "top",
+            left: useEditorStates.getState().lastXPosition,
+          });
         if (!block) return;
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
         let block = props.previousBlock;
         if (block && useUIState.getState().selectedBlock.length <= 1) {
-          focusBlock(block, useEditorStates.getState().lastXPosition, "bottom");
+          focusBlock(block, {
+            type: "bottom",
+            left: useEditorStates.getState().lastXPosition,
+          });
         }
         if (!block) return;
       }
@@ -164,7 +171,7 @@ function Block(props: BlockProps) {
         r.mutate.removeBlock({ blockEntity: props.entityID });
         useUIState.getState().closeCard(props.entityID);
         let block = props.previousBlock;
-        if (block) focusBlock(block, "end", "bottom");
+        if (block) focusBlock(block, { type: "end" });
       }
       if (e.key === "Enter") {
         let newEntityID = crypto.randomUUID();
@@ -260,11 +267,25 @@ export function HeadingBlock(props: BlockProps) {
   );
 }
 
-export function focusBlock(
-  block: Block,
-  left: number | "end" | "start",
-  top: "top" | "bottom",
-) {
+type Position =
+  | {
+      type: "start";
+    }
+  | { type: "end" }
+  | {
+      type: "coord";
+      top: number;
+      left: number;
+    }
+  | {
+      type: "top";
+      left: number;
+    }
+  | {
+      type: "bottom";
+      left: number;
+    };
+export function focusBlock(block: Block, position: Position) {
   if (block.type !== "text" && block.type !== "heading") {
     useUIState.getState().setSelectedBlock(block);
     return true;
@@ -272,21 +293,42 @@ export function focusBlock(
   let nextBlockID = block.value;
   let nextBlock = useEditorStates.getState().editorStates[nextBlockID];
   if (!nextBlock || !nextBlock.view) return;
-  nextBlock.view.focus();
+  nextBlock.view.dom.focus({ preventScroll: true });
   let nextBlockViewClientRect = nextBlock.view.dom.getBoundingClientRect();
   let tr = nextBlock.editor.tr;
-  let pos =
-    left === "end"
-      ? { pos: tr.doc.content.size - 1 }
-      : left === "start"
-        ? { pos: 1 }
-        : nextBlock.view.posAtCoords({
-            top:
-              top === "top"
-                ? nextBlockViewClientRect.top + 12
-                : nextBlockViewClientRect.bottom - 12,
-            left,
-          });
+  let pos: { pos: number } | null = null;
+  switch (position.type) {
+    case "end": {
+      pos = { pos: tr.doc.content.size - 1 };
+      break;
+    }
+    case "start": {
+      pos = { pos: 1 };
+      break;
+    }
+    case "top": {
+      pos = nextBlock.view.posAtCoords({
+        top: nextBlockViewClientRect.top + 12,
+        left: position.left,
+      });
+      break;
+    }
+    case "bottom": {
+      pos = nextBlock.view.posAtCoords({
+        top: nextBlockViewClientRect.bottom - 12,
+        left: position.left,
+      });
+      break;
+    }
+    case "coord": {
+      pos = nextBlock.view.posAtCoords({
+        top: position.top,
+        left: position.left,
+      });
+      break;
+    }
+  }
+
   let newState = nextBlock.editor.apply(
     tr.setSelection(TextSelection.create(tr.doc, pos?.pos || 0)),
   );
