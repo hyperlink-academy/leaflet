@@ -6,9 +6,6 @@ import { usePreventScroll } from "react-aria";
 export default function Layout(props: { children: React.ReactNode }) {
   let viewheight = useViewportSize().height;
   let difference = useViewportDifference();
-
-  usePreventScroll();
-
   return <div style={{ height: viewheight || "100%" }}>{props.children}</div>;
 }
 

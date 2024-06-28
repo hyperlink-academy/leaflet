@@ -15,13 +15,12 @@ import {
   ReplicacheMutators,
   Fact,
 } from "src/replicache";
+import { isVisible } from "src/utils/isVisible";
 
 import { EditorState } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
 import { ySyncPlugin } from "y-prosemirror";
 import { Replicache } from "replicache";
 import { generateKeyBetween } from "fractional-indexing";
-import { create } from "zustand";
 import { RenderYJSFragment } from "./RenderYJSFragment";
 import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 import { addImage } from "src/utils/addImage";
@@ -33,35 +32,8 @@ import { MarkType, DOMParser as ProsemirrorDOMParser } from "prosemirror-model";
 import { useAppEventListener } from "src/eventBus";
 import { addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockOptions } from "components/BlockOptions";
-
-export let useEditorStates = create(() => ({
-  lastXPosition: 0,
-  editorStates: {} as {
-    [entity: string]:
-      | {
-          editor: InstanceType<typeof EditorState>;
-          view?: InstanceType<typeof EditorView>;
-        }
-      | undefined;
-  },
-}));
-
-export const setEditorState = (
-  entityID: string,
-  s: {
-    editor: InstanceType<typeof EditorState>;
-  },
-) => {
-  useEditorStates.setState((oldState) => {
-    let existingState = oldState.editorStates[entityID];
-    return {
-      editorStates: {
-        ...oldState.editorStates,
-        [entityID]: { ...existingState, ...s },
-      },
-    };
-  });
-};
+import { setEditorState, useEditorStates } from "src/state/useEditorState";
+import { isIOS } from "@react-aria/utils";
 
 export function TextBlock(props: BlockProps & { className: string }) {
   let initialized = useInitialPageLoad();
@@ -77,9 +49,45 @@ export function TextBlock(props: BlockProps & { className: string }) {
         />
       )}
       <div className={`relative group/text ${!initialized ? "hidden" : ""}`}>
+        <IOSBS {...props} />
         <BaseTextBlock {...props} />
       </div>
     </>
+  );
+}
+
+export function IOSBS(props: BlockProps) {
+  let selected = useUIState((s) =>
+    s.selectedBlock.find((b) => b.value === props.entityID),
+  );
+  if (selected) return null;
+  return (
+    <div
+      style={{ display: isIOS() ? "none" : undefined }}
+      className="h-full w-full absolute cursor-text"
+      onMouseDown={(e) => {
+        e.preventDefault();
+        let target = e.target;
+        focusBlock(props, {
+          type: "coord",
+          top: e.clientY,
+          left: e.clientX,
+        });
+        setTimeout(async () => {
+          let vis = await isVisible(target as Element);
+          if (!vis) {
+            let parentEl = document.getElementById(
+              elementId.card(props.parent).container,
+            );
+            if (!parentEl) return;
+            parentEl?.scrollBy({
+              top: 250,
+              behavior: "smooth",
+            });
+          }
+        }, 600);
+      }}
+    />
   );
 }
 
@@ -262,8 +270,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
                     parent: propsRef.current.parent,
                     position: p,
                   },
-                  "end",
-                  "bottom",
+                  { type: "end" },
                 );
               }
             }, 10);
@@ -444,19 +451,6 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
       let cursorPosY = coords.top;
       let bottomScrollPadding = 100;
       if (cursorPosY && parentHeight) {
-        if (cursorPosY > parentHeight - bottomScrollPadding) {
-          parentID?.scrollBy({
-            top: bottomScrollPadding - (parentHeight - cursorPosY),
-            behavior: "smooth",
-          });
-        }
-        if (cursorPosY < 50) {
-          if (parentID?.scrollTop === 0) return;
-          parentID?.scrollBy({
-            top: cursorPosY - 50,
-            behavior: "smooth",
-          });
-        }
       }
     }, 10);
   });

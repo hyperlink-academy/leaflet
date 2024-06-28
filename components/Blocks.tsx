@@ -1,10 +1,6 @@
 "use client";
 import { Fact, useEntity, useReplicache } from "src/replicache";
-import {
-  TextBlock,
-  setEditorState,
-  useEditorStates,
-} from "components/TextBlock";
+import { TextBlock } from "components/TextBlock";
 import { generateKeyBetween } from "fractional-indexing";
 import { useEffect } from "react";
 import { elementId } from "src/utils/elementId";
@@ -16,6 +12,7 @@ import { CardBlock } from "./CardBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { BlockOptions } from "./BlockOptions";
 import { useBlocks } from "src/hooks/queries/useBlocks";
+import { setEditorState, useEditorStates } from "src/state/useEditorState";
 
 export type Block = {
   parent: string;

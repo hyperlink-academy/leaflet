@@ -1,4 +1,3 @@
-import { setEditorState, useEditorStates } from "components/TextBlock";
 import { schema } from "components/TextBlock/schema";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { useUIState } from "src/useUIState";
@@ -7,6 +6,7 @@ import { CheckTiny, CloseTiny, LinkTextToolbarSmall } from "components/Icons";
 import { useState } from "react";
 import { Separator } from "components/Layout";
 import { MarkType } from "prosemirror-model";
+import { setEditorState, useEditorStates } from "src/state/useEditorState";
 
 export function LinkButton(props: { setToolBarState: (s: "link") => void }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);

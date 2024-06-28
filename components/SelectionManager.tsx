@@ -5,8 +5,8 @@ import { useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { getBlocksAsHTML } from "src/utils/getBlocksAsHTML";
 import { scanIndex } from "src/replicache/utils";
-import { useEditorStates } from "./TextBlock";
 import { focusBlock } from "./Blocks";
+import { useEditorStates } from "src/state/useEditorState";
 export const useSelectingMouse = create(() => ({
   start: null as null | { top: number; left: number },
 }));
@@ -63,8 +63,7 @@ export function SelectionManager() {
           useUIState.getState().setSelectedBlock(firstBlock);
           focusBlock(
             { ...firstBlock, type: type[0].data.value },
-            "start",
-            "top",
+            { type: "start" },
           );
         } else {
           if (
@@ -130,7 +129,10 @@ export function SelectionManager() {
         );
         if (!type?.[0]) return;
         useUIState.getState().setSelectedBlock(firstBlock);
-        focusBlock({ ...firstBlock, type: type[0].data.value }, "start", "top");
+        focusBlock(
+          { ...firstBlock, type: type[0].data.value },
+          { type: "start" },
+        );
       }
       if (e.key === "ArrowRight") {
         let selectedBlocks = useUIState
@@ -144,7 +146,7 @@ export function SelectionManager() {
         );
         if (!type?.[0]) return;
         useUIState.getState().setSelectedBlock(lastBlock);
-        focusBlock({ ...lastBlock, type: type[0].data.value }, "end", "top");
+        focusBlock({ ...lastBlock, type: type[0].data.value }, { type: "end" });
       }
       if (e.key === "ArrowDown") {
         let selectedBlocks = useUIState
@@ -160,7 +162,10 @@ export function SelectionManager() {
           );
           if (!type?.[0]) return;
           useUIState.getState().setSelectedBlock(lastBlock);
-          focusBlock({ ...lastBlock, type: type[0].data.value }, "end", "top");
+          focusBlock(
+            { ...lastBlock, type: type[0].data.value },
+            { type: "end" },
+          );
         }
         if (e.shiftKey) {
           if (

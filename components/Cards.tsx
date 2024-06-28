@@ -77,6 +77,7 @@ function Card(props: { entityID: string; first?: boolean }) {
           className={`
       card w-[calc(100vw-12px)] md:w-[calc(50vw-32px)] max-w-prose
       grow flex flex-col
+      overscroll-none
       overflow-y-scroll no-scrollbar
       rounded-lg border
       ${isFocused ? "shadow-md border-border" : "border-border-light"}
@@ -209,7 +210,7 @@ export async function focusCard(
       });
 
       if (firstBlock) {
-        focusBlock(firstBlock, "start", "top");
+        focusBlock(firstBlock, { type: "start" });
       }
     }
 

@@ -15,6 +15,7 @@
     "@nytimes/react-prosemirror": "^0.6.1",
     "@radix-ui/react-popover": "^1.0.7",
     "@radix-ui/react-slider": "^1.1.2",
+    "@react-aria/utils": "^3.24.1",
     "@react-spring/web": "^9.7.3",
     "@supabase/ssr": "^0.3.0",
     "@supabase/supabase-js": "^2.43.2",

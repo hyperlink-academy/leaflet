@@ -1,10 +1,10 @@
-import { useEditorStates } from "components/TextBlock";
 import { MarkType } from "prosemirror-model";
 import { useUIState } from "src/useUIState";
 import { ToolbarButton } from ".";
 import { toggleMark } from "prosemirror-commands";
 import { TextSelection } from "prosemirror-state";
 import { publishAppEvent } from "src/eventBus";
+import { useEditorStates } from "src/state/useEditorState";
 
 export function TextDecorationButton(props: {
   mark: MarkType;

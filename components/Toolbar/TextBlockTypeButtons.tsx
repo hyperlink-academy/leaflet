@@ -5,11 +5,11 @@ import {
   ParagraphSmall,
 } from "components/Icons";
 import { Separator } from "components/Layout";
-import { setEditorState, useEditorStates } from "components/TextBlock";
 import { CloseToolbarButton, ToolbarButton } from "components/Toolbar";
 import { TextSelection } from "prosemirror-state";
 import { useCallback } from "react";
 import { useEntity, useReplicache } from "src/replicache";
+import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
 export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
   let focusedBlock = useUIState((s) => s.focusedBlock);

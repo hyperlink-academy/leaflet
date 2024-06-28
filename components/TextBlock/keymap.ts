@@ -7,9 +7,9 @@ import { MutableRefObject } from "react";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { elementId } from "src/utils/elementId";
-import { setEditorState, useEditorStates } from ".";
 import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
+import { setEditorState, useEditorStates } from "src/state/useEditorState";
 
 export const TextBlockKeymap = (
   propsRef: MutableRefObject<BlockProps>,
@@ -19,12 +19,18 @@ export const TextBlockKeymap = (
     "Meta-b": toggleMark(schema.marks.strong),
     "Meta-u": toggleMark(schema.marks.underline),
     "Meta-i": toggleMark(schema.marks.em),
+    Escape: (_state, _dispatch, view) => {
+      view?.dom.blur();
+
+      return true;
+    },
     "#": (state, dispatch, view) => {
       if (state.selection.content().size > 0) return false;
       if (state.selection.anchor > 1) return false;
       repRef.current?.mutate.increaseHeadingLevel({
         entityID: propsRef.current.entityID,
       });
+
       setTimeout(
         () =>
           focusBlock(
@@ -34,8 +40,7 @@ export const TextBlockKeymap = (
               position: propsRef.current.position,
               parent: propsRef.current.parent,
             },
-            "start",
-            "bottom",
+            { type: "start" },
           ),
         10,
       );
@@ -96,7 +101,7 @@ export const TextBlockKeymap = (
         let block = propsRef.current.previousBlock;
         if (block) {
           view.dom.blur();
-          focusBlock(block, coords.left, "bottom");
+          focusBlock(block, { left: coords.left, type: "bottom" });
           return true;
         }
         return false;
@@ -114,7 +119,7 @@ export const TextBlockKeymap = (
         let block = propsRef.current.nextBlock;
         if (block) {
           view.dom.blur();
-          focusBlock(block, coords.left, "top");
+          focusBlock(block, { left: coords.left, type: "top" });
           return true;
         }
         return false;
@@ -127,7 +132,7 @@ export const TextBlockKeymap = (
       let block = propsRef.current.previousBlock;
       if (block) {
         view?.dom.blur();
-        focusBlock(block, "end", "top");
+        focusBlock(block, { type: "end" });
       }
       return true;
     },
@@ -137,7 +142,7 @@ export const TextBlockKeymap = (
       let block = propsRef.current.nextBlock;
       if (block) {
         view?.dom.blur();
-        focusBlock(block, "start", "top");
+        focusBlock(block, { type: "start" });
       }
       return true;
     },
@@ -172,8 +177,7 @@ const backspace =
                 position: propsRef.current.position,
                 parent: propsRef.current.parent,
               },
-              "start",
-              "bottom",
+              { type: "start" },
             ),
           10,
         );
@@ -186,7 +190,7 @@ const backspace =
         blockEntity: propsRef.current.entityID,
       });
       if (propsRef.current.previousBlock) {
-        focusBlock(propsRef.current.previousBlock, "end", "bottom");
+        focusBlock(propsRef.current.previousBlock, { type: "end" });
       }
       return true;
     }
@@ -234,14 +238,15 @@ const enter =
     tr.delete(state.selection.anchor, state.doc.content.size);
     dispatch?.(tr);
     let newEntityID = crypto.randomUUID();
+    let position = generateKeyBetween(
+      propsRef.current.position,
+      propsRef.current.nextPosition,
+    );
     repRef.current?.mutate.addBlock({
       newEntityID,
       parent: propsRef.current.parent,
       type: "text",
-      position: generateKeyBetween(
-        propsRef.current.position,
-        propsRef.current.nextPosition,
-      ),
+      position,
     });
     setTimeout(() => {
       let block = useEditorStates.getState().editorStates[newEntityID];
@@ -255,8 +260,16 @@ const enter =
             editor: newState,
           });
         }
+        focusBlock(
+          {
+            value: newEntityID,
+            parent: propsRef.current.parent,
+            type: "text",
+            position,
+          },
+          { type: "start" },
+        );
       }
-      document.getElementById(elementId.block(newEntityID).text)?.focus();
     }, 10);
     return true;
   };
