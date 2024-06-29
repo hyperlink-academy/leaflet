@@ -102,12 +102,12 @@ export const ThemePopover = (props: { entityID: string }) => {
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content
-            className="w-80 max-h-[800px] overflow-y-scroll bg-white rounded-md border border-border flex"
+            className="themeSetterWrapper w-80 h-fit max-h-[80vh]   bg-white rounded-md border border-border flex"
             align="center"
             sideOffset={4}
             collisionPadding={16}
           >
-            <div className="flex flex-col w-full overflow-hidden ">
+            <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
               <div className="themeBGPage flex">
                 <BGPicker
                   entityID={props.entityID}
@@ -126,7 +126,7 @@ export const ThemePopover = (props: { entityID: string }) => {
                     ? "cover"
                     : `calc(${backgroundRepeat.data.value}px / 2 )`,
                 }}
-                className="bg-bg-page mx-2 mb-3 p-3 pb-0 flex flex-col rounded-md overflow-hidden border border-border"
+                className="bg-bg-page mx-2 p-3 pb-0 mb-3 flex flex-col rounded-md  border border-border"
               >
                 <div className="flex flex-col mt-4 -mb-[6px] z-10">
                   <div
