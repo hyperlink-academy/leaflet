@@ -105,7 +105,7 @@ export function RenderedTextBlock(props: {
   preview?: boolean;
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
-  if (!initialFact) return <pre className="min-h-9 " />;
+  if (!initialFact) return <pre className="min-h-9" />;
   let doc = new Y.Doc();
   const update = base64.toByteArray(initialFact.data.value);
   Y.applyUpdate(doc, update);
@@ -114,13 +114,13 @@ export function RenderedTextBlock(props: {
   return (
     <pre
       className={`
-        w-full  whitespace-pre-wrap outline-none  ${props.className} ${
-          props.preview
-            ? "p-0"
-            : `px-2 sm:px-3  ${
-                props.type === "heading" ? "pt-1 pb-0 " : "pt-1 pb-2"
-              } ${props.first ? "pt-0" : "pt-1"}`
-        }`}
+       w-full  whitespace-pre-wrap outline-none  ${props.className} ${
+         props.preview
+           ? "p-0"
+           : `px-2 sm:px-3  ${
+               props.type === "heading" ? "pb-0 " : "pb-2"
+             } ${props.first ? "pt-0" : "pt-1"}`
+       }`}
     >
       {nodes.map((node, index) => (
         <RenderYJSFragment key={index} node={node} />

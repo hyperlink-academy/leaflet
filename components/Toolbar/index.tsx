@@ -22,6 +22,7 @@ import {
   BlockCardSmall,
   BlockSmall,
   CheckTiny,
+  StrikethroughSmall,
 } from "components/Icons";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
@@ -37,6 +38,7 @@ type textState = {
   bold: boolean;
   italic: boolean;
   underline: boolean;
+  strikethrough: boolean;
   header: "h1" | "h2" | "h3" | "p";
   list: "ordered" | "unordered" | "none";
   link: string | undefined;
@@ -48,6 +50,7 @@ let useTextState = create(
       bold: false,
       italic: false,
       underline: false,
+      strikethrough: false,
       header: "p",
       list: "none",
       link: undefined as string | undefined,
@@ -56,6 +59,8 @@ let useTextState = create(
       toggleBold: () => set((state) => ({ bold: !state.bold })),
       toggleItalic: () => set((state) => ({ italic: !state.italic })),
       toggleUnderline: () => set((state) => ({ underline: !state.underline })),
+      toggleStrikethrough: () =>
+        set((state) => ({ strikethrough: !state.strikethrough })),
       setHeader: (newHeader: "h1" | "h2" | "h3" | "p") =>
         set(() => ({ header: newHeader })),
       setList: (newList: "ordered" | "unordered" | "none") =>
@@ -89,9 +94,10 @@ export const TextToolbar = () => {
           />
           <TextDecorationButton mark={schema.marks.em} icon={<ItalicSmall />} />
           <TextDecorationButton
-            mark={schema.marks.underline}
-            icon={<UnderlineSmall />}
+            mark={schema.marks.strikethrough}
+            icon={<StrikethroughSmall />}
           />
+          <Separator />
           {/* possibly link is only available if text is actively selected  */}
           <LinkButton setToolBarState={setToolbarState} />
           <Separator />

@@ -1,5 +1,6 @@
 import { Schema, Node, MarkSpec } from "prosemirror-model";
 import { marks } from "prosemirror-schema-basic";
+import { theme } from "../../tailwind.config";
 
 let baseSchema = {
   marks: {
@@ -18,6 +19,26 @@ let baseSchema = {
       ],
       toDOM() {
         return ["u", { class: "underline" }, 0];
+      },
+    } as MarkSpec,
+    strikethrough: {
+      parseDOM: [
+        {
+          style: "text-decoration=line-through",
+        },
+        {
+          style: "text-decoration=none",
+          clearMark: (m) => m.type.name == "strikethrough",
+        },
+      ],
+      toDOM() {
+        return [
+          "span",
+          {
+            style: `text-decoration: line-through; text-decoration-color: ${theme.colors.tertiary}`,
+          },
+          0,
+        ];
       },
     } as MarkSpec,
     link: {

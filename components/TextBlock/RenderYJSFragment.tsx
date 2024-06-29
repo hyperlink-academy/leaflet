@@ -1,6 +1,8 @@
 import { XmlElement, XmlHook, XmlText } from "yjs";
 import { nodes, marks } from "prosemirror-schema-basic";
 import { CSSProperties } from "react";
+import { theme } from "../../tailwind.config";
+
 export function RenderYJSFragment({
   node,
   wrapper,
@@ -76,6 +78,8 @@ type Delta = {
   attributes?: {
     strong?: {};
     em?: {};
+    underline?: {};
+    strikethrough?: {};
     link?: { href: string };
   };
 };
@@ -84,6 +88,11 @@ function attributesToStyle(d: Delta) {
   let style: CSSProperties = {};
   if (d.attributes?.strong) style.fontWeight = "700";
   if (d.attributes?.em) style.fontStyle = "italic";
+  if (d.attributes?.underline) style.textDecoration = "underline";
+  if (d.attributes?.strikethrough) {
+    (style.textDecoration = "line-through"),
+      (style.textDecorationColor = theme.colors.tertiary);
+  }
   return style;
 }
 
