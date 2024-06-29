@@ -78,62 +78,58 @@ export const TextToolbar = () => {
   let state = useTextState();
 
   return (
-    <>
-      {toolbarState === "default" ? (
-        <>
-          <ToolbarButton onClick={() => {}}>
-            <UndoSmall />
-          </ToolbarButton>
-          <ToolbarButton onClick={() => {}}>
-            <RedoSmall />
-          </ToolbarButton>
-          <Separator />
-          <TextDecorationButton
-            mark={schema.marks.strong}
-            icon={<BoldSmall />}
-          />
-          <TextDecorationButton mark={schema.marks.em} icon={<ItalicSmall />} />
-          <TextDecorationButton
-            mark={schema.marks.strikethrough}
-            icon={<StrikethroughSmall />}
-          />
-          <Separator />
-          {/* possibly link is only available if text is actively selected  */}
-          <LinkButton setToolBarState={setToolbarState} />
-          <Separator />
-          <TextBlockTypeButton setToolbarState={setToolbarState} />
-          <Separator />
-          <ToolbarButton
-            active={state.list !== "none"}
-            onClick={() => {
-              setToolbarState("list");
-            }}
-          >
-            {state.list === "ordered" ? (
-              <ListOrderedSmall />
-            ) : (
-              <ListUnorderedSmall />
-            )}
-          </ToolbarButton>
-          <Separator />
-          <ToolbarButton
-            onClick={() => {
-              setToolbarState("block");
-            }}
-          >
-            <BlockSmall />
-          </ToolbarButton>
-        </>
-      ) : toolbarState === "link" ? (
-        <LinkEditor onClose={() => setToolbarState("default")} />
-      ) : toolbarState === "header" ? (
-        <TextBlockTypeButtons onClose={() => setToolbarState("default")} />
-      ) : toolbarState === "list" ? (
-        <ListToolbar onClose={() => setToolbarState("default")} />
-      ) : toolbarState === "block" ? (
-        <BlockToolbar onClose={() => setToolbarState("default")} />
-      ) : null}
-    </>
+    <div className="flex items-center justify-between w-full gap-6">
+      <div className="flex gap-[6px] items-center">
+        {toolbarState === "default" ? (
+          <>
+            <ToolbarButton onClick={() => {}}>
+              <UndoSmall />
+            </ToolbarButton>
+            <Separator />
+            <TextDecorationButton
+              mark={schema.marks.strong}
+              icon={<BoldSmall />}
+            />
+            <TextDecorationButton
+              mark={schema.marks.em}
+              icon={<ItalicSmall />}
+            />
+            <TextDecorationButton
+              mark={schema.marks.strikethrough}
+              icon={<StrikethroughSmall />}
+            />
+            <Separator />
+            {/* possibly link is only available if text is actively selected  */}
+            <LinkButton setToolBarState={setToolbarState} />
+            <Separator />
+            <TextBlockTypeButton setToolbarState={setToolbarState} />
+            <Separator />
+            <ToolbarButton
+              active={state.list !== "none"}
+              onClick={() => {
+                setToolbarState("list");
+              }}
+            >
+              {state.list === "ordered" ? (
+                <ListOrderedSmall />
+              ) : (
+                <ListUnorderedSmall />
+              )}
+            </ToolbarButton>
+          </>
+        ) : toolbarState === "link" ? (
+          <LinkEditor onClose={() => setToolbarState("default")} />
+        ) : toolbarState === "header" ? (
+          <TextBlockTypeButtons onClose={() => setToolbarState("default")} />
+        ) : toolbarState === "list" ? (
+          <ListToolbar onClose={() => setToolbarState("default")} />
+        ) : toolbarState === "block" ? (
+          <BlockToolbar onClose={() => setToolbarState("default")} />
+        ) : null}
+      </div>
+
+      <CloseTiny />
+    </div>
   );
 };
 

@@ -9,7 +9,7 @@ export function MobileFooter(props: { entityID: string }) {
   return (
     <Media mobile className="w-full z-10 -mt-6">
       {focusedTextBlock && focusedTextBlock.type == "block" ? (
-        <div className="z-10 p-2 flex gap-[6px] items-center bg-bg-card ">
+        <div className="w-full z-10 p-2 flex bg-bg-card ">
           <TextToolbar />
         </div>
       ) : (
