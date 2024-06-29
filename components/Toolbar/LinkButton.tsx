@@ -35,6 +35,7 @@ export function LinkButton(props: { setToolBarState: (s: "link") => void }) {
         e.preventDefault();
         props.setToolBarState("link");
       }}
+      disabled={focusedEditor?.editor.selection.empty}
     >
       <LinkTextToolbarSmall />
     </ToolbarButton>

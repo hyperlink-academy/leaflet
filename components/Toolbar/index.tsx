@@ -5,15 +5,8 @@ import {
   BoldSmall,
   CloseTiny,
   ItalicSmall,
-  RedoSmall,
   UndoSmall,
-  UnderlineSmall,
-  LinkTextToolbarSmall,
-  ParagraphSmall,
   ListUnorderedSmall,
-  Header1Small,
-  Header2Small,
-  Header3Small,
   ListOrderedSmall,
   ListIndentDecreaseSmall,
   ListIndentIncreaseSmall,
@@ -21,7 +14,6 @@ import {
   BlockLinkSmall,
   BlockCardSmall,
   BlockSmall,
-  CheckTiny,
   StrikethroughSmall,
 } from "components/Icons";
 import { create } from "zustand";
@@ -218,10 +210,17 @@ export const ToolbarButton = (props: {
   onClick?: (e: React.MouseEvent) => void;
   children: React.ReactNode;
   active?: boolean;
+  disabled?: boolean;
 }) => {
   return (
     <button
-      className={`rounded-md text-secondary shrink-0  p-0.5 active:bg-border active:text-primary ${props.className} ${props.active ? "bg-border text-primary" : ""}`}
+      disabled={props.disabled}
+      className={`
+        rounded-md text-secondary shrink-0  p-0.5 active:bg-border active:text-primary
+        ${props.className}
+        ${props.active ? "bg-border text-primary" : ""}
+        ${props.disabled ? "text-border cursor-not-allowed" : ""}
+        `}
       onMouseDown={(e) => {
         e.preventDefault();
         props.onClick && props.onClick(e);

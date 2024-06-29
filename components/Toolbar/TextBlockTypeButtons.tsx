@@ -5,7 +5,7 @@ import {
   ParagraphSmall,
 } from "components/Icons";
 import { Separator } from "components/Layout";
-import { CloseToolbarButton, ToolbarButton } from "components/Toolbar";
+import { ToolbarButton } from "components/Toolbar";
 import { TextSelection } from "prosemirror-state";
 import { useCallback } from "react";
 import { useEntity, useReplicache } from "src/replicache";
@@ -106,7 +106,6 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
           Paragraph
         </ToolbarButton>
       </div>
-      <CloseToolbarButton onClose={props.onClose} />
     </div>
   );
 };
