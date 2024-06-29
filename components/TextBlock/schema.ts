@@ -24,7 +24,7 @@ let baseSchema = {
     strikethrough: {
       parseDOM: [
         {
-          style: "text-decoration=line-through",
+          style: `text-decoration: line-through; text-decoration-color: ${theme.colors.tertiary}`,
         },
         {
           style: "text-decoration=none",
@@ -36,6 +36,21 @@ let baseSchema = {
           "span",
           {
             style: `text-decoration: line-through; text-decoration-color: ${theme.colors.tertiary}`,
+          },
+          0,
+        ];
+      },
+    } as MarkSpec,
+    highlight: {
+      attrs: {
+        color: {},
+      },
+      parseDOM: [{ style: `background-color: ${theme.colors.test}` }],
+      toDOM() {
+        return [
+          "span",
+          {
+            class: `highlight`,
           },
           0,
         ];

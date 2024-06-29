@@ -41,13 +41,13 @@ export function RenderYJSFragment({
               <a
                 href={d.attributes.link.href}
                 key={index}
-                style={attributesToStyle(d)}
+                {...attributesToStyle(d)}
               >
                 {d.insert}
               </a>
             );
           return (
-            <span key={index} style={attributesToStyle(d)}>
+            <span key={index} {...attributesToStyle(d)}>
               {d.insert}
             </span>
           );
@@ -80,20 +80,25 @@ type Delta = {
     em?: {};
     underline?: {};
     strikethrough?: {};
+    highlight?: {};
     link?: { href: string };
   };
 };
 
 function attributesToStyle(d: Delta) {
-  let style: CSSProperties = {};
-  if (d.attributes?.strong) style.fontWeight = "700";
-  if (d.attributes?.em) style.fontStyle = "italic";
-  if (d.attributes?.underline) style.textDecoration = "underline";
+  let props = { style: {} as CSSProperties, className: "" };
+  if (d.attributes?.strong) props.style.fontWeight = "700";
+  if (d.attributes?.em) props.style.fontStyle = "italic";
+  if (d.attributes?.underline) props.style.textDecoration = "underline";
   if (d.attributes?.strikethrough) {
-    (style.textDecoration = "line-through"),
-      (style.textDecorationColor = theme.colors.tertiary);
+    (props.style.textDecoration = "line-through"),
+      (props.style.textDecorationColor = theme.colors.tertiary);
   }
-  return style;
+  if (d.attributes?.highlight) {
+    props.className = "highlight";
+  }
+
+  return props;
 }
 
 export function YJSFragmentToString(

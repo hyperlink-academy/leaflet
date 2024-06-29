@@ -20,6 +20,7 @@ export const TextBlockKeymap = (
     "Meta-u": toggleMark(schema.marks.underline),
     "Meta-i": toggleMark(schema.marks.em),
     "Ctrl-Meta-x": toggleMark(schema.marks.strikethrough),
+    "Ctrl-Meta-h": toggleMark(schema.marks.highlight),
 
     Escape: (_state, _dispatch, view) => {
       view?.dom.blur();

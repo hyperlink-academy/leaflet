@@ -91,3 +91,12 @@ a {
   @apply hover:cursor-pointer;
   text-decoration: underline;
 }
+
+.highlight {
+  @apply bg-test;
+  @apply px-[3px];
+  @apply py-[1px];
+  @apply -mx-[3px];
+  @apply -my-[1px];
+  @apply rounded-[4px];
+}

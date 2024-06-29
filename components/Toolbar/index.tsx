@@ -15,6 +15,7 @@ import {
   BlockCardSmall,
   BlockSmall,
   StrikethroughSmall,
+  HighlightSmall,
 } from "components/Icons";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
@@ -89,6 +90,10 @@ export const TextToolbar = () => {
             <TextDecorationButton
               mark={schema.marks.strikethrough}
               icon={<StrikethroughSmall />}
+            />
+            <TextDecorationButton
+              mark={schema.marks.highlight}
+              icon={<HighlightSmall />}
             />
             <Separator />
             {/* possibly link is only available if text is actively selected  */}
