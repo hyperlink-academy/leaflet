@@ -127,8 +127,13 @@ export const TextToolbar = () => {
           <BlockToolbar onClose={() => setToolbarState("default")} />
         ) : null}
       </div>
-
-      <CloseTiny />
+      <button
+        onClick={() => {
+          setToolbarState("default");
+        }}
+      >
+        <CloseTiny />
+      </button>
     </div>
   );
 };
@@ -180,7 +185,6 @@ const ListToolbar = (props: { onClose: () => void }) => {
           <ListIndentDecreaseSmall />
         </ToolbarButton>
       </div>
-      <CloseToolbarButton onClose={props.onClose} />
     </div>
   );
 };
@@ -203,7 +207,6 @@ const BlockToolbar = (props: { onClose: () => void }) => {
           <BlockCardSmall />
         </ToolbarButton>
       </div>
-      <CloseToolbarButton onClose={props.onClose} />
     </div>
   );
 };
@@ -231,18 +234,4 @@ export const ToolbarButton = (props: {
 
 const Separator = () => {
   return <div className="h-6 border-r border-border" />;
-};
-
-export const CloseToolbarButton = (props: { onClose: () => void }) => {
-  return (
-    <button
-      className="hover:text-accent"
-      onMouseDown={(e) => {
-        e.preventDefault();
-        props.onClose();
-      }}
-    >
-      <CloseTiny />
-    </button>
-  );
 };
