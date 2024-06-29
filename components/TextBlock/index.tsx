@@ -34,6 +34,7 @@ import { addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockOptions } from "components/BlockOptions";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { isIOS } from "@react-aria/utils";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export function TextBlock(props: BlockProps & { className: string }) {
   let initialized = useInitialPageLoad();
@@ -435,15 +436,18 @@ function CommandHandler(props: { entityID: string }) {
 
 let SyncView = (props: { entityID: string; parentID: string }) => {
   let debounce = useRef<number | null>(null);
+  let isMobile = useIsMobile();
   useEditorEffect((view) => {
     if (debounce.current) {
       window.clearInterval(debounce.current);
       debounce.current = null;
     }
+    if (isMobile) return;
     if (!view.hasFocus()) return;
     debounce.current = window.setTimeout(() => {
       debounce.current = null;
 
+      if (!view.state.selection) return;
       const coords = view.coordsAtPos(view.state.selection.anchor);
       useEditorStates.setState({ lastXPosition: coords.left });
 
@@ -455,6 +459,19 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
       let cursorPosY = coords.top;
       let bottomScrollPadding = 100;
       if (cursorPosY && parentHeight) {
+        if (cursorPosY > parentHeight - bottomScrollPadding) {
+          parentID?.scrollBy({
+            top: bottomScrollPadding - (parentHeight - cursorPosY),
+            behavior: "smooth",
+          });
+        }
+        if (cursorPosY < 50) {
+          if (parentID?.scrollTop === 0) return;
+          parentID?.scrollBy({
+            top: cursorPosY - 50,
+            behavior: "smooth",
+          });
+        }
       }
     }, 10);
   });
