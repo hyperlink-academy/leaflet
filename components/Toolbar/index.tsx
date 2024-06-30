@@ -26,6 +26,11 @@ import {
   TextBlockTypeButtons,
 } from "./TextBlockTypeButtons";
 import { LinkButton, LinkEditor } from "./LinkButton";
+import {
+  HighlightColorButton,
+  HighlightColorSettings,
+} from "./HighlightButton";
+import { theme } from "../../tailwind.config";
 
 type textState = {
   bold: boolean;
@@ -65,8 +70,12 @@ let useTextState = create(
 
 export const TextToolbar = () => {
   let [toolbarState, setToolbarState] = useState<
-    "default" | "link" | "header" | "list" | "block"
+    "default" | "highlight" | "link" | "header" | "list" | "block"
   >("default");
+
+  let [lastUsedHighlight, setlastUsedHighlight] = useState<"1" | "2" | "3">(
+    "1",
+  );
 
   let state = useTextState();
 
@@ -95,6 +104,21 @@ export const TextToolbar = () => {
               mark={schema.marks.highlight}
               icon={<HighlightSmall />}
             />
+            <button
+              onClick={() => {
+                setToolbarState("highlight");
+              }}
+              className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
+              style={{
+                backgroundColor:
+                  lastUsedHighlight === "1"
+                    ? theme.colors["highlight-1"]
+                    : lastUsedHighlight === "2"
+                      ? theme.colors["highlight-2"]
+                      : theme.colors["highlight-3"],
+              }}
+            />
+
             <Separator />
             {/* possibly link is only available if text is actively selected  */}
             <LinkButton setToolBarState={setToolbarState} />
@@ -114,6 +138,13 @@ export const TextToolbar = () => {
               )}
             </ToolbarButton>
           </>
+        ) : toolbarState === "highlight" ? (
+          <HighlightToolbar
+            onClose={() => setToolbarState("default")}
+            setLastUsedHighlight={(color: "1" | "2" | "3") =>
+              setlastUsedHighlight(color)
+            }
+          />
         ) : toolbarState === "link" ? (
           <LinkEditor onClose={() => setToolbarState("default")} />
         ) : toolbarState === "header" ? (
@@ -131,6 +162,35 @@ export const TextToolbar = () => {
       >
         <CloseTiny />
       </button>
+    </div>
+  );
+};
+
+const HighlightToolbar = (props: {
+  onClose: () => void;
+  setLastUsedHighlight: (color: "1" | "2" | "3") => void;
+}) => {
+  return (
+    <div className="flex w-full justify-between items-center gap-4">
+      <div className="flex items-center gap-[6px]">
+        <ToolbarButton onClick={() => props.onClose()}>
+          <HighlightSmall />
+        </ToolbarButton>
+        <Separator />
+        <HighlightColorButton
+          color="1"
+          setLastUsedHightlight={props.setLastUsedHighlight}
+        />
+        <HighlightColorButton
+          color="2"
+          setLastUsedHightlight={props.setLastUsedHighlight}
+        />
+        <HighlightColorButton
+          color="3"
+          setLastUsedHightlight={props.setLastUsedHighlight}
+        />
+        <HighlightColorSettings />
+      </div>
     </div>
   );
 };

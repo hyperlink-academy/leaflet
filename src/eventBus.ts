@@ -2,7 +2,7 @@ import { MarkType } from "prosemirror-model";
 import { useEffect } from "react";
 
 type AppEvent = {
-  toggleMark: { mark: MarkType };
+  toggleMark: { mark: MarkType; attrs?: any };
 };
 type Listener<T extends keyof AppEvent> = {
   key: string;

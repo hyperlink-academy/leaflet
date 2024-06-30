@@ -11,6 +11,9 @@ type CSSVariables = {
   "--primary": string;
   "--accent": string;
   "--accent-text": string;
+  "--highlight-1": string;
+  "--highlight-2": string;
+  "--highlight-3": string;
 };
 
 export const ThemeDefaults = {
@@ -19,6 +22,9 @@ export const ThemeDefaults = {
   "theme/primary": "#272727",
   "theme/accent-background": "#0000FF",
   "theme/accent-text": "#FFFFFF",
+  "theme/highlight-1": "#FFE1DF",
+  "theme/highlight-2": "#FFF5D2",
+  "theme/highlight-3": "#F0F7FA",
 };
 
 function setCSSVariableToColor(el: HTMLElement, name: string, value: Color) {
@@ -30,7 +36,6 @@ export function ThemeProvider(props: {
 }) {
   let bgPage = useColorAttribute(props.entityID, "theme/page-background");
   let bgCard = useColorAttribute(props.entityID, "theme/card-background");
-  let bgCardAlpha = useEntity(props.entityID, "theme/card-background-alpha");
   let primary = useColorAttribute(props.entityID, "theme/primary");
   let accentBG = useColorAttribute(props.entityID, "theme/accent-background");
   let accentText = useColorAttribute(props.entityID, "theme/accent-text");
@@ -39,6 +44,10 @@ export function ThemeProvider(props: {
     props.entityID,
     "theme/background-image-repeat",
   );
+  let highlight1 = useColorAttribute(props.entityID, "theme/highlight-1");
+  let highlight2 = useColorAttribute(props.entityID, "theme/highlight-2");
+  let highlight3 = useColorAttribute(props.entityID, "theme/highlight-3");
+
   useEffect(() => {
     let el = document.querySelector(":root") as HTMLElement;
     if (!el) return;
@@ -46,12 +55,24 @@ export function ThemeProvider(props: {
     setCSSVariableToColor(el, "--bg-card", bgCard);
     el?.style.setProperty(
       "--bg-card-alpha",
-      (bgCardAlpha?.data.value || 1).toString(),
+      bgCard.getChannelValue("alpha").toString(),
     );
     setCSSVariableToColor(el, "--primary", primary);
     setCSSVariableToColor(el, "--accent", accentBG);
     setCSSVariableToColor(el, "--accent-text", accentText);
-  }, [bgPage, bgCard, primary, accentBG, accentText, bgCardAlpha]);
+    setCSSVariableToColor(el, "--highlight-1", highlight1);
+    setCSSVariableToColor(el, "--highlight-2", highlight2);
+    setCSSVariableToColor(el, "--highlight-3", highlight3);
+  }, [
+    bgPage,
+    bgCard,
+    primary,
+    accentBG,
+    accentText,
+    highlight1,
+    highlight2,
+    highlight3,
+  ]);
   return (
     <div
       className="pageWrapper w-full bg-bg-page text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
@@ -68,6 +89,9 @@ export function ThemeProvider(props: {
           "--primary": colorToString(primary, "rgb"),
           "--accent": colorToString(accentBG, "rgb"),
           "--accent-text": colorToString(accentText, "rgb"),
+          "--highlight-1": colorToString(highlight1, "rgb"),
+          "--highlight-2": colorToString(highlight2, "rgb"),
+          "--highlight-3": colorToString(highlight3, "rgb"),
         } as CSSProperties
       }
     >

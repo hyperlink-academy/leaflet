@@ -12,6 +12,10 @@
 
     --accent: 0, 0, 225;
     --accent-text: 255, 255, 255;
+
+    --highlight-1: 255, 177, 177;
+    --highlight-2: 253, 245, 203;
+    --highlight-3: 224, 244, 255;
   }
 
   html,
@@ -93,10 +97,10 @@ a {
 }
 
 .highlight {
-  @apply bg-test;
   @apply px-[3px];
   @apply py-[1px];
   @apply -mx-[3px];
   @apply -my-[1px];
   @apply rounded-[4px];
+  @apply box-decoration-clone;
 }

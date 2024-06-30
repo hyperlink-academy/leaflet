@@ -57,10 +57,6 @@ const ThemeAttributes = {
     type: "color",
     cardinality: "one",
   },
-  "theme/card-background-alpha": {
-    type: "number",
-    cardinality: "one",
-  },
   "theme/primary": {
     type: "color",
     cardinality: "one",
@@ -79,6 +75,18 @@ const ThemeAttributes = {
   },
   "theme/background-image-repeat": {
     type: "number",
+    cardinality: "one",
+  },
+  "theme/highlight-1": {
+    type: "color",
+    cardinality: "one",
+  },
+  "theme/highlight-2": {
+    type: "color",
+    cardinality: "one",
+  },
+  "theme/highlight-3": {
+    type: "color",
     cardinality: "one",
   },
 } as const;

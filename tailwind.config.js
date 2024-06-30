@@ -37,6 +37,11 @@ module.exports = {
       "bg-page": "rgb(var(--bg-page))",
       "bg-card": "rgb(var(--bg-card))",
 
+      // HIGHLIGHT COLORS
+      "highlight-1": "rgb(var(--highlight-1))",
+      "highlight-2": "rgb(var(--highlight-2))",
+      "highlight-3": "rgb(var(--highlight-3))",
+
       //DO NOT USE IN PRODUCTION. Test colors to aid development, ie, setting bg color on element to see edges of div. DO. NOT. USE. IN. PRODUCTION
       test: "#E18181",
       "test-blue": "#48D1EF",

@@ -43,14 +43,27 @@ let baseSchema = {
     } as MarkSpec,
     highlight: {
       attrs: {
-        color: {},
+        color: {
+          default: "1",
+        },
       },
-      parseDOM: [{ style: `background-color: ${theme.colors.test}` }],
-      toDOM() {
+      parseDOM: [
+        {
+          tag: "span",
+          getAttrs(dom: HTMLElement) {
+            return {
+              color: dom.getAttribute("color"),
+            };
+          },
+        },
+      ],
+      toDOM(node) {
+        let { color } = node.attrs;
         return [
           "span",
           {
-            class: `highlight`,
+            class: "highlight",
+            style: `background-color: ${color === "1" ? theme.colors["highlight-1"] : color === "2" ? theme.colors["highlight-2"] : theme.colors["highlight-3"]}`,
           },
           0,
         ];

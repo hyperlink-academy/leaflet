@@ -37,8 +37,8 @@ export function TextDecorationButton(props: {
   );
 }
 
-export function toggleMarkInFocusedBlock(mark: MarkType) {
+export function toggleMarkInFocusedBlock(mark: MarkType, attrs?: any) {
   let focusedBlock = useUIState.getState().focusedBlock;
   if (!focusedBlock) return;
-  publishAppEvent(focusedBlock.entityID, "toggleMark", { mark });
+  publishAppEvent(focusedBlock.entityID, "toggleMark", { mark, attrs });
 }

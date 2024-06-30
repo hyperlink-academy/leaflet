@@ -80,7 +80,7 @@ type Delta = {
     em?: {};
     underline?: {};
     strikethrough?: {};
-    highlight?: {};
+    highlight?: { color: string };
     link?: { href: string };
   };
 };
@@ -95,7 +95,13 @@ function attributesToStyle(d: Delta) {
       (props.style.textDecorationColor = theme.colors.tertiary);
   }
   if (d.attributes?.highlight) {
-    props.className = "highlight";
+    (props.className = "highlight"),
+      (props.style.backgroundColor =
+        d.attributes?.highlight.color === "1"
+          ? theme.colors["highlight-1"]
+          : d.attributes.highlight.color === "2"
+            ? theme.colors["highlight-2"]
+            : theme.colors["highlight-3"]);
   }
 
   return props;

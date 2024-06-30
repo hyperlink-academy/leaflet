@@ -34,9 +34,12 @@ export type pickers =
   | "card"
   | "accent"
   | "accentText"
-  | "text";
+  | "text"
+  | "highlight-1"
+  | "highlight-2"
+  | "highlight-3";
 
-function setColorAttribute(
+export function setColorAttribute(
   rep: Replicache<ReplicacheMutators> | null,
   entity: string,
 ) {
@@ -53,7 +56,6 @@ export const ThemePopover = (props: { entityID: string }) => {
   // I need to get these variables from replicache and then write them to the DB. I also need to parse them into a state that can be used here.
   let pageValue = useColorAttribute(props.entityID, "theme/page-background");
   let cardValue = useColorAttribute(props.entityID, "theme/card-background");
-  let cardBGAlpha = useEntity(props.entityID, "theme/card-background-alpha");
   let primaryValue = useColorAttribute(props.entityID, "theme/primary");
   let accentBGValue = useColorAttribute(
     props.entityID,
@@ -171,18 +173,8 @@ export const ThemePopover = (props: { entityID: string }) => {
                     <div className="themePageColor flex items-start ">
                       <ColorPicker
                         label="Page"
+                        alpha
                         value={cardValue}
-                        alpha={{
-                          value: cardBGAlpha?.data.value || 1,
-                          onChange: (a) => {
-                            if (!rep) return;
-                            rep.mutate.assertFact({
-                              entity: props.entityID,
-                              attribute: "theme/card-background-alpha",
-                              data: { type: "number", value: a },
-                            });
-                          },
-                        }}
                         setValue={set("theme/card-background")}
                         thisPicker={"card"}
                         openPicker={openPicker}
@@ -238,10 +230,10 @@ export const ThemePopover = (props: { entityID: string }) => {
 let thumbStyle =
   "w-4 h-4 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C,_inset_0_0_0_1px_#8C8C8C]";
 
-const ColorPicker = (props: {
+export const ColorPicker = (props: {
   label?: string;
   value: Color;
-  alpha?: { value: number; onChange: (alpha: number) => void };
+  alpha?: boolean;
   setValue: (c: Color) => void;
   openPicker: pickers;
   thisPicker: pickers;
@@ -602,7 +594,7 @@ const ImageSettings = (props: { entityID: string }) => {
   );
 };
 
-const SectionArrow = (props: {
+export const SectionArrow = (props: {
   fill: string;
   stroke: string;
   className: string;

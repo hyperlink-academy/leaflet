@@ -427,9 +427,11 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
 }
 
 function CommandHandler(props: { entityID: string }) {
-  let cb = useEditorEventCallback((view, args: { mark: MarkType }) => {
-    toggleMark(args.mark)(view.state, view.dispatch);
-  });
+  let cb = useEditorEventCallback(
+    (view, args: { mark: MarkType; attrs?: any }) => {
+      toggleMark(args.mark, args.attrs)(view.state, view.dispatch);
+    },
+  );
   useAppEventListener(props.entityID, "toggleMark", cb, []);
   return null;
 }
