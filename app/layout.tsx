@@ -1,3 +1,4 @@
+import { ViewportSizeLayout } from "components/ViewportSizeLayout";
 import { InitialPageLoad } from "../components/InitialPageLoadProvider";
 import { ServiceWorker } from "../components/ServiceWorker";
 import "./globals.css";
@@ -25,7 +26,9 @@ export default function RootLayout({
     <html lang="en" className={`${quattro.variable}`}>
       <body>
         <ServiceWorker />
-        <InitialPageLoad>{children}</InitialPageLoad>
+        <InitialPageLoad>
+          <ViewportSizeLayout>{children}</ViewportSizeLayout>
+        </InitialPageLoad>
       </body>
     </html>
   );

@@ -1,9 +1,8 @@
 "use client";
-import { isIOS, useViewportSize } from "@react-aria/utils";
+import { useViewportSize } from "@react-aria/utils";
 import { useEffect, useState } from "react";
-import { usePreventScroll } from "react-aria";
 
-export default function Layout(props: { children: React.ReactNode }) {
+export function ViewportSizeLayout(props: { children: React.ReactNode }) {
   let viewheight = useViewportSize().height;
   let difference = useViewportDifference();
   return <div style={{ height: viewheight || "100%" }}>{props.children}</div>;
