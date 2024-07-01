@@ -49,10 +49,10 @@ let baseSchema = {
       },
       parseDOM: [
         {
-          tag: "span",
+          tag: "span.highlight",
           getAttrs(dom: HTMLElement) {
             return {
-              color: dom.getAttribute("color"),
+              color: dom.getAttribute("data-color"),
             };
           },
         },
@@ -63,6 +63,7 @@ let baseSchema = {
           "span",
           {
             class: "highlight",
+            "data-color": color,
             style: `background-color: ${color === "1" ? theme.colors["highlight-1"] : color === "2" ? theme.colors["highlight-2"] : theme.colors["highlight-3"]}`,
           },
           0,
