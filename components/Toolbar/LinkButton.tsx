@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Separator } from "components/Layout";
 import { MarkType } from "prosemirror-model";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
+import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 
 export function LinkButton(props: { setToolBarState: (s: "link") => void }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);
@@ -17,15 +18,13 @@ export function LinkButton(props: { setToolBarState: (s: "link") => void }) {
   if (focusedEditor) {
     let { to, from, $cursor } = focusedEditor.editor.selection as TextSelection;
     if ($cursor) isLink = !!schema.marks.link.isInSet($cursor.marks());
-    else {
-      isLink = true;
-      for (let pos = from + 1; pos < to - 1; pos++) {
-        const $pos = focusedEditor.editor.doc.resolve(pos);
-        if (!$pos.marks().find((mark) => mark.type === schema.marks.link)) {
-          isLink = false;
-        }
-      }
-    }
+    if (to !== from)
+      isLink = !!rangeHasMark(
+        focusedEditor.editor,
+        schema.marks.link,
+        from,
+        to,
+      );
   }
   return (
     <ToolbarButton

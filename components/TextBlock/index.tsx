@@ -17,7 +17,7 @@ import {
 } from "src/replicache";
 import { isVisible } from "src/utils/isVisible";
 
-import { EditorState } from "prosemirror-state";
+import { EditorState, TextSelection } from "prosemirror-state";
 import { ySyncPlugin } from "y-prosemirror";
 import { Replicache } from "replicache";
 import { generateKeyBetween } from "fractional-indexing";
@@ -35,6 +35,8 @@ import { BlockOptions } from "components/BlockOptions";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { isIOS } from "@react-aria/utils";
 import { useIsMobile } from "src/hooks/isMobile";
+import { setMark } from "src/utils/prosemirror/setMark";
+import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 
 export function TextBlock(props: BlockProps & { className: string }) {
   let initialized = useInitialPageLoad();
@@ -429,7 +431,16 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
 function CommandHandler(props: { entityID: string }) {
   let cb = useEditorEventCallback(
     (view, args: { mark: MarkType; attrs?: any }) => {
-      toggleMark(args.mark, args.attrs)(view.state, view.dispatch);
+      let { to, from, $cursor, $to, $from } = view.state
+        .selection as TextSelection;
+      let mark = rangeHasMark(view.state, args.mark, from, to);
+      if (
+        mark &&
+        (!args.attrs ||
+          JSON.stringify(args.attrs) === JSON.stringify(mark.attrs))
+      ) {
+        toggleMark(args.mark, args.attrs)(view.state, view.dispatch);
+      } else setMark(args.mark, args.attrs)(view.state, view.dispatch);
     },
   );
   useAppEventListener(props.entityID, "toggleMark", cb, []);

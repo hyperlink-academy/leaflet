@@ -28,6 +28,7 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useMemo, useState } from "react";
 import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
 import { useParams } from "next/navigation";
+import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 
 export const HighlightColorButton = (props: {
   color: "1" | "2" | "3";
@@ -40,16 +41,20 @@ export const HighlightColorButton = (props: {
   let hasMark: boolean = false;
   if (focusedEditor) {
     let { to, from, $cursor } = focusedEditor.editor.selection as TextSelection;
+
+    let mark = rangeHasMark(
+      focusedEditor.editor,
+      schema.marks.highlight,
+      from,
+      to,
+    );
     if ($cursor)
       hasMark = !!schema.marks.highlight.isInSet(
         focusedEditor.editor.storedMarks || $cursor.marks(),
       );
-    else
-      hasMark = focusedEditor.editor.doc.rangeHasMark(
-        from,
-        to,
-        schema.marks.highlight,
-      );
+    else {
+      hasMark = !!mark;
+    }
   }
   return (
     <button
@@ -58,7 +63,6 @@ export const HighlightColorButton = (props: {
         toggleMarkInFocusedBlock(schema.marks.highlight, {
           color: props.color,
         });
-        schema.marks.highlight.create({ color: props.color });
         props.setLastUsedHightlight(props.color);
       }}
     >
