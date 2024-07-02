@@ -9,6 +9,7 @@ import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 
 export function TextDecorationButton(props: {
   mark: MarkType;
+  attrs?: any;
   icon: React.ReactNode;
 }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);
@@ -36,7 +37,7 @@ export function TextDecorationButton(props: {
       active={hasMark}
       onClick={(e) => {
         e.preventDefault();
-        toggleMarkInFocusedBlock(props.mark);
+        toggleMarkInFocusedBlock(props.mark, props.attrs);
       }}
     >
       {props.icon}

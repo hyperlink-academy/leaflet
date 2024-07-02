@@ -117,6 +117,7 @@ export const TextToolbar = (props: { entityID: string }) => {
             />
             <div className="flex items-center gap-1">
               <TextDecorationButton
+                attrs={{ color: lastUsedHighlight }}
                 mark={schema.marks.highlight}
                 icon={<HighlightSmall />}
               />
