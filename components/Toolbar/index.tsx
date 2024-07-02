@@ -100,24 +100,30 @@ export const TextToolbar = () => {
               mark={schema.marks.strikethrough}
               icon={<StrikethroughSmall />}
             />
-            <TextDecorationButton
-              mark={schema.marks.highlight}
-              icon={<HighlightSmall />}
-            />
-            <button
-              onClick={() => {
-                setToolbarState("highlight");
-              }}
-              className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
-              style={{
-                backgroundColor:
-                  lastUsedHighlight === "1"
-                    ? theme.colors["highlight-1"]
-                    : lastUsedHighlight === "2"
-                      ? theme.colors["highlight-2"]
-                      : theme.colors["highlight-3"],
-              }}
-            />
+            <div className="flex items-center gap-1">
+              <TextDecorationButton
+                mark={schema.marks.highlight}
+                icon={<HighlightSmall />}
+              />
+              <button
+                onClick={() => {
+                  setToolbarState("highlight");
+                }}
+                className="pr-2"
+              >
+                <div
+                  className={`w-[6px] h-[20px] rounded-[2px] border border-white shadow-[0_0_0_1px_#8C8C8C]`}
+                  style={{
+                    backgroundColor:
+                      lastUsedHighlight === "1"
+                        ? theme.colors["highlight-1"]
+                        : lastUsedHighlight === "2"
+                          ? theme.colors["highlight-2"]
+                          : theme.colors["highlight-3"],
+                  }}
+                />
+              </button>
+            </div>
 
             <Separator />
             {/* possibly link is only available if text is actively selected  */}

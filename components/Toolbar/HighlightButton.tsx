@@ -104,7 +104,6 @@ export const HighlightColorSettings = () => {
           sideOffset={4}
           collisionPadding={16}
         >
-          {/* how do i get the bg image? */}
           <div
             className="bg-bg-page w-full mx-2 p-3 pb-0 my-3 flex flex-col rounded-md  border border-border"
             style={{

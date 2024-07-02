@@ -38,7 +38,7 @@ module.exports = {
       "bg-card": "rgb(var(--bg-card))",
 
       // HIGHLIGHT COLORS
-      "highlight-1": "rgb(var(--highlight-1))",
+      "highlight-1": "var(--highlight-1)",
       "highlight-2": "rgb(var(--highlight-2))",
       "highlight-3": "rgb(var(--highlight-3))",
 

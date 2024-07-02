@@ -2,7 +2,7 @@
 
 import { CSSProperties, useEffect } from "react";
 import { colorToString, useColorAttribute } from "./useColorAttribute";
-import { Color } from "react-aria-components";
+import { Color, parseColor } from "react-aria-components";
 import { useEntity } from "src/replicache";
 
 type CSSVariables = {
@@ -22,7 +22,7 @@ export const ThemeDefaults = {
   "theme/primary": "#272727",
   "theme/accent-background": "#0000FF",
   "theme/accent-text": "#FFFFFF",
-  "theme/highlight-1": "#FFE1DF",
+  "theme/highlight-1": "#FFFFFF",
   "theme/highlight-2": "#FFF5D2",
   "theme/highlight-3": "#F0F7FA",
 };
@@ -44,7 +44,7 @@ export function ThemeProvider(props: {
     props.entityID,
     "theme/background-image-repeat",
   );
-  let highlight1 = useColorAttribute(props.entityID, "theme/highlight-1");
+  let highlight1 = useEntity(props.entityID, "theme/highlight-1");
   let highlight2 = useColorAttribute(props.entityID, "theme/highlight-2");
   let highlight3 = useColorAttribute(props.entityID, "theme/highlight-3");
 
@@ -60,9 +60,24 @@ export function ThemeProvider(props: {
     setCSSVariableToColor(el, "--primary", primary);
     setCSSVariableToColor(el, "--accent", accentBG);
     setCSSVariableToColor(el, "--accent-text", accentText);
-    setCSSVariableToColor(el, "--highlight-1", highlight1);
     setCSSVariableToColor(el, "--highlight-2", highlight2);
     setCSSVariableToColor(el, "--highlight-3", highlight3);
+
+    //highlight 1 is special oop
+    if (highlight1) {
+      console.log("yo");
+      let color = parseColor(`hsba(${highlight1.data.value})`);
+      console.log(`rgb(${colorToString(color, "rgb")})`);
+      el?.style.setProperty(
+        "--highlight-1",
+        `rgb(${colorToString(color, "rgb")})`,
+      );
+    } else {
+      el?.style.setProperty(
+        "--highlight-1",
+        "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-card)) 75%)",
+      );
+    }
   }, [
     bgPage,
     bgCard,
@@ -89,7 +104,9 @@ export function ThemeProvider(props: {
           "--primary": colorToString(primary, "rgb"),
           "--accent": colorToString(accentBG, "rgb"),
           "--accent-text": colorToString(accentText, "rgb"),
-          "--highlight-1": colorToString(highlight1, "rgb"),
+          "--highlight-1": highlight1
+            ? `rgb(${colorToString(parseColor(`hsba(${highlight1.data.value})`), "rgb")})`
+            : "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-card)) 75%)",
           "--highlight-2": colorToString(highlight2, "rgb"),
           "--highlight-3": colorToString(highlight3, "rgb"),
         } as CSSProperties
