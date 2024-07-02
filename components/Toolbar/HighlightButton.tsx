@@ -58,7 +58,7 @@ export const HighlightColorButton = (props: {
   }
   return (
     <button
-      onClick={(e) => {
+      onMouseDown={(e) => {
         e.preventDefault();
         toggleMarkInFocusedBlock(schema.marks.highlight, {
           color: props.color,
