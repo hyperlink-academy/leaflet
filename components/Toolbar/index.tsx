@@ -33,6 +33,7 @@ import {
 import { theme } from "../../tailwind.config";
 import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
+import { useReplicache } from "src/replicache";
 
 type textState = {
   bold: boolean;
@@ -70,7 +71,9 @@ let useTextState = create(
   ),
 );
 
-export const TextToolbar = (props: { entityID: string }) => {
+export const TextToolbar = (props: { cardID: string; blockID: string }) => {
+  let { rep } = useReplicache();
+
   let [toolbarState, setToolbarState] = useState<
     "default" | "highlight" | "link" | "header" | "list" | "block"
   >("default");
@@ -81,11 +84,14 @@ export const TextToolbar = (props: { entityID: string }) => {
   let state = useTextState();
 
   let editorState = useEditorStates(
-    (s) => s.editorStates[props.entityID],
+    (s) => s.editorStates[props.blockID],
   )?.editor;
   let selected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
+    s.selectedBlock.find((b) => b.value === props.blockID),
   );
+
+  let focusedBlock = useUIState((s) => s.focusedBlock);
+
   let blockEmpty = editorState?.doc.textContent.length === 0;
 
   useEffect(() => {
@@ -179,7 +185,16 @@ export const TextToolbar = (props: { entityID: string }) => {
       </div>
       <button
         onClick={() => {
-          setToolbarState("default");
+          if (toolbarState === "default") {
+            useUIState.setState(() => ({
+              focusedBlock: {
+                type: "card",
+                entityID: props.cardID,
+              },
+            }));
+          } else {
+            setToolbarState("default");
+          }
         }}
       >
         <CloseTiny />

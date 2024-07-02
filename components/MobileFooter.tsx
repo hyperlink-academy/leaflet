@@ -5,12 +5,16 @@ import { ThemePopover } from "./ThemeManager/ThemeSetter";
 import { TextToolbar } from "components/Toolbar";
 
 export function MobileFooter(props: { entityID: string }) {
-  let focusedTextBlock = useUIState((s) => s.focusedBlock);
+  let focusedBlock = useUIState((s) => s.focusedBlock);
+
   return (
     <Media mobile className="w-full z-10 -mt-6">
-      {focusedTextBlock && focusedTextBlock.type == "block" ? (
+      {focusedBlock && focusedBlock.type == "block" ? (
         <div className="w-full z-10 p-2 flex bg-bg-card ">
-          <TextToolbar entityID={props.entityID} />
+          <TextToolbar
+            cardID={focusedBlock.parent}
+            blockID={focusedBlock.entityID}
+          />
         </div>
       ) : (
         <div className="z-10 pb-2 px-2 flex gap-[6px] items-center justify-end">

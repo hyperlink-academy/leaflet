@@ -84,7 +84,7 @@ function Card(props: { entityID: string; first?: boolean }) {
     `}
         >
           {isFocused && <CardOptions />}
-          <DesktopCardFooter parentID={props.entityID} />
+          <DesktopCardFooter cardID={props.entityID} />
           <Blocks entityID={props.entityID} />
         </div>
       </div>
