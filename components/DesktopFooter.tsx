@@ -16,7 +16,7 @@ export function DesktopCardFooter(props: { parentID: string }) {
         focusedTextBlock.type === "block" &&
         focusedBlockParent === props.parentID && (
           <div className="pointer-events-auto w-fit mx-auto py-1 px-3 bg-bg-card border border-border rounded-full shadow-sm">
-            <TextToolbar />
+            <TextToolbar entityID={focusedTextBlock.entityID} />
           </div>
         )}
     </Media>

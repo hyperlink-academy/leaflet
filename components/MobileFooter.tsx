@@ -10,7 +10,7 @@ export function MobileFooter(props: { entityID: string }) {
     <Media mobile className="w-full z-10 -mt-6">
       {focusedTextBlock && focusedTextBlock.type == "block" ? (
         <div className="w-full z-10 p-2 flex bg-bg-card ">
-          <TextToolbar />
+          <TextToolbar entityID={props.entityID} />
         </div>
       ) : (
         <div className="z-10 pb-2 px-2 flex gap-[6px] items-center justify-end">

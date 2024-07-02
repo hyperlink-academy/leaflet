@@ -52,7 +52,7 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
         <ToolbarButton className="w-10 flex justify-center" active>
           <BlockTypeIcon entityID={focusedBlock?.entityID} />
         </ToolbarButton>
-        <Separator />
+        <Separator classname="h-6" />
         <ToolbarButton
           onClick={() => {
             setLevel(1);

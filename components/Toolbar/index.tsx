@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BoldSmall,
   CloseTiny,
@@ -31,6 +31,8 @@ import {
   HighlightColorSettings,
 } from "./HighlightButton";
 import { theme } from "../../tailwind.config";
+import { useEditorStates } from "src/state/useEditorState";
+import { useUIState } from "src/useUIState";
 
 type textState = {
   bold: boolean;
@@ -68,7 +70,7 @@ let useTextState = create(
   ),
 );
 
-export const TextToolbar = () => {
+export const TextToolbar = (props: { entityID: string }) => {
   let [toolbarState, setToolbarState] = useState<
     "default" | "highlight" | "link" | "header" | "list" | "block"
   >("default");
@@ -76,8 +78,21 @@ export const TextToolbar = () => {
   let [lastUsedHighlight, setlastUsedHighlight] = useState<"1" | "2" | "3">(
     "1",
   );
-
   let state = useTextState();
+
+  let editorState = useEditorStates(
+    (s) => s.editorStates[props.entityID],
+  )?.editor;
+  let selected = useUIState((s) =>
+    s.selectedBlock.find((b) => b.value === props.entityID),
+  );
+  let blockEmpty = editorState?.doc.textContent.length === 0;
+
+  useEffect(() => {
+    if (blockEmpty && selected) {
+      setToolbarState("block");
+    } else setToolbarState("default");
+  }, [blockEmpty, selected]);
 
   return (
     <div className="flex items-center justify-between w-full gap-6">
@@ -287,12 +302,11 @@ export const ToolbarButton = (props: {
     <button
       disabled={props.disabled}
       className={`
-        rounded-md  shrink-0  p-0.5 active:bg-border active:text-primary
-        ${props.className}
-        ${
-          props.active
-            ? "bg-border text-primary"
-            : props.disabled
+        roprops.className}
+
+          ops.active
+            "bg-border text-primary"
+            props.disabled
               ? "text-border cursor-not-allowed"
               : "text-secondary"
         }
