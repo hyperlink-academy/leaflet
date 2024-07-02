@@ -1,9 +1,7 @@
 // Taken from https://github.com/ueberdosis/tiptap/blob/dfacb3b987b57b3ab518bae87bc3d263ebfb60d0/packages/core/src/commands/setMark.ts#L66
-import { MarkType, ResolvedPos } from "@tiptap/pm/model";
-import { EditorState, Transaction } from "@tiptap/pm/state";
 
-import { TextSelection } from "prosemirror-state";
-import { Mark, Schema } from "prosemirror-model";
+import { EditorState, TextSelection, Transaction } from "prosemirror-state";
+import { Mark, MarkType, ResolvedPos, Schema } from "prosemirror-model";
 
 function canSetMark(
   state: EditorState,
