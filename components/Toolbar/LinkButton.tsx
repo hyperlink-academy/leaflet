@@ -27,7 +27,6 @@ export function LinkButton(props: { setToolBarState: (s: "link") => void }) {
       }
     }
   }
-
   return (
     <ToolbarButton
       active={isLink}
@@ -70,11 +69,11 @@ export function LinkEditor(props: { onClose: () => void }) {
   let [linkValue, setLinkValue] = useState(content);
 
   return (
-    <div className=" w-full flex items-center gap-[6px]">
-      <ToolbarButton onClick={() => props.onClose}>
+    <div className="w-full flex items-center gap-[6px]">
+      <ToolbarButton onClick={() => props.onClose()}>
         <LinkTextToolbarSmall />
       </ToolbarButton>
-      <Separator />
+      <Separator classname="h-6" />
       <input
         autoFocus
         className="w-full grow bg-transparent border-none outline-none "
@@ -84,7 +83,7 @@ export function LinkEditor(props: { onClose: () => void }) {
       />
       <div className="flex items-center gap-3">
         <button
-          className="hover:text-accent"
+          className="hover:text-accent -mr-6"
           onMouseDown={(e) => {
             e.preventDefault();
             let editor = focusedEditor?.editor;
@@ -103,7 +102,7 @@ export function LinkEditor(props: { onClose: () => void }) {
         >
           <CheckTiny />
         </button>
-        <button
+        {/* <button
           className="hover:text-accent"
           onMouseDown={(e) => {
             props.onClose();
@@ -111,7 +110,7 @@ export function LinkEditor(props: { onClose: () => void }) {
           }}
         >
           <CloseTiny />
-        </button>
+        </button> */}
       </div>
     </div>
   );

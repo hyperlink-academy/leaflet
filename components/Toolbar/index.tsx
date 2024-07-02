@@ -287,10 +287,15 @@ export const ToolbarButton = (props: {
     <button
       disabled={props.disabled}
       className={`
-        rounded-md text-secondary shrink-0  p-0.5 active:bg-border active:text-primary
+        rounded-md  shrink-0  p-0.5 active:bg-border active:text-primary
         ${props.className}
-        ${props.active ? "bg-border text-primary" : ""}
-        ${props.disabled ? "text-border cursor-not-allowed" : ""}
+        ${
+          props.active
+            ? "bg-border text-primary"
+            : props.disabled
+              ? "text-border cursor-not-allowed"
+              : "text-secondary"
+        }
         `}
       onMouseDown={(e) => {
         e.preventDefault();
