@@ -302,11 +302,12 @@ export const ToolbarButton = (props: {
     <button
       disabled={props.disabled}
       className={`
-        roprops.className}
-
-          ops.active
-            "bg-border text-primary"
-            props.disabled
+        rounded-md active:bg-border active:text-primary
+        ${props.className}
+        ${
+          props.active
+            ? "bg-border text-primary"
+            : props.disabled
               ? "text-border cursor-not-allowed"
               : "text-secondary"
         }
