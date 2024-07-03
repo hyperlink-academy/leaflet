@@ -207,6 +207,10 @@ function Block(props: BlockProps) {
           document.getElementById(elementId.block(newEntityID).text)?.focus();
         }, 10);
       }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        useUIState.setState({ selectedBlock: [] });
+      }
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
