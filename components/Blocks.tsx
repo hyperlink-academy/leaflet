@@ -76,7 +76,7 @@ export function Blocks(props: { entityID: string }) {
         onClick={() => {
           let newEntityID = crypto.randomUUID();
 
-          if (lastBlock.type === "text") {
+          if (lastBlock && lastBlock.type === "text") {
             focusBlock({ ...lastBlock, type: "text" }, { type: "end" });
           } else {
             rep?.rep?.mutate.addBlock({
