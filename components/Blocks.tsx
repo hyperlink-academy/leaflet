@@ -71,7 +71,24 @@ export function Blocks(props: { entityID: string }) {
       <div
         className="shrink-0 h-[50vh]"
         onClick={() => {
-          focusBlock({ ...lastBlock, type: "text" }, { type: "end" });
+          let newEntityID = crypto.randomUUID();
+
+          if (lastBlock.type === "text") {
+            focusBlock({ ...lastBlock, type: "text" }, { type: "end" });
+          } else {
+            rep?.rep?.mutate.addBlock({
+              parent: props.entityID,
+              type: "text",
+              position: generateKeyBetween(lastBlock?.position || null, null),
+              newEntityID,
+            });
+
+            setTimeout(() => {
+              document
+                .getElementById(elementId.block(newEntityID).text)
+                ?.focus();
+            }, 10);
+          }
         }}
       />
     </div>
