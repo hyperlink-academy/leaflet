@@ -191,6 +191,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                 type: "card",
                 entityID: props.cardID,
               },
+              selectedBlock: [],
             }));
           } else {
             setToolbarState("default");

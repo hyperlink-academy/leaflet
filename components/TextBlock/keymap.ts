@@ -10,6 +10,7 @@ import { elementId } from "src/utils/elementId";
 import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
+import { focusCard } from "components/Cards";
 
 export const TextBlockKeymap = (
   propsRef: MutableRefObject<BlockProps>,
@@ -24,8 +25,15 @@ export const TextBlockKeymap = (
 
     Escape: (_state, _dispatch, view) => {
       view?.dom.blur();
+      useUIState.setState(() => ({
+        focusedBlock: {
+          type: "card",
+          entityID: propsRef.current.parent,
+        },
+        selectedBlock: [],
+      }));
 
-      return true;
+      return false;
     },
     "#": (state, dispatch, view) => {
       if (state.selection.content().size > 0) return false;
