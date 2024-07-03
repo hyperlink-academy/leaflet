@@ -34,21 +34,6 @@ export function CardBlock(props: BlockProps) {
       }}
     >
       <div className="pt-2 pb-2 px-2 grow min-w-0">
-        {/* TODO:
-        if the document is completely empty (no blocks, no text) show placeholder text
-        the placeholder should be classname= "text-tertiary italic font-bold"  */}
-
-        {/* TODO:
-        header blocks should (regardless of what kind of header) render as "text-primary font-bold"*/}
-
-        {/* TODO:
-        this block can fit a total of 4 lines of text.
-        the first block should take up to 4 lines of space.
-        If it doesn't need all 4 lines, the next text block
-        should be rendered and so on until all 4 lines are filled */}
-
-        {/* TODO:
-        the cardBlockPreview image should be screenshot of the page it links to */}
         {docMetadata.heading && (
           <div
             className={`cardBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-none resize-none align-top border h-[24px] line-clamp-1`}

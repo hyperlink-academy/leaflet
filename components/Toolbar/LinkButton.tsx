@@ -79,6 +79,26 @@ export function LinkEditor(props: { onClose: () => void }) {
         placeholder="www.leaflet.pub"
         value={linkValue}
         onChange={(e) => setLinkValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            let editor = focusedEditor?.editor;
+            if (!editor || !start || !end || !focusedBlock) return;
+            let tr = editor.tr;
+            tr.addMark(
+              start,
+              end,
+              schema.marks.link.create({ href: linkValue }),
+            );
+            setEditorState(focusedBlock?.entityID, {
+              editor: editor.apply(tr),
+            });
+            props.onClose();
+          }
+          if (e.key === "Escape") {
+            props.onClose();
+          }
+        }}
       />
       <div className="flex items-center gap-3">
         <button
@@ -101,15 +121,6 @@ export function LinkEditor(props: { onClose: () => void }) {
         >
           <CheckTiny />
         </button>
-        {/* <button
-          className="hover:text-accent"
-          onMouseDown={(e) => {
-            props.onClose();
-            e.preventDefault();
-          }}
-        >
-          <CloseTiny />
-        </button> */}
       </div>
     </div>
   );
