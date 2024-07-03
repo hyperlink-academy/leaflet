@@ -22,7 +22,9 @@ export const ThemeDefaults = {
   "theme/primary": "#272727",
   "theme/accent-background": "#0000FF",
   "theme/accent-text": "#FFFFFF",
-  "theme/highlight-1": "#FFFFFF",
+  // this is affecting the default set in the Highlight settings. It needs to refelct the caluclated value
+  // seems like a pain in the butt tho.
+  "theme/highlight-1": "#0000FF",
   "theme/highlight-2": "#EDD280",
   "theme/highlight-3": "#9FC4C2",
 };
@@ -63,11 +65,9 @@ export function ThemeProvider(props: {
     setCSSVariableToColor(el, "--highlight-2", highlight2);
     setCSSVariableToColor(el, "--highlight-3", highlight3);
 
-    //highlight 1 is special oop
+    //highlight 1 is special because its default value is a calculated value
     if (highlight1) {
-      console.log("yo");
       let color = parseColor(`hsba(${highlight1.data.value})`);
-      console.log(`rgb(${colorToString(color, "rgb")})`);
       el?.style.setProperty(
         "--highlight-1",
         `rgb(${colorToString(color, "rgb")})`,

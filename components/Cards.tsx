@@ -9,7 +9,7 @@ import { DesktopCardFooter } from "./DesktopFooter";
 import { Replicache } from "replicache";
 import { Fact, ReplicacheMutators, useReplicache } from "src/replicache";
 import * as Popover from "@radix-ui/react-popover";
-import { MoreOptionsTiny, DeleteSmall } from "./Icons";
+import { MoreOptionsTiny, DeleteSmall, CloseTiny } from "./Icons";
 import { useToaster } from "./Toast";
 
 export function Cards(props: { rootCard: string }) {
@@ -76,6 +76,7 @@ function Card(props: { entityID: string; first?: boolean }) {
           }}
           className={`
       card w-[calc(100vw-12px)] md:w-[calc(50vw-32px)] max-w-prose
+      sm:pt-0 pt-2
       grow flex flex-col
       overscroll-y-none
       overflow-y-scroll no-scrollbar
@@ -83,39 +84,63 @@ function Card(props: { entityID: string; first?: boolean }) {
       ${isFocused ? "shadow-md border-border" : "border-border-light"}
     `}
         >
-          {isFocused && <CardOptions />}
+          <Media mobile={true}>
+            {!props.first && <CardOptions entityID={props.entityID} />}
+          </Media>
           <DesktopCardFooter cardID={props.entityID} />
           <Blocks entityID={props.entityID} />
         </div>
+        <Media mobile={false}>
+          {isFocused && !props.first && (
+            <CardOptions entityID={props.entityID} />
+          )}
+        </Media>
       </div>
     </>
   );
 }
 
-const CardOptions = () => {
+const CardOptions = (props: { entityID: string }) => {
   let toaster = useToaster();
   return (
-    <Popover.Root>
-      <Popover.Trigger className="cardOptionsTrigger z-10 px-2 py-1 w-fit absolute top-0 right-3 bg-border text-bg-card rounded-b-md">
-        <MoreOptionsTiny />
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          align="end"
-          className="cardOptionsMenu bg-bg-card flex flex-col py-1 gap-0.5 border border-border rounded-md shadow-md"
+    <div className=" z-0 w-fit absolute sm:top-2 sm:-right-5 top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
+      <button
+        className="p-0.5 bg-border text-bg-card sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent hover:text-accentText "
+        onClick={() => {
+          useUIState.getState().closeCard(props.entityID);
+        }}
+      >
+        <CloseTiny />
+      </button>
+      <Popover.Root>
+        <Popover.Trigger
+          className={`cardOptionsTrigger
+            shrink-0 sm:h-8 sm:w-5 h-5 w-8
+            bg-bg-card text-border
+            border sm:border-l-0 border-t-1 border-border sm:rounded-r-md sm:rounded-l-none rounded-b-md
+            sm:hover:border-r-2 hover:border-b-2 hover:border-y-2 hover:border-t-1
+            flex items-center justify-center`}
         >
-          <CardMenuItem
-            onClick={() => {
-              // TODO: Wire up delete card
-              toaster(DeleteCardToast);
-            }}
+          <MoreOptionsTiny className="sm:rotate-90" />
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Content
+            align="end"
+            className="cardOptionsMenu bg-bg-card flex flex-col py-1 gap-0.5 border border-border rounded-md shadow-md"
           >
-            Delete Page <DeleteSmall />
-          </CardMenuItem>
-          <Popover.Arrow />
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+            <CardMenuItem
+              onClick={() => {
+                // TODO: Wire up delete card
+                toaster(DeleteCardToast);
+              }}
+            >
+              Delete Page <DeleteSmall />
+            </CardMenuItem>
+            <Popover.Arrow />
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
+    </div>
   );
 };
 
@@ -125,7 +150,7 @@ const CardMenuItem = (props: {
 }) => {
   return (
     <button
-      className="cardOptionsMenuItem text-left text-secondary py-1 px-2 flex gap-2 font-bold hover:bg-accent hover:text-accentText "
+      className="cardOptionsMenuItem z-10 text-left text-secondary py-1 px-2 flex gap-2 font-bold hover:bg-accent hover:text-accentText "
       onClick={() => {
         props.onClick();
       }}
