@@ -97,9 +97,9 @@ a {
 }
 
 .highlight {
-  @apply px-[3px];
+  @apply px-[1px];
   @apply py-[1px];
-  @apply -mx-[3px];
+  @apply -mx-[1px];
   @apply -my-[1px];
   @apply rounded-[4px];
   @apply box-decoration-clone;
