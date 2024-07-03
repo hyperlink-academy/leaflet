@@ -12,7 +12,16 @@ export const metadata = {
 export const preferredRegion = ["sfo1"];
 
 const quattro = localFont({
-  src: "../public/fonts/iAWriterQuattroV.ttf",
+  src: [
+    {
+      path: "../public/fonts/iAWriterQuattroV.ttf",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/iAWriterQuattroV-Italic.ttf",
+      style: "italic",
+    },
+  ],
   display: "swap",
   variable: "--font-quattro",
 });
