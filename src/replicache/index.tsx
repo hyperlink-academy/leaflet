@@ -19,6 +19,7 @@ export type Fact<A extends keyof typeof Attributes> = {
 let ReplicacheContext = createContext({
   rep: null as null | Replicache<ReplicacheMutators>,
   initialFacts: [] as Fact<keyof typeof Attributes>[],
+  permission_token: {} as PermissionToken,
 });
 export function useReplicache() {
   return useContext(ReplicacheContext);
@@ -29,8 +30,18 @@ export type ReplicacheMutators = {
     args: Parameters<(typeof mutations)[k]>[0],
   ) => Promise<void>;
 };
+
+export type PermissionToken = {
+  id: string;
+  permission_token_rights: {
+    entity_set: string;
+    read: boolean;
+    write: boolean;
+  }[];
+};
 export function ReplicacheProvider(props: {
   initialFacts: Fact<keyof typeof Attributes>[];
+  token: PermissionToken;
   name: string;
   children: React.ReactNode;
 }) {
@@ -55,7 +66,7 @@ export function ReplicacheProvider(props: {
       licenseKey: "l381074b8d5224dabaef869802421225a",
       pusher: async (pushRequest) => {
         return {
-          response: await Push(pushRequest, props.name),
+          response: await Push(pushRequest, props.name, props.token),
           httpRequestInfo: { errorMessage: "", httpStatusCode: 200 },
         };
       },
@@ -87,7 +98,11 @@ export function ReplicacheProvider(props: {
   }, [props.name]);
   return (
     <ReplicacheContext.Provider
-      value={{ rep, initialFacts: props.initialFacts }}
+      value={{
+        rep,
+        initialFacts: props.initialFacts,
+        permission_token: props.token,
+      }}
     >
       {props.children}
     </ReplicacheContext.Provider>

@@ -14,8 +14,8 @@ export function clientMutationContext(tx: WriteTransaction) {
       let supabase = supabaseBrowserClient();
       return cb({ supabase });
     },
-    async createEntity(_entityID) {
-      tx.set(_entityID, true);
+    async createEntity({ entityID }) {
+      tx.set(entityID, true);
       return true;
     },
     scanIndex: {

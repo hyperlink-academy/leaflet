@@ -37,13 +37,15 @@ import { isIOS } from "@react-aria/utils";
 import { useIsMobile } from "src/hooks/isMobile";
 import { setMark } from "src/utils/prosemirror/setMark";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
+import { useEntitySetContext } from "components/EntitySetProvider";
 
 export function TextBlock(props: BlockProps & { className: string }) {
   let initialized = useInitialPageLoad();
   let first = props.previousBlock === null;
+  let permission = useEntitySetContext().permissions.write;
   return (
     <>
-      {!initialized && (
+      {(!initialized || !permission) && (
         <RenderedTextBlock
           entityID={props.entityID}
           className={props.className}
@@ -51,10 +53,12 @@ export function TextBlock(props: BlockProps & { className: string }) {
           first={first}
         />
       )}
-      <div className={`relative group/text ${!initialized ? "hidden" : ""}`}>
-        <IOSBS {...props} />
-        <BaseTextBlock {...props} />
-      </div>
+      {permission && (
+        <div className={`relative group/text ${!initialized ? "hidden" : ""}`}>
+          <IOSBS {...props} />
+          <BaseTextBlock {...props} />
+        </div>
+      )}
     </>
   );
 }
@@ -139,10 +143,11 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
 
   let [value, factID] = useYJSValue(props.entityID);
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
-  let propsRef = useRef(props);
+  let entity_set = useEntitySetContext();
+  let propsRef = useRef({ ...props, entity_set });
   useEffect(() => {
-    propsRef.current = props;
-  }, [props]);
+    propsRef.current = { ...props, entity_set };
+  }, [props, entity_set]);
   let rep = useReplicache();
   useEffect(() => {
     repRef.current = rep.rep;
@@ -244,6 +249,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
                 propsRef.current.nextPosition,
               );
               repRef.current?.mutate.addBlock({
+                permission_set: entity_set.set,
                 newEntityID: entityID,
                 parent: propsRef.current.parent,
                 type: type,
@@ -297,6 +303,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
               propsRef.current.nextPosition,
             );
             repRef.current?.mutate.addBlock({
+              permission_set: entity_set.set,
               newEntityID,
               parent: propsRef.current.parent,
               type: "text",
@@ -332,6 +339,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
               } else {
                 entity = crypto.randomUUID();
                 rep.rep.mutate.addBlock({
+                  permission_set: entity_set.set,
                   type: "image",
                   newEntityID: entity,
                   parent: props.parent,

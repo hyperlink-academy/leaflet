@@ -5,7 +5,10 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 
 export type MutationContext = {
-  createEntity: (entityID: string) => Promise<boolean>;
+  createEntity: (args: {
+    entityID: string;
+    permission_set: string;
+  }) => Promise<boolean>;
   scanIndex: {
     eav: <A extends keyof typeof Attributes>(
       entity: string,
@@ -29,11 +32,15 @@ type Mutation<T> = (args: T, ctx: MutationContext) => Promise<void>;
 
 const addBlock: Mutation<{
   parent: string;
+  permission_set: string;
   type: Fact<"block/type">["data"]["value"];
   newEntityID: string;
   position: string;
 }> = async (args, ctx) => {
-  await ctx.createEntity(args.newEntityID);
+  await ctx.createEntity({
+    entityID: args.newEntityID,
+    permission_set: args.permission_set,
+  });
   await ctx.assertFact({
     entity: args.parent,
     data: {

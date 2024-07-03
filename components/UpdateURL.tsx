@@ -1,9 +1,11 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export function UpdateURL(props: { url: string }) {
+  let router = useRouter();
   useEffect(() => {
-    window.history.replaceState(null, "", props.url);
-  }, [props.url]);
-  return null;
+    router.replace(props.url);
+  }, [props.url, router]);
+  return <></>;
 }

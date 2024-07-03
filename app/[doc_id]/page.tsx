@@ -24,21 +24,41 @@ let supabase = createServerClient<Database>(
   { cookies: {} },
 );
 type Props = {
+  // this is now a token id not doc! Should probs rename
   params: { doc_id: string };
 };
 export default async function DocumentPage(props: Props) {
-  let { data } = await supabase.rpc("get_facts", { root: props.params.doc_id });
+  let res = await supabase
+    .from("permission_tokens")
+    .select("*, permission_token_rights(*)")
+    .eq("id", props.params.doc_id)
+    .single();
+  let rootEntity = res.data?.root_entity;
+  if (!rootEntity || !res.data)
+    return <div>404 no rootEntity found idk man</div>;
+  let { data } = await supabase.rpc("get_facts", {
+    root: rootEntity,
+  });
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
-  return <Doc initialFacts={initialFacts} doc_id={props.params.doc_id} />;
+  return (
+    <Doc initialFacts={initialFacts} doc_id={rootEntity} token={res.data} />
+  );
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
-  let { data } = await supabase.rpc("get_facts", { root: props.params.doc_id });
+  let res = await supabase
+    .from("permission_tokens")
+    .select("*, permission_token_rights(*)")
+    .eq("id", props.params.doc_id)
+    .single();
+  let rootEntity = res.data?.root_entity;
+  if (!rootEntity || !res.data) return { title: "Doc not found" };
+  let { data } = await supabase.rpc("get_facts", {
+    root: rootEntity,
+  });
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
   let blocks = initialFacts
-    .filter(
-      (f) => f.attribute === "card/block" && f.entity === props.params.doc_id,
-    )
+    .filter((f) => f.attribute === "card/block" && f.entity === rootEntity)
     .map((_f) => {
       let block = _f as Fact<"card/block">;
       let type = initialFacts.find(

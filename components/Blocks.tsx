@@ -13,6 +13,7 @@ import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { BlockOptions } from "./BlockOptions";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
+import { useEntitySetContext } from "./EntitySetProvider";
 
 export type Block = {
   parent: string;
@@ -22,6 +23,7 @@ export type Block = {
 };
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
+  let entity_set = useEntitySetContext();
   let blocks = useBlocks(props.entityID);
 
   let lastBlock = blocks[blocks.length - 1];
@@ -38,6 +40,7 @@ export function Blocks(props: { entityID: string }) {
             let newEntityID = crypto.randomUUID();
             await rep.rep?.mutate.addBlock({
               parent: props.entityID,
+              permission_set: entity_set.set,
               type: "text",
               position: generateKeyBetween(lastBlock.position || null, null),
               newEntityID,
@@ -77,6 +80,7 @@ export function Blocks(props: { entityID: string }) {
             focusBlock({ ...lastBlock, type: "text" }, { type: "end" });
           } else {
             rep?.rep?.mutate.addBlock({
+              permission_set: entity_set.set,
               parent: props.entityID,
               type: "text",
               position: generateKeyBetween(lastBlock?.position || null, null),
@@ -97,6 +101,7 @@ export function Blocks(props: { entityID: string }) {
 
 function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
   let { rep } = useReplicache();
+  let entity_set = useEntitySetContext();
   let textContent = useEntity(
     props.lastBlock?.type === "text" ? props.lastBlock.value : null,
     "block/text",
@@ -115,6 +120,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
           await rep?.mutate.addBlock({
             parent: props.entityID,
             type: "text",
+            permission_set: entity_set.set,
             position: generateKeyBetween(
               props.lastBlock?.position || null,
               null,
@@ -161,6 +167,7 @@ function Block(props: BlockProps) {
   );
   let { rep } = useReplicache();
 
+  let entity_set = useEntitySetContext();
   useEffect(() => {
     if (!selected || !rep) return;
     let r = rep;
@@ -198,6 +205,7 @@ function Block(props: BlockProps) {
       if (e.key === "Enter") {
         let newEntityID = crypto.randomUUID();
         r.mutate.addBlock({
+          permission_set: entity_set.set,
           newEntityID,
           parent: props.parent,
           type: "text",
@@ -215,6 +223,7 @@ function Block(props: BlockProps) {
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
   }, [
+    entity_set,
     selected,
     props.entityID,
     props.nextBlock,

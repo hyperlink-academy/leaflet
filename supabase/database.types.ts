@@ -38,6 +38,32 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          set: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          set: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          set?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entities_set_fkey"
+            columns: ["set"]
+            isOneToOne: false
+            referencedRelation: "entity_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_sets: {
+        Row: {
+          created_at: string
+          id: string
         }
         Insert: {
           created_at?: string
@@ -81,6 +107,74 @@ export type Database = {
           {
             foreignKeyName: "facts_entity_fkey"
             columns: ["entity"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      permission_token_rights: {
+        Row: {
+          change_entity_set: boolean
+          create_token: boolean
+          created_at: string
+          entity_set: string
+          read: boolean
+          token: string
+          write: boolean
+        }
+        Insert: {
+          change_entity_set?: boolean
+          create_token?: boolean
+          created_at?: string
+          entity_set: string
+          read?: boolean
+          token: string
+          write?: boolean
+        }
+        Update: {
+          change_entity_set?: boolean
+          create_token?: boolean
+          created_at?: string
+          entity_set?: string
+          read?: boolean
+          token?: string
+          write?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permission_token_rights_entity_set_fkey"
+            columns: ["entity_set"]
+            isOneToOne: false
+            referencedRelation: "entity_sets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "permission_token_rights_token_fkey"
+            columns: ["token"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      permission_tokens: {
+        Row: {
+          id: string
+          root_entity: string
+        }
+        Insert: {
+          id?: string
+          root_entity: string
+        }
+        Update: {
+          id?: string
+          root_entity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permission_tokens_root_entity_fkey"
+            columns: ["root_entity"]
             isOneToOne: false
             referencedRelation: "entities"
             referencedColumns: ["id"]

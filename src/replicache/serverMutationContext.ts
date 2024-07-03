@@ -5,12 +5,17 @@ import * as Y from "yjs";
 import { MutationContext } from "./mutations";
 import { entities, facts } from "drizzle/schema";
 import { Attributes, FilterAttributes } from "./attributes";
-import { Fact } from ".";
+import { Fact, PermissionToken } from ".";
 import { DeepReadonly } from "replicache";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
-export function serverMutationContext(tx: PgTransaction<any, any, any>) {
-  let ctx: MutationContext = {
+export function serverMutationContext(
+  tx: PgTransaction<any, any, any>,
+  token_rights: PermissionToken["permission_token_rights"],
+) {
+  let ctx: MutationContext & {
+    checkPermission: (entity: string) => Promise<boolean>;
+  } = {
     async runOnServer(cb) {
       let supabase = createClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -18,14 +23,37 @@ export function serverMutationContext(tx: PgTransaction<any, any, any>) {
       );
       return cb({ supabase });
     },
+    async checkPermission(entity: string) {
+      let [permission_set] = await tx
+        .select({ entity_set: entities.set })
+        .from(entities)
+        .where(driz.eq(entities.id, entity));
+      return (
+        !!permission_set &&
+        !!token_rights.find(
+          (r) => r.entity_set === permission_set.entity_set && r.write == true,
+        )
+      );
+    },
     async runOnClient(_cb) {},
-    async createEntity(entity) {
+    async createEntity({ entityID, permission_set }) {
+      if (
+        !token_rights.find(
+          (r) => r.entity_set === permission_set && r.write === true,
+        )
+      ) {
+        console.log("NO RIGHT???");
+        console.log(token_rights);
+        console.log(permission_set);
+        return false;
+      }
       await tx.transaction(
         async (tx2) =>
           await tx2
             .insert(entities)
             .values({
-              id: entity,
+              set: permission_set,
+              id: entityID,
             })
             .catch(console.log),
       );
@@ -54,6 +82,11 @@ export function serverMutationContext(tx: PgTransaction<any, any, any>) {
       if (!attribute) return;
       let id = f.id || crypto.randomUUID();
       let data = { ...f.data };
+      let [permission_set] = await tx
+        .select({ entity_set: entities.set })
+        .from(entities)
+        .where(driz.eq(entities.id, f.entity));
+      if (!this.checkPermission(f.entity)) return;
       if (attribute.cardinality === "one") {
         let existingFact = await tx
           .select({ id: facts.id, data: facts.data })
@@ -104,9 +137,16 @@ export function serverMutationContext(tx: PgTransaction<any, any, any>) {
       );
     },
     async retractFact(id) {
+      let [f] = await tx
+        .select()
+        .from(facts)
+        .rightJoin(entities, driz.eq(entities.id, facts.entity))
+        .where(driz.eq(facts.id, id));
+      if (!f || !this.checkPermission(f.entities.id)) return;
       await tx.delete(facts).where(driz.eq(facts.id, id));
     },
     async deleteEntity(entity) {
+      if (!this.checkPermission(entity)) return;
       await Promise.all([
         tx.delete(entities).where(driz.eq(entities.id, entity)),
         tx

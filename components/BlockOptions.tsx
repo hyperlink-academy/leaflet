@@ -13,6 +13,7 @@ import { focusCard } from "./Cards";
 import { useState } from "react";
 import { Separator } from "./Layout";
 import { addLinkBlock } from "src/utils/addLinkBlock";
+import { useEntitySetContext } from "./EntitySetProvider";
 
 type Props = {
   parent: string;
@@ -23,6 +24,7 @@ type Props = {
 };
 export function BlockOptions(props: Props) {
   let { rep } = useReplicache();
+  let entity_set = useEntitySetContext();
 
   let focusedElement = useUIState((s) => s.focusedBlock);
   let focusedCardID =
@@ -51,6 +53,7 @@ export function BlockOptions(props: Props) {
                   entity = crypto.randomUUID();
                   await rep?.mutate.addBlock({
                     parent: props.parent,
+                    permission_set: entity_set.set,
                     type: "text",
                     position: generateKeyBetween(
                       props.position,
@@ -81,6 +84,7 @@ export function BlockOptions(props: Props) {
               let entity = crypto.randomUUID();
 
               await rep?.mutate.addBlock({
+                permission_set: entity_set.set,
                 parent: props.parent,
                 type: "card",
                 position: generateKeyBetween(
@@ -110,6 +114,7 @@ export function BlockOptions(props: Props) {
 }
 
 const BlockLinkButton = (props: Props) => {
+  let entity_set = useEntitySetContext();
   let [linkOpen, setLinkOpen] = useState(false);
   let [linkValue, setLinkValue] = useState("");
   let { rep } = useReplicache();
@@ -119,6 +124,7 @@ const BlockLinkButton = (props: Props) => {
       entity = crypto.randomUUID();
 
       await rep?.mutate.addBlock({
+        permission_set: entity_set.set,
         parent: props.parent,
         type: "card",
         position: generateKeyBetween(props.position, props.nextPosition),

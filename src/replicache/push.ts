@@ -3,8 +3,9 @@ import { PushRequest, PushResponse } from "replicache";
 import { serverMutationContext } from "./serverMutationContext";
 import { mutations } from "./mutations";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { eq } from "drizzle-orm";
 import postgres from "postgres";
-import { replicache_clients } from "drizzle/schema";
+import { permission_token_rights, replicache_clients } from "drizzle/schema";
 import { getClientGroup } from "./utils";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
@@ -18,10 +19,15 @@ const db = drizzle(client);
 export async function Push(
   pushRequest: PushRequest,
   rootEntity: string,
+  token: { id: string },
 ): Promise<PushResponse | undefined> {
   if (pushRequest.pushVersion !== 1)
     return { error: "VersionNotSupported", versionType: "push" };
   let clientGroup = await getClientGroup(db, pushRequest.clientGroupID);
+  let token_rights = await db
+    .select()
+    .from(permission_token_rights)
+    .where(eq(permission_token_rights.token, token.id));
   for (let mutation of pushRequest.mutations) {
     let lastMutationID = clientGroup[mutation.clientID] || 0;
     if (mutation.id <= lastMutationID) continue;
@@ -32,7 +38,10 @@ export async function Push(
     }
     await db.transaction(async (tx) => {
       try {
-        await mutations[name](mutation.args as any, serverMutationContext(tx));
+        await mutations[name](
+          mutation.args as any,
+          serverMutationContext(tx, token_rights),
+        );
       } catch (e) {
         console.log(
           `Error occured while running mutation: ${name}`,

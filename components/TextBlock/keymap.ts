@@ -13,7 +13,7 @@ import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { focusCard } from "components/Cards";
 
 export const TextBlockKeymap = (
-  propsRef: MutableRefObject<BlockProps>,
+  propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
   repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
 ) =>
   keymap({
@@ -240,7 +240,7 @@ const backspace =
 
 const enter =
   (
-    propsRef: MutableRefObject<BlockProps>,
+    propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
     repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
   (state: EditorState, dispatch?: (tr: Transaction) => void) => {
@@ -255,6 +255,7 @@ const enter =
     );
     repRef.current?.mutate.addBlock({
       newEntityID,
+      permission_set: propsRef.current.entity_set.set,
       parent: propsRef.current.parent,
       type: "text",
       position,
