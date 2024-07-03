@@ -68,7 +68,12 @@ export function Blocks(props: { entityID: string }) {
         );
       })}
       <NewBlockButton lastBlock={lastBlock || null} entityID={props.entityID} />
-      <div className="shrink-0 h-[50vh]" />
+      <div
+        className="shrink-0 h-[50vh]"
+        onClick={() => {
+          focusBlock({ ...lastBlock, type: "text" }, { type: "end" });
+        }}
+      />
     </div>
   );
 }
