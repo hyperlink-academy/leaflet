@@ -23,8 +23,8 @@ export const ThemeDefaults = {
   "theme/accent-background": "#0000FF",
   "theme/accent-text": "#FFFFFF",
   "theme/highlight-1": "#FFFFFF",
-  "theme/highlight-2": "#FFF5D2",
-  "theme/highlight-3": "#F0F7FA",
+  "theme/highlight-2": "#EDD280",
+  "theme/highlight-3": "#9FC4C2",
 };
 
 function setCSSVariableToColor(el: HTMLElement, name: string, value: Color) {
