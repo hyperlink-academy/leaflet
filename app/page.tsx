@@ -7,7 +7,9 @@ import { UpdateURL } from "components/UpdateURL";
 const client = postgres(process.env.DB_URL as string);
 const db = drizzle(client);
 
+export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export default async function RootPage() {
   let rows = await db.insert(entities).values({}).returning();
