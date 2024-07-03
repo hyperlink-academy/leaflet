@@ -100,6 +100,17 @@ export function LinkEditor(props: { onClose: () => void }) {
           }
         }}
       />
+      {/*
+        TODO:
+        to avoid all sort of messiness, editing any portion of link will edit the
+        entire range that includes the link rather than just the link text that is selected.
+
+        ALSO TODO:
+        if there is already a link mark, the input should be prefilled with the link value
+        and the check mark should be a garbage can to remove the link.
+
+        if the user changes the link, then the button reverts to a check mark.
+        */}
       <div className="flex items-center gap-3">
         <button
           className="hover:text-accent -mr-6"
