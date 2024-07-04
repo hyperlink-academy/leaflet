@@ -12,6 +12,7 @@ import {
   EntitySetContext,
   EntitySetProvider,
 } from "components/EntitySetProvider";
+import { UpdatePageTitle } from "components/utils/UpdatePageTitle";
 export function Doc(props: {
   token: PermissionToken;
   initialFacts: Fact<keyof typeof Attributes>[];
@@ -28,6 +29,7 @@ export function Doc(props: {
       >
         <PopUpProvider>
           <ThemeProvider entityID={props.doc_id}>
+            <UpdatePageTitle entityID={props.doc_id} />
             <SelectionManager />
             <div
               className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full"
