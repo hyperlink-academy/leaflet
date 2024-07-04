@@ -10,7 +10,7 @@ export default async function OpenGraphImage(props: {
   let protocol = headersList.get("x-forwarded-proto");
   let path = `${protocol}://${hostname}/${props.params.doc_id}`;
   return fetch(
-    `https://pro.microlink.io/?url=${path}&screenshot=&embed=screenshot.url`,
+    `https://pro.microlink.io/?url=${path}&screenshot=true&meta=false&embed=screenshot.url`,
     {
       headers: {
         "x-api-key": process.env.MICROLINK_API_KEY!,
