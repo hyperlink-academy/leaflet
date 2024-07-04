@@ -7,10 +7,12 @@ export default async function OpenGraphImage(props: {
   const headersList = headers();
   const hostname = headersList.get("x-forwarded-host");
   let protocol = headersList.get("x-forwarded-proto");
-  headersList.forEach(console.log);
+  let path = `${protocol}://${hostname}/${props.params.doc_id}`;
+  console.log(path);
   let url_preview = await get_url_preview_data(
     `${protocol}://${hostname}/${props.params.doc_id}`,
   );
   if (url_preview.data) return fetch(url_preview.data?.data.screenshot.url);
+  console.log(url_preview.error);
   return null;
 }
