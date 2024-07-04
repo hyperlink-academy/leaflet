@@ -1,5 +1,6 @@
 import { get_url_preview_data } from "actions/addLinkCard";
 import { headers } from "next/headers";
+export const runtime = "edge";
 export default async function OpenGraphImage(props: {
   params: { doc_id: string };
 }) {
@@ -8,11 +9,12 @@ export default async function OpenGraphImage(props: {
   const hostname = headersList.get("x-forwarded-host");
   let protocol = headersList.get("x-forwarded-proto");
   let path = `${protocol}://${hostname}/${props.params.doc_id}`;
-  console.log(path);
-  let url_preview = await get_url_preview_data(
-    `${protocol}://${hostname}/${props.params.doc_id}`,
+  return fetch(
+    `https://pro.microlink.io/?url=${path}&screenshot=&embed=screenshot.url`,
+    {
+      headers: {
+        "x-api-key": process.env.MICROLINK_API_KEY!,
+      },
+    },
   );
-  if (url_preview.data) return fetch(url_preview.data?.data.screenshot.url);
-  console.log(url_preview.error);
-  return null;
 }
