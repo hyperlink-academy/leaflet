@@ -19,16 +19,16 @@ let expectedAPIResponse = z.object({
     image: z
       .object({
         url: z.string(),
-        width: z.number(),
-        height: z.number(),
+        width: z.number().optional().nullable(),
+        height: z.number().optional().nullable(),
       })
       .nullable()
       .optional(),
     logo: z
       .object({
         url: z.string(),
-        width: z.number().optional(),
-        height: z.number().optional(),
+        width: z.number().optional().nullable(),
+        height: z.number().optional().nullable(),
       })
       .nullable()
       .optional(),
