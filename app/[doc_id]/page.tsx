@@ -86,7 +86,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     .sort((a, b) => (a.position > b.position ? 1 : -1))
     .filter((b) => b.type === "text" || b.type === "heading");
 
-  let metadata: Metadata = { title: "Untitled Leaflet" };
+  let metadata: Metadata = { title: "Untitled Leaflet", description: "" };
   let firstBlock = blocks[0];
   if (firstBlock?.type === "heading") {
     let content = initialFacts.find(
