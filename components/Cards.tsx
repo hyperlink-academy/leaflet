@@ -11,6 +11,7 @@ import { Fact, ReplicacheMutators, useReplicache } from "src/replicache";
 import * as Popover from "@radix-ui/react-popover";
 import { MoreOptionsTiny, DeleteSmall, CloseTiny } from "./Icons";
 import { useToaster } from "./Toast";
+import { ShareOptions } from "./ShareOptions";
 
 export function Cards(props: { rootCard: string }) {
   let cards = useUIState((s) => s.openCards);
@@ -22,8 +23,11 @@ export function Cards(props: { rootCard: string }) {
         className="spacer flex justify-end items-start"
         style={{ width: `calc(50vw - ${cardWidth}px/2)` }}
       >
-        <Media mobile={false} className="flex flex-col gap-2 mr-4 mt-2">
-          <PageOptions entityID={props.rootCard} />
+        <Media mobile={false}>
+          <div className="flex flex-col gap-2 mr-4 mt-2">
+            <PageOptions entityID={props.rootCard} />
+            <ShareOptions rootEntity={props.rootCard} />
+          </div>
         </Media>
       </div>
       <div className="flex items-stretch" ref={cardRef}>

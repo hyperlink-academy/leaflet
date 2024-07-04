@@ -35,6 +35,7 @@ export type PermissionToken = {
   id: string;
   permission_token_rights: {
     entity_set: string;
+    create_token: boolean;
     read: boolean;
     write: boolean;
   }[];
