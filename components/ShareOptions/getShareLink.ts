@@ -10,7 +10,6 @@ export async function getShareLink(
   token: { id: string; entity_set: string },
   rootEntity: string,
 ) {
-  console.log("yo");
   return await db.transaction(async (tx) => {
     // This will likely error out when if we have multiple permission
     // token rights associated with a single token
@@ -22,7 +21,6 @@ export async function getShareLink(
         eq(permission_token_rights.token, permission_tokens.id),
       )
       .where(eq(permission_tokens.id, token.id));
-    console.log(tokenW, token, rootEntity);
     if (
       !tokenW.permission_token_rights ||
       tokenW.permission_token_rights.create_token !== true ||

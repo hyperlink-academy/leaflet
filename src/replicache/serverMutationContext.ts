@@ -42,9 +42,6 @@ export function serverMutationContext(
           (r) => r.entity_set === permission_set && r.write === true,
         )
       ) {
-        console.log("NO RIGHT???");
-        console.log(token_rights);
-        console.log(permission_set);
         return false;
       }
       await tx.transaction(

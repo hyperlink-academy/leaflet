@@ -78,7 +78,6 @@ export function IOSBS(props: BlockProps) {
       onMouseDown={(e) => {
         e.preventDefault();
         let target = e.target;
-        console.log("what");
         focusBlock(props, {
           type: "coord",
           top: e.clientY,

@@ -107,7 +107,6 @@ export const TextBlockKeymap = (
       if (view.state.selection.from !== view.state.selection.to) return false;
       const viewClientRect = view.dom.getBoundingClientRect();
       const coords = view.coordsAtPos(view.state.selection.anchor);
-      console.log(coords.top - viewClientRect.top);
       if (coords.top - viewClientRect.top < 12) {
         let block = propsRef.current.previousBlock;
         if (block) {
