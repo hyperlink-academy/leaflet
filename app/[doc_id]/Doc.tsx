@@ -20,6 +20,7 @@ export function Doc(props: {
 }) {
   return (
     <ReplicacheProvider
+      rootEntity={props.doc_id}
       token={props.token}
       name={props.doc_id}
       initialFacts={props.initialFacts}

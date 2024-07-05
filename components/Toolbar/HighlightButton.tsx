@@ -82,21 +82,20 @@ export const HighlightColorButton = (props: {
 };
 
 export const HighlightColorSettings = () => {
-  let { rep } = useReplicache();
+  let { rep, rootEntity } = useReplicache();
   let params = useParams();
-  let docID = params.doc_id as string;
   let set = useMemo(() => {
-    return setColorAttribute(rep, docID);
-  }, [rep, docID]);
+    return setColorAttribute(rep, rootEntity);
+  }, [rep, rootEntity]);
 
   let [openPicker, setOpenPicker] = useState<pickers>("null");
 
-  let backgroundImage = useEntity(docID, "theme/background-image");
-  let backgroundRepeat = useEntity(docID, "theme/background-image-repeat");
+  let backgroundImage = useEntity(rootEntity, "theme/background-image");
+  let backgroundRepeat = useEntity(rootEntity, "theme/background-image-repeat");
 
-  let highlight1Value = useColorAttribute(docID, "theme/highlight-1");
-  let highlight2Value = useColorAttribute(docID, "theme/highlight-2");
-  let highlight3Value = useColorAttribute(docID, "theme/highlight-3");
+  let highlight1Value = useColorAttribute(rootEntity, "theme/highlight-1");
+  let highlight2Value = useColorAttribute(rootEntity, "theme/highlight-2");
+  let highlight3Value = useColorAttribute(rootEntity, "theme/highlight-3");
 
   return (
     <Popover.Root>

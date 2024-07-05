@@ -17,6 +17,7 @@ export type Fact<A extends keyof typeof Attributes> = {
 };
 
 let ReplicacheContext = createContext({
+  rootEntity: "" as string,
   rep: null as null | Replicache<ReplicacheMutators>,
   initialFacts: [] as Fact<keyof typeof Attributes>[],
   permission_token: {} as PermissionToken,
@@ -41,6 +42,7 @@ export type PermissionToken = {
   }[];
 };
 export function ReplicacheProvider(props: {
+  rootEntity: string;
   initialFacts: Fact<keyof typeof Attributes>[];
   token: PermissionToken;
   name: string;
@@ -101,6 +103,7 @@ export function ReplicacheProvider(props: {
     <ReplicacheContext.Provider
       value={{
         rep,
+        rootEntity: props.rootEntity,
         initialFacts: props.initialFacts,
         permission_token: props.token,
       }}
