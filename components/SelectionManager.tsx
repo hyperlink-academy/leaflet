@@ -22,10 +22,6 @@ export function SelectionManager() {
       if (e.key === "Backspace" || e.key === "Delete") {
         if (moreThanOneSelected) {
           let selectedBlocks = useUIState.getState().selectedBlock;
-          for (let block of selectedBlocks) {
-            useUIState.getState().closeCard(block.value);
-            await rep?.mutate.removeBlock({ blockEntity: block.value });
-          }
           let firstBlock = selectedBlocks.sort((a, b) =>
             a.position > b.position ? 1 : -1,
           )[0];
@@ -34,6 +30,10 @@ export function SelectionManager() {
               scanIndex(tx).eav(firstBlock.parent, "card/block"),
             )
           )?.sort((a, b) => (a.data.position > b.data.position ? 1 : -1));
+          for (let block of selectedBlocks) {
+            useUIState.getState().closeCard(block.value);
+            await rep?.mutate.removeBlock({ blockEntity: block.value });
+          }
           let nextBlock =
             siblings?.[
               siblings.findIndex((s) => s.data.value === firstBlock.value) - 1
@@ -44,6 +44,23 @@ export function SelectionManager() {
               position: nextBlock.data.position,
               parent: nextBlock.entity,
             });
+            let type = await rep?.query((tx) =>
+              scanIndex(tx).eav(nextBlock.data.value, "block/type"),
+            );
+            if (!type?.[0]) return;
+            if (
+              type[0]?.data.value === "text" ||
+              type[0]?.data.value === "heading"
+            )
+              focusBlock(
+                {
+                  value: nextBlock.data.value,
+                  type: "text",
+                  parent: nextBlock.entity,
+                  position: nextBlock.data.position,
+                },
+                { type: "end" },
+              );
           }
         }
       }

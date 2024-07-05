@@ -473,7 +473,7 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
     debounce.current = window.setTimeout(() => {
       debounce.current = null;
 
-      if (!view.state.selection) return;
+      if (!view.state.selection.anchor || !view.docView) return;
       const coords = view.coordsAtPos(view.state.selection.anchor);
       useEditorStates.setState({ lastXPosition: coords.left });
 

@@ -168,6 +168,9 @@ const backspace =
     repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
   (state: EditorState) => {
+    if (useUIState.getState().selectedBlock.length > 1) {
+      return false;
+    }
     if (state.selection.anchor > 1 || state.selection.content().size > 0) {
       return false;
     }
