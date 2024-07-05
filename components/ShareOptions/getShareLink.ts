@@ -42,6 +42,8 @@ export async function getShareLink(
           eq(permission_token_rights.write, false),
           eq(permission_token_rights.create_token, false),
           eq(permission_token_rights.change_entity_set, false),
+          eq(permission_token_rights.entity_set, token.entity_set),
+          eq(permission_tokens.root_entity, rootEntity),
         ),
       );
     if (existingToken) return existingToken.permission_tokens;
