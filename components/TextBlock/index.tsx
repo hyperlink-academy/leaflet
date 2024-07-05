@@ -473,7 +473,12 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
     debounce.current = window.setTimeout(() => {
       debounce.current = null;
 
-      if (!view.state.selection.anchor || !view.docView) return;
+      if (
+        !view.state.selection.anchor ||
+        //@ts-ignore I'm not sure why this type isn't here because it's used in the function underneath
+        !view.docView
+      )
+        return;
       const coords = view.coordsAtPos(view.state.selection.anchor);
       useEditorStates.setState({ lastXPosition: coords.left });
 
