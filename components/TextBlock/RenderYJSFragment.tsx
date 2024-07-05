@@ -86,7 +86,12 @@ type Delta = {
 };
 
 function attributesToStyle(d: Delta) {
-  let props = { style: {} as CSSProperties, className: "" };
+  let props = {
+    style: {},
+    className: "",
+  } as { style: CSSProperties; className: string } & {
+    [s: `data-${string}`]: any;
+  };
   if (d.attributes?.strong) props.style.fontWeight = "700";
   if (d.attributes?.em) props.style.fontStyle = "italic";
   if (d.attributes?.underline) props.style.textDecoration = "underline";
@@ -95,13 +100,14 @@ function attributesToStyle(d: Delta) {
       (props.style.textDecorationColor = theme.colors.tertiary);
   }
   if (d.attributes?.highlight) {
-    (props.className = "highlight"),
-      (props.style.backgroundColor =
-        d.attributes?.highlight.color === "1"
-          ? theme.colors["highlight-1"]
-          : d.attributes.highlight.color === "2"
-            ? theme.colors["highlight-2"]
-            : theme.colors["highlight-3"]);
+    props.className = "highlight";
+    props["data-color"] = d.attributes.highlight.color;
+    props.style.backgroundColor =
+      d.attributes?.highlight.color === "1"
+        ? theme.colors["highlight-1"]
+        : d.attributes.highlight.color === "2"
+          ? theme.colors["highlight-2"]
+          : theme.colors["highlight-3"];
   }
 
   return props;
