@@ -19,6 +19,7 @@ export function SelectionManager() {
   let { rep } = useReplicache();
   useEffect(() => {
     let listener = async (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
       if (e.key === "Backspace" || e.key === "Delete") {
         if (moreThanOneSelected) {
           let selectedBlocks = useUIState.getState().selectedBlock;
