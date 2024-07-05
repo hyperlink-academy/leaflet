@@ -442,6 +442,12 @@ function CommandHandler(props: { entityID: string }) {
         .selection as TextSelection;
       let mark = rangeHasMark(view.state, args.mark, from, to);
       if (
+        to === from &&
+        args.mark?.isInSet(view.state.storedMarks || $cursor?.marks() || [])
+      ) {
+        return toggleMark(args.mark, args.attrs)(view.state, view.dispatch);
+      }
+      if (
         mark &&
         (!args.attrs ||
           JSON.stringify(args.attrs) === JSON.stringify(mark.attrs))
