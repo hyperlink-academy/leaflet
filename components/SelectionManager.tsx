@@ -19,7 +19,6 @@ export function SelectionManager() {
   let { rep } = useReplicache();
   useEffect(() => {
     let listener = async (e: KeyboardEvent) => {
-      if (e.defaultPrevented) return;
       if (e.key === "Backspace" || e.key === "Delete") {
         if (moreThanOneSelected) {
           let selectedBlocks = useUIState.getState().selectedBlock;
@@ -67,6 +66,7 @@ export function SelectionManager() {
             { type: "start" },
           );
         } else {
+          if (e.defaultPrevented) return;
           if (
             selectedBlocks.length <= 1 ||
             !focusedBlock ||
@@ -169,6 +169,7 @@ export function SelectionManager() {
           );
         }
         if (e.shiftKey) {
+          if (e.defaultPrevented) return;
           if (
             selectedBlocks.length <= 1 ||
             !focusedBlock ||
