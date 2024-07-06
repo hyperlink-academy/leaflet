@@ -33,6 +33,7 @@ import { PaintSmall } from "components/Icons";
 
 export const HighlightColorButton = (props: {
   color: "1" | "2" | "3";
+  lastUsedHighlight: "1" | "2" | "3";
   setLastUsedHightlight: (color: "1" | "2" | "3") => void;
 }) => {
   let focusedBlock = useUIState((s) => s.focusedBlock);
@@ -68,16 +69,20 @@ export const HighlightColorButton = (props: {
       }}
     >
       <div
-        className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
-        style={{
-          backgroundColor:
-            props.color === "1"
-              ? theme.colors["highlight-1"]
-              : props.color === "2"
-                ? theme.colors["highlight-2"]
-                : theme.colors["highlight-3"],
-        }}
-      />
+        className={`w-6 h-6 rounded-md flex items-center justify-center ${props.lastUsedHighlight === props.color ? "bg-border" : ""}`}
+      >
+        <div
+          className={`w-5 h-5 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
+          style={{
+            backgroundColor:
+              props.color === "1"
+                ? theme.colors["highlight-1"]
+                : props.color === "2"
+                  ? theme.colors["highlight-2"]
+                  : theme.colors["highlight-3"],
+          }}
+        />
+      </div>
     </button>
   );
 };

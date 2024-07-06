@@ -134,7 +134,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                 className="pr-2"
               >
                 <div
-                  className={`w-[6px] h-[20px] rounded-[2px] border border-white shadow-[0_0_0_1px_#8C8C8C]`}
+                  className={`w-2 h-[22px] rounded-[2px] border border-border`}
                   style={{
                     backgroundColor:
                       lastUsedHighlight === "1"
@@ -169,6 +169,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
         ) : toolbarState === "highlight" ? (
           <HighlightToolbar
             onClose={() => setToolbarState("default")}
+            lastUsedHighlight={lastUsedHighlight}
             setLastUsedHighlight={(color: "1" | "2" | "3") =>
               setlastUsedHighlight(color)
             }
@@ -206,6 +207,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
 
 const HighlightToolbar = (props: {
   onClose: () => void;
+  lastUsedHighlight: "1" | "2" | "3";
   setLastUsedHighlight: (color: "1" | "2" | "3") => void;
 }) => {
   return (
@@ -217,14 +219,17 @@ const HighlightToolbar = (props: {
         <Separator />
         <HighlightColorButton
           color="1"
+          lastUsedHighlight={props.lastUsedHighlight}
           setLastUsedHightlight={props.setLastUsedHighlight}
         />
         <HighlightColorButton
           color="2"
+          lastUsedHighlight={props.lastUsedHighlight}
           setLastUsedHightlight={props.setLastUsedHighlight}
         />
         <HighlightColorButton
           color="3"
+          lastUsedHighlight={props.lastUsedHighlight}
           setLastUsedHightlight={props.setLastUsedHighlight}
         />
         <HighlightColorSettings />
