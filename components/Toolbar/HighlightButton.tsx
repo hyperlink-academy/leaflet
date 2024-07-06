@@ -29,6 +29,7 @@ import { useMemo, useState } from "react";
 import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
 import { useParams } from "next/navigation";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
+import { PaintSmall } from "components/Icons";
 
 export const HighlightColorButton = (props: {
   color: "1" | "2" | "3";
@@ -93,13 +94,18 @@ export const HighlightColorSettings = () => {
   let backgroundImage = useEntity(rootEntity, "theme/background-image");
   let backgroundRepeat = useEntity(rootEntity, "theme/background-image-repeat");
 
+  let color = useEntity(rootEntity, "theme/highlight-1");
   let highlight1Value = useColorAttribute(rootEntity, "theme/highlight-1");
   let highlight2Value = useColorAttribute(rootEntity, "theme/highlight-2");
   let highlight3Value = useColorAttribute(rootEntity, "theme/highlight-3");
 
+  console.log(color?.data.value + " | " + highlight1Value);
+
   return (
     <Popover.Root>
-      <Popover.Trigger>settings</Popover.Trigger>
+      <Popover.Trigger>
+        <PaintSmall />
+      </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
           className="themeSetterWrapper z-20 w-80 h-fit max-h-[80vh] bg-white rounded-md border border-border flex"
@@ -124,7 +130,11 @@ export const HighlightColorSettings = () => {
               >
                 <ColorPicker
                   label="Highlight 1"
-                  value={highlight1Value}
+                  value={
+                    color?.data.value === undefined
+                      ? undefined
+                      : highlight1Value
+                  }
                   setValue={set("theme/highlight-1")}
                   thisPicker={"highlight-1"}
                   openPicker={openPicker}

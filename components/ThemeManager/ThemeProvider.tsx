@@ -22,9 +22,7 @@ export const ThemeDefaults = {
   "theme/primary": "#272727",
   "theme/accent-background": "#0000FF",
   "theme/accent-text": "#FFFFFF",
-  // this is affecting the default set in the Highlight settings. It needs to refelct the caluclated value
-  // seems like a pain in the butt tho.
-  "theme/highlight-1": "#0000FF",
+  "theme/highlight-1": "#FFFFFF",
   "theme/highlight-2": "#EDD280",
   "theme/highlight-3": "#9FC4C2",
 };

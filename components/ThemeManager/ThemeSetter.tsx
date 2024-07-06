@@ -232,7 +232,7 @@ let thumbStyle =
 
 export const ColorPicker = (props: {
   label?: string;
-  value: Color;
+  value: Color | undefined;
   alpha?: boolean;
   setValue: (c: Color) => void;
   openPicker: pickers;
@@ -267,26 +267,30 @@ export const ColorPicker = (props: {
           />
           <strong className="">{props.label}</strong>
           <div className="flex gap-1">
-            <ColorField className="w-fit gap-1">
-              <Input
-                onFocus={(e) => {
-                  e.currentTarget.setSelectionRange(
-                    1,
-                    e.currentTarget.value.length,
-                  );
-                  props.setOpenPicker(props.thisPicker);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.currentTarget.blur();
-                  } else return;
-                }}
-                onBlur={(e) => {
-                  props.setValue(parseColor(e.currentTarget.value));
-                }}
-                className="w-[72px] bg-transparent outline-none"
-              />
-            </ColorField>
+            {props.value === undefined ? (
+              <div>default</div>
+            ) : (
+              <ColorField className="w-fit gap-1">
+                <Input
+                  onFocus={(e) => {
+                    e.currentTarget.setSelectionRange(
+                      1,
+                      e.currentTarget.value.length,
+                    );
+                    props.setOpenPicker(props.thisPicker);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.currentTarget.blur();
+                    } else return;
+                  }}
+                  onBlur={(e) => {
+                    props.setValue(parseColor(e.currentTarget.value));
+                  }}
+                  className="w-[72px] bg-transparent outline-none"
+                />
+              </ColorField>
+            )}
             {props.alpha && (
               <>
                 <Separator classname="my-1" />
