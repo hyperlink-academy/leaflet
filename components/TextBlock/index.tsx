@@ -38,6 +38,7 @@ import { useIsMobile } from "src/hooks/isMobile";
 import { setMark } from "src/utils/prosemirror/setMark";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { useHandlePaste } from "./useHandlePaste";
 
 export function TextBlock(props: BlockProps & { className: string }) {
   let initialized = useInitialPageLoad();
@@ -178,6 +179,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
       }));
     };
   }, [props.entityID]);
+  let handlePaste = useHandlePaste(props.entityID, propsRef, factID);
   if (!editorState) return null;
 
   return (
@@ -192,175 +194,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
           window.open(mark.attrs.href, "_blank");
         }
       }}
-      handlePaste={(view, e) => {
-        if (!rep.rep) return;
-        if (!e.clipboardData) return;
-        let textHTML = e.clipboardData.getData("text/html");
-        let editorState =
-          useEditorStates.getState().editorStates[props.entityID];
-        if (!editorState) return;
-        if (textHTML) {
-          const parser = ProsemirrorDOMParser.fromSchema(schema);
-          let xml = new DOMParser().parseFromString(textHTML, "text/html");
-          let currentPosition = propsRef.current.position;
-          let children = [...xml.body.children];
-          if (
-            !children.find((c) => ["P", "H1", "H2", "H3"].includes(c.tagName))
-          )
-            return;
-          children.forEach((child, index) => {
-            let content = parser.parse(child);
-            let type: Fact<"block/type">["data"]["value"] | null;
-            let headingLevel: number | null = null;
-            switch (child.tagName) {
-              case "SPAN": {
-                type = "text";
-                break;
-              }
-              case "P": {
-                type = "text";
-                break;
-              }
-              case "H1": {
-                headingLevel = 1;
-                type = "heading";
-                break;
-              }
-              case "H2": {
-                headingLevel = 2;
-                type = "heading";
-                break;
-              }
-              case "H3": {
-                headingLevel = 3;
-                type = "heading";
-                break;
-              }
-              default:
-                type = null;
-            }
-            if (!type) return;
-
-            let entityID: string;
-            if (index === 0 && type === props.type) entityID = props.entityID;
-            else {
-              entityID = crypto.randomUUID();
-              currentPosition = generateKeyBetween(
-                currentPosition,
-                propsRef.current.nextPosition,
-              );
-              repRef.current?.mutate.addBlock({
-                permission_set: entity_set.set,
-                newEntityID: entityID,
-                parent: propsRef.current.parent,
-                type: type,
-                position: currentPosition,
-              });
-              if (type === "heading" && headingLevel) {
-                repRef.current?.mutate.assertFact({
-                  entity: entityID,
-                  attribute: "block/heading-level",
-                  data: { type: "number", value: headingLevel },
-                });
-              }
-            }
-            let p = currentPosition;
-
-            setTimeout(() => {
-              let block = useEditorStates.getState().editorStates[entityID];
-              if (block) {
-                let tr = block.editor.tr;
-                tr.insert(block.editor.selection.from || 0, content.content);
-                let newState = block.editor.apply(tr);
-                setEditorState(entityID, {
-                  editor: newState,
-                });
-              }
-              if (index === children.length - 1) {
-                focusBlock(
-                  {
-                    value: entityID,
-                    type: type,
-                    parent: propsRef.current.parent,
-                    position: p,
-                  },
-                  { type: "end" },
-                );
-              }
-            }, 10);
-          });
-          return true;
-        } else {
-          let text = e.clipboardData.getData("text");
-          let paragraphs = text
-            .split("\n")
-            .slice(1)
-            .filter((f) => !!f);
-          let currentPosition = propsRef.current.position;
-          for (let p of paragraphs) {
-            let newEntityID = crypto.randomUUID();
-            currentPosition = generateKeyBetween(
-              currentPosition,
-              propsRef.current.nextPosition,
-            );
-            repRef.current?.mutate.addBlock({
-              permission_set: entity_set.set,
-              newEntityID,
-              parent: propsRef.current.parent,
-              type: "text",
-              position: currentPosition,
-            });
-            setTimeout(() => {
-              let block = useEditorStates.getState().editorStates[newEntityID];
-              if (block) {
-                let tr = block.editor.tr;
-                tr.insertText(p, 1);
-                let newState = block.editor.apply(tr);
-                setEditorState(newEntityID, {
-                  editor: newState,
-                });
-              }
-            }, 10);
-          }
-        }
-
-        for (let item of e.clipboardData.items) {
-          if (item?.type.includes("image")) {
-            let file = item.getAsFile();
-            if (file) {
-              let entity: string;
-              if (editorState.editor.doc.textContent.length === 0) {
-                entity = props.entityID;
-                rep.rep.mutate.assertFact({
-                  entity: props.entityID,
-                  attribute: "block/type",
-                  data: { type: "block-type-union", value: "image" },
-                });
-                if (factID) rep.rep.mutate.retractFact({ factID: factID });
-              } else {
-                entity = crypto.randomUUID();
-                rep.rep.mutate.addBlock({
-                  permission_set: entity_set.set,
-                  type: "image",
-                  newEntityID: entity,
-                  parent: props.parent,
-                  position: generateKeyBetween(
-                    props.position,
-                    props.nextPosition,
-                  ),
-                });
-              }
-              addImage(file, rep.rep, {
-                attribute: "block/image",
-                entityID: entity,
-              });
-            }
-            return;
-          }
-        }
-        e.preventDefault();
-        e.stopPropagation();
-      }}
+      handlePaste={handlePaste}
       mount={mount}
       state={editorState}
       dispatchTransaction={(tr) => {
