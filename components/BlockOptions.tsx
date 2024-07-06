@@ -35,7 +35,10 @@ export function BlockOptions(props: Props) {
   return (
     <div className="blockOptionsWrapper absolute top-0 right-2 sm:right-3 hidden sm:group-hover/text:block group-focus-within/text:block">
       <div className="blockOptionsContent flex gap-1 items-center">
-        <label className="blockOptionsImage hover:cursor-pointer flex place-items-center">
+        <label
+          className="blockOptionsImage hover:cursor-pointer flex place-items-center"
+          onMouseDown={(e) => e.preventDefault()}
+        >
           <div className="text-tertiary hover:text-accent ">
             <BlockImageSmall />
           </div>
@@ -79,6 +82,7 @@ export function BlockOptions(props: Props) {
 
         <button
           className="blockOptionsCard text-tertiary hover:text-accent"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={async () => {
             if (!props.entityID) {
               let entity = crypto.randomUUID();
@@ -140,6 +144,7 @@ const BlockLinkButton = (props: Props) => {
       className={`max-w-sm flex gap-2 rounded-md ${linkOpen ? "text-secondary" : " text-tertiary"}`}
     >
       <button
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => {
           setLinkOpen(!linkOpen);
           setTimeout(() => {
