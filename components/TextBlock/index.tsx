@@ -77,13 +77,15 @@ export function IOSBS(props: BlockProps) {
       className="h-full w-full absolute cursor-text"
       onMouseDown={(e) => {
         e.preventDefault();
-        let target = e.target;
         focusBlock(props, {
           type: "coord",
           top: e.clientY,
           left: e.clientX,
         });
         setTimeout(async () => {
+          let target = document.getElementById(
+            elementId.block(props.entityID).container,
+          );
           let vis = await isVisible(target as Element);
           if (!vis) {
             let parentEl = document.getElementById(
