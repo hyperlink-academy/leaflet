@@ -12,6 +12,7 @@ import * as Popover from "@radix-ui/react-popover";
 import { MoreOptionsTiny, DeleteSmall, CloseTiny } from "./Icons";
 import { useToaster } from "./Toast";
 import { ShareOptions } from "./ShareOptions";
+import { MenuItem, Menu } from "./Layout";
 
 export function Cards(props: { rootCard: string }) {
   let cards = useUIState((s) => s.openCards);
@@ -24,9 +25,9 @@ export function Cards(props: { rootCard: string }) {
         style={{ width: `calc(50vw - ${cardWidth}px/2)` }}
       >
         <Media mobile={false}>
-          <div className="flex flex-col gap-2 mr-4 mt-2">
-            <PageOptions entityID={props.rootCard} />
+          <div className="flex flex-col justify-center gap-2 mr-4 mt-2">
             <ShareOptions rootEntity={props.rootCard} />
+            <PageOptions entityID={props.rootCard} />
           </div>
         </Media>
       </div>
@@ -130,17 +131,19 @@ const CardOptions = (props: { entityID: string }) => {
         <Popover.Portal>
           <Popover.Content
             align="end"
-            className="cardOptionsMenu bg-bg-card flex flex-col py-1 gap-0.5 border border-border rounded-md shadow-md"
+            sideOffset={6}
+            className="cardOptionsMenu"
           >
-            <CardMenuItem
-              onClick={() => {
-                // TODO: Wire up delete card
-                toaster(DeleteCardToast);
-              }}
-            >
-              Delete Page <DeleteSmall />
-            </CardMenuItem>
-            <Popover.Arrow />
+            <Menu>
+              <MenuItem
+                onClick={(e) => {
+                  // TODO: Wire up delete card
+                  toaster(DeleteCardToast);
+                }}
+              >
+                Delete Page <DeleteSmall />
+              </MenuItem>
+            </Menu>
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>
@@ -154,7 +157,7 @@ const CardMenuItem = (props: {
 }) => {
   return (
     <button
-      className="cardOptionsMenuItem z-10 text-left text-secondary py-1 px-2 flex gap-2 font-bold hover:bg-accent hover:text-accentText "
+      className="cardOptionsMenuItem z-10 text-left text-secondary py-1 px-2 flex gap-2 hover:bg-accent hover:text-accentText "
       onClick={() => {
         props.onClick();
       }}
