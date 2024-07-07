@@ -86,11 +86,11 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     .sort((a, b) => (a.position > b.position ? 1 : -1))
     .filter((b) => b.type === "text" || b.type === "heading");
 
-  let metadata: Metadata = { title: "Untitled Leaflet", description: "" };
-  let firstBlock = blocks[0];
-  if (firstBlock?.type === "heading") {
+  let metadata: Metadata = { title: "Untitled Leaflet", description: " " };
+  let block = blocks[0];
+  if (block?.type === "heading") {
     let content = initialFacts.find(
-      (f) => f.entity === firstBlock.value && f.attribute === "block/text",
+      (f) => f.entity === block.value && f.attribute === "block/text",
     ) as Fact<"block/text"> | undefined;
     if (content) {
       let doc = new Y.Doc();
@@ -99,6 +99,18 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       let nodes = doc.getXmlElement("prosemirror").toArray();
       metadata.title = YJSFragmentToString(nodes[0]);
     }
+    block = blocks[1];
   }
+  let content = initialFacts.find(
+    (f) => f.entity === block.value && f.attribute === "block/text",
+  ) as Fact<"block/text"> | undefined;
+  if (content) {
+    let doc = new Y.Doc();
+    const update = base64.toByteArray(content.data.value);
+    Y.applyUpdate(doc, update);
+    let nodes = doc.getXmlElement("prosemirror").toArray();
+    metadata.description = YJSFragmentToString(nodes[0]);
+  }
+
   return metadata;
 }
