@@ -14,6 +14,7 @@ import { BlockOptions } from "./BlockOptions";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "./EntitySetProvider";
+import { scanIndex } from "src/replicache/utils";
 
 export type Block = {
   parent: string;
@@ -243,25 +244,32 @@ function Block(props: BlockProps) {
           useUIState.getState().addBlockToSelection(props);
         } else useUIState.getState().setSelectedBlock(props);
       }}
-      onMouseEnter={(e) => {
+      onMouseEnter={async (e) => {
+        if (e.buttons !== 1) return;
         let selection = useSelectingMouse.getState();
         if (!selection.start) return;
-        useUIState.getState().addBlockToSelection(props);
-      }}
-      onMouseLeave={(e) => {
-        let selection = useSelectingMouse.getState();
-        if (!selection.start) return;
-        let rect = e.currentTarget.getBoundingClientRect();
-        let topMin = Math.min(selection.start.top, e.clientY);
-        let topMax = Math.max(selection.start.top, e.clientY);
-        if (rect.top >= topMin && rect.top < topMax) {
-          return;
-        }
-
-        if (rect.bottom > topMin && rect.bottom <= topMax) {
-          return;
-        }
-        useUIState.getState().removeBlockFromSelection(props);
+        let siblings =
+          (await rep?.query((tx) =>
+            scanIndex(tx).eav(props.parent, "card/block"),
+          )) || [];
+        let sortedSiblings = siblings.sort((a, b) =>
+          a.data.position > b.data.position ? 1 : -1,
+        );
+        let startIndex = sortedSiblings.findIndex(
+          (b) => b.data.value === selection.start,
+        );
+        if (startIndex === -1) return;
+        let endIndex = sortedSiblings.findIndex(
+          (b) => b.data.value === props.entityID,
+        );
+        let start = Math.min(startIndex, endIndex);
+        let end = Math.max(startIndex, endIndex);
+        let selected = sortedSiblings.slice(start, end + 1).map((b) => ({
+          value: b.data.value,
+          position: b.data.position,
+          parent: props.parent,
+        }));
+        useUIState.getState().setSelectedBlocks(selected);
       }}
       // text and heading blocks handle thier own padding so that
       // clicking anywhere on them (even the padding between blocks) will focus the textarea

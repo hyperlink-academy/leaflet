@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { create } from "zustand";
 import { useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
@@ -8,7 +8,7 @@ import { scanIndex } from "src/replicache/utils";
 import { focusBlock } from "./Blocks";
 import { useEditorStates } from "src/state/useEditorState";
 export const useSelectingMouse = create(() => ({
-  start: null as null | { top: number; left: number },
+  start: null as null | string,
 }));
 
 //How should I model selection? As ranges w/ a start and end? Store *blocks* so that I can just construct ranges?
@@ -252,30 +252,26 @@ export function SelectionManager() {
       window.removeEventListener("keydown", listener);
     };
   }, [moreThanOneSelected, rep]);
+
+  let [mouseDown, setMouseDown] = useState(false);
   let dragStart = useSelectingMouse((s) => s.start);
   let initialContentEditableParent = useRef<null | Node>(null);
   let savedSelection = useRef<SavedRange[] | null>();
   useEffect(() => {
     let mouseDownListener = (e: MouseEvent) => {
-      initialContentEditableParent.current = getContentEditableParent(
-        e.target as Node,
-      );
-      useSelectingMouse.setState({
-        start: { left: e.clientX, top: e.clientY },
-      });
+      setMouseDown(true);
+      let contentEditableParent = getContentEditableParent(e.target as Node);
+      if (contentEditableParent) {
+        let entityID = (contentEditableParent as Element).getAttribute(
+          "data-entityid",
+        );
+        useSelectingMouse.setState({ start: entityID });
+      }
+      initialContentEditableParent.current = contentEditableParent;
     };
     let mouseUpListener = (e: MouseEvent) => {
-      if (
-        initialContentEditableParent.current &&
-        getContentEditableParent(e.target as Node) !==
-          initialContentEditableParent.current
-      ) {
-        setTimeout(() => {
-          window.getSelection()?.removeAllRanges();
-        }, 5);
-      }
       savedSelection.current = null;
-      useSelectingMouse.setState({ start: null });
+      setMouseDown(false);
     };
     window.addEventListener("mousedown", mouseDownListener);
     window.addEventListener("mouseup", mouseUpListener);
@@ -285,7 +281,7 @@ export function SelectionManager() {
     };
   }, []);
   useEffect(() => {
-    if (!dragStart) return;
+    if (!mouseDown) return;
     let mouseMoveListener = (e: MouseEvent) => {
       if (e.buttons !== 1) return;
       if (initialContentEditableParent.current) {
@@ -307,7 +303,7 @@ export function SelectionManager() {
     return () => {
       window.removeEventListener("mousemove", mouseMoveListener);
     };
-  }, [dragStart]);
+  }, [mouseDown]);
   return null;
 }
 

@@ -214,6 +214,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
       }}
     >
       <pre
+        data-entityid={props.entityID}
         onBlur={async () => {
           if (editorState.doc.textContent.startsWith("http")) {
             await addLinkBlock(
@@ -234,12 +235,6 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
               },
             }));
           }, 5);
-        }}
-        onSelect={() => {
-          useUIState.setState((s) => ({
-            ...s,
-            focusedTextBlock: props.entityID,
-          }));
         }}
         id={elementId.block(props.entityID).text}
         className={`
