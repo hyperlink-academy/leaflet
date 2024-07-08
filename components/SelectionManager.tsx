@@ -271,6 +271,16 @@ export function SelectionManager() {
     };
     let mouseUpListener = (e: MouseEvent) => {
       savedSelection.current = null;
+      if (
+        initialContentEditableParent.current &&
+        getContentEditableParent(e.target as Node) !==
+          initialContentEditableParent.current
+      ) {
+        setTimeout(() => {
+          window.getSelection()?.removeAllRanges();
+        }, 5);
+      }
+      useSelectingMouse.setState({ start: null });
       setMouseDown(false);
     };
     window.addEventListener("mousedown", mouseDownListener);
