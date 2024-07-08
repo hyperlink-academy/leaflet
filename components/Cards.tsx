@@ -107,7 +107,6 @@ function Card(props: { entityID: string; first?: boolean }) {
 }
 
 const CardOptions = (props: { entityID: string }) => {
-  let toaster = useToaster();
   let permission = useEntitySetContext().permissions.write;
   return (
     <div className=" z-0 w-fit absolute sm:top-2 sm:-right-5 top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
@@ -119,12 +118,13 @@ const CardOptions = (props: { entityID: string }) => {
       >
         <CloseTiny />
       </button>
-      {permission && <DeleteCard />}
+      {/* {permission && <OptionsMenu/>} */}
     </div>
   );
 };
 
-const DeleteCard = () => {
+const OptionsMenu = () => {
+  let toaster = useToaster();
   return (
     <Popover.Root>
       <Popover.Trigger
