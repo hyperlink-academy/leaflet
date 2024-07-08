@@ -87,7 +87,7 @@ let baseSchema = {
       ],
       toDOM(node) {
         let { href } = node.attrs;
-        return ["a", { href }, 0];
+        return ["a", { href, target: "_blank" }, 0];
       },
     } as MarkSpec,
   },

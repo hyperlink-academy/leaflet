@@ -75,7 +75,7 @@
   }
 
   ::placeholder {
-    @apply text-tertiary;
+    @apply text-tertiary !important;
     @apply italic;
   }
   /*END FONT STYLING*/
