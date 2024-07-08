@@ -253,7 +253,7 @@ const HighlightToolbar = (props: {
   setLastUsedHighlight: (color: "1" | "2" | "3") => void;
 }) => {
   return (
-    <div className="flex w-full justify-between items-center gap-4">
+    <div className="flex w-full justify-between items-center gap-4 text-secondary">
       <div className="flex items-center gap-[6px]">
         <ToolbarButton onClick={() => props.onClose()}>
           <HighlightSmall />
@@ -357,9 +357,8 @@ const BlockToolbar = (props: {
               className="blockOptionsImage hover:cursor-pointer flex place-items-center"
               onMouseDown={(e) => e.preventDefault()}
             >
-              <div className="text-tertiary hover:text-accent ">
-                <BlockImageSmall />
-              </div>
+              <BlockImageSmall />
+
               <div className="hidden">
                 <input
                   type="file"

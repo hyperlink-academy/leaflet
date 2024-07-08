@@ -154,7 +154,7 @@ const BlockLinkButton = (props: Props) => {
 
   return (
     <div
-      className={`max-w-sm flex gap-2 rounded-md ${linkOpen ? "text-secondary" : " text-tertiary"}`}
+      className={`max-w-sm flex gap-2 hover:text-accent rounded-md ${linkOpen ? "text-secondary" : " text-tertiary"}`}
     >
       <button
         onMouseDown={(e) => e.preventDefault()}
