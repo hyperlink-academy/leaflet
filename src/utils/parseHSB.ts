@@ -22,7 +22,7 @@ export function parseHSBToRGB(color: string) {
       Math.round(fn(1) * 255),
       a,
     ];
-    return `rgba(${r}, ${g}, ${b}, ${a})`;
+    return `rgb(${r}, ${g}, ${b})`;
   }
 }
 
