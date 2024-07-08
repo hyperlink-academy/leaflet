@@ -35,42 +35,6 @@ import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
 import { useReplicache } from "src/replicache";
 
-type textState = {
-  bold: boolean;
-  italic: boolean;
-  underline: boolean;
-  strikethrough: boolean;
-  header: "h1" | "h2" | "h3" | "p";
-  list: "ordered" | "unordered" | "none";
-  link: string | undefined;
-};
-
-let useTextState = create(
-  combine(
-    {
-      bold: false,
-      italic: false,
-      underline: false,
-      strikethrough: false,
-      header: "p",
-      list: "none",
-      link: undefined as string | undefined,
-    },
-    (set) => ({
-      toggleBold: () => set((state) => ({ bold: !state.bold })),
-      toggleItalic: () => set((state) => ({ italic: !state.italic })),
-      toggleUnderline: () => set((state) => ({ underline: !state.underline })),
-      toggleStrikethrough: () =>
-        set((state) => ({ strikethrough: !state.strikethrough })),
-      setHeader: (newHeader: "h1" | "h2" | "h3" | "p") =>
-        set(() => ({ header: newHeader })),
-      setList: (newList: "ordered" | "unordered" | "none") =>
-        set(() => ({ list: newList })),
-      setLink: (newLink: string | undefined) => set(() => ({ link: newLink })),
-    }),
-  ),
-);
-
 export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   let { rep } = useReplicache();
 
@@ -81,7 +45,6 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   let [lastUsedHighlight, setlastUsedHighlight] = useState<"1" | "2" | "3">(
     "1",
   );
-  let state = useTextState();
 
   let editorState = useEditorStates(
     (s) => s.editorStates[props.blockID],
@@ -105,10 +68,6 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
       <div className="flex gap-[6px] items-center">
         {toolbarState === "default" ? (
           <>
-            <ToolbarButton onClick={() => {}}>
-              <UndoSmall />
-            </ToolbarButton>
-            <Separator />
             <TextDecorationButton
               mark={schema.marks.strong}
               icon={<BoldSmall />}
@@ -153,18 +112,6 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
             <Separator />
             <TextBlockTypeButton setToolbarState={setToolbarState} />
             <Separator />
-            <ToolbarButton
-              active={state.list !== "none"}
-              onClick={() => {
-                setToolbarState("list");
-              }}
-            >
-              {state.list === "ordered" ? (
-                <ListOrderedSmall />
-              ) : (
-                <ListUnorderedSmall />
-              )}
-            </ToolbarButton>
           </>
         ) : toolbarState === "highlight" ? (
           <HighlightToolbar
@@ -178,10 +125,20 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
           <LinkEditor onClose={() => setToolbarState("default")} />
         ) : toolbarState === "header" ? (
           <TextBlockTypeButtons onClose={() => setToolbarState("default")} />
-        ) : toolbarState === "list" ? (
-          <ListToolbar onClose={() => setToolbarState("default")} />
         ) : toolbarState === "block" ? (
-          <BlockToolbar onClose={() => setToolbarState("default")} />
+          <BlockToolbar
+            onClose={() => {
+              if (blockEmpty)
+                useUIState.setState(() => ({
+                  focusedBlock: {
+                    type: "card",
+                    entityID: props.cardID,
+                  },
+                  selectedBlock: [],
+                }));
+              setToolbarState("default");
+            }}
+          />
         ) : null}
       </div>
       <button
@@ -239,41 +196,18 @@ const HighlightToolbar = (props: {
 };
 
 const ListToolbar = (props: { onClose: () => void }) => {
-  let state = useTextState();
-
   // This Toolbar should close once the user starts typing again
   return (
     <div className="flex w-full justify-between items-center gap-4">
       <div className="flex items-center gap-[6px]">
-        <ToolbarButton
-          onClick={() => props.onClose()}
-          active={state.list !== "none"}
-        >
-          {state.list === "ordered" ? (
-            <ListOrderedSmall />
-          ) : (
-            <ListUnorderedSmall />
-          )}
+        <ToolbarButton onClick={() => props.onClose()}>
+          <ListOrderedSmall />
         </ToolbarButton>
         <Separator />
-        <ToolbarButton
-          onClick={() => {
-            state.list === "unordered"
-              ? state.setList("none")
-              : state.setList("unordered");
-          }}
-          active={state.list === "unordered"}
-        >
+        <ToolbarButton onClick={() => {}}>
           <ListUnorderedSmall />
         </ToolbarButton>
-        <ToolbarButton
-          onClick={() => {
-            state.list === "ordered"
-              ? state.setList("none")
-              : state.setList("ordered");
-          }}
-          active={state.list === "ordered"}
-        >
+        <ToolbarButton onClick={() => {}}>
           <ListOrderedSmall />
         </ToolbarButton>
 
@@ -312,8 +246,6 @@ const BlockToolbar = (props: { onClose: () => void }) => {
 };
 
 export const ToolbarButton = (props: {
-  textState?: textState;
-  setTextState?: (textState: textState) => void;
   className?: string;
   onClick?: (e: React.MouseEvent) => void;
   children: React.ReactNode;
