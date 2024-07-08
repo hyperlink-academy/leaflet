@@ -15,6 +15,7 @@ import { useBlocks } from "src/hooks/queries/useBlocks";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { scanIndex } from "src/replicache/utils";
+import { v7 } from "uuid";
 
 export type Block = {
   parent: string;
@@ -38,7 +39,7 @@ export function Blocks(props: { entityID: string }) {
             !lastBlock ||
             (lastBlock.type !== "text" && lastBlock.type !== "heading")
           ) {
-            let newEntityID = crypto.randomUUID();
+            let newEntityID = v7();
             await rep.rep?.mutate.addBlock({
               parent: props.entityID,
               permission_set: entity_set.set,
@@ -75,7 +76,7 @@ export function Blocks(props: { entityID: string }) {
       <div
         className="shrink-0 h-[50vh]"
         onClick={() => {
-          let newEntityID = crypto.randomUUID();
+          let newEntityID = v7();
 
           if (lastBlock && lastBlock.type === "text") {
             focusBlock({ ...lastBlock, type: "text" }, { type: "end" });
@@ -117,7 +118,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
       <div
         className="h-6 hover:cursor-text italic text-tertiary"
         onMouseDown={async () => {
-          let newEntityID = crypto.randomUUID();
+          let newEntityID = v7();
           await rep?.mutate.addBlock({
             parent: props.entityID,
             type: "text",
@@ -204,7 +205,7 @@ function Block(props: BlockProps) {
         if (block) focusBlock(block, { type: "end" });
       }
       if (e.key === "Enter") {
-        let newEntityID = crypto.randomUUID();
+        let newEntityID = v7();
         r.mutate.addBlock({
           permission_set: entity_set.set,
           newEntityID,
@@ -239,6 +240,7 @@ function Block(props: BlockProps) {
     <div
       data-entityid={props.entityID}
       onMouseDown={(e) => {
+        useSelectingMouse.setState({ start: props.entityID });
         if (e.shiftKey) {
           e.preventDefault();
           useUIState.getState().addBlockToSelection(props);

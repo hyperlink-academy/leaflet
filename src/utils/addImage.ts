@@ -3,6 +3,7 @@ import { ReplicacheMutators } from "../replicache";
 import { supabaseBrowserClient } from "supabase/browserClient";
 import { FilterAttributes } from "src/replicache/attributes";
 import { rgbaToDataURL, rgbaToThumbHash, thumbHashToDataURL } from "thumbhash";
+import { v7 } from "uuid";
 
 export async function addImage(
   file: File,
@@ -14,7 +15,7 @@ export async function addImage(
 ) {
   let client = supabaseBrowserClient();
   let cache = await caches.open("minilink-user-assets");
-  let fileID = crypto.randomUUID();
+  let fileID = v7();
   let url = client.storage.from("minilink-user-assets").getPublicUrl(fileID)
     .data.publicUrl;
   let dimensions = await getImageDimensions(file);

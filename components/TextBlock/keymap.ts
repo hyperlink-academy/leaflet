@@ -11,6 +11,7 @@ import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { focusCard } from "components/Cards";
+import { v7 } from "uuid";
 
 export const TextBlockKeymap = (
   propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
@@ -250,7 +251,7 @@ const enter =
     let newContent = tr.doc.slice(state.selection.anchor);
     tr.delete(state.selection.anchor, state.doc.content.size);
     dispatch?.(tr);
-    let newEntityID = crypto.randomUUID();
+    let newEntityID = v7();
     let position = generateKeyBetween(
       propsRef.current.position,
       propsRef.current.nextPosition,

@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import postgres from "postgres";
 import { Doc } from "./[doc_id]/Doc";
 import { UpdateURL } from "components/UpdateURL";
+import { v7 } from "uuid";
 const client = postgres(process.env.DB_URL as string);
 const db = drizzle(client);
 
@@ -26,7 +27,7 @@ export default async function RootPage() {
       let [entity] = await tx
         .insert(entities)
         // And add it to that permission set
-        .values({ set: entity_set.id })
+        .values({ set: entity_set.id, id: v7() })
         .returning();
       //Create a new permission token
       let [permissionToken] = await tx

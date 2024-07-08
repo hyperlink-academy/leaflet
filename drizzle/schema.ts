@@ -21,7 +21,7 @@ export const replicache_clients = pgTable("replicache_clients", {
 });
 
 export const entities = pgTable("entities", {
-	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	id: uuid("id").primaryKey().notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	set: uuid("set").notNull().references(() => entity_sets.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 });
@@ -37,7 +37,7 @@ export const permission_tokens = pgTable("permission_tokens", {
 });
 
 export const facts = pgTable("facts", {
-	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	id: uuid("id").primaryKey().notNull(),
 	entity: uuid("entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "restrict" } ),
 	attribute: text("attribute").notNull(),
 	data: jsonb("data").notNull(),

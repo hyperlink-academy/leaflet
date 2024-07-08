@@ -9,6 +9,7 @@ import { Fact, PermissionToken } from ".";
 import { DeepReadonly } from "replicache";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
+import { v7 } from "uuid";
 export function serverMutationContext(
   tx: PgTransaction<any, any, any>,
   token_rights: PermissionToken["permission_token_rights"],
@@ -77,7 +78,7 @@ export function serverMutationContext(
     async assertFact(f) {
       let attribute = Attributes[f.attribute as keyof typeof Attributes];
       if (!attribute) return;
-      let id = f.id || crypto.randomUUID();
+      let id = f.id || v7();
       let data = { ...f.data };
       let [permission_set] = await tx
         .select({ entity_set: entities.set })

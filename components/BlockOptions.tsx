@@ -14,6 +14,7 @@ import { useState } from "react";
 import { Separator } from "./Layout";
 import { addLinkBlock } from "src/utils/addLinkBlock";
 import { useEntitySetContext } from "./EntitySetProvider";
+import { v7 } from "uuid";
 
 type Props = {
   parent: string;
@@ -53,7 +54,7 @@ export function BlockOptions(props: Props) {
                   await rep.mutate.retractFact({ factID: props.factID });
                 let entity = props.entityID;
                 if (!entity) {
-                  entity = crypto.randomUUID();
+                  entity = v7();
                   await rep?.mutate.addBlock({
                     parent: props.parent,
                     permission_set: entity_set.set,
@@ -85,7 +86,7 @@ export function BlockOptions(props: Props) {
           onMouseDown={(e) => e.preventDefault()}
           onClick={async () => {
             if (!props.entityID) {
-              let entity = crypto.randomUUID();
+              let entity = v7();
 
               await rep?.mutate.addBlock({
                 permission_set: entity_set.set,
@@ -125,7 +126,7 @@ const BlockLinkButton = (props: Props) => {
   let submit = async () => {
     let entity = props.entityID;
     if (!entity) {
-      entity = crypto.randomUUID();
+      entity = v7();
 
       await rep?.mutate.addBlock({
         permission_set: entity_set.set,

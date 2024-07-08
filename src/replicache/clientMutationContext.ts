@@ -6,6 +6,7 @@ import { Attributes, FilterAttributes } from "./attributes";
 import { Fact } from ".";
 import { MutationContext } from "./mutations";
 import { supabaseBrowserClient } from "supabase/browserClient";
+import { v7 } from "uuid";
 
 export function clientMutationContext(tx: WriteTransaction) {
   let ctx: MutationContext = {
@@ -32,7 +33,7 @@ export function clientMutationContext(tx: WriteTransaction) {
     async assertFact(f) {
       let attribute = Attributes[f.attribute as keyof typeof Attributes];
       if (!attribute) return;
-      let id = f.id || crypto.randomUUID();
+      let id = f.id || v7();
       let data = { ...f.data };
       if (attribute.cardinality === "one") {
         let existingFact = await tx

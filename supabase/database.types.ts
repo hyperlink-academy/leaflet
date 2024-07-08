@@ -42,7 +42,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          id?: string
+          id: string
           set: string
         }
         Update: {
@@ -90,7 +90,7 @@ export type Database = {
           created_at?: string
           data: Json
           entity: string
-          id?: string
+          id: string
           updated_at?: string | null
           version?: number
         }

@@ -8,6 +8,7 @@ import { generateKeyBetween } from "fractional-indexing";
 import { addImage } from "src/utils/addImage";
 import { BlockProps, focusBlock } from "components/Blocks";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { v7 } from "uuid";
 
 export const useHandlePaste = (
   entityID: string,
@@ -67,7 +68,7 @@ export const useHandlePaste = (
           if (index === 0 && type === propsRef.current.type)
             entityID = propsRef.current.entityID;
           else {
-            entityID = crypto.randomUUID();
+            entityID = v7();
             currentPosition = generateKeyBetween(
               currentPosition,
               propsRef.current.nextPosition,
@@ -121,7 +122,7 @@ export const useHandlePaste = (
           .filter((f) => !!f);
         let currentPosition = propsRef.current.position;
         for (let p of paragraphs) {
-          let newEntityID = crypto.randomUUID();
+          let newEntityID = v7();
           currentPosition = generateKeyBetween(
             currentPosition,
             propsRef.current.nextPosition,
@@ -161,7 +162,7 @@ export const useHandlePaste = (
               });
               if (factID) rep.mutate.retractFact({ factID: factID });
             } else {
-              entity = crypto.randomUUID();
+              entity = v7();
               rep.mutate.addBlock({
                 permission_set: entity_set.set,
                 type: "image",
