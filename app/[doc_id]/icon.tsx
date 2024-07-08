@@ -42,7 +42,7 @@ export default async function Icon(props: { params: { doc_id: string } }) {
   return new ImageResponse(
     (
       // ImageResponse JSX element
-      <div tw="w-full h-full flex place-items-center justify-center">
+      <div style={{ display: "flex" }}>
         <svg
           width="32"
           height="32"
