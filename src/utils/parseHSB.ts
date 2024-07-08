@@ -16,13 +16,13 @@ export function parseHSBToRGB(color: string) {
     let brightness = b / 100;
     let fn = (n: number, k = (n + hue / 60) % 6) =>
       brightness - saturation * brightness * Math.max(Math.min(k, 4 - k, 1), 0);
-    let [r, g, b2, a2] = [
+    let [red, green, blue] = [
       Math.round(fn(5) * 255),
       Math.round(fn(3) * 255),
       Math.round(fn(1) * 255),
       a,
     ];
-    return `rgb(${r}, ${g}, ${b})`;
+    return `rgb(${red}, ${green}, ${blue})`;
   }
 }
 
