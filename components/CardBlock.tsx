@@ -33,17 +33,17 @@ export function CardBlock(props: BlockProps) {
         if (rep) focusCard(props.entityID, rep, "focusFirstBlock");
       }}
     >
-      <div className="pt-2 pb-2 px-2 grow min-w-0">
+      <div className="py-1 grow min-w-0">
         {docMetadata.heading && (
           <div
-            className={`cardBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-none resize-none align-top border h-[24px] line-clamp-1`}
+            className={`cardBlockTitle bg-transparent -mb-3  border-none text-base font-bold outline-none resize-none align-top border  line-clamp-1`}
           >
             <RenderedTextBlock entityID={docMetadata.heading} />
           </div>
         )}
         {docMetadata.content && (
           <div
-            className={`cardBlockDescription text-sm bg-transparent border-none outline-none resize-none align-top  ${docMetadata.heading ? "line-clamp-3" : "line-clamp-4"}`}
+            className={`cardBlockDescription text-sm bg-transparent border-none outline-none resize-none align-top ${docMetadata.heading ? "line-clamp-3 max-h-16" : "line-clamp-4 max-h-[88px]"}`}
           >
             <RenderedTextBlock entityID={docMetadata.content} />
           </div>
