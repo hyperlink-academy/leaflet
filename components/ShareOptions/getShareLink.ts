@@ -10,7 +10,7 @@ export async function getShareLink(
   token: { id: string; entity_set: string },
   rootEntity: string,
 ) {
-  return await db.transaction(async (tx) => {
+  let link = await db.transaction(async (tx) => {
     // This will likely error out when if we have multiple permission
     // token rights associated with a single token
     let [tokenW] = await tx
@@ -27,7 +27,6 @@ export async function getShareLink(
       tokenW.permission_tokens.root_entity !== rootEntity ||
       tokenW.permission_token_rights.entity_set !== token.entity_set
     ) {
-      client.end();
       return null;
     }
 
@@ -49,7 +48,6 @@ export async function getShareLink(
         ),
       );
     if (existingToken) {
-      client.end();
       return existingToken.permission_tokens;
     }
     let [newToken] = await tx
@@ -64,7 +62,9 @@ export async function getShareLink(
       create_token: false,
       change_entity_set: false,
     });
-    client.end();
     return newToken;
   });
+
+  client.end();
+  return link;
 }
