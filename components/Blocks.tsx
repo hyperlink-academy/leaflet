@@ -72,7 +72,12 @@ export function Blocks(props: { entityID: string }) {
           />
         );
       })}
-      <NewBlockButton lastBlock={lastBlock || null} entityID={props.entityID} />
+      {blocks.length > 1 && (
+        <NewBlockButton
+          lastBlock={lastBlock || null}
+          entityID={props.entityID}
+        />
+      )}
       <div
         className="shrink-0 h-[50vh]"
         onClick={() => {

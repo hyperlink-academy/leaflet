@@ -142,6 +142,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
     s.selectedBlock.find((b) => b.value === props.entityID),
   );
   let first = props.previousBlock === null;
+  let headingLevel = useEntity(props.entityID, "block/heading-level");
 
   let [value, factID] = useYJSValue(props.entityID);
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
@@ -249,7 +250,9 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
       {editorState.doc.textContent.length === 0 &&
         props.position === "a0" &&
         props.nextBlock === null && (
-          <div className="pointer-events-none absolute top-0 left-0 px-2 sm:px-3  pb-2 italic text-tertiary">
+          <div
+            className={`${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""} pointer-events-none absolute top-0 left-0 px-2 sm:px-3  pb-2 italic text-tertiary `}
+          >
             write something...
           </div>
         )}
@@ -267,6 +270,12 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
     </ProseMirror>
   );
 }
+
+const HeadingStyle = {
+  1: "text-xl font-bold",
+  2: "text-lg font-bold",
+  3: "text-base font-bold",
+} as { [level: number]: string };
 
 function CommandHandler(props: { entityID: string }) {
   let cb = useEditorEventCallback(
