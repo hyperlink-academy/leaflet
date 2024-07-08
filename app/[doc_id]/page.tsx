@@ -88,11 +88,13 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
   let metadata: Metadata = { title: "Untitled Leaflet", description: " " };
   let block = blocks[0];
+  console.log(block);
   if (!block) return metadata;
   if (block?.type === "heading") {
     let content = initialFacts.find(
       (f) => f.entity === block.value && f.attribute === "block/text",
     ) as Fact<"block/text"> | undefined;
+    console.log(content);
     if (content) {
       let doc = new Y.Doc();
       const update = base64.toByteArray(content.data.value);
@@ -105,6 +107,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   let content = initialFacts.find(
     (f) => f.entity === block.value && f.attribute === "block/text",
   ) as Fact<"block/text"> | undefined;
+  console.log(content);
   if (content) {
     let doc = new Y.Doc();
     const update = base64.toByteArray(content.data.value);
