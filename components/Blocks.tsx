@@ -108,6 +108,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
     props.lastBlock?.type === "text" ? props.lastBlock.value : null,
     "block/text",
   );
+  if (!entity_set.permissions.write) return null;
   if (
     props.lastBlock?.type === "text" &&
     (!textContent || textContent.data.value === "")

@@ -27,6 +27,7 @@ import {
 } from "components/ThemeManager/useColorAttribute";
 import { addImage } from "src/utils/addImage";
 import { Separator } from "components/Layout";
+import { useEntitySetContext } from "components/EntitySetProvider";
 
 export type pickers =
   | "null"
@@ -61,6 +62,8 @@ export const ThemePopover = (props: { entityID: string }) => {
     props.entityID,
     "theme/accent-background",
   );
+
+  let permission = useEntitySetContext().permissions.write;
   let backgroundImage = useEntity(props.entityID, "theme/background-image");
   let backgroundRepeat = useEntity(
     props.entityID,
@@ -87,6 +90,7 @@ export const ThemePopover = (props: { entityID: string }) => {
     `radial-gradient(at ${randomPositions[1]}, ${cardValue.toString("hex")}66 2px, transparent 60%)`,
     `radial-gradient(at ${randomPositions[2]}, ${primaryValue.toString("hex")}B3 2px, transparent 100%)`,
   ].join(", ");
+  if (!permission) return null;
 
   return (
     <>

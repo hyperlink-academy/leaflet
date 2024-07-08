@@ -48,7 +48,7 @@ export function ShareOptions(props: { rootEntity: string }) {
               onClick={(e) => {
                 if (link) {
                   navigator.clipboard.writeText(
-                    `${location.protocol}://${location.host}/${link}`,
+                    `${location.protocol}//${location.host}/${link}`,
                   );
                   smoker({
                     position: { x: e.clientX, y: e.clientY },
