@@ -247,29 +247,28 @@ export const ColorPicker = (props: {
   return (
     <SpectrumColorPicker value={props.value} onChange={props.setValue}>
       <div className="flex flex-col w-full gap-2">
-        <button
-          onClick={() => {
-            if (props.openPicker === props.thisPicker) {
-              props.setOpenPicker("null");
-            } else {
-              props.setOpenPicker(props.thisPicker);
-            }
-          }}
-          style={
-            {
-              // backgroundColor: "rgba(var(--bg-card), .6)",
-            }
-          }
-          className="colorPickerLabel flex gap-2 items-center "
-        >
-          <ColorSwatch
-            color={props.value}
-            className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
-            style={{
-              backgroundSize: "cover",
+        <div className="colorPickerLabel flex gap-2 items-center ">
+          <button
+            className="flex gap-2 items-center "
+            onClick={() => {
+              if (props.openPicker === props.thisPicker) {
+                props.setOpenPicker("null");
+              } else {
+                props.setOpenPicker(props.thisPicker);
+                console.log("click");
+              }
             }}
-          />
-          <strong className="">{props.label}</strong>
+          >
+            <ColorSwatch
+              color={props.value}
+              className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
+              style={{
+                backgroundSize: "cover",
+              }}
+            />
+            <strong className="">{props.label}</strong>
+          </button>
+
           <div className="flex gap-1">
             {props.value === undefined ? (
               <div>default</div>
@@ -281,7 +280,6 @@ export const ColorPicker = (props: {
                       1,
                       e.currentTarget.value.length,
                     );
-                    props.setOpenPicker(props.thisPicker);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -305,7 +303,6 @@ export const ColorPicker = (props: {
                         0,
                         e.currentTarget.value.length - 1,
                       );
-                      props.setOpenPicker(props.thisPicker);
                     }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -318,7 +315,7 @@ export const ColorPicker = (props: {
               </>
             )}
           </div>
-        </button>
+        </div>
         {props.openPicker === props.thisPicker && (
           <div className="w-full flex flex-col gap-2 px-1">
             {
@@ -378,25 +375,28 @@ const BGPicker = (props: {
     <div className="bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full px-2 pt-3">
       <div className="bgPickerBody w-full flex flex-col gap-2 p-2 border border-[#CCCCCC] rounded-md">
         <div className="bgPickerLabel flex justify-between place-items-center ">
-          <button
-            onClick={() => {
-              if (props.openPicker === props.thisPicker) {
-                props.setOpenPicker("null");
-              } else {
-                props.setOpenPicker(props.thisPicker);
-              }
-            }}
-            className="bgPickerColorLabel flex gap-2 items-center"
-          >
-            <ColorSwatch
-              color={bgColor}
-              className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
-              style={{
-                backgroundImage: `url(${bgImage?.data.src})`,
-                backgroundSize: "cover",
+          <div className="bgPickerColorLabel flex gap-2 items-center">
+            <button
+              onClick={() => {
+                if (props.openPicker === props.thisPicker) {
+                  props.setOpenPicker("null");
+                } else {
+                  props.setOpenPicker(props.thisPicker);
+                }
               }}
-            />
-            <strong className="text-[#595959]">Background</strong>
+              className="flex gap-2 items-center"
+            >
+              <ColorSwatch
+                color={bgColor}
+                className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
+                style={{
+                  backgroundImage: `url(${bgImage?.data.src})`,
+                  backgroundSize: "cover",
+                }}
+              />
+              <strong className="text-[#595959]">Background</strong>
+            </button>
+
             <div className="flex">
               {bgImage ? (
                 <div>Image</div>
@@ -408,7 +408,6 @@ const BGPicker = (props: {
                         1,
                         e.currentTarget.value.length,
                       );
-                      props.setOpenPicker(props.thisPicker);
                     }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -423,7 +422,7 @@ const BGPicker = (props: {
                 </ColorField>
               )}
             </div>
-          </button>
+          </div>
           <label className="hover:cursor-pointer h-fit">
             <div className="text-[#8C8C8C] hover:text-accent">
               <BlockImageSmall />
