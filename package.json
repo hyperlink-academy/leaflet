@@ -37,6 +37,7 @@
     "replicache": "^14.2.2",
     "replicache-react": "^5.0.1",
     "thumbhash": "^0.1.1",
+    "uuid": "^10.0.0",
     "y-prosemirror": "^1.2.5",
     "yjs": "^13.6.15",
     "zustand": "^4.5.2"
@@ -45,6 +46,7 @@
     "@cloudflare/workers-types": "^4.20240512.0",
     "@types/react": "18.3.2",
     "@types/react-dom": "^18.3.0",
+    "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.19",
     "drizzle-kit": "^0.21.2",
     "eslint": "8.57.0",
