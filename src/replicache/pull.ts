@@ -17,7 +17,7 @@ let supabase = createClient<Database>(
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
 );
 
-const client = postgres(process.env.DB_URL as string);
+const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
 const db = drizzle(client);
 export async function Pull(
   body: PullRequest,
@@ -27,6 +27,7 @@ export async function Pull(
   let { data } = await supabase.rpc("get_facts", { root: rootEntity });
   let facts = data || [];
   let clientGroup = await getClientGroup(db, body.clientGroupID);
+  client.end();
 
   return {
     cookie: Date.now(),

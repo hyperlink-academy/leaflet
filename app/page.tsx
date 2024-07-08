@@ -10,7 +10,7 @@ import postgres from "postgres";
 import { Doc } from "./[doc_id]/Doc";
 import { UpdateURL } from "components/UpdateURL";
 import { v7 } from "uuid";
-const client = postgres(process.env.DB_URL as string);
+const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
 const db = drizzle(client);
 
 export const preferredRegion = ["sfo1"];
@@ -49,6 +49,7 @@ export default async function RootPage() {
       return { permissionToken, rights, entity, entity_set };
     },
   );
+  client.end();
   // Here i need to pass the permission token instead of the doc_id
   // In the replicache provider I guess I need to fetch the relevant stuff of the permission token?
   return (

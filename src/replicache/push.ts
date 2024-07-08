@@ -10,7 +10,7 @@ import { getClientGroup } from "./utils";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 
-const client = postgres(process.env.DB_URL as string);
+const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
 let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
@@ -21,8 +21,11 @@ export async function Push(
   rootEntity: string,
   token: { id: string },
 ): Promise<PushResponse | undefined> {
-  if (pushRequest.pushVersion !== 1)
+  if (pushRequest.pushVersion !== 1) {
+    client.end();
+
     return { error: "VersionNotSupported", versionType: "push" };
+  }
   let clientGroup = await getClientGroup(db, pushRequest.clientGroupID);
   let token_rights = await db
     .select()
@@ -69,5 +72,6 @@ export async function Push(
     payload: { message: "poke" },
   });
   supabase.removeChannel(channel);
+  client.end();
   return undefined;
 }

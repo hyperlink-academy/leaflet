@@ -4,7 +4,7 @@ import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { permission_token_rights, permission_tokens } from "drizzle/schema";
 import postgres from "postgres";
-const client = postgres(process.env.DB_URL as string);
+const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
 const db = drizzle(client);
 export async function getShareLink(
   token: { id: string; entity_set: string },
@@ -26,8 +26,10 @@ export async function getShareLink(
       tokenW.permission_token_rights.create_token !== true ||
       tokenW.permission_tokens.root_entity !== rootEntity ||
       tokenW.permission_token_rights.entity_set !== token.entity_set
-    )
+    ) {
+      client.end();
       return null;
+    }
 
     let [existingToken] = await tx
       .select()
@@ -46,7 +48,10 @@ export async function getShareLink(
           eq(permission_tokens.root_entity, rootEntity),
         ),
       );
-    if (existingToken) return existingToken.permission_tokens;
+    if (existingToken) {
+      client.end();
+      return existingToken.permission_tokens;
+    }
     let [newToken] = await tx
       .insert(permission_tokens)
       .values({ root_entity: rootEntity })
@@ -59,6 +64,7 @@ export async function getShareLink(
       create_token: false,
       change_entity_set: false,
     });
+    client.end();
     return newToken;
   });
 }
