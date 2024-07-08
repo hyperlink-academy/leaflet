@@ -65,6 +65,5 @@ export async function getShareLink(
     return newToken;
   });
 
-  client.end();
   return link;
 }

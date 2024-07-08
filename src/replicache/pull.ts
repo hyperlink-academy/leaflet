@@ -27,7 +27,6 @@ export async function Pull(
   let { data } = await supabase.rpc("get_facts", { root: rootEntity });
   let facts = data || [];
   let clientGroup = await getClientGroup(db, body.clientGroupID);
-  client.end();
 
   return {
     cookie: Date.now(),

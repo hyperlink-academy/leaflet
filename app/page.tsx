@@ -49,7 +49,6 @@ export default async function RootPage() {
       return { permissionToken, rights, entity, entity_set };
     },
   );
-  client.end();
   // Here i need to pass the permission token instead of the doc_id
   // In the replicache provider I guess I need to fetch the relevant stuff of the permission token?
   return (

@@ -22,8 +22,6 @@ export async function Push(
   token: { id: string },
 ): Promise<PushResponse | undefined> {
   if (pushRequest.pushVersion !== 1) {
-    client.end();
-
     return { error: "VersionNotSupported", versionType: "push" };
   }
   let clientGroup = await getClientGroup(db, pushRequest.clientGroupID);
@@ -72,6 +70,5 @@ export async function Push(
     payload: { message: "poke" },
   });
   supabase.removeChannel(channel);
-  client.end();
   return undefined;
 }
