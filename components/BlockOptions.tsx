@@ -22,6 +22,7 @@ type Props = {
   position: string | null;
   nextPosition: string | null;
   factID?: string | undefined;
+  first?: boolean;
 };
 export function BlockOptions(props: Props) {
   let { rep } = useReplicache();
@@ -34,7 +35,10 @@ export function BlockOptions(props: Props) {
       : focusedElement?.parent;
 
   return (
-    <div className="blockOptionsWrapper absolute top-0 right-2 sm:right-3 hidden sm:group-hover/text:block group-focus-within/text:block">
+    <div
+      className={`blockOptionsWrapper sm:group-hover/text:block group-focus-within/text:block hidden
+ absolute right-2 sm:right-3 ${props.first ? "top-2 sm:top-3" : "top-1"}`}
+    >
       <div className="blockOptionsContent flex gap-1 items-center">
         <label
           className="blockOptionsImage hover:cursor-pointer flex place-items-center"

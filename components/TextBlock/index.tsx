@@ -251,7 +251,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
         props.position === "a0" &&
         props.nextBlock === null && (
           <div
-            className={`${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""} pointer-events-none absolute top-0 left-0 px-2 sm:px-3  pb-2 italic text-tertiary `}
+            className={`${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""} pointer-events-none absolute top-0 left-0 px-2 sm:px-3 pt-2 sm:pt-3 pb-2 italic text-tertiary `}
           >
             write something...
           </div>
@@ -263,6 +263,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
           parent={props.parent}
           position={props.position}
           nextPosition={props.nextPosition}
+          first={first}
         />
       )}
       <SyncView entityID={props.entityID} parentID={props.parent} />

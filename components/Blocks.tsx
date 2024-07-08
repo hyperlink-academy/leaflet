@@ -72,12 +72,7 @@ export function Blocks(props: { entityID: string }) {
           />
         );
       })}
-      {blocks.length > 1 && (
-        <NewBlockButton
-          lastBlock={lastBlock || null}
-          entityID={props.entityID}
-        />
-      )}
+      <NewBlockButton lastBlock={lastBlock || null} entityID={props.entityID} />
       <div
         className="shrink-0 h-[50vh]"
         onClick={() => {
@@ -109,18 +104,20 @@ export function Blocks(props: { entityID: string }) {
 function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
-  let textContent = useEntity(
-    props.lastBlock?.type === "text" ? props.lastBlock.value : null,
-    "block/text",
+  let editorState = useEditorStates((s) =>
+    props.lastBlock?.type === "text"
+      ? s.editorStates[props.lastBlock.value]
+      : null,
   );
   if (!entity_set.permissions.write) return null;
+  console.log(editorState?.editor.doc.content.size);
   if (
     props.lastBlock?.type === "text" &&
-    (!textContent || textContent.data.value === "")
+    (!editorState?.editor || editorState.editor.doc.content.size <= 2)
   )
     return null;
   return (
-    <div className="relative group/text px-2  sm:px-3">
+    <div className="relative group/text px-2 sm:px-3 bg-test">
       <div
         className="h-6 hover:cursor-text italic text-tertiary"
         onMouseDown={async () => {
@@ -141,13 +138,18 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
           }, 10);
         }}
       >
-        {!props.lastBlock ? "write something..." : " "}
+        {!props.lastBlock ? (
+          <div className="pt-2 sm:pt-3">write something...</div>
+        ) : (
+          " "
+        )}
       </div>
       <BlockOptions
         parent={props.entityID}
         entityID={null}
         position={props.lastBlock?.position || null}
         nextPosition={null}
+        first={!props.lastBlock}
       />
     </div>
   );
