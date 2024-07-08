@@ -104,8 +104,6 @@ export const HighlightColorSettings = () => {
   let highlight2Value = useColorAttribute(rootEntity, "theme/highlight-2");
   let highlight3Value = useColorAttribute(rootEntity, "theme/highlight-3");
 
-  console.log(color?.data.value + " | " + highlight1Value);
-
   return (
     <Popover.Root>
       <Popover.Trigger>

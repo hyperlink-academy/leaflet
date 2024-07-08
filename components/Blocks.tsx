@@ -110,14 +110,13 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
       : null,
   );
   if (!entity_set.permissions.write) return null;
-  console.log(editorState?.editor.doc.content.size);
   if (
     props.lastBlock?.type === "text" &&
     (!editorState?.editor || editorState.editor.doc.content.size <= 2)
   )
     return null;
   return (
-    <div className="relative group/text px-2 sm:px-3 bg-test">
+    <div className="relative group/text px-2 sm:px-3">
       <div
         className="h-6 hover:cursor-text italic text-tertiary"
         onMouseDown={async () => {

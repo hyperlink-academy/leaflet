@@ -255,7 +255,6 @@ export const ColorPicker = (props: {
                 props.setOpenPicker("null");
               } else {
                 props.setOpenPicker(props.thisPicker);
-                console.log("click");
               }
             }}
           >
