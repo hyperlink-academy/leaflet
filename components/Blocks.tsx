@@ -31,7 +31,7 @@ export function Blocks(props: { entityID: string }) {
   let lastBlock = blocks[blocks.length - 1];
   return (
     <div
-      className="blocks w-full flex flex-col pt-2 sm:pt-3 outline-none h-fit min-h-full pb-32"
+      className="blocks w-full flex flex-col outline-none h-fit min-h-full pb-32"
       onClick={async (e) => {
         if (useUIState.getState().selectedBlock.length > 1) return;
         if (e.target === e.currentTarget) {
@@ -284,7 +284,7 @@ function Block(props: BlockProps) {
       className={`${
         props.type !== "heading" &&
         props.type !== "text" &&
-        `border-l-4 first:pt-0 pl-1 sm:pl-2 pr-2 sm:pr-3 pt-1 pb-2 ${selected ? "border-tertiary" : "border-transparent"}`
+        `border-l-4 first:pt-2 sm:first:pt-3 pl-1 sm:pl-2 pr-2 sm:pr-3 pt-1 pb-2 ${selected ? "border-tertiary" : "border-transparent"}`
       }`}
       id={elementId.block(props.entityID).container}
     >

@@ -127,7 +127,7 @@ export function RenderedTextBlock(props: {
            ? "p-0"
            : `px-2 sm:px-3  ${
                props.type === "heading" ? "pb-0 " : "pb-2"
-             } ${props.first ? "pt-0" : "pt-1"}`
+             } ${props.first ? "pt-2 sm:pt-3" : "pt-1"}`
        }`}
     >
       {nodes.map((node, index) => (
@@ -244,7 +244,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
           border-l-4 outline-none
           resize-none align-top whitespace-pre-wrap bg-transparent ${
             selected ? " border-tertiary" : "border-transparent"
-          } ${first ? "pt-0" : "pt-1"} ${props.type === "heading" ? "pb-0" : "pb-2"} ${props.className}`}
+          } ${first ? "pt-2 sm:pt-3" : "pt-1"} ${props.type === "heading" ? "pb-0" : "pb-2"} ${props.className}`}
         ref={setMount}
       />
       {editorState.doc.textContent.length === 0 &&
