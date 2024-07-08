@@ -1,5 +1,5 @@
 import { MutableRefObject, useCallback } from "react";
-import { Fact, useReplicache } from "src/replicache";
+import { Fact, ReplicacheMutators, useReplicache } from "src/replicache";
 import { EditorView } from "prosemirror-view";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { MarkType, DOMParser as ProsemirrorDOMParser } from "prosemirror-model";
@@ -9,7 +9,9 @@ import { addImage } from "src/utils/addImage";
 import { BlockProps, focusBlock } from "components/Blocks";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
+import { Replicache } from "replicache";
 
+const parser = ProsemirrorDOMParser.fromSchema(schema);
 export const useHandlePaste = (
   entityID: string,
   propsRef: MutableRefObject<BlockProps>,
@@ -25,93 +27,28 @@ export const useHandlePaste = (
       let editorState = useEditorStates.getState().editorStates[entityID];
       if (!editorState) return;
       if (textHTML) {
-        const parser = ProsemirrorDOMParser.fromSchema(schema);
         let xml = new DOMParser().parseFromString(textHTML, "text/html");
         let currentPosition = propsRef.current.position;
         let children = [...xml.body.children];
         if (!children.find((c) => ["P", "H1", "H2", "H3"].includes(c.tagName)))
           return;
+        if (children.length === 1) return false;
         children.forEach((child, index) => {
-          let content = parser.parse(child);
-          let type: Fact<"block/type">["data"]["value"] | null;
-          let headingLevel: number | null = null;
-          switch (child.tagName) {
-            case "SPAN": {
-              type = "text";
-              break;
-            }
-            case "P": {
-              type = "text";
-              break;
-            }
-            case "H1": {
-              headingLevel = 1;
-              type = "heading";
-              break;
-            }
-            case "H2": {
-              headingLevel = 2;
-              type = "heading";
-              break;
-            }
-            case "H3": {
-              headingLevel = 3;
-              type = "heading";
-              break;
-            }
-            default:
-              type = null;
-          }
-          if (!type) return;
-
-          let entityID: string;
-          if (index === 0 && type === propsRef.current.type)
-            entityID = propsRef.current.entityID;
-          else {
-            entityID = v7();
-            currentPosition = generateKeyBetween(
-              currentPosition,
-              propsRef.current.nextPosition,
-            );
-            rep.mutate.addBlock({
-              permission_set: entity_set.set,
-              newEntityID: entityID,
-              parent: propsRef.current.parent,
-              type: type,
-              position: currentPosition,
-            });
-            if (type === "heading" && headingLevel) {
-              rep.mutate.assertFact({
-                entity: entityID,
-                attribute: "block/heading-level",
-                data: { type: "number", value: headingLevel },
-              });
-            }
-          }
-          let p = currentPosition;
-
-          setTimeout(() => {
-            let block = useEditorStates.getState().editorStates[entityID];
-            if (block) {
-              let tr = block.editor.tr;
-              tr.insert(block.editor.selection.from || 0, content.content);
-              let newState = block.editor.apply(tr);
-              setEditorState(entityID, {
-                editor: newState,
-              });
-            }
-            if (index === children.length - 1) {
-              focusBlock(
-                {
-                  value: entityID,
-                  type: type,
-                  parent: propsRef.current.parent,
-                  position: p,
-                },
-                { type: "end" },
+          createBlockFromHTML(
+            child,
+            index,
+            propsRef,
+            rep,
+            entity_set,
+            () => {
+              currentPosition = generateKeyBetween(
+                currentPosition,
+                propsRef.current.nextPosition,
               );
-            }
-          }, 10);
+              return currentPosition;
+            },
+            index === children.length - 1,
+          );
         });
         return true;
       } else {
@@ -187,4 +124,90 @@ export const useHandlePaste = (
     },
     [rep, entity_set, entityID, propsRef, factID],
   );
+};
+
+const createBlockFromHTML = (
+  child: Element,
+  index: number,
+  propsRef: MutableRefObject<BlockProps>,
+  rep: Replicache<ReplicacheMutators>,
+  entity_set: { set: string },
+  getPosition: () => string,
+  last: boolean,
+) => {
+  let content = parser.parse(child);
+  let type: Fact<"block/type">["data"]["value"] | null;
+  let headingLevel: number | null = null;
+  switch (child.tagName) {
+    case "UL":
+    case "SPAN":
+    case "P": {
+      type = "text";
+      break;
+    }
+    case "H1": {
+      headingLevel = 1;
+      type = "heading";
+      break;
+    }
+    case "H2": {
+      headingLevel = 2;
+      type = "heading";
+      break;
+    }
+    case "H3": {
+      headingLevel = 3;
+      type = "heading";
+      break;
+    }
+    default:
+      type = null;
+  }
+  if (!type) return;
+
+  let entityID: string;
+  let position: string;
+  if (index === 0 && type === propsRef.current.type)
+    entityID = propsRef.current.entityID;
+  else {
+    entityID = v7();
+    position = getPosition();
+    rep.mutate.addBlock({
+      permission_set: entity_set.set,
+      newEntityID: entityID,
+      parent: propsRef.current.parent,
+      type: type,
+      position,
+    });
+    if (type === "heading" && headingLevel) {
+      rep.mutate.assertFact({
+        entity: entityID,
+        attribute: "block/heading-level",
+        data: { type: "number", value: headingLevel },
+      });
+    }
+  }
+
+  setTimeout(() => {
+    let block = useEditorStates.getState().editorStates[entityID];
+    if (block) {
+      let tr = block.editor.tr;
+      tr.insert(block.editor.selection.from || 0, content.content);
+      let newState = block.editor.apply(tr);
+      setEditorState(entityID, {
+        editor: newState,
+      });
+    }
+    if (last) {
+      focusBlock(
+        {
+          value: entityID,
+          type: type,
+          parent: propsRef.current.parent,
+          position: position,
+        },
+        { type: "end" },
+      );
+    }
+  }, 10);
 };
