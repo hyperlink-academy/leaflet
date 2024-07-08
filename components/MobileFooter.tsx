@@ -3,6 +3,7 @@ import { useUIState } from "src/useUIState";
 import { Media } from "./Media";
 import { ThemePopover } from "./ThemeManager/ThemeSetter";
 import { TextToolbar } from "components/Toolbar";
+import { ShareOptions } from "./ShareOptions";
 
 export function MobileFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);
@@ -19,6 +20,7 @@ export function MobileFooter(props: { entityID: string }) {
       ) : (
         <div className="z-10 pb-2 px-2 flex gap-[6px] items-center justify-end">
           <ThemePopover entityID={props.entityID} />
+          <ShareOptions rootEntity={props.entityID} />
         </div>
       )}
     </Media>
