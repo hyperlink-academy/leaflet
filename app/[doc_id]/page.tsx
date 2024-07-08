@@ -88,6 +88,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
   let metadata: Metadata = { title: "Untitled Leaflet", description: " " };
   let block = blocks[0];
+  if (!block) return metadata;
   if (block?.type === "heading") {
     let content = initialFacts.find(
       (f) => f.entity === block.value && f.attribute === "block/text",
