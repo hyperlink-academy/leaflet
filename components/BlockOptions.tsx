@@ -106,8 +106,16 @@ export function BlockOptions(props: Props) {
                 attribute: "block/type",
                 data: { type: "block-type-union", value: "card" },
               });
+              let entityID = v7();
+              await rep?.mutate.addBlock({
+                parent: props.entityID,
+                position: "a0",
+                newEntityID: entityID,
+                type: "text",
+                permission_set: entity_set.set,
+              });
               useUIState.getState().openCard(props.parent, props.entityID);
-              if (rep) focusCard(props.entityID, rep);
+              if (rep) focusCard(props.entityID, rep, "focusFirstBlock");
             }
           }}
         >

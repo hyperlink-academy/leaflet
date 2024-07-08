@@ -30,7 +30,7 @@ export function CardBlock(props: BlockProps) {
       onClick={(e) => {
         e.stopPropagation();
         useUIState.getState().openCard(props.parent, props.entityID);
-        if (rep) focusCard(props.entityID, rep, "focusFirstBlock");
+        if (rep) focusCard(props.entityID, rep);
       }}
     >
       <div className="py-1 grow min-w-0">
