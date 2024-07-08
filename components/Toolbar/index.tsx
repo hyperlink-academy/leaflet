@@ -16,6 +16,7 @@ import {
   BlockSmall,
   StrikethroughSmall,
   HighlightSmall,
+  CheckTiny,
 } from "components/Icons";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
@@ -40,12 +41,13 @@ import { v7 } from "uuid";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
 import { focusCard } from "components/Cards";
+import { addLinkBlock } from "src/utils/addLinkBlock";
 
 export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   let { rep } = useReplicache();
 
   let [toolbarState, setToolbarState] = useState<
-    "default" | "highlight" | "link" | "header" | "list" | "block"
+    "default" | "highlight" | "link" | "header" | "list" | "block" | "linkBlock"
   >("default");
 
   let [lastUsedHighlight, setlastUsedHighlight] = useState<"1" | "2" | "3">(
@@ -133,6 +135,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
           <TextBlockTypeButtons onClose={() => setToolbarState("default")} />
         ) : toolbarState === "block" ? (
           <BlockToolbar
+            setToolbarState={setToolbarState}
             onClose={() => {
               if (blockEmpty)
                 useUIState.setState(() => ({
@@ -145,11 +148,19 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
               setToolbarState("default");
             }}
           />
+        ) : toolbarState === "linkBlock" ? (
+          <LinkBlockToolbar
+            onClose={() => {
+              setToolbarState("block");
+            }}
+          />
         ) : null}
       </div>
       <button
         onClick={() => {
-          if (toolbarState === "default") {
+          if (toolbarState === "linkBlock") {
+            setToolbarState("link");
+          } else if (toolbarState === "default") {
             useUIState.setState(() => ({
               focusedBlock: {
                 type: "card",
@@ -164,6 +175,74 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
       >
         <CloseTiny />
       </button>
+    </div>
+  );
+};
+
+const LinkBlockToolbar = (props: { onClose: () => void }) => {
+  let entity_set = useEntitySetContext();
+  let [linkValue, setLinkValue] = useState("");
+  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let { rep } = useReplicache();
+  let submit = async () => {
+    if (!focusedBlock || !rep) return [];
+    let entity, position;
+    let parent =
+      focusedBlock.type === "card"
+        ? focusedBlock.entityID
+        : focusedBlock.parent;
+    let children = await rep.query((tx) =>
+      scanIndex(tx).eav(parent, "card/block"),
+    );
+    if (focusedBlock.type === "card") {
+      entity = v7();
+      position =
+        children.sort((a, b) => (a.data.position > b.data.position ? 1 : -1))[
+          children.length - 1
+        ]?.data.position || null;
+      await rep?.mutate.addBlock({
+        parent: focusedBlock.entityID,
+        permission_set: entity_set.set,
+        type: "text",
+        position: generateKeyBetween(position, null),
+        newEntityID: entity,
+      });
+    } else {
+      entity = focusedBlock.entityID;
+    }
+    addLinkBlock(linkValue, entity, rep);
+    props.onClose();
+  };
+
+  return (
+    <div className={`max-w-sm flex gap-2 rounded-md "text-secondary`}>
+      <>
+        <input
+          autoFocus
+          id="block-link-input"
+          type="url"
+          className="w-full grow border-none outline-none bg-transparent "
+          placeholder="www.leaflet.pub"
+          value={linkValue}
+          onChange={(e) => setLinkValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              submit();
+            }
+          }}
+        />
+        <div className="flex items-center gap-3 ">
+          <button
+            className="hover:text-accent"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              submit();
+            }}
+          >
+            <CheckTiny />
+          </button>
+        </div>
+      </>
     </div>
   );
 };
@@ -229,7 +308,11 @@ const ListToolbar = (props: { onClose: () => void }) => {
   );
 };
 
-const BlockToolbar = (props: { onClose: () => void }) => {
+const BlockToolbar = (props: {
+  onClose: () => void;
+  setToolbarState: (s: "linkBlock") => void;
+}) => {
+  let [state, setState] = useState<"normal" | "link">("normal");
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
   let focusedBlock = useUIState((s) => s.focusedBlock);
@@ -261,72 +344,74 @@ const BlockToolbar = (props: { onClose: () => void }) => {
     }
     return [entity, parent];
   }, [focusedBlock, rep, entity_set]);
-  return (
-    <div className="flex w-full justify-between items-center gap-4">
-      <div className="flex items-center gap-[6px]">
-        <ToolbarButton onClick={() => props.onClose()}>
-          <BlockSmall />
-        </ToolbarButton>
-        <Separator />
-        <ToolbarButton>
-          <label
-            className="blockOptionsImage hover:cursor-pointer flex place-items-center"
-            onMouseDown={(e) => e.preventDefault()}
+  if (state === "normal")
+    return (
+      <div className="flex w-full justify-between items-center gap-4">
+        <div className="flex items-center gap-[6px]">
+          <ToolbarButton onClick={() => props.onClose()}>
+            <BlockSmall />
+          </ToolbarButton>
+          <Separator />
+          <ToolbarButton>
+            <label
+              className="blockOptionsImage hover:cursor-pointer flex place-items-center"
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              <div className="text-tertiary hover:text-accent ">
+                <BlockImageSmall />
+              </div>
+              <div className="hidden">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    let file = e.currentTarget.files?.[0];
+                    if (!file || !rep || !focusedBlock) return;
+                    let [entity, parent] = await getEntity();
+                    await rep.mutate.assertFact({
+                      entity,
+                      attribute: "block/type",
+                      data: { type: "block-type-union", value: "image" },
+                    });
+                    await addImage(file, rep, {
+                      entityID: entity,
+                      attribute: "block/image",
+                    });
+                  }}
+                />
+              </div>
+            </label>
+          </ToolbarButton>
+          <ToolbarButton onClick={() => props.setToolbarState("linkBlock")}>
+            <BlockLinkSmall />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={async () => {
+              if (!focusedBlock || !rep) return;
+              let [entity, parent] = await getEntity();
+              await rep?.mutate.assertFact({
+                entity: entity,
+                attribute: "block/type",
+                data: { type: "block-type-union", value: "card" },
+              });
+              useUIState.getState().openCard(parent, entity);
+              let entityID = v7();
+              await rep?.mutate.addBlock({
+                parent: entity,
+                position: "a0",
+                newEntityID: entityID,
+                type: "text",
+                permission_set: entity_set.set,
+              });
+              focusCard(entity, rep, "focusFirstBlock");
+            }}
           >
-            <div className="text-tertiary hover:text-accent ">
-              <BlockImageSmall />
-            </div>
-            <div className="hidden">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-                  let file = e.currentTarget.files?.[0];
-                  if (!file || !rep || !focusedBlock) return;
-                  let [entity, parent] = await getEntity();
-                  await rep.mutate.assertFact({
-                    entity,
-                    attribute: "block/type",
-                    data: { type: "block-type-union", value: "image" },
-                  });
-                  await addImage(file, rep, {
-                    entityID: entity,
-                    attribute: "block/image",
-                  });
-                }}
-              />
-            </div>
-          </label>
-        </ToolbarButton>
-        <ToolbarButton>
-          <BlockLinkSmall />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={async () => {
-            if (!focusedBlock || !rep) return;
-            let [entity, parent] = await getEntity();
-            await rep?.mutate.assertFact({
-              entity: entity,
-              attribute: "block/type",
-              data: { type: "block-type-union", value: "card" },
-            });
-            useUIState.getState().openCard(parent, entity);
-            let entityID = v7();
-            await rep?.mutate.addBlock({
-              parent: entity,
-              position: "a0",
-              newEntityID: entityID,
-              type: "text",
-              permission_set: entity_set.set,
-            });
-            focusCard(entity, rep, "focusFirstBlock");
-          }}
-        >
-          <BlockCardSmall />
-        </ToolbarButton>
+            <BlockCardSmall />
+          </ToolbarButton>
+        </div>
       </div>
-    </div>
-  );
+    );
+  return;
 };
 
 export const ToolbarButton = (props: {
