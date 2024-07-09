@@ -19,8 +19,6 @@ export function Cards(props: { rootCard: string }) {
   let openCards = useUIState((s) => s.openCards);
   let [cardRef, { width: cardWidth }] = useMeasure();
 
-  console.log("openCards", openCards);
-
   return (
     <div
       id="cards"

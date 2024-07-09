@@ -122,7 +122,7 @@ export function RenderedTextBlock(props: {
   return (
     <pre
       className={`
-       w-full  whitespace-pre-wrap outline-none  ${props.className} ${
+       w-full  whitespace-pre-wrap outline-none break-words ${props.className} ${
          props.preview
            ? "p-0"
            : `px-2 sm:px-3  ${

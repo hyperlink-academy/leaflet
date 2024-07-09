@@ -44,7 +44,6 @@ export default async function Icon(props: { params: { doc_id: string } }) {
   let outlineColor = parseHSBToRGB(`hsba(${themeCardBG?.data.value})`);
 
   let fillColor = parseHSBToRGB(`hsba(${themePrimary?.data.value})`);
-  console.log(outlineColor, fillColor);
 
   return new ImageResponse(
     (
