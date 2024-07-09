@@ -119,7 +119,6 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
             <LinkButton setToolBarState={setToolbarState} />
             <Separator />
             <TextBlockTypeButton setToolbarState={setToolbarState} />
-            <Separator />
           </>
         ) : toolbarState === "highlight" ? (
           <HighlightToolbar

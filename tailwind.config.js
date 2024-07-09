@@ -4,6 +4,7 @@ module.exports = {
     screens: {
       sm: "640px",
       md: "960px",
+      lg: "1280px",
     },
     borderRadius: {
       none: "0",
