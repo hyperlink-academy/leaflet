@@ -7,6 +7,7 @@ import localFont from "next/font/local";
 export const metadata = {
   title: "Minilink",
   description: "tiny interconnected social documents",
+  metadataBase: `https://${process.env.VERCEL_URL}`,
 };
 
 export const preferredRegion = ["sfo1"];
