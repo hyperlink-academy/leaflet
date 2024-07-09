@@ -106,11 +106,11 @@ function Card(props: {
               window.innerWidth > 768
                 ? props.openCards.length !== 0
                   ? "calc(50vw - 32px)"
-                  : "auto"
+                  : "65ch"
                 : "calc(100vw - 12px)",
           }}
           className={`
-      card w-max max-w-prose
+      card max-w-prose
       sm:pt-0 pt-2
       grow flex flex-col
       overscroll-y-none
