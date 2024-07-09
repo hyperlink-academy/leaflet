@@ -29,7 +29,7 @@ export const useHandlePaste = (
       if (textHTML) {
         let xml = new DOMParser().parseFromString(textHTML, "text/html");
         let currentPosition = propsRef.current.position;
-        let children = [...xml.body.children];
+        let children = flattenHTMLToTextBlocks(xml.body);
         if (!children.find((c) => ["P", "H1", "H2", "H3"].includes(c.tagName)))
           return;
         if (children.length === 1) return false;
@@ -211,3 +211,30 @@ const createBlockFromHTML = (
     }
   }, 10);
 };
+
+function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
+  // Function to recursively collect HTML from nodes
+  function collectHTML(node: Node, htmlBlocks: HTMLElement[]): void {
+    console.log(node);
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const elementNode = node as HTMLElement;
+      // Collect outer HTML for paragraph-like elements
+      if (
+        ["P", "H1", "H2", "H3", "H4", "H5", "H6", "LI"].includes(
+          elementNode.tagName,
+        )
+      ) {
+        htmlBlocks.push(elementNode);
+      } else {
+        // Recursively collect HTML from child nodes
+        for (let child of node.childNodes) {
+          collectHTML(child, htmlBlocks);
+        }
+      }
+    }
+  }
+
+  const htmlBlocks: HTMLElement[] = [];
+  collectHTML(element, htmlBlocks);
+  return htmlBlocks;
+}
