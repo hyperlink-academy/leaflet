@@ -14,28 +14,20 @@ export function ImageBlock(props: BlockProps) {
 
   let permission = useEntitySetContext().permissions.write;
 
-  let [ref, { width }] = useMeasure();
   let image = useEntity(props.entityID, "block/image");
-  let imageHeight = image?.data.height;
-  let imageWidth = image?.data.width;
   if (image?.data.local && image.data.local !== rep?.clientID)
     return (
-      <div
-        ref={ref}
-        style={{
-          height:
-            imageWidth && imageHeight && width < imageWidth
-              ? imageHeight * (width / imageWidth)
-              : imageHeight,
-          width: image?.data.width,
-        }}
-        className="flex place-items-center justify-center bg-border italic text-tertiary rounded-md min-w-full max-w-full"
-      >
-        loading...
+      <div className="flex place-items-center justify-center bg-border italic text-tertiary rounded-md min-w-full max-w-full">
+        <img
+          alt={""}
+          src={image?.data.fallback}
+          height={image?.data.height}
+          width={image?.data.width}
+          className=""
+        />
       </div>
     );
 
-  console.log(permission);
   return (
     <div className="relative group/image flex w-full justify-center">
       {permission && (
