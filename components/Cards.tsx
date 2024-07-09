@@ -16,14 +16,25 @@ import { MenuItem, Menu } from "./Layout";
 import { useEntitySetContext } from "./EntitySetProvider";
 
 export function Cards(props: { rootCard: string }) {
-  let cards = useUIState((s) => s.openCards);
+  let openCards = useUIState((s) => s.openCards);
   let [cardRef, { width: cardWidth }] = useMeasure();
 
+  console.log("openCards", openCards);
+
   return (
-    <div id="cards" className="cards flex pt-2 pb-8 sm:py-6">
+    <div
+      id="cards"
+      className="cards flex pt-2 pb-8 sm:py-6"
+      onClick={(e) => {
+        e.currentTarget === e.target && blurCard();
+      }}
+    >
       <div
         className="spacer flex justify-end items-start"
         style={{ width: `calc(50vw - ${cardWidth}px/2)` }}
+        onClick={(e) => {
+          e.currentTarget === e.target && blurCard();
+        }}
       >
         <Media mobile={false}>
           <div className="flex flex-col justify-center gap-2 mr-4 mt-2">
@@ -33,16 +44,19 @@ export function Cards(props: { rootCard: string }) {
         </Media>
       </div>
       <div className="flex items-stretch" ref={cardRef}>
-        <Card entityID={props.rootCard} first />
+        <Card entityID={props.rootCard} openCards={openCards} first />
       </div>
-      {cards.map((card) => (
+      {openCards.map((card) => (
         <div className="flex items-stretch" key={card}>
-          <Card entityID={card} />
+          <Card entityID={card} openCards={openCards} />
         </div>
       ))}
       <div
         className="spacer"
         style={{ width: `calc((100vw - ${cardWidth}px)/2)` }}
+        onClick={(e) => {
+          e.currentTarget === e.target && blurCard();
+        }}
       />
     </div>
   );
@@ -56,7 +70,11 @@ export const PageOptions = (props: { entityID: string }) => {
   );
 };
 
-function Card(props: { entityID: string; first?: boolean }) {
+function Card(props: {
+  entityID: string;
+  first?: boolean;
+  openCards: string[];
+}) {
   let { rep } = useReplicache();
 
   let focusedElement = useUIState((s) => s.focusedBlock);
@@ -68,7 +86,14 @@ function Card(props: { entityID: string; first?: boolean }) {
 
   return (
     <>
-      {!props.first && <div className="w-6 md:snap-center" />}
+      {!props.first && (
+        <div
+          className="w-6 md:snap-center"
+          onClick={(e) => {
+            e.currentTarget === e.target && blurCard();
+          }}
+        />
+      )}
       <div className="cardWrapper w-fit flex relative snap-center">
         <div
           onMouseDown={(e) => {
@@ -79,9 +104,15 @@ function Card(props: { entityID: string; first?: boolean }) {
           id={elementId.card(props.entityID).container}
           style={{
             backgroundColor: "rgba(var(--bg-card), var(--bg-card-alpha))",
+            width:
+              window.innerWidth > 768
+                ? props.openCards.length !== 0
+                  ? "calc(50vw - 32px)"
+                  : "auto"
+                : "calc(100vw - 12px)",
           }}
           className={`
-      card w-[calc(100vw-12px)] md:w-[calc(50vw-32px)] max-w-prose
+      card w-max max-w-prose
       sm:pt-0 pt-2
       grow flex flex-col
       overscroll-y-none
@@ -257,3 +288,10 @@ export async function focusCard(
     });
   }, 100);
 }
+
+const blurCard = () => {
+  useUIState.setState(() => ({
+    focusedBlock: null,
+    selectedBlock: [],
+  }));
+};
