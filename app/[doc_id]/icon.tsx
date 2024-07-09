@@ -28,22 +28,25 @@ export default async function Icon(props: { params: { doc_id: string } }) {
     .eq("id", props.params.doc_id)
     .single();
   let rootEntity = res.data?.root_entity;
-  if (!rootEntity || !res.data) return { title: "Doc not found" };
-  let { data } = await supabase.rpc("get_facts", {
-    root: rootEntity,
-  });
-  let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
-  let themeCardBG = initialFacts.find(
-    (f) => f.attribute === "theme/card-background",
-  ) as Fact<"theme/card-background"> | undefined;
+  let outlineColor, fillColor;
+  if (rootEntity && res.data) {
+    let { data } = await supabase.rpc("get_facts", {
+      root: rootEntity,
+    });
+    let initialFacts =
+      (data as unknown as Fact<keyof typeof Attributes>[]) || [];
+    let themeCardBG = initialFacts.find(
+      (f) => f.attribute === "theme/card-background",
+    ) as Fact<"theme/card-background"> | undefined;
 
-  let themePrimary = initialFacts.find(
-    (f) => f.attribute === "theme/primary",
-  ) as Fact<"theme/primary"> | undefined;
+    let themePrimary = initialFacts.find(
+      (f) => f.attribute === "theme/primary",
+    ) as Fact<"theme/primary"> | undefined;
 
-  let outlineColor = parseHSBToRGB(`hsba(${themeCardBG?.data.value})`);
+    outlineColor = parseHSBToRGB(`hsba(${themeCardBG?.data.value})`);
 
-  let fillColor = parseHSBToRGB(`hsba(${themePrimary?.data.value})`);
+    fillColor = parseHSBToRGB(`hsba(${themePrimary?.data.value})`);
+  }
 
   return new ImageResponse(
     (
