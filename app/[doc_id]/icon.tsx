@@ -85,6 +85,9 @@ export default async function Icon(props: { params: { doc_id: string } }) {
       // For convenience, we can re-use the exported icons size metadata
       // config to also set the ImageResponse's width and height.
       ...size,
+      headers: {
+        "Cache-Control": "no-cache",
+      },
     },
   );
 }
