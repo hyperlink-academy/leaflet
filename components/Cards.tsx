@@ -42,11 +42,11 @@ export function Cards(props: { rootCard: string }) {
         </Media>
       </div>
       <div className="flex items-stretch" ref={cardRef}>
-        <Card entityID={props.rootCard} openCards={openCards} first />
+        <Card entityID={props.rootCard} first />
       </div>
       {openCards.map((card) => (
         <div className="flex items-stretch" key={card}>
-          <Card entityID={card} openCards={openCards} />
+          <Card entityID={card} />
         </div>
       ))}
       <div
@@ -68,11 +68,7 @@ export const PageOptions = (props: { entityID: string }) => {
   );
 };
 
-function Card(props: {
-  entityID: string;
-  first?: boolean;
-  openCards: string[];
-}) {
+function Card(props: { entityID: string; first?: boolean }) {
   let { rep } = useReplicache();
 
   let focusedElement = useUIState((s) => s.focusedBlock);
@@ -102,15 +98,9 @@ function Card(props: {
           id={elementId.card(props.entityID).container}
           style={{
             backgroundColor: "rgba(var(--bg-card), var(--bg-card-alpha))",
-            width:
-              window.innerWidth > 768
-                ? props.openCards.length !== 0
-                  ? "calc(50vw - 32px)"
-                  : "65ch"
-                : "calc(100vw - 12px)",
           }}
           className={`
-      card max-w-prose
+      card w-[calc(100vw-12px)] md:w-[calc(50vw-32px)] max-w-prose
       sm:pt-0 pt-2
       grow flex flex-col
       overscroll-y-none
