@@ -7,6 +7,9 @@ import { parseHSBToRGB } from "src/utils/parseHSB";
 
 // Route segment config
 export const runtime = "edge";
+export const preferredRegion = ["sfo1"];
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 // Image metadata
 export const size = {
