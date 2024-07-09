@@ -6,9 +6,14 @@ import { useUIState } from "src/useUIState";
 import { theme } from "tailwind.config";
 import { CloseContrastSmall } from "./Icons";
 import useMeasure from "react-use-measure";
+import { useEntitySetContext } from "./EntitySetProvider";
 
 export function ImageBlock(props: BlockProps) {
-  let { rep } = useReplicache();
+  let { rep, permission_token } = useReplicache();
+  let entity_set = useEntitySetContext();
+
+  let permission = useEntitySetContext().permissions.write;
+
   let [ref, { width }] = useMeasure();
   let image = useEntity(props.entityID, "block/image");
   let imageHeight = image?.data.height;
@@ -30,19 +35,22 @@ export function ImageBlock(props: BlockProps) {
       </div>
     );
 
+  console.log(permission);
   return (
     <div className="relative group/image flex w-full justify-center">
-      <button
-        className="absolute right-2 top-2 z-10 hidden group-hover/image:block"
-        onClick={() => {
-          rep?.mutate.removeBlock({ blockEntity: props.entityID });
-        }}
-      >
-        <CloseContrastSmall
-          fill={theme.colors.primary}
-          stroke={theme.colors["bg-card"]}
-        />
-      </button>
+      {permission && (
+        <button
+          className="absolute right-2 top-2 z-10 hidden group-hover/image:block"
+          onClick={() => {
+            rep?.mutate.removeBlock({ blockEntity: props.entityID });
+          }}
+        >
+          <CloseContrastSmall
+            fill={theme.colors.primary}
+            stroke={theme.colors["bg-card"]}
+          />
+        </button>
+      )}
       <img
         onClick={() => useUIState.getState().setSelectedBlock(props)}
         alt={""}
