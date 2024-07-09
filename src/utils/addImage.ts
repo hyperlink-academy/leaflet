@@ -28,22 +28,21 @@ export async function addImage(
       },
     }),
   );
-  //This may reach other clients before the image has been uploaded.
-  // Maybe we should set the state to uploaded-by (client_ID) or something
-  // and then set the real one after.
+
   let thumbhash = await getThumbHash(file);
-  await rep.mutate.assertFact({
-    entity: args.entityID,
-    attribute: "block/image",
-    data: {
-      fallback: thumbhash,
-      type: "image",
-      local: rep.clientID,
-      src: url,
-      height: dimensions.height,
-      width: dimensions.width,
-    },
-  });
+  if (navigator.serviceWorker)
+    await rep.mutate.assertFact({
+      entity: args.entityID,
+      attribute: "block/image",
+      data: {
+        fallback: thumbhash,
+        type: "image",
+        local: rep.clientID,
+        src: url,
+        height: dimensions.height,
+        width: dimensions.width,
+      },
+    });
   await client.storage.from("minilink-user-assets").upload(fileID, file);
   await rep.mutate.assertFact({
     entity: args.entityID,
