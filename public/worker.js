@@ -16,6 +16,9 @@ self.addEventListener("fetch", (event) => {
     }),
   );
 });
+self.addEventListener("activate", function (event) {
+  event.waitUntil(self.clients.claim());
+});
 
 self.addEventListener("install", () => {
   // The promise that skipWaiting() returns can be safely ignored.
