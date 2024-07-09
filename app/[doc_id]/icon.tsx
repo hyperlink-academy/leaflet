@@ -6,7 +6,7 @@ import { createServerClient } from "@supabase/ssr";
 import { parseHSBToRGB } from "src/utils/parseHSB";
 
 // Route segment config
-export const runtime = "edge";
+export const revalidate = 0;
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
