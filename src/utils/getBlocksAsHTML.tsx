@@ -30,9 +30,10 @@ export async function getBlocksAsHTML(
             );
             wrapper = "h" + headingLevel[0].data.value;
           }
-          let value = await scanIndex(tx).eav(b.entity, "block/text");
+          let value = (await scanIndex(tx).eav(b.entity, "block/text"))[0];
+          if (!value) return `<${wrapper || "p"}></${wrapper || "p"}>`;
           let doc = new Y.Doc();
-          const update = base64.toByteArray(value[0].data.value);
+          const update = base64.toByteArray(value.data.value);
           Y.applyUpdate(doc, update);
           let nodes = doc.getXmlElement("prosemirror").toArray();
           return renderToStaticMarkup(
