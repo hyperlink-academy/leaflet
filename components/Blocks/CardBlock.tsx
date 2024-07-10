@@ -4,6 +4,9 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
+import { CloseTiny } from "components/Icons";
+import { useState } from "react";
+import { useEntitySetContext } from "components/EntitySetProvider";
 
 export function CardBlock(props: BlockProps) {
   let isSelected = useUIState(
@@ -12,44 +15,89 @@ export function CardBlock(props: BlockProps) {
       s.selectedBlock.find((b) => b.value === props.entityID),
   );
   let docMetadata = useDocMetadata(props.entityID);
+  let permission = useEntitySetContext().permissions.write;
 
   let isOpen = useUIState((s) => s.openCards).includes(props.entityID);
+  let [areYouSure, setAreYouSure] = useState(false);
 
   let { rep } = useReplicache();
 
   return (
     <div
       className={`
-        cardBlockWrapper relative group
+        cardBlockWrapper relative group/cardBlock
         w-full h-[104px]
         bg-bg-card border shadow-sm outline outline-1 hover:outline-border-light rounded-lg
         flex overflow-hidden
-        cursor-pointer
+
         ${isSelected || isOpen ? "outline-border border-border" : "outline-transparent border-border-light"}
         `}
-      onClick={(e) => {
-        e.stopPropagation();
-        useUIState.getState().openCard(props.parent, props.entityID);
-        if (rep) focusCard(props.entityID, rep);
-      }}
     >
-      <div className="py-1 grow min-w-0">
-        {docMetadata.heading && (
-          <div
-            className={`cardBlockTitle bg-transparent -mb-3  border-none text-base font-bold outline-none resize-none align-top border  line-clamp-1`}
-          >
-            <RenderedTextBlock entityID={docMetadata.heading} />
+      {areYouSure ? (
+        <div className="flex flex-col gap-1 w-full h-full place-items-center items-center font-bold py-4 bg-border-light">
+          <div className="">Delete this Page?</div>
+          <div className="flex gap-2">
+            <button
+              className="bg-accent text-accentText px-2 py-1 rounded-md "
+              onClick={(e) => {
+                e.stopPropagation();
+                useUIState.getState().closeCard(props.entityID);
+
+                rep &&
+                  rep.mutate.removeBlock({
+                    blockEntity: props.entityID,
+                  });
+              }}
+            >
+              Delete
+            </button>
+            <button
+              className="text-accent"
+              onClick={() => setAreYouSure(false)}
+            >
+              Nevermind
+            </button>
           </div>
-        )}
-        {docMetadata.content && (
-          <div
-            className={`cardBlockDescription text-sm bg-transparent border-none outline-none resize-none align-top ${docMetadata.heading ? "line-clamp-3 max-h-16" : "line-clamp-4 max-h-[88px]"}`}
-          >
-            <RenderedTextBlock entityID={docMetadata.content} />
+        </div>
+      ) : (
+        <div
+          className="w-full flex overflow-hidden cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            useUIState.getState().openCard(props.parent, props.entityID);
+            if (rep) focusCard(props.entityID, rep);
+          }}
+        >
+          <div className="py-1 grow min-w-0">
+            {docMetadata.heading && (
+              <div
+                className={`cardBlockTitle bg-transparent -mb-3  border-none text-base font-bold outline-none resize-none align-top border  line-clamp-1`}
+              >
+                <RenderedTextBlock entityID={docMetadata.heading} />
+              </div>
+            )}
+            {docMetadata.content && (
+              <div
+                className={`cardBlockDescription text-sm bg-transparent border-none outline-none resize-none align-top ${docMetadata.heading ? "line-clamp-3 max-h-16" : "line-clamp-4 max-h-[88px]"}`}
+              >
+                <RenderedTextBlock entityID={docMetadata.content} />
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      <CardPreview entityID={props.entityID} />
+          <CardPreview entityID={props.entityID} />
+          {permission && (
+            <button
+              className="absolute p-1 top-0.5 right-0.5 hover:text-accent text-secondary sm:hidden sm:group-hover/cardBlock:block"
+              onClick={(e) => {
+                e.stopPropagation();
+                setAreYouSure(true);
+              }}
+            >
+              <CloseTiny />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

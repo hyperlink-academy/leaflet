@@ -160,11 +160,11 @@ const BlockLinkButton = (props: Props) => {
 
   return (
     <div
-      className={`max-w-sm flex gap-2 hover:text-accent rounded-md ${linkOpen ? "text-secondary" : " text-tertiary"}`}
+      className={`max-w-sm flex gap-2  rounded-md ${linkOpen ? "text-secondary" : " text-tertiary"}`}
     >
       <ToolbarButton
         tooltipContent="Add a Link"
-        className="hover:bg-transparent hover:text-accent text-tertiary"
+        className="hover:bg-transparent text-tertiary"
         onClick={() => {
           setLinkOpen(!linkOpen);
         }}

@@ -78,7 +78,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   return (
     <Tooltip.Provider>
       <div className="flex items-center justify-between w-full gap-6">
-        <div className="flex gap-[6px] items-center">
+        <div className="flex gap-[6px] items-center grow">
           {toolbarState === "default" ? (
             <>
               <TextDecorationButton
@@ -261,8 +261,10 @@ const LinkBlockToolbar = (props: { onClose: () => void }) => {
   };
 
   return (
-    <div className={`max-w-sm flex gap-2 rounded-md "text-secondary`}>
+    <div className={`flex gap-2 rounded-md text-secondary grow pr-2`}>
       <>
+        <BlockLinkSmall className="shrink-0" />
+        <Separator classname="h-6" />
         <Input
           autoFocus
           type="url"
@@ -276,17 +278,15 @@ const LinkBlockToolbar = (props: { onClose: () => void }) => {
             }
           }}
         />
-        <div className="flex items-center gap-3 ">
-          <button
-            className="hover:text-accent"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              submit();
-            }}
-          >
-            <CheckTiny />
-          </button>
-        </div>
+        <button
+          className="hover:text-accent -mr-6"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+        >
+          <CheckTiny />
+        </button>
       </>
     </div>
   );
@@ -393,7 +393,7 @@ const BlockToolbar = (props: {
   if (state === "normal")
     return (
       <div className="flex w-full justify-between items-center gap-4">
-        <div className="flex items-center gap-[6px]">
+        <div className="flex items-center gap-[6px] w-full">
           <BlockSmall />
           <Separator classname="h-6" />
           <ToolbarButton tooltipContent=<div>Add an Image</div>>

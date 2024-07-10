@@ -113,7 +113,8 @@ export function RenderedTextBlock(props: {
   preview?: boolean;
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
-  if (!initialFact) return <pre className="min-h-9" />;
+  if (!initialFact)
+    return <pre className={`${props.preview ? "min-h-1" : "min-h-9"}`} />;
   let doc = new Y.Doc();
   const update = base64.toByteArray(initialFact.data.value);
   Y.applyUpdate(doc, update);

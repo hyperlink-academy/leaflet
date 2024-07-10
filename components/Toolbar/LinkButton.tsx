@@ -70,7 +70,7 @@ export function LinkEditor(props: { onClose: () => void }) {
   let [linkValue, setLinkValue] = useState(content);
 
   return (
-    <div className="w-full flex items-center gap-[6px]">
+    <div className="w-full flex items-center gap-[6px]  grow">
       <LinkTextToolbarSmall />
       <Separator classname="h-6" />
       <Input
