@@ -111,7 +111,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
   );
   if (!entity_set.permissions.write) return null;
   if (
-    props.lastBlock?.type === "text" &&
+    (props.lastBlock?.type === "text" || props.lastBlock?.type === "heading") &&
     (!editorState?.editor || editorState.editor.doc.content.size <= 2)
   )
     return null;
