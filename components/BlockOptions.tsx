@@ -15,6 +15,7 @@ import { Separator } from "./Layout";
 import { addLinkBlock } from "src/utils/addLinkBlock";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { v7 } from "uuid";
+import { Input } from "./Input";
 
 type Props = {
   parent: string;
@@ -160,9 +161,6 @@ const BlockLinkButton = (props: Props) => {
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => {
           setLinkOpen(!linkOpen);
-          setTimeout(() => {
-            document.getElementById("block-link-input")?.focus();
-          }, 100);
         }}
       >
         <BlockLinkSmall />
@@ -170,8 +168,8 @@ const BlockLinkButton = (props: Props) => {
       {linkOpen && (
         <>
           <Separator />
-          <input
-            id="block-link-input"
+          <Input
+            autoFocus
             type="url"
             className="w-full grow border-none outline-none bg-transparent "
             placeholder="add a link..."

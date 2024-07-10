@@ -45,6 +45,7 @@ import { focusCard } from "components/Cards";
 import { addLinkBlock } from "src/utils/addLinkBlock";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Separator, ShortcutKey } from "components/Layout";
+import { Input } from "components/Input";
 
 export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   let { rep } = useReplicache();
@@ -203,7 +204,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
           className="hover:text-accent"
           onClick={() => {
             if (toolbarState === "linkBlock") {
-              setToolbarState("link");
+              setToolbarState("block");
             } else if (toolbarState === "default") {
               useUIState.setState(() => ({
                 focusedBlock: {
@@ -262,9 +263,8 @@ const LinkBlockToolbar = (props: { onClose: () => void }) => {
   return (
     <div className={`max-w-sm flex gap-2 rounded-md "text-secondary`}>
       <>
-        <input
+        <Input
           autoFocus
-          id="block-link-input"
           type="url"
           className="w-full grow border-none outline-none bg-transparent "
           placeholder="add a link..."

@@ -28,6 +28,8 @@ import {
 import { addImage } from "src/utils/addImage";
 import { Separator } from "components/Layout";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { isIOS, useViewportSize } from "@react-aria/utils";
+import { onMouseDown } from "src/utils/iosInputMouseDown";
 
 export type pickers =
   | "null"
@@ -90,6 +92,7 @@ export const ThemePopover = (props: { entityID: string }) => {
     `radial-gradient(at ${randomPositions[1]}, ${cardValue.toString("hex")}66 2px, transparent 60%)`,
     `radial-gradient(at ${randomPositions[2]}, ${primaryValue.toString("hex")}B3 2px, transparent 100%)`,
   ].join(", ");
+  let viewheight = useViewportSize().height;
   if (!permission) return null;
 
   return (
@@ -108,7 +111,8 @@ export const ThemePopover = (props: { entityID: string }) => {
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content
-            className="themeSetterWrapper w-80 h-fit max-h-[80vh]   bg-white rounded-md border border-border flex"
+            style={{ maxHeight: viewheight ? viewheight * 0.8 : "80vh" }}
+            className="themeSetterWrapper w-80 h-fit bg-white rounded-md border border-border flex"
             align="center"
             sideOffset={4}
             collisionPadding={16}
@@ -274,6 +278,7 @@ export const ColorPicker = (props: {
             ) : (
               <ColorField className="w-fit gap-1">
                 <Input
+                  onMouseDown={onMouseDown}
                   onFocus={(e) => {
                     e.currentTarget.setSelectionRange(
                       1,
@@ -297,6 +302,7 @@ export const ColorPicker = (props: {
                 <Separator classname="my-1" />
                 <ColorField className="w-fit pl-[6px]" channel="alpha">
                   <Input
+                    onMouseDown={onMouseDown}
                     onFocus={(e) => {
                       e.currentTarget.setSelectionRange(
                         0,
@@ -402,6 +408,7 @@ const BGPicker = (props: {
               ) : (
                 <ColorField className="w-fit gap-1" value={bgColor}>
                   <Input
+                    onMouseDown={onMouseDown}
                     onFocus={(e) => {
                       e.currentTarget.setSelectionRange(
                         1,

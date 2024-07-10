@@ -215,7 +215,6 @@ const createBlockFromHTML = (
 function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
   // Function to recursively collect HTML from nodes
   function collectHTML(node: Node, htmlBlocks: HTMLElement[]): void {
-    console.log(node);
     if (node.nodeType === Node.ELEMENT_NODE) {
       const elementNode = node as HTMLElement;
       // Collect outer HTML for paragraph-like elements
