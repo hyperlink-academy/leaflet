@@ -84,7 +84,7 @@ export function serverMutationContext(
         .select({ entity_set: entities.set })
         .from(entities)
         .where(driz.eq(entities.id, f.entity));
-      if (!this.checkPermission(f.entity)) return;
+      if (!(await this.checkPermission(f.entity))) return;
       if (attribute.cardinality === "one") {
         let existingFact = await tx
           .select({ id: facts.id, data: facts.data })
@@ -140,11 +140,11 @@ export function serverMutationContext(
         .from(facts)
         .rightJoin(entities, driz.eq(entities.id, facts.entity))
         .where(driz.eq(facts.id, id));
-      if (!f || !this.checkPermission(f.entities.id)) return;
+      if (!f || !(await this.checkPermission(f.entities.id))) return;
       await tx.delete(facts).where(driz.eq(facts.id, id));
     },
     async deleteEntity(entity) {
-      if (!this.checkPermission(entity)) return;
+      if (!(await this.checkPermission(entity))) return;
       await Promise.all([
         tx.delete(entities).where(driz.eq(entities.id, entity)),
         tx
