@@ -166,7 +166,7 @@ export const ThemePopover = (props: { entityID: string }) => {
                 </div>
 
                 <div className="font-bold relative text-center text-lg py-2  rounded-md bg-accent text-accentText shadow-md">
-                  Button
+                  Example Button
                 </div>
                 {/* <hr className="my-3" /> */}
                 <div className="flex flex-col pt-8 -mb-[6px] z-10">
