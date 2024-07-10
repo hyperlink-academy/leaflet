@@ -1,11 +1,12 @@
 import { useReplicache } from "src/replicache";
-import { ShareSmall } from "components/Icons";
+import { PopoverArrow, ShareSmall } from "components/Icons";
 import { useEffect, useState } from "react";
 import { getShareLink } from "./getShareLink";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useSmoker } from "components/Toast";
 import * as Popover from "@radix-ui/react-popover";
 import { Menu, MenuItem } from "components/Layout";
+import { theme } from "tailwind.config";
 
 export function ShareOptions(props: { rootEntity: string }) {
   let { permission_token } = useReplicache();
@@ -47,7 +48,7 @@ export function ShareOptions(props: { rootEntity: string }) {
         </div>
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Content align="start" sideOffset={6}>
+        <Popover.Content align="center" sideOffset={4}>
           <Menu>
             <MenuItem
               onClick={(e) => {
@@ -88,8 +89,12 @@ export function ShareOptions(props: { rootEntity: string }) {
               </div>
             </MenuItem>
           </Menu>
-
-          <Popover.Close />
+          <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
+            <PopoverArrow
+              arrowFill={theme.colors["bg-card"]}
+              arrowStroke={theme.colors["border"]}
+            />
+          </Popover.Arrow>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

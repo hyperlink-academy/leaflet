@@ -17,7 +17,11 @@ import {
 } from "react-aria-components";
 
 import { useEffect, useMemo, useState } from "react";
-import { BlockImageSmall, CloseContrastSmall } from "components/Icons";
+import {
+  BlockImageSmall,
+  CloseContrastSmall,
+  PopoverArrow,
+} from "components/Icons";
 import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { Replicache } from "replicache";
 import { FilterAttributes } from "src/replicache/attributes";
@@ -114,7 +118,7 @@ export const ThemePopover = (props: { entityID: string }) => {
             style={{ maxHeight: viewheight ? viewheight * 0.8 : "80vh" }}
             className="themeSetterWrapper w-80 h-fit bg-white rounded-md border border-border flex"
             align="center"
-            sideOffset={4}
+            sideOffset={6}
             collisionPadding={16}
           >
             <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
@@ -226,8 +230,12 @@ export const ThemePopover = (props: { entityID: string }) => {
                 </div>
               </div>
             </div>
-
-            <Popover.Arrow />
+            <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
+              <PopoverArrow
+                arrowFill={theme.colors["bg-card"]}
+                arrowStroke={theme.colors["border"]}
+              />
+            </Popover.Arrow>
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>

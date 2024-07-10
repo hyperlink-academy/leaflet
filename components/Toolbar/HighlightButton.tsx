@@ -29,7 +29,7 @@ import { useMemo, useState } from "react";
 import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
 import { useParams } from "next/navigation";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
-import { PaintSmall } from "components/Icons";
+import { PaintSmall, PopoverArrow } from "components/Icons";
 
 export const HighlightColorButton = (props: {
   color: "1" | "2" | "3";
@@ -113,7 +113,7 @@ export const HighlightColorSettings = () => {
         <Popover.Content
           className="themeSetterWrapper z-20 w-80 h-fit max-h-[80vh] bg-white rounded-md border border-border flex"
           align="center"
-          sideOffset={4}
+          sideOffset={8}
           collisionPadding={16}
         >
           <div
@@ -192,7 +192,12 @@ export const HighlightColorSettings = () => {
               </small>
             </div>
           </div>
-          <Popover.Arrow />
+          <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
+            <PopoverArrow
+              arrowFill={theme.colors["bg-card"]}
+              arrowStroke={theme.colors["border"]}
+            />
+          </Popover.Arrow>{" "}
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
