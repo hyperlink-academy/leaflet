@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   BoldSmall,
   CloseTiny,
@@ -17,6 +17,7 @@ import {
   StrikethroughSmall,
   HighlightSmall,
   CheckTiny,
+  PopoverArrow,
 } from "components/Icons";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
@@ -42,6 +43,8 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
 import { focusCard } from "components/Cards";
 import { addLinkBlock } from "src/utils/addLinkBlock";
+import * as Tooltip from "@radix-ui/react-tooltip";
+import { Separator, ShortcutKey } from "components/Layout";
 
 export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   let { rep } = useReplicache();
@@ -72,109 +75,152 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   }, [blockEmpty, selected]);
 
   return (
-    <div className="flex items-center justify-between w-full gap-6">
-      <div className="flex gap-[6px] items-center">
-        {toolbarState === "default" ? (
-          <>
-            <TextDecorationButton
-              mark={schema.marks.strong}
-              icon={<BoldSmall />}
-            />
-            <TextDecorationButton
-              mark={schema.marks.em}
-              icon={<ItalicSmall />}
-            />
-            <TextDecorationButton
-              mark={schema.marks.strikethrough}
-              icon={<StrikethroughSmall />}
-            />
-            <div className="flex items-center gap-1">
+    <Tooltip.Provider>
+      <div className="flex items-center justify-between w-full gap-6">
+        <div className="flex gap-[6px] items-center">
+          {toolbarState === "default" ? (
+            <>
               <TextDecorationButton
-                attrs={{ color: lastUsedHighlight }}
-                mark={schema.marks.highlight}
-                icon={<HighlightSmall />}
+                tooltipContent={
+                  <div className="flex flex-col gap-1 justify-center">
+                    <div className="text-center">Bold </div>
+                    <div className="flex gap-1">
+                      <ShortcutKey> Cntrl </ShortcutKey> +{" "}
+                      <ShortcutKey> B </ShortcutKey>
+                    </div>
+                  </div>
+                }
+                mark={schema.marks.strong}
+                icon={<BoldSmall />}
               />
-              <button
-                onClick={() => {
-                  setToolbarState("highlight");
-                }}
-                className="pr-2"
-              >
-                <div
-                  className={`w-2 h-[22px] rounded-[2px] border border-border`}
-                  style={{
-                    backgroundColor:
-                      lastUsedHighlight === "1"
-                        ? theme.colors["highlight-1"]
-                        : lastUsedHighlight === "2"
-                          ? theme.colors["highlight-2"]
-                          : theme.colors["highlight-3"],
-                  }}
+              <TextDecorationButton
+                tooltipContent=<div className="flex flex-col gap-1 justify-center">
+                  <div className="italic font-normal text-center">Italic</div>
+                  <div className="flex gap-1">
+                    <ShortcutKey> Cntrl </ShortcutKey> +{" "}
+                    <ShortcutKey> I </ShortcutKey>
+                  </div>
+                </div>
+                mark={schema.marks.em}
+                icon={<ItalicSmall />}
+              />
+              <TextDecorationButton
+                tooltipContent={
+                  <div className="flex flex-col gap-1 justify-center">
+                    <div className="text-center font-normal line-through">
+                      Strikethrough
+                    </div>
+                    <div className="flex gap-1">
+                      <ShortcutKey> Cntrl </ShortcutKey> +{" "}
+                      <ShortcutKey> Cmd </ShortcutKey> +{" "}
+                      <ShortcutKey> X </ShortcutKey>
+                    </div>
+                  </div>
+                }
+                mark={schema.marks.strikethrough}
+                icon={<StrikethroughSmall />}
+              />
+              <div className="flex items-center gap-1">
+                <TextDecorationButton
+                  tooltipContent={
+                    <div className="flex flex-col gap-1 justify-center">
+                      <div className="text-center bg-border-light w-fit rounded-md px-0.5 mx-auto ">
+                        Highlight
+                      </div>
+                      <div className="flex gap-1">
+                        <ShortcutKey> Cntrl </ShortcutKey> +{" "}
+                        <ShortcutKey> Cmd </ShortcutKey> +{" "}
+                        <ShortcutKey> H </ShortcutKey>
+                      </div>
+                    </div>
+                  }
+                  attrs={{ color: lastUsedHighlight }}
+                  mark={schema.marks.highlight}
+                  icon={<HighlightSmall />}
                 />
-              </button>
-            </div>
+                <button
+                  onClick={() => {
+                    setToolbarState("highlight");
+                  }}
+                  className="pr-2"
+                >
+                  <div
+                    className={`w-2 h-[22px] rounded-[2px] border border-border`}
+                    style={{
+                      backgroundColor:
+                        lastUsedHighlight === "1"
+                          ? theme.colors["highlight-1"]
+                          : lastUsedHighlight === "2"
+                            ? theme.colors["highlight-2"]
+                            : theme.colors["highlight-3"],
+                    }}
+                  />
+                </button>
+              </div>
 
-            <Separator />
-            {/* possibly link is only available if text is actively selected  */}
-            <LinkButton setToolBarState={setToolbarState} />
-            <Separator />
-            <TextBlockTypeButton setToolbarState={setToolbarState} />
-          </>
-        ) : toolbarState === "highlight" ? (
-          <HighlightToolbar
-            onClose={() => setToolbarState("default")}
-            lastUsedHighlight={lastUsedHighlight}
-            setLastUsedHighlight={(color: "1" | "2" | "3") =>
-              setlastUsedHighlight(color)
-            }
-          />
-        ) : toolbarState === "link" ? (
-          <LinkEditor onClose={() => setToolbarState("default")} />
-        ) : toolbarState === "header" ? (
-          <TextBlockTypeButtons onClose={() => setToolbarState("default")} />
-        ) : toolbarState === "block" ? (
-          <BlockToolbar
-            setToolbarState={setToolbarState}
-            onClose={() => {
-              if (blockEmpty)
-                useUIState.setState(() => ({
-                  focusedBlock: {
-                    type: "card",
-                    entityID: props.cardID,
-                  },
-                  selectedBlock: [],
-                }));
+              <Separator classname="h-6" />
+              {/* possibly link is only available if text is actively selected  */}
+              <LinkButton setToolBarState={setToolbarState} />
+              <Separator classname="h-6" />
+              <TextBlockTypeButton setToolbarState={setToolbarState} />
+            </>
+          ) : toolbarState === "highlight" ? (
+            <HighlightToolbar
+              onClose={() => setToolbarState("default")}
+              lastUsedHighlight={lastUsedHighlight}
+              setLastUsedHighlight={(color: "1" | "2" | "3") =>
+                setlastUsedHighlight(color)
+              }
+            />
+          ) : toolbarState === "link" ? (
+            <LinkEditor onClose={() => setToolbarState("default")} />
+          ) : toolbarState === "header" ? (
+            <TextBlockTypeButtons onClose={() => setToolbarState("default")} />
+          ) : toolbarState === "block" ? (
+            <BlockToolbar
+              setToolbarState={setToolbarState}
+              onClose={() => {
+                if (blockEmpty)
+                  useUIState.setState(() => ({
+                    focusedBlock: {
+                      type: "card",
+                      entityID: props.cardID,
+                    },
+                    selectedBlock: [],
+                  }));
+                setToolbarState("default");
+              }}
+            />
+          ) : toolbarState === "linkBlock" ? (
+            <LinkBlockToolbar
+              onClose={() => {
+                setToolbarState("block");
+              }}
+            />
+          ) : null}
+        </div>
+        <button
+          className="hover:text-accent"
+          onClick={() => {
+            if (toolbarState === "linkBlock") {
+              setToolbarState("link");
+            } else if (toolbarState === "default") {
+              useUIState.setState(() => ({
+                focusedBlock: {
+                  type: "card",
+                  entityID: props.cardID,
+                },
+                selectedBlock: [],
+              }));
+            } else {
               setToolbarState("default");
-            }}
-          />
-        ) : toolbarState === "linkBlock" ? (
-          <LinkBlockToolbar
-            onClose={() => {
-              setToolbarState("block");
-            }}
-          />
-        ) : null}
+            }
+          }}
+        >
+          <CloseTiny />
+        </button>
       </div>
-      <button
-        onClick={() => {
-          if (toolbarState === "linkBlock") {
-            setToolbarState("link");
-          } else if (toolbarState === "default") {
-            useUIState.setState(() => ({
-              focusedBlock: {
-                type: "card",
-                entityID: props.cardID,
-              },
-              selectedBlock: [],
-            }));
-          } else {
-            setToolbarState("default");
-          }
-        }}
-      >
-        <CloseTiny />
-      </button>
-    </div>
+    </Tooltip.Provider>
   );
 };
 
@@ -221,7 +267,7 @@ const LinkBlockToolbar = (props: { onClose: () => void }) => {
           id="block-link-input"
           type="url"
           className="w-full grow border-none outline-none bg-transparent "
-          placeholder="www.leaflet.pub"
+          placeholder="add a link..."
           value={linkValue}
           onChange={(e) => setLinkValue(e.target.value)}
           onKeyDown={(e) => {
@@ -254,10 +300,8 @@ const HighlightToolbar = (props: {
   return (
     <div className="flex w-full justify-between items-center gap-4 text-secondary">
       <div className="flex items-center gap-[6px]">
-        <ToolbarButton onClick={() => props.onClose()}>
-          <HighlightSmall />
-        </ToolbarButton>
-        <Separator />
+        <HighlightSmall />
+        <Separator classname="h-6" />
         <HighlightColorButton
           color="1"
           lastUsedHighlight={props.lastUsedHighlight}
@@ -284,22 +328,25 @@ const ListToolbar = (props: { onClose: () => void }) => {
   return (
     <div className="flex w-full justify-between items-center gap-4">
       <div className="flex items-center gap-[6px]">
-        <ToolbarButton onClick={() => props.onClose()}>
+        <ToolbarButton
+          onClick={() => props.onClose()}
+          tooltipContent={<div></div>}
+        >
           <ListOrderedSmall />
         </ToolbarButton>
-        <Separator />
-        <ToolbarButton onClick={() => {}}>
+        <Separator classname="h-6" />
+        <ToolbarButton onClick={() => {}} tooltipContent={<div></div>}>
           <ListUnorderedSmall />
         </ToolbarButton>
-        <ToolbarButton onClick={() => {}}>
+        <ToolbarButton onClick={() => {}} tooltipContent={<div></div>}>
           <ListOrderedSmall />
         </ToolbarButton>
 
         {/* if there is no list and you click and indent button, then it should create a list */}
-        <ToolbarButton>
+        <ToolbarButton tooltipContent={<div></div>}>
           <ListIndentIncreaseSmall />
         </ToolbarButton>
-        <ToolbarButton>
+        <ToolbarButton tooltipContent={<div></div>}>
           <ListIndentDecreaseSmall />
         </ToolbarButton>
       </div>
@@ -347,11 +394,9 @@ const BlockToolbar = (props: {
     return (
       <div className="flex w-full justify-between items-center gap-4">
         <div className="flex items-center gap-[6px]">
-          <ToolbarButton onClick={() => props.onClose()}>
-            <BlockSmall />
-          </ToolbarButton>
-          <Separator />
-          <ToolbarButton>
+          <BlockSmall />
+          <Separator classname="h-6" />
+          <ToolbarButton tooltipContent=<div>Add an Image</div>>
             <label
               className="blockOptionsImage hover:cursor-pointer flex place-items-center"
               onMouseDown={(e) => e.preventDefault()}
@@ -380,10 +425,14 @@ const BlockToolbar = (props: {
               </div>
             </label>
           </ToolbarButton>
-          <ToolbarButton onClick={() => props.setToolbarState("linkBlock")}>
+          <ToolbarButton
+            onClick={() => props.setToolbarState("linkBlock")}
+            tooltipContent=<div>Add a Link</div>
+          >
             <BlockLinkSmall />
           </ToolbarButton>
           <ToolbarButton
+            tooltipContent=<div>Add a Page</div>
             onClick={async () => {
               if (!focusedBlock || !rep) return;
               let [entity, parent] = await getEntity();
@@ -415,34 +464,50 @@ const BlockToolbar = (props: {
 export const ToolbarButton = (props: {
   className?: string;
   onClick?: (e: React.MouseEvent) => void;
+  tooltipContent: React.ReactNode;
   children: React.ReactNode;
   active?: boolean;
   disabled?: boolean;
 }) => {
+  console.log(props.tooltipContent);
   return (
-    <button
-      disabled={props.disabled}
-      className={`
-        rounded-md active:bg-border active:text-primary
-        ${props.className}
-        ${
-          props.active
-            ? "bg-border text-primary"
-            : props.disabled
-              ? "text-border cursor-not-allowed"
-              : "text-secondary"
-        }
-        `}
-      onMouseDown={(e) => {
-        e.preventDefault();
-        props.onClick && props.onClick(e);
-      }}
-    >
-      {props.children}
-    </button>
-  );
-};
+    <Tooltip.Root>
+      <Tooltip.Trigger
+        disabled={props.disabled}
+        className={`
+          rounded-md active:bg-border active:text-primary
+          ${props.className}
+          ${
+            props.active
+              ? "bg-border text-primary"
+              : props.disabled
+                ? "text-border cursor-not-allowed"
+                : "text-secondary  hover:bg-border hover:text-primary"
+          }
+          `}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          props.onClick && props.onClick(e);
+        }}
+      >
+        {props.children}
+      </Tooltip.Trigger>
 
-const Separator = () => {
-  return <div className="h-6 border-r border-border" />;
+      <Tooltip.Portal>
+        <Tooltip.Content
+          sideOffset={6}
+          className="z-10 bg-border rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
+        >
+          {props.tooltipContent}
+          {/*  fill={theme.colors["border"]}s */}
+          <Tooltip.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
+            <PopoverArrow
+              arrowFill={theme.colors["border"]}
+              arrowStroke="transparent"
+            />
+          </Tooltip.Arrow>
+        </Tooltip.Content>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+  );
 };

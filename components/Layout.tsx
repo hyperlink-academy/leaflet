@@ -25,3 +25,13 @@ export const MenuItem = (props: {
     </button>
   );
 };
+
+export const ShortcutKey = (props: { children: React.ReactNode }) => {
+  return (
+    <span>
+      <code className="min-w-6 w-fit text-xs text-primary bg-border-light border border-secondary rounded-md px-0.5  flex justify-center ">
+        {props.children}
+      </code>
+    </span>
+  );
+};

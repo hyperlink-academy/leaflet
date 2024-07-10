@@ -174,7 +174,7 @@ const BlockLinkButton = (props: Props) => {
             id="block-link-input"
             type="url"
             className="w-full grow border-none outline-none bg-transparent "
-            placeholder="www.leaflet.pub"
+            placeholder="add a link..."
             value={linkValue}
             onChange={(e) => setLinkValue(e.target.value)}
             onBlur={() => setLinkOpen(false)}

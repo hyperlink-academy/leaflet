@@ -34,6 +34,7 @@ export function LinkButton(props: { setToolBarState: (s: "link") => void }) {
         props.setToolBarState("link");
       }}
       disabled={focusedEditor?.editor.selection.empty}
+      tooltipContent={<div className="text-accent underline">Inline Link</div>}
     >
       <LinkTextToolbarSmall />
     </ToolbarButton>
@@ -69,14 +70,12 @@ export function LinkEditor(props: { onClose: () => void }) {
 
   return (
     <div className="w-full flex items-center gap-[6px]">
-      <ToolbarButton onClick={() => props.onClose()}>
-        <LinkTextToolbarSmall />
-      </ToolbarButton>
+      <LinkTextToolbarSmall />
       <Separator classname="h-6" />
       <input
         autoFocus
         className="w-full grow bg-transparent border-none outline-none "
-        placeholder="www.leaflet.pub"
+        placeholder="add a link..."
         value={linkValue}
         onChange={(e) => setLinkValue(e.target.value)}
         onKeyDown={(e) => {

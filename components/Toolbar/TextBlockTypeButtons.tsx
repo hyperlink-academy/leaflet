@@ -49,9 +49,9 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
     // This Toolbar should close once the user starts typing again
     <div className="flex w-full justify-between items-center gap-4">
       <div className="flex items-center gap-[6px]">
-        <ToolbarButton className="w-10 flex justify-center" active>
+        <div className="w-8 flex justify-center">
           <BlockTypeIcon entityID={focusedBlock?.entityID} />
-        </ToolbarButton>
+        </div>
         <Separator classname="h-6" />
         <ToolbarButton
           onClick={() => {
@@ -61,6 +61,7 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
             blockType?.data.value === "heading" &&
             headingLevel?.data.value === 1
           }
+          tooltipContent={<div className="">Title</div>}
         >
           <Header1Small />
         </ToolbarButton>
@@ -72,6 +73,7 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
             blockType?.data.value === "heading" &&
             headingLevel?.data.value === 2
           }
+          tooltipContent={<div>Heading</div>}
         >
           <Header2Small />
         </ToolbarButton>
@@ -83,6 +85,7 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
             blockType?.data.value === "heading" &&
             headingLevel?.data.value === 3
           }
+          tooltipContent={<div>Subheading</div>}
         >
           <Header3Small />
         </ToolbarButton>
@@ -102,6 +105,7 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
           }}
           active={blockType?.data.value === "text"}
           className="px-[6px]"
+          tooltipContent={<div>Paragraph</div>}
         >
           Paragraph
         </ToolbarButton>
@@ -133,6 +137,7 @@ export function TextBlockTypeButton(props: {
   let focusedBlock = useUIState((s) => s.focusedBlock);
   return (
     <ToolbarButton
+      tooltipContent={<div>Format Text</div>}
       active
       onClick={() => {
         props.setToolbarState("header");

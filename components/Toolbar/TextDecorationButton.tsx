@@ -6,11 +6,13 @@ import { TextSelection } from "prosemirror-state";
 import { publishAppEvent } from "src/eventBus";
 import { useEditorStates } from "src/state/useEditorState";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
+import { ShortcutKey } from "components/Layout";
 
 export function TextDecorationButton(props: {
   mark: MarkType;
   attrs?: any;
   icon: React.ReactNode;
+  tooltipContent: React.ReactNode;
 }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);
   let focusedEditor = useEditorStates((s) =>
@@ -39,6 +41,7 @@ export function TextDecorationButton(props: {
         e.preventDefault();
         toggleMarkInFocusedBlock(props.mark, props.attrs);
       }}
+      tooltipContent={props.tooltipContent}
     >
       {props.icon}
     </ToolbarButton>

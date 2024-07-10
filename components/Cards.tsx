@@ -9,7 +9,7 @@ import { DesktopCardFooter } from "./DesktopFooter";
 import { Replicache } from "replicache";
 import { Fact, ReplicacheMutators, useReplicache } from "src/replicache";
 import * as Popover from "@radix-ui/react-popover";
-import { MoreOptionsTiny, DeleteSmall, CloseTiny } from "./Icons";
+import { MoreOptionsTiny, DeleteSmall, CloseTiny, PopoverArrow } from "./Icons";
 import { useToaster } from "./Toast";
 import { ShareOptions } from "./ShareOptions";
 import { MenuItem, Menu } from "./Layout";
