@@ -1,6 +1,6 @@
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
-import { schema } from "components/TextBlock/schema";
+import { schema } from "components/Blocks/TextBlock/schema";
 import { TextSelection } from "prosemirror-state";
 import { toggleMarkInFocusedBlock } from "./TextDecorationButton";
 import * as Popover from "@radix-ui/react-popover";

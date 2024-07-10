@@ -1,7 +1,7 @@
 import { XmlElement, XmlHook, XmlText } from "yjs";
 import { nodes, marks } from "prosemirror-schema-basic";
 import { CSSProperties } from "react";
-import { theme } from "../../tailwind.config";
+import { theme } from "tailwind.config";
 
 export function RenderYJSFragment({
   node,

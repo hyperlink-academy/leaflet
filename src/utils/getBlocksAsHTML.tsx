@@ -4,7 +4,7 @@ import { scanIndex } from "src/replicache/utils";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
-import { RenderYJSFragment } from "components/TextBlock/RenderYJSFragment";
+import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Block } from "components/Blocks";
 
 export async function getBlocksAsHTML(

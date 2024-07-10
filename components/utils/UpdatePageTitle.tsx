@@ -5,7 +5,7 @@ import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEntity } from "src/replicache";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
-import { YJSFragmentToString } from "components/TextBlock/RenderYJSFragment";
+import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
 
 export function UpdatePageTitle(props: { entityID: string }) {
   let blocks = useBlocks(props.entityID).filter(

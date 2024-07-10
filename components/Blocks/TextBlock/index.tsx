@@ -31,7 +31,7 @@ import { useUIState } from "src/useUIState";
 import { MarkType, DOMParser as ProsemirrorDOMParser } from "prosemirror-model";
 import { useAppEventListener } from "src/eventBus";
 import { addLinkBlock } from "src/utils/addLinkBlock";
-import { BlockOptions } from "components/BlockOptions";
+import { BlockOptions } from "components/Blocks/BlockOptions";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { isIOS } from "@react-aria/utils";
 import { useIsMobile } from "src/hooks/isMobile";

@@ -21,7 +21,7 @@ import {
 } from "components/Icons";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
-import { schema } from "components/TextBlock/schema";
+import { schema } from "components/Blocks/TextBlock/schema";
 import { TextDecorationButton } from "./TextDecorationButton";
 import {
   TextBlockTypeButton,

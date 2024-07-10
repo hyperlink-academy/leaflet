@@ -1,12 +1,12 @@
 "use client";
 
 import { useEntity, useReplicache } from "src/replicache";
-import { BlockProps } from "./Blocks";
+import { BlockProps } from "components/Blocks";
 import { useUIState } from "src/useUIState";
 import { theme } from "tailwind.config";
-import { CloseContrastSmall } from "./Icons";
+import { CloseContrastSmall } from "components/Icons";
 import useMeasure from "react-use-measure";
-import { useEntitySetContext } from "./EntitySetProvider";
+import { useEntitySetContext } from "components/EntitySetProvider";
 
 export function ImageBlock(props: BlockProps) {
   let { rep, permission_token } = useReplicache();

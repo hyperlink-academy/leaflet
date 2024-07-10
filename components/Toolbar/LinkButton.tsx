@@ -1,4 +1,4 @@
-import { schema } from "components/TextBlock/schema";
+import { schema } from "components/Blocks/TextBlock/schema";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { useUIState } from "src/useUIState";
 import { ToolbarButton } from ".";

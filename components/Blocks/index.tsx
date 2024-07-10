@@ -1,6 +1,6 @@
 "use client";
 import { Fact, useEntity, useReplicache } from "src/replicache";
-import { TextBlock } from "components/TextBlock";
+import { TextBlock } from "components/Blocks/TextBlock";
 import { generateKeyBetween } from "fractional-indexing";
 import { useEffect } from "react";
 import { elementId } from "src/utils/elementId";
@@ -13,7 +13,7 @@ import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { BlockOptions } from "./BlockOptions";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
-import { useEntitySetContext } from "./EntitySetProvider";
+import { useEntitySetContext } from "components/EntitySetProvider";
 import { scanIndex } from "src/replicache/utils";
 import { v7 } from "uuid";
 

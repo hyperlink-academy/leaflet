@@ -11,7 +11,7 @@ import { Cards } from "components/Cards";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { MobileFooter } from "components/MobileFooter";
 import { PopUpProvider } from "components/Toast";
-import { YJSFragmentToString } from "components/TextBlock/RenderYJSFragment";
+import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Doc } from "./Doc";
 
 export const preferredRegion = ["sfo1"];

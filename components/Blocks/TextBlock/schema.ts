@@ -1,6 +1,6 @@
 import { Schema, Node, MarkSpec } from "prosemirror-model";
 import { marks } from "prosemirror-schema-basic";
-import { theme } from "../../tailwind.config";
+import { theme } from "tailwind.config";
 
 let baseSchema = {
   marks: {

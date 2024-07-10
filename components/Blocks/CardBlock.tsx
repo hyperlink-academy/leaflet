@@ -2,7 +2,7 @@ import { BlockProps } from "components/Blocks";
 import { focusCard } from "components/Cards";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import { RenderedTextBlock } from "./TextBlock";
+import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
 
 export function CardBlock(props: BlockProps) {

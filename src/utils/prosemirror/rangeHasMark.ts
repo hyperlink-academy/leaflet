@@ -1,4 +1,4 @@
-import { schema } from "components/TextBlock/schema";
+import { schema } from "components/Blocks/TextBlock/schema";
 import { Mark, MarkType } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
 

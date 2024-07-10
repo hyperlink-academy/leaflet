@@ -6,16 +6,16 @@ import {
   BlockLinkSmall,
   CheckTiny,
   CloseTiny,
-} from "./Icons";
+} from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
 import { addImage } from "src/utils/addImage";
-import { focusCard } from "./Cards";
+import { focusCard } from "components/Cards";
 import { useState } from "react";
-import { Separator } from "./Layout";
+import { Separator } from "components/Layout";
 import { addLinkBlock } from "src/utils/addLinkBlock";
-import { useEntitySetContext } from "./EntitySetProvider";
+import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
-import { Input } from "./Input";
+import { Input } from "components/Input";
 
 type Props = {
   parent: string;

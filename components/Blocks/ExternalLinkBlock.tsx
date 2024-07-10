@@ -1,5 +1,5 @@
 import { useEntity } from "src/replicache";
-import { CloseTiny } from "./Icons";
+import { CloseTiny } from "components/Icons";
 
 export const ExternalLinkBlock = (props: { entityID: string }) => {
   let previewImage = useEntity(props.entityID, "link/preview");

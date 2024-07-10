@@ -1,6 +1,6 @@
 "use client";
 import { useUIState } from "src/useUIState";
-import { Blocks, focusBlock } from "./Blocks";
+import { Blocks, focusBlock } from "components/Blocks";
 import useMeasure from "react-use-measure";
 import { elementId } from "src/utils/elementId";
 import { ThemePopover } from "./ThemeManager/ThemeSetter";
