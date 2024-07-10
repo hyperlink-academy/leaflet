@@ -204,6 +204,7 @@ function Block(props: BlockProps) {
         if (!block) return;
       }
       if (e.key === "Backspace") {
+        if (!entity_set.permissions.write) return;
         if (textBlocks[props.type]) return;
         e.preventDefault();
         r.mutate.removeBlock({ blockEntity: props.entityID });
@@ -213,6 +214,7 @@ function Block(props: BlockProps) {
       }
       if (e.key === "Enter") {
         let newEntityID = v7();
+        if (!entity_set.permissions.write) return;
         r.mutate.addBlock({
           permission_set: entity_set.set,
           newEntityID,

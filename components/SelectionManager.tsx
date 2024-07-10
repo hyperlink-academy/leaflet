@@ -7,6 +7,7 @@ import { getBlocksAsHTML } from "src/utils/getBlocksAsHTML";
 import { scanIndex } from "src/replicache/utils";
 import { focusBlock } from "./Blocks";
 import { useEditorStates } from "src/state/useEditorState";
+import { useEntitySetContext } from "./EntitySetProvider";
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
@@ -16,10 +17,12 @@ export const useSelectingMouse = create(() => ({
 
 export function SelectionManager() {
   let moreThanOneSelected = useUIState((s) => s.selectedBlock.length > 1);
+  let entity_set = useEntitySetContext();
   let { rep } = useReplicache();
   useEffect(() => {
     let listener = async (e: KeyboardEvent) => {
       if (e.key === "Backspace" || e.key === "Delete") {
+        if (!entity_set.permissions.write) return;
         if (moreThanOneSelected) {
           let selectedBlocks = useUIState.getState().selectedBlock;
           let firstBlock = selectedBlocks.sort((a, b) =>
@@ -254,7 +257,6 @@ export function SelectionManager() {
   }, [moreThanOneSelected, rep]);
 
   let [mouseDown, setMouseDown] = useState(false);
-  let dragStart = useSelectingMouse((s) => s.start);
   let initialContentEditableParent = useRef<null | Node>(null);
   let savedSelection = useRef<SavedRange[] | null>();
   useEffect(() => {
