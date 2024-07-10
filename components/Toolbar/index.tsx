@@ -469,7 +469,6 @@ export const ToolbarButton = (props: {
   active?: boolean;
   disabled?: boolean;
 }) => {
-  console.log(props.tooltipContent);
   return (
     <Tooltip.Root>
       <Tooltip.Trigger

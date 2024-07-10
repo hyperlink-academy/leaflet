@@ -5,22 +5,28 @@ import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
 import { CloseTiny } from "components/Icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
 
 export function CardBlock(props: BlockProps) {
+  let { rep } = useReplicache();
+  let docMetadata = useDocMetadata(props.entityID);
+  let permission = useEntitySetContext().permissions.write;
+
   let isSelected = useUIState(
     (s) =>
       (props.type !== "text" || s.selectedBlock.length > 1) &&
       s.selectedBlock.find((b) => b.value === props.entityID),
   );
-  let docMetadata = useDocMetadata(props.entityID);
-  let permission = useEntitySetContext().permissions.write;
-
   let isOpen = useUIState((s) => s.openCards).includes(props.entityID);
+
   let [areYouSure, setAreYouSure] = useState(false);
 
-  let { rep } = useReplicache();
+  useEffect(() => {
+    if (!isSelected) {
+      setAreYouSure(false);
+    }
+  }, [isSelected]);
 
   return (
     <div
@@ -33,7 +39,8 @@ export function CardBlock(props: BlockProps) {
         ${isSelected || isOpen ? "outline-border border-border" : "outline-transparent border-border-light"}
         `}
     >
-      {areYouSure ? (
+      {/* if the block is not focused, set are you sure to false*/}
+      {areYouSure && isSelected ? (
         <div className="flex flex-col gap-1 w-full h-full place-items-center items-center font-bold py-4 bg-border-light">
           <div className="">Delete this Page?</div>
           <div className="flex gap-2">
