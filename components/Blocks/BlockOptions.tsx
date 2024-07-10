@@ -16,6 +16,8 @@ import { addLinkBlock } from "src/utils/addLinkBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
 import { Input } from "components/Input";
+import { ToolbarButton } from "components/Toolbar";
+import * as Tooltip from "@radix-ui/react-tooltip";
 
 type Props = {
   parent: string;
@@ -36,98 +38,101 @@ export function BlockOptions(props: Props) {
       : focusedElement?.parent;
 
   return (
-    <div
-      className={`blockOptionsWrapper sm:group-hover/text:block group-focus-within/text:block hidden
+    <Tooltip.Provider>
+      <div
+        className={`blockOptionsWrapper sm:group-hover/text:block group-focus-within/text:block hidden
  absolute right-2 sm:right-3 ${props.first ? "top-2 sm:top-3" : "top-1"}`}
-    >
-      <div className="blockOptionsContent flex gap-1 items-center">
-        <label
-          className="blockOptionsImage hover:cursor-pointer flex place-items-center"
-          onMouseDown={(e) => e.preventDefault()}
-        >
-          <div className="text-tertiary hover:text-accent ">
-            <BlockImageSmall />
-          </div>
-          <div className="hidden">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={async (e) => {
-                let file = e.currentTarget.files?.[0];
-                if (!file || !rep) return;
-                if (props.factID)
-                  await rep.mutate.retractFact({ factID: props.factID });
-                let entity = props.entityID;
-                if (!entity) {
-                  entity = v7();
-                  await rep?.mutate.addBlock({
-                    parent: props.parent,
-                    permission_set: entity_set.set,
-                    type: "text",
-                    position: generateKeyBetween(
-                      props.position,
-                      props.nextPosition,
-                    ),
-                    newEntityID: entity,
-                  });
-                }
-                await rep.mutate.assertFact({
-                  entity,
+      >
+        <div className="blockOptionsContent flex gap-1 items-center">
+          <ToolbarButton
+            tooltipContent="Add an Image"
+            className="hover:bg-transparent hover:text-accent text-tertiary"
+          >
+            <label onMouseDown={(e) => e.preventDefault()}>
+              <BlockImageSmall className="hover:text-accent" />
+              <div className="hidden">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    let file = e.currentTarget.files?.[0];
+                    if (!file || !rep) return;
+                    if (props.factID)
+                      await rep.mutate.retractFact({ factID: props.factID });
+                    let entity = props.entityID;
+                    if (!entity) {
+                      entity = v7();
+                      await rep?.mutate.addBlock({
+                        parent: props.parent,
+                        permission_set: entity_set.set,
+                        type: "text",
+                        position: generateKeyBetween(
+                          props.position,
+                          props.nextPosition,
+                        ),
+                        newEntityID: entity,
+                      });
+                    }
+                    await rep.mutate.assertFact({
+                      entity,
+                      attribute: "block/type",
+                      data: { type: "block-type-union", value: "image" },
+                    });
+                    await addImage(file, rep, {
+                      entityID: entity,
+                      attribute: "block/image",
+                    });
+                  }}
+                />
+              </div>
+            </label>
+          </ToolbarButton>
+
+          <BlockLinkButton {...props} />
+
+          <ToolbarButton
+            tooltipContent="Add a card"
+            className="hover:bg-transparent hover:text-accent text-tertiary"
+            onClick={async () => {
+              if (!props.entityID) {
+                let entity = v7();
+
+                await rep?.mutate.addBlock({
+                  permission_set: entity_set.set,
+                  parent: props.parent,
+                  type: "card",
+                  position: generateKeyBetween(
+                    props.position,
+                    props.nextPosition,
+                  ),
+                  newEntityID: entity,
+                });
+                useUIState.getState().openCard(props.parent, entity);
+                if (rep) focusCard(entity, rep);
+              } else {
+                await rep?.mutate.assertFact({
+                  entity: props.entityID,
                   attribute: "block/type",
-                  data: { type: "block-type-union", value: "image" },
+                  data: { type: "block-type-union", value: "card" },
                 });
-                await addImage(file, rep, {
-                  entityID: entity,
-                  attribute: "block/image",
+                let entityID = v7();
+                await rep?.mutate.addBlock({
+                  parent: props.entityID,
+                  position: "a0",
+                  newEntityID: entityID,
+                  type: "text",
+                  permission_set: entity_set.set,
                 });
-              }}
-            />
-          </div>
-        </label>
-        <BlockLinkButton {...props} />
-
-        <button
-          className="blockOptionsCard text-tertiary hover:text-accent"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={async () => {
-            if (!props.entityID) {
-              let entity = v7();
-
-              await rep?.mutate.addBlock({
-                permission_set: entity_set.set,
-                parent: props.parent,
-                type: "card",
-                position: generateKeyBetween(
-                  props.position,
-                  props.nextPosition,
-                ),
-                newEntityID: entity,
-              });
-              useUIState.getState().openCard(props.parent, entity);
-              if (rep) focusCard(entity, rep);
-            } else {
-              await rep?.mutate.assertFact({
-                entity: props.entityID,
-                attribute: "block/type",
-                data: { type: "block-type-union", value: "card" },
-              });
-              let entityID = v7();
-              await rep?.mutate.addBlock({
-                parent: props.entityID,
-                position: "a0",
-                newEntityID: entityID,
-                type: "text",
-                permission_set: entity_set.set,
-              });
-              useUIState.getState().openCard(props.parent, props.entityID);
-              if (rep) focusCard(props.entityID, rep, "focusFirstBlock");
-            }
-          }}
-        >
-          <BlockCardSmall />
-        </button>
+                useUIState.getState().openCard(props.parent, props.entityID);
+                if (rep) focusCard(props.entityID, rep, "focusFirstBlock");
+              }
+            }}
+          >
+            <BlockCardSmall className="hover:text-accent" />
+          </ToolbarButton>
+        </div>
       </div>
-    </div>
+    </Tooltip.Provider>
   );
 }
 
@@ -157,14 +162,16 @@ const BlockLinkButton = (props: Props) => {
     <div
       className={`max-w-sm flex gap-2 hover:text-accent rounded-md ${linkOpen ? "text-secondary" : " text-tertiary"}`}
     >
-      <button
-        onMouseDown={(e) => e.preventDefault()}
+      <ToolbarButton
+        tooltipContent="Add a Link"
+        className="hover:bg-transparent hover:text-accent text-tertiary"
         onClick={() => {
           setLinkOpen(!linkOpen);
         }}
       >
-        <BlockLinkSmall />
-      </button>
+        <BlockLinkSmall className="hover:text-accent" />
+      </ToolbarButton>
+
       {linkOpen && (
         <>
           <Separator />
