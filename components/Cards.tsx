@@ -101,7 +101,6 @@ function Card(props: { entityID: string; first?: boolean }) {
           }}
           className={`
       card w-[calc(100vw-12px)] sm:w-[calc(100vw-128px)] lg:w-[calc(50vw-32px)]  max-w-prose
-      sm:pt-0 pt-2
       grow flex flex-col
       overscroll-y-none
       overflow-y-scroll no-scrollbar

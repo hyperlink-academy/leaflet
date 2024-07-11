@@ -169,12 +169,22 @@ let textBlocks: { [k in Fact<"block/type">["data"]["value"]]?: boolean } = {
 };
 
 function Block(props: BlockProps) {
+  let { rep } = useReplicache();
+
+  let selectedBlocks = useUIState((s) => s.selectedBlock);
+
   let selected = useUIState(
     (s) =>
       (!textBlocks[props.type] || s.selectedBlock.length > 1) &&
       s.selectedBlock.find((b) => b.value === props.entityID),
   );
-  let { rep } = useReplicache();
+
+  let nextBlockSelected = useUIState((s) =>
+    s.selectedBlock.find((b) => b.value === props.nextBlock?.value),
+  );
+  let prevBlockSelected = useUIState((s) =>
+    s.selectedBlock.find((b) => b.value === props.previousBlock?.value),
+  );
 
   let entity_set = useEntitySetContext();
   useEffect(() => {
@@ -284,13 +294,25 @@ function Block(props: BlockProps) {
       }}
       // text and heading blocks handle thier own padding so that
       // clicking anywhere on them (even the padding between blocks) will focus the textarea
-      className={`${
+      className={` relative ${
         props.type !== "heading" &&
         props.type !== "text" &&
-        `border-l-4 first:pt-2 sm:first:pt-3 pl-1 sm:pl-2 pr-2 sm:pr-3 pt-1 pb-2 ${selected ? "border-tertiary" : "border-transparent"}`
+        `first:pt-0 sm:first:pt-0 pl-3 pr-3 sm:pl-4 sm:pr-4 pt-1 pb-2`
       }`}
       id={elementId.block(props.entityID).container}
     >
+      {selected && selectedBlocks.length > 1 && (
+        <div
+          className={`
+            textSelection pointer-events-none
+            absolute right-2 left-2 bg-border-light
+            ${!props.previousBlock ? "top-2" : "top-0"}
+            ${props.type !== "heading" && !nextBlockSelected ? "bottom-1" : "bottom-0"}
+            ${!prevBlockSelected && "rounded-t-md"}
+            ${!nextBlockSelected && "rounded-b-md"}
+            `}
+        />
+      )}
       {props.type === "card" ? (
         <CardBlock {...props} />
       ) : props.type === "text" ? (
