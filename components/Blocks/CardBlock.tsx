@@ -45,7 +45,7 @@ export function CardBlock(props: BlockProps) {
           <div className="">Delete this Page?</div>
           <div className="flex gap-2">
             <button
-              className="bg-accent text-accentText px-2 py-1 rounded-md "
+              className="bg-accent-1 text-accent-2 px-2 py-1 rounded-md "
               onClick={(e) => {
                 e.stopPropagation();
                 useUIState.getState().closeCard(props.entityID);
@@ -59,7 +59,7 @@ export function CardBlock(props: BlockProps) {
               Delete
             </button>
             <button
-              className="text-accent"
+              className="text-accent-1"
               onClick={() => setAreYouSure(false)}
             >
               Nevermind
@@ -94,7 +94,7 @@ export function CardBlock(props: BlockProps) {
           <CardPreview entityID={props.entityID} />
           {permission && (
             <button
-              className="absolute p-1 top-0.5 right-0.5 hover:text-accent text-secondary sm:hidden sm:group-hover/cardBlock:block"
+              className="absolute p-1 top-0.5 right-0.5 hover:text-accent-1 text-secondary sm:hidden sm:group-hover/cardBlock:block"
               onClick={(e) => {
                 e.stopPropagation();
                 setAreYouSure(true);

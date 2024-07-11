@@ -39,8 +39,8 @@ export type pickers =
   | "null"
   | "page"
   | "card"
-  | "accent"
-  | "accentText"
+  | "accent-1"
+  | "accent-2"
   | "text"
   | "highlight-1"
   | "highlight-2"
@@ -64,7 +64,7 @@ export const ThemePopover = (props: { entityID: string }) => {
   let pageValue = useColorAttribute(props.entityID, "theme/page-background");
   let cardValue = useColorAttribute(props.entityID, "theme/card-background");
   let primaryValue = useColorAttribute(props.entityID, "theme/primary");
-  let accentBGValue = useColorAttribute(
+  let accent1Value = useColorAttribute(
     props.entityID,
     "theme/accent-background",
   );
@@ -75,7 +75,7 @@ export const ThemePopover = (props: { entityID: string }) => {
     props.entityID,
     "theme/background-image-repeat",
   );
-  let accentTextValue = useColorAttribute(props.entityID, "theme/accent-text");
+  let accent2Value = useColorAttribute(props.entityID, "theme/accent-text");
   let [openPicker, setOpenPicker] = useState<pickers>("null");
   let set = useMemo(() => {
     return setColorAttribute(rep, props.entityID);
@@ -92,7 +92,7 @@ export const ThemePopover = (props: { entityID: string }) => {
   }, []);
 
   let gradient = [
-    `radial-gradient(at ${randomPositions[0]}, ${accentBGValue.toString("hex")}80 2px, transparent 70%)`,
+    `radial-gradient(at ${randomPositions[0]}, ${accent1Value.toString("hex")}80 2px, transparent 70%)`,
     `radial-gradient(at ${randomPositions[1]}, ${cardValue.toString("hex")}66 2px, transparent 60%)`,
     `radial-gradient(at ${randomPositions[2]}, ${primaryValue.toString("hex")}B3 2px, transparent 100%)`,
   ].join(", ");
@@ -144,36 +144,36 @@ export const ThemePopover = (props: { entityID: string }) => {
               >
                 <div className="flex flex-col mt-4 -mb-[6px] z-10">
                   <div
-                    className="themePageControls text-accentText flex flex-col gap-2 h-full  bg-bg-page p-2 rounded-md border border-accentText shadow-[0_0_0_1px_rgb(var(--accent))]"
-                    style={{ backgroundColor: "rgba(var(--accent), 0.6)" }}
+                    className="themePageControls text-accent-2 flex flex-col gap-2 h-full  bg-bg-page p-2 rounded-md border border-accent-2 shadow-[0_0_0_1px_rgb(var(--accent))]"
+                    style={{ backgroundColor: "rgba(var(--accent-1), 0.6)" }}
                   >
                     <ColorPicker
                       label="Accent"
-                      value={accentBGValue}
+                      value={accent1Value}
                       setValue={set("theme/accent-background")}
-                      thisPicker={"accent"}
+                      thisPicker={"accent-1"}
                       openPicker={openPicker}
                       setOpenPicker={setOpenPicker}
                       closePicker={() => setOpenPicker("null")}
                     />
                     <ColorPicker
                       label="Text on Accent"
-                      value={accentTextValue}
+                      value={accent2Value}
                       setValue={set("theme/accent-text")}
-                      thisPicker={"accentText"}
+                      thisPicker={"accent-2"}
                       openPicker={openPicker}
                       setOpenPicker={setOpenPicker}
                       closePicker={() => setOpenPicker("null")}
                     />
                   </div>
                   <SectionArrow
-                    fill={theme.colors["accentText"]}
-                    stroke={theme.colors["accent"]}
+                    fill={theme.colors["accent-2"]}
+                    stroke={theme.colors["accent-1"]}
                     className="ml-2"
                   />
                 </div>
 
-                <div className="font-bold relative text-center text-lg py-2  rounded-md bg-accent text-accentText shadow-md">
+                <div className="font-bold relative text-center text-lg py-2  rounded-md bg-accent-1 text-accent-2 shadow-md">
                   Example Button
                 </div>
                 {/* <hr className="my-3" /> */}
@@ -223,7 +223,7 @@ export const ThemePopover = (props: { entityID: string }) => {
                   <p className="font-bold">Hello!</p>
                   <small className="">
                     Welcome to{" "}
-                    <span className="font-bold text-accent">Leaflet</span>.
+                    <span className="font-bold text-accent-1">Leaflet</span>.
                     It&apos;s a super easy and fun way to make, share, and
                     collab on little bits of paper
                   </small>
@@ -438,7 +438,7 @@ const BGPicker = (props: {
             </div>
           </div>
           <label className="hover:cursor-pointer h-fit">
-            <div className="text-[#8C8C8C] hover:text-accent">
+            <div className="text-[#8C8C8C] hover:text-accent-1">
               <BlockImageSmall />
             </div>
             <div className="hidden">
@@ -511,7 +511,7 @@ const ImageSettings = (props: { entityID: string }) => {
       >
         <label className="hover:cursor-pointer ">
           <div
-            className="flex gap-2 rounded-md px-2 py-1 text-accent font-bold"
+            className="flex gap-2 rounded-md px-2 py-1 text-accent-1 font-bold"
             style={{ backgroundColor: "rgba(var(--bg-card), .6" }}
           >
             <BlockImageSmall /> Change Image
@@ -538,8 +538,8 @@ const ImageSettings = (props: { entityID: string }) => {
           }}
         >
           <CloseContrastSmall
-            fill={theme.colors.accent}
-            stroke={theme.colors["accentText"]}
+            fill={theme.colors["accent-1"]}
+            stroke={theme.colors["accent-2"]}
           />
         </button>
       </div>
@@ -560,7 +560,7 @@ const ImageSettings = (props: { entityID: string }) => {
             }}
           />
           <div
-            className={`shink-0 grow-0 w-fit border border-accent rounded-md px-1 py-0.5 cursor-pointer ${!repeat ? "bg-accent text-accentText" : "bg-transparent text-accent"}`}
+            className={`shink-0 grow-0 w-fit border border-accent-1 rounded-md px-1 py-0.5 cursor-pointer ${!repeat ? "bg-accent-1 text-accent-2" : "bg-transparent text-accent-1"}`}
           >
             cover
           </div>
@@ -585,7 +585,7 @@ const ImageSettings = (props: { entityID: string }) => {
             }}
           />
           <div
-            className={`shink-0 grow-0 w-fit z-10 border border-accent rounded-md px-1 py-0.5 cursor-pointer ${repeat ? "bg-accent text-accentText" : "bg-transparent text-accent"}`}
+            className={`shink-0 grow-0 w-fit z-10 border border-accent-1 rounded-md px-1 py-0.5 cursor-pointer ${repeat ? "bg-accent-1 text-accent-2" : "bg-transparent text-accent-1"}`}
           >
             repeat
           </div>
@@ -605,9 +605,9 @@ const ImageSettings = (props: { entityID: string }) => {
               });
             }}
           >
-            <Slider.Track className="bg-accent relative grow rounded-full h-[3px]"></Slider.Track>
+            <Slider.Track className="bg-accent-1 relative grow rounded-full h-[3px]"></Slider.Track>
             <Slider.Thumb
-              className="flex w-4 h-4 rounded-full border-2 border-white bg-accent shadow-[0_0_0_1px_#8C8C8C,_inset_0_0_0_1px_#8C8C8C] cursor-pointer"
+              className="flex w-4 h-4 rounded-full border-2 border-white bg-accent-1 shadow-[0_0_0_1px_#8C8C8C,_inset_0_0_0_1px_#8C8C8C] cursor-pointer"
               aria-label="Volume"
             />
           </Slider.Root>

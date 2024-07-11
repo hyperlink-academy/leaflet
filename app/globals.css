@@ -10,8 +10,8 @@
 
     --primary: 39, 39, 39;
 
-    --accent: 0, 0, 225;
-    --accent-text: 255, 255, 255;
+    --accent-1: 0, 0, 225;
+    --accent-2: 255, 255, 255;
 
     --highlight-1: 255, 177, 177;
     --highlight-2: 253, 245, 203;
@@ -91,7 +91,7 @@
 }
 
 a {
-  @apply text-accent;
+  @apply text-accent-1;
   @apply hover:cursor-pointer;
   text-decoration: underline;
 }

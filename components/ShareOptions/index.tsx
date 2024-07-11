@@ -39,7 +39,7 @@ export function ShareOptions(props: { rootEntity: string }) {
     <Popover.Root>
       <Popover.Trigger>
         <div className="sm:w-8 sm:h-8 relative">
-          <div className="z-10 group/share sm:absolute top-0 left-0 rounded-full w-fit h-max bg-accent text-accentText flex gap-2 p-1 place-items-center justify-center">
+          <div className="z-10 group/share sm:absolute top-0 left-0 rounded-full w-fit h-max bg-accent-1 text-accent-2 flex gap-2 p-1 place-items-center justify-center">
             <ShareSmall />
             <div className="font-bold pr-[6px] sm:hidden group-hover/share:block">
               Share

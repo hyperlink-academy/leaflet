@@ -31,8 +31,8 @@ module.exports = {
       white: "#FFFFFF",
 
       //ACCENT COLORS
-      accent: "rgb(var(--accent))",
-      accentText: "rgb(var(--accent-text))",
+      "accent-1": "rgb(var(--accent-1))",
+      "accent-2": "rgb(var(--accent-2))",
 
       //BG COLORS (defined as css variables in global.css)
       "bg-page": "rgb(var(--bg-page))",

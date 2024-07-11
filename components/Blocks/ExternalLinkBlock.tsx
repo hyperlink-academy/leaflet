@@ -22,8 +22,8 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
       className={`
         externalLinkBlock flex relative group/linkBlock
         h-[104px]  bg-bg-card overflow-hidden text-primary no-underline
-        border  hover:border-accent outline outline-1 hover:outline-accent rounded-lg shadow-sm
-        ${selected ? "outline-accent border-accent" : "outline-transparent border-border-light"}
+        border  hover:border-accent-1 outline outline-1 hover:outline-accent-1 rounded-lg shadow-sm
+        ${selected ? "outline-accent-1 border-accent-1" : "outline-transparent border-border-light"}
         `}
     >
       <div className="pt-2 pb-2 px-2 grow min-w-0">
@@ -40,7 +40,7 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
             {description?.data.value}
           </div>
           <div
-            className={`inline-block place-self-end w-full text-xs  italic line-clamp-1 truncate group-hover/linkBlock:text-accent ${selected ? "text-accent" : "text-tertiary"}`}
+            className={`inline-block place-self-end w-full text-xs  italic line-clamp-1 truncate group-hover/linkBlock:text-accent-1 ${selected ? "text-accent-1" : "text-tertiary"}`}
           >
             {url?.data.value}
           </div>
@@ -57,7 +57,7 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
 
       {permission && (
         <button
-          className="absolute p-1 top-0.5 right-0.5 hover:text-accent text-secondary sm:hidden sm:group-hover/linkBlock:block"
+          className="absolute p-1 top-0.5 right-0.5 hover:text-accent-1 text-secondary sm:hidden sm:group-hover/linkBlock:block"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();

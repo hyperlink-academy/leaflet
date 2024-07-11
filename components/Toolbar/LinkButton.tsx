@@ -35,7 +35,9 @@ export function LinkButton(props: { setToolBarState: (s: "link") => void }) {
         props.setToolBarState("link");
       }}
       disabled={focusedEditor?.editor.selection.empty}
-      tooltipContent={<div className="text-accent underline">Inline Link</div>}
+      tooltipContent={
+        <div className="text-accent-1 underline">Inline Link</div>
+      }
     >
       <LinkTextToolbarSmall />
     </ToolbarButton>
@@ -113,7 +115,7 @@ export function LinkEditor(props: { onClose: () => void }) {
         */}
       <div className="flex items-center gap-3">
         <button
-          className="hover:text-accent -mr-6"
+          className="hover:text-accent-1 -mr-6"
           onMouseDown={(e) => {
             e.preventDefault();
             let editor = focusedEditor?.editor;

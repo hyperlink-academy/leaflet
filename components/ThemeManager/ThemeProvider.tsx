@@ -9,8 +9,8 @@ type CSSVariables = {
   "--bg-page": string;
   "--bg-card": string;
   "--primary": string;
-  "--accent": string;
-  "--accent-text": string;
+  "--accent-1": string;
+  "--accent-2": string;
   "--highlight-1": string;
   "--highlight-2": string;
   "--highlight-3": string;
@@ -20,11 +20,14 @@ export const ThemeDefaults = {
   "theme/page-background": "#F0F7FA",
   "theme/card-background": "#FFFFFF",
   "theme/primary": "#272727",
-  "theme/accent-background": "#0000FF",
-  "theme/accent-text": "#FFFFFF",
   "theme/highlight-1": "#FFFFFF",
   "theme/highlight-2": "#EDD280",
   "theme/highlight-3": "#9FC4C2",
+
+  //everywhere else, accent-background = accent-1 and accent-text = accent-2.
+  // we just need to create a migration pipeline before we can change this
+  "theme/accent-text": "#FFFFFF",
+  "theme/accent-background": "#0000FF",
 };
 
 function setCSSVariableToColor(el: HTMLElement, name: string, value: Color) {
@@ -37,8 +40,8 @@ export function ThemeProvider(props: {
   let bgPage = useColorAttribute(props.entityID, "theme/page-background");
   let bgCard = useColorAttribute(props.entityID, "theme/card-background");
   let primary = useColorAttribute(props.entityID, "theme/primary");
-  let accentBG = useColorAttribute(props.entityID, "theme/accent-background");
-  let accentText = useColorAttribute(props.entityID, "theme/accent-text");
+  let accent1 = useColorAttribute(props.entityID, "theme/accent-background");
+  let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
   let backgroundImage = useEntity(props.entityID, "theme/background-image");
   let backgroundImageRepeat = useEntity(
     props.entityID,
@@ -58,8 +61,8 @@ export function ThemeProvider(props: {
       bgCard.getChannelValue("alpha").toString(),
     );
     setCSSVariableToColor(el, "--primary", primary);
-    setCSSVariableToColor(el, "--accent", accentBG);
-    setCSSVariableToColor(el, "--accent-text", accentText);
+    setCSSVariableToColor(el, "--accent-1", accent1);
+    setCSSVariableToColor(el, "--accent-2", accent2);
     setCSSVariableToColor(el, "--highlight-2", highlight2);
     setCSSVariableToColor(el, "--highlight-3", highlight3);
 
@@ -80,8 +83,8 @@ export function ThemeProvider(props: {
     bgPage,
     bgCard,
     primary,
-    accentBG,
-    accentText,
+    accent1,
+    accent2,
     highlight1,
     highlight2,
     highlight3,
@@ -100,8 +103,8 @@ export function ThemeProvider(props: {
           "--bg-card": colorToString(bgCard, "rgb"),
           "--bg-card-alpha": bgCard.getChannelValue("alpha"),
           "--primary": colorToString(primary, "rgb"),
-          "--accent": colorToString(accentBG, "rgb"),
-          "--accent-text": colorToString(accentText, "rgb"),
+          "--accent-1": colorToString(accent1, "rgb"),
+          "--accent-2": colorToString(accent2, "rgb"),
           "--highlight-1": highlight1
             ? `rgb(${colorToString(parseColor(`hsba(${highlight1.data.value})`), "rgb")})`
             : "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-card)) 75%)",
