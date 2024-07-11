@@ -549,17 +549,18 @@ const ImageSettings = (props: { entityID: string }) => {
             className="appearance-none"
             type="radio"
             id="cover"
-            name="cover"
+            name="bg-image-options"
             value="cover"
             checked={!repeat}
             onChange={async (e) => {
+              console.log("coverOnchange");
               if (!e.currentTarget.checked) return;
               if (!repeat) return;
-              await rep?.mutate.retractFact({ factID: repeat.id });
+              if (repeat) await rep?.mutate.retractFact({ factID: repeat.id });
             }}
           />
           <div
-            className={`border border-accent rounded-md px-1 py-0.5 cursor-pointer ${!repeat ? "bg-accent text-accentText" : "bg-transparent text-accent"}`}
+            className={`shink-0 grow-0 w-fit border border-accent rounded-md px-1 py-0.5 cursor-pointer ${!repeat ? "bg-accent text-accentText" : "bg-transparent text-accent"}`}
           >
             cover
           </div>
@@ -569,10 +570,11 @@ const ImageSettings = (props: { entityID: string }) => {
             className={`appearance-none `}
             type="radio"
             id="repeat"
-            name="repeat"
+            name="bg-image-options"
             value="repeat"
             checked={!!repeat}
             onChange={async (e) => {
+              console.log("repeatOnchange");
               if (!e.currentTarget.checked) return;
               if (repeat) return;
               await rep?.mutate.assertFact({
@@ -583,7 +585,7 @@ const ImageSettings = (props: { entityID: string }) => {
             }}
           />
           <div
-            className={`z-10 border border-accent rounded-md px-1 py-0.5 cursor-pointer ${repeat ? "bg-accent text-accentText" : "bg-transparent text-accent"}`}
+            className={`shink-0 grow-0 w-fit z-10 border border-accent rounded-md px-1 py-0.5 cursor-pointer ${repeat ? "bg-accent text-accentText" : "bg-transparent text-accent"}`}
           >
             repeat
           </div>

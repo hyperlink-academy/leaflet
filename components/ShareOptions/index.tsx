@@ -48,7 +48,7 @@ export function ShareOptions(props: { rootEntity: string }) {
         </div>
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Content align="center" sideOffset={4}>
+        <Popover.Content align="center" sideOffset={4} collisionPadding={16}>
           <Menu>
             <MenuItem
               onClick={(e) => {
