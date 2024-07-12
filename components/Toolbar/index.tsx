@@ -201,7 +201,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
           ) : null}
         </div>
         <button
-          className="hover:text-accent-1"
+          className="hover:text-accent-contrast"
           onClick={() => {
             if (toolbarState === "linkBlock") {
               setToolbarState("block");
@@ -279,7 +279,7 @@ const LinkBlockToolbar = (props: { onClose: () => void }) => {
           }}
         />
         <button
-          className="hover:text-accent-1 -mr-6"
+          className="hover:text-accent-contrast -mr-6"
           onMouseDown={(e) => {
             e.preventDefault();
             submit();

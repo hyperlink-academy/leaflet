@@ -46,10 +46,10 @@ export function BlockOptions(props: Props) {
         <div className="blockOptionsContent flex gap-1 items-center">
           <ToolbarButton
             tooltipContent="Add an Image"
-            className="hover:bg-transparent hover:text-accent-1 text-tertiary"
+            className="hover:bg-transparent hover:text-accent-contrast text-tertiary"
           >
             <label onMouseDown={(e) => e.preventDefault()}>
-              <BlockImageSmall className="hover:text-accent-1" />
+              <BlockImageSmall className="hover:text-accent-contrast" />
               <div className="hidden">
                 <input
                   type="file"
@@ -92,7 +92,7 @@ export function BlockOptions(props: Props) {
 
           <ToolbarButton
             tooltipContent="Add a card"
-            className="hover:bg-transparent hover:text-accent-1 text-tertiary"
+            className="hover:bg-transparent hover:text-accent-constrast text-tertiary"
             onClick={async () => {
               if (!props.entityID) {
                 let entity = v7();
@@ -128,7 +128,7 @@ export function BlockOptions(props: Props) {
               }
             }}
           >
-            <BlockCardSmall className="hover:text-accent-1" />
+            <BlockCardSmall className="hover:text-accent-contrast" />
           </ToolbarButton>
         </div>
       </div>
@@ -169,7 +169,7 @@ const BlockLinkButton = (props: Props) => {
           setLinkOpen(!linkOpen);
         }}
       >
-        <BlockLinkSmall className="hover:text-accent-1" />
+        <BlockLinkSmall className="hover:text-accent-contrast" />
       </ToolbarButton>
 
       {linkOpen && (
@@ -191,7 +191,7 @@ const BlockLinkButton = (props: Props) => {
           />
           <div className="flex items-center gap-3 ">
             <button
-              className="hover:text-accent-1"
+              className="hover:text-accent-contrast"
               onMouseDown={(e) => {
                 e.preventDefault();
                 submit();
@@ -200,7 +200,7 @@ const BlockLinkButton = (props: Props) => {
               <CheckTiny />
             </button>
             <button
-              className="hover:text-accent-1"
+              className="hover:text-accent-contrast"
               onClick={() => setLinkOpen(false)}
             >
               <CloseTiny />

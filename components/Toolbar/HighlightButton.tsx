@@ -117,7 +117,7 @@ export const HighlightColorSettings = () => {
           collisionPadding={16}
         >
           <div
-            className="bg-bg-page w-full mx-2 p-3 pb-0 my-3 flex flex-col rounded-md  border border-border"
+            className="bg-bg-page w-full m-2 p-3 pb-0  flex flex-col rounded-md  border border-border"
             style={{
               backgroundImage: `url(${backgroundImage?.data.src})`,
               backgroundRepeat: backgroundRepeat ? "repeat" : "no-repeat",
@@ -194,10 +194,10 @@ export const HighlightColorSettings = () => {
           </div>
           <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
             <PopoverArrow
-              arrowFill={theme.colors["bg-card"]}
+              arrowFill={theme.colors["white"]}
               arrowStroke={theme.colors["border"]}
             />
-          </Popover.Arrow>{" "}
+          </Popover.Arrow>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

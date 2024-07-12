@@ -68,14 +68,14 @@ export const ThemePopover = (props: { entityID: string }) => {
     props.entityID,
     "theme/accent-background",
   );
-
+  let accent2Value = useColorAttribute(props.entityID, "theme/accent-text");
   let permission = useEntitySetContext().permissions.write;
   let backgroundImage = useEntity(props.entityID, "theme/background-image");
   let backgroundRepeat = useEntity(
     props.entityID,
     "theme/background-image-repeat",
   );
-  let accent2Value = useColorAttribute(props.entityID, "theme/accent-text");
+
   let [openPicker, setOpenPicker] = useState<pickers>("null");
   let set = useMemo(() => {
     return setColorAttribute(rep, props.entityID);
@@ -223,8 +223,10 @@ export const ThemePopover = (props: { entityID: string }) => {
                   <p className="font-bold">Hello!</p>
                   <small className="">
                     Welcome to{" "}
-                    <span className="font-bold text-accent-1">Leaflet</span>.
-                    It&apos;s a super easy and fun way to make, share, and
+                    <span className="font-bold text-accent-contrast">
+                      Leaflet
+                    </span>
+                    . It&apos;s a super easy and fun way to make, share, and
                     collab on little bits of paper
                   </small>
                 </div>
@@ -232,7 +234,7 @@ export const ThemePopover = (props: { entityID: string }) => {
             </div>
             <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
               <PopoverArrow
-                arrowFill={theme.colors["bg-card"]}
+                arrowFill={theme.colors["white"]}
                 arrowStroke={theme.colors["border"]}
               />
             </Popover.Arrow>
@@ -438,7 +440,7 @@ const BGPicker = (props: {
             </div>
           </div>
           <label className="hover:cursor-pointer h-fit">
-            <div className="text-[#8C8C8C] hover:text-accent-1">
+            <div className="text-[#8C8C8C] hover:text-[#0000FF]">
               <BlockImageSmall />
             </div>
             <div className="hidden">
@@ -511,7 +513,7 @@ const ImageSettings = (props: { entityID: string }) => {
       >
         <label className="hover:cursor-pointer ">
           <div
-            className="flex gap-2 rounded-md px-2 py-1 text-accent-1 font-bold"
+            className="flex gap-2 rounded-md px-2 py-1 text-accent-contrast font-bold"
             style={{ backgroundColor: "rgba(var(--bg-card), .6" }}
           >
             <BlockImageSmall /> Change Image

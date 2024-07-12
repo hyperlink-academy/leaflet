@@ -94,7 +94,7 @@ export function CardBlock(props: BlockProps) {
           <CardPreview entityID={props.entityID} />
           {permission && (
             <button
-              className="absolute p-1 top-0.5 right-0.5 hover:text-accent-1 text-secondary sm:hidden sm:group-hover/cardBlock:block"
+              className="absolute p-1 top-0.5 right-0.5 hover:text-accent-contrast text-secondary sm:hidden sm:group-hover/cardBlock:block"
               onClick={(e) => {
                 e.stopPropagation();
                 setAreYouSure(true);
