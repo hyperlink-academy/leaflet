@@ -68,8 +68,6 @@ export function ThemeProvider(props: {
     );
   })[0];
 
-  console.log("accentContrast", accentContrast);
-
   useEffect(() => {
     let el = document.querySelector(":root") as HTMLElement;
     if (!el) return;
@@ -103,8 +101,6 @@ export function ThemeProvider(props: {
       "--accent-contrast",
       colorToString(accentContrast, "rgb"),
     );
-
-    console.log(colorToString(accentContrast, "rgb"));
   }, [
     bgPage,
     bgCard,

@@ -555,7 +555,6 @@ const ImageSettings = (props: { entityID: string }) => {
             value="cover"
             checked={!repeat}
             onChange={async (e) => {
-              console.log("coverOnchange");
               if (!e.currentTarget.checked) return;
               if (!repeat) return;
               if (repeat) await rep?.mutate.retractFact({ factID: repeat.id });
@@ -576,7 +575,6 @@ const ImageSettings = (props: { entityID: string }) => {
             value="repeat"
             checked={!!repeat}
             onChange={async (e) => {
-              console.log("repeatOnchange");
               if (!e.currentTarget.checked) return;
               if (repeat) return;
               await rep?.mutate.assertFact({
