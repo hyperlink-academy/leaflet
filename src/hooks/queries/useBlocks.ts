@@ -3,32 +3,18 @@ import { useMemo } from "react";
 import { ReadTransaction } from "replicache";
 import { useSubscribe } from "replicache-react";
 import { Fact, useReplicache } from "src/replicache";
+import { scanIndex, scanIndexLocal } from "src/replicache/utils";
 
 export const useBlocks = (entityID: string) => {
   let rep = useReplicache();
   let initialValue = useMemo(
-    () =>
-      rep.initialFacts
-        .filter((f) => f.attribute === "card/block" && f.entity === entityID)
-        .map((_f) => {
-          let block = _f as Fact<"card/block">;
-          let type = rep.initialFacts.find(
-            (f) =>
-              f.entity === block.data.value && f.attribute === "block/type",
-          ) as Fact<"block/type"> | undefined;
-          if (!type) return null;
-          return { ...block.data, type: type.data.value, parent: block.entity };
-        }),
+    () => getBlocksWithTypeLocal(rep.initialFacts, entityID),
     [rep.initialFacts, entityID],
   );
   let data =
     useSubscribe(rep?.rep, async (tx) => getBlocksWithType(tx, entityID)) ||
     initialValue;
-  return data
-    .flatMap((f) => (!f ? [] : [f]))
-    .sort((a, b) => {
-      return a.position > b.position ? 1 : -1;
-    });
+  return data.flatMap((f) => (!f ? [] : [f]));
 };
 
 export const getBlocksWithType = async (
@@ -37,27 +23,106 @@ export const getBlocksWithType = async (
 ) => {
   let initialized = await tx.get("initialized");
   if (!initialized) return null;
-  let blocks = await tx
-    .scan<
-      Fact<"card/block">
-    >({ indexName: "eav", prefix: `${entityID}-card/block` })
-    .toArray();
+  let scan = scanIndex(tx);
+  let blocks = await scan.eav(entityID, "card/block");
 
-  return await Promise.all(
-    blocks.map(async (b) => {
-      let type = (
-        await tx
-          .scan<
-            Fact<"block/type">
-          >({ prefix: `${b.data.value}-block/type`, indexName: "eav" })
-          .toArray()
-      )[0];
-      if (!type) return null;
-      return {
+  return (
+    await Promise.all(
+      blocks
+        .sort((a, b) => (a.data.position > b.data.position ? 1 : -1))
+        .map(async (b) => {
+          let type = (await scan.eav(b.data.value, "block/type"))[0];
+          let isList = await scan.eav(b.data.value, "block/is-list");
+          if (!type) return null;
+          if (isList[0]?.data.value) {
+            const getChildren = async (
+              root: Fact<"card/block">,
+              parent: string,
+              depth: number,
+              path: { depth: number; entity: string }[],
+            ): Promise<Block[]> => {
+              let children = (
+                await scan.eav(root.data.value, "card/block")
+              ).sort((a, b) => (a.data.position > b.data.position ? 1 : -1));
+              let type = (await scan.eav(b.data.value, "block/type"))[0];
+              let newPath = [...path, { entity: root.data.value, depth }];
+              let childBlocks = await Promise.all(
+                children.map((c) =>
+                  getChildren(c, root.data.value, depth + 1, newPath),
+                ),
+              );
+              return [
+                {
+                  ...root.data,
+                  factID: root.id,
+                  type: type.data.value,
+                  parent: b.entity,
+                  listData: { depth: depth, parent, path: newPath },
+                },
+                ...childBlocks.flat(),
+              ];
+            };
+            return getChildren(b, b.entity, 1, []);
+          }
+          return [
+            {
+              ...b.data,
+              factID: b.id,
+              type: type.data.value,
+              parent: b.entity,
+            },
+          ] as Block[];
+        }),
+    )
+  )
+    .flat()
+    .filter((f) => f !== null);
+};
+
+export const getBlocksWithTypeLocal = (
+  initialFacts: Fact<any>[],
+  entityID: string,
+) => {
+  let scan = scanIndexLocal(initialFacts);
+  let blocks = scan.eav(entityID, "card/block");
+
+  return blocks.flatMap((b) => {
+    let type = scan.eav(b.data.value, "block/type")[0];
+    let isList = scan.eav(b.data.value, "block/is-list");
+    if (!type) return null;
+    if (isList[0]?.data.value) {
+      const getChildren = (
+        root: Fact<"card/block">,
+        parent: string,
+        depth: number,
+        path: { depth: number; entity: string }[],
+      ): Block[] => {
+        let children = scan.eav(root.data.value, "card/block");
+        let type = scan.eav(b.data.value, "block/type")[0];
+        let newPath = [...path, { entity: b.entity, depth }];
+        let childBlocks = children.map((c) =>
+          getChildren(c, root.data.value, depth + 1, newPath),
+        );
+        return [
+          {
+            ...root.data,
+            factID: root.id,
+            type: type.data.value,
+            parent: b.entity,
+            listData: { depth: depth, parent, path: newPath },
+          },
+          ...childBlocks.flat(),
+        ];
+      };
+      return getChildren(b, b.entity, 1, []);
+    }
+    return [
+      {
         ...b.data,
+        factID: b.id,
         type: type.data.value,
         parent: b.entity,
-      } as Block;
-    }),
-  );
+      },
+    ] as Block[];
+  });
 };

@@ -55,7 +55,9 @@ export function TextBlock(props: BlockProps & { className: string }) {
         />
       )}
       {permission && (
-        <div className={`relative group/text ${!initialized ? "hidden" : ""}`}>
+        <div
+          className={`w-full relative group/text ${!initialized ? "hidden" : ""}`}
+        >
           <IOSBS {...props} />
           <BaseTextBlock {...props} />
         </div>

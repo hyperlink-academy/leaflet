@@ -2,6 +2,7 @@ import { Block } from "components/Blocks";
 import { create } from "zustand";
 import { combine, createJSONStorage, persist } from "zustand/middleware";
 
+type SelectedBlock = Pick<Block, "value" | "parent">;
 export const useUIState = create(
   combine(
     {
@@ -10,7 +11,7 @@ export const useUIState = create(
         | { type: "block"; entityID: string; parent: string }
         | null,
       openCards: [] as string[],
-      selectedBlock: [] as Omit<Block, "type">[],
+      selectedBlock: [] as SelectedBlock[],
     },
     (set) => ({
       openCard: (parent: string, card: string) =>
@@ -31,15 +32,15 @@ export const useUIState = create(
           | { type: "block"; entityID: string; parent: string }
           | null,
       ) => set(() => ({ focusedBlock: b })),
-      setSelectedBlock: (block: Omit<Block, "type">) =>
+      setSelectedBlock: (block: SelectedBlock) =>
         set((state) => {
           return { ...state, selectedBlock: [block] };
         }),
-      setSelectedBlocks: (blocks: Omit<Block, "type">[]) =>
+      setSelectedBlocks: (blocks: SelectedBlock[]) =>
         set((state) => {
           return { ...state, selectedBlock: blocks };
         }),
-      addBlockToSelection: (block: Omit<Block, "type">) =>
+      addBlockToSelection: (block: SelectedBlock) =>
         set((state) => {
           if (state.selectedBlock.find((b) => b.value === block.value))
             return state;

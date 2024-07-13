@@ -46,3 +46,11 @@ export const scanIndex = (tx: ReadTransaction) => ({
     ).filter((f) => f.attribute === attribute);
   },
 });
+
+export const scanIndexLocal = (initialFacts: Fact<any>[]) => ({
+  eav<A extends keyof typeof Attributes>(entity: string, attribute: A) {
+    return initialFacts.filter(
+      (f) => f.entity === entity && f.attribute === attribute,
+    ) as Fact<A>[];
+  },
+});

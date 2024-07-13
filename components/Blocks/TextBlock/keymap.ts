@@ -23,6 +23,66 @@ export const TextBlockKeymap = (
     "Meta-i": toggleMark(schema.marks.em),
     "Ctrl-Meta-x": toggleMark(schema.marks.strikethrough),
     "Ctrl-Meta-h": toggleMark(schema.marks.highlight),
+    "-": () => {
+      if (propsRef.current.listData) return false;
+      repRef.current?.mutate.assertFact({
+        entity: propsRef.current.entityID,
+        attribute: "block/is-list",
+        data: { type: "boolean", value: true },
+      });
+      return true;
+    },
+    Tab: () => {
+      if (!propsRef.current.listData) return false;
+      if (!propsRef.current.previousBlock?.listData) return false;
+      let depth = propsRef.current.listData.depth;
+      let newParent = propsRef.current.previousBlock.listData.path.find(
+        (f) => f.depth === depth,
+      );
+      console.log(newParent?.entity.slice(-4));
+      if (!newParent) return false;
+      repRef.current?.mutate.retractFact({ factID: propsRef.current.factID });
+      repRef.current?.mutate.addLastBlock({
+        parent: newParent.entity,
+        factID: v7(),
+        entity: propsRef.current.entityID,
+      });
+      return true;
+    },
+    "Shift-Tab": () => {
+      if (!propsRef.current.listData) return false;
+      let listData = propsRef.current.listData;
+      let previousBlock = propsRef.current.previousBlock;
+      if (listData.depth === 1)
+        repRef.current?.mutate.assertFact({
+          entity: propsRef.current.entityID,
+          attribute: "block/is-list",
+          data: { type: "boolean", value: false },
+        });
+      else {
+        if (!previousBlock || !previousBlock.listData) return false;
+        let after = previousBlock.listData.path.find(
+          (f) => f.depth === listData.depth - 1,
+        )?.entity;
+        if (!after) return false;
+        let parent: string | undefined = undefined;
+        if (listData.depth === 2) {
+          parent = propsRef.current.parent;
+        } else {
+          parent = previousBlock.listData.path.find(
+            (f) => f.depth === listData.depth - 2,
+          )?.entity;
+        }
+        if (!parent) return false;
+        repRef.current?.mutate.outdentBlock({
+          block: propsRef.current.entityID,
+          newParent: parent,
+          oldParent: listData.parent,
+          after,
+        });
+      }
+      return true;
+    },
 
     Escape: (_state, _dispatch, view) => {
       view?.dom.blur();
@@ -49,7 +109,6 @@ export const TextBlockKeymap = (
             {
               value: propsRef.current.entityID,
               type: "heading",
-              position: propsRef.current.position,
               parent: propsRef.current.parent,
             },
             { type: "start" },
@@ -188,7 +247,6 @@ const backspace =
               {
                 value: propsRef.current.entityID,
                 type: "heading",
-                position: propsRef.current.position,
                 parent: propsRef.current.parent,
               },
               { type: "start" },
@@ -197,6 +255,14 @@ const backspace =
         );
       }
       return false;
+    }
+    if (propsRef.current.listData && propsRef.current.listData.depth === 1) {
+      repRef.current?.mutate.assertFact({
+        entity: propsRef.current.entityID,
+        attribute: "block/is-list",
+        data: { type: "boolean", value: false },
+      });
+      return true;
     }
 
     if (state.doc.textContent.length === 0) {
@@ -252,17 +318,71 @@ const enter =
     tr.delete(state.selection.anchor, state.doc.content.size);
     dispatch?.(tr);
     let newEntityID = v7();
-    let position = generateKeyBetween(
-      propsRef.current.position,
-      propsRef.current.nextPosition,
-    );
-    repRef.current?.mutate.addBlock({
-      newEntityID,
-      permission_set: propsRef.current.entity_set.set,
-      parent: propsRef.current.parent,
-      type: "text",
-      position,
-    });
+    let position: string;
+    if (!propsRef.current.listData) {
+      position = generateKeyBetween(
+        propsRef.current.position,
+        propsRef.current.nextPosition,
+      );
+      repRef.current?.mutate.addBlock({
+        newEntityID,
+        factID: v7(),
+        permission_set: propsRef.current.entity_set.set,
+        parent: propsRef.current.parent,
+        type: "text",
+        position,
+      });
+    }
+    if (propsRef.current.listData) {
+      if (
+        propsRef.current.nextBlock?.listData &&
+        propsRef.current.nextBlock.listData.depth >
+          propsRef.current.listData.depth
+      ) {
+        position = generateKeyBetween(
+          null,
+          propsRef.current.nextBlock.position,
+        );
+        repRef.current?.mutate
+          .addBlock({
+            newEntityID,
+            factID: v7(),
+            permission_set: propsRef.current.entity_set.set,
+            parent: propsRef.current.entityID,
+            type: "text",
+            position,
+          })
+          .then(() => {
+            repRef.current?.mutate.assertFact({
+              entity: newEntityID,
+              attribute: "block/is-list",
+              data: { type: "boolean", value: true },
+            });
+          });
+      } else {
+        position = generateKeyBetween(
+          propsRef.current.position,
+          propsRef.current.nextBlock?.position,
+        );
+        repRef.current?.mutate
+          .addBlock({
+            newEntityID,
+            factID: v7(),
+            permission_set: propsRef.current.entity_set.set,
+            parent: propsRef.current.listData.parent,
+            type: "text",
+            position,
+          })
+          .then(() => {
+            repRef.current?.mutate.assertFact({
+              entity: newEntityID,
+              attribute: "block/is-list",
+              data: { type: "boolean", value: true },
+            });
+          });
+      }
+    }
+
     setTimeout(() => {
       let block = useEditorStates.getState().editorStates[newEntityID];
       if (block) {
@@ -280,7 +400,6 @@ const enter =
             value: newEntityID,
             parent: propsRef.current.parent,
             type: "text",
-            position,
           },
           { type: "start" },
         );

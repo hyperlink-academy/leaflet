@@ -11,17 +11,23 @@ import { useUIState } from "src/useUIState";
 import { CardBlock } from "./CardBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { BlockOptions } from "./BlockOptions";
-import { useBlocks } from "src/hooks/queries/useBlocks";
+import { getBlocksWithType, useBlocks } from "src/hooks/queries/useBlocks";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { scanIndex } from "src/replicache/utils";
 import { v7 } from "uuid";
 
 export type Block = {
+  factID: string;
   parent: string;
   position: string;
   value: string;
   type: Fact<"block/type">["data"]["value"];
+  listData?: {
+    path: { depth: number; entity: string }[];
+    parent: string;
+    depth: number;
+  };
 };
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
@@ -42,6 +48,7 @@ export function Blocks(props: { entityID: string }) {
             let newEntityID = v7();
             await rep.rep?.mutate.addBlock({
               parent: props.entityID,
+              factID: v7(),
               permission_set: entity_set.set,
               type: "text",
               position: generateKeyBetween(lastBlock.position || null, null),
@@ -83,6 +90,7 @@ export function Blocks(props: { entityID: string }) {
           } else {
             rep?.rep?.mutate.addBlock({
               permission_set: entity_set.set,
+              factID: v7(),
               parent: props.entityID,
               type: "text",
               position: generateKeyBetween(lastBlock?.position || null, null),
@@ -124,6 +132,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
           await rep?.mutate.addBlock({
             parent: props.entityID,
             type: "text",
+            factID: v7(),
             permission_set: entity_set.set,
             position: generateKeyBetween(
               props.lastBlock?.position || null,
@@ -218,6 +227,7 @@ function Block(props: BlockProps) {
         r.mutate.addBlock({
           permission_set: entity_set.set,
           newEntityID,
+          factID: v7(),
           parent: props.parent,
           type: "text",
           position: generateKeyBetween(props.position, props.nextPosition),
@@ -260,24 +270,15 @@ function Block(props: BlockProps) {
         let selection = useSelectingMouse.getState();
         if (!selection.start) return;
         let siblings =
-          (await rep?.query((tx) =>
-            scanIndex(tx).eav(props.parent, "card/block"),
-          )) || [];
-        let sortedSiblings = siblings.sort((a, b) =>
-          a.data.position > b.data.position ? 1 : -1,
-        );
-        let startIndex = sortedSiblings.findIndex(
-          (b) => b.data.value === selection.start,
-        );
+          (await rep?.query((tx) => getBlocksWithType(tx, props.parent))) || [];
+        let startIndex = siblings.findIndex((b) => b.value === selection.start);
         if (startIndex === -1) return;
-        let endIndex = sortedSiblings.findIndex(
-          (b) => b.data.value === props.entityID,
-        );
+        let endIndex = siblings.findIndex((b) => b.value === props.entityID);
         let start = Math.min(startIndex, endIndex);
         let end = Math.max(startIndex, endIndex);
-        let selected = sortedSiblings.slice(start, end + 1).map((b) => ({
-          value: b.data.value,
-          position: b.data.position,
+        let selected = siblings.slice(start, end + 1).map((b) => ({
+          value: b.value,
+          position: b.position,
           parent: props.parent,
         }));
         useUIState.getState().setSelectedBlocks(selected);
@@ -288,9 +289,16 @@ function Block(props: BlockProps) {
         props.type !== "heading" &&
         props.type !== "text" &&
         `border-l-4 first:pt-2 sm:first:pt-3 pl-1 sm:pl-2 pr-2 sm:pr-3 pt-1 pb-2 ${selected ? "border-tertiary" : "border-transparent"}`
-      }`}
+      }
+      flex flex-row
+      `}
       id={elementId.block(props.entityID).container}
     >
+      {props.listData && (
+        <>
+          <div style={{ width: props.listData.depth * 32 }}></div> *
+        </>
+      )}
       {props.type === "card" ? (
         <CardBlock {...props} />
       ) : props.type === "text" ? (
@@ -339,7 +347,10 @@ type Position =
       type: "bottom";
       left: number;
     };
-export function focusBlock(block: Block, position: Position) {
+export function focusBlock(
+  block: Pick<Block, "type" | "value" | "parent">,
+  position: Position,
+) {
   if (block.type !== "text" && block.type !== "heading") {
     useUIState.getState().setSelectedBlock(block);
     return true;

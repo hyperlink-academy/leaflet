@@ -3,6 +3,7 @@ import { Fact } from ".";
 import { Attributes } from "./attributes";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
+import { generateKeyBetween } from "fractional-indexing";
 
 export type MutationContext = {
   createEntity: (args: {
@@ -33,6 +34,7 @@ type Mutation<T> = (args: T, ctx: MutationContext) => Promise<void>;
 const addBlock: Mutation<{
   parent: string;
   permission_set: string;
+  factID: string;
   type: Fact<"block/type">["data"]["value"];
   newEntityID: string;
   position: string;
@@ -43,6 +45,7 @@ const addBlock: Mutation<{
   });
   await ctx.assertFact({
     entity: args.parent,
+    id: args.factID,
     data: {
       type: "ordered-reference",
       value: args.newEntityID,
@@ -54,6 +57,85 @@ const addBlock: Mutation<{
     entity: args.newEntityID,
     data: { type: "block-type-union", value: args.type },
     attribute: "block/type",
+  });
+};
+
+const addLastBlock: Mutation<{
+  parent: string;
+  factID: string;
+  entity: string;
+}> = async (args, ctx) => {
+  let children = await ctx.scanIndex.eav(args.parent, "card/block");
+  let lastChild = children.toSorted((a, b) =>
+    a.data.position > b.data.position ? 1 : -1,
+  )[children.length - 1];
+  await ctx.assertFact({
+    entity: args.parent,
+    id: args.factID,
+    attribute: "card/block",
+    data: {
+      type: "ordered-reference",
+      value: args.entity,
+      position: generateKeyBetween(lastChild?.data.position || null, null),
+    },
+  });
+};
+
+const outdentBlock: Mutation<{
+  oldParent: string;
+  newParent: string;
+  after: string;
+  block: string;
+}> = async (args, ctx) => {
+  //we should be able to get normal siblings here as we care only about one level
+  let newSiblings = (
+    await ctx.scanIndex.eav(args.newParent, "card/block")
+  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  let currentSiblings = (
+    await ctx.scanIndex.eav(args.oldParent, "card/block")
+  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+
+  let currentFactIndex = currentSiblings.findIndex(
+    (f) => f.data.value === args.block,
+  );
+  if (currentFactIndex === -1) return;
+  let currentSiblingsAfter = currentSiblings.slice(currentFactIndex + 1);
+  let currentChildren = (
+    await ctx.scanIndex.eav(args.block, "card/block")
+  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  let lastPosition =
+    currentChildren[currentChildren.length - 1]?.data.position || null;
+  await ctx.retractFact(currentSiblings[currentFactIndex].id);
+  for (let sib of currentSiblingsAfter) {
+    await ctx.retractFact(sib.id);
+    lastPosition = generateKeyBetween(lastPosition, null);
+    await ctx.assertFact({
+      entity: args.block,
+      id: sib.id,
+      attribute: "card/block",
+      data: {
+        type: "ordered-reference",
+        position: lastPosition,
+        value: sib.data.value,
+      },
+    });
+  }
+
+  let index = newSiblings.findIndex((f) => f.data.value === args.after);
+  if (index === -1) return;
+  let newPosition = generateKeyBetween(
+    newSiblings[index]?.data.position,
+    newSiblings[index + 1]?.data.position || null,
+  );
+  await ctx.assertFact({
+    id: currentSiblings[currentFactIndex].id,
+    entity: args.newParent,
+    attribute: "card/block",
+    data: {
+      type: "ordered-reference",
+      position: newPosition,
+      value: args.block,
+    },
   });
 };
 
@@ -118,6 +200,8 @@ const increaseHeadingLevel: Mutation<{ entityID: string }> = async (
 
 export const mutations = {
   addBlock,
+  addLastBlock,
+  outdentBlock,
   assertFact,
   retractFact,
   removeBlock,

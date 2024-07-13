@@ -9,15 +9,11 @@ import { Block } from "components/Blocks";
 
 export async function getBlocksAsHTML(
   rep: Replicache<ReplicacheMutators>,
-  selectedBlocks: Omit<Block, "type">[],
+  selectedBlocks: Pick<Block, "value">[],
 ) {
   let data = await rep?.query(async (tx) => {
     let types = await Promise.all(
-      selectedBlocks
-        .sort((a, b) => {
-          return a.position > b.position ? 1 : -1;
-        })
-        .map((b) => scanIndex(tx).eav(b.value, "block/type")),
+      selectedBlocks.map((b) => scanIndex(tx).eav(b.value, "block/type")),
     );
     let blocksWithData = Promise.all(
       types.flat().map(async (b) => {
