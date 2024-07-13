@@ -46,6 +46,8 @@ import { addLinkBlock } from "src/utils/addLinkBlock";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Separator, ShortcutKey } from "components/Layout";
 import { Input } from "components/Input";
+import { metaKey } from "src/utils/metaKey";
+import { isMac } from "@react-aria/utils";
 
 export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   let { rep } = useReplicache();
@@ -86,7 +88,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                   <div className="flex flex-col gap-1 justify-center">
                     <div className="text-center">Bold </div>
                     <div className="flex gap-1">
-                      <ShortcutKey> Cntrl </ShortcutKey> +{" "}
+                      <ShortcutKey>{metaKey()}</ShortcutKey> +{" "}
                       <ShortcutKey> B </ShortcutKey>
                     </div>
                   </div>
@@ -98,7 +100,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                 tooltipContent=<div className="flex flex-col gap-1 justify-center">
                   <div className="italic font-normal text-center">Italic</div>
                   <div className="flex gap-1">
-                    <ShortcutKey> Cntrl </ShortcutKey> +{" "}
+                    <ShortcutKey>{metaKey()}</ShortcutKey> +{" "}
                     <ShortcutKey> I </ShortcutKey>
                   </div>
                 </div>
@@ -112,7 +114,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                       Strikethrough
                     </div>
                     <div className="flex gap-1">
-                      <ShortcutKey> Cntrl </ShortcutKey> +{" "}
+                      <ShortcutKey>{metaKey()}</ShortcutKey> +{" "}
                       <ShortcutKey> Cmd </ShortcutKey> +{" "}
                       <ShortcutKey> X </ShortcutKey>
                     </div>
@@ -129,9 +131,20 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                         Highlight
                       </div>
                       <div className="flex gap-1">
-                        <ShortcutKey> Cntrl </ShortcutKey> +{" "}
-                        <ShortcutKey> Cmd </ShortcutKey> +{" "}
-                        <ShortcutKey> H </ShortcutKey>
+                        $
+                        {isMac() ? (
+                          <>
+                            <ShortcutKey> Ctrl </ShortcutKey> +{" "}
+                            <ShortcutKey> Cmd </ShortcutKey> +{" "}
+                            <ShortcutKey> H </ShortcutKey>
+                          </>
+                        ) : (
+                          <>
+                            <ShortcutKey> Ctrl </ShortcutKey> +{" "}
+                            <ShortcutKey> Meta </ShortcutKey> +{" "}
+                            <ShortcutKey> H </ShortcutKey>
+                          </>
+                        )}
                       </div>
                     </div>
                   }
@@ -469,7 +482,6 @@ export const ToolbarButton = (props: {
   active?: boolean;
   disabled?: boolean;
 }) => {
-  console.log(props.tooltipContent);
   return (
     <Tooltip.Root>
       <Tooltip.Trigger
