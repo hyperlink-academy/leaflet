@@ -20,6 +20,7 @@ export function SelectionManager() {
   let entity_set = useEntitySetContext();
   let { rep } = useReplicache();
   useEffect(() => {
+    if (!entity_set.permissions.write) return;
     let listener = async (e: KeyboardEvent) => {
       if (e.key === "Backspace" || e.key === "Delete") {
         if (!entity_set.permissions.write) return;
@@ -254,12 +255,13 @@ export function SelectionManager() {
     return () => {
       window.removeEventListener("keydown", listener);
     };
-  }, [moreThanOneSelected, rep]);
+  }, [moreThanOneSelected, rep, entity_set.permissions.write]);
 
   let [mouseDown, setMouseDown] = useState(false);
   let initialContentEditableParent = useRef<null | Node>(null);
   let savedSelection = useRef<SavedRange[] | null>();
   useEffect(() => {
+    if (!entity_set.permissions.write) return;
     let mouseDownListener = (e: MouseEvent) => {
       setMouseDown(true);
       let contentEditableParent = getContentEditableParent(e.target as Node);
@@ -291,7 +293,7 @@ export function SelectionManager() {
       window.removeEventListener("mousedown", mouseDownListener);
       window.removeEventListener("mouseup", mouseUpListener);
     };
-  }, []);
+  }, [entity_set.permissions.write]);
   useEffect(() => {
     if (!mouseDown) return;
     let mouseMoveListener = (e: MouseEvent) => {
