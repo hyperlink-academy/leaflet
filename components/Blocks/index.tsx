@@ -276,6 +276,7 @@ function Block(props: BlockProps) {
         } else useUIState.getState().setSelectedBlock(props);
       }}
       onMouseEnter={async (e) => {
+        if (!entity_set.permissions.write) return;
         if (e.buttons !== 1) return;
         let selection = useSelectingMouse.getState();
         if (!selection.start) return;
