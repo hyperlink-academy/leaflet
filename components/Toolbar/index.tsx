@@ -260,6 +260,7 @@ const LinkBlockToolbar = (props: { onClose: () => void }) => {
           children.length - 1
         ]?.data.position || null;
       await rep?.mutate.addBlock({
+        factID: v7(),
         parent: focusedBlock.entityID,
         permission_set: entity_set.set,
         type: "text",
@@ -392,6 +393,7 @@ const BlockToolbar = (props: {
           children.length - 1
         ]?.data.position || null;
       await rep?.mutate.addBlock({
+        factID: v7(),
         parent: focusedBlock.entityID,
         permission_set: entity_set.set,
         type: "text",
@@ -458,6 +460,7 @@ const BlockToolbar = (props: {
               let entityID = v7();
               await rep?.mutate.addBlock({
                 parent: entity,
+                factID: v7(),
                 position: "a0",
                 newEntityID: entityID,
                 type: "text",
