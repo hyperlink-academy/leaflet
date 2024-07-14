@@ -2,15 +2,18 @@
 
 import { CSSProperties, useEffect } from "react";
 import { colorToString, useColorAttribute } from "./useColorAttribute";
-import { Color, parseColor } from "react-aria-components";
+import { Color as AriaColor, parseColor } from "react-aria-components";
+import { parse, contrastLstar, ColorSpace, sRGB } from "colorjs.io/fn";
+
 import { useEntity } from "src/replicache";
 
 type CSSVariables = {
   "--bg-page": string;
   "--bg-card": string;
   "--primary": string;
-  "--accent": string;
-  "--accent-text": string;
+  "--accent-1": string;
+  "--accent-2": string;
+  "--accent-contrast": string;
   "--highlight-1": string;
   "--highlight-2": string;
   "--highlight-3": string;
@@ -20,14 +23,22 @@ export const ThemeDefaults = {
   "theme/page-background": "#F0F7FA",
   "theme/card-background": "#FFFFFF",
   "theme/primary": "#272727",
-  "theme/accent-background": "#0000FF",
-  "theme/accent-text": "#FFFFFF",
   "theme/highlight-1": "#FFFFFF",
   "theme/highlight-2": "#EDD280",
   "theme/highlight-3": "#9FC4C2",
+
+  //everywhere else, accent-background = accent-1 and accent-text = accent-2.
+  // we just need to create a migration pipeline before we can change this
+  "theme/accent-text": "#FFFFFF",
+  "theme/accent-background": "#0000FF",
+  "theme/accent-contrast": "#0000FF",
 };
 
-function setCSSVariableToColor(el: HTMLElement, name: string, value: Color) {
+function setCSSVariableToColor(
+  el: HTMLElement,
+  name: string,
+  value: AriaColor,
+) {
   el?.style.setProperty(name, colorToString(value, "rgb"));
 }
 export function ThemeProvider(props: {
@@ -37,8 +48,7 @@ export function ThemeProvider(props: {
   let bgPage = useColorAttribute(props.entityID, "theme/page-background");
   let bgCard = useColorAttribute(props.entityID, "theme/card-background");
   let primary = useColorAttribute(props.entityID, "theme/primary");
-  let accentBG = useColorAttribute(props.entityID, "theme/accent-background");
-  let accentText = useColorAttribute(props.entityID, "theme/accent-text");
+
   let backgroundImage = useEntity(props.entityID, "theme/background-image");
   let backgroundImageRepeat = useEntity(
     props.entityID,
@@ -47,6 +57,16 @@ export function ThemeProvider(props: {
   let highlight1 = useEntity(props.entityID, "theme/highlight-1");
   let highlight2 = useColorAttribute(props.entityID, "theme/highlight-2");
   let highlight3 = useColorAttribute(props.entityID, "theme/highlight-3");
+
+  let accent1 = useColorAttribute(props.entityID, "theme/accent-background");
+  let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
+  // set accent contrast to the accent color that has the highest contrast with the card background
+  let accentContrast = [accent1, accent2].sort((a, b) => {
+    return (
+      getColorContrast(colorToString(b, "rgb"), colorToString(bgCard, "rgb")) -
+      getColorContrast(colorToString(a, "rgb"), colorToString(bgCard, "rgb"))
+    );
+  })[0];
 
   useEffect(() => {
     let el = document.querySelector(":root") as HTMLElement;
@@ -58,8 +78,7 @@ export function ThemeProvider(props: {
       bgCard.getChannelValue("alpha").toString(),
     );
     setCSSVariableToColor(el, "--primary", primary);
-    setCSSVariableToColor(el, "--accent", accentBG);
-    setCSSVariableToColor(el, "--accent-text", accentText);
+
     setCSSVariableToColor(el, "--highlight-2", highlight2);
     setCSSVariableToColor(el, "--highlight-3", highlight3);
 
@@ -76,15 +95,22 @@ export function ThemeProvider(props: {
         "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-card)) 75%)",
       );
     }
+    setCSSVariableToColor(el, "--accent-1", accent1);
+    setCSSVariableToColor(el, "--accent-2", accent2);
+    el?.style.setProperty(
+      "--accent-contrast",
+      colorToString(accentContrast, "rgb"),
+    );
   }, [
     bgPage,
     bgCard,
     primary,
-    accentBG,
-    accentText,
     highlight1,
     highlight2,
     highlight3,
+    accent1,
+    accent2,
+    accentContrast,
   ]);
   return (
     <div
@@ -100,8 +126,9 @@ export function ThemeProvider(props: {
           "--bg-card": colorToString(bgCard, "rgb"),
           "--bg-card-alpha": bgCard.getChannelValue("alpha"),
           "--primary": colorToString(primary, "rgb"),
-          "--accent": colorToString(accentBG, "rgb"),
-          "--accent-text": colorToString(accentText, "rgb"),
+          "--accent-1": colorToString(accent1, "rgb"),
+          "--accent-2": colorToString(accent2, "rgb"),
+          "--accent-contrast": colorToString(accentContrast, "rgb"),
           "--highlight-1": highlight1
             ? `rgb(${colorToString(parseColor(`hsba(${highlight1.data.value})`), "rgb")})`
             : "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-card)) 75%)",
@@ -113,4 +140,13 @@ export function ThemeProvider(props: {
       {props.children}
     </div>
   );
+}
+
+function getColorContrast(color1: string, color2: string) {
+  ColorSpace.register(sRGB);
+
+  let parsedColor1 = parse(`rgb(${color1})`);
+  let parsedColor2 = parse(`rgb(${color2})`);
+
+  return contrastLstar(parsedColor1, parsedColor2);
 }

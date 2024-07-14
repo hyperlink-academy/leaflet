@@ -106,7 +106,7 @@ const Toast = (props: {
               ? "bg-accent-red text-white"
               : props.toast?.type === "success"
                 ? "bg-accent-green text-white"
-                : "bg-accent text-accentText shadow-md border border-border"
+                : "bg-accent-1 text-accent-2 shadow-md border border-border"
           }`}
         >
           <div className="flex gap-2 grow justify-center">{item.content}</div>
@@ -132,7 +132,7 @@ const Smoke: React.FC<
       className={`smoke text-center pointer-events-none absolute z-50 rounded-full px-2 py-1 text-sm  ${
         props.error
           ? "border-accent-red text-accent-red border bg-white"
-          : "bg-accent text-accentText"
+          : "bg-accent-1 text-accent-2"
       }`}
     >
       <style jsx>{`

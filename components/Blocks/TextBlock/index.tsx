@@ -125,13 +125,13 @@ export function RenderedTextBlock(props: {
   return (
     <pre
       className={`
-       w-full  whitespace-pre-wrap outline-none break-words ${props.className} ${
-         props.preview
-           ? "p-0"
-           : `px-2 sm:px-3  ${
-               props.type === "heading" ? "pb-0 " : "pb-2"
-             } ${props.first ? "pt-2 sm:pt-3" : "pt-1"}`
-       }`}
+      w-full whitespace-pre-wrap outline-none break-words ${props.className} ${
+        props.preview
+          ? "p-0 min-h-1"
+          : `px-3 sm:px-4 min-h-9  ${
+              props.type === "heading" ? "pb-0 " : "pb-2"
+            } ${props.first ? "pt-2 sm:pt-3" : "pt-1"}`
+      }`}
     >
       {nodes.map((node, index) => (
         <RenderYJSFragment key={index} node={node} />
@@ -141,13 +141,7 @@ export function RenderedTextBlock(props: {
 }
 export function BaseTextBlock(props: BlockProps & { className: string }) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
-  let selected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
-  );
-  let first = props.previousBlock === null;
-  let headingLevel = useEntity(props.entityID, "block/heading-level");
 
-  let [value, factID] = useYJSValue(props.entityID);
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
   let entity_set = useEntitySetContext();
   let propsRef = useRef({ ...props, entity_set });
@@ -158,6 +152,14 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
   useEffect(() => {
     repRef.current = rep.rep;
   }, [rep?.rep]);
+
+  let selected = useUIState((s) =>
+    s.selectedBlock.find((b) => b.value === props.entityID),
+  );
+  let first = props.previousBlock === null;
+  let headingLevel = useEntity(props.entityID, "block/heading-level");
+
+  let [value, factID] = useYJSValue(props.entityID);
 
   let editorState = useEditorStates(
     (s) => s.editorStates[props.entityID],
@@ -242,14 +244,14 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
         }}
         id={elementId.block(props.entityID).text}
         className={`
-          textBlock
-          w-full pl-1 pr-2 sm:pl-2 sm:pr-3
-          border-l-4 outline-none
-          resize-none align-top whitespace-pre-wrap bg-transparent ${
-            selected ? " border-tertiary" : "border-transparent"
-          } ${first ? "pt-2 sm:pt-3" : "pt-1"} ${props.type === "heading" ? "pb-0" : "pb-2"} ${props.className}`}
+          textContent
+          w-full pl-3 pr-3 sm:pl-4 sm:pr-4
+          relative
+          outline-none
+          resize-none align-top whitespace-pre-wrap bg-transparent ${first ? "pt-2 sm:pt-3" : "pt-1"} ${props.type === "heading" ? "pb-0" : "pb-2"} ${props.className}`}
         ref={setMount}
       />
+
       {editorState.doc.textContent.length === 0 &&
         props.position === "a0" &&
         props.nextBlock === null && (

@@ -21,6 +21,7 @@ export function SelectionManager() {
   let entity_set = useEntitySetContext();
   let { rep } = useReplicache();
   useEffect(() => {
+    if (!entity_set.permissions.write) return;
     const getSortedSelection = async () => {
       let selectedBlocks = useUIState.getState().selectedBlock;
       let siblings =
@@ -238,6 +239,7 @@ export function SelectionManager() {
   let initialContentEditableParent = useRef<null | Node>(null);
   let savedSelection = useRef<SavedRange[] | null>();
   useEffect(() => {
+    if (!entity_set.permissions.write) return;
     let mouseDownListener = (e: MouseEvent) => {
       setMouseDown(true);
       let contentEditableParent = getContentEditableParent(e.target as Node);
@@ -269,7 +271,7 @@ export function SelectionManager() {
       window.removeEventListener("mousedown", mouseDownListener);
       window.removeEventListener("mouseup", mouseUpListener);
     };
-  }, []);
+  }, [entity_set.permissions.write]);
   useEffect(() => {
     if (!mouseDown) return;
     let mouseMoveListener = (e: MouseEvent) => {

@@ -1,11 +1,12 @@
 import { useReplicache } from "src/replicache";
-import { ShareSmall } from "components/Icons";
+import { PopoverArrow, ShareSmall } from "components/Icons";
 import { useEffect, useState } from "react";
 import { getShareLink } from "./getShareLink";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useSmoker } from "components/Toast";
 import * as Popover from "@radix-ui/react-popover";
 import { Menu, MenuItem } from "components/Layout";
+import { theme } from "tailwind.config";
 
 export function ShareOptions(props: { rootEntity: string }) {
   let { permission_token } = useReplicache();
@@ -38,7 +39,7 @@ export function ShareOptions(props: { rootEntity: string }) {
     <Popover.Root>
       <Popover.Trigger>
         <div className="sm:w-8 sm:h-8 relative">
-          <div className="z-10 group/share sm:absolute top-0 left-0 rounded-full w-fit h-max bg-accent text-accentText flex gap-2 p-1 place-items-center justify-center">
+          <div className="z-10 group/share sm:absolute top-0 left-0 rounded-full w-fit h-max bg-accent-1 text-accent-2 flex gap-2 p-1 place-items-center justify-center">
             <ShareSmall />
             <div className="font-bold pr-[6px] sm:hidden group-hover/share:block">
               Share
@@ -47,7 +48,7 @@ export function ShareOptions(props: { rootEntity: string }) {
         </div>
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Content align="start" sideOffset={6}>
+        <Popover.Content align="center" sideOffset={4} collisionPadding={16}>
           <Menu>
             <MenuItem
               onClick={(e) => {
@@ -62,9 +63,11 @@ export function ShareOptions(props: { rootEntity: string }) {
                 }
               }}
             >
-              <div>
-                <div className="font-bold">Publish</div>
-                <div className="text-sm text-tertiary">
+              <div className="group/publish">
+                <div className="font-bold group-hover/publish:text-accent-contrast">
+                  Publish
+                </div>
+                <div className="text-sm text-tertiary group-hover/publish:text-accent-contrast">
                   Share a read only version of this doc
                 </div>
               </div>
@@ -80,16 +83,22 @@ export function ShareOptions(props: { rootEntity: string }) {
                 }
               }}
             >
-              <div>
-                <div className="font-bold">Collaborate</div>
-                <div className="text-sm text-tertiary">
+              <div className="group/collab">
+                <div className="font-bold group-hover/collab:text-accent-contrast">
+                  Collaborate
+                </div>
+                <div className="text-sm text-tertiary group-hover/collab:text-accent-contrast">
                   Invite people to work together
                 </div>
               </div>
             </MenuItem>
           </Menu>
-
-          <Popover.Close />
+          <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
+            <PopoverArrow
+              arrowFill={theme.colors["bg-card"]}
+              arrowStroke={theme.colors["border"]}
+            />
+          </Popover.Arrow>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

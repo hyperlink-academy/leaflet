@@ -29,7 +29,7 @@ import { useMemo, useState } from "react";
 import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
 import { useParams } from "next/navigation";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
-import { PaintSmall } from "components/Icons";
+import { PaintSmall, PopoverArrow } from "components/Icons";
 
 export const HighlightColorButton = (props: {
   color: "1" | "2" | "3";
@@ -113,11 +113,11 @@ export const HighlightColorSettings = () => {
         <Popover.Content
           className="themeSetterWrapper z-20 w-80 h-fit max-h-[80vh] bg-white rounded-md border border-border flex"
           align="center"
-          sideOffset={4}
+          sideOffset={8}
           collisionPadding={16}
         >
           <div
-            className="bg-bg-page w-full mx-2 p-3 pb-0 my-3 flex flex-col rounded-md  border border-border"
+            className="bg-bg-page w-full m-2 p-3 pb-0  flex flex-col rounded-md  border border-border"
             style={{
               backgroundImage: `url(${backgroundImage?.data.src})`,
               backgroundRepeat: backgroundRepeat ? "repeat" : "no-repeat",
@@ -192,7 +192,12 @@ export const HighlightColorSettings = () => {
               </small>
             </div>
           </div>
-          <Popover.Arrow />
+          <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
+            <PopoverArrow
+              arrowFill={theme.colors["white"]}
+              arrowStroke={theme.colors["border"]}
+            />
+          </Popover.Arrow>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

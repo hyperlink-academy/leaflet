@@ -1,6 +1,7 @@
 import { useEntity, useReplicache } from "src/replicache";
 import { CloseTiny } from "components/Icons";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { useUIState } from "src/useUIState";
 
 export const ExternalLinkBlock = (props: { entityID: string }) => {
   let previewImage = useEntity(props.entityID, "link/preview");
@@ -8,6 +9,9 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
   let description = useEntity(props.entityID, "link/description");
   let url = useEntity(props.entityID, "link/url");
 
+  let selected = useUIState((s) =>
+    s.selectedBlock.find((b) => b.value === props.entityID),
+  );
   let permission = useEntitySetContext().permissions.write;
   let { rep } = useReplicache();
 
@@ -15,7 +19,12 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
     <a
       href={url?.data.value}
       target="_blank"
-      className="externalLinkBlock relative group/linkBlock h-[104px]  bg-bg-card shadow-sm flex  border border-border-light hover:border-accent outline outline-1 outline-transparent hover:outline-accent rounded-lg overflow-hidden text-primary no-underline"
+      className={`
+        externalLinkBlock flex relative group/linkBlock
+        h-[104px]  bg-bg-card overflow-hidden text-primary no-underline
+        border  hover:border-accent-contrast outline outline-1 hover:outline-accent-contrast rounded-lg shadow-sm
+        ${selected ? "outline-accent-contrast border-accent-contrast" : "outline-transparent border-border-light"}
+        `}
     >
       <div className="pt-2 pb-2 px-2 grow min-w-0">
         <div className="flex flex-col w-full min-w-0 h-full grow ">
@@ -30,7 +39,9 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
           >
             {description?.data.value}
           </div>
-          <div className="inline-block place-self-end w-full text-xs text-tertiary italic line-clamp-1 truncate group-hover/linkBlock:text-accent">
+          <div
+            className={`inline-block place-self-end w-full text-xs  italic line-clamp-1 truncate group-hover/linkBlock:text-accent-contrast ${selected ? "text-accent-contrast" : "text-tertiary"}`}
+          >
             {url?.data.value}
           </div>
         </div>
@@ -46,7 +57,7 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
 
       {permission && (
         <button
-          className="absolute p-1 top-0.5 right-0.5 hover:text-accent text-secondary sm:hidden sm:group-hover/linkBlock:block"
+          className="absolute p-1 top-0.5 right-0.5 hover:text-accent-contrast text-secondary sm:hidden sm:group-hover/linkBlock:block"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();

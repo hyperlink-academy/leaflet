@@ -5,22 +5,28 @@ import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
 import { CloseTiny } from "components/Icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
 
 export function CardBlock(props: BlockProps) {
+  let { rep } = useReplicache();
+  let docMetadata = useDocMetadata(props.entityID);
+  let permission = useEntitySetContext().permissions.write;
+
   let isSelected = useUIState(
     (s) =>
       (props.type !== "text" || s.selectedBlock.length > 1) &&
       s.selectedBlock.find((b) => b.value === props.entityID),
   );
-  let docMetadata = useDocMetadata(props.entityID);
-  let permission = useEntitySetContext().permissions.write;
-
   let isOpen = useUIState((s) => s.openCards).includes(props.entityID);
+
   let [areYouSure, setAreYouSure] = useState(false);
 
-  let { rep } = useReplicache();
+  useEffect(() => {
+    if (!isSelected) {
+      setAreYouSure(false);
+    }
+  }, [isSelected]);
 
   return (
     <div
@@ -33,12 +39,13 @@ export function CardBlock(props: BlockProps) {
         ${isSelected || isOpen ? "outline-border border-border" : "outline-transparent border-border-light"}
         `}
     >
-      {areYouSure ? (
+      {/* if the block is not focused, set are you sure to false*/}
+      {areYouSure && isSelected ? (
         <div className="flex flex-col gap-1 w-full h-full place-items-center items-center font-bold py-4 bg-border-light">
           <div className="">Delete this Page?</div>
           <div className="flex gap-2">
             <button
-              className="bg-accent text-accentText px-2 py-1 rounded-md "
+              className="bg-accent-1 text-accent-2 px-2 py-1 rounded-md "
               onClick={(e) => {
                 e.stopPropagation();
                 useUIState.getState().closeCard(props.entityID);
@@ -52,7 +59,7 @@ export function CardBlock(props: BlockProps) {
               Delete
             </button>
             <button
-              className="text-accent"
+              className="text-accent-1"
               onClick={() => setAreYouSure(false)}
             >
               Nevermind
@@ -87,7 +94,7 @@ export function CardBlock(props: BlockProps) {
           <CardPreview entityID={props.entityID} />
           {permission && (
             <button
-              className="absolute p-1 top-0.5 right-0.5 hover:text-accent text-secondary sm:hidden sm:group-hover/cardBlock:block"
+              className="absolute p-1 top-0.5 right-0.5 hover:text-accent-contrast text-secondary sm:hidden sm:group-hover/cardBlock:block"
               onClick={(e) => {
                 e.stopPropagation();
                 setAreYouSure(true);

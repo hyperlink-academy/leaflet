@@ -620,6 +620,7 @@ export const PopoverArrow = (
       height="8"
       viewBox="0 0 16 8"
       fill="none"
+      className="-mt-[1px]"
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
