@@ -48,6 +48,7 @@ import { Separator, ShortcutKey } from "components/Layout";
 import { Input } from "components/Input";
 import { metaKey } from "src/utils/metaKey";
 import { isMac } from "@react-aria/utils";
+import { addShortcut } from "src/shortcuts";
 
 export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   let { rep } = useReplicache();
@@ -75,6 +76,15 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
       setToolbarState("block");
     } else setToolbarState("default");
   }, [blockEmpty, selected]);
+  useEffect(() => {
+    if (toolbarState !== "default") return;
+    let removeShortcut = addShortcut({ metaKey: true, key: "k" }, () => {
+      setToolbarState("link");
+    });
+    return () => {
+      removeShortcut();
+    };
+  }, [toolbarState]);
 
   return (
     <Tooltip.Provider>
