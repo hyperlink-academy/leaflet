@@ -106,7 +106,7 @@ a {
   @apply box-decoration-clone;
 }
 
-.selection-highlight {
+.selected .selection-highlight {
   background-color: Highlight;
   @apply py-[1.5px];
 }
