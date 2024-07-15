@@ -92,6 +92,7 @@ export function LinkEditor(props: { onClose: () => void }) {
               end,
               schema.marks.link.create({ href: linkValue }),
             );
+            tr.setSelection(TextSelection.create(tr.doc, tr.selection.to));
             setEditorState(focusedBlock?.entityID, {
               editor: editor.apply(tr),
             });

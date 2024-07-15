@@ -39,6 +39,7 @@ import { setMark } from "src/utils/prosemirror/setMark";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useHandlePaste } from "./useHandlePaste";
+import { highlightSelectionPlugin } from "./plugins";
 
 export function TextBlock(props: BlockProps & { className: string }) {
   let initialized = useInitialPageLoad();
@@ -100,7 +101,7 @@ export function IOSBS(props: BlockProps) {
               behavior: "smooth",
             });
           }
-        }, 600);
+        }, 750);
       }}
     />
   );
@@ -173,6 +174,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
             ySyncPlugin(value),
             TextBlockKeymap(propsRef, repRef),
             keymap(baseKeymap),
+            highlightSelectionPlugin,
           ],
         }),
       });
@@ -246,7 +248,6 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
         className={`
           textContent
           w-full pl-3 pr-3 sm:pl-4 sm:pr-4
-          relative
           outline-none
           resize-none align-top whitespace-pre-wrap bg-transparent ${first ? "pt-2 sm:pt-3" : "pt-1"} ${props.type === "heading" ? "pb-0" : "pb-2"} ${props.className}`}
         ref={setMount}

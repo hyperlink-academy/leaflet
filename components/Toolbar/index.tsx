@@ -48,6 +48,7 @@ import { Separator, ShortcutKey } from "components/Layout";
 import { Input } from "components/Input";
 import { metaKey } from "src/utils/metaKey";
 import { isMac } from "@react-aria/utils";
+import { addShortcut } from "src/shortcuts";
 
 export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   let { rep } = useReplicache();
@@ -60,9 +61,8 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
     "1",
   );
 
-  let editorState = useEditorStates(
-    (s) => s.editorStates[props.blockID],
-  )?.editor;
+  let activeEditor = useEditorStates((s) => s.editorStates[props.blockID]);
+  let editorState = activeEditor?.editor;
   let selected = useUIState((s) =>
     s.selectedBlock.find((b) => b.value === props.blockID),
   );
@@ -76,6 +76,15 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
       setToolbarState("block");
     } else setToolbarState("default");
   }, [blockEmpty, selected]);
+  useEffect(() => {
+    if (toolbarState !== "default") return;
+    let removeShortcut = addShortcut({ metaKey: true, key: "k" }, () => {
+      setToolbarState("link");
+    });
+    return () => {
+      removeShortcut();
+    };
+  }, [toolbarState]);
 
   return (
     <Tooltip.Provider>
@@ -187,7 +196,12 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
               }
             />
           ) : toolbarState === "link" ? (
-            <LinkEditor onClose={() => setToolbarState("default")} />
+            <LinkEditor
+              onClose={() => {
+                activeEditor?.view?.focus();
+                setToolbarState("default");
+              }}
+            />
           ) : toolbarState === "header" ? (
             <TextBlockTypeButtons onClose={() => setToolbarState("default")} />
           ) : toolbarState === "block" ? (
