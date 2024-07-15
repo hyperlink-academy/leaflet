@@ -39,6 +39,7 @@ import { setMark } from "src/utils/prosemirror/setMark";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useHandlePaste } from "./useHandlePaste";
+import { highlightSelectionPlugin } from "./plugins";
 
 export function TextBlock(props: BlockProps & { className: string }) {
   let initialized = useInitialPageLoad();
@@ -171,6 +172,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
             ySyncPlugin(value),
             TextBlockKeymap(propsRef, repRef),
             keymap(baseKeymap),
+            highlightSelectionPlugin,
           ],
         }),
       });

@@ -299,7 +299,9 @@ function Block(props: BlockProps) {
         props.type !== "heading" &&
         props.type !== "text" &&
         `first:pt-0 sm:first:pt-0 pl-3 pr-3 sm:pl-4 sm:pr-4 pt-1 pb-2`
-      }`}
+      }
+      ${selectedBlocks.length > 1 ? "Multiple-Selected" : ""}
+      `}
       id={elementId.block(props.entityID).container}
     >
       {selected && selectedBlocks.length > 1 && (

@@ -105,3 +105,16 @@ a {
   @apply rounded-[4px];
   @apply box-decoration-clone;
 }
+
+.selection-highlight {
+  background-color: Highlight;
+  @apply py-[1.5px];
+}
+
+.ProseMirror:focus-within .selection-highlight {
+  background-color: transparent;
+}
+
+.Multiple-Selected:focus-within .selection-highlight {
+  background-color: transparent;
+}
