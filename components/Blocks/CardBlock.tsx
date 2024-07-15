@@ -113,7 +113,7 @@ function CardPreview(props: { entityID: string }) {
   let blocks = useEntity(props.entityID, "card/block");
   return (
     <div
-      className={`cardBlockPreview w-[120px] p-1 mx-3 mt-3 -mb-2 bg-bg-card border rounded-md shrink-0 border-border-light flex flex-col gap-1 rotate-[4deg] origin-center`}
+      className={`cardBlockPreview w-[120px] p-1 mx-3 mt-3 -mb-2 bg-bg-card border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center`}
     >
       {blocks
         .sort((a, b) => (a.data.position > b.data.position ? 1 : -1))
