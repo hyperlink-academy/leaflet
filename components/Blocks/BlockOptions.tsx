@@ -154,7 +154,9 @@ const BlockLinkButton = (props: Props) => {
         newEntityID: entity,
       });
     }
-    addLinkBlock(linkValue, entity, rep);
+    let link = linkValue;
+    if (!linkValue.startsWith("http")) link = `https://${linkValue}`;
+    addLinkBlock(link, entity, rep);
     setLinkOpen(false);
   };
 
