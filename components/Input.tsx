@@ -16,6 +16,13 @@ export function Input(
         if (!ref.current) return;
         ref.current.style.transform = "translateY(-2000px)";
         ref.current?.focus();
+        ref.current.value = " ";
+        ref.current.setSelectionRange(1, 1);
+        setTimeout(() => {
+          if (!ref.current) return;
+          ref.current.value = "";
+          ref.current.setSelectionRange(0, 0);
+        }, 10);
         requestAnimationFrame(() => {
           if (ref.current) ref.current.style.transform = "";
         });
