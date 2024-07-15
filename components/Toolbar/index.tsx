@@ -60,9 +60,8 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
     "1",
   );
 
-  let editorState = useEditorStates(
-    (s) => s.editorStates[props.blockID],
-  )?.editor;
+  let activeEditor = useEditorStates((s) => s.editorStates[props.blockID]);
+  let editorState = activeEditor?.editor;
   let selected = useUIState((s) =>
     s.selectedBlock.find((b) => b.value === props.blockID),
   );
@@ -187,7 +186,12 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
               }
             />
           ) : toolbarState === "link" ? (
-            <LinkEditor onClose={() => setToolbarState("default")} />
+            <LinkEditor
+              onClose={() => {
+                activeEditor?.view?.focus();
+                setToolbarState("default");
+              }}
+            />
           ) : toolbarState === "header" ? (
             <TextBlockTypeButtons onClose={() => setToolbarState("default")} />
           ) : toolbarState === "block" ? (
