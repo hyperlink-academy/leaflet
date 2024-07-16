@@ -138,21 +138,15 @@ export function BlockOptions(props: Props) {
                       data: { type: "block-type-union", value: "card" },
                     });
                   }
-                  let entityID = v7();
-                  await rep?.mutate.addBlock({
-                    parent: entity,
-                    position: "a0",
-                    newEntityID: entityID,
-                    type: "heading",
+                  let newCard = v7();
+                  await rep?.mutate.addCardBlock({
+                    blockEntity: entity,
+                    firstBlockEntity: v7(),
+                    cardEntity: newCard,
                     permission_set: entity_set.set,
                   });
-                  await rep?.mutate.assertFact({
-                    entity: entityID,
-                    attribute: "block/heading-level",
-                    data: { type: "number", value: 1 },
-                  });
-                  useUIState.getState().openCard(props.parent, entity);
-                  if (rep) focusCard(entity, rep, "focusFirstBlock");
+                  useUIState.getState().openCard(props.parent, newCard);
+                  if (rep) focusCard(newCard, rep, "focusFirstBlock");
                 }}
               >
                 <BlockCardSmall className="hover:text-accent-contrast" />

@@ -10,7 +10,9 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 
 export function CardBlock(props: BlockProps) {
   let { rep } = useReplicache();
-  let docMetadata = useDocMetadata(props.entityID);
+  let card = useEntity(props.entityID, "block/card");
+  let cardEntity = card ? card.data.value : props.entityID;
+  let docMetadata = useDocMetadata(cardEntity);
   let permission = useEntitySetContext().permissions.write;
 
   let isSelected = useUIState(
@@ -18,7 +20,7 @@ export function CardBlock(props: BlockProps) {
       (props.type !== "text" || s.selectedBlock.length > 1) &&
       s.selectedBlock.find((b) => b.value === props.entityID),
   );
-  let isOpen = useUIState((s) => s.openCards).includes(props.entityID);
+  let isOpen = useUIState((s) => s.openCards).includes(cardEntity);
 
   let [areYouSure, setAreYouSure] = useState(false);
 
@@ -48,7 +50,7 @@ export function CardBlock(props: BlockProps) {
               className="bg-accent-1 text-accent-2 px-2 py-1 rounded-md "
               onClick={(e) => {
                 e.stopPropagation();
-                useUIState.getState().closeCard(props.entityID);
+                useUIState.getState().closeCard(cardEntity);
 
                 rep &&
                   rep.mutate.removeBlock({
@@ -71,8 +73,8 @@ export function CardBlock(props: BlockProps) {
           className="w-full flex overflow-hidden cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
-            useUIState.getState().openCard(props.parent, props.entityID);
-            if (rep) focusCard(props.entityID, rep);
+            useUIState.getState().openCard(props.parent, cardEntity);
+            if (rep) focusCard(cardEntity, rep);
           }}
         >
           <div className="py-1 grow min-w-0">
@@ -91,7 +93,7 @@ export function CardBlock(props: BlockProps) {
               </div>
             )}
           </div>
-          <CardPreview entityID={props.entityID} />
+          <CardPreview entityID={cardEntity} />
           {permission && (
             <button
               className="absolute p-1 top-0.5 right-0.5 hover:text-accent-contrast text-secondary sm:hidden sm:group-hover/cardBlock:block"
