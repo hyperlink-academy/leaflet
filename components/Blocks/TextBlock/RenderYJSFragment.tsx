@@ -33,9 +33,11 @@ export function RenderYJSFragment({
     }
   }
   if (node.constructor === XmlText) {
+    let deltas = node.toDelta() as Delta[];
+    if (deltas.length === 0) return <br />;
     return (
       <>
-        {(node.toDelta() as Delta[]).map((d, index) => {
+        {deltas.map((d, index) => {
           if (d.attributes?.link)
             return (
               <a
