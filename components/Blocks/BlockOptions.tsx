@@ -115,7 +115,6 @@ export function BlockOptions(props: Props) {
                 tooltipContent="Add a card"
                 className="hover:bg-transparent hover:text-accent-constrast text-tertiary"
                 onClick={async () => {
-                  console.log(props.entityID);
                   let entity;
                   if (!props.entityID) {
                     entity = v7();
@@ -161,6 +160,7 @@ export function BlockOptions(props: Props) {
             <>
               <TextBlockTypeButtons
                 onClose={() => setblockMenuState("default")}
+                noStatusIcon
               />
               <Separator classname="h-6" />
               <button

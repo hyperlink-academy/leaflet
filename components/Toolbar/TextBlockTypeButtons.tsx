@@ -11,7 +11,10 @@ import { useCallback } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
-export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
+export const TextBlockTypeButtons = (props: {
+  onClose: () => void;
+  noStatusIcon?: boolean;
+}) => {
   let focusedBlock = useUIState((s) => s.focusedBlock);
   let blockType = useEntity(focusedBlock?.entityID || null, "block/type");
   let headingLevel = useEntity(
@@ -49,13 +52,18 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
     // This Toolbar should close once the user starts typing again
     <div className="flex w-full justify-between items-center gap-4">
       <div className="flex items-center gap-[6px]">
-        <div className="w-8 flex justify-center">
-          <BlockTypeIcon entityID={focusedBlock?.entityID} />
-        </div>
-        <Separator classname="h-6" />
+        {!props.noStatusIcon && (
+          <>
+            <div className="w-8 flex justify-center">
+              <BlockTypeIcon entityID={focusedBlock?.entityID} />
+            </div>
+            <Separator classname="h-6" />
+          </>
+        )}
         <ToolbarButton
           onClick={() => {
             setLevel(1);
+            focusedBlock && keepFocus(focusedBlock.entityID);
           }}
           active={
             blockType?.data.value === "heading" &&
@@ -68,6 +76,7 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
         <ToolbarButton
           onClick={() => {
             setLevel(2);
+            focusedBlock && keepFocus(focusedBlock.entityID);
           }}
           active={
             blockType?.data.value === "heading" &&
@@ -80,6 +89,7 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
         <ToolbarButton
           onClick={() => {
             setLevel(3);
+            focusedBlock && keepFocus(focusedBlock.entityID);
           }}
           active={
             blockType?.data.value === "heading" &&
@@ -114,12 +124,14 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
   );
 };
 
-function keepFocus(entityID: string) {
+export function keepFocus(entityID: string) {
   let existingEditor = useEditorStates.getState().editorStates[entityID];
   let selection = existingEditor?.editor.selection;
+  console.log("keepFocus called");
   setTimeout(() => {
     let existingEditor = useEditorStates.getState().editorStates[entityID];
     if (!selection || !existingEditor) return;
+    console.log("timeout!");
     existingEditor.view?.focus();
     setEditorState(entityID, {
       editor: existingEditor.editor.apply(
@@ -128,7 +140,7 @@ function keepFocus(entityID: string) {
         ),
       ),
     });
-  }, 10);
+  }, 20);
 }
 
 export function TextBlockTypeButton(props: {

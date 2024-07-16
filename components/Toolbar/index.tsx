@@ -24,6 +24,7 @@ import { combine } from "zustand/middleware";
 import { schema } from "components/Blocks/TextBlock/schema";
 import { TextDecorationButton } from "./TextDecorationButton";
 import {
+  keepFocus,
   TextBlockTypeButton,
   TextBlockTypeButtons,
 } from "./TextBlockTypeButtons";
@@ -52,6 +53,7 @@ import { addShortcut } from "src/shortcuts";
 
 export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   let { rep } = useReplicache();
+  let focusedBlock = useUIState((s) => s.focusedBlock);
 
   let [toolbarState, setToolbarState] = useState<
     "default" | "highlight" | "link" | "header" | "list" | "linkBlock"
@@ -206,6 +208,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
               }));
             } else {
               setToolbarState("default");
+              focusedBlock && keepFocus(focusedBlock.entityID);
             }
           }}
         >
