@@ -139,6 +139,35 @@ const outdentBlock: Mutation<{
   });
 };
 
+const addCardBlock: Mutation<{
+  permission_set: string;
+  blockEntity: string;
+  firstBlockEntity: string;
+  firstBlockFactID: string;
+  cardEntity: string;
+}> = async (args, ctx) => {
+  await ctx.createEntity({
+    entityID: args.cardEntity,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    entity: args.blockEntity,
+    attribute: "block/card",
+    data: { type: "reference", value: args.cardEntity },
+  });
+  await addBlock(
+    {
+      factID: args.firstBlockFactID,
+      permission_set: args.permission_set,
+      newEntityID: args.firstBlockEntity,
+      type: "heading",
+      parent: args.cardEntity,
+      position: "a0",
+    },
+    ctx,
+  );
+};
+
 const retractFact: Mutation<{ factID: string }> = async (args, ctx) => {
   await ctx.retractFact(args.factID);
 };
@@ -202,6 +231,7 @@ export const mutations = {
   addBlock,
   addLastBlock,
   outdentBlock,
+  addCardBlock,
   assertFact,
   retractFact,
   removeBlock,

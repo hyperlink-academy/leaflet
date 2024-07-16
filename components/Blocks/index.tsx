@@ -124,7 +124,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
   )
     return null;
   return (
-    <div className="relative group/text px-2 sm:px-3">
+    <div className="relative group/text px-3 sm:px-4">
       <div
         className="h-6 hover:cursor-text italic text-tertiary"
         onMouseDown={async () => {
@@ -146,6 +146,8 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
           }, 10);
         }}
       >
+        {/* this is here as a fail safe, in case a new card is created and there are no blocks in it yet,
+       we render a newcardbutton with a textblock-like placeholder instead of a proper first block. */}
         {!props.lastBlock ? (
           <div className="pt-2 sm:pt-3">write something...</div>
         ) : (

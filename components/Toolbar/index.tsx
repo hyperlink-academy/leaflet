@@ -54,7 +54,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   let { rep } = useReplicache();
 
   let [toolbarState, setToolbarState] = useState<
-    "default" | "highlight" | "link" | "header" | "list" | "block" | "linkBlock"
+    "default" | "highlight" | "link" | "header" | "list" | "linkBlock"
   >("default");
 
   let [lastUsedHighlight, setlastUsedHighlight] = useState<"1" | "2" | "3">(
@@ -62,20 +62,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   );
 
   let activeEditor = useEditorStates((s) => s.editorStates[props.blockID]);
-  let editorState = activeEditor?.editor;
-  let selected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.blockID),
-  );
 
-  let focusedBlock = useUIState((s) => s.focusedBlock);
-
-  let blockEmpty = editorState?.doc.textContent.length === 0;
-
-  useEffect(() => {
-    if (blockEmpty && selected) {
-      setToolbarState("block");
-    } else setToolbarState("default");
-  }, [blockEmpty, selected]);
   useEffect(() => {
     if (toolbarState !== "default") return;
     let removeShortcut = addShortcut({ metaKey: true, key: "k" }, () => {
@@ -204,35 +191,12 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
             />
           ) : toolbarState === "header" ? (
             <TextBlockTypeButtons onClose={() => setToolbarState("default")} />
-          ) : toolbarState === "block" ? (
-            <BlockToolbar
-              setToolbarState={setToolbarState}
-              onClose={() => {
-                if (blockEmpty)
-                  useUIState.setState(() => ({
-                    focusedBlock: {
-                      type: "card",
-                      entityID: props.cardID,
-                    },
-                    selectedBlock: [],
-                  }));
-                setToolbarState("default");
-              }}
-            />
-          ) : toolbarState === "linkBlock" ? (
-            <LinkBlockToolbar
-              onClose={() => {
-                setToolbarState("block");
-              }}
-            />
           ) : null}
         </div>
         <button
           className="hover:text-accent-contrast"
           onClick={() => {
-            if (toolbarState === "linkBlock") {
-              setToolbarState("block");
-            } else if (toolbarState === "default") {
+            if (toolbarState === "default") {
               useUIState.setState(() => ({
                 focusedBlock: {
                   type: "card",
@@ -525,6 +489,7 @@ export const ToolbarButton = (props: {
       <Tooltip.Portal>
         <Tooltip.Content
           sideOffset={6}
+          alignOffset={12}
           className="z-10 bg-border rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
         >
           {props.tooltipContent}

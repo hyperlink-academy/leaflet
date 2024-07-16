@@ -117,7 +117,17 @@ export function RenderedTextBlock(props: {
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
   if (!initialFact)
-    return <pre className={`${props.preview ? "min-h-1" : "min-h-9"}`} />;
+    return (
+      <pre
+        className={`${props.className} ${
+          props.preview
+            ? "p-0"
+            : `${props.type === "heading" ? "pb-0" : "pb-2"} ${props.first ? "pt-2 sm:pt-3" : "pt-1"}`
+        }`}
+      >
+        <br />
+      </pre>
+    );
   let doc = new Y.Doc();
   const update = base64.toByteArray(initialFact.data.value);
   Y.applyUpdate(doc, update);
@@ -129,11 +139,12 @@ export function RenderedTextBlock(props: {
       w-full whitespace-pre-wrap outline-none break-words ${props.className} ${
         props.preview
           ? "p-0 min-h-1"
-          : `px-3 sm:px-4 min-h-9  ${
-              props.type === "heading" ? "pb-0 " : "pb-2"
+          : `px-3 sm:px-4 ${
+              props.type === "heading" ? "pb-0" : "pb-2"
             } ${props.first ? "pt-2 sm:pt-3" : "pt-1"}`
       }`}
     >
+      {nodes.length === 0 && <br />}
       {nodes.map((node, index) => (
         <RenderYJSFragment key={index} node={node} />
       ))}
@@ -257,9 +268,15 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
         props.position === "a0" &&
         props.nextBlock === null && (
           <div
-            className={`${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""} pointer-events-none absolute top-0 left-0 px-2 sm:px-3 pt-2 sm:pt-3 pb-2 italic text-tertiary `}
+            className={`${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""} pointer-events-none absolute top-0 left-0 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 italic text-tertiary `}
           >
-            write something...
+            {props.type === "text"
+              ? "write something..."
+              : headingLevel?.data.value === 3
+                ? "Subheader"
+                : headingLevel?.data.value === 2
+                  ? "Header"
+                  : "Title"}
           </div>
         )}
       {editorState.doc.textContent.length === 0 && selected && (
