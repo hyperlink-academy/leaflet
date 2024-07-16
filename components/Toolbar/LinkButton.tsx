@@ -34,7 +34,7 @@ export function LinkButton(props: { setToolBarState: (s: "link") => void }) {
         e.preventDefault();
         props.setToolBarState("link");
       }}
-      disabled={focusedEditor?.editor.selection.empty}
+      disabled={focusedEditor?.editor.selection.empty || !focusedEditor}
       tooltipContent={
         <div className="text-accent-contrast underline">Inline Link</div>
       }

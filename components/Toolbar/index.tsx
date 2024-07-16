@@ -171,7 +171,6 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
               </div>
 
               <Separator classname="h-6" />
-              {/* possibly link is only available if text is actively selected  */}
               <LinkButton setToolBarState={setToolbarState} />
               <Separator classname="h-6" />
               <TextBlockTypeButton setToolbarState={setToolbarState} />

@@ -150,6 +150,7 @@ export function TextBlockTypeButton(props: {
   return (
     <ToolbarButton
       tooltipContent={<div>Format Text</div>}
+      className="w-8"
       active
       onClick={() => {
         props.setToolbarState("header");
@@ -164,11 +165,14 @@ function BlockTypeIcon(props: { entityID?: string }) {
   let blockType = useEntity(props.entityID || null, "block/type");
   let headingLevel =
     useEntity(props.entityID || null, "block/heading-level")?.data.value || 1;
-  if (blockType?.data.value === "text") return <ParagraphSmall />;
+  if (blockType?.data.value === "text")
+    return <ParagraphSmall className="mx-auto" />;
   if (blockType?.data.value === "heading") {
     if (headingLevel === 1) return <Header1Small />;
     if (headingLevel === 2) return <Header2Small />;
     if (headingLevel === 3) return <Header3Small />;
   }
-  return null;
+  // sometimes, toolbar or block options is visible but there is no focused block,
+  // for example, a few milliseconds after a block is deleted. We default to paragraph
+  return <ParagraphSmall className="mx-auto" />;
 }
