@@ -320,14 +320,14 @@ export const ToolbarButton = (props: {
       <Tooltip.Trigger
         disabled={props.disabled}
         className={`
-          rounded-md active:bg-border active:text-primary
+          rounded-md border border-transparent hover:border-border  active:bg-border-light active:text-primary
           ${props.className}
           ${
             props.active
-              ? "bg-border text-primary"
+              ? "bg-border-light text-primary"
               : props.disabled
                 ? "text-border cursor-not-allowed"
-                : "text-secondary  hover:bg-border hover:text-primary"
+                : "text-secondary  hover:text-primary"
           }
           `}
         onMouseDown={(e) => {

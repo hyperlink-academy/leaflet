@@ -11,7 +11,11 @@ import { useCallback } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
-export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
+
+export const TextBlockTypeButtons = (props: {
+  onClose: () => void;
+  className?: string;
+}) => {
   let focusedBlock = useUIState((s) => s.focusedBlock);
   let blockType = useEntity(focusedBlock?.entityID || null, "block/type");
   let headingLevel = useEntity(
@@ -50,6 +54,7 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
     <div className="flex w-full justify-between items-center gap-4">
       <div className="flex items-center gap-[6px]">
         <ToolbarButton
+          className={props.className}
           onClick={() => {
             setLevel(1);
             focusedBlock && keepFocus(focusedBlock.entityID);
@@ -63,6 +68,7 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
           <Header1Small />
         </ToolbarButton>
         <ToolbarButton
+          className={props.className}
           onClick={() => {
             setLevel(2);
             focusedBlock && keepFocus(focusedBlock.entityID);
@@ -76,6 +82,7 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
           <Header2Small />
         </ToolbarButton>
         <ToolbarButton
+          className={props.className}
           onClick={() => {
             setLevel(3);
             focusedBlock && keepFocus(focusedBlock.entityID);
@@ -89,6 +96,7 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
           <Header3Small />
         </ToolbarButton>
         <ToolbarButton
+          className={`px-[6px] ${props.className}`}
           onClick={() => {
             if (headingLevel)
               rep?.mutate.retractFact({ factID: headingLevel.id });
@@ -103,7 +111,6 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
             }
           }}
           active={blockType?.data.value === "text"}
-          className="px-[6px]"
           tooltipContent={<div>Paragraph</div>}
         >
           Paragraph
@@ -132,12 +139,13 @@ export function keepFocus(entityID: string) {
 
 export function TextBlockTypeButton(props: {
   setToolbarState: (s: "header") => void;
+  className?: string;
 }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);
   return (
     <ToolbarButton
       tooltipContent={<div>Format Text</div>}
-      className="w-8"
+      className={`${props.className} w-8`}
       active
       onClick={() => {
         props.setToolbarState("header");

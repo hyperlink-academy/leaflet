@@ -9,6 +9,8 @@ import {
   Header1Small,
   Header2Small,
   Header3Small,
+  LinkSmall,
+  LinkTextToolbarSmall,
   ParagraphSmall,
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
@@ -54,17 +56,17 @@ export function BlockOptions(props: Props) {
   return (
     <Tooltip.Provider>
       <div
-        className={`blockOptionsWrapper hidden w-fit sm:group-hover/text:flex  group-focus-within/text:flex  place-items-center ${props.className}`}
+        className={`blockOptionsWrapper hidden w-fit max-h-9 sm:group-hover/text:flex  group-focus-within/text:flex  place-items-center ${props.className}`}
       >
         <div className="blockOptionsdefaultContent flex gap-1 items-center">
           {blockMenuState === "default" && (
             <>
               <ToolbarButton
                 tooltipContent="Add an Image"
-                className="hover:bg-transparent hover:text-accent-contrast text-tertiary"
+                className="text-tertiary"
               >
                 <label onMouseDown={(e) => e.preventDefault()}>
-                  <BlockImageSmall className="hover:text-accent-contrast" />
+                  <BlockImageSmall />
                   <div className="hidden">
                     <input
                       type="file"
@@ -106,16 +108,16 @@ export function BlockOptions(props: Props) {
               </ToolbarButton>
               <ToolbarButton
                 tooltipContent="Add a Link"
-                className="hover:bg-transparent text-tertiary"
+                className="text-tertiary"
                 onClick={() => {
                   setblockMenuState("link");
                 }}
               >
-                <BlockLinkSmall className="hover:text-accent-contrast" />
+                <LinkTextToolbarSmall />
               </ToolbarButton>
               <ToolbarButton
                 tooltipContent="Add a card"
-                className="hover:bg-transparent hover:text-accent-constrast text-tertiary"
+                className=" text-tertiary"
                 onClick={async () => {
                   let entity;
                   if (!props.entityID) {
@@ -150,10 +152,11 @@ export function BlockOptions(props: Props) {
                   if (rep) focusCard(newCard, rep, "focusFirstBlock");
                 }}
               >
-                <BlockCardSmall className="hover:text-accent-contrast" />
+                <BlockCardSmall />
               </ToolbarButton>
               <Separator classname="h-6" />
               <TextBlockTypeButton
+                className="hover:text-primary text-tertiary "
                 setToolbarState={() => setblockMenuState("heading")}
               />
             </>
@@ -161,6 +164,7 @@ export function BlockOptions(props: Props) {
           {blockMenuState === "heading" && (
             <>
               <TextBlockTypeButtons
+                className="bg-transparent hover:text-primary text-tertiary "
                 onClose={() => setblockMenuState("default")}
               />
               <Separator classname="h-6" />
@@ -220,7 +224,7 @@ const BlockLinkInput = (props: { onClose: () => void } & Props) => {
           autoFocus
           type="url"
           className="w-full grow border-none outline-none bg-transparent "
-          placeholder="add a link..."
+          placeholder="www.example.com"
           value={linkValue}
           onChange={(e) => setLinkValue(e.target.value)}
           onBlur={() => props.onClose()}

@@ -82,7 +82,7 @@ export function LinkEditor(props: { onClose: () => void }) {
       <Input
         autoFocus
         className="w-full grow bg-transparent border-none outline-none "
-        placeholder="add a link..."
+        placeholder="www.example.com"
         value={linkValue}
         onChange={(e) => setLinkValue(e.target.value)}
         onKeyDown={(e) => {
