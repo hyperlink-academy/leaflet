@@ -325,18 +325,12 @@ function CommandHandler(props: { entityID: string }) {
 }
 
 let SyncView = (props: { entityID: string; parentID: string }) => {
-  let debounce = useRef<number | null>(null);
   let isMobile = useIsMobile();
   useEditorEffect((view) => {
-    if (debounce.current) {
-      window.clearInterval(debounce.current);
-      debounce.current = null;
-    }
     if (isMobile) return;
     if (!view.hasFocus()) return;
-    debounce.current = window.setTimeout(() => {
-      debounce.current = null;
-
+    requestAnimationFrame(() => {
+      if (!view.hasFocus()) return;
       if (
         !view.state.selection.anchor ||
         //@ts-ignore I'm not sure why this type isn't here because it's used in the function underneath
@@ -352,23 +346,23 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
       );
       let parentHeight = parentID?.clientHeight;
       let cursorPosY = coords.top;
-      let bottomScrollPadding = 100;
+      let bottomScrollPadding = 50;
       if (cursorPosY && parentHeight) {
         if (cursorPosY > parentHeight - bottomScrollPadding) {
           parentID?.scrollBy({
             top: bottomScrollPadding - (parentHeight - cursorPosY),
-            behavior: "smooth",
+            behavior: "instant",
           });
         }
         if (cursorPosY < 50) {
           if (parentID?.scrollTop === 0) return;
           parentID?.scrollBy({
             top: cursorPosY - 50,
-            behavior: "smooth",
+            behavior: "instant",
           });
         }
       }
-    }, 10);
+    });
   });
   useEditorEffect(
     (view) => {
