@@ -13,6 +13,7 @@ import { useUIState } from "src/useUIState";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { focusCard } from "components/Cards";
 import { v7 } from "uuid";
+import { scanIndex } from "src/replicache/utils";
 
 export const TextBlockKeymap = (
   propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
@@ -200,6 +201,17 @@ const backspace =
       return false;
     }
 
+    let block =
+      useEditorStates.getState().editorStates[
+        propsRef.current.previousBlock.value
+      ];
+    if (block && block.editor.doc.textContent.length === 0) {
+      repRef.current?.mutate.removeBlock({
+        blockEntity: propsRef.current.previousBlock.value,
+      });
+      return true;
+    }
+
     if (state.doc.textContent.length === 0) {
       repRef.current?.mutate.removeBlock({
         blockEntity: propsRef.current.entityID,
@@ -210,10 +222,6 @@ const backspace =
       return true;
     }
 
-    let block =
-      useEditorStates.getState().editorStates[
-        propsRef.current.previousBlock.value
-      ];
     if (!block) return false;
 
     repRef.current?.mutate.removeBlock({
@@ -262,13 +270,36 @@ const enter =
       propsRef.current.position,
       propsRef.current.nextPosition,
     );
-    repRef.current?.mutate.addBlock({
-      newEntityID,
-      permission_set: propsRef.current.entity_set.set,
-      parent: propsRef.current.parent,
-      type: "text",
-      position,
-    });
+    let asyncRun = async () => {
+      let blockType =
+        propsRef.current.type === "heading" && state.selection.anchor <= 2
+          ? ("heading" as const)
+          : ("text" as const);
+      await repRef.current?.mutate.addBlock({
+        newEntityID,
+        permission_set: propsRef.current.entity_set.set,
+        parent: propsRef.current.parent,
+        type: blockType,
+        position,
+      });
+      if (blockType === "heading") {
+        await repRef.current?.mutate.assertFact({
+          entity: propsRef.current.entityID,
+          attribute: "block/type",
+          data: { type: "block-type-union", value: "text" },
+        });
+        let [headingLevel] =
+          (await repRef.current?.query((tx) =>
+            scanIndex(tx).eav(propsRef.current.entityID, "block/heading-level"),
+          )) || [];
+        await repRef.current?.mutate.assertFact({
+          entity: newEntityID,
+          attribute: "block/heading-level",
+          data: { type: "number", value: headingLevel.data.value || 0 },
+        });
+      }
+    };
+    asyncRun();
     setTimeout(() => {
       let block = useEditorStates.getState().editorStates[newEntityID];
       if (block) {
