@@ -79,6 +79,7 @@ export function BlockOptions(props: Props) {
                           entity = v7();
                           await rep?.mutate.addBlock({
                             parent: props.parent,
+                            factID: v7(),
                             permission_set: entity_set.set,
                             type: "text",
                             position: generateKeyBetween(
@@ -122,6 +123,7 @@ export function BlockOptions(props: Props) {
 
                     await rep?.mutate.addBlock({
                       permission_set: entity_set.set,
+                      factID: v7(),
                       parent: props.parent,
                       type: "card",
                       position: generateKeyBetween(
@@ -141,6 +143,7 @@ export function BlockOptions(props: Props) {
                   let newCard = v7();
                   await rep?.mutate.addCardBlock({
                     blockEntity: entity,
+                    firstBlockFactID: v7(),
                     firstBlockEntity: v7(),
                     cardEntity: newCard,
                     permission_set: entity_set.set,
@@ -198,6 +201,7 @@ const BlockLinkButton = (props: { onClose: () => void } & Props) => {
 
       await rep?.mutate.addBlock({
         permission_set: entity_set.set,
+        factID: v7(),
         parent: props.parent,
         type: "card",
         position: generateKeyBetween(props.position, props.nextPosition),

@@ -65,6 +65,7 @@ export const useHandlePaste = (
             propsRef.current.nextPosition,
           );
           rep.mutate.addBlock({
+            factID: v7(),
             permission_set: entity_set.set,
             newEntityID,
             parent: propsRef.current.parent,
@@ -102,6 +103,7 @@ export const useHandlePaste = (
               entity = v7();
               rep.mutate.addBlock({
                 permission_set: entity_set.set,
+                factID: v7(),
                 type: "image",
                 newEntityID: entity,
                 parent: propsRef.current.parent,
@@ -174,6 +176,7 @@ const createBlockFromHTML = (
     position = getPosition();
     rep.mutate.addBlock({
       permission_set: entity_set.set,
+      factID: v7(),
       newEntityID: entityID,
       parent: propsRef.current.parent,
       type: type,
@@ -204,7 +207,6 @@ const createBlockFromHTML = (
           value: entityID,
           type: type,
           parent: propsRef.current.parent,
-          position: position,
         },
         { type: "end" },
       );
