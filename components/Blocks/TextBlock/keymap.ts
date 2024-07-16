@@ -1,4 +1,5 @@
 import { BlockProps, focusBlock } from "components/Blocks";
+import { EditorView } from "prosemirror-view";
 import { generateKeyBetween } from "fractional-indexing";
 import { setBlockType, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
@@ -246,10 +247,15 @@ const enter =
     propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
     repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
-  (state: EditorState, dispatch?: (tr: Transaction) => void) => {
+  (
+    state: EditorState,
+    dispatch?: (tr: Transaction) => void,
+    view?: EditorView,
+  ) => {
     let tr = state.tr;
     let newContent = tr.doc.slice(state.selection.anchor);
     tr.delete(state.selection.anchor, state.doc.content.size);
+    view?.dom.blur();
     dispatch?.(tr);
     let newEntityID = v7();
     let position = generateKeyBetween(
