@@ -21,9 +21,12 @@ export const useBlocks = (entityID: string) => {
         }),
     [rep.initialFacts, entityID],
   );
-  let data =
-    useSubscribe(rep?.rep, async (tx) => getBlocksWithType(tx, entityID)) ||
-    initialValue;
+  let repData = useSubscribe(
+    rep?.rep,
+    async (tx) => getBlocksWithType(tx, entityID),
+    { dependencies: [entityID] },
+  );
+  let data = repData || initialValue;
   return data
     .flatMap((f) => (!f ? [] : [f]))
     .sort((a, b) => {
