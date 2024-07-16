@@ -116,9 +116,9 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
   )
     return null;
   return (
-    <div className="relative group/text px-3 sm:px-4">
+    <div className="flex items-center justify-between group/text px-3 sm:px-4">
       <div
-        className="h-6 hover:cursor-text italic text-tertiary"
+        className="h-6 hover:cursor-text italic text-tertiary grow"
         onMouseDown={async () => {
           let newEntityID = v7();
           await rep?.mutate.addBlock({
@@ -300,7 +300,7 @@ function Block(props: BlockProps) {
       className={` relative ${
         props.type !== "heading" &&
         props.type !== "text" &&
-        `first:pt-0 sm:first:pt-0 pl-3 pr-3 sm:pl-4 sm:pr-4 pt-1 pb-2`
+        `first:pt-3 sm:first:pt-4 pl-3 pr-3 sm:pl-4 sm:pr-4 pt-1 pb-2`
       }
       ${selectedBlocks.length > 1 ? "Multiple-Selected" : ""}
       ${actuallySelected ? "selected" : ""}

@@ -11,10 +11,7 @@ import { useCallback } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
-export const TextBlockTypeButtons = (props: {
-  onClose: () => void;
-  noStatusIcon?: boolean;
-}) => {
+export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
   let focusedBlock = useUIState((s) => s.focusedBlock);
   let blockType = useEntity(focusedBlock?.entityID || null, "block/type");
   let headingLevel = useEntity(
@@ -52,14 +49,6 @@ export const TextBlockTypeButtons = (props: {
     // This Toolbar should close once the user starts typing again
     <div className="flex w-full justify-between items-center gap-4">
       <div className="flex items-center gap-[6px]">
-        {!props.noStatusIcon && (
-          <>
-            <div className="w-8 flex justify-center">
-              <BlockTypeIcon entityID={focusedBlock?.entityID} />
-            </div>
-            <Separator classname="h-6" />
-          </>
-        )}
         <ToolbarButton
           onClick={() => {
             setLevel(1);

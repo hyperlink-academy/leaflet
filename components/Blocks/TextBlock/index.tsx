@@ -230,63 +230,69 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
         });
       }}
     >
-      <pre
-        data-entityid={props.entityID}
-        onBlur={async () => {
-          if (editorState.doc.textContent.startsWith("http")) {
-            await addLinkBlock(
-              editorState.doc.textContent,
-              props.entityID,
-              rep.rep,
-            );
-          }
-        }}
-        onFocus={() => {
-          setTimeout(() => {
-            useUIState.getState().setSelectedBlock(props);
-            useUIState.setState(() => ({
-              focusedBlock: {
-                type: "block",
-                entityID: props.entityID,
-                parent: props.parent,
-              },
-            }));
-          }, 5);
-        }}
-        id={elementId.block(props.entityID).text}
+      <div
         className={`
+        flex items-center justify-between w-full
+        `}
+      >
+        <pre
+          data-entityid={props.entityID}
+          onBlur={async () => {
+            if (editorState.doc.textContent.startsWith("http")) {
+              await addLinkBlock(
+                editorState.doc.textContent,
+                props.entityID,
+                rep.rep,
+              );
+            }
+          }}
+          onFocus={() => {
+            setTimeout(() => {
+              useUIState.getState().setSelectedBlock(props);
+              useUIState.setState(() => ({
+                focusedBlock: {
+                  type: "block",
+                  entityID: props.entityID,
+                  parent: props.parent,
+                },
+              }));
+            }, 5);
+          }}
+          id={elementId.block(props.entityID).text}
+          className={`
           textContent
-          w-full pl-3 pr-3 sm:pl-4 sm:pr-4
+          grow pl-3 pr-3 sm:pl-4 sm:pr-4
           outline-none
           resize-none align-top whitespace-pre-wrap bg-transparent ${first ? "pt-2 sm:pt-3" : "pt-1"} ${props.type === "heading" ? "pb-0" : "pb-2"} ${props.className}`}
-        ref={setMount}
-      />
-
-      {editorState.doc.textContent.length === 0 &&
-        props.position === "a0" &&
-        props.nextBlock === null && (
-          <div
-            className={`${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""} pointer-events-none absolute top-0 left-0 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 italic text-tertiary `}
-          >
-            {props.type === "text"
-              ? "write something..."
-              : headingLevel?.data.value === 3
-                ? "Subheader"
-                : headingLevel?.data.value === 2
-                  ? "Header"
-                  : "Title"}
-          </div>
-        )}
-      {editorState.doc.textContent.length === 0 && selected && (
-        <BlockOptions
-          factID={factID}
-          entityID={props.entityID}
-          parent={props.parent}
-          position={props.position}
-          nextPosition={props.nextPosition}
-          first={first}
+          ref={setMount}
         />
-      )}
+        {editorState.doc.textContent.length === 0 &&
+          props.position === "a0" &&
+          props.nextBlock === null && (
+            <div
+              className={`${props.className} pointer-events-none absolute top-0 left-0 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 italic text-tertiary `}
+            >
+              {props.type === "text"
+                ? "write something..."
+                : headingLevel?.data.value === 3
+                  ? "Subheader"
+                  : headingLevel?.data.value === 2
+                    ? "Header"
+                    : "Title"}
+            </div>
+          )}
+        {editorState.doc.textContent.length === 0 && selected && (
+          <BlockOptions
+            className={`sm:pr-4 pr-3 ${first ? "pt-2 sm:pt-3" : "pt-1"} ${props.type === "heading" ? "pb-0" : "pb-2"}`}
+            factID={factID}
+            entityID={props.entityID}
+            parent={props.parent}
+            position={props.position}
+            nextPosition={props.nextPosition}
+            first={first}
+          />
+        )}
+      </div>
       <SyncView entityID={props.entityID} parentID={props.parent} />
       <CommandHandler entityID={props.entityID} />
     </ProseMirror>

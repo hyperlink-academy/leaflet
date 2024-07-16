@@ -1,4 +1,4 @@
-import { useReplicache } from "src/replicache";
+import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import {
   BlockCardSmall,
@@ -34,6 +34,7 @@ type Props = {
   nextPosition: string | null;
   factID?: string | undefined;
   first?: boolean;
+  className?: string;
 };
 export function BlockOptions(props: Props) {
   let { rep } = useReplicache();
@@ -48,11 +49,12 @@ export function BlockOptions(props: Props) {
       ? focusedElement.entityID
       : focusedElement?.parent;
 
+  let type = useEntity(props.entityID, "block/type");
+
   return (
     <Tooltip.Provider>
       <div
-        className={`blockOptionsWrapper sm:group-hover/text:flex group-focus-within/text:flex hidden place-items-center
- absolute right-2 sm:right-3 bottom-0 ${props.first ? "top-2 sm:top-3" : "top-1"}`}
+        className={`blockOptionsWrapper w-fit sm:group-hover/text:flex  group-focus-within/text:flex  place-items-center ${props.className}`}
       >
         <div className="blockOptionsdefaultContent flex gap-1 items-center">
           {blockMenuState === "default" && (
@@ -160,7 +162,6 @@ export function BlockOptions(props: Props) {
             <>
               <TextBlockTypeButtons
                 onClose={() => setblockMenuState("default")}
-                noStatusIcon
               />
               <Separator classname="h-6" />
               <button
@@ -173,7 +174,7 @@ export function BlockOptions(props: Props) {
           )}
           {blockMenuState === "link" && (
             <>
-              <BlockLinkButton
+              <BlockLinkInput
                 onClose={() => {
                   setblockMenuState("default");
                 }}
@@ -187,7 +188,7 @@ export function BlockOptions(props: Props) {
   );
 }
 
-const BlockLinkButton = (props: { onClose: () => void } & Props) => {
+const BlockLinkInput = (props: { onClose: () => void } & Props) => {
   let entity_set = useEntitySetContext();
   let [linkValue, setLinkValue] = useState("");
   let { rep } = useReplicache();

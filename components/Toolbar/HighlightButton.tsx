@@ -30,6 +30,7 @@ import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
 import { useParams } from "next/navigation";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 import { PaintSmall, PopoverArrow } from "components/Icons";
+import { ToolbarButton } from ".";
 
 export const HighlightColorButton = (props: {
   color: "1" | "2" | "3";
@@ -106,8 +107,10 @@ export const HighlightColorSettings = () => {
 
   return (
     <Popover.Root>
-      <Popover.Trigger>
-        <PaintSmall />
+      <Popover.Trigger asChild>
+        <ToolbarButton tooltipContent="Set Custom Highlights">
+          <PaintSmall />
+        </ToolbarButton>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content

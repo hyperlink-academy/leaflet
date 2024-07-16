@@ -18,6 +18,7 @@ import {
   HighlightSmall,
   CheckTiny,
   PopoverArrow,
+  ArrowRightTiny,
 } from "components/Icons";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
@@ -148,15 +149,28 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                   }
                   attrs={{ color: lastUsedHighlight }}
                   mark={schema.marks.highlight}
-                  icon={<HighlightSmall />}
+                  icon={
+                    <HighlightSmall
+                      highlightColor={
+                        lastUsedHighlight === "1"
+                          ? theme.colors["highlight-1"]
+                          : lastUsedHighlight === "2"
+                            ? theme.colors["highlight-2"]
+                            : theme.colors["highlight-3"]
+                      }
+                    />
+                  }
                 />
-                <button
+
+                <ToolbarButton
+                  tooltipContent="Change Highlight Color"
                   onClick={() => {
                     setToolbarState("highlight");
                   }}
-                  className="pr-2"
+                  className="-ml-1"
                 >
-                  <div
+                  <ArrowRightTiny />
+                  {/* <div
                     className={`w-2 h-[22px] rounded-[2px] border border-border`}
                     style={{
                       backgroundColor:
@@ -166,8 +180,8 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                             ? theme.colors["highlight-2"]
                             : theme.colors["highlight-3"],
                     }}
-                  />
-                </button>
+                  /> */}
+                </ToolbarButton>
               </div>
 
               <Separator classname="h-6" />
@@ -290,11 +304,21 @@ const HighlightToolbar = (props: {
   lastUsedHighlight: "1" | "2" | "3";
   setLastUsedHighlight: (color: "1" | "2" | "3") => void;
 }) => {
+  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedEditor = useEditorStates((s) =>
+    focusedBlock ? s.editorStates[focusedBlock.entityID] : null,
+  );
+  let [initialRender, setInitialRender] = useState(true);
+  useEffect(() => {
+    setInitialRender(false);
+  }, []);
+  useEffect(() => {
+    if (initialRender) return;
+    if (focusedEditor) props.onClose();
+  }, [focusedEditor, props]);
   return (
     <div className="flex w-full justify-between items-center gap-4 text-secondary">
       <div className="flex items-center gap-[6px]">
-        <HighlightSmall />
-        <Separator classname="h-6" />
         <HighlightColorButton
           color="1"
           lastUsedHighlight={props.lastUsedHighlight}
@@ -310,6 +334,7 @@ const HighlightToolbar = (props: {
           lastUsedHighlight={props.lastUsedHighlight}
           setLastUsedHightlight={props.setLastUsedHighlight}
         />
+        <Separator classname="h-6" />
         <HighlightColorSettings />
       </div>
     </div>
