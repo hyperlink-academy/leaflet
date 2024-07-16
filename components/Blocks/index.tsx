@@ -78,7 +78,7 @@ export function Blocks(props: { entityID: string }) {
         onClick={() => {
           let newEntityID = v7();
 
-          if (lastBlock && lastBlock.type === "text") {
+          if (lastBlock && textBlocks[lastBlock.type]) {
             focusBlock({ ...lastBlock, type: "text" }, { type: "end" });
           } else {
             rep?.rep?.mutate.addBlock({
@@ -109,6 +109,9 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
       ? s.editorStates[props.lastBlock.value]
       : null,
   );
+  let type = useEntity(props.entityID, "block/type");
+  let headingLevel = useEntity(props.entityID, "block/heading-level");
+
   if (!entity_set.permissions.write) return null;
   if (
     (props.lastBlock?.type === "text" || props.lastBlock?.type === "heading") &&
@@ -138,7 +141,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
         }}
       >
         {/* this is here as a fail safe, in case a new card is created and there are no blocks in it yet,
-       we render a newcardbutton with a textblock-like placeholder instead of a proper first block. */}
+     we render a newcardbutton with a textblock-like placeholder instead of a proper first block. */}
         {!props.lastBlock ? (
           <div className="pt-2 sm:pt-3">write something...</div>
         ) : (

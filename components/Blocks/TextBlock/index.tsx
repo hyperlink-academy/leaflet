@@ -120,10 +120,11 @@ export function RenderedTextBlock(props: {
         className={`${props.className} ${
           props.preview
             ? "p-0"
-            : `${props.type === "heading" ? "pb-0" : "pb-2"} ${props.first ? "pt-2 sm:pt-3" : "pt-1"}`
+            : `px-3 sm:px-4 italic text-tertiary ${props.type === "heading" ? "pb-0" : "pb-2"} ${props.first ? "pt-2 sm:pt-3" : "pt-1"}`
         }`}
       >
-        <br />
+        {/* Render a placeholder if the card is totally empty, else just show the blank line*/}
+        {props.first ? "Title" : <br />}
       </pre>
     );
   let doc = new Y.Doc();

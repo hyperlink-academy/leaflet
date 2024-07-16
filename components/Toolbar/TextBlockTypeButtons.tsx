@@ -116,11 +116,9 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
 export function keepFocus(entityID: string) {
   let existingEditor = useEditorStates.getState().editorStates[entityID];
   let selection = existingEditor?.editor.selection;
-  console.log("keepFocus called");
   setTimeout(() => {
     let existingEditor = useEditorStates.getState().editorStates[entityID];
     if (!selection || !existingEditor) return;
-    console.log("timeout!");
     existingEditor.view?.focus();
     setEditorState(entityID, {
       editor: existingEditor.editor.apply(
