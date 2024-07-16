@@ -135,7 +135,7 @@ const increaseHeadingLevel: Mutation<{ entityID: string }> = async (
       data: { type: "number", value: 1 },
     });
   }
-  if (headinglevel?.data.value === 4) return;
+  if (headinglevel?.data.value === 3) return;
   return await ctx.assertFact({
     entity: args.entityID,
     attribute: "block/heading-level",
