@@ -488,6 +488,8 @@ export const ToolbarButton = (props: {
   disabled?: boolean;
 }) => {
   return (
+    // toolbar button does not control the highlight theme setter
+    // if toolbar button is updated, be sure to update there as well
     <Tooltip.Root>
       <Tooltip.Trigger
         disabled={props.disabled}
