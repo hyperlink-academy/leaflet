@@ -77,5 +77,5 @@ export default async function RootPage() {
     },
   );
 
-  redirect(`/${permissionToken.id}`);
+  redirect(`/${permissionToken.id}?focusFirstBlock`);
 }
