@@ -1,4 +1,4 @@
-import { BlockProps } from "components/Blocks";
+import { Block, BlockProps } from "components/Blocks";
 import { focusCard } from "components/Cards";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
@@ -7,6 +7,7 @@ import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
 import { CloseTiny } from "components/Icons";
 import { useEffect, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { useBlocks } from "src/hooks/queries/useBlocks";
 
 export function CardBlock(props: BlockProps) {
   let { rep } = useReplicache();
@@ -112,38 +113,50 @@ export function CardBlock(props: BlockProps) {
 }
 
 function CardPreview(props: { entityID: string }) {
-  let blocks = useEntity(props.entityID, "card/block");
+  let blocks = useBlocks(props.entityID);
   return (
     <div
       className={`cardBlockPreview w-[120px] p-1 mx-3 mt-3 -mb-2 bg-bg-card border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center`}
     >
-      {blocks
-        .sort((a, b) => (a.data.position > b.data.position ? 1 : -1))
-        .map((b) => (
-          <PreviewBlock entityID={b.data.value} key={b.data.value} />
-        ))}
+      {blocks.map((b) => {
+        if (b.listData)
+          return (
+            <div
+              className="w-full flex flex-row"
+              style={{ fontSize: "4px" }}
+              key={b.factID}
+            >
+              <div
+                className="flex-shrink-0"
+                style={{ width: b.listData.depth * 3 }}
+              ></div>{" "}
+              *
+              <PreviewBlock {...b} />
+            </div>
+          );
+        return <PreviewBlock {...b} key={b.factID} />;
+      })}
     </div>
   );
 }
 
-function PreviewBlock(props: { entityID: string }) {
-  let type = useEntity(props.entityID, "block/type");
-  switch (type?.data.value) {
+function PreviewBlock(props: Block) {
+  switch (props.type) {
     case "text": {
       return (
         <div style={{ fontSize: "4px" }}>
-          <RenderedTextBlock entityID={props.entityID} preview />
+          <RenderedTextBlock entityID={props.value} preview />
         </div>
       );
     }
     case "heading":
-      return <HeadingPreviewBlock entityID={props.entityID} />;
+      return <HeadingPreviewBlock entityID={props.value} />;
     case "card":
       return (
         <div className="w-full h-4 shrink-0 rounded-md border border-border-light" />
       );
     case "image":
-      return <ImagePreviewBlock entityID={props.entityID} />;
+      return <ImagePreviewBlock entityID={props.value} />;
     default:
       null;
   }
