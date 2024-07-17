@@ -73,10 +73,10 @@ export function CardBlock(props: BlockProps) {
       className={`
         cardBlockWrapper relative group/cardBlock
         w-full h-[104px]
-        bg-bg-card border shadow-sm outline outline-1 hover:outline-border-light rounded-lg
+        bg-bg-card border shadow-sm outline outline-1 outline-transparent   rounded-lg
         flex overflow-hidden
-
-        ${isSelected || isOpen ? "outline-border border-border" : "outline-transparent border-border-light"}
+        ${isOpen ? "border-tertiary hover:outline-tertiary" : "border-border-light hover:outline-border-light"}
+        ${isSelected ? "outline-tertiary border-tertiary" : "border-border-light hover:outline-border-light"}
         `}
       onKeyDown={(e) => {
         if (e.key === "Backspace" && permission) {
