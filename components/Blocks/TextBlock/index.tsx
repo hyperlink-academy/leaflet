@@ -270,7 +270,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
           ref={setMount}
         />
         {editorState.doc.textContent.length === 0 &&
-          props.position === "a0" &&
+          props.previousBlock === null &&
           props.nextBlock === null && (
             <div
               className={`${props.className} pointer-events-none absolute top-0 left-0 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 italic text-tertiary `}
