@@ -4,12 +4,12 @@ import {
   permission_tokens,
   permission_token_rights,
   entity_sets,
+  facts,
 } from "drizzle/schema";
 import { redirect } from "next/navigation";
 import postgres from "postgres";
-import { Doc } from "./[doc_id]/Doc";
-import { UpdateURL } from "components/UpdateURL";
 import { v7 } from "uuid";
+import { sql } from "drizzle-orm";
 const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
 const db = drizzle(client);
 
@@ -46,19 +46,36 @@ export default async function RootPage() {
           change_entity_set: true,
         })
         .returning();
+      let [blockEntity] = await tx
+        .insert(entities)
+        // And add it to that permission set
+        .values({ set: entity_set.id, id: v7() })
+        .returning();
+
+      await tx.insert(facts).values([
+        {
+          id: v7(),
+          entity: entity.id,
+          attribute: "card/block",
+          data: sql`${{ type: "ordered-reference", value: blockEntity.id, position: "a0" }}::jsonb`,
+        },
+        {
+          id: v7(),
+          entity: blockEntity.id,
+          attribute: "block/type",
+          data: sql`${{ type: "block-type-union", value: "heading" }}::jsonb`,
+        },
+        {
+          id: v7(),
+          entity: blockEntity.id,
+          attribute: "block/heading-level",
+          data: sql`${{ type: "number", value: 1 }}::jsonb`,
+        },
+      ]);
+
       return { permissionToken, rights, entity, entity_set };
     },
   );
-  // Here i need to pass the permission token instead of the doc_id
-  // In the replicache provider I guess I need to fetch the relevant stuff of the permission token?
-  return (
-    <>
-      <UpdateURL url={`/${permissionToken.id}`} />
-      <Doc
-        doc_id={entity.id}
-        token={{ id: permissionToken.id, permission_token_rights: [rights] }}
-        initialFacts={[]}
-      />
-    </>
-  );
+
+  redirect(`/${permissionToken.id}`);
 }

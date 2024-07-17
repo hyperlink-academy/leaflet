@@ -11,7 +11,11 @@ import { useCallback } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
-export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
+
+export const TextBlockTypeButtons = (props: {
+  onClose: () => void;
+  className?: string;
+}) => {
   let focusedBlock = useUIState((s) => s.focusedBlock);
   let blockType = useEntity(focusedBlock?.entityID || null, "block/type");
   let headingLevel = useEntity(
@@ -49,13 +53,11 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
     // This Toolbar should close once the user starts typing again
     <div className="flex w-full justify-between items-center gap-4">
       <div className="flex items-center gap-[6px]">
-        <div className="w-8 flex justify-center">
-          <BlockTypeIcon entityID={focusedBlock?.entityID} />
-        </div>
-        <Separator classname="h-6" />
         <ToolbarButton
+          className={props.className}
           onClick={() => {
             setLevel(1);
+            focusedBlock && keepFocus(focusedBlock.entityID);
           }}
           active={
             blockType?.data.value === "heading" &&
@@ -66,8 +68,10 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
           <Header1Small />
         </ToolbarButton>
         <ToolbarButton
+          className={props.className}
           onClick={() => {
             setLevel(2);
+            focusedBlock && keepFocus(focusedBlock.entityID);
           }}
           active={
             blockType?.data.value === "heading" &&
@@ -78,8 +82,10 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
           <Header2Small />
         </ToolbarButton>
         <ToolbarButton
+          className={props.className}
           onClick={() => {
             setLevel(3);
+            focusedBlock && keepFocus(focusedBlock.entityID);
           }}
           active={
             blockType?.data.value === "heading" &&
@@ -90,6 +96,7 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
           <Header3Small />
         </ToolbarButton>
         <ToolbarButton
+          className={`px-[6px] ${props.className}`}
           onClick={() => {
             if (headingLevel)
               rep?.mutate.retractFact({ factID: headingLevel.id });
@@ -104,7 +111,6 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
             }
           }}
           active={blockType?.data.value === "text"}
-          className="px-[6px]"
           tooltipContent={<div>Paragraph</div>}
         >
           Paragraph
@@ -114,7 +120,7 @@ export const TextBlockTypeButtons = (props: { onClose: () => void }) => {
   );
 };
 
-function keepFocus(entityID: string) {
+export function keepFocus(entityID: string) {
   let existingEditor = useEditorStates.getState().editorStates[entityID];
   let selection = existingEditor?.editor.selection;
   setTimeout(() => {
@@ -128,16 +134,18 @@ function keepFocus(entityID: string) {
         ),
       ),
     });
-  }, 10);
+  }, 20);
 }
 
 export function TextBlockTypeButton(props: {
   setToolbarState: (s: "header") => void;
+  className?: string;
 }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);
   return (
     <ToolbarButton
       tooltipContent={<div>Format Text</div>}
+      className={`${props.className} w-8`}
       active
       onClick={() => {
         props.setToolbarState("header");
@@ -152,11 +160,14 @@ function BlockTypeIcon(props: { entityID?: string }) {
   let blockType = useEntity(props.entityID || null, "block/type");
   let headingLevel =
     useEntity(props.entityID || null, "block/heading-level")?.data.value || 1;
-  if (blockType?.data.value === "text") return <ParagraphSmall />;
+  if (blockType?.data.value === "text")
+    return <ParagraphSmall className="mx-auto" />;
   if (blockType?.data.value === "heading") {
     if (headingLevel === 1) return <Header1Small />;
     if (headingLevel === 2) return <Header2Small />;
     if (headingLevel === 3) return <Header3Small />;
   }
-  return null;
+  // sometimes, toolbar or block options is visible but there is no focused block,
+  // for example, a few milliseconds after a block is deleted. We default to paragraph
+  return <ParagraphSmall className="mx-auto" />;
 }

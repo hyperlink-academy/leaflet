@@ -3,7 +3,7 @@ import { EditorState, TextSelection } from "prosemirror-state";
 import { useUIState } from "src/useUIState";
 import { ToolbarButton } from ".";
 import { CheckTiny, CloseTiny, LinkTextToolbarSmall } from "components/Icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Separator } from "components/Layout";
 import { MarkType } from "prosemirror-model";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
@@ -27,6 +27,7 @@ export function LinkButton(props: { setToolBarState: (s: "link") => void }) {
         to,
       );
   }
+
   return (
     <ToolbarButton
       active={isLink}
@@ -34,7 +35,7 @@ export function LinkButton(props: { setToolBarState: (s: "link") => void }) {
         e.preventDefault();
         props.setToolBarState("link");
       }}
-      disabled={focusedEditor?.editor.selection.empty}
+      disabled={focusedEditor?.editor.selection.empty || !focusedEditor}
       tooltipContent={
         <div className="text-accent-contrast underline">Inline Link</div>
       }
@@ -49,6 +50,9 @@ export function LinkEditor(props: { onClose: () => void }) {
   let focusedEditor = useEditorStates((s) =>
     focusedBlock ? s.editorStates[focusedBlock.entityID] : null,
   );
+  useEffect(() => {
+    if (focusedEditor?.editor.selection.empty) props.onClose();
+  }, [focusedEditor?.editor.selection.empty, props]);
   let content = "";
   let start: number | null = null;
   let end: number | null = null;
@@ -78,7 +82,7 @@ export function LinkEditor(props: { onClose: () => void }) {
       <Input
         autoFocus
         className="w-full grow bg-transparent border-none outline-none "
-        placeholder="add a link..."
+        placeholder="www.example.com"
         value={linkValue}
         onChange={(e) => setLinkValue(e.target.value)}
         onKeyDown={(e) => {

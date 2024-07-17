@@ -131,7 +131,7 @@ const Smoke: React.FC<
     <div
       className={`smoke text-center pointer-events-none absolute z-50 rounded-full px-2 py-1 text-sm  ${
         props.error
-          ? "border-accent-red text-accent-red border bg-white"
+          ? "border-white bg-[#dc143c] text-white border font-bold"
           : "bg-accent-1 text-accent-2"
       }`}
     >

@@ -18,12 +18,14 @@ import {
   HighlightSmall,
   CheckTiny,
   PopoverArrow,
+  ArrowRightTiny,
 } from "components/Icons";
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
 import { schema } from "components/Blocks/TextBlock/schema";
 import { TextDecorationButton } from "./TextDecorationButton";
 import {
+  keepFocus,
   TextBlockTypeButton,
   TextBlockTypeButtons,
 } from "./TextBlockTypeButtons";
@@ -52,6 +54,7 @@ import { addShortcut } from "src/shortcuts";
 
 export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   let { rep } = useReplicache();
+  let focusedBlock = useUIState((s) => s.focusedBlock);
 
   let [toolbarState, setToolbarState] = useState<
     "default" | "highlight" | "link" | "header" | "list" | "linkBlock"
@@ -146,15 +149,28 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                   }
                   attrs={{ color: lastUsedHighlight }}
                   mark={schema.marks.highlight}
-                  icon={<HighlightSmall />}
+                  icon={
+                    <HighlightSmall
+                      highlightColor={
+                        lastUsedHighlight === "1"
+                          ? theme.colors["highlight-1"]
+                          : lastUsedHighlight === "2"
+                            ? theme.colors["highlight-2"]
+                            : theme.colors["highlight-3"]
+                      }
+                    />
+                  }
                 />
-                <button
+
+                <ToolbarButton
+                  tooltipContent="Change Highlight Color"
                   onClick={() => {
                     setToolbarState("highlight");
                   }}
-                  className="pr-2"
+                  className="-ml-1"
                 >
-                  <div
+                  <ArrowRightTiny />
+                  {/* <div
                     className={`w-2 h-[22px] rounded-[2px] border border-border`}
                     style={{
                       backgroundColor:
@@ -164,12 +180,11 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                             ? theme.colors["highlight-2"]
                             : theme.colors["highlight-3"],
                     }}
-                  />
-                </button>
+                  /> */}
+                </ToolbarButton>
               </div>
 
               <Separator classname="h-6" />
-              {/* possibly link is only available if text is actively selected  */}
               <LinkButton setToolBarState={setToolbarState} />
               <Separator classname="h-6" />
               <TextBlockTypeButton setToolbarState={setToolbarState} />
@@ -206,6 +221,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
               }));
             } else {
               setToolbarState("default");
+              focusedBlock && keepFocus(focusedBlock.entityID);
             }
           }}
         >
@@ -216,84 +232,26 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   );
 };
 
-const LinkBlockToolbar = (props: { onClose: () => void }) => {
-  let entity_set = useEntitySetContext();
-  let [linkValue, setLinkValue] = useState("");
-  let focusedBlock = useUIState((s) => s.focusedBlock);
-  let { rep } = useReplicache();
-  let submit = async () => {
-    if (!focusedBlock || !rep) return [];
-    let entity, position;
-    let parent =
-      focusedBlock.type === "card"
-        ? focusedBlock.entityID
-        : focusedBlock.parent;
-    let children = await rep.query((tx) =>
-      scanIndex(tx).eav(parent, "card/block"),
-    );
-    if (focusedBlock.type === "card") {
-      entity = v7();
-      position =
-        children.sort((a, b) => (a.data.position > b.data.position ? 1 : -1))[
-          children.length - 1
-        ]?.data.position || null;
-      await rep?.mutate.addBlock({
-        factID: v7(),
-        parent: focusedBlock.entityID,
-        permission_set: entity_set.set,
-        type: "text",
-        position: generateKeyBetween(position, null),
-        newEntityID: entity,
-      });
-    } else {
-      entity = focusedBlock.entityID;
-    }
-    addLinkBlock(linkValue, entity, rep);
-    props.onClose();
-  };
-
-  return (
-    <div className={`flex gap-2 rounded-md text-secondary grow pr-2`}>
-      <>
-        <BlockLinkSmall className="shrink-0" />
-        <Separator classname="h-6" />
-        <Input
-          autoFocus
-          type="url"
-          className="w-full grow border-none outline-none bg-transparent "
-          placeholder="add a link..."
-          value={linkValue}
-          onChange={(e) => setLinkValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              submit();
-            }
-          }}
-        />
-        <button
-          className="hover:text-accent-contrast -mr-6"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            submit();
-          }}
-        >
-          <CheckTiny />
-        </button>
-      </>
-    </div>
-  );
-};
-
 const HighlightToolbar = (props: {
   onClose: () => void;
   lastUsedHighlight: "1" | "2" | "3";
   setLastUsedHighlight: (color: "1" | "2" | "3") => void;
 }) => {
+  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedEditor = useEditorStates((s) =>
+    focusedBlock ? s.editorStates[focusedBlock.entityID] : null,
+  );
+  let [initialRender, setInitialRender] = useState(true);
+  useEffect(() => {
+    setInitialRender(false);
+  }, []);
+  useEffect(() => {
+    if (initialRender) return;
+    if (focusedEditor) props.onClose();
+  }, [focusedEditor, props]);
   return (
     <div className="flex w-full justify-between items-center gap-4 text-secondary">
       <div className="flex items-center gap-[6px]">
-        <HighlightSmall />
-        <Separator classname="h-6" />
         <HighlightColorButton
           color="1"
           lastUsedHighlight={props.lastUsedHighlight}
@@ -309,6 +267,7 @@ const HighlightToolbar = (props: {
           lastUsedHighlight={props.lastUsedHighlight}
           setLastUsedHightlight={props.setLastUsedHighlight}
         />
+        <Separator classname="h-6" />
         <HighlightColorSettings />
       </div>
     </div>
@@ -346,115 +305,6 @@ const ListToolbar = (props: { onClose: () => void }) => {
   );
 };
 
-const BlockToolbar = (props: {
-  onClose: () => void;
-  setToolbarState: (s: "linkBlock") => void;
-}) => {
-  let [state, setState] = useState<"normal" | "link">("normal");
-  let { rep } = useReplicache();
-  let entity_set = useEntitySetContext();
-  let focusedBlock = useUIState((s) => s.focusedBlock);
-  let getEntity = useCallback(async () => {
-    if (!focusedBlock || !rep) return [];
-    let entity, position;
-    let parent =
-      focusedBlock.type === "card"
-        ? focusedBlock.entityID
-        : focusedBlock.parent;
-    let children = await rep.query((tx) =>
-      scanIndex(tx).eav(parent, "card/block"),
-    );
-    if (focusedBlock.type === "card") {
-      entity = v7();
-      position =
-        children.sort((a, b) => (a.data.position > b.data.position ? 1 : -1))[
-          children.length - 1
-        ]?.data.position || null;
-      await rep?.mutate.addBlock({
-        factID: v7(),
-        parent: focusedBlock.entityID,
-        permission_set: entity_set.set,
-        type: "text",
-        position: generateKeyBetween(position, null),
-        newEntityID: entity,
-      });
-    } else {
-      entity = focusedBlock.entityID;
-    }
-    return [entity, parent];
-  }, [focusedBlock, rep, entity_set]);
-  if (state === "normal")
-    return (
-      <div className="flex w-full justify-between items-center gap-4">
-        <div className="flex items-center gap-[6px] w-full">
-          <BlockSmall />
-          <Separator classname="h-6" />
-          <ToolbarButton tooltipContent=<div>Add an Image</div>>
-            <label
-              className="blockOptionsImage hover:cursor-pointer flex place-items-center"
-              onMouseDown={(e) => e.preventDefault()}
-            >
-              <BlockImageSmall />
-
-              <div className="hidden">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    let file = e.currentTarget.files?.[0];
-                    if (!file || !rep || !focusedBlock) return;
-                    let [entity, parent] = await getEntity();
-                    await rep.mutate.assertFact({
-                      entity,
-                      attribute: "block/type",
-                      data: { type: "block-type-union", value: "image" },
-                    });
-                    await addImage(file, rep, {
-                      entityID: entity,
-                      attribute: "block/image",
-                    });
-                  }}
-                />
-              </div>
-            </label>
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() => props.setToolbarState("linkBlock")}
-            tooltipContent=<div>Add a Link</div>
-          >
-            <BlockLinkSmall />
-          </ToolbarButton>
-          <ToolbarButton
-            tooltipContent=<div>Add a Page</div>
-            onClick={async () => {
-              if (!focusedBlock || !rep) return;
-              let [entity, parent] = await getEntity();
-              await rep?.mutate.assertFact({
-                entity: entity,
-                attribute: "block/type",
-                data: { type: "block-type-union", value: "card" },
-              });
-              useUIState.getState().openCard(parent, entity);
-              let entityID = v7();
-              await rep?.mutate.addBlock({
-                parent: entity,
-                factID: v7(),
-                position: "a0",
-                newEntityID: entityID,
-                type: "text",
-                permission_set: entity_set.set,
-              });
-              focusCard(entity, rep, "focusFirstBlock");
-            }}
-          >
-            <BlockCardSmall />
-          </ToolbarButton>
-        </div>
-      </div>
-    );
-  return;
-};
-
 export const ToolbarButton = (props: {
   className?: string;
   onClick?: (e: React.MouseEvent) => void;
@@ -464,18 +314,20 @@ export const ToolbarButton = (props: {
   disabled?: boolean;
 }) => {
   return (
+    // toolbar button does not control the highlight theme setter
+    // if toolbar button is updated, be sure to update there as well
     <Tooltip.Root>
       <Tooltip.Trigger
         disabled={props.disabled}
         className={`
-          rounded-md active:bg-border active:text-primary
+          rounded-md border border-transparent hover:border-border  active:bg-border-light active:text-primary
           ${props.className}
           ${
             props.active
-              ? "bg-border text-primary"
+              ? "bg-border-light text-primary"
               : props.disabled
                 ? "text-border cursor-not-allowed"
-                : "text-secondary  hover:bg-border hover:text-primary"
+                : "text-secondary  hover:text-primary"
           }
           `}
         onMouseDown={(e) => {

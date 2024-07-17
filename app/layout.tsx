@@ -1,6 +1,7 @@
 import { ViewportSizeLayout } from "components/ViewportSizeLayout";
 import { InitialPageLoad } from "../components/InitialPageLoadProvider";
 import { ServiceWorker } from "../components/ServiceWorker";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import localFont from "next/font/local";
 
@@ -35,6 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${quattro.variable}`}>
       <body>
+        <Analytics />
         <ServiceWorker />
         <InitialPageLoad>
           <ViewportSizeLayout>{children}</ViewportSizeLayout>

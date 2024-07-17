@@ -1,4 +1,4 @@
-import { useReplicache } from "src/replicache";
+import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import {
   BlockCardSmall,
@@ -9,6 +9,8 @@ import {
   Header1Small,
   Header2Small,
   Header3Small,
+  LinkSmall,
+  LinkTextToolbarSmall,
   ParagraphSmall,
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
@@ -26,6 +28,8 @@ import {
   TextBlockTypeButton,
   TextBlockTypeButtons,
 } from "components/Toolbar/TextBlockTypeButtons";
+import { isUrl } from "src/utils/isURL";
+import { useSmoker, useToaster } from "components/Toast";
 
 type Props = {
   parent: string;
@@ -34,6 +38,7 @@ type Props = {
   nextPosition: string | null;
   factID?: string | undefined;
   first?: boolean;
+  className?: string;
 };
 export function BlockOptions(props: Props) {
   let { rep } = useReplicache();
@@ -48,21 +53,22 @@ export function BlockOptions(props: Props) {
       ? focusedElement.entityID
       : focusedElement?.parent;
 
+  let type = useEntity(props.entityID, "block/type");
+
   return (
     <Tooltip.Provider>
       <div
-        className={`blockOptionsWrapper sm:group-hover/text:flex group-focus-within/text:flex hidden place-items-center
- absolute right-2 sm:right-3 bottom-0 ${props.first ? "top-2 sm:top-3" : "top-1"}`}
+        className={`blockOptionsWrapper hidden w-fit max-h-9 sm:group-hover/text:flex  group-focus-within/text:flex  place-items-center ${props.className}`}
       >
         <div className="blockOptionsdefaultContent flex gap-1 items-center">
           {blockMenuState === "default" && (
             <>
               <ToolbarButton
                 tooltipContent="Add an Image"
-                className="hover:bg-transparent hover:text-accent-contrast text-tertiary"
+                className="text-tertiary"
               >
                 <label onMouseDown={(e) => e.preventDefault()}>
-                  <BlockImageSmall className="hover:text-accent-contrast" />
+                  <BlockImageSmall />
                   <div className="hidden">
                     <input
                       type="file"
@@ -105,18 +111,17 @@ export function BlockOptions(props: Props) {
               </ToolbarButton>
               <ToolbarButton
                 tooltipContent="Add a Link"
-                className="hover:bg-transparent text-tertiary"
+                className="text-tertiary"
                 onClick={() => {
                   setblockMenuState("link");
                 }}
               >
-                <BlockLinkSmall className="hover:text-accent-contrast" />
+                <LinkTextToolbarSmall />
               </ToolbarButton>
               <ToolbarButton
                 tooltipContent="Add a card"
-                className="hover:bg-transparent hover:text-accent-constrast text-tertiary"
+                className=" text-tertiary"
                 onClick={async () => {
-                  console.log(props.entityID);
                   let entity;
                   if (!props.entityID) {
                     entity = v7();
@@ -152,10 +157,11 @@ export function BlockOptions(props: Props) {
                   if (rep) focusCard(newCard, rep, "focusFirstBlock");
                 }}
               >
-                <BlockCardSmall className="hover:text-accent-contrast" />
+                <BlockCardSmall />
               </ToolbarButton>
               <Separator classname="h-6" />
               <TextBlockTypeButton
+                className="hover:text-primary text-tertiary "
                 setToolbarState={() => setblockMenuState("heading")}
               />
             </>
@@ -163,6 +169,7 @@ export function BlockOptions(props: Props) {
           {blockMenuState === "heading" && (
             <>
               <TextBlockTypeButtons
+                className="bg-transparent hover:text-primary text-tertiary "
                 onClose={() => setblockMenuState("default")}
               />
               <Separator classname="h-6" />
@@ -176,7 +183,7 @@ export function BlockOptions(props: Props) {
           )}
           {blockMenuState === "link" && (
             <>
-              <BlockLinkButton
+              <BlockLinkInput
                 onClose={() => {
                   setblockMenuState("default");
                 }}
@@ -190,7 +197,7 @@ export function BlockOptions(props: Props) {
   );
 }
 
-const BlockLinkButton = (props: { onClose: () => void } & Props) => {
+const BlockLinkInput = (props: { onClose: () => void } & Props) => {
   let entity_set = useEntitySetContext();
   let [linkValue, setLinkValue] = useState("");
   let { rep } = useReplicache();
@@ -213,6 +220,7 @@ const BlockLinkButton = (props: { onClose: () => void } & Props) => {
     addLinkBlock(link, entity, rep);
     props.onClose();
   };
+  let smoke = useSmoker();
 
   return (
     <div className={`max-w-sm flex gap-2 rounded-md text-secondary`}>
@@ -223,12 +231,22 @@ const BlockLinkButton = (props: { onClose: () => void } & Props) => {
           autoFocus
           type="url"
           className="w-full grow border-none outline-none bg-transparent "
-          placeholder="add a link..."
+          placeholder="www.example.com"
           value={linkValue}
           onChange={(e) => setLinkValue(e.target.value)}
           onBlur={() => props.onClose()}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
+              if (!linkValue) return;
+              if (!isUrl(linkValue)) {
+                let rect = e.currentTarget.getBoundingClientRect();
+                smoke({
+                  error: true,
+                  text: "invalid url!",
+                  position: { x: rect.left, y: rect.top - 8 },
+                });
+                return;
+              }
               submit();
             }
           }}
@@ -238,6 +256,15 @@ const BlockLinkButton = (props: { onClose: () => void } & Props) => {
             className="hover:text-accent-contrast"
             onMouseDown={(e) => {
               e.preventDefault();
+              if (!linkValue) return;
+              if (!isUrl(linkValue)) {
+                smoke({
+                  error: true,
+                  text: "invalid url!",
+                  position: { x: e.clientX, y: e.clientY },
+                });
+                return;
+              }
               submit();
             }}
           >
