@@ -112,7 +112,6 @@ function Card(props: { entityID: string; first?: boolean }) {
             {!props.first && <CardOptions entityID={props.entityID} />}
           </Media>
           <DesktopCardFooter cardID={props.entityID} />
-          {props.entityID}
           <Blocks entityID={props.entityID} />
         </div>
         <Media mobile={false}>
