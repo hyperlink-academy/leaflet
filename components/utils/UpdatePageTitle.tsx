@@ -6,6 +6,9 @@ import { useEntity } from "src/replicache";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { focusBlock } from "components/Blocks";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export function UpdatePageTitle(props: { entityID: string }) {
   let blocks = useBlocks(props.entityID).filter(
@@ -25,6 +28,19 @@ export function UpdatePageTitle(props: { entityID: string }) {
       document.title = YJSFragmentToString(nodes[0]) || "Untitled Leaflet";
     }
   }, [content]);
+  let params = useSearchParams();
+  let focusFirstBlock = params.get("focusFirstBlock");
+  let router = useRouter();
+  let isMobile = useIsMobile();
+  useEffect(() => {
+    if (isMobile) return;
+    if (!firstBlock || focusFirstBlock === null) return;
+    setTimeout(() => {
+      focusBlock(firstBlock, { type: "start" });
+      //remove url param
+      router.replace(location.pathname);
+    }, 50);
+  }, [focusFirstBlock, firstBlock, router, isMobile]);
 
   return null;
 }

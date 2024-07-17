@@ -1,4 +1,4 @@
-import { Block, BlockProps } from "components/Blocks";
+import { Block, BlockProps, focusBlock } from "components/Blocks";
 import { focusCard } from "components/Cards";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
@@ -31,16 +31,67 @@ export function CardBlock(props: BlockProps) {
     }
   }, [isSelected]);
 
+  useEffect(() => {
+    if (isSelected) {
+    }
+  }, [isSelected]);
+
+  useEffect(() => {
+    if (!isSelected) return;
+    let listener = (e: KeyboardEvent) => {
+      if (e.key === "Backspace" && permission) {
+        if (e.defaultPrevented) return;
+        if (areYouSure === false) {
+          setAreYouSure(true);
+        } else {
+          e.preventDefault();
+          useUIState.getState().closeCard(cardEntity);
+
+          rep &&
+            rep.mutate.removeBlock({
+              blockEntity: props.entityID,
+            });
+
+          props.previousBlock &&
+            focusBlock(props.previousBlock, { type: "end" });
+        }
+      }
+    };
+    window.addEventListener("keydown", listener);
+    return () => window.removeEventListener("keydown", listener);
+  }, [
+    areYouSure,
+    cardEntity,
+    isSelected,
+    permission,
+    props.entityID,
+    props.previousBlock,
+    rep,
+  ]);
+
   return (
     <div
       className={`
         cardBlockWrapper relative group/cardBlock
         w-full h-[104px]
-        bg-bg-card border shadow-sm outline outline-1 hover:outline-border-light rounded-lg
+        bg-bg-card border shadow-sm outline outline-1 outline-transparent   rounded-lg
         flex overflow-hidden
-
-        ${isSelected || isOpen ? "outline-border border-border" : "outline-transparent border-border-light"}
+        ${isOpen ? "border-tertiary hover:outline-tertiary" : "border-border-light hover:outline-border-light"}
+        ${isSelected ? "outline-tertiary border-tertiary" : "border-border-light hover:outline-border-light"}
         `}
+      onKeyDown={(e) => {
+        if (e.key === "Backspace" && permission) {
+          e.stopPropagation();
+          useUIState.getState().closeCard(cardEntity);
+
+          rep &&
+            rep.mutate.removeBlock({
+              blockEntity: props.entityID,
+            });
+
+          console.log("delete card");
+        }
+      }}
     >
       {/* if the block is not focused, set are you sure to false*/}
       {areYouSure && isSelected ? (

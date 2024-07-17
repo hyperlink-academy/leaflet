@@ -229,7 +229,11 @@ const backspace =
     propsRef: MutableRefObject<BlockProps>,
     repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
-  (state: EditorState) => {
+  (
+    state: EditorState,
+    dispatch?: (tr: Transaction) => void,
+    view?: EditorView,
+  ) => {
     if (useUIState.getState().selectedBlock.length > 1) {
       return false;
     }
@@ -289,6 +293,12 @@ const backspace =
       if (propsRef.current.previousBlock) {
         focusBlock(propsRef.current.previousBlock, { type: "end" });
       }
+      return true;
+    }
+
+    if (propsRef.current.previousBlock.type === "card") {
+      focusBlock(propsRef.current.previousBlock, { type: "end" });
+      view?.dom.blur();
       return true;
     }
 
