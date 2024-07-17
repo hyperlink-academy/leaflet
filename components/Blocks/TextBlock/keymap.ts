@@ -271,7 +271,11 @@ const backspace =
       useEditorStates.getState().editorStates[
         propsRef.current.previousBlock.value
       ];
-    if (block && block.editor.doc.textContent.length === 0) {
+    if (
+      block &&
+      block.editor.doc.textContent.length === 0 &&
+      !propsRef.current.previousBlock.listData
+    ) {
       repRef.current?.mutate.removeBlock({
         blockEntity: propsRef.current.previousBlock.value,
       });
