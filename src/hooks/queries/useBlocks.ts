@@ -47,7 +47,7 @@ export const getBlocksWithType = async (
               let children = (
                 await scan.eav(root.data.value, "card/block")
               ).sort((a, b) => (a.data.position > b.data.position ? 1 : -1));
-              let type = (await scan.eav(b.data.value, "block/type"))[0];
+              let type = (await scan.eav(root.data.value, "block/type"))[0];
               let newPath = [...path, { entity: root.data.value, depth }];
               let childBlocks = await Promise.all(
                 children.map((c) =>
