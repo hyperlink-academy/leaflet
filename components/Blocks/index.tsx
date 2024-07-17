@@ -204,7 +204,7 @@ function Block(props: BlockProps) {
   useEffect(() => {
     if (!selected || !rep) return;
     let r = rep;
-    let listener = (e: KeyboardEvent) => {
+    let listener = async (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
       if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -237,16 +237,42 @@ function Block(props: BlockProps) {
         if (block) focusBlock(block, { type: "end" });
       }
       if (e.key === "Enter") {
-        let newEntityID = v7();
         if (!entity_set.permissions.write) return;
-        r.mutate.addBlock({
-          permission_set: entity_set.set,
-          newEntityID,
-          factID: v7(),
-          parent: props.parent,
-          type: "text",
-          position: generateKeyBetween(props.position, props.nextPosition),
-        });
+        let newEntityID = v7();
+        let position;
+        if (props.listData) {
+          let hasChild =
+            props.nextBlock?.listData &&
+            props.nextBlock.listData.depth > props.listData.depth;
+          position = generateKeyBetween(
+            hasChild ? null : props.position,
+            props.nextBlock?.position,
+          );
+          await r?.mutate.addBlock({
+            newEntityID,
+            factID: v7(),
+            permission_set: entity_set.set,
+            parent: hasChild ? props.entityID : props.listData.parent,
+            type: "text",
+            position,
+          });
+          await r?.mutate.assertFact({
+            entity: newEntityID,
+            attribute: "block/is-list",
+            data: { type: "boolean", value: true },
+          });
+        }
+        if (!props.listData) {
+          position = generateKeyBetween(props.position, props.nextPosition);
+          await r?.mutate.addBlock({
+            newEntityID,
+            factID: v7(),
+            permission_set: entity_set.set,
+            parent: props.parent,
+            type: "text",
+            position,
+          });
+        }
         setTimeout(() => {
           document.getElementById(elementId.block(newEntityID).text)?.focus();
         }, 10);
