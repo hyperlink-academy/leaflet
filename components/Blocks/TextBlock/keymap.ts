@@ -331,90 +331,54 @@ const enter =
     tr.delete(state.selection.anchor, state.doc.content.size);
     view?.dom.blur();
     dispatch?.(tr);
+
     let newEntityID = v7();
     let position: string;
-    if (!propsRef.current.listData) {
-      position = generateKeyBetween(
-        propsRef.current.position,
-        propsRef.current.nextPosition,
-      );
-      repRef.current?.mutate.addBlock({
-        newEntityID,
-        factID: v7(),
-        permission_set: propsRef.current.entity_set.set,
-        parent: propsRef.current.parent,
-        type: "text",
-        position,
-      });
-    }
-    if (propsRef.current.listData) {
-      if (
-        propsRef.current.nextBlock?.listData &&
-        propsRef.current.nextBlock.listData.depth >
-          propsRef.current.listData.depth
-      ) {
-        position = generateKeyBetween(
-          null,
-          propsRef.current.nextBlock.position,
-        );
-        repRef.current?.mutate
-          .addBlock({
-            newEntityID,
-            factID: v7(),
-            permission_set: propsRef.current.entity_set.set,
-            parent: propsRef.current.entityID,
-            type: "text",
-            position,
-          })
-          .then(() => {
-            repRef.current?.mutate.assertFact({
-              entity: newEntityID,
-              attribute: "block/is-list",
-              data: { type: "boolean", value: true },
-            });
-          });
-      } else {
-        position = generateKeyBetween(
-          propsRef.current.position,
-          propsRef.current.nextBlock?.position,
-        );
-        repRef.current?.mutate
-          .addBlock({
-            newEntityID,
-            factID: v7(),
-            permission_set: propsRef.current.entity_set.set,
-            parent: propsRef.current.listData.parent,
-            type: "text",
-            position,
-          })
-          .then(() => {
-            repRef.current?.mutate.assertFact({
-              entity: newEntityID,
-              attribute: "block/is-list",
-              data: { type: "boolean", value: true },
-            });
-          });
-      }
-      return true;
-    }
-
-    position = generateKeyBetween(
-      propsRef.current.position,
-      propsRef.current.nextPosition,
-    );
     let asyncRun = async () => {
       let blockType =
         propsRef.current.type === "heading" && state.selection.anchor <= 2
           ? ("heading" as const)
           : ("text" as const);
-      await repRef.current?.mutate.addBlock({
-        newEntityID,
-        factID: v7(),
-        permission_set: propsRef.current.entity_set.set,
-        parent: propsRef.current.parent,
-        type: blockType,
-        position,
-      });
+      if (propsRef.current.listData) {
+        let hasChild =
+          propsRef.current.nextBlock?.listData &&
+          propsRef.current.nextBlock.listData.depth >
+            propsRef.current.listData.depth;
+        position = generateKeyBetween(
+          hasChild ? null : propsRef.current.position,
+          propsRef.current.nextBlock?.position,
+        );
+        await repRef.current?.mutate.addBlock({
+          newEntityID,
+          factID: v7(),
+          permission_set: propsRef.current.entity_set.set,
+          parent: hasChild
+            ? propsRef.current.entityID
+            : propsRef.current.listData.parent,
+          type: blockType,
+          position,
+        });
+        await repRef.current?.mutate.assertFact({
+          entity: newEntityID,
+          attribute: "block/is-list",
+          data: { type: "boolean", value: true },
+        });
+      }
+      if (!propsRef.current.listData) {
+        position = generateKeyBetween(
+          propsRef.current.position,
+          propsRef.current.nextPosition,
+        );
+        await repRef.current?.mutate.addBlock({
+          newEntityID,
+          factID: v7(),
+          permission_set: propsRef.current.entity_set.set,
+          parent: propsRef.current.parent,
+          type: blockType,
+          position,
+        });
+      }
+
       if (blockType === "heading") {
         await repRef.current?.mutate.assertFact({
           entity: propsRef.current.entityID,
@@ -433,6 +397,7 @@ const enter =
       }
     };
     asyncRun();
+
     setTimeout(() => {
       let block = useEditorStates.getState().editorStates[newEntityID];
       if (block) {
