@@ -28,6 +28,8 @@ import {
   TextBlockTypeButton,
   TextBlockTypeButtons,
 } from "components/Toolbar/TextBlockTypeButtons";
+import { isUrl } from "src/utils/isURL";
+import { useSmoker, useToaster } from "components/Toast";
 
 type Props = {
   parent: string;
@@ -214,6 +216,7 @@ const BlockLinkInput = (props: { onClose: () => void } & Props) => {
     addLinkBlock(link, entity, rep);
     props.onClose();
   };
+  let smoke = useSmoker();
 
   return (
     <div className={`max-w-sm flex gap-2 rounded-md text-secondary`}>
@@ -230,6 +233,16 @@ const BlockLinkInput = (props: { onClose: () => void } & Props) => {
           onBlur={() => props.onClose()}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
+              if (!linkValue) return;
+              if (!isUrl(linkValue)) {
+                let rect = e.currentTarget.getBoundingClientRect();
+                smoke({
+                  error: true,
+                  text: "invalid url!",
+                  position: { x: rect.left, y: rect.top - 8 },
+                });
+                return;
+              }
               submit();
             }
           }}
@@ -239,6 +252,15 @@ const BlockLinkInput = (props: { onClose: () => void } & Props) => {
             className="hover:text-accent-contrast"
             onMouseDown={(e) => {
               e.preventDefault();
+              if (!linkValue) return;
+              if (!isUrl(linkValue)) {
+                smoke({
+                  error: true,
+                  text: "invalid url!",
+                  position: { x: e.clientX, y: e.clientY },
+                });
+                return;
+              }
               submit();
             }}
           >
