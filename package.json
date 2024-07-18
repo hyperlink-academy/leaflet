@@ -29,6 +29,7 @@
     "next": "^14.2.4",
     "postgres": "^3.4.4",
     "prosemirror-commands": "^1.5.2",
+    "prosemirror-inputrules": "^1.4.0",
     "prosemirror-keymap": "^1.2.2",
     "prosemirror-model": "^1.21.0",
     "prosemirror-schema-basic": "^1.2.2",

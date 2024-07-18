@@ -98,27 +98,6 @@ export const TextBlockKeymap = (
 
       return false;
     },
-    "#": (state, dispatch, view) => {
-      if (state.selection.content().size > 0) return false;
-      if (state.selection.anchor > 1) return false;
-      repRef.current?.mutate.increaseHeadingLevel({
-        entityID: propsRef.current.entityID,
-      });
-
-      setTimeout(
-        () =>
-          focusBlock(
-            {
-              value: propsRef.current.entityID,
-              type: "heading",
-              parent: propsRef.current.parent,
-            },
-            { type: "start" },
-          ),
-        10,
-      );
-      return true;
-    },
     "Shift-ArrowDown": (state, _dispatch, view) => {
       if (
         state.doc.content.size - 1 === state.selection.from ||
