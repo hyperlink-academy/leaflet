@@ -25,15 +25,6 @@ export const TextBlockKeymap = (
     "Meta-i": toggleMark(schema.marks.em),
     "Ctrl-Meta-x": toggleMark(schema.marks.strikethrough),
     "Ctrl-Meta-h": toggleMark(schema.marks.highlight),
-    "-": () => {
-      if (propsRef.current.listData) return false;
-      repRef.current?.mutate.assertFact({
-        entity: propsRef.current.entityID,
-        attribute: "block/is-list",
-        data: { type: "boolean", value: true },
-      });
-      return true;
-    },
     Tab: () => {
       if (!propsRef.current.listData) return false;
       if (!propsRef.current.previousBlock?.listData) return false;
