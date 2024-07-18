@@ -32,7 +32,6 @@ export const TextBlockKeymap = (
       let newParent = propsRef.current.previousBlock.listData.path.find(
         (f) => f.depth === depth,
       );
-      console.log(newParent?.entity.slice(-4));
       if (!newParent) return false;
       repRef.current?.mutate.retractFact({ factID: propsRef.current.factID });
       repRef.current?.mutate.addLastBlock({
@@ -42,41 +41,7 @@ export const TextBlockKeymap = (
       });
       return true;
     },
-    "Shift-Tab": () => {
-      if (!propsRef.current.listData) return false;
-      let listData = propsRef.current.listData;
-      let previousBlock = propsRef.current.previousBlock;
-      if (listData.depth === 1)
-        repRef.current?.mutate.assertFact({
-          entity: propsRef.current.entityID,
-          attribute: "block/is-list",
-          data: { type: "boolean", value: false },
-        });
-      else {
-        if (!previousBlock || !previousBlock.listData) return false;
-        let after = previousBlock.listData.path.find(
-          (f) => f.depth === listData.depth - 1,
-        )?.entity;
-        if (!after) return false;
-        let parent: string | undefined = undefined;
-        if (listData.depth === 2) {
-          parent = propsRef.current.parent;
-        } else {
-          parent = previousBlock.listData.path.find(
-            (f) => f.depth === listData.depth - 2,
-          )?.entity;
-        }
-        if (!parent) return false;
-        repRef.current?.mutate.outdentBlock({
-          block: propsRef.current.entityID,
-          newParent: parent,
-          oldParent: listData.parent,
-          after,
-        });
-      }
-      return true;
-    },
-
+    "Shift-Tab": shifttab(propsRef, repRef),
     Escape: (_state, _dispatch, view) => {
       view?.dom.blur();
       useUIState.setState(() => ({
@@ -300,6 +265,46 @@ const backspace =
     return true;
   };
 
+const shifttab =
+  (
+    propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
+    repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+  ) =>
+  () => {
+    if (!propsRef.current.listData) return false;
+    let listData = propsRef.current.listData;
+    let previousBlock = propsRef.current.previousBlock;
+    if (listData.depth === 1)
+      repRef.current?.mutate.assertFact({
+        entity: propsRef.current.entityID,
+        attribute: "block/is-list",
+        data: { type: "boolean", value: false },
+      });
+    else {
+      if (!previousBlock || !previousBlock.listData) return false;
+      let after = previousBlock.listData.path.find(
+        (f) => f.depth === listData.depth - 1,
+      )?.entity;
+      if (!after) return false;
+      let parent: string | undefined = undefined;
+      if (listData.depth === 2) {
+        parent = propsRef.current.parent;
+      } else {
+        parent = previousBlock.listData.path.find(
+          (f) => f.depth === listData.depth - 2,
+        )?.entity;
+      }
+      if (!parent) return false;
+      repRef.current?.mutate.outdentBlock({
+        block: propsRef.current.entityID,
+        newParent: parent,
+        oldParent: listData.parent,
+        after,
+      });
+    }
+    return true;
+  };
+
 const enter =
   (
     propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
@@ -313,7 +318,6 @@ const enter =
     let tr = state.tr;
     let newContent = tr.doc.slice(state.selection.anchor);
     tr.delete(state.selection.anchor, state.doc.content.size);
-    view?.dom.blur();
     dispatch?.(tr);
 
     let newEntityID = v7();
@@ -324,6 +328,9 @@ const enter =
           ? ("heading" as const)
           : ("text" as const);
       if (propsRef.current.listData) {
+        if (state.doc.content.size <= 2) {
+          return shifttab(propsRef, repRef)();
+        }
         let hasChild =
           propsRef.current.nextBlock?.listData &&
           propsRef.current.nextBlock.listData.depth >
@@ -379,6 +386,7 @@ const enter =
           data: { type: "number", value: headingLevel.data.value || 0 },
         });
       }
+      view?.dom.blur();
     };
     asyncRun();
 
