@@ -24,7 +24,7 @@ let baseSchema = {
     strikethrough: {
       parseDOM: [
         {
-          style: `text-decoration: line-through; text-decoration-color: ${theme.colors.tertiary}`,
+          style: `text-decoration=line-through`,
         },
         {
           style: "text-decoration=none",
