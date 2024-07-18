@@ -122,7 +122,9 @@ export function RenderedTextBlock(props: {
         className={`${props.className} ${
           props.preview
             ? "p-0"
-            : `px-3 sm:px-4 italic text-tertiary ${props.type === "heading" ? "pb-0" : "pb-2"} ${props.first ? "pt-2 sm:pt-3" : "pt-1"}`
+            : `px-3 sm:px-4 italic text-tertiary
+            ${props.type === "heading" ? "pb-0" : "pb-2"}
+            ${props.first ? "pt-2 sm:pt-3" : "pt-1"}`
         }`}
       >
         {/* Render a placeholder if the card is totally empty, else just show the blank line*/}
@@ -263,10 +265,14 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
           }}
           id={elementId.block(props.entityID).text}
           className={`
-          textContent
+          textContent yay
           grow pl-3 pr-3 sm:pl-4 sm:pr-4
           outline-none
-          resize-none align-top whitespace-pre-wrap bg-transparent ${first ? "pt-2 sm:pt-3" : "pt-1"} ${props.type === "heading" ? "pb-0" : "pb-2"} ${props.className}`}
+          resize-none align-top whitespace-pre-wrap bg-transparent
+          ${first ? "pt-2 sm:pt-3" : "pt-1"}
+          ${props.type === "heading" || (props.listData && props.nextBlock?.listData) ? "pb-0" : "pb-2"}
+
+          ${props.className}`}
           ref={setMount}
         />
         {editorState.doc.textContent.length === 0 &&

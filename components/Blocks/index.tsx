@@ -298,84 +298,117 @@ function Block(props: BlockProps) {
     props.parent,
   ]);
   return (
-    <div
-      data-entityid={props.entityID}
-      onMouseDown={(e) => {
-        useSelectingMouse.setState({ start: props.entityID });
-        if (e.shiftKey) {
-          e.preventDefault();
-          useUIState.getState().addBlockToSelection(props);
-        } else useUIState.getState().setSelectedBlock(props);
-      }}
-      onMouseEnter={async (e) => {
-        if (!entity_set.permissions.write) return;
-        if (e.buttons !== 1) return;
-        let selection = useSelectingMouse.getState();
-        if (!selection.start) return;
-        let siblings =
-          (await rep?.query((tx) => getBlocksWithType(tx, props.parent))) || [];
-        let startIndex = siblings.findIndex((b) => b.value === selection.start);
-        if (startIndex === -1) return;
-        let endIndex = siblings.findIndex((b) => b.value === props.entityID);
-        let start = Math.min(startIndex, endIndex);
-        let end = Math.max(startIndex, endIndex);
-        let selected = siblings.slice(start, end + 1).map((b) => ({
-          value: b.value,
-          position: b.position,
-          parent: props.parent,
-        }));
-        useUIState.getState().setSelectedBlocks(selected);
-      }}
-      // text and heading blocks handle thier own padding so that
-      // clicking anywhere on them (even the padding between blocks) will focus the textarea
-      className={` relative ${
+    <div className="blockWrapper relative flex">
+      {selected && selectedBlocks.length > 1 && (
+        <div
+          className={`
+          blockSelectionBG pointer-events-none
+          absolute right-2 left-2 bg-border-light
+          ${!props.previousBlock ? "top-2" : "top-0"}
+          ${props.type !== "heading" && !nextBlockSelected ? "bottom-1" : "bottom-0"}
+          ${!prevBlockSelected && "rounded-t-md"}
+          ${!nextBlockSelected && "rounded-b-md"}
+          `}
+        />
+      )}
+      {props.listData && <ListMarker {...props} />}{" "}
+      <div
+        data-entityid={props.entityID}
+        onMouseDown={(e) => {
+          useSelectingMouse.setState({ start: props.entityID });
+          if (e.shiftKey) {
+            e.preventDefault();
+            useUIState.getState().addBlockToSelection(props);
+          } else useUIState.getState().setSelectedBlock(props);
+        }}
+        onMouseEnter={async (e) => {
+          if (!entity_set.permissions.write) return;
+          if (e.buttons !== 1) return;
+          let selection = useSelectingMouse.getState();
+          if (!selection.start) return;
+          let siblings =
+            (await rep?.query((tx) => getBlocksWithType(tx, props.parent))) ||
+            [];
+          let startIndex = siblings.findIndex(
+            (b) => b.value === selection.start,
+          );
+          if (startIndex === -1) return;
+          let endIndex = siblings.findIndex((b) => b.value === props.entityID);
+          let start = Math.min(startIndex, endIndex);
+          let end = Math.max(startIndex, endIndex);
+          let selected = siblings.slice(start, end + 1).map((b) => ({
+            value: b.value,
+            position: b.position,
+            parent: props.parent,
+          }));
+          useUIState.getState().setSelectedBlocks(selected);
+        }}
+        // text and heading blocks handle thier own padding so that
+        // clicking anywhere on them (even the padding between blocks) will focus the textarea
+        //
+        // HEY I WAS IN THE MIDDLE OF FIXING SELECTION STATE BUT AFTER THAT WE NEED TO
+        // MAKE SURE THE PADDING ON HEADER BLOCKS IS RIGHT
+        className={`blockContent relative grow flex flex-row
+      ${
         props.type !== "heading" &&
         props.type !== "text" &&
         `first:pt-3 sm:first:pt-4 pl-3 pr-3 sm:pl-4 sm:pr-4 pt-1 pb-2`
       }
-      flex flex-row
       ${selectedBlocks.length > 1 ? "Multiple-Selected" : ""}
       ${actuallySelected ? "selected" : ""}
       `}
-      id={elementId.block(props.entityID).container}
-    >
-      {selected && selectedBlocks.length > 1 && (
-        <div
-          className={`
-            textSelection pointer-events-none
-            absolute right-2 left-2 bg-border-light
-            ${!props.previousBlock ? "top-2" : "top-0"}
-            ${props.type !== "heading" && !nextBlockSelected ? "bottom-1" : "bottom-0"}
-            ${!prevBlockSelected && "rounded-t-md"}
-            ${!nextBlockSelected && "rounded-b-md"}
-            `}
-        />
-      )}
-      {props.listData && (
-        <>
-          <div style={{ width: props.listData.depth * 32 }}></div> *
-        </>
-      )}
-      {props.type === "card" ? (
-        <CardBlock {...props} />
-      ) : props.type === "text" ? (
-        <TextBlock {...props} className="" />
-      ) : props.type === "heading" ? (
-        <HeadingBlock {...props} />
-      ) : props.type === "image" ? (
-        <ImageBlock {...props} />
-      ) : props.type === "link" ? (
-        <ExternalLinkBlock {...props} />
-      ) : null}
+        id={elementId.block(props.entityID).container}
+      >
+        {props.type === "card" ? (
+          <CardBlock {...props} />
+        ) : props.type === "text" ? (
+          <TextBlock {...props} className="" />
+        ) : props.type === "heading" ? (
+          <HeadingBlock {...props} />
+        ) : props.type === "image" ? (
+          <ImageBlock {...props} />
+        ) : props.type === "link" ? (
+          <ExternalLinkBlock {...props} />
+        ) : null}
+      </div>
     </div>
   );
 }
+
+export const ListMarker = (props: BlockProps) => {
+  let first = props.previousBlock === null;
+  let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
+    .value;
+  return (
+    <>
+      <div
+        className="listMarker shrink-0 flex justify-end relative"
+        style={{ width: props.listData && props.listData?.depth * 32 }}
+      >
+        <div
+          className={`absolute h-[5px] w-[5px] rounded-full bg-secondary shrink-0  -right-1
+            ${first ? "mt-1 sm:mt-2" : ""}
+            ${
+              props.type === "heading"
+                ? headingLevel === 3
+                  ? "top-[13px]"
+                  : headingLevel === 2
+                    ? "top-[15px]"
+                    : "top-[20px]"
+                : "top-[13px]"
+            }`}
+        />
+      </div>
+    </>
+  );
+};
 
 const HeadingStyle = {
   1: "text-xl font-bold",
   2: "text-lg font-bold",
   3: "text-base font-bold text-secondary ",
 } as { [level: number]: string };
+
 export function HeadingBlock(props: BlockProps) {
   let headingLevel = useEntity(props.entityID, "block/heading-level");
   return (
