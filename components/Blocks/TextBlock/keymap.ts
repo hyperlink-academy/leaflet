@@ -336,10 +336,7 @@ const enter =
             propsRef.current.listData.depth;
         position = generateKeyBetween(
           hasChild ? null : propsRef.current.position,
-          propsRef.current.nextBlock?.listData?.depth ===
-            propsRef.current.listData.depth
-            ? propsRef.current.nextBlock?.position
-            : null,
+          propsRef.current.nextPosition,
         );
         await repRef.current?.mutate.addBlock({
           newEntityID,

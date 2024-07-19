@@ -43,7 +43,9 @@ export const useHandlePaste = (
             activeBlockProps: propsRef,
             entity_set,
             rep,
-            parent: propsRef.current.parent,
+            parent: propsRef.current.listData
+              ? propsRef.current.listData.parent
+              : propsRef.current.parent,
             getPosition: () => {
               currentPosition = generateKeyBetween(
                 currentPosition,

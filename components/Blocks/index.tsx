@@ -67,6 +67,12 @@ export function Blocks(props: { entityID: string }) {
       }}
     >
       {blocks.map((f, index, arr) => {
+        let nextBlock = arr[index + 1];
+        let depth = f.listData?.depth || 0;
+        let nextDepth = nextBlock?.listData?.depth || 0;
+        let nextPosition: string | null;
+        if (depth === nextDepth) nextPosition = nextBlock?.position || null;
+        else nextPosition = null;
         return (
           <Block
             {...f}
@@ -75,7 +81,7 @@ export function Blocks(props: { entityID: string }) {
             parent={props.entityID}
             previousBlock={arr[index - 1] || null}
             nextBlock={arr[index + 1] || null}
-            nextPosition={arr[index + 1]?.position || null}
+            nextPosition={nextPosition}
           />
         );
       })}
@@ -249,7 +255,7 @@ function Block(props: BlockProps) {
             props.nextBlock.listData.depth > props.listData.depth;
           position = generateKeyBetween(
             hasChild ? null : props.position,
-            props.nextBlock?.position,
+            props.nextPosition,
           );
           await r?.mutate.addBlock({
             newEntityID,
