@@ -80,32 +80,44 @@ function parseBlocks(blocks: Block[]) {
             {
               type: "list",
               block: b,
-              depth: b.listData.depth + 1,
+              depth: b.listData.depth,
               children: [],
             },
           ],
         });
       else {
         let depth = b.listData.depth;
-        let parent = previousBlock;
-        while (depth > 1) {
-          if (
-            parent.children[parent.children.length - 1]?.depth ===
-            b.listData.depth
-          ) {
-            parent = parent.children[parent.children.length - 1];
+        if (depth === previousBlock.depth)
+          previousBlock.children.push({
+            type: "list",
+            block: b,
+            depth: b.listData.depth,
+            children: [],
+          });
+        else {
+          let parent =
+            previousBlock.children[previousBlock.children.length - 1];
+          while (depth > 1) {
+            if (
+              parent.children[parent.children.length - 1] &&
+              parent.children[parent.children.length - 1].depth <
+                b.listData.depth
+            ) {
+              parent = parent.children[parent.children.length - 1];
+            }
+            depth -= 1;
           }
-          depth -= 1;
+          parent.children.push({
+            type: "list",
+            block: b,
+            depth: b.listData.depth,
+            children: [],
+          });
         }
-        parent.children.push({
-          type: "list",
-          block: b,
-          children: [],
-          depth: b.listData.depth + 1,
-        });
       }
     }
   }
+  console.log(parsed);
   return parsed;
 }
 
