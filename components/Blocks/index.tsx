@@ -33,7 +33,7 @@ export function Blocks(props: { entityID: string }) {
   let entity_set = useEntitySetContext();
   let blocks = useBlocks(props.entityID);
 
-  let lastBlock = blocks[blocks.length - 1];
+  let lastBlock = blocks.findLast((f) => !f.listData || f.listData.depth === 1);
   return (
     <div
       className="blocks w-full flex flex-col outline-none h-fit min-h-full pb-32"
