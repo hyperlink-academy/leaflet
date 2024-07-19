@@ -37,6 +37,7 @@ export function SelectionManager() {
       if (e.key === "Backspace" || e.key === "Delete") {
         if (!entity_set.permissions.write) return;
         if (moreThanOneSelected) {
+          e.preventDefault();
           let [sortedBlocks, siblings] = await getSortedSelection();
           let selectedBlocks = useUIState.getState().selectedBlock;
           let firstBlock = sortedBlocks[0];
