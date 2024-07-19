@@ -46,7 +46,6 @@ export function TextBlock(props: BlockProps & { className: string }) {
   let initialized = useInitialPageLoad();
   let first = props.previousBlock === null;
   let permission = useEntitySetContext().permissions.write;
-  console.log(props.listData);
 
   let blockPadding = `px-3 sm:px-4 ${
     props.type === "heading" || (props.listData && props.nextBlock?.listData)
@@ -234,11 +233,7 @@ export function BaseTextBlock(
         });
       }}
     >
-      <div
-        className={`
-        flex items-center justify-between w-full
-        `}
-      >
+      <div className={` flex items-center justify-between w-full `}>
         <pre
           data-entityid={props.entityID}
           onBlur={async () => {

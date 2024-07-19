@@ -1,4 +1,4 @@
-import { Block, BlockProps, focusBlock } from "components/Blocks";
+import { Block, BlockProps, focusBlock, ListMarker } from "components/Blocks";
 import { focusCard } from "components/Cards";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
@@ -88,8 +88,6 @@ export function CardBlock(props: BlockProps) {
             rep.mutate.removeBlock({
               blockEntity: props.entityID,
             });
-
-          console.log("delete card");
         }
       }}
     >
@@ -122,7 +120,7 @@ export function CardBlock(props: BlockProps) {
         </div>
       ) : (
         <div
-          className="cardBlockContent w-full flex gap-2 overflow-hidden cursor-pointer"
+          className="cardBlockContent w-full flex overflow-hidden cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             useUIState.getState().openCard(props.parent, cardEntity);
@@ -132,22 +130,48 @@ export function CardBlock(props: BlockProps) {
           <div className="my-2 ml-3 grow min-w-0 text-sm bg-transparent overflow-hidden">
             {docMetadata[0] && (
               <div
-                className={`cardBlockOne outline-none resize-none align-top  ${docMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
+                className={`cardBlockOne outline-none resize-none align-top flex gap-3 ${docMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
               >
+                {docMetadata[0].listData && (
+                  <ListMarker
+                    {...docMetadata[0]}
+                    compact
+                    className={
+                      docMetadata[0].type === "heading"
+                        ? "top-[10px]"
+                        : "top-[8px]"
+                    }
+                  />
+                )}
                 <RenderedTextBlock entityID={docMetadata[0].value} />
               </div>
             )}
             {docMetadata[1] && (
               <div
-                className={`cardBlockLineTwo outline-none resize-none align-top ${docMetadata[1].type === "heading" ? "font-bold" : ""}`}
+                className={`cardBlockLineTwo outline-none resize-none align-top flex  gap-3 ${docMetadata[1].type === "heading" ? "font-bold" : ""}`}
               >
+                {docMetadata[1].listData && (
+                  <ListMarker
+                    {...docMetadata[1]}
+                    compact
+                    className="top-[8px]"
+                  />
+                )}
                 <RenderedTextBlock entityID={docMetadata[1].value} />
               </div>
             )}
             {docMetadata[2] && (
               <div
-                className={`cardBlockLineThree outline-none resize-none align-top ${docMetadata[2].type === "heading" ? "font-bold" : ""}`}
+                className={`cardBlockLineThree outline-none resize-none align-top flex  gap-3 ${docMetadata[2].type === "heading" ? "font-bold" : ""}`}
               >
+                {docMetadata[2].listData && (
+                  <ListMarker
+                    {...docMetadata[2]}
+                    compact
+                    className="top-[8px]"
+                  />
+                )}
+
                 <RenderedTextBlock entityID={docMetadata[2].value} />
               </div>
             )}

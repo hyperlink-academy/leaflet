@@ -185,6 +185,8 @@ let textBlocks: { [k in Fact<"block/type">["data"]["value"]]?: boolean } = {
 function Block(props: BlockProps) {
   let { rep } = useReplicache();
 
+  let first = props.previousBlock === null;
+
   let selectedBlocks = useUIState((s) => s.selectedBlock);
 
   let actuallySelected = useUIState(
@@ -311,7 +313,7 @@ function Block(props: BlockProps) {
           `}
         />
       )}
-      {props.listData && <ListMarker {...props} />}{" "}
+      {props.listData && <ListMarker {...props} first={first} />}
       <div
         data-entityid={props.entityID}
         onMouseDown={(e) => {
@@ -375,19 +377,23 @@ function Block(props: BlockProps) {
   );
 }
 
-export const ListMarker = (props: BlockProps) => {
-  let first = props.previousBlock === null;
-  let headingLevel = useEntity(props.entityID, "block/heading-level")?.data
-    .value;
+export const ListMarker = (
+  props: Block & { first?: boolean; className?: string; compact?: boolean },
+) => {
+  let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
   return (
     <>
       <div
         className="listMarker shrink-0 flex justify-end relative"
-        style={{ width: props.listData && props.listData?.depth * 32 }}
+        style={{
+          width:
+            props.listData &&
+            props.listData?.depth * (props.compact === true ? 16 : 32),
+        }}
       >
         <div
-          className={`absolute h-[5px] w-[5px] rounded-full bg-secondary shrink-0  -right-1
-            ${first ? "mt-1 sm:mt-2" : ""}
+          className={` ${props.className} absolute h-[5px] w-[5px] rounded-full bg-secondary shrink-0  -right-1
+            ${props.first ? "mt-1 sm:mt-2" : ""}
             ${
               props.type === "heading"
                 ? headingLevel === 3
