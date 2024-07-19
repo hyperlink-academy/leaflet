@@ -172,23 +172,27 @@ const retractFact: Mutation<{ factID: string }> = async (args, ctx) => {
   await ctx.retractFact(args.factID);
 };
 
-const removeBlock: Mutation<{ blockEntity: string }> = async (args, ctx) => {
-  let images = await ctx.scanIndex.eav(args.blockEntity, "block/image");
-  ctx.runOnServer(async ({ supabase }) => {
-    for (let image of images) {
-      let paths = image.data.src.split("/");
-      await supabase.storage
-        .from("minilink-user-assets")
-        .remove([paths[paths.length - 1]]);
-    }
-  });
-  ctx.runOnClient(async () => {
-    let cache = await caches.open("minilink-user-assets");
-    for (let image of images) {
-      await cache.delete(image.data.src);
-    }
-  });
-  await ctx.deleteEntity(args.blockEntity);
+const removeBlock: Mutation<
+  { blockEntity: string } | { blockEntity: string }[]
+> = async (args, ctx) => {
+  for (let block of [args].flat()) {
+    let images = await ctx.scanIndex.eav(block.blockEntity, "block/image");
+    ctx.runOnServer(async ({ supabase }) => {
+      for (let image of images) {
+        let paths = image.data.src.split("/");
+        await supabase.storage
+          .from("minilink-user-assets")
+          .remove([paths[paths.length - 1]]);
+      }
+    });
+    ctx.runOnClient(async () => {
+      let cache = await caches.open("minilink-user-assets");
+      for (let image of images) {
+        await cache.delete(image.data.src);
+      }
+    });
+    await ctx.deleteEntity(block.blockEntity);
+  }
 };
 
 const assertFact: Mutation<

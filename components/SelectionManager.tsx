@@ -41,10 +41,12 @@ export function SelectionManager() {
           let [sortedBlocks, siblings] = await getSortedSelection();
           let selectedBlocks = useUIState.getState().selectedBlock;
           let firstBlock = sortedBlocks[0];
-          for (let block of selectedBlocks) {
-            useUIState.getState().closeCard(block.value);
-            await rep?.mutate.removeBlock({ blockEntity: block.value });
-          }
+
+          await rep?.mutate.removeBlock(
+            selectedBlocks.map((block) => ({ blockEntity: block.value })),
+          );
+          useUIState.getState().closeCard(selectedBlocks.map((b) => b.value));
+
           let nextBlock =
             siblings?.[
               siblings.findIndex((s) => s.value === firstBlock.value) - 1
