@@ -204,14 +204,6 @@ const backspace =
       }
       return false;
     }
-    if (propsRef.current.listData && propsRef.current.listData.depth === 1) {
-      repRef.current?.mutate.assertFact({
-        entity: propsRef.current.entityID,
-        attribute: "block/is-list",
-        data: { type: "boolean", value: false },
-      });
-      return true;
-    }
 
     let block =
       useEditorStates.getState().editorStates[
