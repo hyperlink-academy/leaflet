@@ -58,7 +58,7 @@ export function BlockOptions(props: Props) {
   return (
     <Tooltip.Provider>
       <div
-        className={`blockOptionsWrapper w-fit sm:group-hover/text:flex  group-focus-within/text:flex  place-items-center ${props.className}`}
+        className={`blockOptionsWrapper w-fit hidden sm:group-hover/text:flex  group-focus-within/text:flex  place-items-center ${props.className}`}
       >
         <div className="blockOptionsdefaultContent flex gap-1 items-center">
           {blockMenuState === "default" && (
