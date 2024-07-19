@@ -16,7 +16,6 @@ import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { scanIndex } from "src/replicache/utils";
 import { v7 } from "uuid";
-
 export type Block = {
   factID: string;
   parent: string;
@@ -304,10 +303,9 @@ function Block(props: BlockProps) {
       {selected && selectedBlocks.length > 1 && (
         <div
           className={`
-          blockSelectionBG pointer-events-none
-          absolute right-2 left-2 bg-border-light
-          ${!props.previousBlock ? "top-2" : "top-0"}
-          ${props.type !== "heading" && !nextBlockSelected ? "bottom-1" : "bottom-0"}
+          blockSelectionBG pointer-events-none bg-border-light
+          absolute right-2 left-2 bottom-0
+          ${first ? "top-2" : "top-0"}
           ${!prevBlockSelected && "rounded-t-md"}
           ${!nextBlockSelected && "rounded-b-md"}
           `}
@@ -354,7 +352,7 @@ function Block(props: BlockProps) {
       ${
         props.type !== "heading" &&
         props.type !== "text" &&
-        `first:pt-3 sm:first:pt-4 pl-3 pr-3 sm:pl-4 sm:pr-4 pt-1 pb-2`
+        `${first ? "pt-3 sm:pt-4" : "pt-1"} px-3 sm:px-4 pb-2`
       }
       ${selectedBlocks.length > 1 ? "Multiple-Selected" : ""}
       ${actuallySelected ? "selected" : ""}
@@ -388,21 +386,23 @@ export const ListMarker = (
         style={{
           width:
             props.listData &&
-            props.listData?.depth * (props.compact === true ? 16 : 32),
+            `calc(${props.listData.depth} * ${
+              props.compact ? "16px" : `var(--list-marker-width))`
+            }`,
         }}
       >
         <div
           className={` ${props.className} absolute h-[5px] w-[5px] rounded-full bg-secondary shrink-0  -right-1
-            ${props.first ? "mt-1 sm:mt-2" : ""}
-            ${
-              props.type === "heading"
-                ? headingLevel === 3
-                  ? "top-[13px]"
-                  : headingLevel === 2
-                    ? "top-[15px]"
-                    : "top-[20px]"
-                : "top-[13px]"
-            }`}
+      ${props.first ? "mt-1 sm:mt-2" : ""}
+      ${
+        props.type === "heading"
+          ? headingLevel === 3
+            ? "top-[13px]"
+            : headingLevel === 2
+              ? "top-[15px]"
+              : "top-[20px]"
+          : "top-[13px]"
+      }`}
         />
       </div>
     </>
