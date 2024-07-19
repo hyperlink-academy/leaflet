@@ -68,19 +68,41 @@ function parseBlocks(blocks: Block[]) {
     if (!b.listData) parsed.push({ type: "block", block: b });
     else {
       let previousBlock = parsed[parsed.length - 1];
-      if (!previousBlock || previousBlock.type !== "list")
+      if (
+        !previousBlock ||
+        previousBlock.type !== "list" ||
+        previousBlock.depth > b.listData.depth
+      )
         parsed.push({
           type: "list",
-          children: [{ type: "list", block: b, children: [] }],
+          depth: b.listData.depth,
+          children: [
+            {
+              type: "list",
+              block: b,
+              depth: b.listData.depth + 1,
+              children: [],
+            },
+          ],
         });
       else {
         let depth = b.listData.depth;
         let parent = previousBlock;
         while (depth > 1) {
-          parent = parent.children[parent.children.length - 1];
+          if (
+            parent.children[parent.children.length - 1]?.depth ===
+            b.listData.depth
+          ) {
+            parent = parent.children[parent.children.length - 1];
+          }
           depth -= 1;
         }
-        parent.children.push({ type: "list", block: b, children: [] });
+        parent.children.push({
+          type: "list",
+          block: b,
+          children: [],
+          depth: b.listData.depth + 1,
+        });
       }
     }
   }
@@ -88,11 +110,13 @@ function parseBlocks(blocks: Block[]) {
 }
 
 type ParsedBlocks = Array<
-  { type: "block"; block: Block } | { type: "list"; children: List[] }
+  | { type: "block"; block: Block }
+  | { type: "list"; depth: number; children: List[] }
 >;
 
 type List = {
   type: "list";
   block: Block;
+  depth: number;
   children: List[];
 };
