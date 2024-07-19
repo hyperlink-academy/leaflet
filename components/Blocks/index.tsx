@@ -50,7 +50,7 @@ export function Blocks(props: { entityID: string }) {
               factID: v7(),
               permission_set: entity_set.set,
               type: "text",
-              position: generateKeyBetween(lastBlock.position || null, null),
+              position: generateKeyBetween(lastBlock?.position || null, null),
               newEntityID,
             });
 
