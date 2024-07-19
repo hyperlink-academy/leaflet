@@ -58,14 +58,14 @@ export function BlockOptions(props: Props) {
   return (
     <Tooltip.Provider>
       <div
-        className={`blockOptionsWrapper hidden w-fit max-h-9 sm:group-hover/text:flex  group-focus-within/text:flex  place-items-center ${props.className}`}
+        className={`blockOptionsWrapper w-fit sm:group-hover/text:flex  group-focus-within/text:flex  place-items-center ${props.className}`}
       >
         <div className="blockOptionsdefaultContent flex gap-1 items-center">
           {blockMenuState === "default" && (
             <>
               <ToolbarButton
                 tooltipContent="Add an Image"
-                className="text-tertiary"
+                className="text-tertiary h-6"
               >
                 <label onMouseDown={(e) => e.preventDefault()}>
                   <BlockImageSmall />
@@ -111,7 +111,7 @@ export function BlockOptions(props: Props) {
               </ToolbarButton>
               <ToolbarButton
                 tooltipContent="Add a Link"
-                className="text-tertiary"
+                className="text-tertiary h-6"
                 onClick={() => {
                   setblockMenuState("link");
                 }}
@@ -120,7 +120,7 @@ export function BlockOptions(props: Props) {
               </ToolbarButton>
               <ToolbarButton
                 tooltipContent="Add a card"
-                className=" text-tertiary"
+                className="text-tertiary h-6"
                 onClick={async () => {
                   let entity;
                   if (!props.entityID) {
@@ -161,7 +161,7 @@ export function BlockOptions(props: Props) {
               </ToolbarButton>
               <Separator classname="h-6" />
               <TextBlockTypeButton
-                className="hover:text-primary text-tertiary "
+                className="hover:text-primary text-tertiary h-6"
                 setToolbarState={() => setblockMenuState("heading")}
               />
             </>

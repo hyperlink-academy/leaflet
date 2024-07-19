@@ -320,7 +320,7 @@ export const ToolbarButton = (props: {
       <Tooltip.Trigger
         disabled={props.disabled}
         className={`
-          rounded-md border border-transparent hover:border-border  active:bg-border-light active:text-primary
+          flex items-center rounded-md border border-transparent hover:border-border  active:bg-border-light active:text-primary
           ${props.className}
           ${
             props.active
