@@ -14,7 +14,6 @@ export const inputrules = (
   inputRules({
     rules: [
       new InputRule(/^([-+*])\s$/, (state) => {
-        console.log("yooo");
         if (propsRef.current.listData) return null;
         let tr = state.tr;
         tr.delete(0, 2);
