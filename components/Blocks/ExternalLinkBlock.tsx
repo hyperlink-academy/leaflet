@@ -26,7 +26,7 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
         ${selected ? "outline-accent-contrast border-accent-contrast" : "outline-transparent border-border-light"}
         `}
     >
-      <div className="pt-2 pb-2 px-2 grow min-w-0">
+      <div className="pt-2 pb-2 px-3 grow min-w-0">
         <div className="flex flex-col w-full min-w-0 h-full grow ">
           <div
             className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-none resize-none align-top border h-[24px] line-clamp-1`}

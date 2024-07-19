@@ -122,26 +122,33 @@ export function CardBlock(props: BlockProps) {
         </div>
       ) : (
         <div
-          className="w-full flex overflow-hidden cursor-pointer"
+          className="cardBlockContent w-full flex gap-2 overflow-hidden cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             useUIState.getState().openCard(props.parent, cardEntity);
             if (rep) focusCard(cardEntity, rep);
           }}
         >
-          <div className="py-1 grow min-w-0">
-            {docMetadata.heading && (
+          <div className="my-2 ml-3 grow min-w-0 text-sm bg-transparent overflow-hidden">
+            {docMetadata[0] && (
               <div
-                className={`cardBlockTitle bg-transparent -mb-3  border-none text-base font-bold outline-none resize-none align-top border  line-clamp-1`}
+                className={`cardBlockOne outline-none resize-none align-top  ${docMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
               >
-                <RenderedTextBlock entityID={docMetadata.heading} />
+                <RenderedTextBlock entityID={docMetadata[0].value} />
               </div>
             )}
-            {docMetadata.content && (
+            {docMetadata[1] && (
               <div
-                className={`cardBlockDescription text-sm bg-transparent border-none outline-none resize-none align-top ${docMetadata.heading ? "line-clamp-3 max-h-16" : "line-clamp-4 max-h-[88px]"}`}
+                className={`cardBlockLineTwo outline-none resize-none align-top ${docMetadata[1].type === "heading" ? "font-bold" : ""}`}
               >
-                <RenderedTextBlock entityID={docMetadata.content} />
+                <RenderedTextBlock entityID={docMetadata[1].value} />
+              </div>
+            )}
+            {docMetadata[2] && (
+              <div
+                className={`cardBlockLineThree outline-none resize-none align-top ${docMetadata[2].type === "heading" ? "font-bold" : ""}`}
+              >
+                <RenderedTextBlock entityID={docMetadata[2].value} />
               </div>
             )}
           </div>
@@ -165,38 +172,52 @@ export function CardBlock(props: BlockProps) {
 
 function CardPreview(props: { entityID: string }) {
   let blocks = useBlocks(props.entityID);
+
   return (
     <div
       className={`cardBlockPreview w-[120px] p-1 mx-3 mt-3 -mb-2 bg-bg-card border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center`}
     >
       {blocks.map((b) => {
-        if (b.listData)
-          return (
-            <div
-              className="w-full flex flex-row"
-              style={{ fontSize: "4px" }}
-              key={b.factID}
-            >
-              <div
-                className="flex-shrink-0"
-                style={{ width: b.listData.depth * 3 }}
-              ></div>{" "}
-              *
-              <PreviewBlock {...b} />
-            </div>
-          );
         return <PreviewBlock {...b} key={b.factID} />;
       })}
     </div>
   );
 }
 
-function PreviewBlock(props: Block) {
+function PreviewBlock(b: Block) {
+  let headingLevel = useEntity(b.value, "block/heading-level")?.data.value;
+  if (b.listData)
+    return (
+      <div className="w-full flex flex-row" style={{ fontSize: "4px" }}>
+        <div
+          className="flex-shrink-0 relative"
+          style={{ width: b.listData.depth * 4 }}
+        >
+          <div
+            className={`absolute top-[] right-[2px] w-[1px] h-[1px] rounded-full bg-secondary ${
+              b.type === "heading"
+                ? headingLevel === 3
+                  ? "top-[2.5px]"
+                  : headingLevel === 2
+                    ? "top-[3.5px]"
+                    : "top-[4px]"
+                : "top-[2.5px]"
+            }`}
+          />
+        </div>
+
+        <PreviewBlockContent {...b} />
+      </div>
+    );
+  return <PreviewBlockContent {...b} key={b.factID} />;
+}
+
+function PreviewBlockContent(props: Block) {
   switch (props.type) {
     case "text": {
       return (
         <div style={{ fontSize: "4px" }}>
-          <RenderedTextBlock entityID={props.value} preview />
+          <RenderedTextBlock entityID={props.value} className="p-0" />
         </div>
       );
     }
@@ -217,7 +238,7 @@ function HeadingPreviewBlock(props: { entityID: string }) {
   let headingLevel = useEntity(props.entityID, "block/heading-level");
   return (
     <div className={HeadingStyle[headingLevel?.data.value || 1]}>
-      <RenderedTextBlock entityID={props.entityID} preview />
+      <RenderedTextBlock entityID={props.entityID} className="p-0 " />
     </div>
   );
 }
