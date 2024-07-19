@@ -13,26 +13,18 @@ export function ImageBlock(props: BlockProps) {
   let entity_set = useEntitySetContext();
 
   let permission = useEntitySetContext().permissions.write;
-
   let image = useEntity(props.entityID, "block/image");
-  if (image?.data.local && image.data.local !== rep?.clientID)
-    return (
-      <div className="flex place-items-center justify-center bg-border italic text-tertiary rounded-md min-w-full max-w-full">
-        <img
-          alt={""}
-          src={image?.data.fallback}
-          height={image?.data.height}
-          width={image?.data.width}
-          className=""
-        />
-      </div>
-    );
+  let selected = useUIState(
+    (s) =>
+      (props.type !== "text" || s.selectedBlock.length > 1) &&
+      s.selectedBlock.find((b) => b.value === props.entityID),
+  );
 
   return (
     <div className="relative group/image flex w-full justify-center">
       {permission && (
         <button
-          className="absolute right-2 top-2 z-10 hidden group-hover/image:block"
+          className={`absolute right-2 top-2 z-10 ${selected ? "block" : "hidden group-hover/image:block"}`}
           onClick={() => {
             rep?.mutate.removeBlock({ blockEntity: props.entityID });
           }}
@@ -46,10 +38,16 @@ export function ImageBlock(props: BlockProps) {
       <img
         onClick={() => useUIState.getState().setSelectedBlock(props)}
         alt={""}
-        src={image?.data.src}
+        src={
+          image?.data.local && image.data.local !== rep?.clientID
+            ? image?.data.fallback
+            : image?.data.src
+        }
         height={image?.data.height}
         width={image?.data.width}
-        className=""
+        className={`
+          outline outline-1 border rounded-lg
+          ${selected ? "border-tertiary outline-tertiary" : "border-transparent  outline-transparent"}`}
       />
     </div>
   );
