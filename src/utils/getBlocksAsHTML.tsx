@@ -1,4 +1,4 @@
-import { Replicache } from "replicache";
+import { ReadTransaction, Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { scanIndex } from "src/replicache/utils";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -9,37 +9,90 @@ import { Block } from "components/Blocks";
 
 export async function getBlocksAsHTML(
   rep: Replicache<ReplicacheMutators>,
-  selectedBlocks: Pick<Block, "value">[],
+  selectedBlocks: Block[],
 ) {
   let data = await rep?.query(async (tx) => {
-    let types = await Promise.all(
-      selectedBlocks.map((b) => scanIndex(tx).eav(b.value, "block/type")),
-    );
-    let blocksWithData = Promise.all(
-      types.flat().map(async (b) => {
-        if (b.data.value === "text" || b.data.value === "heading") {
-          let wrapper: undefined | "h1" | "h2" | "h3";
-          if (b.data.value === "heading") {
-            let headingLevel = await scanIndex(tx).eav(
-              b.entity,
-              "block/heading-level",
-            );
-            wrapper = "h" + headingLevel[0].data.value;
-          }
-          let value = (await scanIndex(tx).eav(b.entity, "block/text"))[0];
-          if (!value) return `<${wrapper || "p"}></${wrapper || "p"}>`;
-          let doc = new Y.Doc();
-          const update = base64.toByteArray(value.data.value);
-          Y.applyUpdate(doc, update);
-          let nodes = doc.getXmlElement("prosemirror").toArray();
-          return renderToStaticMarkup(
-            <RenderYJSFragment node={nodes[0]} wrapper={wrapper} />,
-          );
-        }
-        return "";
-      }),
-    );
-    return blocksWithData;
+    let result: string[] = [];
+    let parsed = parseBlocks(selectedBlocks);
+    for (let pb of parsed) {
+      if (pb.type === "block") result.push(await renderBlock(pb.block, tx));
+      else
+        result.push(
+          `<ul>${(
+            await Promise.all(
+              pb.children.map(async (c) => await renderList(c, tx)),
+            )
+          ).join("\n")}
+          </ul>`,
+        );
+    }
+    return result;
   });
   return data;
 }
+
+async function renderList(l: List, tx: ReadTransaction): Promise<string> {
+  let children = (
+    await Promise.all(l.children.map(async (c) => await renderList(c, tx)))
+  ).join("\n");
+  return `<li>${await renderBlock(l.block, tx)} ${
+    l.children.length > 0
+      ? `
+  <ul>${children}</ul>
+  `
+      : ""
+  }</li>`;
+}
+
+async function renderBlock(b: Block, tx: ReadTransaction) {
+  let wrapper: undefined | "h1" | "h2" | "h3";
+  if (b.type === "heading") {
+    let headingLevel = await scanIndex(tx).eav(b.value, "block/heading-level");
+    wrapper = "h" + headingLevel[0].data.value;
+  }
+  let value = (await scanIndex(tx).eav(b.value, "block/text"))[0];
+  if (!value) return `<${wrapper || "p"}></${wrapper || "p"}>`;
+  let doc = new Y.Doc();
+  const update = base64.toByteArray(value.data.value);
+  Y.applyUpdate(doc, update);
+  let nodes = doc.getXmlElement("prosemirror").toArray();
+  return renderToStaticMarkup(
+    <RenderYJSFragment node={nodes[0]} wrapper={wrapper} />,
+  );
+}
+
+function parseBlocks(blocks: Block[]) {
+  let parsed: ParsedBlocks = [];
+  for (let i = 0; i < blocks.length; i++) {
+    let b = blocks[i];
+    if (!b.listData) parsed.push({ type: "block", block: b });
+    else {
+      let previousBlock = parsed[parsed.length - 1];
+      if (!previousBlock || previousBlock.type !== "list")
+        parsed.push({
+          type: "list",
+          children: [{ type: "list", block: b, children: [] }],
+        });
+      else {
+        let depth = b.listData.depth;
+        let parent = previousBlock;
+        while (depth > 1) {
+          parent = parent.children[parent.children.length - 1];
+          depth -= 1;
+        }
+        parent.children.push({ type: "list", block: b, children: [] });
+      }
+    }
+  }
+  return parsed;
+}
+
+type ParsedBlocks = Array<
+  { type: "block"; block: Block } | { type: "list"; children: List[] }
+>;
+
+type List = {
+  type: "list";
+  block: Block;
+  children: List[];
+};
