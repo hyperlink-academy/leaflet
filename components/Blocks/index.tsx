@@ -16,6 +16,7 @@ import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { scanIndex } from "src/replicache/utils";
 import { v7 } from "uuid";
+import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
 export type Block = {
   factID: string;
   parent: string;
@@ -286,18 +287,8 @@ function Block(props: BlockProps) {
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [
-    entity_set,
-    selected,
-    props.entityID,
-    props.nextBlock,
-    props.type,
-    props.previousBlock,
-    props.position,
-    props.nextPosition,
-    rep,
-    props.parent,
-  ]);
+  }, [entity_set, selected, props, rep]);
+  let mouseHandlers = useBlockMouseHandlers(props);
   return (
     <div className="blockWrapper relative flex">
       {selected && selectedBlocks.length > 1 && (
@@ -313,41 +304,8 @@ function Block(props: BlockProps) {
       )}
       {props.listData && <ListMarker {...props} first={first} />}
       <div
+        {...mouseHandlers}
         data-entityid={props.entityID}
-        onMouseDown={(e) => {
-          useSelectingMouse.setState({ start: props.entityID });
-          if (e.shiftKey) {
-            e.preventDefault();
-            useUIState.getState().addBlockToSelection(props);
-          } else useUIState.getState().setSelectedBlock(props);
-        }}
-        onMouseEnter={async (e) => {
-          if (!entity_set.permissions.write) return;
-          if (e.buttons !== 1) return;
-          let selection = useSelectingMouse.getState();
-          if (!selection.start) return;
-          let siblings =
-            (await rep?.query((tx) => getBlocksWithType(tx, props.parent))) ||
-            [];
-          let startIndex = siblings.findIndex(
-            (b) => b.value === selection.start,
-          );
-          if (startIndex === -1) return;
-          let endIndex = siblings.findIndex((b) => b.value === props.entityID);
-          let start = Math.min(startIndex, endIndex);
-          let end = Math.max(startIndex, endIndex);
-          let selected = siblings.slice(start, end + 1).map((b) => ({
-            value: b.value,
-            position: b.position,
-            parent: props.parent,
-          }));
-          useUIState.getState().setSelectedBlocks(selected);
-        }}
-        // text and heading blocks handle thier own padding so that
-        // clicking anywhere on them (even the padding between blocks) will focus the textarea
-        //
-        // HEY I WAS IN THE MIDDLE OF FIXING SELECTION STATE BUT AFTER THAT WE NEED TO
-        // MAKE SURE THE PADDING ON HEADER BLOCKS IS RIGHT
         className={`blockContent relative grow flex flex-row
       ${
         props.type !== "heading" &&
