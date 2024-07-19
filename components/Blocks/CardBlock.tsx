@@ -5,7 +5,7 @@ import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
 import { CloseTiny } from "components/Icons";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 
@@ -75,7 +75,7 @@ export function CardBlock(props: BlockProps) {
         cardBlockWrapper relative group/cardBlock
         w-full h-[104px]
         bg-bg-card border shadow-sm outline outline-1 rounded-lg
-        flex overflow-hidden
+        flex overflow-clip
         ${isSelected ? "border-tertiary outline-tertiary " : isOpen ? "border-tertiary outline-transparent hover:outline-tertiary" : "border-border-light outline-transparent hover:outline-border-light"}
         `}
       onKeyDown={(e) => {
@@ -119,14 +119,14 @@ export function CardBlock(props: BlockProps) {
         </div>
       ) : (
         <div
-          className="cardBlockContent w-full flex overflow-hidden cursor-pointer"
+          className="cardBlockContent w-full flex overflow-clip cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             useUIState.getState().openCard(props.parent, cardEntity);
             if (rep) focusCard(cardEntity, rep);
           }}
         >
-          <div className="my-2 ml-3 grow min-w-0 text-sm bg-transparent overflow-hidden">
+          <div className="my-2 ml-3 grow min-w-0 text-sm bg-transparent overflow-clip ">
             {docMetadata[0] && (
               <div
                 className={`cardBlockOne outline-none resize-none align-top flex gap-3 ${docMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
@@ -195,23 +195,50 @@ export function CardBlock(props: BlockProps) {
 
 function CardPreview(props: { entityID: string }) {
   let blocks = useBlocks(props.entityID);
+  let previewRef = useRef<HTMLDivElement | null>(null);
 
   return (
     <div
-      className={`cardBlockPreview w-[120px] p-1 mx-3 mt-3 -mb-2 bg-bg-card border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center`}
+      ref={previewRef}
+      className={`cardBlockPreview w-[120px] overflow-clip p-1 mx-3 mt-3 -mb-2 bg-bg-card border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center`}
     >
-      {blocks.map((b) => {
-        return <PreviewBlock {...b} key={b.factID} />;
+      {blocks.slice(0, 10).map((b) => {
+        return <BlockPreview previewRef={previewRef} {...b} key={b.factID} />;
       })}
     </div>
   );
 }
 
-function PreviewBlock(b: Block) {
+function BlockPreview(
+  b: Block & { previewRef: React.RefObject<HTMLDivElement> },
+) {
   let headingLevel = useEntity(b.value, "block/heading-level")?.data.value;
+  let ref = useRef<HTMLDivElement | null>(null);
+  let [isVisible, setIsVisible] = useState(true);
+  useEffect(() => {
+    if (!ref.current) return;
+    let observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          } else {
+            setIsVisible(false);
+          }
+        });
+      },
+      { threshold: 0.5, root: b.previewRef.current },
+    );
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [b.previewRef]);
   if (b.listData)
     return (
-      <div className="w-full flex flex-row" style={{ fontSize: "4px" }}>
+      <div
+        ref={ref}
+        className="w-full flex flex-row"
+        style={{ fontSize: "4px" }}
+      >
         <div
           className="flex-shrink-0 relative"
           style={{ width: b.listData.depth * 4 }}
@@ -229,10 +256,14 @@ function PreviewBlock(b: Block) {
           />
         </div>
 
-        <PreviewBlockContent {...b} />
+        {isVisible && <PreviewBlockContent {...b} />}
       </div>
     );
-  return <PreviewBlockContent {...b} key={b.factID} />;
+  return (
+    <div ref={ref}>
+      {isVisible && <PreviewBlockContent {...b} key={b.factID} />}
+    </div>
+  );
 }
 
 function PreviewBlockContent(props: Block) {
