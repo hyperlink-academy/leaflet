@@ -71,8 +71,8 @@ export function Blocks(props: { entityID: string }) {
         let depth = f.listData?.depth || 0;
         let nextDepth = nextBlock?.listData?.depth || 0;
         let nextPosition: string | null;
-        if (depth === 1 && !nextBlock.listData)
-          nextPosition = nextBlock.position;
+        if (depth === 1 && !nextBlock?.listData)
+          nextPosition = nextBlock?.position;
         else {
           if (depth === nextDepth) nextPosition = nextBlock?.position || null;
           else nextPosition = null;

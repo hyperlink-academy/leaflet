@@ -27,6 +27,7 @@ export const TextBlockKeymap = (
     "Ctrl-Meta-x": toggleMark(schema.marks.strikethrough),
     "Ctrl-Meta-h": toggleMark(schema.marks.highlight),
     Tab: () => {
+      if (useUIState.getState().selectedBlock.length > 1) return false;
       if (!propsRef.current.listData) return false;
       if (!propsRef.current.previousBlock?.listData) return false;
       let depth = propsRef.current.listData.depth;
@@ -277,6 +278,7 @@ const shifttab =
     repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
   () => {
+    if (useUIState.getState().selectedBlock.length > 1) return false;
     if (!propsRef.current.listData) return false;
     let listData = propsRef.current.listData;
     let previousBlock = propsRef.current.previousBlock;

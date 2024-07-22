@@ -5,10 +5,11 @@ import { useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { getBlocksAsHTML } from "src/utils/getBlocksAsHTML";
 import { scanIndex } from "src/replicache/utils";
-import { focusBlock } from "./Blocks";
+import { Block, focusBlock } from "./Blocks";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
+import { v7 } from "uuid";
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
@@ -160,6 +161,76 @@ export function SelectionManager() {
         if (!type?.[0]) return;
         useUIState.getState().setSelectedBlock(lastBlock);
         focusBlock({ ...lastBlock, type: type[0].data.value }, { type: "end" });
+      }
+      if (e.key === "Tab") {
+        let [sortedSelection, siblings] = await getSortedSelection();
+        if (sortedSelection.length <= 1) return;
+        e.preventDefault();
+        for (let i = 0; i < siblings.length; i++) {
+          let block = siblings[i];
+          if (!sortedSelection.find((s) => s.value === block.value)) continue;
+          if (sortedSelection.find((s) => s.value === block.listData?.parent))
+            continue;
+          let parentoffset = 1;
+          let previousBlock = siblings[i - parentoffset];
+          while (
+            previousBlock &&
+            sortedSelection.find((s) => previousBlock.value === s.value)
+          ) {
+            parentoffset += 1;
+            previousBlock = siblings[i - parentoffset];
+          }
+          if (!block.listData || !previousBlock.listData) continue;
+          if (!e.shiftKey) {
+            let depth = block.listData.depth;
+            let newParent = previousBlock.listData.path.find(
+              (f) => f.depth === depth,
+            );
+            console.log(newParent?.entity);
+            if (!newParent) continue;
+            rep?.mutate.retractFact({ factID: block.factID });
+            rep?.mutate.addLastBlock({
+              parent: newParent.entity,
+              factID: v7(),
+              entity: block.value,
+            });
+          } else {
+            let listData = block.listData;
+            if (listData.depth === 1) {
+              rep?.mutate.assertFact({
+                entity: block.value,
+                attribute: "block/is-list",
+                data: { type: "boolean", value: false },
+              });
+              rep?.mutate.moveChildren({
+                oldParent: block.value,
+                newParent: block.parent,
+                after: block.value,
+              });
+            } else {
+              if (!previousBlock || !previousBlock.listData) return false;
+              let after = previousBlock.listData.path.find(
+                (f) => f.depth === listData.depth - 1,
+              )?.entity;
+              if (!after) return false;
+              let parent: string | undefined = undefined;
+              if (listData.depth === 2) {
+                parent = block.parent;
+              } else {
+                parent = previousBlock.listData.path.find(
+                  (f) => f.depth === listData.depth - 2,
+                )?.entity;
+              }
+              if (!parent) return false;
+              rep?.mutate.outdentBlock({
+                block: block.value,
+                newParent: parent,
+                oldParent: listData.parent,
+                after,
+              });
+            }
+          }
+        }
       }
       if (e.key === "ArrowDown") {
         let [sortedSelection, siblings] = await getSortedSelection();
