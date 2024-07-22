@@ -15,8 +15,9 @@ import { focusCard } from "components/Cards";
 import { v7 } from "uuid";
 import { scanIndex } from "src/replicache/utils";
 
+type PropsRef = MutableRefObject<BlockProps & { entity_set: { set: string } }>;
 export const TextBlockKeymap = (
-  propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
+  propsRef: PropsRef,
   repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
 ) =>
   keymap({
@@ -161,7 +162,7 @@ export const TextBlockKeymap = (
 
 const backspace =
   (
-    propsRef: MutableRefObject<BlockProps>,
+    propsRef: PropsRef,
     repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
   (
@@ -174,6 +175,19 @@ const backspace =
     }
     if (state.selection.anchor > 1 || state.selection.content().size > 0) {
       return false;
+    }
+    if (propsRef.current.listData) {
+      let depth = propsRef.current.listData.depth;
+      repRef.current?.mutate.moveChildren({
+        oldParent: propsRef.current.entityID,
+        newParent: propsRef.current.listData.parent || propsRef.current.parent,
+        after:
+          propsRef.current.previousBlock?.listData?.path.find(
+            (f) => f.depth === depth,
+          )?.entity ||
+          propsRef.current.previousBlock?.value ||
+          null,
+      });
     }
     if (!propsRef.current.previousBlock) {
       if (propsRef.current.type === "heading") {
@@ -194,13 +208,6 @@ const backspace =
             ),
           10,
         );
-      }
-      if (propsRef.current.listData) {
-        repRef.current?.mutate.assertFact({
-          entity: propsRef.current.entityID,
-          attribute: "block/is-list",
-          data: { type: "boolean", value: false },
-        });
       }
       return false;
     }
@@ -273,13 +280,18 @@ const shifttab =
     if (!propsRef.current.listData) return false;
     let listData = propsRef.current.listData;
     let previousBlock = propsRef.current.previousBlock;
-    if (listData.depth === 1)
+    if (listData.depth === 1) {
       repRef.current?.mutate.assertFact({
         entity: propsRef.current.entityID,
         attribute: "block/is-list",
         data: { type: "boolean", value: false },
       });
-    else {
+      repRef.current?.mutate.moveChildren({
+        oldParent: propsRef.current.entityID,
+        newParent: propsRef.current.parent,
+        after: propsRef.current.entityID,
+      });
+    } else {
       if (!previousBlock || !previousBlock.listData) return false;
       let after = previousBlock.listData.path.find(
         (f) => f.depth === listData.depth - 1,
@@ -334,6 +346,7 @@ const enter =
           propsRef.current.nextBlock?.listData &&
           propsRef.current.nextBlock.listData.depth >
             propsRef.current.listData.depth;
+        console.log(propsRef);
         position = generateKeyBetween(
           hasChild ? null : propsRef.current.position,
           propsRef.current.nextPosition,

@@ -81,6 +81,40 @@ const addLastBlock: Mutation<{
   });
 };
 
+const moveChildren: Mutation<{
+  oldParent: string;
+  newParent: string;
+  after: string | null;
+}> = async (args, ctx) => {
+  let children = (
+    await ctx.scanIndex.eav(args.oldParent, "card/block")
+  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  let newSiblings = (
+    await ctx.scanIndex.eav(args.newParent, "card/block")
+  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  let index = newSiblings.findIndex((f) => f.data.value === args.after);
+  let newPosition = generateKeyBetween(
+    newSiblings[index]?.data.position || null,
+    newSiblings[index + 1]?.data.position || null,
+  );
+  for (let child of children) {
+    await ctx.retractFact(child.id);
+    await ctx.assertFact({
+      entity: args.newParent,
+      attribute: "card/block",
+      data: {
+        type: "ordered-reference",
+        value: child.data.value,
+        position: newPosition,
+      },
+    });
+    newPosition = generateKeyBetween(
+      newPosition,
+      newSiblings[index + 1]?.data.position || null,
+    );
+  }
+};
+
 const outdentBlock: Mutation<{
   oldParent: string;
   newParent: string;
@@ -239,5 +273,6 @@ export const mutations = {
   assertFact,
   retractFact,
   removeBlock,
+  moveChildren,
   increaseHeadingLevel,
 };
