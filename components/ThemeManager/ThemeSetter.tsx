@@ -20,6 +20,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   BlockImageSmall,
   CloseContrastSmall,
+  PaintSmall,
   PopoverArrow,
 } from "components/Icons";
 import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
@@ -103,15 +104,20 @@ export const ThemePopover = (props: { entityID: string }) => {
     <>
       <Popover.Root>
         <Popover.Trigger>
-          <div
-            className="rounded-full w-7 h-7 border border-border"
-            style={{
-              backgroundColor: pageValue.toString("hex"),
-              backgroundImage: gradient,
-            }}
-          />
-
-          <div className="relative z-10"></div>
+          <div className="sm:w-8 sm:h-8 relative text-white">
+            <div
+              className="z-10 group/theme sm:absolute top-0 left-0 rounded-full w-fit h-max flex gap-2 p-1 place-items-center justify-center"
+              style={{
+                backgroundColor: pageValue.toString("hex"),
+                backgroundImage: gradient,
+              }}
+            >
+              <PaintSmall />
+              <div className="font-bold pr-[6px] sm:hidden group-hover/theme:block">
+                Theme
+              </div>
+            </div>
+          </div>
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content
