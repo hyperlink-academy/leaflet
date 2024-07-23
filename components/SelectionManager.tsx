@@ -90,6 +90,7 @@ export function SelectionManager() {
           if (
             previousBlock?.listData &&
             block.listData &&
+            block.listData.depth > 1 &&
             !previousBlock.listData.path.find(
               (f) => f.entity === block.listData?.parent,
             )
