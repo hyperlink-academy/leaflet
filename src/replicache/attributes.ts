@@ -10,6 +10,10 @@ const BlockAttributes = {
     type: "block-type-union",
     cardinality: "one",
   },
+  "block/is-list": {
+    type: "boolean",
+    cardinality: "one",
+  },
   "block/text": {
     type: "text",
     cardinality: "one",
@@ -113,6 +117,10 @@ export type Data<A extends keyof typeof Attributes> = {
     height: number;
     width: number;
     local?: string;
+  };
+  boolean: {
+    type: "boolean";
+    value: boolean;
   };
   number: {
     type: "number";

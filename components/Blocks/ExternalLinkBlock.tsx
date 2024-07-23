@@ -21,12 +21,12 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
       target="_blank"
       className={`
         externalLinkBlock flex relative group/linkBlock
-        h-[104px]  bg-bg-card overflow-hidden text-primary no-underline
+        h-[104px] w-full bg-bg-card overflow-hidden text-primary no-underline
         border  hover:border-accent-contrast outline outline-1 hover:outline-accent-contrast rounded-lg shadow-sm
         ${selected ? "outline-accent-contrast border-accent-contrast" : "outline-transparent border-border-light"}
         `}
     >
-      <div className="pt-2 pb-2 px-2 grow min-w-0">
+      <div className="pt-2 pb-2 px-3 grow min-w-0">
         <div className="flex flex-col w-full min-w-0 h-full grow ">
           <div
             className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-none resize-none align-top border h-[24px] line-clamp-1`}
@@ -40,7 +40,7 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
             {description?.data.value}
           </div>
           <div
-            className={`inline-block place-self-end w-full text-xs  italic line-clamp-1 truncate group-hover/linkBlock:text-accent-contrast ${selected ? "text-accent-contrast" : "text-tertiary"}`}
+            className={`min-w-0 w-full break-all line-clamp-1 text-xs italic group-hover/linkBlock:text-accent-contrast ${selected ? "text-accent-contrast" : "text-tertiary"}`}
           >
             {url?.data.value}
           </div>

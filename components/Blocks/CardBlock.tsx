@@ -1,12 +1,13 @@
-import { BlockProps, focusBlock } from "components/Blocks";
+import { Block, BlockProps, focusBlock, ListMarker } from "components/Blocks";
 import { focusCard } from "components/Cards";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
 import { CloseTiny } from "components/Icons";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { useBlocks } from "src/hooks/queries/useBlocks";
 
 export function CardBlock(props: BlockProps) {
   let { rep } = useReplicache();
@@ -73,10 +74,9 @@ export function CardBlock(props: BlockProps) {
       className={`
         cardBlockWrapper relative group/cardBlock
         w-full h-[104px]
-        bg-bg-card border shadow-sm outline outline-1 outline-transparent   rounded-lg
-        flex overflow-hidden
-        ${isOpen ? "border-tertiary hover:outline-tertiary" : "border-border-light hover:outline-border-light"}
-        ${isSelected ? "outline-tertiary border-tertiary" : "border-border-light hover:outline-border-light"}
+        bg-bg-card border shadow-sm outline outline-1 rounded-lg
+        flex overflow-clip
+        ${isSelected ? "border-tertiary outline-tertiary " : isOpen ? "border-tertiary outline-transparent hover:outline-tertiary" : "border-border-light outline-transparent hover:outline-border-light"}
         `}
       onKeyDown={(e) => {
         if (e.key === "Backspace" && permission) {
@@ -87,8 +87,6 @@ export function CardBlock(props: BlockProps) {
             rep.mutate.removeBlock({
               blockEntity: props.entityID,
             });
-
-          console.log("delete card");
         }
       }}
     >
@@ -121,26 +119,59 @@ export function CardBlock(props: BlockProps) {
         </div>
       ) : (
         <div
-          className="w-full flex overflow-hidden cursor-pointer"
+          className="cardBlockContent w-full flex overflow-clip cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             useUIState.getState().openCard(props.parent, cardEntity);
             if (rep) focusCard(cardEntity, rep);
           }}
         >
-          <div className="py-1 grow min-w-0">
-            {docMetadata.heading && (
+          <div className="my-2 ml-3 grow min-w-0 text-sm bg-transparent overflow-clip ">
+            {docMetadata[0] && (
               <div
-                className={`cardBlockTitle bg-transparent -mb-3  border-none text-base font-bold outline-none resize-none align-top border  line-clamp-1`}
+                className={`cardBlockOne outline-none resize-none align-top flex gap-3 ${docMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
               >
-                <RenderedTextBlock entityID={docMetadata.heading} />
+                {docMetadata[0].listData && (
+                  <ListMarker
+                    {...docMetadata[0]}
+                    compact
+                    className={
+                      docMetadata[0].type === "heading"
+                        ? "top-[10px]"
+                        : "top-[8px]"
+                    }
+                  />
+                )}
+                <RenderedTextBlock entityID={docMetadata[0].value} />
               </div>
             )}
-            {docMetadata.content && (
+            {docMetadata[1] && (
               <div
-                className={`cardBlockDescription text-sm bg-transparent border-none outline-none resize-none align-top ${docMetadata.heading ? "line-clamp-3 max-h-16" : "line-clamp-4 max-h-[88px]"}`}
+                className={`cardBlockLineTwo outline-none resize-none align-top flex  gap-3 ${docMetadata[1].type === "heading" ? "font-bold" : ""}`}
               >
-                <RenderedTextBlock entityID={docMetadata.content} />
+                {docMetadata[1].listData && (
+                  <ListMarker
+                    {...docMetadata[1]}
+                    compact
+                    className="top-[8px]"
+                  />
+                )}
+                <RenderedTextBlock entityID={docMetadata[1].value} />
+              </div>
+            )}
+            {docMetadata[2] && (
+              <div
+                className={`cardBlockLineThree outline-none resize-none align-top flex  gap-3 ${docMetadata[2].type === "heading" ? "font-bold" : ""}`}
+              >
+                {docMetadata[2].listData && (
+                  <ListMarker
+                    {...docMetadata[2]}
+                    compact
+                    className="top-[8px]"
+                  />
+                )}
+
+                <RenderedTextBlock entityID={docMetadata[2].value} />
               </div>
             )}
           </div>
@@ -163,38 +194,95 @@ export function CardBlock(props: BlockProps) {
 }
 
 function CardPreview(props: { entityID: string }) {
-  let blocks = useEntity(props.entityID, "card/block");
+  let blocks = useBlocks(props.entityID);
+  let previewRef = useRef<HTMLDivElement | null>(null);
+
   return (
     <div
-      className={`cardBlockPreview w-[120px] p-1 mx-3 mt-3 -mb-2 bg-bg-card border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center`}
+      ref={previewRef}
+      className={`cardBlockPreview w-[120px] overflow-clip p-1 mx-3 mt-3 -mb-2 bg-bg-card border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center`}
     >
-      {blocks
-        .sort((a, b) => (a.data.position > b.data.position ? 1 : -1))
-        .map((b) => (
-          <PreviewBlock entityID={b.data.value} key={b.data.value} />
-        ))}
+      {blocks.slice(0, 10).map((b) => {
+        return <BlockPreview previewRef={previewRef} {...b} key={b.factID} />;
+      })}
     </div>
   );
 }
 
-function PreviewBlock(props: { entityID: string }) {
-  let type = useEntity(props.entityID, "block/type");
-  switch (type?.data.value) {
+function BlockPreview(
+  b: Block & { previewRef: React.RefObject<HTMLDivElement> },
+) {
+  let headingLevel = useEntity(b.value, "block/heading-level")?.data.value;
+  let ref = useRef<HTMLDivElement | null>(null);
+  let [isVisible, setIsVisible] = useState(true);
+  useEffect(() => {
+    if (!ref.current) return;
+    let observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          } else {
+            setIsVisible(false);
+          }
+        });
+      },
+      { threshold: 0.5, root: b.previewRef.current },
+    );
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [b.previewRef]);
+  if (b.listData)
+    return (
+      <div
+        ref={ref}
+        className="w-full flex flex-row"
+        style={{ fontSize: "4px" }}
+      >
+        <div
+          className="flex-shrink-0 relative"
+          style={{ width: b.listData.depth * 4 }}
+        >
+          <div
+            className={`absolute top-[] right-[2px] w-[1px] h-[1px] rounded-full bg-secondary ${
+              b.type === "heading"
+                ? headingLevel === 3
+                  ? "top-[2.5px]"
+                  : headingLevel === 2
+                    ? "top-[3.5px]"
+                    : "top-[4px]"
+                : "top-[2.5px]"
+            }`}
+          />
+        </div>
+
+        {isVisible && <PreviewBlockContent {...b} />}
+      </div>
+    );
+  return (
+    <div ref={ref}>
+      {isVisible && <PreviewBlockContent {...b} key={b.factID} />}
+    </div>
+  );
+}
+
+function PreviewBlockContent(props: Block) {
+  switch (props.type) {
     case "text": {
       return (
         <div style={{ fontSize: "4px" }}>
-          <RenderedTextBlock entityID={props.entityID} preview />
+          <RenderedTextBlock entityID={props.value} className="p-0" />
         </div>
       );
     }
     case "heading":
-      return <HeadingPreviewBlock entityID={props.entityID} />;
+      return <HeadingPreviewBlock entityID={props.value} />;
     case "card":
       return (
         <div className="w-full h-4 shrink-0 rounded-md border border-border-light" />
       );
     case "image":
-      return <ImagePreviewBlock entityID={props.entityID} />;
+      return <ImagePreviewBlock entityID={props.value} />;
     default:
       null;
   }
@@ -204,7 +292,7 @@ function HeadingPreviewBlock(props: { entityID: string }) {
   let headingLevel = useEntity(props.entityID, "block/heading-level");
   return (
     <div className={HeadingStyle[headingLevel?.data.value || 1]}>
-      <RenderedTextBlock entityID={props.entityID} preview />
+      <RenderedTextBlock entityID={props.entityID} className="p-0 " />
     </div>
   );
 }

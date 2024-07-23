@@ -30,25 +30,31 @@ export const useHandlePaste = (
         let xml = new DOMParser().parseFromString(textHTML, "text/html");
         let currentPosition = propsRef.current.position;
         let children = flattenHTMLToTextBlocks(xml.body);
-        if (!children.find((c) => ["P", "H1", "H2", "H3"].includes(c.tagName)))
+        if (
+          !children.find((c) =>
+            ["P", "H1", "H2", "H3", "UL"].includes(c.tagName),
+          )
+        )
           return;
-        if (children.length === 1) return false;
+        if (children.length === 1 && children[0].tagName !== "UL") return false;
         children.forEach((child, index) => {
-          createBlockFromHTML(
-            child,
-            index,
-            propsRef,
-            rep,
+          createBlockFromHTML(child, {
+            first: index === 0,
+            activeBlockProps: propsRef,
             entity_set,
-            () => {
+            rep,
+            parent: propsRef.current.listData
+              ? propsRef.current.listData.parent
+              : propsRef.current.parent,
+            getPosition: () => {
               currentPosition = generateKeyBetween(
                 currentPosition,
                 propsRef.current.nextPosition,
               );
               return currentPosition;
             },
-            index === children.length - 1,
-          );
+            last: index === children.length - 1,
+          });
         });
         return true;
       } else {
@@ -65,6 +71,7 @@ export const useHandlePaste = (
             propsRef.current.nextPosition,
           );
           rep.mutate.addBlock({
+            factID: v7(),
             permission_set: entity_set.set,
             newEntityID,
             parent: propsRef.current.parent,
@@ -102,6 +109,7 @@ export const useHandlePaste = (
               entity = v7();
               rep.mutate.addBlock({
                 permission_set: entity_set.set,
+                factID: v7(),
                 type: "image",
                 newEntityID: entity,
                 parent: propsRef.current.parent,
@@ -128,18 +136,44 @@ export const useHandlePaste = (
 
 const createBlockFromHTML = (
   child: Element,
-  index: number,
-  propsRef: MutableRefObject<BlockProps>,
-  rep: Replicache<ReplicacheMutators>,
-  entity_set: { set: string },
-  getPosition: () => string,
-  last: boolean,
+  {
+    first,
+    last,
+    activeBlockProps,
+    rep,
+    entity_set,
+    getPosition,
+    parent,
+  }: {
+    parent: string;
+    first: boolean;
+    last: boolean;
+    activeBlockProps?: MutableRefObject<BlockProps>;
+    rep: Replicache<ReplicacheMutators>;
+    entity_set: { set: string };
+    getPosition: () => string;
+  },
 ) => {
   let content = parser.parse(child);
   let type: Fact<"block/type">["data"]["value"] | null;
   let headingLevel: number | null = null;
+
+  if (child.tagName === "UL") {
+    let children = Array.from(child.children);
+    for (let c of children) {
+      createBlockFromHTML(c, {
+        first: first && c === children[0],
+        last: last && c === children[children.length - 1],
+        activeBlockProps,
+        rep,
+        entity_set,
+        getPosition,
+        parent,
+      });
+    }
+  }
   switch (child.tagName) {
-    case "UL":
+    case "LI":
     case "SPAN":
     case "P": {
       type = "text";
@@ -167,15 +201,16 @@ const createBlockFromHTML = (
 
   let entityID: string;
   let position: string;
-  if (index === 0 && type === propsRef.current.type)
-    entityID = propsRef.current.entityID;
+  if (first && type === activeBlockProps?.current.type)
+    entityID = activeBlockProps.current.entityID;
   else {
     entityID = v7();
     position = getPosition();
     rep.mutate.addBlock({
       permission_set: entity_set.set,
+      factID: v7(),
       newEntityID: entityID,
-      parent: propsRef.current.parent,
+      parent: parent,
       type: type,
       position,
     });
@@ -184,6 +219,30 @@ const createBlockFromHTML = (
         entity: entityID,
         attribute: "block/heading-level",
         data: { type: "number", value: headingLevel },
+      });
+    }
+  }
+
+  if (child.tagName === "LI") {
+    let ul = Array.from(child.children).find((f) => f.tagName === "UL");
+    rep.mutate.assertFact({
+      entity: entityID,
+      attribute: "block/is-list",
+      data: { type: "boolean", value: true },
+    });
+    if (ul) {
+      let currentPosition: string | null = null;
+      createBlockFromHTML(ul, {
+        first: false,
+        last: last,
+        activeBlockProps,
+        rep,
+        entity_set,
+        getPosition: () => {
+          currentPosition = generateKeyBetween(currentPosition, null);
+          return currentPosition;
+        },
+        parent: entityID,
       });
     }
   }
@@ -203,8 +262,7 @@ const createBlockFromHTML = (
         {
           value: entityID,
           type: type,
-          parent: propsRef.current.parent,
-          position: position,
+          parent: parent,
         },
         { type: "end" },
       );
@@ -219,7 +277,7 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
       const elementNode = node as HTMLElement;
       // Collect outer HTML for paragraph-like elements
       if (
-        ["P", "H1", "H2", "H3", "H4", "H5", "H6", "LI"].includes(
+        ["P", "H1", "H2", "H3", "H4", "H5", "H6", "LI", "UL"].includes(
           elementNode.tagName,
         )
       ) {

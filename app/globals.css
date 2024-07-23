@@ -17,6 +17,13 @@
     --highlight-1: 255, 177, 177;
     --highlight-2: 253, 245, 203;
     --highlight-3: 224, 244, 255;
+
+    --list-marker-width: 32px;
+  }
+  @media (max-width: 640px) {
+    :root {
+      --list-marker-width: 16px;
+    }
   }
 
   html,
