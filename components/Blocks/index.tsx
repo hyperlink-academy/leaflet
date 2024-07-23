@@ -78,8 +78,8 @@ export function Blocks(props: { entityID: string }) {
         )
         .map((f, index, arr) => {
           let nextBlock = arr[index + 1];
-          let depth = f.listData?.depth || 0;
-          let nextDepth = nextBlock?.listData?.depth || 0;
+          let depth = f.listData?.depth || 1;
+          let nextDepth = nextBlock?.listData?.depth || 1;
           let nextPosition: string | null;
           if (depth === 1 && !nextBlock?.listData)
             nextPosition = nextBlock?.position;
