@@ -35,11 +35,12 @@ export function UpdatePageTitle(props: { entityID: string }) {
   useEffect(() => {
     if (isMobile) return;
     if (!firstBlock || focusFirstBlock === null) return;
+
+    router.replace(location.pathname);
     setTimeout(() => {
       focusBlock(firstBlock, { type: "start" });
       //remove url param
-      router.replace(location.pathname);
-    }, 50);
+    }, 100);
   }, [focusFirstBlock, firstBlock, router, isMobile]);
 
   return null;
