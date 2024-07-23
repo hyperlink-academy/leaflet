@@ -36,6 +36,26 @@ export function SelectionManager() {
       return [sortedBlocks, siblings];
     };
     let listener = async (e: KeyboardEvent) => {
+      if (e.metaKey && (e.key === "j" || e.key === "ArrowDown")) {
+        e.preventDefault();
+        let [sortedBlocks, siblings] = await getSortedSelection();
+        if (sortedBlocks.length > 1) return;
+        let block = sortedBlocks[0];
+        rep?.mutate.moveBlockDown({
+          entityID: block.value,
+          parent: block.listData?.parent || block.parent,
+        });
+      }
+      if (e.metaKey && (e.key === "k" || e.key === "ArrowUp")) {
+        e.preventDefault();
+        let [sortedBlocks, siblings] = await getSortedSelection();
+        if (sortedBlocks.length > 1) return;
+        let block = sortedBlocks[0];
+        rep?.mutate.moveBlockUp({
+          entityID: block.value,
+          parent: block.listData?.parent || block.parent,
+        });
+      }
       if (e.key === "Backspace" || e.key === "Delete") {
         if (!entity_set.permissions.write) return;
         if (moreThanOneSelected) {

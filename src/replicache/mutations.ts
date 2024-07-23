@@ -265,10 +265,65 @@ const increaseHeadingLevel: Mutation<{ entityID: string }> = async (
   });
 };
 
+const moveBlockUp: Mutation<{ entityID: string; parent: string }> = async (
+  args,
+  ctx,
+) => {
+  let children = (await ctx.scanIndex.eav(args.parent, "card/block")).toSorted(
+    (a, b) => (a.data.position > b.data.position ? 1 : -1),
+  );
+  let index = children.findIndex((f) => f.data.value === args.entityID);
+  if (index === -1) return;
+  let next = children[index - 1];
+  if (!next) return;
+  await ctx.retractFact(children[index].id);
+  await ctx.assertFact({
+    id: children[index].id,
+    entity: args.parent,
+    attribute: "card/block",
+    data: {
+      type: "ordered-reference",
+      position: generateKeyBetween(
+        children[index - 2]?.data.position || null,
+        next.data.position,
+      ),
+      value: args.entityID,
+    },
+  });
+};
+const moveBlockDown: Mutation<{ entityID: string; parent: string }> = async (
+  args,
+  ctx,
+) => {
+  let children = (await ctx.scanIndex.eav(args.parent, "card/block")).toSorted(
+    (a, b) => (a.data.position > b.data.position ? 1 : -1),
+  );
+  let index = children.findIndex((f) => f.data.value === args.entityID);
+  if (index === -1) return;
+  let next = children[index + 1];
+  if (!next) return;
+  await ctx.retractFact(children[index].id);
+  await ctx.assertFact({
+    id: children[index].id,
+    entity: args.parent,
+    attribute: "card/block",
+    data: {
+      type: "ordered-reference",
+      position: generateKeyBetween(
+        next.data.position,
+        children[index + 2]?.data.position || null,
+      ),
+      value: args.entityID,
+    },
+  });
+};
+
 export const mutations = {
   addBlock,
   addLastBlock,
   outdentBlock,
+  moveBlockUp,
+  moveBlockDown,
   addCardBlock,
   assertFact,
   retractFact,
