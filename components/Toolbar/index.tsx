@@ -70,8 +70,12 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
 
   useEffect(() => {
     if (toolbarState !== "default") return;
-    let removeShortcut = addShortcut({ metaKey: true, key: "k" }, () => {
-      setToolbarState("link");
+    let removeShortcut = addShortcut({
+      metaKey: true,
+      key: "k",
+      handler: () => {
+        setToolbarState("link");
+      },
     });
     return () => {
       removeShortcut();

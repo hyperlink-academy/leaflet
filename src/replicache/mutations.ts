@@ -81,6 +81,49 @@ const addLastBlock: Mutation<{
   });
 };
 
+const moveBlock: Mutation<{
+  oldParent: string;
+  block: string;
+  newParent: string;
+  position: { type: "first" } | { type: "end" };
+}> = async (args, ctx) => {
+  let children = (
+    await ctx.scanIndex.eav(args.oldParent, "card/block")
+  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  let newSiblings = (
+    await ctx.scanIndex.eav(args.newParent, "card/block")
+  ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+  let block = children.find((f) => f.data.value === args.block);
+  if (!block) return;
+  await ctx.retractFact(block.id);
+  let newPosition;
+  switch (args.position.type) {
+    case "first": {
+      newPosition = generateKeyBetween(
+        null,
+        newSiblings[0]?.data.position || null,
+      );
+      break;
+    }
+    case "end": {
+      newPosition = generateKeyBetween(
+        newSiblings[newSiblings.length - 1]?.data.position || null,
+        null,
+      );
+      break;
+    }
+  }
+  await ctx.assertFact({
+    id: block.id,
+    entity: args.newParent,
+    attribute: "card/block",
+    data: {
+      type: "ordered-reference",
+      value: block.data.value,
+      position: newPosition,
+    },
+  });
+};
 const moveChildren: Mutation<{
   oldParent: string;
   newParent: string;
@@ -325,6 +368,7 @@ export const mutations = {
   moveBlockUp,
   moveBlockDown,
   addCardBlock,
+  moveBlock,
   assertFact,
   retractFact,
   removeBlock,

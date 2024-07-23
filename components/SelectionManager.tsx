@@ -11,6 +11,7 @@ import { useEntitySetContext } from "./EntitySetProvider";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { v7 } from "uuid";
 import { indent, outdent } from "src/utils/list-operations";
+import { addShortcut } from "src/shortcuts";
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
@@ -35,27 +36,86 @@ export function SelectionManager() {
       );
       return [sortedBlocks, siblings];
     };
+    let removeListener = addShortcut([
+      {
+        metaKey: true,
+        key: ["ArrowDown"],
+        handler: async () => {
+          let [sortedBlocks, siblings] = await getSortedSelection();
+          if (sortedBlocks.length > 1) return;
+          let block = sortedBlocks[0];
+          let nextBlock = siblings
+            .slice(siblings.findIndex((s) => s.value === block.value) + 1)
+            .find(
+              (f) =>
+                f.listData &&
+                block.listData &&
+                !f.listData.path.find((f) => f.entity === block.value),
+            );
+          if (
+            nextBlock?.listData &&
+            block.listData &&
+            nextBlock.listData.depth === block.listData.depth - 1
+          ) {
+            rep?.mutate.moveBlock({
+              block: block.value,
+              oldParent: block.listData?.parent,
+              newParent: nextBlock.value,
+              position: { type: "first" },
+            });
+          } else {
+            rep?.mutate.moveBlockDown({
+              entityID: block.value,
+              parent: block.listData?.parent || block.parent,
+            });
+          }
+        },
+      },
+      {
+        metaKey: true,
+        key: ["ArrowUp"],
+        handler: async () => {
+          let [sortedBlocks, siblings] = await getSortedSelection();
+          if (sortedBlocks.length > 1) return;
+          let block = sortedBlocks[0];
+          let previousBlock =
+            siblings?.[siblings.findIndex((s) => s.value === block.value) - 1];
+          if (previousBlock.value === block.listData?.parent) {
+            previousBlock =
+              siblings?.[
+                siblings.findIndex((s) => s.value === block.value) - 2
+              ];
+          }
+
+          if (
+            previousBlock?.listData &&
+            block.listData &&
+            !previousBlock.listData.path.find(
+              (f) => f.entity === block.listData?.parent,
+            )
+          ) {
+            let depth = block.listData.depth;
+            let newParent = previousBlock.listData.path.find(
+              (f) => f.depth === depth - 1,
+            );
+            if (!newParent) return;
+            rep?.mutate.moveBlock({
+              block: block.value,
+              oldParent: block.listData?.parent,
+              newParent: newParent.entity,
+              position: { type: "end" },
+            });
+          } else {
+            rep?.mutate.moveBlockUp({
+              entityID: block.value,
+              parent: block.listData?.parent || block.parent,
+            });
+          }
+        },
+      },
+      },
+    ]);
     let listener = async (e: KeyboardEvent) => {
-      if (e.metaKey && (e.key === "j" || e.key === "ArrowDown")) {
-        e.preventDefault();
-        let [sortedBlocks, siblings] = await getSortedSelection();
-        if (sortedBlocks.length > 1) return;
-        let block = sortedBlocks[0];
-        rep?.mutate.moveBlockDown({
-          entityID: block.value,
-          parent: block.listData?.parent || block.parent,
-        });
-      }
-      if (e.metaKey && (e.key === "k" || e.key === "ArrowUp")) {
-        e.preventDefault();
-        let [sortedBlocks, siblings] = await getSortedSelection();
-        if (sortedBlocks.length > 1) return;
-        let block = sortedBlocks[0];
-        rep?.mutate.moveBlockUp({
-          entityID: block.value,
-          parent: block.listData?.parent || block.parent,
-        });
-      }
       if (e.key === "Backspace" || e.key === "Delete") {
         if (!entity_set.permissions.write) return;
         if (moreThanOneSelected) {
@@ -298,6 +358,7 @@ export function SelectionManager() {
     };
     window.addEventListener("keydown", listener);
     return () => {
+      removeListener();
       window.removeEventListener("keydown", listener);
     };
   }, [moreThanOneSelected, rep, entity_set.permissions.write]);
