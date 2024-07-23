@@ -57,6 +57,8 @@ export function SelectionManager() {
             block.listData &&
             nextBlock.listData.depth === block.listData.depth - 1
           ) {
+            if (useUIState.getState().foldedBlocks.includes(nextBlock.value))
+              useUIState.getState().toggleFold(nextBlock.value);
             rep?.mutate.moveBlock({
               block: block.value,
               oldParent: block.listData?.parent,
@@ -100,6 +102,8 @@ export function SelectionManager() {
               (f) => f.depth === depth - 1,
             );
             if (!newParent) return;
+            if (useUIState.getState().foldedBlocks.includes(newParent.entity))
+              useUIState.getState().toggleFold(newParent.entity);
             rep?.mutate.moveBlock({
               block: block.value,
               oldParent: block.listData?.parent,

@@ -1,6 +1,7 @@
 import { Block, BlockProps } from "components/Blocks";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
+import { useUIState } from "src/useUIState";
 import { v7 } from "uuid";
 
 export function indent(
@@ -13,6 +14,8 @@ export function indent(
   let depth = block.listData.depth;
   let newParent = previousBlock.listData.path.find((f) => f.depth === depth);
   if (!newParent) return false;
+  if (useUIState.getState().foldedBlocks.includes(newParent.entity))
+    useUIState.getState().toggleFold(newParent.entity);
   rep?.mutate.retractFact({ factID: block.factID });
   rep?.mutate.addLastBlock({
     parent: newParent.entity,
@@ -55,6 +58,8 @@ export function outdent(
       )?.entity;
     }
     if (!parent) return false;
+    if (useUIState.getState().foldedBlocks.includes(parent))
+      useUIState.getState().toggleFold(parent);
     rep?.mutate.outdentBlock({
       block: block.value,
       newParent: parent,
