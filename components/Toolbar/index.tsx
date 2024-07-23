@@ -146,7 +146,6 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                         Highlight
                       </div>
                       <div className="flex gap-1">
-                        $
                         {isMac() ? (
                           <>
                             <ShortcutKey>⌘</ShortcutKey> +{" "}
