@@ -14,6 +14,7 @@ import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { focusCard } from "components/Cards";
 import { v7 } from "uuid";
 import { scanIndex } from "src/replicache/utils";
+import { indent, outdent } from "src/utils/list-operations";
 
 type PropsRef = MutableRefObject<BlockProps & { entity_set: { set: string } }>;
 export const TextBlockKeymap = (
@@ -28,19 +29,8 @@ export const TextBlockKeymap = (
     "Ctrl-Meta-h": toggleMark(schema.marks.highlight),
     Tab: () => {
       if (useUIState.getState().selectedBlock.length > 1) return false;
-      if (!propsRef.current.listData) return false;
-      if (!propsRef.current.previousBlock?.listData) return false;
-      let depth = propsRef.current.listData.depth;
-      let newParent = propsRef.current.previousBlock.listData.path.find(
-        (f) => f.depth === depth,
-      );
-      if (!newParent) return false;
-      repRef.current?.mutate.retractFact({ factID: propsRef.current.factID });
-      repRef.current?.mutate.addLastBlock({
-        parent: newParent.entity,
-        factID: v7(),
-        entity: propsRef.current.entityID,
-      });
+      if (!repRef.current || !propsRef.current.previousBlock) return false;
+      indent(propsRef.current, propsRef.current.previousBlock, repRef.current);
       return true;
     },
     "Shift-Tab": shifttab(propsRef, repRef),
@@ -279,42 +269,9 @@ const shifttab =
   ) =>
   () => {
     if (useUIState.getState().selectedBlock.length > 1) return false;
-    if (!propsRef.current.listData) return false;
-    let listData = propsRef.current.listData;
-    let previousBlock = propsRef.current.previousBlock;
-    if (listData.depth === 1) {
-      repRef.current?.mutate.assertFact({
-        entity: propsRef.current.entityID,
-        attribute: "block/is-list",
-        data: { type: "boolean", value: false },
-      });
-      repRef.current?.mutate.moveChildren({
-        oldParent: propsRef.current.entityID,
-        newParent: propsRef.current.parent,
-        after: propsRef.current.entityID,
-      });
-    } else {
-      if (!previousBlock || !previousBlock.listData) return false;
-      let after = previousBlock.listData.path.find(
-        (f) => f.depth === listData.depth - 1,
-      )?.entity;
-      if (!after) return false;
-      let parent: string | undefined = undefined;
-      if (listData.depth === 2) {
-        parent = propsRef.current.parent;
-      } else {
-        parent = previousBlock.listData.path.find(
-          (f) => f.depth === listData.depth - 2,
-        )?.entity;
-      }
-      if (!parent) return false;
-      repRef.current?.mutate.outdentBlock({
-        block: propsRef.current.entityID,
-        newParent: parent,
-        oldParent: listData.parent,
-        after,
-      });
-    }
+    if (!repRef.current) return false;
+    if (!repRef.current) return false;
+    outdent(propsRef.current, propsRef.current.previousBlock, repRef.current);
     return true;
   };
 

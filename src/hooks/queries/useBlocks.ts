@@ -5,15 +5,18 @@ import { useSubscribe } from "replicache-react";
 import { Fact, useReplicache } from "src/replicache";
 import { scanIndex, scanIndexLocal } from "src/replicache/utils";
 
-export const useBlocks = (entityID: string) => {
+export const useBlocks = (entityID: string | null) => {
   let rep = useReplicache();
   let initialValue = useMemo(
-    () => getBlocksWithTypeLocal(rep.initialFacts, entityID),
+    () =>
+      entityID === null
+        ? []
+        : getBlocksWithTypeLocal(rep.initialFacts, entityID),
     [rep.initialFacts, entityID],
   );
   let repData = useSubscribe(
     rep?.rep,
-    async (tx) => getBlocksWithType(tx, entityID),
+    async (tx) => (entityID === null ? [] : getBlocksWithType(tx, entityID)),
     { dependencies: [entityID] },
   );
   let data = repData || initialValue;

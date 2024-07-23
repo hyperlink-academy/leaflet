@@ -10,6 +10,7 @@ import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { v7 } from "uuid";
+import { indent, outdent } from "src/utils/list-operations";
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
@@ -182,53 +183,9 @@ export function SelectionManager() {
           }
           if (!block.listData || !previousBlock.listData) continue;
           if (!e.shiftKey) {
-            let depth = block.listData.depth;
-            let newParent = previousBlock.listData.path.find(
-              (f) => f.depth === depth,
-            );
-            console.log(newParent?.entity);
-            if (!newParent) continue;
-            rep?.mutate.retractFact({ factID: block.factID });
-            rep?.mutate.addLastBlock({
-              parent: newParent.entity,
-              factID: v7(),
-              entity: block.value,
-            });
+            indent(block, previousBlock, rep);
           } else {
-            let listData = block.listData;
-            if (listData.depth === 1) {
-              rep?.mutate.assertFact({
-                entity: block.value,
-                attribute: "block/is-list",
-                data: { type: "boolean", value: false },
-              });
-              rep?.mutate.moveChildren({
-                oldParent: block.value,
-                newParent: block.parent,
-                after: block.value,
-              });
-            } else {
-              if (!previousBlock || !previousBlock.listData) return false;
-              let after = previousBlock.listData.path.find(
-                (f) => f.depth === listData.depth - 1,
-              )?.entity;
-              if (!after) return false;
-              let parent: string | undefined = undefined;
-              if (listData.depth === 2) {
-                parent = block.parent;
-              } else {
-                parent = previousBlock.listData.path.find(
-                  (f) => f.depth === listData.depth - 2,
-                )?.entity;
-              }
-              if (!parent) return false;
-              rep?.mutate.outdentBlock({
-                block: block.value,
-                newParent: parent,
-                oldParent: listData.parent,
-                after,
-              });
-            }
+            outdent(block, previousBlock, rep);
           }
         }
       }
