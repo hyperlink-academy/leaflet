@@ -187,25 +187,41 @@ export function SelectionManager() {
         let [sortedSelection, siblings] = await getSortedSelection();
         if (sortedSelection.length <= 1) return;
         e.preventDefault();
-        for (let i = 0; i < siblings.length; i++) {
-          let block = siblings[i];
-          if (!sortedSelection.find((s) => s.value === block.value)) continue;
-          if (sortedSelection.find((s) => s.value === block.listData?.parent))
-            continue;
-          let parentoffset = 1;
-          let previousBlock = siblings[i - parentoffset];
-          while (
-            previousBlock &&
-            sortedSelection.find((s) => previousBlock.value === s.value)
-          ) {
-            parentoffset += 1;
-            previousBlock = siblings[i - parentoffset];
-          }
-          if (!block.listData || !previousBlock.listData) continue;
-          if (!e.shiftKey) {
-            indent(block, previousBlock, rep);
-          } else {
+        if (e.shiftKey) {
+          for (let i = siblings.length - 1; i >= 0; i--) {
+            let block = siblings[i];
+            if (!sortedSelection.find((s) => s.value === block.value)) continue;
+            if (sortedSelection.find((s) => s.value === block.listData?.parent))
+              continue;
+            let parentoffset = 1;
+            let previousBlock = siblings[i - parentoffset];
+            while (
+              previousBlock &&
+              sortedSelection.find((s) => previousBlock.value === s.value)
+            ) {
+              parentoffset += 1;
+              previousBlock = siblings[i - parentoffset];
+            }
+            if (!block.listData || !previousBlock.listData) continue;
             outdent(block, previousBlock, rep);
+          }
+        } else {
+          for (let i = 0; i < siblings.length; i++) {
+            let block = siblings[i];
+            if (!sortedSelection.find((s) => s.value === block.value)) continue;
+            if (sortedSelection.find((s) => s.value === block.listData?.parent))
+              continue;
+            let parentoffset = 1;
+            let previousBlock = siblings[i - parentoffset];
+            while (
+              previousBlock &&
+              sortedSelection.find((s) => previousBlock.value === s.value)
+            ) {
+              parentoffset += 1;
+              previousBlock = siblings[i - parentoffset];
+            }
+            if (!block.listData || !previousBlock.listData) continue;
+            indent(block, previousBlock, rep);
           }
         }
       }
