@@ -40,6 +40,7 @@ export function SelectionManager() {
     let removeListener = addShortcut([
       {
         metaKey: true,
+        shift: true,
         key: ["ArrowDown"],
         handler: async () => {
           let [sortedBlocks, siblings] = await getSortedSelection();
@@ -76,6 +77,7 @@ export function SelectionManager() {
       },
       {
         metaKey: true,
+        shift: true,
         key: ["ArrowUp"],
         handler: async () => {
           let [sortedBlocks, siblings] = await getSortedSelection();
