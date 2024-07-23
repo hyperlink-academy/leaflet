@@ -119,9 +119,19 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                       Strikethrough
                     </div>
                     <div className="flex gap-1">
-                      <ShortcutKey>{metaKey()}</ShortcutKey> +{" "}
-                      <ShortcutKey> Cmd </ShortcutKey> +{" "}
-                      <ShortcutKey> X </ShortcutKey>
+                      {isMac() ? (
+                        <>
+                          <ShortcutKey>⌘</ShortcutKey> +{" "}
+                          <ShortcutKey> Ctrl </ShortcutKey> +{" "}
+                          <ShortcutKey> X </ShortcutKey>
+                        </>
+                      ) : (
+                        <>
+                          <ShortcutKey> Ctrl </ShortcutKey> +{" "}
+                          <ShortcutKey> Meta </ShortcutKey> +{" "}
+                          <ShortcutKey> X </ShortcutKey>
+                        </>
+                      )}
                     </div>
                   </div>
                 }
@@ -139,8 +149,8 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                         $
                         {isMac() ? (
                           <>
+                            <ShortcutKey>⌘</ShortcutKey> +{" "}
                             <ShortcutKey> Ctrl </ShortcutKey> +{" "}
-                            <ShortcutKey> Cmd </ShortcutKey> +{" "}
                             <ShortcutKey> H </ShortcutKey>
                           </>
                         ) : (
@@ -296,7 +306,20 @@ const ListToolbar = () => {
     return (
       <div className="flex w-full justify-between items-center gap-4">
         <ToolbarButton
-          tooltipContent={<div>Indent List Item</div>}
+          tooltipContent={
+            <div className="flex flex-col gap-1 justify-center">
+              <div className="text-center font-normal">Make List</div>
+              <div className="flex gap-1">
+                {
+                  <>
+                    <ShortcutKey> {metaKey()}</ShortcutKey> +{" "}
+                    <ShortcutKey> Alt </ShortcutKey> +{" "}
+                    <ShortcutKey> L </ShortcutKey>
+                  </>
+                }
+              </div>
+            </div>
+          }
           onClick={() => {
             if (!focusedBlock) return;
             rep?.mutate.assertFact({
@@ -316,7 +339,14 @@ const ListToolbar = () => {
       <div className="flex items-center gap-[6px]">
         <Separator classname="h-6" />
         <ToolbarButton
-          tooltipContent={<div>Indent List Item</div>}
+          tooltipContent={
+            <div className="flex flex-col gap-1 justify-center">
+              <div className="text-center">Indent Item</div>
+              <div className="flex gap-1 justify-center">
+                <ShortcutKey>Tab</ShortcutKey>
+              </div>
+            </div>
+          }
           disabled={
             !previousBlock?.listData ||
             previousBlock.listData.depth !== block?.listData?.depth
@@ -329,7 +359,15 @@ const ListToolbar = () => {
           <ListIndentIncreaseSmall />
         </ToolbarButton>
         <ToolbarButton
-          tooltipContent={<div>Outdent List Item</div>}
+          tooltipContent={
+            <div className="flex flex-col gap-1 justify-center">
+              <div className="text-center">Outdent Item</div>
+              <div className="flex gap-1 justify-center">
+                <ShortcutKey>Shift</ShortcutKey> +{" "}
+                <ShortcutKey>Tab</ShortcutKey>
+              </div>
+            </div>
+          }
           onClick={() => {
             if (!rep || !block) return;
             outdent(block, previousBlock, rep);
