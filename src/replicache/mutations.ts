@@ -143,6 +143,7 @@ const moveChildren: Mutation<{
   for (let child of children) {
     await ctx.retractFact(child.id);
     await ctx.assertFact({
+      id: child.id,
       entity: args.newParent,
       attribute: "card/block",
       data: {
