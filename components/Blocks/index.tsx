@@ -33,6 +33,7 @@ export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
   let entity_set = useEntitySetContext();
   let blocks = useBlocks(props.entityID);
+  let foldedBlocks = useUIState((s) => s.foldedBlocks);
 
   let lastBlock = blocks.findLast((f) => !f.listData || f.listData.depth === 1);
   return (
@@ -66,29 +67,38 @@ export function Blocks(props: { entityID: string }) {
         }
       }}
     >
-      {blocks.map((f, index, arr) => {
-        let nextBlock = arr[index + 1];
-        let depth = f.listData?.depth || 0;
-        let nextDepth = nextBlock?.listData?.depth || 0;
-        let nextPosition: string | null;
-        if (depth === 1 && !nextBlock?.listData)
-          nextPosition = nextBlock?.position;
-        else {
-          if (depth === nextDepth) nextPosition = nextBlock?.position || null;
-          else nextPosition = null;
-        }
-        return (
-          <Block
-            {...f}
-            key={f.value}
-            entityID={f.value}
-            parent={props.entityID}
-            previousBlock={arr[index - 1] || null}
-            nextBlock={arr[index + 1] || null}
-            nextPosition={nextPosition}
-          />
-        );
-      })}
+      {blocks
+        .filter(
+          (f) =>
+            !f.listData ||
+            !f.listData.path.find(
+              (path) =>
+                foldedBlocks.includes(path.entity) && f.value !== path.entity,
+            ),
+        )
+        .map((f, index, arr) => {
+          let nextBlock = arr[index + 1];
+          let depth = f.listData?.depth || 0;
+          let nextDepth = nextBlock?.listData?.depth || 0;
+          let nextPosition: string | null;
+          if (depth === 1 && !nextBlock?.listData)
+            nextPosition = nextBlock?.position;
+          else {
+            if (depth === nextDepth) nextPosition = nextBlock?.position || null;
+            else nextPosition = null;
+          }
+          return (
+            <Block
+              {...f}
+              key={f.value}
+              entityID={f.value}
+              parent={props.entityID}
+              previousBlock={arr[index - 1] || null}
+              nextBlock={arr[index + 1] || null}
+              nextPosition={nextPosition}
+            />
+          );
+        })}
       <NewBlockButton lastBlock={lastBlock || null} entityID={props.entityID} />
       <div
         className="shrink-0 h-[50vh]"
@@ -347,9 +357,17 @@ export const ListMarker = (
   props: Block & { first?: boolean; className?: string; compact?: boolean },
 ) => {
   let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
+  let children = useEntity(props.value, "card/block");
+  let folded =
+    useUIState((s) => s.foldedBlocks.includes(props.value)) &&
+    children.length > 0;
   return (
     <>
-      <div
+      <button
+        onClick={() => {
+          if (children.length > 0)
+            useUIState.getState().toggleFold(props.value);
+        }}
         className="listMarker shrink-0 flex justify-end relative"
         style={{
           width:
@@ -360,7 +378,7 @@ export const ListMarker = (
         }}
       >
         <div
-          className={` ${props.className} absolute h-[5px] w-[5px] rounded-full bg-secondary shrink-0  -right-1
+          className={` ${props.className} ${folded ? " outline outline-1 outline-secondary outline-offset-1" : ""} absolute h-[5px] w-[5px] rounded-full bg-secondary shrink-0  -right-1
       ${props.first ? "mt-1 sm:mt-2" : ""}
       ${
         props.type === "heading"
@@ -372,7 +390,7 @@ export const ListMarker = (
           : "top-[13px]"
       }`}
         />
-      </div>
+      </button>
     </>
   );
 };
@@ -459,7 +477,7 @@ export function focusBlock(
   }
 
   let newState = nextBlock.editor.apply(
-    tr.setSelection(TextSelection.create(tr.doc, pos?.pos || 0)),
+    tr.setSelection(TextSelection.create(tr.doc, pos?.pos || 1)),
   );
 
   setEditorState(nextBlockID, { editor: newState });

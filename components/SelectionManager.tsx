@@ -113,6 +113,16 @@ export function SelectionManager() {
           }
         },
       },
+      {
+        metaKey: true,
+        shift: true,
+        key: "Enter",
+        handler: async () => {
+          let [sortedBlocks, siblings] = await getSortedSelection();
+          if (sortedBlocks.length > 1) return;
+          if (!sortedBlocks[0].listData) return;
+          useUIState.getState().toggleFold(sortedBlocks[0].value);
+        },
       },
     ]);
     let listener = async (e: KeyboardEvent) => {

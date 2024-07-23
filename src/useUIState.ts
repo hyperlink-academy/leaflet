@@ -10,10 +10,20 @@ export const useUIState = create(
         | { type: "card"; entityID: string }
         | { type: "block"; entityID: string; parent: string }
         | null,
+      foldedBlocks: [] as string[],
       openCards: [] as string[],
       selectedBlock: [] as SelectedBlock[],
     },
     (set) => ({
+      toggleFold: (entityID: string) => {
+        set((state) => {
+          return {
+            foldedBlocks: state.foldedBlocks.includes(entityID)
+              ? state.foldedBlocks.filter((b) => b !== entityID)
+              : [...state.foldedBlocks, entityID],
+          };
+        });
+      },
       openCard: (parent: string, card: string) =>
         set((state) => {
           let parentPosition = state.openCards.findIndex((s) => s == parent);
