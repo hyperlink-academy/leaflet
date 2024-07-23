@@ -40,6 +40,24 @@ export function SelectionManager() {
     let removeListener = addShortcut([
       {
         metaKey: true,
+        altKey: true,
+        key: ["l", "¬"],
+        handler: async () => {
+          let [sortedBlocks, siblings] = await getSortedSelection();
+          for (let block of sortedBlocks) {
+            if (!block.listData) {
+              console.log("yo?");
+              await rep?.mutate.assertFact({
+                entity: block.value,
+                attribute: "block/is-list",
+                data: { type: "boolean", value: true },
+              });
+            }
+          }
+        },
+      },
+      {
+        metaKey: true,
         shift: true,
         key: ["ArrowDown"],
         handler: async () => {
