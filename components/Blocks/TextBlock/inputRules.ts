@@ -13,6 +13,17 @@ export const inputrules = (
 ) =>
   inputRules({
     rules: [
+      new InputRule(/^([-+*])\s$/, (state) => {
+        if (propsRef.current.listData) return null;
+        let tr = state.tr;
+        tr.delete(0, 2);
+        repRef.current?.mutate.assertFact({
+          entity: propsRef.current.entityID,
+          attribute: "block/is-list",
+          data: { type: "boolean", value: true },
+        });
+        return tr;
+      }),
       new InputRule(/^([#]{1,3})\s$/, (state, match) => {
         let tr = state.tr;
         tr.delete(0, match[0].length);
@@ -35,7 +46,6 @@ export const inputrules = (
                 value: propsRef.current.entityID,
                 type: "heading",
                 parent: propsRef.current.parent,
-                position: propsRef.current.position,
               },
               { type: "start" },
             ),

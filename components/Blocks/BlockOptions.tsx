@@ -58,14 +58,14 @@ export function BlockOptions(props: Props) {
   return (
     <Tooltip.Provider>
       <div
-        className={`blockOptionsWrapper hidden w-fit max-h-9 sm:group-hover/text:flex  group-focus-within/text:flex  place-items-center ${props.className}`}
+        className={`blockOptionsWrapper w-fit hidden sm:group-hover/text:flex  group-focus-within/text:flex  place-items-center ${props.className}`}
       >
         <div className="blockOptionsdefaultContent flex gap-1 items-center">
           {blockMenuState === "default" && (
             <>
               <ToolbarButton
                 tooltipContent="Add an Image"
-                className="text-tertiary"
+                className="text-tertiary h-6"
               >
                 <label onMouseDown={(e) => e.preventDefault()}>
                   <BlockImageSmall />
@@ -85,6 +85,7 @@ export function BlockOptions(props: Props) {
                           entity = v7();
                           await rep?.mutate.addBlock({
                             parent: props.parent,
+                            factID: v7(),
                             permission_set: entity_set.set,
                             type: "text",
                             position: generateKeyBetween(
@@ -110,7 +111,7 @@ export function BlockOptions(props: Props) {
               </ToolbarButton>
               <ToolbarButton
                 tooltipContent="Add a Link"
-                className="text-tertiary"
+                className="text-tertiary h-6"
                 onClick={() => {
                   setblockMenuState("link");
                 }}
@@ -119,7 +120,7 @@ export function BlockOptions(props: Props) {
               </ToolbarButton>
               <ToolbarButton
                 tooltipContent="Add a card"
-                className=" text-tertiary"
+                className="text-tertiary h-6"
                 onClick={async () => {
                   let entity;
                   if (!props.entityID) {
@@ -127,6 +128,7 @@ export function BlockOptions(props: Props) {
 
                     await rep?.mutate.addBlock({
                       permission_set: entity_set.set,
+                      factID: v7(),
                       parent: props.parent,
                       type: "card",
                       position: generateKeyBetween(
@@ -146,6 +148,7 @@ export function BlockOptions(props: Props) {
                   let newCard = v7();
                   await rep?.mutate.addCardBlock({
                     blockEntity: entity,
+                    firstBlockFactID: v7(),
                     firstBlockEntity: v7(),
                     cardEntity: newCard,
                     permission_set: entity_set.set,
@@ -158,7 +161,7 @@ export function BlockOptions(props: Props) {
               </ToolbarButton>
               <Separator classname="h-6" />
               <TextBlockTypeButton
-                className="hover:text-primary text-tertiary "
+                className="hover:text-primary text-tertiary h-6"
                 setToolbarState={() => setblockMenuState("heading")}
               />
             </>
@@ -205,6 +208,7 @@ const BlockLinkInput = (props: { onClose: () => void } & Props) => {
 
       await rep?.mutate.addBlock({
         permission_set: entity_set.set,
+        factID: v7(),
         parent: props.parent,
         type: "card",
         position: generateKeyBetween(props.position, props.nextPosition),

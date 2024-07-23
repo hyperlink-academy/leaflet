@@ -11,24 +11,31 @@ import { useUIState } from "src/useUIState";
 import { CardBlock } from "./CardBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { BlockOptions } from "./BlockOptions";
-import { useBlocks } from "src/hooks/queries/useBlocks";
+import { getBlocksWithType, useBlocks } from "src/hooks/queries/useBlocks";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { scanIndex } from "src/replicache/utils";
 import { v7 } from "uuid";
-
+import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
 export type Block = {
+  factID: string;
   parent: string;
   position: string;
   value: string;
   type: Fact<"block/type">["data"]["value"];
+  listData?: {
+    path: { depth: number; entity: string }[];
+    parent: string;
+    depth: number;
+  };
 };
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
   let entity_set = useEntitySetContext();
   let blocks = useBlocks(props.entityID);
+  let foldedBlocks = useUIState((s) => s.foldedBlocks);
 
-  let lastBlock = blocks[blocks.length - 1];
+  let lastBlock = blocks.findLast((f) => !f.listData || f.listData.depth === 1);
   return (
     <div
       className="blocks w-full flex flex-col outline-none h-fit min-h-full pb-32"
@@ -42,9 +49,10 @@ export function Blocks(props: { entityID: string }) {
             let newEntityID = v7();
             await rep.rep?.mutate.addBlock({
               parent: props.entityID,
+              factID: v7(),
               permission_set: entity_set.set,
               type: "text",
-              position: generateKeyBetween(lastBlock.position || null, null),
+              position: generateKeyBetween(lastBlock?.position || null, null),
               newEntityID,
             });
 
@@ -59,19 +67,38 @@ export function Blocks(props: { entityID: string }) {
         }
       }}
     >
-      {blocks.map((f, index, arr) => {
-        return (
-          <Block
-            {...f}
-            key={f.value}
-            entityID={f.value}
-            parent={props.entityID}
-            previousBlock={arr[index - 1] || null}
-            nextBlock={arr[index + 1] || null}
-            nextPosition={arr[index + 1]?.position || null}
-          />
-        );
-      })}
+      {blocks
+        .filter(
+          (f) =>
+            !f.listData ||
+            !f.listData.path.find(
+              (path) =>
+                foldedBlocks.includes(path.entity) && f.value !== path.entity,
+            ),
+        )
+        .map((f, index, arr) => {
+          let nextBlock = arr[index + 1];
+          let depth = f.listData?.depth || 0;
+          let nextDepth = nextBlock?.listData?.depth || 0;
+          let nextPosition: string | null;
+          if (depth === 1 && !nextBlock?.listData)
+            nextPosition = nextBlock?.position;
+          else {
+            if (depth === nextDepth) nextPosition = nextBlock?.position || null;
+            else nextPosition = null;
+          }
+          return (
+            <Block
+              {...f}
+              key={f.value}
+              entityID={f.value}
+              parent={props.entityID}
+              previousBlock={arr[index - 1] || null}
+              nextBlock={arr[index + 1] || null}
+              nextPosition={nextPosition}
+            />
+          );
+        })}
       <NewBlockButton lastBlock={lastBlock || null} entityID={props.entityID} />
       <div
         className="shrink-0 h-[50vh]"
@@ -83,6 +110,7 @@ export function Blocks(props: { entityID: string }) {
           } else {
             rep?.rep?.mutate.addBlock({
               permission_set: entity_set.set,
+              factID: v7(),
               parent: props.entityID,
               type: "text",
               position: generateKeyBetween(lastBlock?.position || null, null),
@@ -127,6 +155,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
           await rep?.mutate.addBlock({
             parent: props.entityID,
             type: "text",
+            factID: v7(),
             permission_set: entity_set.set,
             position: generateKeyBetween(
               props.lastBlock?.position || null,
@@ -176,6 +205,8 @@ let textBlocks: { [k in Fact<"block/type">["data"]["value"]]?: boolean } = {
 function Block(props: BlockProps) {
   let { rep } = useReplicache();
 
+  let first = props.previousBlock === null;
+
   let selectedBlocks = useUIState((s) => s.selectedBlock);
 
   let actuallySelected = useUIState(
@@ -195,7 +226,7 @@ function Block(props: BlockProps) {
   useEffect(() => {
     if (!selected || !rep) return;
     let r = rep;
-    let listener = (e: KeyboardEvent) => {
+    let listener = async (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
       if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -229,15 +260,42 @@ function Block(props: BlockProps) {
         if (block) focusBlock(block, { type: "end" });
       }
       if (e.key === "Enter") {
-        let newEntityID = v7();
         if (!entity_set.permissions.write) return;
-        r.mutate.addBlock({
-          permission_set: entity_set.set,
-          newEntityID,
-          parent: props.parent,
-          type: "text",
-          position: generateKeyBetween(props.position, props.nextPosition),
-        });
+        let newEntityID = v7();
+        let position;
+        if (props.listData) {
+          let hasChild =
+            props.nextBlock?.listData &&
+            props.nextBlock.listData.depth > props.listData.depth;
+          position = generateKeyBetween(
+            hasChild ? null : props.position,
+            props.nextPosition,
+          );
+          await r?.mutate.addBlock({
+            newEntityID,
+            factID: v7(),
+            permission_set: entity_set.set,
+            parent: hasChild ? props.entityID : props.listData.parent,
+            type: "text",
+            position,
+          });
+          await r?.mutate.assertFact({
+            entity: newEntityID,
+            attribute: "block/is-list",
+            data: { type: "boolean", value: true },
+          });
+        }
+        if (!props.listData) {
+          position = generateKeyBetween(props.position, props.nextPosition);
+          await r?.mutate.addBlock({
+            newEntityID,
+            factID: v7(),
+            permission_set: entity_set.set,
+            parent: props.parent,
+            type: "text",
+            position,
+          });
+        }
         setTimeout(() => {
           document.getElementById(elementId.block(newEntityID).text)?.focus();
         }, 10);
@@ -249,100 +307,100 @@ function Block(props: BlockProps) {
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [
-    entity_set,
-    selected,
-    props.entityID,
-    props.nextBlock,
-    props.type,
-    props.previousBlock,
-    props.position,
-    props.nextPosition,
-    rep,
-    props.parent,
-  ]);
+  }, [entity_set, selected, props, rep]);
+  let mouseHandlers = useBlockMouseHandlers(props);
   return (
-    <div
-      data-entityid={props.entityID}
-      onMouseDown={(e) => {
-        useSelectingMouse.setState({ start: props.entityID });
-        if (e.shiftKey) {
-          e.preventDefault();
-          useUIState.getState().addBlockToSelection(props);
-        } else useUIState.getState().setSelectedBlock(props);
-      }}
-      onMouseEnter={async (e) => {
-        if (!entity_set.permissions.write) return;
-        if (e.buttons !== 1) return;
-        let selection = useSelectingMouse.getState();
-        if (!selection.start) return;
-        let siblings =
-          (await rep?.query((tx) =>
-            scanIndex(tx).eav(props.parent, "card/block"),
-          )) || [];
-        let sortedSiblings = siblings.sort((a, b) =>
-          a.data.position > b.data.position ? 1 : -1,
-        );
-        let startIndex = sortedSiblings.findIndex(
-          (b) => b.data.value === selection.start,
-        );
-        if (startIndex === -1) return;
-        let endIndex = sortedSiblings.findIndex(
-          (b) => b.data.value === props.entityID,
-        );
-        let start = Math.min(startIndex, endIndex);
-        let end = Math.max(startIndex, endIndex);
-        let selected = sortedSiblings.slice(start, end + 1).map((b) => ({
-          value: b.data.value,
-          position: b.data.position,
-          parent: props.parent,
-        }));
-        useUIState.getState().setSelectedBlocks(selected);
-      }}
-      // text and heading blocks handle thier own padding so that
-      // clicking anywhere on them (even the padding between blocks) will focus the textarea
-      className={` relative ${
+    <div className="blockWrapper relative flex">
+      {selected && selectedBlocks.length > 1 && (
+        <div
+          className={`
+          blockSelectionBG pointer-events-none bg-border-light
+          absolute right-2 left-2 bottom-0
+          ${first ? "top-2" : "top-0"}
+          ${!prevBlockSelected && "rounded-t-md"}
+          ${!nextBlockSelected && "rounded-b-md"}
+          `}
+        />
+      )}
+      {props.listData && <ListMarker {...props} first={first} />}
+      <div
+        {...mouseHandlers}
+        data-entityid={props.entityID}
+        className={`blockContent relative grow flex flex-row
+      ${
         props.type !== "heading" &&
         props.type !== "text" &&
-        `first:pt-3 sm:first:pt-4 pl-3 pr-3 sm:pl-4 sm:pr-4 pt-1 pb-2`
+        `${first ? "pt-3 sm:pt-4" : "pt-1"} px-3 sm:px-4 pb-2`
       }
       ${selectedBlocks.length > 1 ? "Multiple-Selected" : ""}
       ${actuallySelected ? "selected" : ""}
       `}
-      id={elementId.block(props.entityID).container}
-    >
-      {selected && selectedBlocks.length > 1 && (
-        <div
-          className={`
-            textSelection pointer-events-none
-            absolute right-2 left-2 bg-border-light
-            ${!props.previousBlock ? "top-2" : "top-0"}
-            ${props.type !== "heading" && !nextBlockSelected ? "bottom-1" : "bottom-0"}
-            ${!prevBlockSelected && "rounded-t-md"}
-            ${!nextBlockSelected && "rounded-b-md"}
-            `}
-        />
-      )}
-      {props.type === "card" ? (
-        <CardBlock {...props} />
-      ) : props.type === "text" ? (
-        <TextBlock {...props} className="" />
-      ) : props.type === "heading" ? (
-        <HeadingBlock {...props} />
-      ) : props.type === "image" ? (
-        <ImageBlock {...props} />
-      ) : props.type === "link" ? (
-        <ExternalLinkBlock {...props} />
-      ) : null}
+        id={elementId.block(props.entityID).container}
+      >
+        {props.type === "card" ? (
+          <CardBlock {...props} />
+        ) : props.type === "text" ? (
+          <TextBlock {...props} className="" />
+        ) : props.type === "heading" ? (
+          <HeadingBlock {...props} />
+        ) : props.type === "image" ? (
+          <ImageBlock {...props} />
+        ) : props.type === "link" ? (
+          <ExternalLinkBlock {...props} />
+        ) : null}
+      </div>
     </div>
   );
 }
+
+export const ListMarker = (
+  props: Block & { first?: boolean; className?: string; compact?: boolean },
+) => {
+  let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
+  let children = useEntity(props.value, "card/block");
+  let folded =
+    useUIState((s) => s.foldedBlocks.includes(props.value)) &&
+    children.length > 0;
+  return (
+    <>
+      <button
+        onClick={() => {
+          if (children.length > 0)
+            useUIState.getState().toggleFold(props.value);
+        }}
+        className="listMarker shrink-0 flex justify-end relative"
+        style={{
+          width:
+            props.listData &&
+            `calc(${props.listData.depth} * ${
+              props.compact ? "16px" : `var(--list-marker-width))`
+            }`,
+        }}
+      >
+        <div
+          className={` ${props.className} ${folded ? " outline outline-1 outline-secondary outline-offset-1" : ""} absolute h-[5px] w-[5px] rounded-full bg-secondary shrink-0  -right-1
+      ${props.first ? "mt-1 sm:mt-2" : ""}
+      ${
+        props.type === "heading"
+          ? headingLevel === 3
+            ? "top-[13px]"
+            : headingLevel === 2
+              ? "top-[15px]"
+              : "top-[20px]"
+          : "top-[13px]"
+      }`}
+        />
+      </button>
+    </>
+  );
+};
 
 const HeadingStyle = {
   1: "text-xl font-bold",
   2: "text-lg font-bold",
   3: "text-base font-bold text-secondary ",
 } as { [level: number]: string };
+
 export function HeadingBlock(props: BlockProps) {
   let headingLevel = useEntity(props.entityID, "block/heading-level");
   return (
@@ -371,7 +429,10 @@ type Position =
       type: "bottom";
       left: number;
     };
-export function focusBlock(block: Block, position: Position) {
+export function focusBlock(
+  block: Pick<Block, "type" | "value" | "parent">,
+  position: Position,
+) {
   if (block.type !== "text" && block.type !== "heading") {
     useUIState.getState().setSelectedBlock(block);
     return true;
@@ -416,7 +477,7 @@ export function focusBlock(block: Block, position: Position) {
   }
 
   let newState = nextBlock.editor.apply(
-    tr.setSelection(TextSelection.create(tr.doc, pos?.pos || 0)),
+    tr.setSelection(TextSelection.create(tr.doc, pos?.pos || 1)),
   );
 
   setEditorState(nextBlockID, { editor: newState });

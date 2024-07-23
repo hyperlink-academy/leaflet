@@ -14,9 +14,11 @@ import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { focusCard } from "components/Cards";
 import { v7 } from "uuid";
 import { scanIndex } from "src/replicache/utils";
+import { indent, outdent } from "src/utils/list-operations";
 
+type PropsRef = MutableRefObject<BlockProps & { entity_set: { set: string } }>;
 export const TextBlockKeymap = (
-  propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
+  propsRef: PropsRef,
   repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
 ) =>
   keymap({
@@ -25,7 +27,13 @@ export const TextBlockKeymap = (
     "Meta-i": toggleMark(schema.marks.em),
     "Ctrl-Meta-x": toggleMark(schema.marks.strikethrough),
     "Ctrl-Meta-h": toggleMark(schema.marks.highlight),
-
+    Tab: () => {
+      if (useUIState.getState().selectedBlock.length > 1) return false;
+      if (!repRef.current || !propsRef.current.previousBlock) return false;
+      indent(propsRef.current, propsRef.current.previousBlock, repRef.current);
+      return true;
+    },
+    "Shift-Tab": shifttab(propsRef, repRef),
     Escape: (_state, _dispatch, view) => {
       view?.dom.blur();
       useUIState.setState(() => ({
@@ -145,7 +153,7 @@ export const TextBlockKeymap = (
 
 const backspace =
   (
-    propsRef: MutableRefObject<BlockProps>,
+    propsRef: PropsRef,
     repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
   (
@@ -158,6 +166,19 @@ const backspace =
     }
     if (state.selection.anchor > 1 || state.selection.content().size > 0) {
       return false;
+    }
+    if (propsRef.current.listData) {
+      let depth = propsRef.current.listData.depth;
+      repRef.current?.mutate.moveChildren({
+        oldParent: propsRef.current.entityID,
+        newParent: propsRef.current.listData.parent || propsRef.current.parent,
+        after:
+          propsRef.current.previousBlock?.listData?.path.find(
+            (f) => f.depth === depth,
+          )?.entity ||
+          propsRef.current.previousBlock?.value ||
+          null,
+      });
     }
     if (!propsRef.current.previousBlock) {
       if (propsRef.current.type === "heading") {
@@ -172,7 +193,6 @@ const backspace =
               {
                 value: propsRef.current.entityID,
                 type: "heading",
-                position: propsRef.current.position,
                 parent: propsRef.current.parent,
               },
               { type: "start" },
@@ -187,7 +207,11 @@ const backspace =
       useEditorStates.getState().editorStates[
         propsRef.current.previousBlock.value
       ];
-    if (block && block.editor.doc.textContent.length === 0) {
+    if (
+      block &&
+      block.editor.doc.textContent.length === 0 &&
+      !propsRef.current.previousBlock.listData
+    ) {
       repRef.current?.mutate.removeBlock({
         blockEntity: propsRef.current.previousBlock.value,
       });
@@ -238,6 +262,19 @@ const backspace =
     return true;
   };
 
+const shifttab =
+  (
+    propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
+    repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+  ) =>
+  () => {
+    if (useUIState.getState().selectedBlock.length > 1) return false;
+    if (!repRef.current) return false;
+    if (!repRef.current) return false;
+    outdent(propsRef.current, propsRef.current.previousBlock, repRef.current);
+    return true;
+  };
+
 const enter =
   (
     propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
@@ -251,25 +288,59 @@ const enter =
     let tr = state.tr;
     let newContent = tr.doc.slice(state.selection.anchor);
     tr.delete(state.selection.anchor, state.doc.content.size);
-    view?.dom.blur();
     dispatch?.(tr);
+
     let newEntityID = v7();
-    let position = generateKeyBetween(
-      propsRef.current.position,
-      propsRef.current.nextPosition,
-    );
+    let position: string;
     let asyncRun = async () => {
       let blockType =
         propsRef.current.type === "heading" && state.selection.anchor <= 2
           ? ("heading" as const)
           : ("text" as const);
-      await repRef.current?.mutate.addBlock({
-        newEntityID,
-        permission_set: propsRef.current.entity_set.set,
-        parent: propsRef.current.parent,
-        type: blockType,
-        position,
-      });
+      if (propsRef.current.listData) {
+        if (state.doc.content.size <= 2) {
+          return shifttab(propsRef, repRef)();
+        }
+        let hasChild =
+          propsRef.current.nextBlock?.listData &&
+          propsRef.current.nextBlock.listData.depth >
+            propsRef.current.listData.depth;
+        console.log(propsRef);
+        position = generateKeyBetween(
+          hasChild ? null : propsRef.current.position,
+          propsRef.current.nextPosition,
+        );
+        await repRef.current?.mutate.addBlock({
+          newEntityID,
+          factID: v7(),
+          permission_set: propsRef.current.entity_set.set,
+          parent: hasChild
+            ? propsRef.current.entityID
+            : propsRef.current.listData.parent,
+          type: blockType,
+          position,
+        });
+        await repRef.current?.mutate.assertFact({
+          entity: newEntityID,
+          attribute: "block/is-list",
+          data: { type: "boolean", value: true },
+        });
+      }
+      if (!propsRef.current.listData) {
+        position = generateKeyBetween(
+          propsRef.current.position,
+          propsRef.current.nextPosition,
+        );
+        await repRef.current?.mutate.addBlock({
+          newEntityID,
+          factID: v7(),
+          permission_set: propsRef.current.entity_set.set,
+          parent: propsRef.current.parent,
+          type: blockType,
+          position,
+        });
+      }
+
       if (blockType === "heading") {
         await repRef.current?.mutate.assertFact({
           entity: propsRef.current.entityID,
@@ -286,8 +357,10 @@ const enter =
           data: { type: "number", value: headingLevel.data.value || 0 },
         });
       }
+      view?.dom.blur();
     };
     asyncRun();
+
     setTimeout(() => {
       let block = useEditorStates.getState().editorStates[newEntityID];
       if (block) {
@@ -305,7 +378,6 @@ const enter =
             value: newEntityID,
             parent: propsRef.current.parent,
             type: "text",
-            position,
           },
           { type: "start" },
         );

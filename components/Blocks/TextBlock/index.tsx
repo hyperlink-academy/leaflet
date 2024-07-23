@@ -46,20 +46,28 @@ export function TextBlock(props: BlockProps & { className: string }) {
   let initialized = useInitialPageLoad();
   let first = props.previousBlock === null;
   let permission = useEntitySetContext().permissions.write;
+
+  let blockPadding = `px-3 sm:px-4 ${
+    props.type === "heading" || (props.listData && props.nextBlock?.listData)
+      ? "pb-0"
+      : "pb-2"
+  } ${first ? "pt-2 sm:pt-3" : "pt-1"}`;
+
   return (
     <>
       {(!initialized || !permission) && (
         <RenderedTextBlock
           entityID={props.entityID}
-          className={props.className}
-          type={props.type}
+          className={blockPadding + " " + props.className}
           first={first}
         />
       )}
       {permission && (
-        <div className={`relative group/text ${!initialized ? "hidden" : ""}`}>
+        <div
+          className={`w-full relative group/text ${!initialized ? "hidden" : ""}`}
+        >
           <IOSBS {...props} />
-          <BaseTextBlock {...props} />
+          <BaseTextBlock blockPadding={blockPadding} {...props} />
         </div>
       )}
     </>
@@ -109,22 +117,15 @@ export function IOSBS(props: BlockProps) {
 export function RenderedTextBlock(props: {
   entityID: string;
   className?: string;
-  placeholder?: string;
-  type?: string;
   first?: boolean;
-  preview?: boolean;
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
+
   if (!initialFact)
+    // show a blank line if the block is empty. blocks with content are styled elsewhere! update both!
     return (
-      <pre
-        className={`${props.className} ${
-          props.preview
-            ? "p-0"
-            : `px-3 sm:px-4 italic text-tertiary ${props.type === "heading" ? "pb-0" : "pb-2"} ${props.first ? "pt-2 sm:pt-3" : "pt-1"}`
-        }`}
-      >
-        {/* Render a placeholder if the card is totally empty, else just show the blank line*/}
+      <pre className={`${props.className}`}>
+        {/* Render a placeholder if there are no other blocks in the card, else just show the blank line*/}
         {props.first ? "Title" : <br />}
       </pre>
     );
@@ -133,16 +134,12 @@ export function RenderedTextBlock(props: {
   Y.applyUpdate(doc, update);
   let nodes = doc.getXmlElement("prosemirror").toArray();
 
+  // show the rendered version of the block is the block has something in it!
+  // empty block rendering is handled further up. update both!
   return (
     <pre
       className={`
-      w-full whitespace-pre-wrap outline-none break-words ${props.className} ${
-        props.preview
-          ? "p-0 min-h-1"
-          : `px-3 sm:px-4 ${
-              props.type === "heading" ? "pb-0" : "pb-2"
-            } ${props.first ? "pt-2 sm:pt-3" : "pt-1"}`
-      }`}
+      w-full whitespace-pre-wrap outline-none break-words ${props.className} `}
     >
       {nodes.length === 0 && <br />}
       {nodes.map((node, index) => (
@@ -151,7 +148,10 @@ export function RenderedTextBlock(props: {
     </pre>
   );
 }
-export function BaseTextBlock(props: BlockProps & { className: string }) {
+
+export function BaseTextBlock(
+  props: BlockProps & { className: string; blockPadding: string },
+) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
 
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
@@ -233,11 +233,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
         });
       }}
     >
-      <div
-        className={`
-        flex items-center justify-between w-full
-        `}
-      >
+      <div className={` flex items-center justify-between w-full `}>
         <pre
           data-entityid={props.entityID}
           onBlur={async () => {
@@ -263,14 +259,15 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
           }}
           id={elementId.block(props.entityID).text}
           className={`
-          textContent
-          grow pl-3 pr-3 sm:pl-4 sm:pr-4
+          grow resize-none align-top whitespace-pre-wrap bg-transparent
           outline-none
-          resize-none align-top whitespace-pre-wrap bg-transparent ${first ? "pt-2 sm:pt-3" : "pt-1"} ${props.type === "heading" ? "pb-0" : "pb-2"} ${props.className}`}
+          ${props.blockPadding}
+          ${props.className}`}
           ref={setMount}
         />
+        {/* if this is the only block on the page and is empty*/}
         {editorState.doc.textContent.length === 0 &&
-          props.position === "a0" &&
+          props.previousBlock === null &&
           props.nextBlock === null && (
             <div
               className={`${props.className} pointer-events-none absolute top-0 left-0 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 italic text-tertiary `}
@@ -284,9 +281,10 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
                     : "Title"}
             </div>
           )}
+        {/* if this is the block is empty and selected */}
         {editorState.doc.textContent.length === 0 && selected && (
           <BlockOptions
-            className={`sm:pr-4 pr-3 ${first ? "pt-2 sm:pt-3" : "pt-1"} ${props.type === "heading" ? "pb-0" : "pb-2"}`}
+            className={props.blockPadding}
             factID={factID}
             entityID={props.entityID}
             parent={props.parent}

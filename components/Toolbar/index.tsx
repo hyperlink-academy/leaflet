@@ -37,7 +37,7 @@ import {
 import { theme } from "../../tailwind.config";
 import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
-import { useReplicache } from "src/replicache";
+import { useEntity, useReplicache } from "src/replicache";
 import { addImage } from "src/utils/addImage";
 import { scanIndex } from "src/replicache/utils";
 import { v7 } from "uuid";
@@ -51,6 +51,8 @@ import { Input } from "components/Input";
 import { metaKey } from "src/utils/metaKey";
 import { isMac } from "@react-aria/utils";
 import { addShortcut } from "src/shortcuts";
+import { useBlocks } from "src/hooks/queries/useBlocks";
+import { indent, outdent } from "src/utils/list-operations";
 
 export const TextToolbar = (props: { cardID: string; blockID: string }) => {
   let { rep } = useReplicache();
@@ -68,8 +70,12 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
 
   useEffect(() => {
     if (toolbarState !== "default") return;
-    let removeShortcut = addShortcut({ metaKey: true, key: "k" }, () => {
-      setToolbarState("link");
+    let removeShortcut = addShortcut({
+      metaKey: true,
+      key: "k",
+      handler: () => {
+        setToolbarState("link");
+      },
     });
     return () => {
       removeShortcut();
@@ -183,6 +189,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                   /> */}
                 </ToolbarButton>
               </div>
+              <ListToolbar />
 
               <Separator classname="h-6" />
               <LinkButton setToolBarState={setToolbarState} />
@@ -274,30 +281,60 @@ const HighlightToolbar = (props: {
   );
 };
 
-const ListToolbar = (props: { onClose: () => void }) => {
+const ListToolbar = () => {
   // This Toolbar should close once the user starts typing again
+  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let isList = useEntity(focusedBlock?.entityID || null, "block/is-list");
+  let siblings = useBlocks(
+    focusedBlock?.type === "block" ? focusedBlock.parent : null,
+  );
+  let block = siblings.find((s) => s.value === focusedBlock?.entityID);
+  let previousBlock =
+    siblings[siblings.findIndex((b) => b.value === focusedBlock?.entityID) - 1];
+  let { rep } = useReplicache();
+  if (!isList?.data.value)
+    return (
+      <div className="flex w-full justify-between items-center gap-4">
+        <ToolbarButton
+          tooltipContent={<div>Indent List Item</div>}
+          onClick={() => {
+            if (!focusedBlock) return;
+            rep?.mutate.assertFact({
+              entity: focusedBlock?.entityID,
+              attribute: "block/is-list",
+              data: { value: true, type: "boolean" },
+            });
+          }}
+        >
+          <ListUnorderedSmall />
+        </ToolbarButton>
+      </div>
+    );
+
   return (
     <div className="flex w-full justify-between items-center gap-4">
       <div className="flex items-center gap-[6px]">
-        <ToolbarButton
-          onClick={() => props.onClose()}
-          tooltipContent={<div></div>}
-        >
-          <ListOrderedSmall />
-        </ToolbarButton>
         <Separator classname="h-6" />
-        <ToolbarButton onClick={() => {}} tooltipContent={<div></div>}>
-          <ListUnorderedSmall />
-        </ToolbarButton>
-        <ToolbarButton onClick={() => {}} tooltipContent={<div></div>}>
-          <ListOrderedSmall />
-        </ToolbarButton>
-
-        {/* if there is no list and you click and indent button, then it should create a list */}
-        <ToolbarButton tooltipContent={<div></div>}>
+        <ToolbarButton
+          tooltipContent={<div>Indent List Item</div>}
+          disabled={
+            !previousBlock?.listData ||
+            previousBlock.listData.depth !== block?.listData?.depth
+          }
+          onClick={() => {
+            if (!rep || !block || !previousBlock) return;
+            indent(block, previousBlock, rep);
+          }}
+        >
           <ListIndentIncreaseSmall />
         </ToolbarButton>
-        <ToolbarButton tooltipContent={<div></div>}>
+        <ToolbarButton
+          tooltipContent={<div>Outdent List Item</div>}
+          onClick={() => {
+            if (!rep || !block) return;
+            outdent(block, previousBlock, rep);
+          }}
+        >
           <ListIndentDecreaseSmall />
         </ToolbarButton>
       </div>
@@ -320,7 +357,7 @@ export const ToolbarButton = (props: {
       <Tooltip.Trigger
         disabled={props.disabled}
         className={`
-          rounded-md border border-transparent hover:border-border  active:bg-border-light active:text-primary
+          flex items-center rounded-md border border-transparent hover:border-border  active:bg-border-light active:text-primary
           ${props.className}
           ${
             props.active

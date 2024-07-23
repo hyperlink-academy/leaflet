@@ -2,6 +2,7 @@ import { Block } from "components/Blocks";
 import { create } from "zustand";
 import { combine, createJSONStorage, persist } from "zustand/middleware";
 
+type SelectedBlock = Pick<Block, "value" | "parent">;
 export const useUIState = create(
   combine(
     {
@@ -9,10 +10,20 @@ export const useUIState = create(
         | { type: "card"; entityID: string }
         | { type: "block"; entityID: string; parent: string }
         | null,
+      foldedBlocks: [] as string[],
       openCards: [] as string[],
-      selectedBlock: [] as Omit<Block, "type">[],
+      selectedBlock: [] as SelectedBlock[],
     },
     (set) => ({
+      toggleFold: (entityID: string) => {
+        set((state) => {
+          return {
+            foldedBlocks: state.foldedBlocks.includes(entityID)
+              ? state.foldedBlocks.filter((b) => b !== entityID)
+              : [...state.foldedBlocks, entityID],
+          };
+        });
+      },
       openCard: (parent: string, card: string) =>
         set((state) => {
           let parentPosition = state.openCards.findIndex((s) => s == parent);
@@ -23,23 +34,25 @@ export const useUIState = create(
                 : [...state.openCards.slice(0, parentPosition + 1), card],
           };
         }),
-      closeCard: (card: string) =>
-        set((s) => ({ openCards: s.openCards.filter((c) => c !== card) })),
+      closeCard: (cards: string | string[]) =>
+        set((s) => ({
+          openCards: s.openCards.filter((c) => ![cards].flat().includes(c)),
+        })),
       setFocusedBlock: (
         b:
           | { type: "card"; entityID: string }
           | { type: "block"; entityID: string; parent: string }
           | null,
       ) => set(() => ({ focusedBlock: b })),
-      setSelectedBlock: (block: Omit<Block, "type">) =>
+      setSelectedBlock: (block: SelectedBlock) =>
         set((state) => {
           return { ...state, selectedBlock: [block] };
         }),
-      setSelectedBlocks: (blocks: Omit<Block, "type">[]) =>
+      setSelectedBlocks: (blocks: SelectedBlock[]) =>
         set((state) => {
           return { ...state, selectedBlock: blocks };
         }),
-      addBlockToSelection: (block: Omit<Block, "type">) =>
+      addBlockToSelection: (block: SelectedBlock) =>
         set((state) => {
           if (state.selectedBlock.find((b) => b.value === block.value))
             return state;
