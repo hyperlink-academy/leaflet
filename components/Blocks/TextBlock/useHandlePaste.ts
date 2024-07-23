@@ -10,6 +10,7 @@ import { BlockProps, focusBlock } from "components/Blocks";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
 import { Replicache } from "replicache";
+import { markdownToHtml } from "src/htmlMarkdownParsers";
 
 const parser = ProsemirrorDOMParser.fromSchema(schema);
 export const useHandlePaste = (
@@ -24,8 +25,14 @@ export const useHandlePaste = (
       if (!rep) return;
       if (!e.clipboardData) return;
       let textHTML = e.clipboardData.getData("text/html");
+      let text = e.clipboardData.getData("text");
       let editorState = useEditorStates.getState().editorStates[entityID];
       if (!editorState) return;
+      if (!textHTML && text) {
+        console.log(text);
+        textHTML = markdownToHtml(text);
+        console.log(textHTML);
+      }
       if (textHTML) {
         let xml = new DOMParser().parseFromString(textHTML, "text/html");
         let currentPosition = propsRef.current.position;
@@ -57,39 +64,6 @@ export const useHandlePaste = (
           });
         });
         return true;
-      } else {
-        let text = e.clipboardData.getData("text");
-        let paragraphs = text
-          .split("\n")
-          .slice(1)
-          .filter((f) => !!f);
-        let currentPosition = propsRef.current.position;
-        for (let p of paragraphs) {
-          let newEntityID = v7();
-          currentPosition = generateKeyBetween(
-            currentPosition,
-            propsRef.current.nextPosition,
-          );
-          rep.mutate.addBlock({
-            factID: v7(),
-            permission_set: entity_set.set,
-            newEntityID,
-            parent: propsRef.current.parent,
-            type: "text",
-            position: currentPosition,
-          });
-          setTimeout(() => {
-            let block = useEditorStates.getState().editorStates[newEntityID];
-            if (block) {
-              let tr = block.editor.tr;
-              tr.insertText(p, 1);
-              let newState = block.editor.apply(tr);
-              setEditorState(newEntityID, {
-                editor: newState,
-              });
-            }
-          }, 10);
-        }
       }
 
       for (let item of e.clipboardData.items) {
@@ -157,9 +131,11 @@ const createBlockFromHTML = (
   let content = parser.parse(child);
   let type: Fact<"block/type">["data"]["value"] | null;
   let headingLevel: number | null = null;
+  let hasChildren = false;
 
   if (child.tagName === "UL") {
     let children = Array.from(child.children);
+    if (children.length > 0) hasChildren = true;
     for (let c of children) {
       createBlockFromHTML(c, {
         first: first && c === children[0],
@@ -231,6 +207,7 @@ const createBlockFromHTML = (
       data: { type: "boolean", value: true },
     });
     if (ul) {
+      hasChildren = true;
       let currentPosition: string | null = null;
       createBlockFromHTML(ul, {
         first: false,
@@ -257,7 +234,7 @@ const createBlockFromHTML = (
         editor: newState,
       });
     }
-    if (last) {
+    if (last && !hasChildren) {
       focusBlock(
         {
           value: entityID,

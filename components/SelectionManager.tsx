@@ -12,6 +12,7 @@ import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { v7 } from "uuid";
 import { indent, outdent } from "src/utils/list-operations";
 import { addShortcut } from "src/shortcuts";
+import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
@@ -365,9 +366,14 @@ export function SelectionManager() {
         if (!rep) return;
         let [sortedSelection] = await getSortedSelection();
         let html = await getBlocksAsHTML(rep, sortedSelection);
-        const type = "text/html";
-        const blob = new Blob([html.join("\n")], { type });
-        const data = [new ClipboardItem({ [type]: blob })];
+        const data = [
+          new ClipboardItem({
+            ["text/html"]: new Blob([html.join("\n")], { type: "text/html" }),
+            "text/plain": new Blob([htmlToMarkdown(html.join("\n"))], {
+              type: "text/plain",
+            }),
+          }),
+        ];
         await navigator.clipboard.write(data);
       }
     };

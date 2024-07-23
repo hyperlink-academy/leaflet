@@ -35,7 +35,7 @@ async function renderList(l: List, tx: ReadTransaction): Promise<string> {
   let children = (
     await Promise.all(l.children.map(async (c) => await renderList(c, tx)))
   ).join("\n");
-  return `<li>${await renderBlock(l.block, tx)} ${
+  return `<li>${await renderBlock(l.block, tx, true)} ${
     l.children.length > 0
       ? `
   <ul>${children}</ul>
@@ -44,20 +44,28 @@ async function renderList(l: List, tx: ReadTransaction): Promise<string> {
   }</li>`;
 }
 
-async function renderBlock(b: Block, tx: ReadTransaction) {
+async function renderBlock(
+  b: Block,
+  tx: ReadTransaction,
+  ignoreWrapper?: boolean,
+) {
   let wrapper: undefined | "h1" | "h2" | "h3";
   if (b.type === "heading") {
     let headingLevel = await scanIndex(tx).eav(b.value, "block/heading-level");
     wrapper = "h" + headingLevel[0].data.value;
   }
   let value = (await scanIndex(tx).eav(b.value, "block/text"))[0];
-  if (!value) return `<${wrapper || "p"}></${wrapper || "p"}>`;
+  if (!value)
+    return ignoreWrapper ? "" : `<${wrapper || "p"}></${wrapper || "p"}>`;
   let doc = new Y.Doc();
   const update = base64.toByteArray(value.data.value);
   Y.applyUpdate(doc, update);
   let nodes = doc.getXmlElement("prosemirror").toArray();
   return renderToStaticMarkup(
-    <RenderYJSFragment node={nodes[0]} wrapper={wrapper} />,
+    <RenderYJSFragment
+      node={nodes[0]}
+      wrapper={ignoreWrapper ? null : wrapper}
+    />,
   );
 }
 
