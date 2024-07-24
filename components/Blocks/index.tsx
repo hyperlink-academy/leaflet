@@ -368,7 +368,7 @@ export const ListMarker = (
           if (children.length > 0)
             useUIState.getState().toggleFold(props.value);
         }}
-        className="listMarker pl-1 pr-2 sm:pr-3"
+        className={`listMarker group/list-marker pl-1 pr-2 sm:pr-3 ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >
         <div
           className="h-full shrink-0 flex justify-end relative"
@@ -381,8 +381,8 @@ export const ListMarker = (
           }}
         >
           <div
-            className={`absolute h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0
-      ${folded ? " outline outline-1 outline-secondary outline-offset-1" : ""}
+            className={`absolute h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline outline-1  outline-offset-1
+              ${folded ? "outline-secondary" : ` ${children.length > 0 ? "group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`}
       ${props.first ? "mt-1 sm:mt-2" : ""}
       ${
         props.type === "heading"
