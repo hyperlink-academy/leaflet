@@ -368,17 +368,21 @@ export const ListMarker = (
           if (children.length > 0)
             useUIState.getState().toggleFold(props.value);
         }}
-        className="listMarker shrink-0 flex justify-end relative"
-        style={{
-          width:
-            props.listData &&
-            `calc(${props.listData.depth} * ${
-              props.compact ? "16px" : `var(--list-marker-width))`
-            }`,
-        }}
+        className="listMarker pl-1 pr-2 sm:pr-3"
       >
         <div
-          className={` ${props.className} ${folded ? " outline outline-1 outline-secondary outline-offset-1" : ""} absolute h-[5px] w-[5px] rounded-full bg-secondary shrink-0  -right-1
+          className="h-full shrink-0 flex justify-end relative"
+          style={{
+            width:
+              props.listData &&
+              `calc(${props.listData.depth} * ${
+                props.compact ? "16px" : `var(--list-marker-width))`
+              }`,
+          }}
+        >
+          <div
+            className={`absolute h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0
+      ${folded ? " outline outline-1 outline-secondary outline-offset-1" : ""}
       ${props.first ? "mt-1 sm:mt-2" : ""}
       ${
         props.type === "heading"
@@ -388,8 +392,10 @@ export const ListMarker = (
               ? "top-[15px]"
               : "top-[20px]"
           : "top-[13px]"
-      }`}
-        />
+      }
+      ${props.className}`}
+          />
+        </div>
       </button>
     </>
   );

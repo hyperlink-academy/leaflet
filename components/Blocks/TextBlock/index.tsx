@@ -51,7 +51,9 @@ export function TextBlock(props: BlockProps & { className: string }) {
     props.type === "heading" || (props.listData && props.nextBlock?.listData)
       ? "pb-0"
       : "pb-2"
-  } ${first ? "pt-2 sm:pt-3" : "pt-1"}`;
+  }
+  ${props.listData ? "!pl-1" : ""}
+  ${first ? "pt-2 sm:pt-3" : "pt-1"}`;
 
   return (
     <>
