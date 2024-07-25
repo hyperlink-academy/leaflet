@@ -227,7 +227,7 @@ function BlockPreview(
           }
         });
       },
-      { threshold: 0.5, root: b.previewRef.current },
+      { threshold: 0.1, root: b.previewRef.current },
     );
     observer.observe(ref.current);
     return () => observer.disconnect();
