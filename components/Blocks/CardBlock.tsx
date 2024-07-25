@@ -1,3 +1,4 @@
+"use client";
 import { Block, BlockProps, focusBlock, ListMarker } from "components/Blocks";
 import { focusCard } from "components/Cards";
 import { useEntity, useReplicache } from "src/replicache";
@@ -193,7 +194,7 @@ export function CardBlock(props: BlockProps) {
   );
 }
 
-function CardPreview(props: { entityID: string }) {
+export function CardPreview(props: { entityID: string }) {
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
 

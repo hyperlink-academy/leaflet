@@ -31,6 +31,11 @@ export const entity_sets = pgTable("entity_sets", {
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 });
 
+export const identities = pgTable("identities", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+});
+
 export const permission_tokens = pgTable("permission_tokens", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	root_entity: uuid("root_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
@@ -45,6 +50,16 @@ export const facts = pgTable("facts", {
 	updated_at: timestamp("updated_at", { mode: 'string' }),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	version: bigint("version", { mode: "number" }).default(0).notNull(),
+});
+
+export const permission_token_creator = pgTable("permission_token_creator", {
+	token: uuid("token").notNull().references(() => permission_tokens.id),
+	identity: uuid("identity").notNull().references(() => identities.id),
+},
+(table) => {
+	return {
+		permission_token_creator_pkey: primaryKey({ columns: [table.token, table.identity], name: "permission_token_creator_pkey"}),
+	}
 });
 
 export const permission_token_rights = pgTable("permission_token_rights", {

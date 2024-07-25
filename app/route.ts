@@ -5,11 +5,14 @@ import {
   permission_token_rights,
   entity_sets,
   facts,
+  identities,
+  permission_token_creator,
 } from "drizzle/schema";
 import { redirect } from "next/navigation";
 import postgres from "postgres";
 import { v7 } from "uuid";
 import { sql } from "drizzle-orm";
+import { cookies } from "next/headers";
 const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
 const db = drizzle(client);
 
@@ -17,8 +20,16 @@ export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
-export default async function RootPage() {
+export async function GET() {
   // Creating a new document
+  let cookieStore = cookies();
+  let identity = cookieStore.get("identity")?.value;
+  if (!identity) {
+    let [newIdentity] = await db.insert(identities).values({}).returning();
+    cookieStore.set("identity", newIdentity.id, { sameSite: "strict" });
+    identity = newIdentity.id;
+  }
+
   let { permissionToken, rights, entity, entity_set } = await db.transaction(
     async (tx) => {
       // Create a new entity set
@@ -46,6 +57,11 @@ export default async function RootPage() {
           change_entity_set: true,
         })
         .returning();
+
+      // and add it to created_by for the identity
+      await tx
+        .insert(permission_token_creator)
+        .values({ identity, token: permissionToken.id });
       let [blockEntity] = await tx
         .insert(entities)
         // And add it to that permission set
