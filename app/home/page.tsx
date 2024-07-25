@@ -5,6 +5,7 @@ import { createServerClient } from "@supabase/ssr";
 import { Database } from "supabase/database.types";
 import { CardBlock, CardPreview } from "components/Blocks/CardBlock";
 import Link from "next/link";
+import { DocPreview } from "./DocPreview";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -30,21 +31,19 @@ export default async function Home() {
           <div>
             <PaintSmall />
           </div>
-          <div className="flex gap-2 items-center">
+          {/* <div className="flex gap-2 items-center">
             <div className="text-m text-tertiary">sort: recent</div>
             <input
               className="w-full sm:w-72 bg-transparent border border-border rounded-md px-2 py-1 outline-none"
               placeholder="search"
             />
-          </div>
+          </div> */}
         </div>
-        {identity?.value}
+        {/* {identity?.value} */}
 
         <div className="grid grid-cols-1 md:grid-cols-4 sm:grid-cols-3 gap-6">
           {docs.map((doc) => (
-            <>
-              <Doc key={doc.id} token={doc} doc_id={doc.root_entity} />
-            </>
+            <Doc key={doc.id} token={doc} doc_id={doc.root_entity} />
           ))}
         </div>
       </div>
@@ -60,16 +59,7 @@ const Doc = (props: { token: PermissionToken; doc_id: string }) => {
       name={props.doc_id}
       initialFacts={[]}
     >
-      <Link
-        href={"/" + props.token.id}
-        className="doc flex flex-row sm:flex-col gap-3 sm:gap-1 grow basis-64  "
-      >
-        <CardPreview entityID={props.doc_id} />
-        <div className="docDescription flex flex-col grow gap-0">
-          <h4 className="line-clamp-3 sm:line-clamp-1"></h4>
-          <p className="text-tertiary">6/2/2024</p>
-        </div>
-      </Link>
+      <DocPreview {...props} />
     </ReplicacheProvider>
   );
 };

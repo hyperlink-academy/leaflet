@@ -210,8 +210,11 @@ export function CardPreview(props: { entityID: string }) {
   );
 }
 
-function BlockPreview(
-  b: Block & { previewRef: React.RefObject<HTMLDivElement> },
+export function BlockPreview(
+  b: Block & {
+    previewRef: React.RefObject<HTMLDivElement>;
+    size?: "small" | "large";
+  },
 ) {
   let headingLevel = useEntity(b.value, "block/heading-level")?.data.value;
   let ref = useRef<HTMLDivElement | null>(null);
@@ -257,21 +260,21 @@ function BlockPreview(
           />
         </div>
 
-        {isVisible && <PreviewBlockContent {...b} />}
+        {isVisible && <PreviewBlockContent {...b} size={b.size} />}
       </div>
     );
   return (
     <div ref={ref}>
-      {isVisible && <PreviewBlockContent {...b} key={b.factID} />}
+      {isVisible && <PreviewBlockContent {...b} key={b.factID} size={b.size} />}
     </div>
   );
 }
 
-function PreviewBlockContent(props: Block) {
+function PreviewBlockContent(props: Block & { size?: "small" | "large" }) {
   switch (props.type) {
     case "text": {
       return (
-        <div style={{ fontSize: "4px" }}>
+        <div style={{ fontSize: `${props.size === "large" ? "8px" : "4px"}` }}>
           <RenderedTextBlock entityID={props.value} className="p-0" />
         </div>
       );
