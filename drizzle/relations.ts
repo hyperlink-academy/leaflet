@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { entity_sets, entities, permission_tokens, facts, identities, permission_token_creator, permission_token_rights } from "./schema";
+import { entity_sets, entities, permission_tokens, identities, facts, permission_token_creator, permission_token_rights } from "./schema";
 
 export const entitiesRelations = relations(entities, ({one, many}) => ({
 	entity_set: one(entity_sets, {
@@ -15,7 +15,16 @@ export const entity_setsRelations = relations(entity_sets, ({many}) => ({
 	permission_token_rights: many(permission_token_rights),
 }));
 
+export const identitiesRelations = relations(identities, ({one, many}) => ({
+	permission_token: one(permission_tokens, {
+		fields: [identities.home_page],
+		references: [permission_tokens.id]
+	}),
+	permission_token_creators: many(permission_token_creator),
+}));
+
 export const permission_tokensRelations = relations(permission_tokens, ({one, many}) => ({
+	identities: many(identities),
 	entity: one(entities, {
 		fields: [permission_tokens.root_entity],
 		references: [entities.id]
@@ -40,10 +49,6 @@ export const permission_token_creatorRelations = relations(permission_token_crea
 		fields: [permission_token_creator.token],
 		references: [permission_tokens.id]
 	}),
-}));
-
-export const identitiesRelations = relations(identities, ({many}) => ({
-	permission_token_creators: many(permission_token_creator),
 }));
 
 export const permission_token_rightsRelations = relations(permission_token_rights, ({one}) => ({

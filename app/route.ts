@@ -25,7 +25,39 @@ export async function GET() {
   let cookieStore = cookies();
   let identity = cookieStore.get("identity")?.value;
   if (!identity) {
-    let [newIdentity] = await db.insert(identities).values({}).returning();
+    let newIdentity = await db.transaction(async (tx) => {
+      // Create a new entity set
+      let [entity_set] = await tx.insert(entity_sets).values({}).returning();
+      // Create a root-entity
+      let [entity] = await tx
+        .insert(entities)
+        // And add it to that permission set
+        .values({ set: entity_set.id, id: v7() })
+        .returning();
+      //Create a new permission token
+      let [permissionToken] = await tx
+        .insert(permission_tokens)
+        .values({ root_entity: entity.id })
+        .returning();
+      //and give it all the permission on that entity set
+      let [rights] = await tx
+        .insert(permission_token_rights)
+        .values({
+          token: permissionToken.id,
+          entity_set: entity_set.id,
+          read: true,
+          write: true,
+          create_token: true,
+          change_entity_set: true,
+        })
+        .returning();
+      console.log(permissionToken);
+      let [identity] = await tx
+        .insert(identities)
+        .values({ home_page: permissionToken.id })
+        .returning();
+      return identity;
+    });
     cookieStore.set("identity", newIdentity.id, { sameSite: "strict" });
     identity = newIdentity.id;
   }

@@ -116,17 +116,28 @@ export type Database = {
       identities: {
         Row: {
           created_at: string
+          home_page: string
           id: string
         }
         Insert: {
           created_at?: string
+          home_page: string
           id?: string
         }
         Update: {
           created_at?: string
+          home_page?: string
           id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "identities_home_page_fkey"
+            columns: ["home_page"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       permission_token_creator: {
         Row: {

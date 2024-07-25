@@ -34,6 +34,7 @@ export const entity_sets = pgTable("entity_sets", {
 export const identities = pgTable("identities", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	home_page: uuid("home_page").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
 });
 
 export const permission_tokens = pgTable("permission_tokens", {
@@ -53,8 +54,8 @@ export const facts = pgTable("facts", {
 });
 
 export const permission_token_creator = pgTable("permission_token_creator", {
-	token: uuid("token").notNull().references(() => permission_tokens.id),
-	identity: uuid("identity").notNull().references(() => identities.id),
+	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
+	identity: uuid("identity").notNull().references(() => identities.id, { onDelete: "cascade" } ),
 },
 (table) => {
 	return {
