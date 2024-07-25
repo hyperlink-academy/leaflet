@@ -228,7 +228,14 @@ export async function focusCard(
   }));
 
   setTimeout(async () => {
+    //scroll to card
+    document.getElementById(elementId.card(cardID).container)?.scrollIntoView({
+      behavior: "smooth",
+      inline: "nearest",
+    });
+
     // if we asked that the function focus the first block, do that
+
     if (focusFirstBlock === "focusFirstBlock") {
       let firstBlock = await rep.query(async (tx) => {
         let blocks = await tx
@@ -264,16 +271,12 @@ export async function focusCard(
       });
 
       if (firstBlock) {
-        focusBlock(firstBlock, { type: "start" });
+        setTimeout(() => {
+          focusBlock(firstBlock, { type: "start" });
+        }, 500);
       }
     }
-
-    //scroll to card
-    document.getElementById(elementId.card(cardID).container)?.scrollIntoView({
-      behavior: "smooth",
-      inline: "nearest",
-    });
-  }, 100);
+  }, 50);
 }
 
 const blurCard = () => {
