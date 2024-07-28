@@ -3,30 +3,6 @@ import { create } from "zustand";
 import { combine, createJSONStorage, persist } from "zustand/middleware";
 
 type SelectedBlock = Pick<Block, "value" | "parent">;
-export const useFoldedState = create(
-  persist(
-    combine(
-      {
-        foldedBlocks: [] as string[],
-      },
-      (set) => ({
-        toggleFold: (entityID: string) => {
-          set((state) => {
-            return {
-              foldedBlocks: state.foldedBlocks.includes(entityID)
-                ? state.foldedBlocks.filter((b) => b !== entityID)
-                : [...state.foldedBlocks, entityID],
-            };
-          });
-        },
-      }),
-    ),
-    {
-      name: "ui-state", // name of the item in the storage (must be unique)
-      storage: createJSONStorage(() => sessionStorage), // (optional) by default, 'localStorage' is used
-    },
-  ),
-);
 export const useUIState = create(
   combine(
     {
@@ -34,10 +10,20 @@ export const useUIState = create(
         | { type: "card"; entityID: string }
         | { type: "block"; entityID: string; parent: string }
         | null,
+      foldedBlocks: [] as string[],
       openCards: [] as string[],
       selectedBlock: [] as SelectedBlock[],
     },
     (set) => ({
+      toggleFold: (entityID: string) => {
+        set((state) => {
+          return {
+            foldedBlocks: state.foldedBlocks.includes(entityID)
+              ? state.foldedBlocks.filter((b) => b !== entityID)
+              : [...state.foldedBlocks, entityID],
+          };
+        });
+      },
       openCard: (parent: string, card: string) =>
         set((state) => {
           let parentPosition = state.openCards.findIndex((s) => s == parent);
