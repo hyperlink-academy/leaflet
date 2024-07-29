@@ -53,7 +53,7 @@ export default async function Home() {
         set={res.data.permission_tokens.permission_token_rights[0].entity_set}
       >
         <ThemeProvider entityID={root_entity}>
-          <div className=" bg-bg-page flex h-full">
+          <div className="flex h-full">
             <div className="max-w-screen-lg w-full h-full mx-auto p-3 pb-6 sm:p-6 sm:pb-12 flex flex-col gap-6">
               <div className="flex flex-col sm:flex-row justify-between w-full items-center">
                 <div>
@@ -61,11 +61,17 @@ export default async function Home() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 sm:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-4 sm:grid-cols-3 grid-cols-2  gap-4 sm:gap-6">
                 {docs.map((doc) => (
-                  <>
-                    <Doc key={doc.id} token={doc} doc_id={doc.root_entity} />
-                  </>
+                  <ReplicacheProvider
+                    rootEntity={doc.root_entity}
+                    key={doc.id}
+                    token={doc}
+                    name={doc.root_entity}
+                    initialFacts={[]}
+                  >
+                    <DocPreview token={doc} doc_id={doc.root_entity} />
+                  </ReplicacheProvider>
                 ))}
               </div>
             </div>
@@ -75,16 +81,3 @@ export default async function Home() {
     </ReplicacheProvider>
   );
 }
-
-const Doc = (props: { token: PermissionToken; doc_id: string }) => {
-  return (
-    <ReplicacheProvider
-      rootEntity={props.doc_id}
-      token={props.token}
-      name={props.doc_id}
-      initialFacts={[]}
-    >
-      <DocPreview {...props} />
-    </ReplicacheProvider>
-  );
-};
