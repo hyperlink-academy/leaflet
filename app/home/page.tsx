@@ -10,6 +10,7 @@ import { Attributes } from "src/replicache/attributes";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
+import { createNewDoc } from "actions/createNewDoc";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -55,10 +56,13 @@ export default async function Home() {
         <ThemeProvider entityID={root_entity}>
           <div className="flex h-full">
             <div className="max-w-screen-lg w-full h-full mx-auto p-3 pb-6 sm:p-6 sm:pb-12 flex flex-col gap-6">
-              <div className="flex flex-col sm:flex-row justify-between w-full items-center">
+              <div className="flex flex-row sm:flex-row justify-between w-full items-center">
                 <div>
                   <ThemePopover entityID={root_entity} />
                 </div>
+                <form action={createNewDoc}>
+                  <button>create new doc</button>
+                </form>
               </div>
 
               <div className="grid md:grid-cols-4 sm:grid-cols-3 grid-cols-2  gap-4 sm:gap-6">
