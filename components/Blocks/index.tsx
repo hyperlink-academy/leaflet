@@ -38,7 +38,7 @@ export function Blocks(props: { entityID: string }) {
   let lastBlock = blocks.findLast((f) => !f.listData || f.listData.depth === 1);
   return (
     <div
-      className="blocks w-full flex flex-col outline-none h-fit min-h-full pb-32"
+      className={`blocks w-full flex flex-col outline-none h-fit min-h-full ${entity_set.permissions.write ? "pb-32" : ""}`}
       onClick={async (e) => {
         if (useUIState.getState().selectedBlock.length > 1) return;
         if (e.target === e.currentTarget) {
@@ -368,17 +368,21 @@ export const ListMarker = (
           if (children.length > 0)
             useUIState.getState().toggleFold(props.value);
         }}
-        className="listMarker shrink-0 flex justify-end relative"
-        style={{
-          width:
-            props.listData &&
-            `calc(${props.listData.depth} * ${
-              props.compact ? "16px" : `var(--list-marker-width))`
-            }`,
-        }}
+        className={`listMarker group/list-marker pl-1 pr-2 sm:pr-3 ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >
         <div
-          className={` ${props.className} ${folded ? " outline outline-1 outline-secondary outline-offset-1" : ""} absolute h-[5px] w-[5px] rounded-full bg-secondary shrink-0  -right-1
+          className="h-full shrink-0 flex justify-end relative"
+          style={{
+            width:
+              props.listData &&
+              `calc(${props.listData.depth} * ${
+                props.compact ? "16px" : `var(--list-marker-width))`
+              }`,
+          }}
+        >
+          <div
+            className={`absolute h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline outline-1  outline-offset-1
+              ${folded ? "outline-secondary" : ` ${children.length > 0 ? "group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`}
       ${props.first ? "mt-1 sm:mt-2" : ""}
       ${
         props.type === "heading"
@@ -388,8 +392,10 @@ export const ListMarker = (
               ? "top-[15px]"
               : "top-[20px]"
           : "top-[13px]"
-      }`}
-        />
+      }
+      ${props.className}`}
+          />
+        </div>
       </button>
     </>
   );

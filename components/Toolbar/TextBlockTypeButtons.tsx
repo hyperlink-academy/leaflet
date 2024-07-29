@@ -4,7 +4,7 @@ import {
   Header3Small,
   ParagraphSmall,
 } from "components/Icons";
-import { Separator } from "components/Layout";
+import { Separator, ShortcutKey } from "components/Layout";
 import { ToolbarButton } from "components/Toolbar";
 import { TextSelection } from "prosemirror-state";
 import { useCallback } from "react";
@@ -63,7 +63,15 @@ export const TextBlockTypeButtons = (props: {
             blockType?.data.value === "heading" &&
             headingLevel?.data.value === 1
           }
-          tooltipContent={<div className="">Title</div>}
+          tooltipContent={
+            <div className="flex flex-col justify-center">
+              <div className="font-bold text-center">Title</div>
+              <div className="flex gap-1 font-normal">
+                start line with
+                <ShortcutKey>#</ShortcutKey>
+              </div>
+            </div>
+          }
         >
           <Header1Small />
         </ToolbarButton>
@@ -77,7 +85,15 @@ export const TextBlockTypeButtons = (props: {
             blockType?.data.value === "heading" &&
             headingLevel?.data.value === 2
           }
-          tooltipContent={<div>Heading</div>}
+          tooltipContent={
+            <div className="flex flex-col justify-center">
+              <div className="font-bold text-center">Heading</div>
+              <div className="flex gap-1 font-normal">
+                start line with
+                <ShortcutKey>##</ShortcutKey>
+              </div>
+            </div>
+          }
         >
           <Header2Small />
         </ToolbarButton>
@@ -91,7 +107,15 @@ export const TextBlockTypeButtons = (props: {
             blockType?.data.value === "heading" &&
             headingLevel?.data.value === 3
           }
-          tooltipContent={<div>Subheading</div>}
+          tooltipContent={
+            <div className="flex flex-col justify-center">
+              <div className="font-bold text-center">Subheading</div>
+              <div className="flex gap-1 font-normal">
+                start line with
+                <ShortcutKey>###</ShortcutKey>
+              </div>
+            </div>
+          }
         >
           <Header3Small />
         </ToolbarButton>

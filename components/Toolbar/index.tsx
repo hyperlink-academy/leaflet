@@ -1,27 +1,18 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   BoldSmall,
   CloseTiny,
   ItalicSmall,
-  UndoSmall,
   ListUnorderedSmall,
-  ListOrderedSmall,
   ListIndentDecreaseSmall,
   ListIndentIncreaseSmall,
-  BlockImageSmall,
-  BlockLinkSmall,
-  BlockCardSmall,
-  BlockSmall,
   StrikethroughSmall,
   HighlightSmall,
-  CheckTiny,
   PopoverArrow,
   ArrowRightTiny,
 } from "components/Icons";
-import { create } from "zustand";
-import { combine } from "zustand/middleware";
 import { schema } from "components/Blocks/TextBlock/schema";
 import { TextDecorationButton } from "./TextDecorationButton";
 import {
@@ -38,16 +29,8 @@ import { theme } from "../../tailwind.config";
 import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
 import { useEntity, useReplicache } from "src/replicache";
-import { addImage } from "src/utils/addImage";
-import { scanIndex } from "src/replicache/utils";
-import { v7 } from "uuid";
-import { useEntitySetContext } from "components/EntitySetProvider";
-import { generateKeyBetween } from "fractional-indexing";
-import { focusCard } from "components/Cards";
-import { addLinkBlock } from "src/utils/addLinkBlock";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Separator, ShortcutKey } from "components/Layout";
-import { Input } from "components/Input";
 import { metaKey } from "src/utils/metaKey";
 import { isMac } from "@react-aria/utils";
 import { addShortcut } from "src/shortcuts";
@@ -146,7 +129,6 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                         Highlight
                       </div>
                       <div className="flex gap-1">
-                        $
                         {isMac() ? (
                           <>
                             <ShortcutKey>⌘</ShortcutKey> +{" "}
@@ -186,19 +168,10 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
                   className="-ml-1"
                 >
                   <ArrowRightTiny />
-                  {/* <div
-                    className={`w-2 h-[22px] rounded-[2px] border border-border`}
-                    style={{
-                      backgroundColor:
-                        lastUsedHighlight === "1"
-                          ? theme.colors["highlight-1"]
-                          : lastUsedHighlight === "2"
-                            ? theme.colors["highlight-2"]
-                            : theme.colors["highlight-3"],
-                    }}
-                  /> */}
                 </ToolbarButton>
               </div>
+              <Separator classname="h-6" />
+
               <ListToolbar />
 
               <Separator classname="h-6" />
@@ -292,7 +265,6 @@ const HighlightToolbar = (props: {
 };
 
 const ListToolbar = () => {
-  // This Toolbar should close once the user starts typing again
   let focusedBlock = useUIState((s) => s.focusedBlock);
   let isList = useEntity(focusedBlock?.entityID || null, "block/is-list");
   let siblings = useBlocks(
@@ -308,7 +280,7 @@ const ListToolbar = () => {
         <ToolbarButton
           tooltipContent={
             <div className="flex flex-col gap-1 justify-center">
-              <div className="text-center font-normal">Make List</div>
+              <div className="text-center">Make List</div>
               <div className="flex gap-1">
                 {
                   <>
@@ -335,47 +307,43 @@ const ListToolbar = () => {
     );
 
   return (
-    <div className="flex w-full justify-between items-center gap-4">
-      <div className="flex items-center gap-[6px]">
-        <Separator classname="h-6" />
-        <ToolbarButton
-          tooltipContent={
-            <div className="flex flex-col gap-1 justify-center">
-              <div className="text-center">Indent Item</div>
-              <div className="flex gap-1 justify-center">
-                <ShortcutKey>Tab</ShortcutKey>
-              </div>
+    <div className="flex items-center gap-[6px]">
+      <ToolbarButton
+        tooltipContent={
+          <div className="flex flex-col gap-1 justify-center">
+            <div className="text-center">Indent Item</div>
+            <div className="flex gap-1 justify-center">
+              <ShortcutKey>Tab</ShortcutKey>
             </div>
-          }
-          disabled={
-            !previousBlock?.listData ||
-            previousBlock.listData.depth !== block?.listData?.depth
-          }
-          onClick={() => {
-            if (!rep || !block || !previousBlock) return;
-            indent(block, previousBlock, rep);
-          }}
-        >
-          <ListIndentIncreaseSmall />
-        </ToolbarButton>
-        <ToolbarButton
-          tooltipContent={
-            <div className="flex flex-col gap-1 justify-center">
-              <div className="text-center">Outdent Item</div>
-              <div className="flex gap-1 justify-center">
-                <ShortcutKey>Shift</ShortcutKey> +{" "}
-                <ShortcutKey>Tab</ShortcutKey>
-              </div>
+          </div>
+        }
+        disabled={
+          !previousBlock?.listData ||
+          previousBlock.listData.depth !== block?.listData?.depth
+        }
+        onClick={() => {
+          if (!rep || !block || !previousBlock) return;
+          indent(block, previousBlock, rep);
+        }}
+      >
+        <ListIndentIncreaseSmall />
+      </ToolbarButton>
+      <ToolbarButton
+        tooltipContent={
+          <div className="flex flex-col gap-1 justify-center">
+            <div className="text-center">Outdent Item</div>
+            <div className="flex gap-1 justify-center">
+              <ShortcutKey>Shift</ShortcutKey> + <ShortcutKey>Tab</ShortcutKey>
             </div>
-          }
-          onClick={() => {
-            if (!rep || !block) return;
-            outdent(block, previousBlock, rep);
-          }}
-        >
-          <ListIndentDecreaseSmall />
-        </ToolbarButton>
-      </div>
+          </div>
+        }
+        onClick={() => {
+          if (!rep || !block) return;
+          outdent(block, previousBlock, rep);
+        }}
+      >
+        <ListIndentDecreaseSmall />
+      </ToolbarButton>
     </div>
   );
 };
