@@ -1,13 +1,14 @@
-import { PaintSmall } from "components/Icons";
+import { MoreOptionsTiny } from "components/Icons";
 import { cookies } from "next/headers";
-import { Fact, PermissionToken, ReplicacheProvider } from "src/replicache";
+import { Fact, ReplicacheProvider } from "src/replicache";
 import { createServerClient } from "@supabase/ssr";
 import { Database } from "supabase/database.types";
-import { CardBlock, CardPreview } from "components/Blocks/CardBlock";
-import Link from "next/link";
 import { DocPreview } from "./DocPreview";
 import { Attributes } from "src/replicache/attributes";
-import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
+import {
+  ThemeBackgroundProvider,
+  ThemeProvider,
+} from "components/ThemeManager/ThemeProvider";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { createNewDoc } from "actions/createNewDoc";
@@ -54,31 +55,34 @@ export default async function Home() {
         set={res.data.permission_tokens.permission_token_rights[0].entity_set}
       >
         <ThemeProvider entityID={root_entity}>
-          <div className="flex h-full">
-            <div className="max-w-screen-lg w-full h-full mx-auto p-3 pb-6 sm:p-6 sm:pb-12 flex flex-col gap-6">
-              <div className="flex flex-row sm:flex-row justify-between w-full items-center">
-                <div>
-                  <ThemePopover entityID={root_entity} />
+          <div className="flex h-full bg-bg-page">
+            <ThemeBackgroundProvider entityID={root_entity}>
+              <div className="max-w-screen-lg w-full h-full mx-auto p-3 pb-6 sm:p-6 sm:pb-12 flex flex-col gap-6">
+                <div className="flex flex-col sm:flex-row justify-between w-full items-center">
+                  <div>
+                    <ThemePopover entityID={root_entity} />
+                  </div>
+                  <form action={createNewDoc}>
+                    <button>create new doc</button>
+                  </form>
                 </div>
-                <form action={createNewDoc}>
-                  <button>create new doc</button>
-                </form>
-              </div>
 
-              <div className="grid md:grid-cols-4 sm:grid-cols-3 grid-cols-2  gap-4 sm:gap-6">
-                {docs.map((doc) => (
-                  <ReplicacheProvider
-                    rootEntity={doc.root_entity}
-                    key={doc.id}
-                    token={doc}
-                    name={doc.root_entity}
-                    initialFacts={[]}
-                  >
-                    <DocPreview token={doc} doc_id={doc.root_entity} />
-                  </ReplicacheProvider>
-                ))}
+                <div className="grid md:grid-cols-4 sm:grid-cols-3 grid-cols-2  gap-y-8 gap-x-4 sm:gap-6">
+                  {docs.map((doc) => (
+                    <div key={doc.id} className={`flex flex-col gap-1`}>
+                      <ReplicacheProvider
+                        rootEntity={doc.root_entity}
+                        token={doc}
+                        name={doc.root_entity}
+                        initialFacts={[]}
+                      >
+                        <DocPreview token={doc} doc_id={doc.root_entity} />
+                      </ReplicacheProvider>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            </ThemeBackgroundProvider>
           </div>
         </ThemeProvider>
       </EntitySetProvider>
