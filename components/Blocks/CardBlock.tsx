@@ -279,11 +279,16 @@ function PreviewBlockContent(props: Block & { size?: "small" | "large" }) {
         </div>
       );
     }
+    case "link": {
+      return (
+        <div className="w-full h-5 shrink-0 rounded-md border border-border-light" />
+      );
+    }
     case "heading":
       return <HeadingPreviewBlock entityID={props.value} size={props.size} />;
     case "card":
       return (
-        <div className="w-full h-4 shrink-0 rounded-md border border-border-light" />
+        <div className="w-full h-5 shrink-0 rounded-md border border-border-light" />
       );
     case "image":
       return <ImagePreviewBlock entityID={props.value} />;
