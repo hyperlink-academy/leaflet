@@ -24,6 +24,26 @@ export const HomeMedium = (props: Props) => {
 
 // SMALL ICONS 24X24
 
+export const AddSmall = (props: Props) => {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22ZM18.6569 12C18.6569 12.5523 18.2091 13 17.6569 13H13V17.6569C13 18.2091 12.5523 18.6569 12 18.6569C11.4477 18.6569 11 18.2091 11 17.6569V13H6.34315C5.79086 13 5.34315 12.5523 5.34315 12C5.34315 11.4477 5.79086 11 6.34315 11H11L11 6.34314C11 5.79086 11.4477 5.34315 12 5.34315C12.5523 5.34315 13 5.79086 13 6.34315V11H17.6569C18.2091 11 18.6569 11.4477 18.6569 12Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
 export const BlockSmall = (props: Props) => {
   return (
     <svg
@@ -212,6 +232,25 @@ export const ShareSmall = (props: Props) => {
 
 // TINY ICONS 16x16
 
+export const AddTiny = (props: Props) => {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8C16 3.58172 12.4183 0 8 0ZM8 2.5C8.41421 2.5 8.75 2.83579 8.75 3.25V7.25H12.75C13.1642 7.25 13.5 7.58579 13.5 8C13.5 8.41421 13.1642 8.75 12.75 8.75H8.75V12.75C8.75 13.1642 8.41421 13.5 8 13.5C7.58579 13.5 7.25 13.1642 7.25 12.75V8.75H3.25C2.83579 8.75 2.5 8.41421 2.5 8C2.5 7.58579 2.83579 7.25 3.25 7.25H7.25V3.25C7.25 2.83579 7.58579 2.5 8 2.5Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
 export const ArrowRightTiny = (props: Props) => {
   return (
     <svg

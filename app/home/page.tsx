@@ -1,4 +1,4 @@
-import { MoreOptionsTiny } from "components/Icons";
+import { AddSmall, AddTiny, MoreOptionsTiny } from "components/Icons";
 import { cookies } from "next/headers";
 import { Fact, ReplicacheProvider } from "src/replicache";
 import { createServerClient } from "@supabase/ssr";
@@ -57,20 +57,30 @@ export default async function Home() {
         <ThemeProvider entityID={root_entity}>
           <div className="flex h-full bg-bg-page">
             <ThemeBackgroundProvider entityID={root_entity}>
-              <div className="max-w-screen-lg w-full h-full mx-auto p-3 pb-6 sm:p-6 sm:pb-12 flex flex-col gap-6">
-                <div className="flex flex-col sm:flex-row justify-between w-full items-center">
+              <div className="max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col-reverse sm:gap-4 sm:px-6 ">
+                <div className="homeOptions shrink-0 place-self-end sm:place-self-start flex sm:flex-col flex-row-reverse gap-2 sm:w-fit w-full items-center p-2 pt-1 sm:px-0 sm:pt-7 border-t border-border">
+                  <form action={createNewDoc}>
+                    <div className="sm:w-8 sm:h-8 relative text-accent-2 ">
+                      <button>
+                        <div className="z-10 group/create-doc sm:absolute top-0 left-0 bg-accent-1 rounded-full w-fit h-max flex gap-2 p-1 place-items-center justify-center">
+                          <AddTiny className="shrink-0 m-1" />
+                          <div className="font-bold pr-[6px] w-max sm:hidden group-hover/create-doc:block">
+                            New Doc
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  </form>
+
                   <div>
                     <ThemePopover entityID={root_entity} />
                   </div>
-                  <form action={createNewDoc}>
-                    <button>create new doc</button>
-                  </form>
                 </div>
-
-                <div className="grid md:grid-cols-4 sm:grid-cols-3 grid-cols-2  gap-y-8 gap-x-4 sm:gap-6">
-                  {docs.map((doc) => (
-                    <div key={doc.id} className={`flex flex-col gap-1`}>
+                <div className="homeDocGrid grow w-full h-full overflow-y-scroll no-scrollbar pt-3 pb-9 sm:pt-6 sm:pb-12 px-2 sm:px-0">
+                  <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-8 gap-x-4 sm:gap-6 grow">
+                    {docs.map((doc) => (
                       <ReplicacheProvider
+                        key={doc.id}
                         rootEntity={doc.root_entity}
                         token={doc}
                         name={doc.root_entity}
@@ -78,8 +88,8 @@ export default async function Home() {
                       >
                         <DocPreview token={doc} doc_id={doc.root_entity} />
                       </ReplicacheProvider>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </ThemeBackgroundProvider>

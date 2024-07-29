@@ -1,16 +1,11 @@
-import { Metadata, ResolvingMetadata } from "next";
+import { Metadata } from "next";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 
-import { Fact, ReplicacheProvider } from "src/replicache";
+import { Fact } from "src/replicache";
 import { Database } from "../../supabase/database.types";
 import { Attributes } from "src/replicache/attributes";
 import { createServerClient } from "@supabase/ssr";
-import { SelectionManager } from "components/SelectionManager";
-import { Cards } from "components/Cards";
-import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
-import { MobileFooter } from "components/MobileFooter";
-import { PopUpProvider } from "components/Toast";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Doc } from "./Doc";
 

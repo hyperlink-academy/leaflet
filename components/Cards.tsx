@@ -35,7 +35,7 @@ export function Cards(props: { rootCard: string }) {
         }}
       >
         <Media mobile={false}>
-          <div className="flex flex-col justify-center gap-2 mr-4 mt-2">
+          <div className="flex flex-col justify-center gap-2 mr-4 mt-1">
             <ShareOptions rootEntity={props.rootCard} />
             <PageOptions entityID={props.rootCard} />
           </div>

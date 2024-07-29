@@ -104,7 +104,7 @@ export const ThemePopover = (props: { entityID: string }) => {
     <>
       <Popover.Root>
         <Popover.Trigger>
-          <div className="sm:w-8 sm:h-8 relative text-white">
+          <div className="sm:w-8 sm:h-8 relative text-bg-card">
             <div
               className="z-10 group/theme sm:absolute top-0 left-0 rounded-full w-fit h-max flex gap-2 p-1 place-items-center justify-center"
               style={{
