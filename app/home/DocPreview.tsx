@@ -1,5 +1,6 @@
 "use client";
 import { BlockPreview, CardPreview } from "components/Blocks/CardBlock";
+import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { useRef } from "react";
 import { Link } from "react-aria-components";
 import { useBlocks } from "src/hooks/queries/useBlocks";
@@ -12,13 +13,22 @@ export const DocPreview = (props: {
   return (
     <Link
       href={"/" + props.token.id}
-      className="doc flex flex-row sm:flex-col gap-3 sm:gap-1 grow basis-64 no-underline text-primary "
+      className="doc flex flex-row sm:flex-col gap-3 sm:gap-1 grow no-underline text-primary s "
     >
-      <div className="docLink flex flex-row sm:flex-col gap-3 sm:gap-1 grow">
-        <div className="docImage bg-bg-page shrink-0 w-24 h-24 sm:w-full sm:h-40 px-2 pt-2  sm:px-3 sm:pt-2 border border-border rounded-lg flex items-end">
-          <div className="docContent bg-bg-card w-full h-full sm:max-w-48 sm:max-h-36 mx-auto border border-border-light border-b-0 rounded-t-md px-1 pt-1 sm:px-[6px] sm:pt-2 overflow-clip">
-            <DocImage entityID={props.doc_id} />
-          </div>
+      <div className="docLink flex flex-row sm:flex-col gap-3 sm:gap-1 grow rounded-lg">
+        <div className="rounded-lg overflow-clip border border-border">
+          <ThemeProvider local entityID={props.doc_id}>
+            <div className="docImage shrink-0 w-24 h-24 sm:w-full sm:h-40 px-2 pt-2 sm:px-3 sm:pt-3 flex items-end">
+              <div
+                className="docContent w-full h-full sm:max-w-48 mx-auto border border-border-light border-b-0 rounded-t-md px-1 pt-1 sm:px-[6px] sm:pt-2 overflow-clip"
+                style={{
+                  backgroundColor: "rgba(var(--bg-card), var(--bg-card-alpha))",
+                }}
+              >
+                <DocImage entityID={props.doc_id} />
+              </div>
+            </div>
+          </ThemeProvider>
         </div>
         <div className="docDescription flex flex-col grow gap-0">
           <h4 className="line-clamp-3 sm:line-clamp-1">

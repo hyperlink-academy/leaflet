@@ -43,6 +43,7 @@ function setCSSVariableToColor(
 }
 export function ThemeProvider(props: {
   entityID: string;
+  local?: boolean;
   children: React.ReactNode;
 }) {
   let bgPage = useColorAttribute(props.entityID, "theme/page-background");
@@ -69,6 +70,7 @@ export function ThemeProvider(props: {
   })[0];
 
   useEffect(() => {
+    if (props.local) return;
     let el = document.querySelector(":root") as HTMLElement;
     if (!el) return;
     setCSSVariableToColor(el, "--bg-page", bgPage);
@@ -102,6 +104,7 @@ export function ThemeProvider(props: {
       colorToString(accentContrast, "rgb"),
     );
   }, [
+    props.local,
     bgPage,
     bgCard,
     primary,

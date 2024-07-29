@@ -274,13 +274,13 @@ function PreviewBlockContent(props: Block & { size?: "small" | "large" }) {
   switch (props.type) {
     case "text": {
       return (
-        <div style={{ fontSize: `${props.size === "large" ? "8px" : "4px"}` }}>
+        <div style={{ fontSize: `${props.size === "large" ? "6px" : "4px"}` }}>
           <RenderedTextBlock entityID={props.value} className="p-0" />
         </div>
       );
     }
     case "heading":
-      return <HeadingPreviewBlock entityID={props.value} />;
+      return <HeadingPreviewBlock entityID={props.value} size={props.size} />;
     case "card":
       return (
         <div className="w-full h-4 shrink-0 rounded-md border border-border-light" />
@@ -292,10 +292,19 @@ function PreviewBlockContent(props: Block & { size?: "small" | "large" }) {
   }
 }
 
-function HeadingPreviewBlock(props: { entityID: string }) {
+function HeadingPreviewBlock(props: {
+  entityID: string;
+  size?: "small" | "large";
+}) {
   let headingLevel = useEntity(props.entityID, "block/heading-level");
   return (
-    <div className={HeadingStyle[headingLevel?.data.value || 1]}>
+    <div
+      className={
+        props.size === "large"
+          ? LargeHeadingStyle[headingLevel?.data.value || 1]
+          : HeadingStyle[headingLevel?.data.value || 1]
+      }
+    >
       <RenderedTextBlock entityID={props.entityID} className="p-0 " />
     </div>
   );
@@ -305,6 +314,12 @@ const HeadingStyle = {
   1: "text-[6px] font-bold",
   2: "text-[5px] font-bold ",
   3: "text-[4px] font-bold italic text-secondary ",
+} as { [level: number]: string };
+
+const LargeHeadingStyle = {
+  1: "text-[9px] font-bold",
+  2: "text-[7px] font-bold ",
+  3: "text-[6px] font-bold italic text-secondary ",
 } as { [level: number]: string };
 
 function ImagePreviewBlock(props: { entityID: string }) {
