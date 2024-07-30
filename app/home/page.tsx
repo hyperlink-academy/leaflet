@@ -57,6 +57,15 @@ export default async function Home() {
     .single();
   if (!res.data) return <div>{JSON.stringify(res.error)}</div>;
   let docs = res.data.permission_token_on_homepage
+    .sort((a, b) =>
+      a.created_at === b.created_at
+        ? a.token > b.token
+          ? -1
+          : 1
+        : a.created_at > b.created_at
+          ? -1
+          : 1,
+    )
     .map((d) => d.permission_tokens)
     .filter((d) => d !== null);
   if (!res.data.permission_tokens) return <div>no home page wierdly</div>;

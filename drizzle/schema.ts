@@ -56,6 +56,7 @@ export const facts = pgTable("facts", {
 export const permission_token_on_homepage = pgTable("permission_token_on_homepage", {
 	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
 	identity: uuid("identity").notNull().references(() => identities.id, { onDelete: "cascade" } ),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 },
 (table) => {
 	return {
