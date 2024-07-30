@@ -22,16 +22,19 @@ export const HomeHelp = () => {
           collisionPadding={16}
         >
           <div className="flex flex-col gap-2">
-            <div>
-              These docs are saved using cookies,{" "}
+            <p>
+              Docs are saved to home <strong>per-device / browser</strong> using
+              cookies.
+            </p>
+            <p>
               <strong>
-                if you clear your cookies you will lose access to them.
+                If you clear your cookies, they&apos;ll disappear.
               </strong>
-            </div>
-            <div>
+            </p>
+            <p>
               Please <a href="mailto:contact@hyperlink.academy">contact us</a>{" "}
-              and we&apos;ll help recover them!
-            </div>
+              for help recovering docs!
+            </p>
           </div>
           <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
             <PopoverArrow arrowFill="#FFFFFF" arrowStroke="#CCCCCC" />
