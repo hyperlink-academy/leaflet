@@ -48,7 +48,9 @@ export const DocPreview = (props: {
                 backgroundColor: "rgba(var(--bg-card), var(--bg-card-alpha))",
               }}
             >
-              <div className="font-bold text-lg">Permanently this Doc?</div>
+              <div className="font-bold text-lg">
+                Permanently delete this doc?
+              </div>
               <div className="flex gap-2">
                 <button
                   className="bg-accent-1 text-accent-2 px-2 py-1 rounded-md "
