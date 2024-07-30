@@ -68,10 +68,10 @@ export function ShareOptions(props: { rootEntity: string }) {
               }}
             >
               <div className="group/publish">
-                <div className="font-bold group-hover/publish:text-accent-contrast">
+                <div className=" group-hover/publish:text-accent-contrast">
                   Publish
                 </div>
-                <div className="text-sm text-tertiary group-hover/publish:text-accent-contrast">
+                <div className="text-sm font-normal text-tertiary group-hover/publish:text-accent-contrast">
                   Share a read only version of this doc
                 </div>
               </div>
@@ -88,10 +88,10 @@ export function ShareOptions(props: { rootEntity: string }) {
               }}
             >
               <div className="group/collab">
-                <div className="font-bold group-hover/collab:text-accent-contrast">
+                <div className="group-hover/collab:text-accent-contrast">
                   Collaborate
                 </div>
-                <div className="text-sm text-tertiary group-hover/collab:text-accent-contrast">
+                <div className="text-sm font-bold text-tertiary group-hover/collab:text-accent-contrast">
                   Invite people to work together
                 </div>
               </div>
