@@ -4,6 +4,7 @@ import { Attributes } from "src/replicache/attributes";
 import { Database } from "../../supabase/database.types";
 import { createServerClient } from "@supabase/ssr";
 import { parseHSBToRGB } from "src/utils/parseHSB";
+import { cookies } from "next/headers";
 
 // Route segment config
 export const revalidate = 0;
@@ -24,15 +25,27 @@ let supabase = createServerClient<Database>(
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
   { cookies: {} },
 );
-export default async function Icon(props: { params: { doc_id: string } }) {
-  let res = await supabase
-    .from("permission_tokens")
-    .select("*, permission_token_rights(*)")
-    .eq("id", props.params.doc_id)
-    .single();
-  let rootEntity = res.data?.root_entity;
+export default async function Icon() {
+  let cookieStore = cookies();
+  let identity = cookieStore.get("identity");
+  let rootEntity: string | null = null;
+  if (identity) {
+    let res = await supabase
+      .from("identities")
+      .select(
+        `*,
+        permission_tokens!identities_home_page_fkey(*, permission_token_rights(*)),
+      permission_token_on_homepage(
+        *, permission_tokens(*, permission_token_rights(*))
+      )
+      `,
+      )
+      .eq("id", identity?.value)
+      .single();
+    rootEntity = res.data?.permission_tokens?.root_entity || null;
+  }
   let outlineColor, fillColor;
-  if (rootEntity && res.data) {
+  if (rootEntity) {
     let { data } = await supabase.rpc("get_facts", {
       root: rootEntity,
     });
