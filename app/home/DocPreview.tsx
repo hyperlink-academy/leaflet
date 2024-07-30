@@ -48,7 +48,7 @@ export const DocPreview = (props: {
                 backgroundColor: "rgba(var(--bg-card), var(--bg-card-alpha))",
               }}
             >
-              <div className="font-bold text-lg">
+              <div className="font-bold text-lg text-center">
                 Permanently delete this doc?
               </div>
               <div className="flex gap-2">
