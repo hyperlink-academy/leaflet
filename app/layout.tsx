@@ -6,7 +6,7 @@ import "./globals.css";
 import localFont from "next/font/local";
 
 export const metadata = {
-  title: "Minilink",
+  title: "Leaflet",
   description: "tiny interconnected social documents",
   metadataBase: `https://leaflet.pub`,
 };
