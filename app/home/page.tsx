@@ -77,8 +77,8 @@ export default async function Home() {
         <ThemeProvider entityID={root_entity}>
           <div className="flex h-full bg-bg-page">
             <ThemeBackgroundProvider entityID={root_entity}>
-              <div className="max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col-reverse sm:gap-4 sm:px-6 ">
-                <div className="homeOptions shrink-0 place-self-end sm:place-self-start flex sm:flex-col flex-row-reverse gap-2 sm:w-fit w-full items-center p-2 pt-1 sm:px-0 sm:pt-7 border-t border-border">
+              <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col-reverse sm:gap-4 px-2 sm:px-6 ">
+                <div className="homeOptions z-10 shrink-0 sm:static absolute bottom-0  place-self-end sm:place-self-start flex sm:flex-col flex-row-reverse gap-2 sm:w-fit w-full items-center pb-2 pt-1 sm:pt-7">
                   <form action={createNewDoc}>
                     <div className="sm:w-8 sm:h-8 relative text-accent-2 ">
                       <button>
@@ -93,10 +93,10 @@ export default async function Home() {
                   </form>
 
                   <div>
-                    <ThemePopover entityID={root_entity} />
+                    <ThemePopover entityID={root_entity} home />
                   </div>
                 </div>
-                <div className="homeDocGrid grow w-full h-full overflow-y-scroll no-scrollbar pt-3 pb-9 sm:pt-6 sm:pb-12 px-2 sm:px-0">
+                <div className="homeDocGrid grow w-full h-full overflow-y-scroll no-scrollbar pt-3 pb-28 sm:pt-6 sm:pb-12 ">
                   <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-8 gap-x-4 sm:gap-6 grow">
                     {docs.map((doc) => (
                       <ReplicacheProvider

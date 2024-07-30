@@ -59,7 +59,7 @@ export function setColorAttribute(
         data: { type: "color", value: colorToString(color, "hsba") },
       });
 }
-export const ThemePopover = (props: { entityID: string }) => {
+export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   let { rep } = useReplicache();
   // I need to get these variables from replicache and then write them to the DB. I also need to parse them into a state that can be used here.
   let pageValue = useColorAttribute(props.entityID, "theme/page-background");
@@ -77,7 +77,9 @@ export const ThemePopover = (props: { entityID: string }) => {
     "theme/background-image-repeat",
   );
 
-  let [openPicker, setOpenPicker] = useState<pickers>("null");
+  let [openPicker, setOpenPicker] = useState<pickers>(
+    props.home === true ? "page" : "null",
+  );
   let set = useMemo(() => {
     return setColorAttribute(rep, props.entityID);
   }, [rep, props.entityID]);
@@ -138,6 +140,7 @@ export const ThemePopover = (props: { entityID: string }) => {
                   setValue={set("theme/page-background")}
                 />
               </div>
+
               <div
                 style={{
                   backgroundImage: `url(${backgroundImage?.data.src})`,
@@ -146,12 +149,14 @@ export const ThemePopover = (props: { entityID: string }) => {
                     ? "cover"
                     : `calc(${backgroundRepeat.data.value}px / 2 )`,
                 }}
-                className="bg-bg-page mx-2 p-3 pb-0 mb-3 flex flex-col rounded-md  border border-border"
+                className={`bg-bg-page mx-2 p-3  mb-3 flex flex-col rounded-md  border border-border ${props.home ? "" : "pb-0"}`}
               >
-                <div className="flex flex-col mt-4 -mb-[6px] z-10">
+                <div className={`flex flex-col z-10 mt-4 -mb-[6px] `}>
                   <div
                     className="themePageControls text-accent-2 flex flex-col gap-2 h-full  bg-bg-page p-2 rounded-md border border-accent-2 shadow-[0_0_0_1px_rgb(var(--accent))]"
-                    style={{ backgroundColor: "rgba(var(--accent-1), 0.6)" }}
+                    style={{
+                      backgroundColor: "rgba(var(--accent-1), 0.6)",
+                    }}
                   >
                     <ColorPicker
                       label="Accent"
@@ -182,60 +187,64 @@ export const ThemePopover = (props: { entityID: string }) => {
                 <div className="font-bold relative text-center text-lg py-2  rounded-md bg-accent-1 text-accent-2 shadow-md">
                   Example Button
                 </div>
-                {/* <hr className="my-3" /> */}
-                <div className="flex flex-col pt-8 -mb-[6px] z-10">
-                  <div
-                    className="themePageControls flex flex-col gap-2 h-full text-primary bg-bg-page p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-card))]"
-                    style={{ backgroundColor: "rgba(var(--bg-card), 0.6)" }}
-                  >
-                    <div className="themePageColor flex items-start ">
-                      <ColorPicker
-                        label="Page"
-                        alpha
-                        value={cardValue}
-                        setValue={set("theme/card-background")}
-                        thisPicker={"card"}
-                        openPicker={openPicker}
-                        setOpenPicker={setOpenPicker}
-                        closePicker={() => setOpenPicker("null")}
+                {!props.home && (
+                  <>
+                    {/* <hr className="my-3" /> */}
+                    <div className="flex flex-col pt-8 -mb-[6px] z-10">
+                      <div
+                        className="themePageControls flex flex-col gap-2 h-full text-primary bg-bg-page p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-card))]"
+                        style={{ backgroundColor: "rgba(var(--bg-card), 0.6)" }}
+                      >
+                        <div className="themePageColor flex items-start ">
+                          <ColorPicker
+                            label="Page"
+                            alpha
+                            value={cardValue}
+                            setValue={set("theme/card-background")}
+                            thisPicker={"card"}
+                            openPicker={openPicker}
+                            setOpenPicker={setOpenPicker}
+                            closePicker={() => setOpenPicker("null")}
+                          />
+                        </div>
+                        <div className="themePageTextColor w-full flex pr-2 items-start">
+                          <ColorPicker
+                            label="Text"
+                            value={primaryValue}
+                            setValue={set("theme/primary")}
+                            thisPicker={"text"}
+                            openPicker={openPicker}
+                            setOpenPicker={setOpenPicker}
+                            closePicker={() => setOpenPicker("null")}
+                          />
+                        </div>
+                      </div>
+                      <SectionArrow
+                        fill={theme.colors["primary"]}
+                        stroke={theme.colors["bg-card"]}
+                        className=" ml-2"
                       />
                     </div>
-                    <div className="themePageTextColor w-full flex pr-2 items-start">
-                      <ColorPicker
-                        label="Text"
-                        value={primaryValue}
-                        setValue={set("theme/primary")}
-                        thisPicker={"text"}
-                        openPicker={openPicker}
-                        setOpenPicker={setOpenPicker}
-                        closePicker={() => setOpenPicker("null")}
-                      />
-                    </div>
-                  </div>
-                  <SectionArrow
-                    fill={theme.colors["primary"]}
-                    stroke={theme.colors["bg-card"]}
-                    className=" ml-2"
-                  />
-                </div>
 
-                <div
-                  className="rounded-t-lg p-2  border border-border border-b-transparent shadow-md text-primary"
-                  style={{
-                    backgroundColor:
-                      "rgba(var(--bg-card), var(--bg-card-alpha))",
-                  }}
-                >
-                  <p className="font-bold">Hello!</p>
-                  <small className="">
-                    Welcome to{" "}
-                    <span className="font-bold text-accent-contrast">
-                      Leaflet
-                    </span>
-                    . It&apos;s a super easy and fun way to make, share, and
-                    collab on little bits of paper
-                  </small>
-                </div>
+                    <div
+                      className="rounded-t-lg p-2  border border-border border-b-transparent shadow-md text-primary"
+                      style={{
+                        backgroundColor:
+                          "rgba(var(--bg-card), var(--bg-card-alpha))",
+                      }}
+                    >
+                      <p className="font-bold">Hello!</p>
+                      <small className="">
+                        Welcome to{" "}
+                        <span className="font-bold text-accent-contrast">
+                          Leaflet
+                        </span>
+                        . It&apos;s a super easy and fun way to make, share, and
+                        collab on little bits of paper
+                      </small>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
             <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
@@ -393,7 +402,9 @@ const BGPicker = (props: {
   let { rep } = useReplicache();
 
   return (
-    <div className="bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full px-2 pt-3">
+    <div
+      className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full px-2 pt-3`}
+    >
       <div className="bgPickerBody w-full flex flex-col gap-2 p-2 border border-[#CCCCCC] rounded-md">
         <div className="bgPickerLabel flex justify-between place-items-center ">
           <div className="bgPickerColorLabel flex gap-2 items-center">
