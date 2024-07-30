@@ -1,4 +1,4 @@
-import { AddSmall, AddTiny, MoreOptionsTiny } from "components/Icons";
+import { AddTiny } from "components/Icons";
 import { cookies } from "next/headers";
 import { Fact, ReplicacheProvider } from "src/replicache";
 import { createServerClient } from "@supabase/ssr";
@@ -17,6 +17,7 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { IdentitySetter } from "./IdentitySetter";
 import { HoverButton } from "components/Buttons";
+import { HomeHelp } from "./HomeHelp";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -90,6 +91,7 @@ export default async function Home() {
                       />
                     </button>
                   </form>
+                  <HomeHelp />
 
                   <ThemePopover entityID={root_entity} home />
                 </div>
