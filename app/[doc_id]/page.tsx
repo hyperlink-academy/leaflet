@@ -8,11 +8,6 @@ import { Attributes } from "src/replicache/attributes";
 import { createServerClient } from "@supabase/ssr";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Doc } from "./Doc";
-import { cookies } from "next/headers";
-import { createIdentity } from "actions/createIdentity";
-import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
-import { getIsBot } from "src/utils/isBot";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -30,7 +25,7 @@ type Props = {
 export default async function DocumentPage(props: Props) {
   let res = await supabase
     .from("permission_tokens")
-    .select("*, permission_token_rights(*), permission_token_on_homepage(*)")
+    .select("*, permission_token_rights(*) ")
     .eq("id", props.params.doc_id)
     .single();
   let rootEntity = res.data?.root_entity;
@@ -51,27 +46,7 @@ export default async function DocumentPage(props: Props) {
         </div>
       </div>
     );
-  if (res.data.permission_token_rights.find((f) => f.write)) {
-    let identity = cookies().get("identity")?.value;
-    if (!identity && !getIsBot()) {
-      const client = postgres(process.env.DB_URL as string, {
-        idle_timeout: 5,
-      });
-      const db = drizzle(client);
-      let newIdentity = await createIdentity(db);
-      client.end();
-      cookies().set("identity", newIdentity.id, { sameSite: "strict" });
-      identity = newIdentity.id;
-    }
-    if (
-      identity &&
-      res.data.permission_token_on_homepage.find((f) => f.identity === identity)
-    )
-      await supabase.from("permission_token_on_homepage").insert({
-        identity: identity,
-        token: res.data.id,
-      });
-  }
+
   let { data } = await supabase.rpc("get_facts", {
     root: rootEntity,
   });

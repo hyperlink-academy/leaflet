@@ -16,6 +16,7 @@ import {
   EntitySetProvider,
 } from "components/EntitySetProvider";
 import { UpdatePageTitle } from "components/utils/UpdatePageTitle";
+import { AddDocToHomepage } from "components/utils/AddDocToHomepage";
 export function Doc(props: {
   token: PermissionToken;
   initialFacts: Fact<keyof typeof Attributes>[];
@@ -35,6 +36,7 @@ export function Doc(props: {
           <ThemeProvider entityID={props.doc_id}>
             <ThemeBackgroundProvider entityID={props.doc_id}>
               <UpdatePageTitle entityID={props.doc_id} />
+              <AddDocToHomepage />
               <SelectionManager />
               <div
                 className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full"

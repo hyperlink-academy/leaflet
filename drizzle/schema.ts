@@ -53,17 +53,6 @@ export const facts = pgTable("facts", {
 	version: bigint("version", { mode: "number" }).default(0).notNull(),
 });
 
-export const permission_token_on_homepage = pgTable("permission_token_on_homepage", {
-	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
-	identity: uuid("identity").notNull().references(() => identities.id, { onDelete: "cascade" } ),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-},
-(table) => {
-	return {
-		permission_token_creator_pkey: primaryKey({ columns: [table.token, table.identity], name: "permission_token_creator_pkey"}),
-	}
-});
-
 export const permission_token_rights = pgTable("permission_token_rights", {
 	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 	entity_set: uuid("entity_set").notNull().references(() => entity_sets.id, { onDelete: "cascade", onUpdate: "cascade" } ),

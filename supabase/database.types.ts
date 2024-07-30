@@ -139,39 +139,6 @@ export type Database = {
           },
         ]
       }
-      permission_token_on_homepage: {
-        Row: {
-          created_at: string
-          identity: string
-          token: string
-        }
-        Insert: {
-          created_at?: string
-          identity: string
-          token: string
-        }
-        Update: {
-          created_at?: string
-          identity?: string
-          token?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "permission_token_creator_identity_fkey"
-            columns: ["identity"]
-            isOneToOne: false
-            referencedRelation: "identities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "permission_token_creator_token_fkey"
-            columns: ["token"]
-            isOneToOne: false
-            referencedRelation: "permission_tokens"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       permission_token_rights: {
         Row: {
           change_entity_set: boolean

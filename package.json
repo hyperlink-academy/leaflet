@@ -46,6 +46,7 @@
     "remark-stringify": "^11.0.0",
     "replicache": "^14.2.2",
     "replicache-react": "^5.0.1",
+    "swr": "^2.2.5",
     "thumbhash": "^0.1.1",
     "unified": "^11.0.5",
     "uuid": "^10.0.0",

@@ -7,30 +7,15 @@ import {
   permission_token_rights,
   entity_sets,
   facts,
-  permission_token_on_homepage,
 } from "drizzle/schema";
 import { redirect } from "next/navigation";
 import postgres from "postgres";
 import { v7 } from "uuid";
 import { sql } from "drizzle-orm";
-import { cookies, headers } from "next/headers";
-import { createIdentity } from "./createIdentity";
-import { getIsBot } from "src/utils/isBot";
 const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
 const db = drizzle(client);
 
 export async function createNewDoc() {
-  let cookieStore = cookies();
-  let identity = cookieStore.get("identity")?.value;
-  if (!identity) {
-    const isBot = getIsBot();
-    if (!isBot) {
-      let newIdentity = await createIdentity(db);
-      cookieStore.set("identity", newIdentity.id, { sameSite: "strict" });
-      identity = newIdentity.id;
-    }
-  }
-
   let { permissionToken } = await db.transaction(async (tx) => {
     // Create a new entity set
     let [entity_set] = await tx.insert(entity_sets).values({}).returning();
@@ -58,11 +43,6 @@ export async function createNewDoc() {
       })
       .returning();
 
-    // and add it to created_by for the identity
-    if (identity)
-      await tx
-        .insert(permission_token_on_homepage)
-        .values({ identity, token: permissionToken.id });
     let [blockEntity] = await tx
       .insert(entities)
       // And add it to that permission set

@@ -18,6 +18,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { IdentitySetter } from "./IdentitySetter";
 import { HoverButton } from "components/Buttons";
 import { HomeHelp } from "./HomeHelp";
+import { DocsList } from "./DocsList";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -47,27 +48,12 @@ export default async function Home() {
     .from("identities")
     .select(
       `*,
-      permission_tokens!identities_home_page_fkey(*, permission_token_rights(*)),
-    permission_token_on_homepage(
-      *, permission_tokens(*, permission_token_rights(*))
-    )
+      permission_tokens!identities_home_page_fkey(*, permission_token_rights(*))
     `,
     )
     .eq("id", identity)
     .single();
   if (!res.data) return <div>{JSON.stringify(res.error)}</div>;
-  let docs = res.data.permission_token_on_homepage
-    .sort((a, b) =>
-      a.created_at === b.created_at
-        ? a.token > b.token
-          ? -1
-          : 1
-        : a.created_at > b.created_at
-          ? -1
-          : 1,
-    )
-    .map((d) => d.permission_tokens)
-    .filter((d) => d !== null);
   if (!res.data.permission_tokens) return <div>no home page wierdly</div>;
   let { data } = await supabase.rpc("get_facts", {
     root: res.data.permission_tokens?.root_entity,
@@ -104,21 +90,7 @@ export default async function Home() {
 
                   <ThemePopover entityID={root_entity} home />
                 </div>
-                <div className="homeDocGrid grow w-full h-full overflow-y-scroll no-scrollbar pt-3 pb-28 sm:pt-6 sm:pb-12 ">
-                  <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-8 gap-x-4 sm:gap-6 grow">
-                    {docs.map((doc) => (
-                      <ReplicacheProvider
-                        key={doc.id}
-                        rootEntity={doc.root_entity}
-                        token={doc}
-                        name={doc.root_entity}
-                        initialFacts={[]}
-                      >
-                        <DocPreview token={doc} doc_id={doc.root_entity} />
-                      </ReplicacheProvider>
-                    ))}
-                  </div>
-                </div>
+                <DocsList />
               </div>
             </ThemeBackgroundProvider>
           </div>

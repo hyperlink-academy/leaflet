@@ -1,5 +1,5 @@
 import { cookies, headers } from "next/headers";
-export function isBot() {
+export function getIsBot() {
   const userAgent = headers().get("user-agent") || "";
   console.log("User agent: ", userAgent);
   const botPatterns = [
