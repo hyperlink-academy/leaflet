@@ -12,6 +12,10 @@ import {
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { createNewDoc } from "actions/createNewDoc";
+import { createIdentity } from "actions/createIdentity";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
+import { IdentitySetter } from "./IdentitySetter";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -20,8 +24,23 @@ let supabase = createServerClient<Database>(
 );
 export default async function Home() {
   let cookieStore = cookies();
-  let identity = cookieStore.get("identity");
-  if (!identity) return <div>no identity</div>;
+  let identity = cookieStore.get("identity")?.value;
+  let needstosetcookie = false;
+  if (!identity) {
+    const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+    const db = drizzle(client);
+    let newIdentity = await createIdentity(db);
+    client.end();
+    identity = newIdentity.id;
+    needstosetcookie = true;
+  }
+
+  async function setCookie() {
+    "use server";
+
+    cookies().set("identity", identity as string, { sameSite: "strict" });
+  }
+
   let res = await supabase
     .from("identities")
     .select(
@@ -32,7 +51,7 @@ export default async function Home() {
     )
     `,
     )
-    .eq("id", identity.value)
+    .eq("id", identity)
     .single();
   if (!res.data) return <div>{JSON.stringify(res.error)}</div>;
   let docs = res.data.permission_token_creator
@@ -51,6 +70,7 @@ export default async function Home() {
       name={root_entity}
       initialFacts={initialFacts}
     >
+      <IdentitySetter cb={setCookie} call={needstosetcookie} />
       <EntitySetProvider
         set={res.data.permission_tokens.permission_token_rights[0].entity_set}
       >
