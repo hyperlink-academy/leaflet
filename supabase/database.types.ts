@@ -139,7 +139,7 @@ export type Database = {
           },
         ]
       }
-      permission_token_creator: {
+      permission_token_on_homepage: {
         Row: {
           identity: string
           token: string

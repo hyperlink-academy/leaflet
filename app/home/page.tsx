@@ -47,7 +47,7 @@ export default async function Home() {
     .select(
       `*,
       permission_tokens!identities_home_page_fkey(*, permission_token_rights(*)),
-    permission_token_creator(
+    permission_token_on_homepage(
       *, permission_tokens(*, permission_token_rights(*))
     )
     `,
@@ -55,7 +55,7 @@ export default async function Home() {
     .eq("id", identity)
     .single();
   if (!res.data) return <div>{JSON.stringify(res.error)}</div>;
-  let docs = res.data.permission_token_creator
+  let docs = res.data.permission_token_on_homepage
     .map((d) => d.permission_tokens)
     .filter((d) => d !== null);
   if (!res.data.permission_tokens) return <div>no home page wierdly</div>;

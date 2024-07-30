@@ -8,6 +8,7 @@ import { Attributes } from "src/replicache/attributes";
 import { createServerClient } from "@supabase/ssr";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Doc } from "./Doc";
+import { cookies } from "next/headers";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -25,7 +26,7 @@ type Props = {
 export default async function DocumentPage(props: Props) {
   let res = await supabase
     .from("permission_tokens")
-    .select("*, permission_token_rights(*)")
+    .select("*, permission_token_rights(*), permission_token_on_homepage(*)")
     .eq("id", props.params.doc_id)
     .single();
   let rootEntity = res.data?.root_entity;
@@ -46,6 +47,18 @@ export default async function DocumentPage(props: Props) {
         </div>
       </div>
     );
+  let identity = cookies().get("identity");
+  if (
+    identity?.value &&
+    !res.data.permission_token_on_homepage.find(
+      (f) => f.identity === identity.value,
+    )
+  ) {
+    await supabase.from("permission_token_on_homepage").insert({
+      identity: identity.value,
+      token: res.data.id,
+    });
+  }
   let { data } = await supabase.rpc("get_facts", {
     root: rootEntity,
   });

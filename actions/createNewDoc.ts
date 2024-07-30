@@ -7,8 +7,7 @@ import {
   permission_token_rights,
   entity_sets,
   facts,
-  identities,
-  permission_token_creator,
+  permission_token_on_homepage,
 } from "drizzle/schema";
 import { redirect } from "next/navigation";
 import postgres from "postgres";
@@ -57,7 +56,7 @@ export async function createNewDoc() {
 
     // and add it to created_by for the identity
     await tx
-      .insert(permission_token_creator)
+      .insert(permission_token_on_homepage)
       .values({ identity, token: permissionToken.id });
     let [blockEntity] = await tx
       .insert(entities)

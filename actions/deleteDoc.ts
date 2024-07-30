@@ -5,10 +5,6 @@ import {
   entities,
   permission_tokens,
   permission_token_rights,
-  entity_sets,
-  facts,
-  identities,
-  permission_token_creator,
 } from "drizzle/schema";
 import { redirect } from "next/navigation";
 import postgres from "postgres";

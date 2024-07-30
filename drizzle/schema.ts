@@ -53,7 +53,7 @@ export const facts = pgTable("facts", {
 	version: bigint("version", { mode: "number" }).default(0).notNull(),
 });
 
-export const permission_token_creator = pgTable("permission_token_creator", {
+export const permission_token_on_homepage = pgTable("permission_token_on_homepage", {
 	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
 	identity: uuid("identity").notNull().references(() => identities.id, { onDelete: "cascade" } ),
 },
