@@ -50,6 +50,7 @@ export default async function DocumentPage(props: Props) {
   let identity = cookies().get("identity");
   if (
     identity?.value &&
+    res.data.permission_token_rights.find((f) => f.write) &&
     !res.data.permission_token_on_homepage.find(
       (f) => f.identity === identity.value,
     )
