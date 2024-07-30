@@ -10,6 +10,8 @@ import { useBlocks } from "src/hooks/queries/useBlocks";
 import { PermissionToken } from "src/replicache";
 import { DocOptions } from "./DocOptions";
 import { deleteDoc } from "actions/deleteDoc";
+import { removeDocFromHome } from "./storage";
+import { mutate } from "swr";
 
 export const DocPreview = (props: {
   token: PermissionToken;
@@ -58,6 +60,8 @@ export const DocPreview = (props: {
                     e.stopPropagation();
                     e.preventDefault();
                     deleteDoc(props.token);
+                    removeDocFromHome(props.token);
+                    mutate("docs");
                   }}
                 >
                   Delete

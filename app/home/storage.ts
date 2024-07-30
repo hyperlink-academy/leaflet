@@ -27,3 +27,13 @@ export function addDocToHome(doc: PermissionToken) {
   };
   window.localStorage.setItem(key, JSON.stringify(newValue));
 }
+
+export function removeDocFromHome(doc: PermissionToken) {
+  let homepageDocs = getHomeDocs();
+  let newDocs = homepageDocs.filter((d) => d.token.id !== doc.id);
+  let newValue: HomeDocsStorage = {
+    version: 1,
+    docs: newDocs,
+  };
+  window.localStorage.setItem(key, JSON.stringify(newValue));
+}
