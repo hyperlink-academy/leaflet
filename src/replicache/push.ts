@@ -21,6 +21,7 @@ export async function Push(
   rootEntity: string,
   token: { id: string },
 ): Promise<PushResponse | undefined> {
+  console.log("Push");
   if (pushRequest.pushVersion !== 1) {
     return { error: "VersionNotSupported", versionType: "push" };
   }

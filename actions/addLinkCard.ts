@@ -2,6 +2,7 @@
 import * as z from "zod";
 
 export async function addLinkCard(args: { link: string }) {
+  console.log("addLinkCard");
   let result = await get_url_preview_data(args.link);
   return result;
 }

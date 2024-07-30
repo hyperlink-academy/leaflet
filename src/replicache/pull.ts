@@ -23,6 +23,7 @@ export async function Pull(
   body: PullRequest,
   rootEntity: string,
 ): Promise<PullResponseV1> {
+  console.log("Pull");
   if (body.pullVersion === 0) return versionNotSupported;
   let { data } = await supabase.rpc("get_facts", { root: rootEntity });
   let facts = data || [];
