@@ -35,6 +35,7 @@ import { Separator } from "components/Layout";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { isIOS, useViewportSize } from "@react-aria/utils";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
+import { HoverButton } from "components/Buttons";
 
 export type pickers =
   | "null"
@@ -106,20 +107,16 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
     <>
       <Popover.Root>
         <Popover.Trigger>
-          <div className="sm:w-8 sm:h-8 relative text-bg-card">
-            <div
-              className="z-10 group/theme sm:absolute top-0 left-0 rounded-full w-fit h-max flex gap-2 p-1 place-items-center justify-center"
-              style={{
-                backgroundColor: pageValue.toString("hex"),
-                backgroundImage: gradient,
-              }}
-            >
-              <PaintSmall />
-              <div className="font-bold pr-[6px] sm:hidden group-hover/theme:block">
-                Theme
-              </div>
-            </div>
-          </div>
+          <HoverButton
+            icon=<PaintSmall />
+            label="Theme"
+            background="bg-bg-card"
+            text="text-bg-card"
+            backgroundImage={{
+              backgroundColor: pageValue.toString("hex"),
+              backgroundImage: gradient,
+            }}
+          />
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content

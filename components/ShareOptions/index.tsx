@@ -7,6 +7,7 @@ import { useSmoker } from "components/Toast";
 import * as Popover from "@radix-ui/react-popover";
 import { Menu, MenuItem } from "components/Layout";
 import { theme } from "tailwind.config";
+import { HoverButton } from "components/Buttons";
 
 export function ShareOptions(props: { rootEntity: string }) {
   let { permission_token } = useReplicache();
@@ -38,14 +39,12 @@ export function ShareOptions(props: { rootEntity: string }) {
   return (
     <Popover.Root>
       <Popover.Trigger>
-        <div className="sm:w-8 sm:h-8 relative">
-          <div className="z-10 group/share sm:absolute top-0 left-0 rounded-full w-fit h-max bg-accent-1 text-accent-2 flex gap-2 p-1 place-items-center justify-center">
-            <ShareSmall />
-            <div className="font-bold pr-[6px] sm:hidden group-hover/share:block">
-              Share
-            </div>
-          </div>
-        </div>
+        <HoverButton
+          icon=<ShareSmall />
+          label="Share"
+          background="bg-accent-1"
+          text="text-accent-2"
+        />
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content

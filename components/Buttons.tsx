@@ -1,3 +1,5 @@
+import React from "react";
+
 type ButtonProps = Omit<JSX.IntrinsicElements["button"], "content">;
 export function ButtonPrimary(
   props: {
@@ -21,3 +23,33 @@ export function ButtonPrimary(
     </button>
   );
 }
+
+export const HoverButton = (props: {
+  icon: React.ReactNode;
+  label: string;
+  background: string;
+  text: string;
+  backgroundImage?: React.CSSProperties;
+  noLabelOnMobile?: boolean;
+}) => {
+  return (
+    <div className="sm:w-8 sm:h-8 relative ">
+      <div
+        className={`
+          z-10 group/hover-button
+          w-max h-max rounded-full p-1 flex gap-2
+          sm:absolute top-0 left-0
+          place-items-center justify-center
+          ${props.background} ${props.text}`}
+        style={props.backgroundImage}
+      >
+        {props.icon}
+        <div
+          className={`font-bold pr-[6px] group-hover/hover-button:block ${props.noLabelOnMobile ? "hidden" : "sm:hidden"}`}
+        >
+          {props.label}
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -40,8 +40,9 @@ export function Cards(props: { rootCard: string }) {
             <div className="flex flex-col justify-center gap-2 ">
               <ShareOptions rootEntity={props.rootCard} />
               <PageOptions entityID={props.rootCard} />
+              <hr className="text-border my-3" />
+              <HomeButton />
             </div>
-            <HomeButton />
           </div>
         </Media>
       </div>
