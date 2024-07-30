@@ -12,6 +12,7 @@ import { cookies } from "next/headers";
 import { createIdentity } from "actions/createIdentity";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { getIsBot } from "src/utils/isBot";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -52,7 +53,7 @@ export default async function DocumentPage(props: Props) {
     );
   if (res.data.permission_token_rights.find((f) => f.write)) {
     let identity = cookies().get("identity")?.value;
-    if (!identity) {
+    if (!identity && !getIsBot()) {
       const client = postgres(process.env.DB_URL as string, {
         idle_timeout: 5,
       });
@@ -63,10 +64,11 @@ export default async function DocumentPage(props: Props) {
       identity = newIdentity.id;
     }
     if (
+      identity &&
       res.data.permission_token_on_homepage.find((f) => f.identity === identity)
     )
       await supabase.from("permission_token_on_homepage").insert({
-        identity: identity.value,
+        identity: identity,
         token: res.data.id,
       });
   }
