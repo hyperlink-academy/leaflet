@@ -100,31 +100,35 @@ export function Blocks(props: { entityID: string }) {
           );
         })}
       <NewBlockButton lastBlock={lastBlock || null} entityID={props.entityID} />
-      <div
-        className="shrink-0 h-[50vh]"
-        onClick={() => {
-          let newEntityID = v7();
+      {entity_set.permissions.write ? (
+        <div
+          className="shrink-0 h-[50vh]"
+          onClick={() => {
+            let newEntityID = v7();
 
-          if (lastBlock && textBlocks[lastBlock.type]) {
-            focusBlock({ ...lastBlock, type: "text" }, { type: "end" });
-          } else {
-            rep?.rep?.mutate.addBlock({
-              permission_set: entity_set.set,
-              factID: v7(),
-              parent: props.entityID,
-              type: "text",
-              position: generateKeyBetween(lastBlock?.position || null, null),
-              newEntityID,
-            });
+            if (lastBlock && textBlocks[lastBlock.type]) {
+              focusBlock({ ...lastBlock, type: "text" }, { type: "end" });
+            } else {
+              rep?.rep?.mutate.addBlock({
+                permission_set: entity_set.set,
+                factID: v7(),
+                parent: props.entityID,
+                type: "text",
+                position: generateKeyBetween(lastBlock?.position || null, null),
+                newEntityID,
+              });
 
-            setTimeout(() => {
-              document
-                .getElementById(elementId.block(newEntityID).text)
-                ?.focus();
-            }, 10);
-          }
-        }}
-      />
+              setTimeout(() => {
+                document
+                  .getElementById(elementId.block(newEntityID).text)
+                  ?.focus();
+              }, 10);
+            }
+          }}
+        />
+      ) : (
+        <div className="h-4" />
+      )}
     </div>
   );
 }
