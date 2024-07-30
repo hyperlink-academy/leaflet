@@ -9,6 +9,9 @@ import { createServerClient } from "@supabase/ssr";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Doc } from "./Doc";
 import { cookies } from "next/headers";
+import { createIdentity } from "actions/createIdentity";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -47,18 +50,25 @@ export default async function DocumentPage(props: Props) {
         </div>
       </div>
     );
-  let identity = cookies().get("identity");
-  if (
-    identity?.value &&
-    res.data.permission_token_rights.find((f) => f.write) &&
-    !res.data.permission_token_on_homepage.find(
-      (f) => f.identity === identity.value,
+  if (res.data.permission_token_rights.find((f) => f.write)) {
+    let identity = cookies().get("identity")?.value;
+    if (!identity) {
+      const client = postgres(process.env.DB_URL as string, {
+        idle_timeout: 5,
+      });
+      const db = drizzle(client);
+      let newIdentity = await createIdentity(db);
+      client.end();
+      cookies().set("identity", newIdentity.id, { sameSite: "strict" });
+      identity = newIdentity.id;
+    }
+    if (
+      res.data.permission_token_on_homepage.find((f) => f.identity === identity)
     )
-  ) {
-    await supabase.from("permission_token_on_homepage").insert({
-      identity: identity.value,
-      token: res.data.id,
-    });
+      await supabase.from("permission_token_on_homepage").insert({
+        identity: identity.value,
+        token: res.data.id,
+      });
   }
   let { data } = await supabase.rpc("get_facts", {
     root: rootEntity,
