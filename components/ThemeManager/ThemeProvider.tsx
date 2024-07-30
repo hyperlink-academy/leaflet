@@ -43,17 +43,13 @@ function setCSSVariableToColor(
 }
 export function ThemeProvider(props: {
   entityID: string;
+  local?: boolean;
   children: React.ReactNode;
 }) {
   let bgPage = useColorAttribute(props.entityID, "theme/page-background");
   let bgCard = useColorAttribute(props.entityID, "theme/card-background");
   let primary = useColorAttribute(props.entityID, "theme/primary");
 
-  let backgroundImage = useEntity(props.entityID, "theme/background-image");
-  let backgroundImageRepeat = useEntity(
-    props.entityID,
-    "theme/background-image-repeat",
-  );
   let highlight1 = useEntity(props.entityID, "theme/highlight-1");
   let highlight2 = useColorAttribute(props.entityID, "theme/highlight-2");
   let highlight3 = useColorAttribute(props.entityID, "theme/highlight-3");
@@ -69,6 +65,7 @@ export function ThemeProvider(props: {
   })[0];
 
   useEffect(() => {
+    if (props.local) return;
     let el = document.querySelector(":root") as HTMLElement;
     if (!el) return;
     setCSSVariableToColor(el, "--bg-page", bgPage);
@@ -102,6 +99,7 @@ export function ThemeProvider(props: {
       colorToString(accentContrast, "rgb"),
     );
   }, [
+    props.local,
     bgPage,
     bgCard,
     primary,
@@ -114,14 +112,9 @@ export function ThemeProvider(props: {
   ]);
   return (
     <div
-      className="pageWrapper w-full bg-bg-page text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
+      className="pageWrapper w-full text-primary h-full flex flex-col bg-center items-stretch"
       style={
         {
-          backgroundImage: `url(${backgroundImage?.data.src}), url(${backgroundImage?.data.fallback})`,
-          backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
-          backgroundSize: !backgroundImageRepeat
-            ? "cover"
-            : backgroundImageRepeat?.data.value,
           "--bg-page": colorToString(bgPage, "rgb"),
           "--bg-card": colorToString(bgCard, "rgb"),
           "--bg-card-alpha": bgCard.getChannelValue("alpha"),
@@ -141,6 +134,33 @@ export function ThemeProvider(props: {
     </div>
   );
 }
+
+export const ThemeBackgroundProvider = (props: {
+  entityID: string;
+  children: React.ReactNode;
+}) => {
+  let backgroundImage = useEntity(props.entityID, "theme/background-image");
+  let backgroundImageRepeat = useEntity(
+    props.entityID,
+    "theme/background-image-repeat",
+  );
+  return (
+    <div
+      className="pageBackgroundWrapper w-full bg-bg-page text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
+      style={
+        {
+          backgroundImage: `url(${backgroundImage?.data.src}), url(${backgroundImage?.data.fallback})`,
+          backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
+          backgroundSize: !backgroundImageRepeat
+            ? "cover"
+            : backgroundImageRepeat?.data.value,
+        } as CSSProperties
+      }
+    >
+      {props.children}
+    </div>
+  );
+};
 
 function getColorContrast(color1: string, color2: string) {
   ColorSpace.register(sRGB);

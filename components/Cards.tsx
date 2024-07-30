@@ -14,6 +14,7 @@ import { useToaster } from "./Toast";
 import { ShareOptions } from "./ShareOptions";
 import { MenuItem, Menu } from "./Layout";
 import { useEntitySetContext } from "./EntitySetProvider";
+import { HomeButton } from "./HomeButton";
 
 export function Cards(props: { rootCard: string }) {
   let openCards = useUIState((s) => s.openCards);
@@ -34,10 +35,14 @@ export function Cards(props: { rootCard: string }) {
           e.currentTarget === e.target && blurCard();
         }}
       >
-        <Media mobile={false}>
-          <div className="flex flex-col justify-center gap-2 mr-4 mt-2">
-            <ShareOptions rootEntity={props.rootCard} />
-            <PageOptions entityID={props.rootCard} />
+        <Media mobile={false} className="h-full">
+          <div className="flex flex-col h-full justify-between mr-4 mt-1">
+            <div className="flex flex-col justify-center gap-2 ">
+              <ShareOptions rootEntity={props.rootCard} />
+              <PageOptions entityID={props.rootCard} />
+              <hr className="text-border my-3" />
+              <HomeButton />
+            </div>
           </div>
         </Media>
       </div>

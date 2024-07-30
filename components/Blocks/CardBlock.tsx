@@ -1,3 +1,4 @@
+"use client";
 import { Block, BlockProps, focusBlock, ListMarker } from "components/Blocks";
 import { focusCard } from "components/Cards";
 import { useEntity, useReplicache } from "src/replicache";
@@ -193,7 +194,7 @@ export function CardBlock(props: BlockProps) {
   );
 }
 
-function CardPreview(props: { entityID: string }) {
+export function CardPreview(props: { entityID: string }) {
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
 
@@ -209,8 +210,11 @@ function CardPreview(props: { entityID: string }) {
   );
 }
 
-function BlockPreview(
-  b: Block & { previewRef: React.RefObject<HTMLDivElement> },
+export function BlockPreview(
+  b: Block & {
+    previewRef: React.RefObject<HTMLDivElement>;
+    size?: "small" | "large";
+  },
 ) {
   let headingLevel = useEntity(b.value, "block/heading-level")?.data.value;
   let ref = useRef<HTMLDivElement | null>(null);
@@ -256,30 +260,35 @@ function BlockPreview(
           />
         </div>
 
-        {isVisible && <PreviewBlockContent {...b} />}
+        {isVisible && <PreviewBlockContent {...b} size={b.size} />}
       </div>
     );
   return (
     <div ref={ref}>
-      {isVisible && <PreviewBlockContent {...b} key={b.factID} />}
+      {isVisible && <PreviewBlockContent {...b} key={b.factID} size={b.size} />}
     </div>
   );
 }
 
-function PreviewBlockContent(props: Block) {
+function PreviewBlockContent(props: Block & { size?: "small" | "large" }) {
   switch (props.type) {
     case "text": {
       return (
-        <div style={{ fontSize: "4px" }}>
+        <div style={{ fontSize: `${props.size === "large" ? "6px" : "4px"}` }}>
           <RenderedTextBlock entityID={props.value} className="p-0" />
         </div>
       );
     }
+    case "link": {
+      return (
+        <div className="w-full h-5 shrink-0 rounded-md border border-border-light" />
+      );
+    }
     case "heading":
-      return <HeadingPreviewBlock entityID={props.value} />;
+      return <HeadingPreviewBlock entityID={props.value} size={props.size} />;
     case "card":
       return (
-        <div className="w-full h-4 shrink-0 rounded-md border border-border-light" />
+        <div className="w-full h-5 shrink-0 rounded-md border border-border-light" />
       );
     case "image":
       return <ImagePreviewBlock entityID={props.value} />;
@@ -288,10 +297,19 @@ function PreviewBlockContent(props: Block) {
   }
 }
 
-function HeadingPreviewBlock(props: { entityID: string }) {
+function HeadingPreviewBlock(props: {
+  entityID: string;
+  size?: "small" | "large";
+}) {
   let headingLevel = useEntity(props.entityID, "block/heading-level");
   return (
-    <div className={HeadingStyle[headingLevel?.data.value || 1]}>
+    <div
+      className={
+        props.size === "large"
+          ? LargeHeadingStyle[headingLevel?.data.value || 1]
+          : HeadingStyle[headingLevel?.data.value || 1]
+      }
+    >
       <RenderedTextBlock entityID={props.entityID} className="p-0 " />
     </div>
   );
@@ -301,6 +319,12 @@ const HeadingStyle = {
   1: "text-[6px] font-bold",
   2: "text-[5px] font-bold ",
   3: "text-[4px] font-bold italic text-secondary ",
+} as { [level: number]: string };
+
+const LargeHeadingStyle = {
+  1: "text-[9px] font-bold",
+  2: "text-[7px] font-bold ",
+  3: "text-[6px] font-bold italic text-secondary ",
 } as { [level: number]: string };
 
 function ImagePreviewBlock(props: { entityID: string }) {

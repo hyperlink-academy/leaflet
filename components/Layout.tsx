@@ -19,7 +19,7 @@ export const MenuItem = (props: {
   return (
     <button
       onClick={(e) => props.onClick(e)}
-      className="MenuItem z-10 text-left text-secondary py-1 px-3 flex gap-2 hover:bg-border-light hover:text-secondary "
+      className="MenuItem font-bold z-10 text-left text-secondary py-1 px-3 flex gap-2 hover:bg-border-light hover:text-secondary "
     >
       {props.children}
     </button>

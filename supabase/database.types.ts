@@ -113,6 +113,62 @@ export type Database = {
           },
         ]
       }
+      identities: {
+        Row: {
+          created_at: string
+          home_page: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          home_page: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          home_page?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "identities_home_page_fkey"
+            columns: ["home_page"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      permission_token_on_homepage: {
+        Row: {
+          identity: string
+          token: string
+        }
+        Insert: {
+          identity: string
+          token: string
+        }
+        Update: {
+          identity?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permission_token_creator_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "permission_token_creator_token_fkey"
+            columns: ["token"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permission_token_rights: {
         Row: {
           change_entity_set: boolean

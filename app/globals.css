@@ -58,7 +58,7 @@
 
   h4 {
     @apply text-base;
-    @apply font-bold italic;
+    @apply font-bold;
   }
 
   p {

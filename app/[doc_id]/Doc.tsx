@@ -4,7 +4,10 @@ import { Attributes } from "src/replicache/attributes";
 import { createServerClient } from "@supabase/ssr";
 import { SelectionManager } from "components/SelectionManager";
 import { Cards } from "components/Cards";
-import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
+import {
+  ThemeBackgroundProvider,
+  ThemeProvider,
+} from "components/ThemeManager/ThemeProvider";
 import { MobileFooter } from "components/MobileFooter";
 import { PopUpProvider } from "components/Toast";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
@@ -30,15 +33,17 @@ export function Doc(props: {
       >
         <PopUpProvider>
           <ThemeProvider entityID={props.doc_id}>
-            <UpdatePageTitle entityID={props.doc_id} />
-            <SelectionManager />
-            <div
-              className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full"
-              id="card-carousel"
-            >
-              <Cards rootCard={props.doc_id} />
-            </div>
-            <MobileFooter entityID={props.doc_id} />
+            <ThemeBackgroundProvider entityID={props.doc_id}>
+              <UpdatePageTitle entityID={props.doc_id} />
+              <SelectionManager />
+              <div
+                className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full"
+                id="card-carousel"
+              >
+                <Cards rootCard={props.doc_id} />
+              </div>
+              <MobileFooter entityID={props.doc_id} />
+            </ThemeBackgroundProvider>
           </ThemeProvider>
         </PopUpProvider>
       </EntitySetProvider>
