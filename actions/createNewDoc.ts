@@ -12,10 +12,10 @@ import { redirect } from "next/navigation";
 import postgres from "postgres";
 import { v7 } from "uuid";
 import { sql } from "drizzle-orm";
-const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
-const db = drizzle(client);
 
 export async function createNewDoc() {
+  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const db = drizzle(client);
   let { permissionToken } = await db.transaction(async (tx) => {
     // Create a new entity set
     let [entity_set] = await tx.insert(entity_sets).values({}).returning();
@@ -73,5 +73,6 @@ export async function createNewDoc() {
     return { permissionToken, rights, entity, entity_set };
   });
 
+  client.end();
   redirect(`/${permissionToken.id}?focusFirstBlock`);
 }

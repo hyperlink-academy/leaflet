@@ -4,12 +4,12 @@ import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { permission_token_rights, permission_tokens } from "drizzle/schema";
 import postgres from "postgres";
-const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
-const db = drizzle(client);
 export async function getShareLink(
   token: { id: string; entity_set: string },
   rootEntity: string,
 ) {
+  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const db = drizzle(client);
   let link = await db.transaction(async (tx) => {
     // This will likely error out when if we have multiple permission
     // token rights associated with a single token
@@ -65,5 +65,6 @@ export async function getShareLink(
     return newToken;
   });
 
+  client.end();
   return link;
 }

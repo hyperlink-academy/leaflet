@@ -13,10 +13,10 @@ import { eq, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { PermissionToken } from "src/replicache";
 import { revalidatePath } from "next/cache";
-const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
-const db = drizzle(client);
 
 export async function deleteDoc(permission_token: PermissionToken) {
+  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const db = drizzle(client);
   await db.transaction(async (tx) => {
     let [token] = await tx
       .select()
@@ -36,5 +36,6 @@ export async function deleteDoc(permission_token: PermissionToken) {
       .delete(permission_tokens)
       .where(eq(permission_tokens.id, permission_token.id));
   });
+  client.end();
   return revalidatePath("/docs");
 }
