@@ -91,7 +91,7 @@ export function ShareOptions(props: { rootEntity: string }) {
                 <div className="group-hover/collab:text-accent-contrast">
                   Collaborate
                 </div>
-                <div className="text-sm font-bold text-tertiary group-hover/collab:text-accent-contrast">
+                <div className="text-sm font-normal text-tertiary group-hover/collab:text-accent-contrast">
                   Invite people to work together
                 </div>
               </div>
