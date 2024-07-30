@@ -126,7 +126,7 @@ export function RenderedTextBlock(props: {
   if (!initialFact)
     // show a blank line if the block is empty. blocks with content are styled elsewhere! update both!
     return (
-      <pre className={`${props.className}`}>
+      <pre className={`${props.className} italic text-tertiary`}>
         {/* Render a placeholder if there are no other blocks in the card, else just show the blank line*/}
         {props.first ? "Title" : <br />}
       </pre>
