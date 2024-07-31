@@ -83,27 +83,25 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     .filter((b) => b.type === "text" || b.type === "heading");
 
   let metadata: Metadata = { title: "Untitled Leaflet", description: " " };
-  let block: undefined | (typeof blocks)[0] = blocks[0];
-  if (block?.type === "heading") {
-    let content = initialFacts.find(
-      (f) => f.entity === block?.value && f.attribute === "block/text",
-    ) as Fact<"block/text"> | undefined;
-    if (content) {
-      let doc = new Y.Doc();
-      const update = base64.toByteArray(content.data.value);
-      Y.applyUpdate(doc, update);
-      let nodes = doc.getXmlElement("prosemirror").toArray();
-      metadata.title = YJSFragmentToString(nodes[0]);
-    }
-    block = blocks[1];
-  }
-  if (!block) return metadata;
-  let content = initialFacts.find(
-    (f) => f.entity === block.value && f.attribute === "block/text",
+  let [firstBlock, secondBlock] = blocks;
+
+  let titleFact = initialFacts.find(
+    (f) => f.entity === firstBlock?.value && f.attribute === "block/text",
   ) as Fact<"block/text"> | undefined;
-  if (content) {
+  if (titleFact) {
     let doc = new Y.Doc();
-    const update = base64.toByteArray(content.data.value);
+    const update = base64.toByteArray(titleFact.data.value);
+    Y.applyUpdate(doc, update);
+    let nodes = doc.getXmlElement("prosemirror").toArray();
+    metadata.title = YJSFragmentToString(nodes[0]);
+  }
+
+  let descriptionFact = initialFacts.find(
+    (f) => f.entity === secondBlock?.value && f.attribute === "block/text",
+  ) as Fact<"block/text"> | undefined;
+  if (descriptionFact) {
+    let doc = new Y.Doc();
+    const update = base64.toByteArray(descriptionFact.data.value);
     Y.applyUpdate(doc, update);
     let nodes = doc.getXmlElement("prosemirror").toArray();
     metadata.description = YJSFragmentToString(nodes[0]);
