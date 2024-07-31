@@ -28,8 +28,7 @@ export async function deleteDoc(permission_token: PermissionToken) {
       )
       .where(eq(permission_tokens.id, permission_token.id));
 
-    console.log(token);
-    if (!token.permission_token_rights?.write) return;
+    if (!token?.permission_token_rights?.write) return;
     await tx
       .delete(entities)
       .where(eq(entities.set, token.permission_token_rights.entity_set));
