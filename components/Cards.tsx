@@ -96,6 +96,7 @@ function Card(props: { entityID: string; first?: boolean }) {
       <div className="cardWrapper w-fit flex relative snap-center">
         <div
           onMouseDown={(e) => {
+            if (e.defaultPrevented) return;
             if (rep) {
               focusCard(props.entityID, rep);
             }

@@ -121,7 +121,8 @@ export function CardBlock(props: BlockProps) {
       ) : (
         <div
           className="cardBlockContent w-full flex overflow-clip cursor-pointer"
-          onClick={(e) => {
+          onMouseDown={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             useUIState.getState().openCard(props.parent, cardEntity);
             if (rep) focusCard(cardEntity, rep);
