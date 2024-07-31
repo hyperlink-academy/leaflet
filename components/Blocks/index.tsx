@@ -38,7 +38,7 @@ export function Blocks(props: { entityID: string }) {
   let lastBlock = blocks.findLast((f) => !f.listData || f.listData.depth === 1);
   return (
     <div
-      className={`blocks w-full flex flex-col outline-none h-fit min-h-full ${entity_set.permissions.write ? "pb-32" : ""}`}
+      className={`blocks w-full flex flex-col outline-none h-fit min-h-full ${entity_set.permissions.write ? "pb-32" : "pb-4"}`}
       onClick={async (e) => {
         if (useUIState.getState().selectedBlock.length > 1) return;
         if (e.target === e.currentTarget) {
