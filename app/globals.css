@@ -99,7 +99,7 @@
 }
 
 a {
-  @apply text-accent-1;
+  @apply text-accent-contrast;
   @apply hover:cursor-pointer;
   text-decoration: underline;
 }
