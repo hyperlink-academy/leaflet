@@ -382,7 +382,7 @@ export function SelectionManager() {
           }
         }
       }
-      if ((e.key === "c" && e.metaKey) || e.ctrlKey) {
+      if (e.key === "c" && (e.metaKey || e.ctrlKey)) {
         if (!rep) return;
         let [sortedSelection] = await getSortedSelection();
         let html = await getBlocksAsHTML(rep, sortedSelection);
