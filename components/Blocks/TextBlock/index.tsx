@@ -261,6 +261,7 @@ export function BaseTextBlock(
           }}
           id={elementId.block(props.entityID).text}
           className={`
+            break-all
           grow resize-none align-top whitespace-pre-wrap bg-transparent
           outline-none
           ${props.blockPadding}
