@@ -357,7 +357,6 @@ const enter =
           data: { type: "number", value: headingLevel.data.value || 0 },
         });
       }
-      view?.dom.blur();
     };
     asyncRun();
 
