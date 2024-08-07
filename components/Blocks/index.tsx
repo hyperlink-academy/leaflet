@@ -17,6 +17,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { scanIndex } from "src/replicache/utils";
 import { v7 } from "uuid";
 import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
+import { indent, outdent } from "src/utils/list-operations";
 export type Block = {
   factID: string;
   parent: string;
@@ -232,6 +233,16 @@ function Block(props: BlockProps) {
     let r = rep;
     let listener = async (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
+      if (e.key === "Tab") {
+        if (textBlocks[props.type]) return;
+        if (e.shiftKey) {
+          e.preventDefault();
+          outdent(props, props.previousBlock, rep);
+        } else {
+          e.preventDefault();
+          if (props.previousBlock) indent(props, props.previousBlock, rep);
+        }
+      }
       if (e.key === "ArrowDown") {
         e.preventDefault();
         let block = props.nextBlock;
