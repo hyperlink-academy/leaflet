@@ -159,6 +159,36 @@ export function BlockOptions(props: Props) {
               >
                 <BlockCardSmall />
               </ToolbarButton>
+              <ToolbarButton
+                tooltipContent="Add Mailbox"
+                className="text-tertiary h-6"
+                onClick={async () => {
+                  let entity;
+                  if (!props.entityID) {
+                    entity = v7();
+                    await rep?.mutate.addBlock({
+                      parent: props.parent,
+                      factID: v7(),
+                      permission_set: entity_set.set,
+                      type: "mailbox",
+                      position: generateKeyBetween(
+                        props.position,
+                        props.nextPosition,
+                      ),
+                      newEntityID: entity,
+                    });
+                  } else {
+                    entity = props.entityID;
+                    await rep?.mutate.assertFact({
+                      entity,
+                      attribute: "block/type",
+                      data: { type: "block-type-union", value: "mailbox" },
+                    });
+                  }
+                }}
+              >
+                mailbox
+              </ToolbarButton>
               <Separator classname="h-6" />
               <TextBlockTypeButton
                 className="hover:text-primary text-tertiary h-6"

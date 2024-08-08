@@ -9,7 +9,7 @@ export function ButtonPrimary(
   return (
     <button
       {...props}
-      className={`m-0 px-2 py-0.5 w-max
+      className={`m-0 px-2 py-0.5 w-max h-max
   bg-accent-1 outline-offset-[-2px] active:outline active:outline-2
   border border-accent-1 rounded-md
   text-base font-bold text-accent-2

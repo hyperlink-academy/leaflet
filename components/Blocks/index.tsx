@@ -17,6 +17,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { scanIndex } from "src/replicache/utils";
 import { v7 } from "uuid";
 import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
+import { MailboxBlock } from "./MailboxBlock";
 export type Block = {
   factID: string;
   parent: string;
@@ -99,6 +100,7 @@ export function Blocks(props: { entityID: string }) {
             />
           );
         })}
+
       <NewBlockButton lastBlock={lastBlock || null} entityID={props.entityID} />
       {entity_set.permissions.write ? (
         <div
@@ -351,6 +353,8 @@ function Block(props: BlockProps) {
           <ImageBlock {...props} />
         ) : props.type === "link" ? (
           <ExternalLinkBlock {...props} />
+        ) : props.type === "mailbox" ? (
+          <MailboxBlock {...props} />
         ) : null}
       </div>
     </div>
