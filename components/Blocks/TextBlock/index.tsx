@@ -78,7 +78,7 @@ export function TextBlock(props: BlockProps & { className: string }) {
 
 export function IOSBS(props: BlockProps) {
   let selected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
+    s.selectedBlock.find((b) => b.value === props.entityID)
   );
   let [initialRender, setInitialRender] = useState(true);
   useEffect(() => {
@@ -97,12 +97,12 @@ export function IOSBS(props: BlockProps) {
         });
         setTimeout(async () => {
           let target = document.getElementById(
-            elementId.block(props.entityID).container,
+            elementId.block(props.entityID).container
           );
           let vis = await isVisible(target as Element);
           if (!vis) {
             let parentEl = document.getElementById(
-              elementId.card(props.parent).container,
+              elementId.card(props.parent).container
             );
             if (!parentEl) return;
             parentEl?.scrollBy({
@@ -152,7 +152,7 @@ export function RenderedTextBlock(props: {
 }
 
 export function BaseTextBlock(
-  props: BlockProps & { className: string; blockPadding: string },
+  props: BlockProps & { className: string; blockPadding: string }
 ) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
 
@@ -168,7 +168,7 @@ export function BaseTextBlock(
   }, [rep?.rep]);
 
   let selected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
+    s.selectedBlock.find((b) => b.value === props.entityID)
   );
   let first = props.previousBlock === null;
   let headingLevel = useEntity(props.entityID, "block/heading-level");
@@ -176,7 +176,7 @@ export function BaseTextBlock(
   let [value, factID] = useYJSValue(props.entityID);
 
   let editorState = useEditorStates(
-    (s) => s.editorStates[props.entityID],
+    (s) => s.editorStates[props.entityID]
   )?.editor;
   useEffect(() => {
     if (!editorState)
@@ -243,7 +243,7 @@ export function BaseTextBlock(
               await addLinkBlock(
                 editorState.doc.textContent,
                 props.entityID,
-                rep.rep,
+                rep.rep
               );
             }
           }}
@@ -260,8 +260,11 @@ export function BaseTextBlock(
             }, 5);
           }}
           id={elementId.block(props.entityID).text}
+          // unless we break *only* on urls, this is better than tailwind 'break-all'
+          // b/c break-all can cause breaks in the middle of words, but break-word still
+          // forces break if a single text string (e.g. a url) spans more than a full line
+          style={{ wordBreak: "break-word" }}
           className={`
-            break-all
           grow resize-none align-top whitespace-pre-wrap bg-transparent
           outline-none
           ${props.blockPadding}
@@ -328,7 +331,7 @@ function CommandHandler(props: { entityID: string }) {
       ) {
         toggleMark(args.mark, args.attrs)(view.state, view.dispatch);
       } else setMark(args.mark, args.attrs)(view.state, view.dispatch);
-    },
+    }
   );
   useAppEventListener(props.entityID, "toggleMark", cb, []);
   return null;
@@ -355,7 +358,7 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
 
       // scroll card if cursor is at the very top or very bottom of the card
       let parentID = document.getElementById(
-        elementId.card(props.parentID).container,
+        elementId.card(props.parentID).container
       );
       let parentHeight = parentID?.clientHeight;
       let cursorPosY = coords.top;
@@ -390,7 +393,7 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
         };
       });
     },
-    [props.entityID],
+    [props.entityID]
   );
   return null;
 };
