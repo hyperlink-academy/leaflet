@@ -11,13 +11,14 @@ import { useUIState } from "src/useUIState";
 import { CardBlock } from "./CardBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { BlockOptions } from "./BlockOptions";
+import { MailboxBlock } from "./MailboxBlock";
+
 import { getBlocksWithType, useBlocks } from "src/hooks/queries/useBlocks";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { scanIndex } from "src/replicache/utils";
 import { v7 } from "uuid";
 import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
-import { MailboxBlock } from "./MailboxBlock";
 export type Block = {
   factID: string;
   parent: string;
@@ -354,7 +355,11 @@ function Block(props: BlockProps) {
         ) : props.type === "link" ? (
           <ExternalLinkBlock {...props} />
         ) : props.type === "mailbox" ? (
-          <MailboxBlock {...props} />
+          <div className="flex flex-col gap-4 w-full">
+            <MailboxBlock role="author" {...props} />
+            <hr />
+            <MailboxBlock role="reader" {...props} />
+          </div>
         ) : null}
       </div>
     </div>
