@@ -13,7 +13,7 @@ export function markdownToHtml(markdown: string): string {
       .use(remarkParse) // Parse markdown content to a syntax tree
       .use(remarkRehype) // Turn markdown syntax tree to HTML syntax tree, ignoring embedded HTML
       .use(rehypeStringify) // Serialize HTML syntax tree
-      .processSync(markdown),
+      .processSync(markdown)
   );
 }
 
@@ -22,7 +22,13 @@ export function htmlToMarkdown(html: string): string {
     unified()
       .use(rehypeParse) // Parse HTML to a syntax tree
       .use(rehypeRemark) // Turn HTML syntax tree to markdown syntax tree
-      .use(remarkStringify) // Serialize HTML syntax tree
-      .processSync(html),
+      .use(
+        remarkStringify, // Serialize HTML syntax tree
+        {
+          bullet: "-", // change default list marker from '*'
+          listItemIndent: "tab", // change default indent from two spaces
+        }
+      )
+      .processSync(html)
   );
 }
