@@ -120,7 +120,8 @@ export function LinkEditor(props: { onClose: () => void }) {
         */}
       <div className="flex items-center gap-3">
         <button
-          className="hover:text-accent-contrast -mr-6"
+          disabled={!linkValue || linkValue === ""}
+          className="hover:text-accent-contrast -mr-6 disabled:text-border"
           onMouseDown={(e) => {
             e.preventDefault();
             let editor = focusedEditor?.editor;
