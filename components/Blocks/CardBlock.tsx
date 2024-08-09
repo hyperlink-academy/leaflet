@@ -20,7 +20,7 @@ export function CardBlock(props: BlockProps) {
   let isSelected = useUIState(
     (s) =>
       (props.type !== "text" || s.selectedBlock.length > 1) &&
-      s.selectedBlock.find((b) => b.value === props.entityID),
+      s.selectedBlock.find((b) => b.value === props.entityID)
   );
   let isOpen = useUIState((s) => s.openCards).includes(cardEntity);
 
@@ -215,7 +215,7 @@ export function BlockPreview(
   b: Block & {
     previewRef: React.RefObject<HTMLDivElement>;
     size?: "small" | "large";
-  },
+  }
 ) {
   let headingLevel = useEntity(b.value, "block/heading-level")?.data.value;
   let ref = useRef<HTMLDivElement | null>(null);
@@ -232,7 +232,7 @@ export function BlockPreview(
           }
         });
       },
-      { threshold: 0.1, root: b.previewRef.current },
+      { threshold: 0.1, root: b.previewRef.current }
     );
     observer.observe(ref.current);
     return () => observer.disconnect();
@@ -280,16 +280,31 @@ function PreviewBlockContent(props: Block & { size?: "small" | "large" }) {
         </div>
       );
     }
-    case "link": {
-      return (
-        <div className="w-full h-5 shrink-0 rounded-md border border-border-light" />
-      );
-    }
     case "heading":
       return <HeadingPreviewBlock entityID={props.value} size={props.size} />;
+    // currently "link" and "card" render an identical preview
+    case "link": {
+      return (
+        <div
+          // gradiend with 'primary' and 'tertiary' text colors as defined in tailwind config
+          style={{
+            backgroundImage:
+              "linear-gradient(355deg, color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-card)) 55%), rgb(var(--bg-card)))",
+          }}
+          className="w-full h-5 shrink-0 rounded-md border border-border-light"
+        />
+      );
+    }
     case "card":
       return (
-        <div className="w-full h-5 shrink-0 rounded-md border border-border-light" />
+        <div
+          // gradiend with 'primary' and 'tertiary' text colors as defined in tailwind config
+          style={{
+            backgroundImage:
+              "linear-gradient(355deg, color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-card)) 55%), rgb(var(--bg-card)))",
+          }}
+          className="w-full h-5 shrink-0 rounded-md border border-border-light"
+        />
       );
     case "image":
       return <ImagePreviewBlock entityID={props.value} />;
