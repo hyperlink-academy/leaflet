@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { entity_sets, entities, permission_tokens, identities, facts, permission_token_rights } from "./schema";
+import { entity_sets, entities, permission_tokens, identities, facts, pending_email_subscriptions_to_entity, email_subscriptions_to_entity, permission_token_rights } from "./schema";
 
 export const entitiesRelations = relations(entities, ({one, many}) => ({
 	entity_set: one(entity_sets, {
@@ -8,6 +8,8 @@ export const entitiesRelations = relations(entities, ({one, many}) => ({
 	}),
 	permission_tokens: many(permission_tokens),
 	facts: many(facts),
+	pending_email_subscriptions_to_entities: many(pending_email_subscriptions_to_entity),
+	email_subscriptions_to_entities: many(email_subscriptions_to_entity),
 }));
 
 export const entity_setsRelations = relations(entity_sets, ({many}) => ({
@@ -34,6 +36,20 @@ export const permission_tokensRelations = relations(permission_tokens, ({one, ma
 export const factsRelations = relations(facts, ({one}) => ({
 	entity: one(entities, {
 		fields: [facts.entity],
+		references: [entities.id]
+	}),
+}));
+
+export const pending_email_subscriptions_to_entityRelations = relations(pending_email_subscriptions_to_entity, ({one}) => ({
+	entity: one(entities, {
+		fields: [pending_email_subscriptions_to_entity.entity],
+		references: [entities.id]
+	}),
+}));
+
+export const email_subscriptions_to_entityRelations = relations(email_subscriptions_to_entity, ({one}) => ({
+	entity: one(entities, {
+		fields: [email_subscriptions_to_entity.entity],
 		references: [entities.id]
 	}),
 }));

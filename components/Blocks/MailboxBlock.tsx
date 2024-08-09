@@ -10,6 +10,8 @@ import { useEntity, useReplicache } from "src/replicache";
 import { AreYouSure } from "./DeleteBlock";
 import { focusBlock } from ".";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { subscribeToMailboxWithEmail } from "actions/subscriptions/subscribeToMailboxWithEmail";
+import { confirmEmailSubscription } from "actions/subscriptions/confirmEmailSubscription";
 
 export const MailboxBlock = (
   props: BlockProps & {
@@ -99,6 +101,7 @@ export const MailboxBlock = (
             <div className="flex flex-col w-full gap-2 p-4">
               {!isSubscribed ? (
                 <SubscribeForm
+                  entityID={props.entityID}
                   role={props.role}
                   setIsSubscribed={() => {
                     setIsSubscribed(true);
@@ -143,6 +146,7 @@ export const MailboxBlock = (
           <>
             {!isSubscribed ? (
               <SubscribePopover
+                entityID={props.entityID}
                 setIsSubscribed={() => {
                   setIsSubscribed(true);
                 }}
@@ -219,6 +223,7 @@ const MailboxInfo = (props: { subscriber?: boolean }) => {
 };
 
 const SubscribePopover = (props: {
+  entityID: string;
   role: "author" | "reader";
   setIsSubscribed: () => void;
 }) => {
@@ -229,6 +234,7 @@ const SubscribePopover = (props: {
       content={
         <div className="text-sm text-secondary flex flex-col gap-2 py-1">
           <SubscribeForm
+            entityID={props.entityID}
             setIsSubscribed={props.setIsSubscribed}
             role={props.role}
           />
@@ -239,10 +245,37 @@ const SubscribePopover = (props: {
 };
 
 const SubscribeForm = (props: {
+  entityID: string;
   role: "author" | "reader";
   setIsSubscribed: () => void;
 }) => {
   let smoke = useSmoker();
+  let [email, setEmail] = useState("");
+  let [state, setState] = useState<"normal" | "confirm">("normal");
+  let [subscriptionID, setSubscriptionID] = useState("");
+  let [code, setCode] = useState("");
+  if (state === "confirm") {
+    return (
+      <>
+        <div className="font-bold text-tertiary">
+          We just sent you a confirmation code, enter it here!
+        </div>
+        <input
+          type="number"
+          value={code}
+          onChange={(e) => setCode(e.currentTarget.value)}
+        />
+        <ButtonPrimary
+          onClick={async () => {
+            await confirmEmailSubscription(subscriptionID, code);
+            props.setIsSubscribed();
+          }}
+        >
+          Confirm
+        </ButtonPrimary>
+      </>
+    );
+  }
   return (
     <>
       <input
@@ -251,19 +284,20 @@ const SubscribeForm = (props: {
       />
 
       <input
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
         className="border border-border-light rounded-md py-1 px-2 max-w-80 mx-auto"
         placeholder="email or phone"
       />
       <div className="flex gap-2 items-center place-self-center pt-2">
         <ButtonPrimary
-          onClick={(e) => {
-            let rect = e.currentTarget.getBoundingClientRect();
-
-            props.setIsSubscribed();
-            smoke({
-              text: "subscribed!",
-              position: { x: rect.left, y: rect.top - 8 },
-            });
+          onClick={async (e) => {
+            let subscriptionID = await subscribeToMailboxWithEmail(
+              props.entityID,
+              email,
+            );
+            if (subscriptionID) setSubscriptionID(subscriptionID?.id);
+            setState("confirm");
           }}
         >
           Get Notified
@@ -275,10 +309,6 @@ const SubscribeForm = (props: {
           </>
         )}
       </div>
-      <hr className="border-border mt-2" />
-      <button className="text-tertiary hover:text-accent-contrast -mb-2 ">
-        see past posts
-      </button>
     </>
   );
 };

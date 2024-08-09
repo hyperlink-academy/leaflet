@@ -53,6 +53,25 @@ export const facts = pgTable("facts", {
 	version: bigint("version", { mode: "number" }).default(0).notNull(),
 });
 
+export const pending_email_subscriptions_to_entity = pgTable("pending_email_subscriptions_to_entity", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	entity: uuid("entity").notNull().references(() => entities.id, { onDelete: "cascade" } ),
+	email: text("email").notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	code: text("code").notNull(),
+});
+
+export const email_subscriptions_to_entity = pgTable("email_subscriptions_to_entity", {
+	entity: uuid("entity").notNull().references(() => entities.id, { onDelete: "cascade" } ),
+	email: text("email").notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		email_subscriptions_to_entity_pkey: primaryKey({ columns: [table.entity, table.email], name: "email_subscriptions_to_entity_pkey"}),
+	}
+});
+
 export const permission_token_rights = pgTable("permission_token_rights", {
 	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 	entity_set: uuid("entity_set").notNull().references(() => entity_sets.id, { onDelete: "cascade", onUpdate: "cascade" } ),

@@ -34,6 +34,32 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_subscriptions_to_entity: {
+        Row: {
+          created_at: string
+          email: string
+          entity: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          entity: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          entity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_subscriptions_to_entity_entity_fkey"
+            columns: ["entity"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entities: {
         Row: {
           created_at: string
@@ -135,6 +161,38 @@ export type Database = {
             columns: ["home_page"]
             isOneToOne: false
             referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pending_email_subscriptions_to_entity: {
+        Row: {
+          code: string
+          created_at: string
+          email: string
+          entity: string
+          id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          email: string
+          entity: string
+          id?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          email?: string
+          entity?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_subscriptions_to_entity_entity_fkey"
+            columns: ["entity"]
+            isOneToOne: false
+            referencedRelation: "entities"
             referencedColumns: ["id"]
           },
         ]
