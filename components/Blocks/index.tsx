@@ -11,10 +11,9 @@ import { useUIState } from "src/useUIState";
 import { CardBlock } from "./CardBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { BlockOptions } from "./BlockOptions";
-import { getBlocksWithType, useBlocks } from "src/hooks/queries/useBlocks";
+import { useBlocks } from "src/hooks/queries/useBlocks";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { scanIndex } from "src/replicache/utils";
 import { v7 } from "uuid";
 import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
 import { indent, outdent } from "src/utils/list-operations";
@@ -36,16 +35,28 @@ export function Blocks(props: { entityID: string }) {
   let blocks = useBlocks(props.entityID);
   let foldedBlocks = useUIState((s) => s.foldedBlocks);
 
-  let lastBlock = blocks.findLast((f) => !f.listData || f.listData.depth === 1);
+  let lastRootBlock = blocks.findLast(
+    (f) => !f.listData || f.listData.depth === 1,
+  );
+
+  let lastVisibleBlock = blocks.findLast(
+    (f) =>
+      !f.listData ||
+      !f.listData.path.find(
+        (path) => foldedBlocks.includes(path.entity) && f.value !== path.entity,
+      ),
+  );
+
   return (
     <div
-      className={`blocks w-full flex flex-col outline-none h-fit min-h-full ${entity_set.permissions.write ? "pb-32" : "pb-4"}`}
+      className={`blocks w-full flex flex-col outline-none h-fit min-h-full ${!entity_set.permissions.write && "pb-6"}`}
       onClick={async (e) => {
         if (useUIState.getState().selectedBlock.length > 1) return;
         if (e.target === e.currentTarget) {
           if (
-            !lastBlock ||
-            (lastBlock.type !== "text" && lastBlock.type !== "heading")
+            !lastVisibleBlock ||
+            (lastVisibleBlock.type !== "text" &&
+              lastVisibleBlock.type !== "heading")
           ) {
             let newEntityID = v7();
             await rep.rep?.mutate.addBlock({
@@ -53,7 +64,10 @@ export function Blocks(props: { entityID: string }) {
               factID: v7(),
               permission_set: entity_set.set,
               type: "text",
-              position: generateKeyBetween(lastBlock?.position || null, null),
+              position: generateKeyBetween(
+                lastRootBlock?.position || null,
+                null,
+              ),
               newEntityID,
             });
 
@@ -63,7 +77,7 @@ export function Blocks(props: { entityID: string }) {
                 ?.focus();
             }, 10);
           } else {
-            focusBlock(lastBlock, { type: "end" });
+            lastVisibleBlock && focusBlock(lastVisibleBlock, { type: "end" });
           }
         }
       }}
@@ -100,22 +114,35 @@ export function Blocks(props: { entityID: string }) {
             />
           );
         })}
-      <NewBlockButton lastBlock={lastBlock || null} entityID={props.entityID} />
+      <NewBlockButton
+        lastBlock={lastRootBlock || null}
+        entityID={props.entityID}
+      />
       {entity_set.permissions.write ? (
         <div
           className="shrink-0 h-[50vh]"
           onClick={() => {
             let newEntityID = v7();
 
-            if (lastBlock && textBlocks[lastBlock.type]) {
-              focusBlock({ ...lastBlock, type: "text" }, { type: "end" });
+            if (
+              lastRootBlock &&
+              lastVisibleBlock &&
+              textBlocks[lastVisibleBlock.type]
+            ) {
+              focusBlock(
+                { ...lastVisibleBlock, type: "text" },
+                { type: "end" },
+              );
             } else {
               rep?.rep?.mutate.addBlock({
                 permission_set: entity_set.set,
                 factID: v7(),
                 parent: props.entityID,
                 type: "text",
-                position: generateKeyBetween(lastBlock?.position || null, null),
+                position: generateKeyBetween(
+                  lastRootBlock?.position || null,
+                  null,
+                ),
                 newEntityID,
               });
 
