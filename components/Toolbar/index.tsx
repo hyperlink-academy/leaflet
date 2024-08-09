@@ -45,9 +45,15 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
     "default" | "highlight" | "link" | "header" | "list" | "linkBlock"
   >("default");
 
-  let [lastUsedHighlight, setlastUsedHighlight] = useState<"1" | "2" | "3">(
-    "1",
-  );
+  // let [lastUsedHighlight, setlastUsedHighlight] = useState<"1" | "2" | "3">(
+  //   "1",
+  // );
+
+  let lastUsedHighlight = useUIState((s) => s.lastUsedHighlight);
+  let setLastUsedHighlight = (color: "1" | "2" | "3") =>
+    useUIState.setState({
+      lastUsedHighlight: color,
+    });
 
   let activeEditor = useEditorStates((s) => s.editorStates[props.blockID]);
 
@@ -184,7 +190,7 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
               onClose={() => setToolbarState("default")}
               lastUsedHighlight={lastUsedHighlight}
               setLastUsedHighlight={(color: "1" | "2" | "3") =>
-                setlastUsedHighlight(color)
+                setLastUsedHighlight(color)
               }
             />
           ) : toolbarState === "link" ? (

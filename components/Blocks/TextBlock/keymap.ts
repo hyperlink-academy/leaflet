@@ -26,7 +26,9 @@ export const TextBlockKeymap = (
     "Meta-u": toggleMark(schema.marks.underline),
     "Meta-i": toggleMark(schema.marks.em),
     "Ctrl-Meta-x": toggleMark(schema.marks.strikethrough),
-    "Ctrl-Meta-h": toggleMark(schema.marks.highlight),
+    "Ctrl-Meta-h": toggleMark(schema.marks.highlight, {
+      color: useUIState.getState().lastUsedHighlight,
+    }),
     Tab: () => {
       if (useUIState.getState().selectedBlock.length > 1) return false;
       if (!repRef.current || !propsRef.current.previousBlock) return false;

@@ -6,6 +6,7 @@ type SelectedBlock = Pick<Block, "value" | "parent">;
 export const useUIState = create(
   combine(
     {
+      lastUsedHighlight: "1" as "1" | "2" | "3",
       focusedBlock: null as
         | { type: "card"; entityID: string }
         | { type: "block"; entityID: string; parent: string }
