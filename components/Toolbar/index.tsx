@@ -45,10 +45,6 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
     "default" | "highlight" | "link" | "header" | "list" | "linkBlock"
   >("default");
 
-  // let [lastUsedHighlight, setlastUsedHighlight] = useState<"1" | "2" | "3">(
-  //   "1",
-  // );
-
   let lastUsedHighlight = useUIState((s) => s.lastUsedHighlight);
   let setLastUsedHighlight = (color: "1" | "2" | "3") =>
     useUIState.setState({
@@ -282,7 +278,7 @@ const ListToolbar = () => {
   let { rep } = useReplicache();
   if (!isList?.data.value)
     return (
-      <div className="flex w-full justify-between items-center gap-4">
+      <div className="flex justify-between items-center gap-4">
         <ToolbarButton
           tooltipContent={
             <div className="flex flex-col gap-1 justify-center">

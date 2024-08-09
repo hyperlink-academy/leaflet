@@ -39,6 +39,7 @@ export function TextDecorationButton(props: {
       active={hasMark}
       onClick={(e) => {
         e.preventDefault();
+        e.stopPropagation();
         toggleMarkInFocusedBlock(props.mark, props.attrs);
       }}
       tooltipContent={props.tooltipContent}
