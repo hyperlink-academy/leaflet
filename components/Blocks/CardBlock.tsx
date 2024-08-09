@@ -9,6 +9,7 @@ import { CloseTiny } from "components/Icons";
 import { useEffect, useRef, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useBlocks } from "src/hooks/queries/useBlocks";
+import { AreYouSure } from "./DeleteBlock";
 
 export function CardBlock(props: BlockProps) {
   let { rep } = useReplicache();
@@ -29,11 +30,6 @@ export function CardBlock(props: BlockProps) {
   useEffect(() => {
     if (!isSelected) {
       setAreYouSure(false);
-    }
-  }, [isSelected]);
-
-  useEffect(() => {
-    if (isSelected) {
     }
   }, [isSelected]);
 
@@ -91,33 +87,11 @@ export function CardBlock(props: BlockProps) {
         }
       }}
     >
-      {/* if the block is not focused, set are you sure to false*/}
       {areYouSure && isSelected ? (
-        <div className="flex flex-col gap-1 w-full h-full place-items-center items-center font-bold py-4 bg-border-light">
-          <div className="">Delete this Page?</div>
-          <div className="flex gap-2">
-            <button
-              className="bg-accent-1 text-accent-2 px-2 py-1 rounded-md "
-              onClick={(e) => {
-                e.stopPropagation();
-                useUIState.getState().closeCard(cardEntity);
-
-                rep &&
-                  rep.mutate.removeBlock({
-                    blockEntity: props.entityID,
-                  });
-              }}
-            >
-              Delete
-            </button>
-            <button
-              className="text-accent-1"
-              onClick={() => setAreYouSure(false)}
-            >
-              Nevermind
-            </button>
-          </div>
-        </div>
+        <AreYouSure
+          closeAreYouSure={() => setAreYouSure(false)}
+          entityID={props.entityID}
+        />
       ) : (
         <div
           className="cardBlockContent w-full flex overflow-clip cursor-pointer"

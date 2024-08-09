@@ -259,7 +259,7 @@ function Block(props: BlockProps) {
       if (e.key === "Backspace") {
         if (!entity_set.permissions.write) return;
         if (textBlocks[props.type]) return;
-        if (props.type === "card") return;
+        if (props.type === "card" || props.type === "mailbox") return;
         e.preventDefault();
         r.mutate.removeBlock({ blockEntity: props.entityID });
         useUIState.getState().closeCard(props.entityID);

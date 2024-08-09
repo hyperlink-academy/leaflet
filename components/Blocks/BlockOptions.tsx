@@ -11,6 +11,7 @@ import {
   Header3Small,
   LinkSmall,
   LinkTextToolbarSmall,
+  MailboxSmall,
   ParagraphSmall,
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
@@ -110,15 +111,6 @@ export function BlockOptions(props: Props) {
                 </label>
               </ToolbarButton>
               <ToolbarButton
-                tooltipContent="Add a Link"
-                className="text-tertiary h-6"
-                onClick={() => {
-                  setblockMenuState("link");
-                }}
-              >
-                <LinkTextToolbarSmall />
-              </ToolbarButton>
-              <ToolbarButton
                 tooltipContent="Add a card"
                 className="text-tertiary h-6"
                 onClick={async () => {
@@ -160,7 +152,17 @@ export function BlockOptions(props: Props) {
                 <BlockCardSmall />
               </ToolbarButton>
               <ToolbarButton
-                tooltipContent="Add Mailbox"
+                tooltipContent="Add a Link"
+                className="text-tertiary h-6"
+                onClick={() => {
+                  setblockMenuState("link");
+                }}
+              >
+                <LinkTextToolbarSmall />
+              </ToolbarButton>
+
+              <ToolbarButton
+                tooltipContent="Add a Mailbox"
                 className="text-tertiary h-6"
                 onClick={async () => {
                   let entity;
@@ -187,7 +189,7 @@ export function BlockOptions(props: Props) {
                   }
                 }}
               >
-                mailbox
+                <MailboxSmall />
               </ToolbarButton>
               <Separator classname="h-6" />
               <TextBlockTypeButton
