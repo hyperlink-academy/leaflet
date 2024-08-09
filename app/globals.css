@@ -72,7 +72,6 @@
   a {
     @apply text-accent-contrast;
     @apply hover:cursor-pointer;
-
     @apply no-underline;
   }
 
