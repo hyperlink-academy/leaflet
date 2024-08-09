@@ -5,7 +5,7 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
-import { CloseTiny } from "components/Icons";
+import { CloseTiny, TrashSmall } from "components/Icons";
 import { useEffect, useRef, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useBlocks } from "src/hooks/queries/useBlocks";
@@ -26,6 +26,7 @@ export function CardBlock(props: BlockProps) {
   let isOpen = useUIState((s) => s.openCards).includes(cardEntity);
 
   let [areYouSure, setAreYouSure] = useState(false);
+  console.log(areYouSure);
 
   useEffect(() => {
     if (!isSelected) {
@@ -87,7 +88,7 @@ export function CardBlock(props: BlockProps) {
         }
       }}
     >
-      {areYouSure && isSelected ? (
+      {areYouSure ? (
         <AreYouSure
           closeAreYouSure={() => setAreYouSure(false)}
           entityID={props.entityID}
@@ -97,7 +98,6 @@ export function CardBlock(props: BlockProps) {
           className="cardBlockContent w-full flex overflow-clip cursor-pointer"
           onMouseDown={(e) => {
             e.preventDefault();
-            e.stopPropagation();
             useUIState.getState().openCard(props.parent, cardEntity);
             if (rep) focusCard(cardEntity, rep);
           }}
@@ -155,12 +155,13 @@ export function CardBlock(props: BlockProps) {
           {permission && (
             <button
               className="absolute p-1 top-0.5 right-0.5 hover:text-accent-contrast text-secondary sm:hidden sm:group-hover/cardBlock:block"
-              onClick={(e) => {
+              onMouseDown={(e) => {
                 e.stopPropagation();
                 setAreYouSure(true);
+                console.log("clicked");
               }}
             >
-              <CloseTiny />
+              <TrashSmall />
             </button>
           )}
         </div>
