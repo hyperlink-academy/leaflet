@@ -10,7 +10,7 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
   let url = useEntity(props.entityID, "link/url");
 
   let selected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
+    s.selectedBlock.find((b) => b.value === props.entityID)
   );
   let permission = useEntitySetContext().permissions.write;
   let { rep } = useReplicache();
@@ -40,7 +40,8 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
             {description?.data.value}
           </div>
           <div
-            className={`min-w-0 w-full break-all line-clamp-1 text-xs italic group-hover/linkBlock:text-accent-contrast ${selected ? "text-accent-contrast" : "text-tertiary"}`}
+            style={{ wordBreak: "break-word" }} // better than tailwind break-all!
+            className={`min-w-0 w-full line-clamp-1 text-xs italic group-hover/linkBlock:text-accent-contrast ${selected ? "text-accent-contrast" : "text-tertiary"}`}
           >
             {url?.data.value}
           </div>

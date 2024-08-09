@@ -140,8 +140,9 @@ export function RenderedTextBlock(props: {
   // empty block rendering is handled further up. update both!
   return (
     <pre
+      style={{ wordBreak: "break-word" }} // better than tailwind break-all!
       className={`
-      w-full whitespace-pre-wrap outline-none break-words ${props.className} `}
+      w-full whitespace-pre-wrap outline-none ${props.className} `}
     >
       {nodes.length === 0 && <br />}
       {nodes.map((node, index) => (
