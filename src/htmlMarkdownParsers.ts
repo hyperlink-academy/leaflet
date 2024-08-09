@@ -26,7 +26,6 @@ export function htmlToMarkdown(html: string): string {
         remarkStringify, // Serialize HTML syntax tree
         {
           bullet: "-", // change default list marker from '*'
-          listItemIndent: "tab", // change default indent from two spaces
         }
       )
       .processSync(html)
