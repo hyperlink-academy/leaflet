@@ -2,7 +2,6 @@
 import { useUIState } from "src/useUIState";
 import { Media } from "./Media";
 import { TextToolbar } from "./Toolbar";
-import { keepFocus } from "./Toolbar/TextBlockTypeButtons";
 
 export function DesktopCardFooter(props: { cardID: string }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);
@@ -21,7 +20,7 @@ export function DesktopCardFooter(props: { cardID: string }) {
           <div
             className="pointer-events-auto w-fit mx-auto py-1 px-3 bg-bg-card border border-border rounded-full shadow-sm"
             onMouseDown={(e) => {
-              keepFocus(focusedBlock.entityID);
+              if (e.currentTarget === e.target) e.preventDefault();
             }}
           >
             <TextToolbar

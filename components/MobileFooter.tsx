@@ -5,7 +5,6 @@ import { ThemePopover } from "./ThemeManager/ThemeSetter";
 import { TextToolbar } from "components/Toolbar";
 import { ShareOptions } from "./ShareOptions";
 import { HomeButton } from "./HomeButton";
-import { keepFocus } from "./Toolbar/TextBlockTypeButtons";
 
 export function MobileFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);
@@ -16,7 +15,7 @@ export function MobileFooter(props: { entityID: string }) {
         <div
           className="w-full z-10 p-2 flex bg-bg-card "
           onMouseDown={(e) => {
-            keepFocus(focusedBlock.entityID);
+            if (e.currentTarget === e.target) e.preventDefault();
           }}
         >
           <TextToolbar
