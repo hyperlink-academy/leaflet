@@ -414,49 +414,59 @@ export const ListMarker = (
   let depth = props.listData?.depth;
   let { rep } = useReplicache();
   return (
-    <>
-      <div className={`${padding}`}>
-        <div
-          className="h-full shrink-0 flex justify-end relative gap-4"
-          style={{
-            width:
-              depth &&
-              `calc(${depth} * ${
-                props.compact
-                  ? "16px"
-                  : `var(--list-marker-width) ${checklist ? " + 26px" : ""})`
-              } `,
+    <div
+      className="h-full shrink-0 flex justify-end relative pr-1 sm:pr-1.5"
+      style={{
+        width:
+          depth &&
+          `calc(${depth} * ${
+            props.compact
+              ? "16px"
+              : `var(--list-marker-width) ${checklist ? " + 18px" : ""})`
+          } `,
+      }}
+    >
+      <div
+        className={`absolute flex gap-2 h-[5px]
+                    ${
+                      props.type === "heading"
+                        ? headingLevel === 3
+                          ? "top-[13px]"
+                          : headingLevel === 2
+                            ? "top-[15px]"
+                            : "top-[20px]"
+                        : "top-[13px]"
+                    }
+              `}
+      >
+        <button
+          onClick={() => {
+            if (children.length > 0)
+              useUIState.getState().toggleFold(props.value);
           }}
+          className={`listMarker group/list-marker ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
         >
+          <div
+            className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline outline-1  outline-offset-1
+                                ${folded ? "outline-secondary" : ` ${children.length > 0 ? "group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`}`}
+          />
+        </button>
+        {checklist && (
           <button
             onClick={() => {
-              if (children.length > 0)
-                useUIState.getState().toggleFold(props.value);
+              rep?.mutate.assertFact({
+                entity: props.value,
+                attribute: "block/check-list",
+                data: { type: "boolean", value: !checklist.data.value },
+              });
             }}
-            className={`listMarker group/list-marker ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
+            className={`h-[10px] w-[10px] rounded-[2px] border shrink-0 flex  self-center items-center justify-center`}
           >
-            <div
-              className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline outline-1  outline-offset-1
-                                ${folded ? "outline-secondary" : ` ${children.length > 0 ? "group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`}`}
-            />
+            {checklist?.data.value ? <span className="">✔</span> : null}
           </button>
-          {checklist && (
-            <button
-              onClick={() => {
-                rep?.mutate.assertFact({
-                  entity: props.value,
-                  attribute: "block/check-list",
-                  data: { type: "boolean", value: !checklist.data.value },
-                });
-              }}
-              className={`h-[10px] w-[10px] rounded-[2px] border shrink-0 flex  self-center items-center justify-center`}
-            >
-              {checklist?.data.value ? <span className="">✔</span> : null}
-            </button>
-          )}
-        </div>
+        )}
       </div>
-    </>
+    </div>
   );
 };
 
