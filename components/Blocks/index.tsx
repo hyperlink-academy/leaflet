@@ -1,6 +1,6 @@
 "use client";
 import { Fact, useEntity, useReplicache } from "src/replicache";
-import { TextBlock, textBlockPadding } from "components/Blocks/TextBlock";
+import { TextBlock } from "components/Blocks/TextBlock";
 import { generateKeyBetween } from "fractional-indexing";
 import { useEffect } from "react";
 import { elementId } from "src/utils/elementId";
@@ -397,7 +397,10 @@ function Block(props: BlockProps) {
 }
 
 export const ListMarker = (
-  props: BlockProps & { className?: string; compact?: boolean },
+  props: Block & { previousBlock?: Block | null; nextBlock?: Block | null } & {
+    className?: string;
+    compact?: boolean;
+  },
 ) => {
   let checklist = useEntity(props.value, "block/check-list");
   let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
@@ -441,7 +444,7 @@ export const ListMarker = (
             <button
               onClick={() => {
                 rep?.mutate.assertFact({
-                  entity: props.entityID,
+                  entity: props.value,
                   attribute: "block/check-list",
                   data: { type: "boolean", value: !checklist.data.value },
                 });
