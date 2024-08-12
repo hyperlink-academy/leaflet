@@ -8,12 +8,45 @@ import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { BlockProps, focusBlock } from "components/Blocks";
 import { schema } from "./schema";
+import { useUIState } from "src/useUIState";
 export const inputrules = (
   propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
   repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
 ) =>
   inputRules({
     rules: [
+      new InputRule(/\~\~([^*]+)\~\~$/, (state, match, start, end) => {
+        const [fullMatch, content] = match;
+        const { tr } = state;
+        if (content) {
+          tr.replaceWith(start, end, state.schema.text(content))
+            .addMark(
+              start,
+              start + content.length,
+              schema.marks.strikethrough.create(),
+            )
+            .removeStoredMark(schema.marks.strikethrough);
+          return tr;
+        }
+        return null;
+      }),
+      new InputRule(/\=\=([^*]+)\=\=$/, (state, match, start, end) => {
+        const [fullMatch, content] = match;
+        const { tr } = state;
+        if (content) {
+          tr.replaceWith(start, end, state.schema.text(content))
+            .addMark(
+              start,
+              start + content.length,
+              schema.marks.highlight.create({
+                color: useUIState.getState().lastUsedHighlight || "1",
+              }),
+            )
+            .removeStoredMark(schema.marks.highlight);
+          return tr;
+        }
+        return null;
+      }),
       new InputRule(/\*\*([^*]+)\*\*$/, (state, match, start, end) => {
         const [fullMatch, content] = match;
         const { tr } = state;
