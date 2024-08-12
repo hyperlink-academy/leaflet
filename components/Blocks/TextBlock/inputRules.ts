@@ -78,6 +78,18 @@ export const inputrules = (
         }
         return null;
       }),
+      new InputRule(/^\[(\ |x)\]\s$/, (state, match) => {
+        if (!propsRef.current.listData) return null;
+        console.log(match);
+        let tr = state.tr;
+        tr.delete(0, 4);
+        repRef.current?.mutate.assertFact({
+          entity: propsRef.current.entityID,
+          attribute: "block/check-list",
+          data: { type: "boolean", value: match[1] === "x" ? true : false },
+        });
+        return tr;
+      }),
       new InputRule(/^([-+*])\s$/, (state) => {
         if (propsRef.current.listData) return null;
         let tr = state.tr;

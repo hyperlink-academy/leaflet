@@ -1,6 +1,6 @@
 "use client";
 import { Fact, useEntity, useReplicache } from "src/replicache";
-import { TextBlock } from "components/Blocks/TextBlock";
+import { TextBlock, textBlockPadding } from "components/Blocks/TextBlock";
 import { generateKeyBetween } from "fractional-indexing";
 import { useEffect } from "react";
 import { elementId } from "src/utils/elementId";
@@ -24,6 +24,7 @@ export type Block = {
   value: string;
   type: Fact<"block/type">["data"]["value"];
   listData?: {
+    checklist?: boolean;
     path: { depth: number; entity: string }[];
     parent: string;
     depth: number;
@@ -364,7 +365,7 @@ function Block(props: BlockProps) {
           `}
         />
       )}
-      {props.listData && <ListMarker {...props} first={first} />}
+      {props.listData && <ListMarker {...props} />}
       <div
         {...mouseHandlers}
         data-entityid={props.entityID}
@@ -396,49 +397,62 @@ function Block(props: BlockProps) {
 }
 
 export const ListMarker = (
-  props: Block & { first?: boolean; className?: string; compact?: boolean },
+  props: BlockProps & { className?: string; compact?: boolean },
 ) => {
+  let checklist = useEntity(props.value, "block/check-list");
   let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
   let children = useEntity(props.value, "card/block");
   let folded =
     useUIState((s) => s.foldedBlocks.includes(props.value)) &&
     children.length > 0;
+  let padding = `pr-2 sm:pr-3
+    ${props.nextBlock?.listData ? "pb-0" : "pb-2"}
+    ${props.previousBlock === null ? "pt-2 sm:pt-3" : "pt-1"}`;
+  let depth = props.listData?.depth;
+  let { rep } = useReplicache();
   return (
     <>
-      <button
-        onClick={() => {
-          if (children.length > 0)
-            useUIState.getState().toggleFold(props.value);
-        }}
-        className={`listMarker group/list-marker pl-1 pr-2 sm:pr-3 ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
-      >
+      <div className={`${padding}`}>
         <div
-          className="h-full shrink-0 flex justify-end relative"
+          className="h-full shrink-0 flex justify-end relative gap-4"
           style={{
             width:
-              props.listData &&
-              `calc(${props.listData.depth} * ${
-                props.compact ? "16px" : `var(--list-marker-width))`
-              }`,
+              depth &&
+              `calc(${depth} * ${
+                props.compact
+                  ? "16px"
+                  : `var(--list-marker-width) ${checklist ? " + 26px" : ""})`
+              } `,
           }}
         >
-          <div
-            className={`absolute h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline outline-1  outline-offset-1
-              ${folded ? "outline-secondary" : ` ${children.length > 0 ? "group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`}
-      ${props.first ? "mt-1 sm:mt-2" : ""}
-      ${
-        props.type === "heading"
-          ? headingLevel === 3
-            ? "top-[13px]"
-            : headingLevel === 2
-              ? "top-[15px]"
-              : "top-[20px]"
-          : "top-[13px]"
-      }
-      ${props.className}`}
-          />
+          <button
+            onClick={() => {
+              if (children.length > 0)
+                useUIState.getState().toggleFold(props.value);
+            }}
+            className={`listMarker group/list-marker ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
+          >
+            <div
+              className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline outline-1  outline-offset-1
+                                ${folded ? "outline-secondary" : ` ${children.length > 0 ? "group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`}`}
+            />
+          </button>
+          {checklist && (
+            <button
+              onClick={() => {
+                rep?.mutate.assertFact({
+                  entity: props.entityID,
+                  attribute: "block/check-list",
+                  data: { type: "boolean", value: !checklist.data.value },
+                });
+              }}
+              className={`h-[10px] w-[10px] rounded-[2px] border shrink-0 flex  self-center items-center justify-center`}
+            >
+              {checklist?.data.value ? <span className="">✔</span> : null}
+            </button>
+          )}
         </div>
-      </button>
+      </div>
     </>
   );
 };

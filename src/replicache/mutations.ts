@@ -1,6 +1,6 @@
 import { DeepReadonly } from "replicache";
 import { Fact } from ".";
-import { Attributes } from "./attributes";
+import { Attributes, FilterAttributes } from "./attributes";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 import { generateKeyBetween } from "fractional-indexing";
@@ -362,7 +362,35 @@ const moveBlockDown: Mutation<{ entityID: string; parent: string }> = async (
   });
 };
 
+const retractAttribute: Mutation<{
+  entity: string;
+  attribute: keyof FilterAttributes<{ cardinality: "one" }>;
+}> = async (args, ctx) => {
+  let fact = (await ctx.scanIndex.eav(args.entity, args.attribute))[0];
+  if (fact) await ctx.retractFact(fact.id);
+};
+
+const toggleTodoState: Mutation<{ entityID: string }> = async (args, ctx) => {
+  let [checked] = await ctx.scanIndex.eav(args.entityID, "block/check-list");
+  if (!checked) {
+    await ctx.assertFact({
+      entity: args.entityID,
+      attribute: "block/check-list",
+      data: { type: "boolean", value: false },
+    });
+  } else if (!checked.data.value) {
+    await ctx.assertFact({
+      entity: args.entityID,
+      attribute: "block/check-list",
+      data: { type: "boolean", value: true },
+    });
+  } else {
+    await ctx.retractFact(checked.id);
+  }
+};
+
 export const mutations = {
+  retractAttribute,
   addBlock,
   addLastBlock,
   outdentBlock,
@@ -375,4 +403,5 @@ export const mutations = {
   removeBlock,
   moveChildren,
   increaseHeadingLevel,
+  toggleTodoState,
 };
