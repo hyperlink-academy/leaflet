@@ -362,7 +362,29 @@ const moveBlockDown: Mutation<{ entityID: string; parent: string }> = async (
   });
 };
 
+const createDraft: Mutation<{
+  mailboxEntity: string;
+  newEntity: string;
+  permission_set: string;
+}> = async (args, ctx) => {
+  let [existingDraft] = await ctx.scanIndex.eav(
+    args.mailboxEntity,
+    "mailbox/draft",
+  );
+  if (existingDraft) return;
+  await ctx.createEntity({
+    entityID: args.newEntity,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    entity: args.mailboxEntity,
+    attribute: "mailbox/draft",
+    data: { type: "reference", value: args.newEntity },
+  });
+};
+
 export const mutations = {
+  createDraft,
   addBlock,
   addLastBlock,
   outdentBlock,

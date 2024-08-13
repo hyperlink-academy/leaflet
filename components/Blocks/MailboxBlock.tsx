@@ -12,6 +12,12 @@ import { focusBlock } from ".";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { subscribeToMailboxWithEmail } from "actions/subscriptions/subscribeToMailboxWithEmail";
 import { confirmEmailSubscription } from "actions/subscriptions/confirmEmailSubscription";
+import { focusCard } from "components/Cards";
+import { v7 } from "uuid";
+import { sendPostToSubscribers } from "actions/subscriptions/sendPostToSubscribers";
+import { getBlocksWithType } from "src/hooks/queries/useBlocks";
+import { getBlocksAsHTML } from "src/utils/getBlocksAsHTML";
+import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 
 export const MailboxBlock = (props: BlockProps) => {
   let [isSubscribed, setIsSubscribed] = useState(false);
@@ -24,7 +30,7 @@ export const MailboxBlock = (props: BlockProps) => {
   let cardEntity = card ? card.data.value : props.entityID;
   let permission = useEntitySetContext().permissions.write;
 
-  let { rep } = useReplicache();
+  let { rep, permission_token } = useReplicache();
 
   let smoke = useSmoker();
 
@@ -73,6 +79,8 @@ export const MailboxBlock = (props: BlockProps) => {
     props.previousBlock,
     rep,
   ]);
+  let draft = useEntity(props.entityID, "mailbox/draft");
+  let entity_set = useEntitySetContext();
   if (!permission) return <MailboxReaderView entityID={props.entityID} />;
 
   return (
@@ -90,7 +98,49 @@ export const MailboxBlock = (props: BlockProps) => {
       >
         {!areYouSure ? (
           <div className="flex gap-2 p-4">
-            <ButtonPrimary>Write a Post</ButtonPrimary>
+            <ButtonPrimary
+              onClick={async () => {
+                let entity;
+                if (draft) {
+                  entity = draft.data.value;
+                } else {
+                  entity = v7();
+                  await rep?.mutate.createDraft({
+                    mailboxEntity: props.entityID,
+                    permission_set: entity_set.set,
+                    newEntity: entity,
+                  });
+                }
+                useUIState.getState().openCard(props.parent, entity);
+                if (rep) focusCard(entity, rep);
+                return;
+              }}
+            >
+              Write a Post
+            </ButtonPrimary>
+            {draft && (
+              <ButtonPrimary
+                onClick={async () => {
+                  // Call the
+                  if (!rep) return;
+                  let blocks =
+                    (await rep?.query((tx) =>
+                      getBlocksWithType(tx, draft.data.value),
+                    )) || [];
+                  let html = (await getBlocksAsHTML(rep, blocks))?.join("\n");
+                  await sendPostToSubscribers(
+                    permission_token,
+                    props.entityID,
+                    {
+                      html,
+                      markdown: htmlToMarkdown(html),
+                    },
+                  );
+                }}
+              >
+                send!
+              </ButtonPrimary>
+            )}
             <MailboxInfo />
           </div>
         ) : (
@@ -109,14 +159,13 @@ export const MailboxBlock = (props: BlockProps) => {
                 setIsSubscribed={() => {
                   setIsSubscribed(true);
                 }}
-                role={props.role}
+                role="author"
               />
             ) : (
               <button
                 className="text-tertiary hover:text-accent-contrast"
                 onClick={(e) => {
                   let rect = e.currentTarget.getBoundingClientRect();
-
                   setIsSubscribed(false);
                   smoke({
                     text: "unsubscribed!",

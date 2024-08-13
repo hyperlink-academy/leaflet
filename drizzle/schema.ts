@@ -31,6 +31,13 @@ export const entity_sets = pgTable("entity_sets", {
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 });
 
+export const email_subscriptions_to_entity = pgTable("email_subscriptions_to_entity", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	entity: uuid("entity").notNull().references(() => entities.id),
+	email: text("email").notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+});
+
 export const identities = pgTable("identities", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -59,17 +66,6 @@ export const pending_email_subscriptions_to_entity = pgTable("pending_email_subs
 	email: text("email").notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	code: text("code").notNull(),
-});
-
-export const email_subscriptions_to_entity = pgTable("email_subscriptions_to_entity", {
-	entity: uuid("entity").notNull().references(() => entities.id, { onDelete: "cascade" } ),
-	email: text("email").notNull(),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-},
-(table) => {
-	return {
-		email_subscriptions_to_entity_pkey: primaryKey({ columns: [table.entity, table.email], name: "email_subscriptions_to_entity_pkey"}),
-	}
 });
 
 export const permission_token_rights = pgTable("permission_token_rights", {

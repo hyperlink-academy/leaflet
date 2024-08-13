@@ -33,6 +33,17 @@ const BlockAttributes = {
   },
 } as const;
 
+const MailboxAttributes = {
+  "mailbox/draft": {
+    type: "reference",
+    cardinality: "one",
+  },
+  "mailbox/archive": {
+    type: "reference",
+    cardinality: "one",
+  },
+} as const;
+
 const LinkBlockAttributes = {
   "link/preview": {
     type: "image",
@@ -100,6 +111,7 @@ export const Attributes = {
   ...BlockAttributes,
   ...LinkBlockAttributes,
   ...ThemeAttributes,
+  ...MailboxAttributes,
 };
 type Attribute = typeof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
