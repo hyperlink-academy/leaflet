@@ -24,9 +24,9 @@ export const DocPreview = (props: {
         {state === "normal" ? (
           <Link
             href={"/" + props.token.id}
-            className={`no-underline text-primary h-full`}
+            className={`no-underline hover:no-underline text-primary h-full`}
           >
-            <div className="rounded-lg overflow-clip border border-border bg-bg-page grow w-full h-full">
+            <div className="rounded-lg hover:border-primary hover:shadow-sm overflow-clip border border-border bg-bg-page grow w-full h-full">
               <ThemeBackgroundProvider entityID={props.doc_id}>
                 <div className="docPreview grow shrink-0 h-full w-full px-2 pt-2 sm:px-3 sm:pt-3 flex items-end">
                   <div
