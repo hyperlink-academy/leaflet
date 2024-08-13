@@ -206,6 +206,7 @@ export type BlockProps = {
 
 let textBlocks: { [k in Fact<"block/type">["data"]["value"]]?: boolean } = {
   text: true,
+  mailbox: true,
   heading: true,
 };
 
@@ -356,9 +357,7 @@ function Block(props: BlockProps) {
           <ExternalLinkBlock {...props} />
         ) : props.type === "mailbox" ? (
           <div className="flex flex-col gap-4 w-full">
-            <MailboxBlock role="author" {...props} />
-            <hr />
-            <MailboxBlock role="reader" {...props} />
+            <MailboxBlock {...props} />
           </div>
         ) : null}
       </div>

@@ -13,11 +13,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { subscribeToMailboxWithEmail } from "actions/subscriptions/subscribeToMailboxWithEmail";
 import { confirmEmailSubscription } from "actions/subscriptions/confirmEmailSubscription";
 
-export const MailboxBlock = (
-  props: BlockProps & {
-    role: "author" | "reader";
-  },
-) => {
+export const MailboxBlock = (props: BlockProps) => {
   let [isSubscribed, setIsSubscribed] = useState(false);
   let [areYouSure, setAreYouSure] = useState(false);
   let isSelected = useUIState((s) =>
@@ -41,6 +37,14 @@ export const MailboxBlock = (
   useEffect(() => {
     if (!isSelected) return;
     let listener = (e: KeyboardEvent) => {
+      let el = e.target as HTMLElement;
+      console.log(el.tagName, el.contentEditable, el);
+      if (
+        el.tagName === "INPUT" ||
+        el.tagName === "textarea" ||
+        el.contentEditable === "true"
+      )
+        return;
       if (e.key === "Backspace" && permission) {
         if (e.defaultPrevented) return;
         if (areYouSure === false) {
@@ -69,22 +73,10 @@ export const MailboxBlock = (
     props.previousBlock,
     rep,
   ]);
-  console.log(areYouSure);
+  if (!permission) return <MailboxReaderView entityID={props.entityID} />;
 
   return (
-    <div
-      className={`mailboxContent relative w-full flex flex-col gap-1`}
-      onKeyDown={(e) => {
-        if (e.key === "Backspace" && permission) {
-          e.stopPropagation();
-
-          rep &&
-            rep.mutate.removeBlock({
-              blockEntity: props.entityID,
-            });
-        }
-      }}
-    >
+    <div className={`mailboxContent relative w-full flex flex-col gap-1`}>
       <div
         className={`flex flex-col gap-2 items-center justify-center w-full rounded-md border outline ${
           isSelected
@@ -97,43 +89,10 @@ export const MailboxBlock = (
         }}
       >
         {!areYouSure ? (
-          props.role === "reader" ? (
-            <div className="flex flex-col w-full gap-2 p-4">
-              {!isSubscribed ? (
-                <SubscribeForm
-                  entityID={props.entityID}
-                  role={props.role}
-                  setIsSubscribed={() => {
-                    setIsSubscribed(true);
-                  }}
-                />
-              ) : (
-                <div className="flex flex-col gap-2 items-center place-self-center pt-2">
-                  <div className="flex font-bold text-tertiary gap-2 items-center place-self-center  ">
-                    You&apos;re Subscribed! <MailboxInfo subscriber />
-                  </div>
-                  <div className="flex flex-col gap-1 items-center place-self-center">
-                    <ButtonPrimary onClick={() => {}}>
-                      See All Posts
-                    </ButtonPrimary>
-                    <button
-                      className="text-tertiary hover:text-accent-contrast"
-                      onClick={() => {
-                        setIsSubscribed(false);
-                      }}
-                    >
-                      unsubscribe
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex gap-2 p-4">
-              <ButtonPrimary>Write a Post</ButtonPrimary>
-              <MailboxInfo />
-            </div>
-          )
+          <div className="flex gap-2 p-4">
+            <ButtonPrimary>Write a Post</ButtonPrimary>
+            <MailboxInfo />
+          </div>
         ) : (
           <AreYouSure
             entityID={props.entityID}
@@ -142,7 +101,7 @@ export const MailboxBlock = (
         )}
       </div>
       <div className="flex gap-3 items-center justify-between">
-        {props.role === "author" && (
+        {
           <>
             {!isSubscribed ? (
               <SubscribePopover
@@ -179,7 +138,52 @@ export const MailboxBlock = (
               </button>
             </div>
           </>
-        )}
+        }
+      </div>
+    </div>
+  );
+};
+
+const MailboxReaderView = (props: { entityID: string }) => {
+  let [isSubscribed, setIsSubscribed] = useState(false);
+  return (
+    <div className={`mailboxContent relative w-full flex flex-col gap-1`}>
+      <div
+        className={`flex flex-col gap-2 items-center justify-center w-full rounded-md border outline border-border-light outline-transparent"
+      `}
+        style={{
+          backgroundColor:
+            "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-card)) 85%)",
+        }}
+      >
+        <div className="flex flex-col w-full gap-2 p-4">
+          {!isSubscribed ? (
+            <SubscribeForm
+              entityID={props.entityID}
+              role={"reader"}
+              setIsSubscribed={() => {
+                setIsSubscribed(true);
+              }}
+            />
+          ) : (
+            <div className="flex flex-col gap-2 items-center place-self-center pt-2">
+              <div className="flex font-bold text-tertiary gap-2 items-center place-self-center  ">
+                You&apos;re Subscribed! <MailboxInfo subscriber />
+              </div>
+              <div className="flex flex-col gap-1 items-center place-self-center">
+                <ButtonPrimary onClick={() => {}}>See All Posts</ButtonPrimary>
+                <button
+                  className="text-tertiary hover:text-accent-contrast"
+                  onClick={() => {
+                    setIsSubscribed(false);
+                  }}
+                >
+                  unsubscribe
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
