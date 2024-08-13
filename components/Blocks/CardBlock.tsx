@@ -20,7 +20,7 @@ export function CardBlock(props: BlockProps) {
   let isSelected = useUIState(
     (s) =>
       (props.type !== "text" || s.selectedBlock.length > 1) &&
-      s.selectedBlock.find((b) => b.value === props.entityID)
+      s.selectedBlock.find((b) => b.value === props.entityID),
   );
   let isOpen = useUIState((s) => s.openCards).includes(cardEntity);
 
@@ -215,7 +215,7 @@ export function BlockPreview(
   b: Block & {
     previewRef: React.RefObject<HTMLDivElement>;
     size?: "small" | "large";
-  }
+  },
 ) {
   let headingLevel = useEntity(b.value, "block/heading-level")?.data.value;
   let ref = useRef<HTMLDivElement | null>(null);
@@ -232,7 +232,7 @@ export function BlockPreview(
           }
         });
       },
-      { threshold: 0.1, root: b.previewRef.current }
+      { threshold: 0.01, root: b.previewRef.current },
     );
     observer.observe(ref.current);
     return () => observer.disconnect();
