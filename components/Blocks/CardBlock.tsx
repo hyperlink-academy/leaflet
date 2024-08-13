@@ -20,7 +20,7 @@ export function CardBlock(props: BlockProps) {
   let isSelected = useUIState(
     (s) =>
       (props.type !== "text" || s.selectedBlock.length > 1) &&
-      s.selectedBlock.find((b) => b.value === props.entityID)
+      s.selectedBlock.find((b) => b.value === props.entityID),
   );
   let isOpen = useUIState((s) => s.openCards).includes(cardEntity);
 
@@ -131,7 +131,7 @@ export function CardBlock(props: BlockProps) {
           <div className="my-2 ml-3 grow min-w-0 text-sm bg-transparent overflow-clip ">
             {docMetadata[0] && (
               <div
-                className={`cardBlockOne outline-none resize-none align-top flex gap-3 ${docMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
+                className={`cardBlockOne outline-none resize-none align-top flex gap-2 ${docMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
               >
                 {docMetadata[0].listData && (
                   <ListMarker
@@ -139,8 +139,8 @@ export function CardBlock(props: BlockProps) {
                     compact
                     className={
                       docMetadata[0].type === "heading"
-                        ? "top-[10px]"
-                        : "top-[8px]"
+                        ? "!top-[6px]"
+                        : "!top-[4px]"
                     }
                   />
                 )}
@@ -149,13 +149,13 @@ export function CardBlock(props: BlockProps) {
             )}
             {docMetadata[1] && (
               <div
-                className={`cardBlockLineTwo outline-none resize-none align-top flex  gap-3 ${docMetadata[1].type === "heading" ? "font-bold" : ""}`}
+                className={`cardBlockLineTwo outline-none resize-none align-top flex  gap-2 ${docMetadata[1].type === "heading" ? "font-bold" : ""}`}
               >
                 {docMetadata[1].listData && (
                   <ListMarker
                     {...docMetadata[1]}
                     compact
-                    className="top-[8px]"
+                    className="top-[4px]"
                   />
                 )}
                 <RenderedTextBlock entityID={docMetadata[1].value} />
@@ -163,13 +163,13 @@ export function CardBlock(props: BlockProps) {
             )}
             {docMetadata[2] && (
               <div
-                className={`cardBlockLineThree outline-none resize-none align-top flex  gap-3 ${docMetadata[2].type === "heading" ? "font-bold" : ""}`}
+                className={`cardBlockLineThree outline-none resize-none align-top flex  gap-2 ${docMetadata[2].type === "heading" ? "font-bold" : ""}`}
               >
                 {docMetadata[2].listData && (
                   <ListMarker
                     {...docMetadata[2]}
                     compact
-                    className="top-[8px]"
+                    className="top-[4px]"
                   />
                 )}
 
@@ -215,7 +215,7 @@ export function BlockPreview(
   b: Block & {
     previewRef: React.RefObject<HTMLDivElement>;
     size?: "small" | "large";
-  }
+  },
 ) {
   let headingLevel = useEntity(b.value, "block/heading-level")?.data.value;
   let ref = useRef<HTMLDivElement | null>(null);
@@ -232,7 +232,7 @@ export function BlockPreview(
           }
         });
       },
-      { threshold: 0.1, root: b.previewRef.current }
+      { threshold: 0.1, root: b.previewRef.current },
     );
     observer.observe(ref.current);
     return () => observer.disconnect();

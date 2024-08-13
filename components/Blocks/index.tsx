@@ -17,6 +17,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
 import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
 import { indent, outdent } from "src/utils/list-operations";
+import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
 export type Block = {
   factID: string;
   parent: string;
@@ -375,6 +376,7 @@ function Block(props: BlockProps) {
         props.type !== "text" &&
         `${first ? "pt-3 sm:pt-4" : "pt-1"} px-3 sm:px-4 pb-2`
       }
+      ${props.listData && "!pl-2"}
       ${selectedBlocks.length > 1 ? "Multiple-Selected" : ""}
       ${actuallySelected ? "selected" : ""}
       `}
@@ -411,31 +413,33 @@ export const ListMarker = (
   let padding = `pr-2 sm:pr-3
     ${props.nextBlock?.listData ? "pb-0" : "pb-2"}
     ${props.previousBlock === null ? "pt-2 sm:pt-3" : "pt-1"}`;
+
   let depth = props.listData?.depth;
   let { rep } = useReplicache();
   return (
     <div
-      className="h-full shrink-0 flex justify-end relative pr-1 sm:pr-1.5"
+      className="h-full shrink-0 flex justify-end relative"
       style={{
         width:
           depth &&
           `calc(${depth} * ${
             props.compact
-              ? "16px"
-              : `var(--list-marker-width) ${checklist ? " + 18px" : ""})`
+              ? `16px  ${checklist ? " + 20px" : ""})`
+              : `var(--list-marker-width) ${checklist ? " + 20px" : ""})`
           } `,
       }}
     >
       <div
-        className={`absolute flex gap-2 h-[5px]
+        className={`absolute flex gap-[8px] h-3
+                    ${props.className}
                     ${
                       props.type === "heading"
                         ? headingLevel === 3
-                          ? "top-[13px]"
+                          ? "top-[10px]"
                           : headingLevel === 2
-                            ? "top-[15px]"
-                            : "top-[20px]"
-                        : "top-[13px]"
+                            ? "top-[14px]"
+                            : "top-[18px]"
+                        : "top-[10px]"
                     }
               `}
       >
@@ -460,9 +464,9 @@ export const ListMarker = (
                 data: { type: "boolean", value: !checklist.data.value },
               });
             }}
-            className={`h-[10px] w-[10px] rounded-[2px] border shrink-0 flex  self-center items-center justify-center`}
+            className={`${checklist?.data.value ? "text-accent-contrast" : "text-border"}`}
           >
-            {checklist?.data.value ? <span className="">✔</span> : null}
+            {checklist?.data.value ? <CheckboxChecked /> : <CheckboxEmpty />}
           </button>
         )}
       </div>

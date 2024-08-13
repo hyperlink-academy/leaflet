@@ -47,12 +47,15 @@ export function TextBlock(props: BlockProps & { className: string }) {
   let first = props.previousBlock === null;
   let permission = useEntitySetContext().permissions.write;
 
+  // block padding is pb-2 pt-1, px-4 on desktop and px-3 on mobile with pb-2
+  // if it's a heading or a list, we don't want padding on the bottom (though if its the last list item, we do want padding on the bottom!)
+  // if it's the firs block in the card, we want padding on the top
   let blockPadding = `px-3 sm:px-4 ${
     props.type === "heading" || (props.listData && props.nextBlock?.listData)
       ? "pb-0"
       : "pb-2"
   }
-  ${props.listData ? "!pl-1" : ""}
+  ${props.listData ? "!pl-0" : ""}
   ${first ? "pt-2 sm:pt-3" : "pt-1"}`;
 
   return (
@@ -78,7 +81,7 @@ export function TextBlock(props: BlockProps & { className: string }) {
 
 export function IOSBS(props: BlockProps) {
   let selected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID)
+    s.selectedBlock.find((b) => b.value === props.entityID),
   );
   let [initialRender, setInitialRender] = useState(true);
   useEffect(() => {
@@ -97,12 +100,12 @@ export function IOSBS(props: BlockProps) {
         });
         setTimeout(async () => {
           let target = document.getElementById(
-            elementId.block(props.entityID).container
+            elementId.block(props.entityID).container,
           );
           let vis = await isVisible(target as Element);
           if (!vis) {
             let parentEl = document.getElementById(
-              elementId.card(props.parent).container
+              elementId.card(props.parent).container,
             );
             if (!parentEl) return;
             parentEl?.scrollBy({
@@ -136,7 +139,7 @@ export function RenderedTextBlock(props: {
   Y.applyUpdate(doc, update);
   let nodes = doc.getXmlElement("prosemirror").toArray();
 
-  // show the rendered version of the block is the block has something in it!
+  // show the rendered version of the block if the block has something in it!
   // empty block rendering is handled further up. update both!
   return (
     <pre
@@ -153,7 +156,7 @@ export function RenderedTextBlock(props: {
 }
 
 export function BaseTextBlock(
-  props: BlockProps & { className: string; blockPadding: string }
+  props: BlockProps & { className: string; blockPadding: string },
 ) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
 
@@ -169,7 +172,7 @@ export function BaseTextBlock(
   }, [rep?.rep]);
 
   let selected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID)
+    s.selectedBlock.find((b) => b.value === props.entityID),
   );
   let first = props.previousBlock === null;
   let headingLevel = useEntity(props.entityID, "block/heading-level");
@@ -177,7 +180,7 @@ export function BaseTextBlock(
   let [value, factID] = useYJSValue(props.entityID);
 
   let editorState = useEditorStates(
-    (s) => s.editorStates[props.entityID]
+    (s) => s.editorStates[props.entityID],
   )?.editor;
   useEffect(() => {
     if (!editorState)
@@ -244,7 +247,7 @@ export function BaseTextBlock(
               await addLinkBlock(
                 editorState.doc.textContent,
                 props.entityID,
-                rep.rep
+                rep.rep,
               );
             }
           }}
@@ -332,7 +335,7 @@ function CommandHandler(props: { entityID: string }) {
       ) {
         toggleMark(args.mark, args.attrs)(view.state, view.dispatch);
       } else setMark(args.mark, args.attrs)(view.state, view.dispatch);
-    }
+    },
   );
   useAppEventListener(props.entityID, "toggleMark", cb, []);
   return null;
@@ -359,7 +362,7 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
 
       // scroll card if cursor is at the very top or very bottom of the card
       let parentID = document.getElementById(
-        elementId.card(props.parentID).container
+        elementId.card(props.parentID).container,
       );
       let parentHeight = parentID?.clientHeight;
       let cursorPosY = coords.top;
@@ -394,7 +397,7 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
         };
       });
     },
-    [props.entityID]
+    [props.entityID],
   );
   return null;
 };

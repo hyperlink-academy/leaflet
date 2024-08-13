@@ -78,7 +78,7 @@ export const inputrules = (
         }
         return null;
       }),
-      new InputRule(/^\[(\ |x)\]\s$/, (state, match) => {
+      new InputRule(/^\[(\ |x)?\]\s$/, (state, match) => {
         if (!propsRef.current.listData) return null;
         console.log(match);
         let tr = state.tr;
