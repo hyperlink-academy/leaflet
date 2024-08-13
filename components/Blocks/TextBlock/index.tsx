@@ -47,23 +47,12 @@ export function TextBlock(props: BlockProps & { className: string }) {
   let first = props.previousBlock === null;
   let permission = useEntitySetContext().permissions.write;
 
-  // block padding is pb-2 pt-1, px-4 on desktop and px-3 on mobile with pb-2
-  // if it's a heading or a list, we don't want padding on the bottom (though if its the last list item, we do want padding on the bottom!)
-  // if it's the firs block in the card, we want padding on the top
-  let blockPadding = `px-3 sm:px-4 ${
-    props.type === "heading" || (props.listData && props.nextBlock?.listData)
-      ? "pb-0"
-      : "pb-2"
-  }
-  ${props.listData ? "!pl-0" : ""}
-  ${first ? "pt-2 sm:pt-3" : "pt-1"}`;
-
   return (
     <>
       {(!initialized || !permission) && (
         <RenderedTextBlock
           entityID={props.entityID}
-          className={blockPadding + " " + props.className}
+          className={props.className}
           first={first}
         />
       )}
@@ -72,7 +61,7 @@ export function TextBlock(props: BlockProps & { className: string }) {
           className={`w-full relative group/text ${!initialized ? "hidden" : ""}`}
         >
           <IOSBS {...props} />
-          <BaseTextBlock blockPadding={blockPadding} {...props} />
+          <BaseTextBlock {...props} />
         </div>
       )}
     </>
@@ -155,9 +144,7 @@ export function RenderedTextBlock(props: {
   );
 }
 
-export function BaseTextBlock(
-  props: BlockProps & { className: string; blockPadding: string },
-) {
+export function BaseTextBlock(props: BlockProps & { className: string }) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
 
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
@@ -271,7 +258,6 @@ export function BaseTextBlock(
           className={`
           grow resize-none align-top whitespace-pre-wrap bg-transparent
           outline-none
-          ${props.blockPadding}
           ${props.className}`}
           ref={setMount}
         />
@@ -294,7 +280,6 @@ export function BaseTextBlock(
         {/* if this is the block is empty and selected */}
         {editorState.doc.textContent.length === 0 && selected && (
           <BlockOptions
-            className={props.blockPadding}
             factID={factID}
             entityID={props.entityID}
             parent={props.parent}

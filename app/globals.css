@@ -22,7 +22,7 @@
   }
   @media (max-width: 640px) {
     :root {
-      --list-marker-width: 16px;
+      --list-marker-width: 20px;
     }
   }
 

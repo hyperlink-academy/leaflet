@@ -274,24 +274,24 @@ function Block(props: BlockProps) {
       }
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        let block = props.nextBlock;
-        if (block && useUIState.getState().selectedBlock.length <= 1)
-          focusBlock(block, {
+        let nextBlock = props.nextBlock;
+        if (nextBlock && useUIState.getState().selectedBlock.length <= 1)
+          focusBlock(nextBlock, {
             type: "top",
             left: useEditorStates.getState().lastXPosition,
           });
-        if (!block) return;
+        if (!nextBlock) return;
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        let block = props.previousBlock;
-        if (block && useUIState.getState().selectedBlock.length <= 1) {
-          focusBlock(block, {
+        let prevBlock = props.previousBlock;
+        if (prevBlock && useUIState.getState().selectedBlock.length <= 1) {
+          focusBlock(prevBlock, {
             type: "bottom",
             left: useEditorStates.getState().lastXPosition,
           });
         }
-        if (!block) return;
+        if (!prevBlock) return;
       }
       if (e.key === "Backspace") {
         if (!entity_set.permissions.write) return;
@@ -300,8 +300,8 @@ function Block(props: BlockProps) {
         e.preventDefault();
         r.mutate.removeBlock({ blockEntity: props.entityID });
         useUIState.getState().closeCard(props.entityID);
-        let block = props.previousBlock;
-        if (block) focusBlock(block, { type: "end" });
+        let prevBlock = props.previousBlock;
+        if (prevBlock) focusBlock(prevBlock, { type: "end" });
       }
       if (e.key === "Enter") {
         if (!entity_set.permissions.write) return;
@@ -353,6 +353,9 @@ function Block(props: BlockProps) {
     return () => window.removeEventListener("keydown", listener);
   }, [entity_set, selected, props, rep]);
   let mouseHandlers = useBlockMouseHandlers(props);
+
+  let focusedElement = useUIState((s) => s.focusedBlock);
+
   return (
     <div className="blockWrapper relative flex">
       {selected && selectedBlocks.length > 1 && (
@@ -366,22 +369,27 @@ function Block(props: BlockProps) {
           `}
         />
       )}
-      {props.listData && <ListMarker {...props} />}
       <div
         {...mouseHandlers}
         data-entityid={props.entityID}
-        className={`blockContent relative grow flex flex-row
-      ${
-        props.type !== "heading" &&
-        props.type !== "text" &&
-        `${first ? "pt-3 sm:pt-4" : "pt-1"} px-3 sm:px-4 pb-2`
-      }
-      ${props.listData && "!pl-2"}
-      ${selectedBlocks.length > 1 ? "Multiple-Selected" : ""}
-      ${actuallySelected ? "selected" : ""}
+        className={`
+          blockContent relative
+          grow flex flex-row gap-2
+          px-3 sm:px-4
+          ${
+            props.type === "heading" ||
+            (props.listData && props.nextBlock?.listData)
+              ? "pb-0"
+              : "pb-2"
+          }
+          ${first ? `${props.type === "heading" || props.type === "text" ? "pt-2 sm:pt-3" : "pt-3 sm:pt-4"}` : "pt-1"}
+          ${selectedBlocks.length > 1 ? "Multiple-Selected" : ""}
+          ${actuallySelected ? "selected" : ""}
       `}
         id={elementId.block(props.entityID).container}
       >
+        {props.listData && <ListMarker {...props} />}
+
         {props.type === "card" ? (
           <CardBlock {...props} />
         ) : props.type === "text" ? (
@@ -410,15 +418,23 @@ export const ListMarker = (
   let folded =
     useUIState((s) => s.foldedBlocks.includes(props.value)) &&
     children.length > 0;
-  let padding = `pr-2 sm:pr-3
-    ${props.nextBlock?.listData ? "pb-0" : "pb-2"}
-    ${props.previousBlock === null ? "pt-2 sm:pt-3" : "pt-1"}`;
 
   let depth = props.listData?.depth;
   let { rep } = useReplicache();
   return (
     <div
-      className="h-full shrink-0 flex justify-end relative"
+      className={`shrink-0  flex gap-[8px] justify-end items-center h-3
+                  ${props.className}
+                  ${
+                    props.type === "heading"
+                      ? headingLevel === 3
+                        ? "pt-[10px]"
+                        : headingLevel === 2
+                          ? "pt-[14px]"
+                          : "pt-[18px]"
+                      : "pt-[10px]"
+                  }
+            `}
       style={{
         width:
           depth &&
@@ -429,47 +445,36 @@ export const ListMarker = (
           } `,
       }}
     >
-      <div
-        className={`absolute flex gap-[8px] h-3
-                    ${props.className}
-                    ${
-                      props.type === "heading"
-                        ? headingLevel === 3
-                          ? "top-[10px]"
-                          : headingLevel === 2
-                            ? "top-[14px]"
-                            : "top-[18px]"
-                        : "top-[10px]"
-                    }
-              `}
+      <button
+        onClick={() => {
+          if (children.length > 0)
+            useUIState.getState().toggleFold(props.value);
+        }}
+        className={`listMarker group/list-marker ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >
+        <div
+          className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline outline-1  outline-offset-1
+                      ${
+                        folded
+                          ? "outline-secondary"
+                          : ` ${children.length > 0 ? "group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`
+                      }`}
+        />
+      </button>
+      {checklist && (
         <button
           onClick={() => {
-            if (children.length > 0)
-              useUIState.getState().toggleFold(props.value);
+            rep?.mutate.assertFact({
+              entity: props.value,
+              attribute: "block/check-list",
+              data: { type: "boolean", value: !checklist.data.value },
+            });
           }}
-          className={`listMarker group/list-marker ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
+          className={`${checklist?.data.value ? "text-accent-contrast" : "text-border"}`}
         >
-          <div
-            className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline outline-1  outline-offset-1
-                                ${folded ? "outline-secondary" : ` ${children.length > 0 ? "group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`}`}
-          />
+          {checklist?.data.value ? <CheckboxChecked /> : <CheckboxEmpty />}
         </button>
-        {checklist && (
-          <button
-            onClick={() => {
-              rep?.mutate.assertFact({
-                entity: props.value,
-                attribute: "block/check-list",
-                data: { type: "boolean", value: !checklist.data.value },
-              });
-            }}
-            className={`${checklist?.data.value ? "text-accent-contrast" : "text-border"}`}
-          >
-            {checklist?.data.value ? <CheckboxChecked /> : <CheckboxEmpty />}
-          </button>
-        )}
-      </div>
+      )}
     </div>
   );
 };

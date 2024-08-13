@@ -139,8 +139,8 @@ export function CardBlock(props: BlockProps) {
                     compact
                     className={
                       docMetadata[0].type === "heading"
-                        ? "!top-[6px]"
-                        : "!top-[4px]"
+                        ? "!pt-[12px]"
+                        : "!pt-[8px]"
                     }
                   />
                 )}
@@ -155,7 +155,7 @@ export function CardBlock(props: BlockProps) {
                   <ListMarker
                     {...docMetadata[1]}
                     compact
-                    className="top-[4px]"
+                    className="!pt-[8px]"
                   />
                 )}
                 <RenderedTextBlock entityID={docMetadata[1].value} />
@@ -169,7 +169,7 @@ export function CardBlock(props: BlockProps) {
                   <ListMarker
                     {...docMetadata[2]}
                     compact
-                    className="top-[4px]"
+                    className="!pt-[8px]"
                   />
                 )}
 
