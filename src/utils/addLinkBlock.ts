@@ -21,19 +21,19 @@ export async function addLinkBlock(
       value: url,
     },
   });
+  await rep?.mutate.assertFact({
+    entity: entityID,
+    attribute: "link/preview",
+    data: {
+      fallback: "",
+      type: "image",
+      src: `/api/link-preview-proxy?url=${url}`,
+      width: 1920,
+      height: 1080,
+    },
+  });
   let data = await addLinkCard({ link: url });
   if (data.success) {
-    await rep?.mutate.assertFact({
-      entity: entityID,
-      attribute: "link/preview",
-      data: {
-        fallback: "",
-        type: "image",
-        src: data.data.data.screenshot.url,
-        width: data.data.data.screenshot.width,
-        height: data.data.data.screenshot.height,
-      },
-    });
     await rep?.mutate.assertFact({
       entity: entityID,
       attribute: "link/title",
