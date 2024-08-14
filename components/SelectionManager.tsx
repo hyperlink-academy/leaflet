@@ -40,6 +40,44 @@ export function SelectionManager() {
     let removeListener = addShortcut([
       {
         metaKey: true,
+        key: "ArrowUp",
+        handler: async () => {
+          let [firstBlock] =
+            (await rep?.query((tx) =>
+              getBlocksWithType(
+                tx,
+                useUIState.getState().selectedBlock[0].parent,
+              ),
+            )) || [];
+          if (firstBlock) focusBlock(firstBlock, { type: "start" });
+        },
+      },
+      {
+        metaKey: true,
+        key: "ArrowDown",
+        handler: async () => {
+          let blocks =
+            (await rep?.query((tx) =>
+              getBlocksWithType(
+                tx,
+                useUIState.getState().selectedBlock[0].parent,
+              ),
+            )) || [];
+          let folded = useUIState.getState().foldedBlocks;
+          blocks.filter(
+            (f) =>
+              !f.listData ||
+              !f.listData.path.find(
+                (path) =>
+                  folded.includes(path.entity) && f.value !== path.entity,
+              ),
+          );
+          let lastBlock = blocks[blocks.length - 1];
+          if (lastBlock) focusBlock(lastBlock, { type: "end" });
+        },
+      },
+      {
+        metaKey: true,
         altKey: true,
         key: ["l", "¬"],
         handler: async () => {
