@@ -39,16 +39,16 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-      let listener = () => {
-        let el = document.querySelector(":root");
-        el.style.setProperty("--page-height-unitless", window.innerHeight)
-        el.style.setProperty("--page-width-unitless", window.innerWidth)
-      }
-      listener()
-      window.addEventListener("resize", listener)
-      `,
+            let listener = () => {
+              let el = document.querySelector(":root");
+              el.style.setProperty("--page-height-unitless", window.innerHeight)
+              el.style.setProperty("--page-width-unitless", window.innerWidth)
+            }
+            listener()
+            window.addEventListener("resize", listener)
+            `,
           }}
-        ></script>
+        />
         <Analytics />
         <ServiceWorker />
         <InitialPageLoad>
