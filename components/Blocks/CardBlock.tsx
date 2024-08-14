@@ -197,6 +197,7 @@ export function CardPreview(props: { entityID: string }) {
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
 
+  let cardWidth = `var(--card-width-unitless)`;
   return (
     <div
       ref={previewRef}
@@ -205,8 +206,8 @@ export function CardPreview(props: { entityID: string }) {
       <div
         className="absolute top-0 left-0 w-full h-full bg-white origin-top-left pointer-events-none"
         style={{
-          width: `calc(var(--card-width) * 1px)`,
-          transform: "scale(calc(120 / var(--card-width)))",
+          width: `calc(1px * ${cardWidth})`,
+          transform: `scale(calc((120 / ${cardWidth} )))`,
         }}
       >
         {blocks.slice(0, 10).map((b, index, arr) => {

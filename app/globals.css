@@ -19,10 +19,26 @@
     --highlight-3: 224, 244, 255;
 
     --list-marker-width: 36px;
+    --card-width-unitless: min(624, calc(var(--page-width-unitless) - 12));
   }
   @media (max-width: 640px) {
     :root {
       --list-marker-width: 20px;
+    }
+  }
+
+  @media (min-width: 640px) {
+    :root {
+      --card-width-unitless: min(624, calc(var(--page-width-unitless) - 128));
+    }
+  }
+
+  @media (min-width: 1280px) {
+    :root {
+      --card-width-unitless: min(
+        624,
+        calc((var(--page-width-unitless) / 2) - 32)
+      );
     }
   }
 
