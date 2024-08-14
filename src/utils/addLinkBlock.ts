@@ -25,6 +25,17 @@ export async function addLinkBlock(
   if (data.success) {
     await rep?.mutate.assertFact({
       entity: entityID,
+      attribute: "link/preview",
+      data: {
+        fallback: "",
+        type: "image",
+        src: data.screenshot.url,
+        width: data.screenshot.width,
+        height: data.screenshot.height,
+      },
+    });
+    await rep?.mutate.assertFact({
+      entity: entityID,
       attribute: "link/title",
       data: {
         type: "text",
