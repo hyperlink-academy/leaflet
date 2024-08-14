@@ -42,34 +42,28 @@ import { useHandlePaste } from "./useHandlePaste";
 import { highlightSelectionPlugin } from "./plugins";
 import { inputrules } from "./inputRules";
 
-export function TextBlock(props: BlockProps & { className: string }) {
+export function TextBlock(
+  props: BlockProps & { className: string; previewOnly?: boolean },
+) {
   let initialized = useInitialPageLoad();
   let first = props.previousBlock === null;
   let permission = useEntitySetContext().permissions.write;
 
-  let blockPadding = `px-3 sm:px-4 ${
-    props.type === "heading" || (props.listData && props.nextBlock?.listData)
-      ? "pb-0"
-      : "pb-2"
-  }
-  ${props.listData ? "!pl-1" : ""}
-  ${first ? "pt-2 sm:pt-3" : "pt-1"}`;
-
   return (
     <>
-      {(!initialized || !permission) && (
+      {(!initialized || !permission || props.previewOnly) && (
         <RenderedTextBlock
           entityID={props.entityID}
-          className={blockPadding + " " + props.className}
+          className={props.className}
           first={first}
         />
       )}
-      {permission && (
+      {permission && !props.previewOnly && (
         <div
           className={`w-full relative group/text ${!initialized ? "hidden" : ""}`}
         >
           <IOSBS {...props} />
-          <BaseTextBlock blockPadding={blockPadding} {...props} />
+          <BaseTextBlock {...props} />
         </div>
       )}
     </>
@@ -78,7 +72,7 @@ export function TextBlock(props: BlockProps & { className: string }) {
 
 export function IOSBS(props: BlockProps) {
   let selected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID)
+    s.selectedBlock.find((b) => b.value === props.entityID),
   );
   let [initialRender, setInitialRender] = useState(true);
   useEffect(() => {
@@ -97,12 +91,12 @@ export function IOSBS(props: BlockProps) {
         });
         setTimeout(async () => {
           let target = document.getElementById(
-            elementId.block(props.entityID).container
+            elementId.block(props.entityID).container,
           );
           let vis = await isVisible(target as Element);
           if (!vis) {
             let parentEl = document.getElementById(
-              elementId.card(props.parent).container
+              elementId.card(props.parent).container,
             );
             if (!parentEl) return;
             parentEl?.scrollBy({
@@ -136,7 +130,7 @@ export function RenderedTextBlock(props: {
   Y.applyUpdate(doc, update);
   let nodes = doc.getXmlElement("prosemirror").toArray();
 
-  // show the rendered version of the block is the block has something in it!
+  // show the rendered version of the block if the block has something in it!
   // empty block rendering is handled further up. update both!
   return (
     <pre
@@ -152,9 +146,7 @@ export function RenderedTextBlock(props: {
   );
 }
 
-export function BaseTextBlock(
-  props: BlockProps & { className: string; blockPadding: string }
-) {
+export function BaseTextBlock(props: BlockProps & { className: string }) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
 
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
@@ -169,7 +161,7 @@ export function BaseTextBlock(
   }, [rep?.rep]);
 
   let selected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID)
+    s.selectedBlock.find((b) => b.value === props.entityID),
   );
   let first = props.previousBlock === null;
   let headingLevel = useEntity(props.entityID, "block/heading-level");
@@ -177,7 +169,7 @@ export function BaseTextBlock(
   let [value, factID] = useYJSValue(props.entityID);
 
   let editorState = useEditorStates(
-    (s) => s.editorStates[props.entityID]
+    (s) => s.editorStates[props.entityID],
   )?.editor;
   useEffect(() => {
     if (!editorState)
@@ -244,7 +236,7 @@ export function BaseTextBlock(
               await addLinkBlock(
                 editorState.doc.textContent,
                 props.entityID,
-                rep.rep
+                rep.rep,
               );
             }
           }}
@@ -268,7 +260,6 @@ export function BaseTextBlock(
           className={`
           grow resize-none align-top whitespace-pre-wrap bg-transparent
           outline-none
-          ${props.blockPadding}
           ${props.className}`}
           ref={setMount}
         />
@@ -277,7 +268,7 @@ export function BaseTextBlock(
           props.previousBlock === null &&
           props.nextBlock === null && (
             <div
-              className={`${props.className} pointer-events-none absolute top-0 left-0 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 italic text-tertiary `}
+              className={`${props.className} pointer-events-none absolute top-0 left-0  italic text-tertiary `}
             >
               {props.type === "text"
                 ? "write something..."
@@ -291,7 +282,6 @@ export function BaseTextBlock(
         {/* if this is the block is empty and selected */}
         {editorState.doc.textContent.length === 0 && selected && (
           <BlockOptions
-            className={props.blockPadding}
             factID={factID}
             entityID={props.entityID}
             parent={props.parent}
@@ -332,7 +322,7 @@ function CommandHandler(props: { entityID: string }) {
       ) {
         toggleMark(args.mark, args.attrs)(view.state, view.dispatch);
       } else setMark(args.mark, args.attrs)(view.state, view.dispatch);
-    }
+    },
   );
   useAppEventListener(props.entityID, "toggleMark", cb, []);
   return null;
@@ -359,7 +349,7 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
 
       // scroll card if cursor is at the very top or very bottom of the card
       let parentID = document.getElementById(
-        elementId.card(props.parentID).container
+        elementId.card(props.parentID).container,
       );
       let parentHeight = parentID?.clientHeight;
       let cursorPosY = coords.top;
@@ -394,7 +384,7 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
         };
       });
     },
-    [props.entityID]
+    [props.entityID],
   );
   return null;
 };

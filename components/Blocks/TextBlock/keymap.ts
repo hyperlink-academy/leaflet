@@ -151,6 +151,8 @@ export const TextBlockKeymap = (
     "Shift-Backspace": backspace(propsRef, repRef),
     Enter: enter(propsRef, repRef),
     "Shift-Enter": enter(propsRef, repRef),
+    "Ctrl-Enter": CtrlEnter(propsRef, repRef),
+    "Meta-Enter": CtrlEnter(propsRef, repRef),
   });
 
 const backspace =
@@ -170,6 +172,13 @@ const backspace =
       return false;
     }
     if (propsRef.current.listData) {
+      if (propsRef.current.listData.checklist) {
+        repRef.current?.mutate.retractAttribute({
+          entity: propsRef.current.entityID,
+          attribute: "block/check-list",
+        });
+        return true;
+      }
       let depth = propsRef.current.listData.depth;
       repRef.current?.mutate.moveChildren({
         oldParent: propsRef.current.entityID,
@@ -327,7 +336,17 @@ const enter =
           attribute: "block/is-list",
           data: { type: "boolean", value: true },
         });
+        let checked = await repRef.current?.query((tx) =>
+          scanIndex(tx).eav(propsRef.current.entityID, "block/check-list"),
+        );
+        if (checked?.[0])
+          await repRef.current?.mutate.assertFact({
+            entity: newEntityID,
+            attribute: "block/check-list",
+            data: { type: "boolean", value: false },
+          });
       }
+
       if (!propsRef.current.listData) {
         position = generateKeyBetween(
           propsRef.current.position,
@@ -384,5 +403,21 @@ const enter =
         );
       }
     }, 10);
+    return true;
+  };
+
+const CtrlEnter =
+  (
+    propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
+    repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+  ) =>
+  (
+    state: EditorState,
+    dispatch?: (tr: Transaction) => void,
+    view?: EditorView,
+  ) => {
+    repRef.current?.mutate.toggleTodoState({
+      entityID: propsRef.current.entityID,
+    });
     return true;
   };

@@ -1,16 +1,22 @@
 "use client";
-import { Block, BlockProps, focusBlock, ListMarker } from "components/Blocks";
+import {
+  BaseBlock,
+  Block,
+  BlockProps,
+  focusBlock,
+  ListMarker,
+} from "components/Blocks";
 import { focusCard } from "components/Cards";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
 import { CloseTiny } from "components/Icons";
-import { useEffect, useRef, useState } from "react";
+import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 
-export function CardBlock(props: BlockProps) {
+export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
   let { rep } = useReplicache();
   let card = useEntity(props.entityID, "block/card");
   let cardEntity = card ? card.data.value : props.entityID;
@@ -72,6 +78,7 @@ export function CardBlock(props: BlockProps) {
 
   return (
     <div
+      style={{ "--list-marker-width": "20px" } as CSSProperties}
       className={`
         cardBlockWrapper relative group/cardBlock
         w-full h-[104px]
@@ -131,16 +138,15 @@ export function CardBlock(props: BlockProps) {
           <div className="my-2 ml-3 grow min-w-0 text-sm bg-transparent overflow-clip ">
             {docMetadata[0] && (
               <div
-                className={`cardBlockOne outline-none resize-none align-top flex gap-3 ${docMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
+                className={`cardBlockOne outline-none resize-none align-top flex gap-2 ${docMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
               >
                 {docMetadata[0].listData && (
                   <ListMarker
                     {...docMetadata[0]}
-                    compact
                     className={
                       docMetadata[0].type === "heading"
-                        ? "top-[10px]"
-                        : "top-[8px]"
+                        ? "!pt-[12px]"
+                        : "!pt-[8px]"
                     }
                   />
                 )}
@@ -149,35 +155,27 @@ export function CardBlock(props: BlockProps) {
             )}
             {docMetadata[1] && (
               <div
-                className={`cardBlockLineTwo outline-none resize-none align-top flex  gap-3 ${docMetadata[1].type === "heading" ? "font-bold" : ""}`}
+                className={`cardBlockLineTwo outline-none resize-none align-top flex  gap-2 ${docMetadata[1].type === "heading" ? "font-bold" : ""}`}
               >
                 {docMetadata[1].listData && (
-                  <ListMarker
-                    {...docMetadata[1]}
-                    compact
-                    className="top-[8px]"
-                  />
+                  <ListMarker {...docMetadata[1]} className="!pt-[8px]" />
                 )}
                 <RenderedTextBlock entityID={docMetadata[1].value} />
               </div>
             )}
             {docMetadata[2] && (
               <div
-                className={`cardBlockLineThree outline-none resize-none align-top flex  gap-3 ${docMetadata[2].type === "heading" ? "font-bold" : ""}`}
+                className={`cardBlockLineThree outline-none resize-none align-top flex  gap-2 ${docMetadata[2].type === "heading" ? "font-bold" : ""}`}
               >
                 {docMetadata[2].listData && (
-                  <ListMarker
-                    {...docMetadata[2]}
-                    compact
-                    className="top-[8px]"
-                  />
+                  <ListMarker {...docMetadata[2]} className="!pt-[8px]" />
                 )}
 
                 <RenderedTextBlock entityID={docMetadata[2].value} />
               </div>
             )}
           </div>
-          <CardPreview entityID={cardEntity} />
+          {props.renderPreview && <CardPreview entityID={cardEntity} />}
           {permission && (
             <button
               className="absolute p-1 top-0.5 right-0.5 hover:text-accent-contrast text-secondary sm:hidden sm:group-hover/cardBlock:block"
@@ -199,20 +197,39 @@ export function CardPreview(props: { entityID: string }) {
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
 
+  let cardWidth = `var(--card-width-unitless)`;
   return (
     <div
       ref={previewRef}
       className={`cardBlockPreview w-[120px] overflow-clip p-1 mx-3 mt-3 -mb-2 bg-bg-card border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center`}
     >
-      {blocks.slice(0, 10).map((b) => {
-        return <BlockPreview previewRef={previewRef} {...b} key={b.factID} />;
-      })}
+      <div
+        className="absolute top-0 left-0 w-full h-full origin-top-left pointer-events-none"
+        style={{
+          width: `calc(1px * ${cardWidth})`,
+          transform: `scale(calc((120 / ${cardWidth} )))`,
+        }}
+      >
+        {blocks.slice(0, 10).map((b, index, arr) => {
+          return (
+            <BlockPreview
+              entityID={b.value}
+              previousBlock={arr[index - 1] || null}
+              nextBlock={arr[index + 1] || null}
+              nextPosition={""}
+              previewRef={previewRef}
+              {...b}
+              key={b.factID}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
 
 export function BlockPreview(
-  b: Block & {
+  b: BlockProps & {
     previewRef: React.RefObject<HTMLDivElement>;
     size?: "small" | "large";
   },
@@ -237,123 +254,5 @@ export function BlockPreview(
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, [b.previewRef]);
-  if (b.listData)
-    return (
-      <div
-        ref={ref}
-        className="w-full flex flex-row"
-        style={{ fontSize: "4px" }}
-      >
-        <div
-          className="flex-shrink-0 relative"
-          style={{ width: b.listData.depth * 4 }}
-        >
-          <div
-            className={`absolute top-[] right-[2px] w-[1px] h-[1px] rounded-full bg-secondary ${
-              b.type === "heading"
-                ? headingLevel === 3
-                  ? "top-[2.5px]"
-                  : headingLevel === 2
-                    ? "top-[3.5px]"
-                    : "top-[4px]"
-                : "top-[2.5px]"
-            }`}
-          />
-        </div>
-
-        {isVisible && <PreviewBlockContent {...b} size={b.size} />}
-      </div>
-    );
-  return (
-    <div ref={ref}>
-      {isVisible && <PreviewBlockContent {...b} key={b.factID} size={b.size} />}
-    </div>
-  );
-}
-
-function PreviewBlockContent(props: Block & { size?: "small" | "large" }) {
-  switch (props.type) {
-    case "text": {
-      return (
-        <div style={{ fontSize: `${props.size === "large" ? "6px" : "4px"}` }}>
-          <RenderedTextBlock entityID={props.value} className="p-0" />
-        </div>
-      );
-    }
-    case "heading":
-      return <HeadingPreviewBlock entityID={props.value} size={props.size} />;
-    // currently "link" and "card" render an identical preview
-    case "link": {
-      return (
-        <div
-          // gradiend with 'primary' and 'tertiary' text colors as defined in tailwind config
-          style={{
-            backgroundImage:
-              "linear-gradient(355deg, color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-card)) 55%), rgb(var(--bg-card)))",
-          }}
-          className="w-full h-5 shrink-0 rounded-md border border-border-light"
-        />
-      );
-    }
-    case "card":
-      return (
-        <div
-          // gradiend with 'primary' and 'tertiary' text colors as defined in tailwind config
-          style={{
-            backgroundImage:
-              "linear-gradient(355deg, color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-card)) 55%), rgb(var(--bg-card)))",
-          }}
-          className="w-full h-5 shrink-0 rounded-md border border-border-light"
-        />
-      );
-    case "image":
-      return <ImagePreviewBlock entityID={props.value} />;
-    default:
-      null;
-  }
-}
-
-function HeadingPreviewBlock(props: {
-  entityID: string;
-  size?: "small" | "large";
-}) {
-  let headingLevel = useEntity(props.entityID, "block/heading-level");
-  return (
-    <div
-      className={
-        props.size === "large"
-          ? LargeHeadingStyle[headingLevel?.data.value || 1]
-          : HeadingStyle[headingLevel?.data.value || 1]
-      }
-    >
-      <RenderedTextBlock entityID={props.entityID} className="p-0 " />
-    </div>
-  );
-}
-
-const HeadingStyle = {
-  1: "text-[6px] font-bold",
-  2: "text-[5px] font-bold ",
-  3: "text-[4px] font-bold italic text-secondary ",
-} as { [level: number]: string };
-
-const LargeHeadingStyle = {
-  1: "text-[9px] font-bold",
-  2: "text-[7px] font-bold ",
-  3: "text-[6px] font-bold italic text-secondary ",
-} as { [level: number]: string };
-
-function ImagePreviewBlock(props: { entityID: string }) {
-  let image = useEntity(props.entityID, "block/image");
-  return (
-    <div className="relative group/image flex w-full justify-center">
-      <img
-        alt={""}
-        src={image?.data.src}
-        height={image?.data.height}
-        width={image?.data.width}
-        className=""
-      />
-    </div>
-  );
+  return <div ref={ref}>{isVisible && <BaseBlock {...b} preview />}</div>;
 }

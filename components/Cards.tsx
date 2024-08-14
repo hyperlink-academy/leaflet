@@ -104,9 +104,10 @@ function Card(props: { entityID: string; first?: boolean }) {
           id={elementId.card(props.entityID).container}
           style={{
             backgroundColor: "rgba(var(--bg-card), var(--bg-card-alpha))",
+            width: "calc(1px * var(--card-width-unitless))",
           }}
           className={`
-      card w-[calc(100vw-12px)] sm:w-[calc(100vw-128px)] lg:w-[calc(50vw-32px)]  max-w-prose
+      card
       grow flex flex-col
       overscroll-y-none
       overflow-y-scroll no-scrollbar

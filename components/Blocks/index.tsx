@@ -17,6 +17,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
 import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
 import { indent, outdent } from "src/utils/list-operations";
+import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
 export type Block = {
   factID: string;
   parent: string;
@@ -24,6 +25,7 @@ export type Block = {
   value: string;
   type: Fact<"block/type">["data"]["value"];
   listData?: {
+    checklist?: boolean;
     path: { depth: number; entity: string }[];
     parent: string;
     depth: number;
@@ -272,24 +274,24 @@ function Block(props: BlockProps) {
       }
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        let block = props.nextBlock;
-        if (block && useUIState.getState().selectedBlock.length <= 1)
-          focusBlock(block, {
+        let nextBlock = props.nextBlock;
+        if (nextBlock && useUIState.getState().selectedBlock.length <= 1)
+          focusBlock(nextBlock, {
             type: "top",
             left: useEditorStates.getState().lastXPosition,
           });
-        if (!block) return;
+        if (!nextBlock) return;
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        let block = props.previousBlock;
-        if (block && useUIState.getState().selectedBlock.length <= 1) {
-          focusBlock(block, {
+        let prevBlock = props.previousBlock;
+        if (prevBlock && useUIState.getState().selectedBlock.length <= 1) {
+          focusBlock(prevBlock, {
             type: "bottom",
             left: useEditorStates.getState().lastXPosition,
           });
         }
-        if (!block) return;
+        if (!prevBlock) return;
       }
       if (e.key === "Backspace") {
         if (!entity_set.permissions.write) return;
@@ -298,8 +300,8 @@ function Block(props: BlockProps) {
         e.preventDefault();
         r.mutate.removeBlock({ blockEntity: props.entityID });
         useUIState.getState().closeCard(props.entityID);
-        let block = props.previousBlock;
-        if (block) focusBlock(block, { type: "end" });
+        let prevBlock = props.previousBlock;
+        if (prevBlock) focusBlock(prevBlock, { type: "end" });
       }
       if (e.key === "Enter") {
         if (!entity_set.permissions.write) return;
@@ -351,95 +353,129 @@ function Block(props: BlockProps) {
     return () => window.removeEventListener("keydown", listener);
   }, [entity_set, selected, props, rep]);
   let mouseHandlers = useBlockMouseHandlers(props);
+
+  let focusedElement = useUIState((s) => s.focusedBlock);
+
   return (
-    <div className="blockWrapper relative flex">
+    <div {...mouseHandlers} className="blockWrapper relative flex">
       {selected && selectedBlocks.length > 1 && (
         <div
           className={`
           blockSelectionBG pointer-events-none bg-border-light
           absolute right-2 left-2 bottom-0
+          ${selectedBlocks.length > 1 ? "Multiple-Selected" : ""}
+          ${actuallySelected ? "selected" : ""}
           ${first ? "top-2" : "top-0"}
           ${!prevBlockSelected && "rounded-t-md"}
           ${!nextBlockSelected && "rounded-b-md"}
           `}
         />
       )}
-      {props.listData && <ListMarker {...props} first={first} />}
-      <div
-        {...mouseHandlers}
-        data-entityid={props.entityID}
-        className={`blockContent relative grow flex flex-row
-      ${
-        props.type !== "heading" &&
-        props.type !== "text" &&
-        `${first ? "pt-3 sm:pt-4" : "pt-1"} px-3 sm:px-4 pb-2`
-      }
-      ${selectedBlocks.length > 1 ? "Multiple-Selected" : ""}
-      ${actuallySelected ? "selected" : ""}
-      `}
-        id={elementId.block(props.entityID).container}
-      >
-        {props.type === "card" ? (
-          <CardBlock {...props} />
-        ) : props.type === "text" ? (
-          <TextBlock {...props} className="" />
-        ) : props.type === "heading" ? (
-          <HeadingBlock {...props} />
-        ) : props.type === "image" ? (
-          <ImageBlock {...props} />
-        ) : props.type === "link" ? (
-          <ExternalLinkBlock {...props} />
-        ) : null}
-      </div>
+      <BaseBlock {...props} />
     </div>
   );
 }
 
+export const BaseBlock = (props: BlockProps & { preview?: boolean }) => {
+  return (
+    <div
+      data-entityid={props.entityID}
+      className={`
+      blockContent relative
+      grow flex flex-row gap-2
+      px-3 sm:px-4
+      ${
+        props.type === "heading" ||
+        (props.listData && props.nextBlock?.listData)
+          ? "pb-0"
+          : "pb-2"
+      }
+      ${!props.previousBlock ? `${props.type === "heading" || props.type === "text" ? "pt-2 sm:pt-3" : "pt-3 sm:pt-4"}` : "pt-1"}
+  `}
+      id={elementId.block(props.entityID).container}
+    >
+      {props.listData && <ListMarker {...props} />}
+
+      {props.type === "card" ? (
+        <CardBlock {...props} renderPreview={!props.preview} />
+      ) : props.type === "text" ? (
+        <TextBlock {...props} className="" previewOnly={props.preview} />
+      ) : props.type === "heading" ? (
+        <HeadingBlock {...props} preview={props.preview} />
+      ) : props.type === "image" ? (
+        <ImageBlock {...props} />
+      ) : props.type === "link" ? (
+        <ExternalLinkBlock {...props} />
+      ) : null}
+    </div>
+  );
+};
+
 export const ListMarker = (
-  props: Block & { first?: boolean; className?: string; compact?: boolean },
+  props: Block & { previousBlock?: Block | null; nextBlock?: Block | null } & {
+    className?: string;
+  },
 ) => {
+  let checklist = useEntity(props.value, "block/check-list");
   let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
   let children = useEntity(props.value, "card/block");
   let folded =
     useUIState((s) => s.foldedBlocks.includes(props.value)) &&
     children.length > 0;
+
+  let depth = props.listData?.depth;
+  let { rep } = useReplicache();
   return (
-    <>
+    <div
+      className={`shrink-0  flex gap-[8px] justify-end items-center h-3
+                  ${props.className}
+                  ${
+                    props.type === "heading"
+                      ? headingLevel === 3
+                        ? "pt-[12px]"
+                        : headingLevel === 2
+                          ? "pt-[15px]"
+                          : "pt-[20px]"
+                      : "pt-[12px]"
+                  }
+            `}
+      style={{
+        width:
+          depth &&
+          `calc(${depth} * ${`var(--list-marker-width) ${checklist ? " + 20px" : ""} - 12px)`} `,
+      }}
+    >
       <button
         onClick={() => {
           if (children.length > 0)
             useUIState.getState().toggleFold(props.value);
         }}
-        className={`listMarker group/list-marker pl-1 pr-2 sm:pr-3 ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
+        className={`listMarker group/list-marker ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >
         <div
-          className="h-full shrink-0 flex justify-end relative"
-          style={{
-            width:
-              props.listData &&
-              `calc(${props.listData.depth} * ${
-                props.compact ? "16px" : `var(--list-marker-width))`
-              }`,
-          }}
-        >
-          <div
-            className={`absolute h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline outline-1  outline-offset-1
-              ${folded ? "outline-secondary" : ` ${children.length > 0 ? "group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`}
-      ${props.first ? "mt-1 sm:mt-2" : ""}
-      ${
-        props.type === "heading"
-          ? headingLevel === 3
-            ? "top-[13px]"
-            : headingLevel === 2
-              ? "top-[15px]"
-              : "top-[20px]"
-          : "top-[13px]"
-      }
-      ${props.className}`}
-          />
-        </div>
+          className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline outline-1  outline-offset-1
+                      ${
+                        folded
+                          ? "outline-secondary"
+                          : ` ${children.length > 0 ? "group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`
+                      }`}
+        />
       </button>
-    </>
+      {checklist && (
+        <button
+          onClick={() => {
+            rep?.mutate.assertFact({
+              entity: props.value,
+              attribute: "block/check-list",
+              data: { type: "boolean", value: !checklist.data.value },
+            });
+          }}
+          className={`${checklist?.data.value ? "text-accent-contrast" : "text-border"}`}
+        >
+          {checklist?.data.value ? <CheckboxChecked /> : <CheckboxEmpty />}
+        </button>
+      )}
+    </div>
   );
 };
 
@@ -449,11 +485,12 @@ const HeadingStyle = {
   3: "text-base font-bold text-secondary ",
 } as { [level: number]: string };
 
-export function HeadingBlock(props: BlockProps) {
+export function HeadingBlock(props: BlockProps & { preview?: boolean }) {
   let headingLevel = useEntity(props.entityID, "block/heading-level");
   return (
     <TextBlock
       {...props}
+      previewOnly={props.preview}
       className={HeadingStyle[headingLevel?.data.value || 1]}
     />
   );

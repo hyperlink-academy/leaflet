@@ -14,6 +14,7 @@ export const inputrules = (
   repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
 ) =>
   inputRules({
+    //Strikethrough
     rules: [
       new InputRule(/\~\~([^*]+)\~\~$/, (state, match, start, end) => {
         const [fullMatch, content] = match;
@@ -30,6 +31,8 @@ export const inputrules = (
         }
         return null;
       }),
+
+      //Highlight
       new InputRule(/\=\=([^*]+)\=\=$/, (state, match, start, end) => {
         const [fullMatch, content] = match;
         const { tr } = state;
@@ -47,6 +50,8 @@ export const inputrules = (
         }
         return null;
       }),
+
+      //Bold
       new InputRule(/\*\*([^*]+)\*\*$/, (state, match, start, end) => {
         const [fullMatch, content] = match;
         const { tr } = state;
@@ -62,6 +67,8 @@ export const inputrules = (
         }
         return null;
       }),
+
+      //Italic
       new InputRule(/(?:^|[^*])\*([^*]+)\*$/, (state, match, start, end) => {
         const [fullMatch, content] = match;
         const { tr } = state;
@@ -78,6 +85,21 @@ export const inputrules = (
         }
         return null;
       }),
+
+      //Checklist
+      new InputRule(/^\[(\ |x)?\]\s$/, (state, match) => {
+        if (!propsRef.current.listData) return null;
+        let tr = state.tr;
+        tr.delete(0, match[0].length);
+        repRef.current?.mutate.assertFact({
+          entity: propsRef.current.entityID,
+          attribute: "block/check-list",
+          data: { type: "boolean", value: match[1] === "x" ? true : false },
+        });
+        return tr;
+      }),
+
+      // Unordered List
       new InputRule(/^([-+*])\s$/, (state) => {
         if (propsRef.current.listData) return null;
         let tr = state.tr;
@@ -89,17 +111,8 @@ export const inputrules = (
         });
         return tr;
       }),
-      new InputRule(/^([-+*])\s$/, (state) => {
-        if (propsRef.current.listData) return null;
-        let tr = state.tr;
-        tr.delete(0, 2);
-        repRef.current?.mutate.assertFact({
-          entity: propsRef.current.entityID,
-          attribute: "block/is-list",
-          data: { type: "boolean", value: true },
-        });
-        return tr;
-      }),
+
+      //Header
       new InputRule(/^([#]{1,3})\s$/, (state, match) => {
         let tr = state.tr;
         tr.delete(0, match[0].length);
