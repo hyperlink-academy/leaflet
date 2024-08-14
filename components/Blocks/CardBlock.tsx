@@ -204,7 +204,7 @@ export function CardPreview(props: { entityID: string }) {
       className={`cardBlockPreview w-[120px] overflow-clip p-1 mx-3 mt-3 -mb-2 bg-bg-card border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center`}
     >
       <div
-        className="absolute top-0 left-0 w-full h-full bg-white origin-top-left pointer-events-none"
+        className="absolute top-0 left-0 w-full h-full origin-top-left pointer-events-none"
         style={{
           width: `calc(1px * ${cardWidth})`,
           transform: `scale(calc((120 / ${cardWidth} )))`,
