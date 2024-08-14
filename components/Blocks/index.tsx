@@ -432,11 +432,11 @@ export const ListMarker = (
                   ${
                     props.type === "heading"
                       ? headingLevel === 3
-                        ? "pt-[10px]"
+                        ? "pt-[12px]"
                         : headingLevel === 2
-                          ? "pt-[14px]"
-                          : "pt-[18px]"
-                      : "pt-[10px]"
+                          ? "pt-[15px]"
+                          : "pt-[20px]"
+                      : "pt-[12px]"
                   }
             `}
       style={{
