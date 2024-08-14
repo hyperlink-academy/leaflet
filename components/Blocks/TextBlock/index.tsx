@@ -42,21 +42,23 @@ import { useHandlePaste } from "./useHandlePaste";
 import { highlightSelectionPlugin } from "./plugins";
 import { inputrules } from "./inputRules";
 
-export function TextBlock(props: BlockProps & { className: string }) {
+export function TextBlock(
+  props: BlockProps & { className: string; previewOnly?: boolean },
+) {
   let initialized = useInitialPageLoad();
   let first = props.previousBlock === null;
   let permission = useEntitySetContext().permissions.write;
 
   return (
     <>
-      {(!initialized || !permission) && (
+      {(!initialized || !permission || props.previewOnly) && (
         <RenderedTextBlock
           entityID={props.entityID}
           className={props.className}
           first={first}
         />
       )}
-      {permission && (
+      {permission && !props.previewOnly && (
         <div
           className={`w-full relative group/text ${!initialized ? "hidden" : ""}`}
         >
@@ -266,7 +268,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
           props.previousBlock === null &&
           props.nextBlock === null && (
             <div
-              className={`${props.className} pointer-events-none absolute top-0 left-0 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 italic text-tertiary `}
+              className={`${props.className} pointer-events-none absolute top-0 left-0  italic text-tertiary `}
             >
               {props.type === "text"
                 ? "write something..."

@@ -357,59 +357,63 @@ function Block(props: BlockProps) {
   let focusedElement = useUIState((s) => s.focusedBlock);
 
   return (
-    <div className="blockWrapper relative flex">
+    <div {...mouseHandlers} className="blockWrapper relative flex">
       {selected && selectedBlocks.length > 1 && (
         <div
           className={`
           blockSelectionBG pointer-events-none bg-border-light
           absolute right-2 left-2 bottom-0
+          ${selectedBlocks.length > 1 ? "Multiple-Selected" : ""}
+          ${actuallySelected ? "selected" : ""}
           ${first ? "top-2" : "top-0"}
           ${!prevBlockSelected && "rounded-t-md"}
           ${!nextBlockSelected && "rounded-b-md"}
           `}
         />
       )}
-      <div
-        {...mouseHandlers}
-        data-entityid={props.entityID}
-        className={`
-          blockContent relative
-          grow flex flex-row gap-2
-          px-3 sm:px-4
-          ${
-            props.type === "heading" ||
-            (props.listData && props.nextBlock?.listData)
-              ? "pb-0"
-              : "pb-2"
-          }
-          ${first ? `${props.type === "heading" || props.type === "text" ? "pt-2 sm:pt-3" : "pt-3 sm:pt-4"}` : "pt-1"}
-          ${selectedBlocks.length > 1 ? "Multiple-Selected" : ""}
-          ${actuallySelected ? "selected" : ""}
-      `}
-        id={elementId.block(props.entityID).container}
-      >
-        {props.listData && <ListMarker {...props} />}
-
-        {props.type === "card" ? (
-          <CardBlock {...props} />
-        ) : props.type === "text" ? (
-          <TextBlock {...props} className="" />
-        ) : props.type === "heading" ? (
-          <HeadingBlock {...props} />
-        ) : props.type === "image" ? (
-          <ImageBlock {...props} />
-        ) : props.type === "link" ? (
-          <ExternalLinkBlock {...props} />
-        ) : null}
-      </div>
+      <BaseBlock {...props} />
     </div>
   );
 }
 
+export const BaseBlock = (props: BlockProps & { preview?: boolean }) => {
+  return (
+    <div
+      data-entityid={props.entityID}
+      className={`
+      blockContent relative
+      grow flex flex-row gap-2
+      px-3 sm:px-4
+      ${
+        props.type === "heading" ||
+        (props.listData && props.nextBlock?.listData)
+          ? "pb-0"
+          : "pb-2"
+      }
+      ${!props.previousBlock ? `${props.type === "heading" || props.type === "text" ? "pt-2 sm:pt-3" : "pt-3 sm:pt-4"}` : "pt-1"}
+  `}
+      id={elementId.block(props.entityID).container}
+    >
+      {props.listData && <ListMarker {...props} />}
+
+      {props.type === "card" ? (
+        <CardBlock {...props} renderPreview={!props.preview} />
+      ) : props.type === "text" ? (
+        <TextBlock {...props} className="" previewOnly={props.preview} />
+      ) : props.type === "heading" ? (
+        <HeadingBlock {...props} preview={props.preview} />
+      ) : props.type === "image" ? (
+        <ImageBlock {...props} />
+      ) : props.type === "link" ? (
+        <ExternalLinkBlock {...props} />
+      ) : null}
+    </div>
+  );
+};
+
 export const ListMarker = (
   props: Block & { previousBlock?: Block | null; nextBlock?: Block | null } & {
     className?: string;
-    compact?: boolean;
   },
 ) => {
   let checklist = useEntity(props.value, "block/check-list");
@@ -438,11 +442,7 @@ export const ListMarker = (
       style={{
         width:
           depth &&
-          `calc(${depth} * ${
-            props.compact
-              ? `16px  ${checklist ? " + 20px" : ""})`
-              : `var(--list-marker-width) ${checklist ? " + 20px" : ""})`
-          } `,
+          `calc(${depth} * ${`var(--list-marker-width) ${checklist ? " + 20px" : ""} - 12px)`} `,
       }}
     >
       <button
@@ -485,11 +485,12 @@ const HeadingStyle = {
   3: "text-base font-bold text-secondary ",
 } as { [level: number]: string };
 
-export function HeadingBlock(props: BlockProps) {
+export function HeadingBlock(props: BlockProps & { preview?: boolean }) {
   let headingLevel = useEntity(props.entityID, "block/heading-level");
   return (
     <TextBlock
       {...props}
+      previewOnly={props.preview}
       className={HeadingStyle[headingLevel?.data.value || 1]}
     />
   );

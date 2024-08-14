@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, useEffect } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 import { colorToString, useColorAttribute } from "./useColorAttribute";
 import { Color as AriaColor, parseColor } from "react-aria-components";
 import { parse, contrastLstar, ColorSpace, sRGB } from "colorjs.io/fn";
@@ -110,11 +110,22 @@ export function ThemeProvider(props: {
     accent2,
     accentContrast,
   ]);
+  let [canonicalCardWidth, setCanonicalCardWidth] = useState(0);
+  useEffect(() => {
+    let listener = () => {
+      let el = document.getElementById("canonical-card-width");
+      setCanonicalCardWidth(el?.clientWidth || 0);
+    };
+    listener();
+    window.addEventListener("resize", listener);
+    return () => window.removeEventListener("resize", listener);
+  }, []);
   return (
     <div
       className="pageWrapper w-full text-primary h-full flex flex-col bg-center items-stretch"
       style={
         {
+          "--card-width": canonicalCardWidth,
           "--bg-page": colorToString(bgPage, "rgb"),
           "--bg-card": colorToString(bgCard, "rgb"),
           "--bg-card-alpha": bgCard.getChannelValue("alpha"),
@@ -130,6 +141,10 @@ export function ThemeProvider(props: {
         } as CSSProperties
       }
     >
+      <div
+        className="h-[0px] w-[calc(100vw-12px)] sm:w-[calc(100vw-128px)] lg:w-[calc(50vw-32px)]  max-w-prose"
+        id="canonical-card-width"
+      />
       {props.children}
     </div>
   );
