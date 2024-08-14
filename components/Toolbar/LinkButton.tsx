@@ -10,7 +10,7 @@ import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 import { Input } from "components/Input";
 
-export function LinkButton(props: { setToolBarState: (s: "link") => void }) {
+export function LinkButton(props: { setToolbarState: (s: "link") => void }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);
   let focusedEditor = useEditorStates((s) =>
     focusedBlock ? s.editorStates[focusedBlock.entityID] : null,
@@ -33,7 +33,7 @@ export function LinkButton(props: { setToolBarState: (s: "link") => void }) {
       active={isLink}
       onClick={(e) => {
         e.preventDefault();
-        props.setToolBarState("link");
+        props.setToolbarState("link");
       }}
       disabled={focusedEditor?.editor.selection.empty || !focusedEditor}
       tooltipContent={
