@@ -82,7 +82,7 @@ export const inputrules = (
         if (!propsRef.current.listData) return null;
         console.log(match);
         let tr = state.tr;
-        tr.delete(0, 4);
+        tr.delete(0, match[0].length);
         repRef.current?.mutate.assertFact({
           entity: propsRef.current.entityID,
           attribute: "block/check-list",
