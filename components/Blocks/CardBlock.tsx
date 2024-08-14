@@ -210,7 +210,7 @@ export function CardPreview(props: { entityID: string }) {
           transform: `scale(calc((120 / ${cardWidth} )))`,
         }}
       >
-        {blocks.slice(0, 10).map((b, index, arr) => {
+        {blocks.slice(0, 20).map((b, index, arr) => {
           return (
             <BlockPreview
               entityID={b.value}
