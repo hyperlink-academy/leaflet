@@ -43,9 +43,7 @@ export const useHandlePaste = (
         return true;
       }
       if (!textHTML && text) {
-        console.log(text);
         textHTML = markdownToHtml(text);
-        console.log(textHTML);
       }
       if (textHTML) {
         let xml = new DOMParser().parseFromString(textHTML, "text/html");
@@ -57,7 +55,6 @@ export const useHandlePaste = (
           )
         )
           return;
-        if (children.length === 1 && children[0].tagName !== "UL") return false;
         children.forEach((child, index) => {
           createBlockFromHTML(child, {
             first: index === 0,
