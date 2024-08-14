@@ -51,7 +51,7 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
       <div
         className={`linkBlockPreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center`}
         style={{
-          backgroundImage: `url(${previewImage?.data.src})`,
+          backgroundImage: `url(${`/api/link-preview-proxy?url=${url?.data.value}`})`,
           backgroundPosition: "center",
         }}
       />

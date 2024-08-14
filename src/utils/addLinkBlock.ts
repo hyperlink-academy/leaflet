@@ -21,17 +21,6 @@ export async function addLinkBlock(
       value: url,
     },
   });
-  await rep?.mutate.assertFact({
-    entity: entityID,
-    attribute: "link/preview",
-    data: {
-      fallback: "",
-      type: "image",
-      src: `/api/link-preview-proxy?url=${url}`,
-      width: 1920,
-      height: 1080,
-    },
-  });
   let data = await addLinkCard({ link: url });
   if (data.success) {
     await rep?.mutate.assertFact({
