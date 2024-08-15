@@ -18,7 +18,6 @@ import { HomeButton } from "./HomeButton";
 
 export function Cards(props: { rootCard: string }) {
   let openCards = useUIState((s) => s.openCards);
-  let [cardRef, { width: cardWidth }] = useMeasure();
 
   return (
     <div
@@ -30,7 +29,7 @@ export function Cards(props: { rootCard: string }) {
     >
       <div
         className="spacer flex justify-end items-start"
-        style={{ width: `calc(50vw - ${cardWidth}px/2)` }}
+        style={{ width: `calc(50vw - (1px * (var(--card-width-unitless)/2))` }}
         onClick={(e) => {
           e.currentTarget === e.target && blurCard();
         }}
@@ -46,7 +45,7 @@ export function Cards(props: { rootCard: string }) {
           </div>
         </Media>
       </div>
-      <div className="flex items-stretch" ref={cardRef}>
+      <div className="flex items-stretch">
         <Card entityID={props.rootCard} first />
       </div>
       {openCards.map((card) => (
@@ -56,7 +55,7 @@ export function Cards(props: { rootCard: string }) {
       ))}
       <div
         className="spacer"
-        style={{ width: `calc((100vw - ${cardWidth}px)/2)` }}
+        style={{ width: `calc(50vw - (1px * (var(--card-width-unitless)/2))` }}
         onClick={(e) => {
           e.currentTarget === e.target && blurCard();
         }}
