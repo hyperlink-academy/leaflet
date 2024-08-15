@@ -29,7 +29,7 @@ export function Cards(props: { rootCard: string }) {
     >
       <div
         className="spacer flex justify-end items-start"
-        style={{ width: `calc(50vw - (1px * (var(--card-width-unitless)/2))` }}
+        style={{ width: `calc(50vw - ((var(--card-width-units)/2))` }}
         onClick={(e) => {
           e.currentTarget === e.target && blurCard();
         }}
@@ -55,7 +55,7 @@ export function Cards(props: { rootCard: string }) {
       ))}
       <div
         className="spacer"
-        style={{ width: `calc(50vw - (1px * (var(--card-width-unitless)/2))` }}
+        style={{ width: `calc(50vw - ((var(--card-width-units)/2))` }}
         onClick={(e) => {
           e.currentTarget === e.target && blurCard();
         }}
@@ -103,7 +103,7 @@ function Card(props: { entityID: string; first?: boolean }) {
           id={elementId.card(props.entityID).container}
           style={{
             backgroundColor: "rgba(var(--bg-card), var(--bg-card-alpha))",
-            width: "calc(1px * var(--card-width-unitless))",
+            width: "var(--card-width-units)",
           }}
           className={`
       card
