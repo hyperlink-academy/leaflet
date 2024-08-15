@@ -126,59 +126,61 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
           </div>
         </div>
       ) : (
-        <div
-          className="cardBlockContent w-full flex overflow-clip cursor-pointer"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            useUIState.getState().openCard(props.parent, cardEntity);
-            if (rep) focusCard(cardEntity, rep);
-          }}
-        >
-          <div className="my-2 ml-3 grow min-w-0 text-sm bg-transparent overflow-clip ">
-            {docMetadata[0] && (
-              <div
-                className={`cardBlockOne outline-none resize-none align-top flex gap-2 ${docMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
-              >
-                {docMetadata[0].listData && (
-                  <ListMarker
-                    {...docMetadata[0]}
-                    className={
-                      docMetadata[0].type === "heading"
-                        ? "!pt-[12px]"
-                        : "!pt-[8px]"
-                    }
-                  />
-                )}
-                <RenderedTextBlock entityID={docMetadata[0].value} />
-              </div>
-            )}
-            {docMetadata[1] && (
-              <div
-                className={`cardBlockLineTwo outline-none resize-none align-top flex  gap-2 ${docMetadata[1].type === "heading" ? "font-bold" : ""}`}
-              >
-                {docMetadata[1].listData && (
-                  <ListMarker {...docMetadata[1]} className="!pt-[8px]" />
-                )}
-                <RenderedTextBlock entityID={docMetadata[1].value} />
-              </div>
-            )}
-            {docMetadata[2] && (
-              <div
-                className={`cardBlockLineThree outline-none resize-none align-top flex  gap-2 ${docMetadata[2].type === "heading" ? "font-bold" : ""}`}
-              >
-                {docMetadata[2].listData && (
-                  <ListMarker {...docMetadata[2]} className="!pt-[8px]" />
-                )}
+        <>
+          <div
+            className="cardBlockContent w-full flex overflow-clip cursor-pointer"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              useUIState.getState().openCard(props.parent, cardEntity);
+              if (rep) focusCard(cardEntity, rep);
+            }}
+          >
+            <div className="my-2 ml-3 grow min-w-0 text-sm bg-transparent overflow-clip ">
+              {docMetadata[0] && (
+                <div
+                  className={`cardBlockOne outline-none resize-none align-top flex gap-2 ${docMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
+                >
+                  {docMetadata[0].listData && (
+                    <ListMarker
+                      {...docMetadata[0]}
+                      className={
+                        docMetadata[0].type === "heading"
+                          ? "!pt-[12px]"
+                          : "!pt-[8px]"
+                      }
+                    />
+                  )}
+                  <RenderedTextBlock entityID={docMetadata[0].value} />
+                </div>
+              )}
+              {docMetadata[1] && (
+                <div
+                  className={`cardBlockLineTwo outline-none resize-none align-top flex  gap-2 ${docMetadata[1].type === "heading" ? "font-bold" : ""}`}
+                >
+                  {docMetadata[1].listData && (
+                    <ListMarker {...docMetadata[1]} className="!pt-[8px]" />
+                  )}
+                  <RenderedTextBlock entityID={docMetadata[1].value} />
+                </div>
+              )}
+              {docMetadata[2] && (
+                <div
+                  className={`cardBlockLineThree outline-none resize-none align-top flex  gap-2 ${docMetadata[2].type === "heading" ? "font-bold" : ""}`}
+                >
+                  {docMetadata[2].listData && (
+                    <ListMarker {...docMetadata[2]} className="!pt-[8px]" />
+                  )}
 
-                <RenderedTextBlock entityID={docMetadata[2].value} />
-              </div>
-            )}
+                  <RenderedTextBlock entityID={docMetadata[2].value} />
+                </div>
+              )}
+            </div>
+            {props.renderPreview && <CardPreview entityID={cardEntity} />}
           </div>
-          {props.renderPreview && <CardPreview entityID={cardEntity} />}
           {permission && (
             <button
-              className="absolute p-1 top-0.5 right-0.5 hover:text-accent-contrast text-secondary sm:hidden sm:group-hover/cardBlock:block"
+              className="absolute p-1 top-0.5 right-0.5 hover:text-accent-contrast text-secondary sm:hidden sm:group-hover/cardBlock:block z-10"
               onClick={(e) => {
                 e.stopPropagation();
                 setAreYouSure(true);
@@ -187,7 +189,7 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
               <CloseTiny />
             </button>
           )}
-        </div>
+        </>
       )}
     </div>
   );
