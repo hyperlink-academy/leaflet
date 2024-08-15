@@ -63,10 +63,9 @@ export const get_url_preview_data = async (url: string) => {
   return {
     ...result,
     screenshot: {
-      url: supabase.storage
-        .from("url-previews")
-        .getPublicUrl(key, { transform: { width: 240, height: 208 } }).data
-        .publicUrl,
+      url: supabase.storage.from("url-previews").getPublicUrl(key, {
+        transform: { width: 240, height: 208, resize: "contain" },
+      }).data.publicUrl,
       height: 208,
       width: 240,
     },
