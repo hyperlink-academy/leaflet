@@ -192,6 +192,13 @@ const backspace =
       });
     }
     if (!propsRef.current.previousBlock) {
+      if (propsRef.current.listData) {
+        repRef.current?.mutate.retractAttribute({
+          entity: propsRef.current.entityID,
+          attribute: "block/is-list",
+        });
+        return true;
+      }
       if (propsRef.current.type === "heading") {
         repRef.current?.mutate.assertFact({
           entity: propsRef.current.entityID,
