@@ -13,6 +13,8 @@ import { v7 } from "uuid";
 import { indent, outdent } from "src/utils/list-operations";
 import { addShortcut } from "src/shortcuts";
 import { htmlToMarkdown } from "src/htmlMarkdownParsers";
+import { elementId } from "src/utils/elementId";
+import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
@@ -264,6 +266,12 @@ export function SelectionManager() {
             let nextSelectedBlock = siblings[index - 1];
             if (!nextSelectedBlock) return;
 
+            scrollIntoViewIfNeeded(
+              document.getElementById(
+                elementId.block(nextSelectedBlock.value).container,
+              ),
+              false,
+            );
             useUIState.getState().addBlockToSelection({
               ...nextSelectedBlock,
             });
@@ -279,6 +287,12 @@ export function SelectionManager() {
               parent: b.parent,
               entityID: nextBlock.value,
             });
+            scrollIntoViewIfNeeded(
+              document.getElementById(
+                elementId.block(nextBlock.value).container,
+              ),
+              false,
+            );
             if (sortedBlocks.length === 2) {
               useEditorStates
                 .getState()
@@ -397,6 +411,13 @@ export function SelectionManager() {
             useUIState.getState().addBlockToSelection({
               ...nextSelectedBlock,
             });
+
+            scrollIntoViewIfNeeded(
+              document.getElementById(
+                elementId.block(nextSelectedBlock.value).container,
+              ),
+              false,
+            );
             useUIState.getState().setFocusedBlock({
               type: "block",
               parent: nextSelectedBlock.parent,
@@ -407,6 +428,12 @@ export function SelectionManager() {
             useUIState
               .getState()
               .removeBlockFromSelection({ value: b.entityID });
+            scrollIntoViewIfNeeded(
+              document.getElementById(
+                elementId.block(nextBlock.value).container,
+              ),
+              false,
+            );
             useUIState.getState().setFocusedBlock({
               type: "block",
               parent: b.parent,
