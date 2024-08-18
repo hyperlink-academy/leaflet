@@ -23,8 +23,11 @@ export const TextBlockKeymap = (
 ) =>
   keymap({
     "Meta-b": toggleMark(schema.marks.strong),
+    "Ctrl-b": toggleMark(schema.marks.strong),
     "Meta-u": toggleMark(schema.marks.underline),
+    "Ctrl-u": toggleMark(schema.marks.underline),
     "Meta-i": toggleMark(schema.marks.em),
+    "Ctrl-i": toggleMark(schema.marks.em),
     "Ctrl-Meta-x": toggleMark(schema.marks.strikethrough),
     "Ctrl-Meta-h": toggleMark(schema.marks.highlight, {
       color: useUIState.getState().lastUsedHighlight,
