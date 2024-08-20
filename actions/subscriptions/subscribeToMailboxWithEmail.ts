@@ -60,7 +60,7 @@ export async function subscribeToMailboxWithEmail(
       "X-Postmark-Server-Token": process.env.POSTMARK_API_KEY!,
     },
     body: JSON.stringify({
-      From: "subscriptions@leaflet.pub",
+      From: "Leaflet Subscriptions <subscriptions@leaflet.pub>",
       Subject: `Your confirmation code is ${subscription.code}`,
       To: email,
       TextBody: `${subscription.code}`,

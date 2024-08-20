@@ -31,17 +31,18 @@ export const entity_sets = pgTable("entity_sets", {
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 });
 
+export const identities = pgTable("identities", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	home_page: uuid("home_page").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
+});
+
 export const email_subscriptions_to_entity = pgTable("email_subscriptions_to_entity", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	entity: uuid("entity").notNull().references(() => entities.id),
 	email: text("email").notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-});
-
-export const identities = pgTable("identities", {
-	id: uuid("id").defaultRandom().primaryKey().notNull(),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	home_page: uuid("home_page").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
+	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
 });
 
 export const permission_tokens = pgTable("permission_tokens", {

@@ -40,18 +40,21 @@ export type Database = {
           email: string
           entity: string
           id: string
+          token: string
         }
         Insert: {
           created_at?: string
           email: string
           entity: string
           id?: string
+          token: string
         }
         Update: {
           created_at?: string
           email?: string
           entity?: string
           id?: string
+          token?: string
         }
         Relationships: [
           {
@@ -59,6 +62,13 @@ export type Database = {
             columns: ["entity"]
             isOneToOne: false
             referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_subscriptions_to_entity_token_fkey"
+            columns: ["token"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
             referencedColumns: ["id"]
           },
         ]
