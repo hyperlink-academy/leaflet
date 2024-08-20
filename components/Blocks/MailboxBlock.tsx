@@ -20,6 +20,7 @@ import { getBlocksAsHTML } from "src/utils/getBlocksAsHTML";
 import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 import {
   addSubscription,
+  unsubscribe,
   useSubscriptionStatus,
 } from "src/hooks/useSubscriptionStatus";
 
@@ -27,7 +28,7 @@ export const MailboxBlock = (props: BlockProps) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
   let [areYouSure, setAreYouSure] = useState(false);
   let isSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
+    s.selectedBlock.find((b) => b.value === props.entityID)
   );
 
   let card = useEntity(props.entityID, "block/card");
@@ -128,7 +129,7 @@ export const MailboxBlock = (props: BlockProps) => {
                   if (!rep) return;
                   let blocks =
                     (await rep?.query((tx) =>
-                      getBlocksWithType(tx, draft.data.value),
+                      getBlocksWithType(tx, draft.data.value)
                     )) || [];
                   let html = (await getBlocksAsHTML(rep, blocks))?.join("\n");
                   await sendPostToSubscribers(
@@ -137,7 +138,7 @@ export const MailboxBlock = (props: BlockProps) => {
                     {
                       html,
                       markdown: htmlToMarkdown(html),
-                    },
+                    }
                   );
                 }}
               >
@@ -162,8 +163,8 @@ export const MailboxBlock = (props: BlockProps) => {
               <button
                 className="text-tertiary hover:text-accent-contrast"
                 onClick={(e) => {
-                  //TODO UNSUBSCRIBE
                   let rect = e.currentTarget.getBoundingClientRect();
+                  unsubscribe(isSubscribed);
                   smoke({
                     text: "unsubscribed!",
                     position: { x: rect.left, y: rect.top - 8 },
@@ -192,6 +193,7 @@ export const MailboxBlock = (props: BlockProps) => {
 
 const MailboxReaderView = (props: { entityID: string }) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
+  let smoke = useSmoker();
   return (
     <div className={`mailboxContent relative w-full flex flex-col gap-1`}>
       <div
@@ -214,8 +216,13 @@ const MailboxReaderView = (props: { entityID: string }) => {
                 <ButtonPrimary onClick={() => {}}>See All Posts</ButtonPrimary>
                 <button
                   className="text-tertiary hover:text-accent-contrast"
-                  onClick={() => {
-                    //TODO Unsubscribe
+                  onClick={(e) => {
+                    let rect = e.currentTarget.getBoundingClientRect();
+                    unsubscribe(isSubscribed);
+                    smoke({
+                      text: "unsubscribed!",
+                      position: { x: rect.left, y: rect.top - 8 },
+                    });
                   }}
                 >
                   unsubscribe
@@ -313,7 +320,7 @@ const SubscribeForm = (props: {
             let result = await confirmEmailSubscription(
               subscriptionID,
               code,
-              permission_token,
+              permission_token
             );
             console.log(result);
             if (!result) return;
@@ -343,7 +350,7 @@ const SubscribeForm = (props: {
           onClick={async (e) => {
             let subscriptionID = await subscribeToMailboxWithEmail(
               props.entityID,
-              email,
+              email
             );
             if (subscriptionID) setSubscriptionID(subscriptionID?.id);
             setState({ state: "confirm", email });

@@ -62,7 +62,7 @@ export async function sendPostToSubscribers(
         Subject: `A new update in: ${entity}`,
         To: sub.email_subscriptions_to_entity.email,
         HtmlBody: `${contents.html}
-        <a href="${domain}/${sub.email_subscriptions_to_entity.token}?sub_id=${sub.email_subscriptions_to_entity.id}">
+        <a href="${domain}/${sub.email_subscriptions_to_entity.token}?sub_id=${sub.email_subscriptions_to_entity.id}&email=${sub.email_subscriptions_to_entity.email}&entity=${sub.email_subscriptions_to_entity.entity}">
         Click here to unsubscribe
         </a>
         `,

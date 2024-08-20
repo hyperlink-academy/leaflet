@@ -1,3 +1,4 @@
+import { deleteSubscription } from "actions/subscriptions/deleteSubscription";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import useSWR, { mutate } from "swr";
@@ -18,12 +19,22 @@ export function useSubscriptionStatus(entityID: string) {
   let params = useSearchParams();
   let sub_id = params.get("sub_id");
   useEffect(() => {
+    console.log(sub_id)
     if (!sub_id) return;
-  }, [sub_id]);
-  let { data: docs } = useSWR("subscriptions", () => getSubscriptions(), {
-    fallbackData: [],
-  });
-  return docs.some((d) => d.entity === entityID);
+    let entity = params.get("entity");
+    let email = params.get("email");
+    if (!entity || !email) return;
+    addSubscription({ id: sub_id, email: email, entity: entity });
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete('sub_id');
+    url.searchParams.delete('entity');
+    url.searchParams.delete('email');
+    window.history.replaceState({}, '', url.toString());
+  }, [sub_id, params]);
+  let { data: docs } = useSWR("subscriptions", () => getSubscriptions(), {});
+  if (!docs) return null;
+  return docs.find((d) => d.entity === entityID);
 }
 
 export function getSubscriptions() {
@@ -43,4 +54,18 @@ export function addSubscription(s: Subscription) {
   };
   window.localStorage.setItem(key, JSON.stringify(newValue));
   mutate("subscriptions", subscriptions, false);
+}
+
+export async function unsubscribe(s: Subscription) {
+  let subscriptions = getSubscriptions();
+  let newDocs = subscriptions.filter((d) => d.id !== s.id);
+  let newValue: SubscriptionStorage = {
+    version: 1,
+    subscriptions: newDocs,
+  };
+  // Call the unsubscribe action
+  await deleteSubscription(s.id);
+
+  window.localStorage.setItem(key, JSON.stringify(newValue));
+  mutate("subscriptions", newDocs, false);
 }
