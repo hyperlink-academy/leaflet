@@ -24,7 +24,7 @@ export const Menu = (props: {
           align={props.align ? props.align : "center"}
           sideOffset={4}
           collisionPadding={16}
-          className="dropdownMenu z-20 bg-bg-card flex flex-col py-1 gap-0.5 border border-border rounded-md shadow-md"
+          className={`dropdownMenu z-20 bg-bg-card flex flex-col py-1 gap-0.5 border border-border rounded-md shadow-md ${props.className}`}
         >
           {props.children}
           <DropdownMenu.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
@@ -43,6 +43,7 @@ export const Menu = (props: {
 
 export const MenuItem = (props: {
   children?: React.ReactNode;
+  className?: string;
   onSelect: (e: Event) => void;
   id?: string;
 }) => {
@@ -60,6 +61,7 @@ export const MenuItem = (props: {
         data-[highlighted]:bg-border-light data-[highlighted]:text-secondary
         hover:bg-border-light hover:text-secondary
         outline-none
+        ${props.className}
         `}
     >
       {props.children}

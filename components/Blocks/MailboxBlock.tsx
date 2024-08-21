@@ -282,7 +282,7 @@ const SubscribePopover = (props: {
       trigger={<div className="font-bold text-accent-contrast">Subscribe</div>}
       content={
         <div className="text-sm text-secondary flex flex-col gap-2 py-1">
-          <SubscribeForm entityID={props.entityID} role={props.role} />
+          <SubscribeForm compact entityID={props.entityID} role={props.role} />
         </div>
       }
     />
@@ -292,6 +292,7 @@ const SubscribePopover = (props: {
 const SubscribeForm = (props: {
   entityID: string;
   role: "author" | "reader";
+  compact?: boolean;
 }) => {
   let smoke = useSmoker();
   let [channel, setChannel] = useState<"email" | "sms">("email");
@@ -336,46 +337,51 @@ const SubscribeForm = (props: {
   }
   return (
     <>
-      <div className="flex gap-2 items-center place-self-center w-full">
-        <div className="flex ">
+      <div
+        className={`mailboxSubscribeForm flex sm:flex-row flex-col ${props.compact && "sm:flex-col"} gap-2 items-center place-self-center mx-auto`}
+      >
+        <div className="mailboxChannelInput flex gap-2 border border-border-light bg-bg-card rounded-md py-1 px-2 grow max-w-72 ">
           <ChannelSelector
             channel={channel}
             setChannel={(channel) => {
               setChannel(channel);
             }}
           />
+          <Separator classname="h-6" />
           {channel === "email" ? (
             <input
               value={email}
               type="email"
               onChange={(e) => setEmail(e.target.value)}
-              className="border border-border-light rounded-md py-1 px-2 grow"
-              placeholder="email"
+              className="w-full"
+              placeholder="youremail@email.com"
             />
           ) : (
             <input
               value={sms}
               type="tel"
               onChange={(e) => setSMS(e.target.value)}
-              className="border border-border-light rounded-md py-1 px-2 grow"
-              placeholder="phone number"
+              className="w-full"
+              placeholder="123-456-7890"
             />
           )}
         </div>
-        <ButtonPrimary
-          onClick={async (e) => {
-            let subscriptionID = await subscribeToMailboxWithEmail(
-              props.entityID,
-              email,
-            );
-            if (subscriptionID) setSubscriptionID(subscriptionID?.id);
-            setState({ state: "confirm", email });
-          }}
-        >
-          Subscribe!
-        </ButtonPrimary>
+        <div className="flex items-center gap-2">
+          <ButtonPrimary
+            onClick={async (e) => {
+              let subscriptionID = await subscribeToMailboxWithEmail(
+                props.entityID,
+                email,
+              );
+              if (subscriptionID) setSubscriptionID(subscriptionID?.id);
+              setState({ state: "confirm", email });
+            }}
+          >
+            Subscribe!
+          </ButtonPrimary>
 
-        {props.role === "reader" && <MailboxInfo subscriber />}
+          {props.role === "reader" && <MailboxInfo subscriber />}
+        </div>
       </div>
     </>
   );
@@ -387,14 +393,16 @@ const ChannelSelector = (props: {
 }) => {
   return (
     <Menu
+      className="w-20"
       trigger={
-        <div className="flex gap-2 w-20 items-center justify-between bg-test px-2">
+        <div className="flex gap-2 w-16 items-center justify-between text-secondary">
           {props.channel === "email" ? "Email" : "SMS"}{" "}
-          <ArrowDownTiny className="shrink-0" />
+          <ArrowDownTiny className="shrink-0 text-accent-1" />
         </div>
       }
     >
       <MenuItem
+        className="font-normal"
         onSelect={() => {
           props.setChannel("email");
         }}
@@ -402,6 +410,7 @@ const ChannelSelector = (props: {
         Email
       </MenuItem>
       <MenuItem
+        className="font-normal"
         onSelect={() => {
           props.setChannel("sms");
         }}
