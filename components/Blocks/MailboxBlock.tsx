@@ -88,7 +88,6 @@ export const MailboxBlock = (props: BlockProps) => {
   let draft = useEntity(props.entityID, "mailbox/draft");
   let entity_set = useEntitySetContext();
   let archive = useEntity(props.entityID, "mailbox/archive");
-  let pagetitle = usePageTitle(permission_token.root_entity);
   if (!permission) return <MailboxReaderView entityID={props.entityID} />;
 
   return (
@@ -126,38 +125,6 @@ export const MailboxBlock = (props: BlockProps) => {
             >
               Write a Post
             </ButtonPrimary>
-            {draft && (
-              <ButtonPrimary
-                onClick={async () => {
-                  // Call the
-                  if (!rep) return;
-                  let blocks =
-                    (await rep?.query((tx) =>
-                      getBlocksWithType(tx, draft.data.value),
-                    )) || [];
-                  let html = (await getBlocksAsHTML(rep, blocks))?.join("\n");
-                  await sendPostToSubscribers({
-                    title: pagetitle,
-                    permission_token,
-                    mailboxEntity: props.entityID,
-                    messageEntity: draft.data.value,
-                    contents: {
-                      html,
-                      markdown: htmlToMarkdown(html),
-                    },
-                  });
-
-                  rep?.mutate.archiveDraft({
-                    entity_set: entity_set.set,
-                    mailboxEntity: props.entityID,
-                    newBlockEntity: v7(),
-                    archiveEntity: v7(),
-                  });
-                }}
-              >
-                send!
-              </ButtonPrimary>
-            )}
             <MailboxInfo />
           </div>
         ) : (
@@ -394,8 +361,15 @@ const SubscribeForm = (props: {
     </>
   );
 };
-export const DraftPostOptions = (props: {}) => {
+
+export const DraftPostOptions = (props: { mailboxEntity: string }) => {
   let toaster = useToaster();
+  let draft = useEntity(props.mailboxEntity, "mailbox/draft");
+  let { rep, permission_token } = useReplicache();
+  let entity_set = useEntitySetContext();
+  let archive = useEntity(props.mailboxEntity, "mailbox/archive");
+  let pagetitle = usePageTitle(permission_token.root_entity);
+  if (!draft) return null;
 
   // once the send button is clicked, close the card and show a toast.
   return (
@@ -403,7 +377,32 @@ export const DraftPostOptions = (props: {}) => {
       <div className="flex gap-2">This is still a draft</div>
       <button
         className="font-bold text-accent-contrast hover:bg-bg-card rounded-md px-1"
-        onClick={() => {
+        onClick={async () => {
+          // Call the
+          if (!rep) return;
+          let blocks =
+            (await rep?.query((tx) =>
+              getBlocksWithType(tx, draft.data.value),
+            )) || [];
+          let html = (await getBlocksAsHTML(rep, blocks))?.join("\n");
+          await sendPostToSubscribers({
+            title: pagetitle,
+            permission_token,
+            mailboxEntity: props.mailboxEntity,
+            messageEntity: draft.data.value,
+            contents: {
+              html,
+              markdown: htmlToMarkdown(html),
+            },
+          });
+
+          rep?.mutate.archiveDraft({
+            entity_set: entity_set.set,
+            mailboxEntity: props.mailboxEntity,
+            newBlockEntity: v7(),
+            archiveEntity: v7(),
+          });
+
           toaster({
             content: (
               <div className="font-bold"> Sent Post to Subscribers!</div>

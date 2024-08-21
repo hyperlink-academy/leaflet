@@ -7,7 +7,12 @@ import { ThemePopover } from "./ThemeManager/ThemeSetter";
 import { Media } from "./Media";
 import { DesktopCardFooter } from "./DesktopFooter";
 import { Replicache } from "replicache";
-import { Fact, ReplicacheMutators, useReplicache } from "src/replicache";
+import {
+  Fact,
+  ReplicacheMutators,
+  useReferenceToEntity,
+  useReplicache,
+} from "src/replicache";
 import * as Popover from "@radix-ui/react-popover";
 import { MoreOptionsTiny, DeleteSmall, CloseTiny, PopoverArrow } from "./Icons";
 import { useToaster } from "./Toast";
@@ -85,6 +90,7 @@ export const PageOptions = (props: { entityID: string }) => {
 
 function Card(props: { entityID: string; first?: boolean }) {
   let { rep } = useReplicache();
+  let isDraft = useReferenceToEntity("mailbox/draft", props.entityID);
 
   let focusedElement = useUIState((s) => s.focusedBlock);
   let focusedCardID =
@@ -129,15 +135,17 @@ function Card(props: { entityID: string; first?: boolean }) {
             {!props.first && <CardOptions entityID={props.entityID} />}
           </Media>
           <DesktopCardFooter cardID={props.entityID} />
-          <div
-            className="cardStatus px-3 sm:px-4 pt-[6px] pb-1 border-b border-border text-tertiary"
-            style={{
-              backgroundColor:
-                "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-card)) 85%)",
-            }}
-          >
-            <DraftPostOptions />
-          </div>
+          {isDraft.length > 0 && (
+            <div
+              className="cardStatus px-3 sm:px-4 pt-[6px] pb-1 border-b border-border text-tertiary"
+              style={{
+                backgroundColor:
+                  "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-card)) 85%)",
+              }}
+            >
+              <DraftPostOptions mailboxEntity={isDraft[0].entity} />
+            </div>
+          )}
           <Blocks entityID={props.entityID} />
         </div>
         <Media mobile={false}>
