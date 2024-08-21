@@ -1,13 +1,18 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { createClient } from "@supabase/supabase-js";
+import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import {
   email_subscriptions_to_entity,
+  facts,
   pending_email_subscriptions_to_entity,
 } from "drizzle/schema";
 import postgres from "postgres";
-import { PermissionToken } from "src/replicache";
+import { Fact, PermissionToken } from "src/replicache";
+import { serverMutationContext } from "src/replicache/serverMutationContext";
+import { Database } from "supabase/database.types";
+import { v7 } from "uuid";
 
 export async function confirmEmailSubscription(
   subscriptionID: string,
@@ -40,6 +45,31 @@ export async function confirmEmailSubscription(
         ),
       );
     if (existing_subscription) return existing_subscription;
+    let [fact] = (await db
+      .select()
+      .from(facts)
+      .where(
+        and(
+          eq(facts.entity, pending_subscription.entity),
+
+          eq(facts.attribute, "mailbox/subscriber-count"),
+        ),
+      )) as Fact<"mailbox/subscriber-count">[];
+    if (!fact) {
+      await db.insert(facts).values({
+        id: v7(),
+        entity: pending_subscription.entity,
+        data: sql`${{ type: "number", value: 1 }}::jsonb`,
+        attribute: "mailbox/subscriber-count",
+      });
+    } else {
+      await db
+        .update(facts)
+        .set({
+          data: sql`${{ type: "number", value: fact.data.value + 1 }}::jsonb`,
+        })
+        .where(eq(facts.id, fact.id));
+    }
     let [subscription] = await db
       .insert(email_subscriptions_to_entity)
       .values({
@@ -51,6 +81,18 @@ export async function confirmEmailSubscription(
 
     return subscription;
   });
+
+  let supabase = createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
+    process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+  );
+  let channel = supabase.channel(`rootEntity:${token.root_entity}`);
+  await channel.send({
+    type: "broadcast",
+    event: "poke",
+    payload: { message: "poke" },
+  });
+  supabase.removeChannel(channel);
   client.end();
   return subscription;
 }

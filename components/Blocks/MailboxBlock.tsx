@@ -88,6 +88,7 @@ export const MailboxBlock = (props: BlockProps) => {
   let draft = useEntity(props.entityID, "mailbox/draft");
   let entity_set = useEntitySetContext();
   let archive = useEntity(props.entityID, "mailbox/archive");
+  let subscriber_count = useEntity(props.entityID, "mailbox/subscriber-count");
   if (!permission) return <MailboxReaderView entityID={props.entityID} />;
 
   return (
@@ -153,6 +154,12 @@ export const MailboxBlock = (props: BlockProps) => {
               >
                 Unsubscribe
               </button>
+            )}
+            {subscriber_count && subscriber_count.data.value > 0 && (
+              <span className="text-tertiary">
+                {subscriber_count.data.value} subscriber
+                {subscriber_count.data.value > 1 ? "s" : ""}
+              </span>
             )}
             {archive ? (
               <button

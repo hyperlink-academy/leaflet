@@ -46,6 +46,10 @@ const MailboxAttributes = {
     type: "reference",
     cardinality: "one",
   },
+  "mailbox/subscriber-count": {
+    type: "number",
+    cardinality: "one",
+  },
 } as const;
 
 const LinkBlockAttributes = {
