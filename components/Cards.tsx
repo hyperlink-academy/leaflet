@@ -137,7 +137,7 @@ function Card(props: { entityID: string; first?: boolean }) {
           <DesktopCardFooter cardID={props.entityID} />
           {isDraft.length > 0 && (
             <div
-              className="cardStatus px-3 sm:px-4 pt-[6px] pb-1 border-b border-border text-tertiary"
+              className={`cardStatus pt-[6px] pb-1 ${!props.first ? "pr-10 pl-3 sm:px-4" : "px-3 sm:px-4"} border-b border-border text-tertiary`}
               style={{
                 backgroundColor:
                   "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-card)) 85%)",
@@ -163,7 +163,7 @@ const CardOptions = (props: { entityID: string }) => {
   return (
     <div className=" z-10 w-fit absolute sm:top-2 sm:-right-[18px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
       <button
-        className="p-1 sm:p-0.5 sm:pl-0 bg-border text-bg-card sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
+        className="p-1 pt-2 sm:p-0.5 sm:pl-0 bg-border text-bg-card sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
         onClick={() => {
           useUIState.getState().closeCard(props.entityID);
         }}
@@ -178,32 +178,29 @@ const CardOptions = (props: { entityID: string }) => {
 const OptionsMenu = () => {
   let toaster = useToaster();
   return (
-    <Popover.Root>
-      <Popover.Trigger
-        className={`cardOptionsTrigger
-        shrink-0 sm:h-8 sm:w-5 h-5 w-8
-        bg-bg-card text-border
-        border sm:border-l-0 border-t-1 border-border sm:rounded-r-md sm:rounded-l-none rounded-b-md
-        sm:hover:border-r-2 hover:border-b-2 hover:border-y-2 hover:border-t-1
-        flex items-center justify-center`}
+    <Menu
+      trigger={
+        <div
+          className={`cardOptionsTrigger
+      shrink-0 sm:h-8 sm:w-5 h-5 w-8
+      bg-bg-card text-border
+      border sm:border-l-0 border-t-1 border-border sm:rounded-r-md sm:rounded-l-none rounded-b-md
+      sm:hover:border-r-2 hover:border-b-2 hover:border-y-2 hover:border-t-1
+      flex items-center justify-center`}
+        >
+          <MoreOptionsTiny className="sm:rotate-90" />
+        </div>
+      }
+    >
+      <MenuItem
+        onSelect={(e) => {
+          // TODO: Wire up delete card
+          toaster(DeleteCardToast);
+        }}
       >
-        <MoreOptionsTiny className="sm:rotate-90" />
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content align="end" sideOffset={6} className="cardOptionsMenu">
-          <Menu>
-            <MenuItem
-              onClick={(e) => {
-                // TODO: Wire up delete card
-                toaster(DeleteCardToast);
-              }}
-            >
-              Delete Page <DeleteSmall />
-            </MenuItem>
-          </Menu>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+        Delete Page <DeleteSmall />
+      </MenuItem>
+    </Menu>
   );
 };
 

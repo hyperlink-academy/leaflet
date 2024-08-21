@@ -1,7 +1,7 @@
 import { ButtonPrimary } from "components/Buttons";
-import { InfoSmall } from "components/Icons";
+import { ArrowDownTiny, InfoSmall } from "components/Icons";
 import { Popover } from "components/Popover";
-import { Separator } from "components/Layout";
+import { Menu, MenuItem, Separator } from "components/Layout";
 import { useUIState } from "src/useUIState";
 import { useEffect, useState } from "react";
 import { useSmoker, useToaster } from "components/Toast";
@@ -154,24 +154,24 @@ export const MailboxBlock = (props: BlockProps) => {
                 Unsubscribe
               </button>
             )}
-            <div className="flex gap-2 items-center">
-              {archive && (
-                <button
-                  className="text-tertiary hover:text-accent-contrast place-self-end"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    if (rep) {
-                      useUIState
-                        .getState()
-                        .openCard(props.parent, archive.data.value);
-                      focusCard(archive.data.value, rep);
-                    }
-                  }}
-                >
-                  past posts
-                </button>
-              )}
-            </div>
+            {archive ? (
+              <button
+                className="text-tertiary hover:text-accent-contrast place-self-end"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  if (rep) {
+                    useUIState
+                      .getState()
+                      .openCard(props.parent, archive.data.value);
+                    focusCard(archive.data.value, rep);
+                  }
+                }}
+              >
+                past posts
+              </button>
+            ) : (
+              <div className="text-tertiary">no posts yet</div>
+            )}
           </>
         }
       </div>
@@ -181,13 +181,19 @@ export const MailboxBlock = (props: BlockProps) => {
 
 const MailboxReaderView = (props: { entityID: string }) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
+  let isSelected = useUIState((s) =>
+    s.selectedBlock.find((b) => b.value === props.entityID),
+  );
   let archive = useEntity(props.entityID, "mailbox/archive");
   let smoke = useSmoker();
   return (
     <div className={`mailboxContent relative w-full flex flex-col gap-1`}>
       <div
-        className={`flex flex-col gap-2 items-center justify-center w-full rounded-md border outline border-border-light outline-transparent"
-      `}
+        className={`flex flex-col gap-2 items-center justify-center w-full rounded-md border outline ${
+          isSelected
+            ? "border-border outline-border"
+            : "border-border-light outline-transparent"
+        }`}
         style={{
           backgroundColor:
             "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-card)) 85%)",
@@ -273,7 +279,7 @@ const SubscribePopover = (props: {
   return (
     <Popover
       className="max-w-xs"
-      trigger={<div className="font-bold text-accent-contrast"> Subscribe</div>}
+      trigger={<div className="font-bold text-accent-contrast">Subscribe</div>}
       content={
         <div className="text-sm text-secondary flex flex-col gap-2 py-1">
           <SubscribeForm entityID={props.entityID} role={props.role} />
@@ -288,7 +294,10 @@ const SubscribeForm = (props: {
   role: "author" | "reader";
 }) => {
   let smoke = useSmoker();
+  let [channel, setChannel] = useState<"email" | "sms">("email");
   let [email, setEmail] = useState("");
+  let [sms, setSMS] = useState("");
+
   let [state, setState] = useState<
     { state: "normal" } | { state: "confirm"; email: string }
   >({ state: "normal" });
@@ -327,18 +336,32 @@ const SubscribeForm = (props: {
   }
   return (
     <>
-      <input
-        className="border border-border-light rounded-md py-1 px-2 max-w-80 mx-auto"
-        placeholder="name (optional)"
-      />
-
-      <input
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="border border-border-light rounded-md py-1 px-2 max-w-80 mx-auto"
-        placeholder="email or phone"
-      />
-      <div className="flex gap-2 items-center place-self-center pt-2">
+      <div className="flex gap-2 items-center place-self-center w-full">
+        <div className="flex ">
+          <ChannelSelector
+            channel={channel}
+            setChannel={(channel) => {
+              setChannel(channel);
+            }}
+          />
+          {channel === "email" ? (
+            <input
+              value={email}
+              type="email"
+              onChange={(e) => setEmail(e.target.value)}
+              className="border border-border-light rounded-md py-1 px-2 grow"
+              placeholder="email"
+            />
+          ) : (
+            <input
+              value={sms}
+              type="tel"
+              onChange={(e) => setSMS(e.target.value)}
+              className="border border-border-light rounded-md py-1 px-2 grow"
+              placeholder="phone number"
+            />
+          )}
+        </div>
         <ButtonPrimary
           onClick={async (e) => {
             let subscriptionID = await subscribeToMailboxWithEmail(
@@ -349,19 +372,45 @@ const SubscribeForm = (props: {
             setState({ state: "confirm", email });
           }}
         >
-          Get Notified
+          Subscribe!
         </ButtonPrimary>
 
-        {props.role === "reader" && (
-          <>
-            <MailboxInfo subscriber />
-          </>
-        )}
+        {props.role === "reader" && <MailboxInfo subscriber />}
       </div>
     </>
   );
 };
 
+const ChannelSelector = (props: {
+  channel: "email" | "sms";
+  setChannel: (channel: "email" | "sms") => void;
+}) => {
+  return (
+    <Menu
+      trigger={
+        <div className="flex gap-2 w-20 items-center justify-between bg-test px-2">
+          {props.channel === "email" ? "Email" : "SMS"}{" "}
+          <ArrowDownTiny className="shrink-0" />
+        </div>
+      }
+    >
+      <MenuItem
+        onSelect={() => {
+          props.setChannel("email");
+        }}
+      >
+        Email
+      </MenuItem>
+      <MenuItem
+        onSelect={() => {
+          props.setChannel("sms");
+        }}
+      >
+        SMS
+      </MenuItem>
+    </Menu>
+  );
+};
 export const DraftPostOptions = (props: { mailboxEntity: string }) => {
   let toaster = useToaster();
   let draft = useEntity(props.mailboxEntity, "mailbox/draft");
@@ -404,9 +453,7 @@ export const DraftPostOptions = (props: { mailboxEntity: string }) => {
           });
 
           toaster({
-            content: (
-              <div className="font-bold"> Sent Post to Subscribers!</div>
-            ),
+            content: <div className="font-bold">Sent Post to Subscribers!</div>,
             type: "success",
           });
         }}
