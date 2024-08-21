@@ -16,7 +16,8 @@ let supabase = createServerClient<Database>(
 );
 export async function sendPostToSubscribers(
   permission_token: PermissionToken,
-  entity: string,
+  mailboxEntity: string,
+  messageEntity: string,
   contents: {
     html: string;
     markdown: string;
@@ -39,8 +40,8 @@ export async function sendPostToSubscribers(
     .select()
     .from(email_subscriptions_to_entity)
     .innerJoin(entities, eq(email_subscriptions_to_entity.entity, entities.id))
-    .where(eq(email_subscriptions_to_entity.entity, entity));
-  let entity_set = subscribers[0].entities.set;
+    .where(eq(email_subscriptions_to_entity.entity, mailboxEntity));
+  let entity_set = subscribers[0]?.entities.set;
   if (
     !token_rights.data.permission_token_rights.find(
       (r) => r.entity_set === entity_set,
@@ -57,12 +58,22 @@ export async function sendPostToSubscribers(
     },
     body: JSON.stringify(
       subscribers.map((sub) => ({
+        Headers: [
+          {
+            Name: "List-Unsubscribe-Post",
+            Value: "List-Unsubscribe=One-Click",
+          },
+          {
+            Name: "List-Unsubscribe",
+            Value: `<${domain}/mail/unsubscribe?sub_id=${sub.email_subscriptions_to_entity.id}>`,
+          },
+        ],
         MessageStream: "broadcast",
         From: "mailbox@leaflet.pub",
-        Subject: `A new update in: ${entity}`,
+        Subject: `A new update in: ${mailboxEntity}`,
         To: sub.email_subscriptions_to_entity.email,
         HtmlBody: `${contents.html}
-        <a href="${domain}/${sub.email_subscriptions_to_entity.token}?sub_id=${sub.email_subscriptions_to_entity.id}&email=${sub.email_subscriptions_to_entity.email}&entity=${sub.email_subscriptions_to_entity.entity}">
+        <a href="${domain}/${sub.email_subscriptions_to_entity.token}?sub_id=${sub.email_subscriptions_to_entity.id}&email=${sub.email_subscriptions_to_entity.email}&entity=${sub.email_subscriptions_to_entity.entity}&openCard=${messageEntity}">
         Click here to unsubscribe
         </a>
         `,
