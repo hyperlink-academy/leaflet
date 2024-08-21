@@ -390,3 +390,26 @@ const SubscribeForm = (props: {
     </>
   );
 };
+export const DraftPostOptions = (props: {}) => {
+  let toaster = useToaster();
+
+  // once the send button is clicked, close the card and show a toast.
+  return (
+    <div className="flex justify-between items-center text-sm">
+      <div className="flex gap-2">This is still a draft</div>
+      <button
+        className="font-bold text-accent-contrast hover:bg-bg-card rounded-md px-1"
+        onClick={() => {
+          toaster({
+            content: (
+              <div className="font-bold"> Sent Post to Subscribers!</div>
+            ),
+            type: "success",
+          });
+        }}
+      >
+        Post It!
+      </button>
+    </div>
+  );
+};

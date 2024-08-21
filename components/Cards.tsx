@@ -17,6 +17,7 @@ import { useEntitySetContext } from "./EntitySetProvider";
 import { HomeButton } from "./HomeButton";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
+import { DraftPostOptions } from "./Blocks/MailboxBlock";
 
 export function Cards(props: { rootCard: string }) {
   let openCards = useUIState((s) => s.openCards);
@@ -128,6 +129,15 @@ function Card(props: { entityID: string; first?: boolean }) {
             {!props.first && <CardOptions entityID={props.entityID} />}
           </Media>
           <DesktopCardFooter cardID={props.entityID} />
+          <div
+            className="cardStatus px-3 sm:px-4 pt-[6px] pb-1 border-b border-border text-tertiary"
+            style={{
+              backgroundColor:
+                "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-card)) 85%)",
+            }}
+          >
+            <DraftPostOptions />
+          </div>
           <Blocks entityID={props.entityID} />
         </div>
         <Media mobile={false}>
