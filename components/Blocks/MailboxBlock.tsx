@@ -28,7 +28,7 @@ export const MailboxBlock = (props: BlockProps) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
   let [areYouSure, setAreYouSure] = useState(false);
   let isSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID)
+    s.selectedBlock.find((b) => b.value === props.entityID),
   );
 
   let card = useEntity(props.entityID, "block/card");
@@ -85,6 +85,7 @@ export const MailboxBlock = (props: BlockProps) => {
   ]);
   let draft = useEntity(props.entityID, "mailbox/draft");
   let entity_set = useEntitySetContext();
+  let archive = useEntity(props.entityID, "mailbox/archive");
   if (!permission) return <MailboxReaderView entityID={props.entityID} />;
 
   return (
@@ -129,17 +130,25 @@ export const MailboxBlock = (props: BlockProps) => {
                   if (!rep) return;
                   let blocks =
                     (await rep?.query((tx) =>
-                      getBlocksWithType(tx, draft.data.value)
+                      getBlocksWithType(tx, draft.data.value),
                     )) || [];
                   let html = (await getBlocksAsHTML(rep, blocks))?.join("\n");
                   await sendPostToSubscribers(
                     permission_token,
                     props.entityID,
+                    draft.data.value,
                     {
                       html,
                       markdown: htmlToMarkdown(html),
-                    }
+                    },
                   );
+
+                  rep?.mutate.archiveDraft({
+                    entity_set: entity_set.set,
+                    mailboxEntity: props.entityID,
+                    newBlockEntity: v7(),
+                    archiveEntity: v7(),
+                  });
                 }}
               >
                 send!
@@ -175,14 +184,22 @@ export const MailboxBlock = (props: BlockProps) => {
               </button>
             )}
             <div className="flex gap-2 items-center">
-              <button className="text-tertiary hover:text-accent-contrast place-self-end">
-                readers
-              </button>
-              <Separator classname="h-5" />
-
-              <button className="text-tertiary hover:text-accent-contrast place-self-end">
-                past posts
-              </button>
+              {archive && (
+                <button
+                  className="text-tertiary hover:text-accent-contrast place-self-end"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    if (rep) {
+                      useUIState
+                        .getState()
+                        .openCard(props.parent, archive.data.value);
+                      focusCard(archive.data.value, rep);
+                    }
+                  }}
+                >
+                  past posts
+                </button>
+              )}
             </div>
           </>
         }
@@ -193,6 +210,7 @@ export const MailboxBlock = (props: BlockProps) => {
 
 const MailboxReaderView = (props: { entityID: string }) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
+  let archive = useEntity(props.entityID, "mailbox/archive");
   let smoke = useSmoker();
   return (
     <div className={`mailboxContent relative w-full flex flex-col gap-1`}>
@@ -213,7 +231,11 @@ const MailboxReaderView = (props: { entityID: string }) => {
                 You&apos;re Subscribed! <MailboxInfo subscriber />
               </div>
               <div className="flex flex-col gap-1 items-center place-self-center">
-                <ButtonPrimary onClick={() => {}}>See All Posts</ButtonPrimary>
+                {archive && (
+                  <ButtonPrimary onClick={() => {}}>
+                    See All Posts
+                  </ButtonPrimary>
+                )}
                 <button
                   className="text-tertiary hover:text-accent-contrast"
                   onClick={(e) => {
@@ -320,7 +342,7 @@ const SubscribeForm = (props: {
             let result = await confirmEmailSubscription(
               subscriptionID,
               code,
-              permission_token
+              permission_token,
             );
             console.log(result);
             if (!result) return;
@@ -350,7 +372,7 @@ const SubscribeForm = (props: {
           onClick={async (e) => {
             let subscriptionID = await subscribeToMailboxWithEmail(
               props.entityID,
-              email
+              email,
             );
             if (subscriptionID) setSubscriptionID(subscriptionID?.id);
             setState({ state: "confirm", email });

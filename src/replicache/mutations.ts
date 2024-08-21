@@ -383,6 +383,71 @@ const createDraft: Mutation<{
   });
 };
 
+const archiveDraft: Mutation<{
+  mailboxEntity: string;
+  archiveEntity: string;
+  newBlockEntity: string;
+  entity_set: string;
+}> = async (args, ctx) => {
+  let [existingDraft] = await ctx.scanIndex.eav(
+    args.mailboxEntity,
+    "mailbox/draft",
+  );
+  if (!existingDraft) return;
+
+  let [archive] = await ctx.scanIndex.eav(
+    args.mailboxEntity,
+    "mailbox/archive",
+  );
+  let archiveEntity = archive?.data.value;
+  if (!archive) {
+    archiveEntity = args.archiveEntity;
+    await ctx.createEntity({
+      entityID: archiveEntity,
+      permission_set: args.entity_set,
+    });
+    console.log("creating archive?");
+    await ctx.assertFact({
+      entity: args.mailboxEntity,
+      attribute: "mailbox/archive",
+      data: { type: "reference", value: archiveEntity },
+    });
+  }
+
+  let archiveChildren = await ctx.scanIndex.eav(archiveEntity, "card/block");
+  let lastChild = archiveChildren.toSorted((a, b) =>
+    a.data.position > b.data.position ? 1 : -1,
+  )[archiveChildren.length - 1];
+
+  await ctx.createEntity({
+    entityID: args.newBlockEntity,
+    permission_set: args.entity_set,
+  });
+  await ctx.assertFact({
+    entity: args.newBlockEntity,
+    attribute: "block/type",
+    data: { type: "block-type-union", value: "card" },
+  });
+
+  await ctx.assertFact({
+    entity: args.newBlockEntity,
+    attribute: "block/card",
+    data: { type: "reference", value: existingDraft.data.value },
+  });
+
+  await ctx.assertFact({
+    entity: archiveEntity,
+    attribute: "card/block",
+    data: {
+      type: "ordered-reference",
+      value: args.newBlockEntity,
+      position: generateKeyBetween(lastChild?.data.position || null, null),
+    },
+  });
+
+  await ctx.retractFact(existingDraft.id);
+};
+
 export const mutations = {
   createDraft,
   addBlock,
@@ -397,4 +462,5 @@ export const mutations = {
   removeBlock,
   moveChildren,
   increaseHeadingLevel,
+  archiveDraft,
 };
