@@ -23,6 +23,8 @@ import {
   unsubscribe,
   useSubscriptionStatus,
 } from "src/hooks/useSubscriptionStatus";
+import { scanIndex } from "src/replicache/utils";
+import { usePageTitle } from "components/utils/UpdatePageTitle";
 
 export const MailboxBlock = (props: BlockProps) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
@@ -86,6 +88,7 @@ export const MailboxBlock = (props: BlockProps) => {
   let draft = useEntity(props.entityID, "mailbox/draft");
   let entity_set = useEntitySetContext();
   let archive = useEntity(props.entityID, "mailbox/archive");
+  let pagetitle = usePageTitle(permission_token.root_entity);
   if (!permission) return <MailboxReaderView entityID={props.entityID} />;
 
   return (
@@ -133,15 +136,16 @@ export const MailboxBlock = (props: BlockProps) => {
                       getBlocksWithType(tx, draft.data.value),
                     )) || [];
                   let html = (await getBlocksAsHTML(rep, blocks))?.join("\n");
-                  await sendPostToSubscribers(
+                  await sendPostToSubscribers({
+                    title: pagetitle,
                     permission_token,
-                    props.entityID,
-                    draft.data.value,
-                    {
+                    mailboxEntity: props.entityID,
+                    messageEntity: draft.data.value,
+                    contents: {
                       html,
                       markdown: htmlToMarkdown(html),
                     },
-                  );
+                  });
 
                   rep?.mutate.archiveDraft({
                     entity_set: entity_set.set,

@@ -14,15 +14,22 @@ let supabase = createServerClient<Database>(
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
   { cookies: {} },
 );
-export async function sendPostToSubscribers(
-  permission_token: PermissionToken,
-  mailboxEntity: string,
-  messageEntity: string,
+export async function sendPostToSubscribers({
+  title,
+  permission_token,
+  mailboxEntity,
+  messageEntity,
+  contents,
+}: {
+  title: string;
+  permission_token: PermissionToken;
+  mailboxEntity: string;
+  messageEntity: string;
   contents: {
     html: string;
     markdown: string;
-  },
-) {
+  };
+}) {
   let token_rights = await supabase
     .from("permission_tokens")
     .select("*, permission_token_rights(*)")
@@ -70,7 +77,7 @@ export async function sendPostToSubscribers(
         ],
         MessageStream: "broadcast",
         From: "mailbox@leaflet.pub",
-        Subject: `A new update in: ${mailboxEntity}`,
+        Subject: `New Mail in : ${title}`,
         To: sub.email_subscriptions_to_entity.email,
         HtmlBody: `${contents.html}
         <a href="${domain}/${sub.email_subscriptions_to_entity.token}?sub_id=${sub.email_subscriptions_to_entity.id}&email=${sub.email_subscriptions_to_entity.email}&entity=${sub.email_subscriptions_to_entity.entity}&openCard=${messageEntity}">
