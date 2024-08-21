@@ -15,7 +15,7 @@ export function UpdatePageTitle(props: { entityID: string }) {
     (b) => b.type === "text" || b.type === "heading",
   );
   let firstBlock = blocks[0];
-  let content = useEntity(firstBlock.value, "block/text");
+  let content = useEntity(firstBlock?.value, "block/text");
   useEffect(() => {
     if (content) {
       let doc = new Y.Doc();

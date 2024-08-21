@@ -29,9 +29,9 @@ export async function addLinkBlock(
       data: {
         fallback: "",
         type: "image",
-        src: data.data.data.screenshot.url,
-        width: data.data.data.screenshot.width,
-        height: data.data.data.screenshot.height,
+        src: data.screenshot.url,
+        width: data.screenshot.width,
+        height: data.screenshot.height,
       },
     });
     await rep?.mutate.assertFact({

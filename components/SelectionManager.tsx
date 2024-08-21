@@ -13,6 +13,8 @@ import { v7 } from "uuid";
 import { indent, outdent } from "src/utils/list-operations";
 import { addShortcut } from "src/shortcuts";
 import { htmlToMarkdown } from "src/htmlMarkdownParsers";
+import { elementId } from "src/utils/elementId";
+import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
@@ -38,6 +40,44 @@ export function SelectionManager() {
       return [sortedBlocks, siblings];
     };
     let removeListener = addShortcut([
+      {
+        metaKey: true,
+        key: "ArrowUp",
+        handler: async () => {
+          let [firstBlock] =
+            (await rep?.query((tx) =>
+              getBlocksWithType(
+                tx,
+                useUIState.getState().selectedBlock[0].parent,
+              ),
+            )) || [];
+          if (firstBlock) focusBlock(firstBlock, { type: "start" });
+        },
+      },
+      {
+        metaKey: true,
+        key: "ArrowDown",
+        handler: async () => {
+          let blocks =
+            (await rep?.query((tx) =>
+              getBlocksWithType(
+                tx,
+                useUIState.getState().selectedBlock[0].parent,
+              ),
+            )) || [];
+          let folded = useUIState.getState().foldedBlocks;
+          blocks.filter(
+            (f) =>
+              !f.listData ||
+              !f.listData.path.find(
+                (path) =>
+                  folded.includes(path.entity) && f.value !== path.entity,
+              ),
+          );
+          let lastBlock = blocks[blocks.length - 1];
+          if (lastBlock) focusBlock(lastBlock, { type: "end" });
+        },
+      },
       {
         metaKey: true,
         altKey: true,
@@ -226,6 +266,12 @@ export function SelectionManager() {
             let nextSelectedBlock = siblings[index - 1];
             if (!nextSelectedBlock) return;
 
+            scrollIntoViewIfNeeded(
+              document.getElementById(
+                elementId.block(nextSelectedBlock.value).container,
+              ),
+              false,
+            );
             useUIState.getState().addBlockToSelection({
               ...nextSelectedBlock,
             });
@@ -241,6 +287,12 @@ export function SelectionManager() {
               parent: b.parent,
               entityID: nextBlock.value,
             });
+            scrollIntoViewIfNeeded(
+              document.getElementById(
+                elementId.block(nextBlock.value).container,
+              ),
+              false,
+            );
             if (sortedBlocks.length === 2) {
               useEditorStates
                 .getState()
@@ -359,6 +411,13 @@ export function SelectionManager() {
             useUIState.getState().addBlockToSelection({
               ...nextSelectedBlock,
             });
+
+            scrollIntoViewIfNeeded(
+              document.getElementById(
+                elementId.block(nextSelectedBlock.value).container,
+              ),
+              false,
+            );
             useUIState.getState().setFocusedBlock({
               type: "block",
               parent: nextSelectedBlock.parent,
@@ -369,6 +428,12 @@ export function SelectionManager() {
             useUIState
               .getState()
               .removeBlockFromSelection({ value: b.entityID });
+            scrollIntoViewIfNeeded(
+              document.getElementById(
+                elementId.block(nextBlock.value).container,
+              ),
+              false,
+            );
             useUIState.getState().setFocusedBlock({
               type: "block",
               parent: b.parent,

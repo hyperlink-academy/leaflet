@@ -36,6 +36,19 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${quattro.variable}`}>
       <body>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+            let listener = () => {
+              let el = document.querySelector(":root");
+              el.style.setProperty("--page-height-unitless", window.innerHeight)
+              el.style.setProperty("--page-width-unitless", window.innerWidth)
+            }
+            listener()
+            window.addEventListener("resize", listener)
+            `,
+          }}
+        />
         <Analytics />
         <ServiceWorker />
         <InitialPageLoad>

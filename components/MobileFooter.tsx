@@ -12,7 +12,12 @@ export function MobileFooter(props: { entityID: string }) {
   return (
     <Media mobile className="w-full z-10 -mt-6 touch-none">
       {focusedBlock && focusedBlock.type == "block" ? (
-        <div className="w-full z-10 p-2 flex bg-bg-card ">
+        <div
+          className="w-full z-10 p-2 flex bg-bg-card "
+          onMouseDown={(e) => {
+            if (e.currentTarget === e.target) e.preventDefault();
+          }}
+        >
           <TextToolbar
             cardID={focusedBlock.parent}
             blockID={focusedBlock.entityID}

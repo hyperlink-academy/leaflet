@@ -12,6 +12,7 @@ import { DocOptions } from "./DocOptions";
 import { deleteDoc } from "actions/deleteDoc";
 import { removeDocFromHome } from "./storage";
 import { mutate } from "swr";
+import useMeasure from "react-use-measure";
 
 export const DocPreview = (props: {
   token: PermissionToken;
@@ -24,9 +25,9 @@ export const DocPreview = (props: {
         {state === "normal" ? (
           <Link
             href={"/" + props.token.id}
-            className={`no-underline text-primary h-full`}
+            className={`no-underline hover:no-underline text-primary h-full`}
           >
-            <div className="rounded-lg overflow-clip border border-border bg-bg-page grow w-full h-full">
+            <div className="rounded-lg hover:border-primary hover:shadow-sm overflow-clip border border-border bg-bg-page grow w-full h-full">
               <ThemeBackgroundProvider entityID={props.doc_id}>
                 <div className="docPreview grow shrink-0 h-full w-full px-2 pt-2 sm:px-3 sm:pt-3 flex items-end">
                   <div
@@ -91,22 +92,35 @@ export const DocPreview = (props: {
 const DocContent = (props: { entityID: string }) => {
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
+  let [ref, dimensions] = useMeasure();
 
   return (
     <div
       ref={previewRef}
-      className={`cardBlockPreview w-full h-full overflow-clip flex flex-col gap-0.5 no-underline `}
+      className={`cardBlockPreview w-full h-full overflow-clip flex flex-col gap-0.5 no-underline relative`}
     >
-      {blocks.slice(0, 10).map((b) => {
-        return (
-          <BlockPreview
-            previewRef={previewRef}
-            {...b}
-            key={b.factID}
-            size="large"
-          />
-        );
-      })}
+      <div className="w-full" ref={ref} />
+      <div
+        className="absolute top-0 left-0 w-full h-full origin-top-left pointer-events-none"
+        style={{
+          width: `calc(var(--card-width) * 1px)`,
+          transform: `scale(calc(${dimensions.width} / var(--card-width)))`,
+        }}
+      >
+        {blocks.slice(0, 10).map((b, index, arr) => {
+          return (
+            <BlockPreview
+              entityID={b.value}
+              previousBlock={arr[index - 1] || null}
+              nextBlock={arr[index + 1] || null}
+              nextPosition={""}
+              previewRef={previewRef}
+              {...b}
+              key={b.factID}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 };

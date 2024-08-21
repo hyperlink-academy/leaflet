@@ -14,6 +14,10 @@ const BlockAttributes = {
     type: "boolean",
     cardinality: "one",
   },
+  "block/check-list": {
+    type: "boolean",
+    cardinality: "one",
+  },
   "block/text": {
     type: "text",
     cardinality: "one",

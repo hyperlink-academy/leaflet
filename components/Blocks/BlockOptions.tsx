@@ -285,7 +285,8 @@ const BlockLinkInput = (props: { onClose: () => void } & Props) => {
         />
         <div className="flex items-center gap-3 ">
           <button
-            className="hover:text-accent-contrast"
+            disabled={!linkValue || linkValue === ""}
+            className="hover:text-accent-contrast disabled:text-border"
             onMouseDown={(e) => {
               e.preventDefault();
               if (!linkValue) return;

@@ -1,7 +1,13 @@
 "use client";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useSubscribe } from "replicache-react";
-import { DeepReadonlyObject, Replicache, WriteTransaction } from "replicache";
+import {
+  DeepReadonlyObject,
+  PushRequest,
+  PushRequestV1,
+  Replicache,
+  WriteTransaction,
+} from "replicache";
 import { Pull } from "./pull";
 import { mutations } from "./mutations";
 import { Attributes, Data } from "./attributes";
@@ -69,8 +75,12 @@ export function ReplicacheProvider(props: {
       ) as ReplicacheMutators,
       licenseKey: "l381074b8d5224dabaef869802421225a",
       pusher: async (pushRequest) => {
+        let smolpushRequest = {
+          ...pushRequest,
+          mutations: pushRequest.mutations.slice(0, 250),
+        } as PushRequest;
         return {
-          response: await Push(pushRequest, props.name, props.token),
+          response: await Push(smolpushRequest, props.name, props.token),
           httpRequestInfo: { errorMessage: "", httpStatusCode: 200 },
         };
       },

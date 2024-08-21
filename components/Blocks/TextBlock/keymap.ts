@@ -23,10 +23,15 @@ export const TextBlockKeymap = (
 ) =>
   keymap({
     "Meta-b": toggleMark(schema.marks.strong),
+    "Ctrl-b": toggleMark(schema.marks.strong),
     "Meta-u": toggleMark(schema.marks.underline),
+    "Ctrl-u": toggleMark(schema.marks.underline),
     "Meta-i": toggleMark(schema.marks.em),
+    "Ctrl-i": toggleMark(schema.marks.em),
     "Ctrl-Meta-x": toggleMark(schema.marks.strikethrough),
-    "Ctrl-Meta-h": toggleMark(schema.marks.highlight),
+    "Ctrl-Meta-h": toggleMark(schema.marks.highlight, {
+      color: useUIState.getState().lastUsedHighlight,
+    }),
     Tab: () => {
       if (useUIState.getState().selectedBlock.length > 1) return false;
       if (!repRef.current || !propsRef.current.previousBlock) return false;
@@ -149,6 +154,8 @@ export const TextBlockKeymap = (
     "Shift-Backspace": backspace(propsRef, repRef),
     Enter: enter(propsRef, repRef),
     "Shift-Enter": enter(propsRef, repRef),
+    "Ctrl-Enter": CtrlEnter(propsRef, repRef),
+    "Meta-Enter": CtrlEnter(propsRef, repRef),
   });
 
 const backspace =
@@ -168,6 +175,13 @@ const backspace =
       return false;
     }
     if (propsRef.current.listData) {
+      if (propsRef.current.listData.checklist) {
+        repRef.current?.mutate.retractAttribute({
+          entity: propsRef.current.entityID,
+          attribute: "block/check-list",
+        });
+        return true;
+      }
       let depth = propsRef.current.listData.depth;
       repRef.current?.mutate.moveChildren({
         oldParent: propsRef.current.entityID,
@@ -181,6 +195,13 @@ const backspace =
       });
     }
     if (!propsRef.current.previousBlock) {
+      if (propsRef.current.listData) {
+        repRef.current?.mutate.retractAttribute({
+          entity: propsRef.current.entityID,
+          attribute: "block/is-list",
+        });
+        return true;
+      }
       if (propsRef.current.type === "heading") {
         repRef.current?.mutate.assertFact({
           entity: propsRef.current.entityID,
@@ -325,7 +346,17 @@ const enter =
           attribute: "block/is-list",
           data: { type: "boolean", value: true },
         });
+        let checked = await repRef.current?.query((tx) =>
+          scanIndex(tx).eav(propsRef.current.entityID, "block/check-list"),
+        );
+        if (checked?.[0])
+          await repRef.current?.mutate.assertFact({
+            entity: newEntityID,
+            attribute: "block/check-list",
+            data: { type: "boolean", value: false },
+          });
       }
+
       if (!propsRef.current.listData) {
         position = generateKeyBetween(
           propsRef.current.position,
@@ -357,7 +388,6 @@ const enter =
           data: { type: "number", value: headingLevel.data.value || 0 },
         });
       }
-      view?.dom.blur();
     };
     asyncRun();
 
@@ -383,5 +413,21 @@ const enter =
         );
       }
     }, 10);
+    return true;
+  };
+
+const CtrlEnter =
+  (
+    propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
+    repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+  ) =>
+  (
+    state: EditorState,
+    dispatch?: (tr: Transaction) => void,
+    view?: EditorView,
+  ) => {
+    repRef.current?.mutate.toggleTodoState({
+      entityID: propsRef.current.entityID,
+    });
     return true;
   };

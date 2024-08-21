@@ -23,6 +23,8 @@ let baseSchema = {
     } as MarkSpec,
     strikethrough: {
       parseDOM: [
+        { tag: "s" },
+        { tag: "del" },
         {
           style: `text-decoration=line-through`,
         },
@@ -33,9 +35,9 @@ let baseSchema = {
       ],
       toDOM() {
         return [
-          "span",
+          "s",
           {
-            style: `text-decoration: line-through; text-decoration-color: ${theme.colors.tertiary}`,
+            style: `text-decoration-color: ${theme.colors.tertiary};`,
           },
           0,
         ];

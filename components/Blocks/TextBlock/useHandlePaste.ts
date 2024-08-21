@@ -11,6 +11,8 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { v7 } from "uuid";
 import { Replicache } from "replicache";
 import { markdownToHtml } from "src/htmlMarkdownParsers";
+import { betterIsUrl, isUrl } from "src/utils/isURL";
+import { TextSelection } from "prosemirror-state";
 
 const parser = ProsemirrorDOMParser.fromSchema(schema);
 export const useHandlePaste = (
@@ -28,10 +30,20 @@ export const useHandlePaste = (
       let text = e.clipboardData.getData("text");
       let editorState = useEditorStates.getState().editorStates[entityID];
       if (!editorState) return;
+      if (text && betterIsUrl(text)) {
+        let selection = view.state.selection as TextSelection;
+        if (selection.empty) return;
+        let tr = view.state.tr;
+        let { from, to } = selection;
+        tr.addMark(from, to, schema.marks.link.create({ href: text }));
+
+        setEditorState(entityID, {
+          editor: view.state.apply(tr),
+        });
+        return true;
+      }
       if (!textHTML && text) {
-        console.log(text);
         textHTML = markdownToHtml(text);
-        console.log(textHTML);
       }
       if (textHTML) {
         let xml = new DOMParser().parseFromString(textHTML, "text/html");
@@ -43,7 +55,6 @@ export const useHandlePaste = (
           )
         )
           return;
-        if (children.length === 1 && children[0].tagName !== "UL") return false;
         children.forEach((child, index) => {
           createBlockFromHTML(child, {
             first: index === 0,

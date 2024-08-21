@@ -42,34 +42,28 @@ import { useHandlePaste } from "./useHandlePaste";
 import { highlightSelectionPlugin } from "./plugins";
 import { inputrules } from "./inputRules";
 
-export function TextBlock(props: BlockProps & { className: string }) {
+export function TextBlock(
+  props: BlockProps & { className: string; previewOnly?: boolean },
+) {
   let initialized = useInitialPageLoad();
   let first = props.previousBlock === null;
   let permission = useEntitySetContext().permissions.write;
 
-  let blockPadding = `px-3 sm:px-4 ${
-    props.type === "heading" || (props.listData && props.nextBlock?.listData)
-      ? "pb-0"
-      : "pb-2"
-  }
-  ${props.listData ? "!pl-1" : ""}
-  ${first ? "pt-2 sm:pt-3" : "pt-1"}`;
-
   return (
     <>
-      {(!initialized || !permission) && (
+      {(!initialized || !permission || props.previewOnly) && (
         <RenderedTextBlock
           entityID={props.entityID}
-          className={blockPadding + " " + props.className}
+          className={props.className}
           first={first}
         />
       )}
-      {permission && (
+      {permission && !props.previewOnly && (
         <div
           className={`w-full relative group/text ${!initialized ? "hidden" : ""}`}
         >
           <IOSBS {...props} />
-          <BaseTextBlock blockPadding={blockPadding} {...props} />
+          <BaseTextBlock {...props} />
         </div>
       )}
     </>
@@ -136,12 +130,13 @@ export function RenderedTextBlock(props: {
   Y.applyUpdate(doc, update);
   let nodes = doc.getXmlElement("prosemirror").toArray();
 
-  // show the rendered version of the block is the block has something in it!
+  // show the rendered version of the block if the block has something in it!
   // empty block rendering is handled further up. update both!
   return (
     <pre
+      style={{ wordBreak: "break-word" }} // better than tailwind break-all!
       className={`
-      w-full whitespace-pre-wrap outline-none break-words ${props.className} `}
+      w-full whitespace-pre-wrap outline-none ${props.className} `}
     >
       {nodes.length === 0 && <br />}
       {nodes.map((node, index) => (
@@ -151,9 +146,7 @@ export function RenderedTextBlock(props: {
   );
 }
 
-export function BaseTextBlock(
-  props: BlockProps & { className: string; blockPadding: string },
-) {
+export function BaseTextBlock(props: BlockProps & { className: string }) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
 
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
@@ -260,10 +253,13 @@ export function BaseTextBlock(
             }, 5);
           }}
           id={elementId.block(props.entityID).text}
+          // unless we break *only* on urls, this is better than tailwind 'break-all'
+          // b/c break-all can cause breaks in the middle of words, but break-word still
+          // forces break if a single text string (e.g. a url) spans more than a full line
+          style={{ wordBreak: "break-word" }}
           className={`
           grow resize-none align-top whitespace-pre-wrap bg-transparent
           outline-none
-          ${props.blockPadding}
           ${props.className}`}
           ref={setMount}
         />
@@ -272,7 +268,7 @@ export function BaseTextBlock(
           props.previousBlock === null &&
           props.nextBlock === null && (
             <div
-              className={`${props.className} pointer-events-none absolute top-0 left-0 px-3 sm:px-4 pt-2 sm:pt-3 pb-2 italic text-tertiary `}
+              className={`${props.className} pointer-events-none absolute top-0 left-0  italic text-tertiary `}
             >
               {props.type === "text"
                 ? "write something..."
@@ -286,7 +282,6 @@ export function BaseTextBlock(
         {/* if this is the block is empty and selected */}
         {editorState.doc.textContent.length === 0 && selected && (
           <BlockOptions
-            className={props.blockPadding}
             factID={factID}
             entityID={props.entityID}
             parent={props.parent}

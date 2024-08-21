@@ -20,7 +20,6 @@ import { useEffect } from "react";
 
 export function Cards(props: { rootCard: string }) {
   let openCards = useUIState((s) => s.openCards);
-  let [cardRef, { width: cardWidth }] = useMeasure();
   let params = useSearchParams();
   let openCard = params.get("openCard");
   useEffect(() => {
@@ -40,7 +39,7 @@ export function Cards(props: { rootCard: string }) {
     >
       <div
         className="spacer flex justify-end items-start"
-        style={{ width: `calc(50vw - ${cardWidth}px/2)` }}
+        style={{ width: `calc(50vw - ((var(--card-width-units)/2))` }}
         onClick={(e) => {
           e.currentTarget === e.target && blurCard();
         }}
@@ -56,7 +55,7 @@ export function Cards(props: { rootCard: string }) {
           </div>
         </Media>
       </div>
-      <div className="flex items-stretch" ref={cardRef}>
+      <div className="flex items-stretch">
         <Card entityID={props.rootCard} first />
       </div>
       {cards.map((card) => (
@@ -66,7 +65,7 @@ export function Cards(props: { rootCard: string }) {
       ))}
       <div
         className="spacer"
-        style={{ width: `calc((100vw - ${cardWidth}px)/2)` }}
+        style={{ width: `calc(50vw - ((var(--card-width-units)/2))` }}
         onClick={(e) => {
           e.currentTarget === e.target && blurCard();
         }}
@@ -114,9 +113,10 @@ function Card(props: { entityID: string; first?: boolean }) {
           id={elementId.card(props.entityID).container}
           style={{
             backgroundColor: "rgba(var(--bg-card), var(--bg-card-alpha))",
+            width: "var(--card-width-units)",
           }}
           className={`
-      card w-[calc(100vw-12px)] sm:w-[calc(100vw-128px)] lg:w-[calc(50vw-32px)]  max-w-prose
+      card
       grow flex flex-col
       overscroll-y-none
       overflow-y-scroll no-scrollbar
