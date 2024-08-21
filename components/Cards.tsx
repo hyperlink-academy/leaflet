@@ -15,10 +15,20 @@ import { ShareOptions } from "./ShareOptions";
 import { MenuItem, Menu } from "./Layout";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { HomeButton } from "./HomeButton";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 export function Cards(props: { rootCard: string }) {
   let openCards = useUIState((s) => s.openCards);
   let [cardRef, { width: cardWidth }] = useMeasure();
+  let params = useSearchParams();
+  let openCard = params.get("openCard");
+  useEffect(() => {
+    if (openCard) {
+    }
+  }, [openCard, props.rootCard]);
+  let cards = [...openCards];
+  if (openCard && !cards.includes(openCard)) cards.push(openCard);
 
   return (
     <div
@@ -49,7 +59,7 @@ export function Cards(props: { rootCard: string }) {
       <div className="flex items-stretch" ref={cardRef}>
         <Card entityID={props.rootCard} first />
       </div>
-      {openCards.map((card) => (
+      {cards.map((card) => (
         <div className="flex items-stretch" key={card}>
           <Card entityID={card} />
         </div>
