@@ -30,7 +30,7 @@ export const MailboxBlock = (props: BlockProps) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
   let [areYouSure, setAreYouSure] = useState(false);
   let isSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
+    s.selectedBlock.find((b) => b.value === props.entityID)
   );
 
   let card = useEntity(props.entityID, "block/card");
@@ -186,7 +186,7 @@ export const MailboxBlock = (props: BlockProps) => {
 const MailboxReaderView = (props: { entityID: string; parent: string }) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
   let isSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
+    s.selectedBlock.find((b) => b.value === props.entityID)
   );
   let archive = useEntity(props.entityID, "mailbox/archive");
   let smoke = useSmoker();
@@ -358,7 +358,7 @@ const SubscribeForm = (props: {
               let result = await confirmEmailSubscription(
                 subscriptionID,
                 code,
-                permission_token,
+                permission_token
               );
 
               let rect = document
@@ -413,7 +413,7 @@ const SubscribeForm = (props: {
             e.preventDefault();
             let subscriptionID = await subscribeToMailboxWithEmail(
               props.entityID,
-              email,
+              email
             );
             if (subscriptionID) setSubscriptionID(subscriptionID?.id);
             setState({ state: "confirm", email });
@@ -496,12 +496,18 @@ export const DraftPostOptions = (props: { mailboxEntity: string }) => {
   let entity_set = useEntitySetContext();
   let archive = useEntity(props.mailboxEntity, "mailbox/archive");
   let pagetitle = usePageTitle(permission_token.root_entity);
+  let subscriber_count = useEntity(
+    props.mailboxEntity,
+    "mailbox/subscriber-count"
+  );
   if (!draft) return null;
 
   // once the send button is clicked, close the card and show a toast.
   return (
     <div className="flex justify-between items-center text-sm">
-      <div className="flex gap-2">This is still a draft</div>
+      <div className="flex gap-2">
+        <em>Draft</em>
+      </div>
       <button
         className="font-bold text-accent-2 bg-accent-1 border border-accent-2 hover:bg-accent-2 hover:text-accent-1 rounded-md px-2"
         onClick={async () => {
@@ -509,7 +515,7 @@ export const DraftPostOptions = (props: { mailboxEntity: string }) => {
           if (!rep) return;
           let blocks =
             (await rep?.query((tx) =>
-              getBlocksWithType(tx, draft.data.value),
+              getBlocksWithType(tx, draft.data.value)
             )) || [];
           let html = (await getBlocksAsHTML(rep, blocks))?.join("\n");
           await sendPostToSubscribers({
@@ -536,7 +542,7 @@ export const DraftPostOptions = (props: { mailboxEntity: string }) => {
           });
         }}
       >
-        Post It!
+        Send to {subscriber_count ? subscriber_count?.data.value : "0"} Readers!
       </button>
     </div>
   );
