@@ -542,7 +542,8 @@ export const DraftPostOptions = (props: { mailboxEntity: string }) => {
           });
         }}
       >
-        Send to {subscriber_count ? subscriber_count?.data.value : "0"} Readers!
+        Send to {subscriber_count ? subscriber_count?.data.value : "0"} Reader
+        {subscriber_count?.data.value === 1 ? "" : "s"}!
       </button>
     </div>
   );
