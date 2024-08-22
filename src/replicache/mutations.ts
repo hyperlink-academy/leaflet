@@ -366,6 +366,8 @@ const createDraft: Mutation<{
   mailboxEntity: string;
   newEntity: string;
   permission_set: string;
+  firstBlockEntity: string;
+  firstBlockFactID: string;
 }> = async (args, ctx) => {
   let [existingDraft] = await ctx.scanIndex.eav(
     args.mailboxEntity,
@@ -381,6 +383,17 @@ const createDraft: Mutation<{
     attribute: "mailbox/draft",
     data: { type: "reference", value: args.newEntity },
   });
+  await addBlock(
+    {
+      factID: args.firstBlockFactID,
+      permission_set: args.permission_set,
+      newEntityID: args.firstBlockEntity,
+      type: "text",
+      parent: args.newEntity,
+      position: "a0",
+    },
+    ctx,
+  );
 };
 
 const archiveDraft: Mutation<{

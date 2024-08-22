@@ -120,10 +120,12 @@ export const MailboxBlock = (props: BlockProps) => {
                     mailboxEntity: props.entityID,
                     permission_set: entity_set.set,
                     newEntity: entity,
+                    firstBlockEntity: v7(),
+                    firstBlockFactID: v7(),
                   });
                 }
                 useUIState.getState().openCard(props.parent, entity);
-                if (rep) focusCard(entity, rep);
+                if (rep) focusCard(entity, rep, "focusFirstBlock");
                 return;
               }}
             >
@@ -532,7 +534,7 @@ export const DraftPostOptions = (props: { mailboxEntity: string }) => {
           });
 
           toaster({
-            content: <div className="font-bold">Sent Post to Subscribers!</div>,
+            content: <div className="font-bold">Sent Post to Readers!</div>,
             type: "success",
           });
         }}
