@@ -89,7 +89,10 @@ export const MailboxBlock = (props: BlockProps) => {
   let entity_set = useEntitySetContext();
   let archive = useEntity(props.entityID, "mailbox/archive");
   let subscriber_count = useEntity(props.entityID, "mailbox/subscriber-count");
-  if (!permission) return <MailboxReaderView entityID={props.entityID} />;
+  if (!permission)
+    return (
+      <MailboxReaderView entityID={props.entityID} parent={props.parent} />
+    );
 
   return (
     <div className={`mailboxContent relative w-full flex flex-col gap-1`}>
@@ -186,13 +189,14 @@ export const MailboxBlock = (props: BlockProps) => {
   );
 };
 
-const MailboxReaderView = (props: { entityID: string }) => {
+const MailboxReaderView = (props: { entityID: string; parent: string }) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
   let isSelected = useUIState((s) =>
     s.selectedBlock.find((b) => b.value === props.entityID),
   );
   let archive = useEntity(props.entityID, "mailbox/archive");
   let smoke = useSmoker();
+  let { rep } = useReplicache();
   return (
     <div className={`mailboxContent relative w-full flex flex-col gap-1`}>
       <div
@@ -216,7 +220,17 @@ const MailboxReaderView = (props: { entityID: string }) => {
               </div>
               <div className="flex flex-col gap-1 items-center place-self-center">
                 {archive && (
-                  <ButtonPrimary onClick={() => {}}>
+                  <ButtonPrimary
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      if (rep) {
+                        useUIState
+                          .getState()
+                          .openCard(props.parent, archive.data.value);
+                        focusCard(archive.data.value, rep);
+                      }
+                    }}
+                  >
                     See All Posts
                   </ButtonPrimary>
                 )}
