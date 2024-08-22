@@ -430,30 +430,14 @@ const SubscribeForm = (props: {
           className={`mailboxSubscribeForm flex sm:flex-row flex-col ${props.compact && "sm:flex-col sm:gap-2"} gap-2 sm:gap-3 items-center place-self-center mx-auto`}
         >
           <div className="mailboxChannelInput flex gap-2 border border-border-light bg-bg-card rounded-md py-1 px-2 grow max-w-72 ">
-            <ChannelSelector
-              channel={channel}
-              setChannel={(channel) => {
-                setChannel(channel);
-              }}
+            <input
+              value={email}
+              type="email"
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full appearance-none focus:outline-none bg-transparent max-w-none "
+              size={100}
+              placeholder="youremail@email.com"
             />
-            <Separator classname="h-6" />
-            {channel === "email" ? (
-              <input
-                value={email}
-                type="email"
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full appearance-none focus:outline-none bg-transparent"
-                placeholder="youremail@email.com"
-              />
-            ) : (
-              <input
-                value={sms}
-                type="tel"
-                onChange={(e) => setSMS(e.target.value)}
-                className="w-full appearance-none focus:outline-none bg-transparent"
-                placeholder="123-456-7890"
-              />
-            )}
           </div>
           <ButtonPrimary type="submit">Subscribe!</ButtonPrimary>
         </form>
