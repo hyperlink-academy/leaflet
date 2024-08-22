@@ -30,7 +30,7 @@ export const MailboxBlock = (props: BlockProps) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
   let [areYouSure, setAreYouSure] = useState(false);
   let isSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID)
+    s.selectedBlock.find((b) => b.value === props.entityID),
   );
 
   let card = useEntity(props.entityID, "block/card");
@@ -186,7 +186,7 @@ export const MailboxBlock = (props: BlockProps) => {
 const MailboxReaderView = (props: { entityID: string; parent: string }) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
   let isSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID)
+    s.selectedBlock.find((b) => b.value === props.entityID),
   );
   let archive = useEntity(props.entityID, "mailbox/archive");
   let smoke = useSmoker();
@@ -215,8 +215,8 @@ const MailboxReaderView = (props: { entityID: string; parent: string }) => {
             </>
           ) : (
             <div className="flex flex-col gap-2 items-center place-self-center">
-              <div className="flex font-bold text-secondary gap-3 items-center place-self-center  ">
-                You&apos;re Subscribed! <MailboxInfo subscriber />
+              <div className=" font-bold text-secondary ">
+                You&apos;re Subscribed!
               </div>
               <div className="flex flex-col gap-1 items-center place-self-center">
                 {archive ? (
@@ -299,10 +299,10 @@ const SubscribePopover = (props: {
 }) => {
   return (
     <Popover
-      className="max-w-xs"
+      className="max-w-sm"
       trigger={<div className="font-bold text-accent-contrast">Subscribe</div>}
       content={
-        <div className="text-sm text-secondary flex flex-col gap-2 py-1">
+        <div className="text-secondary flex flex-col gap-2 py-1">
           <SubscribeForm
             compact
             entityID={props.entityID}
@@ -353,7 +353,7 @@ const SubscribeForm = (props: {
               let result = await confirmEmailSubscription(
                 subscriptionID,
                 code,
-                permission_token
+                permission_token,
               );
 
               let rect = document
@@ -378,7 +378,7 @@ const SubscribeForm = (props: {
             <input
               type="number"
               value={code}
-              className="appearance-none focus:outline-none focus:border-border w-20 border border-border-light rounded-md p-1"
+              className="appearance-none focus:outline-none focus:border-border w-20 border border-border-light bg-bg-card rounded-md p-1"
               onChange={(e) => setCode(e.currentTarget.value)}
             />
 
@@ -408,12 +408,12 @@ const SubscribeForm = (props: {
             e.preventDefault();
             let subscriptionID = await subscribeToMailboxWithEmail(
               props.entityID,
-              email
+              email,
             );
             if (subscriptionID) setSubscriptionID(subscriptionID?.id);
             setState({ state: "confirm", email });
           }}
-          className={`mailboxSubscribeForm flex sm:flex-row flex-col ${props.compact && "sm:flex-col"} gap-3 items-center place-self-center mx-auto`}
+          className={`mailboxSubscribeForm flex sm:flex-row flex-col ${props.compact && "sm:flex-col sm:gap-2"} gap-2 sm:gap-3 items-center place-self-center mx-auto`}
         >
           <div className="mailboxChannelInput flex gap-2 border border-border-light bg-bg-card rounded-md py-1 px-2 grow max-w-72 ">
             <ChannelSelector
@@ -428,7 +428,7 @@ const SubscribeForm = (props: {
                 value={email}
                 type="email"
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full appearance-none focus:outline-none"
+                className="w-full appearance-none focus:outline-none bg-transparent"
                 placeholder="youremail@email.com"
               />
             ) : (
@@ -436,13 +436,12 @@ const SubscribeForm = (props: {
                 value={sms}
                 type="tel"
                 onChange={(e) => setSMS(e.target.value)}
-                className="w-full appearance-none focus:outline-none"
+                className="w-full appearance-none focus:outline-none bg-transparent"
                 placeholder="123-456-7890"
               />
             )}
           </div>
           <ButtonPrimary type="submit">Subscribe!</ButtonPrimary>
-          <MailboxInfo subscriber />
         </form>
         {props.role === "reader" && (
           <GoToArchive entityID={props.entityID} parent={props.parent} small />
@@ -494,7 +493,7 @@ export const DraftPostOptions = (props: { mailboxEntity: string }) => {
   let pagetitle = usePageTitle(permission_token.root_entity);
   let subscriber_count = useEntity(
     props.mailboxEntity,
-    "mailbox/subscriber-count"
+    "mailbox/subscriber-count",
   );
   if (!draft) return null;
 
@@ -511,7 +510,7 @@ export const DraftPostOptions = (props: { mailboxEntity: string }) => {
           if (!rep) return;
           let blocks =
             (await rep?.query((tx) =>
-              getBlocksWithType(tx, draft.data.value)
+              getBlocksWithType(tx, draft.data.value),
             )) || [];
           let html = (await getBlocksAsHTML(rep, blocks))?.join("\n");
           await sendPostToSubscribers({
@@ -538,8 +537,11 @@ export const DraftPostOptions = (props: { mailboxEntity: string }) => {
           });
         }}
       >
-        Send to {subscriber_count ? subscriber_count?.data.value : "0"} Reader
-        {subscriber_count?.data.value === 1 ? "" : "s"}!
+        Send
+        {!subscriber_count ||
+          (subscriber_count.data.value !== 0 &&
+            ` to ${subscriber_count.data.value} Reader${subscriber_count.data.value === 1 ? "" : "s"}`)}
+        !
       </button>
     </div>
   );
