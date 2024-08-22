@@ -143,7 +143,10 @@ function Card(props: { entityID: string; first?: boolean }) {
                   "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-card)) 85%)",
               }}
             >
-              <DraftPostOptions mailboxEntity={isDraft[0].entity} />
+              <DraftPostOptions
+                parentID={props.entityID}
+                mailboxEntity={isDraft[0].entity}
+              />
             </div>
           )}
           <Blocks entityID={props.entityID} />

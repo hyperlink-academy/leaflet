@@ -498,7 +498,10 @@ const ChannelSelector = (props: {
     </Menu>
   );
 };
-export const DraftPostOptions = (props: { mailboxEntity: string }) => {
+export const DraftPostOptions = (props: {
+  parentID: string;
+  mailboxEntity: string;
+}) => {
   let toaster = useToaster();
   let draft = useEntity(props.mailboxEntity, "mailbox/draft");
   let { rep, permission_token } = useReplicache();
@@ -543,6 +546,12 @@ export const DraftPostOptions = (props: { mailboxEntity: string }) => {
             newBlockEntity: v7(),
             archiveEntity: v7(),
           });
+
+          useUIState.getState().closeCard(draft.data.value);
+          if (archive) {
+            useUIState.getState().openCard(props.parentID, archive.data.value);
+            if (rep) focusCard(archive.data.value, rep, "focusFirstBlock");
+          }
 
           toaster({
             content: <div className="font-bold">Sent Post to Readers!</div>,

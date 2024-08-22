@@ -427,9 +427,9 @@ const archiveDraft: Mutation<{
   }
 
   let archiveChildren = await ctx.scanIndex.eav(archiveEntity, "card/block");
-  let lastChild = archiveChildren.toSorted((a, b) =>
+  let firstChild = archiveChildren.toSorted((a, b) =>
     a.data.position > b.data.position ? 1 : -1,
-  )[archiveChildren.length - 1];
+  )[0];
 
   await ctx.createEntity({
     entityID: args.newBlockEntity,
@@ -453,7 +453,7 @@ const archiveDraft: Mutation<{
     data: {
       type: "ordered-reference",
       value: args.newBlockEntity,
-      position: generateKeyBetween(lastChild?.data.position || null, null),
+      position: generateKeyBetween(null, firstChild?.data.position),
     },
   });
 
