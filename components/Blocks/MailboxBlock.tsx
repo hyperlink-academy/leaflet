@@ -37,7 +37,7 @@ export const MailboxBlock = (props: BlockProps) => {
   let cardEntity = card ? card.data.value : props.entityID;
   let permission = useEntitySetContext().permissions.write;
 
-  let { rep, permission_token } = useReplicache();
+  let { rep } = useReplicache();
 
   let smoke = useSmoker();
 
@@ -142,7 +142,11 @@ export const MailboxBlock = (props: BlockProps) => {
         {
           <>
             {!isSubscribed ? (
-              <SubscribePopover entityID={props.entityID} role="author" />
+              <SubscribePopover
+                entityID={props.entityID}
+                role="author"
+                parent={props.parent}
+              />
             ) : (
               <button
                 className="text-tertiary hover:text-accent-contrast"
@@ -164,24 +168,7 @@ export const MailboxBlock = (props: BlockProps) => {
                 {subscriber_count.data.value > 1 ? "s" : ""}
               </span>
             )}
-            {archive ? (
-              <button
-                className="text-tertiary hover:text-accent-contrast place-self-end"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  if (rep) {
-                    useUIState
-                      .getState()
-                      .openCard(props.parent, archive.data.value);
-                    focusCard(archive.data.value, rep);
-                  }
-                }}
-              >
-                past posts
-              </button>
-            ) : (
-              <div className="text-tertiary">no posts yet</div>
-            )}
+            <GoToArchive entityID={props.entityID} parent={props.parent} />
           </>
         }
       </div>
@@ -212,7 +199,13 @@ const MailboxReaderView = (props: { entityID: string; parent: string }) => {
       >
         <div className="flex flex-col w-full gap-2 p-4">
           {!isSubscribed ? (
-            <SubscribeForm entityID={props.entityID} role={"reader"} />
+            <>
+              <SubscribeForm
+                entityID={props.entityID}
+                role={"reader"}
+                parent={props.parent}
+              />
+            </>
           ) : (
             <div className="flex flex-col gap-2 items-center place-self-center">
               <div className="flex font-bold text-secondary gap-3 items-center place-self-center  ">
@@ -239,7 +232,7 @@ const MailboxReaderView = (props: { entityID: string; parent: string }) => {
                   </div>
                 )}
                 <button
-                  className="text-accent-contrast hover:underline"
+                  className="text-accent-contrast hover:underline text-sm"
                   onClick={(e) => {
                     let rect = e.currentTarget.getBoundingClientRect();
                     unsubscribe(isSubscribed);
@@ -300,6 +293,7 @@ const MailboxInfo = (props: { subscriber?: boolean }) => {
 const SubscribePopover = (props: {
   entityID: string;
   role: "author" | "reader";
+  parent: string;
 }) => {
   return (
     <Popover
@@ -307,7 +301,12 @@ const SubscribePopover = (props: {
       trigger={<div className="font-bold text-accent-contrast">Subscribe</div>}
       content={
         <div className="text-sm text-secondary flex flex-col gap-2 py-1">
-          <SubscribeForm compact entityID={props.entityID} role={props.role} />
+          <SubscribeForm
+            compact
+            entityID={props.entityID}
+            role={props.role}
+            parent={props.parent}
+          />
         </div>
       }
     />
@@ -316,6 +315,7 @@ const SubscribePopover = (props: {
 
 const SubscribeForm = (props: {
   entityID: string;
+  parent: string;
   role: "author" | "reader";
   compact?: boolean;
 }) => {
@@ -374,12 +374,13 @@ const SubscribeForm = (props: {
               Confirm!
             </ButtonPrimary>
           </div>
+
           <button
             onMouseDown={() => {
               setState({ state: "normal" });
               setEmail("");
             }}
-            className="text-accent-contrast hover:underline"
+            className="text-accent-contrast hover:underline text-sm"
           >
             use another contact
           </button>
@@ -389,51 +390,54 @@ const SubscribeForm = (props: {
   }
   return (
     <>
-      <div
-        className={`mailboxSubscribeForm flex sm:flex-row flex-col ${props.compact && "sm:flex-col"} gap-2 items-center place-self-center mx-auto`}
-      >
-        <div className="mailboxChannelInput flex gap-2 border border-border-light bg-bg-card rounded-md py-1 px-2 grow max-w-72 ">
-          <ChannelSelector
-            channel={channel}
-            setChannel={(channel) => {
-              setChannel(channel);
-            }}
-          />
-          <Separator classname="h-6" />
-          {channel === "email" ? (
-            <input
-              value={email}
-              type="email"
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full appearance-none focus:outline-none"
-              placeholder="youremail@email.com"
+      <div className="flex flex-col gap-1">
+        <div
+          className={`mailboxSubscribeForm flex sm:flex-row flex-col ${props.compact && "sm:flex-col"} gap-3 items-center place-self-center mx-auto`}
+        >
+          <div className="mailboxChannelInput flex gap-2 border border-border-light bg-bg-card rounded-md py-1 px-2 grow max-w-72 ">
+            <ChannelSelector
+              channel={channel}
+              setChannel={(channel) => {
+                setChannel(channel);
+              }}
             />
-          ) : (
-            <input
-              value={sms}
-              type="tel"
-              onChange={(e) => setSMS(e.target.value)}
-              className="w-full appearance-none focus:outline-none"
-              placeholder="123-456-7890"
-            />
-          )}
+            <Separator classname="h-6" />
+            {channel === "email" ? (
+              <input
+                value={email}
+                type="email"
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full appearance-none focus:outline-none"
+                placeholder="youremail@email.com"
+              />
+            ) : (
+              <input
+                value={sms}
+                type="tel"
+                onChange={(e) => setSMS(e.target.value)}
+                className="w-full appearance-none focus:outline-none"
+                placeholder="123-456-7890"
+              />
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <ButtonPrimary
+              onClick={async (e) => {
+                let subscriptionID = await subscribeToMailboxWithEmail(
+                  props.entityID,
+                  email,
+                );
+                if (subscriptionID) setSubscriptionID(subscriptionID?.id);
+                setState({ state: "confirm", email });
+              }}
+            >
+              Subscribe!
+            </ButtonPrimary>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <ButtonPrimary
-            onClick={async (e) => {
-              let subscriptionID = await subscribeToMailboxWithEmail(
-                props.entityID,
-                email,
-              );
-              if (subscriptionID) setSubscriptionID(subscriptionID?.id);
-              setState({ state: "confirm", email });
-            }}
-          >
-            Subscribe!
-          </ButtonPrimary>
-
-          {props.role === "reader" && <MailboxInfo subscriber />}
-        </div>
+        {props.role === "reader" && (
+          <GoToArchive entityID={props.entityID} parent={props.parent} small />
+        )}
       </div>
     </>
   );
@@ -521,6 +525,34 @@ export const DraftPostOptions = (props: { mailboxEntity: string }) => {
       >
         Post It!
       </button>
+    </div>
+  );
+};
+
+const GoToArchive = (props: {
+  entityID: string;
+  parent: string;
+  small?: boolean;
+}) => {
+  let archive = useEntity(props.entityID, "mailbox/archive");
+  let { rep } = useReplicache();
+
+  return archive ? (
+    <button
+      className={`text-tertiary hover:text-accent-contrast place-self-end ${props.small && "text-sm"}`}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        if (rep) {
+          useUIState.getState().openCard(props.parent, archive.data.value);
+          focusCard(archive.data.value, rep);
+        }
+      }}
+    >
+      past posts
+    </button>
+  ) : (
+    <div className={`text-tertiary text-center ${props.small && "text-sm"}`}>
+      no posts yet
     </div>
   );
 };
