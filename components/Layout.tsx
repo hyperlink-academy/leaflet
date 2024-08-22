@@ -61,6 +61,7 @@ export const MenuItem = (props: {
         data-[highlighted]:bg-border-light data-[highlighted]:text-secondary
         hover:bg-border-light hover:text-secondary
         outline-none
+        cursor-pointer
         ${props.className}
         `}
     >
