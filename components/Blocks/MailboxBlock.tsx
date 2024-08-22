@@ -162,13 +162,20 @@ export const MailboxBlock = (props: BlockProps) => {
                 Unsubscribe
               </button>
             )}
-            {subscriber_count && subscriber_count.data.value > 0 && (
+            <div className="flex gap-2 place-items-center">
               <span className="text-tertiary">
-                {subscriber_count.data.value} subscriber
-                {subscriber_count.data.value > 1 ? "s" : ""}
+                {!subscriber_count ||
+                subscriber_count?.data.value === undefined ||
+                subscriber_count?.data.value === 0
+                  ? "no"
+                  : subscriber_count?.data.value}{" "}
+                reader
+                {subscriber_count?.data.value === 1 ? "" : "s"}
               </span>
-            )}
-            <GoToArchive entityID={props.entityID} parent={props.parent} />
+              <Separator classname="h-5" />
+
+              <GoToArchive entityID={props.entityID} parent={props.parent} />
+            </div>
           </>
         }
       </div>
@@ -539,7 +546,7 @@ const GoToArchive = (props: {
 
   return archive ? (
     <button
-      className={`text-tertiary hover:text-accent-contrast place-self-end ${props.small && "text-sm"}`}
+      className={`text-tertiary hover:text-accent-contrast  ${props.small && "text-sm"}`}
       onMouseDown={(e) => {
         e.preventDefault();
         if (rep) {
