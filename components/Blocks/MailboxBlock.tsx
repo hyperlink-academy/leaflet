@@ -352,35 +352,45 @@ const SubscribeForm = (props: {
           here!
         </div>
         <div className="flex flex-col gap-1">
-          <div className="mailboxConfirmCodeInput flex gap-2 items-center mx-auto">
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              let result = await confirmEmailSubscription(
+                subscriptionID,
+                code,
+                permission_token,
+              );
+
+              let rect = document
+                .getElementById("confirm-code-button")
+                ?.getBoundingClientRect();
+
+              if (!result) {
+                smoke({
+                  error: true,
+                  text: "oops, incorrect code",
+                  position: {
+                    x: rect ? rect.left + 45 : 0,
+                    y: rect ? rect.top + 15 : 0,
+                  },
+                });
+                return;
+              }
+              addSubscription(result);
+            }}
+            className="mailboxConfirmCodeInput flex gap-2 items-center mx-auto"
+          >
             <input
               type="number"
               value={code}
-              className="appearance-none w-20 border border-border-light rounded-md p-1"
+              className="appearance-none focus:outline-none focus:border-border w-20 border border-border-light rounded-md p-1"
               onChange={(e) => setCode(e.currentTarget.value)}
             />
 
-            <ButtonPrimary
-              onClick={async (e) => {
-                let result = await confirmEmailSubscription(
-                  subscriptionID,
-                  code,
-                  permission_token,
-                );
-                if (!result) {
-                  smoke({
-                    error: true,
-                    text: "oops, incorrect code",
-                    position: { x: e.clientX, y: e.clientY },
-                  });
-                  return;
-                }
-                addSubscription(result);
-              }}
-            >
+            <ButtonPrimary type="submit" id="confirm-code-button">
               Confirm!
             </ButtonPrimary>
-          </div>
+          </form>
 
           <button
             onMouseDown={() => {
@@ -398,7 +408,16 @@ const SubscribeForm = (props: {
   return (
     <>
       <div className="flex flex-col gap-1">
-        <div
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            let subscriptionID = await subscribeToMailboxWithEmail(
+              props.entityID,
+              email,
+            );
+            if (subscriptionID) setSubscriptionID(subscriptionID?.id);
+            setState({ state: "confirm", email });
+          }}
           className={`mailboxSubscribeForm flex sm:flex-row flex-col ${props.compact && "sm:flex-col"} gap-3 items-center place-self-center mx-auto`}
         >
           <div className="mailboxChannelInput flex gap-2 border border-border-light bg-bg-card rounded-md py-1 px-2 grow max-w-72 ">
@@ -427,21 +446,8 @@ const SubscribeForm = (props: {
               />
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <ButtonPrimary
-              onClick={async (e) => {
-                let subscriptionID = await subscribeToMailboxWithEmail(
-                  props.entityID,
-                  email,
-                );
-                if (subscriptionID) setSubscriptionID(subscriptionID?.id);
-                setState({ state: "confirm", email });
-              }}
-            >
-              Subscribe!
-            </ButtonPrimary>
-          </div>
-        </div>
+          <ButtonPrimary type="submit">Subscribe!</ButtonPrimary>
+        </form>
         {props.role === "reader" && (
           <GoToArchive entityID={props.entityID} parent={props.parent} small />
         )}
