@@ -24,6 +24,9 @@ export const AreYouSure = (props: {
           className="bg-accent-1 text-accent-2 px-2 py-1 rounded-md "
           onClick={(e) => {
             e.stopPropagation();
+            // This only handles the case where the literal delete button is clicked.
+            // In cases where the backspace button is pressed, each block that uses the AreYouSure
+            // has an event listener that handles the backspace key press.
             useUIState.getState().closeCard(cardID);
 
             rep &&

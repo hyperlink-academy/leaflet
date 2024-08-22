@@ -32,8 +32,6 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
   let isOpen = useUIState((s) => s.openCards).includes(cardEntity);
 
   let [areYouSure, setAreYouSure] = useState(false);
-  console.log(areYouSure);
-
   useEffect(() => {
     if (!isSelected) {
       setAreYouSure(false);
@@ -158,7 +156,6 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
               onClick={(e) => {
                 e.stopPropagation();
                 setAreYouSure(true);
-                console.log("clicked");
               }}
             >
               <TrashSmall />

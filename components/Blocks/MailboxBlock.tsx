@@ -146,7 +146,6 @@ export const MailboxBlock = (props: BlockProps) => {
             onClick={() => {
               draft && useUIState.getState().closeCard(draft.data.value);
               archive && useUIState.getState().closeCard(archive.data.value);
-              console.log("deleting");
             }}
           />
         )}

@@ -86,7 +86,6 @@ export function SelectionManager() {
           let [sortedBlocks, siblings] = await getSortedSelection();
           for (let block of sortedBlocks) {
             if (!block.listData) {
-              console.log("yo?");
               await rep?.mutate.assertFact({
                 entity: block.value,
                 attribute: "block/is-list",

@@ -326,7 +326,6 @@ const enter =
           propsRef.current.nextBlock?.listData &&
           propsRef.current.nextBlock.listData.depth >
             propsRef.current.listData.depth;
-        console.log(propsRef);
         position = generateKeyBetween(
           hasChild ? null : propsRef.current.position,
           propsRef.current.nextPosition,
