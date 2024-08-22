@@ -127,7 +127,7 @@ export const MailboxBlock = (props: BlockProps) => {
                 return;
               }}
             >
-              Write a Post
+              {draft ? "Edit Draft" : "Write a Post"}
             </ButtonPrimary>
             <MailboxInfo />
           </div>
@@ -198,9 +198,9 @@ const MailboxReaderView = (props: { entityID: string; parent: string }) => {
   let smoke = useSmoker();
   let { rep } = useReplicache();
   return (
-    <div className={`mailboxContent relative w-full flex flex-col gap-1`}>
+    <div className={`mailboxContent relative w-full flex flex-col gap-1 h-32`}>
       <div
-        className={`flex flex-col gap-2 items-center justify-center w-full rounded-md border outline ${
+        className={`h-full flex flex-col gap-2 items-center justify-center w-full rounded-md border outline ${
           isSelected
             ? "border-border outline-border"
             : "border-border-light outline-transparent"
@@ -214,12 +214,12 @@ const MailboxReaderView = (props: { entityID: string; parent: string }) => {
           {!isSubscribed ? (
             <SubscribeForm entityID={props.entityID} role={"reader"} />
           ) : (
-            <div className="flex flex-col gap-2 items-center place-self-center pt-2">
-              <div className="flex font-bold text-tertiary gap-2 items-center place-self-center  ">
+            <div className="flex flex-col gap-2 items-center place-self-center">
+              <div className="flex font-bold text-secondary gap-3 items-center place-self-center  ">
                 You&apos;re Subscribed! <MailboxInfo subscriber />
               </div>
               <div className="flex flex-col gap-1 items-center place-self-center">
-                {archive && (
+                {archive ? (
                   <ButtonPrimary
                     onMouseDown={(e) => {
                       e.preventDefault();
@@ -233,9 +233,13 @@ const MailboxReaderView = (props: { entityID: string; parent: string }) => {
                   >
                     See All Posts
                   </ButtonPrimary>
+                ) : (
+                  <div className="text-tertiary">
+                    Nothing has been posted yet
+                  </div>
                 )}
                 <button
-                  className="text-tertiary hover:text-accent-contrast"
+                  className="text-accent-contrast hover:underline"
                   onClick={(e) => {
                     let rect = e.currentTarget.getBoundingClientRect();
                     unsubscribe(isSubscribed);
@@ -329,31 +333,58 @@ const SubscribeForm = (props: {
   let [code, setCode] = useState("");
   if (state.state === "confirm") {
     return (
-      <>
-        <div className="font-bold text-tertiary">
-          We just sent a confirmation code to <code>{state.email}</code>, enter
-          it here!
+      <div className="flex flex-col gap-3 justify-center text-center ">
+        <div className="font-bold text-secondary  ">
+          Enter the code we sent to{" "}
+          <code
+            className="italic"
+            style={{ fontFamily: "var(--font-quattro)" }}
+          >
+            {state.email}
+          </code>{" "}
+          here!
         </div>
-        <input
-          type="number"
-          value={code}
-          onChange={(e) => setCode(e.currentTarget.value)}
-        />
-        <ButtonPrimary
-          onClick={async () => {
-            let result = await confirmEmailSubscription(
-              subscriptionID,
-              code,
-              permission_token,
-            );
-            console.log(result);
-            if (!result) return;
-            addSubscription(result);
-          }}
-        >
-          Confirm
-        </ButtonPrimary>
-      </>
+        <div className="flex flex-col gap-1">
+          <div className="mailboxConfirmCodeInput flex gap-2 items-center mx-auto">
+            <input
+              type="number"
+              value={code}
+              className="appearance-none w-20 border border-border-light rounded-md p-1"
+              onChange={(e) => setCode(e.currentTarget.value)}
+            />
+
+            <ButtonPrimary
+              onClick={async (e) => {
+                let result = await confirmEmailSubscription(
+                  subscriptionID,
+                  code,
+                  permission_token,
+                );
+                if (!result) {
+                  smoke({
+                    error: true,
+                    text: "oops, incorrect code",
+                    position: { x: e.clientX, y: e.clientY },
+                  });
+                  return;
+                }
+                addSubscription(result);
+              }}
+            >
+              Confirm!
+            </ButtonPrimary>
+          </div>
+          <button
+            onMouseDown={() => {
+              setState({ state: "normal" });
+              setEmail("");
+            }}
+            className="text-accent-contrast hover:underline"
+          >
+            use another contact
+          </button>
+        </div>
+      </div>
     );
   }
   return (
@@ -374,7 +405,7 @@ const SubscribeForm = (props: {
               value={email}
               type="email"
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full"
+              className="w-full appearance-none focus:outline-none"
               placeholder="youremail@email.com"
             />
           ) : (
@@ -382,7 +413,7 @@ const SubscribeForm = (props: {
               value={sms}
               type="tel"
               onChange={(e) => setSMS(e.target.value)}
-              className="w-full"
+              className="w-full appearance-none focus:outline-none"
               placeholder="123-456-7890"
             />
           )}
@@ -418,7 +449,7 @@ const ChannelSelector = (props: {
       trigger={
         <div className="flex gap-2 w-16 items-center justify-between text-secondary">
           {props.channel === "email" ? "Email" : "SMS"}{" "}
-          <ArrowDownTiny className="shrink-0 text-accent-1" />
+          <ArrowDownTiny className="shrink-0 text-accent-contrast" />
         </div>
       }
     >

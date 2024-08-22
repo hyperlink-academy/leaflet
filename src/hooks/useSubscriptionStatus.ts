@@ -19,7 +19,6 @@ export function useSubscriptionStatus(entityID: string) {
   let params = useSearchParams();
   let sub_id = params.get("sub_id");
   useEffect(() => {
-    console.log(sub_id)
     if (!sub_id) return;
     let entity = params.get("entity");
     let email = params.get("email");
@@ -27,10 +26,10 @@ export function useSubscriptionStatus(entityID: string) {
     addSubscription({ id: sub_id, email: email, entity: entity });
 
     const url = new URL(window.location.href);
-    url.searchParams.delete('sub_id');
-    url.searchParams.delete('entity');
-    url.searchParams.delete('email');
-    window.history.replaceState({}, '', url.toString());
+    url.searchParams.delete("sub_id");
+    url.searchParams.delete("entity");
+    url.searchParams.delete("email");
+    window.history.replaceState({}, "", url.toString());
   }, [sub_id, params]);
   let { data: docs } = useSWR("subscriptions", () => getSubscriptions(), {});
   if (!docs) return null;
