@@ -163,7 +163,7 @@ const CardOptions = (props: { entityID: string }) => {
   return (
     <div className=" z-10 w-fit absolute sm:top-2 sm:-right-[18px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
       <button
-        className="p-1 pt-2 sm:p-0.5 sm:pl-0 bg-border text-bg-card sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
+        className="p-1 pt-[10px] sm:p-0.5 sm:pl-0 bg-border text-bg-card sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
         onClick={() => {
           useUIState.getState().closeCard(props.entityID);
         }}

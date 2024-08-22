@@ -497,7 +497,7 @@ export const DraftPostOptions = (props: { mailboxEntity: string }) => {
     <div className="flex justify-between items-center text-sm">
       <div className="flex gap-2">This is still a draft</div>
       <button
-        className="font-bold text-accent-contrast hover:bg-bg-card rounded-md px-1"
+        className="font-bold text-accent-2 bg-accent-1 border border-accent-2 hover:bg-accent-2 hover:text-accent-1 rounded-md px-2"
         onClick={async () => {
           // Call the
           if (!rep) return;
