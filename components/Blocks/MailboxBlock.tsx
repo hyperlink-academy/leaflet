@@ -345,6 +345,7 @@ const SubscribeForm = (props: {
   let { permission_token } = useReplicache();
   let [subscriptionID, setSubscriptionID] = useState("");
   let [code, setCode] = useState("");
+  let { rootEntity } = useReplicache();
   if (state.state === "confirm") {
     return (
       <div className="flex flex-col gap-3 justify-center text-center ">
@@ -421,6 +422,7 @@ const SubscribeForm = (props: {
             let subscriptionID = await subscribeToMailboxWithEmail(
               props.entityID,
               email,
+              rootEntity,
             );
             if (subscriptionID) setSubscriptionID(subscriptionID?.id);
             setState({ state: "confirm", email });
