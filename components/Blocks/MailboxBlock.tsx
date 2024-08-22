@@ -269,26 +269,21 @@ const MailboxInfo = (props: { subscriber?: boolean }) => {
         <div className="text-sm text-secondary flex flex-col gap-2">
           {props.subscriber ? (
             <>
-              <div className="font-bold">
-                Receive a notification whenever the author posts an update to
-                this mailbox!
-              </div>
-              <div>
-                The author will only see your name and you can unsubscribe at
+              <p className="font-bold">
+                Get a notification whenever the creator posts to this mailbox!
+              </p>
+              <p>
+                Your contact info will be kept private, and you can unsubscribe
                 anytime.
-              </div>
+              </p>
             </>
           ) : (
             <>
-              <div className="font-bold">
-                When you post to this mailbox, readers who have subscribed to it
-                will receive a notification!
-              </div>
-
-              <div>
-                Reader contact information will be kept private, but you will be
-                able to see thier names.
-              </div>
+              <p className="font-bold">
+                When you post to this mailbox, subscribers will be notified!
+              </p>
+              <p>Reader contact info is kept private.</p>
+              <p>You can have one draft post at a time.</p>
             </>
           )}
         </div>
@@ -447,6 +442,7 @@ const SubscribeForm = (props: {
             )}
           </div>
           <ButtonPrimary type="submit">Subscribe!</ButtonPrimary>
+          <MailboxInfo subscriber />
         </form>
         {props.role === "reader" && (
           <GoToArchive entityID={props.entityID} parent={props.parent} small />
