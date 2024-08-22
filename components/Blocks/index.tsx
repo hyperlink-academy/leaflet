@@ -235,7 +235,6 @@ export type BlockProps = {
 
 let textBlocks: { [k in Fact<"block/type">["data"]["value"]]?: boolean } = {
   text: true,
-  mailbox: true,
   heading: true,
 };
 
