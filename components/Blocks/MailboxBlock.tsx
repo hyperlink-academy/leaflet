@@ -46,6 +46,9 @@ export const MailboxBlock = (props: BlockProps) => {
       setAreYouSure(false);
     }
   }, [isSelected]);
+  let draft = useEntity(props.entityID, "mailbox/draft");
+  let entity_set = useEntitySetContext();
+  let archive = useEntity(props.entityID, "mailbox/archive");
 
   useEffect(() => {
     if (!isSelected) return;
@@ -71,12 +74,17 @@ export const MailboxBlock = (props: BlockProps) => {
 
           props.previousBlock &&
             focusBlock(props.previousBlock, { type: "end" });
+
+          draft && useUIState.getState().closeCard(draft.data.value);
+          archive && useUIState.getState().closeCard(archive.data.value);
         }
       }
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
   }, [
+    draft,
+    archive,
     areYouSure,
     cardEntity,
     isSelected,
@@ -85,9 +93,7 @@ export const MailboxBlock = (props: BlockProps) => {
     props.previousBlock,
     rep,
   ]);
-  let draft = useEntity(props.entityID, "mailbox/draft");
-  let entity_set = useEntitySetContext();
-  let archive = useEntity(props.entityID, "mailbox/archive");
+
   let subscriber_count = useEntity(props.entityID, "mailbox/subscriber-count");
   if (!permission)
     return (
@@ -137,6 +143,11 @@ export const MailboxBlock = (props: BlockProps) => {
           <AreYouSure
             entityID={props.entityID}
             closeAreYouSure={() => setAreYouSure(false)}
+            onClick={() => {
+              draft && useUIState.getState().closeCard(draft.data.value);
+              archive && useUIState.getState().closeCard(archive.data.value);
+              console.log("deleting");
+            }}
           />
         )}
       </div>
@@ -506,9 +517,8 @@ export const DraftPostOptions = (props: { mailboxEntity: string }) => {
         <em>Draft</em>
       </div>
       <button
-        className="font-bold text-accent-2 bg-accent-1 border border-accent-2 hover:bg-accent-2 hover:text-accent-1 rounded-md px-2"
+        className="font-bold text-accent-2 bg-accent-1 border  hover:bg-accent-2 hover:text-accent-1 rounded-md px-2"
         onClick={async () => {
-          // Call the
           if (!rep) return;
           let blocks =
             (await rep?.query((tx) =>

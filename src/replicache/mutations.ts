@@ -419,7 +419,6 @@ const archiveDraft: Mutation<{
       entityID: archiveEntity,
       permission_set: args.entity_set,
     });
-    console.log("creating archive?");
     await ctx.assertFact({
       entity: args.mailboxEntity,
       attribute: "mailbox/archive",
