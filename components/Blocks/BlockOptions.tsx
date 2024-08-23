@@ -27,8 +27,8 @@ import { ToolbarButton } from "components/Toolbar";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import {
   TextBlockTypeButton,
-  TextBlockTypeButtons,
-} from "components/Toolbar/TextBlockTypeButtons";
+  TextBlockTypeToolbar,
+} from "components/Toolbar/TextBlockTypeToolbar";
 import { isUrl } from "src/utils/isURL";
 import { useSmoker, useToaster } from "components/Toast";
 
@@ -200,7 +200,7 @@ export function BlockOptions(props: Props) {
           )}
           {blockMenuState === "heading" && (
             <>
-              <TextBlockTypeButtons
+              <TextBlockTypeToolbar
                 className="bg-transparent hover:text-primary text-tertiary "
                 onClose={() => setblockMenuState("default")}
               />

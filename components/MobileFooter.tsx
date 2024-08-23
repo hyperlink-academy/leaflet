@@ -2,7 +2,7 @@
 import { useUIState } from "src/useUIState";
 import { Media } from "./Media";
 import { ThemePopover } from "./ThemeManager/ThemeSetter";
-import { TextToolbar } from "components/Toolbar";
+import { Toolbar } from "components/Toolbar";
 import { ShareOptions } from "./ShareOptions";
 import { HomeButton } from "./HomeButton";
 
@@ -18,7 +18,7 @@ export function MobileFooter(props: { entityID: string }) {
             if (e.currentTarget === e.target) e.preventDefault();
           }}
         >
-          <TextToolbar
+          <Toolbar
             cardID={focusedBlock.parent}
             blockID={focusedBlock.entityID}
           />

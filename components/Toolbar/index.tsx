@@ -5,9 +5,6 @@ import {
   BoldSmall,
   CloseTiny,
   ItalicSmall,
-  ListUnorderedSmall,
-  ListIndentDecreaseSmall,
-  ListIndentIncreaseSmall,
   StrikethroughSmall,
   HighlightSmall,
   PopoverArrow,
@@ -18,33 +15,35 @@ import { TextDecorationButton } from "./TextDecorationButton";
 import {
   keepFocus,
   TextBlockTypeButton,
-  TextBlockTypeButtons,
-} from "./TextBlockTypeButtons";
-import { LinkButton, LinkEditor } from "./LinkButton";
-import {
-  HighlightColorButton,
-  HighlightColorSettings,
-} from "./HighlightButton";
+  TextBlockTypeToolbar,
+} from "./TextBlockTypeToolbar";
+import { LinkButton, InlineLinkToolbar } from "./InlineLinkToolbar";
 import { theme } from "../../tailwind.config";
 import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
-import { useEntity, useReplicache } from "src/replicache";
+import { useReplicache } from "src/replicache";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Separator, ShortcutKey } from "components/Layout";
 import { metaKey } from "src/utils/metaKey";
 import { isMac } from "@react-aria/utils";
 import { addShortcut } from "src/shortcuts";
-import { useBlocks } from "src/hooks/queries/useBlocks";
-import { indent, outdent } from "src/utils/list-operations";
-import { ListButton, ListToolbar } from "./ListButton";
+import { ListButton, ListToolbar } from "./ListToolbar";
+import { HighlightToolbar } from "./HighlightToolbar";
+import { TextToolbar } from "./TextToolbar";
 
-export const TextToolbar = (props: { cardID: string; blockID: string }) => {
+export type ToolbarTypes =
+  | "default"
+  | "highlight"
+  | "link"
+  | "header"
+  | "list"
+  | "linkBlock";
+
+export const Toolbar = (props: { cardID: string; blockID: string }) => {
   let { rep } = useReplicache();
   let focusedBlock = useUIState((s) => s.focusedBlock);
 
-  let [toolbarState, setToolbarState] = useState<
-    "default" | "highlight" | "link" | "header" | "list" | "linkBlock"
-  >("default");
+  let [toolbarState, setToolbarState] = useState<ToolbarTypes>("default");
 
   let lastUsedHighlight = useUIState((s) => s.lastUsedHighlight);
   let setLastUsedHighlight = (color: "1" | "2" | "3") =>
@@ -73,113 +72,12 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
       <div className="flex items-center justify-between w-full gap-6">
         <div className="flex gap-[6px] items-center grow">
           {toolbarState === "default" ? (
-            <>
-              <TextDecorationButton
-                tooltipContent={
-                  <div className="flex flex-col gap-1 justify-center">
-                    <div className="text-center">Bold </div>
-                    <div className="flex gap-1">
-                      <ShortcutKey>{metaKey()}</ShortcutKey> +{" "}
-                      <ShortcutKey> B </ShortcutKey>
-                    </div>
-                  </div>
-                }
-                mark={schema.marks.strong}
-                icon={<BoldSmall />}
-              />
-              <TextDecorationButton
-                tooltipContent=<div className="flex flex-col gap-1 justify-center">
-                  <div className="italic font-normal text-center">Italic</div>
-                  <div className="flex gap-1">
-                    <ShortcutKey>{metaKey()}</ShortcutKey> +{" "}
-                    <ShortcutKey> I </ShortcutKey>
-                  </div>
-                </div>
-                mark={schema.marks.em}
-                icon={<ItalicSmall />}
-              />
-              <TextDecorationButton
-                tooltipContent={
-                  <div className="flex flex-col gap-1 justify-center">
-                    <div className="text-center font-normal line-through">
-                      Strikethrough
-                    </div>
-                    <div className="flex gap-1">
-                      {isMac() ? (
-                        <>
-                          <ShortcutKey>⌘</ShortcutKey> +{" "}
-                          <ShortcutKey> Ctrl </ShortcutKey> +{" "}
-                          <ShortcutKey> X </ShortcutKey>
-                        </>
-                      ) : (
-                        <>
-                          <ShortcutKey> Ctrl </ShortcutKey> +{" "}
-                          <ShortcutKey> Meta </ShortcutKey> +{" "}
-                          <ShortcutKey> X </ShortcutKey>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                }
-                mark={schema.marks.strikethrough}
-                icon={<StrikethroughSmall />}
-              />
-              <div className="flex items-center gap-1">
-                <TextDecorationButton
-                  tooltipContent={
-                    <div className="flex flex-col gap-1 justify-center">
-                      <div className="text-center bg-border-light w-fit rounded-md px-0.5 mx-auto ">
-                        Highlight
-                      </div>
-                      <div className="flex gap-1">
-                        {isMac() ? (
-                          <>
-                            <ShortcutKey>⌘</ShortcutKey> +{" "}
-                            <ShortcutKey> Ctrl </ShortcutKey> +{" "}
-                            <ShortcutKey> H </ShortcutKey>
-                          </>
-                        ) : (
-                          <>
-                            <ShortcutKey> Ctrl </ShortcutKey> +{" "}
-                            <ShortcutKey> Meta </ShortcutKey> +{" "}
-                            <ShortcutKey> H </ShortcutKey>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  }
-                  attrs={{ color: lastUsedHighlight }}
-                  mark={schema.marks.highlight}
-                  icon={
-                    <HighlightSmall
-                      highlightColor={
-                        lastUsedHighlight === "1"
-                          ? theme.colors["highlight-1"]
-                          : lastUsedHighlight === "2"
-                            ? theme.colors["highlight-2"]
-                            : theme.colors["highlight-3"]
-                      }
-                    />
-                  }
-                />
-
-                <ToolbarButton
-                  tooltipContent="Change Highlight Color"
-                  onClick={() => {
-                    setToolbarState("highlight");
-                  }}
-                  className="-ml-1"
-                >
-                  <ArrowRightTiny />
-                </ToolbarButton>
-              </div>
-              <Separator classname="h-6" />
-              <ListButton setToolbarState={setToolbarState} />
-              <Separator classname="h-6" />
-              <LinkButton setToolbarState={setToolbarState} />
-              <Separator classname="h-6" />
-              <TextBlockTypeButton setToolbarState={setToolbarState} />
-            </>
+            <TextToolbar
+              lastUsedHighlight={lastUsedHighlight}
+              setToolbarState={(s) => {
+                setToolbarState(s);
+              }}
+            />
           ) : toolbarState === "highlight" ? (
             <HighlightToolbar
               onClose={() => setToolbarState("default")}
@@ -191,14 +89,14 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
           ) : toolbarState === "list" ? (
             <ListToolbar onClose={() => setToolbarState("default")} />
           ) : toolbarState === "link" ? (
-            <LinkEditor
+            <InlineLinkToolbar
               onClose={() => {
                 activeEditor?.view?.focus();
                 setToolbarState("default");
               }}
             />
           ) : toolbarState === "header" ? (
-            <TextBlockTypeButtons onClose={() => setToolbarState("default")} />
+            <TextBlockTypeToolbar onClose={() => setToolbarState("default")} />
           ) : null}
         </div>
         <button
@@ -222,48 +120,6 @@ export const TextToolbar = (props: { cardID: string; blockID: string }) => {
         </button>
       </div>
     </Tooltip.Provider>
-  );
-};
-
-const HighlightToolbar = (props: {
-  onClose: () => void;
-  lastUsedHighlight: "1" | "2" | "3";
-  setLastUsedHighlight: (color: "1" | "2" | "3") => void;
-}) => {
-  let focusedBlock = useUIState((s) => s.focusedBlock);
-  let focusedEditor = useEditorStates((s) =>
-    focusedBlock ? s.editorStates[focusedBlock.entityID] : null,
-  );
-  let [initialRender, setInitialRender] = useState(true);
-  useEffect(() => {
-    setInitialRender(false);
-  }, []);
-  useEffect(() => {
-    if (initialRender) return;
-    if (focusedEditor) props.onClose();
-  }, [focusedEditor, props]);
-  return (
-    <div className="flex w-full justify-between items-center gap-4 text-secondary">
-      <div className="flex items-center gap-[6px]">
-        <HighlightColorButton
-          color="1"
-          lastUsedHighlight={props.lastUsedHighlight}
-          setLastUsedHightlight={props.setLastUsedHighlight}
-        />
-        <HighlightColorButton
-          color="2"
-          lastUsedHighlight={props.lastUsedHighlight}
-          setLastUsedHightlight={props.setLastUsedHighlight}
-        />
-        <HighlightColorButton
-          color="3"
-          lastUsedHighlight={props.lastUsedHighlight}
-          setLastUsedHightlight={props.setLastUsedHighlight}
-        />
-        <Separator classname="h-6" />
-        <HighlightColorSettings />
-      </div>
-    </div>
   );
 };
 

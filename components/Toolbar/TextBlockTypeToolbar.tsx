@@ -4,7 +4,7 @@ import {
   Header3Small,
   ParagraphSmall,
 } from "components/Icons";
-import { Separator, ShortcutKey } from "components/Layout";
+import { ShortcutKey } from "components/Layout";
 import { ToolbarButton } from "components/Toolbar";
 import { TextSelection } from "prosemirror-state";
 import { useCallback } from "react";
@@ -12,7 +12,7 @@ import { useEntity, useReplicache } from "src/replicache";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
 
-export const TextBlockTypeButtons = (props: {
+export const TextBlockTypeToolbar = (props: {
   onClose: () => void;
   className?: string;
 }) => {
