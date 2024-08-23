@@ -34,6 +34,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_subscriptions_to_entity: {
+        Row: {
+          confirmation_code: string
+          confirmed: boolean
+          created_at: string
+          email: string
+          entity: string
+          id: string
+          token: string
+        }
+        Insert: {
+          confirmation_code: string
+          confirmed?: boolean
+          created_at?: string
+          email: string
+          entity: string
+          id?: string
+          token: string
+        }
+        Update: {
+          confirmation_code?: string
+          confirmed?: boolean
+          created_at?: string
+          email?: string
+          entity?: string
+          id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_subscriptions_to_entity_entity_fkey"
+            columns: ["entity"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_subscriptions_to_entity_token_fkey"
+            columns: ["token"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entities: {
         Row: {
           created_at: string

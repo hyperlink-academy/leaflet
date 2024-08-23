@@ -1,7 +1,7 @@
 "use client";
 import { useUIState } from "src/useUIState";
 import { Media } from "./Media";
-import { TextToolbar } from "./Toolbar";
+import { Toolbar } from "./Toolbar";
 
 export function DesktopCardFooter(props: { cardID: string }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);
@@ -23,7 +23,7 @@ export function DesktopCardFooter(props: { cardID: string }) {
               if (e.currentTarget === e.target) e.preventDefault();
             }}
           >
-            <TextToolbar
+            <Toolbar
               cardID={focusedBlockParentID}
               blockID={focusedBlock.entityID}
             />

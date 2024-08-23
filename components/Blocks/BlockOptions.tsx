@@ -11,6 +11,7 @@ import {
   Header3Small,
   LinkSmall,
   LinkTextToolbarSmall,
+  MailboxSmall,
   ParagraphSmall,
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
@@ -26,8 +27,8 @@ import { ToolbarButton } from "components/Toolbar";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import {
   TextBlockTypeButton,
-  TextBlockTypeButtons,
-} from "components/Toolbar/TextBlockTypeButtons";
+  TextBlockTypeToolbar,
+} from "components/Toolbar/TextBlockTypeToolbar";
 import { isUrl } from "src/utils/isURL";
 import { useSmoker, useToaster } from "components/Toast";
 
@@ -110,15 +111,6 @@ export function BlockOptions(props: Props) {
                 </label>
               </ToolbarButton>
               <ToolbarButton
-                tooltipContent="Add a Link"
-                className="text-tertiary h-6"
-                onClick={() => {
-                  setblockMenuState("link");
-                }}
-              >
-                <LinkTextToolbarSmall />
-              </ToolbarButton>
-              <ToolbarButton
                 tooltipContent="Add a card"
                 className="text-tertiary h-6"
                 onClick={async () => {
@@ -159,6 +151,46 @@ export function BlockOptions(props: Props) {
               >
                 <BlockCardSmall />
               </ToolbarButton>
+              <ToolbarButton
+                tooltipContent="Add a Link"
+                className="text-tertiary h-6"
+                onClick={() => {
+                  setblockMenuState("link");
+                }}
+              >
+                <LinkTextToolbarSmall />
+              </ToolbarButton>
+
+              <ToolbarButton
+                tooltipContent="Add a Mailbox"
+                className="text-tertiary h-6"
+                onClick={async () => {
+                  let entity;
+                  if (!props.entityID) {
+                    entity = v7();
+                    await rep?.mutate.addBlock({
+                      parent: props.parent,
+                      factID: v7(),
+                      permission_set: entity_set.set,
+                      type: "mailbox",
+                      position: generateKeyBetween(
+                        props.position,
+                        props.nextPosition,
+                      ),
+                      newEntityID: entity,
+                    });
+                  } else {
+                    entity = props.entityID;
+                    await rep?.mutate.assertFact({
+                      entity,
+                      attribute: "block/type",
+                      data: { type: "block-type-union", value: "mailbox" },
+                    });
+                  }
+                }}
+              >
+                <MailboxSmall />
+              </ToolbarButton>
               <Separator classname="h-6" />
               <TextBlockTypeButton
                 className="hover:text-primary text-tertiary h-6"
@@ -168,7 +200,7 @@ export function BlockOptions(props: Props) {
           )}
           {blockMenuState === "heading" && (
             <>
-              <TextBlockTypeButtons
+              <TextBlockTypeToolbar
                 className="bg-transparent hover:text-primary text-tertiary "
                 onClose={() => setblockMenuState("default")}
               />

@@ -11,6 +11,8 @@ import { useUIState } from "src/useUIState";
 import { CardBlock } from "./CardBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { BlockOptions } from "./BlockOptions";
+import { MailboxBlock } from "./MailboxBlock";
+
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -296,7 +298,7 @@ function Block(props: BlockProps) {
       if (e.key === "Backspace") {
         if (!entity_set.permissions.write) return;
         if (textBlocks[props.type]) return;
-        if (props.type === "card") return;
+        if (props.type === "card" || props.type === "mailbox") return;
         e.preventDefault();
         r.mutate.removeBlock({ blockEntity: props.entityID });
         useUIState.getState().closeCard(props.entityID);
@@ -406,6 +408,10 @@ export const BaseBlock = (props: BlockProps & { preview?: boolean }) => {
         <ImageBlock {...props} />
       ) : props.type === "link" ? (
         <ExternalLinkBlock {...props} />
+      ) : props.type === "mailbox" ? (
+        <div className="flex flex-col gap-4 w-full">
+          <MailboxBlock {...props} />
+        </div>
       ) : null}
     </div>
   );

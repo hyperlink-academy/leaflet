@@ -11,10 +11,11 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
-import { CloseTiny } from "components/Icons";
+import { CloseTiny, TrashSmall } from "components/Icons";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useBlocks } from "src/hooks/queries/useBlocks";
+import { AreYouSure } from "./DeleteBlock";
 
 export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
   let { rep } = useReplicache();
@@ -31,15 +32,9 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
   let isOpen = useUIState((s) => s.openCards).includes(cardEntity);
 
   let [areYouSure, setAreYouSure] = useState(false);
-
   useEffect(() => {
     if (!isSelected) {
       setAreYouSure(false);
-    }
-  }, [isSelected]);
-
-  useEffect(() => {
-    if (isSelected) {
     }
   }, [isSelected]);
 
@@ -98,33 +93,11 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
         }
       }}
     >
-      {/* if the block is not focused, set are you sure to false*/}
-      {areYouSure && isSelected ? (
-        <div className="flex flex-col gap-1 w-full h-full place-items-center items-center font-bold py-4 bg-border-light">
-          <div className="">Delete this Page?</div>
-          <div className="flex gap-2">
-            <button
-              className="bg-accent-1 text-accent-2 px-2 py-1 rounded-md "
-              onClick={(e) => {
-                e.stopPropagation();
-                useUIState.getState().closeCard(cardEntity);
-
-                rep &&
-                  rep.mutate.removeBlock({
-                    blockEntity: props.entityID,
-                  });
-              }}
-            >
-              Delete
-            </button>
-            <button
-              className="text-accent-1"
-              onClick={() => setAreYouSure(false)}
-            >
-              Nevermind
-            </button>
-          </div>
-        </div>
+      {areYouSure ? (
+        <AreYouSure
+          closeAreYouSure={() => setAreYouSure(false)}
+          entityID={props.entityID}
+        />
       ) : (
         <>
           <div
@@ -171,7 +144,6 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
                   {docMetadata[2].listData && (
                     <ListMarker {...docMetadata[2]} className="!pt-[8px]" />
                   )}
-
                   <RenderedTextBlock entityID={docMetadata[2].value} />
                 </div>
               )}
@@ -186,7 +158,7 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
                 setAreYouSure(true);
               }}
             >
-              <CloseTiny />
+              <TrashSmall />
             </button>
           )}
         </>

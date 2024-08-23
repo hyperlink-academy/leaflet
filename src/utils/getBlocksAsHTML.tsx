@@ -50,6 +50,11 @@ async function renderBlock(
   ignoreWrapper?: boolean,
 ) {
   let wrapper: undefined | "h1" | "h2" | "h3";
+  if (b.type === "image") {
+    let [src] = await scanIndex(tx).eav(b.value, "block/image");
+    if (!src) return "";
+    return renderToStaticMarkup(<img src={src.data.src} />);
+  }
   if (b.type === "heading") {
     let headingLevel = await scanIndex(tx).eav(b.value, "block/heading-level");
     wrapper = "h" + headingLevel[0].data.value;

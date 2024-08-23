@@ -1,5 +1,5 @@
 import { useEntity, useReplicache } from "src/replicache";
-import { CloseTiny } from "components/Icons";
+import { CloseTiny, TrashSmall } from "components/Icons";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useUIState } from "src/useUIState";
 
@@ -68,7 +68,7 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
               });
           }}
         >
-          <CloseTiny />
+          <TrashSmall />
         </button>
       )}
     </a>

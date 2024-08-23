@@ -45,7 +45,7 @@ export function LinkButton(props: { setToolbarState: (s: "link") => void }) {
   );
 }
 
-export function LinkEditor(props: { onClose: () => void }) {
+export function InlineLinkToolbar(props: { onClose: () => void }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);
   let focusedEditor = useEditorStates((s) =>
     focusedBlock ? s.editorStates[focusedBlock.entityID] : null,

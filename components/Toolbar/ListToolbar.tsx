@@ -38,7 +38,8 @@ export const ListButton = (props: { setToolbarState: (s: "list") => void }) => {
             </div>
           </div>
         }
-        onClick={() => {
+        onClick={(e) => {
+          e.preventDefault();
           if (!focusedBlock) return;
           if (!isList?.data.value) {
             rep?.mutate.assertFact({

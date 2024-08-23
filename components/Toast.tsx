@@ -59,7 +59,7 @@ export const PopUpProvider: React.FC<React.PropsWithChildren<unknown>> = (
         () => {
           setToastState(null);
         },
-        toast?.duration ? toast.duration : 3000,
+        toast?.duration ? toast.duration : 6000,
       );
     },
     [setToastState],
@@ -84,9 +84,9 @@ const Toast = (props: {
   setToast: (t: Toast | null) => void;
 }) => {
   let transitions = useTransition(props.toast ? [props.toast] : [], {
-    from: { top: -30 },
+    from: { top: -40 },
     enter: { top: 8 },
-    leave: { top: -30 },
+    leave: { top: -40 },
     config: {
       mass: 8,
       friction: 150,
@@ -101,12 +101,12 @@ const Toast = (props: {
         className={`toastAnimationWrapper fixed bottom-0 right-0 left-0 z-50 h-fit`}
       >
         <div
-          className={`toast absolute right-2 w-max  px-3 py-1 flex flex-row gap-2 rounded-full border text-center ${
+          className={`toast absolute right-2 w-max  shadow-md px-3 py-1 flex flex-row gap-2 rounded-full border text-center ${
             props.toast?.type === "error"
-              ? "bg-accent-red text-white"
+              ? "bg-accent-red text-white border-white"
               : props.toast?.type === "success"
-                ? "bg-accent-green text-white"
-                : "bg-accent-1 text-accent-2 shadow-md border border-border"
+                ? "bg-accent-1 text-accent-2 border border-accent-2"
+                : "bg-accent-1 text-accent-2 border border-accent-2"
           }`}
         >
           <div className="flex gap-2 grow justify-center">{item.content}</div>

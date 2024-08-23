@@ -37,6 +37,21 @@ const BlockAttributes = {
   },
 } as const;
 
+const MailboxAttributes = {
+  "mailbox/draft": {
+    type: "reference",
+    cardinality: "one",
+  },
+  "mailbox/archive": {
+    type: "reference",
+    cardinality: "one",
+  },
+  "mailbox/subscriber-count": {
+    type: "number",
+    cardinality: "one",
+  },
+} as const;
+
 const LinkBlockAttributes = {
   "link/preview": {
     type: "image",
@@ -104,6 +119,7 @@ export const Attributes = {
   ...BlockAttributes,
   ...LinkBlockAttributes,
   ...ThemeAttributes,
+  ...MailboxAttributes,
 };
 type Attribute = typeof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
@@ -137,7 +153,7 @@ export type Data<A extends keyof typeof Attributes> = {
   reference: { type: "reference"; value: string };
   "block-type-union": {
     type: "block-type-union";
-    value: "text" | "image" | "card" | "heading" | "link";
+    value: "text" | "image" | "card" | "heading" | "link" | "mailbox";
   };
   color: { type: "color"; value: string };
 }[(typeof Attributes)[A]["type"]];

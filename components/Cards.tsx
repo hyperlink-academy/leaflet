@@ -7,7 +7,12 @@ import { ThemePopover } from "./ThemeManager/ThemeSetter";
 import { Media } from "./Media";
 import { DesktopCardFooter } from "./DesktopFooter";
 import { Replicache } from "replicache";
-import { Fact, ReplicacheMutators, useReplicache } from "src/replicache";
+import {
+  Fact,
+  ReplicacheMutators,
+  useReferenceToEntity,
+  useReplicache,
+} from "src/replicache";
 import * as Popover from "@radix-ui/react-popover";
 import { MoreOptionsTiny, DeleteSmall, CloseTiny, PopoverArrow } from "./Icons";
 import { useToaster } from "./Toast";
@@ -15,9 +20,20 @@ import { ShareOptions } from "./ShareOptions";
 import { MenuItem, Menu } from "./Layout";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { HomeButton } from "./HomeButton";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
+import { DraftPostOptions } from "./Blocks/MailboxBlock";
 
 export function Cards(props: { rootCard: string }) {
   let openCards = useUIState((s) => s.openCards);
+  let params = useSearchParams();
+  let openCard = params.get("openCard");
+  useEffect(() => {
+    if (openCard) {
+    }
+  }, [openCard, props.rootCard]);
+  let cards = [...openCards];
+  if (openCard && !cards.includes(openCard)) cards.push(openCard);
 
   return (
     <div
@@ -48,7 +64,7 @@ export function Cards(props: { rootCard: string }) {
       <div className="flex items-stretch">
         <Card entityID={props.rootCard} first />
       </div>
-      {openCards.map((card) => (
+      {cards.map((card) => (
         <div className="flex items-stretch" key={card}>
           <Card entityID={card} />
         </div>
@@ -74,6 +90,7 @@ export const PageOptions = (props: { entityID: string }) => {
 
 function Card(props: { entityID: string; first?: boolean }) {
   let { rep } = useReplicache();
+  let isDraft = useReferenceToEntity("mailbox/draft", props.entityID);
 
   let focusedElement = useUIState((s) => s.focusedBlock);
   let focusedCardID =
@@ -118,6 +135,17 @@ function Card(props: { entityID: string; first?: boolean }) {
             {!props.first && <CardOptions entityID={props.entityID} />}
           </Media>
           <DesktopCardFooter cardID={props.entityID} />
+          {isDraft.length > 0 && (
+            <div
+              className={`cardStatus pt-[6px] pb-1 ${!props.first ? "pr-10 pl-3 sm:px-4" : "px-3 sm:px-4"} border-b border-border text-tertiary`}
+              style={{
+                backgroundColor:
+                  "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-card)) 85%)",
+              }}
+            >
+              <DraftPostOptions mailboxEntity={isDraft[0].entity} />
+            </div>
+          )}
           <Blocks entityID={props.entityID} />
         </div>
         <Media mobile={false}>
@@ -135,7 +163,7 @@ const CardOptions = (props: { entityID: string }) => {
   return (
     <div className=" z-10 w-fit absolute sm:top-2 sm:-right-[18px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
       <button
-        className="p-1 sm:p-0.5 sm:pl-0 bg-border text-bg-card sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
+        className="p-1 pt-[10px] sm:p-0.5 sm:pl-0 bg-border text-bg-card sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
         onClick={() => {
           useUIState.getState().closeCard(props.entityID);
         }}
@@ -150,32 +178,29 @@ const CardOptions = (props: { entityID: string }) => {
 const OptionsMenu = () => {
   let toaster = useToaster();
   return (
-    <Popover.Root>
-      <Popover.Trigger
-        className={`cardOptionsTrigger
-        shrink-0 sm:h-8 sm:w-5 h-5 w-8
-        bg-bg-card text-border
-        border sm:border-l-0 border-t-1 border-border sm:rounded-r-md sm:rounded-l-none rounded-b-md
-        sm:hover:border-r-2 hover:border-b-2 hover:border-y-2 hover:border-t-1
-        flex items-center justify-center`}
+    <Menu
+      trigger={
+        <div
+          className={`cardOptionsTrigger
+      shrink-0 sm:h-8 sm:w-5 h-5 w-8
+      bg-bg-card text-border
+      border sm:border-l-0 border-t-1 border-border sm:rounded-r-md sm:rounded-l-none rounded-b-md
+      sm:hover:border-r-2 hover:border-b-2 hover:border-y-2 hover:border-t-1
+      flex items-center justify-center`}
+        >
+          <MoreOptionsTiny className="sm:rotate-90" />
+        </div>
+      }
+    >
+      <MenuItem
+        onSelect={(e) => {
+          // TODO: Wire up delete card
+          toaster(DeleteCardToast);
+        }}
       >
-        <MoreOptionsTiny className="sm:rotate-90" />
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content align="end" sideOffset={6} className="cardOptionsMenu">
-          <Menu>
-            <MenuItem
-              onClick={(e) => {
-                // TODO: Wire up delete card
-                toaster(DeleteCardToast);
-              }}
-            >
-              Delete Page <DeleteSmall />
-            </MenuItem>
-          </Menu>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+        Delete Page <DeleteSmall />
+      </MenuItem>
+    </Menu>
   );
 };
 

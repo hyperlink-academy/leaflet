@@ -15,7 +15,6 @@ import { PermissionToken } from "src/replicache";
 import { revalidatePath } from "next/cache";
 
 export async function deleteDoc(permission_token: PermissionToken) {
-  console.log("Delete doc");
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
   await db.transaction(async (tx) => {
