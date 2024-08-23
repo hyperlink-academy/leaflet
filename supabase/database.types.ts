@@ -36,6 +36,8 @@ export type Database = {
     Tables: {
       email_subscriptions_to_entity: {
         Row: {
+          confirmation_code: string
+          confirmed: boolean
           created_at: string
           email: string
           entity: string
@@ -43,6 +45,8 @@ export type Database = {
           token: string
         }
         Insert: {
+          confirmation_code: string
+          confirmed?: boolean
           created_at?: string
           email: string
           entity: string
@@ -50,6 +54,8 @@ export type Database = {
           token: string
         }
         Update: {
+          confirmation_code?: string
+          confirmed?: boolean
           created_at?: string
           email?: string
           entity?: string
@@ -174,38 +180,6 @@ export type Database = {
             columns: ["home_page"]
             isOneToOne: false
             referencedRelation: "permission_tokens"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pending_email_subscriptions_to_entity: {
-        Row: {
-          code: string
-          created_at: string
-          email: string
-          entity: string
-          id: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          email: string
-          entity: string
-          id?: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          email?: string
-          entity?: string
-          id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pending_subscriptions_to_entity_entity_fkey"
-            columns: ["entity"]
-            isOneToOne: false
-            referencedRelation: "entities"
             referencedColumns: ["id"]
           },
         ]

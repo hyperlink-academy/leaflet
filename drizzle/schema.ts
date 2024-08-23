@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, text, bigint, foreignKey, uuid, timestamp, jsonb, primaryKey, boolean } from "drizzle-orm/pg-core"
+import { pgTable, pgEnum, text, bigint, foreignKey, uuid, timestamp, boolean, jsonb, primaryKey } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const aal_level = pgEnum("aal_level", ['aal1', 'aal2', 'aal3'])
@@ -31,18 +31,20 @@ export const entity_sets = pgTable("entity_sets", {
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 });
 
+export const email_subscriptions_to_entity = pgTable("email_subscriptions_to_entity", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	entity: uuid("entity").notNull().references(() => entities.id, { onDelete: "cascade" } ),
+	email: text("email").notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
+	confirmed: boolean("confirmed").default(false).notNull(),
+	confirmation_code: text("confirmation_code").notNull(),
+});
+
 export const identities = pgTable("identities", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	home_page: uuid("home_page").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
-});
-
-export const email_subscriptions_to_entity = pgTable("email_subscriptions_to_entity", {
-	id: uuid("id").defaultRandom().primaryKey().notNull(),
-	entity: uuid("entity").notNull().references(() => entities.id),
-	email: text("email").notNull(),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
 });
 
 export const permission_tokens = pgTable("permission_tokens", {
@@ -59,14 +61,6 @@ export const facts = pgTable("facts", {
 	updated_at: timestamp("updated_at", { mode: 'string' }),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	version: bigint("version", { mode: "number" }).default(0).notNull(),
-});
-
-export const pending_email_subscriptions_to_entity = pgTable("pending_email_subscriptions_to_entity", {
-	id: uuid("id").defaultRandom().primaryKey().notNull(),
-	entity: uuid("entity").notNull().references(() => entities.id, { onDelete: "cascade" } ),
-	email: text("email").notNull(),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	code: text("code").notNull(),
 });
 
 export const permission_token_rights = pgTable("permission_token_rights", {

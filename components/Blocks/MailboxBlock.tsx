@@ -20,6 +20,7 @@ import { getBlocksAsHTML } from "src/utils/getBlocksAsHTML";
 import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 import {
   addSubscription,
+  removeSubscription,
   unsubscribe,
   useSubscriptionStatus,
 } from "src/hooks/useSubscriptionStatus";
@@ -153,10 +154,10 @@ export const MailboxBlock = (props: BlockProps) => {
       <div className="flex gap-3 items-center justify-between">
         {
           <>
-            {!isSubscribed ? (
+            {!isSubscribed?.confirmed ? (
               <SubscribePopover
                 entityID={props.entityID}
-                role="author"
+                unconfirmed={!!isSubscribed && !isSubscribed.confirmed}
                 parent={props.parent}
               />
             ) : (
@@ -306,19 +307,23 @@ const MailboxInfo = (props: { subscriber?: boolean }) => {
 
 const SubscribePopover = (props: {
   entityID: string;
-  role: "author" | "reader";
   parent: string;
+  unconfirmed: boolean;
 }) => {
   return (
     <Popover
       className="max-w-sm"
-      trigger={<div className="font-bold text-accent-contrast">Subscribe</div>}
+      trigger={
+        <div className="font-bold text-accent-contrast">
+          {props.unconfirmed ? "Confirm" : "Subscribe"}
+        </div>
+      }
       content={
         <div className="text-secondary flex flex-col gap-2 py-1">
           <SubscribeForm
             compact
             entityID={props.entityID}
-            role={props.role}
+            role="author"
             parent={props.parent}
           />
         </div>
@@ -338,15 +343,10 @@ const SubscribeForm = (props: {
   let [email, setEmail] = useState("");
   let [sms, setSMS] = useState("");
 
-  let [state, setState] = useState<
-    { state: "normal" } | { state: "confirm"; email: string }
-  >({ state: "normal" });
-  let subscriptionStatus = useSubscriptionStatus(props.entityID);
-  let { permission_token } = useReplicache();
-  let [subscriptionID, setSubscriptionID] = useState("");
+  let subscription = useSubscriptionStatus(props.entityID);
   let [code, setCode] = useState("");
-  let { rootEntity } = useReplicache();
-  if (state.state === "confirm") {
+  let { permission_token } = useReplicache();
+  if (subscription && !subscription.confirmed) {
     return (
       <div className="flex flex-col gap-3 justify-center text-center ">
         <div className="font-bold text-secondary  ">
@@ -355,7 +355,7 @@ const SubscribeForm = (props: {
             className="italic"
             style={{ fontFamily: "var(--font-quattro)" }}
           >
-            {state.email}
+            {subscription.email}
           </code>{" "}
           here!
         </div>
@@ -364,9 +364,8 @@ const SubscribeForm = (props: {
             onSubmit={async (e) => {
               e.preventDefault();
               let result = await confirmEmailSubscription(
-                subscriptionID,
+                subscription.id,
                 code,
-                permission_token,
               );
 
               let rect = document
@@ -384,7 +383,7 @@ const SubscribeForm = (props: {
                 });
                 return;
               }
-              addSubscription(result);
+              addSubscription(result.subscription);
             }}
             className="mailboxConfirmCodeInput flex gap-2 items-center mx-auto"
           >
@@ -402,7 +401,7 @@ const SubscribeForm = (props: {
 
           <button
             onMouseDown={() => {
-              setState({ state: "normal" });
+              removeSubscription(subscription);
               setEmail("");
             }}
             className="text-accent-contrast hover:underline text-sm"
@@ -422,22 +421,37 @@ const SubscribeForm = (props: {
             let subscriptionID = await subscribeToMailboxWithEmail(
               props.entityID,
               email,
-              rootEntity,
+              permission_token,
             );
-            if (subscriptionID) setSubscriptionID(subscriptionID?.id);
-            setState({ state: "confirm", email });
+            if (subscriptionID) addSubscription(subscriptionID);
           }}
           className={`mailboxSubscribeForm flex sm:flex-row flex-col ${props.compact && "sm:flex-col sm:gap-2"} gap-2 sm:gap-3 items-center place-self-center mx-auto`}
         >
           <div className="mailboxChannelInput flex gap-2 border border-border-light bg-bg-card rounded-md py-1 px-2 grow max-w-72 ">
-            <input
-              value={email}
-              type="email"
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full appearance-none focus:outline-none bg-transparent max-w-none "
-              size={100}
-              placeholder="youremail@email.com"
+            <ChannelSelector
+              channel={channel}
+              setChannel={(channel) => {
+                setChannel(channel);
+              }}
             />
+            <Separator classname="h-6" />
+            {channel === "email" ? (
+              <input
+                value={email}
+                type="email"
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full appearance-none focus:outline-none bg-transparent"
+                placeholder="youremail@email.com"
+              />
+            ) : (
+              <input
+                value={sms}
+                type="tel"
+                onChange={(e) => setSMS(e.target.value)}
+                className="w-full appearance-none focus:outline-none bg-transparent"
+                placeholder="123-456-7890"
+              />
+            )}
           </div>
           <ButtonPrimary type="submit">Subscribe!</ButtonPrimary>
         </form>
@@ -482,10 +496,7 @@ const ChannelSelector = (props: {
     </Menu>
   );
 };
-export const DraftPostOptions = (props: {
-  parentID: string;
-  mailboxEntity: string;
-}) => {
+export const DraftPostOptions = (props: { mailboxEntity: string }) => {
   let toaster = useToaster();
   let draft = useEntity(props.mailboxEntity, "mailbox/draft");
   let { rep, permission_token } = useReplicache();
@@ -530,12 +541,6 @@ export const DraftPostOptions = (props: {
             newBlockEntity: v7(),
             archiveEntity: v7(),
           });
-
-          useUIState.getState().closeCard(draft.data.value);
-          if (archive) {
-            useUIState.getState().openCard(props.parentID, archive.data.value);
-            if (rep) focusCard(archive.data.value, rep, "focusFirstBlock");
-          }
 
           toaster({
             content: <div className="font-bold">Sent Post to Readers!</div>,

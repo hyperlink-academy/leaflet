@@ -4,10 +4,10 @@ import * as base64 from "base64-js";
 import { createServerClient } from "@supabase/ssr";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { pending_email_subscriptions_to_entity } from "drizzle/schema";
+import { email_subscriptions_to_entity } from "drizzle/schema";
 import postgres from "postgres";
 import { getBlocksWithTypeLocal } from "src/hooks/queries/useBlocks";
-import { Fact } from "src/replicache";
+import { Fact, PermissionToken } from "src/replicache";
 import { Attributes } from "src/replicache/attributes";
 import { Database } from "supabase/database.types";
 import * as Y from "yjs";
@@ -35,32 +35,30 @@ const generateCode = () => {
 export async function subscribeToMailboxWithEmail(
   entity: string,
   email: string,
-  root_entity: string,
+  token: PermissionToken,
 ) {
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
   let newCode = generateCode();
   let subscription = await db.transaction(async (tx) => {
     let existingEmail = await db
-      .select({
-        id: pending_email_subscriptions_to_entity.id,
-        code: pending_email_subscriptions_to_entity.code,
-      })
-      .from(pending_email_subscriptions_to_entity)
+      .select()
+      .from(email_subscriptions_to_entity)
       .where(
         and(
-          eq(pending_email_subscriptions_to_entity.entity, entity),
-          eq(pending_email_subscriptions_to_entity.email, email),
+          eq(email_subscriptions_to_entity.entity, entity),
+          eq(email_subscriptions_to_entity.email, email),
         ),
       );
     if (existingEmail[0]) return existingEmail[0];
     if (existingEmail.length === 0) {
       let newSubscription = await tx
-        .insert(pending_email_subscriptions_to_entity)
+        .insert(email_subscriptions_to_entity)
         .values({
+          token: token.id,
           entity,
           email,
-          code: newCode,
+          confirmation_code: newCode,
         })
         .returning();
       return newSubscription[0];
@@ -76,11 +74,11 @@ export async function subscribeToMailboxWithEmail(
     },
     body: JSON.stringify({
       From: "Leaflet Subscriptions <subscriptions@leaflet.pub>",
-      Subject: `Your confirmation code is ${subscription.code}`,
+      Subject: `Your confirmation code is ${subscription.confirmation_code}`,
       To: email,
-      TextBody: `Paste this code to confirm your subscription to a mailbox in ${await getPageTitle(root_entity)}:
+      TextBody: `Paste this code to confirm your subscription to a mailbox in ${await getPageTitle(token.root_entity)}:
 
-${subscription.code}
+${subscription.confirmation_code}
       `,
     }),
   });

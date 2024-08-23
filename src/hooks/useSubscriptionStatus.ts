@@ -3,7 +3,12 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import useSWR, { mutate } from "swr";
 
-type Subscription = { id: string; email: string; entity: string };
+type Subscription = {
+  id: string;
+  email: string;
+  entity: string;
+  confirmed: boolean;
+};
 type SubscriptionStorage = {
   version: number;
   subscriptions: Array<Subscription>;
@@ -23,7 +28,13 @@ export function useSubscriptionStatus(entityID: string) {
     let entity = params.get("entity");
     let email = params.get("email");
     if (!entity || !email) return;
-    addSubscription({ id: sub_id, email: email, entity: entity });
+    //How do I get subscribed state here huh?
+    addSubscription({
+      id: sub_id,
+      email: email,
+      entity: entity,
+      confirmed: true,
+    });
 
     const url = new URL(window.location.href);
     url.searchParams.delete("sub_id");
@@ -45,17 +56,17 @@ export function getSubscriptions() {
 
 export function addSubscription(s: Subscription) {
   let subscriptions = getSubscriptions();
-  if (subscriptions.find((d) => d.id === s.id)) return;
-  subscriptions.push(s);
+  let newSubscriptions = subscriptions.filter((d) => d.id !== s.id);
+  newSubscriptions.push(s);
   let newValue: SubscriptionStorage = {
     version: 1,
-    subscriptions: subscriptions,
+    subscriptions: newSubscriptions,
   };
   window.localStorage.setItem(key, JSON.stringify(newValue));
-  mutate("subscriptions", subscriptions, false);
+  mutate("subscriptions", newSubscriptions, false);
 }
 
-export async function unsubscribe(s: Subscription) {
+export function removeSubscription(s: Subscription) {
   let subscriptions = getSubscriptions();
   let newDocs = subscriptions.filter((d) => d.id !== s.id);
   let newValue: SubscriptionStorage = {
@@ -63,8 +74,12 @@ export async function unsubscribe(s: Subscription) {
     subscriptions: newDocs,
   };
   // Call the unsubscribe action
-  await deleteSubscription(s.id);
 
   window.localStorage.setItem(key, JSON.stringify(newValue));
   mutate("subscriptions", newDocs, false);
+}
+
+export async function unsubscribe(s: Subscription) {
+  removeSubscription(s);
+  await deleteSubscription(s.id);
 }

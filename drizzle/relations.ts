@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { entity_sets, entities, permission_tokens, identities, email_subscriptions_to_entity, facts, pending_email_subscriptions_to_entity, permission_token_rights } from "./schema";
+import { entity_sets, entities, email_subscriptions_to_entity, permission_tokens, identities, facts, permission_token_rights } from "./schema";
 
 export const entitiesRelations = relations(entities, ({one, many}) => ({
 	entity_set: one(entity_sets, {
@@ -9,28 +9,10 @@ export const entitiesRelations = relations(entities, ({one, many}) => ({
 	email_subscriptions_to_entities: many(email_subscriptions_to_entity),
 	permission_tokens: many(permission_tokens),
 	facts: many(facts),
-	pending_email_subscriptions_to_entities: many(pending_email_subscriptions_to_entity),
 }));
 
 export const entity_setsRelations = relations(entity_sets, ({many}) => ({
 	entities: many(entities),
-	permission_token_rights: many(permission_token_rights),
-}));
-
-export const identitiesRelations = relations(identities, ({one}) => ({
-	permission_token: one(permission_tokens, {
-		fields: [identities.home_page],
-		references: [permission_tokens.id]
-	}),
-}));
-
-export const permission_tokensRelations = relations(permission_tokens, ({one, many}) => ({
-	identities: many(identities),
-	email_subscriptions_to_entities: many(email_subscriptions_to_entity),
-	entity: one(entities, {
-		fields: [permission_tokens.root_entity],
-		references: [entities.id]
-	}),
 	permission_token_rights: many(permission_token_rights),
 }));
 
@@ -45,16 +27,26 @@ export const email_subscriptions_to_entityRelations = relations(email_subscripti
 	}),
 }));
 
-export const factsRelations = relations(facts, ({one}) => ({
+export const permission_tokensRelations = relations(permission_tokens, ({one, many}) => ({
+	email_subscriptions_to_entities: many(email_subscriptions_to_entity),
+	identities: many(identities),
 	entity: one(entities, {
-		fields: [facts.entity],
+		fields: [permission_tokens.root_entity],
 		references: [entities.id]
+	}),
+	permission_token_rights: many(permission_token_rights),
+}));
+
+export const identitiesRelations = relations(identities, ({one}) => ({
+	permission_token: one(permission_tokens, {
+		fields: [identities.home_page],
+		references: [permission_tokens.id]
 	}),
 }));
 
-export const pending_email_subscriptions_to_entityRelations = relations(pending_email_subscriptions_to_entity, ({one}) => ({
+export const factsRelations = relations(facts, ({one}) => ({
 	entity: one(entities, {
-		fields: [pending_email_subscriptions_to_entity.entity],
+		fields: [facts.entity],
 		references: [entities.id]
 	}),
 }));
