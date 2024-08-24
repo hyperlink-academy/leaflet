@@ -24,7 +24,7 @@ export const DocOptions = (props: {
             mutate("docs");
           }}
         >
-          Remove from your home{" "}
+          Hide from home{" "}
         </MenuItem>
         <MenuItem
           onSelect={(e) => {
