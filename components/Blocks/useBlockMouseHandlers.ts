@@ -14,6 +14,11 @@ export function useBlockMouseHandlers(props: Block) {
     (e: MouseEvent) => {
       useSelectingMouse.setState({ start: props.value });
       if (e.shiftKey) {
+        if (
+          useUIState.getState().selectedBlock[0].value === props.value &&
+          useUIState.getState().selectedBlock.length === 1
+        )
+          return;
         e.preventDefault();
         useUIState.getState().addBlockToSelection(props);
       } else useUIState.getState().setSelectedBlock(props);
