@@ -83,7 +83,7 @@ export const DocPreview = (props: {
         )}
         {state === "normal" && (
           <div className="flex justify-end pt-1">
-            <DocOptions doc_id={props.doc_id} setState={setState} />
+            <DocOptions doc={props.token} setState={setState} />
           </div>
         )}
       </ThemeProvider>

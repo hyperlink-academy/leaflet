@@ -16,6 +16,7 @@ export function DocsList() {
       <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-8 gap-x-4 sm:gap-6 grow">
         {docs
           .sort((a, b) => (a.added_at > b.added_at ? -1 : 1))
+          .filter((d) => !d.hidden)
           .map(({ token: doc }) => (
             <ReplicacheProvider
               key={doc.id}

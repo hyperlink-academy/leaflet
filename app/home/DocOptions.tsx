@@ -1,9 +1,12 @@
 "use client";
 import { DeleteSmall, MoreOptionsTiny } from "components/Icons";
 import { Menu, MenuItem } from "components/Layout";
+import { PermissionToken } from "src/replicache";
+import { mutate } from "swr";
+import { hideDoc, removeDocFromHome } from "./storage";
 
 export const DocOptions = (props: {
-  doc_id: string;
+  doc: PermissionToken;
   setState: (s: "normal" | "deleting") => void;
 }) => {
   return (
@@ -15,6 +18,14 @@ export const DocOptions = (props: {
           </div>
         }
       >
+        <MenuItem
+          onSelect={() => {
+            hideDoc(props.doc);
+            mutate("docs");
+          }}
+        >
+          Remove from your home{" "}
+        </MenuItem>
         <MenuItem
           onSelect={(e) => {
             props.setState("deleting");
