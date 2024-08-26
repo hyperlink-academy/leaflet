@@ -1,5 +1,4 @@
 import { useEntity, useReplicache } from "src/replicache";
-import { CloseTiny, TrashSmall } from "components/Icons";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useUIState } from "src/useUIState";
 
@@ -55,22 +54,6 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
           backgroundPosition: "center",
         }}
       />
-
-      {permission && (
-        <button
-          className="absolute p-1 top-0.5 right-0.5 hover:text-accent-contrast text-secondary sm:hidden sm:group-hover/linkBlock:block"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            rep &&
-              rep.mutate.removeBlock({
-                blockEntity: props.entityID,
-              });
-          }}
-        >
-          <TrashSmall />
-        </button>
-      )}
     </a>
   );
 };

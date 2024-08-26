@@ -11,7 +11,6 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
-import { CloseTiny, TrashSmall } from "components/Icons";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useBlocks } from "src/hooks/queries/useBlocks";
@@ -150,17 +149,6 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
             </div>
             {props.renderPreview && <CardPreview entityID={cardEntity} />}
           </div>
-          {permission && (
-            <button
-              className="absolute p-1 top-0.5 right-0.5 hover:text-accent-contrast text-secondary sm:hidden sm:group-hover/cardBlock:block z-10"
-              onClick={(e) => {
-                e.stopPropagation();
-                setAreYouSure(true);
-              }}
-            >
-              <TrashSmall />
-            </button>
-          )}
         </>
       )}
     </div>

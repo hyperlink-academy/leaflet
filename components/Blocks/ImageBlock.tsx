@@ -3,9 +3,7 @@
 import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps } from "components/Blocks";
 import { useUIState } from "src/useUIState";
-import { theme } from "tailwind.config";
-import { CloseContrastSmall } from "components/Icons";
-import useMeasure from "react-use-measure";
+
 import { useEntitySetContext } from "components/EntitySetProvider";
 
 export function ImageBlock(props: BlockProps) {
@@ -22,19 +20,6 @@ export function ImageBlock(props: BlockProps) {
 
   return (
     <div className="relative group/image flex w-full justify-center">
-      {permission && (
-        <button
-          className={`absolute right-2 top-2 z-10 ${selected ? "block" : "hidden group-hover/image:block"}`}
-          onClick={() => {
-            rep?.mutate.removeBlock({ blockEntity: props.entityID });
-          }}
-        >
-          <CloseContrastSmall
-            fill={theme.colors.primary}
-            stroke={theme.colors["bg-card"]}
-          />
-        </button>
-      )}
       <img
         onClick={() => useUIState.getState().setSelectedBlock(props)}
         alt={""}
