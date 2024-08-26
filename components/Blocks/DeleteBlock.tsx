@@ -4,6 +4,8 @@ import { useUIState } from "src/useUIState";
 import { focusBlock } from ".";
 import { ButtonPrimary } from "components/Buttons";
 import { CloseTiny } from "components/Icons";
+import { getBlocksWithType } from "src/hooks/queries/useBlocks";
+import { scanIndex } from "src/replicache/utils";
 
 export const AreYouSure = (props: {
   entityID: string;
@@ -12,9 +14,11 @@ export const AreYouSure = (props: {
   compact?: boolean;
 }) => {
   let { rep } = useReplicache();
-  let card = useEntity(props.entityID, "block/card");
+  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let card = useEntity(focusedBlock?.entityID || null, "block/card");
   let cardID = card ? card.data.value : props.entityID;
-  let type = useEntity(props.entityID, "block/type")?.data.value;
+  let type = useEntity(focusedBlock?.entityID || null, "block/type")?.data
+    .value;
 
   return (
     <div
@@ -30,13 +34,52 @@ export const AreYouSure = (props: {
         </div>
         <div className="flex gap-2">
           <ButtonPrimary
+            autoFocus
             compact
-            onClick={(e) => {
+            onClick={async (e) => {
+              if (!focusedBlock || focusedBlock?.type === "card") return;
               e.stopPropagation();
               // This only handles the case where the literal delete button is clicked.
               // In cases where the backspace button is pressed, each block that uses the AreYouSure
               // has an event listener that handles the backspace key press.
+
               useUIState.getState().closeCard(cardID);
+
+              let siblings =
+                (await rep?.query((tx) =>
+                  getBlocksWithType(tx, focusedBlock?.parent),
+                )) || [];
+
+              let nextBlock =
+                siblings?.[
+                  siblings.findIndex((s) => s.value === focusedBlock.entityID) -
+                    1
+                ];
+
+              if (nextBlock) {
+                useUIState.getState().setSelectedBlock({
+                  value: nextBlock.value,
+                  parent: nextBlock.parent,
+                });
+                let nextBlockType = await rep?.query((tx) =>
+                  scanIndex(tx).eav(nextBlock.value, "block/type"),
+                );
+                if (!nextBlockType?.[0]) return;
+                if (
+                  nextBlockType[0]?.data.value === "text" ||
+                  nextBlockType[0]?.data.value === "heading"
+                ) {
+                  focusBlock(
+                    {
+                      value: nextBlock.value,
+                      type: "text",
+                      parent: nextBlock.parent,
+                    },
+                    { type: "end" },
+                  );
+                }
+              }
+              props.closeAreYouSure();
 
               rep &&
                 rep.mutate.removeBlock({

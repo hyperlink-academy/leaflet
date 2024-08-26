@@ -91,7 +91,7 @@ export const Toolbar = (props: { cardID: string; blockID: string }) => {
           ) : toolbarState === "heading" ? (
             <TextBlockTypeToolbar onClose={() => setToolbarState("default")} />
           ) : toolbarState === "block" ? (
-            <BlockToolbar blockID={props.blockID} />
+            <BlockToolbar />
           ) : null}
         </div>
         {toolbarState === "block" ? (

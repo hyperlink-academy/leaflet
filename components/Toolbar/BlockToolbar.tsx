@@ -9,9 +9,13 @@ import { metaKey } from "src/utils/metaKey";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { useUIState } from "src/useUIState";
 
-export const BlockToolbar = (props: { blockID: string }) => {
+export const BlockToolbar = () => {
   let { rep } = useReplicache();
-  let type = useEntity(props.blockID, "block/type")?.data.value;
+  let focusedBlock = useUIState((s) => s.focusedBlock);
+
+  let type = useEntity(focusedBlock?.entityID || null, "block/type")?.data
+    .value;
+
   const getSortedSelection = async () => {
     let selectedBlocks = useUIState.getState().selectedBlock;
     let siblings =
