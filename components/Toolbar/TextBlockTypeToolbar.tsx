@@ -162,7 +162,7 @@ export function keepFocus(entityID: string) {
 }
 
 export function TextBlockTypeButton(props: {
-  setToolbarState: (s: "header") => void;
+  setToolbarState: (s: "heading") => void;
   className?: string;
 }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);
@@ -172,7 +172,7 @@ export function TextBlockTypeButton(props: {
       className={`${props.className} w-8`}
       active
       onClick={() => {
-        props.setToolbarState("header");
+        props.setToolbarState("heading");
       }}
     >
       <BlockTypeIcon entityID={focusedBlock?.entityID} />

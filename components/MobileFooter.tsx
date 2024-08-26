@@ -10,7 +10,7 @@ export function MobileFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);
 
   return (
-    <Media mobile className="w-full z-10 -mt-6 touch-none">
+    <Media mobile className="mobileFooter w-full z-10 -mt-6 touch-none">
       {focusedBlock && focusedBlock.type == "block" ? (
         <div
           className="w-full z-10 p-2 flex bg-bg-card "

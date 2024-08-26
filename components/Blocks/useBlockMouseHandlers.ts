@@ -21,7 +21,16 @@ export function useBlockMouseHandlers(props: Block) {
           return;
         e.preventDefault();
         useUIState.getState().addBlockToSelection(props);
-      } else useUIState.getState().setSelectedBlock(props);
+      } else {
+        useUIState
+          .getState()
+          .setFocusedBlock({
+            type: "block",
+            entityID: props.value,
+            parent: props.parent,
+          });
+        useUIState.getState().setSelectedBlock(props);
+      }
     },
     [props],
   );

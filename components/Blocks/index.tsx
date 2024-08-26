@@ -526,6 +526,13 @@ export function focusBlock(
 ) {
   if (block.type !== "text" && block.type !== "heading") {
     useUIState.getState().setSelectedBlock(block);
+    useUIState
+      .getState()
+      .setFocusedBlock({
+        type: "block",
+        entityID: block.value,
+        parent: block.parent,
+      });
     return true;
   }
   let nextBlockID = block.value;

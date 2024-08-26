@@ -18,7 +18,7 @@ export function DesktopCardFooter(props: { cardID: string }) {
         focusedBlock.type === "block" &&
         focusedBlockParentID === props.cardID && (
           <div
-            className="pointer-events-auto w-fit mx-auto py-1 px-3 bg-bg-card border border-border rounded-full shadow-sm"
+            className="pointer-events-auto w-fit mx-auto py-1 px-3 h-9 bg-bg-card border border-border rounded-full shadow-sm"
             onMouseDown={(e) => {
               if (e.currentTarget === e.target) e.preventDefault();
             }}
