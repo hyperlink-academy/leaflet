@@ -218,7 +218,7 @@ const MailboxReaderView = (props: { entityID: string; parent: string }) => {
         }}
       >
         <div className="flex flex-col w-full gap-2 p-4">
-          {!isSubscribed ? (
+          {!isSubscribed?.confirmed ? (
             <>
               <SubscribeForm
                 entityID={props.entityID}
