@@ -23,6 +23,7 @@ import { HomeButton } from "./HomeButton";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { DraftPostOptions } from "./Blocks/MailboxBlock";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export function Cards(props: { rootCard: string }) {
   let openCards = useUIState((s) => s.openCards);
@@ -98,6 +99,7 @@ function Card(props: { entityID: string; first?: boolean }) {
       ? focusedElement.entityID
       : focusedElement?.parent;
   let isFocused = focusedCardID === props.entityID;
+  let isMobile = useIsMobile();
 
   return (
     <>
@@ -113,6 +115,7 @@ function Card(props: { entityID: string; first?: boolean }) {
         <div
           onMouseDown={(e) => {
             if (e.defaultPrevented) return;
+            if (!isMobile) return;
             if (rep) {
               focusCard(props.entityID, rep);
             }
@@ -241,7 +244,7 @@ const DeleteCardToast = {
 export async function focusCard(
   cardID: string,
   rep: Replicache<ReplicacheMutators>,
-  focusFirstBlock?: "focusFirstBlock",
+  focusFirstBlock?: "focusFirstBlock"
 ) {
   // if this card is already focused,
   let focusedBlock = useUIState.getState().focusedBlock;
