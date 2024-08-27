@@ -86,7 +86,10 @@ export const ListToolbar = (props: { onClose: () => void }) => {
   let { rep } = useReplicache();
 
   useEffect(() => {
-    if (!isList?.data.value) props.onClose();
+    if (!isList?.data.value) {
+      let timeout = setTimeout(() => props.onClose(), 50);
+      return () => clearTimeout(timeout);
+    }
   }, [props, isList]);
 
   return (
