@@ -14,6 +14,7 @@ import { ListToolbar } from "./ListToolbar";
 import { HighlightToolbar } from "./HighlightToolbar";
 import { TextToolbar } from "./TextToolbar";
 import { BlockToolbar, DeleteBlockButton } from "./BlockToolbar";
+import { MultiSelectToolbar } from "./MultiSelectToolbar";
 
 export type ToolbarTypes =
   | "default"
@@ -22,7 +23,8 @@ export type ToolbarTypes =
   | "heading"
   | "list"
   | "linkBlock"
-  | "block";
+  | "block"
+  | "multiSelect";
 
 export const Toolbar = (props: { cardID: string; blockID: string }) => {
   let focusedBlock = useUIState((s) => s.focusedBlock);
@@ -38,6 +40,8 @@ export const Toolbar = (props: { cardID: string; blockID: string }) => {
     });
 
   let activeEditor = useEditorStates((s) => s.editorStates[props.blockID]);
+
+  let selectedBlocks = useUIState((s) => s.selectedBlock);
 
   useEffect(() => {
     if (toolbarState !== "default") return;
@@ -59,6 +63,14 @@ export const Toolbar = (props: { cardID: string; blockID: string }) => {
       setToolbarState("default");
     }
   }, [blockType]);
+
+  useEffect(() => {
+    if (selectedBlocks.length > 1) {
+      setToolbarState("multiSelect");
+    } else if (toolbarState === "multiSelect") {
+      setToolbarState("default");
+    }
+  }, [selectedBlocks.length, toolbarState]);
 
   return (
     <Tooltip.Provider>
@@ -92,14 +104,11 @@ export const Toolbar = (props: { cardID: string; blockID: string }) => {
             <TextBlockTypeToolbar onClose={() => setToolbarState("default")} />
           ) : toolbarState === "block" ? (
             <BlockToolbar />
+          ) : toolbarState === "multiSelect" ? (
+            <MultiSelectToolbar />
           ) : null}
         </div>
-        {toolbarState === "block" ? (
-          <DeleteBlockButton
-            blockID={props.blockID}
-            confirmDelete={blockType === "card" || blockType === "mailbox"}
-          />
-        ) : (
+        {toolbarState !== "multiSelect" && toolbarState !== "block" && (
           <button
             className="toolbarBackToDefault hover:text-accent-contrast"
             onClick={() => {

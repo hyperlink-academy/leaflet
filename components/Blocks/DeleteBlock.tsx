@@ -8,11 +8,12 @@ import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { scanIndex } from "src/replicache/utils";
 
 export const AreYouSure = (props: {
-  entityID: string;
+  entityID: string[] | string;
   onClick?: () => void;
   closeAreYouSure: () => void;
   compact?: boolean;
 }) => {
+  let entities = [props.entityID].flat();
   let { rep } = useReplicache();
   let focusedBlock = useUIState((s) => s.focusedBlock);
   let card = useEntity(focusedBlock?.entityID || null, "block/card");
@@ -29,7 +30,15 @@ export const AreYouSure = (props: {
       >
         <div className="text-center w-fit">
           Delete{" "}
-          {type === "card" ? <span>Page</span> : <span>Mailbox and Posts</span>}
+          {entities.length > 1 ? (
+            "Blocks"
+          ) : type === "card" ? (
+            <span>Page</span>
+          ) : type === "mailbox" ? (
+            <span>Mailbox and Posts</span>
+          ) : (
+            <span>Block</span>
+          )}
           ?{" "}
         </div>
         <div className="flex gap-2">
@@ -47,7 +56,7 @@ export const AreYouSure = (props: {
 
               let siblings =
                 (await rep?.query((tx) =>
-                  getBlocksWithType(tx, focusedBlock?.parent),
+                  getBlocksWithType(tx, focusedBlock?.parent)
                 )) || [];
 
               let nextBlock =
@@ -62,12 +71,11 @@ export const AreYouSure = (props: {
                   parent: nextBlock.parent,
                 });
                 let nextBlockType = await rep?.query((tx) =>
-                  scanIndex(tx).eav(nextBlock.value, "block/type"),
+                  scanIndex(tx).eav(nextBlock.value, "block/type")
                 );
-                if (!nextBlockType?.[0]) return;
                 if (
-                  nextBlockType[0]?.data.value === "text" ||
-                  nextBlockType[0]?.data.value === "heading"
+                  nextBlockType?.[0]?.data.value === "text" ||
+                  nextBlockType?.[0]?.data.value === "heading"
                 ) {
                   focusBlock(
                     {
@@ -75,16 +83,16 @@ export const AreYouSure = (props: {
                       type: "text",
                       parent: nextBlock.parent,
                     },
-                    { type: "end" },
+                    { type: "end" }
                   );
                 }
               }
               props.closeAreYouSure();
-
-              rep &&
-                rep.mutate.removeBlock({
-                  blockEntity: props.entityID,
+              entities.forEach((entity) => {
+                rep?.mutate.removeBlock({
+                  blockEntity: entity,
                 });
+              });
 
               props.onClick && props.onClick();
             }}
