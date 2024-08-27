@@ -7,11 +7,13 @@ export const useLongPress = (
 ) => {
   let longPressTimer = useRef<number>();
   let isLongPress = useRef(false);
-  let [isDown, setIsdown] = useState(false);
+  // Change isDown to store the starting position
+  let [startPosition, setStartPosition] = useState<{ x: number; y: number } | null>(null);
 
   let start = (e: React.MouseEvent) => {
     onMouseDown && onMouseDown(e);
-    setIsdown(true);
+    // Set the starting position
+    setStartPosition({ x: e.clientX, y: e.clientY });
     isLongPress.current = false;
     longPressTimer.current = window.setTimeout(() => {
       isLongPress.current = true;
@@ -19,23 +21,32 @@ export const useLongPress = (
     }, 500);
   };
 
-  useEffect(()=> {
-    if (isDown) {
+  useEffect(() => {
+    if (startPosition) {
       let listener = (e: MouseEvent) => {
-        end() 
-      }
+        // Calculate the distance moved
+        const distance = Math.sqrt(
+          Math.pow(e.clientX - startPosition.x, 2) + Math.pow(e.clientY - startPosition.y, 2)
+        );
+        // Only end if the distance is greater than 10 pixels
+        if (distance > 16) {
+          end();
+        }
+      };
       window.addEventListener("mousemove", listener);
-      return ()=> {
+      return () => {
         window.removeEventListener("mousemove", listener);
       };
     }
-  }, [isDown]);
+  }, [startPosition]);
 
   let end = () => {
-    setIsdown(false);
+    // Clear the starting position
+    setStartPosition(null);
     window.clearTimeout(longPressTimer.current);
     longPressTimer.current = undefined;
   };
+
   let click = (e: React.MouseEvent | React.PointerEvent) => {
     if (isLongPress.current) e.preventDefault();
     if (e.shiftKey) e.preventDefault();
