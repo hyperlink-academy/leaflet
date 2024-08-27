@@ -123,6 +123,7 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
             className="cardBlockContent w-full flex overflow-clip cursor-pointer"
             onClick={(e) => {
               if (e.isDefaultPrevented()) return;
+              if (e.shiftKey) return;
               e.preventDefault();
               e.stopPropagation();
               useUIState.getState().openCard(props.parent, cardEntity);

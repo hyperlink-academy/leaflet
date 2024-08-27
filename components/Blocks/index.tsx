@@ -261,7 +261,7 @@ function Block(props: BlockProps) {
   let actuallySelected = useUIState(
     (s) => !!s.selectedBlock.find((b) => b.value === props.entityID),
   );
-  let visuallySelected =
+  let hasSelectionUI =
     (!textBlocks[props.type] || selectedBlocks.length > 1) && actuallySelected;
 
   let nextBlockSelected = useUIState((s) =>
@@ -273,7 +273,7 @@ function Block(props: BlockProps) {
 
   let entity_set = useEntitySetContext();
   useEffect(() => {
-    if (!visuallySelected || !rep) return;
+    if (!hasSelectionUI || !rep) return;
     let r = rep;
     let listener = async (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
@@ -366,7 +366,7 @@ function Block(props: BlockProps) {
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [entity_set, visuallySelected, props, rep]);
+  }, [entity_set, hasSelectionUI, props, rep]);
 
   return (
     <div
@@ -374,7 +374,7 @@ function Block(props: BlockProps) {
       {...handlers}
       className="blockWrapper relative flex"
     >
-      {visuallySelected && selectedBlocks.length > 1 && (
+      {hasSelectionUI && selectedBlocks.length > 1 && (
         <div
           className={`
           blockSelectionBG pointer-events-none bg-border-light

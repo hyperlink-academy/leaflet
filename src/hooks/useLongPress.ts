@@ -21,6 +21,7 @@ export const useLongPress = (
   };
   let click = (e: React.MouseEvent | React.PointerEvent) => {
     if (isLongPress.current) e.preventDefault();
+    if (e.shiftKey) e.preventDefault();
   };
 
   useEffect(() => {

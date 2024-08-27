@@ -21,7 +21,6 @@ export function ImageBlock(props: BlockProps) {
   return (
     <div className="relative group/image flex w-full justify-center">
       <img
-        onClick={() => useUIState.getState().setSelectedBlock(props)}
         alt={""}
         src={
           image?.data.local && image.data.local !== rep?.clientID
