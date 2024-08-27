@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { create } from "zustand";
 import { useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import { getBlocksAsHTML } from "src/utils/getBlocksAsHTML";
 import { scanIndex } from "src/replicache/utils";
 import { Block, focusBlock } from "./Blocks";
 import { useEditorStates } from "src/state/useEditorState";
