@@ -15,6 +15,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { AreYouSure } from "./DeleteBlock";
+import { useLongPress } from "src/hooks/useLongPress";
 
 export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
   let { rep } = useReplicache();
@@ -23,14 +24,19 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
   let docMetadata = useDocMetadata(cardEntity);
   let permission = useEntitySetContext().permissions.write;
 
-  let isSelected = useUIState(
+  let isMultiSelected = useUIState(
     (s) =>
-      (props.type !== "text" || s.selectedBlock.length > 1) &&
+      s.selectedBlock.length > 1 &&
       s.selectedBlock.find((b) => b.value === props.entityID),
   );
+  let isSelected = useUIState(
+    (s) => s.selectedBlock[0]?.value === props.entityID,
+  );
+
   let isOpen = useUIState((s) => s.openCards).includes(cardEntity);
 
   let [areYouSure, setAreYouSure] = useState(false);
+
   useEffect(() => {
     if (!isSelected) {
       setAreYouSure(false);
@@ -57,6 +63,13 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
             focusBlock(props.previousBlock, { type: "end" });
         }
       }
+      if (e.key === "Escape" && permission && areYouSure) {
+        setAreYouSure(false);
+        focusBlock(
+          { type: "card", value: props.entityID, parent: props.parent },
+          { type: "start" },
+        );
+      }
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
@@ -66,6 +79,7 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
     isSelected,
     permission,
     props.entityID,
+    props.parent,
     props.previousBlock,
     rep,
   ]);
@@ -78,7 +92,13 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
         w-full h-[104px]
         bg-bg-card border shadow-sm outline outline-1 rounded-lg
         flex overflow-clip
-        ${isSelected ? "border-tertiary outline-tertiary " : isOpen ? "border-tertiary outline-transparent hover:outline-tertiary" : "border-border-light outline-transparent hover:outline-border-light"}
+        ${
+          isSelected || isMultiSelected
+            ? "border-tertiary outline-tertiary"
+            : isOpen
+              ? "border-border outline-transparent hover:outline-border-light"
+              : "border-border-light outline-transparent hover:outline-border-light"
+        }
         `}
       onKeyDown={(e) => {
         if (e.key === "Backspace" && permission) {
@@ -101,7 +121,8 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
         <>
           <div
             className="cardBlockContent w-full flex overflow-clip cursor-pointer"
-            onMouseDown={(e) => {
+            onClick={(e) => {
+              if (e.isDefaultPrevented()) return;
               e.preventDefault();
               e.stopPropagation();
               useUIState.getState().openCard(props.parent, cardEntity);

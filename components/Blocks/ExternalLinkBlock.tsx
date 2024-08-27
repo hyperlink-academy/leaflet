@@ -1,5 +1,4 @@
-import { useEntity, useReplicache } from "src/replicache";
-import { useEntitySetContext } from "components/EntitySetProvider";
+import { useEntity } from "src/replicache";
 import { useUIState } from "src/useUIState";
 
 export const ExternalLinkBlock = (props: { entityID: string }) => {
@@ -8,11 +7,15 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
   let description = useEntity(props.entityID, "link/description");
   let url = useEntity(props.entityID, "link/url");
 
-  let selected = useUIState((s) =>
+  let isSelected = useUIState((s) =>
     s.selectedBlock.find((b) => b.value === props.entityID),
   );
-  let permission = useEntitySetContext().permissions.write;
-  let { rep } = useReplicache();
+
+  let isMultiSelected = useUIState(
+    (s) =>
+      s.selectedBlock.length > 1 &&
+      s.selectedBlock.find((b) => b.value === props.entityID),
+  );
 
   return (
     <a
@@ -21,8 +24,8 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
       className={`
         externalLinkBlock flex relative group/linkBlock
         h-[104px] w-full bg-bg-card overflow-hidden text-primary hover:no-underline no-underline
-        border  hover:border-accent-contrast outline outline-1 hover:outline-accent-contrast rounded-lg shadow-sm
-        ${selected ? "outline-accent-contrast border-accent-contrast" : "outline-transparent border-border-light"}
+        border  hover:border-accent-contrast outline outline-1 -outline-offset-0 rounded-lg shadow-sm
+        ${isSelected || isMultiSelected ? "outline-accent-contrast border-accent-contrast" : "outline-transparent border-border-light"}
         `}
     >
       <div className="pt-2 pb-2 px-3 grow min-w-0">
@@ -40,7 +43,7 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
           </div>
           <div
             style={{ wordBreak: "break-word" }} // better than tailwind break-all!
-            className={`min-w-0 w-full line-clamp-1 text-xs italic group-hover/linkBlock:text-accent-contrast ${selected ? "text-accent-contrast" : "text-tertiary"}`}
+            className={`min-w-0 w-full line-clamp-1 text-xs italic group-hover/linkBlock:text-accent-contrast ${isSelected ? "text-accent-contrast" : "text-tertiary"}`}
           >
             {url?.data.value}
           </div>

@@ -20,6 +20,7 @@ import { v7 } from "uuid";
 import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
 import { indent, outdent } from "src/utils/list-operations";
 import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
+import { useLongPress } from "src/hooks/useLongPress";
 export type Block = {
   factID: string;
   parent: string;
@@ -233,13 +234,25 @@ export type BlockProps = {
   nextPosition: string | null;
 } & Block;
 
-let textBlocks: { [k in Fact<"block/type">["data"]["value"]]?: boolean } = {
+export const textBlocks: {
+  [k in Fact<"block/type">["data"]["value"]]?: boolean;
+} = {
   text: true,
   heading: true,
 };
 
 function Block(props: BlockProps) {
   let { rep } = useReplicache();
+  let mouseHandlers = useBlockMouseHandlers(props);
+
+  let { isLongPress, handlers } = useLongPress(() => {
+    if (isLongPress.current) {
+      focusBlock(
+        { type: "card", value: props.entityID, parent: props.parent },
+        { type: "start" },
+      );
+    }
+  }, mouseHandlers.onMouseDown);
 
   let first = props.previousBlock === null;
 
@@ -248,7 +261,7 @@ function Block(props: BlockProps) {
   let actuallySelected = useUIState(
     (s) => !!s.selectedBlock.find((b) => b.value === props.entityID),
   );
-  let selected =
+  let visuallySelected =
     (!textBlocks[props.type] || selectedBlocks.length > 1) && actuallySelected;
 
   let nextBlockSelected = useUIState((s) =>
@@ -260,7 +273,7 @@ function Block(props: BlockProps) {
 
   let entity_set = useEntitySetContext();
   useEffect(() => {
-    if (!selected || !rep) return;
+    if (!visuallySelected || !rep) return;
     let r = rep;
     let listener = async (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
@@ -353,14 +366,15 @@ function Block(props: BlockProps) {
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [entity_set, selected, props, rep]);
-  let mouseHandlers = useBlockMouseHandlers(props);
-
-  let focusedElement = useUIState((s) => s.focusedBlock);
+  }, [entity_set, visuallySelected, props, rep]);
 
   return (
-    <div {...mouseHandlers} className="blockWrapper relative flex">
-      {selected && selectedBlocks.length > 1 && (
+    <div
+      {...mouseHandlers}
+      {...handlers}
+      className="blockWrapper relative flex"
+    >
+      {visuallySelected && selectedBlocks.length > 1 && (
         <div
           className={`
           blockSelectionBG pointer-events-none bg-border-light
@@ -526,13 +540,11 @@ export function focusBlock(
 ) {
   if (block.type !== "text" && block.type !== "heading") {
     useUIState.getState().setSelectedBlock(block);
-    useUIState
-      .getState()
-      .setFocusedBlock({
-        type: "block",
-        entityID: block.value,
-        parent: block.parent,
-      });
+    useUIState.getState().setFocusedBlock({
+      type: "block",
+      entityID: block.value,
+      parent: block.parent,
+    });
     return true;
   }
   let nextBlockID = block.value;
