@@ -59,6 +59,26 @@ async function renderBlock(
     let headingLevel = await scanIndex(tx).eav(b.value, "block/heading-level");
     wrapper = "h" + headingLevel[0].data.value;
   }
+  if (b.type === "link") {
+    let [url] = await scanIndex(tx).eav(b.value, "link/url");
+    let [title] = await scanIndex(tx).eav(b.value, "link/title");
+    if (!url) return "";
+    return renderToStaticMarkup(
+      <a href={url.data.value} target="_blank">
+        {title.data.value}
+      </a>,
+    );
+  }
+  if (b.type === "card" || b.type === "mailbox") {
+    return renderToStaticMarkup(
+      <div>
+        <a href={window.location.href} target="_blank">
+          View {b.type}
+        </a>{" "}
+        in Leaflet!
+      </div>,
+    );
+  }
   let value = (await scanIndex(tx).eav(b.value, "block/text"))[0];
   if (!value)
     return ignoreWrapper ? "" : `<${wrapper || "p"}></${wrapper || "p"}>`;
