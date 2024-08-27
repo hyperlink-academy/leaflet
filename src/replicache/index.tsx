@@ -164,7 +164,7 @@ export function useEntity<A extends keyof typeof Attributes>(
 }
 
 export function useReferenceToEntity<
-  A extends keyof FilterAttributes<{ type: "reference" }>,
+  A extends keyof FilterAttributes<{ type: "reference" | "ordered-reference" }>,
 >(attribute: A, entity: string) {
   let { rep, initialFacts } = useReplicache();
   let fallbackData = useMemo(

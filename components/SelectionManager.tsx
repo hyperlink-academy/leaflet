@@ -15,6 +15,7 @@ import { addShortcut } from "src/shortcuts";
 import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 import { elementId } from "src/utils/elementId";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
+import { copySelection } from "src/utils/copySelection";
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
@@ -449,16 +450,7 @@ export function SelectionManager() {
       if (e.key === "c" && (e.metaKey || e.ctrlKey)) {
         if (!rep) return;
         let [sortedSelection] = await getSortedSelection();
-        let html = await getBlocksAsHTML(rep, sortedSelection);
-        const data = [
-          new ClipboardItem({
-            ["text/html"]: new Blob([html.join("\n")], { type: "text/html" }),
-            "text/plain": new Blob([htmlToMarkdown(html.join("\n"))], {
-              type: "text/plain",
-            }),
-          }),
-        ];
-        await navigator.clipboard.write(data);
+        await copySelection(rep, sortedSelection);
       }
     };
     window.addEventListener("keydown", listener);

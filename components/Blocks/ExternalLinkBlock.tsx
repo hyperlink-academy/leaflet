@@ -1,6 +1,4 @@
-import { useEntity, useReplicache } from "src/replicache";
-import { CloseTiny, TrashSmall } from "components/Icons";
-import { useEntitySetContext } from "components/EntitySetProvider";
+import { useEntity } from "src/replicache";
 import { useUIState } from "src/useUIState";
 
 export const ExternalLinkBlock = (props: { entityID: string }) => {
@@ -9,11 +7,9 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
   let description = useEntity(props.entityID, "link/description");
   let url = useEntity(props.entityID, "link/url");
 
-  let selected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
+  let isSelected = useUIState((s) =>
+    s.selectedBlock.find((b) => b.value === props.entityID)
   );
-  let permission = useEntitySetContext().permissions.write;
-  let { rep } = useReplicache();
 
   return (
     <a
@@ -22,8 +18,8 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
       className={`
         externalLinkBlock flex relative group/linkBlock
         h-[104px] w-full bg-bg-card overflow-hidden text-primary hover:no-underline no-underline
-        border  hover:border-accent-contrast outline outline-1 hover:outline-accent-contrast rounded-lg shadow-sm
-        ${selected ? "outline-accent-contrast border-accent-contrast" : "outline-transparent border-border-light"}
+        border  hover:border-accent-contrast outline outline-1 -outline-offset-0 rounded-lg shadow-sm
+        ${isSelected ? "outline-accent-contrast border-accent-contrast" : "outline-transparent border-border-light"}
         `}
     >
       <div className="pt-2 pb-2 px-3 grow min-w-0">
@@ -41,7 +37,7 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
           </div>
           <div
             style={{ wordBreak: "break-word" }} // better than tailwind break-all!
-            className={`min-w-0 w-full line-clamp-1 text-xs italic group-hover/linkBlock:text-accent-contrast ${selected ? "text-accent-contrast" : "text-tertiary"}`}
+            className={`min-w-0 w-full line-clamp-1 text-xs italic group-hover/linkBlock:text-accent-contrast ${isSelected ? "text-accent-contrast" : "text-tertiary"}`}
           >
             {url?.data.value}
           </div>
@@ -55,22 +51,6 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
           backgroundPosition: "center",
         }}
       />
-
-      {permission && (
-        <button
-          className="absolute p-1 top-0.5 right-0.5 hover:text-accent-contrast text-secondary sm:hidden sm:group-hover/linkBlock:block"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            rep &&
-              rep.mutate.removeBlock({
-                blockEntity: props.entityID,
-              });
-          }}
-        >
-          <TrashSmall />
-        </button>
-      )}
     </a>
   );
 };

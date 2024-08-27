@@ -1,47 +1,35 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  BoldSmall,
-  CloseTiny,
-  ItalicSmall,
-  StrikethroughSmall,
-  HighlightSmall,
-  PopoverArrow,
-  ArrowRightTiny,
-} from "components/Icons";
-import { schema } from "components/Blocks/TextBlock/schema";
-import { TextDecorationButton } from "./TextDecorationButton";
-import {
-  keepFocus,
-  TextBlockTypeButton,
-  TextBlockTypeToolbar,
-} from "./TextBlockTypeToolbar";
-import { LinkButton, InlineLinkToolbar } from "./InlineLinkToolbar";
+import { CloseTiny, PopoverArrow } from "components/Icons";
+import { keepFocus, TextBlockTypeToolbar } from "./TextBlockTypeToolbar";
+import { InlineLinkToolbar } from "./InlineLinkToolbar";
 import { theme } from "../../tailwind.config";
 import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
-import { useReplicache } from "src/replicache";
+import { useEntity, useReplicache } from "src/replicache";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { Separator, ShortcutKey } from "components/Layout";
-import { metaKey } from "src/utils/metaKey";
-import { isMac } from "@react-aria/utils";
 import { addShortcut } from "src/shortcuts";
-import { ListButton, ListToolbar } from "./ListToolbar";
+import { ListToolbar } from "./ListToolbar";
 import { HighlightToolbar } from "./HighlightToolbar";
 import { TextToolbar } from "./TextToolbar";
+import { BlockToolbar, DeleteBlockButton } from "./BlockToolbar";
+import { MultiSelectToolbar } from "./MultiSelectToolbar";
 
 export type ToolbarTypes =
   | "default"
   | "highlight"
   | "link"
-  | "header"
+  | "heading"
   | "list"
-  | "linkBlock";
+  | "linkBlock"
+  | "block"
+  | "multiSelect";
 
 export const Toolbar = (props: { cardID: string; blockID: string }) => {
-  let { rep } = useReplicache();
   let focusedBlock = useUIState((s) => s.focusedBlock);
+
+  let blockType = useEntity(props.blockID, "block/type")?.data.value;
 
   let [toolbarState, setToolbarState] = useState<ToolbarTypes>("default");
 
@@ -52,6 +40,8 @@ export const Toolbar = (props: { cardID: string; blockID: string }) => {
     });
 
   let activeEditor = useEditorStates((s) => s.editorStates[props.blockID]);
+
+  let selectedBlocks = useUIState((s) => s.selectedBlock);
 
   useEffect(() => {
     if (toolbarState !== "default") return;
@@ -66,11 +56,26 @@ export const Toolbar = (props: { cardID: string; blockID: string }) => {
       removeShortcut();
     };
   }, [toolbarState]);
+  useEffect(() => {
+    if (blockType !== "heading" && blockType !== "text") {
+      setToolbarState("block");
+    } else {
+      setToolbarState("default");
+    }
+  }, [blockType]);
+
+  useEffect(() => {
+    if (selectedBlocks.length > 1) {
+      setToolbarState("multiSelect");
+    } else if (toolbarState === "multiSelect") {
+      setToolbarState("default");
+    }
+  }, [selectedBlocks.length, toolbarState]);
 
   return (
     <Tooltip.Provider>
-      <div className="flex items-center justify-between w-full gap-6">
-        <div className="flex gap-[6px] items-center grow">
+      <div className="toolbar flex items-center justify-between w-full gap-6">
+        <div className="toolbarOptions flex gap-[6px] items-center grow">
           {toolbarState === "default" ? (
             <TextToolbar
               lastUsedHighlight={lastUsedHighlight}
@@ -95,29 +100,35 @@ export const Toolbar = (props: { cardID: string; blockID: string }) => {
                 setToolbarState("default");
               }}
             />
-          ) : toolbarState === "header" ? (
+          ) : toolbarState === "heading" ? (
             <TextBlockTypeToolbar onClose={() => setToolbarState("default")} />
+          ) : toolbarState === "block" ? (
+            <BlockToolbar />
+          ) : toolbarState === "multiSelect" ? (
+            <MultiSelectToolbar />
           ) : null}
         </div>
-        <button
-          className="hover:text-accent-contrast"
-          onClick={() => {
-            if (toolbarState === "default") {
-              useUIState.setState(() => ({
-                focusedBlock: {
-                  type: "card",
-                  entityID: props.cardID,
-                },
-                selectedBlock: [],
-              }));
-            } else {
-              setToolbarState("default");
-              focusedBlock && keepFocus(focusedBlock.entityID);
-            }
-          }}
-        >
-          <CloseTiny />
-        </button>
+        {toolbarState !== "multiSelect" && toolbarState !== "block" && (
+          <button
+            className="toolbarBackToDefault hover:text-accent-contrast"
+            onClick={() => {
+              if (toolbarState === "default") {
+                useUIState.setState(() => ({
+                  focusedBlock: {
+                    type: "card",
+                    entityID: props.cardID,
+                  },
+                  selectedBlock: [],
+                }));
+              } else {
+                setToolbarState("default");
+                focusedBlock && keepFocus(focusedBlock.entityID);
+              }
+            }}
+          >
+            <CloseTiny />
+          </button>
+        )}
       </div>
     </Tooltip.Provider>
   );

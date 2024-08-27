@@ -11,7 +11,6 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
-import { CloseTiny, TrashSmall } from "components/Icons";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useBlocks } from "src/hooks/queries/useBlocks";
@@ -24,14 +23,14 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
   let docMetadata = useDocMetadata(cardEntity);
   let permission = useEntitySetContext().permissions.write;
 
-  let isSelected = useUIState(
-    (s) =>
-      (props.type !== "text" || s.selectedBlock.length > 1) &&
-      s.selectedBlock.find((b) => b.value === props.entityID),
+  let isSelected = useUIState((s) =>
+    s.selectedBlock.find((b) => b.value === props.entityID),
   );
+
   let isOpen = useUIState((s) => s.openCards).includes(cardEntity);
 
   let [areYouSure, setAreYouSure] = useState(false);
+
   useEffect(() => {
     if (!isSelected) {
       setAreYouSure(false);
@@ -58,6 +57,13 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
             focusBlock(props.previousBlock, { type: "end" });
         }
       }
+      if (e.key === "Escape" && permission && areYouSure) {
+        setAreYouSure(false);
+        focusBlock(
+          { type: "card", value: props.entityID, parent: props.parent },
+          { type: "start" },
+        );
+      }
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
@@ -67,6 +73,7 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
     isSelected,
     permission,
     props.entityID,
+    props.parent,
     props.previousBlock,
     rep,
   ]);
@@ -79,7 +86,13 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
         w-full h-[104px]
         bg-bg-card border shadow-sm outline outline-1 rounded-lg
         flex overflow-clip
-        ${isSelected ? "border-tertiary outline-tertiary " : isOpen ? "border-tertiary outline-transparent hover:outline-tertiary" : "border-border-light outline-transparent hover:outline-border-light"}
+        ${
+          isSelected
+            ? "border-tertiary outline-tertiary"
+            : isOpen
+              ? "border-border outline-transparent hover:outline-border-light"
+              : "border-border-light outline-transparent hover:outline-border-light"
+        }
         `}
       onKeyDown={(e) => {
         if (e.key === "Backspace" && permission) {
@@ -102,7 +115,9 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
         <>
           <div
             className="cardBlockContent w-full flex overflow-clip cursor-pointer"
-            onMouseDown={(e) => {
+            onClick={(e) => {
+              if (e.isDefaultPrevented()) return;
+              if (e.shiftKey) return;
               e.preventDefault();
               e.stopPropagation();
               useUIState.getState().openCard(props.parent, cardEntity);
@@ -150,17 +165,6 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
             </div>
             {props.renderPreview && <CardPreview entityID={cardEntity} />}
           </div>
-          {permission && (
-            <button
-              className="absolute p-1 top-0.5 right-0.5 hover:text-accent-contrast text-secondary sm:hidden sm:group-hover/cardBlock:block z-10"
-              onClick={(e) => {
-                e.stopPropagation();
-                setAreYouSure(true);
-              }}
-            >
-              <TrashSmall />
-            </button>
-          )}
         </>
       )}
     </div>

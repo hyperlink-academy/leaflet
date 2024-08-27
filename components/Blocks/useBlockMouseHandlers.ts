@@ -1,7 +1,7 @@
 import { useSelectingMouse } from "components/SelectionManager";
 import { MouseEvent, useCallback, useRef } from "react";
 import { useUIState } from "src/useUIState";
-import { Block } from ".";
+import { Block, textBlocks } from ".";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useReplicache } from "src/replicache";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
@@ -15,13 +15,21 @@ export function useBlockMouseHandlers(props: Block) {
       useSelectingMouse.setState({ start: props.value });
       if (e.shiftKey) {
         if (
-          useUIState.getState().selectedBlock[0].value === props.value &&
+          useUIState.getState().selectedBlock[0]?.value === props.value &&
           useUIState.getState().selectedBlock.length === 1
         )
           return;
         e.preventDefault();
         useUIState.getState().addBlockToSelection(props);
-      } else useUIState.getState().setSelectedBlock(props);
+      } else {
+        if (!textBlocks[props.type]) return;
+        useUIState.getState().setFocusedBlock({
+          type: "block",
+          entityID: props.value,
+          parent: props.parent,
+        });
+        useUIState.getState().setSelectedBlock(props);
+      }
     },
     [props],
   );

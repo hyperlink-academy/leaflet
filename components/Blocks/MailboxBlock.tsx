@@ -104,9 +104,9 @@ export const MailboxBlock = (props: BlockProps) => {
   return (
     <div className={`mailboxContent relative w-full flex flex-col gap-1`}>
       <div
-        className={`flex flex-col gap-2 items-center justify-center w-full rounded-md border outline ${
+        className={`flex flex-col gap-2 items-center justify-center w-full rounded-lg border outline ${
           isSelected
-            ? "border-border outline-border"
+            ? "border-tertiary outline-tertiary"
             : "border-border-light outline-transparent"
         }`}
         style={{

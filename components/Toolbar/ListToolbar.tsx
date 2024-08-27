@@ -13,7 +13,6 @@ import { metaKey } from "src/utils/metaKey";
 import { ToolbarButton } from ".";
 import { indent, outdent } from "src/utils/list-operations";
 import { useEffect } from "react";
-import { useEditorStates } from "src/state/useEditorState";
 
 export const ListButton = (props: { setToolbarState: (s: "list") => void }) => {
   let focusedBlock = useUIState((s) => s.focusedBlock);
