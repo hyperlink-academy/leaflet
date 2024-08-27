@@ -362,6 +362,7 @@ function Block(props: BlockProps) {
       if (e.key === "Escape") {
         e.preventDefault();
         useUIState.setState({ selectedBlock: [] });
+        useUIState.setState({ focusedBlock: null });
       }
     };
     window.addEventListener("keydown", listener);
