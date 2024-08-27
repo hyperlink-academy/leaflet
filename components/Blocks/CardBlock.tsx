@@ -15,7 +15,6 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { AreYouSure } from "./DeleteBlock";
-import { useLongPress } from "src/hooks/useLongPress";
 
 export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
   let { rep } = useReplicache();
@@ -24,13 +23,8 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
   let docMetadata = useDocMetadata(cardEntity);
   let permission = useEntitySetContext().permissions.write;
 
-  let isMultiSelected = useUIState(
-    (s) =>
-      s.selectedBlock.length > 1 &&
-      s.selectedBlock.find((b) => b.value === props.entityID),
-  );
-  let isSelected = useUIState(
-    (s) => s.selectedBlock[0]?.value === props.entityID,
+  let isSelected = useUIState((s) =>
+    s.selectedBlock.find((b) => b.value === props.entityID),
   );
 
   let isOpen = useUIState((s) => s.openCards).includes(cardEntity);
@@ -93,7 +87,7 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
         bg-bg-card border shadow-sm outline outline-1 rounded-lg
         flex overflow-clip
         ${
-          isSelected || isMultiSelected
+          isSelected
             ? "border-tertiary outline-tertiary"
             : isOpen
               ? "border-border outline-transparent hover:outline-border-light"

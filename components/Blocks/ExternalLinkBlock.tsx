@@ -8,13 +8,7 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
   let url = useEntity(props.entityID, "link/url");
 
   let isSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
-  );
-
-  let isMultiSelected = useUIState(
-    (s) =>
-      s.selectedBlock.length > 1 &&
-      s.selectedBlock.find((b) => b.value === props.entityID),
+    s.selectedBlock.find((b) => b.value === props.entityID)
   );
 
   return (
@@ -25,7 +19,7 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
         externalLinkBlock flex relative group/linkBlock
         h-[104px] w-full bg-bg-card overflow-hidden text-primary hover:no-underline no-underline
         border  hover:border-accent-contrast outline outline-1 -outline-offset-0 rounded-lg shadow-sm
-        ${isSelected || isMultiSelected ? "outline-accent-contrast border-accent-contrast" : "outline-transparent border-border-light"}
+        ${isSelected ? "outline-accent-contrast border-accent-contrast" : "outline-transparent border-border-light"}
         `}
     >
       <div className="pt-2 pb-2 px-3 grow min-w-0">
