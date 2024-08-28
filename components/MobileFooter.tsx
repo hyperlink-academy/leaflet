@@ -5,13 +5,17 @@ import { ThemePopover } from "./ThemeManager/ThemeSetter";
 import { Toolbar } from "components/Toolbar";
 import { ShareOptions } from "./ShareOptions";
 import { HomeButton } from "./HomeButton";
+import { useEntitySetContext } from "./EntitySetProvider";
 
 export function MobileFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedBlock);
+  let entity_set = useEntitySetContext();
 
   return (
     <Media mobile className="mobileFooter w-full z-10 -mt-6 touch-none">
-      {focusedBlock && focusedBlock.type == "block" ? (
+      {focusedBlock &&
+      focusedBlock.type == "block" &&
+      entity_set.permissions.write ? (
         <div
           className="w-full z-10 p-2 flex bg-bg-card "
           onMouseDown={(e) => {
