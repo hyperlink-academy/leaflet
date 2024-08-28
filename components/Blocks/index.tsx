@@ -437,6 +437,7 @@ export const ListMarker = (
     className?: string;
   },
 ) => {
+  let entity_set = useEntitySetContext();
   let checklist = useEntity(props.value, "block/check-list");
   let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
   let children = useEntity(props.value, "card/block");
@@ -485,6 +486,7 @@ export const ListMarker = (
       {checklist && (
         <button
           onClick={() => {
+            if (!entity_set.permissions.write) return;
             rep?.mutate.assertFact({
               entity: props.value,
               attribute: "block/check-list",
