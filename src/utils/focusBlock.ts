@@ -8,7 +8,6 @@ export function focusBlock(
   block: Pick<Block, "type" | "value" | "parent">,
   position: Position,
 ) {
-  console.log("focusing");
   if (block.type !== "text" && block.type !== "heading") {
     useUIState.getState().setSelectedBlock(block);
     useUIState.getState().setFocusedBlock({

@@ -1,4 +1,4 @@
-import { BlockProps } from "components/Blocks";
+import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
 import { EditorView } from "prosemirror-view";
 import { generateKeyBetween } from "fractional-indexing";

@@ -1,5 +1,6 @@
 "use client";
-import { BaseBlock, Block, BlockProps, ListMarker } from "components/Blocks";
+import { ListMarker } from "components/Blocks";
+import { BlockProps, BaseBlock } from "./Block";
 import { focusBlock } from "src/utils/focusBlock";
 
 import { focusCard } from "components/Cards";

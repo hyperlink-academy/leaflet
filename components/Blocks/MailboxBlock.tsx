@@ -5,7 +5,7 @@ import { Menu, MenuItem, Separator } from "components/Layout";
 import { useUIState } from "src/useUIState";
 import { useEffect, useState } from "react";
 import { useSmoker, useToaster } from "components/Toast";
-import { BlockProps } from ".";
+import { BlockProps } from "./Block";
 import { useEntity, useReplicache } from "src/replicache";
 import { AreYouSure } from "./DeleteBlock";
 import { focusBlock } from "src/utils/focusBlock";

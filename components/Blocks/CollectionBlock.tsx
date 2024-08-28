@@ -1,13 +1,14 @@
 "use client";
-import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
-import { useReplicache } from "src/replicache";
-import { useEditorStates } from "src/state/useEditorState";
 import { elementId } from "src/utils/elementId";
 import { v7 } from "uuid";
-import { Block, BlockProps } from ".";
-import { BlockOptions } from "./BlockOptions";
-import { getBlocksWithType, useBlocks } from "src/hooks/queries/useBlocks";
+
+import { useReplicache } from "src/replicache";
+import { useEntitySetContext } from "components/EntitySetProvider";
+import { useBlocks } from "src/hooks/queries/useBlocks";
+
+import { Block as BlockType } from ".";
+import { Block, BlockProps } from "./Block";
 
 export const CollectionBlock = (props: BlockProps) => {
   let { rep } = useReplicache();
@@ -54,7 +55,7 @@ export const CollectionBlock = (props: BlockProps) => {
 };
 
 function NewCollectionItem(props: {
-  lastBlock: Block | null;
+  lastBlock: BlockType | null;
   parentID: string;
 }) {
   let { rep } = useReplicache();

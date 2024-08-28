@@ -23,7 +23,7 @@ import { Replicache } from "replicache";
 import { generateKeyBetween } from "fractional-indexing";
 import { RenderYJSFragment } from "./RenderYJSFragment";
 import { useInitialPageLoad } from "components/InitialPageLoadProvider";
-import { BlockProps } from "components/Blocks";
+import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
 import { TextBlockKeymap } from "./keymap";
 import { schema } from "./schema";

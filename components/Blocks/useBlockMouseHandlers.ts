@@ -1,7 +1,8 @@
 import { useSelectingMouse } from "components/SelectionManager";
 import { MouseEvent, useCallback, useRef } from "react";
 import { useUIState } from "src/useUIState";
-import { Block, isTextBlock } from ".";
+import { Block } from ".";
+import { isTextBlock } from "src/utils/isTextBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useReplicache } from "src/replicache";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
