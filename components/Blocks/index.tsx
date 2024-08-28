@@ -21,6 +21,7 @@ import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
 import { indent, outdent } from "src/utils/list-operations";
 import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
 import { useLongPress } from "src/hooks/useLongPress";
+import { CollectionBlock } from "./CollectionBlock";
 export type Block = {
   factID: string;
   parent: string;
@@ -174,8 +175,6 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
       ? s.editorStates[props.lastBlock.value]
       : null,
   );
-  let type = useEntity(props.entityID, "block/type");
-  let headingLevel = useEntity(props.entityID, "block/heading-level");
 
   if (!entity_set.permissions.write) return null;
   if (
@@ -241,7 +240,7 @@ export const textBlocks: {
   heading: true,
 };
 
-function Block(props: BlockProps) {
+export function Block(props: BlockProps) {
   let { rep } = useReplicache();
   let mouseHandlers = useBlockMouseHandlers(props);
 
@@ -427,6 +426,8 @@ export const BaseBlock = (props: BlockProps & { preview?: boolean }) => {
         <div className="flex flex-col gap-4 w-full">
           <MailboxBlock {...props} />
         </div>
+      ) : props.type === "collection" ? (
+        <CollectionBlock {...props} />
       ) : null}
     </div>
   );

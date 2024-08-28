@@ -153,7 +153,14 @@ export type Data<A extends keyof typeof Attributes> = {
   reference: { type: "reference"; value: string };
   "block-type-union": {
     type: "block-type-union";
-    value: "text" | "image" | "card" | "heading" | "link" | "mailbox";
+    value:
+      | "text"
+      | "image"
+      | "card"
+      | "heading"
+      | "link"
+      | "mailbox"
+      | "collection";
   };
   color: { type: "color"; value: string };
 }[(typeof Attributes)[A]["type"]];
