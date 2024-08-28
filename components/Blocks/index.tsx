@@ -136,7 +136,7 @@ export function Blocks(props: { entityID: string }) {
               // if the last visible(not-folded) block is a text block, focus it
               lastRootBlock && // if the last visible(not-folded) block is a text block, focus it
               lastVisibleBlock &&
-              textBlocks[lastVisibleBlock.type]
+              isTextBlock[lastVisibleBlock.type]
             ) {
               focusBlock(
                 { ...lastVisibleBlock, type: "text" },
@@ -237,7 +237,7 @@ export type BlockProps = {
   nextPosition: string | null;
 } & Block;
 
-export const textBlocks: {
+export const isTextBlock: {
   [k in Fact<"block/type">["data"]["value"]]?: boolean;
 } = {
   text: true,
@@ -265,7 +265,7 @@ export function Block(props: BlockProps) {
     (s) => !!s.selectedBlock.find((b) => b.value === props.entityID),
   );
   let hasSelectionUI =
-    (!textBlocks[props.type] || selectedBlocks.length > 1) && actuallySelected;
+    (!isTextBlock[props.type] || selectedBlocks.length > 1) && actuallySelected;
 
   let nextBlockSelected = useUIState((s) =>
     s.selectedBlock.find((b) => b.value === props.nextBlock?.value),
@@ -280,8 +280,10 @@ export function Block(props: BlockProps) {
     let r = rep;
     let listener = async (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
+
       if (e.key === "Tab") {
-        if (textBlocks[props.type]) return;
+        // if tab, andindent or outdent
+        if (isTextBlock[props.type]) return;
         if (e.shiftKey) {
           e.preventDefault();
           outdent(props, props.previousBlock, rep);
@@ -311,9 +313,10 @@ export function Block(props: BlockProps) {
         }
         if (!prevBlock) return;
       }
+      // if backspacem
       if (e.key === "Backspace") {
         if (!entity_set.permissions.write) return;
-        if (textBlocks[props.type]) return;
+        if (isTextBlock[props.type]) return;
         if (props.type === "card" || props.type === "mailbox") return;
         e.preventDefault();
         r.mutate.removeBlock({ blockEntity: props.entityID });
@@ -364,6 +367,7 @@ export function Block(props: BlockProps) {
       }
       if (e.key === "Escape") {
         e.preventDefault();
+
         useUIState.setState({ selectedBlock: [] });
         useUIState.setState({ focusedBlock: null });
       }
