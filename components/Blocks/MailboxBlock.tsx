@@ -8,7 +8,7 @@ import { useSmoker, useToaster } from "components/Toast";
 import { BlockProps } from ".";
 import { useEntity, useReplicache } from "src/replicache";
 import { AreYouSure } from "./DeleteBlock";
-import { focusBlock } from ".";
+import { focusBlock } from "src/utils/focusBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { subscribeToMailboxWithEmail } from "actions/subscriptions/subscribeToMailboxWithEmail";
 import { confirmEmailSubscription } from "actions/subscriptions/confirmEmailSubscription";

@@ -1,27 +1,29 @@
 "use client";
+
 import { Fact, useEntity, useReplicache } from "src/replicache";
-import { TextBlock } from "components/Blocks/TextBlock";
-import { generateKeyBetween } from "fractional-indexing";
 import { useEffect } from "react";
-import { elementId } from "src/utils/elementId";
-import { TextSelection } from "prosemirror-state";
-import { useSelectingMouse } from "components/SelectionManager";
-import { ImageBlock } from "./ImageBlock";
 import { useUIState } from "src/useUIState";
+import { useBlocks } from "src/hooks/queries/useBlocks";
+import { useEditorStates } from "src/state/useEditorState";
+import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
+import { useLongPress } from "src/hooks/useLongPress";
+import { useEntitySetContext } from "components/EntitySetProvider";
+
+import { focusBlock } from "src/utils/focusBlock";
+import { elementId } from "src/utils/elementId";
+import { indent, outdent } from "src/utils/list-operations";
+import { generateKeyBetween } from "fractional-indexing";
+import { v7 } from "uuid";
+
+import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
+import { CollectionBlock } from "./CollectionBlock";
+import { TextBlock } from "components/Blocks/TextBlock";
+import { ImageBlock } from "./ImageBlock";
 import { CardBlock } from "./CardBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { BlockOptions } from "./BlockOptions";
 import { MailboxBlock } from "./MailboxBlock";
 
-import { useBlocks } from "src/hooks/queries/useBlocks";
-import { setEditorState, useEditorStates } from "src/state/useEditorState";
-import { useEntitySetContext } from "components/EntitySetProvider";
-import { v7 } from "uuid";
-import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
-import { indent, outdent } from "src/utils/list-operations";
-import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
-import { useLongPress } from "src/hooks/useLongPress";
-import { CollectionBlock } from "./CollectionBlock";
 export type Block = {
   factID: string;
   parent: string;
@@ -55,7 +57,7 @@ export function Blocks(props: { entityID: string }) {
 
   return (
     <div
-      className={`blocks w-full flex flex-col outline-none h-fit min-h-full ${!entity_set.permissions.write && "pb-6"}`}
+      className={`blocks w-full flex flex-col outline-none h-fit min-h-full`}
       onClick={async (e) => {
         if (useUIState.getState().selectedBlock.length > 1) return;
         if (e.target === e.currentTarget) {
@@ -126,12 +128,13 @@ export function Blocks(props: { entityID: string }) {
       />
       {entity_set.permissions.write ? (
         <div
-          className="shrink-0 h-[50vh]"
+          className="blocksBottomClickable shrink-0 h-[50vh]"
           onClick={() => {
             let newEntityID = v7();
 
             if (
-              lastRootBlock &&
+              // if the last visible(not-folded) block is a text block, focus it
+              lastRootBlock && // if the last visible(not-folded) block is a text block, focus it
               lastVisibleBlock &&
               textBlocks[lastVisibleBlock.type]
             ) {
@@ -140,6 +143,7 @@ export function Blocks(props: { entityID: string }) {
                 { type: "end" },
               );
             } else {
+              // else add a new text block at the end and focus it
               rep?.rep?.mutate.addBlock({
                 permission_set: entity_set.set,
                 factID: v7(),
@@ -516,81 +520,4 @@ export function HeadingBlock(props: BlockProps & { preview?: boolean }) {
       className={HeadingStyle[headingLevel?.data.value || 1]}
     />
   );
-}
-
-type Position =
-  | {
-      type: "start";
-    }
-  | { type: "end" }
-  | {
-      type: "coord";
-      top: number;
-      left: number;
-    }
-  | {
-      type: "top";
-      left: number;
-    }
-  | {
-      type: "bottom";
-      left: number;
-    };
-export function focusBlock(
-  block: Pick<Block, "type" | "value" | "parent">,
-  position: Position,
-) {
-  if (block.type !== "text" && block.type !== "heading") {
-    useUIState.getState().setSelectedBlock(block);
-    useUIState.getState().setFocusedBlock({
-      type: "block",
-      entityID: block.value,
-      parent: block.parent,
-    });
-    return true;
-  }
-  let nextBlockID = block.value;
-  let nextBlock = useEditorStates.getState().editorStates[nextBlockID];
-  if (!nextBlock || !nextBlock.view) return;
-  nextBlock.view.dom.focus({ preventScroll: true });
-  let nextBlockViewClientRect = nextBlock.view.dom.getBoundingClientRect();
-  let tr = nextBlock.editor.tr;
-  let pos: { pos: number } | null = null;
-  switch (position.type) {
-    case "end": {
-      pos = { pos: tr.doc.content.size - 1 };
-      break;
-    }
-    case "start": {
-      pos = { pos: 1 };
-      break;
-    }
-    case "top": {
-      pos = nextBlock.view.posAtCoords({
-        top: nextBlockViewClientRect.top + 12,
-        left: position.left,
-      });
-      break;
-    }
-    case "bottom": {
-      pos = nextBlock.view.posAtCoords({
-        top: nextBlockViewClientRect.bottom - 12,
-        left: position.left,
-      });
-      break;
-    }
-    case "coord": {
-      pos = nextBlock.view.posAtCoords({
-        top: position.top,
-        left: position.left,
-      });
-      break;
-    }
-  }
-
-  let newState = nextBlock.editor.apply(
-    tr.setSelection(TextSelection.create(tr.doc, pos?.pos || 1)),
-  );
-
-  setEditorState(nextBlockID, { editor: newState });
 }

@@ -1,11 +1,7 @@
 "use client";
-import {
-  BaseBlock,
-  Block,
-  BlockProps,
-  focusBlock,
-  ListMarker,
-} from "components/Blocks";
+import { BaseBlock, Block, BlockProps, ListMarker } from "components/Blocks";
+import { focusBlock } from "src/utils/focusBlock";
+
 import { focusCard } from "components/Cards";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";

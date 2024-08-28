@@ -6,7 +6,8 @@ import {
 import { MutableRefObject } from "react";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
-import { BlockProps, focusBlock } from "components/Blocks";
+import { BlockProps } from "components/Blocks";
+import { focusBlock } from "src/utils/focusBlock";
 import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
 export const inputrules = (

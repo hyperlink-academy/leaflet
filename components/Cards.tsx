@@ -1,6 +1,7 @@
 "use client";
 import { useUIState } from "src/useUIState";
-import { Blocks, focusBlock } from "components/Blocks";
+import { Blocks } from "components/Blocks";
+import { focusBlock } from "src/utils/focusBlock";
 import useMeasure from "react-use-measure";
 import { elementId } from "src/utils/elementId";
 import { ThemePopover } from "./ThemeManager/ThemeSetter";
@@ -244,7 +245,7 @@ const DeleteCardToast = {
 export async function focusCard(
   cardID: string,
   rep: Replicache<ReplicacheMutators>,
-  focusFirstBlock?: "focusFirstBlock"
+  focusFirstBlock?: "focusFirstBlock",
 ) {
   // if this card is already focused,
   let focusedBlock = useUIState.getState().focusedBlock;
@@ -268,8 +269,7 @@ export async function focusCard(
       inline: "nearest",
     });
 
-    // if we asked that the function focus the first block, do that
-
+    // if we asked that the function focus the first block, focus the first block
     if (focusFirstBlock === "focusFirstBlock") {
       let firstBlock = await rep.query(async (tx) => {
         let blocks = await tx

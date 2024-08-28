@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import { focusBlock } from ".";
+import { focusBlock } from "src/utils/focusBlock";
 import { ButtonPrimary } from "components/Buttons";
 import { CloseTiny } from "components/Icons";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
@@ -56,7 +56,7 @@ export const AreYouSure = (props: {
 
               let siblings =
                 (await rep?.query((tx) =>
-                  getBlocksWithType(tx, focusedBlock?.parent)
+                  getBlocksWithType(tx, focusedBlock?.parent),
                 )) || [];
 
               let nextBlock =
@@ -71,7 +71,7 @@ export const AreYouSure = (props: {
                   parent: nextBlock.parent,
                 });
                 let nextBlockType = await rep?.query((tx) =>
-                  scanIndex(tx).eav(nextBlock.value, "block/type")
+                  scanIndex(tx).eav(nextBlock.value, "block/type"),
                 );
                 if (
                   nextBlockType?.[0]?.data.value === "text" ||
@@ -83,7 +83,7 @@ export const AreYouSure = (props: {
                       type: "text",
                       parent: nextBlock.parent,
                     },
-                    { type: "end" }
+                    { type: "end" },
                   );
                 }
               }

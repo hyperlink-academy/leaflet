@@ -1,4 +1,5 @@
-import { BlockProps, focusBlock } from "components/Blocks";
+import { BlockProps } from "components/Blocks";
+import { focusBlock } from "src/utils/focusBlock";
 import { EditorView } from "prosemirror-view";
 import { generateKeyBetween } from "fractional-indexing";
 import { setBlockType, toggleMark } from "prosemirror-commands";
@@ -168,13 +169,17 @@ const backspace =
     dispatch?: (tr: Transaction) => void,
     view?: EditorView,
   ) => {
+    // if multiple blocks are selected, don't do anything (handled in SelectionManager)
     if (useUIState.getState().selectedBlock.length > 1) {
       return false;
     }
+    // if you are selecting text within a block, don't do anything (handled by proseMirror)
     if (state.selection.anchor > 1 || state.selection.content().size > 0) {
       return false;
     }
+    // if you are in a list...
     if (propsRef.current.listData) {
+      // ...and the item is a checklist item, remove the checklist attribute
       if (propsRef.current.listData.checklist) {
         repRef.current?.mutate.retractAttribute({
           entity: propsRef.current.entityID,
@@ -182,6 +187,7 @@ const backspace =
         });
         return true;
       }
+      // ...move the child list items to next eligible parent (?)
       let depth = propsRef.current.listData.depth;
       repRef.current?.mutate.moveChildren({
         oldParent: propsRef.current.entityID,
@@ -194,6 +200,7 @@ const backspace =
           null,
       });
     }
+    // if this is the first block and is it a list, remove list attribute
     if (!propsRef.current.previousBlock) {
       if (propsRef.current.listData) {
         repRef.current?.mutate.retractAttribute({
@@ -202,6 +209,8 @@ const backspace =
         });
         return true;
       }
+
+      // If the block is a heading, convert it to a text block
       if (propsRef.current.type === "heading") {
         repRef.current?.mutate.assertFact({
           entity: propsRef.current.entityID,
@@ -213,7 +222,7 @@ const backspace =
             focusBlock(
               {
                 value: propsRef.current.entityID,
-                type: "heading",
+                type: "text",
                 parent: propsRef.current.parent,
               },
               { type: "start" },
@@ -355,7 +364,7 @@ const enter =
             data: { type: "boolean", value: false },
           });
       }
-
+      // if the block is not a list, add a new text block after it
       if (!propsRef.current.listData) {
         position = generateKeyBetween(
           propsRef.current.position,
@@ -370,7 +379,7 @@ const enter =
           position,
         });
       }
-
+      // if you are are the beginning of a heading, move the heading level to the new block
       if (blockType === "heading") {
         await repRef.current?.mutate.assertFact({
           entity: propsRef.current.entityID,
@@ -390,6 +399,7 @@ const enter =
     };
     asyncRun();
 
+    // if you are in the middle of a text block, split the block
     setTimeout(() => {
       let block = useEditorStates.getState().editorStates[newEntityID];
       if (block) {
