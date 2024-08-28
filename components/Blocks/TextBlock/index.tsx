@@ -297,12 +297,6 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
   );
 }
 
-const HeadingStyle = {
-  1: "text-xl font-bold",
-  2: "text-lg font-bold",
-  3: "text-base font-bold",
-} as { [level: number]: string };
-
 function CommandHandler(props: { entityID: string }) {
   let cb = useEditorEventCallback(
     (view, args: { mark: MarkType; attrs?: any }) => {
