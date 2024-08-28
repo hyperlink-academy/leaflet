@@ -1,27 +1,19 @@
 "use client";
 
 import { Fact, useEntity, useReplicache } from "src/replicache";
-import { useEffect } from "react";
 import { useUIState } from "src/useUIState";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEditorStates } from "src/state/useEditorState";
-import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
-import { useLongPress } from "src/hooks/useLongPress";
 import { useEntitySetContext } from "components/EntitySetProvider";
 
 import { isTextBlock } from "src/utils/isTextBlock";
 import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
-import { indent, outdent } from "src/utils/list-operations";
 import { generateKeyBetween } from "fractional-indexing";
 import { v7 } from "uuid";
 
 import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
-import { CollectionBlock } from "./CollectionBlock";
 import { TextBlock } from "components/Blocks/TextBlock";
-import { ImageBlock } from "./ImageBlock";
-import { CardBlock } from "./CardBlock";
-import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { BlockOptions } from "./BlockOptions";
 import { Block, BlockProps } from "./Block";
 
@@ -296,20 +288,3 @@ export const ListMarker = (
     </div>
   );
 };
-
-const HeadingStyle = {
-  1: "text-xl font-bold",
-  2: "text-lg font-bold",
-  3: "text-base font-bold text-secondary ",
-} as { [level: number]: string };
-
-export function HeadingBlock(props: BlockProps & { preview?: boolean }) {
-  let headingLevel = useEntity(props.entityID, "block/heading-level");
-  return (
-    <TextBlock
-      {...props}
-      previewOnly={props.preview}
-      className={HeadingStyle[headingLevel?.data.value || 1]}
-    />
-  );
-}

@@ -21,7 +21,8 @@ import { ImageBlock } from "./ImageBlock";
 import { CardBlock } from "./CardBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { MailboxBlock } from "./MailboxBlock";
-import { Block as BlockType, HeadingBlock, ListMarker } from ".";
+import { HeadingBlock } from "./HeadingBlock";
+import { Block as BlockType, ListMarker } from ".";
 
 export type BlockProps = {
   entityID: string;
