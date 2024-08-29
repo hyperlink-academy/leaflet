@@ -1,11 +1,16 @@
 import { useEffect } from "react";
-import { useEntity, useReplicache } from "src/replicache";
+import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { focusBlock } from "src/utils/focusBlock";
 import { ButtonPrimary } from "components/Buttons";
 import { CloseTiny } from "components/Icons";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { scanIndex } from "src/replicache/utils";
+import { Replicache } from "replicache";
+import { Block } from "./Block";
+import { v7 } from "uuid";
+import { useEntitySetContext } from "components/EntitySetProvider";
+import { generateKeyBetween } from "fractional-indexing";
 
 export const AreYouSure = (props: {
   entityID: string[] | string;
@@ -16,8 +21,8 @@ export const AreYouSure = (props: {
   let entities = [props.entityID].flat();
   let { rep } = useReplicache();
   let focusedBlock = useUIState((s) => s.focusedBlock);
-  let card = useEntity(focusedBlock?.entityID || null, "block/card");
-  let cardID = card ? card.data.value : props.entityID;
+  let childCards = useEntity(focusedBlock?.entityID || null, "block/card");
+  let childCardIDs = childCards ? childCards.data.value : props.entityID;
   let type = useEntity(focusedBlock?.entityID || null, "block/type")?.data
     .value;
 
@@ -46,55 +51,8 @@ export const AreYouSure = (props: {
             autoFocus
             compact
             onClick={async (e) => {
-              if (!focusedBlock || focusedBlock?.type === "card") return;
-              e.stopPropagation();
-              // This only handles the case where the literal delete button is clicked.
-              // In cases where the backspace button is pressed, each block that uses the AreYouSure
-              // has an event listener that handles the backspace key press.
-
-              useUIState.getState().closeCard(cardID);
-
-              let siblings =
-                (await rep?.query((tx) =>
-                  getBlocksWithType(tx, focusedBlock?.parent),
-                )) || [];
-
-              let nextBlock =
-                siblings?.[
-                  siblings.findIndex((s) => s.value === focusedBlock.entityID) -
-                    1
-                ];
-
-              if (nextBlock) {
-                useUIState.getState().setSelectedBlock({
-                  value: nextBlock.value,
-                  parent: nextBlock.parent,
-                });
-                let nextBlockType = await rep?.query((tx) =>
-                  scanIndex(tx).eav(nextBlock.value, "block/type"),
-                );
-                if (
-                  nextBlockType?.[0]?.data.value === "text" ||
-                  nextBlockType?.[0]?.data.value === "heading"
-                ) {
-                  focusBlock(
-                    {
-                      value: nextBlock.value,
-                      type: "text",
-                      parent: nextBlock.parent,
-                    },
-                    { type: "end" },
-                  );
-                }
-              }
-              props.closeAreYouSure();
-              entities.forEach((entity) => {
-                rep?.mutate.removeBlock({
-                  blockEntity: entity,
-                });
-              });
-
-              props.onClick && props.onClick();
+              if (rep)
+                await deleteBlock(e, focusedBlock, childCardIDs, entities, rep);
             }}
           >
             Delete
@@ -114,3 +72,81 @@ export const AreYouSure = (props: {
     </div>
   );
 };
+
+async function deleteBlock(
+  e: React.MouseEvent,
+  focusedBlock:
+    | {
+        type: "card";
+        entityID: string;
+      }
+    | {
+        type: "block";
+        entityID: string;
+        parent: string;
+      }
+    | null,
+  childCardIDs: string | string[],
+  entities: string[],
+  rep: Replicache<ReplicacheMutators>,
+) {
+  if (!focusedBlock || focusedBlock?.type === "card") return;
+  e.stopPropagation();
+
+  let siblings =
+    (await rep?.query((tx) => getBlocksWithType(tx, focusedBlock?.parent))) ||
+    [];
+
+  let prevBlock =
+    siblings?.[
+      siblings.findIndex((s) => s.value === focusedBlock.entityID) - 1
+    ];
+  let prevBlockType = await rep?.query((tx) =>
+    scanIndex(tx).eav(nextBlock.value, "block/type"),
+  );
+
+  let nextBlock =
+    siblings?.[
+      siblings.findIndex((s) => s.value === focusedBlock.entityID) + 1
+    ];
+  let nextBlockType = await rep?.query((tx) =>
+    scanIndex(tx).eav(nextBlock.value, "block/type"),
+  );
+  if (prevBlock) {
+    useUIState.getState().setSelectedBlock({
+      value: prevBlock.value,
+      parent: prevBlock.parent,
+    });
+
+    focusBlock(
+      {
+        value: prevBlock.value,
+        type: prevBlockType?.[0]?.data.value,
+        parent: prevBlock.parent,
+      },
+      { type: "end" },
+    );
+  } else {
+    useUIState.getState().setSelectedBlock({
+      value: nextBlock.value,
+      parent: nextBlock.parent,
+    });
+
+    focusBlock(
+      {
+        value: nextBlock.value,
+        type: nextBlockType?.[0]?.data.value,
+        parent: nextBlock.parent,
+      },
+      { type: "start" },
+    );
+  }
+
+  useUIState.getState().closeCard(childCardIDs);
+
+  entities.forEach((entity) => {
+    rep?.mutate.removeBlock({
+      blockEntity: entity,
+    });
+  });
+}
