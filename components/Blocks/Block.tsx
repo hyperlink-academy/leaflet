@@ -23,6 +23,7 @@ import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { MailboxBlock } from "./MailboxBlock";
 import { HeadingBlock } from "./HeadingBlock";
 import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
+import { useBlockKeyboardHandlers } from "./useBlockKeyboardHandlers";
 
 export type Block = {
   factID: string;
@@ -47,7 +48,6 @@ export type BlockProps = {
 } & Block;
 
 export function Block(props: BlockProps) {
-  let { rep } = useReplicache();
   let mouseHandlers = useBlockMouseHandlers(props);
 
   let { isLongPress, handlers } = useLongPress(() => {
@@ -75,122 +75,7 @@ export function Block(props: BlockProps) {
   let prevBlockSelected = useUIState((s) =>
     s.selectedBlock.find((b) => b.value === props.previousBlock?.value),
   );
-
-  let entity_set = useEntitySetContext();
-
-  useEffect(() => {
-    if (!hasSelectionUI || !rep) return;
-    let r = rep;
-    let listener = async (e: KeyboardEvent) => {
-      // keymapping for textBlocks is handled in TextBlock/keymap
-
-      if (e.defaultPrevented) return;
-
-      //if no permissions, do nothing
-      if (!entity_set.permissions.write) return;
-
-      if (e.key === "Tab") {
-        // if tab or shift tab & not a textBlock, indent or outdent
-        if (isTextBlock[props.type]) return;
-        if (e.shiftKey) {
-          e.preventDefault();
-          outdent(props, props.previousBlock, rep);
-        } else {
-          e.preventDefault();
-          if (props.previousBlock) indent(props, props.previousBlock, rep);
-        }
-      }
-
-      // if arrow down, focus next block
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        let nextBlock = props.nextBlock;
-        if (nextBlock && useUIState.getState().selectedBlock.length <= 1)
-          focusBlock(nextBlock, {
-            type: "top",
-            left: useEditorStates.getState().lastXPosition,
-          });
-        if (!nextBlock) return;
-      }
-
-      // if arrow up, focus next block
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        let prevBlock = props.previousBlock;
-        if (prevBlock && useUIState.getState().selectedBlock.length <= 1) {
-          focusBlock(prevBlock, {
-            type: "bottom",
-            left: useEditorStates.getState().lastXPosition,
-          });
-        }
-        if (!prevBlock) return;
-      }
-
-      // if backspace, remove block, focus previous block
-      if (e.key === "Backspace") {
-        if (isTextBlock[props.type]) return;
-        if (props.type === "card" || props.type === "mailbox") return;
-        e.preventDefault();
-        r.mutate.removeBlock({ blockEntity: props.entityID });
-        useUIState.getState().closeCard(props.entityID);
-        let prevBlock = props.previousBlock;
-        if (prevBlock) focusBlock(prevBlock, { type: "end" });
-      }
-
-      // if enter, create new block
-      if (e.key === "Enter") {
-        let newEntityID = v7();
-        let position;
-        // if it's a list, create a new list item at the same depth
-        if (props.listData) {
-          let hasChild =
-            props.nextBlock?.listData &&
-            props.nextBlock.listData.depth > props.listData.depth;
-          position = generateKeyBetween(
-            hasChild ? null : props.position,
-            props.nextPosition,
-          );
-          await r?.mutate.addBlock({
-            newEntityID,
-            factID: v7(),
-            permission_set: entity_set.set,
-            parent: hasChild ? props.entityID : props.listData.parent,
-            type: "text",
-            position,
-          });
-          await r?.mutate.assertFact({
-            entity: newEntityID,
-            attribute: "block/is-list",
-            data: { type: "boolean", value: true },
-          });
-        }
-        // if it's not a list, create a new block between current and next block
-        if (!props.listData) {
-          position = generateKeyBetween(props.position, props.nextPosition);
-          await r?.mutate.addBlock({
-            newEntityID,
-            factID: v7(),
-            permission_set: entity_set.set,
-            parent: props.parent,
-            type: "text",
-            position,
-          });
-        }
-        setTimeout(() => {
-          document.getElementById(elementId.block(newEntityID).text)?.focus();
-        }, 10);
-      }
-      // if escape, deselect and defocus block
-      if (e.key === "Escape") {
-        e.preventDefault();
-
-        useUIState.setState({ selectedBlock: [] });
-        useUIState.setState({ focusedBlock: null });
-      }
-    };
-    window.addEventListener("keydown", listener);
-    return () => window.removeEventListener("keydown", listener);
-  }, [entity_set, hasSelectionUI, props, rep]);
+  useBlockKeyboardHandlers(props);
 
   return (
     <div
