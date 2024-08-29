@@ -3,17 +3,12 @@
 import { Fact, useEntity, useReplicache } from "src/replicache";
 import { useEffect, useState } from "react";
 import { useUIState } from "src/useUIState";
-import { useEditorStates } from "src/state/useEditorState";
 import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
 import { useLongPress } from "src/hooks/useLongPress";
-import { useEntitySetContext } from "components/EntitySetProvider";
 
 import { isTextBlock } from "src/utils/isTextBlock";
 import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
-import { indent, outdent } from "src/utils/list-operations";
-import { generateKeyBetween } from "fractional-indexing";
-import { v7 } from "uuid";
 
 import { CollectionBlock } from "./CollectionBlock";
 import { TextBlock } from "components/Blocks/TextBlock";
@@ -49,8 +44,13 @@ export type BlockProps = {
 } & Block;
 
 export function Block(props: BlockProps) {
+  // Block handles all block level events like
+  // mouse events, keyboard events and longPress, and setting AreYouSure state
+  // it does NOT render any styling
+
   let mouseHandlers = useBlockMouseHandlers(props);
 
+  // focus block on longpress, shouldnt the type be based on the block type (?)
   let { isLongPress, handlers } = useLongPress(() => {
     if (isLongPress.current) {
       focusBlock(
@@ -60,29 +60,17 @@ export function Block(props: BlockProps) {
     }
   }, mouseHandlers.onMouseDown);
 
-  let first = props.previousBlock === null;
-
-  let selectedBlocks = useUIState((s) => s.selectedBlock);
-  let actuallySelected = useUIState(
+  let selected = useUIState(
     (s) => !!s.selectedBlock.find((b) => b.value === props.entityID),
-  );
-  let hasSelectionUI =
-    (!isTextBlock[props.type] || selectedBlocks.length > 1) && actuallySelected;
-
-  let nextBlockSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.nextBlock?.value),
-  );
-  let prevBlockSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.previousBlock?.value),
   );
 
   let [areYouSure, setAreYouSure] = useState(false);
 
   useEffect(() => {
-    if (!actuallySelected) {
+    if (!selected) {
       setAreYouSure(false);
     }
-  }, [actuallySelected]);
+  }, [selected]);
 
   useBlockKeyboardHandlers(props, areYouSure, setAreYouSure);
 
@@ -92,20 +80,7 @@ export function Block(props: BlockProps) {
       {...handlers}
       className="blockWrapper relative flex"
     >
-      {hasSelectionUI && selectedBlocks.length > 1 && (
-        <div
-          className={`
-          blockSelectionBG pointer-events-none bg-border-light
-          absolute right-2 left-2 bottom-0
-          ${selectedBlocks.length > 1 ? "Multiple-Selected" : ""}
-          ${actuallySelected ? "selected" : ""}
-          ${first ? "top-2" : "top-0"}
-          ${!prevBlockSelected && "rounded-t-md"}
-          ${!nextBlockSelected && "rounded-b-md"}
-          `}
-        />
-      )}
-
+      <BlockMultiselectIndicator {...props} />
       <BaseBlock
         {...props}
         areYouSure={areYouSure}
@@ -122,6 +97,8 @@ export const BaseBlock = (
     setAreYouSure?: (value: boolean) => void;
   },
 ) => {
+  // BaseBlock renders the actual block content
+  // and handles shared block styles, mostly padding
   return (
     <div
       data-entityid={props.entityID}
@@ -135,7 +112,13 @@ export const BaseBlock = (
           ? "pb-0"
           : "pb-2"
       }
-      ${!props.previousBlock ? `${props.type === "heading" || props.type === "text" ? "pt-2 sm:pt-3" : "pt-3 sm:pt-4"}` : "pt-1"}
+      ${
+        !props.previousBlock
+          ? props.type === "heading" || props.type === "text"
+            ? "pt-2 sm:pt-3"
+            : "pt-3 sm:pt-4"
+          : "pt-1"
+      }
   `}
       id={elementId.block(props.entityID).container}
     >
@@ -171,6 +154,40 @@ export const BaseBlock = (
       )}
     </div>
   );
+};
+
+export const BlockMultiselectIndicator = (props: BlockProps) => {
+  let first = props.previousBlock === null;
+
+  let selectedBlocks = useUIState((s) => s.selectedBlock);
+
+  let selected = useUIState(
+    (s) => !!s.selectedBlock.find((b) => b.value === props.entityID),
+  );
+
+  let isMultiSelected = selected && selectedBlocks.length > 1;
+
+  let nextBlockSelected = useUIState((s) =>
+    s.selectedBlock.find((b) => b.value === props.nextBlock?.value),
+  );
+  let prevBlockSelected = useUIState((s) =>
+    s.selectedBlock.find((b) => b.value === props.previousBlock?.value),
+  );
+
+  if (isMultiSelected)
+    // not sure what multiselected and selected is doing (?)
+    return (
+      <div
+        className={`
+      blockSelectionBG multiselected selected
+      pointer-events-none bg-border-light
+      absolute right-2 left-2 bottom-0
+      ${first ? "top-2" : "top-0"}
+      ${!prevBlockSelected && "rounded-t-md"}
+      ${!nextBlockSelected && "rounded-b-md"}
+      `}
+      />
+    );
 };
 
 export const ListMarker = (
