@@ -1,7 +1,7 @@
 "use client";
 
 import { Fact, useEntity, useReplicache } from "src/replicache";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useUIState } from "src/useUIState";
 import { useEditorStates } from "src/state/useEditorState";
 import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
@@ -24,6 +24,7 @@ import { MailboxBlock } from "./MailboxBlock";
 import { HeadingBlock } from "./HeadingBlock";
 import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
 import { useBlockKeyboardHandlers } from "./useBlockKeyboardHandlers";
+import { AreYouSure } from "./DeleteBlock";
 
 export type Block = {
   factID: string;
@@ -62,7 +63,6 @@ export function Block(props: BlockProps) {
   let first = props.previousBlock === null;
 
   let selectedBlocks = useUIState((s) => s.selectedBlock);
-
   let actuallySelected = useUIState(
     (s) => !!s.selectedBlock.find((b) => b.value === props.entityID),
   );
@@ -75,7 +75,16 @@ export function Block(props: BlockProps) {
   let prevBlockSelected = useUIState((s) =>
     s.selectedBlock.find((b) => b.value === props.previousBlock?.value),
   );
-  useBlockKeyboardHandlers(props);
+
+  let [areYouSure, setAreYouSure] = useState(false);
+
+  useEffect(() => {
+    if (!actuallySelected) {
+      setAreYouSure(false);
+    }
+  }, [actuallySelected]);
+
+  useBlockKeyboardHandlers(props, areYouSure, setAreYouSure);
 
   return (
     <div
@@ -96,12 +105,23 @@ export function Block(props: BlockProps) {
           `}
         />
       )}
-      <BaseBlock {...props} />
+
+      <BaseBlock
+        {...props}
+        areYouSure={areYouSure}
+        setAreYouSure={(value) => setAreYouSure(value)}
+      />
     </div>
   );
 }
 
-export const BaseBlock = (props: BlockProps & { preview?: boolean }) => {
+export const BaseBlock = (
+  props: BlockProps & {
+    preview?: boolean;
+    areYouSure?: boolean;
+    setAreYouSure?: (value: boolean) => void;
+  },
+) => {
   return (
     <div
       data-entityid={props.entityID}
@@ -119,25 +139,36 @@ export const BaseBlock = (props: BlockProps & { preview?: boolean }) => {
   `}
       id={elementId.block(props.entityID).container}
     >
-      {props.listData && <ListMarker {...props} />}
+      {props.areYouSure ? (
+        <AreYouSure
+          closeAreYouSure={() =>
+            props.setAreYouSure && props.setAreYouSure(false)
+          }
+          entityID={props.entityID}
+        />
+      ) : (
+        <>
+          {props.listData && <ListMarker {...props} />}
 
-      {props.type === "card" ? (
-        <CardBlock {...props} renderPreview={!props.preview} />
-      ) : props.type === "text" ? (
-        <TextBlock {...props} className="" previewOnly={props.preview} />
-      ) : props.type === "heading" ? (
-        <HeadingBlock {...props} preview={props.preview} />
-      ) : props.type === "image" ? (
-        <ImageBlock {...props} />
-      ) : props.type === "link" ? (
-        <ExternalLinkBlock {...props} />
-      ) : props.type === "mailbox" ? (
-        <div className="flex flex-col gap-4 w-full">
-          <MailboxBlock {...props} />
-        </div>
-      ) : props.type === "collection" ? (
-        <CollectionBlock {...props} />
-      ) : null}
+          {props.type === "card" ? (
+            <CardBlock {...props} renderPreview={!props.preview} />
+          ) : props.type === "text" ? (
+            <TextBlock {...props} className="" previewOnly={props.preview} />
+          ) : props.type === "heading" ? (
+            <HeadingBlock {...props} preview={props.preview} />
+          ) : props.type === "image" ? (
+            <ImageBlock {...props} />
+          ) : props.type === "link" ? (
+            <ExternalLinkBlock {...props} />
+          ) : props.type === "mailbox" ? (
+            <div className="flex flex-col gap-4 w-full">
+              <MailboxBlock {...props} />
+            </div>
+          ) : props.type === "collection" ? (
+            <CollectionBlock {...props} />
+          ) : null}
+        </>
+      )}
     </div>
   );
 };

@@ -10,7 +10,6 @@ import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useBlocks } from "src/hooks/queries/useBlocks";
-import { AreYouSure } from "./DeleteBlock";
 
 export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
   let { rep } = useReplicache();
@@ -24,55 +23,6 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
   );
 
   let isOpen = useUIState((s) => s.openCards).includes(cardEntity);
-
-  let [areYouSure, setAreYouSure] = useState(false);
-
-  useEffect(() => {
-    if (!isSelected) {
-      setAreYouSure(false);
-    }
-  }, [isSelected]);
-
-  useEffect(() => {
-    if (!isSelected) return;
-    let listener = (e: KeyboardEvent) => {
-      if (e.key === "Backspace" && permission) {
-        if (e.defaultPrevented) return;
-        if (areYouSure === false) {
-          setAreYouSure(true);
-        } else {
-          e.preventDefault();
-          useUIState.getState().closeCard(cardEntity);
-
-          rep &&
-            rep.mutate.removeBlock({
-              blockEntity: props.entityID,
-            });
-
-          props.previousBlock &&
-            focusBlock(props.previousBlock, { type: "end" });
-        }
-      }
-      if (e.key === "Escape" && permission && areYouSure) {
-        setAreYouSure(false);
-        focusBlock(
-          { type: "card", value: props.entityID, parent: props.parent },
-          { type: "start" },
-        );
-      }
-    };
-    window.addEventListener("keydown", listener);
-    return () => window.removeEventListener("keydown", listener);
-  }, [
-    areYouSure,
-    cardEntity,
-    isSelected,
-    permission,
-    props.entityID,
-    props.parent,
-    props.previousBlock,
-    rep,
-  ]);
 
   return (
     <div
@@ -102,67 +52,60 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
         }
       }}
     >
-      {areYouSure ? (
-        <AreYouSure
-          closeAreYouSure={() => setAreYouSure(false)}
-          entityID={props.entityID}
-        />
-      ) : (
-        <>
-          <div
-            className="cardBlockContent w-full flex overflow-clip cursor-pointer"
-            onClick={(e) => {
-              if (e.isDefaultPrevented()) return;
-              if (e.shiftKey) return;
-              e.preventDefault();
-              e.stopPropagation();
-              useUIState.getState().openCard(props.parent, cardEntity);
-              if (rep) focusCard(cardEntity, rep);
-            }}
-          >
-            <div className="my-2 ml-3 grow min-w-0 text-sm bg-transparent overflow-clip ">
-              {docMetadata[0] && (
-                <div
-                  className={`cardBlockOne outline-none resize-none align-top flex gap-2 ${docMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
-                >
-                  {docMetadata[0].listData && (
-                    <ListMarker
-                      {...docMetadata[0]}
-                      className={
-                        docMetadata[0].type === "heading"
-                          ? "!pt-[12px]"
-                          : "!pt-[8px]"
-                      }
-                    />
-                  )}
-                  <RenderedTextBlock entityID={docMetadata[0].value} />
-                </div>
-              )}
-              {docMetadata[1] && (
-                <div
-                  className={`cardBlockLineTwo outline-none resize-none align-top flex  gap-2 ${docMetadata[1].type === "heading" ? "font-bold" : ""}`}
-                >
-                  {docMetadata[1].listData && (
-                    <ListMarker {...docMetadata[1]} className="!pt-[8px]" />
-                  )}
-                  <RenderedTextBlock entityID={docMetadata[1].value} />
-                </div>
-              )}
-              {docMetadata[2] && (
-                <div
-                  className={`cardBlockLineThree outline-none resize-none align-top flex  gap-2 ${docMetadata[2].type === "heading" ? "font-bold" : ""}`}
-                >
-                  {docMetadata[2].listData && (
-                    <ListMarker {...docMetadata[2]} className="!pt-[8px]" />
-                  )}
-                  <RenderedTextBlock entityID={docMetadata[2].value} />
-                </div>
-              )}
-            </div>
-            {props.renderPreview && <CardPreview entityID={cardEntity} />}
+      <>
+        <div
+          className="cardBlockContent w-full flex overflow-clip cursor-pointer"
+          onClick={(e) => {
+            if (e.isDefaultPrevented()) return;
+            if (e.shiftKey) return;
+            e.preventDefault();
+            e.stopPropagation();
+            useUIState.getState().openCard(props.parent, cardEntity);
+            if (rep) focusCard(cardEntity, rep);
+          }}
+        >
+          <div className="my-2 ml-3 grow min-w-0 text-sm bg-transparent overflow-clip ">
+            {docMetadata[0] && (
+              <div
+                className={`cardBlockOne outline-none resize-none align-top flex gap-2 ${docMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
+              >
+                {docMetadata[0].listData && (
+                  <ListMarker
+                    {...docMetadata[0]}
+                    className={
+                      docMetadata[0].type === "heading"
+                        ? "!pt-[12px]"
+                        : "!pt-[8px]"
+                    }
+                  />
+                )}
+                <RenderedTextBlock entityID={docMetadata[0].value} />
+              </div>
+            )}
+            {docMetadata[1] && (
+              <div
+                className={`cardBlockLineTwo outline-none resize-none align-top flex  gap-2 ${docMetadata[1].type === "heading" ? "font-bold" : ""}`}
+              >
+                {docMetadata[1].listData && (
+                  <ListMarker {...docMetadata[1]} className="!pt-[8px]" />
+                )}
+                <RenderedTextBlock entityID={docMetadata[1].value} />
+              </div>
+            )}
+            {docMetadata[2] && (
+              <div
+                className={`cardBlockLineThree outline-none resize-none align-top flex  gap-2 ${docMetadata[2].type === "heading" ? "font-bold" : ""}`}
+              >
+                {docMetadata[2].listData && (
+                  <ListMarker {...docMetadata[2]} className="!pt-[8px]" />
+                )}
+                <RenderedTextBlock entityID={docMetadata[2].value} />
+              </div>
+            )}
           </div>
-        </>
-      )}
+          {props.renderPreview && <CardPreview entityID={cardEntity} />}
+        </div>
+      </>
     </div>
   );
 }

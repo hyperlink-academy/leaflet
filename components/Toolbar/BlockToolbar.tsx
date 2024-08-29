@@ -1,4 +1,4 @@
-import { AreYouSure } from "components/Blocks/DeleteBlock";
+import { AreYouSure, deleteBlock } from "components/Blocks/DeleteBlock";
 import { ButtonPrimary } from "components/Buttons";
 import {
   DeleteSmall,
@@ -193,10 +193,7 @@ export const DeleteBlockButton = (props: {
           compact
           entityID={props.blockID}
           onClick={() => {
-            rep &&
-              rep.mutate.removeBlock({
-                blockEntity: props.blockID,
-              });
+            rep && deleteBlock([props.blockID].flat(), rep);
           }}
           closeAreYouSure={() => {
             handleAreYouSureChange(false);

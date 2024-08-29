@@ -1,16 +1,11 @@
-import { useEffect } from "react";
 import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
+import { Replicache } from "replicache";
 import { useUIState } from "src/useUIState";
+import { scanIndex } from "src/replicache/utils";
+import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { focusBlock } from "src/utils/focusBlock";
 import { ButtonPrimary } from "components/Buttons";
 import { CloseTiny } from "components/Icons";
-import { getBlocksWithType } from "src/hooks/queries/useBlocks";
-import { scanIndex } from "src/replicache/utils";
-import { Replicache } from "replicache";
-import { Block } from "./Block";
-import { v7 } from "uuid";
-import { useEntitySetContext } from "components/EntitySetProvider";
-import { generateKeyBetween } from "fractional-indexing";
 
 export const AreYouSure = (props: {
   entityID: string[] | string;
@@ -21,8 +16,6 @@ export const AreYouSure = (props: {
   let entities = [props.entityID].flat();
   let { rep } = useReplicache();
   let focusedBlock = useUIState((s) => s.focusedBlock);
-  let childCards = useEntity(focusedBlock?.entityID || null, "block/card");
-  let childCardIDs = childCards ? childCards.data.value : props.entityID;
   let type = useEntity(focusedBlock?.entityID || null, "block/type")?.data
     .value;
 
@@ -51,8 +44,8 @@ export const AreYouSure = (props: {
             autoFocus
             compact
             onClick={async (e) => {
-              if (rep)
-                await deleteBlock(e, focusedBlock, childCardIDs, entities, rep);
+              e.stopPropagation();
+              if (rep) await deleteBlock(entities, rep);
             }}
           >
             Delete
@@ -73,26 +66,37 @@ export const AreYouSure = (props: {
   );
 };
 
-async function deleteBlock(
-  e: React.MouseEvent,
-  focusedBlock:
-    | {
-        type: "card";
-        entityID: string;
-      }
-    | {
-        type: "block";
-        entityID: string;
-        parent: string;
-      }
-    | null,
-  childCardIDs: string | string[],
+export async function deleteBlock(
   entities: string[],
   rep: Replicache<ReplicacheMutators>,
 ) {
-  if (!focusedBlock || focusedBlock?.type === "card") return;
-  e.stopPropagation();
+  let focusedBlock = useUIState.getState().focusedBlock;
 
+  // if the focused thing is a page and not a blcok, return
+  if (!focusedBlock || focusedBlock?.type === "card") return;
+  let [type] = await rep.query((tx) =>
+    scanIndex(tx).eav(focusedBlock.entityID, "block/type"),
+  );
+
+  // get what cards we need to close as a result of deleting this block
+  let cardsToClose = [] as string[];
+  if (type.data.value === "card") {
+    let [childCards] = await rep?.query(
+      (tx) => scanIndex(tx).eav(focusedBlock.entityID, "block/card") || [],
+    );
+    cardsToClose = [childCards?.data.value];
+  }
+  if (type.data.value === "mailbox") {
+    let [archive] = await rep?.query(
+      (tx) => scanIndex(tx).eav(focusedBlock.entityID, "mailbox/archive") || [],
+    );
+    let [draft] = await rep?.query(
+      (tx) => scanIndex(tx).eav(focusedBlock.entityID, "mailbox/draft") || [],
+    );
+    cardsToClose = [archive?.data.value, draft?.data.value];
+  }
+
+  //  the next and previous blocks in the block list
   let siblings =
     (await rep?.query((tx) => getBlocksWithType(tx, focusedBlock?.parent))) ||
     [];
@@ -102,7 +106,7 @@ async function deleteBlock(
       siblings.findIndex((s) => s.value === focusedBlock.entityID) - 1
     ];
   let prevBlockType = await rep?.query((tx) =>
-    scanIndex(tx).eav(nextBlock.value, "block/type"),
+    scanIndex(tx).eav(prevBlock?.value, "block/type"),
   );
 
   let nextBlock =
@@ -112,6 +116,7 @@ async function deleteBlock(
   let nextBlockType = await rep?.query((tx) =>
     scanIndex(tx).eav(nextBlock.value, "block/type"),
   );
+
   if (prevBlock) {
     useUIState.getState().setSelectedBlock({
       value: prevBlock.value,
@@ -121,7 +126,7 @@ async function deleteBlock(
     focusBlock(
       {
         value: prevBlock.value,
-        type: prevBlockType?.[0]?.data.value,
+        type: prevBlockType?.[0].data.value,
         parent: prevBlock.parent,
       },
       { type: "end" },
@@ -142,11 +147,13 @@ async function deleteBlock(
     );
   }
 
-  useUIState.getState().closeCard(childCardIDs);
+  cardsToClose.forEach((card) => card && useUIState.getState().closeCard(card));
 
-  entities.forEach((entity) => {
-    rep?.mutate.removeBlock({
-      blockEntity: entity,
-    });
-  });
+  await Promise.all(
+    entities.map((entity) =>
+      rep?.mutate.removeBlock({
+        blockEntity: entity,
+      }),
+    ),
+  );
 }

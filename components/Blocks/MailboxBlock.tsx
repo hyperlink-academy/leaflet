@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { useSmoker, useToaster } from "components/Toast";
 import { BlockProps } from "./Block";
 import { useEntity, useReplicache } from "src/replicache";
-import { AreYouSure } from "./DeleteBlock";
 import { focusBlock } from "src/utils/focusBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { subscribeToMailboxWithEmail } from "actions/subscriptions/subscribeToMailboxWithEmail";
@@ -114,42 +113,31 @@ export const MailboxBlock = (props: BlockProps) => {
             "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-card)) 85%)",
         }}
       >
-        {!areYouSure ? (
-          <div className="flex gap-2 p-4">
-            <ButtonPrimary
-              onClick={async () => {
-                let entity;
-                if (draft) {
-                  entity = draft.data.value;
-                } else {
-                  entity = v7();
-                  await rep?.mutate.createDraft({
-                    mailboxEntity: props.entityID,
-                    permission_set: entity_set.set,
-                    newEntity: entity,
-                    firstBlockEntity: v7(),
-                    firstBlockFactID: v7(),
-                  });
-                }
-                useUIState.getState().openCard(props.parent, entity);
-                if (rep) focusCard(entity, rep, "focusFirstBlock");
-                return;
-              }}
-            >
-              {draft ? "Edit Draft" : "Write a Post"}
-            </ButtonPrimary>
-            <MailboxInfo />
-          </div>
-        ) : (
-          <AreYouSure
-            entityID={props.entityID}
-            closeAreYouSure={() => setAreYouSure(false)}
-            onClick={() => {
-              draft && useUIState.getState().closeCard(draft.data.value);
-              archive && useUIState.getState().closeCard(archive.data.value);
+        <div className="flex gap-2 p-4">
+          <ButtonPrimary
+            onClick={async () => {
+              let entity;
+              if (draft) {
+                entity = draft.data.value;
+              } else {
+                entity = v7();
+                await rep?.mutate.createDraft({
+                  mailboxEntity: props.entityID,
+                  permission_set: entity_set.set,
+                  newEntity: entity,
+                  firstBlockEntity: v7(),
+                  firstBlockFactID: v7(),
+                });
+              }
+              useUIState.getState().openCard(props.parent, entity);
+              if (rep) focusCard(entity, rep, "focusFirstBlock");
+              return;
             }}
-          />
-        )}
+          >
+            {draft ? "Edit Draft" : "Write a Post"}
+          </ButtonPrimary>
+          <MailboxInfo />
+        </div>
       </div>
       <div className="flex gap-3 items-center justify-between">
         {

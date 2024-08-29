@@ -9,11 +9,18 @@ import { indent, outdent } from "src/utils/list-operations";
 import { generateKeyBetween } from "fractional-indexing";
 import { v7 } from "uuid";
 import { BlockProps } from "./Block";
-import { ReplicacheMutators, useReplicache } from "src/replicache";
+import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { Replicache } from "replicache";
+import { deleteBlock } from "./DeleteBlock";
+import { entities } from "drizzle/schema";
+import { scanIndex } from "src/replicache/utils";
 
-export function useBlockKeyboardHandlers(props: BlockProps) {
+export function useBlockKeyboardHandlers(
+  props: BlockProps,
+  areYouSure: boolean,
+  setAreYouSure: (value: boolean) => void,
+) {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
 
@@ -26,7 +33,6 @@ export function useBlockKeyboardHandlers(props: BlockProps) {
 
   useEffect(() => {
     if (!hasSelectionUI || !rep) return;
-    let r = rep;
     let listener = async (e: KeyboardEvent) => {
       // keymapping for textBlocks is handled in TextBlock/keymap
       if (e.defaultPrevented) return;
@@ -35,18 +41,23 @@ export function useBlockKeyboardHandlers(props: BlockProps) {
       let command = { Tab, ArrowUp, ArrowDown, Backspace, Enter, Escape }[
         e.key
       ];
-      command?.(e, props, r, entity_set);
+      command?.({ e, props, rep, entity_set, areYouSure, setAreYouSure });
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [entity_set, hasSelectionUI, props, rep]);
+  }, [entity_set, hasSelectionUI, props, rep, areYouSure, setAreYouSure]);
 }
 
-function Tab(
-  e: KeyboardEvent,
-  props: BlockProps,
-  rep: Replicache<ReplicacheMutators>,
-) {
+type Args = {
+  e: KeyboardEvent;
+  props: BlockProps;
+  rep: Replicache<ReplicacheMutators>;
+  entity_set: { set: string };
+  areYouSure: boolean;
+  setAreYouSure: (value: boolean) => void;
+};
+
+function Tab({ e, props, rep }: Args) {
   // if tab or shift tab & not a textBlock, indent or outdent
   if (isTextBlock[props.type]) return;
   if (e.shiftKey) {
@@ -58,7 +69,7 @@ function Tab(
   }
 }
 
-function ArrowDown(e: KeyboardEvent, props: BlockProps) {
+function ArrowDown({ e, props }: Args) {
   e.preventDefault();
   let nextBlock = props.nextBlock;
   if (nextBlock && useUIState.getState().selectedBlock.length <= 1)
@@ -69,7 +80,7 @@ function ArrowDown(e: KeyboardEvent, props: BlockProps) {
   if (!nextBlock) return;
 }
 
-function ArrowUp(e: KeyboardEvent, props: BlockProps) {
+function ArrowUp({ e, props }: Args) {
   e.preventDefault();
   let prevBlock = props.previousBlock;
   if (prevBlock && useUIState.getState().selectedBlock.length <= 1) {
@@ -81,13 +92,34 @@ function ArrowUp(e: KeyboardEvent, props: BlockProps) {
   if (!prevBlock) return;
 }
 
-function Backspace(
-  e: KeyboardEvent,
-  props: BlockProps,
-  rep: Replicache<ReplicacheMutators>,
-) {
+async function Backspace({ e, props, rep, areYouSure, setAreYouSure }: Args) {
+  // if this is a textBlock, let the textBlock/keymap handle the backspace
   if (isTextBlock[props.type]) return;
-  if (props.type === "card" || props.type === "mailbox") return;
+
+  // if the block is a card or mailbox...
+  if (props.type === "card" || props.type === "mailbox") {
+    // ...and areYouSure state is false, set it to true
+    if (!areYouSure) {
+      setAreYouSure(true);
+      return;
+    }
+    // ... and areYouSure state is true,
+    // and the user is not in an input or textarea,
+    // if there is a card to close, close it and remove the block
+    if (areYouSure) {
+      let el = e.target as HTMLElement;
+
+      if (
+        el.tagName === "INPUT" ||
+        el.tagName === "textarea" ||
+        el.contentEditable === "true"
+      )
+        return;
+
+      return deleteBlock([props.entityID].flat(), rep);
+    }
+  }
+
   e.preventDefault();
   rep.mutate.removeBlock({ blockEntity: props.entityID });
   useUIState.getState().closeCard(props.entityID);
@@ -95,12 +127,7 @@ function Backspace(
   if (prevBlock) focusBlock(prevBlock, { type: "end" });
 }
 
-async function Enter(
-  e: KeyboardEvent,
-  props: BlockProps,
-  rep: Replicache<ReplicacheMutators>,
-  entity_set: { set: string },
-) {
+async function Enter({ props, rep, entity_set }: Args) {
   let newEntityID = v7();
   let position;
   // if it's a list, create a new list item at the same depth
@@ -126,6 +153,7 @@ async function Enter(
       data: { type: "boolean", value: true },
     });
   }
+
   // if it's not a list, create a new block between current and next block
   if (!props.listData) {
     position = generateKeyBetween(props.position, props.nextPosition);
@@ -143,8 +171,15 @@ async function Enter(
   }, 10);
 }
 
-function Escape(e: KeyboardEvent) {
+function Escape({ e, props, areYouSure, setAreYouSure }: Args) {
   e.preventDefault();
+  if (areYouSure) {
+    setAreYouSure(false);
+    focusBlock(
+      { type: "card", value: props.entityID, parent: props.parent },
+      { type: "start" },
+    );
+  }
 
   useUIState.setState({ selectedBlock: [] });
   useUIState.setState({ focusedBlock: null });
