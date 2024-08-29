@@ -1,7 +1,6 @@
 "use client";
 
-import { Fact, ReplicacheMutators, useReplicache } from "src/replicache";
-import { Replicache } from "replicache";
+import { Fact, useReplicache } from "src/replicache";
 
 import { useUIState } from "src/useUIState";
 import { useBlocks } from "src/hooks/queries/useBlocks";
@@ -17,19 +16,6 @@ import { v7 } from "uuid";
 import { BlockOptions } from "./BlockOptions";
 import { Block } from "./Block";
 
-export type Block = {
-  factID: string;
-  parent: string;
-  position: string;
-  value: string;
-  type: Fact<"block/type">["data"]["value"];
-  listData?: {
-    checklist?: boolean;
-    path: { depth: number; entity: string }[];
-    parent: string;
-    depth: number;
-  };
-};
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
   let entity_set = useEntitySetContext();

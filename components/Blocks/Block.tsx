@@ -1,6 +1,6 @@
 "use client";
 
-import { useEntity, useReplicache } from "src/replicache";
+import { Fact, useEntity, useReplicache } from "src/replicache";
 import { useEffect } from "react";
 import { useUIState } from "src/useUIState";
 import { useEditorStates } from "src/state/useEditorState";
@@ -22,17 +22,29 @@ import { CardBlock } from "./CardBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { MailboxBlock } from "./MailboxBlock";
 import { HeadingBlock } from "./HeadingBlock";
-import { Block as BlockType } from ".";
 import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
 
+export type Block = {
+  factID: string;
+  parent: string;
+  position: string;
+  value: string;
+  type: Fact<"block/type">["data"]["value"];
+  listData?: {
+    checklist?: boolean;
+    path: { depth: number; entity: string }[];
+    parent: string;
+    depth: number;
+  };
+};
 export type BlockProps = {
   entityID: string;
   parent: string;
   position: string;
-  nextBlock: BlockType | null;
-  previousBlock: BlockType | null;
+  nextBlock: Block | null;
+  previousBlock: Block | null;
   nextPosition: string | null;
-} & BlockType;
+} & Block;
 
 export function Block(props: BlockProps) {
   let { rep } = useReplicache();
@@ -246,9 +258,9 @@ export const BaseBlock = (props: BlockProps & { preview?: boolean }) => {
 };
 
 export const ListMarker = (
-  props: BlockType & {
-    previousBlock?: BlockType | null;
-    nextBlock?: BlockType | null;
+  props: Block & {
+    previousBlock?: Block | null;
+    nextBlock?: Block | null;
   } & {
     className?: string;
   },

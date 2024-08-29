@@ -1,4 +1,4 @@
-import { Block } from "components/Blocks";
+import { Block } from "components/Blocks/Block";
 import { create } from "zustand";
 import { combine, createJSONStorage, persist } from "zustand/middleware";
 

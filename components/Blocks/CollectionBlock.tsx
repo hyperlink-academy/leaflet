@@ -7,13 +7,12 @@ import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 
-import { Block as BlockType } from ".";
-import { Block, BlockProps } from "./Block";
+import { Block } from "./Block";
 
-export const CollectionBlock = (props: BlockProps) => {
+export const CollectionBlock = (props: Block) => {
   let { rep } = useReplicache();
 
-  let collectionItems = useBlocks(props.entityID);
+  let collectionItems = useBlocks(props.value);
 
   let lastCollectionItem = collectionItems.findLast(
     (f) => !f.listData || f.listData.depth === 1,
@@ -23,7 +22,7 @@ export const CollectionBlock = (props: BlockProps) => {
     <div className="grid grid-cols-3 gap-3 w-full">
       <NewCollectionItem
         lastBlock={lastCollectionItem || null}
-        parentID={props.entityID}
+        parentID={props.value}
       />
       {collectionItems.map((f, index, arr) => {
         let nextBlock = arr[index + 1];
@@ -37,12 +36,11 @@ export const CollectionBlock = (props: BlockProps) => {
           else nextPosition = null;
         }
         return (
-          <div className="border border-border aspect-square">
+          <div className="border border-border aspect-square" key={f.value}>
             <Block
               {...f}
-              key={f.value}
               entityID={f.value}
-              parent={props.entityID}
+              parent={props.value}
               previousBlock={arr[index - 1] || null}
               nextBlock={arr[index + 1] || null}
               nextPosition={nextPosition}
@@ -55,7 +53,7 @@ export const CollectionBlock = (props: BlockProps) => {
 };
 
 function NewCollectionItem(props: {
-  lastBlock: BlockType | null;
+  lastBlock: Block | null;
   parentID: string;
 }) {
   let { rep } = useReplicache();

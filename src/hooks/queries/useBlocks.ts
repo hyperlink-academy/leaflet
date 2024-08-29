@@ -1,4 +1,4 @@
-import { Block } from "components/Blocks";
+import { Block } from "components/Blocks/Block";
 import { useMemo } from "react";
 import { ReadTransaction } from "replicache";
 import { useSubscribe } from "replicache-react";

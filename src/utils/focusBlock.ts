@@ -1,6 +1,6 @@
 import { TextSelection } from "prosemirror-state";
 import { useUIState } from "src/useUIState";
-import { Block } from "components/Blocks/index";
+import { Block } from "components/Blocks/Block";
 
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 

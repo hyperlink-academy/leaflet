@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
-import { Block } from "components/Blocks";
+import { Block } from "components/Blocks/Block";
 
 export async function getBlocksAsHTML(
   rep: Replicache<ReplicacheMutators>,
