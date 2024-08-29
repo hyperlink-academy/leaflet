@@ -1,4 +1,9 @@
-import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
+import {
+  Fact,
+  ReplicacheMutators,
+  useEntity,
+  useReplicache,
+} from "src/replicache";
 import { Replicache } from "replicache";
 import { useUIState } from "src/useUIState";
 import { scanIndex } from "src/replicache/utils";
@@ -11,6 +16,7 @@ export const AreYouSure = (props: {
   entityID: string[] | string;
   onClick?: () => void;
   closeAreYouSure: () => void;
+  type: Fact<"block/type">["data"]["value"];
   compact?: boolean;
 }) => {
   let entities = [props.entityID].flat();
@@ -21,7 +27,11 @@ export const AreYouSure = (props: {
 
   return (
     <div
-      className={`flex w-full h-full items-center justify-center ${!props.compact && "bg-border-light"}`}
+      className={`
+        w-full ${props.type === "card" ? "h-[104px]" : props.type === "mailbox" ? "h-[92px]" : "h-full"}
+        flex items-center justify-center
+        border-2 border-border rounded-lg
+        ${!props.compact && "bg-border-light"}`}
     >
       <div
         className={`flex h-fit justify-center items-center font-bold text-secondary  ${props.compact ? "flex-row gap-2 justify-between w-full " : "flex-col  py-2 gap-1"}`}

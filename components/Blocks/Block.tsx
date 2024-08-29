@@ -122,17 +122,17 @@ export const BaseBlock = (
   `}
       id={elementId.block(props.entityID).container}
     >
+      {props.listData && <ListMarker {...props} />}
       {props.areYouSure ? (
         <AreYouSure
           closeAreYouSure={() =>
             props.setAreYouSure && props.setAreYouSure(false)
           }
+          type={props.type}
           entityID={props.entityID}
         />
       ) : (
         <>
-          {props.listData && <ListMarker {...props} />}
-
           {props.type === "card" ? (
             <CardBlock {...props} renderPreview={!props.preview} />
           ) : props.type === "text" ? (
