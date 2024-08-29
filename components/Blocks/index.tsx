@@ -1,6 +1,8 @@
 "use client";
 
-import { Fact, useEntity, useReplicache } from "src/replicache";
+import { Fact, ReplicacheMutators, useReplicache } from "src/replicache";
+import { Replicache } from "replicache";
+
 import { useUIState } from "src/useUIState";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEditorStates } from "src/state/useEditorState";
@@ -12,10 +14,8 @@ import { elementId } from "src/utils/elementId";
 import { generateKeyBetween } from "fractional-indexing";
 import { v7 } from "uuid";
 
-import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
-import { TextBlock } from "components/Blocks/TextBlock";
 import { BlockOptions } from "./BlockOptions";
-import { Block, BlockProps } from "./Block";
+import { Block } from "./Block";
 
 export type Block = {
   factID: string;
@@ -119,47 +119,12 @@ export function Blocks(props: { entityID: string }) {
         lastBlock={lastRootBlock || null}
         entityID={props.entityID}
       />
-      {entity_set.permissions.write ? (
-        <div
-          className="blocksBottomClickable shrink-0 h-[50vh]"
-          onClick={() => {
-            let newEntityID = v7();
 
-            if (
-              // if the last visible(not-folded) block is a text block, focus it
-              lastRootBlock &&
-              lastVisibleBlock &&
-              isTextBlock[lastVisibleBlock.type]
-            ) {
-              focusBlock(
-                { ...lastVisibleBlock, type: "text" },
-                { type: "end" },
-              );
-            } else {
-              // else add a new text block at the end and focus it
-              rep?.rep?.mutate.addBlock({
-                permission_set: entity_set.set,
-                factID: v7(),
-                parent: props.entityID,
-                type: "text",
-                position: generateKeyBetween(
-                  lastRootBlock?.position || null,
-                  null,
-                ),
-                newEntityID,
-              });
-
-              setTimeout(() => {
-                document
-                  .getElementById(elementId.block(newEntityID).text)
-                  ?.focus();
-              }, 10);
-            }
-          }}
-        />
-      ) : (
-        <div className="h-4" />
-      )}
+      <BlockListBottom
+        lastVisibleBlock={lastVisibleBlock || undefined}
+        lastRootBlock={lastRootBlock || undefined}
+        entityID={props.entityID}
+      />
     </div>
   );
 }
@@ -220,3 +185,50 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
     </div>
   );
 }
+
+const BlockListBottom = (props: {
+  lastRootBlock: Block | undefined;
+  lastVisibleBlock: Block | undefined;
+  entityID: string;
+}) => {
+  let newEntityID = v7();
+  let { rep } = useReplicache();
+  let entity_set = useEntitySetContext();
+
+  if (!entity_set.permissions.write) return <div className="h-4" />;
+  return (
+    <div
+      className="blockListClickableBottomArea shrink-0 h-[50vh]"
+      onClick={() => {
+        if (
+          // if the last visible(not-folded) block is a text block, focus it
+          props.lastRootBlock &&
+          props.lastVisibleBlock &&
+          isTextBlock[props.lastVisibleBlock.type]
+        ) {
+          focusBlock(
+            { ...props.lastVisibleBlock, type: "text" },
+            { type: "end" },
+          );
+        } else {
+          // else add a new text block at the end and focus it
+          rep?.mutate.addBlock({
+            permission_set: entity_set.set,
+            factID: v7(),
+            parent: props.entityID,
+            type: "text",
+            position: generateKeyBetween(
+              props.lastRootBlock?.position || null,
+              null,
+            ),
+            newEntityID,
+          });
+
+          setTimeout(() => {
+            document.getElementById(elementId.block(newEntityID).text)?.focus();
+          }, 10);
+        }
+      }}
+    />
+  );
+};
