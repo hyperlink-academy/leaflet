@@ -15,6 +15,7 @@ import { focusCard } from "components/Cards";
 import { v7 } from "uuid";
 import { scanIndex } from "src/replicache/utils";
 import { indent, outdent } from "src/utils/list-operations";
+import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 
 type PropsRef = MutableRefObject<BlockProps & { entity_set: { set: string } }>;
 export const TextBlockKeymap = (
@@ -32,6 +33,29 @@ export const TextBlockKeymap = (
     "Ctrl-Meta-h": toggleMark(schema.marks.highlight, {
       color: useUIState.getState().lastUsedHighlight,
     }),
+    "Meta-a": (state, _dispatch, view) => {
+      const { from, to } = state.selection;
+      // Check if the entire content of the blockk is selected
+      const isFullySelected = from === 0 && to === state.doc.content.size;
+      
+      if (!isFullySelected) {
+        // If the entire block is selected, we don't need to do anything
+        return false
+      } else {
+        // Remove the selection
+        view?.dispatch(state.tr.setSelection(TextSelection.create(state.doc, from)));
+        view?.dom.blur()
+        repRef.current?.query(async tx=>{
+          let allBlocks = await getBlocksWithType(tx, propsRef.current.parent) ||[]
+          console.log("allBlocks", allBlocks)
+          useUIState.setState({
+            selectedBlock: allBlocks.map(b=>({value: b.value, parent: propsRef.current.parent}))
+          })
+        })
+        return true
+      }
+
+    },
     Tab: () => {
       if (useUIState.getState().selectedBlock.length > 1) return false;
       if (!repRef.current || !propsRef.current.previousBlock) return false;
