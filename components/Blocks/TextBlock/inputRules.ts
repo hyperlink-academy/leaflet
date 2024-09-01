@@ -88,7 +88,11 @@ export const inputrules = (
 
       //Checklist
       new InputRule(/^\[(\ |x)?\]\s$/, (state, match) => {
-        if (!propsRef.current.listData) return null;
+        if (!propsRef.current.listData) repRef.current?.mutate.assertFact({
+          entity: propsRef.current.entityID,
+          attribute: "block/is-list",
+          data: { type: "boolean", value: true },
+        });
         let tr = state.tr;
         tr.delete(0, match[0].length);
         repRef.current?.mutate.assertFact({
