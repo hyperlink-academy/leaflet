@@ -43,7 +43,7 @@ import { highlightSelectionPlugin } from "./plugins";
 import { inputrules } from "./inputRules";
 
 export function TextBlock(
-  props: BlockProps & { className: string; previewOnly?: boolean },
+  props: BlockProps & { className: string; preview?: boolean },
 ) {
   let initialized = useInitialPageLoad();
   let first = props.previousBlock === null;
@@ -51,14 +51,14 @@ export function TextBlock(
 
   return (
     <>
-      {(!initialized || !permission || props.previewOnly) && (
+      {(!initialized || !permission || props.preview) && (
         <RenderedTextBlock
           entityID={props.entityID}
           className={props.className}
           first={first}
         />
       )}
-      {permission && !props.previewOnly && (
+      {permission && !props.preview && (
         <div
           className={`w-full relative group/text ${!initialized ? "hidden" : ""}`}
         >

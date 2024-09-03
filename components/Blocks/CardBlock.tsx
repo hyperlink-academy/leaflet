@@ -1,5 +1,5 @@
 "use client";
-import { BlockProps, BaseBlock, ListMarker } from "./Block";
+import { BlockProps, BaseBlock, ListMarker, Block } from "./Block";
 import { focusBlock } from "src/utils/focusBlock";
 
 import { focusCard } from "components/Cards";
@@ -8,15 +8,13 @@ import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
 import { CSSProperties, useEffect, useRef, useState } from "react";
-import { useEntitySetContext } from "components/EntitySetProvider";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 
-export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
+export function CardBlock(props: BlockProps & { preview?: boolean }) {
   let { rep } = useReplicache();
   let card = useEntity(props.entityID, "block/card");
   let cardEntity = card ? card.data.value : props.entityID;
   let docMetadata = useDocMetadata(cardEntity);
-  let permission = useEntitySetContext().permissions.write;
 
   let isSelected = useUIState((s) =>
     s.selectedBlock.find((b) => b.value === props.entityID),
@@ -40,17 +38,6 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
               : "border-border-light outline-transparent hover:outline-border-light"
         }
         `}
-      onKeyDown={(e) => {
-        if (e.key === "Backspace" && permission) {
-          e.stopPropagation();
-          useUIState.getState().closeCard(cardEntity);
-
-          rep &&
-            rep.mutate.removeBlock({
-              blockEntity: props.entityID,
-            });
-        }
-      }}
     >
       <>
         <div
@@ -103,7 +90,7 @@ export function CardBlock(props: BlockProps & { renderPreview?: boolean }) {
               </div>
             )}
           </div>
-          {props.renderPreview && <CardPreview entityID={cardEntity} />}
+          {props.preview && <CardPreview entityID={cardEntity} />}
         </div>
       </>
     </div>
@@ -118,10 +105,10 @@ export function CardPreview(props: { entityID: string }) {
   return (
     <div
       ref={previewRef}
-      className={`cardBlockPreview w-[120px] overflow-clip p-1 mx-3 mt-3 -mb-2 bg-bg-card border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center`}
+      className={`cardBlockPreview w-[120px] overflow-clip  mx-3 mt-3 -mb-2 bg-bg-card border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center`}
     >
       <div
-        className="absolute top-0 left-0 w-full h-full origin-top-left pointer-events-none"
+        className="absolute top-0 left-0  h-full origin-top-left pointer-events-none"
         style={{
           width: `calc(1px * ${cardWidth})`,
           transform: `scale(calc((120 / ${cardWidth} )))`,
@@ -171,5 +158,5 @@ export function BlockPreview(
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, [b.previewRef]);
-  return <div ref={ref}>{isVisible && <BaseBlock {...b} preview />}</div>;
+  return <div ref={ref}>{isVisible && <Block {...b} />}</div>;
 }

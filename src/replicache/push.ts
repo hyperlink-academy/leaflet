@@ -48,6 +48,7 @@ export async function Push(
         console.log(
           `Error occured while running mutation: ${name}`,
           JSON.stringify(e),
+          JSON.stringify(mutation, null, 2),
         );
       }
       await tx

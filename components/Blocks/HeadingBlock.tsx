@@ -15,7 +15,7 @@ export function HeadingBlock(props: BlockProps & { preview?: boolean }) {
   return (
     <TextBlock
       {...props}
-      previewOnly={props.preview}
+      preview={props.preview}
       className={HeadingStyle[headingLevel?.data.value || 1]}
     />
   );

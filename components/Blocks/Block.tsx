@@ -46,7 +46,7 @@ export type BlockProps = {
 export function Block(props: BlockProps) {
   // Block handles all block level events like
   // mouse events, keyboard events and longPress, and setting AreYouSure state
-  // it does NOT render any styling
+  // and shared styling like padding and flex for list layouting
 
   let mouseHandlers = useBlockMouseHandlers(props);
 
@@ -78,7 +78,23 @@ export function Block(props: BlockProps) {
     <div
       {...mouseHandlers}
       {...handlers}
-      className="blockWrapper relative flex"
+      className={`
+        blockWrapper relative
+        grow flex flex-row gap-2
+        px-3 sm:px-4
+      ${
+        props.type === "heading" ||
+        (props.listData && props.nextBlock?.listData)
+          ? "pb-0"
+          : "pb-2"
+      }
+      ${
+        !props.previousBlock
+          ? props.type === "heading" || props.type === "text"
+            ? "pt-2 sm:pt-3"
+            : "pt-3 sm:pt-4"
+          : "pt-1"
+      }`}
     >
       <BlockMultiselectIndicator {...props} />
       <BaseBlock
@@ -98,30 +114,8 @@ export const BaseBlock = (
   },
 ) => {
   // BaseBlock renders the actual block content
-  // and handles shared block styles, mostly padding
   return (
-    <div
-      data-entityid={props.entityID}
-      className={`
-      blockContent relative
-      grow flex flex-row gap-2
-      px-3 sm:px-4
-      ${
-        props.type === "heading" ||
-        (props.listData && props.nextBlock?.listData)
-          ? "pb-0"
-          : "pb-2"
-      }
-      ${
-        !props.previousBlock
-          ? props.type === "heading" || props.type === "text"
-            ? "pt-2 sm:pt-3"
-            : "pt-3 sm:pt-4"
-          : "pt-1"
-      }
-  `}
-      id={elementId.block(props.entityID).container}
-    >
+    <div className="grow flex gap-2">
       {props.listData && <ListMarker {...props} />}
       {props.areYouSure ? (
         <AreYouSure
@@ -134,9 +128,9 @@ export const BaseBlock = (
       ) : (
         <>
           {props.type === "card" ? (
-            <CardBlock {...props} renderPreview={!props.preview} />
+            <CardBlock {...props} preview={!props.preview} />
           ) : props.type === "text" ? (
-            <TextBlock {...props} className="" previewOnly={props.preview} />
+            <TextBlock {...props} className="" preview={props.preview} />
           ) : props.type === "heading" ? (
             <HeadingBlock {...props} preview={props.preview} />
           ) : props.type === "image" ? (
