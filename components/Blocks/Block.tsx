@@ -4,11 +4,9 @@ import { Fact, useEntity, useReplicache } from "src/replicache";
 import { useEffect, useState } from "react";
 import { useUIState } from "src/useUIState";
 import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
+import { useBlockKeyboardHandlers } from "./useBlockKeyboardHandlers";
 import { useLongPress } from "src/hooks/useLongPress";
-
-import { isTextBlock } from "src/utils/isTextBlock";
 import { focusBlock } from "src/utils/focusBlock";
-import { elementId } from "src/utils/elementId";
 
 import { CollectionBlock } from "./CollectionBlock";
 import { TextBlock } from "components/Blocks/TextBlock";
@@ -18,7 +16,6 @@ import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { MailboxBlock } from "./MailboxBlock";
 import { HeadingBlock } from "./HeadingBlock";
 import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
-import { useBlockKeyboardHandlers } from "./useBlockKeyboardHandlers";
 import { AreYouSure } from "./DeleteBlock";
 
 export type Block = {
