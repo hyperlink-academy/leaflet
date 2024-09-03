@@ -13,10 +13,13 @@ import { addShortcut } from "src/shortcuts";
 import { ListToolbar } from "./ListToolbar";
 import { HighlightToolbar } from "./HighlightToolbar";
 import { TextToolbar } from "./TextToolbar";
-import { BlockToolbar, DeleteBlockButton } from "./BlockToolbar";
+import { BlockToolbar } from "./BlockToolbar";
 import { MultiSelectToolbar } from "./MultiSelectToolbar";
+import { focusCard } from "components/Cards";
+import { AreYouSure, deleteBlock } from "components/Blocks/DeleteBlock";
 
 export type ToolbarTypes =
+  | "areYouSure"
   | "default"
   | "highlight"
   | "link"
@@ -24,24 +27,24 @@ export type ToolbarTypes =
   | "list"
   | "linkBlock"
   | "block"
-  | "multiSelect";
+  | "multiselect";
 
 export const Toolbar = (props: { cardID: string; blockID: string }) => {
-  let focusedBlock = useUIState((s) => s.focusedEntity);
-
-  let blockType = useEntity(props.blockID, "block/type")?.data.value;
+  let { rep } = useReplicache();
 
   let [toolbarState, setToolbarState] = useState<ToolbarTypes>("default");
+
+  let focusedBlock = useUIState((s) => s.focusedEntity);
+  let selectedBlocks = useUIState((s) => s.selectedBlocks);
+  let activeEditor = useEditorStates((s) => s.editorStates[props.blockID]);
+
+  let blockType = useEntity(props.blockID, "block/type")?.data.value;
 
   let lastUsedHighlight = useUIState((s) => s.lastUsedHighlight);
   let setLastUsedHighlight = (color: "1" | "2" | "3") =>
     useUIState.setState({
       lastUsedHighlight: color,
     });
-
-  let activeEditor = useEditorStates((s) => s.editorStates[props.blockID]);
-
-  let selectedBlocks = useUIState((s) => s.selectedBlocks);
 
   useEffect(() => {
     if (toolbarState !== "default") return;
@@ -56,6 +59,7 @@ export const Toolbar = (props: { cardID: string; blockID: string }) => {
       removeShortcut();
     };
   }, [toolbarState]);
+
   useEffect(() => {
     if (blockType !== "heading" && blockType !== "text") {
       setToolbarState("block");
@@ -65,9 +69,9 @@ export const Toolbar = (props: { cardID: string; blockID: string }) => {
   }, [blockType]);
 
   useEffect(() => {
-    if (selectedBlocks.length > 1) {
-      setToolbarState("multiSelect");
-    } else if (toolbarState === "multiSelect") {
+    if (selectedBlocks.length > 1 && toolbarState !== "areYouSure") {
+      setToolbarState("multiselect");
+    } else if (toolbarState === "multiselect") {
       setToolbarState("default");
     }
   }, [selectedBlocks.length, toolbarState]);
@@ -103,15 +107,50 @@ export const Toolbar = (props: { cardID: string; blockID: string }) => {
           ) : toolbarState === "heading" ? (
             <TextBlockTypeToolbar onClose={() => setToolbarState("default")} />
           ) : toolbarState === "block" ? (
-            <BlockToolbar />
-          ) : toolbarState === "multiSelect" ? (
-            <MultiSelectToolbar />
+            <BlockToolbar
+              setToolbarState={(state) => {
+                setToolbarState(state);
+              }}
+            />
+          ) : toolbarState === "multiselect" ? (
+            <MultiSelectToolbar
+              setToolbarState={(state) => {
+                setToolbarState(state);
+              }}
+            />
+          ) : toolbarState === "areYouSure" ? (
+            <AreYouSure
+              compact
+              type={blockType}
+              entityID={selectedBlocks.map((b) => b.value)}
+              onClick={() => {
+                rep &&
+                  deleteBlock(
+                    selectedBlocks.map((b) => b.value),
+                    rep,
+                  );
+              }}
+              closeAreYouSure={() => {
+                let state: ToolbarTypes =
+                  selectedBlocks.length > 1
+                    ? "multiselect"
+                    : blockType !== "heading" && blockType !== "text"
+                      ? "block"
+                      : "default";
+              }}
+            />
           ) : null}
         </div>
-        {toolbarState !== "multiSelect" && toolbarState !== "block" && (
+        {/* if the thing is are you sure state, don't show the x... is each thing handling its own are you sure? theres no need for that */}
+        {toolbarState !== "areYouSure" && (
           <button
             className="toolbarBackToDefault hover:text-accent-contrast"
             onClick={() => {
+              if (toolbarState === "multiselect" || toolbarState === "block") {
+                useUIState.setState({ selectedBlocks: [] });
+                rep && focusCard(props.cardID, rep);
+              }
+
               if (toolbarState === "default") {
                 useUIState.setState(() => ({
                   focusedEntity: {

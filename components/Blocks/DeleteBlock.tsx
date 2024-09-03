@@ -124,7 +124,7 @@ export async function deleteBlock(
       siblings.findIndex((s) => s.value === focusedBlock.entityID) + 1
     ];
   let nextBlockType = await rep?.query((tx) =>
-    scanIndex(tx).eav(nextBlock.value, "block/type"),
+    scanIndex(tx).eav(nextBlock?.value, "block/type"),
   );
 
   if (prevBlock) {
@@ -158,7 +158,6 @@ export async function deleteBlock(
   }
 
   cardsToClose.forEach((card) => card && useUIState.getState().closeCard(card));
-
   await Promise.all(
     entities.map((entity) =>
       rep?.mutate.removeBlock({

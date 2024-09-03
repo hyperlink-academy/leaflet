@@ -2,33 +2,18 @@ import React, { useState } from "react";
 import { useUIState } from "src/useUIState";
 import { ReplicacheMutators, useReplicache } from "src/replicache";
 import { ToolbarButton } from "./index";
-import { TrashSmall, CloseTiny, CopySmall } from "components/Icons";
+import { TrashSmall, CopySmall } from "components/Icons";
 import { AreYouSure } from "components/Blocks/DeleteBlock";
 import { copySelection } from "src/utils/copySelection";
 import { useSmoker } from "components/Toast";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { Replicache } from "replicache";
 
-export const MultiSelectToolbar = () => {
+export const MultiSelectToolbar = (props: {
+  setToolbarState: (state: "areYouSure" | "multiselect") => void;
+}) => {
   const { rep } = useReplicache();
-  const selectedBlocks = useUIState((s) => s.selectedBlocks || []);
-  const [areYouSure, setAreYouSure] = useState(false);
   const smoker = useSmoker();
-
-  const handleDeleteBlocks = async () => {
-    if (!rep) return;
-
-    for (const blockID of selectedBlocks) {
-      await rep.mutate.removeBlock({ blockEntity: blockID.value });
-    }
-
-    useUIState.setState({ selectedBlocks: [] });
-    setAreYouSure(false);
-  };
-
-  const handleClose = () => {
-    useUIState.setState({ selectedBlocks: [] });
-  };
 
   const handleCopy = async (event: React.MouseEvent) => {
     if (!rep) return;
@@ -43,40 +28,22 @@ export const MultiSelectToolbar = () => {
   return (
     <div className="flex items-center gap-2 justify-between w-full">
       <div className="flex items-center gap-2">
-        {areYouSure ? (
-          <AreYouSure
-            compact
-            type={undefined}
-            entityID={selectedBlocks.map((b) => b.value)}
-            onClick={handleDeleteBlocks}
-            closeAreYouSure={() => setAreYouSure(false)}
-          />
-        ) : (
-          <>
-            <ToolbarButton
-              tooltipContent="Delete selected blocks"
-              onClick={() => setAreYouSure(true)}
-            >
-              <TrashSmall />
-            </ToolbarButton>
-            <ToolbarButton
-              tooltipContent="Copy selected blocks"
-              onClick={handleCopy}
-            >
-              <CopySmall />
-            </ToolbarButton>
-          </>
-        )}
+        <ToolbarButton
+          tooltipContent="Delete Selected Blocks"
+          onClick={() => {
+            props.setToolbarState("areYouSure");
+          }}
+        >
+          <TrashSmall />
+        </ToolbarButton>
+        <ToolbarButton
+          tooltipContent="Copy Selected Blocks"
+          onClick={handleCopy}
+        >
+          <CopySmall />
+        </ToolbarButton>
         {/* Add more multi-select toolbar buttons here */}
       </div>
-      {!areYouSure && (
-        <button
-          className="toolbarBackToDefault hover:text-accent-contrast"
-          onClick={handleClose}
-        >
-          <CloseTiny />
-        </button>
-      )}
     </div>
   );
 };
