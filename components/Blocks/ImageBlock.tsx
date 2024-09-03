@@ -8,7 +8,7 @@ export function ImageBlock(props: Block) {
   let { rep } = useReplicache();
   let image = useEntity(props.value, "block/image");
   let isSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.value),
+    s.selectedBlocks.find((b) => b.value === props.value),
   );
 
   return (

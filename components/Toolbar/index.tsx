@@ -41,7 +41,7 @@ export const Toolbar = (props: { cardID: string; blockID: string }) => {
 
   let activeEditor = useEditorStates((s) => s.editorStates[props.blockID]);
 
-  let selectedBlocks = useUIState((s) => s.selectedBlock);
+  let selectedBlocks = useUIState((s) => s.selectedBlocks);
 
   useEffect(() => {
     if (toolbarState !== "default") return;
@@ -118,7 +118,7 @@ export const Toolbar = (props: { cardID: string; blockID: string }) => {
                     type: "card",
                     entityID: props.cardID,
                   },
-                  selectedBlock: [],
+                  selectedBlocks: [],
                 }));
               } else {
                 setToolbarState("default");

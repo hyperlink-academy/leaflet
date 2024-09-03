@@ -13,7 +13,7 @@ export const useUIState = create(
         | null,
       foldedBlocks: [] as string[],
       openCards: [] as string[],
-      selectedBlock: [] as SelectedBlock[],
+      selectedBlocks: [] as SelectedBlock[],
     },
     (set) => ({
       toggleFold: (entityID: string) => {
@@ -47,23 +47,23 @@ export const useUIState = create(
       ) => set(() => ({ focusedBlock: b })),
       setSelectedBlock: (block: SelectedBlock) =>
         set((state) => {
-          return { ...state, selectedBlock: [block] };
+          return { ...state, selectedBlocks: [block] };
         }),
       setSelectedBlocks: (blocks: SelectedBlock[]) =>
         set((state) => {
-          return { ...state, selectedBlock: blocks };
+          return { ...state, selectedBlocks: blocks };
         }),
       addBlockToSelection: (block: SelectedBlock) =>
         set((state) => {
-          if (state.selectedBlock.find((b) => b.value === block.value))
+          if (state.selectedBlocks.find((b) => b.value === block.value))
             return state;
-          return { ...state, selectedBlock: [...state.selectedBlock, block] };
+          return { ...state, selectedBlocks: [...state.selectedBlocks, block] };
         }),
       removeBlockFromSelection: (block: { value: string }) =>
         set((state) => {
           return {
             ...state,
-            selectedBlock: state.selectedBlock.filter(
+            selectedBlocks: state.selectedBlocks.filter(
               (f) => f.value !== block.value,
             ),
           };

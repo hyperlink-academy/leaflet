@@ -24,9 +24,9 @@ export function useBlockKeyboardHandlers(
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
 
-  let selectedBlocks = useUIState((s) => s.selectedBlock);
+  let selectedBlocks = useUIState((s) => s.selectedBlocks);
   let actuallySelected = useUIState(
-    (s) => !!s.selectedBlock.find((b) => b.value === props.entityID),
+    (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   let hasSelectionUI =
     (!isTextBlock[props.type] || selectedBlocks.length > 1) && actuallySelected;
@@ -72,7 +72,7 @@ function Tab({ e, props, rep }: Args) {
 function ArrowDown({ e, props }: Args) {
   e.preventDefault();
   let nextBlock = props.nextBlock;
-  if (nextBlock && useUIState.getState().selectedBlock.length <= 1)
+  if (nextBlock && useUIState.getState().selectedBlocks.length <= 1)
     focusBlock(nextBlock, {
       type: "top",
       left: useEditorStates.getState().lastXPosition,
@@ -83,7 +83,7 @@ function ArrowDown({ e, props }: Args) {
 function ArrowUp({ e, props }: Args) {
   e.preventDefault();
   let prevBlock = props.previousBlock;
-  if (prevBlock && useUIState.getState().selectedBlock.length <= 1) {
+  if (prevBlock && useUIState.getState().selectedBlocks.length <= 1) {
     focusBlock(prevBlock, {
       type: "bottom",
       left: useEditorStates.getState().lastXPosition,
@@ -181,6 +181,6 @@ function Escape({ e, props, areYouSure, setAreYouSure }: Args) {
     );
   }
 
-  useUIState.setState({ selectedBlock: [] });
+  useUIState.setState({ selectedBlocks: [] });
   useUIState.setState({ focusedBlock: null });
 }

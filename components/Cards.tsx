@@ -316,6 +316,6 @@ export async function focusCard(
 const blurCard = () => {
   useUIState.setState(() => ({
     focusedBlock: null,
-    selectedBlock: [],
+    selectedBlocks: [],
   }));
 };

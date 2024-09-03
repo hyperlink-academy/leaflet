@@ -17,7 +17,7 @@ export function CardBlock(props: BlockProps & { preview?: boolean }) {
   let docMetadata = useDocMetadata(cardEntity);
 
   let isSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
+    s.selectedBlocks.find((b) => b.value === props.entityID),
   );
 
   let isOpen = useUIState((s) => s.openCards).includes(cardEntity);

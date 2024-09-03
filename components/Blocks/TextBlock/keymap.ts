@@ -34,7 +34,7 @@ export const TextBlockKeymap = (
       color: useUIState.getState().lastUsedHighlight,
     }),
     Tab: () => {
-      if (useUIState.getState().selectedBlock.length > 1) return false;
+      if (useUIState.getState().selectedBlocks.length > 1) return false;
       if (!repRef.current || !propsRef.current.previousBlock) return false;
       indent(propsRef.current, propsRef.current.previousBlock, repRef.current);
       return true;
@@ -47,7 +47,7 @@ export const TextBlockKeymap = (
           type: "card",
           entityID: propsRef.current.parent,
         },
-        selectedBlock: [],
+        selectedBlocks: [],
       }));
 
       return false;
@@ -98,7 +98,7 @@ export const TextBlockKeymap = (
     },
     ArrowUp: (state, _tr, view) => {
       if (!view) return false;
-      if (useUIState.getState().selectedBlock.length > 1) return true;
+      if (useUIState.getState().selectedBlocks.length > 1) return true;
       if (view.state.selection.from !== view.state.selection.to) return false;
       const viewClientRect = view.dom.getBoundingClientRect();
       const coords = view.coordsAtPos(view.state.selection.anchor);
@@ -115,7 +115,7 @@ export const TextBlockKeymap = (
     },
     ArrowDown: (state, tr, view) => {
       if (!view) return true;
-      if (useUIState.getState().selectedBlock.length > 1) return true;
+      if (useUIState.getState().selectedBlocks.length > 1) return true;
       if (view.state.selection.from !== view.state.selection.to) return false;
       const viewClientRect = view.dom.getBoundingClientRect();
       const coords = view.coordsAtPos(view.state.selection.anchor);
@@ -170,7 +170,7 @@ const backspace =
     view?: EditorView,
   ) => {
     // if multiple blocks are selected, don't do anything (handled in SelectionManager)
-    if (useUIState.getState().selectedBlock.length > 1) {
+    if (useUIState.getState().selectedBlocks.length > 1) {
       return false;
     }
     // if you are selecting text within a block, don't do anything (handled by proseMirror)
@@ -298,7 +298,7 @@ const shifttab =
     repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
   () => {
-    if (useUIState.getState().selectedBlock.length > 1) return false;
+    if (useUIState.getState().selectedBlocks.length > 1) return false;
     if (!repRef.current) return false;
     if (!repRef.current) return false;
     outdent(propsRef.current, propsRef.current.previousBlock, repRef.current);

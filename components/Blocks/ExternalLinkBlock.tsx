@@ -8,7 +8,7 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
   let url = useEntity(props.entityID, "link/url");
 
   let isSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID)
+    s.selectedBlocks.find((b) => b.value === props.entityID),
   );
 
   return (

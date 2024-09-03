@@ -23,13 +23,13 @@ export const useSelectingMouse = create(() => ({
 // How does this relate to *when dragging* ?
 
 export function SelectionManager() {
-  let moreThanOneSelected = useUIState((s) => s.selectedBlock.length > 1);
+  let moreThanOneSelected = useUIState((s) => s.selectedBlocks.length > 1);
   let entity_set = useEntitySetContext();
   let { rep } = useReplicache();
   useEffect(() => {
     if (!entity_set.permissions.write) return;
     const getSortedSelection = async () => {
-      let selectedBlocks = useUIState.getState().selectedBlock;
+      let selectedBlocks = useUIState.getState().selectedBlocks;
       let siblings =
         (await rep?.query((tx) =>
           getBlocksWithType(tx, selectedBlocks[0].parent),
@@ -48,7 +48,7 @@ export function SelectionManager() {
             (await rep?.query((tx) =>
               getBlocksWithType(
                 tx,
-                useUIState.getState().selectedBlock[0].parent,
+                useUIState.getState().selectedBlocks[0].parent,
               ),
             )) || [];
           if (firstBlock) focusBlock(firstBlock, { type: "start" });
@@ -62,7 +62,7 @@ export function SelectionManager() {
             (await rep?.query((tx) =>
               getBlocksWithType(
                 tx,
-                useUIState.getState().selectedBlock[0].parent,
+                useUIState.getState().selectedBlocks[0].parent,
               ),
             )) || [];
           let folded = useUIState.getState().foldedBlocks;
@@ -196,7 +196,7 @@ export function SelectionManager() {
         if (moreThanOneSelected) {
           e.preventDefault();
           let [sortedBlocks, siblings] = await getSortedSelection();
-          let selectedBlocks = useUIState.getState().selectedBlock;
+          let selectedBlocks = useUIState.getState().selectedBlocks;
           let firstBlock = sortedBlocks[0];
 
           await rep?.mutate.removeBlock(

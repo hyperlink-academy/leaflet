@@ -16,7 +16,7 @@ export const AreYouSure = (props: {
   entityID: string[] | string;
   onClick?: () => void;
   closeAreYouSure: () => void;
-  type: Fact<"block/type">["data"]["value"];
+  type: Fact<"block/type">["data"]["value"] | undefined;
   compact?: boolean;
 }) => {
   let entities = [props.entityID].flat();

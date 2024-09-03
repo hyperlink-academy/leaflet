@@ -30,7 +30,7 @@ export const MailboxBlock = (props: BlockProps) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
   let [areYouSure, setAreYouSure] = useState(false);
   let isSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
+    s.selectedBlocks.find((b) => b.value === props.entityID),
   );
 
   let card = useEntity(props.entityID, "block/card");
@@ -187,7 +187,7 @@ export const MailboxBlock = (props: BlockProps) => {
 const MailboxReaderView = (props: { entityID: string; parent: string }) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
   let isSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
+    s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   let archive = useEntity(props.entityID, "mailbox/archive");
   let smoke = useSmoker();

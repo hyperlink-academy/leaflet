@@ -11,7 +11,7 @@ import { Replicache } from "replicache";
 
 export const MultiSelectToolbar = () => {
   const { rep } = useReplicache();
-  const selectedBlocks = useUIState((s) => s.selectedBlock || []);
+  const selectedBlocks = useUIState((s) => s.selectedBlocks || []);
   const [areYouSure, setAreYouSure] = useState(false);
   const smoker = useSmoker();
 
@@ -22,12 +22,12 @@ export const MultiSelectToolbar = () => {
       await rep.mutate.removeBlock({ blockEntity: blockID.value });
     }
 
-    useUIState.setState({ selectedBlock: [] });
+    useUIState.setState({ selectedBlocks: [] });
     setAreYouSure(false);
   };
 
   const handleClose = () => {
-    useUIState.setState({ selectedBlock: [] });
+    useUIState.setState({ selectedBlocks: [] });
   };
 
   const handleCopy = async (event: React.MouseEvent) => {
@@ -46,6 +46,7 @@ export const MultiSelectToolbar = () => {
         {areYouSure ? (
           <AreYouSure
             compact
+            type={undefined}
             entityID={selectedBlocks.map((b) => b.value)}
             onClick={handleDeleteBlocks}
             closeAreYouSure={() => setAreYouSure(false)}
@@ -82,7 +83,7 @@ export const MultiSelectToolbar = () => {
 
 // Helper function to get sorted selection
 async function getSortedSelection(rep: Replicache<ReplicacheMutators>) {
-  const selectedBlocks = useUIState.getState().selectedBlock;
+  const selectedBlocks = useUIState.getState().selectedBlocks;
   const siblings =
     (await rep?.query((tx) =>
       getBlocksWithType(tx, selectedBlocks[0].parent),

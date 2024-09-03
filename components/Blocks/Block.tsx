@@ -58,7 +58,7 @@ export function Block(props: BlockProps) {
   }, mouseHandlers.onMouseDown);
 
   let selected = useUIState(
-    (s) => !!s.selectedBlock.find((b) => b.value === props.entityID),
+    (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
   );
 
   let [areYouSure, setAreYouSure] = useState(false);
@@ -77,7 +77,7 @@ export function Block(props: BlockProps) {
       {...handlers}
       className={`
         blockWrapper relative
-        grow flex flex-row gap-2
+        flex flex-row gap-2
         px-3 sm:px-4
       ${
         props.type === "heading" ||
@@ -150,19 +150,19 @@ export const BaseBlock = (
 export const BlockMultiselectIndicator = (props: BlockProps) => {
   let first = props.previousBlock === null;
 
-  let selectedBlocks = useUIState((s) => s.selectedBlock);
+  let selectedBlocks = useUIState((s) => s.selectedBlocks);
 
   let selected = useUIState(
-    (s) => !!s.selectedBlock.find((b) => b.value === props.entityID),
+    (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
   );
 
   let isMultiSelected = selected && selectedBlocks.length > 1;
 
   let nextBlockSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.nextBlock?.value),
+    s.selectedBlocks.find((b) => b.value === props.nextBlock?.value),
   );
   let prevBlockSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.previousBlock?.value),
+    s.selectedBlocks.find((b) => b.value === props.previousBlock?.value),
   );
 
   if (isMultiSelected)

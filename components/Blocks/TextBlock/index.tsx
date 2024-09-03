@@ -72,7 +72,7 @@ export function TextBlock(
 
 export function IOSBS(props: BlockProps) {
   let selected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
+    s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   let [initialRender, setInitialRender] = useState(true);
   useEffect(() => {
@@ -161,7 +161,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
   }, [rep?.rep]);
 
   let selected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
+    s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   let first = props.previousBlock === null;
   let headingLevel = useEntity(props.entityID, "block/heading-level");

@@ -23,7 +23,7 @@ export const BlockToolbar = () => {
     .value;
 
   const getSortedSelection = async () => {
-    let selectedBlocks = useUIState.getState().selectedBlock;
+    let selectedBlocks = useUIState.getState().selectedBlocks;
     let siblings =
       (await rep?.query((tx) =>
         getBlocksWithType(tx, selectedBlocks[0].parent),
@@ -180,6 +180,7 @@ export const DeleteBlockButton = (props: {
 }) => {
   let [areYouSure, setAreYouSure] = useState(false);
   let { rep } = useReplicache();
+  let blockType = useEntity(props.blockID, "block/type")?.data.value;
 
   const handleAreYouSureChange = (value: boolean) => {
     setAreYouSure(value);
@@ -191,6 +192,7 @@ export const DeleteBlockButton = (props: {
       {areYouSure ? (
         <AreYouSure
           compact
+          type={blockType}
           entityID={props.blockID}
           onClick={() => {
             rep && deleteBlock([props.blockID].flat(), rep);
