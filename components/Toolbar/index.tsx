@@ -14,7 +14,7 @@ import { ListToolbar } from "./ListToolbar";
 import { HighlightToolbar } from "./HighlightToolbar";
 import { TextToolbar } from "./TextToolbar";
 import { BlockToolbar } from "./BlockToolbar";
-import { MultiSelectToolbar } from "./MultiSelectToolbar";
+import { MultiselectToolbar } from "./MultiSelectToolbar";
 import { focusCard } from "components/Cards";
 import { AreYouSure, deleteBlock } from "components/Blocks/DeleteBlock";
 
@@ -113,7 +113,7 @@ export const Toolbar = (props: { cardID: string; blockID: string }) => {
               }}
             />
           ) : toolbarState === "multiselect" ? (
-            <MultiSelectToolbar
+            <MultiselectToolbar
               setToolbarState={(state) => {
                 setToolbarState(state);
               }}

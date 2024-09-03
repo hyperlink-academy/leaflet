@@ -9,7 +9,7 @@ import { useSmoker } from "components/Toast";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { Replicache } from "replicache";
 
-export const MultiSelectToolbar = (props: {
+export const MultiselectToolbar = (props: {
   setToolbarState: (state: "areYouSure" | "multiselect") => void;
 }) => {
   const { rep } = useReplicache();

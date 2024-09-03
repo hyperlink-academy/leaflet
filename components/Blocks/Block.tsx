@@ -156,7 +156,7 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
     (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
   );
 
-  let isMultiSelected = selected && selectedBlocks.length > 1;
+  let isMultiselected = selected && selectedBlocks.length > 1;
 
   let nextBlockSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.nextBlock?.value),
@@ -165,7 +165,7 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
     s.selectedBlocks.find((b) => b.value === props.previousBlock?.value),
   );
 
-  if (isMultiSelected)
+  if (isMultiselected)
     // not sure what multiselected and selected is doing (?)
     return (
       <div
