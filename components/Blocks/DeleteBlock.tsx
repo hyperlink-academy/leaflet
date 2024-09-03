@@ -21,7 +21,7 @@ export const AreYouSure = (props: {
 }) => {
   let entities = [props.entityID].flat();
   let { rep } = useReplicache();
-  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedBlock = useUIState((s) => s.focusedEntity);
   let type = useEntity(focusedBlock?.entityID || null, "block/type")?.data
     .value;
 
@@ -80,10 +80,10 @@ export async function deleteBlock(
   entities: string[],
   rep: Replicache<ReplicacheMutators>,
 ) {
-  let focusedBlock = useUIState.getState().focusedBlock;
+  let focusedBlock = useUIState.getState().focusedEntity;
 
   // if the focused thing is a page and not a blcok, return
-  if (!focusedBlock || focusedBlock?.type === "card") return;
+  if (!focusedBlock || focusedBlock?.entityType === "card") return;
   let [type] = await rep.query((tx) =>
     scanIndex(tx).eav(focusedBlock.entityID, "block/type"),
   );

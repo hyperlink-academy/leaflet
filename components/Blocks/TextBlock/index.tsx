@@ -244,8 +244,8 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
             setTimeout(() => {
               useUIState.getState().setSelectedBlock(props);
               useUIState.setState(() => ({
-                focusedBlock: {
-                  type: "block",
+                focusedEntity: {
+                  entityType: "block",
                   entityID: props.entityID,
                   parent: props.parent,
                 },

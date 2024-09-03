@@ -16,7 +16,7 @@ import { useUIState } from "src/useUIState";
 
 export const BlockToolbar = () => {
   let { rep } = useReplicache();
-  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedBlock = useUIState((s) => s.focusedEntity);
   const [areYouSure, setAreYouSure] = useState(false);
 
   let type = useEntity(focusedBlock?.entityID || null, "block/type")?.data
@@ -35,7 +35,7 @@ export const BlockToolbar = () => {
   };
 
   const handleClose = () => {
-    useUIState.setState({ focusedBlock: null });
+    useUIState.setState({ focusedEntity: null });
   };
 
   return (

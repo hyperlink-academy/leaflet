@@ -15,7 +15,7 @@ import { indent, outdent } from "src/utils/list-operations";
 import { useEffect } from "react";
 
 export const ListButton = (props: { setToolbarState: (s: "list") => void }) => {
-  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedBlock = useUIState((s) => s.focusedEntity);
   let isList = useEntity(focusedBlock?.entityID || null, "block/is-list");
 
   let { rep } = useReplicache();
@@ -68,9 +68,9 @@ export const ListButton = (props: { setToolbarState: (s: "list") => void }) => {
 };
 
 export const ListToolbar = (props: { onClose: () => void }) => {
-  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedBlock = useUIState((s) => s.focusedEntity);
   let siblings = useBlocks(
-    focusedBlock?.type === "block" ? focusedBlock.parent : null,
+    focusedBlock?.entityType === "block" ? focusedBlock.parent : null,
   );
 
   let isCheckbox = useEntity(

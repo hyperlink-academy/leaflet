@@ -182,5 +182,5 @@ function Escape({ e, props, areYouSure, setAreYouSure }: Args) {
   }
 
   useUIState.setState({ selectedBlocks: [] });
-  useUIState.setState({ focusedBlock: null });
+  useUIState.setState({ focusedEntity: null });
 }

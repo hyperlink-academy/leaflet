@@ -25,7 +25,7 @@ export function useBlockMouseHandlers(props: Block) {
       } else {
         if (!isTextBlock[props.type]) return;
         useUIState.getState().setFocusedBlock({
-          type: "block",
+          entityType: "block",
           entityID: props.value,
           parent: props.parent,
         });

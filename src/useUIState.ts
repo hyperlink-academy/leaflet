@@ -7,9 +7,9 @@ export const useUIState = create(
   combine(
     {
       lastUsedHighlight: "1" as "1" | "2" | "3",
-      focusedBlock: null as
-        | { type: "card"; entityID: string }
-        | { type: "block"; entityID: string; parent: string }
+      focusedEntity: null as
+        | { entityType: "card"; entityID: string }
+        | { entityType: "block"; entityID: string; parent: string }
         | null,
       foldedBlocks: [] as string[],
       openCards: [] as string[],
@@ -41,10 +41,10 @@ export const useUIState = create(
         })),
       setFocusedBlock: (
         b:
-          | { type: "card"; entityID: string }
-          | { type: "block"; entityID: string; parent: string }
+          | { entityType: "card"; entityID: string }
+          | { entityType: "block"; entityID: string; parent: string }
           | null,
-      ) => set(() => ({ focusedBlock: b })),
+      ) => set(() => ({ focusedEntity: b })),
       setSelectedBlock: (block: SelectedBlock) =>
         set((state) => {
           return { ...state, selectedBlocks: [block] };

@@ -43,8 +43,8 @@ export const TextBlockKeymap = (
     Escape: (_state, _dispatch, view) => {
       view?.dom.blur();
       useUIState.setState(() => ({
-        focusedBlock: {
-          type: "card",
+        focusedEntity: {
+          entityType: "card",
           entityID: propsRef.current.parent,
         },
         selectedBlocks: [],
@@ -62,7 +62,7 @@ export const TextBlockKeymap = (
             .getState()
             .setSelectedBlocks([propsRef.current, propsRef.current.nextBlock]);
           useUIState.getState().setFocusedBlock({
-            type: "block",
+            entityType: "block",
             entityID: propsRef.current.nextBlock.value,
             parent: propsRef.current.parent,
           });
@@ -84,7 +84,7 @@ export const TextBlockKeymap = (
               propsRef.current.previousBlock,
             ]);
           useUIState.getState().setFocusedBlock({
-            type: "block",
+            entityType: "block",
             entityID: propsRef.current.previousBlock.value,
             parent: propsRef.current.parent,
           });

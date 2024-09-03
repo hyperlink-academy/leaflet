@@ -48,9 +48,9 @@ export function BlockOptions(props: Props) {
     "default" | "link" | "heading"
   >("default");
 
-  let focusedElement = useUIState((s) => s.focusedBlock);
+  let focusedElement = useUIState((s) => s.focusedEntity);
   let focusedCardID =
-    focusedElement?.type === "card"
+    focusedElement?.entityType === "card"
       ? focusedElement.entityID
       : focusedElement?.parent;
 

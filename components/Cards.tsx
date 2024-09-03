@@ -94,9 +94,9 @@ function Card(props: { entityID: string; first?: boolean }) {
   let { rep } = useReplicache();
   let isDraft = useReferenceToEntity("mailbox/draft", props.entityID);
 
-  let focusedElement = useUIState((s) => s.focusedBlock);
+  let focusedElement = useUIState((s) => s.focusedEntity);
   let focusedCardID =
-    focusedElement?.type === "card"
+    focusedElement?.entityType === "card"
       ? focusedElement.entityID
       : focusedElement?.parent;
   let isFocused = focusedCardID === props.entityID;
@@ -248,16 +248,16 @@ export async function focusCard(
   focusFirstBlock?: "focusFirstBlock",
 ) {
   // if this card is already focused,
-  let focusedBlock = useUIState.getState().focusedBlock;
+  let focusedBlock = useUIState.getState().focusedEntity;
   if (
-    (focusedBlock?.type == "card" && focusedBlock.entityID === cardID) ||
-    (focusedBlock?.type === "block" && focusedBlock.parent === cardID)
+    (focusedBlock?.entityType == "card" && focusedBlock.entityID === cardID) ||
+    (focusedBlock?.entityType === "block" && focusedBlock.parent === cardID)
   )
     return;
   // else set this card as focused
   useUIState.setState(() => ({
-    focusedBlock: {
-      type: "card",
+    focusedEntity: {
+      entityType: "card",
       entityID: cardID,
     },
   }));
@@ -315,7 +315,7 @@ export async function focusCard(
 
 const blurCard = () => {
   useUIState.setState(() => ({
-    focusedBlock: null,
+    focusedEntity: null,
     selectedBlocks: [],
   }));
 };

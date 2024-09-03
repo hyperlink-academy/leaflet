@@ -11,7 +11,7 @@ import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 import { Input } from "components/Input";
 
 export function LinkButton(props: { setToolbarState: (s: "link") => void }) {
-  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedBlock = useUIState((s) => s.focusedEntity);
   let focusedEditor = useEditorStates((s) =>
     focusedBlock ? s.editorStates[focusedBlock.entityID] : null,
   );
@@ -46,7 +46,7 @@ export function LinkButton(props: { setToolbarState: (s: "link") => void }) {
 }
 
 export function InlineLinkToolbar(props: { onClose: () => void }) {
-  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedBlock = useUIState((s) => s.focusedEntity);
   let focusedEditor = useEditorStates((s) =>
     focusedBlock ? s.editorStates[focusedBlock.entityID] : null,
   );

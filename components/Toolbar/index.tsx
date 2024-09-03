@@ -27,7 +27,7 @@ export type ToolbarTypes =
   | "multiSelect";
 
 export const Toolbar = (props: { cardID: string; blockID: string }) => {
-  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedBlock = useUIState((s) => s.focusedEntity);
 
   let blockType = useEntity(props.blockID, "block/type")?.data.value;
 
@@ -114,8 +114,8 @@ export const Toolbar = (props: { cardID: string; blockID: string }) => {
             onClick={() => {
               if (toolbarState === "default") {
                 useUIState.setState(() => ({
-                  focusedBlock: {
-                    type: "card",
+                  focusedEntity: {
+                    entityType: "card",
                     entityID: props.cardID,
                   },
                   selectedBlocks: [],

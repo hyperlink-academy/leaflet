@@ -7,11 +7,11 @@ import { ShareOptions } from "./ShareOptions";
 import { HomeButton } from "./HomeButton";
 
 export function MobileFooter(props: { entityID: string }) {
-  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedBlock = useUIState((s) => s.focusedEntity);
 
   return (
     <Media mobile className="mobileFooter w-full z-10 -mt-6 touch-none">
-      {focusedBlock && focusedBlock.type == "block" ? (
+      {focusedBlock && focusedBlock.entityType == "block" ? (
         <div
           className="w-full z-10 p-2 flex bg-bg-card "
           onMouseDown={(e) => {
