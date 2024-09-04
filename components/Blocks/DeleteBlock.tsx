@@ -88,7 +88,7 @@ export async function deleteBlock(
 ) {
   let focusedBlock = useUIState.getState().focusedEntity;
 
-  // if the focused thing is a page and not a blcok, return
+  // if the focused thing is a page and not a block, return
   if (!focusedBlock || focusedBlock?.entityType === "card") return;
   let [type] = await rep.query((tx) =>
     scanIndex(tx).eav(focusedBlock.entityID, "block/type"),
@@ -113,22 +113,23 @@ export async function deleteBlock(
   }
 
   //  the next and previous blocks in the block list
+
   let siblings =
     (await rep?.query((tx) => getBlocksWithType(tx, focusedBlock?.parent))) ||
     [];
 
+  let selectedBlocks = useUIState.getState().selectedBlocks;
+  let firstSelected = selectedBlocks[0];
+  let lastSelected = selectedBlocks[entities.length - 1];
+
   let prevBlock =
-    siblings?.[
-      siblings.findIndex((s) => s.value === focusedBlock.entityID) - 1
-    ];
+    siblings?.[siblings.findIndex((s) => s.value === firstSelected.value) - 1];
   let prevBlockType = await rep?.query((tx) =>
     scanIndex(tx).eav(prevBlock?.value, "block/type"),
   );
 
   let nextBlock =
-    siblings?.[
-      siblings.findIndex((s) => s.value === focusedBlock.entityID) + 1
-    ];
+    siblings?.[siblings.findIndex((s) => s.value === lastSelected.value) + 1];
   let nextBlockType = await rep?.query((tx) =>
     scanIndex(tx).eav(nextBlock?.value, "block/type"),
   );
