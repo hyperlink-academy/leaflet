@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import { Fact, ReplicacheProvider } from "src/replicache";
 import { createServerClient } from "@supabase/ssr";
 import { Database } from "supabase/database.types";
-import { DocPreview } from "./DocPreview";
 import { Attributes } from "src/replicache/attributes";
 import {
   ThemeBackgroundProvider,
@@ -11,14 +10,14 @@ import {
 } from "components/ThemeManager/ThemeProvider";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
-import { createNewDoc } from "actions/createNewDoc";
+import { createNewLeaflet } from "actions/createNewLeaflet";
 import { createIdentity } from "actions/createIdentity";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { IdentitySetter } from "./IdentitySetter";
 import { HoverButton } from "components/Buttons";
 import { HomeHelp } from "./HomeHelp";
-import { DocsList } from "./DocsList";
+import { LeafletList } from "./LeafletList";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -76,7 +75,7 @@ export default async function Home() {
             <ThemeBackgroundProvider entityID={root_entity}>
               <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col-reverse sm:gap-4 px-2 sm:px-6 ">
                 <div className="homeOptions z-10 shrink-0 sm:static absolute bottom-0  place-self-end sm:place-self-start flex sm:flex-col flex-row-reverse gap-2 sm:w-fit w-full items-center pb-2 pt-1 sm:pt-7">
-                  <form action={createNewDoc}>
+                  <form action={createNewLeaflet}>
                     <button className="contents">
                       <HoverButton
                         icon=<AddTiny className="m-1 shrink-0" />
@@ -90,7 +89,7 @@ export default async function Home() {
 
                   <ThemePopover entityID={root_entity} home />
                 </div>
-                <DocsList />
+                <LeafletList />
               </div>
             </ThemeBackgroundProvider>
           </div>

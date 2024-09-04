@@ -98,7 +98,7 @@ async function getPageTitle(root_entity: string) {
   let text = initialFacts.find(
     (f) => f.entity === title.value && f.attribute === "block/text",
   ) as Fact<"block/text"> | undefined;
-  if (!text) return "Untitled Doc";
+  if (!text) return "Untitled Leaflet";
   let doc = new Y.Doc();
   const update = base64.toByteArray(text.data.value);
   Y.applyUpdate(doc, update);

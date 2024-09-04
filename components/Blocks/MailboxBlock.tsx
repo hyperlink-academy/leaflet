@@ -23,8 +23,7 @@ import {
   unsubscribe,
   useSubscriptionStatus,
 } from "src/hooks/useSubscriptionStatus";
-import { scanIndex } from "src/replicache/utils";
-import { usePageTitle } from "components/utils/UpdatePageTitle";
+import { usePageTitle } from "components/utils/UpdateLeafletTitle";
 
 export const MailboxBlock = (props: BlockProps) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);

@@ -13,7 +13,7 @@ import postgres from "postgres";
 import { v7 } from "uuid";
 import { sql } from "drizzle-orm";
 
-export async function createNewDoc() {
+export async function createNewLeaflet() {
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
   let { permissionToken } = await db.transaction(async (tx) => {

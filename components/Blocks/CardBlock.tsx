@@ -6,7 +6,7 @@ import { focusCard } from "components/Cards";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";
-import { useDocMetadata } from "src/hooks/queries/useDocMetadata";
+import { usePageMetadata } from "src/hooks/queries/usePageMetadata";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 
@@ -14,7 +14,7 @@ export function CardBlock(props: BlockProps & { preview?: boolean }) {
   let { rep } = useReplicache();
   let card = useEntity(props.entityID, "block/card");
   let cardEntity = card ? card.data.value : props.entityID;
-  let docMetadata = useDocMetadata(cardEntity);
+  let leafletMetadata = usePageMetadata(cardEntity);
 
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
@@ -52,41 +52,41 @@ export function CardBlock(props: BlockProps & { preview?: boolean }) {
           }}
         >
           <div className="my-2 ml-3 grow min-w-0 text-sm bg-transparent overflow-clip ">
-            {docMetadata[0] && (
+            {leafletMetadata[0] && (
               <div
-                className={`cardBlockOne outline-none resize-none align-top flex gap-2 ${docMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
+                className={`cardBlockOne outline-none resize-none align-top flex gap-2 ${leafletMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
               >
-                {docMetadata[0].listData && (
+                {leafletMetadata[0].listData && (
                   <ListMarker
-                    {...docMetadata[0]}
+                    {...leafletMetadata[0]}
                     className={
-                      docMetadata[0].type === "heading"
+                      leafletMetadata[0].type === "heading"
                         ? "!pt-[12px]"
                         : "!pt-[8px]"
                     }
                   />
                 )}
-                <RenderedTextBlock entityID={docMetadata[0].value} />
+                <RenderedTextBlock entityID={leafletMetadata[0].value} />
               </div>
             )}
-            {docMetadata[1] && (
+            {leafletMetadata[1] && (
               <div
-                className={`cardBlockLineTwo outline-none resize-none align-top flex  gap-2 ${docMetadata[1].type === "heading" ? "font-bold" : ""}`}
+                className={`cardBlockLineTwo outline-none resize-none align-top flex  gap-2 ${leafletMetadata[1].type === "heading" ? "font-bold" : ""}`}
               >
-                {docMetadata[1].listData && (
-                  <ListMarker {...docMetadata[1]} className="!pt-[8px]" />
+                {leafletMetadata[1].listData && (
+                  <ListMarker {...leafletMetadata[1]} className="!pt-[8px]" />
                 )}
-                <RenderedTextBlock entityID={docMetadata[1].value} />
+                <RenderedTextBlock entityID={leafletMetadata[1].value} />
               </div>
             )}
-            {docMetadata[2] && (
+            {leafletMetadata[2] && (
               <div
-                className={`cardBlockLineThree outline-none resize-none align-top flex  gap-2 ${docMetadata[2].type === "heading" ? "font-bold" : ""}`}
+                className={`cardBlockLineThree outline-none resize-none align-top flex  gap-2 ${leafletMetadata[2].type === "heading" ? "font-bold" : ""}`}
               >
-                {docMetadata[2].listData && (
-                  <ListMarker {...docMetadata[2]} className="!pt-[8px]" />
+                {leafletMetadata[2].listData && (
+                  <ListMarker {...leafletMetadata[2]} className="!pt-[8px]" />
                 )}
-                <RenderedTextBlock entityID={docMetadata[2].value} />
+                <RenderedTextBlock entityID={leafletMetadata[2].value} />
               </div>
             )}
           </div>

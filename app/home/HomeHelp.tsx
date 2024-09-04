@@ -23,8 +23,8 @@ export const HomeHelp = () => {
         >
           <div className="flex flex-col gap-2">
             <p>
-              Docs are saved to home <strong>per-device / browser</strong> using
-              cookies.
+              Leaflets are saved to home <strong>per-device / browser</strong>{" "}
+              using cookies.
             </p>
             <p>
               <strong>
@@ -33,7 +33,7 @@ export const HomeHelp = () => {
             </p>
             <p>
               Please <a href="mailto:contact@hyperlink.academy">contact us</a>{" "}
-              for help recovering docs!
+              for help recovering Leaflets!
             </p>
           </div>
           <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">

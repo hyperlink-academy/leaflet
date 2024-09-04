@@ -71,7 +71,7 @@ export function ShareOptions(props: { rootEntity: string }) {
             Publish
           </div>
           <div className="text-sm font-normal text-tertiary group-hover/publish:text-accent-contrast">
-            Share a read only version of this doc
+            Share a read only version of this leaflet
           </div>
         </div>
       </MenuItem>

@@ -14,7 +14,7 @@ import { cookies } from "next/headers";
 import { PermissionToken } from "src/replicache";
 import { revalidatePath } from "next/cache";
 
-export async function deleteDoc(permission_token: PermissionToken) {
+export async function deleteLeaflet(permission_token: PermissionToken) {
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
   await db.transaction(async (tx) => {
@@ -36,5 +36,5 @@ export async function deleteDoc(permission_token: PermissionToken) {
       .where(eq(permission_tokens.id, permission_token.id));
   });
   client.end();
-  return revalidatePath("/docs");
+  return revalidatePath("/leaflets");
 }

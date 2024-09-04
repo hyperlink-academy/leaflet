@@ -1,6 +1,6 @@
 import { useBlocks } from "./useBlocks";
 
-export function useDocMetadata(entityID: string) {
+export function usePageMetadata(entityID: string) {
   let blocks = useBlocks(entityID);
 
   let textBlocks = blocks.filter(

@@ -24,11 +24,11 @@ let supabase = createServerClient<Database>(
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
   { cookies: {} },
 );
-export default async function Icon(props: { params: { doc_id: string } }) {
+export default async function Icon(props: { params: { leaflet_id: string } }) {
   let res = await supabase
     .from("permission_tokens")
     .select("*, permission_token_rights(*)")
-    .eq("id", props.params.doc_id)
+    .eq("id", props.params.leaflet_id)
     .single();
   let rootEntity = res.data?.root_entity;
   let outlineColor, fillColor;

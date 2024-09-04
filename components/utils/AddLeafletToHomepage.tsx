@@ -4,7 +4,7 @@ import { addDocToHome } from "app/home/storage";
 import { useEffect } from "react";
 import { useReplicache } from "src/replicache";
 
-export function AddDocToHomepage() {
+export function AddLeafletToHomepage() {
   let { permission_token } = useReplicache();
   useEffect(() => {
     if (permission_token.permission_token_rights[0].write) {
