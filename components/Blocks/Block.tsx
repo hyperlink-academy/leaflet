@@ -200,7 +200,7 @@ export const ListMarker = (
   let { rep } = useReplicache();
   return (
     <div
-      className={`shrink-0  flex gap-[8px] justify-end items-center h-3
+      className={`shrink-0  flex gap-[8px] justify-end items-center h-3 z-[1]
                   ${props.className}
                   ${
                     props.type === "heading"

@@ -27,7 +27,6 @@ export const AreYouSure = (props: {
       className={`
         w-full
         flex items-center justify-center
-
         ${
           !props.compact &&
           `bg-border-light border-2 border-border rounded-lg
