@@ -464,7 +464,7 @@ const CtrlEnter =
           let allBlocks = await getBlocksWithType(tx, propsRef.current.parent) ||[]
           console.log("allBlocks", allBlocks)
           useUIState.setState({
-            selectedBlock: allBlocks.map(b=>({value: b.value, parent: propsRef.current.parent}))
+            selectedBlocks: allBlocks.map(b=>({value: b.value, parent: propsRef.current.parent}))
           })
         })
         return true
