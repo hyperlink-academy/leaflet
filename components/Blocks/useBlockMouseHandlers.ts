@@ -13,6 +13,7 @@ export function useBlockMouseHandlers(props: Block) {
   let { rep } = useReplicache();
   let onMouseDown = useCallback(
     (e: MouseEvent) => {
+      if (!entity_set.permissions.write) return;
       useSelectingMouse.setState({ start: props.value });
       if (e.shiftKey) {
         if (
