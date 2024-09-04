@@ -8,7 +8,6 @@ import { useBlockKeyboardHandlers } from "./useBlockKeyboardHandlers";
 import { useLongPress } from "src/hooks/useLongPress";
 import { focusBlock } from "src/utils/focusBlock";
 
-import { CollectionBlock } from "./CollectionBlock";
 import { TextBlock } from "components/Blocks/TextBlock";
 import { ImageBlock } from "./ImageBlock";
 import { CardBlock } from "./CardBlock";
@@ -138,8 +137,6 @@ export const BaseBlock = (
             <div className="flex flex-col gap-4 w-full">
               <MailboxBlock {...props} />
             </div>
-          ) : props.type === "collection" ? (
-            <CollectionBlock {...props} />
           ) : null}
         </>
       )}
