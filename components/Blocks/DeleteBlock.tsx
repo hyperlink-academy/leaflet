@@ -21,17 +21,24 @@ export const AreYouSure = (props: {
 }) => {
   let entities = [props.entityID].flat();
   let { rep } = useReplicache();
-  let focusedBlock = useUIState((s) => s.focusedEntity);
-  let type = useEntity(focusedBlock?.entityID || null, "block/type")?.data
-    .value;
 
   return (
     <div
       className={`
-        w-full ${props.type === "card" ? "h-[104px]" : props.type === "mailbox" ? "h-[92px]" : "h-full"}
+        w-full
         flex items-center justify-center
-        border-2 border-border rounded-lg
-        ${!props.compact && "bg-border-light"}`}
+
+        ${
+          !props.compact &&
+          `bg-border-light border-2 border-border rounded-lg
+        ${
+          props.type === "card"
+            ? "h-[104px]"
+            : props.type === "mailbox"
+              ? "h-[92px]"
+              : "h-full"
+        }`
+        }`}
     >
       <div
         className={`flex h-fit justify-center items-center font-bold text-secondary  ${props.compact ? "flex-row gap-2 justify-between w-full " : "flex-col  py-2 gap-1"}`}
@@ -40,9 +47,9 @@ export const AreYouSure = (props: {
           Delete{" "}
           {entities.length > 1 ? (
             "Blocks"
-          ) : type === "card" ? (
+          ) : props.type === "card" ? (
             <span>Page</span>
-          ) : type === "mailbox" ? (
+          ) : props.type === "mailbox" ? (
             <span>Mailbox and Posts</span>
           ) : (
             <span>Block</span>

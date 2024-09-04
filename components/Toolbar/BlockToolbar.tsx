@@ -1,7 +1,5 @@
-import { AreYouSure, deleteBlock } from "components/Blocks/DeleteBlock";
 import { DeleteSmall, MoveBlockDown, MoveBlockUp } from "components/Icons";
-import { useState } from "react";
-import { useEntity, useReplicache } from "src/replicache";
+import { useReplicache } from "src/replicache";
 import { ToolbarButton } from ".";
 import { Separator, ShortcutKey } from "components/Layout";
 import { metaKey } from "src/utils/metaKey";
@@ -12,7 +10,6 @@ export const BlockToolbar = (props: {
   setToolbarState: (state: "areYouSure" | "block") => void;
 }) => {
   let { rep } = useReplicache();
-  let focusedBlock = useUIState((s) => s.focusedEntity);
 
   const getSortedSelection = async () => {
     let selectedBlocks = useUIState.getState().selectedBlocks;
