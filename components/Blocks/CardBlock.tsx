@@ -158,5 +158,5 @@ export function BlockPreview(
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, [b.previewRef]);
-  return <div ref={ref}>{isVisible && <Block {...b} />}</div>;
+  return <div ref={ref}>{isVisible && <Block {...b} preview />}</div>;
 }

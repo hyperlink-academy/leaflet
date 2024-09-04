@@ -39,7 +39,7 @@ export type BlockProps = {
   nextPosition: string | null;
 } & Block;
 
-export function Block(props: BlockProps) {
+export function Block(props: BlockProps & { preview?: boolean }) {
   // Block handles all block level events like
   // mouse events, keyboard events and longPress, and setting AreYouSure state
   // and shared styling like padding and flex for list layouting
@@ -72,8 +72,7 @@ export function Block(props: BlockProps) {
 
   return (
     <div
-      {...mouseHandlers}
-      {...handlers}
+      {...(!props.preview ? { ...mouseHandlers, ...handlers } : {})}
       className={`
         blockWrapper relative
         flex flex-row gap-2
@@ -92,7 +91,7 @@ export function Block(props: BlockProps) {
           : "pt-1"
       }`}
     >
-      <BlockMultiselectIndicator {...props} />
+      {!props.preview && <BlockMultiselectIndicator {...props} />}
       <BaseBlock
         {...props}
         areYouSure={areYouSure}
