@@ -39,7 +39,7 @@ export function Leaflet(props: {
               <AddLeafletToHomepage />
               <SelectionManager />
               <div
-                className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full"
+                className="leafletContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full"
                 id="card-carousel"
               >
                 <Cards rootCard={props.leaflet_id} />

@@ -39,7 +39,7 @@ import { HoverButton } from "components/Buttons";
 
 export type pickers =
   | "null"
-  | "page"
+  | "leaflet"
   | "card"
   | "accent-1"
   | "accent-2"
@@ -63,7 +63,10 @@ export function setColorAttribute(
 export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   let { rep } = useReplicache();
   // I need to get these variables from replicache and then write them to the DB. I also need to parse them into a state that can be used here.
-  let pageValue = useColorAttribute(props.entityID, "theme/page-background");
+  let leafletValue = useColorAttribute(
+    props.entityID,
+    "theme/leaflet-background",
+  );
   let cardValue = useColorAttribute(props.entityID, "theme/card-background");
   let primaryValue = useColorAttribute(props.entityID, "theme/primary");
   let accent1Value = useColorAttribute(
@@ -79,7 +82,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   );
 
   let [openPicker, setOpenPicker] = useState<pickers>(
-    props.home === true ? "page" : "null",
+    props.home === true ? "leaflet" : "null",
   );
   let set = useMemo(() => {
     return setColorAttribute(rep, props.entityID);
@@ -113,7 +116,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
             background="bg-bg-card"
             text="text-bg-card"
             backgroundImage={{
-              backgroundColor: pageValue.toString("hex"),
+              backgroundColor: leafletValue.toString("hex"),
               backgroundImage: gradient,
             }}
           />
@@ -127,14 +130,14 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
             collisionPadding={16}
           >
             <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
-              <div className="themeBGPage flex">
+              <div className="themeBGLeaflet flex">
                 <BGPicker
                   entityID={props.entityID}
-                  thisPicker={"page"}
+                  thisPicker={"leaflet"}
                   openPicker={openPicker}
                   setOpenPicker={setOpenPicker}
                   closePicker={() => setOpenPicker("null")}
-                  setValue={set("theme/page-background")}
+                  setValue={set("theme/leaflet-background")}
                 />
               </div>
 
@@ -146,11 +149,11 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                     ? "cover"
                     : `calc(${backgroundRepeat.data.value}px / 2 )`,
                 }}
-                className={`bg-bg-page mx-2 p-3  mb-3 flex flex-col rounded-md  border border-border ${props.home ? "" : "pb-0"}`}
+                className={`bg-bg-leaflet mx-2 p-3  mb-3 flex flex-col rounded-md  border border-border ${props.home ? "" : "pb-0"}`}
               >
                 <div className={`flex flex-col z-10 mt-4 -mb-[6px] `}>
                   <div
-                    className="themePageControls text-accent-2 flex flex-col gap-2 h-full  bg-bg-page p-2 rounded-md border border-accent-2 shadow-[0_0_0_1px_rgb(var(--accent))]"
+                    className="themeLeafletControls text-accent-2 flex flex-col gap-2 h-full  bg-bg-leaflet p-2 rounded-md border border-accent-2 shadow-[0_0_0_1px_rgb(var(--accent))]"
                     style={{
                       backgroundColor: "rgba(var(--accent-1), 0.6)",
                     }}
@@ -189,12 +192,12 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                     {/* <hr className="my-3" /> */}
                     <div className="flex flex-col pt-8 -mb-[6px] z-10">
                       <div
-                        className="themePageControls flex flex-col gap-2 h-full text-primary bg-bg-page p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-card))]"
+                        className="themeLeafletControls flex flex-col gap-2 h-full text-primary bg-bg-leaflet p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-card))]"
                         style={{ backgroundColor: "rgba(var(--bg-card), 0.6)" }}
                       >
-                        <div className="themePageColor flex items-start ">
+                        <div className="themeLeafletColor flex items-start ">
                           <ColorPicker
-                            label="Page"
+                            label="Leaflet"
                             alpha
                             value={cardValue}
                             setValue={set("theme/card-background")}
@@ -204,7 +207,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                             closePicker={() => setOpenPicker("null")}
                           />
                         </div>
-                        <div className="themePageTextColor w-full flex pr-2 items-start">
+                        <div className="themeLeafletTextColor w-full flex pr-2 items-start">
                           <ColorPicker
                             label="Text"
                             value={primaryValue}
@@ -394,7 +397,7 @@ const BGPicker = (props: {
   setValue: (c: Color) => void;
 }) => {
   let bgImage = useEntity(props.entityID, "theme/background-image");
-  let bgColor = useColorAttribute(props.entityID, "theme/page-background");
+  let bgColor = useColorAttribute(props.entityID, "theme/leaflet-background");
   let open = props.openPicker == props.thisPicker;
   let { rep } = useReplicache();
 
@@ -484,7 +487,7 @@ const BGPicker = (props: {
                 onChange={setColorAttribute(
                   rep,
                   props.entityID,
-                )("theme/page-background")}
+                )("theme/leaflet-background")}
               >
                 <ColorArea
                   className="w-full h-[128px] rounded-md"

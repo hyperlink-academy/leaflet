@@ -22,7 +22,6 @@ const BlockAttributes = {
     type: "text",
     cardinality: "one",
   },
-  "page/awareness": { type: "awareness", cardinality: "one" },
   "block/heading-level": {
     type: "number",
     cardinality: "one",
@@ -72,7 +71,7 @@ const LinkBlockAttributes = {
 } as const;
 
 const ThemeAttributes = {
-  "theme/page-background": {
+  "theme/leaflet-background": {
     type: "color",
     cardinality: "one",
   },

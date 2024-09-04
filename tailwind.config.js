@@ -36,7 +36,7 @@ module.exports = {
       "accent-contrast": "rgb(var(--accent-contrast))",
 
       //BG COLORS (defined as css variables in global.css)
-      "bg-page": "rgb(var(--bg-page))",
+      "bg-leaflet": "rgb(var(--bg-leaflet))",
       "bg-card": "rgb(var(--bg-card))",
 
       // HIGHLIGHT COLORS

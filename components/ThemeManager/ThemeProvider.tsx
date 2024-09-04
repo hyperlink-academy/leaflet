@@ -8,7 +8,7 @@ import { parse, contrastLstar, ColorSpace, sRGB } from "colorjs.io/fn";
 import { useEntity } from "src/replicache";
 
 type CSSVariables = {
-  "--bg-page": string;
+  "--bg-leaflet": string;
   "--bg-card": string;
   "--primary": string;
   "--accent-1": string;
@@ -20,7 +20,7 @@ type CSSVariables = {
 };
 
 export const ThemeDefaults = {
-  "theme/page-background": "#F0F7FA",
+  "theme/leaflet-background": "#F0F7FA",
   "theme/card-background": "#FFFFFF",
   "theme/primary": "#272727",
   "theme/highlight-1": "#FFFFFF",
@@ -46,7 +46,7 @@ export function ThemeProvider(props: {
   local?: boolean;
   children: React.ReactNode;
 }) {
-  let bgPage = useColorAttribute(props.entityID, "theme/page-background");
+  let bgLeaflet = useColorAttribute(props.entityID, "theme/leaflet-background");
   let bgCard = useColorAttribute(props.entityID, "theme/card-background");
   let primary = useColorAttribute(props.entityID, "theme/primary");
 
@@ -68,7 +68,7 @@ export function ThemeProvider(props: {
     if (props.local) return;
     let el = document.querySelector(":root") as HTMLElement;
     if (!el) return;
-    setCSSVariableToColor(el, "--bg-page", bgPage);
+    setCSSVariableToColor(el, "--bg-leaflet", bgLeaflet);
     setCSSVariableToColor(el, "--bg-card", bgCard);
     el?.style.setProperty(
       "--bg-card-alpha",
@@ -100,7 +100,7 @@ export function ThemeProvider(props: {
     );
   }, [
     props.local,
-    bgPage,
+    bgLeaflet,
     bgCard,
     primary,
     highlight1,
@@ -122,11 +122,11 @@ export function ThemeProvider(props: {
   }, []);
   return (
     <div
-      className="pageWrapper w-full text-primary h-full flex flex-col bg-center items-stretch"
+      className="leafletWrapper w-full text-primary h-full flex flex-col bg-center items-stretch"
       style={
         {
           "--card-width": canonicalCardWidth,
-          "--bg-page": colorToString(bgPage, "rgb"),
+          "--bg-leaflet": colorToString(bgLeaflet, "rgb"),
           "--bg-card": colorToString(bgCard, "rgb"),
           "--bg-card-alpha": bgCard.getChannelValue("alpha"),
           "--primary": colorToString(primary, "rgb"),
@@ -161,7 +161,7 @@ export const ThemeBackgroundProvider = (props: {
   );
   return (
     <div
-      className="pageBackgroundWrapper w-full bg-bg-page text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
+      className="LeafletBackgroundWrapper w-full bg-bg-leaflet text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
       style={
         {
           backgroundImage: `url(${backgroundImage?.data.src}), url(${backgroundImage?.data.fallback})`,

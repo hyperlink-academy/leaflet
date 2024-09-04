@@ -41,8 +41,8 @@ export default function RootLayout({
             __html: `
             let listener = () => {
               let el = document.querySelector(":root");
-              el.style.setProperty("--page-height-unitless", window.innerHeight)
-              el.style.setProperty("--page-width-unitless", window.innerWidth)
+              el.style.setProperty("--leaflet-height-unitless", window.innerHeight)
+              el.style.setProperty("--leaflet-width-unitless", window.innerWidth)
             }
             listener()
             window.addEventListener("resize", listener)

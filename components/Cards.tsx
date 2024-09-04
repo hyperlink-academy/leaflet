@@ -56,7 +56,7 @@ export function Cards(props: { rootCard: string }) {
           <div className="flex flex-col h-full justify-between mr-4 mt-1">
             <div className="flex flex-col justify-center gap-2 ">
               <ShareOptions rootEntity={props.rootCard} />
-              <PageOptions entityID={props.rootCard} />
+              <LeafletOptions entityID={props.rootCard} />
               <hr className="text-border my-3" />
               <HomeButton />
             </div>
@@ -82,7 +82,7 @@ export function Cards(props: { rootCard: string }) {
   );
 }
 
-export const PageOptions = (props: { entityID: string }) => {
+export const LeafletOptions = (props: { entityID: string }) => {
   return (
     <>
       <ThemePopover entityID={props.entityID} />
