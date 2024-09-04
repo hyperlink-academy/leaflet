@@ -14,7 +14,7 @@ export function TextDecorationButton(props: {
   icon: React.ReactNode;
   tooltipContent: React.ReactNode;
 }) {
-  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedBlock = useUIState((s) => s.focusedEntity);
   let focusedEditor = useEditorStates((s) =>
     focusedBlock ? s.editorStates[focusedBlock.entityID] : null,
   );
@@ -50,7 +50,7 @@ export function TextDecorationButton(props: {
 }
 
 export function toggleMarkInFocusedBlock(mark: MarkType, attrs?: any) {
-  let focusedBlock = useUIState.getState().focusedBlock;
+  let focusedBlock = useUIState.getState().focusedEntity;
   if (!focusedBlock) return;
   publishAppEvent(focusedBlock.entityID, "toggleMark", { mark, attrs });
 }

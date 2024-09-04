@@ -1,4 +1,4 @@
-import { Block, BlockProps } from "components/Blocks";
+import { Block } from "components/Blocks/Block";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";

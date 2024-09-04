@@ -1,6 +1,7 @@
 "use client";
 import { useUIState } from "src/useUIState";
-import { Blocks, focusBlock } from "components/Blocks";
+import { Blocks } from "components/Blocks";
+import { focusBlock } from "src/utils/focusBlock";
 import useMeasure from "react-use-measure";
 import { elementId } from "src/utils/elementId";
 import { ThemePopover } from "./ThemeManager/ThemeSetter";
@@ -93,9 +94,9 @@ function Card(props: { entityID: string; first?: boolean }) {
   let { rep } = useReplicache();
   let isDraft = useReferenceToEntity("mailbox/draft", props.entityID);
 
-  let focusedElement = useUIState((s) => s.focusedBlock);
+  let focusedElement = useUIState((s) => s.focusedEntity);
   let focusedCardID =
-    focusedElement?.type === "card"
+    focusedElement?.entityType === "card"
       ? focusedElement.entityID
       : focusedElement?.parent;
   let isFocused = focusedCardID === props.entityID;
@@ -244,19 +245,19 @@ const DeleteCardToast = {
 export async function focusCard(
   cardID: string,
   rep: Replicache<ReplicacheMutators>,
-  focusFirstBlock?: "focusFirstBlock"
+  focusFirstBlock?: "focusFirstBlock",
 ) {
   // if this card is already focused,
-  let focusedBlock = useUIState.getState().focusedBlock;
+  let focusedBlock = useUIState.getState().focusedEntity;
   if (
-    (focusedBlock?.type == "card" && focusedBlock.entityID === cardID) ||
-    (focusedBlock?.type === "block" && focusedBlock.parent === cardID)
+    (focusedBlock?.entityType == "card" && focusedBlock.entityID === cardID) ||
+    (focusedBlock?.entityType === "block" && focusedBlock.parent === cardID)
   )
     return;
   // else set this card as focused
   useUIState.setState(() => ({
-    focusedBlock: {
-      type: "card",
+    focusedEntity: {
+      entityType: "card",
       entityID: cardID,
     },
   }));
@@ -268,8 +269,7 @@ export async function focusCard(
       inline: "nearest",
     });
 
-    // if we asked that the function focus the first block, do that
-
+    // if we asked that the function focus the first block, focus the first block
     if (focusFirstBlock === "focusFirstBlock") {
       let firstBlock = await rep.query(async (tx) => {
         let blocks = await tx
@@ -315,7 +315,7 @@ export async function focusCard(
 
 const blurCard = () => {
   useUIState.setState(() => ({
-    focusedBlock: null,
-    selectedBlock: [],
+    focusedEntity: null,
+    selectedBlocks: [],
   }));
 };

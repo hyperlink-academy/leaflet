@@ -92,7 +92,7 @@ export const HighlightToolbar = (props: {
   lastUsedHighlight: "1" | "2" | "3";
   setLastUsedHighlight: (color: "1" | "2" | "3") => void;
 }) => {
-  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedBlock = useUIState((s) => s.focusedEntity);
   let focusedEditor = useEditorStates((s) =>
     focusedBlock ? s.editorStates[focusedBlock.entityID] : null,
   );
@@ -138,7 +138,7 @@ export const HighlightColorButton = (props: {
   lastUsedHighlight: "1" | "2" | "3";
   setLastUsedHightlight: (color: "1" | "2" | "3") => void;
 }) => {
-  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedBlock = useUIState((s) => s.focusedEntity);
   let focusedEditor = useEditorStates((s) =>
     focusedBlock ? s.editorStates[focusedBlock.entityID] : null,
   );

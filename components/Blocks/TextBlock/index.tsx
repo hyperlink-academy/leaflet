@@ -23,8 +23,8 @@ import { Replicache } from "replicache";
 import { generateKeyBetween } from "fractional-indexing";
 import { RenderYJSFragment } from "./RenderYJSFragment";
 import { useInitialPageLoad } from "components/InitialPageLoadProvider";
-import { addImage } from "src/utils/addImage";
-import { BlockProps, focusBlock } from "components/Blocks";
+import { BlockProps } from "../Block";
+import { focusBlock } from "src/utils/focusBlock";
 import { TextBlockKeymap } from "./keymap";
 import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
@@ -43,7 +43,7 @@ import { highlightSelectionPlugin } from "./plugins";
 import { inputrules } from "./inputRules";
 
 export function TextBlock(
-  props: BlockProps & { className: string; previewOnly?: boolean },
+  props: BlockProps & { className: string; preview?: boolean },
 ) {
   let initialized = useInitialPageLoad();
   let first = props.previousBlock === null;
@@ -51,14 +51,14 @@ export function TextBlock(
 
   return (
     <>
-      {(!initialized || !permission || props.previewOnly) && (
+      {(!initialized || !permission || props.preview) && (
         <RenderedTextBlock
           entityID={props.entityID}
           className={props.className}
           first={first}
         />
       )}
-      {permission && !props.previewOnly && (
+      {permission && !props.preview && (
         <div
           className={`w-full relative group/text ${!initialized ? "hidden" : ""}`}
         >
@@ -72,7 +72,7 @@ export function TextBlock(
 
 export function IOSBS(props: BlockProps) {
   let selected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
+    s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   let [initialRender, setInitialRender] = useState(true);
   useEffect(() => {
@@ -161,7 +161,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
   }, [rep?.rep]);
 
   let selected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID),
+    s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   let first = props.previousBlock === null;
   let headingLevel = useEntity(props.entityID, "block/heading-level");
@@ -244,8 +244,8 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
             setTimeout(() => {
               useUIState.getState().setSelectedBlock(props);
               useUIState.setState(() => ({
-                focusedBlock: {
-                  type: "block",
+                focusedEntity: {
+                  entityType: "block",
                   entityID: props.entityID,
                   parent: props.parent,
                 },
@@ -296,12 +296,6 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
     </ProseMirror>
   );
 }
-
-const HeadingStyle = {
-  1: "text-xl font-bold",
-  2: "text-lg font-bold",
-  3: "text-base font-bold",
-} as { [level: number]: string };
 
 function CommandHandler(props: { entityID: string }) {
   let cb = useEditorEventCallback(

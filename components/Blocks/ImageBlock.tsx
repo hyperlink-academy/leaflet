@@ -1,14 +1,14 @@
 "use client";
 
 import { useEntity, useReplicache } from "src/replicache";
-import { BlockProps } from "components/Blocks";
+import { Block } from "./Block";
 import { useUIState } from "src/useUIState";
 
-export function ImageBlock(props: BlockProps) {
+export function ImageBlock(props: Block) {
   let { rep } = useReplicache();
-  let image = useEntity(props.entityID, "block/image");
+  let image = useEntity(props.value, "block/image");
   let isSelected = useUIState((s) =>
-    s.selectedBlock.find((b) => b.value === props.entityID)
+    s.selectedBlocks.find((b) => b.value === props.value),
   );
 
   return (

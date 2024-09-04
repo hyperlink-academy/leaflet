@@ -5,9 +5,9 @@ import { Toolbar } from "./Toolbar";
 import { useEntitySetContext } from "./EntitySetProvider";
 
 export function DesktopCardFooter(props: { cardID: string }) {
-  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedBlock = useUIState((s) => s.focusedEntity);
   let focusedBlockParentID =
-    focusedBlock?.type === "card"
+    focusedBlock?.entityType === "card"
       ? focusedBlock.entityID
       : focusedBlock?.parent;
   let entity_set = useEntitySetContext();
@@ -17,7 +17,7 @@ export function DesktopCardFooter(props: { cardID: string }) {
       className="absolute bottom-4 w-full z-10 pointer-events-none"
     >
       {focusedBlock &&
-        focusedBlock.type === "block" &&
+        focusedBlock.entityType === "block" &&
         entity_set.permissions.write &&
         focusedBlockParentID === props.cardID && (
           <div

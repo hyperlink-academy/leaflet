@@ -16,7 +16,7 @@ export const TextBlockTypeToolbar = (props: {
   onClose: () => void;
   className?: string;
 }) => {
-  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedBlock = useUIState((s) => s.focusedEntity);
   let blockType = useEntity(focusedBlock?.entityID || null, "block/type");
   let headingLevel = useEntity(
     focusedBlock?.entityID || null,
@@ -165,7 +165,7 @@ export function TextBlockTypeButton(props: {
   setToolbarState: (s: "heading") => void;
   className?: string;
 }) {
-  let focusedBlock = useUIState((s) => s.focusedBlock);
+  let focusedBlock = useUIState((s) => s.focusedEntity);
   return (
     <ToolbarButton
       tooltipContent={<div>Format Text</div>}

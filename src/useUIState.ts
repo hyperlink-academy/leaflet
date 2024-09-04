@@ -1,4 +1,4 @@
-import { Block } from "components/Blocks";
+import { Block } from "components/Blocks/Block";
 import { create } from "zustand";
 import { combine, createJSONStorage, persist } from "zustand/middleware";
 
@@ -7,13 +7,13 @@ export const useUIState = create(
   combine(
     {
       lastUsedHighlight: "1" as "1" | "2" | "3",
-      focusedBlock: null as
-        | { type: "card"; entityID: string }
-        | { type: "block"; entityID: string; parent: string }
+      focusedEntity: null as
+        | { entityType: "card"; entityID: string }
+        | { entityType: "block"; entityID: string; parent: string }
         | null,
       foldedBlocks: [] as string[],
       openCards: [] as string[],
-      selectedBlock: [] as SelectedBlock[],
+      selectedBlocks: [] as SelectedBlock[],
     },
     (set) => ({
       toggleFold: (entityID: string) => {
@@ -41,29 +41,29 @@ export const useUIState = create(
         })),
       setFocusedBlock: (
         b:
-          | { type: "card"; entityID: string }
-          | { type: "block"; entityID: string; parent: string }
+          | { entityType: "card"; entityID: string }
+          | { entityType: "block"; entityID: string; parent: string }
           | null,
-      ) => set(() => ({ focusedBlock: b })),
+      ) => set(() => ({ focusedEntity: b })),
       setSelectedBlock: (block: SelectedBlock) =>
         set((state) => {
-          return { ...state, selectedBlock: [block] };
+          return { ...state, selectedBlocks: [block] };
         }),
       setSelectedBlocks: (blocks: SelectedBlock[]) =>
         set((state) => {
-          return { ...state, selectedBlock: blocks };
+          return { ...state, selectedBlocks: blocks };
         }),
       addBlockToSelection: (block: SelectedBlock) =>
         set((state) => {
-          if (state.selectedBlock.find((b) => b.value === block.value))
+          if (state.selectedBlocks.find((b) => b.value === block.value))
             return state;
-          return { ...state, selectedBlock: [...state.selectedBlock, block] };
+          return { ...state, selectedBlocks: [...state.selectedBlocks, block] };
         }),
       removeBlockFromSelection: (block: { value: string }) =>
         set((state) => {
           return {
             ...state,
-            selectedBlock: state.selectedBlock.filter(
+            selectedBlocks: state.selectedBlocks.filter(
               (f) => f.value !== block.value,
             ),
           };

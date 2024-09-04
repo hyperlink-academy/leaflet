@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { scanIndex } from "src/replicache/utils";
-import { Block, focusBlock } from "./Blocks";
+import { focusBlock } from "src/utils/focusBlock";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
@@ -23,13 +23,13 @@ export const useSelectingMouse = create(() => ({
 // How does this relate to *when dragging* ?
 
 export function SelectionManager() {
-  let moreThanOneSelected = useUIState((s) => s.selectedBlock.length > 1);
+  let moreThanOneSelected = useUIState((s) => s.selectedBlocks.length > 1);
   let entity_set = useEntitySetContext();
   let { rep } = useReplicache();
   useEffect(() => {
     if (!entity_set.permissions.write) return;
     const getSortedSelection = async () => {
-      let selectedBlocks = useUIState.getState().selectedBlock;
+      let selectedBlocks = useUIState.getState().selectedBlocks;
       let siblings =
         (await rep?.query((tx) =>
           getBlocksWithType(tx, selectedBlocks[0].parent),
@@ -48,7 +48,7 @@ export function SelectionManager() {
             (await rep?.query((tx) =>
               getBlocksWithType(
                 tx,
-                useUIState.getState().selectedBlock[0].parent,
+                useUIState.getState().selectedBlocks[0].parent,
               ),
             )) || [];
           if (firstBlock) focusBlock(firstBlock, { type: "start" });
@@ -62,7 +62,7 @@ export function SelectionManager() {
             (await rep?.query((tx) =>
               getBlocksWithType(
                 tx,
-                useUIState.getState().selectedBlock[0].parent,
+                useUIState.getState().selectedBlocks[0].parent,
               ),
             )) || [];
           let folded = useUIState.getState().foldedBlocks;
@@ -196,7 +196,7 @@ export function SelectionManager() {
         if (moreThanOneSelected) {
           e.preventDefault();
           let [sortedBlocks, siblings] = await getSortedSelection();
-          let selectedBlocks = useUIState.getState().selectedBlock;
+          let selectedBlocks = useUIState.getState().selectedBlocks;
           let firstBlock = sortedBlocks[0];
 
           await rep?.mutate.removeBlock(
@@ -234,7 +234,7 @@ export function SelectionManager() {
       }
       if (e.key === "ArrowUp") {
         let [sortedBlocks, siblings] = await getSortedSelection();
-        let focusedBlock = useUIState.getState().focusedBlock;
+        let focusedBlock = useUIState.getState().focusedEntity;
         if (!e.shiftKey) {
           if (sortedBlocks.length === 1) return;
           let firstBlock = sortedBlocks[0];
@@ -253,7 +253,7 @@ export function SelectionManager() {
           if (
             sortedBlocks.length <= 1 ||
             !focusedBlock ||
-            focusedBlock.type === "card"
+            focusedBlock.entityType === "card"
           )
             return;
           let b = focusedBlock;
@@ -275,14 +275,14 @@ export function SelectionManager() {
               ...nextSelectedBlock,
             });
             useUIState.getState().setFocusedBlock({
-              type: "block",
+              entityType: "block",
               parent: nextSelectedBlock.parent,
               entityID: nextSelectedBlock.value,
             });
           } else {
             let nextBlock = sortedBlocks[sortedBlocks.length - 2];
             useUIState.getState().setFocusedBlock({
-              type: "block",
+              entityType: "block",
               parent: b.parent,
               entityID: nextBlock.value,
             });
@@ -374,7 +374,7 @@ export function SelectionManager() {
       }
       if (e.key === "ArrowDown") {
         let [sortedSelection, siblings] = await getSortedSelection();
-        let focusedBlock = useUIState.getState().focusedBlock;
+        let focusedBlock = useUIState.getState().focusedEntity;
         if (!e.shiftKey) {
           if (sortedSelection.length === 1) return;
           let lastBlock = sortedSelection[sortedSelection.length - 1];
@@ -394,7 +394,7 @@ export function SelectionManager() {
           if (
             sortedSelection.length <= 1 ||
             !focusedBlock ||
-            focusedBlock.type === "card"
+            focusedBlock.entityType === "card"
           )
             return;
           let b = focusedBlock;
@@ -418,7 +418,7 @@ export function SelectionManager() {
               false,
             );
             useUIState.getState().setFocusedBlock({
-              type: "block",
+              entityType: "block",
               parent: nextSelectedBlock.parent,
               entityID: nextSelectedBlock.value,
             });
@@ -434,7 +434,7 @@ export function SelectionManager() {
               false,
             );
             useUIState.getState().setFocusedBlock({
-              type: "block",
+              entityType: "block",
               parent: b.parent,
               entityID: nextBlock.value,
             });

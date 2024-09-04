@@ -1,4 +1,5 @@
-import { BlockProps, focusBlock } from "components/Blocks";
+import { BlockProps } from "../Block";
+import { focusBlock } from "src/utils/focusBlock";
 import { EditorView } from "prosemirror-view";
 import { generateKeyBetween } from "fractional-indexing";
 import { setBlockType, toggleMark } from "prosemirror-commands";
@@ -36,7 +37,7 @@ export const TextBlockKeymap = (
     "Ctrl-a": metaA(propsRef, repRef),
     "Meta-a": metaA(propsRef, repRef),
     Tab: () => {
-      if (useUIState.getState().selectedBlock.length > 1) return false;
+      if (useUIState.getState().selectedBlocks.length > 1) return false;
       if (!repRef.current || !propsRef.current.previousBlock) return false;
       indent(propsRef.current, propsRef.current.previousBlock, repRef.current);
       return true;
@@ -45,11 +46,11 @@ export const TextBlockKeymap = (
     Escape: (_state, _dispatch, view) => {
       view?.dom.blur();
       useUIState.setState(() => ({
-        focusedBlock: {
-          type: "card",
+        focusedEntity: {
+          entityType: "card",
           entityID: propsRef.current.parent,
         },
-        selectedBlock: [],
+        selectedBlocks: [],
       }));
 
       return false;
@@ -64,7 +65,7 @@ export const TextBlockKeymap = (
             .getState()
             .setSelectedBlocks([propsRef.current, propsRef.current.nextBlock]);
           useUIState.getState().setFocusedBlock({
-            type: "block",
+            entityType: "block",
             entityID: propsRef.current.nextBlock.value,
             parent: propsRef.current.parent,
           });
@@ -86,7 +87,7 @@ export const TextBlockKeymap = (
               propsRef.current.previousBlock,
             ]);
           useUIState.getState().setFocusedBlock({
-            type: "block",
+            entityType: "block",
             entityID: propsRef.current.previousBlock.value,
             parent: propsRef.current.parent,
           });
@@ -100,7 +101,7 @@ export const TextBlockKeymap = (
     },
     ArrowUp: (state, _tr, view) => {
       if (!view) return false;
-      if (useUIState.getState().selectedBlock.length > 1) return true;
+      if (useUIState.getState().selectedBlocks.length > 1) return true;
       if (view.state.selection.from !== view.state.selection.to) return false;
       const viewClientRect = view.dom.getBoundingClientRect();
       const coords = view.coordsAtPos(view.state.selection.anchor);
@@ -117,7 +118,7 @@ export const TextBlockKeymap = (
     },
     ArrowDown: (state, tr, view) => {
       if (!view) return true;
-      if (useUIState.getState().selectedBlock.length > 1) return true;
+      if (useUIState.getState().selectedBlocks.length > 1) return true;
       if (view.state.selection.from !== view.state.selection.to) return false;
       const viewClientRect = view.dom.getBoundingClientRect();
       const coords = view.coordsAtPos(view.state.selection.anchor);
@@ -171,13 +172,17 @@ const backspace =
     dispatch?: (tr: Transaction) => void,
     view?: EditorView,
   ) => {
-    if (useUIState.getState().selectedBlock.length > 1) {
+    // if multiple blocks are selected, don't do anything (handled in SelectionManager)
+    if (useUIState.getState().selectedBlocks.length > 1) {
       return false;
     }
+    // if you are selecting text within a block, don't do anything (handled by proseMirror)
     if (state.selection.anchor > 1 || state.selection.content().size > 0) {
       return false;
     }
+    // if you are in a list...
     if (propsRef.current.listData) {
+      // ...and the item is a checklist item, remove the checklist attribute
       if (propsRef.current.listData.checklist) {
         repRef.current?.mutate.retractAttribute({
           entity: propsRef.current.entityID,
@@ -185,6 +190,7 @@ const backspace =
         });
         return true;
       }
+      // ...move the child list items to next eligible parent (?)
       let depth = propsRef.current.listData.depth;
       repRef.current?.mutate.moveChildren({
         oldParent: propsRef.current.entityID,
@@ -197,6 +203,7 @@ const backspace =
           null,
       });
     }
+    // if this is the first block and is it a list, remove list attribute
     if (!propsRef.current.previousBlock) {
       if (propsRef.current.listData) {
         repRef.current?.mutate.retractAttribute({
@@ -205,6 +212,8 @@ const backspace =
         });
         return true;
       }
+
+      // If the block is a heading, convert it to a text block
       if (propsRef.current.type === "heading") {
         repRef.current?.mutate.assertFact({
           entity: propsRef.current.entityID,
@@ -216,7 +225,7 @@ const backspace =
             focusBlock(
               {
                 value: propsRef.current.entityID,
-                type: "heading",
+                type: "text",
                 parent: propsRef.current.parent,
               },
               { type: "start" },
@@ -292,7 +301,7 @@ const shifttab =
     repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
   () => {
-    if (useUIState.getState().selectedBlock.length > 1) return false;
+    if (useUIState.getState().selectedBlocks.length > 1) return false;
     if (!repRef.current) return false;
     if (!repRef.current) return false;
     outdent(propsRef.current, propsRef.current.previousBlock, repRef.current);
@@ -358,7 +367,7 @@ const enter =
             data: { type: "boolean", value: false },
           });
       }
-
+      // if the block is not a list, add a new text block after it
       if (!propsRef.current.listData) {
         position = generateKeyBetween(
           propsRef.current.position,
@@ -373,7 +382,7 @@ const enter =
           position,
         });
       }
-
+      // if you are are the beginning of a heading, move the heading level to the new block
       if (blockType === "heading") {
         await repRef.current?.mutate.assertFact({
           entity: propsRef.current.entityID,
@@ -393,6 +402,7 @@ const enter =
     };
     asyncRun();
 
+    // if you are in the middle of a text block, split the block
     setTimeout(() => {
       let block = useEditorStates.getState().editorStates[newEntityID];
       if (block) {
@@ -454,7 +464,7 @@ const CtrlEnter =
           let allBlocks = await getBlocksWithType(tx, propsRef.current.parent) ||[]
           console.log("allBlocks", allBlocks)
           useUIState.setState({
-            selectedBlock: allBlocks.map(b=>({value: b.value, parent: propsRef.current.parent}))
+            selectedBlocks: allBlocks.map(b=>({value: b.value, parent: propsRef.current.parent}))
           })
         })
         return true

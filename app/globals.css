@@ -149,6 +149,6 @@ input[type="number"] {
   background-color: transparent;
 }
 
-.Multiple-Selected:focus-within .selection-highlight {
+.multiselected:focus-within .selection-highlight {
   background-color: transparent;
 }
