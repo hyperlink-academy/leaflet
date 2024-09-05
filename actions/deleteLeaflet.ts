@@ -36,5 +36,5 @@ export async function deleteLeaflet(permission_token: PermissionToken) {
       .where(eq(permission_tokens.id, permission_token.id));
   });
   client.end();
-  return revalidatePath("/leaflets");
+  return ;
 }
