@@ -20,7 +20,7 @@ type CSSVariables = {
 };
 
 export const ThemeDefaults = {
-  "theme/leaflet-background": "#F0F7FA",
+  "theme/page-background": "#F0F7FA",
   "theme/card-background": "#FFFFFF",
   "theme/primary": "#272727",
   "theme/highlight-1": "#FFFFFF",
@@ -37,7 +37,7 @@ export const ThemeDefaults = {
 function setCSSVariableToColor(
   el: HTMLElement,
   name: string,
-  value: AriaColor,
+  value: AriaColor
 ) {
   el?.style.setProperty(name, colorToString(value, "rgb"));
 }
@@ -46,7 +46,7 @@ export function ThemeProvider(props: {
   local?: boolean;
   children: React.ReactNode;
 }) {
-  let bgLeaflet = useColorAttribute(props.entityID, "theme/leaflet-background");
+  let bgLeaflet = useColorAttribute(props.entityID, "theme/page-background");
   let bgPage = useColorAttribute(props.entityID, "theme/card-background");
   let primary = useColorAttribute(props.entityID, "theme/primary");
 
@@ -72,7 +72,7 @@ export function ThemeProvider(props: {
     setCSSVariableToColor(el, "--bg-page", bgPage);
     el?.style.setProperty(
       "--bg-page-alpha",
-      bgPage.getChannelValue("alpha").toString(),
+      bgPage.getChannelValue("alpha").toString()
     );
     setCSSVariableToColor(el, "--primary", primary);
 
@@ -84,19 +84,19 @@ export function ThemeProvider(props: {
       let color = parseColor(`hsba(${highlight1.data.value})`);
       el?.style.setProperty(
         "--highlight-1",
-        `rgb(${colorToString(color, "rgb")})`,
+        `rgb(${colorToString(color, "rgb")})`
       );
     } else {
       el?.style.setProperty(
         "--highlight-1",
-        "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 75%)",
+        "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 75%)"
       );
     }
     setCSSVariableToColor(el, "--accent-1", accent1);
     setCSSVariableToColor(el, "--accent-2", accent2);
     el?.style.setProperty(
       "--accent-contrast",
-      colorToString(accentContrast, "rgb"),
+      colorToString(accentContrast, "rgb")
     );
   }, [
     props.local,
@@ -157,7 +157,7 @@ export const ThemeBackgroundProvider = (props: {
   let backgroundImage = useEntity(props.entityID, "theme/background-image");
   let backgroundImageRepeat = useEntity(
     props.entityID,
-    "theme/background-image-repeat",
+    "theme/background-image-repeat"
   );
   return (
     <div

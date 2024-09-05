@@ -71,7 +71,7 @@ const LinkBlockAttributes = {
 } as const;
 
 const ThemeAttributes = {
-  "theme/leaflet-background": {
+  "theme/page-background": {
     type: "color",
     cardinality: "one",
   },

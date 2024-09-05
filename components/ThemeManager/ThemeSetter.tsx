@@ -50,7 +50,7 @@ export type pickers =
 
 export function setColorAttribute(
   rep: Replicache<ReplicacheMutators> | null,
-  entity: string,
+  entity: string
 ) {
   return (attribute: keyof FilterAttributes<{ type: "color" }>) =>
     (color: Color) =>
@@ -63,26 +63,23 @@ export function setColorAttribute(
 export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   let { rep } = useReplicache();
   // I need to get these variables from replicache and then write them to the DB. I also need to parse them into a state that can be used here.
-  let leafletValue = useColorAttribute(
-    props.entityID,
-    "theme/leaflet-background",
-  );
+  let leafletValue = useColorAttribute(props.entityID, "theme/page-background");
   let pageValue = useColorAttribute(props.entityID, "theme/card-background");
   let primaryValue = useColorAttribute(props.entityID, "theme/primary");
   let accent1Value = useColorAttribute(
     props.entityID,
-    "theme/accent-background",
+    "theme/accent-background"
   );
   let accent2Value = useColorAttribute(props.entityID, "theme/accent-text");
   let permission = useEntitySetContext().permissions.write;
   let backgroundImage = useEntity(props.entityID, "theme/background-image");
   let backgroundRepeat = useEntity(
     props.entityID,
-    "theme/background-image-repeat",
+    "theme/background-image-repeat"
   );
 
   let [openPicker, setOpenPicker] = useState<pickers>(
-    props.home === true ? "leaflet" : "null",
+    props.home === true ? "leaflet" : "null"
   );
   let set = useMemo(() => {
     return setColorAttribute(rep, props.entityID);
@@ -92,7 +89,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
     let values = [] as string[];
     for (let i = 0; i < 3; i++) {
       values.push(
-        `${Math.floor(Math.random() * 100)}% ${Math.floor(Math.random() * 100)}%`,
+        `${Math.floor(Math.random() * 100)}% ${Math.floor(Math.random() * 100)}%`
       );
     }
     return values;
@@ -137,7 +134,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                   openPicker={openPicker}
                   setOpenPicker={setOpenPicker}
                   closePicker={() => setOpenPicker("null")}
-                  setValue={set("theme/leaflet-background")}
+                  setValue={set("theme/page-background")}
                 />
               </div>
 
@@ -307,7 +304,7 @@ export const ColorPicker = (props: {
                   onFocus={(e) => {
                     e.currentTarget.setSelectionRange(
                       1,
-                      e.currentTarget.value.length,
+                      e.currentTarget.value.length
                     );
                   }}
                   onKeyDown={(e) => {
@@ -331,7 +328,7 @@ export const ColorPicker = (props: {
                     onFocus={(e) => {
                       e.currentTarget.setSelectionRange(
                         0,
-                        e.currentTarget.value.length - 1,
+                        e.currentTarget.value.length - 1
                       );
                     }}
                     onKeyDown={(e) => {
@@ -397,7 +394,7 @@ const BGPicker = (props: {
   setValue: (c: Color) => void;
 }) => {
   let bgImage = useEntity(props.entityID, "theme/background-image");
-  let bgColor = useColorAttribute(props.entityID, "theme/leaflet-background");
+  let bgColor = useColorAttribute(props.entityID, "theme/page-background");
   let open = props.openPicker == props.thisPicker;
   let { rep } = useReplicache();
 
@@ -439,7 +436,7 @@ const BGPicker = (props: {
                     onFocus={(e) => {
                       e.currentTarget.setSelectionRange(
                         1,
-                        e.currentTarget.value.length,
+                        e.currentTarget.value.length
                       );
                     }}
                     onKeyDown={(e) => {
@@ -486,8 +483,8 @@ const BGPicker = (props: {
                 value={bgColor}
                 onChange={setColorAttribute(
                   rep,
-                  props.entityID,
-                )("theme/leaflet-background")}
+                  props.entityID
+                )("theme/page-background")}
               >
                 <ColorArea
                   className="w-full h-[128px] rounded-md"
