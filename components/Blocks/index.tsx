@@ -153,8 +153,8 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
           }, 10);
         }}
       >
-        {/* this is here as a fail safe, in case a new card is created and there are no blocks in it yet,
-     we render a newcardbutton with a textblock-like placeholder instead of a proper first block. */}
+        {/* this is here as a fail safe, in case a new page is created and there are no blocks in it yet,
+     we render a newblockbutton with a textblock-like placeholder instead of a proper first block. */}
         {!props.lastBlock ? (
           <div className="pt-2 sm:pt-3">write something...</div>
         ) : (

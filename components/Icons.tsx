@@ -84,7 +84,7 @@ export const BlockLinkSmall = (props: Props) => {
   );
 };
 
-export const BlockCardSmall = (props: Props) => {
+export const BlockPageLinkSmall = (props: Props) => {
   return (
     <svg
       width="24"

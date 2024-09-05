@@ -12,7 +12,7 @@ import { elementId } from "src/utils/elementId";
 import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
-import { focusCard } from "components/Cards";
+import { focusPage } from "components/Pages";
 import { v7 } from "uuid";
 import { scanIndex } from "src/replicache/utils";
 import { indent, outdent } from "src/utils/list-operations";
@@ -47,7 +47,7 @@ export const TextBlockKeymap = (
       view?.dom.blur();
       useUIState.setState(() => ({
         focusedEntity: {
-          entityType: "card",
+          entityType: "page",
           entityID: propsRef.current.parent,
         },
         selectedBlocks: [],
@@ -444,30 +444,40 @@ const CtrlEnter =
     return true;
   };
 
-
-  const metaA = (
+const metaA =
+  (
     propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
     repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
-  )=> (state: EditorState, dispatch: ((tr: Transaction) => void) | undefined, view: EditorView | undefined) => {
-      const { from, to } = state.selection;
-      // Check if the entire content of the blockk is selected
-      const isFullySelected = from === 0 && to === state.doc.content.size;
-      
-      if (!isFullySelected) {
-        // If the entire block is selected, we don't need to do anything
-        return false
-      } else {
-        // Remove the selection
-        view?.dispatch(state.tr.setSelection(TextSelection.create(state.doc, from)));
-        view?.dom.blur()
-        repRef.current?.query(async tx=>{
-          let allBlocks = await getBlocksWithType(tx, propsRef.current.parent) ||[]
-          console.log("allBlocks", allBlocks)
-          useUIState.setState({
-            selectedBlocks: allBlocks.map(b=>({value: b.value, parent: propsRef.current.parent}))
-          })
-        })
-        return true
-      }
+  ) =>
+  (
+    state: EditorState,
+    dispatch: ((tr: Transaction) => void) | undefined,
+    view: EditorView | undefined,
+  ) => {
+    const { from, to } = state.selection;
+    // Check if the entire content of the blockk is selected
+    const isFullySelected = from === 0 && to === state.doc.content.size;
 
+    if (!isFullySelected) {
+      // If the entire block is selected, we don't need to do anything
+      return false;
+    } else {
+      // Remove the selection
+      view?.dispatch(
+        state.tr.setSelection(TextSelection.create(state.doc, from)),
+      );
+      view?.dom.blur();
+      repRef.current?.query(async (tx) => {
+        let allBlocks =
+          (await getBlocksWithType(tx, propsRef.current.parent)) || [];
+        console.log("allBlocks", allBlocks);
+        useUIState.setState({
+          selectedBlocks: allBlocks.map((b) => ({
+            value: b.value,
+            parent: propsRef.current.parent,
+          })),
+        });
+      });
+      return true;
     }
+  };

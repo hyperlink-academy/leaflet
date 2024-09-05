@@ -6,7 +6,7 @@ import useMeasure from "react-use-measure";
 import { elementId } from "src/utils/elementId";
 import { ThemePopover } from "./ThemeManager/ThemeSetter";
 import { Media } from "./Media";
-import { DesktopCardFooter } from "./DesktopFooter";
+import { DesktopPageFooter } from "./DesktopFooter";
 import { Replicache } from "replicache";
 import {
   Fact,
@@ -26,37 +26,37 @@ import { useEffect } from "react";
 import { DraftPostOptions } from "./Blocks/MailboxBlock";
 import { useIsMobile } from "src/hooks/isMobile";
 
-export function Cards(props: { rootCard: string }) {
-  let openCards = useUIState((s) => s.openCards);
+export function Pages(props: { rootPage: string }) {
+  let openPages = useUIState((s) => s.openPages);
   let params = useSearchParams();
-  let openCard = params.get("openCard");
+  let openPage = params.get("openPage");
   useEffect(() => {
-    if (openCard) {
+    if (openPage) {
     }
-  }, [openCard, props.rootCard]);
-  let cards = [...openCards];
-  if (openCard && !cards.includes(openCard)) cards.push(openCard);
+  }, [openPage, props.rootPage]);
+  let pages = [...openPages];
+  if (openPage && !pages.includes(openPage)) pages.push(openPage);
 
   return (
     <div
-      id="cards"
-      className="cards flex pt-2 pb-8 sm:py-6"
+      id="pages"
+      className="pages flex pt-2 pb-8 sm:py-6"
       onClick={(e) => {
-        e.currentTarget === e.target && blurCard();
+        e.currentTarget === e.target && blurPage();
       }}
     >
       <div
         className="spacer flex justify-end items-start"
-        style={{ width: `calc(50vw - ((var(--card-width-units)/2))` }}
+        style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
         onClick={(e) => {
-          e.currentTarget === e.target && blurCard();
+          e.currentTarget === e.target && blurPage();
         }}
       >
         <Media mobile={false} className="h-full">
           <div className="flex flex-col h-full justify-between mr-4 mt-1">
             <div className="flex flex-col justify-center gap-2 ">
-              <ShareOptions rootEntity={props.rootCard} />
-              <PageOptions entityID={props.rootCard} />
+              <ShareOptions rootEntity={props.rootPage} />
+              <LeafletOptions entityID={props.rootPage} />
               <hr className="text-border my-3" />
               <HomeButton />
             </div>
@@ -64,25 +64,25 @@ export function Cards(props: { rootCard: string }) {
         </Media>
       </div>
       <div className="flex items-stretch">
-        <Card entityID={props.rootCard} first />
+        <Page entityID={props.rootPage} first />
       </div>
-      {cards.map((card) => (
-        <div className="flex items-stretch" key={card}>
-          <Card entityID={card} />
+      {pages.map((page) => (
+        <div className="flex items-stretch" key={page}>
+          <Page entityID={page} />
         </div>
       ))}
       <div
         className="spacer"
-        style={{ width: `calc(50vw - ((var(--card-width-units)/2))` }}
+        style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
         onClick={(e) => {
-          e.currentTarget === e.target && blurCard();
+          e.currentTarget === e.target && blurPage();
         }}
       />
     </div>
   );
 }
 
-export const PageOptions = (props: { entityID: string }) => {
+export const LeafletOptions = (props: { entityID: string }) => {
   return (
     <>
       <ThemePopover entityID={props.entityID} />
@@ -90,16 +90,16 @@ export const PageOptions = (props: { entityID: string }) => {
   );
 };
 
-function Card(props: { entityID: string; first?: boolean }) {
+function Page(props: { entityID: string; first?: boolean }) {
   let { rep } = useReplicache();
   let isDraft = useReferenceToEntity("mailbox/draft", props.entityID);
 
   let focusedElement = useUIState((s) => s.focusedEntity);
-  let focusedCardID =
-    focusedElement?.entityType === "card"
+  let focusedPageID =
+    focusedElement?.entityType === "page"
       ? focusedElement.entityID
       : focusedElement?.parent;
-  let isFocused = focusedCardID === props.entityID;
+  let isFocused = focusedPageID === props.entityID;
   let isMobile = useIsMobile();
 
   return (
@@ -108,26 +108,26 @@ function Card(props: { entityID: string; first?: boolean }) {
         <div
           className="w-6 lg:snap-center"
           onClick={(e) => {
-            e.currentTarget === e.target && blurCard();
+            e.currentTarget === e.target && blurPage();
           }}
         />
       )}
-      <div className="cardWrapper w-fit flex relative snap-center">
+      <div className="pageWrapper w-fit flex relative snap-center">
         <div
           onMouseDown={(e) => {
             if (e.defaultPrevented) return;
             if (!isMobile) return;
             if (rep) {
-              focusCard(props.entityID, rep);
+              focusPage(props.entityID, rep);
             }
           }}
-          id={elementId.card(props.entityID).container}
+          id={elementId.page(props.entityID).container}
           style={{
-            backgroundColor: "rgba(var(--bg-card), var(--bg-card-alpha))",
-            width: "var(--card-width-units)",
+            backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
+            width: "var(--page-width-units)",
           }}
           className={`
-      card
+      page
       grow flex flex-col
       overscroll-y-none
       overflow-y-scroll no-scrollbar
@@ -136,15 +136,15 @@ function Card(props: { entityID: string; first?: boolean }) {
     `}
         >
           <Media mobile={true}>
-            {!props.first && <CardOptions entityID={props.entityID} />}
+            {!props.first && <PageOptionsMenu entityID={props.entityID} />}
           </Media>
-          <DesktopCardFooter cardID={props.entityID} />
+          <DesktopPageFooter pageID={props.entityID} />
           {isDraft.length > 0 && (
             <div
-              className={`cardStatus pt-[6px] pb-1 ${!props.first ? "pr-10 pl-3 sm:px-4" : "px-3 sm:px-4"} border-b border-border text-tertiary`}
+              className={`pageStatus pt-[6px] pb-1 ${!props.first ? "pr-10 pl-3 sm:px-4" : "px-3 sm:px-4"} border-b border-border text-tertiary`}
               style={{
                 backgroundColor:
-                  "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-card)) 85%)",
+                  "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
               }}
             >
               <DraftPostOptions mailboxEntity={isDraft[0].entity} />
@@ -154,7 +154,7 @@ function Card(props: { entityID: string; first?: boolean }) {
         </div>
         <Media mobile={false}>
           {isFocused && !props.first && (
-            <CardOptions entityID={props.entityID} />
+            <PageOptionsMenu entityID={props.entityID} />
           )}
         </Media>
       </div>
@@ -162,14 +162,14 @@ function Card(props: { entityID: string; first?: boolean }) {
   );
 }
 
-const CardOptions = (props: { entityID: string }) => {
+const PageOptionsMenu = (props: { entityID: string }) => {
   let permission = useEntitySetContext().permissions.write;
   return (
     <div className=" z-10 w-fit absolute sm:top-2 sm:-right-[18px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
       <button
-        className="p-1 pt-[10px] sm:p-0.5 sm:pl-0 bg-border text-bg-card sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
+        className="p-1 pt-[10px] sm:p-0.5 sm:pl-0 bg-border text-bg-page sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
         onClick={() => {
-          useUIState.getState().closeCard(props.entityID);
+          useUIState.getState().closePage(props.entityID);
         }}
       >
         <CloseTiny />
@@ -185,9 +185,9 @@ const OptionsMenu = () => {
     <Menu
       trigger={
         <div
-          className={`cardOptionsTrigger
+          className={`pageOptionsTrigger
       shrink-0 sm:h-8 sm:w-5 h-5 w-8
-      bg-bg-card text-border
+      bg-bg-page text-border
       border sm:border-l-0 border-t-1 border-border sm:rounded-r-md sm:rounded-l-none rounded-b-md
       sm:hover:border-r-2 hover:border-b-2 hover:border-y-2 hover:border-t-1
       flex items-center justify-center`}
@@ -198,8 +198,8 @@ const OptionsMenu = () => {
     >
       <MenuItem
         onSelect={(e) => {
-          // TODO: Wire up delete card
-          toaster(DeleteCardToast);
+          // TODO: Wire up delete page
+          toaster(DeletePageToast);
         }}
       >
         Delete Page <DeleteSmall />
@@ -208,13 +208,13 @@ const OptionsMenu = () => {
   );
 };
 
-const CardMenuItem = (props: {
+const PageMenuItem = (props: {
   children: React.ReactNode;
   onClick: () => void;
 }) => {
   return (
     <button
-      className="cardOptionsMenuItem z-10 text-left text-secondary py-1 px-2 flex gap-2 hover:bg-accent-1 hover:text-accent-2"
+      className="pageOptionsMenuItem z-10 text-left text-secondary py-1 px-2 flex gap-2 hover:bg-accent-1 hover:text-accent-2"
       onClick={() => {
         props.onClick();
       }}
@@ -224,10 +224,10 @@ const CardMenuItem = (props: {
   );
 };
 
-const DeleteCardToast = {
+const DeletePageToast = {
   content: (
     <div className="flex gap-2">
-      You deleted a card.{" "}
+      You deleted a page.{" "}
       <button
         className="underline font-bold sm:font-normal sm:hover:font-bold italic"
         onClick={() => {
@@ -242,29 +242,29 @@ const DeleteCardToast = {
   duration: 5000,
 } as const;
 
-export async function focusCard(
-  cardID: string,
+export async function focusPage(
+  pageID: string,
   rep: Replicache<ReplicacheMutators>,
   focusFirstBlock?: "focusFirstBlock",
 ) {
-  // if this card is already focused,
+  // if this page is already focused,
   let focusedBlock = useUIState.getState().focusedEntity;
   if (
-    (focusedBlock?.entityType == "card" && focusedBlock.entityID === cardID) ||
-    (focusedBlock?.entityType === "block" && focusedBlock.parent === cardID)
+    (focusedBlock?.entityType == "page" && focusedBlock.entityID === pageID) ||
+    (focusedBlock?.entityType === "block" && focusedBlock.parent === pageID)
   )
     return;
-  // else set this card as focused
+  // else set this page as focused
   useUIState.setState(() => ({
     focusedEntity: {
-      entityType: "card",
-      entityID: cardID,
+      entityType: "page",
+      entityID: pageID,
     },
   }));
 
   setTimeout(async () => {
-    //scroll to card
-    document.getElementById(elementId.card(cardID).container)?.scrollIntoView({
+    //scroll to page
+    document.getElementById(elementId.page(pageID).container)?.scrollIntoView({
       behavior: "smooth",
       inline: "nearest",
     });
@@ -275,7 +275,7 @@ export async function focusCard(
         let blocks = await tx
           .scan<
             Fact<"card/block">
-          >({ indexName: "eav", prefix: `${cardID}-card/block` })
+          >({ indexName: "eav", prefix: `${pageID}-page/block` })
           .toArray();
 
         let firstBlock = blocks.sort((a, b) => {
@@ -313,7 +313,7 @@ export async function focusCard(
   }, 50);
 }
 
-const blurCard = () => {
+const blurPage = () => {
   useUIState.setState(() => ({
     focusedEntity: null,
     selectedBlocks: [],

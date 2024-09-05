@@ -3,7 +3,7 @@ import { Database } from "../../supabase/database.types";
 import { Attributes } from "src/replicache/attributes";
 import { createServerClient } from "@supabase/ssr";
 import { SelectionManager } from "components/SelectionManager";
-import { Cards } from "components/Cards";
+import { Pages } from "components/Pages";
 import {
   ThemeBackgroundProvider,
   ThemeProvider,
@@ -15,36 +15,36 @@ import {
   EntitySetContext,
   EntitySetProvider,
 } from "components/EntitySetProvider";
-import { UpdatePageTitle } from "components/utils/UpdatePageTitle";
-import { AddDocToHomepage } from "components/utils/AddDocToHomepage";
-export function Doc(props: {
+import { AddLeafletToHomepage } from "components/utils/AddLeafletToHomepage";
+import { UpdateLeafletTitle } from "components/utils/UpdateLeafletTitle";
+export function Leaflet(props: {
   token: PermissionToken;
   initialFacts: Fact<keyof typeof Attributes>[];
-  doc_id: string;
+  leaflet_id: string;
 }) {
   return (
     <ReplicacheProvider
-      rootEntity={props.doc_id}
+      rootEntity={props.leaflet_id}
       token={props.token}
-      name={props.doc_id}
+      name={props.leaflet_id}
       initialFacts={props.initialFacts}
     >
       <EntitySetProvider
         set={props.token.permission_token_rights[0].entity_set}
       >
         <PopUpProvider>
-          <ThemeProvider entityID={props.doc_id}>
-            <ThemeBackgroundProvider entityID={props.doc_id}>
-              <UpdatePageTitle entityID={props.doc_id} />
-              <AddDocToHomepage />
+          <ThemeProvider entityID={props.leaflet_id}>
+            <ThemeBackgroundProvider entityID={props.leaflet_id}>
+              <UpdateLeafletTitle entityID={props.leaflet_id} />
+              <AddLeafletToHomepage />
               <SelectionManager />
               <div
-                className="pageContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full"
-                id="card-carousel"
+                className="leafletContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full"
+                id="page-carousel"
               >
-                <Cards rootCard={props.doc_id} />
+                <Pages rootPage={props.leaflet_id} />
               </div>
-              <MobileFooter entityID={props.doc_id} />
+              <MobileFooter entityID={props.leaflet_id} />
             </ThemeBackgroundProvider>
           </ThemeProvider>
         </PopUpProvider>

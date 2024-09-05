@@ -202,7 +202,7 @@ export function SelectionManager() {
           await rep?.mutate.removeBlock(
             selectedBlocks.map((block) => ({ blockEntity: block.value })),
           );
-          useUIState.getState().closeCard(selectedBlocks.map((b) => b.value));
+          useUIState.getState().closePage(selectedBlocks.map((b) => b.value));
 
           let nextBlock =
             siblings?.[
@@ -253,7 +253,7 @@ export function SelectionManager() {
           if (
             sortedBlocks.length <= 1 ||
             !focusedBlock ||
-            focusedBlock.entityType === "card"
+            focusedBlock.entityType === "page"
           )
             return;
           let b = focusedBlock;
@@ -394,7 +394,7 @@ export function SelectionManager() {
           if (
             sortedSelection.length <= 1 ||
             !focusedBlock ||
-            focusedBlock.entityType === "card"
+            focusedBlock.entityType === "page"
           )
             return;
           let b = focusedBlock;

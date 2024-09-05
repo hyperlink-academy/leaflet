@@ -11,7 +11,7 @@ import { focusBlock } from "src/utils/focusBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { subscribeToMailboxWithEmail } from "actions/subscriptions/subscribeToMailboxWithEmail";
 import { confirmEmailSubscription } from "actions/subscriptions/confirmEmailSubscription";
-import { focusCard } from "components/Cards";
+import { focusPage } from "components/Pages";
 import { v7 } from "uuid";
 import { sendPostToSubscribers } from "actions/subscriptions/sendPostToSubscribers";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
@@ -23,8 +23,7 @@ import {
   unsubscribe,
   useSubscriptionStatus,
 } from "src/hooks/useSubscriptionStatus";
-import { scanIndex } from "src/replicache/utils";
-import { usePageTitle } from "components/utils/UpdatePageTitle";
+import { usePageTitle } from "components/utils/UpdateLeafletTitle";
 
 export const MailboxBlock = (props: BlockProps) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
@@ -33,8 +32,8 @@ export const MailboxBlock = (props: BlockProps) => {
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
 
-  let card = useEntity(props.entityID, "block/card");
-  let cardEntity = card ? card.data.value : props.entityID;
+  let page = useEntity(props.entityID, "block/card");
+  let pageEntity = page ? page.data.value : props.entityID;
   let permission = useEntitySetContext().permissions.write;
 
   let { rep } = useReplicache();
@@ -75,8 +74,8 @@ export const MailboxBlock = (props: BlockProps) => {
           props.previousBlock &&
             focusBlock(props.previousBlock, { type: "end" });
 
-          draft && useUIState.getState().closeCard(draft.data.value);
-          archive && useUIState.getState().closeCard(archive.data.value);
+          draft && useUIState.getState().closePage(draft.data.value);
+          archive && useUIState.getState().closePage(archive.data.value);
         }
       }
     };
@@ -86,7 +85,7 @@ export const MailboxBlock = (props: BlockProps) => {
     draft,
     archive,
     areYouSure,
-    cardEntity,
+    pageEntity,
     isSelected,
     permission,
     props.entityID,
@@ -110,7 +109,7 @@ export const MailboxBlock = (props: BlockProps) => {
         }`}
         style={{
           backgroundColor:
-            "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-card)) 85%)",
+            "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
         }}
       >
         <div className="flex gap-2 p-4">
@@ -129,8 +128,8 @@ export const MailboxBlock = (props: BlockProps) => {
                   firstBlockFactID: v7(),
                 });
               }
-              useUIState.getState().openCard(props.parent, entity);
-              if (rep) focusCard(entity, rep, "focusFirstBlock");
+              useUIState.getState().openPage(props.parent, entity);
+              if (rep) focusPage(entity, rep, "focusFirstBlock");
               return;
             }}
           >
@@ -202,7 +201,7 @@ const MailboxReaderView = (props: { entityID: string; parent: string }) => {
         }`}
         style={{
           backgroundColor:
-            "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-card)) 85%)",
+            "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
         }}
       >
         <div className="flex flex-col w-full gap-2 p-4">
@@ -227,8 +226,8 @@ const MailboxReaderView = (props: { entityID: string; parent: string }) => {
                       if (rep) {
                         useUIState
                           .getState()
-                          .openCard(props.parent, archive.data.value);
-                        focusCard(archive.data.value, rep);
+                          .openPage(props.parent, archive.data.value);
+                        focusPage(archive.data.value, rep);
                       }
                     }}
                   >
@@ -378,7 +377,7 @@ const SubscribeForm = (props: {
             <input
               type="number"
               value={code}
-              className="appearance-none focus:outline-none focus:border-border w-20 border border-border-light bg-bg-card rounded-md p-1"
+              className="appearance-none focus:outline-none focus:border-border w-20 border border-border-light bg-bg-page rounded-md p-1"
               onChange={(e) => setCode(e.currentTarget.value)}
             />
 
@@ -415,7 +414,7 @@ const SubscribeForm = (props: {
           }}
           className={`mailboxSubscribeForm flex sm:flex-row flex-col ${props.compact && "sm:flex-col sm:gap-2"} gap-2 sm:gap-3 items-center place-self-center mx-auto`}
         >
-          <div className="mailboxChannelInput flex gap-2 border border-border-light bg-bg-card rounded-md py-1 px-2 grow max-w-72 ">
+          <div className="mailboxChannelInput flex gap-2 border border-border-light bg-bg-page rounded-md py-1 px-2 grow max-w-72 ">
             <input
               value={email}
               type="email"
@@ -480,7 +479,7 @@ export const DraftPostOptions = (props: { mailboxEntity: string }) => {
   );
   if (!draft) return null;
 
-  // once the send button is clicked, close the card and show a toast.
+  // once the send button is clicked, close the page and show a toast.
   return (
     <div className="flex justify-between items-center text-sm">
       <div className="flex gap-2">
@@ -543,8 +542,8 @@ const GoToArchive = (props: {
       onMouseDown={(e) => {
         e.preventDefault();
         if (rep) {
-          useUIState.getState().openCard(props.parent, archive.data.value);
-          focusCard(archive.data.value, rep);
+          useUIState.getState().openPage(props.parent, archive.data.value);
+          focusPage(archive.data.value, rep);
         }
       }}
     >

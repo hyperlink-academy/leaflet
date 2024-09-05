@@ -7,7 +7,7 @@ import { Database } from "../../supabase/database.types";
 import { Attributes } from "src/replicache/attributes";
 import { createServerClient } from "@supabase/ssr";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
-import { Doc } from "./Doc";
+import { Leaflet } from "./Leaflet";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -19,20 +19,20 @@ let supabase = createServerClient<Database>(
   { cookies: {} },
 );
 type Props = {
-  // this is now a token id not doc! Should probs rename
-  params: { doc_id: string };
+  // this is now a token id not leaflet! Should probs rename
+  params: { leaflet_id: string };
 };
-export default async function DocumentPage(props: Props) {
+export default async function LeafletPage(props: Props) {
   let res = await supabase
     .from("permission_tokens")
     .select("*, permission_token_rights(*) ")
-    .eq("id", props.params.doc_id)
+    .eq("id", props.params.leaflet_id)
     .single();
   let rootEntity = res.data?.root_entity;
   if (!rootEntity || !res.data)
     return (
-      <div className="w-screen h-screen flex place-items-center bg-bg-page">
-        <div className="bg-bg-card mx-auto p-4 border border-border rounded-md flex flex-col text-center justify-centergap-1 w-fit">
+      <div className="w-screen h-screen flex place-items-center bg-bg-leaflet">
+        <div className="bg-bg-page mx-auto p-4 border border-border rounded-md flex flex-col text-center justify-centergap-1 w-fit">
           <div className="font-bold">
             Hmmm... Couldn&apos;t find that leaflet.
           </div>
@@ -52,7 +52,11 @@ export default async function DocumentPage(props: Props) {
   });
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
   return (
-    <Doc initialFacts={initialFacts} doc_id={rootEntity} token={res.data} />
+    <Leaflet
+      initialFacts={initialFacts}
+      leaflet_id={rootEntity}
+      token={res.data}
+    />
   );
 }
 
@@ -60,10 +64,10 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   let res = await supabase
     .from("permission_tokens")
     .select("*, permission_token_rights(*)")
-    .eq("id", props.params.doc_id)
+    .eq("id", props.params.leaflet_id)
     .single();
   let rootEntity = res.data?.root_entity;
-  if (!rootEntity || !res.data) return { title: "Doc not found" };
+  if (!rootEntity || !res.data) return { title: "Leaflet not found" };
   let { data } = await supabase.rpc("get_facts", {
     root: rootEntity,
   });

@@ -12,7 +12,7 @@ import { Database } from "supabase/database.types";
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-  { cookies: {} }
+  { cookies: {} },
 );
 export async function sendPostToSubscribers({
   title,
@@ -36,7 +36,7 @@ export async function sendPostToSubscribers({
     .eq("id", permission_token.id)
     .single();
   let rootEntity = token_rights.data?.root_entity;
-  if (!rootEntity || !token_rights.data) return { title: "Doc not found" };
+  if (!rootEntity || !token_rights.data) return { title: "Leaflet not found" };
   let { data } = await supabase.rpc("get_facts", {
     root: rootEntity,
   });
@@ -51,7 +51,7 @@ export async function sendPostToSubscribers({
   let entity_set = subscribers[0]?.entities.set;
   if (
     !token_rights.data.permission_token_rights.find(
-      (r) => r.entity_set === entity_set
+      (r) => r.entity_set === entity_set,
     )
   ) {
     return;
@@ -80,19 +80,19 @@ export async function sendPostToSubscribers({
         Subject: `New Mail in: ${title}`,
         To: sub.email_subscriptions_to_entity.email,
         HtmlBody: `
-        You've got new mail from <a href="${domain}/${sub.email_subscriptions_to_entity.token}?sub_id=${sub.email_subscriptions_to_entity.id}&email=${sub.email_subscriptions_to_entity.email}&entity=${sub.email_subscriptions_to_entity.entity}&openCard=${messageEntity}">
+        You've got new mail from <a href="${domain}/${sub.email_subscriptions_to_entity.token}?sub_id=${sub.email_subscriptions_to_entity.id}&email=${sub.email_subscriptions_to_entity.email}&entity=${sub.email_subscriptions_to_entity.entity}&openPage=${messageEntity}">
         ${title}!
         </a>
         <hr style="margin-top: 1em; margin-bottom: 1em;">
         ${contents.html}
         <hr style="margin-top: 1em; margin-bottom: 1em;">
         <em>Manage your subscription at
-        <a href="${domain}/${sub.email_subscriptions_to_entity.token}?sub_id=${sub.email_subscriptions_to_entity.id}&email=${sub.email_subscriptions_to_entity.email}&entity=${sub.email_subscriptions_to_entity.entity}&openCard=${messageEntity}">
+        <a href="${domain}/${sub.email_subscriptions_to_entity.token}?sub_id=${sub.email_subscriptions_to_entity.id}&email=${sub.email_subscriptions_to_entity.email}&entity=${sub.email_subscriptions_to_entity.entity}&openPage=${messageEntity}">
         ${title}
         </a></em>
         `,
         TextBody: contents.markdown,
-      }))
+      })),
     ),
   });
   client.end();

@@ -3,10 +3,10 @@ import { DeleteSmall, MoreOptionsTiny } from "components/Icons";
 import { Menu, MenuItem } from "components/Layout";
 import { PermissionToken } from "src/replicache";
 import { mutate } from "swr";
-import { hideDoc, removeDocFromHome } from "./storage";
+import { hideDoc } from "./storage";
 
-export const DocOptions = (props: {
-  doc: PermissionToken;
+export const LeafletOptions = (props: {
+  leaflet: PermissionToken;
   setState: (s: "normal" | "deleting") => void;
 }) => {
   return (
@@ -20,8 +20,8 @@ export const DocOptions = (props: {
       >
         <MenuItem
           onSelect={() => {
-            hideDoc(props.doc);
-            mutate("docs");
+            hideDoc(props.leaflet);
+            mutate("leaflets");
           }}
         >
           Hide from home{" "}
@@ -32,7 +32,7 @@ export const DocOptions = (props: {
           }}
         >
           <DeleteSmall />
-          Delete Doc
+          Delete Leaflet
         </MenuItem>
       </Menu>
     </>

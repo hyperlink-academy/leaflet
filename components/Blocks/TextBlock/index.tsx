@@ -96,7 +96,7 @@ export function IOSBS(props: BlockProps) {
           let vis = await isVisible(target as Element);
           if (!vis) {
             let parentEl = document.getElementById(
-              elementId.card(props.parent).container,
+              elementId.page(props.parent).container,
             );
             if (!parentEl) return;
             parentEl?.scrollBy({
@@ -121,7 +121,7 @@ export function RenderedTextBlock(props: {
     // show a blank line if the block is empty. blocks with content are styled elsewhere! update both!
     return (
       <pre className={`${props.className} italic text-tertiary`}>
-        {/* Render a placeholder if there are no other blocks in the card, else just show the blank line*/}
+        {/* Render a placeholder if there are no other blocks in the page, else just show the blank line*/}
         {props.first ? "Title" : <br />}
       </pre>
     );
@@ -341,9 +341,9 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
       const coords = view.coordsAtPos(view.state.selection.anchor);
       useEditorStates.setState({ lastXPosition: coords.left });
 
-      // scroll card if cursor is at the very top or very bottom of the card
+      // scroll page if cursor is at the very top or very bottom of the page
       let parentID = document.getElementById(
-        elementId.card(props.parentID).container,
+        elementId.page(props.parentID).container,
       );
       let parentHeight = parentID?.clientHeight;
       let cursorPosY = coords.top;

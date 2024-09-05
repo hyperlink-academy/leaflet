@@ -89,18 +89,18 @@ export async function deleteBlock(
   let focusedBlock = useUIState.getState().focusedEntity;
 
   // if the focused thing is a page and not a block, return
-  if (!focusedBlock || focusedBlock?.entityType === "card") return;
+  if (!focusedBlock || focusedBlock?.entityType === "page") return;
   let [type] = await rep.query((tx) =>
     scanIndex(tx).eav(focusedBlock.entityID, "block/type"),
   );
 
-  // get what cards we need to close as a result of deleting this block
-  let cardsToClose = [] as string[];
+  // get what pagess we need to close as a result of deleting this block
+  let pagesToClose = [] as string[];
   if (type.data.value === "card") {
-    let [childCards] = await rep?.query(
+    let [childPages] = await rep?.query(
       (tx) => scanIndex(tx).eav(focusedBlock.entityID, "block/card") || [],
     );
-    cardsToClose = [childCards?.data.value];
+    pagesToClose = [childPages?.data.value];
   }
   if (type.data.value === "mailbox") {
     let [archive] = await rep?.query(
@@ -109,7 +109,7 @@ export async function deleteBlock(
     let [draft] = await rep?.query(
       (tx) => scanIndex(tx).eav(focusedBlock.entityID, "mailbox/draft") || [],
     );
-    cardsToClose = [archive?.data.value, draft?.data.value];
+    pagesToClose = [archive?.data.value, draft?.data.value];
   }
 
   //  the next and previous blocks in the block list
@@ -164,7 +164,7 @@ export async function deleteBlock(
     );
   }
 
-  cardsToClose.forEach((card) => card && useUIState.getState().closeCard(card));
+  pagesToClose.forEach((page) => page && useUIState.getState().closePage(page));
   await Promise.all(
     entities.map((entity) =>
       rep?.mutate.removeBlock({

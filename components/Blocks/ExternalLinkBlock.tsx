@@ -17,7 +17,7 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
       target="_blank"
       className={`
         externalLinkBlock flex relative group/linkBlock
-        h-[104px] w-full bg-bg-card overflow-hidden text-primary hover:no-underline no-underline
+        h-[104px] w-full bg-bg-page overflow-hidden text-primary hover:no-underline no-underline
         border  hover:border-accent-contrast outline outline-1 -outline-offset-0 rounded-lg shadow-sm
         ${isSelected ? "outline-accent-contrast border-accent-contrast" : "outline-transparent border-border-light"}
         `}

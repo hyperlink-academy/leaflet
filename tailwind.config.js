@@ -22,11 +22,11 @@ module.exports = {
       primary: "rgb(var(--primary))",
       secondary: "color-mix(in oklab, rgb(var(--primary)), white 15%)",
       tertiary:
-        "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-card)) 55%)",
+        "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 55%)",
       border:
-        "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-card)) 75%)",
+        "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 75%)",
       "border-light":
-        "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-card)) 85%)",
+        "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 85%)",
 
       white: "#FFFFFF",
 
@@ -36,8 +36,8 @@ module.exports = {
       "accent-contrast": "rgb(var(--accent-contrast))",
 
       //BG COLORS (defined as css variables in global.css)
+      "bg-leaflet": "rgb(var(--bg-leaflet))",
       "bg-page": "rgb(var(--bg-page))",
-      "bg-card": "rgb(var(--bg-card))",
 
       // HIGHLIGHT COLORS
       "highlight-1": "var(--highlight-1)",

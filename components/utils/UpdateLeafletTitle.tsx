@@ -10,7 +10,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { focusBlock } from "src/utils/focusBlock";
 import { useIsMobile } from "src/hooks/isMobile";
 
-export function UpdatePageTitle(props: { entityID: string }) {
+export function UpdateLeafletTitle(props: { entityID: string }) {
   let blocks = useBlocks(props.entityID).filter(
     (b) => b.type === "text" || b.type === "heading",
   );

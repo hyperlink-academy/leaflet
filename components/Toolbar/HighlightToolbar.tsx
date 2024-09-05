@@ -244,7 +244,7 @@ export const HighlightColorSettings = () => {
             collisionPadding={16}
           >
             <div
-              className="bg-bg-page w-full m-2 p-3 pb-0  flex flex-col rounded-md  border border-border"
+              className="bg-bg-leaflet w-full m-2 p-3 pb-0  flex flex-col rounded-md  border border-border"
               style={{
                 backgroundImage: `url(${backgroundImage?.data.src})`,
                 backgroundRepeat: backgroundRepeat ? "repeat" : "no-repeat",
@@ -255,8 +255,8 @@ export const HighlightColorSettings = () => {
             >
               <div className="flex flex-col -mb-[6px] z-10">
                 <div
-                  className="themeHighlightControls flex flex-col gap-2 h-full text-primary bg-bg-page p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-card))]"
-                  style={{ backgroundColor: "rgba(var(--bg-card), 0.6)" }}
+                  className="themeHighlightControls flex flex-col gap-2 h-full text-primary bg-bg-leaflet p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))]"
+                  style={{ backgroundColor: "rgba(var(--bg-page), 0.6)" }}
                 >
                   <ColorPicker
                     label="Highlight 1"
@@ -292,7 +292,7 @@ export const HighlightColorSettings = () => {
                 </div>
                 <SectionArrow
                   fill={theme.colors["primary"]}
-                  stroke={theme.colors["bg-card"]}
+                  stroke={theme.colors["bg-page"]}
                   className="ml-2"
                 />
               </div>
@@ -300,7 +300,7 @@ export const HighlightColorSettings = () => {
               <div
                 className="rounded-t-lg p-2  border border-border border-b-transparent shadow-md text-primary"
                 style={{
-                  backgroundColor: "rgba(var(--bg-card), var(--bg-card-alpha))",
+                  backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
                 }}
               >
                 <p className="font-bold">Pick your highlights!</p>

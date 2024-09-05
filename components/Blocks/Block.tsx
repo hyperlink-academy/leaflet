@@ -10,7 +10,7 @@ import { focusBlock } from "src/utils/focusBlock";
 
 import { TextBlock } from "components/Blocks/TextBlock";
 import { ImageBlock } from "./ImageBlock";
-import { CardBlock } from "./CardBlock";
+import { PageLinkBlock } from "./PageLinkBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { MailboxBlock } from "./MailboxBlock";
 import { HeadingBlock } from "./HeadingBlock";
@@ -123,7 +123,7 @@ export const BaseBlock = (
       ) : (
         <>
           {props.type === "card" ? (
-            <CardBlock {...props} preview={!props.preview} />
+            <PageLinkBlock {...props} preview={!props.preview} />
           ) : props.type === "text" ? (
             <TextBlock {...props} className="" preview={props.preview} />
           ) : props.type === "heading" ? (

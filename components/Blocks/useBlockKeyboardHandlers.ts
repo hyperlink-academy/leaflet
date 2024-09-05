@@ -105,7 +105,7 @@ async function Backspace({ e, props, rep, areYouSure, setAreYouSure }: Args) {
     }
     // ... and areYouSure state is true,
     // and the user is not in an input or textarea,
-    // if there is a card to close, close it and remove the block
+    // if there is a page to close, close it and remove the block
     if (areYouSure) {
       let el = e.target as HTMLElement;
 
@@ -122,7 +122,7 @@ async function Backspace({ e, props, rep, areYouSure, setAreYouSure }: Args) {
 
   e.preventDefault();
   rep.mutate.removeBlock({ blockEntity: props.entityID });
-  useUIState.getState().closeCard(props.entityID);
+  useUIState.getState().closePage(props.entityID);
   let prevBlock = props.previousBlock;
   if (prevBlock) focusBlock(prevBlock, { type: "end" });
 }

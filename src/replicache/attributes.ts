@@ -1,4 +1,4 @@
-const CardAttributes = {
+const PageAttributes = {
   "card/block": {
     type: "ordered-reference",
     cardinality: "many",
@@ -22,7 +22,6 @@ const BlockAttributes = {
     type: "text",
     cardinality: "one",
   },
-  "page/awareness": { type: "awareness", cardinality: "one" },
   "block/heading-level": {
     type: "number",
     cardinality: "one",
@@ -115,7 +114,7 @@ const ThemeAttributes = {
 } as const;
 
 export const Attributes = {
-  ...CardAttributes,
+  ...PageAttributes,
   ...BlockAttributes,
   ...LinkBlockAttributes,
   ...ThemeAttributes,

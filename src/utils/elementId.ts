@@ -3,7 +3,7 @@ export const elementId = {
     text: `block/${id}/content`,
     container: `block/${id}/container`,
   }),
-  card: (id: string) => ({
+  page: (id: string) => ({
     container: `card/${id}/container`,
   }),
 };
