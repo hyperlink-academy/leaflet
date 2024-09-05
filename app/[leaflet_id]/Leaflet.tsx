@@ -3,7 +3,7 @@ import { Database } from "../../supabase/database.types";
 import { Attributes } from "src/replicache/attributes";
 import { createServerClient } from "@supabase/ssr";
 import { SelectionManager } from "components/SelectionManager";
-import { Cards } from "components/Cards";
+import { Pages } from "components/Pages";
 import {
   ThemeBackgroundProvider,
   ThemeProvider,
@@ -40,9 +40,9 @@ export function Leaflet(props: {
               <SelectionManager />
               <div
                 className="leafletContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full"
-                id="card-carousel"
+                id="page-carousel"
               >
-                <Cards rootCard={props.leaflet_id} />
+                <Pages rootPage={props.leaflet_id} />
               </div>
               <MobileFooter entityID={props.leaflet_id} />
             </ThemeBackgroundProvider>

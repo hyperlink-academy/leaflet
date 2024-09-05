@@ -8,11 +8,11 @@ export const useUIState = create(
     {
       lastUsedHighlight: "1" as "1" | "2" | "3",
       focusedEntity: null as
-        | { entityType: "card"; entityID: string }
+        | { entityType: "page"; entityID: string }
         | { entityType: "block"; entityID: string; parent: string }
         | null,
       foldedBlocks: [] as string[],
-      openCards: [] as string[],
+      openPages: [] as string[],
       selectedBlocks: [] as SelectedBlock[],
     },
     (set) => ({
@@ -25,23 +25,23 @@ export const useUIState = create(
           };
         });
       },
-      openCard: (parent: string, card: string) =>
+      openPage: (parent: string, page: string) =>
         set((state) => {
-          let parentPosition = state.openCards.findIndex((s) => s == parent);
+          let parentPosition = state.openPages.findIndex((s) => s == parent);
           return {
-            openCards:
+            openPages:
               parentPosition === -1
-                ? [card]
-                : [...state.openCards.slice(0, parentPosition + 1), card],
+                ? [page]
+                : [...state.openPages.slice(0, parentPosition + 1), page],
           };
         }),
-      closeCard: (cards: string | string[]) =>
+      closePage: (pages: string | string[]) =>
         set((s) => ({
-          openCards: s.openCards.filter((c) => ![cards].flat().includes(c)),
+          openPages: s.openPages.filter((c) => ![pages].flat().includes(c)),
         })),
       setFocusedBlock: (
         b:
-          | { entityType: "card"; entityID: string }
+          | { entityType: "page"; entityID: string }
           | { entityType: "block"; entityID: string; parent: string }
           | null,
       ) => set(() => ({ focusedEntity: b })),

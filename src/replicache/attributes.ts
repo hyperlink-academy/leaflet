@@ -1,4 +1,4 @@
-const CardAttributes = {
+const PageAttributes = {
   "card/block": {
     type: "ordered-reference",
     cardinality: "many",
@@ -114,7 +114,7 @@ const ThemeAttributes = {
 } as const;
 
 export const Attributes = {
-  ...CardAttributes,
+  ...PageAttributes,
   ...BlockAttributes,
   ...LinkBlockAttributes,
   ...ThemeAttributes,

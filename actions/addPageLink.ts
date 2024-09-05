@@ -7,7 +7,7 @@ let supabase = createClient<Database>(
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
 );
 
-export async function addLinkCard(args: { link: string }) {
+export async function addPageLink(args: { link: string }) {
   let result = await get_url_preview_data(args.link);
   return result;
 }

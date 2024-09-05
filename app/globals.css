@@ -5,8 +5,8 @@
 @layer base {
   :root {
     --bg-leaflet: 240, 247, 250;
-    --bg-card: 255, 255, 255;
-    --bg-card-alpha: 1;
+    --bg-page: 255, 255, 255;
+    --bg-page-alpha: 1;
 
     --primary: 39, 39, 39;
 
@@ -19,8 +19,8 @@
     --highlight-3: 224, 244, 255;
 
     --list-marker-width: 36px;
-    --card-width-unitless: min(624, calc(var(--leaflet-width-unitless) - 12));
-    --card-width-units: min(624px, calc(100vw - 12px));
+    --page-width-unitless: min(624, calc(var(--leaflet-width-unitless) - 12));
+    --page-width-units: min(624px, calc(100vw - 12px));
   }
   @media (max-width: 640px) {
     :root {
@@ -30,21 +30,21 @@
 
   @media (min-width: 640px) {
     :root {
-      --card-width-unitless: min(
+      --page-width-unitless: min(
         624,
         calc(var(--leaflet-width-unitless) - 128)
       );
-      --card-width-units: min(624px, calc(100vw - 128px));
+      --page-width-units: min(624px, calc(100vw - 128px));
     }
   }
 
   @media (min-width: 1280px) {
     :root {
-      --card-width-unitless: min(
+      --page-width-unitless: min(
         624,
         calc((var(--leaflet-width-unitless) / 2) - 32)
       );
-      --card-width-units: min(624px, calc((100vw / 2) - 32px));
+      --page-width-units: min(624px, calc((100vw / 2) - 32px));
     }
   }
 

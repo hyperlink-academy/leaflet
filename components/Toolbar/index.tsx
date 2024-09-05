@@ -15,7 +15,7 @@ import { HighlightToolbar } from "./HighlightToolbar";
 import { TextToolbar } from "./TextToolbar";
 import { BlockToolbar } from "./BlockToolbar";
 import { MultiselectToolbar } from "./MultiSelectToolbar";
-import { focusCard } from "components/Cards";
+import { focusPage } from "components/Pages";
 import { AreYouSure, deleteBlock } from "components/Blocks/DeleteBlock";
 
 export type ToolbarTypes =
@@ -29,7 +29,7 @@ export type ToolbarTypes =
   | "block"
   | "multiselect";
 
-export const Toolbar = (props: { cardID: string; blockID: string }) => {
+export const Toolbar = (props: { pageID: string; blockID: string }) => {
   let { rep } = useReplicache();
 
   let [toolbarState, setToolbarState] = useState<ToolbarTypes>("default");
@@ -148,14 +148,14 @@ export const Toolbar = (props: { cardID: string; blockID: string }) => {
             onClick={() => {
               if (toolbarState === "multiselect" || toolbarState === "block") {
                 useUIState.setState({ selectedBlocks: [] });
-                rep && focusCard(props.cardID, rep);
+                rep && focusPage(props.pageID, rep);
               }
 
               if (toolbarState === "default") {
                 useUIState.setState(() => ({
                   focusedEntity: {
-                    entityType: "card",
-                    entityID: props.cardID,
+                    entityType: "page",
+                    entityID: props.pageID,
                   },
                   selectedBlocks: [],
                 }));

@@ -1,7 +1,7 @@
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import {
-  BlockCardSmall,
+  BlockPageLinkSmall,
   BlockImageSmall,
   BlockLinkSmall,
   CheckTiny,
@@ -16,7 +16,7 @@ import {
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
 import { addImage } from "src/utils/addImage";
-import { focusCard } from "components/Cards";
+import { focusPage } from "components/Pages";
 import { useState } from "react";
 import { Separator } from "components/Layout";
 import { addLinkBlock } from "src/utils/addLinkBlock";
@@ -49,8 +49,8 @@ export function BlockOptions(props: Props) {
   >("default");
 
   let focusedElement = useUIState((s) => s.focusedEntity);
-  let focusedCardID =
-    focusedElement?.entityType === "card"
+  let focusedPageID =
+    focusedElement?.entityType === "page"
       ? focusedElement.entityID
       : focusedElement?.parent;
 
@@ -111,7 +111,7 @@ export function BlockOptions(props: Props) {
                 </label>
               </ToolbarButton>
               <ToolbarButton
-                tooltipContent="Add a card"
+                tooltipContent="Add a page"
                 className="text-tertiary h-6"
                 onClick={async () => {
                   let entity;
@@ -137,19 +137,19 @@ export function BlockOptions(props: Props) {
                       data: { type: "block-type-union", value: "card" },
                     });
                   }
-                  let newCard = v7();
-                  await rep?.mutate.addCardBlock({
+                  let newPage = v7();
+                  await rep?.mutate.addPageLinkBlock({
                     blockEntity: entity,
                     firstBlockFactID: v7(),
                     firstBlockEntity: v7(),
-                    cardEntity: newCard,
+                    pageEntity: newPage,
                     permission_set: entity_set.set,
                   });
-                  useUIState.getState().openCard(props.parent, newCard);
-                  if (rep) focusCard(newCard, rep, "focusFirstBlock");
+                  useUIState.getState().openPage(props.parent, newPage);
+                  if (rep) focusPage(newPage, rep, "focusFirstBlock");
                 }}
               >
-                <BlockCardSmall />
+                <BlockPageLinkSmall />
               </ToolbarButton>
               <ToolbarButton
                 tooltipContent="Add a Link"

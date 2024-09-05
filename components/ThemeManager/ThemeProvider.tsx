@@ -9,7 +9,7 @@ import { useEntity } from "src/replicache";
 
 type CSSVariables = {
   "--bg-leaflet": string;
-  "--bg-card": string;
+  "--bg-page": string;
   "--primary": string;
   "--accent-1": string;
   "--accent-2": string;
@@ -47,7 +47,7 @@ export function ThemeProvider(props: {
   children: React.ReactNode;
 }) {
   let bgLeaflet = useColorAttribute(props.entityID, "theme/leaflet-background");
-  let bgCard = useColorAttribute(props.entityID, "theme/card-background");
+  let bgPage = useColorAttribute(props.entityID, "theme/card-background");
   let primary = useColorAttribute(props.entityID, "theme/primary");
 
   let highlight1 = useEntity(props.entityID, "theme/highlight-1");
@@ -56,11 +56,11 @@ export function ThemeProvider(props: {
 
   let accent1 = useColorAttribute(props.entityID, "theme/accent-background");
   let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
-  // set accent contrast to the accent color that has the highest contrast with the card background
+  // set accent contrast to the accent color that has the highest contrast with the page background
   let accentContrast = [accent1, accent2].sort((a, b) => {
     return (
-      getColorContrast(colorToString(b, "rgb"), colorToString(bgCard, "rgb")) -
-      getColorContrast(colorToString(a, "rgb"), colorToString(bgCard, "rgb"))
+      getColorContrast(colorToString(b, "rgb"), colorToString(bgPage, "rgb")) -
+      getColorContrast(colorToString(a, "rgb"), colorToString(bgPage, "rgb"))
     );
   })[0];
 
@@ -69,10 +69,10 @@ export function ThemeProvider(props: {
     let el = document.querySelector(":root") as HTMLElement;
     if (!el) return;
     setCSSVariableToColor(el, "--bg-leaflet", bgLeaflet);
-    setCSSVariableToColor(el, "--bg-card", bgCard);
+    setCSSVariableToColor(el, "--bg-page", bgPage);
     el?.style.setProperty(
-      "--bg-card-alpha",
-      bgCard.getChannelValue("alpha").toString(),
+      "--bg-page-alpha",
+      bgPage.getChannelValue("alpha").toString(),
     );
     setCSSVariableToColor(el, "--primary", primary);
 
@@ -89,7 +89,7 @@ export function ThemeProvider(props: {
     } else {
       el?.style.setProperty(
         "--highlight-1",
-        "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-card)) 75%)",
+        "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 75%)",
       );
     }
     setCSSVariableToColor(el, "--accent-1", accent1);
@@ -101,7 +101,7 @@ export function ThemeProvider(props: {
   }, [
     props.local,
     bgLeaflet,
-    bgCard,
+    bgPage,
     primary,
     highlight1,
     highlight2,
@@ -110,11 +110,11 @@ export function ThemeProvider(props: {
     accent2,
     accentContrast,
   ]);
-  let [canonicalCardWidth, setCanonicalCardWidth] = useState(0);
+  let [canonicalPageWidth, setCanonicalPageWidth] = useState(0);
   useEffect(() => {
     let listener = () => {
-      let el = document.getElementById("canonical-card-width");
-      setCanonicalCardWidth(el?.clientWidth || 0);
+      let el = document.getElementById("canonical-page-width");
+      setCanonicalPageWidth(el?.clientWidth || 0);
     };
     listener();
     window.addEventListener("resize", listener);
@@ -125,17 +125,17 @@ export function ThemeProvider(props: {
       className="leafletWrapper w-full text-primary h-full flex flex-col bg-center items-stretch"
       style={
         {
-          "--card-width": canonicalCardWidth,
+          "--page-width": canonicalPageWidth,
           "--bg-leaflet": colorToString(bgLeaflet, "rgb"),
-          "--bg-card": colorToString(bgCard, "rgb"),
-          "--bg-card-alpha": bgCard.getChannelValue("alpha"),
+          "--bg-page": colorToString(bgPage, "rgb"),
+          "--bg-page-alpha": bgPage.getChannelValue("alpha"),
           "--primary": colorToString(primary, "rgb"),
           "--accent-1": colorToString(accent1, "rgb"),
           "--accent-2": colorToString(accent2, "rgb"),
           "--accent-contrast": colorToString(accentContrast, "rgb"),
           "--highlight-1": highlight1
             ? `rgb(${colorToString(parseColor(`hsba(${highlight1.data.value})`), "rgb")})`
-            : "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-card)) 75%)",
+            : "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 75%)",
           "--highlight-2": colorToString(highlight2, "rgb"),
           "--highlight-3": colorToString(highlight3, "rgb"),
         } as CSSProperties
@@ -143,7 +143,7 @@ export function ThemeProvider(props: {
     >
       <div
         className="h-[0px] w-[calc(100vw-12px)] sm:w-[calc(100vw-128px)] lg:w-[calc(50vw-32px)]  max-w-prose"
-        id="canonical-card-width"
+        id="canonical-page-width"
       />
       {props.children}
     </div>

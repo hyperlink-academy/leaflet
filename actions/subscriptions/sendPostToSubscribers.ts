@@ -80,14 +80,14 @@ export async function sendPostToSubscribers({
         Subject: `New Mail in: ${title}`,
         To: sub.email_subscriptions_to_entity.email,
         HtmlBody: `
-        You've got new mail from <a href="${domain}/${sub.email_subscriptions_to_entity.token}?sub_id=${sub.email_subscriptions_to_entity.id}&email=${sub.email_subscriptions_to_entity.email}&entity=${sub.email_subscriptions_to_entity.entity}&openCard=${messageEntity}">
+        You've got new mail from <a href="${domain}/${sub.email_subscriptions_to_entity.token}?sub_id=${sub.email_subscriptions_to_entity.id}&email=${sub.email_subscriptions_to_entity.email}&entity=${sub.email_subscriptions_to_entity.entity}&openPage=${messageEntity}">
         ${title}!
         </a>
         <hr style="margin-top: 1em; margin-bottom: 1em;">
         ${contents.html}
         <hr style="margin-top: 1em; margin-bottom: 1em;">
         <em>Manage your subscription at
-        <a href="${domain}/${sub.email_subscriptions_to_entity.token}?sub_id=${sub.email_subscriptions_to_entity.id}&email=${sub.email_subscriptions_to_entity.email}&entity=${sub.email_subscriptions_to_entity.entity}&openCard=${messageEntity}">
+        <a href="${domain}/${sub.email_subscriptions_to_entity.token}?sub_id=${sub.email_subscriptions_to_entity.id}&email=${sub.email_subscriptions_to_entity.email}&entity=${sub.email_subscriptions_to_entity.entity}&openPage=${messageEntity}">
         ${title}
         </a></em>
         `,

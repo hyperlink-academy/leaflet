@@ -38,7 +38,7 @@ export default async function Icon(props: { params: { leaflet_id: string } }) {
     });
     let initialFacts =
       (data as unknown as Fact<keyof typeof Attributes>[]) || [];
-    let themeCardBG = initialFacts.find(
+    let themePageBG = initialFacts.find(
       (f) => f.attribute === "theme/card-background",
     ) as Fact<"theme/card-background"> | undefined;
 
@@ -46,7 +46,7 @@ export default async function Icon(props: { params: { leaflet_id: string } }) {
       (f) => f.attribute === "theme/primary",
     ) as Fact<"theme/primary"> | undefined;
 
-    outlineColor = parseHSBToRGB(`hsba(${themeCardBG?.data.value})`);
+    outlineColor = parseHSBToRGB(`hsba(${themePageBG?.data.value})`);
 
     fillColor = parseHSBToRGB(`hsba(${themePrimary?.data.value})`);
   }

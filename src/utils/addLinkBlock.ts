@@ -1,4 +1,4 @@
-import { addLinkCard } from "actions/addLinkCard";
+import { addPageLink } from "actions/addPageLink";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 
@@ -21,7 +21,7 @@ export async function addLinkBlock(
       value: url,
     },
   });
-  let data = await addLinkCard({ link: url });
+  let data = await addPageLink({ link: url });
   if (data.success) {
     await rep?.mutate.assertFact({
       entity: entityID,

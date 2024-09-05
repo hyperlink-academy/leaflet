@@ -1,5 +1,5 @@
 "use client";
-import { BlockPreview, CardPreview } from "components/Blocks/CardBlock";
+import { BlockPreview, PagePreview } from "components/Blocks/PageLinkBlock";
 import {
   ThemeBackgroundProvider,
   ThemeProvider,
@@ -35,7 +35,7 @@ export const LeafletPreview = (props: {
                     className="leafletContentWrapper w-full h-full max-w-48 mx-auto border border-border-light border-b-0 rounded-t-md overflow-clip"
                     style={{
                       backgroundColor:
-                        "rgba(var(--bg-card), var(--bg-card-alpha))",
+                        "rgba(var(--bg-page), var(--bg-page-alpha))",
                     }}
                   >
                     <LeafletContent entityID={props.leaflet_id} />
@@ -63,14 +63,14 @@ const LeafletContent = (props: { entityID: string }) => {
   return (
     <div
       ref={previewRef}
-      className={`cardBlockPreview w-full h-full overflow-clip flex flex-col gap-0.5 no-underline relative`}
+      className={`pageLinkBlockPreview w-full h-full overflow-clip flex flex-col gap-0.5 no-underline relative`}
     >
       <div className="w-full" ref={ref} />
       <div
         className="absolute top-0 left-0 w-full h-full origin-top-left pointer-events-none"
         style={{
-          width: `calc(var(--card-width) * 1px)`,
-          transform: `scale(calc(${dimensions.width} / var(--card-width)))`,
+          width: `calc(var(--page-width) * 1px)`,
+          transform: `scale(calc(${dimensions.width} / var(--page-width)))`,
         }}
       >
         {blocks.slice(0, 10).map((b, index, arr) => {
@@ -99,7 +99,7 @@ const LeafletAreYouSure = (props: {
     <div
       className="leafletContentWrapper w-full h-full px-1 pt-1 sm:px-[6px] sm:pt-2 flex flex-col gap-2 justify-center items-center "
       style={{
-        backgroundColor: "rgba(var(--bg-card), var(--bg-card-alpha))",
+        backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
       }}
     >
       <div className="font-bold text-center">
