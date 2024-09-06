@@ -11,6 +11,7 @@ import { Replicache } from "replicache";
 import {
   Fact,
   ReplicacheMutators,
+  useEntity,
   useReferenceToEntity,
   useReplicache,
 } from "src/replicache";
@@ -25,6 +26,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { DraftPostOptions } from "./Blocks/MailboxBlock";
 import { useIsMobile } from "src/hooks/isMobile";
+import { Canvas } from "./Canvas";
 
 export function Pages(props: { rootPage: string }) {
   let openPages = useUIState((s) => s.openPages);
@@ -150,7 +152,7 @@ function Page(props: { entityID: string; first?: boolean }) {
               <DraftPostOptions mailboxEntity={isDraft[0].entity} />
             </div>
           )}
-          <Blocks entityID={props.entityID} />
+          <PageContent entityID={props.entityID} />
         </div>
         <Media mobile={false}>
           {isFocused && !props.first && (
@@ -161,6 +163,29 @@ function Page(props: { entityID: string; first?: boolean }) {
     </>
   );
 }
+
+const PageContent = (props: { entityID: string }) => {
+  let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
+  let { rep } = useReplicache();
+  if (type === "doc")
+    return (
+      <div>
+        <button
+          onClick={() => {
+            rep?.mutate.assertFact({
+              entity: props.entityID,
+              attribute: "page/type",
+              data: { type: "page-type-union", value: "canvas" },
+            });
+          }}
+        >
+          make canvas lmao
+        </button>
+        <Blocks entityID={props.entityID} />
+      </div>
+    );
+  return <Canvas entityID={props.entityID} />;
+};
 
 const PageOptionsMenu = (props: { entityID: string }) => {
   let permission = useEntitySetContext().permissions.write;
