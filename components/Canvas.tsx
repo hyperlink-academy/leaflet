@@ -1,7 +1,7 @@
 import { useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { v7 } from "uuid";
-import { Block } from "./Blocks/Block";
+import { BaseBlock, Block } from "./Blocks/Block";
 import { useEffect, useState } from "react";
 import { AddBlockLarge, AddSmall } from "./Icons";
 
@@ -152,7 +152,7 @@ function CanvasBlock(props: {
   return (
     <div
       onMouseDown={(e) => setDragStart({ x: e.clientX, y: e.clientY })}
-      className="absolute border will-change-transform"
+      className="absolute group/canvas-block will-change-transform rounded-lg flex gap-1 items-stretch"
       style={{
         width: props.width || 260,
         transform: dragPosition
@@ -162,7 +162,8 @@ function CanvasBlock(props: {
         left: props.position.x,
       }}
     >
-      <Block
+      <Gripper />
+      <BaseBlock
         preview={props.preview}
         type={type?.data.value || "text"}
         value={props.entityID}
@@ -205,5 +206,16 @@ const CanvasBackground = (props: { color: string }) => {
       </defs>
       <rect width="100%" height="100%" x="0" y="0" fill="url(#gridPattern)" />
     </svg>
+  );
+};
+
+const Gripper = () => {
+  return (
+    <div className="w-[6px] shrink-0 py-0.5 bg-bg-card cursor-grab">
+      <div
+        className="h-full bg-tertiary hidden group-hover/canvas-block:block"
+        style={{ maskImage: "var(--gripperSVG)" }}
+      />
+    </div>
   );
 };
