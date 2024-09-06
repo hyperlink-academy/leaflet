@@ -3,8 +3,11 @@ import { useEntitySetContext } from "./EntitySetProvider";
 import { v7 } from "uuid";
 import { Block } from "./Blocks/Block";
 import { useEffect, useState } from "react";
+import { AddBlockLarge, AddSmall } from "./Icons";
 
 export function Canvas(props: { entityID: string; preview?: boolean }) {
+  let entity_set = useEntitySetContext();
+
   return (
     <div
       onTouchMoveCapture={(e) => {
@@ -24,6 +27,7 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
   overflow-y-scroll no-scrollbar
 `}
     >
+      <AddCanvasBlockButton entityID={props.entityID} entity_set={entity_set} />
       <CanvasContent {...props} />
     </div>
   );
@@ -32,7 +36,6 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
 export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   let blocks = useEntity(props.entityID, "canvas/block");
   let { rep } = useReplicache();
-  let entity_set = useEntitySetContext();
   let [height, setHeight] = useState<number | undefined>(undefined);
   useEffect(() => {
     setHeight(document.getElementById("canvasContent")?.scrollHeight);
@@ -43,23 +46,6 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
       style={{ height: `calc(${height}px + 32px)` }}
       className="relative h-full w-[1150px]"
     >
-      <button
-        onMouseDown={() => {
-          rep?.mutate.addCanvasBlock({
-            parent: props.entityID,
-            position: {
-              x: Math.floor(Math.random() * 191) + 10,
-              y: Math.floor(Math.random() * 191) + 10,
-            },
-            factID: v7(),
-            type: "text",
-            newEntityID: v7(),
-            permission_set: entity_set.set,
-          });
-        }}
-      >
-        add block
-      </button>
       <CanvasBackground color="#DBDBDB" />
       {blocks.map((b) => {
         return (
@@ -76,6 +62,35 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
     </div>
   );
 }
+
+const AddCanvasBlockButton = (props: {
+  entityID: string;
+  entity_set: { set: string };
+}) => {
+  let { rep } = useReplicache();
+  return (
+    <div className="sticky top-4 left-0 right-0 z-10 flex justify-end">
+      <button
+        className="absolute right-4 p-0.5 rounded-full bg-bg-page border-2 outline outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-1"
+        onMouseDown={() => {
+          rep?.mutate.addCanvasBlock({
+            parent: props.entityID,
+            position: {
+              x: Math.floor(Math.random() * 191) + 10,
+              y: Math.floor(Math.random() * 191) + 10,
+            },
+            factID: v7(),
+            type: "text",
+            newEntityID: v7(),
+            permission_set: props.entity_set.set,
+          });
+        }}
+      >
+        <AddBlockLarge />
+      </button>
+    </div>
+  );
+};
 
 function CanvasBlock(props: {
   preview?: boolean;
