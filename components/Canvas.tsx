@@ -2,19 +2,17 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { v7 } from "uuid";
 import { BaseBlock, Block } from "./Blocks/Block";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AddBlockLarge, AddSmall } from "./Icons";
+import { useDrag } from "src/hooks/useDrag";
 
 export function Canvas(props: { entityID: string; preview?: boolean }) {
   let entity_set = useEntitySetContext();
 
   return (
     <div
-      onTouchMoveCapture={(e) => {
-        e.preventDefault();
-      }}
+      onTouchMoveCapture={(e) => {}}
       onWheelCapture={(e) => {
-        e.preventDefault();
         e.currentTarget.scrollLeft += e.deltaX;
         e.currentTarget.scrollTop += e.deltaY;
       }}
@@ -99,67 +97,58 @@ function CanvasBlock(props: {
   position: { x: number; y: number };
   factID: string;
 }) {
-  let width = useEntity(props.entityID, "canvas/block/width");
+  let width =
+    useEntity(props.entityID, "canvas/block/width")?.data.value || 260;
   let type = useEntity(props.entityID, "block/type");
-  let [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(
-    null,
-  );
   let { rep } = useReplicache();
-  let [dragPosition, setDragPosition] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
-  useEffect(() => {
-    if (!dragStart || !rep) return;
-    let disconnect = new AbortController();
-    let dragPosition = { x: 0, y: 0 };
-    window.addEventListener(
-      "mousemove",
-      (e) => {
-        dragPosition = {
-          x: e.clientX - dragStart.x,
-          y: e.clientY - dragStart.y,
-        };
-        setDragPosition(dragPosition);
-      },
-      { signal: disconnect.signal },
-    );
-    window.addEventListener(
-      "mouseup",
-      () => {
-        setDragStart(null);
-        setDragPosition(null);
-        rep.mutate.assertFact({
-          id: props.factID,
-          entity: props.parent,
-          attribute: "canvas/block",
-          data: {
-            type: "spatial-reference",
-            value: props.entityID,
-            position: {
-              x: props.position.x + dragPosition.x,
-              y: props.position.y + dragPosition.y,
-            },
+  let onDragEnd = useCallback(
+    (dragPosition: { x: number; y: number }) => {
+      console.log(dragPosition, rep);
+      rep?.mutate.assertFact({
+        id: props.factID,
+        entity: props.parent,
+        attribute: "canvas/block",
+        data: {
+          type: "spatial-reference",
+          value: props.entityID,
+          position: {
+            x: props.position.x + dragPosition.x,
+            y: props.position.y + dragPosition.y,
           },
-        });
-      },
-      { signal: disconnect.signal },
-    );
-    return () => {
-      disconnect.abort();
-    };
-  }, [dragStart, rep, props]);
+        },
+      });
+    },
+    [props, rep],
+  );
+  let { onMouseDown, dragDelta } = useDrag({ onDragEnd });
+
+  let widthOnDragEnd = useCallback(
+    (dragPosition: { x: number; y: number }) => {
+      console.log(dragPosition, rep);
+      rep?.mutate.assertFact({
+        entity: props.entityID,
+        attribute: "canvas/block/width",
+        data: {
+          type: "number",
+          value: width + dragPosition.x,
+        },
+      });
+    },
+    [props, rep, width],
+  );
+  let widthHandle = useDrag({ onDragEnd: widthOnDragEnd });
+
   return (
     <div
-      onMouseDown={(e) => setDragStart({ x: e.clientX, y: e.clientY })}
+      onMouseDown={onMouseDown}
       className="absolute group/canvas-block will-change-transform rounded-lg flex gap-1 items-stretch"
       style={{
-        width: props.width || 260,
-        transform: dragPosition
-          ? `translate(${dragPosition.x}px, ${dragPosition.y}px)`
+        width: width + (widthHandle.dragDelta?.x || 0),
+        transform: dragDelta
+          ? `translate(${dragDelta.x}px, ${dragDelta.y}px)`
           : undefined,
-        top: props.position.y,
-        left: props.position.x,
+        top: props.position?.y,
+        left: props.position?.x,
       }}
     >
       <Gripper />
@@ -175,6 +164,12 @@ function CanvasBlock(props: {
         nextBlock={null}
         previousBlock={null}
       />
+      <div
+        className="hover:cursor-e-resize"
+        onMouseDown={widthHandle.onMouseDown}
+      >
+        |
+      </div>
     </div>
   );
 }
