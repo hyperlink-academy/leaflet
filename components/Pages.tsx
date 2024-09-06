@@ -103,6 +103,7 @@ function Page(props: { entityID: string; first?: boolean }) {
       : focusedElement?.parent;
   let isFocused = focusedPageID === props.entityID;
   let isMobile = useIsMobile();
+  let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
 
   return (
     <>
@@ -126,9 +127,10 @@ function Page(props: { entityID: string; first?: boolean }) {
           id={elementId.page(props.entityID).container}
           style={{
             backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-            width: "var(--page-width-units)",
+            width: type === "doc" ? "var(--page-width-units)" : undefined,
           }}
           className={`
+            ${type === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
       page
       grow flex flex-col
       overscroll-y-none

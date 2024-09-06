@@ -9,8 +9,36 @@ import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { usePageMetadata } from "src/hooks/queries/usePageMetadata";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
+import { Canvas, CanvasContent } from "components/Canvas";
 
 export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
+  let page = useEntity(props.entityID, "block/card");
+  let type =
+    useEntity(page?.data.value || null, "page/type")?.data.value || "doc";
+  let { rep } = useReplicache();
+
+  return (
+    <div
+      className="pageLinkBlockContent w-full cursor-pointer"
+      onClick={(e) => {
+        if (!page) return;
+        if (e.isDefaultPrevented()) return;
+        if (e.shiftKey) return;
+        e.preventDefault();
+        e.stopPropagation();
+        useUIState.getState().openPage(props.parent, page.data.value);
+        if (rep) focusPage(page.data.value, rep);
+      }}
+    >
+      {type === "canvas" ? (
+        <CanvasPreview entityID={page.data.value} />
+      ) : (
+        <PageLinkBlockDoc {...props} />
+      )}
+    </div>
+  );
+}
+export function PageLinkBlockDoc(props: BlockProps & { preview?: boolean }) {
   let { rep } = useReplicache();
   let page = useEntity(props.entityID, "block/card");
   let pageEntity = page ? page.data.value : props.entityID;
@@ -102,6 +130,8 @@ export function PagePreview(props: { entityID: string }) {
   let previewRef = useRef<HTMLDivElement | null>(null);
 
   let pageWidth = `var(--page-width-unitless)`;
+  let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
+  if (type === "canvas") return <CanvasPreview entityID={props.entityID} />;
   return (
     <div
       ref={previewRef}
@@ -132,10 +162,52 @@ export function PagePreview(props: { entityID: string }) {
   );
 }
 
+const CanvasPreview = (props: { entityID: string }) => {
+  let pageWidth = `var(--page-width-unitless)`;
+  return (
+    <div
+      className={`pageLinkBlockPreview w-full overflow-clip relative bg-bg-page border rounded-md shrink-0 border-border-light origin-center h-[200px]`}
+    >
+      <div
+        className="absolute top-0 left-0 origin-top-left pointer-events-none w-full"
+        style={{
+          width: `calc(1px * ${pageWidth})`,
+          transform: `scale(calc((${pageWidth} / 1150 )))`,
+        }}
+      >
+        <CanvasContent entityID={props.entityID} preview />
+      </div>
+    </div>
+  );
+};
+
+const DocPreview = (props: {
+  entityID: string;
+  previewRef: React.RefObject<HTMLDivElement>;
+}) => {
+  let blocks = useBlocks(props.entityID);
+  return (
+    <>
+      {blocks.slice(0, 20).map((b, index, arr) => {
+        return (
+          <BlockPreview
+            entityID={b.value}
+            previousBlock={arr[index - 1] || null}
+            nextBlock={arr[index + 1] || null}
+            nextPosition={""}
+            previewRef={props.previewRef}
+            {...b}
+            key={b.factID}
+          />
+        );
+      })}
+    </>
+  );
+};
+
 export function BlockPreview(
   b: BlockProps & {
     previewRef: React.RefObject<HTMLDivElement>;
-    size?: "small" | "large";
   },
 ) {
   let ref = useRef<HTMLDivElement | null>(null);
