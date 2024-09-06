@@ -43,6 +43,23 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
       style={{ height: `calc(${height}px + 32px)` }}
       className="relative h-full w-[1150px]"
     >
+      <button
+        onMouseDown={() => {
+          rep?.mutate.addCanvasBlock({
+            parent: props.entityID,
+            position: {
+              x: Math.floor(Math.random() * 191) + 10,
+              y: Math.floor(Math.random() * 191) + 10,
+            },
+            factID: v7(),
+            type: "text",
+            newEntityID: v7(),
+            permission_set: entity_set.set,
+          });
+        }}
+      >
+        add block
+      </button>
       <CanvasBackground color="#DBDBDB" />
       {blocks.map((b) => {
         return (
