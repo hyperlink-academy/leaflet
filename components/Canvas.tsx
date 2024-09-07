@@ -5,6 +5,8 @@ import { BaseBlock, Block } from "./Blocks/Block";
 import { useCallback, useEffect, useState } from "react";
 import { AddBlockLarge, AddSmall } from "./Icons";
 import { useDrag } from "src/hooks/useDrag";
+import { useLongPress } from "src/hooks/useLongPress";
+import { focusBlock } from "src/utils/focusBlock";
 
 export function Canvas(props: { entityID: string; preview?: boolean }) {
   let entity_set = useEntitySetContext();
@@ -98,7 +100,7 @@ function CanvasBlock(props: {
   factID: string;
 }) {
   let width =
-    useEntity(props.entityID, "canvas/block/width")?.data.value || 260;
+    useEntity(props.entityID, "canvas/block/width")?.data.value || 360;
   let type = useEntity(props.entityID, "block/type");
   let { rep } = useReplicache();
   let onDragEnd = useCallback(
@@ -138,9 +140,25 @@ function CanvasBlock(props: {
   );
   let widthHandle = useDrag({ onDragEnd: widthOnDragEnd });
 
+  let { isLongPress, handlers } = useLongPress(
+    () => {
+      if (isLongPress.current) {
+        focusBlock(
+          {
+            type: type?.data.value || "text",
+            value: props.entityID,
+            parent: props.parent,
+          },
+          { type: "start" },
+        );
+      }
+    },
+    () => {},
+  );
+
   return (
     <div
-      onMouseDown={onMouseDown}
+      {...(!props.preview ? { ...handlers } : {})}
       className="absolute group/canvas-block will-change-transform rounded-lg flex items-stretch"
       style={{
         width: width + (widthHandle.dragDelta?.x || 0),
@@ -152,7 +170,7 @@ function CanvasBlock(props: {
       }}
     >
       {/* the gripper show on hover, but longpress logic needs to be added for mobile*/}
-      <Gripper />
+      <Gripper onMouseDown={onMouseDown} />
       <BaseBlock
         preview={props.preview}
         type={type?.data.value || "text"}
@@ -209,9 +227,12 @@ const CanvasBackground = (props: { color: string }) => {
   );
 };
 
-const Gripper = () => {
+const Gripper = (props: { onMouseDown: (e: React.MouseEvent) => void }) => {
   return (
-    <div className="w-[10px] shrink-0 py-0.5 bg-bg-card cursor-grab pr-1">
+    <div
+      onMouseDown={props.onMouseDown}
+      className="w-[10px] shrink-0 py-0.5 bg-bg-card cursor-grab pr-1"
+    >
       <div
         className="h-full bg-tertiary hidden group-hover/canvas-block:block"
         style={{ maskImage: "var(--gripperSVG)" }}
