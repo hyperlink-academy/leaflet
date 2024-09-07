@@ -141,7 +141,7 @@ function CanvasBlock(props: {
   return (
     <div
       onMouseDown={onMouseDown}
-      className="absolute group/canvas-block will-change-transform rounded-lg flex gap-1 items-stretch"
+      className="absolute group/canvas-block will-change-transform rounded-lg flex items-stretch"
       style={{
         width: width + (widthHandle.dragDelta?.x || 0),
         transform: dragDelta
@@ -151,6 +151,7 @@ function CanvasBlock(props: {
         left: props.position?.x,
       }}
     >
+      {/* the gripper show on hover, but longpress logic needs to be added for mobile*/}
       <Gripper />
       <BaseBlock
         preview={props.preview}
@@ -164,12 +165,16 @@ function CanvasBlock(props: {
         nextBlock={null}
         previousBlock={null}
       />
+
       <div
-        className="hover:cursor-e-resize"
+        className={`resizeHandle
+          cursor-e-resize shrink-0 z-10
+          hidden group-hover/canvas-block:block
+          w-[5px] h-6 -ml-[3px]
+          absolute top-1/2 right-0 -translate-y-1/2 translate-x-[2px]
+          rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
         onMouseDown={widthHandle.onMouseDown}
-      >
-        |
-      </div>
+      ></div>
     </div>
   );
 }
@@ -206,7 +211,7 @@ const CanvasBackground = (props: { color: string }) => {
 
 const Gripper = () => {
   return (
-    <div className="w-[6px] shrink-0 py-0.5 bg-bg-card cursor-grab">
+    <div className="w-[10px] shrink-0 py-0.5 bg-bg-card cursor-grab pr-1">
       <div
         className="h-full bg-tertiary hidden group-hover/canvas-block:block"
         style={{ maskImage: "var(--gripperSVG)" }}
