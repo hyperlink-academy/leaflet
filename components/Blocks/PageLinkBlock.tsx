@@ -30,15 +30,15 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
         if (rep) focusPage(page.data.value, rep);
       }}
     >
-      {type === "canvas" ? (
-        <CanvasPreview entityID={page.data.value} />
+      {type === "canvas" && page ? (
+        <CanvasLinkBlock entityID={page?.data.value} />
       ) : (
-        <PageLinkBlockDoc {...props} />
+        <DocLinkBlock {...props} />
       )}
     </div>
   );
 }
-export function PageLinkBlockDoc(props: BlockProps & { preview?: boolean }) {
+export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
   let { rep } = useReplicache();
   let page = useEntity(props.entityID, "block/card");
   let pageEntity = page ? page.data.value : props.entityID;
@@ -131,7 +131,7 @@ export function PagePreview(props: { entityID: string }) {
 
   let pageWidth = `var(--page-width-unitless)`;
   let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
-  if (type === "canvas") return <CanvasPreview entityID={props.entityID} />;
+  if (type === "canvas") return <CanvasLinkBlock entityID={props.entityID} />;
   return (
     <div
       ref={previewRef}
@@ -162,14 +162,14 @@ export function PagePreview(props: { entityID: string }) {
   );
 }
 
-const CanvasPreview = (props: { entityID: string }) => {
+const CanvasLinkBlock = (props: { entityID: string }) => {
   let pageWidth = `var(--page-width-unitless)`;
   return (
     <div
-      className={`pageLinkBlockPreview w-full overflow-clip relative bg-bg-page border rounded-md shrink-0 border-border-light origin-center h-[200px]`}
+      className={`pageLinkBlockPreview shrink-0 h-[200px] w-full overflow-clip relative bg-bg-page shadow-sm border border-border-light rounded-md`}
     >
       <div
-        className="absolute top-0 left-0 origin-top-left pointer-events-none w-full"
+        className={`absolute top-0 left-0 origin-top-left pointer-events-none w-full`}
         style={{
           width: `calc(1px * ${pageWidth})`,
           transform: `scale(calc((${pageWidth} / 1150 )))`,
