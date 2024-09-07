@@ -44,7 +44,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   return (
     <div
       id="canvasContent"
-      style={{ height: `calc(${height}px + 32px)` }}
+      style={{ minHeight: `calc(${height}px + 32px)` }}
       className="relative h-full w-[1150px]"
     >
       <CanvasBackground color="#DBDBDB" />
