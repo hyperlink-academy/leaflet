@@ -274,7 +274,7 @@ const backspace =
       return true;
     }
 
-    if (!block) return false;
+    if (!block || !propsRef.current.previousBlock) return false;
 
     repRef.current?.mutate.removeBlock({
       blockEntity: propsRef.current.entityID,
@@ -337,6 +337,29 @@ const enter =
         propsRef.current.type === "heading" && state.selection.anchor <= 2
           ? ("heading" as const)
           : ("text" as const);
+      if (propsRef.current.pageType === "canvas") {
+        let el = document.getElementById(
+          elementId.block(propsRef.current.entityID).container,
+        );
+        if (!el) return;
+        let box = el.getBoundingClientRect();
+        let top = parseFloat(el.style.top) || 0,
+          left = parseFloat(el.style.left) || 0;
+        console.log(box, el);
+
+        await repRef.current?.mutate.addCanvasBlock({
+          newEntityID,
+          factID: v7(),
+          permission_set: propsRef.current.entity_set.set,
+          parent: propsRef.current.parent,
+          type: blockType,
+          position: {
+            x: left,
+            y: top + box.height + 12,
+          },
+        });
+        return;
+      }
       if (propsRef.current.listData) {
         if (state.doc.content.size <= 2) {
           return shifttab(propsRef, repRef)();

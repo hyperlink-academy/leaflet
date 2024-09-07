@@ -31,6 +31,7 @@ export type Block = {
   };
 };
 export type BlockProps = {
+  pageType: Fact<"page/type">["data"]["value"];
   entityID: string;
   parent: string;
   position: string;
@@ -50,7 +51,7 @@ export function Block(props: BlockProps & { preview?: boolean }) {
   let { isLongPress, handlers } = useLongPress(() => {
     if (isLongPress.current) {
       focusBlock(
-        { type: "card", value: props.entityID, parent: props.parent },
+        { type: props.type, value: props.entityID, parent: props.parent },
         { type: "start" },
       );
     }

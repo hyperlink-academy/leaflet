@@ -7,6 +7,7 @@ import { AddBlockLarge, AddSmall } from "./Icons";
 import { useDrag } from "src/hooks/useDrag";
 import { useLongPress } from "src/hooks/useLongPress";
 import { focusBlock } from "src/utils/focusBlock";
+import { elementId } from "src/utils/elementId";
 
 export function Canvas(props: { entityID: string; preview?: boolean }) {
   let entity_set = useEntitySetContext();
@@ -159,6 +160,7 @@ function CanvasBlock(props: {
   return (
     <div
       {...(!props.preview ? { ...handlers } : {})}
+      id={props.preview ? undefined : elementId.block(props.entityID).container}
       className="absolute group/canvas-block will-change-transform rounded-lg flex items-stretch"
       style={{
         width: width + (widthHandle.dragDelta?.x || 0),
@@ -172,6 +174,7 @@ function CanvasBlock(props: {
       {/* the gripper show on hover, but longpress logic needs to be added for mobile*/}
       <Gripper onMouseDown={onMouseDown} />
       <BaseBlock
+        pageType="canvas"
         preview={props.preview}
         type={type?.data.value || "text"}
         value={props.entityID}
