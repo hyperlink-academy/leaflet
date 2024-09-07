@@ -14,7 +14,11 @@ export function FactWithIndexes(f: Fact<keyof typeof Attributes>) {
     eav: `${f.entity}-${f.attribute}-${f.id}`,
     aev: `${f.attribute}-${f.entity}-${f.id}`,
   };
-  if (f.data.type === "reference" || f.data.type === "ordered-reference")
+  if (
+    f.data.type === "reference" ||
+    f.data.type === "ordered-reference" ||
+    f.data.type === "spatial-reference"
+  )
     indexes.vae = `${f.data.value}-${f.attribute}`;
   return { ...f, indexes };
 }

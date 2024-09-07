@@ -150,7 +150,7 @@ export function serverMutationContext(
         tx
           .delete(facts)
           .where(
-            driz.sql`(data->>'type' = 'ordered-reference' or data ->>'type' = 'reference') and data->>'value' = ${entity}`,
+            driz.sql`(data->>'type' = 'ordered-reference' or data ->>'type' = 'reference' or data ->>'type' = 'spatial-reference') and data->>'value' = ${entity}`,
           ),
       ]);
     },

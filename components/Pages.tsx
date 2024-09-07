@@ -119,7 +119,6 @@ function Page(props: { entityID: string; first?: boolean }) {
         <div
           onMouseDown={(e) => {
             if (e.defaultPrevented) return;
-            if (!isMobile) return;
             if (rep) {
               focusPage(props.entityID, rep);
             }
