@@ -17,6 +17,7 @@ import { v7 } from "uuid";
 import { scanIndex } from "src/replicache/utils";
 import { indent, outdent } from "src/utils/list-operations";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
+import { isTextBlock } from "src/utils/isTextBlock";
 
 type PropsRef = MutableRefObject<BlockProps & { entity_set: { set: string } }>;
 export const TextBlockKeymap = (
@@ -232,18 +233,21 @@ const backspace =
             ),
           10,
         );
+
+        return false;
       }
-      return false;
     }
 
-    let block =
-      useEditorStates.getState().editorStates[
-        propsRef.current.previousBlock.value
-      ];
+    let block = !!propsRef.current.previousBlock
+      ? useEditorStates.getState().editorStates[
+          propsRef.current.previousBlock.value
+        ]
+      : null;
     if (
       block &&
+      propsRef.current.previousBlock &&
       block.editor.doc.textContent.length === 0 &&
-      !propsRef.current.previousBlock.listData
+      !propsRef.current.previousBlock?.listData
     ) {
       repRef.current?.mutate.removeBlock({
         blockEntity: propsRef.current.previousBlock.value,
@@ -261,7 +265,10 @@ const backspace =
       return true;
     }
 
-    if (propsRef.current.previousBlock.type === "card") {
+    if (
+      propsRef.current.previousBlock &&
+      !isTextBlock[propsRef.current.previousBlock?.type]
+    ) {
       focusBlock(propsRef.current.previousBlock, { type: "end" });
       view?.dom.blur();
       return true;
