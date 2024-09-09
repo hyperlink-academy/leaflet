@@ -309,10 +309,14 @@ const Gripper = (props: { onMouseDown: (e: React.MouseEvent) => void }) => {
   return (
     <div
       onMouseDown={props.onMouseDown}
-      className="w-[10px] shrink-0 py-0.5 bg-bg-card cursor-grab pr-1"
+      className="w-[12px] shrink-0 py-0.5 bg-bg-card cursor-grab pr-1 -mr-0.5 grid grid-cols-1 grid-rows-1"
     >
       <div
-        className="h-full bg-tertiary hidden group-hover/canvas-block:block"
+        className="h-full col-start-1 col-end-2 row-start-1 row-end-2 bg-bg-page group-hover/canvas-block:block"
+        style={{ maskImage: "var(--gripperSVG2)" }}
+      />
+      <div
+        className="h-full col-start-1 col-end-2 row-start-1 row-end-2 bg-tertiary group-hover/canvas-block:block"
         style={{ maskImage: "var(--gripperSVG)" }}
       />
     </div>

@@ -23,6 +23,7 @@
     --page-width-units: min(624px, calc(100vw - 12px));
 
     --gripperSVG: url("/gripperPattern.svg");
+    --gripperSVG2: url("/gripperPattern2.svg");
   }
   @media (max-width: 640px) {
     :root {
