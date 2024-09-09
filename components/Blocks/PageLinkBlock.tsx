@@ -17,9 +17,26 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
     useEntity(page?.data.value || null, "page/type")?.data.value || "doc";
   let { rep } = useReplicache();
 
+  let isSelected = useUIState((s) =>
+    s.selectedBlocks.find((b) => b.value === props.entityID),
+  );
+
+  let isOpen = useUIState((s) => s.openPages).includes(page?.data.value || "");
+
   return (
     <div
-      className="pageLinkBlockContent w-full cursor-pointer"
+      className={`w-full cursor-pointer
+        pageLinkBlockWrapper relative group/pageLinkBlock
+        bg-bg-page border shadow-sm outline outline-1 rounded-lg
+        flex overflow-clip
+        ${
+          isSelected
+            ? "border-tertiary outline-tertiary"
+            : isOpen
+              ? "border-border outline-transparent hover:outline-border-light"
+              : "border-border-light outline-transparent hover:outline-border-light"
+        }
+        `}
       onClick={(e) => {
         if (!page) return;
         if (e.isDefaultPrevented()) return;
@@ -44,32 +61,16 @@ export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
   let pageEntity = page ? page.data.value : props.entityID;
   let leafletMetadata = usePageMetadata(pageEntity);
 
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
-
-  let isOpen = useUIState((s) => s.openPages).includes(pageEntity);
-
   return (
     <div
       style={{ "--list-marker-width": "20px" } as CSSProperties}
       className={`
-        pageLinkBlockWrapper relative group/pageLinkBlock
         w-full h-[104px]
-        bg-bg-page border shadow-sm outline outline-1 rounded-lg
-        flex overflow-clip
-        ${
-          isSelected
-            ? "border-tertiary outline-tertiary"
-            : isOpen
-              ? "border-border outline-transparent hover:outline-border-light"
-              : "border-border-light outline-transparent hover:outline-border-light"
-        }
         `}
     >
       <>
         <div
-          className="pageLinkBlockContent w-full flex overflow-clip cursor-pointer"
+          className="pageLinkBlockContent w-full flex overflow-clip cursor-pointer h-full"
           onClick={(e) => {
             if (e.isDefaultPrevented()) return;
             if (e.shiftKey) return;
@@ -130,8 +131,6 @@ export function PagePreview(props: { entityID: string }) {
   let previewRef = useRef<HTMLDivElement | null>(null);
 
   let pageWidth = `var(--page-width-unitless)`;
-  let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
-  if (type === "canvas") return <CanvasLinkBlock entityID={props.entityID} />;
   return (
     <div
       ref={previewRef}
@@ -147,7 +146,7 @@ export function PagePreview(props: { entityID: string }) {
         {blocks.slice(0, 20).map((b, index, arr) => {
           return (
             <BlockPreview
-              pageType={type}
+              pageType="doc"
               entityID={b.value}
               previousBlock={arr[index - 1] || null}
               nextBlock={arr[index + 1] || null}
@@ -167,7 +166,7 @@ const CanvasLinkBlock = (props: { entityID: string }) => {
   let pageWidth = `var(--page-width-unitless)`;
   return (
     <div
-      className={`pageLinkBlockPreview shrink-0 h-[200px] w-full overflow-clip relative bg-bg-page shadow-sm border border-border-light rounded-md`}
+      className={`pageLinkBlockPreview shrink-0 h-[200px] w-full overflow-clip relative`}
     >
       <div
         className={`absolute top-0 left-0 origin-top-left pointer-events-none w-full`}
