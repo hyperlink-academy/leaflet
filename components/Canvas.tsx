@@ -8,6 +8,7 @@ import { useDrag } from "src/hooks/useDrag";
 import { useLongPress } from "src/hooks/useLongPress";
 import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
+import { useUIState } from "src/useUIState";
 
 export function Canvas(props: { entityID: string; preview?: boolean }) {
   let entity_set = useEntitySetContext();
@@ -44,6 +45,12 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   return (
     <div
       id="canvasContent"
+      onClick={(e) => {
+        e.currentTarget === e.target &&
+          useUIState.setState(() => ({
+            selectedBlocks: [],
+          }));
+      }}
       style={{ minHeight: `calc(${height}px + 32px)` }}
       className="relative h-full w-[1150px]"
     >
