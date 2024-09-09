@@ -179,7 +179,7 @@ function CanvasBlock(props: {
       }}
     >
       {/* the gripper show on hover, but longpress logic needs to be added for mobile*/}
-      <Gripper onMouseDown={onMouseDown} />
+      {!props.preview && <Gripper onMouseDown={onMouseDown} />}
       <BaseBlock
         pageType="canvas"
         preview={props.preview}
@@ -194,15 +194,18 @@ function CanvasBlock(props: {
         previousBlock={null}
       />
 
-      <div
-        className={`resizeHandle
+      {!props.preview && (
+        <div
+          className={`resizeHandle
           cursor-e-resize shrink-0 z-10
+          group-hover/canvas-preview:hidden
           hidden group-hover/canvas-block:block
           w-[5px] h-6 -ml-[3px]
           absolute top-1/2 right-0 -translate-y-1/2 translate-x-[2px]
           rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
-        onMouseDown={widthHandle.onMouseDown}
-      ></div>
+          onMouseDown={widthHandle.onMouseDown}
+        />
+      )}
     </div>
   );
 }
