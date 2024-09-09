@@ -15,6 +15,10 @@ const PageAttributes = {
     type: "number",
     cardinality: "one",
   },
+  "canvas/block/rotation": {
+    type: "number",
+    cardinality: "one",
+  },
 } as const;
 
 const BlockAttributes = {

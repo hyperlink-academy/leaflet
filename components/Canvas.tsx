@@ -9,6 +9,7 @@ import { useLongPress } from "src/hooks/useLongPress";
 import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
 import { useUIState } from "src/useUIState";
+import useMeasure from "react-use-measure";
 
 export function Canvas(props: { entityID: string; preview?: boolean }) {
   let entity_set = useEntitySetContext();
@@ -109,6 +110,9 @@ function CanvasBlock(props: {
 }) {
   let width =
     useEntity(props.entityID, "canvas/block/width")?.data.value || 360;
+  let rotation =
+    useEntity(props.entityID, "canvas/block/rotation")?.data.value || 0;
+  let [ref, rect] = useMeasure();
   let type = useEntity(props.entityID, "block/type");
   let { rep } = useReplicache();
   let onDragEnd = useCallback(
@@ -148,6 +152,35 @@ function CanvasBlock(props: {
   );
   let widthHandle = useDrag({ onDragEnd: widthOnDragEnd });
 
+  let RotateOnDragEnd = useCallback(
+    (dragDelta: { x: number; y: number }) => {
+      let originX = rect.x + rect.width / 2;
+      let originY = rect.y + rect.height / 2;
+
+      let angle =
+        find_angle(
+          { x: rect.x + rect.width, y: rect.y + rect.height },
+          { x: originX, y: originY },
+          {
+            x: rect.x + rect.width + dragDelta.x,
+            y: rect.y + rect.height + dragDelta.y,
+          },
+        ) *
+        (180 / Math.PI);
+
+      rep?.mutate.assertFact({
+        entity: props.entityID,
+        attribute: "canvas/block/rotation",
+        data: {
+          type: "number",
+          value: (rotation + angle) % 360,
+        },
+      });
+    },
+    [props, rep, rect, rotation],
+  );
+  let rotateHandle = useDrag({ onDragEnd: RotateOnDragEnd });
+
   let { isLongPress, handlers } = useLongPress(
     () => {
       if (isLongPress.current) {
@@ -163,17 +196,37 @@ function CanvasBlock(props: {
     },
     () => {},
   );
+  let angle = 0;
+  if (rotateHandle.dragDelta) {
+    let originX = rect.x + rect.width / 2;
+    let originY = rect.y + rect.height / 2;
+
+    angle =
+      find_angle(
+        { x: rect.x + rect.width, y: rect.y + rect.height },
+        { x: originX, y: originY },
+        {
+          x: rect.x + rect.width + rotateHandle.dragDelta.x,
+          y: rect.y + rect.height + rotateHandle.dragDelta.y,
+        },
+      ) *
+      (180 / Math.PI);
+  }
+  let transform = `${
+    dragDelta ? `translate(${dragDelta.x}px, ${dragDelta.y}px)` : ""
+  } rotate(${angle}deg)`;
+  console.log(transform);
 
   return (
     <div
+      ref={ref}
       {...(!props.preview ? { ...handlers } : {})}
       id={props.preview ? undefined : elementId.block(props.entityID).container}
       className="absolute group/canvas-block will-change-transform rounded-lg flex items-stretch"
       style={{
         width: width + (widthHandle.dragDelta?.x || 0),
-        transform: dragDelta
-          ? `translate(${dragDelta.x}px, ${dragDelta.y}px)`
-          : undefined,
+        transform,
+        rotate: `${rotation}deg`,
         top: props.position?.y,
         left: props.position?.x,
       }}
@@ -198,12 +251,24 @@ function CanvasBlock(props: {
         <div
           className={`resizeHandle
           cursor-e-resize shrink-0 z-10
-          group-hover/canvas-preview:hidden
           hidden group-hover/canvas-block:block
           w-[5px] h-6 -ml-[3px]
           absolute top-1/2 right-0 -translate-y-1/2 translate-x-[2px]
           rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
           onMouseDown={widthHandle.onMouseDown}
+        />
+      )}
+
+      {!props.preview && (
+        <div
+          className={`resizeHandle
+            cursor-grab shrink-0 z-10
+            hidden group-hover/canvas-block:block
+            w-[8px] h-[8px]
+            absolute bottom-0 right-0
+            -translate-y-1/2 -translate-x-1/2
+            rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
+          onMouseDown={rotateHandle.onMouseDown}
         />
       )}
     </div>
@@ -253,3 +318,11 @@ const Gripper = (props: { onMouseDown: (e: React.MouseEvent) => void }) => {
     </div>
   );
 };
+
+type P = { x: number; y: number };
+function find_angle(P2: P, P1: P, P3: P) {
+  if (P1.x === P3.x && P1.y === P3.y) return 0;
+  let a = Math.atan2(P3.y - P1.y, P3.x - P1.x);
+  let b = Math.atan2(P2.y - P1.y, P2.x - P1.x);
+  return a - b;
+}
