@@ -56,18 +56,25 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
       className="relative h-full w-[1150px]"
     >
       <CanvasBackground color="#DBDBDB" />
-      {blocks.map((b) => {
-        return (
-          <CanvasBlock
-            preview={props.preview}
-            parent={props.entityID}
-            entityID={b.data.value}
-            position={b.data.position}
-            factID={b.id}
-            key={b.id}
-          />
-        );
-      })}
+      {blocks
+        .sort((a, b) => {
+          if (a.data.position.y === b.data.position.y) {
+            return a.data.position.x - b.data.position.x;
+          }
+          return a.data.position.y - b.data.position.y;
+        })
+        .map((b) => {
+          return (
+            <CanvasBlock
+              preview={props.preview}
+              parent={props.entityID}
+              entityID={b.data.value}
+              position={b.data.position}
+              factID={b.id}
+              key={b.id}
+            />
+          );
+        })}
     </div>
   );
 }
