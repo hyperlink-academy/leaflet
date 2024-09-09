@@ -147,6 +147,7 @@ export function PagePreview(props: { entityID: string }) {
         {blocks.slice(0, 20).map((b, index, arr) => {
           return (
             <BlockPreview
+              pageType={type}
               entityID={b.value}
               previousBlock={arr[index - 1] || null}
               nextBlock={arr[index + 1] || null}
@@ -172,36 +173,13 @@ const CanvasLinkBlock = (props: { entityID: string }) => {
         className={`absolute top-0 left-0 origin-top-left pointer-events-none w-full`}
         style={{
           width: `calc(1px * ${pageWidth})`,
+          height: "calc(1150px * 2)",
           transform: `scale(calc((${pageWidth} / 1150 )))`,
         }}
       >
         <CanvasContent entityID={props.entityID} preview />
       </div>
     </div>
-  );
-};
-
-const DocPreview = (props: {
-  entityID: string;
-  previewRef: React.RefObject<HTMLDivElement>;
-}) => {
-  let blocks = useBlocks(props.entityID);
-  return (
-    <>
-      {blocks.slice(0, 20).map((b, index, arr) => {
-        return (
-          <BlockPreview
-            entityID={b.value}
-            previousBlock={arr[index - 1] || null}
-            nextBlock={arr[index + 1] || null}
-            nextPosition={""}
-            previewRef={props.previewRef}
-            {...b}
-            key={b.factID}
-          />
-        );
-      })}
-    </>
   );
 };
 
