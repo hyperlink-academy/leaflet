@@ -32,10 +32,15 @@ export const BlockCommandBar = ({
     command.name.toLocaleLowerCase().includes(searchValue.toLocaleLowerCase()),
   );
   useEffect(() => {
+    if (
+      !highlighted ||
+      !commandResults.find((result) => result.name === highlighted)
+    )
+      setHighlighted(commandResults[0]?.name);
     if (commandResults.length === 1) {
       setHighlighted(commandResults[0].name);
     }
-  }, [commandResults, setHighlighted]);
+  }, [commandResults, setHighlighted, highlighted]);
   useEffect(() => {
     let listener = async (e: KeyboardEvent) => {
       let input = document.getElementById("block-search");
@@ -73,7 +78,7 @@ export const BlockCommandBar = ({
       if (e.key === "Enter") {
         e.preventDefault();
         rep &&
-          commandResults[currentHighlightIndex].onSelect(rep, {
+          commandResults[currentHighlightIndex]?.onSelect(rep, {
             ...props,
             entity_set: entity_set.set,
           });
