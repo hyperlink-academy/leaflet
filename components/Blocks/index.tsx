@@ -91,6 +91,7 @@ export function Blocks(props: { entityID: string }) {
           }
           return (
             <Block
+              pageType="doc"
               {...f}
               key={f.value}
               entityID={f.value}
