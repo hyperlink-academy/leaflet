@@ -126,9 +126,18 @@ async function Backspace({ e, props, rep, areYouSure, setAreYouSure }: Args) {
   if (prevBlock) focusBlock(prevBlock, { type: "end" });
 }
 
-async function Enter({ props, rep, entity_set }: Args) {
+async function Enter({ e, props, rep, entity_set }: Args) {
   let newEntityID = v7();
   let position;
+  let el = e.target as HTMLElement;
+  if (
+    el.tagName === "LABEL" ||
+    el.tagName === "INPUT" ||
+    el.tagName === "TEXTAREA" ||
+    el.contentEditable === "true"
+  )
+    return;
+
   // if it's a list, create a new list item at the same depth
   if (props.listData) {
     let hasChild =

@@ -9,6 +9,8 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
 import { addImage } from "src/utils/addImage";
 import { elementId } from "src/utils/elementId";
+import { useEffect } from "react";
+import { deleteBlock } from "./DeleteBlock";
 
 export function ImageBlock(props: BlockProps) {
   let { rep } = useReplicache();
@@ -17,15 +19,33 @@ export function ImageBlock(props: BlockProps) {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.value),
   );
-  if (!image)
+  useEffect(() => {
+    let input = document.getElementById(elementId.block(props.entityID).input);
+    if (isSelected) {
+      input?.focus();
+    } else {
+      input?.blur();
+    }
+  }, [isSelected]);
+
+  if (!image) {
     return (
-      <div>
+      <div className="grow w-full">
         <label
           id={elementId.block(props.entityID).input}
-          className="w-full border focus-within:bg-test flex flex-row"
+          className={`group/image-block w-full h-[104px] text-tertiary hover:text-accent-contrast hover:font-bold hover:cursor-pointer flex flex-auto gap-2 items-center justify-center p-2 ${isSelected ? "border-2 border-tertiary font-bold" : "border border-border"} hover:border-2 border-dashed  hover:border-accent-contrast rounded-lg`}
           onMouseDown={(e) => e.preventDefault()}
+          onKeyDown={(e) => {
+            if (e.key === "Backspace") {
+              e.preventDefault();
+              rep && deleteBlock([props.entityID].flat(), rep);
+            }
+          }}
         >
-          add an image <BlockImageSmall />
+          <BlockImageSmall
+            className={`shrink-0 group-hover/image-block:text-accent-contrast ${isSelected ? "text-tertiary" : "text-border"}`}
+          />{" "}
+          Upload An Image
           <input
             className="h-0 w-0"
             type="file"
@@ -62,6 +82,7 @@ export function ImageBlock(props: BlockProps) {
         </label>
       </div>
     );
+  }
 
   return (
     <div className="relative group/image flex w-full justify-center">

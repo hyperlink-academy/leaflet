@@ -1,6 +1,6 @@
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { addLinkBlock } from "src/utils/addLinkBlock";
@@ -11,6 +11,8 @@ import { BlockLinkSmall, CheckTiny } from "components/Icons";
 import { Separator } from "components/Layout";
 import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
+import { elementId } from "src/utils/elementId";
+import { deleteBlock } from "./DeleteBlock";
 
 export const ExternalLinkBlock = (props: BlockProps) => {
   let previewImage = useEntity(props.entityID, "link/preview");
@@ -21,12 +23,23 @@ export const ExternalLinkBlock = (props: BlockProps) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
-  if (!url)
+  useEffect(() => {
+    let input = document.getElementById(elementId.block(props.entityID).input);
+    if (isSelected) {
+      input?.focus();
+    } else input?.blur();
+  }, [isSelected]);
+
+  if (!url) {
     return (
-      <div>
+      <label
+        id={elementId.block(props.entityID).input}
+        className={`w-full h-[104px] text-tertiary hover:text-accent-contrast hover:cursor-pointer flex flex-auto gap-2 items-center justify-center p-2 ${isSelected ? "border-2 border-tertiary" : "border border-border"} hover:border-2 border-dashed rounded-lg`}
+      >
         <BlockLinkInput {...props} />
-      </div>
+      </label>
     );
+  }
 
   return (
     <a
@@ -73,6 +86,9 @@ export const ExternalLinkBlock = (props: BlockProps) => {
 };
 
 const BlockLinkInput = (props: BlockProps) => {
+  let isSelected = useUIState((s) =>
+    s.selectedBlocks.find((b) => b.value === props.entityID),
+  );
   let entity_set = useEntitySetContext();
   let [linkValue, setLinkValue] = useState("");
   let { rep } = useReplicache();
@@ -99,16 +115,21 @@ const BlockLinkInput = (props: BlockProps) => {
   return (
     <div className={`max-w-sm flex gap-2 rounded-md text-secondary`}>
       <>
-        <BlockLinkSmall className="shrink-0" />
+        <BlockLinkSmall
+          className={`shrink-0  ${isSelected ? "text-tertiary" : "text-border"} `}
+        />
         <Separator />
         <Input
-          autoFocus
           type="url"
           className="w-full grow border-none outline-none bg-transparent "
           placeholder="www.example.com"
           value={linkValue}
           onChange={(e) => setLinkValue(e.target.value)}
           onKeyDown={(e) => {
+            if (e.key === "Backspace" && linkValue === "") {
+              rep && deleteBlock([props.entityID].flat(), rep);
+              return;
+            }
             if (e.key === "Enter") {
               if (!linkValue) return;
               if (!isUrl(linkValue)) {
