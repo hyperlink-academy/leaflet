@@ -4,6 +4,7 @@ export const elementId = {
     container: `block/${id}/container`,
   }),
   page: (id: string) => ({
-    container: `card/${id}/container`,
+    container: `page/${id}/container`,
+    canvasScrollArea: `page/${id}/canvasScrollArea`,
   }),
 };

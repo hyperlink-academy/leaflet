@@ -16,6 +16,7 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
 
   return (
     <div
+      id={elementId.page(props.entityID).canvasScrollArea}
       onTouchMoveCapture={(e) => {}}
       onWheelCapture={(e) => {
         e.currentTarget.scrollLeft += e.deltaX;
@@ -41,11 +42,13 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   let { rep } = useReplicache();
   let [height, setHeight] = useState<number | undefined>(undefined);
   useEffect(() => {
-    setHeight(document.getElementById("canvasContent")?.scrollHeight);
-  }, [blocks]);
+    setHeight(
+      document.getElementById(elementId.page(props.entityID).canvasScrollArea)
+        ?.scrollHeight,
+    );
+  }, [blocks, props.entityID]);
   return (
     <div
-      id="canvasContent"
       onClick={(e) => {
         e.currentTarget === e.target &&
           useUIState.setState(() => ({
@@ -89,17 +92,28 @@ const AddCanvasBlockButton = (props: {
       <button
         className="absolute right-4 p-0.5 rounded-full bg-bg-page border-2 outline outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-1"
         onMouseDown={() => {
+          let page = document.getElementById(
+            elementId.page(props.entityID).canvasScrollArea,
+          );
+          if (!page) return;
+          let newEntityID = v7();
           rep?.mutate.addCanvasBlock({
+            newEntityID,
             parent: props.entityID,
             position: {
-              x: Math.floor(Math.random() * 191) + 10,
-              y: Math.floor(Math.random() * 191) + 10,
+              x: page?.clientWidth + page?.scrollLeft - 468,
+              y: 32 + page.scrollTop,
             },
             factID: v7(),
             type: "text",
-            newEntityID: v7(),
             permission_set: props.entity_set.set,
           });
+          setTimeout(() => {
+            focusBlock(
+              { type: "text", value: newEntityID, parent: props.entityID },
+              { type: "start" },
+            );
+          }, 20);
         }}
       >
         <AddBlockLarge />
