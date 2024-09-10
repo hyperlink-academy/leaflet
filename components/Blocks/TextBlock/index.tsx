@@ -31,7 +31,7 @@ import { useUIState } from "src/useUIState";
 import { MarkType, DOMParser as ProsemirrorDOMParser } from "prosemirror-model";
 import { useAppEventListener } from "src/eventBus";
 import { addLinkBlock } from "src/utils/addLinkBlock";
-import { BlockOptions } from "components/Blocks/BlockOptions";
+import { BlockCommandBar } from "components/Blocks/BlockCommandBar";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { isIOS } from "@react-aria/utils";
 import { useIsMobile } from "src/hooks/isMobile";
@@ -148,7 +148,6 @@ export function RenderedTextBlock(props: {
 
 export function BaseTextBlock(props: BlockProps & { className: string }) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
-
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
   let entity_set = useEntitySetContext();
   let propsRef = useRef({ ...props, entity_set });
@@ -281,7 +280,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
           )}
         {/* if this is the block is empty and selected */}
         {editorState.doc.textContent.length === 0 && selected && (
-          <BlockOptions
+          <BlockCommandBar
             factID={factID}
             entityID={props.entityID}
             parent={props.parent}
