@@ -1,4 +1,4 @@
-import { ReplicacheMutators } from "src/replicache";
+import { Fact, ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import {
   BlockPageLinkSmall,
@@ -14,6 +14,9 @@ import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "components/Pages";
 import { v7 } from "uuid";
 import { Replicache } from "replicache";
+import { keepFocus } from "components/Toolbar/TextBlockTypeToolbar";
+import { useEditorStates } from "src/state/useEditorState";
+import { elementId } from "src/utils/elementId";
 
 type Props = {
   parent: string;
@@ -25,60 +28,162 @@ type Props = {
   className?: string;
 };
 
-export const blockCommands = [
+async function createBlockWithType(
+  rep: Replicache<ReplicacheMutators>,
+  args: {
+    entity_set: string;
+    parent: string;
+    position: string | null;
+    nextPosition: string | null;
+    entityID: string | null;
+  },
+  type: Fact<"block/type">["data"]["value"],
+) {
+  let entity;
+
+  if (!args.entityID) {
+    entity = v7();
+    await rep?.mutate.addBlock({
+      parent: args.parent,
+      factID: v7(),
+      permission_set: args.entity_set,
+      type: type,
+      position: generateKeyBetween(args.position, args.nextPosition),
+      newEntityID: entity,
+    });
+  } else {
+    entity = args.entityID;
+    await rep?.mutate.assertFact({
+      entity,
+      attribute: "block/type",
+      data: { type: "block-type-union", value: type },
+    });
+  }
+  return entity;
+}
+
+function clearCommandSearchText(entityID: string) {
+  useEditorStates.setState((s) => {
+    let existingState = s.editorStates[entityID];
+    if (!existingState) {
+      console.log("no existing state???");
+      return s;
+    }
+
+    let tr = existingState.editor.tr;
+    console.log("deleting!");
+    tr.deleteRange(1, tr.doc.content.size - 1);
+    return {
+      editorStates: {
+        ...s.editorStates,
+        [entityID]: {
+          ...existingState,
+          editor: existingState.editor.apply(tr),
+        },
+      },
+    };
+  });
+}
+
+type Command = {
+  name: string;
+  icon: React.ReactNode;
+  type: string;
+  onSelect: (
+    rep: Replicache<ReplicacheMutators>,
+    props: Props & { entity_set: string },
+  ) => void;
+};
+export const blockCommands: Command[] = [
   // please keep these in the order that they appear in the menu, grouped by type
-  { name: "Text", icon: <ParagraphSmall />, type: "text", onSelect: () => {} },
-  { name: "Title", icon: <Header1Small />, type: "text", onSelect: () => {} },
-  { name: "Header", icon: <Header2Small />, type: "text", onSelect: () => {} },
+  {
+    name: "Text",
+    icon: <ParagraphSmall />,
+    type: "text",
+    onSelect: async (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      let entity = await createBlockWithType(rep, props, "text");
+      clearCommandSearchText(entity);
+      keepFocus(entity);
+    },
+  },
+  {
+    name: "Title",
+    icon: <Header1Small />,
+    type: "text",
+    onSelect: async (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      let entity = await createBlockWithType(rep, props, "heading");
+      await rep.mutate.assertFact({
+        entity,
+        attribute: "block/heading-level",
+        data: { type: "number", value: 1 },
+      });
+
+      keepFocus(entity);
+    },
+  },
+  {
+    name: "Header",
+    icon: <Header2Small />,
+    type: "text",
+    onSelect: async (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      let entity = await createBlockWithType(rep, props, "heading");
+      rep.mutate.assertFact({
+        entity,
+        attribute: "block/heading-level",
+        data: { type: "number", value: 2 },
+      });
+      clearCommandSearchText(entity);
+      keepFocus(entity);
+    },
+  },
   {
     name: "Subheader",
     icon: <Header3Small />,
     type: "text",
-    onSelect: () => {},
+    onSelect: async (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      let entity = await createBlockWithType(rep, props, "heading");
+      rep.mutate.assertFact({
+        entity,
+        attribute: "block/heading-level",
+        data: { type: "number", value: 3 },
+      });
+      clearCommandSearchText(entity);
+      keepFocus(entity);
+    },
   },
 
   {
     name: "External Link",
     icon: <BlockLinkSmall />,
     type: "block",
-    onSelect: () => {},
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "link");
+    },
   },
   {
     name: "Image",
     icon: <BlockImageSmall />,
     type: "block",
-    onSelect: () => {},
+    onSelect: async (rep, props) => {
+      let entity = await createBlockWithType(rep, props, "image");
+      setTimeout(() => {
+        let el = document.getElementById(elementId.block(entity).input);
+        console.log(el);
+        el?.focus();
+      }, 100);
+    },
   },
   {
     name: "Mailbox",
     icon: <MailboxSmall />,
     type: "block",
-    onSelect: async (
-      props: {
-        entity_set: { set: string };
-        rep: Replicache<ReplicacheMutators>;
-      } & Props,
-    ) => {
+    onSelect: async (rep, props) => {
       let entity;
-
-      if (!props.entityID) {
-        entity = v7();
-        await props.rep?.mutate.addBlock({
-          parent: props.parent,
-          factID: v7(),
-          permission_set: props.entity_set.set,
-          type: "mailbox",
-          position: generateKeyBetween(props.position, props.nextPosition),
-          newEntityID: entity,
-        });
-      } else {
-        entity = props.entityID;
-        await props.rep?.mutate.assertFact({
-          entity,
-          attribute: "block/type",
-          data: { type: "block-type-union", value: "mailbox" },
-        });
-      }
+      createBlockWithType(rep, props, "mailbox");
     },
   },
 
@@ -86,49 +191,40 @@ export const blockCommands = [
     name: "New Page",
     icon: <BlockPageLinkSmall />,
     type: "page",
-    onSelect: async (
-      props: {
-        entity_set: { set: string };
-        rep: Replicache<ReplicacheMutators>;
-      } & Props,
-    ) => {
-      let entity;
+    onSelect: async (rep, props) => {
+      let entity = await createBlockWithType(rep, props, "card");
 
-      if (!props.entityID) {
-        entity = v7();
-
-        await props.rep?.mutate.addBlock({
-          permission_set: props.entity_set.set,
-          factID: v7(),
-          parent: props.parent,
-          type: "card",
-          position: generateKeyBetween(props.position, props.nextPosition),
-          newEntityID: entity,
-        });
-      } else {
-        entity = props.entityID;
-        await props.rep?.mutate.assertFact({
-          entity,
-          attribute: "block/type",
-          data: { type: "block-type-union", value: "card" },
-        });
-      }
       let newPage = v7();
-      await props.rep?.mutate.addPageLinkBlock({
+      await rep?.mutate.addPageLinkBlock({
         blockEntity: entity,
         firstBlockFactID: v7(),
         firstBlockEntity: v7(),
         pageEntity: newPage,
-        permission_set: props.entity_set.set,
+        type: "doc",
+        permission_set: props.entity_set,
       });
       useUIState.getState().openPage(props.parent, newPage);
-      if (props.rep) focusPage(newPage, props.rep, "focusFirstBlock");
+      focusPage(newPage, rep, "focusFirstBlock");
     },
   },
   {
     name: "New Canvas",
     icon: <BlockPageLinkSmall />,
     type: "page",
-    onSelect: () => {},
+    onSelect: async (rep, props) => {
+      let entity = await createBlockWithType(rep, props, "card");
+
+      let newPage = v7();
+      await rep?.mutate.addPageLinkBlock({
+        type: "canvas",
+        blockEntity: entity,
+        firstBlockFactID: v7(),
+        firstBlockEntity: v7(),
+        pageEntity: newPage,
+        permission_set: props.entity_set,
+      });
+      useUIState.getState().openPage(props.parent, newPage);
+      focusPage(newPage, rep, "focusFirstBlock");
+    },
   },
 ];

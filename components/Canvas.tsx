@@ -236,7 +236,6 @@ function CanvasBlock(props: {
   let transform = `${
     dragDelta ? `translate(${dragDelta.x}px, ${dragDelta.y}px)` : ""
   } rotate(${angle}deg)`;
-  console.log(transform);
 
   return (
     <div

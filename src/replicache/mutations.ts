@@ -247,6 +247,7 @@ const outdentBlock: Mutation<{
 };
 
 const addPageLinkBlock: Mutation<{
+  type: "canvas" | "doc";
   permission_set: string;
   blockEntity: string;
   firstBlockEntity: string;
@@ -261,6 +262,11 @@ const addPageLinkBlock: Mutation<{
     entity: args.blockEntity,
     attribute: "block/card",
     data: { type: "reference", value: args.pageEntity },
+  });
+  await ctx.assertFact({
+    attribute: "page/type",
+    entity: args.pageEntity,
+    data: { type: "page-type-union", value: args.type },
   });
   await addBlock(
     {

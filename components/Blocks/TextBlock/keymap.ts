@@ -102,6 +102,7 @@ export const TextBlockKeymap = (
     },
     ArrowUp: (state, _tr, view) => {
       if (!view) return false;
+      if (state.doc.textContent.startsWith("/")) return true;
       if (useUIState.getState().selectedBlocks.length > 1) return true;
       if (view.state.selection.from !== view.state.selection.to) return false;
       const viewClientRect = view.dom.getBoundingClientRect();
@@ -119,6 +120,7 @@ export const TextBlockKeymap = (
     },
     ArrowDown: (state, tr, view) => {
       if (!view) return true;
+      if (state.doc.textContent.startsWith("/")) return true;
       if (useUIState.getState().selectedBlocks.length > 1) return true;
       if (view.state.selection.from !== view.state.selection.to) return false;
       const viewClientRect = view.dom.getBoundingClientRect();
@@ -325,6 +327,7 @@ const enter =
     dispatch?: (tr: Transaction) => void,
     view?: EditorView,
   ) => {
+    if (state.doc.textContent.startsWith("/")) return true;
     let tr = state.tr;
     let newContent = tr.doc.slice(state.selection.anchor);
     tr.delete(state.selection.anchor, state.doc.content.size);

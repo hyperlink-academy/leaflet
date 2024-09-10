@@ -95,6 +95,14 @@ function ArrowUp({ e, props }: Args) {
 async function Backspace({ e, props, rep, areYouSure, setAreYouSure }: Args) {
   // if this is a textBlock, let the textBlock/keymap handle the backspace
   if (isTextBlock[props.type]) return;
+  let el = e.target as HTMLElement;
+  if (
+    el.tagName === "LABEL" ||
+    el.tagName === "INPUT" ||
+    el.tagName === "TEXTAREA" ||
+    el.contentEditable === "true"
+  )
+    return;
 
   // if the block is a card or mailbox...
   if (props.type === "card" || props.type === "mailbox") {
@@ -107,15 +115,6 @@ async function Backspace({ e, props, rep, areYouSure, setAreYouSure }: Args) {
     // and the user is not in an input or textarea,
     // if there is a page to close, close it and remove the block
     if (areYouSure) {
-      let el = e.target as HTMLElement;
-
-      if (
-        el.tagName === "INPUT" ||
-        el.tagName === "textarea" ||
-        el.contentEditable === "true"
-      )
-        return;
-
       return deleteBlock([props.entityID].flat(), rep);
     }
   }

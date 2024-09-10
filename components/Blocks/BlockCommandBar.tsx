@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import * as DropdownMenu from "@radix-ui/react-popover";
 import { blockCommands } from "./BlockCommands";
 import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -14,13 +14,16 @@ type Props = {
   className?: string;
 };
 
-export type commandTypes = (typeof blockCommands)[number];
-
-export const BlockCommandBar = (props: {} & Props) => {
+export const BlockCommandBar = ({
+  props,
+  searchValue,
+}: {
+  props: Props;
+  searchValue: string;
+}) => {
   let ref = useRef<HTMLDivElement>(null);
 
   let [highlighted, setHighlighted] = useState<string | undefined>(undefined);
-  let [searchValue, setSearchValue] = useState("");
 
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
@@ -68,11 +71,11 @@ export const BlockCommandBar = (props: {} & Props) => {
 
       // on enter, select the highlighted item
       if (e.key === "Enter") {
+        e.preventDefault();
         rep &&
-          commandResults[currentHighlightIndex].onSelect({
+          commandResults[currentHighlightIndex].onSelect(rep, {
             ...props,
-            entity_set: entity_set,
-            rep: rep,
+            entity_set: entity_set.set,
           });
         return;
       }
@@ -88,35 +91,21 @@ export const BlockCommandBar = (props: {} & Props) => {
     window.addEventListener("keydown", listener);
 
     return () => window.removeEventListener("keydown", listener);
-  }, [highlighted, setHighlighted, commandResults]);
+  }, [highlighted, setHighlighted, commandResults, rep, entity_set.set, props]);
 
   return (
-    <DropdownMenu.Root
-      onOpenChange={() => {
-        setSearchValue("");
-        setHighlighted(undefined);
-      }}
-    >
-      <DropdownMenu.Trigger>menu</DropdownMenu.Trigger>
+    <DropdownMenu.Root open>
+      <DropdownMenu.Trigger className="absolute left-0"></DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content
           align="start"
-          sideOffset={4}
+          sideOffset={16}
           collisionPadding={16}
           ref={ref}
+          onOpenAutoFocus={(e) => e.preventDefault()}
           className={`commandMenuContent group/cmd-menu z-20 h-[333px] flex data-[side=top]:items-end items-start`}
         >
           <div className="flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page py-1 gap-0.5 border border-border rounded-md shadow-md">
-            <input
-              autoFocus
-              id="block-search"
-              type="text"
-              className="px-2 py-1 outline-none "
-              placeholder="Search blocks..."
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-            />
-            <hr className=" border-border mb-1" />
             {commandResults.length === 0 ? (
               <div className="text-tertiary text-center italic py-2">
                 No blocks found
@@ -130,10 +119,9 @@ export const BlockCommandBar = (props: {} & Props) => {
                     icon={result.icon}
                     onSelect={() => {
                       rep &&
-                        result.onSelect({
+                        result.onSelect(rep, {
                           ...props,
-                          entity_set: entity_set,
-                          rep: rep,
+                          entity_set: entity_set.set,
                         });
                     }}
                     highlighted={highlighted}

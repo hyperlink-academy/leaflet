@@ -1,7 +1,18 @@
-import { useEntity } from "src/replicache";
+import { useEntitySetContext } from "components/EntitySetProvider";
+import { generateKeyBetween } from "fractional-indexing";
+import { useState } from "react";
+import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
+import { addLinkBlock } from "src/utils/addLinkBlock";
+import { BlockProps } from "./Block";
+import { v7 } from "uuid";
+import { useSmoker } from "components/Toast";
+import { BlockLinkSmall, CheckTiny } from "components/Icons";
+import { Separator } from "components/Layout";
+import { Input } from "components/Input";
+import { isUrl } from "src/utils/isURL";
 
-export const ExternalLinkBlock = (props: { entityID: string }) => {
+export const ExternalLinkBlock = (props: BlockProps) => {
   let previewImage = useEntity(props.entityID, "link/preview");
   let title = useEntity(props.entityID, "link/title");
   let description = useEntity(props.entityID, "link/description");
@@ -10,6 +21,12 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
+  if (!url)
+    return (
+      <div>
+        <BlockLinkInput {...props} />
+      </div>
+    );
 
   return (
     <a
@@ -52,5 +69,83 @@ export const ExternalLinkBlock = (props: { entityID: string }) => {
         }}
       />
     </a>
+  );
+};
+
+const BlockLinkInput = (props: BlockProps) => {
+  let entity_set = useEntitySetContext();
+  let [linkValue, setLinkValue] = useState("");
+  let { rep } = useReplicache();
+  let submit = async () => {
+    let entity = props.entityID;
+    if (!entity) {
+      entity = v7();
+
+      await rep?.mutate.addBlock({
+        permission_set: entity_set.set,
+        factID: v7(),
+        parent: props.parent,
+        type: "card",
+        position: generateKeyBetween(props.position, props.nextPosition),
+        newEntityID: entity,
+      });
+    }
+    let link = linkValue;
+    if (!linkValue.startsWith("http")) link = `https://${linkValue}`;
+    addLinkBlock(link, entity, rep);
+  };
+  let smoke = useSmoker();
+
+  return (
+    <div className={`max-w-sm flex gap-2 rounded-md text-secondary`}>
+      <>
+        <BlockLinkSmall className="shrink-0" />
+        <Separator />
+        <Input
+          autoFocus
+          type="url"
+          className="w-full grow border-none outline-none bg-transparent "
+          placeholder="www.example.com"
+          value={linkValue}
+          onChange={(e) => setLinkValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              if (!linkValue) return;
+              if (!isUrl(linkValue)) {
+                let rect = e.currentTarget.getBoundingClientRect();
+                smoke({
+                  error: true,
+                  text: "invalid url!",
+                  position: { x: rect.left, y: rect.top - 8 },
+                });
+                return;
+              }
+              submit();
+            }
+          }}
+        />
+        <div className="flex items-center gap-3 ">
+          <button
+            disabled={!linkValue || linkValue === ""}
+            className="hover:text-accent-contrast disabled:text-border"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              if (!linkValue) return;
+              if (!isUrl(linkValue)) {
+                smoke({
+                  error: true,
+                  text: "invalid url!",
+                  position: { x: e.clientX, y: e.clientY },
+                });
+                return;
+              }
+              submit();
+            }}
+          >
+            <CheckTiny />
+          </button>
+        </div>
+      </>
+    </div>
   );
 };

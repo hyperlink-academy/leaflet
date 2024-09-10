@@ -279,14 +279,10 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
             </div>
           )}
         {/* if this is the block is empty and selected */}
-        {editorState.doc.textContent.length === 0 && selected && (
+        {editorState.doc.textContent.startsWith("/") && selected && (
           <BlockCommandBar
-            factID={factID}
-            entityID={props.entityID}
-            parent={props.parent}
-            position={props.position}
-            nextPosition={props.nextPosition}
-            first={first}
+            props={props}
+            searchValue={editorState.doc.textContent.slice(1)}
           />
         )}
       </div>
