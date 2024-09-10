@@ -13,6 +13,7 @@ import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
 import { elementId } from "src/utils/elementId";
 import { deleteBlock } from "./DeleteBlock";
+import { focusBlock } from "src/utils/focusBlock";
 
 export const ExternalLinkBlock = (props: BlockProps) => {
   let previewImage = useEntity(props.entityID, "link/preview");
@@ -35,6 +36,12 @@ export const ExternalLinkBlock = (props: BlockProps) => {
       <label
         id={elementId.block(props.entityID).input}
         className={`w-full h-[104px] text-tertiary hover:text-accent-contrast hover:cursor-pointer flex flex-auto gap-2 items-center justify-center p-2 ${isSelected ? "border-2 border-tertiary" : "border border-border"} hover:border-2 border-dashed rounded-lg`}
+        onMouseDown={() => {
+          focusBlock(
+            { type: props.type, value: props.entityID, parent: props.parent },
+            { type: "start" },
+          );
+        }}
       >
         <BlockLinkInput {...props} />
       </label>
@@ -56,6 +63,11 @@ export const ExternalLinkBlock = (props: BlockProps) => {
         <div className="flex flex-col w-full min-w-0 h-full grow ">
           <div
             className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-none resize-none align-top border h-[24px] line-clamp-1`}
+            style={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              wordBreak: "break-all",
+            }}
           >
             {title?.data.value}
           </div>
@@ -147,11 +159,17 @@ const BlockLinkInput = (props: BlockProps) => {
         />
         <div className="flex items-center gap-3 ">
           <button
-            disabled={!linkValue || linkValue === ""}
-            className="hover:text-accent-contrast disabled:text-border"
+            className={`p-1 ${isSelected ? "text-accent-contrast" : "text-border"}`}
             onMouseDown={(e) => {
               e.preventDefault();
-              if (!linkValue) return;
+              if (!linkValue || linkValue === "") {
+                smoke({
+                  error: true,
+                  text: "no url!",
+                  position: { x: e.clientX, y: e.clientY },
+                });
+                return;
+              }
               if (!isUrl(linkValue)) {
                 smoke({
                   error: true,
