@@ -2,7 +2,7 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { v7 } from "uuid";
 import { BaseBlock, Block } from "./Blocks/Block";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AddBlockLarge, AddSmall } from "./Icons";
 import { useDrag } from "src/hooks/useDrag";
 import { useLongPress } from "src/hooks/useLongPress";
@@ -13,15 +13,29 @@ import useMeasure from "react-use-measure";
 
 export function Canvas(props: { entityID: string; preview?: boolean }) {
   let entity_set = useEntitySetContext();
+  let ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let abort = new AbortController();
+    let isTouch = false;
+    let startX: number, startY: number, scrollLeft: number, scrollTop: number;
+    let el = ref.current;
+    ref.current?.addEventListener(
+      "wheel",
+      (e) => {
+        e.preventDefault();
+        if (!el) return;
+        el.scrollLeft += e.deltaX;
+        el.scrollTop += e.deltaY;
+      },
+      { passive: false, signal: abort.signal },
+    );
+    return () => abort.abort();
+  });
 
   return (
     <div
+      ref={ref}
       id={elementId.page(props.entityID).canvasScrollArea}
-      onTouchMoveCapture={(e) => {}}
-      onWheelCapture={(e) => {
-        e.currentTarget.scrollLeft += e.deltaX;
-        e.currentTarget.scrollTop += e.deltaY;
-      }}
       className={`
         h-full
   canvasWrapper relative mx-auto
