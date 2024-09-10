@@ -245,6 +245,7 @@ function CanvasBlock(props: {
       id={props.preview ? undefined : elementId.block(props.entityID).container}
       className="absolute group/canvas-block will-change-transform rounded-lg flex items-stretch"
       style={{
+        zIndex: dragDelta ? 10 : undefined,
         width: width + (widthHandle.dragDelta?.x || 0),
         transform,
         rotate: `${rotation}deg`,
