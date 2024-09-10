@@ -1,7 +1,8 @@
 import { Fact, ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import {
-  BlockPageLinkSmall,
+  BlockDocPageSmall,
+  BlockCanvasPageSmall,
   BlockImageSmall,
   BlockLinkSmall,
   Header1Small,
@@ -189,7 +190,7 @@ export const blockCommands: Command[] = [
 
   {
     name: "New Page",
-    icon: <BlockPageLinkSmall />,
+    icon: <BlockDocPageSmall />,
     type: "page",
     onSelect: async (rep, props) => {
       let entity = await createBlockWithType(rep, props, "card");
@@ -209,7 +210,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "New Canvas",
-    icon: <BlockPageLinkSmall />,
+    icon: <BlockCanvasPageSmall />,
     type: "page",
     onSelect: async (rep, props) => {
       let entity = await createBlockWithType(rep, props, "card");

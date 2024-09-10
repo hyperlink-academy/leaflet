@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import * as DropdownMenu from "@radix-ui/react-popover";
+import * as Popover from "@radix-ui/react-popover";
 import { blockCommands } from "./BlockCommands";
 import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -99,20 +99,20 @@ export const BlockCommandBar = ({
   }, [highlighted, setHighlighted, commandResults, rep, entity_set.set, props]);
 
   return (
-    <DropdownMenu.Root open>
-      <DropdownMenu.Trigger className="absolute left-0"></DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
+    <Popover.Root open>
+      <Popover.Trigger className="absolute left-0"></Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
           align="start"
           sideOffset={16}
           collisionPadding={16}
           ref={ref}
           onOpenAutoFocus={(e) => e.preventDefault()}
-          className={`commandMenuContent group/cmd-menu z-20 h-[333px] flex data-[side=top]:items-end items-start`}
+          className={`commandMenuContent group/cmd-menu z-20 h-[292px] w-[264px] flex data-[side=top]:items-end items-start`}
         >
-          <div className="flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page py-1 gap-0.5 border border-border rounded-md shadow-md">
+          <div className="commandMenuResults w-full flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page py-1 gap-0.5 border border-border rounded-md shadow-md">
             {commandResults.length === 0 ? (
-              <div className="text-tertiary text-center italic py-2">
+              <div className="w-full text-tertiary text-center italic py-2 px-2 ">
                 No blocks found
               </div>
             ) : (
@@ -142,9 +142,9 @@ export const BlockCommandBar = ({
               ))
             )}
           </div>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 };
 
@@ -159,7 +159,7 @@ const CommandResult = (props: {
 
   return (
     <button
-      className={`text-left flex gap-2 mx-1 px-1 py-0.5 rounded-md text-secondary ${isHighlighted && "bg-border-light"}`}
+      className={`commandResult text-left flex gap-2 mx-1 pr-2 py-0.5 rounded-md text-secondary ${isHighlighted && "bg-border-light"}`}
       onMouseOver={() => {
         isHighlighted
           ? props.setHighlighted(undefined)

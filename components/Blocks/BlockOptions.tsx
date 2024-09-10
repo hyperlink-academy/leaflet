@@ -1,7 +1,7 @@
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import {
-  BlockPageLinkSmall,
+  BlockDocPageSmall,
   BlockImageSmall,
   BlockLinkSmall,
   CheckTiny,
@@ -150,7 +150,7 @@ export function BlockOptions(props: Props) {
                   if (rep) focusPage(newPage, rep, "focusFirstBlock");
                 }}
               >
-                <BlockPageLinkSmall />
+                <BlockDocPageSmall />
               </ToolbarButton>
               <ToolbarButton
                 tooltipContent="Add a Link"
