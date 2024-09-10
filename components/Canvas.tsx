@@ -233,9 +233,9 @@ function CanvasBlock(props: {
       ) *
       (180 / Math.PI);
   }
-  let transform = `${
-    dragDelta ? `translate(${dragDelta.x}px, ${dragDelta.y}px)` : ""
-  } rotate(${angle}deg)`;
+  let x = props.position.x + (dragDelta?.x || 0);
+  let y = props.position.y + (dragDelta?.y || 0);
+  let transform = `translate(${x}px, ${y}px) rotate(${rotation + angle}deg)`;
 
   return (
     <div
@@ -244,12 +244,11 @@ function CanvasBlock(props: {
       id={props.preview ? undefined : elementId.block(props.entityID).container}
       className="absolute group/canvas-block will-change-transform rounded-lg flex items-stretch"
       style={{
+        top: 0,
+        left: 0,
         zIndex: dragDelta ? 10 : undefined,
         width: width + (widthHandle.dragDelta?.x || 0),
         transform,
-        rotate: `${rotation}deg`,
-        top: props.position?.y,
-        left: props.position?.x,
       }}
     >
       {/* the gripper show on hover, but longpress logic needs to be added for mobile*/}
