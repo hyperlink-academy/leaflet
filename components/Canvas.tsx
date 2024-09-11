@@ -10,6 +10,7 @@ import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
 import { useUIState } from "src/useUIState";
 import useMeasure from "react-use-measure";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export function Canvas(props: { entityID: string; preview?: boolean }) {
   let entity_set = useEntitySetContext();
@@ -69,7 +70,10 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
             selectedBlocks: [],
           }));
       }}
-      style={{ minHeight: `calc(${height}px + 32px)` }}
+      style={{
+        minHeight: `calc(${height}px + 32px)`,
+        contain: "size layout paint",
+      }}
       className="relative h-full w-[1150px]"
     >
       <CanvasBackground />
@@ -148,6 +152,7 @@ function CanvasBlock(props: {
   let [ref, rect] = useMeasure();
   let type = useEntity(props.entityID, "block/type");
   let { rep } = useReplicache();
+  let isMobile = useIsMobile();
   let onDragEnd = useCallback(
     (dragPosition: { x: number; y: number }) => {
       console.log(dragPosition, rep);
@@ -167,7 +172,10 @@ function CanvasBlock(props: {
     },
     [props, rep],
   );
-  let { onMouseDown, dragDelta } = useDrag({ onDragEnd });
+  let { dragDelta, handlers } = useDrag({
+    onDragEnd,
+    delay: isMobile,
+  });
 
   let widthOnDragEnd = useCallback(
     (dragPosition: { x: number; y: number }) => {
@@ -214,7 +222,7 @@ function CanvasBlock(props: {
   );
   let rotateHandle = useDrag({ onDragEnd: RotateOnDragEnd });
 
-  let { isLongPress, handlers } = useLongPress(
+  let { isLongPress, handlers: longPressHandlers } = useLongPress(
     () => {
       if (isLongPress.current) {
         focusBlock(
@@ -247,14 +255,15 @@ function CanvasBlock(props: {
   }
   let x = props.position.x + (dragDelta?.x || 0);
   let y = props.position.y + (dragDelta?.y || 0);
-  let transform = `translate(${x}px, ${y}px) rotate(${rotation + angle}deg)`;
+  let transform = `translate(${x}px, ${y}px) rotate(${rotation + angle}deg) scale(${!dragDelta ? "1.0" : "1.02"})`;
 
   return (
     <div
       ref={ref}
-      {...(!props.preview ? { ...handlers } : {})}
+      {...(!props.preview ? { ...longPressHandlers } : {})}
+      {...(isMobile ? { ...handlers } : {})}
       id={props.preview ? undefined : elementId.block(props.entityID).container}
-      className="absolute group/canvas-block will-change-transform rounded-lg flex items-stretch"
+      className="absolute group/canvas-block will-change-transform rounded-lg flex items-stretch touch-none origin-top-left"
       style={{
         top: 0,
         left: 0,
@@ -264,7 +273,7 @@ function CanvasBlock(props: {
       }}
     >
       {/* the gripper show on hover, but longpress logic needs to be added for mobile*/}
-      {!props.preview && <Gripper onMouseDown={onMouseDown} />}
+      {!props.preview && !isMobile && <Gripper {...handlers} />}
       <BaseBlock
         pageType="canvas"
         preview={props.preview}
@@ -287,7 +296,7 @@ function CanvasBlock(props: {
           w-[5px] h-6 -ml-[3px]
           absolute top-1/2 right-0 -translate-y-1/2 translate-x-[2px]
           rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
-          onMouseDown={widthHandle.onMouseDown}
+          {...widthHandle.handlers}
         />
       )}
 
@@ -300,14 +309,14 @@ function CanvasBlock(props: {
             absolute bottom-0 right-0
             -translate-y-1/2 -translate-x-1/2
             rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
-          onMouseDown={rotateHandle.onMouseDown}
+          {...rotateHandle.handlers}
         />
       )}
     </div>
   );
 }
 
-const CanvasBackground = () => {
+export const CanvasBackground = () => {
   return (
     <svg
       width="100%"
@@ -341,7 +350,8 @@ const Gripper = (props: { onMouseDown: (e: React.MouseEvent) => void }) => {
   return (
     <div
       onMouseDown={props.onMouseDown}
-      className="w-[9px] shrink-0 py-1 mr-1 bg-bg-card cursor-grab grid grid-cols-1 grid-rows-1"
+      onPointerDown={props.onMouseDown}
+      className="w-[9px] shrink-0 py-1 mr-1 bg-bg-card cursor-grab grid grid-cols-1 grid-rows-1 touch-none"
     >
       <div
         className="h-full col-start-1 col-end-2 row-start-1 row-end-2 bg-bg-page hidden group-hover/canvas-block:block"

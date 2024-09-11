@@ -49,6 +49,7 @@ export function Block(props: BlockProps & { preview?: boolean }) {
 
   // focus block on longpress, shouldnt the type be based on the block type (?)
   let { isLongPress, handlers } = useLongPress(() => {
+    console.log("wat");
     if (isLongPress.current) {
       focusBlock(
         { type: props.type, value: props.entityID, parent: props.parent },

@@ -9,7 +9,7 @@ import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { usePageMetadata } from "src/hooks/queries/usePageMetadata";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
-import { Canvas, CanvasContent } from "components/Canvas";
+import { Canvas, CanvasBackground, CanvasContent } from "components/Canvas";
 
 export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
   let page = useEntity(props.entityID, "block/card");
@@ -162,10 +162,11 @@ export function PagePreview(props: { entityID: string }) {
   );
 }
 
-const CanvasLinkBlock = (props: { entityID: string }) => {
+const CanvasLinkBlock = (props: { entityID: string; preview?: boolean }) => {
   let pageWidth = `var(--page-width-unitless)`;
   return (
     <div
+      style={{ contain: "size layout paint" }}
       className={`pageLinkBlockPreview shrink-0 h-[200px] w-full overflow-clip relative`}
     >
       <div
@@ -176,7 +177,11 @@ const CanvasLinkBlock = (props: { entityID: string }) => {
           transform: `scale(calc((${pageWidth} / 1150 )))`,
         }}
       >
-        <CanvasContent entityID={props.entityID} preview />
+        {props.preview ? (
+          <CanvasBackground />
+        ) : (
+          <CanvasContent entityID={props.entityID} preview />
+        )}
       </div>
     </div>
   );
