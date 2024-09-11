@@ -56,6 +56,7 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
 export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   let blocks = useEntity(props.entityID, "canvas/block");
   let { rep } = useReplicache();
+  let entity_set = useEntitySetContext();
   let [height, setHeight] = useState<number | undefined>(undefined);
   useEffect(() => {
     setHeight(
@@ -65,11 +66,30 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   }, [blocks, props.entityID]);
   return (
     <div
-      onClick={(e) => {
-        e.currentTarget === e.target &&
-          useUIState.setState(() => ({
-            selectedBlocks: [],
-          }));
+      onClick={async (e) => {
+        if (e.currentTarget !== e.target) return;
+        useUIState.setState(() => ({
+          selectedBlocks: [],
+        }));
+        if (e.detail === 2 || e.ctrlKey || e.metaKey) {
+          let parentRect = e.currentTarget.getBoundingClientRect();
+          let newEntityID = v7();
+          await rep?.mutate.addCanvasBlock({
+            newEntityID,
+            parent: props.entityID,
+            position: {
+              x: Math.max(e.clientX - parentRect.left, 0),
+              y: Math.max(e.clientY - parentRect.top - 12, 0),
+            },
+            factID: v7(),
+            type: "text",
+            permission_set: entity_set.set,
+          });
+          focusBlock(
+            { type: "text", parent: props.entityID, value: newEntityID },
+            { type: "start" },
+          );
+        }
       }}
       style={{
         minHeight: `calc(${height}px + 32px)`,
