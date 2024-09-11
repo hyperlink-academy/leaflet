@@ -38,10 +38,10 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
       id={elementId.page(props.entityID).canvasScrollArea}
       className={`
         h-full
-  canvasWrapper relative mx-auto
+  canvasWrapper mx-auto
   w-fit
   max-w-[calc(100vw-12px)] sm:max-w-[calc(100vw-128px)] lg:max-w-[1152px]
-  bg-white rounded-lg border border-[#DBDBDB]
+  bg-white rounded-lg
   overflow-y-scroll no-scrollbar
 `}
     >
@@ -102,37 +102,35 @@ const AddCanvasBlockButton = (props: {
 }) => {
   let { rep } = useReplicache();
   return (
-    <div className="sticky top-4 left-0 right-0 z-10 flex justify-end">
-      <button
-        className="absolute right-4 p-0.5 rounded-full bg-bg-page border-2 outline outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-1"
-        onMouseDown={() => {
-          let page = document.getElementById(
-            elementId.page(props.entityID).canvasScrollArea,
+    <button
+      className="absolute right-2 sm:top-4 bottom-2 sm:bottom-auto z-10 p-0.5 rounded-full bg-bg-page border-2 outline outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-1"
+      onMouseDown={() => {
+        let page = document.getElementById(
+          elementId.page(props.entityID).canvasScrollArea,
+        );
+        if (!page) return;
+        let newEntityID = v7();
+        rep?.mutate.addCanvasBlock({
+          newEntityID,
+          parent: props.entityID,
+          position: {
+            x: page?.clientWidth + page?.scrollLeft - 468,
+            y: 32 + page.scrollTop,
+          },
+          factID: v7(),
+          type: "text",
+          permission_set: props.entity_set.set,
+        });
+        setTimeout(() => {
+          focusBlock(
+            { type: "text", value: newEntityID, parent: props.entityID },
+            { type: "start" },
           );
-          if (!page) return;
-          let newEntityID = v7();
-          rep?.mutate.addCanvasBlock({
-            newEntityID,
-            parent: props.entityID,
-            position: {
-              x: page?.clientWidth + page?.scrollLeft - 468,
-              y: 32 + page.scrollTop,
-            },
-            factID: v7(),
-            type: "text",
-            permission_set: props.entity_set.set,
-          });
-          setTimeout(() => {
-            focusBlock(
-              { type: "text", value: newEntityID, parent: props.entityID },
-              { type: "start" },
-            );
-          }, 20);
-        }}
-      >
-        <AddBlockLarge />
-      </button>
-    </div>
+        }, 20);
+      }}
+    >
+      <AddBlockLarge />
+    </button>
   );
 };
 
