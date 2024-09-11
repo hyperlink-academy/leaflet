@@ -11,6 +11,7 @@ import { elementId } from "src/utils/elementId";
 import { useUIState } from "src/useUIState";
 import useMeasure from "react-use-measure";
 import { useIsMobile } from "src/hooks/isMobile";
+import { Media } from "./Media";
 
 export function Canvas(props: { entityID: string; preview?: boolean }) {
   let entity_set = useEntitySetContext();
@@ -263,7 +264,7 @@ function CanvasBlock(props: {
       {...(!props.preview ? { ...longPressHandlers } : {})}
       {...(isMobile ? { ...handlers } : {})}
       id={props.preview ? undefined : elementId.block(props.entityID).container}
-      className="absolute group/canvas-block will-change-transform rounded-lg flex items-stretch touch-none origin-top-left"
+      className="absolute group/canvas-block will-change-transform rounded-lg flex items-stretch touch-none origin-center"
       style={{
         top: 0,
         left: 0,
@@ -273,7 +274,7 @@ function CanvasBlock(props: {
       }}
     >
       {/* the gripper show on hover, but longpress logic needs to be added for mobile*/}
-      {!props.preview && !isMobile && <Gripper {...handlers} />}
+      {!props.preview && <Gripper {...handlers} />}
       <BaseBlock
         pageType="canvas"
         preview={props.preview}
@@ -351,16 +352,18 @@ const Gripper = (props: { onMouseDown: (e: React.MouseEvent) => void }) => {
     <div
       onMouseDown={props.onMouseDown}
       onPointerDown={props.onMouseDown}
-      className="w-[9px] shrink-0 py-1 mr-1 bg-bg-card cursor-grab grid grid-cols-1 grid-rows-1 touch-none"
+      className="w-[9px] shrink-0 py-1 mr-1 bg-bg-card cursor-grab touch-none"
     >
-      <div
-        className="h-full col-start-1 col-end-2 row-start-1 row-end-2 bg-bg-page hidden group-hover/canvas-block:block"
-        style={{ maskImage: "var(--gripperSVG2)", maskRepeat: "space" }}
-      />
-      <div
-        className="h-full col-start-1 col-end-2 row-start-1 row-end-2 bg-tertiary hidden group-hover/canvas-block:block"
-        style={{ maskImage: "var(--gripperSVG)", maskRepeat: "space" }}
-      />
+      <Media mobile={false} className="h-full grid grid-cols-1 grid-rows-1 ">
+        <div
+          className="h-full col-start-1 col-end-2 row-start-1 row-end-2 bg-bg-page hidden group-hover/canvas-block:block"
+          style={{ maskImage: "var(--gripperSVG2)", maskRepeat: "space" }}
+        />
+        <div
+          className="h-full col-start-1 col-end-2 row-start-1 row-end-2 bg-tertiary hidden group-hover/canvas-block:block"
+          style={{ maskImage: "var(--gripperSVG)", maskRepeat: "space" }}
+        />
+      </Media>
     </div>
   );
 };

@@ -939,7 +939,7 @@ export const PopoverArrow = (
 ) => {
   return (
     <svg
-      {...props}
+      {...{ props, arrowFill: undefined, arrowStroke: undefined }}
       width="16"
       height="8"
       viewBox="0 0 16 8"
