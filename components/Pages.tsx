@@ -143,7 +143,7 @@ function Page(props: { entityID: string; first?: boolean }) {
           }}
           className={`
             ${type === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
-      page relative
+      page
       grow flex flex-col
       overscroll-y-none
       overflow-y-scroll no-scrollbar

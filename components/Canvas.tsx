@@ -103,7 +103,7 @@ const AddCanvasBlockButton = (props: {
   let { rep } = useReplicache();
   return (
     <button
-      className="absolute right-2 sm:top-4 bottom-2 sm:bottom-auto z-10 p-0.5 rounded-full bg-bg-page border-2 outline outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-1"
+      className="absolute right-2 sm:top-4 sm:right-4 bottom-2 sm:bottom-auto z-10 p-0.5 rounded-full bg-bg-page border-2 outline outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-1"
       onMouseDown={() => {
         let page = document.getElementById(
           elementId.page(props.entityID).canvasScrollArea,
