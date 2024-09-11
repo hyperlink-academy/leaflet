@@ -7,17 +7,18 @@ import { metaKey } from "src/utils/metaKey";
 export const HelpPopover = () => {
   return (
     <Popover
+      className="max-w-xs w-full"
       trigger={
         <div className="p-1 rounded-full bg-accent-1 text-accent-2">
           <HelpSmall />{" "}
         </div>
       }
     >
-      <div className="flex flex-col  text-sm gap-1 max-w-xs w-full text-secondary">
+      <div className="flex flex-col  text-sm gap-1  text-secondary">
         <div className="font-bold text-base">Welcome to Leaflet!</div>
         <div>A fun, fast, no accounts needed document editor.</div>
         <div
-          className="py-1 px-2 rounded-md "
+          className="py-1 px-1 -mx-1 rounded-md "
           style={{
             backgroundColor:
               "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
@@ -66,8 +67,8 @@ const KeyboardShortcut = (props: { name: string; keys: string[] }) => {
     <div className="flex justify-between items-center">
       {props.name}
       <div className="flex gap-1 items-center font-bold">
-        {props.keys.map((key) => {
-          return <ShortcutKey>{key}</ShortcutKey>;
+        {props.keys.map((key, index) => {
+          return <ShortcutKey key={index}>{key}</ShortcutKey>;
         })}
       </div>
     </div>

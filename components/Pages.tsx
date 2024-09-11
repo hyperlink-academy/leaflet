@@ -25,7 +25,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { DraftPostOptions } from "./Blocks/MailboxBlock";
 import { useIsMobile } from "src/hooks/isMobile";
-import { HelpPopover } from "./HelpPopover";}
+import { HelpPopover } from "./HelpPopover";
 
 export function Pages(props: { rootPage: string }) {
   let openPages = useUIState((s) => s.openPages);

@@ -50,7 +50,7 @@ export type pickers =
 
 export function setColorAttribute(
   rep: Replicache<ReplicacheMutators> | null,
-  entity: string
+  entity: string,
 ) {
   return (attribute: keyof FilterAttributes<{ type: "color" }>) =>
     (color: Color) =>
@@ -68,18 +68,18 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   let primaryValue = useColorAttribute(props.entityID, "theme/primary");
   let accent1Value = useColorAttribute(
     props.entityID,
-    "theme/accent-background"
+    "theme/accent-background",
   );
   let accent2Value = useColorAttribute(props.entityID, "theme/accent-text");
   let permission = useEntitySetContext().permissions.write;
   let backgroundImage = useEntity(props.entityID, "theme/background-image");
   let backgroundRepeat = useEntity(
     props.entityID,
-    "theme/background-image-repeat"
+    "theme/background-image-repeat",
   );
 
   let [openPicker, setOpenPicker] = useState<pickers>(
-    props.home === true ? "leaflet" : "null"
+    props.home === true ? "leaflet" : "null",
   );
   let set = useMemo(() => {
     return setColorAttribute(rep, props.entityID);
@@ -89,7 +89,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
     let values = [] as string[];
     for (let i = 0; i < 3; i++) {
       values.push(
-        `${Math.floor(Math.random() * 100)}% ${Math.floor(Math.random() * 100)}%`
+        `${Math.floor(Math.random() * 100)}% ${Math.floor(Math.random() * 100)}%`,
       );
     }
     return values;
@@ -123,7 +123,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
             style={{ maxHeight: viewheight ? viewheight * 0.8 : "80vh" }}
             className="z-20 themeSetterWrapper w-80 h-fit bg-white rounded-md border border-border flex"
             align="center"
-            sideOffset={6}
+            sideOffset={4}
             collisionPadding={16}
           >
             <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
@@ -304,7 +304,7 @@ export const ColorPicker = (props: {
                   onFocus={(e) => {
                     e.currentTarget.setSelectionRange(
                       1,
-                      e.currentTarget.value.length
+                      e.currentTarget.value.length,
                     );
                   }}
                   onKeyDown={(e) => {
@@ -328,7 +328,7 @@ export const ColorPicker = (props: {
                     onFocus={(e) => {
                       e.currentTarget.setSelectionRange(
                         0,
-                        e.currentTarget.value.length - 1
+                        e.currentTarget.value.length - 1,
                       );
                     }}
                     onKeyDown={(e) => {
@@ -436,7 +436,7 @@ const BGPicker = (props: {
                     onFocus={(e) => {
                       e.currentTarget.setSelectionRange(
                         1,
-                        e.currentTarget.value.length
+                        e.currentTarget.value.length,
                       );
                     }}
                     onKeyDown={(e) => {
@@ -483,7 +483,7 @@ const BGPicker = (props: {
                 value={bgColor}
                 onChange={setColorAttribute(
                   rep,
-                  props.entityID
+                  props.entityID,
                 )("theme/page-background")}
               >
                 <ColorArea

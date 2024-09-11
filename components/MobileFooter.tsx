@@ -6,6 +6,7 @@ import { Toolbar } from "components/Toolbar";
 import { ShareOptions } from "./ShareOptions";
 import { HomeButton } from "./HomeButton";
 import { useEntitySetContext } from "./EntitySetProvider";
+import { HelpPopover } from "./HelpPopover";
 
 export function MobileFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedEntity);
@@ -31,9 +32,9 @@ export function MobileFooter(props: { entityID: string }) {
         <div className="z-10 pb-2 px-2 flex justify-between">
           <HomeButton />
           <div className="flex flex-row gap-[6px] items-center ">
+            <HelpPopover />
             <ThemePopover entityID={props.entityID} />
             <ShareOptions rootEntity={props.entityID} />
-            <HelpPopover />
           </div>
         </div>
       )}
