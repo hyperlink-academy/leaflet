@@ -36,6 +36,7 @@ import {
   BlockDocPageSmall,
   BlockCanvasPageSmall,
 } from "./Icons";
+import { useEditorStates } from "src/state/useEditorState";
 
 export function Pages(props: { rootPage: string }) {
   let openPages = useUIState((s) => s.openPages);
@@ -212,8 +213,21 @@ const SwitchPageTypeButton = (props: {
   pageType: "doc" | "canvas";
 }) => {
   let { rep } = useReplicache();
+  let blocks = useEntity(
+    props.entityID,
+    props.pageType === "doc" ? "card/block" : "canvas/block",
+  );
+  let firstBlockText = useEditorStates((s) =>
+    blocks[0]?.data.value ? s.editorStates[blocks[0].data.value] : null,
+  );
   let permission = useEntitySetContext().permissions.write;
   if (!permission) return;
+  if (blocks.length > 1) return null;
+  if (
+    firstBlockText?.editor &&
+    firstBlockText?.editor.doc.textContent.length > 0
+  )
+    return null;
   return (
     <div className="flex gap-0 absolute top-2 right-2 sm:top-0 sm:-right-10  z-20">
       <Media mobile={false}>
