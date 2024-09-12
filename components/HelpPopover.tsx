@@ -4,9 +4,11 @@ import { ShortcutKey } from "./Layout";
 import { Media } from "./Media";
 import { Popover } from "./Popover";
 import { metaKey } from "src/utils/metaKey";
+import { useEntitySetContext } from "./EntitySetProvider";
 
 export const HelpPopover = () => {
-  return (
+  let entity_set = useEntitySetContext();
+  return entity_set.permissions.write ? (
     <Popover
       className="max-w-xs w-full"
       trigger={
@@ -96,7 +98,7 @@ export const HelpPopover = () => {
         </Media>
       </div>
     </Popover>
-  );
+  ) : null;
 };
 
 const KeyboardShortcut = (props: { name: string; keys: string[] }) => {

@@ -37,6 +37,7 @@ export function Pages(props: { rootPage: string }) {
   }, [openPage, props.rootPage]);
   let pages = [...openPages];
   if (openPage && !pages.includes(openPage)) pages.push(openPage);
+  let entity_set = useEntitySetContext();
 
   return (
     <div
@@ -53,17 +54,19 @@ export function Pages(props: { rootPage: string }) {
           e.currentTarget === e.target && blurPage();
         }}
       >
-        <Media mobile={false} className="h-full">
-          <div className="flex flex-col h-full justify-between mr-4 mt-1">
-            <div className="flex flex-col justify-center gap-2 ">
-              <ShareOptions rootEntity={props.rootPage} />
-              <LeafletOptions entityID={props.rootPage} />
-              <HelpPopover />
-              <hr className="text-border my-3" />
-              <HomeButton />
+        {entity_set.permissions.write ? (
+          <Media mobile={false} className="h-full">
+            <div className="flex flex-col h-full justify-between mr-4 mt-1">
+              <div className="flex flex-col justify-center gap-2 ">
+                <ShareOptions rootEntity={props.rootPage} />
+                <LeafletOptions entityID={props.rootPage} />
+                <HelpPopover />
+                <hr className="text-border my-3" />
+                <HomeButton />
+              </div>
             </div>
-          </div>
-        </Media>
+          </Media>
+        ) : null}
       </div>
       <div className="flex items-stretch">
         <Page entityID={props.rootPage} first />

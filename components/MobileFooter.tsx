@@ -28,7 +28,7 @@ export function MobileFooter(props: { entityID: string }) {
             blockID={focusedBlock.entityID}
           />
         </div>
-      ) : (
+      ) : entity_set.permissions.write ? (
         <div className="z-10 pb-2 px-2 flex justify-between">
           <HomeButton />
           <div className="flex flex-row gap-[6px] items-center ">
@@ -37,7 +37,7 @@ export function MobileFooter(props: { entityID: string }) {
             <ShareOptions rootEntity={props.entityID} />
           </div>
         </div>
-      )}
+      ) : null}
     </Media>
   );
 }
