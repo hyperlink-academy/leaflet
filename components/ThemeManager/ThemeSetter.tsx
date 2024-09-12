@@ -194,7 +194,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                       >
                         <div className="themeLeafletColor flex items-start ">
                           <ColorPicker
-                            label="Leaflet"
+                            label="Page"
                             alpha
                             value={pageValue}
                             setValue={set("theme/card-background")}
@@ -227,7 +227,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                       className="rounded-t-lg p-2  border border-border border-b-transparent shadow-md text-primary"
                       style={{
                         backgroundColor:
-                          "rgba(var(--bg-page), var(--bg-page-page))",
+                          "rgba(var(--bg-page), var(--bg-page-alpha))",
                       }}
                     >
                       <p className="font-bold">Hello!</p>
