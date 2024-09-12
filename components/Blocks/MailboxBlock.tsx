@@ -265,30 +265,29 @@ const MailboxInfo = (props: { subscriber?: boolean }) => {
     <Popover
       className="max-w-xs"
       trigger={<InfoSmall className="shrink-0 text-accent-contrast" />}
-      content={
-        <div className="text-sm text-secondary flex flex-col gap-2">
-          {props.subscriber ? (
-            <>
-              <p className="font-bold">
-                Get a notification whenever the creator posts to this mailbox!
-              </p>
-              <p>
-                Your contact info will be kept private, and you can unsubscribe
-                anytime.
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="font-bold">
-                When you post to this mailbox, subscribers will be notified!
-              </p>
-              <p>Reader contact info is kept private.</p>
-              <p>You can have one draft post at a time.</p>
-            </>
-          )}
-        </div>
-      }
-    />
+    >
+      <div className="text-sm text-secondary flex flex-col gap-2">
+        {props.subscriber ? (
+          <>
+            <p className="font-bold">
+              Get a notification whenever the creator posts to this mailbox!
+            </p>
+            <p>
+              Your contact info will be kept private, and you can unsubscribe
+              anytime.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-bold">
+              When you post to this mailbox, subscribers will be notified!
+            </p>
+            <p>Reader contact info is kept private.</p>
+            <p>You can have one draft post at a time.</p>
+          </>
+        )}
+      </div>
+    </Popover>
   );
 };
 
@@ -305,17 +304,16 @@ const SubscribePopover = (props: {
           {props.unconfirmed ? "Confirm" : "Subscribe"}
         </div>
       }
-      content={
-        <div className="text-secondary flex flex-col gap-2 py-1">
-          <SubscribeForm
-            compact
-            entityID={props.entityID}
-            role="author"
-            parent={props.parent}
-          />
-        </div>
-      }
-    />
+    >
+      <div className="text-secondary flex flex-col gap-2 py-1">
+        <SubscribeForm
+          compact
+          entityID={props.entityID}
+          role="author"
+          parent={props.parent}
+        />
+      </div>
+    </Popover>
   );
 };
 

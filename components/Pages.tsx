@@ -25,6 +25,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { DraftPostOptions } from "./Blocks/MailboxBlock";
 import { useIsMobile } from "src/hooks/isMobile";
+import { HelpPopover } from "./HelpPopover";
 
 export function Pages(props: { rootPage: string }) {
   let openPages = useUIState((s) => s.openPages);
@@ -57,6 +58,7 @@ export function Pages(props: { rootPage: string }) {
             <div className="flex flex-col justify-center gap-2 ">
               <ShareOptions rootEntity={props.rootPage} />
               <LeafletOptions entityID={props.rootPage} />
+              <HelpPopover />
               <hr className="text-border my-3" />
               <HomeButton />
             </div>
