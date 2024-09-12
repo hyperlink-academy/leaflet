@@ -1,3 +1,4 @@
+import { isMac } from "@react-aria/utils";
 import { HelpSmall } from "./Icons";
 import { ShortcutKey } from "./Layout";
 import { Media } from "./Media";
@@ -15,38 +16,49 @@ export const HelpPopover = () => {
       }
     >
       <div className="flex flex-col  text-sm gap-1  text-secondary">
-        <div className="font-bold text-base">Welcome to Leaflet!</div>
-        <div>A fun, fast, no accounts needed document editor.</div>
+        {/* <div className="font-bold text-base">Welcome to Leaflet!</div> */}
+        <div>
+          Welcome to <strong>Leaflet</strong> — a fun, fast, easy-to-share
+          document editor.
+        </div>
         <div
-          className="py-1 px-1 -mx-1 rounded-md "
+          className="py-2 px-1 -mx-1 rounded-md "
           style={{
             backgroundColor:
               "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
           }}
         >
-          <a href="/">Learn more</a> about us, or{" "}
-          <a href="mailto:contact@hyperlink.academy">email us</a> with feedback,
-          questions, and issues.
+          <a
+            href="https://leaflet.pub/0325b34c-1948-412c-a6fb-d155fd2fe6ed"
+            target="_blank"
+          >
+            <strong>Learn more</strong>
+          </a>{" "}
+          about Leaflet, or{" "}
+          <a href="mailto:contact@hyperlink.academy">
+            <strong>email us</strong>
+          </a>{" "}
+          with questions or feedback!
         </div>
         <Media mobile={false}>
           <hr className="text-border my-1" />
           <div className="flex flex-col gap-1">
-            {/*
-            BRENDAN TODO:
-            I'll seeded a couple for ya!
-
-            The meta key is a special util that shows that like curly thing on macs but just says cmd on desktop
-            Mone of the other special keys are like that, though I guess we could add them
-
-            It's possible that there's too many shortcuts and the modal will get too tall,
-            In that case i thought we could do a two column list and make the popover wider
-            (since there isn't keyboard short in mobile anyway)
-            */}
             <Label>Text Shortcuts</Label>
             <KeyboardShortcut name="Bold" keys={[metaKey(), "B"]} />
-            <KeyboardShortcut name="Underline" keys={[metaKey(), "U"]} />
             <KeyboardShortcut name="Italic" keys={[metaKey(), "I"]} />
+            <KeyboardShortcut name="Underline" keys={[metaKey(), "U"]} />
+            <KeyboardShortcut
+              name="Highlight"
+              keys={[metaKey(), isMac() ? "Ctrl" : "Meta", "H"]}
+            />
+            <KeyboardShortcut
+              name="Strikethrough"
+              keys={[metaKey(), isMac() ? "Ctrl" : "Meta", "X"]}
+            />
+            <KeyboardShortcut name="Inline Link" keys={[metaKey(), "K"]} />
+
             <Label>Block Shortcuts</Label>
+            {/* shift + up/down arrows (or click + drag): select multiple blocks */}
             <KeyboardShortcut
               name="Move Block Up"
               keys={["Shift", metaKey(), "↑"]}
@@ -54,6 +66,31 @@ export const HelpPopover = () => {
             <KeyboardShortcut
               name="Move Block Down"
               keys={["Shift", metaKey(), "↓"]}
+            />
+            {/* cmd/ctrl-a: first selects all text in a block; again selects all blocks on page */}
+            {/* cmd/ctrl + up/down arrows: go to beginning / end of doc */}
+
+            <Label>Outliner Shortcuts</Label>
+            <KeyboardShortcut
+              name="Make List"
+              keys={[metaKey(), isMac() ? "Opt" : "Alt", "L"]}
+            />
+            {/* tab / shift + tab: indent / outdent */}
+            <KeyboardShortcut
+              name="Toggle Checkbox"
+              keys={[metaKey(), "Enter"]}
+            />
+            <KeyboardShortcut
+              name="Toggle Fold"
+              keys={[metaKey(), "Shift", "Enter"]}
+            />
+            <KeyboardShortcut
+              name="Fold All"
+              keys={[metaKey(), isMac() ? "Opt" : "Alt", "Shift", "↑"]}
+            />
+            <KeyboardShortcut
+              name="Unfold All"
+              keys={[metaKey(), isMac() ? "Opt" : "Alt", "Shift", "↓"]}
             />
           </div>
         </Media>
