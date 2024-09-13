@@ -41,6 +41,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { useHandlePaste } from "./useHandlePaste";
 import { highlightSelectionPlugin } from "./plugins";
 import { inputrules } from "./inputRules";
+import { MoreOptionsTiny } from "components/Icons";
 
 export function TextBlock(
   props: BlockProps & { className: string; preview?: boolean },
@@ -270,7 +271,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
               className={`${props.className} pointer-events-none absolute top-0 left-0  italic text-tertiary `}
             >
               {props.type === "text"
-                ? "write something... or type /"
+                ? 'write something... or type "/" for options'
                 : headingLevel?.data.value === 3
                   ? "Subheader"
                   : headingLevel?.data.value === 2
@@ -279,9 +280,9 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
             </div>
           )}
         {/* if this is the block is empty and selected */}
-        {editorState.doc.textContent.length === 0 && (
+        {editorState.doc.textContent.length === 0 && selected ? (
           <button
-            className="absolute top-2 right-2 rounded bg-secondary px-1 text-sm text-tertiary"
+            className="absolute top-0.5 right-0 w-5 h-5 rounded border border-border outline outline-transparent hover:outline-border hover:text-tertiary  font-bold  rounded-md  text-sm text-border"
             onMouseDown={(e) => {
               e.preventDefault();
               console.log("yo!");
@@ -306,9 +307,9 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
               }
             }}
           >
-            /
+            <div className="-mt-[2px]">/</div>
           </button>
-        )}
+        ) : null}
         {editorState.doc.textContent.startsWith("/") && selected && (
           <BlockCommandBar
             props={props}
