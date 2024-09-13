@@ -4,7 +4,7 @@ import { theme } from "tailwind.config";
 
 export const Popover = (props: {
   trigger: React.ReactNode;
-  content: React.ReactNode;
+  children: React.ReactNode;
   align?: "start" | "end" | "center";
   background?: string;
   border?: string;
@@ -20,7 +20,7 @@ export const Popover = (props: {
           sideOffset={4}
           collisionPadding={16}
         >
-          {props.content}
+          {props.children}
           <RadixPopover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
             <PopoverArrow
               arrowFill={

@@ -15,12 +15,61 @@ import { v7 } from "uuid";
 
 import { BlockOptions } from "./BlockOptions";
 import { Block } from "./Block";
+import { useEffect } from "react";
+import { addShortcut } from "src/shortcuts";
 
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
   let entity_set = useEntitySetContext();
   let blocks = useBlocks(props.entityID);
   let foldedBlocks = useUIState((s) => s.foldedBlocks);
+  useEffect(() => {
+    return addShortcut([
+      {
+        altKey: true,
+        metaKey: true,
+        key: "ArrowUp",
+        shift: true,
+        handler: () => {
+          let allParents = blocks.reduce((acc, block) => {
+            if (!block.listData) return acc;
+            block.listData.path.forEach((p) =>
+              !acc.includes(p.entity) ? acc.push(p.entity) : null,
+            );
+            return acc;
+          }, [] as string[]);
+          useUIState.setState((s) => {
+            let foldedBlocks = [...s.foldedBlocks];
+            allParents.forEach((p) => {
+              if (!foldedBlocks.includes(p)) foldedBlocks.push(p);
+            });
+            return { foldedBlocks };
+          });
+        },
+      },
+      {
+        altKey: true,
+        metaKey: true,
+        key: "ArrowDown",
+        shift: true,
+        handler: () => {
+          let allParents = blocks.reduce((acc, block) => {
+            if (!block.listData) return acc;
+            block.listData.path.forEach((p) =>
+              !acc.includes(p.entity) ? acc.push(p.entity) : null,
+            );
+            return acc;
+          }, [] as string[]);
+          useUIState.setState((s) => {
+            let foldedBlocks = [...s.foldedBlocks].filter(
+              (f) => !allParents.includes(f),
+            );
+            return { foldedBlocks };
+          });
+        },
+      },
+    ]);
+  }, [blocks]);
 
   let lastRootBlock = blocks.findLast(
     (f) => !f.listData || f.listData.depth === 1,
