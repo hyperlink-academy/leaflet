@@ -52,7 +52,7 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
         h-full w-fit mx-auto
         max-w-[calc(100vw-12px)]
         ${pageWidth == "full" ? " sm:max-w-[calc(100vw-128px)] lg:max-w-[calc(var(--page-width-units)*2 + 24px))]" : " sm:max-w-[var(--page-width-units)]"}
-        bg-white rounded-lg
+        bg-bg-page rounded-lg
         overflow-y-scroll no-scrollbar
       `}
     >
@@ -216,9 +216,9 @@ function CanvasBlock(props: {
   let type = useEntity(props.entityID, "block/type");
   let { rep } = useReplicache();
   let isMobile = useIsMobile();
+
   let onDragEnd = useCallback(
     (dragPosition: { x: number; y: number }) => {
-      console.log(dragPosition, rep);
       rep?.mutate.assertFact({
         id: props.factID,
         entity: props.parent,
@@ -344,7 +344,7 @@ function CanvasBlock(props: {
       {...(!props.preview ? { ...longPressHandlers } : {})}
       {...(isMobile ? { ...handlers } : {})}
       id={props.preview ? undefined : elementId.block(props.entityID).container}
-      className="absolute group/canvas-block will-change-transform rounded-lg flex items-stretch touch-none origin-center"
+      className="absolute group/canvas-block will-change-transform rounded-lg flex items-stretch touch-none origin-center p-3"
       style={{
         top: 0,
         left: 0,
@@ -372,7 +372,7 @@ function CanvasBlock(props: {
           cursor-e-resize shrink-0 z-10
           hidden group-hover/canvas-block:block
           w-[5px] h-6 -ml-[3px]
-          absolute top-1/2 right-0 -translate-y-1/2 translate-x-[2px]
+          absolute top-1/2 right-3 -translate-y-1/2 translate-x-[2px]
           rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
           {...widthHandle.handlers}
         />
@@ -380,12 +380,14 @@ function CanvasBlock(props: {
 
       {!props.preview && (
         <div
-          className={`resizeHandle
+          className={`rotateHandle
             cursor-grab shrink-0 z-10
             hidden group-hover/canvas-block:block
             w-[8px] h-[8px]
-            absolute bottom-0 right-0
-            -translate-y-1/2 -translate-x-1/2
+            absolute bottom-0 -right-0
+            -translate-y-1/2 -translate-x-1/2 
+
+
             rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
           {...rotateHandle.handlers}
         />
