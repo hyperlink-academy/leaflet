@@ -2,7 +2,7 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { v7 } from "uuid";
 import { BaseBlock, Block } from "./Blocks/Block";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AddBlockLarge,
   AddSmall,
@@ -18,6 +18,7 @@ import useMeasure from "react-use-measure";
 import { useIsMobile } from "src/hooks/isMobile";
 import { Media } from "./Media";
 import { TooltipButton } from "./Buttons";
+import { useBlockKeyboardHandlers } from "./Blocks/useBlockKeyboardHandlers";
 
 export function Canvas(props: { entityID: string; preview?: boolean }) {
   let entity_set = useEntitySetContext();
@@ -46,10 +47,10 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
     <div
       ref={ref}
       id={elementId.page(props.entityID).canvasScrollArea}
-      className={`     
+      className={`
         canvasWrapper
         h-full w-fit mx-auto
-        max-w-[calc(100vw-12px)] 
+        max-w-[calc(100vw-12px)]
         ${pageWidth == "full" ? " sm:max-w-[calc(100vw-128px)] lg:max-w-[calc(var(--page-width-units)*2 + 24px))]" : " sm:max-w-[var(--page-width-units)]"}
         bg-white rounded-lg
         overflow-y-scroll no-scrollbar
@@ -318,6 +319,24 @@ function CanvasBlock(props: {
   let x = props.position.x + (dragDelta?.x || 0);
   let y = props.position.y + (dragDelta?.y || 0);
   let transform = `translate(${x}px, ${y}px) rotate(${rotation + angle}deg) scale(${!dragDelta ? "1.0" : "1.02"})`;
+  let [areYouSure, setAreYouSure] = useState(false);
+  let blockProps = useMemo(() => {
+    return {
+      pageType: "canvas" as const,
+      preview: props.preview,
+      type: type?.data.value || "text",
+      value: props.entityID,
+      factID: props.factID,
+      position: "",
+      nextPosition: "",
+      entityID: props.entityID,
+      parent: props.parent,
+      nextBlock: null,
+      previousBlock: null,
+    };
+  }, [props, type?.data.value]);
+  useBlockKeyboardHandlers(blockProps, areYouSure, setAreYouSure);
+  let isList = useEntity(props.entityID, "block/is-list");
 
   return (
     <div
@@ -337,17 +356,14 @@ function CanvasBlock(props: {
       {/* the gripper show on hover, but longpress logic needs to be added for mobile*/}
       {!props.preview && <Gripper {...handlers} />}
       <BaseBlock
-        pageType="canvas"
-        preview={props.preview}
-        type={type?.data.value || "text"}
-        value={props.entityID}
-        factID={props.factID}
-        position=""
-        nextPosition=""
-        entityID={props.entityID}
-        parent={props.parent}
-        nextBlock={null}
-        previousBlock={null}
+        {...blockProps}
+        listData={
+          isList?.data.value
+            ? { path: [], parent: props.parent, depth: 1 }
+            : undefined
+        }
+        areYouSure={areYouSure}
+        setAreYouSure={setAreYouSure}
       />
 
       {!props.preview && (
