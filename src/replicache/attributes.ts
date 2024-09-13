@@ -19,6 +19,10 @@ const PageAttributes = {
     type: "number",
     cardinality: "one",
   },
+  "canvas/narrow-width": {
+    type: "boolean",
+    cardinality: "one",
+  },
 } as const;
 
 const BlockAttributes = {
