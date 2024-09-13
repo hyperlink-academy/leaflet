@@ -270,7 +270,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
               className={`${props.className} pointer-events-none absolute top-0 left-0  italic text-tertiary `}
             >
               {props.type === "text"
-                ? "write something..."
+                ? "write something... or type /"
                 : headingLevel?.data.value === 3
                   ? "Subheader"
                   : headingLevel?.data.value === 2
@@ -279,6 +279,42 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
             </div>
           )}
         {/* if this is the block is empty and selected */}
+        {editorState.doc.textContent.length === 0 && (
+          <button
+            className="absolute top-2 right-2 rounded bg-secondary px-1 text-sm text-tertiary"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              console.log("yo!");
+              let editor =
+                useEditorStates.getState().editorStates[props.entityID];
+
+              let editorState = editor?.editor;
+              if (editorState) {
+                editor?.view?.focus();
+                let tr = editorState.tr.insertText("/", 1);
+                tr.setSelection(TextSelection.create(tr.doc, 2));
+                console.log(tr);
+                useEditorStates.setState((s) => ({
+                  editorStates: {
+                    ...s.editorStates,
+                    [props.entityID]: {
+                      ...s.editorStates[props.entityID]!,
+                      editor: editorState!.apply(tr),
+                    },
+                  },
+                }));
+              }
+            }}
+          >
+            /
+          </button>
+        )}
+        {editorState.doc.textContent.startsWith("/") && selected && (
+          <BlockCommandBar
+            props={props}
+            searchValue={editorState.doc.textContent.slice(1)}
+          />
+        )}
         {editorState.doc.textContent.startsWith("/") && selected && (
           <BlockCommandBar
             props={props}
