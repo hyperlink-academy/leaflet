@@ -1,29 +1,41 @@
 "use client";
+import { useEffect } from "react";
 import { useUIState } from "src/useUIState";
-import { Blocks } from "components/Blocks";
+import { useEntitySetContext } from "./EntitySetProvider";
+import { useSearchParams } from "next/navigation";
+import { useToaster } from "./Toast";
+
 import { focusBlock } from "src/utils/focusBlock";
-import useMeasure from "react-use-measure";
 import { elementId } from "src/utils/elementId";
-import { ThemePopover } from "./ThemeManager/ThemeSetter";
-import { Media } from "./Media";
-import { DesktopPageFooter } from "./DesktopFooter";
+import { theme } from "tailwind.config";
+
 import { Replicache } from "replicache";
 import {
   Fact,
   ReplicacheMutators,
+  useEntity,
   useReferenceToEntity,
   useReplicache,
 } from "src/replicache";
-import * as Popover from "@radix-ui/react-popover";
-import { MoreOptionsTiny, DeleteSmall, CloseTiny, PopoverArrow } from "./Icons";
-import { useToaster } from "./Toast";
+
+import { Media } from "./Media";
+import { DesktopPageFooter } from "./DesktopFooter";
 import { ShareOptions } from "./ShareOptions";
-import { MenuItem, Menu } from "./Layout";
-import { useEntitySetContext } from "./EntitySetProvider";
+import { ThemePopover } from "./ThemeManager/ThemeSetter";
 import { HomeButton } from "./HomeButton";
-import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { Canvas } from "./Canvas";
 import { DraftPostOptions } from "./Blocks/MailboxBlock";
+import { Blocks } from "components/Blocks";
+import { MenuItem, Menu } from "./Layout";
+import {
+  MoreOptionsTiny,
+  DeleteSmall,
+  CloseTiny,
+  PopoverArrow,
+  BlockDocPageSmall,
+  BlockCanvasPageSmall,
+} from "./Icons";
+import { useEditorStates } from "src/state/useEditorState";
 import { useIsMobile } from "src/hooks/isMobile";
 import { HelpPopover } from "./HelpPopover";
 
@@ -42,7 +54,7 @@ export function Pages(props: { rootPage: string }) {
   return (
     <div
       id="pages"
-      className="pages flex pt-2 pb-8 sm:py-6"
+      className="pages flex pt-2 pb-1 sm:pb-8 sm:py-6"
       onClick={(e) => {
         e.currentTarget === e.target && blurPage();
       }}
@@ -106,6 +118,7 @@ function Page(props: { entityID: string; first?: boolean }) {
       : focusedElement?.parent;
   let isFocused = focusedPageID === props.entityID;
   let isMobile = useIsMobile();
+  let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
 
   return (
     <>
@@ -118,10 +131,13 @@ function Page(props: { entityID: string; first?: boolean }) {
         />
       )}
       <div className="pageWrapper w-fit flex relative snap-center">
+        {props.first && (
+          <SwitchPageTypeButton entityID={props.entityID} pageType={type} />
+        )}
+
         <div
           onMouseDown={(e) => {
             if (e.defaultPrevented) return;
-            if (!isMobile) return;
             if (rep) {
               focusPage(props.entityID, rep);
             }
@@ -129,9 +145,10 @@ function Page(props: { entityID: string; first?: boolean }) {
           id={elementId.page(props.entityID).container}
           style={{
             backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-            width: "var(--page-width-units)",
+            width: type === "doc" ? "var(--page-width-units)" : undefined,
           }}
           className={`
+            ${type === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
       page
       grow flex flex-col
       overscroll-y-none
@@ -141,7 +158,7 @@ function Page(props: { entityID: string; first?: boolean }) {
     `}
         >
           <Media mobile={true}>
-            {!props.first && <PageOptionsMenu entityID={props.entityID} />}
+            <PageOptionsMenu entityID={props.entityID} first={props.first} />
           </Media>
           <DesktopPageFooter pageID={props.entityID} />
           {isDraft.length > 0 && (
@@ -155,11 +172,12 @@ function Page(props: { entityID: string; first?: boolean }) {
               <DraftPostOptions mailboxEntity={isDraft[0].entity} />
             </div>
           )}
-          <Blocks entityID={props.entityID} />
+
+          <PageContent entityID={props.entityID} />
         </div>
         <Media mobile={false}>
-          {isFocused && !props.first && (
-            <PageOptionsMenu entityID={props.entityID} />
+          {isFocused && (
+            <PageOptionsMenu entityID={props.entityID} first={props.first} />
           )}
         </Media>
       </div>
@@ -167,19 +185,92 @@ function Page(props: { entityID: string; first?: boolean }) {
   );
 }
 
-const PageOptionsMenu = (props: { entityID: string }) => {
+const PageContent = (props: { entityID: string }) => {
+  let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
+  if (type === "doc") return <Blocks entityID={props.entityID} />;
+  return <Canvas entityID={props.entityID} />;
+};
+
+const PageOptionsMenu = (props: {
+  entityID: string;
+  first: boolean | undefined;
+}) => {
   let permission = useEntitySetContext().permissions.write;
+  if (!permission) return;
   return (
     <div className=" z-10 w-fit absolute sm:top-2 sm:-right-[18px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
-      <button
-        className="p-1 pt-[10px] sm:p-0.5 sm:pl-0 bg-border text-bg-page sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
-        onClick={() => {
-          useUIState.getState().closePage(props.entityID);
-        }}
+      {!props.first && (
+        <button
+          className="p-1 pt-[10px] sm:p-0.5 sm:pl-0 bg-border text-bg-page sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
+          onClick={() => {
+            useUIState.getState().closePage(props.entityID);
+          }}
+        >
+          <CloseTiny />
+        </button>
+      )}
+    </div>
+  );
+};
+
+const SwitchPageTypeButton = (props: {
+  entityID: string;
+  pageType: "doc" | "canvas";
+}) => {
+  let { rep } = useReplicache();
+  let blocks = useEntity(
+    props.entityID,
+    props.pageType === "doc" ? "card/block" : "canvas/block",
+  );
+  let firstBlockText = useEditorStates((s) =>
+    blocks[0]?.data.value ? s.editorStates[blocks[0].data.value] : null,
+  );
+  let permission = useEntitySetContext().permissions.write;
+  if (!permission) return;
+  if (blocks.length > 1) return null;
+  if (
+    firstBlockText?.editor &&
+    firstBlockText?.editor.doc.textContent.length > 0
+  )
+    return null;
+  return (
+    <div className="flex gap-0 absolute top-2 right-2 sm:top-0 sm:-right-10  z-20">
+      <Media mobile={false}>
+        <div className="h-fit mt-[30px] -mr-[5px] rotate-90">
+          <PopoverArrow
+            arrowFill={theme.colors["bg-page"]}
+            arrowStroke={theme.colors.border}
+          />
+        </div>
+      </Media>
+      <div
+        className={`flex sm:flex-col gap-1  rounded-full border bg-bg-page border-border p-0.5`}
       >
-        <CloseTiny />
-      </button>
-      {/* {permission && <OptionsMenu/>} */}
+        <button
+          className={`rounded-full p-0.5 border-2 ${props.pageType === "doc" ? "bg-tertiary text-bg-page border-tertiary" : "border-transparent text-border"}`}
+          onClick={() => {
+            rep?.mutate.assertFact({
+              entity: props.entityID,
+              attribute: "page/type",
+              data: { type: "page-type-union", value: "doc" },
+            });
+          }}
+        >
+          <BlockDocPageSmall />
+        </button>
+        <button
+          className={`rounded-full p-0.5 border-2 ${props.pageType === "canvas" ? "bg-tertiary text-bg-page border-tertiary" : "border-transparent text-border"}`}
+          onClick={() => {
+            rep?.mutate.assertFact({
+              entity: props.entityID,
+              attribute: "page/type",
+              data: { type: "page-type-union", value: "canvas" },
+            });
+          }}
+        >
+          <BlockCanvasPageSmall />
+        </button>
+      </div>
     </div>
   );
 };

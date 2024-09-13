@@ -7,13 +7,14 @@ import {
 import { useRef, useState } from "react";
 import { Link } from "react-aria-components";
 import { useBlocks } from "src/hooks/queries/useBlocks";
-import { PermissionToken } from "src/replicache";
+import { PermissionToken, useEntity } from "src/replicache";
 import { deleteLeaflet } from "actions/deleteLeaflet";
 import { removeDocFromHome } from "./storage";
 import { mutate } from "swr";
 import useMeasure from "react-use-measure";
 import { ButtonPrimary } from "components/Buttons";
 import { LeafletOptions } from "./LeafletOptions";
+import { CanvasContent } from "components/Canvas";
 
 export const LeafletPreview = (props: {
   token: PermissionToken;
@@ -56,9 +57,28 @@ export const LeafletPreview = (props: {
 };
 
 const LeafletContent = (props: { entityID: string }) => {
+  let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
   let [ref, dimensions] = useMeasure();
+
+  if (type === "canvas")
+    return (
+      <div
+        className={`pageLinkBlockPreview shrink-0 h-[200px] w-full overflow-clip relative bg-bg-page shadow-sm border border-border-light rounded-md`}
+      >
+        <div
+          className={`absolute top-0 left-0 origin-top-left pointer-events-none w-full h-full`}
+          style={{
+            width: `1150px`,
+            height: "calc(1150px * 2)",
+            transform: `scale(calc((${dimensions.width} / 1150 )))`,
+          }}
+        >
+          <CanvasContent entityID={props.entityID} preview />
+        </div>
+      </div>
+    );
 
   return (
     <div
@@ -76,6 +96,7 @@ const LeafletContent = (props: { entityID: string }) => {
         {blocks.slice(0, 10).map((b, index, arr) => {
           return (
             <BlockPreview
+              pageType="doc"
               entityID={b.value}
               previousBlock={arr[index - 1] || null}
               nextBlock={arr[index + 1] || null}

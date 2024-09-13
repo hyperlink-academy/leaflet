@@ -31,6 +31,35 @@ export type MutationContext = {
 
 type Mutation<T> = (args: T, ctx: MutationContext) => Promise<void>;
 
+const addCanvasBlock: Mutation<{
+  parent: string;
+  permission_set: string;
+  factID: string;
+  type: Fact<"block/type">["data"]["value"];
+  newEntityID: string;
+  position: { x: number; y: number };
+}> = async (args, ctx) => {
+  await ctx.createEntity({
+    entityID: args.newEntityID,
+    permission_set: args.permission_set,
+  });
+  await ctx.assertFact({
+    entity: args.parent,
+    id: args.factID,
+    data: {
+      type: "spatial-reference",
+      value: args.newEntityID,
+      position: args.position,
+    },
+    attribute: "canvas/block",
+  });
+  await ctx.assertFact({
+    entity: args.newEntityID,
+    data: { type: "block-type-union", value: args.type },
+    attribute: "block/type",
+  });
+};
+
 const addBlock: Mutation<{
   parent: string;
   permission_set: string;
@@ -218,6 +247,7 @@ const outdentBlock: Mutation<{
 };
 
 const addPageLinkBlock: Mutation<{
+  type: "canvas" | "doc";
   permission_set: string;
   blockEntity: string;
   firstBlockEntity: string;
@@ -232,6 +262,11 @@ const addPageLinkBlock: Mutation<{
     entity: args.blockEntity,
     attribute: "block/card",
     data: { type: "reference", value: args.pageEntity },
+  });
+  await ctx.assertFact({
+    attribute: "page/type",
+    entity: args.pageEntity,
+    data: { type: "page-type-union", value: args.type },
   });
   await addBlock(
     {
@@ -490,6 +525,7 @@ const toggleTodoState: Mutation<{ entityID: string }> = async (args, ctx) => {
 export const mutations = {
   retractAttribute,
   addBlock,
+  addCanvasBlock,
   addLastBlock,
   outdentBlock,
   moveBlockUp,

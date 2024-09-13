@@ -17,6 +17,7 @@ import { v7 } from "uuid";
 import { scanIndex } from "src/replicache/utils";
 import { indent, outdent } from "src/utils/list-operations";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
+import { isTextBlock } from "src/utils/isTextBlock";
 
 type PropsRef = MutableRefObject<BlockProps & { entity_set: { set: string } }>;
 export const TextBlockKeymap = (
@@ -101,6 +102,7 @@ export const TextBlockKeymap = (
     },
     ArrowUp: (state, _tr, view) => {
       if (!view) return false;
+      if (state.doc.textContent.startsWith("/")) return true;
       if (useUIState.getState().selectedBlocks.length > 1) return true;
       if (view.state.selection.from !== view.state.selection.to) return false;
       const viewClientRect = view.dom.getBoundingClientRect();
@@ -118,6 +120,7 @@ export const TextBlockKeymap = (
     },
     ArrowDown: (state, tr, view) => {
       if (!view) return true;
+      if (state.doc.textContent.startsWith("/")) return true;
       if (useUIState.getState().selectedBlocks.length > 1) return true;
       if (view.state.selection.from !== view.state.selection.to) return false;
       const viewClientRect = view.dom.getBoundingClientRect();
@@ -232,18 +235,21 @@ const backspace =
             ),
           10,
         );
+
+        return false;
       }
-      return false;
     }
 
-    let block =
-      useEditorStates.getState().editorStates[
-        propsRef.current.previousBlock.value
-      ];
+    let block = !!propsRef.current.previousBlock
+      ? useEditorStates.getState().editorStates[
+          propsRef.current.previousBlock.value
+        ]
+      : null;
     if (
       block &&
+      propsRef.current.previousBlock &&
       block.editor.doc.textContent.length === 0 &&
-      !propsRef.current.previousBlock.listData
+      !propsRef.current.previousBlock?.listData
     ) {
       repRef.current?.mutate.removeBlock({
         blockEntity: propsRef.current.previousBlock.value,
@@ -261,13 +267,16 @@ const backspace =
       return true;
     }
 
-    if (propsRef.current.previousBlock.type === "card") {
+    if (
+      propsRef.current.previousBlock &&
+      !isTextBlock[propsRef.current.previousBlock?.type]
+    ) {
       focusBlock(propsRef.current.previousBlock, { type: "end" });
       view?.dom.blur();
       return true;
     }
 
-    if (!block) return false;
+    if (!block || !propsRef.current.previousBlock) return false;
 
     repRef.current?.mutate.removeBlock({
       blockEntity: propsRef.current.entityID,
@@ -318,6 +327,7 @@ const enter =
     dispatch?: (tr: Transaction) => void,
     view?: EditorView,
   ) => {
+    if (state.doc.textContent.startsWith("/")) return true;
     let tr = state.tr;
     let newContent = tr.doc.slice(state.selection.anchor);
     tr.delete(state.selection.anchor, state.doc.content.size);
@@ -330,6 +340,31 @@ const enter =
         propsRef.current.type === "heading" && state.selection.anchor <= 2
           ? ("heading" as const)
           : ("text" as const);
+      if (propsRef.current.pageType === "canvas") {
+        let el = document.getElementById(
+          elementId.block(propsRef.current.entityID).container,
+        );
+        let [position] =
+          (await repRef.current?.query((tx) =>
+            scanIndex(tx).vae(propsRef.current.entityID, "canvas/block"),
+          )) || [];
+        if (!position || !el) return;
+
+        let box = el.getBoundingClientRect();
+
+        await repRef.current?.mutate.addCanvasBlock({
+          newEntityID,
+          factID: v7(),
+          permission_set: propsRef.current.entity_set.set,
+          parent: propsRef.current.parent,
+          type: blockType,
+          position: {
+            x: position.data.position.x,
+            y: position.data.position.y + box.height + 12,
+          },
+        });
+        return;
+      }
       if (propsRef.current.listData) {
         if (state.doc.content.size <= 2) {
           return shifttab(propsRef, repRef)();

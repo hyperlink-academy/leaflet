@@ -31,6 +31,7 @@ export type Block = {
   };
 };
 export type BlockProps = {
+  pageType: Fact<"page/type">["data"]["value"];
   entityID: string;
   parent: string;
   position: string;
@@ -48,9 +49,10 @@ export function Block(props: BlockProps & { preview?: boolean }) {
 
   // focus block on longpress, shouldnt the type be based on the block type (?)
   let { isLongPress, handlers } = useLongPress(() => {
+    console.log("wat");
     if (isLongPress.current) {
       focusBlock(
-        { type: "card", value: props.entityID, parent: props.parent },
+        { type: props.type, value: props.entityID, parent: props.parent },
         { type: "start" },
       );
     }

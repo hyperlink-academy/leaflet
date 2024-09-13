@@ -9,25 +9,24 @@ import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { usePageMetadata } from "src/hooks/queries/usePageMetadata";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
+import { Canvas, CanvasBackground, CanvasContent } from "components/Canvas";
 
 export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
-  let { rep } = useReplicache();
   let page = useEntity(props.entityID, "block/card");
-  let pageEntity = page ? page.data.value : props.entityID;
-  let leafletMetadata = usePageMetadata(pageEntity);
+  let type =
+    useEntity(page?.data.value || null, "page/type")?.data.value || "doc";
+  let { rep } = useReplicache();
 
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
 
-  let isOpen = useUIState((s) => s.openPages).includes(pageEntity);
+  let isOpen = useUIState((s) => s.openPages).includes(page?.data.value || "");
 
   return (
     <div
-      style={{ "--list-marker-width": "20px" } as CSSProperties}
-      className={`
+      className={`w-full cursor-pointer
         pageLinkBlockWrapper relative group/pageLinkBlock
-        w-full h-[104px]
         bg-bg-page border shadow-sm outline outline-1 rounded-lg
         flex overflow-clip
         ${
@@ -38,10 +37,40 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
               : "border-border-light outline-transparent hover:outline-border-light"
         }
         `}
+      onClick={(e) => {
+        if (!page) return;
+        if (e.isDefaultPrevented()) return;
+        if (e.shiftKey) return;
+        e.preventDefault();
+        e.stopPropagation();
+        useUIState.getState().openPage(props.parent, page.data.value);
+        if (rep) focusPage(page.data.value, rep);
+      }}
+    >
+      {type === "canvas" && page ? (
+        <CanvasLinkBlock entityID={page?.data.value} />
+      ) : (
+        <DocLinkBlock {...props} />
+      )}
+    </div>
+  );
+}
+export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
+  let { rep } = useReplicache();
+  let page = useEntity(props.entityID, "block/card");
+  let pageEntity = page ? page.data.value : props.entityID;
+  let leafletMetadata = usePageMetadata(pageEntity);
+
+  return (
+    <div
+      style={{ "--list-marker-width": "20px" } as CSSProperties}
+      className={`
+        w-full h-[104px]
+        `}
     >
       <>
         <div
-          className="pageLinkBlockContent w-full flex overflow-clip cursor-pointer"
+          className="pageLinkBlockContent w-full flex overflow-clip cursor-pointer h-full"
           onClick={(e) => {
             if (e.isDefaultPrevented()) return;
             if (e.shiftKey) return;
@@ -117,6 +146,7 @@ export function PagePreview(props: { entityID: string }) {
         {blocks.slice(0, 20).map((b, index, arr) => {
           return (
             <BlockPreview
+              pageType="doc"
               entityID={b.value}
               previousBlock={arr[index - 1] || null}
               nextBlock={arr[index + 1] || null}
@@ -132,10 +162,34 @@ export function PagePreview(props: { entityID: string }) {
   );
 }
 
+const CanvasLinkBlock = (props: { entityID: string; preview?: boolean }) => {
+  let pageWidth = `var(--page-width-unitless)`;
+  return (
+    <div
+      style={{ contain: "size layout paint" }}
+      className={`pageLinkBlockPreview shrink-0 h-[200px] w-full overflow-clip relative`}
+    >
+      <div
+        className={`absolute top-0 left-0 origin-top-left pointer-events-none w-full`}
+        style={{
+          width: `calc(1px * ${pageWidth})`,
+          height: "calc(1150px * 2)",
+          transform: `scale(calc((${pageWidth} / 1150 )))`,
+        }}
+      >
+        {props.preview ? (
+          <CanvasBackground />
+        ) : (
+          <CanvasContent entityID={props.entityID} preview />
+        )}
+      </div>
+    </div>
+  );
+};
+
 export function BlockPreview(
   b: BlockProps & {
     previewRef: React.RefObject<HTMLDivElement>;
-    size?: "small" | "large";
   },
 ) {
   let ref = useRef<HTMLDivElement | null>(null);

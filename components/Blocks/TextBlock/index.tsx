@@ -31,7 +31,7 @@ import { useUIState } from "src/useUIState";
 import { MarkType, DOMParser as ProsemirrorDOMParser } from "prosemirror-model";
 import { useAppEventListener } from "src/eventBus";
 import { addLinkBlock } from "src/utils/addLinkBlock";
-import { BlockOptions } from "components/Blocks/BlockOptions";
+import { BlockCommandBar } from "components/Blocks/BlockCommandBar";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { isIOS } from "@react-aria/utils";
 import { useIsMobile } from "src/hooks/isMobile";
@@ -41,6 +41,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { useHandlePaste } from "./useHandlePaste";
 import { highlightSelectionPlugin } from "./plugins";
 import { inputrules } from "./inputRules";
+import { MoreOptionsTiny } from "components/Icons";
 
 export function TextBlock(
   props: BlockProps & { className: string; preview?: boolean },
@@ -148,7 +149,6 @@ export function RenderedTextBlock(props: {
 
 export function BaseTextBlock(props: BlockProps & { className: string }) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
-
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
   let entity_set = useEntitySetContext();
   let propsRef = useRef({ ...props, entity_set });
@@ -271,7 +271,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
               className={`${props.className} pointer-events-none absolute top-0 left-0  italic text-tertiary `}
             >
               {props.type === "text"
-                ? "write something..."
+                ? 'write something... or type "/"'
                 : headingLevel?.data.value === 3
                   ? "Subheader"
                   : headingLevel?.data.value === 2
@@ -280,14 +280,46 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
             </div>
           )}
         {/* if this is the block is empty and selected */}
-        {editorState.doc.textContent.length === 0 && selected && (
-          <BlockOptions
-            factID={factID}
-            entityID={props.entityID}
-            parent={props.parent}
-            position={props.position}
-            nextPosition={props.nextPosition}
-            first={first}
+        {editorState.doc.textContent.length === 0 && selected ? (
+          <button
+            className="absolute top-0.5 right-0 w-5 h-5 rounded border border-border outline outline-transparent hover:outline-border hover:text-tertiary  font-bold  rounded-md  text-sm text-border"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              console.log("yo!");
+              let editor =
+                useEditorStates.getState().editorStates[props.entityID];
+
+              let editorState = editor?.editor;
+              if (editorState) {
+                editor?.view?.focus();
+                let tr = editorState.tr.insertText("/", 1);
+                tr.setSelection(TextSelection.create(tr.doc, 2));
+                console.log(tr);
+                useEditorStates.setState((s) => ({
+                  editorStates: {
+                    ...s.editorStates,
+                    [props.entityID]: {
+                      ...s.editorStates[props.entityID]!,
+                      editor: editorState!.apply(tr),
+                    },
+                  },
+                }));
+              }
+            }}
+          >
+            <div className="-mt-[2px]">/</div>
+          </button>
+        ) : null}
+        {editorState.doc.textContent.startsWith("/") && selected && (
+          <BlockCommandBar
+            props={props}
+            searchValue={editorState.doc.textContent.slice(1)}
+          />
+        )}
+        {editorState.doc.textContent.startsWith("/") && selected && (
+          <BlockCommandBar
+            props={props}
+            searchValue={editorState.doc.textContent.slice(1)}
           />
         )}
       </div>

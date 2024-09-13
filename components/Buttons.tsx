@@ -1,4 +1,7 @@
 import React from "react";
+import * as RadixTooltip from "@radix-ui/react-tooltip";
+import { theme } from "tailwind.config";
+import { PopoverArrow } from "./Icons";
 
 type ButtonProps = Omit<JSX.IntrinsicElements["button"], "content">;
 export function ButtonPrimary(
@@ -53,5 +56,53 @@ export const HoverButton = (props: {
         </div>
       </div>
     </div>
+  );
+};
+
+export const TooltipButton = (props: {
+  onMouseDown?: (e: React.MouseEvent) => void;
+  className?: string;
+  children: React.ReactNode;
+  content: React.ReactNode;
+  side?: "top" | "right" | "bottom" | "left" | undefined;
+}) => {
+  return (
+    // toolbar button does not control the highlight theme setter
+    // if toolbar button is updated, be sure to update there as well
+    <RadixTooltip.TooltipProvider>
+      <RadixTooltip.Root>
+        <RadixTooltip.Trigger
+          className={props.className}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            props.onMouseDown && props.onMouseDown(e);
+          }}
+        >
+          {props.children}
+        </RadixTooltip.Trigger>
+
+        <RadixTooltip.Portal>
+          <RadixTooltip.Content
+            side={props.side ? props.side : undefined}
+            sideOffset={6}
+            alignOffset={12}
+            className="z-10 bg-border rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
+          >
+            {props.content}
+            <RadixTooltip.Arrow
+              asChild
+              width={16}
+              height={8}
+              viewBox="0 0 16 8"
+            >
+              <PopoverArrow
+                arrowFill={theme.colors["border"]}
+                arrowStroke="transparent"
+              />
+            </RadixTooltip.Arrow>
+          </RadixTooltip.Content>
+        </RadixTooltip.Portal>
+      </RadixTooltip.Root>
+    </RadixTooltip.TooltipProvider>
   );
 };

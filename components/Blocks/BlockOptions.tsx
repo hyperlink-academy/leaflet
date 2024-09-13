@@ -1,7 +1,7 @@
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import {
-  BlockPageLinkSmall,
+  BlockDocPageSmall,
   BlockImageSmall,
   BlockLinkSmall,
   CheckTiny,
@@ -34,7 +34,7 @@ import { useSmoker, useToaster } from "components/Toast";
 
 type Props = {
   parent: string;
-  entityID: string | null;
+  entityID: string;
   position: string | null;
   nextPosition: string | null;
   factID?: string | undefined;
@@ -139,6 +139,7 @@ export function BlockOptions(props: Props) {
                   }
                   let newPage = v7();
                   await rep?.mutate.addPageLinkBlock({
+                    type: "doc",
                     blockEntity: entity,
                     firstBlockFactID: v7(),
                     firstBlockEntity: v7(),
@@ -149,7 +150,7 @@ export function BlockOptions(props: Props) {
                   if (rep) focusPage(newPage, rep, "focusFirstBlock");
                 }}
               >
-                <BlockPageLinkSmall />
+                <BlockDocPageSmall />
               </ToolbarButton>
               <ToolbarButton
                 tooltipContent="Add a Link"

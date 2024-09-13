@@ -72,15 +72,15 @@ export function Blocks(props: { entityID: string }) {
   }, [blocks]);
 
   let lastRootBlock = blocks.findLast(
-    (f) => !f.listData || f.listData.depth === 1
+    (f) => !f.listData || f.listData.depth === 1,
   );
 
   let lastVisibleBlock = blocks.findLast(
     (f) =>
       !f.listData ||
       !f.listData.path.find(
-        (path) => foldedBlocks.includes(path.entity) && f.value !== path.entity
-      )
+        (path) => foldedBlocks.includes(path.entity) && f.value !== path.entity,
+      ),
   );
 
   return (
@@ -102,7 +102,7 @@ export function Blocks(props: { entityID: string }) {
               type: "text",
               position: generateKeyBetween(
                 lastRootBlock?.position || null,
-                null
+                null,
               ),
               newEntityID,
             });
@@ -124,8 +124,8 @@ export function Blocks(props: { entityID: string }) {
             !f.listData ||
             !f.listData.path.find(
               (path) =>
-                foldedBlocks.includes(path.entity) && f.value !== path.entity
-            )
+                foldedBlocks.includes(path.entity) && f.value !== path.entity,
+            ),
         )
         .map((f, index, arr) => {
           let nextBlock = arr[index + 1];
@@ -140,6 +140,7 @@ export function Blocks(props: { entityID: string }) {
           }
           return (
             <Block
+              pageType="doc"
               {...f}
               key={f.value}
               entityID={f.value}
@@ -170,7 +171,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
   let editorState = useEditorStates((s) =>
     props.lastBlock?.type === "text"
       ? s.editorStates[props.lastBlock.value]
-      : null
+      : null,
   );
 
   if (!entity_set.permissions.write) return null;
@@ -192,7 +193,7 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
             permission_set: entity_set.set,
             position: generateKeyBetween(
               props.lastBlock?.position || null,
-              null
+              null,
             ),
             newEntityID,
           });
@@ -210,13 +211,6 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
           " "
         )}
       </div>
-      <BlockOptions
-        parent={props.entityID}
-        entityID={null}
-        position={props.lastBlock?.position || null}
-        nextPosition={null}
-        first={!props.lastBlock}
-      />
     </div>
   );
 }
@@ -243,7 +237,7 @@ const BlockListBottom = (props: {
         ) {
           focusBlock(
             { ...props.lastVisibleBlock, type: "text" },
-            { type: "end" }
+            { type: "end" },
           );
         } else {
           // else add a new text block at the end and focus it
@@ -254,7 +248,7 @@ const BlockListBottom = (props: {
             type: "text",
             position: generateKeyBetween(
               props.lastRootBlock?.position || null,
-              null
+              null,
             ),
             newEntityID,
           });

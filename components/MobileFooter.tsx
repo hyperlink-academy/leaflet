@@ -13,7 +13,7 @@ export function MobileFooter(props: { entityID: string }) {
   let entity_set = useEntitySetContext();
 
   return (
-    <Media mobile className="mobileFooter w-full z-10 -mt-6 touch-none">
+    <Media mobile className="mobileFooter w-full z-10 touch-none">
       {focusedBlock &&
       focusedBlock.entityType == "block" &&
       entity_set.permissions.write ? (

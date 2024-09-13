@@ -21,6 +21,9 @@
     --list-marker-width: 36px;
     --page-width-unitless: min(624, calc(var(--leaflet-width-unitless) - 12));
     --page-width-units: min(624px, calc(100vw - 12px));
+
+    --gripperSVG: url("/gripperPattern.svg");
+    --gripperSVG2: url("/gripperPattern2.svg");
   }
   @media (max-width: 640px) {
     :root {

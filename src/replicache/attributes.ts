@@ -3,6 +3,26 @@ const PageAttributes = {
     type: "ordered-reference",
     cardinality: "many",
   },
+  "page/type": {
+    type: "page-type-union",
+    cardinality: "one",
+  },
+  "canvas/block": {
+    type: "spatial-reference",
+    cardinality: "many",
+  },
+  "canvas/block/width": {
+    type: "number",
+    cardinality: "one",
+  },
+  "canvas/block/rotation": {
+    type: "number",
+    cardinality: "one",
+  },
+  "canvas/narrow-width": {
+    type: "boolean",
+    cardinality: "one",
+  },
 } as const;
 
 const BlockAttributes = {
@@ -124,6 +144,11 @@ type Attribute = typeof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
   text: { type: "text"; value: string };
   string: { type: "string"; value: string };
+  "spatial-reference": {
+    type: "spatial-reference";
+    position: { x: number; y: number };
+    value: string;
+  };
   "ordered-reference": {
     type: "ordered-reference";
     position: string;
@@ -150,6 +175,7 @@ export type Data<A extends keyof typeof Attributes> = {
     value: string;
   };
   reference: { type: "reference"; value: string };
+  "page-type-union": { type: "page-type-union"; value: "doc" | "canvas" };
   "block-type-union": {
     type: "block-type-union";
     value:
