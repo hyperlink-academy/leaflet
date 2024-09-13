@@ -101,8 +101,9 @@ async function Backspace({ e, props, rep, areYouSure, setAreYouSure }: Args) {
     el.tagName === "INPUT" ||
     el.tagName === "TEXTAREA" ||
     el.contentEditable === "true"
-  )
-    return;
+  ) {
+    if ((el as HTMLInputElement).value !== "") return;
+  }
 
   // if the block is a card or mailbox...
   if (props.type === "card" || props.type === "mailbox") {
