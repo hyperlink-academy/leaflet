@@ -271,7 +271,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
               className={`${props.className} pointer-events-none absolute top-0 left-0  italic text-tertiary `}
             >
               {props.type === "text"
-                ? 'write something... or type "/" for options'
+                ? 'write something... or type "/"'
                 : headingLevel?.data.value === 3
                   ? "Subheader"
                   : headingLevel?.data.value === 2
