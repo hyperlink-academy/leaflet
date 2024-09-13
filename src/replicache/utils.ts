@@ -2,7 +2,7 @@ import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as driz from "drizzle-orm";
 import { Fact } from ".";
 import { replicache_clients } from "drizzle/schema";
-import { Attributes } from "./attributes";
+import { Attributes, FilterAttributes } from "./attributes";
 import { ReadTransaction, WriteTransaction } from "replicache";
 
 export function FactWithIndexes(f: Fact<keyof typeof Attributes>) {
@@ -46,6 +46,17 @@ export const scanIndex = (tx: ReadTransaction) => ({
     return (
       await tx
         .scan<Fact<A>>({ indexName: "eav", prefix: `${entity}-${attribute}` })
+        .toArray()
+    ).filter((f) => f.attribute === attribute);
+  },
+  async vae<
+    A extends keyof FilterAttributes<{
+      type: "reference" | "ordered-reference" | "spatial-reference";
+    }>,
+  >(entity: string, attribute: A) {
+    return (
+      await tx
+        .scan<Fact<A>>({ indexName: "vae", prefix: `${entity}-${attribute}` })
         .toArray()
     ).filter((f) => f.attribute === attribute);
   },

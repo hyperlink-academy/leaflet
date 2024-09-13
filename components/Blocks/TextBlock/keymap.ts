@@ -344,11 +344,13 @@ const enter =
         let el = document.getElementById(
           elementId.block(propsRef.current.entityID).container,
         );
-        if (!el) return;
+        let [position] =
+          (await repRef.current?.query((tx) =>
+            scanIndex(tx).vae(propsRef.current.entityID, "canvas/block"),
+          )) || [];
+        if (!position || !el) return;
+
         let box = el.getBoundingClientRect();
-        let top = parseFloat(el.style.top) || 0,
-          left = parseFloat(el.style.left) || 0;
-        console.log(box, el);
 
         await repRef.current?.mutate.addCanvasBlock({
           newEntityID,
@@ -357,8 +359,8 @@ const enter =
           parent: propsRef.current.parent,
           type: blockType,
           position: {
-            x: left,
-            y: top + box.height + 12,
+            x: position.data.position.x,
+            y: position.data.position.y + box.height + 12,
           },
         });
         return;
