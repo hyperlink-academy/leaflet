@@ -3,7 +3,12 @@ import { useEntitySetContext } from "./EntitySetProvider";
 import { v7 } from "uuid";
 import { BaseBlock, Block } from "./Blocks/Block";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AddBlockLarge, AddSmall } from "./Icons";
+import {
+  AddBlockLarge,
+  AddSmall,
+  CanvasShrinkSmall,
+  CanvasWidenSmall,
+} from "./Icons";
 import { useDrag } from "src/hooks/useDrag";
 import { useLongPress } from "src/hooks/useLongPress";
 import { focusBlock } from "src/utils/focusBlock";
@@ -12,6 +17,7 @@ import { useUIState } from "src/useUIState";
 import useMeasure from "react-use-measure";
 import { useIsMobile } from "src/hooks/isMobile";
 import { Media } from "./Media";
+import { TooltipButton } from "./Buttons";
 
 export function Canvas(props: { entityID: string; preview?: boolean }) {
   let entity_set = useEntitySetContext();
@@ -34,20 +40,29 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
     return () => abort.abort();
   });
 
+  let [pageWidth, setPageWidth] = useState<"full" | "half">("full");
+
   return (
     <div
       ref={ref}
       id={elementId.page(props.entityID).canvasScrollArea}
-      className={`
-        h-full
-  canvasWrapper mx-auto
-  w-fit
-  max-w-[calc(100vw-12px)] sm:max-w-[calc(100vw-128px)] lg:max-w-[1152px]
-  bg-white rounded-lg
-  overflow-y-scroll no-scrollbar
-`}
+      className={`     
+        canvasWrapper
+        h-full w-fit mx-auto
+        max-w-[calc(100vw-12px)] 
+        ${pageWidth == "full" ? " sm:max-w-[calc(100vw-128px)] lg:max-w-[calc(var(--page-width-units)*2 + 24px))]" : " sm:max-w-[var(--page-width-units)]"}
+        bg-white rounded-lg
+        overflow-y-scroll no-scrollbar
+      `}
     >
-      <AddCanvasBlockButton entityID={props.entityID} entity_set={entity_set} />
+      <AddCanvasBlockButton
+        entityID={props.entityID}
+        entity_set={entity_set}
+        pageWidth={pageWidth}
+        setPageWidth={(pageWidth) => {
+          setPageWidth(pageWidth === "full" ? "half" : "full");
+        }}
+      />
       <CanvasContent {...props} />
     </div>
   );
@@ -95,7 +110,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
         minHeight: `calc(${height}px + 32px)`,
         contain: "size layout paint",
       }}
-      className="relative h-full w-[1150px]"
+      className="relative h-full w-[1272px]"
     >
       <CanvasBackground />
       {blocks
@@ -124,38 +139,64 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
 const AddCanvasBlockButton = (props: {
   entityID: string;
   entity_set: { set: string };
+  pageWidth: "full" | "half";
+  setPageWidth: (pageWidth: "full" | "half") => void;
 }) => {
   let { rep } = useReplicache();
   return (
-    <button
-      className="absolute right-2 sm:top-4 sm:right-4 bottom-2 sm:bottom-auto z-10 p-0.5 rounded-full bg-bg-page border-2 outline outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-1"
-      onMouseDown={() => {
-        let page = document.getElementById(
-          elementId.page(props.entityID).canvasScrollArea,
-        );
-        if (!page) return;
-        let newEntityID = v7();
-        rep?.mutate.addCanvasBlock({
-          newEntityID,
-          parent: props.entityID,
-          position: {
-            x: page?.clientWidth + page?.scrollLeft - 468,
-            y: 32 + page.scrollTop,
-          },
-          factID: v7(),
-          type: "text",
-          permission_set: props.entity_set.set,
-        });
-        setTimeout(() => {
-          focusBlock(
-            { type: "text", value: newEntityID, parent: props.entityID },
-            { type: "start" },
+    <div className="absolute right-2 sm:top-4 sm:right-4 bottom-2 sm:bottom-auto z-10 flex flex-col gap-1 justify-center">
+      <TooltipButton
+        side="left"
+        content={
+          <div className="flex flex-col justify-end text-center ">
+            <div>Add a Block!</div>
+            <div className="font-normal">or double click anywhere</div>
+          </div>
+        }
+        className="w-fit p-2 rounded-full bg-accent-1 border-2 outline outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-2"
+        onMouseDown={() => {
+          let page = document.getElementById(
+            elementId.page(props.entityID).canvasScrollArea,
           );
-        }, 20);
-      }}
-    >
-      <AddBlockLarge />
-    </button>
+          if (!page) return;
+          let newEntityID = v7();
+          rep?.mutate.addCanvasBlock({
+            newEntityID,
+            parent: props.entityID,
+            position: {
+              x: page?.clientWidth + page?.scrollLeft - 468,
+              y: 32 + page.scrollTop,
+            },
+            factID: v7(),
+            type: "text",
+            permission_set: props.entity_set.set,
+          });
+          setTimeout(() => {
+            focusBlock(
+              { type: "text", value: newEntityID, parent: props.entityID },
+              { type: "start" },
+            );
+          }, 20);
+        }}
+      >
+        <AddSmall />
+      </TooltipButton>
+
+      <TooltipButton
+        side="left"
+        onMouseDown={() => {
+          props.setPageWidth(props.pageWidth);
+        }}
+        content={props.pageWidth === "full" ? "Narrow Canvas" : "Widen Canvas"}
+        className="hidden sm:block  bg-accent-2 border-2 outline outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-1 p-1 rounded-full w-fit mx-auto"
+      >
+        {props.pageWidth === "full" ? (
+          <CanvasShrinkSmall />
+        ) : (
+          <CanvasWidenSmall />
+        )}
+      </TooltipButton>
+    </div>
   );
 };
 
