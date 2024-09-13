@@ -34,7 +34,7 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
 
   let [toolbarState, setToolbarState] = useState<ToolbarTypes>("default");
 
-  let focusedBlock = useUIState((s) => s.focusedEntity);
+  let focusedEntity = useUIState((s) => s.focusedEntity);
   let selectedBlocks = useUIState((s) => s.selectedBlocks);
   let activeEditor = useEditorStates((s) => s.editorStates[props.blockID]);
 
@@ -146,12 +146,11 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
           <button
             className="toolbarBackToDefault hover:text-accent-contrast"
             onClick={() => {
-              if (toolbarState === "multiselect" || toolbarState === "block") {
-                useUIState.setState({ selectedBlocks: [] });
-                rep && focusPage(props.pageID, rep);
-              }
-
-              if (toolbarState === "default") {
+              if (
+                toolbarState === "multiselect" ||
+                toolbarState === "block" ||
+                toolbarState === "default"
+              ) {
                 useUIState.setState(() => ({
                   focusedEntity: {
                     entityType: "page",
@@ -161,7 +160,7 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
                 }));
               } else {
                 setToolbarState("default");
-                focusedBlock && keepFocus(focusedBlock.entityID);
+                focusedEntity && keepFocus(focusedEntity.entityID);
               }
             }}
           >

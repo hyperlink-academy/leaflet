@@ -3,21 +3,23 @@ import { useUIState } from "src/useUIState";
 import { Media } from "./Media";
 import { Toolbar } from "./Toolbar";
 import { useEntitySetContext } from "./EntitySetProvider";
+import { focusBlock } from "src/utils/focusBlock";
 
 export function DesktopPageFooter(props: { pageID: string }) {
-  let focusedBlock = useUIState((s) => s.focusedEntity);
+  let focusedEntity = useUIState((s) => s.focusedEntity);
   let focusedBlockParentID =
-    focusedBlock?.entityType === "page"
-      ? focusedBlock.entityID
-      : focusedBlock?.parent;
+    focusedEntity?.entityType === "page"
+      ? focusedEntity.entityID
+      : focusedEntity?.parent;
   let entity_set = useEntitySetContext();
+
   return (
     <Media
       mobile={false}
       className="absolute bottom-4 w-full z-10 pointer-events-none"
     >
-      {focusedBlock &&
-        focusedBlock.entityType === "block" &&
+      {focusedEntity &&
+        focusedEntity.entityType === "block" &&
         entity_set.permissions.write &&
         focusedBlockParentID === props.pageID && (
           <div
@@ -28,7 +30,7 @@ export function DesktopPageFooter(props: { pageID: string }) {
           >
             <Toolbar
               pageID={focusedBlockParentID}
-              blockID={focusedBlock.entityID}
+              blockID={focusedEntity.entityID}
             />
           </div>
         )}
