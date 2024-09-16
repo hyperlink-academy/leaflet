@@ -197,7 +197,9 @@ const backspace =
       let depth = propsRef.current.listData.depth;
       repRef.current?.mutate.moveChildren({
         oldParent: propsRef.current.entityID,
-        newParent: propsRef.current.listData.parent || propsRef.current.parent,
+        newParent: propsRef.current.previousBlock?.listData
+          ? propsRef.current.previousBlock.value
+          : propsRef.current.listData.parent || propsRef.current.parent,
         after:
           propsRef.current.previousBlock?.listData?.path.find(
             (f) => f.depth === depth,
@@ -372,7 +374,8 @@ const enter =
         let hasChild =
           propsRef.current.nextBlock?.listData &&
           propsRef.current.nextBlock.listData.depth >
-            propsRef.current.listData.depth;
+            propsRef.current.listData.depth &&
+          state.selection.anchor === state.doc.content.size - 1;
         position = generateKeyBetween(
           hasChild ? null : propsRef.current.position,
           propsRef.current.nextPosition,
@@ -387,6 +390,13 @@ const enter =
           type: blockType,
           position,
         });
+        if (!hasChild) {
+          await repRef.current?.mutate.moveChildren({
+            oldParent: propsRef.current.entityID,
+            newParent: newEntityID,
+            after: null,
+          });
+        }
         await repRef.current?.mutate.assertFact({
           entity: newEntityID,
           attribute: "block/is-list",
