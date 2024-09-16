@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { EditorState } from "prosemirror-state";
+import { Command, EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 export let useEditorStates = create(() => ({
   lastXPosition: 0,
@@ -8,6 +8,7 @@ export let useEditorStates = create(() => ({
       | {
           editor: InstanceType<typeof EditorState>;
           view?: InstanceType<typeof EditorView>;
+          keymap?: { [key: string]: Command };
         }
       | undefined;
   },
@@ -17,6 +18,7 @@ export const setEditorState = (
   entityID: string,
   s: {
     editor: InstanceType<typeof EditorState>;
+    keymap?: { [key: string]: Command };
   },
 ) => {
   useEditorStates.setState((oldState) => {

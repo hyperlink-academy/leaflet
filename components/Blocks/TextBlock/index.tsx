@@ -172,19 +172,22 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
     (s) => s.editorStates[props.entityID],
   )?.editor;
   useEffect(() => {
-    if (!editorState)
+    if (!editorState) {
+      let km = TextBlockKeymap(propsRef, repRef);
       setEditorState(props.entityID, {
+        keymap: km,
         editor: EditorState.create({
           schema,
           plugins: [
             ySyncPlugin(value),
-            TextBlockKeymap(propsRef, repRef),
+            keymap(km),
             inputrules(propsRef, repRef),
             keymap(baseKeymap),
             highlightSelectionPlugin,
           ],
         }),
       });
+    }
   }, [editorState, props.entityID, props.parent, value]);
   useEffect(() => {
     return () => {
