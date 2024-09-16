@@ -67,13 +67,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   let blocks = useEntity(props.entityID, "canvas/block");
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
-  let [height, setHeight] = useState<number | undefined>(undefined);
-  useEffect(() => {
-    setHeight(
-      document.getElementById(elementId.page(props.entityID).canvasScrollArea)
-        ?.scrollHeight,
-    );
-  }, [blocks, props.entityID]);
+  let height = Math.max(...blocks.map((f) => f.data.position.y));
   return (
     <div
       onClick={async (e) => {
@@ -103,7 +97,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
         }
       }}
       style={{
-        minHeight: `calc(${height}px + 32px)`,
+        minHeight: height + 512,
         contain: "size layout paint",
       }}
       className="relative h-full w-[1272px]"
