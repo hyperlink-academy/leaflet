@@ -15,6 +15,7 @@ import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 import { elementId } from "src/utils/elementId";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 import { copySelection } from "src/utils/copySelection";
+import { isTextBlock } from "src/utils/isTextBlock";
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
@@ -76,7 +77,7 @@ export function SelectionManager() {
               ),
             )) || [];
           let folded = useUIState.getState().foldedBlocks;
-          blocks.filter(
+          blocks = blocks.filter(
             (f) =>
               !f.listData ||
               !f.listData.path.find(
@@ -246,6 +247,7 @@ export function SelectionManager() {
         let [sortedBlocks, siblings] = await getSortedSelection();
         let focusedBlock = useUIState.getState().focusedEntity;
         if (!e.shiftKey) {
+          if (e.defaultPrevented) return;
           if (sortedBlocks.length === 1) return;
           let firstBlock = sortedBlocks[0];
           if (!firstBlock) return;
