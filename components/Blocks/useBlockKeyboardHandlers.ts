@@ -138,6 +138,33 @@ async function Enter({ e, props, rep, entity_set }: Args) {
     el.contentEditable === "true"
   )
     return;
+  if (props.pageType === "canvas") {
+    let el = document.getElementById(elementId.block(props.entityID).container);
+    let [position] =
+      (await rep?.query((tx) =>
+        scanIndex(tx).vae(props.entityID, "canvas/block"),
+      )) || [];
+    if (!position || !el) return;
+
+    let box = el.getBoundingClientRect();
+
+    await rep.mutate.addCanvasBlock({
+      newEntityID,
+      factID: v7(),
+      permission_set: entity_set.set,
+      parent: props.parent,
+      type: "text",
+      position: {
+        x: position.data.position.x,
+        y: position.data.position.y + box.height + 12,
+      },
+    });
+    focusBlock(
+      { type: "text", value: newEntityID, parent: props.parent },
+      { type: "start" },
+    );
+    return;
+  }
 
   // if it's a list, create a new list item at the same depth
   if (props.listData) {
