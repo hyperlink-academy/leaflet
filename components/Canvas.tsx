@@ -31,8 +31,16 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
     ref.current?.addEventListener(
       "wheel",
       (e) => {
-        e.preventDefault();
         if (!el) return;
+        if (
+          (e.deltaX > 0 && el.scrollLeft >= el.scrollWidth - el.clientWidth) ||
+          (e.deltaX < 0 && el.scrollLeft <= 0) ||
+          (e.deltaY > 0 && el.scrollTop >= el.scrollHeight - el.clientHeight) ||
+          (e.deltaY < 0 && el.scrollTop <= 0)
+        ) {
+          return;
+        }
+        e.preventDefault();
         el.scrollLeft += e.deltaX;
         el.scrollTop += e.deltaY;
       },
