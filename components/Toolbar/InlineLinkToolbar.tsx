@@ -89,7 +89,7 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
           if (e.key === "Enter") {
             e.preventDefault();
             let editor = focusedEditor?.editor;
-            if (!editor || !start || !end || !focusedBlock) return;
+            if (!editor || start === null || !end || !focusedBlock) return;
             let tr = editor.tr;
             tr.addMark(
               start,
