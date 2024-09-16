@@ -10,14 +10,13 @@ import {
 } from "components/ThemeManager/ThemeProvider";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
-import { createNewLeaflet } from "actions/createNewLeaflet";
 import { createIdentity } from "actions/createIdentity";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { IdentitySetter } from "./IdentitySetter";
-import { HoverButton } from "components/Buttons";
 import { HomeHelp } from "./HomeHelp";
 import { LeafletList } from "./LeafletList";
+import { CreateNewLeafletButton } from "./CreateNewButton";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -75,18 +74,8 @@ export default async function Home() {
             <ThemeBackgroundProvider entityID={root_entity}>
               <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col-reverse sm:gap-4 px-2 sm:px-6 ">
                 <div className="homeOptions z-10 shrink-0 sm:static absolute bottom-0  place-self-end sm:place-self-start flex sm:flex-col flex-row-reverse gap-2 sm:w-fit w-full items-center pb-2 pt-1 sm:pt-7">
-                  <form action={createNewLeaflet}>
-                    <button className="contents">
-                      <HoverButton
-                        icon=<AddTiny className="m-1 shrink-0" />
-                        label="Create New"
-                        background="bg-accent-1"
-                        text="text-accent-2"
-                      />
-                    </button>
-                  </form>
+                  <CreateNewLeafletButton />
                   <HomeHelp />
-
                   <ThemePopover entityID={root_entity} home />
                 </div>
                 <LeafletList />
