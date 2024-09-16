@@ -51,11 +51,20 @@ export const MultiselectToolbar = (props: {
 // Helper function to get sorted selection
 async function getSortedSelection(rep: Replicache<ReplicacheMutators>) {
   const selectedBlocks = useUIState.getState().selectedBlocks;
+  const foldedBlocks = useUIState.getState().foldedBlocks;
   const siblings =
     (await rep?.query((tx) =>
       getBlocksWithType(tx, selectedBlocks[0].parent),
     )) || [];
-  return siblings.filter((s) =>
-    selectedBlocks.find((sb) => sb.value === s.value),
-  );
+  return siblings.filter((s) => {
+    let selected = selectedBlocks.find((sb) => sb.value === s.value);
+    if (s.listData && !selected) {
+      //Select the children of folded list blocks
+      return s.listData.path.find(
+        (p) =>
+          selectedBlocks.find((sb) => sb.value === p.entity) &&
+          foldedBlocks.includes(p.entity),
+      );
+    }
+  });
 }

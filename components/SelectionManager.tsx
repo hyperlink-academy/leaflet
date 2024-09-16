@@ -30,13 +30,23 @@ export function SelectionManager() {
     if (!entity_set.permissions.write) return;
     const getSortedSelection = async () => {
       let selectedBlocks = useUIState.getState().selectedBlocks;
+      let foldedBlocks = useUIState.getState().foldedBlocks;
       let siblings =
         (await rep?.query((tx) =>
           getBlocksWithType(tx, selectedBlocks[0].parent),
         )) || [];
-      let sortedBlocks = siblings.filter((s) =>
-        selectedBlocks.find((sb) => sb.value === s.value),
-      );
+      let sortedBlocks = siblings.filter((s) => {
+        let selected = selectedBlocks.find((sb) => sb.value === s.value);
+        if (s.listData && !selected) {
+          //Select the children of folded list blocks
+          return s.listData.path.find(
+            (p) =>
+              selectedBlocks.find((sb) => sb.value === p.entity) &&
+              foldedBlocks.includes(p.entity),
+          );
+        }
+        return selected;
+      });
       return [sortedBlocks, siblings];
     };
     let removeListener = addShortcut([
