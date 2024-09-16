@@ -56,8 +56,10 @@ async function renderBlock(
     return renderToStaticMarkup(<img src={src.data.src} />);
   }
   if (b.type === "heading") {
-    let headingLevel = await scanIndex(tx).eav(b.value, "block/heading-level");
-    wrapper = "h" + headingLevel[0].data.value;
+    let headingLevel =
+      (await scanIndex(tx).eav(b.value, "block/heading-level"))[0]?.data
+        .value || 1;
+    wrapper = "h" + headingLevel;
   }
   if (b.type === "link") {
     let [url] = await scanIndex(tx).eav(b.value, "link/url");
