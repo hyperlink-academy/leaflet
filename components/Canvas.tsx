@@ -139,8 +139,10 @@ const AddCanvasBlockButton = (props: {
   entity_set: { set: string };
 }) => {
   let { rep } = useReplicache();
+  let { permissions } = useEntitySetContext();
   let narrowWidth = useEntity(props.entityID, "canvas/narrow-width")?.data
     .value;
+  if (!permissions.write) return null;
   return (
     <div className="absolute right-2 sm:top-4 sm:right-4 bottom-2 sm:bottom-auto z-10 flex flex-col gap-1 justify-center">
       <TooltipButton
