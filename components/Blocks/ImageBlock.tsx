@@ -12,7 +12,7 @@ import { elementId } from "src/utils/elementId";
 import { useEffect } from "react";
 import { deleteBlock } from "./DeleteBlock";
 
-export function ImageBlock(props: BlockProps) {
+export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let { rep } = useReplicache();
   let image = useEntity(props.value, "block/image");
   let entity_set = useEntitySetContext();
@@ -32,7 +32,7 @@ export function ImageBlock(props: BlockProps) {
     return (
       <div className="grow w-full">
         <label
-          id={elementId.block(props.entityID).input}
+          id={props.preview ? undefined : elementId.block(props.entityID).input}
           className={`group/image-block w-full h-[104px] text-tertiary hover:text-accent-contrast hover:font-bold hover:cursor-pointer flex flex-auto gap-2 items-center justify-center p-2 ${isSelected ? "border-2 border-tertiary font-bold" : "border border-border"} hover:border-2 border-dashed  hover:border-accent-contrast rounded-lg`}
           onMouseDown={(e) => e.preventDefault()}
           onKeyDown={(e) => {

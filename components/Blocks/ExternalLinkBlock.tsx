@@ -15,7 +15,9 @@ import { elementId } from "src/utils/elementId";
 import { deleteBlock } from "./DeleteBlock";
 import { focusBlock } from "src/utils/focusBlock";
 
-export const ExternalLinkBlock = (props: BlockProps) => {
+export const ExternalLinkBlock = (
+  props: BlockProps & { preview?: boolean },
+) => {
   let previewImage = useEntity(props.entityID, "link/preview");
   let title = useEntity(props.entityID, "link/title");
   let description = useEntity(props.entityID, "link/description");
@@ -34,7 +36,7 @@ export const ExternalLinkBlock = (props: BlockProps) => {
   if (!url) {
     return (
       <label
-        id={elementId.block(props.entityID).input}
+        id={props.preview ? undefined : elementId.block(props.entityID).input}
         className={`w-full h-[104px] text-tertiary hover:text-accent-contrast hover:cursor-pointer flex flex-auto gap-2 items-center justify-center p-2 ${isSelected ? "border-2 border-tertiary" : "border border-border"} hover:border-2 border-dashed rounded-lg`}
         onMouseDown={() => {
           focusBlock(
