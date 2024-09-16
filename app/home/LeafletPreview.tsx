@@ -22,7 +22,7 @@ export const LeafletPreview = (props: {
 }) => {
   let [state, setState] = useState<"normal" | "deleting">("normal");
   return (
-    <div className="relative h-40">
+    <div className="relative max-h-40 h-40">
       <ThemeProvider local entityID={props.leaflet_id}>
         <div className="rounded-lg hover:shadow-sm overflow-clip border border-border outline outline-transparent hover:outline-border bg-bg-leaflet grow w-full h-full">
           {state === "normal" ? (
@@ -48,7 +48,7 @@ export const LeafletPreview = (props: {
             <LeafletAreYouSure token={props.token} setState={setState} />
           )}
         </div>
-        <div className="flex justify-end pt-1">
+        <div className="flex justify-end pt-1 shrink-0">
           <LeafletOptions leaflet={props.token} setState={setState} />
         </div>
       </ThemeProvider>
@@ -65,7 +65,7 @@ const LeafletContent = (props: { entityID: string }) => {
   if (type === "canvas")
     return (
       <div
-        className={`pageLinkBlockPreview shrink-0 h-[200px] w-full overflow-clip relative bg-bg-page shadow-sm border border-border-light rounded-md`}
+        className={`pageLinkBlockPreview shrink-0 h-[136x] w-full overflow-clip relative bg-bg-page shadow-sm  rounded-md`}
       >
         <div
           className={`absolute top-0 left-0 origin-top-left pointer-events-none w-full h-full`}
