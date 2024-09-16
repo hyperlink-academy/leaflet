@@ -35,7 +35,9 @@ export function LinkButton(props: { setToolbarState: (s: "link") => void }) {
         e.preventDefault();
         props.setToolbarState("link");
       }}
-      disabled={focusedEditor?.editor.selection.empty || !focusedEditor}
+      disabled={
+        !focusedEditor || (focusedEditor?.editor.selection.empty && !isLink)
+      }
       tooltipContent={
         <div className="text-accent-contrast underline">Inline Link</div>
       }
@@ -51,8 +53,22 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
     focusedBlock ? s.editorStates[focusedBlock.entityID] : null,
   );
   useEffect(() => {
+    if (focusedEditor) {
+      let isLink;
+      let { to, from, $cursor } = focusedEditor.editor
+        .selection as TextSelection;
+      if ($cursor) isLink = !!schema.marks.link.isInSet($cursor.marks());
+      if (to !== from)
+        isLink = !!rangeHasMark(
+          focusedEditor.editor,
+          schema.marks.link,
+          from,
+          to,
+        );
+      if (isLink) return;
+    }
     if (focusedEditor?.editor.selection.empty) props.onClose();
-  }, [focusedEditor?.editor.selection.empty, props]);
+  }, [focusedEditor, props]);
   let content = "";
   let start: number | null = null;
   let end: number | null = null;
