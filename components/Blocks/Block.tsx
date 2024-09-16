@@ -16,6 +16,7 @@ import { MailboxBlock } from "./MailboxBlock";
 import { HeadingBlock } from "./HeadingBlock";
 import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
 import { AreYouSure } from "./DeleteBlock";
+import { useEntitySetContext } from "components/EntitySetProvider";
 
 export type Block = {
   factID: string;
@@ -195,6 +196,7 @@ export const ListMarker = (
     children.length > 0;
 
   let depth = props.listData?.depth;
+  let { permissions } = useEntitySetContext();
   let { rep } = useReplicache();
   return (
     <div
@@ -235,13 +237,14 @@ export const ListMarker = (
       {checklist && (
         <button
           onClick={() => {
-            rep?.mutate.assertFact({
-              entity: props.value,
-              attribute: "block/check-list",
-              data: { type: "boolean", value: !checklist.data.value },
-            });
+            if (permissions.write)
+              rep?.mutate.assertFact({
+                entity: props.value,
+                attribute: "block/check-list",
+                data: { type: "boolean", value: !checklist.data.value },
+              });
           }}
-          className={`${checklist?.data.value ? "text-accent-contrast" : "text-border"}`}
+          className={`${checklist?.data.value ? "text-accent-contrast" : "text-border"} ${permissions.write ? "cursor-default" : ""}`}
         >
           {checklist?.data.value ? <CheckboxChecked /> : <CheckboxEmpty />}
         </button>
