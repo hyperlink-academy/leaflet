@@ -109,6 +109,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
         <Popover.Trigger>
           <HoverButton
             icon=<PaintSmall />
+            noLabelOnMobile
             label="Theme"
             background="bg-bg-page"
             text="text-bg-page"
