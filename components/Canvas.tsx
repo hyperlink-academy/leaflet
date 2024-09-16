@@ -281,10 +281,11 @@ function CanvasBlock(props: {
     [props, rep, rect, rotation],
   );
   let rotateHandle = useDrag({ onDragEnd: RotateOnDragEnd });
+  let { permissions } = useEntitySetContext();
 
   let { isLongPress, handlers: longPressHandlers } = useLongPress(
     () => {
-      if (isLongPress.current) {
+      if (isLongPress.current && permissions.write) {
         focusBlock(
           {
             type: type?.data.value || "text",
@@ -354,7 +355,7 @@ function CanvasBlock(props: {
       }}
     >
       {/* the gripper show on hover, but longpress logic needs to be added for mobile*/}
-      {!props.preview && <Gripper {...handlers} />}
+      {!props.preview && permissions.write && <Gripper {...handlers} />}
       <BaseBlock
         {...blockProps}
         listData={
@@ -366,7 +367,7 @@ function CanvasBlock(props: {
         setAreYouSure={setAreYouSure}
       />
 
-      {!props.preview && (
+      {!props.preview && permissions.write && (
         <div
           className={`resizeHandle
           cursor-e-resize shrink-0 z-10
@@ -378,7 +379,7 @@ function CanvasBlock(props: {
         />
       )}
 
-      {!props.preview && (
+      {!props.preview && permissions.write && (
         <div
           className={`rotateHandle
             cursor-grab shrink-0 z-10
