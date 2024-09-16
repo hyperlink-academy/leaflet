@@ -20,7 +20,6 @@ export function focusBlock(
   let nextBlockID = block.value;
   let nextBlock = useEditorStates.getState().editorStates[nextBlockID];
   if (!nextBlock || !nextBlock.view) return;
-  nextBlock.view.dom.focus({ preventScroll: true });
   let nextBlockViewClientRect = nextBlock.view.dom.getBoundingClientRect();
   let tr = nextBlock.editor.tr;
   let pos: { pos: number } | null = null;
@@ -56,11 +55,10 @@ export function focusBlock(
     }
   }
 
-  let newState = nextBlock.editor.apply(
+  nextBlock.view.dispatch(
     tr.setSelection(TextSelection.create(tr.doc, pos?.pos || 1)),
   );
-
-  setEditorState(nextBlockID, { editor: newState });
+  nextBlock.view.focus();
 }
 
 type Position =
