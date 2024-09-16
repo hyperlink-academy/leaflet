@@ -80,6 +80,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
         if (e.currentTarget !== e.target) return;
         useUIState.setState(() => ({
           selectedBlocks: [],
+          focusedEntity: { entityType: "page", entityID: props.entityID },
         }));
         if (e.detail === 2 || e.ctrlKey || e.metaKey) {
           let parentRect = e.currentTarget.getBoundingClientRect();
@@ -331,6 +332,9 @@ function CanvasBlock(props: {
   }, [props, type?.data.value]);
   useBlockKeyboardHandlers(blockProps, areYouSure, setAreYouSure);
   let isList = useEntity(props.entityID, "block/is-list");
+  let isFocused = useUIState(
+    (s) => s.focusedEntity?.entityID === props.entityID,
+  );
 
   return (
     <div
@@ -342,7 +346,7 @@ function CanvasBlock(props: {
       style={{
         top: 0,
         left: 0,
-        zIndex: dragDelta ? 10 : undefined,
+        zIndex: dragDelta || isFocused ? 10 : undefined,
         width: width + (widthHandle.dragDelta?.x || 0),
         transform,
       }}
