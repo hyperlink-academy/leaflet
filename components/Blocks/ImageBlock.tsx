@@ -29,6 +29,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   }, [isSelected]);
 
   if (!image) {
+    if (!entity_set.permissions.write) return null;
     return (
       <div className="grow w-full">
         <label

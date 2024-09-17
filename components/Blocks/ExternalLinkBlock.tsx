@@ -18,6 +18,7 @@ import { focusBlock } from "src/utils/focusBlock";
 export const ExternalLinkBlock = (
   props: BlockProps & { preview?: boolean },
 ) => {
+  let { permissions } = useEntitySetContext();
   let previewImage = useEntity(props.entityID, "link/preview");
   let title = useEntity(props.entityID, "link/title");
   let description = useEntity(props.entityID, "link/description");
@@ -34,6 +35,7 @@ export const ExternalLinkBlock = (
   }, [isSelected]);
 
   if (!url) {
+    if (!permissions.write) return null;
     return (
       <label
         id={props.preview ? undefined : elementId.block(props.entityID).input}

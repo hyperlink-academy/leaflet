@@ -195,8 +195,6 @@ const PageOptionsMenu = (props: {
   entityID: string;
   first: boolean | undefined;
 }) => {
-  let permission = useEntitySetContext().permissions.write;
-  if (!permission) return;
   return (
     <div className=" z-10 w-fit absolute sm:top-2 sm:-right-[18px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
       {!props.first && (
