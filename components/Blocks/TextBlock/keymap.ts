@@ -24,50 +24,12 @@ import { indent, outdent } from "src/utils/list-operations";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { isTextBlock } from "src/utils/isTextBlock";
 
-let commandBuffer = {
-  commandInProgress: false,
-  buffer: [] as string[],
-};
-const runCommands = () => {
-  commandBuffer.commandInProgress = false;
-  let focusedBlock = useUIState.getState().focusedEntity;
-  let commands = commandBuffer.buffer.slice(0);
-  commandBuffer.buffer = [];
-  if (focusedBlock?.entityType !== "block") return;
-  let editorState =
-    useEditorStates.getState().editorStates[focusedBlock.entityID];
-  for (let c of commands) {
-    editorState?.keymap?.[c]?.(
-      editorState.editor,
-      editorState.view?.dispatch,
-      editorState.view,
-    );
-  }
-};
-
-const bufferCommands = (commands: { [k: string]: Command }) => {
-  return Object.fromEntries(
-    Object.entries(commands).map((entry) => {
-      return [
-        entry[0],
-        ((...args: Parameters<Command>) => {
-          if (commandBuffer.commandInProgress) {
-            commandBuffer.buffer.push(entry[0]);
-            return true;
-          }
-          return entry[1](...args);
-        }) as Command,
-      ];
-    }),
-  );
-};
-
 type PropsRef = MutableRefObject<BlockProps & { entity_set: { set: string } }>;
 export const TextBlockKeymap = (
   propsRef: PropsRef,
   repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
 ) =>
-  bufferCommands({
+  ({
     "Meta-b": toggleMark(schema.marks.strong),
     "Ctrl-b": toggleMark(schema.marks.strong),
     "Meta-u": toggleMark(schema.marks.underline),
@@ -372,7 +334,6 @@ const enter =
     dispatch?: (tr: Transaction) => void,
     view?: EditorView,
   ) => {
-    commandBuffer.commandInProgress = true;
     if (state.doc.textContent.startsWith("/")) return true;
     let tr = state.tr;
     let newContent = tr.doc.slice(state.selection.anchor);
@@ -513,7 +474,6 @@ const enter =
           { type: "start" },
         );
       }
-      runCommands();
     }, 10);
     return true;
   };
