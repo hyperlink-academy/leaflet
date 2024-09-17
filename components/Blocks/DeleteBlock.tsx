@@ -114,6 +114,16 @@ export async function deleteBlock(
 
   //  the next and previous blocks in the block list
 
+  let parentType = await rep?.query((tx) =>
+    scanIndex(tx).eav(focusedBlock?.parent, "page/type"),
+  );
+  if (parentType[0]?.data.value === "canvas") {
+    useUIState
+      .getState()
+      .setFocusedBlock({ entityType: "page", entityID: focusedBlock.parent });
+    useUIState.getState().setSelectedBlocks([]);
+    return;
+  }
   let siblings =
     (await rep?.query((tx) => getBlocksWithType(tx, focusedBlock?.parent))) ||
     [];
