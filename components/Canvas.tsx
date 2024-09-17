@@ -56,9 +56,6 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
         rounded-lg
         overflow-y-scroll no-scrollbar
       `}
-      style={{
-        backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-      }}
     >
       <AddCanvasBlockButton entityID={props.entityID} entity_set={entity_set} />
       <CanvasContent {...props} />
