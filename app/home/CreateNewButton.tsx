@@ -22,7 +22,12 @@ export const CreateNewLeafletButton = (props: {}) => {
         />
       }
     >
-      <MenuItem onSelect={() => createNewLeaflet("doc")}>
+      <MenuItem
+        onSelect={async () => {
+          let id = await createNewLeaflet("doc", false);
+          window.open(`/${id}`, "_blank");
+        }}
+      >
         <BlockDocPageSmall />{" "}
         <div className="flex flex-col">
           <div>Start New Doc</div>
@@ -32,8 +37,9 @@ export const CreateNewLeafletButton = (props: {}) => {
         </div>
       </MenuItem>
       <MenuItem
-        onSelect={() => {
-          createNewLeaflet("canvas");
+        onSelect={async () => {
+          let id = await createNewLeaflet("canvas", false);
+          window.open(`/${id}`, "_blank");
         }}
       >
         <BlockCanvasPageSmall />
