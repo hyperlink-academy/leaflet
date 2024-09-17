@@ -65,10 +65,11 @@ const LeafletContent = (props: { entityID: string }) => {
   if (type === "canvas")
     return (
       <div
-        className={`pageLinkBlockPreview shrink-0 h-[136x] w-full overflow-clip relative bg-bg-page shadow-sm  rounded-md`}
+        ref={ref}
+        className={`pageLinkBlockPreview shrink-0 h-full w-full overflow-clip relative bg-bg-page shadow-sm  rounded-md`}
       >
         <div
-          className={`absolute top-0 left-0 origin-top-left pointer-events-none w-full h-full`}
+          className={`absolute top-0 left-0 origin-top-left pointer-events-none `}
           style={{
             width: `1150px`,
             height: "calc(1150px * 2)",
