@@ -163,7 +163,6 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
   let selected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
-  let first = props.previousBlock === null;
   let headingLevel = useEntity(props.entityID, "block/heading-level");
 
   let [value, factID] = useYJSValue(props.entityID);
@@ -228,7 +227,9 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
         });
       }}
     >
-      <div className={` flex items-center justify-between w-full `}>
+      <div
+        className={`flex items-center justify-between w-full ${selected && props.pageType === "canvas" && "bg-bg-page rounded-md"} `}
+      >
         <pre
           data-entityid={props.entityID}
           onBlur={async () => {
@@ -268,15 +269,16 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
           props.previousBlock === null &&
           props.nextBlock === null && (
             <div
-              className={`${props.className} pointer-events-none absolute top-0 left-0  italic text-tertiary `}
+              className={`${props.className} pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col`}
             >
               {props.type === "text"
-                ? 'write something... or type "/"'
+                ? "write something..."
                 : headingLevel?.data.value === 3
                   ? "Subheader"
                   : headingLevel?.data.value === 2
                     ? "Header"
                     : "Title"}
+              <div className=" text-xs">or type &quot;/&quot; for commands</div>
             </div>
           )}
         {/* if this is the block is empty and selected */}

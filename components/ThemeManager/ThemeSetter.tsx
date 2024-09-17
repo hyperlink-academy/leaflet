@@ -140,6 +140,9 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
               </div>
 
               <div
+                onClick={(e) => {
+                  e.currentTarget === e.target && setOpenPicker("leaflet");
+                }}
                 style={{
                   backgroundImage: `url(${backgroundImage?.data.src})`,
                   backgroundRepeat: backgroundRepeat ? "repeat" : "no-repeat",
@@ -151,7 +154,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
               >
                 <div className={`flex flex-col z-10 mt-4 -mb-[6px] `}>
                   <div
-                    className="themeLeafletControls text-accent-2 flex flex-col gap-2 h-full  bg-bg-leaflet p-2 rounded-md border border-accent-2 shadow-[0_0_0_1px_rgb(var(--accent))]"
+                    className="themeLeafletControls text-accent-2 flex flex-col gap-2 h-full  bg-bg-leaflet p-2 rounded-md border border-accent-2 shadow-[0_0_0_1px_rgb(var(--accent-1))]"
                     style={{
                       backgroundColor: "rgba(var(--accent-1), 0.6)",
                     }}
@@ -182,13 +185,25 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                   />
                 </div>
 
-                <div className="font-bold relative text-center text-lg py-2  rounded-md bg-accent-1 text-accent-2 shadow-md">
-                  Example Button
+                <div
+                  onClick={(e) => {
+                    e.target === e.currentTarget && setOpenPicker("accent-1");
+                  }}
+                  className="pointer-cursor font-bold relative text-center text-lg py-2  rounded-md bg-accent-1 text-accent-2 shadow-md flex items-center justify-center"
+                >
+                  <div
+                    className="cursor-pointer w-fit"
+                    onClick={() => {
+                      setOpenPicker("accent-2");
+                    }}
+                  >
+                    Example Button
+                  </div>
                 </div>
                 {!props.home && (
                   <>
                     {/* <hr className="my-3" /> */}
-                    <div className="flex flex-col pt-8 -mb-[6px] z-10">
+                    <div className="flex flex-col mt-8 -mb-[6px] z-10">
                       <div
                         className="themeLeafletControls flex flex-col gap-2 h-full text-primary bg-bg-leaflet p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))]"
                         style={{ backgroundColor: "rgba(var(--bg-page, 0.6)" }}
@@ -225,14 +240,24 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                     </div>
 
                     <div
-                      className="rounded-t-lg p-2  border border-border border-b-transparent shadow-md text-primary"
+                      onClick={(e) => {
+                        e.currentTarget === e.target && setOpenPicker("page");
+                      }}
+                      className="rounded-t-lg cursor-pointer p-2  border border-border border-b-transparent shadow-md text-primary"
                       style={{
                         backgroundColor:
                           "rgba(var(--bg-page), var(--bg-page-alpha))",
                       }}
                     >
-                      <p className="font-bold">Hello!</p>
-                      <small className="">
+                      <p
+                        onClick={() => {
+                          setOpenPicker("text");
+                        }}
+                        className=" cursor-pointer font-bold w-fit"
+                      >
+                        Hello!
+                      </p>
+                      <small onClick={() => setOpenPicker("text")}>
                         Welcome to{" "}
                         <span className="font-bold text-accent-contrast">
                           Leaflet
