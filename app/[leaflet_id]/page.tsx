@@ -8,6 +8,7 @@ import { Attributes } from "src/replicache/attributes";
 import { createServerClient } from "@supabase/ssr";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Leaflet } from "./Leaflet";
+import { scanIndexLocal } from "src/replicache/utils";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -72,22 +73,41 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     root: rootEntity,
   });
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
-  let blocks = initialFacts
-    .filter((f) => f.attribute === "card/block" && f.entity === rootEntity)
-    .map((_f) => {
-      let block = _f as Fact<"card/block">;
-      let type = initialFacts.find(
-        (f) => f.entity === block.data.value && f.attribute === "block/type",
-      ) as Fact<"block/type"> | undefined;
-      if (!type) return null;
-      return { ...block.data, type: type.data.value, parent: block.entity };
-    })
-    .flatMap((f) => (f ? [f] : []))
-    .sort((a, b) => (a.position > b.position ? 1 : -1))
-    .filter((b) => b.type === "text" || b.type === "heading");
+  let scan = scanIndexLocal(initialFacts);
+  let pageType = scan.eav(rootEntity, "page/type")[0]?.data.value || "doc";
+  let firstBlock, secondBlock;
+  if (pageType === "canvas") {
+    [firstBlock, secondBlock] = scan
+      .eav(rootEntity, "canvas/block")
+      .map((b) => {
+        let type = scan.eav(b.data.value, "block/type");
+        return {
+          ...b.data,
+          type: type[0].data.value,
+        };
+      })
+      .filter((b) => b.type === "text" || b.type === "heading")
+      .sort((a, b) => {
+        if (a.position.y === b.position.y) {
+          return a.position.x - b.position.x;
+        }
+        return a.position.y - b.position.y;
+      });
+  } else {
+    [firstBlock, secondBlock] = scan
+      .eav(rootEntity, "card/block")
+      .map((b) => {
+        let type = scan.eav(b.data.value, "block/type");
+        return {
+          ...b.data,
+          type: type[0].data.value,
+        };
+      })
 
+      .filter((b) => b.type === "text" || b.type === "heading")
+      .sort((a, b) => (a.position > b.position ? 1 : -1));
+  }
   let metadata: Metadata = { title: "Untitled Leaflet", description: " " };
-  let [firstBlock, secondBlock] = blocks;
 
   let titleFact = initialFacts.find(
     (f) => f.entity === firstBlock?.value && f.attribute === "block/text",

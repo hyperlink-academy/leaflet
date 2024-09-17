@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useBlocks } from "src/hooks/queries/useBlocks";
-import { useEntity } from "src/replicache";
+import {
+  useBlocks,
+  useCanvasBlocksWithType,
+} from "src/hooks/queries/useBlocks";
+import { useEntity, useReplicache } from "src/replicache";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
@@ -41,10 +44,13 @@ export function UpdateLeafletTitle(props: { entityID: string }) {
 
 export const usePageTitle = (entityID: string) => {
   let [title, setTitle] = useState("");
+  let canvasBlocks = useCanvasBlocksWithType(entityID).filter(
+    (b) => b.type === "text" || b.type === "heading",
+  );
   let blocks = useBlocks(entityID).filter(
     (b) => b.type === "text" || b.type === "heading",
   );
-  let firstBlock = blocks[0];
+  let firstBlock = canvasBlocks[0] || blocks[0];
   let content = useEntity(firstBlock?.value, "block/text");
   useEffect(() => {
     if (content) {
