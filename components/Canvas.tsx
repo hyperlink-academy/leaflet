@@ -67,7 +67,7 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
     >
       <AddCanvasBlockButton entityID={props.entityID} entity_set={entity_set} />
       <CanvasContent {...props} />
-      <CanvasWidthHandle />
+      <CanvasWidthHandle entityID={props.entityID} />
     </div>
   );
 }
@@ -138,13 +138,26 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   );
 }
 
-function CanvasWidthHandle() {
+function CanvasWidthHandle(props: { entityID: string }) {
   let canvasFocused = useUIState((s) => s.focusedEntity?.entityType === "page");
-
+  let { rep } = useReplicache();
+  let { permissions } = useEntitySetContext();
+  let narrowWidth = useEntity(props.entityID, "canvas/narrow-width")?.data
+    .value;
   return (
-    <div
+    <button
+      onClick={() => {
+        rep?.mutate.assertFact({
+          entity: props.entityID,
+          attribute: "canvas/narrow-width",
+          data: {
+            type: "boolean",
+            value: !narrowWidth,
+          },
+        });
+      }}
       className={`resizeHandle
-        cursor-e-resize shrink-0 z-10
+        ${narrowWidth ? "cursor-e-resize" : "cursor-w-resize"} shrink-0 z-10
          ${canvasFocused ? "sm:block hidden" : "hidden"}
         w-[8px] h-12
         absolute top-1/2 right-0 -translate-y-1/2 translate-x-[3px]

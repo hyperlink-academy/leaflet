@@ -37,7 +37,12 @@ export const ExternalLinkBlock = (
     return (
       <label
         id={props.preview ? undefined : elementId.block(props.entityID).input}
-        className={`w-full h-[104px] text-tertiary hover:text-accent-contrast hover:cursor-pointer flex flex-auto gap-2 items-center justify-center p-2 ${isSelected ? "border-2 border-tertiary" : "border border-border"} hover:border-2 border-dashed rounded-lg`}
+        className={`
+          w-full h-[104px] p-2
+          text-tertiary hover:text-accent-contrast hover:cursor-pointer 
+          flex flex-auto gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg 
+          ${isSelected ? "border-2 border-tertiary" : "border border-border"} 
+          ${props.pageType === "canvas" && "bg-bg-page"}`}
         onMouseDown={() => {
           focusBlock(
             { type: props.type, value: props.entityID, parent: props.parent },

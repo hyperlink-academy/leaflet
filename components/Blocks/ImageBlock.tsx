@@ -32,8 +32,14 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     return (
       <div className="grow w-full">
         <label
-          id={props.preview ? undefined : elementId.block(props.entityID).input}
-          className={`group/image-block w-full h-[104px] text-tertiary hover:text-accent-contrast hover:font-bold hover:cursor-pointer flex flex-auto gap-2 items-center justify-center p-2 ${isSelected ? "border-2 border-tertiary font-bold" : "border border-border"} hover:border-2 border-dashed  hover:border-accent-contrast rounded-lg`}
+          className={`
+            group/image-block 
+            w-full h-[104px] p-2 hover:cursor-pointer
+            text-tertiary hover:text-accent-contrast hover:font-bold  
+            flex flex-auto gap-2 items-center justify-center  
+            hover:border-2 border-dashed  hover:border-accent-contrast rounded-lg
+            ${isSelected ? "border-2 border-tertiary font-bold" : "border border-border"} 
+            ${props.pageType === "canvas" && "bg-bg-page"}`}
           onMouseDown={(e) => e.preventDefault()}
           onKeyDown={(e) => {
             if (e.key === "Backspace") {

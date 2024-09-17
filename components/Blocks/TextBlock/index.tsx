@@ -123,7 +123,16 @@ export function RenderedTextBlock(props: {
     return (
       <pre className={`${props.className} italic text-tertiary`}>
         {/* Render a placeholder if there are no other blocks in the page, else just show the blank line*/}
-        {props.first ? "Title" : <br />}
+        {props.first ? (
+          <div className="flex flex-col">
+            write something...
+            <div className=" text-xs font-normal">
+              or type &quot;/&quot; for commands
+            </div>
+          </div>
+        ) : (
+          <br />
+        )}
       </pre>
     );
   let doc = new Y.Doc();
@@ -281,7 +290,9 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
                   : headingLevel?.data.value === 2
                     ? "Header"
                     : "Title"}
-              <div className=" text-xs">or type &quot;/&quot; for commands</div>
+              <div className=" text-xs font-normal">
+                or type &quot;/&quot; for commands
+              </div>
             </div>
           )}
         {/* if this is the block is empty and selected */}
