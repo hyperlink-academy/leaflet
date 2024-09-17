@@ -218,5 +218,7 @@ function Escape({ e, props, areYouSure, setAreYouSure }: Args) {
   }
 
   useUIState.setState({ selectedBlocks: [] });
-  useUIState.setState({ focusedEntity: null });
+  useUIState.setState({
+    focusedEntity: { entityType: "page", entityID: props.parent },
+  });
 }

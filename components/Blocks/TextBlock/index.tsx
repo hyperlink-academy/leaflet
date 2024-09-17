@@ -41,7 +41,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { useHandlePaste } from "./useHandlePaste";
 import { highlightSelectionPlugin } from "./plugins";
 import { inputrules } from "./inputRules";
-import { MoreOptionsTiny } from "components/Icons";
+import { AddTiny, MoreOptionsTiny } from "components/Icons";
 
 export function TextBlock(
   props: BlockProps & { className: string; preview?: boolean },
@@ -57,6 +57,7 @@ export function TextBlock(
           entityID={props.entityID}
           className={props.className}
           first={first}
+          pageType={props.pageType}
         />
       )}
       {permission && !props.preview && (
@@ -115,15 +116,35 @@ export function RenderedTextBlock(props: {
   entityID: string;
   className?: string;
   first?: boolean;
+  pageType?: "canvas" | "doc";
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
+  let headingLevel = useEntity(props.entityID, "block/heading-level");
 
   if (!initialFact)
     // show a blank line if the block is empty. blocks with content are styled elsewhere! update both!
     return (
       <pre className={`${props.className} italic text-tertiary`}>
-        {/* Render a placeholder if there are no other blocks in the page, else just show the blank line*/}
-        {props.first ? "Title" : <br />}
+        {/* Render a placeholder if this is a doc and there are no other blocks in the page, or this is a canvas. else just show the blank line*/}
+        {(props.pageType === "doc" && props.first) ||
+        props.pageType === "canvas" ? (
+          <div
+            className={`${props.className} pointer-events-none italic text-tertiary flex flex-col`}
+          >
+            {headingLevel?.data.value === 1
+              ? "Title"
+              : headingLevel?.data.value === 2
+                ? "Header"
+                : headingLevel?.data.value === 3
+                  ? "Subheader"
+                  : "write something..."}
+            <div className=" text-xs font-normal">
+              or type &quot;/&quot; for commands
+            </div>
+          </div>
+        ) : (
+          <br />
+        )}
       </pre>
     );
   let doc = new Y.Doc();
@@ -163,7 +184,6 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
   let selected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
-  let first = props.previousBlock === null;
   let headingLevel = useEntity(props.entityID, "block/heading-level");
 
   let [value, factID] = useYJSValue(props.entityID);
@@ -231,7 +251,9 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
         });
       }}
     >
-      <div className={` flex items-center justify-between w-full `}>
+      <div
+        className={`flex items-center justify-between w-full ${selected && props.pageType === "canvas" && "bg-bg-page rounded-md"} `}
+      >
         <pre
           data-entityid={props.entityID}
           onBlur={async () => {
@@ -271,24 +293,26 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
           props.previousBlock === null &&
           props.nextBlock === null && (
             <div
-              className={`${props.className} pointer-events-none absolute top-0 left-0  italic text-tertiary `}
+              className={`${props.className} pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col`}
             >
               {props.type === "text"
-                ? 'write something... or type "/"'
+                ? "write something..."
                 : headingLevel?.data.value === 3
                   ? "Subheader"
                   : headingLevel?.data.value === 2
                     ? "Header"
                     : "Title"}
+              <div className=" text-xs font-normal">
+                or type &quot;/&quot; for commands
+              </div>
             </div>
           )}
         {/* if this is the block is empty and selected */}
         {editorState.doc.textContent.length === 0 && selected ? (
           <button
-            className="absolute top-0.5 right-0 w-5 h-5 rounded border border-border outline outline-transparent hover:outline-border hover:text-tertiary  font-bold  rounded-md  text-sm text-border"
+            className={`absolute top-0.5 right-0 w-5 h-5 rounded border border-border outline outline-transparent hover:outline-border hover:text-tertiary  font-bold  rounded-md  text-sm text-border ${props.pageType === "canvas" && "mr-[6px]"}`}
             onMouseDown={(e) => {
               e.preventDefault();
-              console.log("yo!");
               let editor =
                 useEditorStates.getState().editorStates[props.entityID];
 
@@ -310,7 +334,9 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
               }
             }}
           >
-            <div className="-mt-[2px]">/</div>
+            <div className={`flex items-center justify-center `}>
+              <MoreOptionsTiny />
+            </div>
           </button>
         ) : null}
         {editorState.doc.textContent.startsWith("/") && selected && (

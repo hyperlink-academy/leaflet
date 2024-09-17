@@ -13,7 +13,7 @@ import postgres from "postgres";
 import { v7 } from "uuid";
 import { sql } from "drizzle-orm";
 
-export async function createNewLeaflet() {
+export async function createNewLeaflet(pageType: "canvas" | "doc") {
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
   let { permissionToken } = await db.transaction(async (tx) => {
@@ -49,26 +49,49 @@ export async function createNewLeaflet() {
       .values({ set: entity_set.id, id: v7() })
       .returning();
 
-    await tx.insert(facts).values([
-      {
-        id: v7(),
-        entity: entity.id,
-        attribute: "card/block",
-        data: sql`${{ type: "ordered-reference", value: blockEntity.id, position: "a0" }}::jsonb`,
-      },
-      {
-        id: v7(),
-        entity: blockEntity.id,
-        attribute: "block/type",
-        data: sql`${{ type: "block-type-union", value: "heading" }}::jsonb`,
-      },
-      {
-        id: v7(),
-        entity: blockEntity.id,
-        attribute: "block/heading-level",
-        data: sql`${{ type: "number", value: 1 }}::jsonb`,
-      },
-    ]);
+    if (pageType === "canvas") {
+      await tx.insert(facts).values([
+        {
+          id: v7(),
+          entity: entity.id,
+          attribute: "page/type",
+          data: sql`${{ type: "page-type-union", value: "canvas" }}`,
+        },
+        {
+          id: v7(),
+          entity: entity.id,
+          attribute: "canvas/block",
+          data: sql`${{ type: "spatial-reference", value: blockEntity.id, position: { x: 12, y: 24 } }}::jsonb`,
+        },
+        {
+          id: v7(),
+          entity: blockEntity.id,
+          attribute: "block/type",
+          data: sql`${{ type: "block-type-union", value: "text" }}::jsonb`,
+        },
+      ]);
+    } else {
+      await tx.insert(facts).values([
+        {
+          id: v7(),
+          entity: entity.id,
+          attribute: "card/block",
+          data: sql`${{ type: "ordered-reference", value: blockEntity.id, position: "a0" }}::jsonb`,
+        },
+        {
+          id: v7(),
+          entity: blockEntity.id,
+          attribute: "block/type",
+          data: sql`${{ type: "block-type-union", value: "heading" }}::jsonb`,
+        },
+        {
+          id: v7(),
+          entity: blockEntity.id,
+          attribute: "block/heading-level",
+          data: sql`${{ type: "number", value: 1 }}::jsonb`,
+        },
+      ]);
+    }
 
     return { permissionToken, rights, entity, entity_set };
   });

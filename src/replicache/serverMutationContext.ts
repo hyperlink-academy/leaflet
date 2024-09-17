@@ -76,6 +76,7 @@ export function serverMutationContext(
       },
     },
     async assertFact(f) {
+      if (!f.entity) return;
       let attribute = Attributes[f.attribute as keyof typeof Attributes];
       if (!attribute) return;
       let id = f.id || v7();

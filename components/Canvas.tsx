@@ -61,12 +61,13 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
         h-full w-fit mx-auto
         max-w-[calc(100vw-12px)]
         ${!narrowWidth ? "sm:max-w-[calc(100vw-128px)] lg:max-w-[calc(var(--page-width-units)*2 + 24px))]" : " sm:max-w-[var(--page-width-units)]"}
-        bg-bg-page rounded-lg
+        rounded-lg
         overflow-y-scroll no-scrollbar
       `}
     >
       <AddCanvasBlockButton entityID={props.entityID} entity_set={entity_set} />
       <CanvasContent {...props} />
+      <CanvasWidthHandle entityID={props.entityID} />
     </div>
   );
 }
@@ -84,6 +85,9 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
           selectedBlocks: [],
           focusedEntity: { entityType: "page", entityID: props.entityID },
         }));
+        useUIState.setState({
+          focusedEntity: { entityType: "page", entityID: props.entityID },
+        });
         if (e.detail === 2 || e.ctrlKey || e.metaKey) {
           let parentRect = e.currentTarget.getBoundingClientRect();
           let newEntityID = v7();
@@ -134,6 +138,34 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   );
 }
 
+function CanvasWidthHandle(props: { entityID: string }) {
+  let canvasFocused = useUIState((s) => s.focusedEntity?.entityType === "page");
+  let { rep } = useReplicache();
+  let { permissions } = useEntitySetContext();
+  let narrowWidth = useEntity(props.entityID, "canvas/narrow-width")?.data
+    .value;
+  return (
+    <button
+      onClick={() => {
+        rep?.mutate.assertFact({
+          entity: props.entityID,
+          attribute: "canvas/narrow-width",
+          data: {
+            type: "boolean",
+            value: !narrowWidth,
+          },
+        });
+      }}
+      className={`resizeHandle
+        ${narrowWidth ? "cursor-e-resize" : "cursor-w-resize"} shrink-0 z-10
+         ${canvasFocused ? "sm:block hidden" : "hidden"}
+        w-[8px] h-12
+        absolute top-1/2 right-0 -translate-y-1/2 translate-x-[3px]
+        rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
+    />
+  );
+}
+
 const AddCanvasBlockButton = (props: {
   entityID: string;
   entity_set: { set: string };
@@ -180,21 +212,6 @@ const AddCanvasBlockButton = (props: {
         }}
       >
         <AddSmall />
-      </TooltipButton>
-
-      <TooltipButton
-        side="left"
-        onMouseDown={() => {
-          rep?.mutate.assertFact({
-            entity: props.entityID,
-            attribute: "canvas/narrow-width",
-            data: { type: "boolean", value: !narrowWidth },
-          });
-        }}
-        content={narrowWidth ? "Widen Canvas" : "Narrow Canvas"}
-        className="hidden sm:block  bg-accent-2 border-2 outline outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-1 p-1 rounded-full w-fit mx-auto"
-      >
-        {narrowWidth ? <CanvasWidenSmall /> : <CanvasShrinkSmall />}
       </TooltipButton>
     </div>
   );

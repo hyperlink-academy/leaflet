@@ -38,6 +38,7 @@ import {
 import { useEditorStates } from "src/state/useEditorState";
 import { useIsMobile } from "src/hooks/isMobile";
 import { HelpPopover } from "./HelpPopover";
+import { CreateNewLeafletButton } from "app/home/CreateNewButton";
 
 export function Pages(props: { rootPage: string }) {
   let openPages = useUIState((s) => s.openPages);
@@ -72,6 +73,7 @@ export function Pages(props: { rootPage: string }) {
               <div className="flex flex-col justify-center gap-2 ">
                 <ShareOptions rootEntity={props.rootPage} />
                 <LeafletOptions entityID={props.rootPage} />
+                <CreateNewLeafletButton />
                 <HelpPopover />
                 <hr className="text-border my-3" />
                 <HomeButton />
@@ -131,10 +133,6 @@ function Page(props: { entityID: string; first?: boolean }) {
         />
       )}
       <div className="pageWrapper w-fit flex relative snap-center">
-        {props.first && (
-          <SwitchPageTypeButton entityID={props.entityID} pageType={type} />
-        )}
-
         <div
           onMouseDown={(e) => {
             if (e.defaultPrevented) return;
@@ -207,68 +205,6 @@ const PageOptionsMenu = (props: {
           <CloseTiny />
         </button>
       )}
-    </div>
-  );
-};
-
-const SwitchPageTypeButton = (props: {
-  entityID: string;
-  pageType: "doc" | "canvas";
-}) => {
-  let { rep } = useReplicache();
-  let blocks = useEntity(
-    props.entityID,
-    props.pageType === "doc" ? "card/block" : "canvas/block",
-  );
-  let firstBlockText = useEditorStates((s) =>
-    blocks[0]?.data.value ? s.editorStates[blocks[0].data.value] : null,
-  );
-  let permission = useEntitySetContext().permissions.write;
-  if (!permission) return;
-  if (blocks.length > 1) return null;
-  if (
-    firstBlockText?.editor &&
-    firstBlockText?.editor.doc.textContent.length > 0
-  )
-    return null;
-  return (
-    <div className="flex gap-0 absolute top-2 right-2 sm:top-0 sm:-right-10  z-20">
-      <Media mobile={false}>
-        <div className="h-fit mt-[30px] -mr-[5px] rotate-90">
-          <PopoverArrow
-            arrowFill={theme.colors["bg-page"]}
-            arrowStroke={theme.colors.border}
-          />
-        </div>
-      </Media>
-      <div
-        className={`flex sm:flex-col gap-1  rounded-full border bg-bg-page border-border p-0.5`}
-      >
-        <button
-          className={`rounded-full p-0.5 border-2 ${props.pageType === "doc" ? "bg-tertiary text-bg-page border-tertiary" : "border-transparent text-border"}`}
-          onClick={() => {
-            rep?.mutate.assertFact({
-              entity: props.entityID,
-              attribute: "page/type",
-              data: { type: "page-type-union", value: "doc" },
-            });
-          }}
-        >
-          <BlockDocPageSmall />
-        </button>
-        <button
-          className={`rounded-full p-0.5 border-2 ${props.pageType === "canvas" ? "bg-tertiary text-bg-page border-tertiary" : "border-transparent text-border"}`}
-          onClick={() => {
-            rep?.mutate.assertFact({
-              entity: props.entityID,
-              attribute: "page/type",
-              data: { type: "page-type-union", value: "canvas" },
-            });
-          }}
-        >
-          <BlockCanvasPageSmall />
-        </button>
-      </div>
     </div>
   );
 };
