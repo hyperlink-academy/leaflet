@@ -31,8 +31,16 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
     ref.current?.addEventListener(
       "wheel",
       (e) => {
-        e.preventDefault();
         if (!el) return;
+        if (
+          (e.deltaX > 0 && el.scrollLeft >= el.scrollWidth - el.clientWidth) ||
+          (e.deltaX < 0 && el.scrollLeft <= 0) ||
+          (e.deltaY > 0 && el.scrollTop >= el.scrollHeight - el.clientHeight) ||
+          (e.deltaY < 0 && el.scrollTop <= 0)
+        ) {
+          return;
+        }
+        e.preventDefault();
         el.scrollLeft += e.deltaX;
         el.scrollTop += e.deltaY;
       },
@@ -68,19 +76,14 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   let blocks = useEntity(props.entityID, "canvas/block");
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
-  let [height, setHeight] = useState<number | undefined>(undefined);
-  useEffect(() => {
-    setHeight(
-      document.getElementById(elementId.page(props.entityID).canvasScrollArea)
-        ?.scrollHeight,
-    );
-  }, [blocks, props.entityID]);
+  let height = Math.max(...blocks.map((f) => f.data.position.y));
   return (
     <div
       onClick={async (e) => {
         if (e.currentTarget !== e.target) return;
         useUIState.setState(() => ({
           selectedBlocks: [],
+          focusedEntity: { entityType: "page", entityID: props.entityID },
         }));
         useUIState.setState({
           focusedEntity: { entityType: "page", entityID: props.entityID },
@@ -106,7 +109,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
         }
       }}
       style={{
-        minHeight: `calc(${height}px + 32px)`,
+        minHeight: height + 512,
         contain: "size layout paint",
       }}
       className="relative h-full w-[1272px]"
@@ -155,8 +158,10 @@ const AddCanvasBlockButton = (props: {
   entity_set: { set: string };
 }) => {
   let { rep } = useReplicache();
+  let { permissions } = useEntitySetContext();
   let narrowWidth = useEntity(props.entityID, "canvas/narrow-width")?.data
     .value;
+  if (!permissions.write) return null;
   return (
     <div className="absolute right-2 sm:top-4 sm:right-4 bottom-2 sm:bottom-auto z-10 flex flex-col gap-1 justify-center">
       <TooltipButton
@@ -282,10 +287,11 @@ function CanvasBlock(props: {
     [props, rep, rect, rotation],
   );
   let rotateHandle = useDrag({ onDragEnd: RotateOnDragEnd });
+  let { permissions } = useEntitySetContext();
 
   let { isLongPress, handlers: longPressHandlers } = useLongPress(
     () => {
-      if (isLongPress.current) {
+      if (isLongPress.current && permissions.write) {
         focusBlock(
           {
             type: type?.data.value || "text",
@@ -335,6 +341,9 @@ function CanvasBlock(props: {
   }, [props, type?.data.value]);
   useBlockKeyboardHandlers(blockProps, areYouSure, setAreYouSure);
   let isList = useEntity(props.entityID, "block/is-list");
+  let isFocused = useUIState(
+    (s) => s.focusedEntity?.entityID === props.entityID,
+  );
 
   return (
     <div
@@ -346,13 +355,13 @@ function CanvasBlock(props: {
       style={{
         top: 0,
         left: 0,
-        zIndex: dragDelta ? 10 : undefined,
+        zIndex: dragDelta || isFocused ? 10 : undefined,
         width: width + (widthHandle.dragDelta?.x || 0),
         transform,
       }}
     >
       {/* the gripper show on hover, but longpress logic needs to be added for mobile*/}
-      {!props.preview && <Gripper {...handlers} />}
+      {!props.preview && permissions.write && <Gripper {...handlers} />}
       <BaseBlock
         {...blockProps}
         listData={
@@ -364,7 +373,7 @@ function CanvasBlock(props: {
         setAreYouSure={setAreYouSure}
       />
 
-      {!props.preview && (
+      {!props.preview && permissions.write && (
         <div
           className={`resizeHandle
           cursor-e-resize shrink-0 z-10
@@ -376,7 +385,7 @@ function CanvasBlock(props: {
         />
       )}
 
-      {!props.preview && (
+      {!props.preview && permissions.write && (
         <div
           className={`rotateHandle
             cursor-grab shrink-0 z-10

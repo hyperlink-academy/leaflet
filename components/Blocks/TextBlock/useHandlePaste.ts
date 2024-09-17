@@ -189,7 +189,11 @@ const createBlockFromHTML = (
 
   let entityID: string;
   let position: string;
-  if (first && type === activeBlockProps?.current.type)
+  if (
+    first &&
+    (activeBlockProps?.current.type === "heading" ||
+      type === activeBlockProps?.current.type)
+  )
     entityID = activeBlockProps.current.entityID;
   else {
     entityID = v7();
