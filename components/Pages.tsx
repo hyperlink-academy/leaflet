@@ -39,6 +39,7 @@ import { useEditorStates } from "src/state/useEditorState";
 import { useIsMobile } from "src/hooks/isMobile";
 import { HelpPopover } from "./HelpPopover";
 import { CreateNewLeafletButton } from "app/home/CreateNewButton";
+import { scanIndex } from "src/replicache/utils";
 
 export function Pages(props: { rootPage: string }) {
   let openPages = useUIState((s) => s.openPages);
@@ -302,15 +303,13 @@ export async function focusPage(
     // if we asked that the function focus the first block, focus the first block
     if (focusFirstBlock === "focusFirstBlock") {
       let firstBlock = await rep.query(async (tx) => {
-        let blocks = await tx
-          .scan<
-            Fact<"card/block">
-          >({ indexName: "eav", prefix: `${pageID}-page/block` })
-          .toArray();
+        let type = await scanIndex(tx).eav(pageID, "page/type");
+        let blocks = await scanIndex(tx).eav(
+          pageID,
+          type.data.value === "canvas" ? "canvas/block" : "card/block",
+        );
 
-        let firstBlock = blocks.sort((a, b) => {
-          return a.data.position > b.data.position ? 1 : -1;
-        })[0];
+        let firstBlock = blocks[0];
 
         if (!firstBlock) {
           return null;
