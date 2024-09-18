@@ -233,8 +233,10 @@ function CanvasBlock(props: {
   let { rep } = useReplicache();
   let isMobile = useIsMobile();
 
+  let { permissions } = useEntitySetContext();
   let onDragEnd = useCallback(
     (dragPosition: { x: number; y: number }) => {
+      if (!permissions.write) return;
       rep?.mutate.assertFact({
         id: props.factID,
         entity: props.parent,
@@ -249,7 +251,7 @@ function CanvasBlock(props: {
         },
       });
     },
-    [props, rep],
+    [props, rep, permissions],
   );
   let { dragDelta, handlers } = useDrag({
     onDragEnd,
@@ -300,7 +302,6 @@ function CanvasBlock(props: {
     [props, rep, rect, rotation],
   );
   let rotateHandle = useDrag({ onDragEnd: RotateOnDragEnd });
-  let { permissions } = useEntitySetContext();
 
   let { isLongPress, handlers: longPressHandlers } = useLongPress(
     () => {
@@ -362,7 +363,7 @@ function CanvasBlock(props: {
     <div
       ref={ref}
       {...(!props.preview ? { ...longPressHandlers } : {})}
-      {...(isMobile ? { ...handlers } : {})}
+      {...(isMobile && permissions.write ? { ...handlers } : {})}
       id={props.preview ? undefined : elementId.block(props.entityID).container}
       className="absolute group/canvas-block will-change-transform rounded-lg flex items-stretch touch-none origin-center p-3"
       style={{
