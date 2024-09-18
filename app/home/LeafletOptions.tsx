@@ -26,14 +26,6 @@ export const LeafletOptions = (props: {
         >
           Hide from home{" "}
         </MenuItem>
-        <MenuItem
-          onSelect={(e) => {
-            props.setState("deleting");
-          }}
-        >
-          <DeleteSmall />
-          Delete Leaflet
-        </MenuItem>
       </Menu>
     </>
   );

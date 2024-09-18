@@ -15,6 +15,7 @@ import { PermissionToken } from "src/replicache";
 import { revalidatePath } from "next/cache";
 
 export async function deleteLeaflet(permission_token: PermissionToken) {
+  console.log("DELETING LEAFLET: " + permission_token);
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
   await db.transaction(async (tx) => {
@@ -36,5 +37,5 @@ export async function deleteLeaflet(permission_token: PermissionToken) {
       .where(eq(permission_tokens.id, permission_token.id));
   });
   client.end();
-  return ;
+  return;
 }
