@@ -380,13 +380,12 @@ const enter =
           propsRef.current.nextBlock?.listData &&
           propsRef.current.nextBlock.listData.depth >
             propsRef.current.listData.depth &&
-          state.selection.anchor === state.doc.content.size - 1;
+          state.selection.anchor === state.doc.content.size - 1 &&
+          !useUIState
+            .getState()
+            .foldedBlocks.includes(propsRef.current.entityID);
 
-        if (
-          !createChild &&
-          !propsRef.current.nextPosition &&
-          propsRef.current.nextBlock
-        ) {
+        if (!createChild) {
           //get this items next sibling
           let parent = propsRef.current.listData.parent;
           let siblings = (
@@ -413,7 +412,6 @@ const enter =
             children[0]?.data.position || null,
           );
         }
-        console.log(propsRef.current);
         await repRef.current?.mutate.addBlock({
           newEntityID,
           factID: v7(),
@@ -426,9 +424,10 @@ const enter =
         });
         if (
           !createChild &&
-          !useUIState
+          (!useUIState
             .getState()
-            .foldedBlocks.includes(propsRef.current.entityID)
+            .foldedBlocks.includes(propsRef.current.entityID) ||
+            state.selection.anchor === 1)
         ) {
           await repRef.current?.mutate.moveChildren({
             oldParent: propsRef.current.entityID,
