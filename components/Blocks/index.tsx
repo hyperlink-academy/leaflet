@@ -132,12 +132,8 @@ export function Blocks(props: { entityID: string }) {
           let depth = f.listData?.depth || 1;
           let nextDepth = nextBlock?.listData?.depth || 1;
           let nextPosition: string | null;
-          if (depth === 1 && !nextBlock?.listData)
-            nextPosition = nextBlock?.position;
-          else {
-            if (depth === nextDepth) nextPosition = nextBlock?.position || null;
-            else nextPosition = null;
-          }
+          if (depth === nextDepth) nextPosition = nextBlock?.position || null;
+          else nextPosition = null;
           return (
             <Block
               pageType="doc"

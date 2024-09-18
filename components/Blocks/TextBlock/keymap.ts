@@ -376,26 +376,54 @@ const enter =
         if (state.doc.content.size <= 2) {
           return shifttab(propsRef, repRef)();
         }
-        let hasChild =
+        let createChild =
           propsRef.current.nextBlock?.listData &&
           propsRef.current.nextBlock.listData.depth >
             propsRef.current.listData.depth &&
           state.selection.anchor === state.doc.content.size - 1;
-        position = generateKeyBetween(
-          hasChild ? null : propsRef.current.position,
-          propsRef.current.nextPosition,
-        );
+
+        if (
+          !createChild &&
+          !propsRef.current.nextPosition &&
+          propsRef.current.nextBlock
+        ) {
+          //get this items next sibling
+          let parent = propsRef.current.listData.parent;
+          let siblings = (
+            (await repRef.current?.query((tx) =>
+              scanIndex(tx).eav(parent, "card/block"),
+            )) || []
+          ).sort((a, b) => (a.data.position > b.data.position ? 1 : -1));
+          let index = siblings.findIndex(
+            (sib) => sib.data.value === propsRef.current.entityID,
+          );
+          position = generateKeyBetween(
+            propsRef.current.position,
+            siblings[index + 1]?.data.position || null,
+          );
+        } else {
+          position = generateKeyBetween(
+            createChild ? null : propsRef.current.position,
+            propsRef.current.nextPosition,
+          );
+        }
+        console.log(propsRef.current);
         await repRef.current?.mutate.addBlock({
           newEntityID,
           factID: v7(),
           permission_set: propsRef.current.entity_set.set,
-          parent: hasChild
+          parent: createChild
             ? propsRef.current.entityID
             : propsRef.current.listData.parent,
           type: blockType,
           position,
         });
-        if (!hasChild) {
+        if (
+          !createChild &&
+          !useUIState
+            .getState()
+            .foldedBlocks.includes(propsRef.current.entityID)
+        ) {
           await repRef.current?.mutate.moveChildren({
             oldParent: propsRef.current.entityID,
             newParent: newEntityID,
@@ -414,7 +442,11 @@ const enter =
           await repRef.current?.mutate.assertFact({
             entity: newEntityID,
             attribute: "block/check-list",
-            data: { type: "boolean", value: false },
+            data: {
+              type: "boolean",
+              value:
+                state.selection.anchor === 1 ? checked?.[0].data.value : false,
+            },
           });
       }
       // if the block is not a list, add a new text block after it
