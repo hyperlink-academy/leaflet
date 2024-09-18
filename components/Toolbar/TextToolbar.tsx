@@ -71,11 +71,11 @@ export const TextToolbar = (props: {
         setToolbarState={props.setToolbarState}
       />
       <Separator classname="h-6" />
+      <TextBlockTypeButton setToolbarState={props.setToolbarState} />
+      <Separator classname="h-6" />
       <ListButton setToolbarState={props.setToolbarState} />
       <Separator classname="h-6" />
       <LinkButton setToolbarState={props.setToolbarState} />
-      <Separator classname="h-6" />
-      <TextBlockTypeButton setToolbarState={props.setToolbarState} />
     </>
   );
 };

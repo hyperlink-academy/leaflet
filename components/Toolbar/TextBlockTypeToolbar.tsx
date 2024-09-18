@@ -3,6 +3,7 @@ import {
   Header2Small,
   Header3Small,
   ParagraphSmall,
+  TextSizeSmall,
 } from "components/Icons";
 import { ShortcutKey } from "components/Layout";
 import { ToolbarButton } from "components/Toolbar";
@@ -168,30 +169,13 @@ export function TextBlockTypeButton(props: {
   let focusedBlock = useUIState((s) => s.focusedEntity);
   return (
     <ToolbarButton
-      tooltipContent={<div>Format Text</div>}
-      className={`${props.className} w-8`}
-      active
+      tooltipContent={<div>Text Size</div>}
+      className={`${props.className}`}
       onClick={() => {
         props.setToolbarState("heading");
       }}
     >
-      <BlockTypeIcon entityID={focusedBlock?.entityID} />
+      <TextSizeSmall />
     </ToolbarButton>
   );
-}
-
-function BlockTypeIcon(props: { entityID?: string }) {
-  let blockType = useEntity(props.entityID || null, "block/type");
-  let headingLevel =
-    useEntity(props.entityID || null, "block/heading-level")?.data.value || 1;
-  if (blockType?.data.value === "text")
-    return <ParagraphSmall className="mx-auto" />;
-  if (blockType?.data.value === "heading") {
-    if (headingLevel === 1) return <Header1Small />;
-    if (headingLevel === 2) return <Header2Small />;
-    if (headingLevel === 3) return <Header3Small />;
-  }
-  // sometimes, toolbar or block options is visible but there is no focused block,
-  // for example, a few milliseconds after a block is deleted. We default to paragraph
-  return <ParagraphSmall className="mx-auto" />;
 }
