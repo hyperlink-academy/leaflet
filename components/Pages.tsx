@@ -306,7 +306,7 @@ export async function focusPage(
         let type = await scanIndex(tx).eav(pageID, "page/type");
         let blocks = await scanIndex(tx).eav(
           pageID,
-          type.data.value === "canvas" ? "canvas/block" : "card/block",
+          type[0]?.data.value === "canvas" ? "canvas/block" : "card/block",
         );
 
         let firstBlock = blocks[0];
