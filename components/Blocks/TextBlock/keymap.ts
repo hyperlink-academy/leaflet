@@ -402,9 +402,15 @@ const enter =
             siblings[index + 1]?.data.position || null,
           );
         } else {
+          //Get this blocks children and get the first one
+          let children = (
+            (await repRef.current?.query((tx) =>
+              scanIndex(tx).eav(propsRef.current.entityID, "card/block"),
+            )) || []
+          ).sort((a, b) => (a.data.position > b.data.position ? 1 : -1));
           position = generateKeyBetween(
             createChild ? null : propsRef.current.position,
-            propsRef.current.nextPosition,
+            children[0]?.data.position || null,
           );
         }
         console.log(propsRef.current);
