@@ -112,7 +112,6 @@ export function SelectionManager() {
         key: ["ArrowDown"],
         handler: async () => {
           let [sortedBlocks, siblings] = await getSortedSelection();
-          if (sortedBlocks.length > 1) return;
           let block = sortedBlocks[0];
           let nextBlock = siblings
             .slice(siblings.findIndex((s) => s.value === block.value) + 1)
@@ -149,7 +148,6 @@ export function SelectionManager() {
         key: ["ArrowUp"],
         handler: async () => {
           let [sortedBlocks, siblings] = await getSortedSelection();
-          if (sortedBlocks.length > 1) return;
           let block = sortedBlocks[0];
           let previousBlock =
             siblings?.[siblings.findIndex((s) => s.value === block.value) - 1];
@@ -195,7 +193,6 @@ export function SelectionManager() {
         key: "Enter",
         handler: async () => {
           let [sortedBlocks, siblings] = await getSortedSelection();
-          if (sortedBlocks.length > 1) return;
           if (!sortedBlocks[0].listData) return;
           useUIState.getState().toggleFold(sortedBlocks[0].value);
         },
@@ -246,7 +243,7 @@ export function SelectionManager() {
       if (e.key === "ArrowUp") {
         let [sortedBlocks, siblings] = await getSortedSelection();
         let focusedBlock = useUIState.getState().focusedEntity;
-        if (!e.shiftKey) {
+        if (!e.shiftKey && !e.ctrlKey) {
           if (e.defaultPrevented) return;
           if (sortedBlocks.length === 1) return;
           let firstBlock = sortedBlocks[0];
