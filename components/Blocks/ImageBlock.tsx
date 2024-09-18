@@ -42,18 +42,13 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             ${isSelected ? "border-2 border-tertiary font-bold" : "border border-border"} 
             ${props.pageType === "canvas" && "bg-bg-page"}`}
           onMouseDown={(e) => e.preventDefault()}
-          onKeyDown={(e) => {
-            if (e.key === "Backspace") {
-              e.preventDefault();
-              rep && deleteBlock([props.entityID].flat(), rep);
-            }
-          }}
         >
           <BlockImageSmall
             className={`shrink-0 group-hover/image-block:text-accent-contrast ${isSelected ? "text-tertiary" : "text-border"}`}
           />{" "}
           Upload An Image
           <input
+            autoFocus
             className="h-0 w-0"
             type="file"
             accept="image/*"

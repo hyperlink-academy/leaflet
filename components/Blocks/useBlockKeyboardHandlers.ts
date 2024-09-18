@@ -116,6 +116,7 @@ async function Backspace({ e, props, rep, areYouSure, setAreYouSure }: Args) {
     // and the user is not in an input or textarea,
     // if there is a page to close, close it and remove the block
     if (areYouSure) {
+      e.preventDefault();
       return deleteBlock([props.entityID].flat(), rep);
     }
   }
