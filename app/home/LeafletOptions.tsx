@@ -1,5 +1,5 @@
 "use client";
-import { DeleteSmall, MoreOptionsTiny } from "components/Icons";
+import { DeleteSmall, HideSmall, MoreOptionsTiny } from "components/Icons";
 import { Menu, MenuItem } from "components/Layout";
 import { PermissionToken } from "src/replicache";
 import { mutate } from "swr";
@@ -12,6 +12,7 @@ export const LeafletOptions = (props: {
   return (
     <>
       <Menu
+        align="end"
         trigger={
           <div className="bg-accent-1 text-accent-2 px-2 py-1 border border-accent-2 rounded-md">
             <MoreOptionsTiny />
@@ -24,7 +25,8 @@ export const LeafletOptions = (props: {
             mutate("leaflets");
           }}
         >
-          Hide from home{" "}
+          <HideSmall />
+          Remove from home
         </MenuItem>
       </Menu>
     </>

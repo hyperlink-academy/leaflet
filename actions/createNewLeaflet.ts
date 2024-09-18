@@ -64,7 +64,7 @@ export async function createNewLeaflet(
           id: v7(),
           entity: entity.id,
           attribute: "canvas/block",
-          data: sql`${{ type: "spatial-reference", value: blockEntity.id, position: { x: 12, y: 24 } }}::jsonb`,
+          data: sql`${{ type: "spatial-reference", value: blockEntity.id, position: { x: 8, y: 12 } }}::jsonb`,
         },
         {
           id: v7(),
