@@ -88,6 +88,12 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
         useUIState.setState({
           focusedEntity: { entityType: "page", entityID: props.entityID },
         });
+        document
+          .getElementById(elementId.page(props.entityID).container)
+          ?.scrollIntoView({
+            behavior: "smooth",
+            inline: "nearest",
+          });
         if (e.detail === 2 || e.ctrlKey || e.metaKey) {
           let parentRect = e.currentTarget.getBoundingClientRect();
           let newEntityID = v7();

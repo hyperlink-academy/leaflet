@@ -135,7 +135,7 @@ function Page(props: { entityID: string; first?: boolean }) {
       )}
       <div className="pageWrapper w-fit flex relative snap-center">
         <div
-          onMouseDown={(e) => {
+          onClick={(e) => {
             if (e.defaultPrevented) return;
             if (rep) {
               focusPage(props.entityID, rep);
