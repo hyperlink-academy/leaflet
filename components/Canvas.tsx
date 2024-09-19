@@ -365,7 +365,8 @@ function CanvasBlock(props: {
       {...(!props.preview ? { ...longPressHandlers } : {})}
       {...(isMobile && permissions.write ? { ...handlers } : {})}
       id={props.preview ? undefined : elementId.block(props.entityID).container}
-      className="absolute group/canvas-block will-change-transform rounded-lg flex items-stretch touch-none origin-center p-3"
+      className={`absolute group/canvas-block will-change-transform rounded-lg flex items-stretch origin-center p-3
+        `}
       style={{
         top: 0,
         left: 0,
