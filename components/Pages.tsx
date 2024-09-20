@@ -56,7 +56,7 @@ export function Pages(props: { rootPage: string }) {
   return (
     <div
       id="pages"
-      className="pages flex pt-2 pb-1 sm:pb-8 sm:py-6"
+      className="pages flex pt-2 pb-1 sm:pb-8 sm:py-6 snap-center"
       onClick={(e) => {
         e.currentTarget === e.target && blurPage();
       }}
