@@ -89,6 +89,8 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   return (
     <div className="relative group/image flex w-full justify-center">
       <img
+        loading="lazy"
+        decoding="async"
         alt={""}
         src={
           image?.data.local && image.data.local !== rep?.clientID
