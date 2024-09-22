@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 
 export const useLongPress = (
   cb: () => void,
@@ -61,10 +61,10 @@ export const useLongPress = (
     }
   }, [startPosition, end]);
 
-  let click = (e: React.MouseEvent | React.PointerEvent) => {
+  let click = useCallback((e: React.MouseEvent | React.PointerEvent) => {
     if (isLongPress.current) e.preventDefault();
     if (e.shiftKey) e.preventDefault();
-  };
+  }, []);
 
   useEffect(() => {
     if (cancel) {
@@ -72,14 +72,17 @@ export const useLongPress = (
     }
   }, [cancel, end]);
 
-  return {
-    isLongPress: isLongPress,
-    handlers: {
-      onMouseDown,
-      onMouseUp: end,
-      onTouchStart: onTouchStart,
-      onTouchEnd: end,
-      onClickCapture: click,
-    },
-  };
+  return useMemo(
+    () => ({
+      isLongPress: isLongPress,
+      handlers: {
+        onMouseDown,
+        onMouseUp: end,
+        onTouchStart: onTouchStart,
+        onTouchEnd: end,
+        onClickCapture: click,
+      },
+    }),
+    [isLongPress, end, onMouseDown, onTouchStart, click],
+  );
 };

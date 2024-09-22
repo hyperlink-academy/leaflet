@@ -1,7 +1,7 @@
 "use client";
 
 import { Fact, useEntity, useReplicache } from "src/replicache";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { useUIState } from "src/useUIState";
 import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
 import { useBlockKeyboardHandlers } from "./useBlockKeyboardHandlers";
@@ -41,7 +41,9 @@ export type BlockProps = {
   nextPosition: string | null;
 } & Block;
 
-export function Block(props: BlockProps & { preview?: boolean }) {
+export const Block = memo(function Block(
+  props: BlockProps & { preview?: boolean },
+) {
   // Block handles all block level events like
   // mouse events, keyboard events and longPress, and setting AreYouSure state
   // and shared styling like padding and flex for list layouting
@@ -50,7 +52,6 @@ export function Block(props: BlockProps & { preview?: boolean }) {
 
   // focus block on longpress, shouldnt the type be based on the block type (?)
   let { isLongPress, handlers } = useLongPress(() => {
-    console.log("wat");
     if (isLongPress.current) {
       focusBlock(
         { type: props.type, value: props.entityID, parent: props.parent },
@@ -98,11 +99,11 @@ export function Block(props: BlockProps & { preview?: boolean }) {
       <BaseBlock
         {...props}
         areYouSure={areYouSure}
-        setAreYouSure={(value) => setAreYouSure(value)}
+        setAreYouSure={setAreYouSure}
       />
     </div>
   );
-}
+});
 
 export const BaseBlock = (
   props: BlockProps & {
@@ -149,13 +150,11 @@ export const BaseBlock = (
 export const BlockMultiselectIndicator = (props: BlockProps) => {
   let first = props.previousBlock === null;
 
-  let selectedBlocks = useUIState((s) => s.selectedBlocks);
-
-  let selected = useUIState(
-    (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
+  let isMultiselected = useUIState(
+    (s) =>
+      !!s.selectedBlocks.find((b) => b.value === props.entityID) &&
+      s.selectedBlocks.length > 1,
   );
-
-  let isMultiselected = selected && selectedBlocks.length > 1;
 
   let nextBlockSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.nextBlock?.value),

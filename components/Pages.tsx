@@ -114,12 +114,14 @@ function Page(props: { entityID: string; first?: boolean }) {
   let { rep } = useReplicache();
   let isDraft = useReferenceToEntity("mailbox/draft", props.entityID);
 
-  let focusedElement = useUIState((s) => s.focusedEntity);
-  let focusedPageID =
-    focusedElement?.entityType === "page"
-      ? focusedElement.entityID
-      : focusedElement?.parent;
-  let isFocused = focusedPageID === props.entityID;
+  let isFocused = useUIState((s) => {
+    let focusedElement = s.focusedEntity;
+    let focusedPageID =
+      focusedElement?.entityType === "page"
+        ? focusedElement.entityID
+        : focusedElement?.parent;
+    return focusedPageID === props.entityID;
+  });
   let isMobile = useIsMobile();
   let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
 
