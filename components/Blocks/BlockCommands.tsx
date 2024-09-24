@@ -166,6 +166,14 @@ export const blockCommands: Command[] = [
     },
   },
   {
+    name: "Embed",
+    icon: <BlockLinkSmall />,
+    type: "block",
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "embed");
+    },
+  },
+  {
     name: "Image",
     icon: <BlockImageSmall />,
     type: "block",

@@ -90,6 +90,13 @@ const LinkBlockAttributes = {
   },
 } as const;
 
+const EmbedBlockAttributes = {
+  "embed/url": {
+    type: "string",
+    cardinality: "one",
+  },
+} as const;
+
 const ThemeAttributes = {
   "theme/page-background": {
     type: "color",
@@ -139,6 +146,7 @@ export const Attributes = {
   ...LinkBlockAttributes,
   ...ThemeAttributes,
   ...MailboxAttributes,
+  ...EmbedBlockAttributes,
 };
 type Attribute = typeof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
@@ -185,7 +193,8 @@ export type Data<A extends keyof typeof Attributes> = {
       | "heading"
       | "link"
       | "mailbox"
-      | "collection";
+      | "collection"
+      | "embed";
   };
   color: { type: "color"; value: string };
 }[(typeof Attributes)[A]["type"]];
