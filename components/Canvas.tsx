@@ -372,6 +372,7 @@ function CanvasBlock(props: {
       {...(isMobile && permissions.write ? { ...handlers } : {})}
       id={props.preview ? undefined : elementId.block(props.entityID).container}
       className={`absolute group/canvas-block will-change-transform rounded-lg flex items-stretch origin-center p-3
+        ${dragDelta || widthHandle.dragDelta || rotateHandle.dragDelta ? "pointer-events-none" : ""}
         `}
       style={{
         top: 0,
