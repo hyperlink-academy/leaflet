@@ -81,11 +81,13 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       .eav(rootEntity, "canvas/block")
       .map((b) => {
         let type = scan.eav(b.data.value, "block/type");
+        if (!type[0]) return null;
         return {
           ...b.data,
           type: type[0].data.value,
         };
       })
+      .filter((b) => b !== null)
       .filter((b) => b.type === "text" || b.type === "heading")
       .sort((a, b) => {
         if (a.position.y === b.position.y) {
