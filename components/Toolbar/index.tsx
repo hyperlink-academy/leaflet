@@ -61,6 +61,7 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
   }, [toolbarState]);
 
   useEffect(() => {
+    if (!blockType) return;
     if (blockType !== "heading" && blockType !== "text") {
       setToolbarState("block");
     } else {
