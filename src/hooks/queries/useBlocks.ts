@@ -29,13 +29,16 @@ export const useCanvasBlocksWithType = (entityID: string | null) => {
     if (!entityID) return [];
     let scan = scanIndexLocal(rep.initialFacts);
     let blocks = scan.eav(entityID, "canvas/block");
-    return blocks.map((b) => {
-      let type = scan.eav(b.data.value, "block/type");
-      return {
-        ...b.data,
-        type: type[0].data.value,
-      };
-    });
+    return blocks
+      .map((b) => {
+        let type = scan.eav(b.data.value, "block/type");
+        if (!type[0]) return null;
+        return {
+          ...b.data,
+          type: type[0]?.data.value || "text",
+        };
+      })
+      .filter((f) => f !== null);
   }, [rep.initialFacts, entityID]);
   let repData = useSubscribe(
     rep?.rep,
