@@ -17,6 +17,7 @@ import { HeadingBlock } from "./HeadingBlock";
 import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
 import { AreYouSure } from "./DeleteBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { CommentPanelBlock } from "./CommentPanelBlock";
 
 export type Block = {
   factID: string;
@@ -135,10 +136,10 @@ export const BaseBlock = (
             <ImageBlock {...props} />
           ) : props.type === "link" ? (
             <ExternalLinkBlock {...props} />
+          ) : props.type === "comment-section" ? (
+            <CommentPanelBlock {...props} />
           ) : props.type === "mailbox" ? (
-            <div className="flex flex-col gap-4 w-full">
-              <MailboxBlock {...props} />
-            </div>
+            <MailboxBlock {...props} />
           ) : null}
         </>
       )}

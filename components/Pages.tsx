@@ -7,7 +7,6 @@ import { useToaster } from "./Toast";
 
 import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
-import { theme } from "tailwind.config";
 
 import { Replicache } from "replicache";
 import {
@@ -40,6 +39,7 @@ import { useIsMobile } from "src/hooks/isMobile";
 import { HelpPopover } from "./HelpPopover";
 import { CreateNewLeafletButton } from "app/home/CreateNewButton";
 import { scanIndex } from "src/replicache/utils";
+import { CommentPanel } from "./Blocks/CommentPanelBlock";
 
 export function Pages(props: { rootPage: string }) {
   let openPages = useUIState((s) => s.openPages);
@@ -120,8 +120,8 @@ function Page(props: { entityID: string; first?: boolean }) {
       ? focusedElement.entityID
       : focusedElement?.parent;
   let isFocused = focusedPageID === props.entityID;
-  let isMobile = useIsMobile();
   let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
+  let commentSectionOpen = useUIState((s) => s.openCommentSection);
 
   return (
     <>
@@ -133,47 +133,52 @@ function Page(props: { entityID: string; first?: boolean }) {
           }}
         />
       )}
-      <div className="pageWrapper w-fit flex relative snap-center">
-        <div
-          onMouseDown={(e) => {
-            if (e.defaultPrevented) return;
-            if (rep) {
-              focusPage(props.entityID, rep);
-            }
-          }}
-          id={elementId.page(props.entityID).container}
-          style={{
-            backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-            width: type === "doc" ? "var(--page-width-units)" : undefined,
-          }}
-          className={`
+      <div className="pageAndMore relative  w-fit flex flex-row  snap-center">
+        {/* // pageWrapper is required so that items absolutely positioned items on the page border
+      (like canvasWidthHandle) can overflow the page itself */}
+        <div className="pageWrapper  flex w-fit h-full relative ">
+          <div
+            onMouseDown={(e) => {
+              if (e.defaultPrevented) return;
+              if (rep) {
+                focusPage(props.entityID, rep);
+              }
+            }}
+            id={elementId.page(props.entityID).container}
+            style={{
+              backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
+              width: type === "doc" ? "var(--page-width-units)" : undefined,
+            }}
+            className={`
             ${type === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
-      page
-      grow flex flex-col
-      overscroll-y-none
-      overflow-y-scroll no-scrollbar
-      rounded-lg border
-      ${isFocused ? "shadow-md border-border" : "border-border-light"}
-    `}
-        >
-          <Media mobile={true}>
-            <PageOptionsMenu entityID={props.entityID} first={props.first} />
-          </Media>
-          <DesktopPageFooter pageID={props.entityID} />
-          {isDraft.length > 0 && (
-            <div
-              className={`pageStatus pt-[6px] pb-1 ${!props.first ? "pr-10 pl-3 sm:px-4" : "px-3 sm:px-4"} border-b border-border text-tertiary`}
-              style={{
-                backgroundColor:
-                  "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
-              }}
-            >
-              <DraftPostOptions mailboxEntity={isDraft[0].entity} />
-            </div>
-          )}
+            page z-[1]
+            grow flex flex-col 
+            overscroll-y-none
+            overflow-y-scroll no-scrollbar
+            rounded-lg border
+            ${isFocused ? "shadow-md border-border" : "border-border-light"}
+          `}
+          >
+            <DesktopPageFooter pageID={props.entityID} />
+            {isDraft.length > 0 && (
+              <div
+                className={`pageStatus pt-[6px] pb-1 ${!props.first ? "pr-10 pl-3 sm:px-4" : "px-3 sm:px-4"} border-b border-border text-tertiary`}
+                style={{
+                  backgroundColor:
+                    "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
+                }}
+              >
+                <DraftPostOptions mailboxEntity={isDraft[0].entity} />
+              </div>
+            )}
 
-          <PageContent entityID={props.entityID} />
+            <PageContent entityID={props.entityID} />
+          </div>
         </div>
+        {commentSectionOpen && <CommentPanel />}
+        <Media mobile={true}>
+          <PageOptionsMenu entityID={props.entityID} first={props.first} />
+        </Media>
         <Media mobile={false}>
           {isFocused && (
             <PageOptionsMenu entityID={props.entityID} first={props.first} />

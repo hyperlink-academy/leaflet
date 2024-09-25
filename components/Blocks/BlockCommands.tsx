@@ -10,6 +10,7 @@ import {
   Header3Small,
   MailboxSmall,
   ParagraphSmall,
+  CommentSmall,
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "components/Pages";
@@ -96,7 +97,7 @@ type Command = {
   ) => void;
 };
 export const blockCommands: Command[] = [
-  // please keep these in the order that they appear in the menu, grouped by type
+  // please keep these in this order!!! This is the order in which the appear in the menu, grouped by type
   {
     name: "Text",
     icon: <ParagraphSmall />,
@@ -178,6 +179,16 @@ export const blockCommands: Command[] = [
       }, 100);
     },
   },
+  {
+    name: "Comment Section",
+    icon: <CommentSmall />,
+    type: "block",
+    onSelect: async (rep, props) => {
+      let entity;
+      createBlockWithType(rep, props, "comment-section");
+    },
+  },
+
   {
     name: "Mailbox",
     icon: <MailboxSmall />,

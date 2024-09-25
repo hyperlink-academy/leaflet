@@ -6,6 +6,7 @@ type SelectedBlock = Pick<Block, "value" | "parent">;
 export const useUIState = create(
   combine(
     {
+      openCommentSection: null as string | null,
       lastUsedHighlight: "1" as "1" | "2" | "3",
       focusedEntity: null as
         | { entityType: "page"; entityID: string }

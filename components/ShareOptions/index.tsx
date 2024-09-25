@@ -99,7 +99,7 @@ export function ShareOptions(props: { rootEntity: string }) {
             Collaborate
           </div>
           <div className="text-sm font-normal text-tertiary group-hover/collab:text-accent-contrast">
-            Invite people to work together
+            Invite people to edit and work together
           </div>
         </div>
       </MenuItem>{" "}
