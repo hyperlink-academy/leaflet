@@ -371,8 +371,7 @@ function CanvasBlock(props: {
       {...(!props.preview ? { ...longPressHandlers } : {})}
       {...(isMobile && permissions.write ? { ...handlers } : {})}
       id={props.preview ? undefined : elementId.block(props.entityID).container}
-      className={`absolute group/canvas-block will-change-transform rounded-lg flex items-stretch origin-center p-3
-        `}
+      className={`absolute group/canvas-block will-change-transform rounded-lg flex items-stretch origin-center p-3        `}
       style={{
         top: 0,
         left: 0,
@@ -383,16 +382,20 @@ function CanvasBlock(props: {
     >
       {/* the gripper show on hover, but longpress logic needs to be added for mobile*/}
       {!props.preview && permissions.write && <Gripper {...handlers} />}
-      <BaseBlock
-        {...blockProps}
-        listData={
-          isList?.data.value
-            ? { path: [], parent: props.parent, depth: 1 }
-            : undefined
-        }
-        areYouSure={areYouSure}
-        setAreYouSure={setAreYouSure}
-      />
+      <div
+        className={`contents ${dragDelta || widthHandle.dragDelta || rotateHandle.dragDelta ? "pointer-events-none" : ""} `}
+      >
+        <BaseBlock
+          {...blockProps}
+          listData={
+            isList?.data.value
+              ? { path: [], parent: props.parent, depth: 1 }
+              : undefined
+          }
+          areYouSure={areYouSure}
+          setAreYouSure={setAreYouSure}
+        />
+      </div>
 
       {!props.preview && permissions.write && (
         <div

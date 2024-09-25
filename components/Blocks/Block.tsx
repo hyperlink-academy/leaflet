@@ -12,6 +12,7 @@ import { TextBlock } from "components/Blocks/TextBlock";
 import { ImageBlock } from "./ImageBlock";
 import { PageLinkBlock } from "./PageLinkBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
+import { EmbedBlock } from "./EmbedBlock";
 import { MailboxBlock } from "./MailboxBlock";
 import { HeadingBlock } from "./HeadingBlock";
 import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
@@ -136,6 +137,8 @@ export const BaseBlock = (
             <ImageBlock {...props} />
           ) : props.type === "link" ? (
             <ExternalLinkBlock {...props} />
+          ) : props.type === "embed" ? (
+            <EmbedBlock {...props} />
           ) : props.type === "mailbox" ? (
             <div className="flex flex-col gap-4 w-full">
               <MailboxBlock {...props} />

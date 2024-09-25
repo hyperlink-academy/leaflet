@@ -3,16 +3,10 @@ import { useUIState } from "src/useUIState";
 import {
   BlockDocPageSmall,
   BlockImageSmall,
-  BlockLinkSmall,
   CheckTiny,
   CloseTiny,
-  Header1Small,
-  Header2Small,
-  Header3Small,
   LinkSmall,
-  LinkTextToolbarSmall,
-  MailboxSmall,
-  ParagraphSmall,
+  BlockMailboxSmall,
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
 import { addImage } from "src/utils/addImage";
@@ -159,7 +153,7 @@ export function BlockOptions(props: Props) {
                   setblockMenuState("link");
                 }}
               >
-                <LinkTextToolbarSmall />
+                <LinkSmall />
               </ToolbarButton>
 
               <ToolbarButton
@@ -190,7 +184,7 @@ export function BlockOptions(props: Props) {
                   }
                 }}
               >
-                <MailboxSmall />
+                <BlockMailboxSmall />
               </ToolbarButton>
               <Separator classname="h-6" />
               <TextBlockTypeButton
@@ -258,7 +252,7 @@ const BlockLinkInput = (props: { onClose: () => void } & Props) => {
   return (
     <div className={`max-w-sm flex gap-2 rounded-md text-secondary`}>
       <>
-        <BlockLinkSmall className="shrink-0" />
+        <LinkSmall className="shrink-0" />
         <Separator />
         <Input
           autoFocus

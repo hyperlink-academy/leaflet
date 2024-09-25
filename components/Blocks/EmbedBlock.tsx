@@ -3,11 +3,10 @@ import { generateKeyBetween } from "fractional-indexing";
 import { useEffect, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import { addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockProps } from "./Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
-import { CheckTiny, LinkSmall } from "components/Icons";
+import { BlockEmbedSmall, CheckTiny } from "components/Icons";
 import { Separator } from "components/Layout";
 import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
@@ -15,14 +14,10 @@ import { elementId } from "src/utils/elementId";
 import { deleteBlock } from "./DeleteBlock";
 import { focusBlock } from "src/utils/focusBlock";
 
-export const ExternalLinkBlock = (
-  props: BlockProps & { preview?: boolean },
-) => {
+export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
-  let previewImage = useEntity(props.entityID, "link/preview");
-  let title = useEntity(props.entityID, "link/title");
-  let description = useEntity(props.entityID, "link/description");
-  let url = useEntity(props.entityID, "link/url");
+  let url = useEntity(props.entityID, "embed/url");
+  let isCanvasBlock = props.pageType === "canvas";
 
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
@@ -41,7 +36,7 @@ export const ExternalLinkBlock = (
       <label
         id={props.preview ? undefined : elementId.block(props.entityID).input}
         className={`
-          w-full h-[104px] p-2
+          w-full h-[420px] p-2
           text-tertiary hover:text-accent-contrast hover:cursor-pointer 
           flex flex-auto gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg 
           ${isSelected ? "border-2 border-tertiary" : "border border-border"} 
@@ -59,54 +54,39 @@ export const ExternalLinkBlock = (
   }
 
   return (
-    <a
-      href={url?.data.value}
-      target="_blank"
-      className={`
-        externalLinkBlock flex relative group/linkBlock
-        h-[104px] w-full bg-bg-page overflow-hidden text-primary hover:no-underline no-underline
-        border  hover:border-accent-contrast outline outline-1 -outline-offset-0 rounded-lg shadow-sm
-        ${isSelected ? "outline-accent-contrast border-accent-contrast" : "outline-transparent border-border-light"}
-        `}
-    >
-      <div className="pt-2 pb-2 px-3 grow min-w-0">
-        <div className="flex flex-col w-full min-w-0 h-full grow ">
-          <div
-            className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-none resize-none align-top border h-[24px] line-clamp-1`}
-            style={{
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              wordBreak: "break-all",
-            }}
-          >
-            {title?.data.value}
-          </div>
+    <div className={`w-full aspect-[4/3]`}>
+      {/*
+	  the iframe! 
+	  very simple, just a fixed height (could add as an option)
+	  can also add 'allow' and 'referrerpolicy' attributes later if needed 
+	  */}
+      <iframe
+        className={`
+              flex flex-col relative w-full overflow-hidden group/embedBlock
+              border  outline outline-1 -outline-offset-0 rounded-lg
+              ${isSelected ? "border-tertiary outline-tertiary" : "border-border-light outline-transparent"}
+              `}
+        width="100%"
+        height="100%"
+        src={url?.data.value}
+        allow="fullscreen"
+        loading="lazy"
+      ></iframe>
 
-          <div
-            className={`linkBlockDescription text-sm bg-transparent border-none outline-none resize-none align-top  grow line-clamp-2`}
-          >
-            {description?.data.value}
-          </div>
-          <div
-            style={{ wordBreak: "break-word" }} // better than tailwind break-all!
-            className={`min-w-0 w-full line-clamp-1 text-xs italic group-hover/linkBlock:text-accent-contrast ${isSelected ? "text-accent-contrast" : "text-tertiary"}`}
-          >
-            {url?.data.value}
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={`linkBlockPreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center`}
-        style={{
-          backgroundImage: `url(${previewImage?.data.src})`,
-          backgroundPosition: "center",
-        }}
-      />
-    </a>
+      <a
+        href={url?.data.value}
+        target="_blank"
+        style={{ wordBreak: "break-word" }} // better than tailwind break-all!
+        className={`py-0.5 min-w-0 w-full line-clamp-1 text-xs italic text-accent-contrast`}
+      >
+        {url?.data.value}
+      </a>
+    </div>
   );
 };
 
+// TODO: maybe extract into a component…
+// would just have to branch for the mutations (addLinkBlock or addEmbedBlock)
 const BlockLinkInput = (props: BlockProps) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
@@ -130,14 +110,28 @@ const BlockLinkInput = (props: BlockProps) => {
     }
     let link = linkValue;
     if (!linkValue.startsWith("http")) link = `https://${linkValue}`;
-    addLinkBlock(link, entity, rep);
+    // these mutations = simpler subset of addLinkBlock
+    if (!rep) return;
+    await rep.mutate.assertFact({
+      entity: entity,
+      attribute: "block/type",
+      data: { type: "block-type-union", value: "embed" },
+    });
+    await rep?.mutate.assertFact({
+      entity: entity,
+      attribute: "embed/url",
+      data: {
+        type: "text",
+        value: link,
+      },
+    });
   };
   let smoke = useSmoker();
 
   return (
-    <div className={`max-w-sm flex gap-2 rounded-md text-secondary`}>
-      <>
-        <LinkSmall
+    <div>
+      <div className={`max-w-sm flex gap-2 rounded-md text-secondary`}>
+        <BlockEmbedSmall
           className={`shrink-0  ${isSelected ? "text-tertiary" : "text-border"} `}
         />
         <Separator />
@@ -194,7 +188,7 @@ const BlockLinkInput = (props: BlockProps) => {
             <CheckTiny />
           </button>
         </div>
-      </>
+      </div>
     </div>
   );
 };
