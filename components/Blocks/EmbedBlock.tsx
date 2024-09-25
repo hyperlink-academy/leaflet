@@ -6,7 +6,7 @@ import { useUIState } from "src/useUIState";
 import { BlockProps } from "./Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
-import { BlockLinkSmall, CheckTiny } from "components/Icons";
+import { BlockEmbedSmall, CheckTiny } from "components/Icons";
 import { Separator } from "components/Layout";
 import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
@@ -131,7 +131,7 @@ const BlockLinkInput = (props: BlockProps) => {
   return (
     <div>
       <div className={`max-w-sm flex gap-2 rounded-md text-secondary`}>
-        <BlockLinkSmall
+        <BlockEmbedSmall
           className={`shrink-0  ${isSelected ? "text-tertiary" : "text-border"} `}
         />
         <Separator />
