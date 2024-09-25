@@ -36,12 +36,16 @@ export const HelpPopover = () => {
           >
             <strong>Learn more</strong>
           </a>{" "}
-          about Leaflet, or{" "}
-          <a href="mailto:contact@hyperlink.academy">
-            <strong>email us</strong>
+          &{" "}
+          <a href="https://buttondown.com/leaflet" target="_blank">
+            <strong>sign up for updates!</strong>
           </a>{" "}
-          with questions or feedback!
+          <a href="mailto:contact@hyperlink.academy">
+            <strong>Email us</strong>
+          </a>{" "}
+          questions or feedback 🍃
         </div>
+        {/* <div>Leaflet&apos;s in alpha. Sign up for updates!</div> */}
         <Media mobile={false}>
           <hr className="text-border my-1" />
           <div className="flex flex-col gap-1">
