@@ -17,6 +17,7 @@ import { focusBlock } from "src/utils/focusBlock";
 export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
   let url = useEntity(props.entityID, "embed/url");
+  let isCanvasBlock = props.pageType === "canvas";
 
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
@@ -53,41 +54,33 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   }
 
   return (
-    <div
-      className={`
-        flex flex-col relative w-full bg-border-light overflow-hidden group/embedBlock
-        border outline outline-1 -outline-offset-0 rounded-lg
-        ${isSelected ? "border-tertiary outline-tertiary" : "border-transparent outline-transparent"}
-        `}
-    >
+    <div className={`w-full aspect-[4/3]`}>
       {/*
 	  the iframe! 
 	  very simple, just a fixed height (could add as an option)
 	  can also add 'allow' and 'referrerpolicy' attributes later if needed 
 	  */}
       <iframe
+        className={`
+              flex flex-col relative w-full overflow-hidden group/embedBlock
+              border  outline outline-1 -outline-offset-0 rounded-lg
+              ${isSelected ? "border-tertiary outline-tertiary" : "border-border-light outline-transparent"}
+              `}
         width="100%"
-        height="420"
+        height="100%"
         src={url?.data.value}
         allow="fullscreen"
         loading="lazy"
       ></iframe>
 
-      {/* link source */}
-      {/* TODO: more subtle, maybe icon + only show link on hover? */}
-      {/* disabled for now, idk how to make non-obtrusive, maybe we don't need */}
-      {/* <div className="py-1 px-2 m-2 grow min-w-0 absolute bottom-0 bg-border-light rounded-md"> */}
-      {/* <div className="py-2 px-3 grow min-w-0 bg-border-light hidden group-hover/embedBlock:inline-block"> */}
-      {/* <div className="py-1 px-2 m-2 grow min-w-0 bg-border-light absolute bottom-0 rounded-md hidden group-hover/embedBlock:inline-block"> */}
-      {/* <a
-          href={url?.data.value}
-          target="_blank"
-          style={{ wordBreak: "break-word" }} // better than tailwind break-all!
-          className={`min-w-0 w-full line-clamp-1 text-xs italic ${isSelected ? "text-accent-contrast" : "text-accent-contrast"}`}
-        >
-          {url?.data.value}
-        </a> */}
-      {/* </div> */}
+      <a
+        href={url?.data.value}
+        target="_blank"
+        style={{ wordBreak: "break-word" }} // better than tailwind break-all!
+        className={`py-0.5 min-w-0 w-full line-clamp-1 text-xs italic text-accent-contrast`}
+      >
+        {url?.data.value}
+      </a>
     </div>
   );
 };
@@ -136,8 +129,8 @@ const BlockLinkInput = (props: BlockProps) => {
   let smoke = useSmoker();
 
   return (
-    <div className={`max-w-sm flex gap-2 rounded-md text-secondary`}>
-      <>
+    <div>
+      <div className={`max-w-sm flex gap-2 rounded-md text-secondary`}>
         <BlockLinkSmall
           className={`shrink-0  ${isSelected ? "text-tertiary" : "text-border"} `}
         />
@@ -195,7 +188,7 @@ const BlockLinkInput = (props: BlockProps) => {
             <CheckTiny />
           </button>
         </div>
-      </>
+      </div>
     </div>
   );
 };

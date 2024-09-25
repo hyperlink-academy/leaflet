@@ -10,6 +10,8 @@ import {
   Header3Small,
   MailboxSmall,
   ParagraphSmall,
+  LinkTextToolbarSmall,
+  BlockEmbedSmall,
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "components/Pages";
@@ -159,15 +161,15 @@ export const blockCommands: Command[] = [
 
   {
     name: "External Link",
-    icon: <BlockLinkSmall />,
+    icon: <LinkTextToolbarSmall />,
     type: "block",
     onSelect: async (rep, props) => {
       createBlockWithType(rep, props, "link");
     },
   },
   {
-    name: "Embed",
-    icon: <BlockLinkSmall />,
+    name: "Embed Webpage",
+    icon: <BlockEmbedSmall />,
     type: "block",
     onSelect: async (rep, props) => {
       createBlockWithType(rep, props, "embed");
