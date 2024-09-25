@@ -20,13 +20,14 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     s.selectedBlocks.find((b) => b.value === props.value),
   );
   useEffect(() => {
+    if (props.preview) return;
     let input = document.getElementById(elementId.block(props.entityID).input);
     if (isSelected) {
       input?.focus();
     } else {
       input?.blur();
     }
-  }, [isSelected]);
+  }, [isSelected, props.preview, props.entityID]);
 
   if (!image) {
     if (!entity_set.permissions.write) return null;

@@ -28,11 +28,12 @@ export const ExternalLinkBlock = (
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   useEffect(() => {
+    if (props.preview) return;
     let input = document.getElementById(elementId.block(props.entityID).input);
     if (isSelected) {
       input?.focus();
     } else input?.blur();
-  }, [isSelected]);
+  }, [isSelected, props.entityID, props.preview]);
 
   if (!url) {
     if (!permissions.write) return null;
