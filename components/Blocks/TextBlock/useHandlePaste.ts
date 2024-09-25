@@ -31,6 +31,7 @@ export const useHandlePaste = (
       let text = e.clipboardData.getData("text");
       let editorState = useEditorStates.getState().editorStates[entityID];
       if (!editorState) return;
+      console.log("yo");
       if (text && betterIsUrl(text)) {
         let selection = view.state.selection as TextSelection;
         if (selection.empty) return;
@@ -51,31 +52,31 @@ export const useHandlePaste = (
         let currentPosition = propsRef.current.position;
         let children = flattenHTMLToTextBlocks(xml.body);
         if (
-          !children.find((c) =>
+          children.find((c) =>
             ["P", "H1", "H2", "H3", "UL"].includes(c.tagName),
           )
-        )
-          return;
-        children.forEach((child, index) => {
-          createBlockFromHTML(child, {
-            first: index === 0,
-            activeBlockProps: propsRef,
-            entity_set,
-            rep,
-            parent: propsRef.current.listData
-              ? propsRef.current.listData.parent
-              : propsRef.current.parent,
-            getPosition: () => {
-              currentPosition = generateKeyBetween(
-                currentPosition,
-                propsRef.current.nextPosition,
-              );
-              return currentPosition;
-            },
-            last: index === children.length - 1,
+        ) {
+          children.forEach((child, index) => {
+            createBlockFromHTML(child, {
+              first: index === 0,
+              activeBlockProps: propsRef,
+              entity_set,
+              rep,
+              parent: propsRef.current.listData
+                ? propsRef.current.listData.parent
+                : propsRef.current.parent,
+              getPosition: () => {
+                currentPosition = generateKeyBetween(
+                  currentPosition,
+                  propsRef.current.nextPosition,
+                );
+                return currentPosition;
+              },
+              last: index === children.length - 1,
+            });
           });
-        });
-        return true;
+          return true;
+        }
       }
 
       for (let item of e.clipboardData.items) {
