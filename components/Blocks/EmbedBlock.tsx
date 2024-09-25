@@ -22,11 +22,12 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   useEffect(() => {
+    if (props.preview) return;
     let input = document.getElementById(elementId.block(props.entityID).input);
     if (isSelected) {
       input?.focus();
     } else input?.blur();
-  }, [isSelected, props.entityID]);
+  }, [isSelected, props.entityID, props.preview]);
 
   if (!url) {
     if (!permissions.write) return null;
