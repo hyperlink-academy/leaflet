@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Color, parseColor } from "react-aria-components";
-import { useEntity } from "src/replicache";
+import { useEntity, useReplicache } from "src/replicache";
 import { FilterAttributes } from "src/replicache/attributes";
 import { ThemeDefaults } from "./ThemeProvider";
 
@@ -8,12 +8,13 @@ export function useColorAttribute(
   entity: string,
   attribute: keyof FilterAttributes<{ type: "color"; cardinality: "one" }>,
 ) {
+  let { rootEntity } = useReplicache();
   let color = useEntity(entity, attribute);
+  let fallbackColor = useEntity(color ? null : rootEntity, attribute);
   return useMemo(() => {
-    return parseColor(
-      color ? `hsba(${color.data.value})` : ThemeDefaults[attribute],
-    );
-  }, [color, attribute]);
+    let c = color || fallbackColor;
+    return parseColor(c ? `hsba(${c.data.value})` : ThemeDefaults[attribute]);
+  }, [color, fallbackColor, attribute]);
 }
 
 export function colorToString(value: Color, space: "rgb" | "hsba") {
