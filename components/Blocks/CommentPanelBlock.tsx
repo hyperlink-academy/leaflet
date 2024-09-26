@@ -1,49 +1,9 @@
-import { CloseTiny, CommentDefaultTiny } from "components/Icons";
+import { CloseTiny, DiscussionDefaultTiny } from "components/Icons";
 import { useUIState } from "src/useUIState";
 
-export const CommentPanelBlock = (props: {
-  entityID: string;
-  parent: string;
-}) => {
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
-
+export const Discussion = (props: { entityID: string }) => {
   return (
-    <div className="w-full text-tertiary text-sm flex flex-col gap-1">
-      {/* <hr
-        className={`${isSelected ? "border-border" : "border-border-light"}`}
-      /> */}
-      <button
-        className="flex gap-1 items-center w-fit px-1 place-self-end hover:bg-border-light rounded-md"
-        onClick={() => {
-          useUIState.setState({ openCommentSection: props.entityID });
-        }}
-      >
-        6 <CommentDefaultTiny />
-      </button>
-    </div>
-  );
-};
-
-export const CommentPanel = (props: {}) => {
-  return (
-    <div
-      className="commentSection relative  w-[var(--page-width-units)] sm:w-[calc(var(--page-width-units)/2)]  -ml-2 pl-6 p-4 rounded-r-lg text-sm text-secondary flex flex-col justify-between"
-      style={{
-        backgroundColor:
-          "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
-      }}
-    >
-      <button
-        className="absolute top-4 right-4 p-0.5"
-        onClick={() => {
-          useUIState.setState({ openCommentSection: null });
-        }}
-      >
-        <CloseTiny />
-        {/* needs MORE OPTIONS for changing permissions */}
-      </button>
+    <div className="discussion relative sm:p-4 p-3 w-full h-full text-sm text-secondary flex flex-col justify-between">
       {/* <div className="flex flex-col gap-2">
         <Message message="hello" />
         <Message message="how are you" />
@@ -101,5 +61,3 @@ const MessageComposer = (props: {}) => {
     </div>
   );
 };
-
-// i need to set which (if any) comment section is open in the UI state, and then use that to render the drawer

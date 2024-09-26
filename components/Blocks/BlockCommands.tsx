@@ -10,7 +10,7 @@ import {
   Header3Small,
   MailboxSmall,
   ParagraphSmall,
-  CommentSmall,
+  DiscussionSmall,
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "components/Pages";
@@ -179,15 +179,6 @@ export const blockCommands: Command[] = [
       }, 100);
     },
   },
-  {
-    name: "Comment Section",
-    icon: <CommentSmall />,
-    type: "block",
-    onSelect: async (rep, props) => {
-      let entity;
-      createBlockWithType(rep, props, "comment-section");
-    },
-  },
 
   {
     name: "Mailbox",
@@ -237,6 +228,27 @@ export const blockCommands: Command[] = [
       });
       useUIState.getState().openPage(props.parent, newPage);
       focusPage(newPage, rep, "focusFirstBlock");
+    },
+  },
+
+  {
+    name: "New Discussion",
+    icon: <DiscussionSmall />,
+    type: "page",
+    onSelect: async (rep, props) => {
+      let entity = await createBlockWithType(rep, props, "card");
+
+      let newPage = v7();
+      await rep?.mutate.addPageLinkBlock({
+        type: "discussion",
+        blockEntity: entity,
+        firstBlockFactID: v7(),
+        firstBlockEntity: v7(),
+        pageEntity: newPage,
+        permission_set: props.entity_set,
+      });
+      useUIState.getState().openPage(props.parent, newPage);
+      focusPage(newPage, rep);
     },
   },
 ];

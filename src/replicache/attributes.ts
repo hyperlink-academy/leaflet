@@ -56,10 +56,6 @@ const BlockAttributes = {
   },
 } as const;
 
-const CommentAtrributes = {
-  "comment/section": { type: "boolean", cardinality: "one" },
-} as const;
-
 const MailboxAttributes = {
   "mailbox/draft": {
     type: "reference",
@@ -143,7 +139,6 @@ export const Attributes = {
   ...LinkBlockAttributes,
   ...ThemeAttributes,
   ...MailboxAttributes,
-  ...CommentAtrributes,
 };
 type Attribute = typeof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
@@ -180,17 +175,13 @@ export type Data<A extends keyof typeof Attributes> = {
     value: string;
   };
   reference: { type: "reference"; value: string };
-  "page-type-union": { type: "page-type-union"; value: "doc" | "canvas" };
+  "page-type-union": {
+    type: "page-type-union";
+    value: "doc" | "canvas" | "discussion";
+  };
   "block-type-union": {
     type: "block-type-union";
-    value:
-      | "text"
-      | "image"
-      | "card"
-      | "heading"
-      | "link"
-      | "mailbox"
-      | "comment-section";
+    value: "text" | "image" | "card" | "heading" | "link" | "mailbox";
   };
   color: { type: "color"; value: string };
 }[(typeof Attributes)[A]["type"]];

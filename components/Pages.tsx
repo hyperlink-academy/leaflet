@@ -26,20 +26,11 @@ import { Canvas } from "./Canvas";
 import { DraftPostOptions } from "./Blocks/MailboxBlock";
 import { Blocks } from "components/Blocks";
 import { MenuItem, Menu } from "./Layout";
-import {
-  MoreOptionsTiny,
-  DeleteSmall,
-  CloseTiny,
-  PopoverArrow,
-  BlockDocPageSmall,
-  BlockCanvasPageSmall,
-} from "./Icons";
-import { useEditorStates } from "src/state/useEditorState";
-import { useIsMobile } from "src/hooks/isMobile";
+import { MoreOptionsTiny, DeleteSmall, CloseTiny } from "./Icons";
 import { HelpPopover } from "./HelpPopover";
 import { CreateNewLeafletButton } from "app/home/CreateNewButton";
 import { scanIndex } from "src/replicache/utils";
-import { CommentPanel } from "./Blocks/CommentPanelBlock";
+import { Discussion } from "./Blocks/CommentPanelBlock";
 
 export function Pages(props: { rootPage: string }) {
   let openPages = useUIState((s) => s.openPages);
@@ -121,7 +112,6 @@ function Page(props: { entityID: string; first?: boolean }) {
       : focusedElement?.parent;
   let isFocused = focusedPageID === props.entityID;
   let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
-  let commentSectionOpen = useUIState((s) => s.openCommentSection);
 
   return (
     <>
@@ -133,58 +123,55 @@ function Page(props: { entityID: string; first?: boolean }) {
           }}
         />
       )}
-      <div className="pageAndMore relative  w-fit flex flex-row  snap-center">
-        {/* // pageWrapper is required so that items absolutely positioned items on the page border
+      {/* // pageWrapper is required so that items absolutely positioned items on the page border
       (like canvasWidthHandle) can overflow the page itself */}
-        <div className="pageWrapper  flex w-fit h-full relative ">
-          <div
-            onMouseDown={(e) => {
-              if (e.defaultPrevented) return;
-              if (rep) {
-                focusPage(props.entityID, rep);
-              }
-            }}
-            id={elementId.page(props.entityID).container}
-            style={{
-              backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-              width: type === "doc" ? "var(--page-width-units)" : undefined,
-            }}
-            className={`
-            ${type === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
-            page z-[1]
+      <div className="pageWrapper  flex w-fit h-full relative ">
+        <div
+          onMouseDown={(e) => {
+            if (e.defaultPrevented) return;
+            if (rep) {
+              focusPage(props.entityID, rep);
+            }
+          }}
+          id={elementId.page(props.entityID).container}
+          style={{
+            backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
+            width: type === "doc" ? "var(--page-width-units)" : undefined,
+          }}
+          className={`
+            page 
             grow flex flex-col 
             overscroll-y-none
             overflow-y-scroll no-scrollbar
             rounded-lg border
+            ${type === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
             ${isFocused ? "shadow-md border-border" : "border-border-light"}
           `}
-          >
-            <DesktopPageFooter pageID={props.entityID} />
-            {isDraft.length > 0 && (
-              <div
-                className={`pageStatus pt-[6px] pb-1 ${!props.first ? "pr-10 pl-3 sm:px-4" : "px-3 sm:px-4"} border-b border-border text-tertiary`}
-                style={{
-                  backgroundColor:
-                    "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
-                }}
-              >
-                <DraftPostOptions mailboxEntity={isDraft[0].entity} />
-              </div>
-            )}
-
-            <PageContent entityID={props.entityID} />
-          </div>
-        </div>
-        {commentSectionOpen && <CommentPanel />}
-        <Media mobile={true}>
-          <PageOptionsMenu entityID={props.entityID} first={props.first} />
-        </Media>
-        <Media mobile={false}>
-          {isFocused && (
-            <PageOptionsMenu entityID={props.entityID} first={props.first} />
+        >
+          <DesktopPageFooter pageID={props.entityID} />
+          {isDraft.length > 0 && (
+            <div
+              className={`pageStatus pt-[6px] pb-1 ${!props.first ? "pr-10 pl-3 sm:px-4" : "px-3 sm:px-4"} border-b border-border text-tertiary`}
+              style={{
+                backgroundColor:
+                  "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
+              }}
+            >
+              <DraftPostOptions mailboxEntity={isDraft[0].entity} />
+            </div>
           )}
-        </Media>
+
+          <PageContent entityID={props.entityID} />
+        </div>
       </div>
+      <Media mobile={true}>
+        <PageOptionsMenu entityID={props.entityID} first={props.first} />
+      </Media>
+      <Media mobile={false}>
+        {isFocused && (
+          <PageOptionsMenu entityID={props.entityID} first={props.first} />
+        )}
+      </Media>
     </>
   );
 }
@@ -192,7 +179,8 @@ function Page(props: { entityID: string; first?: boolean }) {
 const PageContent = (props: { entityID: string }) => {
   let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
   if (type === "doc") return <Blocks entityID={props.entityID} />;
-  return <Canvas entityID={props.entityID} />;
+  if (type === "canvas") return <Canvas entityID={props.entityID} />;
+  if (type === "discussion") return <Discussion entityID={props.entityID} />;
 };
 
 const PageOptionsMenu = (props: {

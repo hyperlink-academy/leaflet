@@ -1,12 +1,11 @@
 import { Block } from "components/Blocks/Block";
 import { create } from "zustand";
-import { combine, createJSONStorage, persist } from "zustand/middleware";
+import { combine } from "zustand/middleware";
 
 type SelectedBlock = Pick<Block, "value" | "parent">;
 export const useUIState = create(
   combine(
     {
-      openCommentSection: null as string | null,
       lastUsedHighlight: "1" as "1" | "2" | "3",
       focusedEntity: null as
         | { entityType: "page"; entityID: string }

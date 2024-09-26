@@ -204,7 +204,7 @@ export const CanvasShrinkSmall = (props: Props) => {
   );
 };
 
-export const CommentSmall = (props: Props) => {
+export const DiscussionSmall = (props: Props) => {
   return (
     <svg
       width="24"
@@ -589,7 +589,7 @@ export const CloseTiny = (props: Props) => {
   );
 };
 
-export const CommentDefaultTiny = (props: Props) => {
+export const DiscussionDefaultTiny = (props: Props) => {
   return (
     <svg
       width="16"
@@ -608,7 +608,7 @@ export const CommentDefaultTiny = (props: Props) => {
     </svg>
   );
 };
-export const CommentUnreadTiny = (props: Props) => {
+export const DiscussionUnreadTiny = (props: Props) => {
   return (
     <svg
       width="16"
