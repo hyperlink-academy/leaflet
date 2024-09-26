@@ -165,7 +165,7 @@ function Page(props: { entityID: string; first?: boolean }) {
               overscroll-y-none
               overflow-y-scroll no-scrollbar
               rounded-lg border
-              ${isFocused ? "shadow-md" : ""}
+              ${isFocused ? "shadow-md border-border" : "border-border-light"}
             `}
         >
           {/* we handle page bg in this sepate div so that 
@@ -175,8 +175,8 @@ function Page(props: { entityID: string; first?: boolean }) {
             className={`pageBackground 
               absolute top-0 left-0 right-0 bottom-0 
               pointer-events-none               
-              rounded-lg border
-              ${isFocused ? "border-border" : "border-border-light"}`}
+              rounded-lg 
+              `}
             style={
               pageType === "canvas"
                 ? { opacity: "0" }
