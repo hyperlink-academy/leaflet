@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useUIState } from "src/useUIState";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { useSearchParams } from "next/navigation";
@@ -40,6 +40,8 @@ import { useIsMobile } from "src/hooks/isMobile";
 import { HelpPopover } from "./HelpPopover";
 import { CreateNewLeafletButton } from "app/home/CreateNewButton";
 import { scanIndex } from "src/replicache/utils";
+import { PageThemeSetter } from "./ThemeManager/PageThemeSetter";
+import { PageThemeProvider } from "./ThemeManager/ThemeProvider";
 
 export function Pages(props: { rootPage: string }) {
   let openPages = useUIState((s) => s.openPages);
@@ -88,7 +90,9 @@ export function Pages(props: { rootPage: string }) {
       </div>
       {pages.map((page) => (
         <div className="flex items-stretch" key={page}>
-          <Page entityID={page} />
+          <PageThemeProvider entityID={page}>
+            <Page entityID={page} />
+          </PageThemeProvider>
         </div>
       ))}
       <div
@@ -199,23 +203,30 @@ const PageOptionsMenu = (props: {
   return (
     <div className=" z-10 w-fit absolute sm:top-2 sm:-right-[18px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
       {!props.first && (
-        <button
-          className="p-1 pt-[10px] sm:p-0.5 sm:pl-0 bg-border text-bg-page sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
-          onClick={() => {
-            useUIState.getState().closePage(props.entityID);
-          }}
-        >
-          <CloseTiny />
-        </button>
+        <>
+          <button
+            className="p-1 pt-[10px] sm:p-0.5 sm:pl-0 bg-border text-bg-page sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
+            onClick={() => {
+              useUIState.getState().closePage(props.entityID);
+            }}
+          >
+            <CloseTiny />
+          </button>
+          <OptionsMenu entityID={props.entityID} />
+        </>
       )}
     </div>
   );
 };
 
-const OptionsMenu = () => {
+const OptionsMenu = (props: { entityID: string }) => {
   let toaster = useToaster();
+  let [state, setState] = useState<"normal" | "theme">("normal");
   return (
     <Menu
+      onOpenChange={(open) => {
+        if (!open) setState("normal");
+      }}
       trigger={
         <div
           className={`pageOptionsTrigger
@@ -229,14 +240,20 @@ const OptionsMenu = () => {
         </div>
       }
     >
-      <MenuItem
-        onSelect={(e) => {
-          // TODO: Wire up delete page
-          toaster(DeletePageToast);
-        }}
-      >
-        Delete Page <DeleteSmall />
-      </MenuItem>
+      {state === "normal" ? (
+        <>
+          <MenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              setState("theme");
+            }}
+          >
+            Theme Page
+          </MenuItem>
+        </>
+      ) : (
+        <PageThemeSetter entityID={props.entityID} />
+      )}
     </Menu>
   );
 };

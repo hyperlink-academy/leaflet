@@ -411,7 +411,7 @@ export const ColorPicker = (props: {
   );
 };
 
-const BGPicker = (props: {
+export const BGPicker = (props: {
   entityID: string;
   openPicker: pickers;
   thisPicker: pickers;

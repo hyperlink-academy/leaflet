@@ -10,6 +10,7 @@ import { usePageMetadata } from "src/hooks/queries/usePageMetadata";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { Canvas, CanvasBackground, CanvasContent } from "components/Canvas";
+import { PageThemeProvider } from "components/ThemeManager/ThemeProvider";
 
 export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
   let page = useEntity(props.entityID, "block/card");
@@ -24,8 +25,9 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
   let isOpen = useUIState((s) => s.openPages).includes(page?.data.value || "");
 
   return (
-    <div
-      className={`w-full cursor-pointer
+    <PageThemeProvider entityID={page?.data.value}>
+      <div
+        className={`w-full cursor-pointer
         pageLinkBlockWrapper relative group/pageLinkBlock
         bg-bg-page border shadow-sm outline outline-1 rounded-lg
         flex overflow-clip
@@ -37,22 +39,23 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
               : "border-border-light outline-transparent hover:outline-border-light"
         }
         `}
-      onClick={(e) => {
-        if (!page) return;
-        if (e.isDefaultPrevented()) return;
-        if (e.shiftKey) return;
-        e.preventDefault();
-        e.stopPropagation();
-        useUIState.getState().openPage(props.parent, page.data.value);
-        if (rep) focusPage(page.data.value, rep);
-      }}
-    >
-      {type === "canvas" && page ? (
-        <CanvasLinkBlock entityID={page?.data.value} />
-      ) : (
-        <DocLinkBlock {...props} />
-      )}
-    </div>
+        onClick={(e) => {
+          if (!page) return;
+          if (e.isDefaultPrevented()) return;
+          if (e.shiftKey) return;
+          e.preventDefault();
+          e.stopPropagation();
+          useUIState.getState().openPage(props.parent, page.data.value);
+          if (rep) focusPage(page.data.value, rep);
+        }}
+      >
+        {type === "canvas" && page ? (
+          <CanvasLinkBlock entityID={page?.data.value} />
+        ) : (
+          <DocLinkBlock {...props} />
+        )}
+      </div>
+    </PageThemeProvider>
   );
 }
 export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {

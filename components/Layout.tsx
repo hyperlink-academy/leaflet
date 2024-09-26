@@ -15,9 +15,10 @@ export const Menu = (props: {
   background?: string;
   border?: string;
   className?: string;
+  onOpenChange?: (o: boolean) => void;
 }) => {
   return (
-    <DropdownMenu.Root>
+    <DropdownMenu.Root onOpenChange={props.onOpenChange}>
       <DropdownMenu.Trigger>{props.trigger}</DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content
