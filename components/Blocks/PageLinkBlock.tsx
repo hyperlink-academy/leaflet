@@ -10,7 +10,7 @@ import { usePageMetadata } from "src/hooks/queries/usePageMetadata";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { Canvas, CanvasBackground, CanvasContent } from "components/Canvas";
-import { PageThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
 
 export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
   let page = useEntity(props.entityID, "block/card");
@@ -25,7 +25,7 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
   let isOpen = useUIState((s) => s.openPages).includes(page?.data.value || "");
 
   return (
-    <PageThemeProvider entityID={page?.data.value}>
+    <CardThemeProvider entityID={page?.data.value}>
       <div
         className={`w-full cursor-pointer
         pageLinkBlockWrapper relative group/pageLinkBlock
@@ -55,7 +55,7 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
           <DocLinkBlock {...props} />
         )}
       </div>
-    </PageThemeProvider>
+    </CardThemeProvider>
   );
 }
 export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {

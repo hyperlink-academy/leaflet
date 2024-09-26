@@ -1,7 +1,6 @@
 import { useEntity, useReplicache } from "src/replicache";
 import { useColorAttribute } from "./useColorAttribute";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { useViewportSize } from "@react-aria/utils";
 import {
   BGPicker,
   ColorPicker,
@@ -9,20 +8,14 @@ import {
   setColorAttribute,
 } from "./ThemeSetter";
 import { useMemo, useState } from "react";
-import * as Popover from "@radix-ui/react-popover";
-import { PopoverArrow } from "components/Icons";
 
 export const PageThemeSetter = (props: { entityID: string }) => {
   let { rep } = useReplicache();
-  let primaryValue = useColorAttribute(props.entityID, "theme/primary");
-  let pageValue = useColorAttribute(props.entityID, "theme/card-background");
-  let [openPicker, setOpenPicker] = useState<pickers>("null");
   let permission = useEntitySetContext().permissions.write;
-  let backgroundImage = useEntity(props.entityID, "theme/background-image");
-  let backgroundRepeat = useEntity(
-    props.entityID,
-    "theme/background-image-repeat",
-  );
+
+  let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
+  let primaryValue = useColorAttribute(props.entityID, "theme/primary");
+  let [openPicker, setOpenPicker] = useState<pickers>("null");
 
   let set = useMemo(() => {
     return setColorAttribute(rep, props.entityID);
@@ -32,31 +25,69 @@ export const PageThemeSetter = (props: { entityID: string }) => {
 
   return (
     <>
-      <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
-        <div className="themeBGLeaflet flex">
-          <ColorPicker
-            label="Page"
-            value={pageValue}
+      <div className="pageThemeSetterContent w-80 flex flex-col gap-2 overflow-y-scroll no-scrollbar">
+        <div className="pageThemeBG flex flex-col gap-2 -mb-[6px] z-10 w-full px-2 pt-2">
+          <BGPicker
+            entityID={props.entityID}
+            thisPicker={"leaflet"}
+            openPicker={openPicker}
+            setOpenPicker={setOpenPicker}
+            closePicker={() => setOpenPicker("null")}
             setValue={set("theme/card-background")}
-            thisPicker={"page"}
+            card
+          />
+          {pageType === "canvas" && (
+            <div className="flex gap-2">
+              <button
+                onMouseDown={() => {
+                  rep &&
+                    rep.mutate.assertFact({
+                      entity: props.entityID,
+                      attribute: "canvas/background-pattern",
+                      data: { type: "canvas-pattern-union", value: "grid" },
+                    });
+                }}
+              >
+                grid
+              </button>
+              <button
+                onMouseDown={() => {
+                  rep &&
+                    rep.mutate.assertFact({
+                      entity: props.entityID,
+                      attribute: "canvas/background-pattern",
+                      data: { type: "canvas-pattern-union", value: "dot" },
+                    });
+                }}
+              >
+                dot
+              </button>
+              <button
+                onMouseDown={() => {
+                  rep &&
+                    rep.mutate.assertFact({
+                      entity: props.entityID,
+                      attribute: "canvas/background-pattern",
+                      data: { type: "canvas-pattern-union", value: "plain" },
+                    });
+                }}
+              >
+                plain
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="themeLeafletTextColor w-full flex p-2 items-start text-primary">
+          <ColorPicker
+            label="Text"
+            value={primaryValue}
+            setValue={set("theme/primary")}
+            thisPicker={"text"}
             openPicker={openPicker}
             setOpenPicker={setOpenPicker}
             closePicker={() => setOpenPicker("null")}
           />
         </div>
-        <>
-          <div className="themeLeafletTextColor w-full flex p-2 items-start">
-            <ColorPicker
-              label="Text"
-              value={primaryValue}
-              setValue={set("theme/primary")}
-              thisPicker={"text"}
-              openPicker={openPicker}
-              setOpenPicker={setOpenPicker}
-              closePicker={() => setOpenPicker("null")}
-            />
-          </div>
-        </>
       </div>
     </>
   );

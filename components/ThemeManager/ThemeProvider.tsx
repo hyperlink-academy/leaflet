@@ -134,7 +134,7 @@ export function ThemeProvider(props: {
     </div>
   );
 }
-export function PageThemeProvider(props: {
+export function CardThemeProvider(props: {
   entityID: string;
   children: React.ReactNode;
 }) {

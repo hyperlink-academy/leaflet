@@ -41,7 +41,7 @@ import { HelpPopover } from "./HelpPopover";
 import { CreateNewLeafletButton } from "app/home/CreateNewButton";
 import { scanIndex } from "src/replicache/utils";
 import { PageThemeSetter } from "./ThemeManager/PageThemeSetter";
-import { PageThemeProvider } from "./ThemeManager/ThemeProvider";
+import { CardThemeProvider } from "./ThemeManager/ThemeProvider";
 
 export function Pages(props: { rootPage: string }) {
   let openPages = useUIState((s) => s.openPages);
@@ -90,9 +90,9 @@ export function Pages(props: { rootPage: string }) {
       </div>
       {pages.map((page) => (
         <div className="flex items-stretch" key={page}>
-          <PageThemeProvider entityID={page}>
+          <CardThemeProvider entityID={page}>
             <Page entityID={page} />
-          </PageThemeProvider>
+          </CardThemeProvider>
         </div>
       ))}
       <div
@@ -126,8 +126,15 @@ function Page(props: { entityID: string; first?: boolean }) {
         : focusedElement?.parent;
     return focusedPageID === props.entityID;
   });
-  let isMobile = useIsMobile();
-  let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
+  let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
+  let cardBackgroundImage = useEntity(
+    props.entityID,
+    "theme/card-background-image",
+  );
+  let cardBackgroundImageRepeat = useEntity(
+    props.entityID,
+    "theme/card-background-image-repeat",
+  );
 
   return (
     <>
@@ -149,19 +156,43 @@ function Page(props: { entityID: string; first?: boolean }) {
           }}
           id={elementId.page(props.entityID).container}
           style={{
-            backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-            width: type === "doc" ? "var(--page-width-units)" : undefined,
+            width: pageType === "doc" ? "var(--page-width-units)" : undefined,
           }}
           className={`
-            ${type === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
-      page
-      grow flex flex-col
-      overscroll-y-none
-      overflow-y-scroll no-scrollbar
-      rounded-lg border
-      ${isFocused ? "shadow-md border-border" : "border-border-light"}
-    `}
+            ${pageType === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
+              page
+              grow flex flex-col
+              overscroll-y-none
+              overflow-y-scroll no-scrollbar
+              rounded-lg border
+              ${isFocused ? "shadow-md" : ""}
+            `}
         >
+          {/* we handle page bg in this sepate div so that 
+          we can apply an opacity the background image 
+          without affecting the opacity of the rest of the page */}
+          <div
+            className={`pageBackground 
+              absolute top-0 left-0 right-0 bottom-0 
+              pointer-events-none               
+              rounded-lg border
+              ${isFocused ? "border-border" : "border-border-light"}`}
+            style={
+              pageType === "canvas"
+                ? { opacity: "0" }
+                : {
+                    backgroundColor: "rgb(var(--bg-page))",
+                    backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
+                    backgroundRepeat: cardBackgroundImageRepeat
+                      ? "repeat"
+                      : "no-repeat",
+                    backgroundSize: !cardBackgroundImageRepeat
+                      ? "cover"
+                      : cardBackgroundImageRepeat?.data.value,
+                    opacity: "var(--bg-page-alpha)",
+                  }
+            }
+          />
           <Media mobile={true}>
             <PageOptionsMenu entityID={props.entityID} first={props.first} />
           </Media>
@@ -191,8 +222,8 @@ function Page(props: { entityID: string; first?: boolean }) {
 }
 
 const PageContent = (props: { entityID: string }) => {
-  let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
-  if (type === "doc") return <Blocks entityID={props.entityID} />;
+  let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
+  if (pageType === "doc") return <Blocks entityID={props.entityID} />;
   return <Canvas entityID={props.entityID} />;
 };
 
@@ -201,26 +232,23 @@ const PageOptionsMenu = (props: {
   first: boolean | undefined;
 }) => {
   return (
-    <div className=" z-10 w-fit absolute sm:top-2 sm:-right-[18px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
+    <div className=" z-10 w-fit absolute sm:top-3 sm:-right-[19px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
       {!props.first && (
-        <>
-          <button
-            className="p-1 pt-[10px] sm:p-0.5 sm:pl-0 bg-border text-bg-page sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
-            onClick={() => {
-              useUIState.getState().closePage(props.entityID);
-            }}
-          >
-            <CloseTiny />
-          </button>
-          <OptionsMenu entityID={props.entityID} />
-        </>
+        <button
+          className="pt-[2px] h-5 w-5 p-0.5 mx-auto bg-border text-bg-page sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
+          onClick={() => {
+            useUIState.getState().closePage(props.entityID);
+          }}
+        >
+          <CloseTiny />
+        </button>
       )}
+      <OptionsMenu entityID={props.entityID} />
     </div>
   );
 };
 
 const OptionsMenu = (props: { entityID: string }) => {
-  let toaster = useToaster();
   let [state, setState] = useState<"normal" | "theme">("normal");
   return (
     <Menu
@@ -230,11 +258,14 @@ const OptionsMenu = (props: { entityID: string }) => {
       trigger={
         <div
           className={`pageOptionsTrigger
-      shrink-0 sm:h-8 sm:w-5 h-5 w-8
-      bg-bg-page text-border
-      border sm:border-l-0 border-t-1 border-border sm:rounded-r-md sm:rounded-l-none rounded-b-md
-      sm:hover:border-r-2 hover:border-b-2 hover:border-y-2 hover:border-t-1
-      flex items-center justify-center`}
+          shrink-0 sm:h-8 sm:w-5 h-5 w-8
+          bg-bg-page text-border 
+          outline-none border sm:border-l-0 border-t-1 border-border sm:rounded-r-md sm:rounded-l-none rounded-b-md
+          hover:shadow-[0_1px_0_theme(colors.border)_inset,_0_-1px_0_theme(colors.border)_inset,_-1px_0_0_theme(colors.border)_inset]
+          flex items-center justify-center`}
+          // style={{
+          //   boxShadow: `0 1px 0 ${theme.colors.border}, 0 -1px 0 ${theme.colors.border}, 1px 0 0 ${theme.colors.border} `,
+          // }}
         >
           <MoreOptionsTiny className="sm:rotate-90" />
         </div>
