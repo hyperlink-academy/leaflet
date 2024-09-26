@@ -125,9 +125,9 @@ function Page(props: { entityID: string; first?: boolean }) {
       )}
       {/* // pageWrapper is required so that items absolutely positioned items on the page border
       (like canvasWidthHandle) can overflow the page itself */}
-      <div className="pageWrapper  flex w-fit h-full relative ">
+      <div className="pageWrapper w-fit flex relative snap-center">
         <div
-          onMouseDown={(e) => {
+          onClick={(e) => {
             if (e.defaultPrevented) return;
             if (rep) {
               focusPage(props.entityID, rep);
@@ -139,15 +139,18 @@ function Page(props: { entityID: string; first?: boolean }) {
             width: type === "doc" ? "var(--page-width-units)" : undefined,
           }}
           className={`
-            page 
-            grow flex flex-col 
-            overscroll-y-none
-            overflow-y-scroll no-scrollbar
-            rounded-lg border
-            ${type === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
-            ${isFocused ? "shadow-md border-border" : "border-border-light"}
-          `}
+                    ${type === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
+              page
+              grow flex flex-col
+              overscroll-y-none
+              overflow-y-scroll no-scrollbar
+              rounded-lg border
+              ${isFocused ? "shadow-md border-border" : "border-border-light"}
+            `}
         >
+          <Media mobile={true}>
+            <PageOptionsMenu entityID={props.entityID} first={props.first} />
+          </Media>
           <DesktopPageFooter pageID={props.entityID} />
           {isDraft.length > 0 && (
             <div
@@ -163,15 +166,12 @@ function Page(props: { entityID: string; first?: boolean }) {
 
           <PageContent entityID={props.entityID} />
         </div>
+        <Media mobile={false}>
+          {isFocused && (
+            <PageOptionsMenu entityID={props.entityID} first={props.first} />
+          )}
+        </Media>
       </div>
-      <Media mobile={true}>
-        <PageOptionsMenu entityID={props.entityID} first={props.first} />
-      </Media>
-      <Media mobile={false}>
-        {isFocused && (
-          <PageOptionsMenu entityID={props.entityID} first={props.first} />
-        )}
-      </Media>
     </>
   );
 }

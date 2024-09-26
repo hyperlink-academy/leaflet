@@ -22,6 +22,7 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
   );
 
   let isOpen = useUIState((s) => s.openPages).includes(page?.data.value || "");
+  if (!page) return <div>An error occured adding this page!</div>;
 
   return (
     <div
@@ -47,8 +48,10 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
         if (rep) focusPage(page.data.value, rep);
       }}
     >
-      {type === "canvas" && page ? (
+      {type === "canvas" ? (
         <CanvasLinkBlock entityID={page?.data.value} />
+      ) : type === "discussion" ? (
+        <DiscussionLinkBlock entityID={page?.data.value} />
       ) : (
         <DocLinkBlock {...props} />
       )}
@@ -183,6 +186,15 @@ const CanvasLinkBlock = (props: { entityID: string; preview?: boolean }) => {
           <CanvasContent entityID={props.entityID} preview />
         )}
       </div>
+    </div>
+  );
+};
+
+const DiscussionLinkBlock = (props: { entityID: string }) => {
+  //just a dummy block for now
+  return (
+    <div className="w-full h-[104px] flex items-center justify-center bg-gray-100 text-gray-600">
+      <span className="text-sm">Discussion Preview</span>
     </div>
   );
 };
