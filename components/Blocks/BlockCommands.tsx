@@ -167,7 +167,7 @@ export const blockCommands: Command[] = [
     },
   },
   {
-    name: "Embed Webpage",
+    name: "Embed Website",
     icon: <BlockEmbedSmall />,
     type: "block",
     onSelect: async (rep, props) => {
