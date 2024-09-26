@@ -31,6 +31,7 @@ export function SelectionManager() {
     if (!entity_set.permissions.write) return;
     const getSortedSelection = async () => {
       let selectedBlocks = useUIState.getState().selectedBlocks;
+      if (!selectedBlocks[0]) return [[], []];
       let foldedBlocks = useUIState.getState().foldedBlocks;
       let siblings =
         (await rep?.query((tx) =>

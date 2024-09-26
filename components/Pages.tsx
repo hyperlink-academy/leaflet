@@ -136,7 +136,7 @@ function Page(props: { entityID: string; first?: boolean }) {
           id={elementId.page(props.entityID).container}
           style={{
             backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-            width: type === "doc" ? "var(--page-width-units)" : undefined,
+            width: type === "canvas" ? undefined : "var(--page-width-units)",
           }}
           className={`
                     ${type === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
