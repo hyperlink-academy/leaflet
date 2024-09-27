@@ -263,9 +263,6 @@ const OptionsMenu = (props: { entityID: string }) => {
           outline-none border sm:border-l-0 border-t-1 border-border sm:rounded-r-md sm:rounded-l-none rounded-b-md
           hover:shadow-[0_1px_0_theme(colors.border)_inset,_0_-1px_0_theme(colors.border)_inset,_-1px_0_0_theme(colors.border)_inset]
           flex items-center justify-center`}
-          // style={{
-          //   boxShadow: `0 1px 0 ${theme.colors.border}, 0 -1px 0 ${theme.colors.border}, 1px 0 0 ${theme.colors.border} `,
-          // }}
         >
           <MoreOptionsTiny className="sm:rotate-90" />
         </div>

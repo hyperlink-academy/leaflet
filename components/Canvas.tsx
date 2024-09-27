@@ -414,8 +414,6 @@ function CanvasBlock(props: {
             w-[8px] h-[8px]
             absolute bottom-0 -right-0
             -translate-y-1/2 -translate-x-1/2
-
-
             rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
           {...rotateHandle.handlers}
         />
@@ -433,6 +431,10 @@ export const CanvasBackground = (props: { entityID: string }) => {
     props.entityID,
     "theme/card-background-image-repeat",
   );
+
+  let canvasPattern =
+    useEntity(props.entityID, "canvas/background-pattern")?.data.value ||
+    "grid";
   return (
     <div
       className="w-full h-full"
@@ -444,19 +446,18 @@ export const CanvasBackground = (props: { entityID: string }) => {
         opacity: "var(--bg-page-alpha)",
       }}
     >
-      <CanvasBackgroundPattern entityID={props.entityID} />
+      <CanvasBackgroundPattern pattern={canvasPattern} />
     </div>
   );
 };
 
-const CanvasBackgroundPattern = (props: { entityID: string }) => {
-  let canvasPattern =
-    useEntity(props.entityID, "canvas/background-pattern")?.data.value ||
-    "grid";
-
-  if (canvasPattern === "plain") return null;
-
-  if (canvasPattern === "grid")
+export const CanvasBackgroundPattern = (props: {
+  pattern: "grid" | "dot" | "plain";
+  scale?: number;
+}) => {
+  if (props.pattern === "plain") return null;
+  let patternID = `canvasPattern-${props.pattern}-${props.scale}`;
+  if (props.pattern === "grid")
     return (
       <svg
         width="100%"
@@ -466,11 +467,12 @@ const CanvasBackgroundPattern = (props: { entityID: string }) => {
       >
         <defs>
           <pattern
-            id="gridPattern"
+            id={patternID}
             x="0"
             y="0"
-            width="32"
-            height="32"
+            width={props.scale ? 32 * props.scale : 32}
+            height={props.scale ? 32 * props.scale : 32}
+            viewBox={`${props.scale ? 16 * props.scale : 0} ${props.scale ? 16 * props.scale : 0} ${props.scale ? 32 * props.scale : 32} ${props.scale ? 32 * props.scale : 32}`}
             patternUnits="userSpaceOnUse"
           >
             <path
@@ -481,31 +483,48 @@ const CanvasBackgroundPattern = (props: { entityID: string }) => {
             />
           </pattern>
         </defs>
-        <rect width="100%" height="100%" x="0" y="0" fill="url(#gridPattern)" />
+        <rect
+          width="100%"
+          height="100%"
+          x="0"
+          y="0"
+          fill={`url(#${patternID})`}
+        />
       </svg>
     );
 
-  if (canvasPattern === "dot") {
+  if (props.pattern === "dot") {
     return (
       <svg
         width="100%"
         height="100%"
         xmlns="http://www.w3.org/2000/svg"
-        className="pointer-events-none text-border-light"
+        className={`pointer-events-none text-border`}
       >
         <defs>
           <pattern
-            id="dotPattern"
+            id={patternID}
             x="0"
             y="0"
-            width="24"
-            height="24"
+            width={props.scale ? 24 * props.scale : 24}
+            height={props.scale ? 24 * props.scale : 24}
             patternUnits="userSpaceOnUse"
           >
-            <circle cx="12" cy="12" r="1" fill="currentColor" />
+            <circle
+              cx={props.scale ? 12 * props.scale : 12}
+              cy={props.scale ? 12 * props.scale : 12}
+              r="1"
+              fill="currentColor"
+            />
           </pattern>
         </defs>
-        <rect width="100%" height="100%" x="0" y="0" fill="url(#dotPattern)" />
+        <rect
+          width="100%"
+          height="100%"
+          x="0"
+          y="0"
+          fill={`url(#${patternID})`}
+        />
       </svg>
     );
   }

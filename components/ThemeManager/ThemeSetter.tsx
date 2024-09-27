@@ -519,7 +519,7 @@ export const BGPicker = (props: {
                             e.currentTarget.blur();
                           } else return;
                         }}
-                        className="w-[72px] bg-transparent outline-none text-primary"
+                        className="w-[48px] bg-transparent outline-none text-primary"
                       />
                     </ColorField>
                   </>
