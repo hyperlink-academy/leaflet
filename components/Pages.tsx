@@ -243,7 +243,7 @@ const PageOptionsMenu = (props: {
           <CloseTiny />
         </button>
       )}
-      <OptionsMenu entityID={props.entityID} />
+      {!props.first && <OptionsMenu entityID={props.entityID} />}
     </div>
   );
 };
