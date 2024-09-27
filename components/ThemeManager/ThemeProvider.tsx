@@ -156,6 +156,14 @@ export function CardThemeProvider(props: {
 }) {
   let bgPage = useColorAttribute(props.entityID, "theme/card-background");
   let primary = useColorAttribute(props.entityID, "theme/primary");
+  let accent1 = useColorAttribute(props.entityID, "theme/accent-background");
+  let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
+  let accentContrast = [accent1, accent2].sort((a, b) => {
+    return (
+      getColorContrast(colorToString(b, "rgb"), colorToString(bgPage, "rgb")) -
+      getColorContrast(colorToString(a, "rgb"), colorToString(bgPage, "rgb"))
+    );
+  })[0];
 
   return (
     <CardThemeProviderContext.Provider value={props.entityID}>
@@ -163,6 +171,9 @@ export function CardThemeProvider(props: {
         className="contents text-primary"
         style={
           {
+            "--accent-1": colorToString(accent1, "rgb"),
+            "--accent-2": colorToString(accent2, "rgb"),
+            "--accent-contrast": colorToString(accentContrast, "rgb"),
             "--bg-page": colorToString(bgPage, "rgb"),
             "--bg-page-alpha": bgPage.getChannelValue("alpha"),
             "--primary": colorToString(primary, "rgb"),

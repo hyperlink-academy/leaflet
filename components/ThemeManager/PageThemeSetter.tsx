@@ -17,6 +17,11 @@ export const PageThemeSetter = (props: { entityID: string }) => {
 
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
   let primaryValue = useColorAttribute(props.entityID, "theme/primary");
+  let accent1Value = useColorAttribute(
+    props.entityID,
+    "theme/accent-background",
+  );
+  let accent2Value = useColorAttribute(props.entityID, "theme/accent-text");
   let [openPicker, setOpenPicker] = useState<pickers>("null");
 
   let set = useMemo(() => {
@@ -44,6 +49,31 @@ export const PageThemeSetter = (props: { entityID: string }) => {
             closePicker={() => setOpenPicker("null")}
             setValue={set("theme/card-background")}
             card
+          />
+        </div>
+        <div
+          className="themeLeafletControls text-accent-2 flex flex-col gap-2 h-full  bg-bg-leaflet p-2 rounded-md border border-accent-2 shadow-[0_0_0_1px_rgb(var(--accent-1))]"
+          style={{
+            backgroundColor: "rgba(var(--accent-1), 0.6)",
+          }}
+        >
+          <ColorPicker
+            label="Accent"
+            value={accent1Value}
+            setValue={set("theme/accent-background")}
+            thisPicker={"accent-1"}
+            openPicker={openPicker}
+            setOpenPicker={setOpenPicker}
+            closePicker={() => setOpenPicker("null")}
+          />
+          <ColorPicker
+            label="Text on Accent"
+            value={accent2Value}
+            setValue={set("theme/accent-text")}
+            thisPicker={"accent-2"}
+            openPicker={openPicker}
+            setOpenPicker={setOpenPicker}
+            closePicker={() => setOpenPicker("null")}
           />
         </div>
         <div className="themeLeafletTextColor w-full flex p-2 items-start text-primary">
