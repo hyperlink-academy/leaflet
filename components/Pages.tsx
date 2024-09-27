@@ -140,6 +140,7 @@ function Page(props: { entityID: string; first?: boolean }) {
           onClick={(e) => {
             if (e.defaultPrevented) return;
             if (rep) {
+              if (isFocused) return;
               focusPage(props.entityID, rep);
             }
           }}
@@ -282,11 +283,6 @@ export async function focusPage(
 ) {
   // if this page is already focused,
   let focusedBlock = useUIState.getState().focusedEntity;
-  if (
-    (focusedBlock?.entityType == "page" && focusedBlock.entityID === pageID) ||
-    (focusedBlock?.entityType === "block" && focusedBlock.parent === pageID)
-  )
-    return;
   // else set this page as focused
   useUIState.setState(() => ({
     focusedEntity: {
