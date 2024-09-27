@@ -127,14 +127,6 @@ function Page(props: { entityID: string; first?: boolean }) {
     return focusedPageID === props.entityID;
   });
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
-  let cardBackgroundImage = useEntity(
-    props.entityID,
-    "theme/card-background-image",
-  );
-  let cardBackgroundImageRepeat = useEntity(
-    props.entityID,
-    "theme/card-background-image-repeat",
-  );
 
   return (
     <>
@@ -168,31 +160,6 @@ function Page(props: { entityID: string; first?: boolean }) {
               ${isFocused ? "shadow-md border-border" : "border-border-light"}
             `}
         >
-          {/* we handle page bg in this sepate div so that 
-          we can apply an opacity the background image 
-          without affecting the opacity of the rest of the page */}
-          <div
-            className={`pageBackground 
-              absolute top-0 left-0 right-0 bottom-0 
-              pointer-events-none               
-              rounded-lg 
-              `}
-            style={
-              pageType === "canvas"
-                ? { opacity: "0" }
-                : {
-                    backgroundColor: "rgb(var(--bg-page))",
-                    backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
-                    backgroundRepeat: cardBackgroundImageRepeat
-                      ? "repeat"
-                      : "no-repeat",
-                    backgroundSize: !cardBackgroundImageRepeat
-                      ? "cover"
-                      : cardBackgroundImageRepeat?.data.value,
-                    opacity: "var(--bg-page-alpha)",
-                  }
-            }
-          />
           <Media mobile={true}>
             <PageOptionsMenu entityID={props.entityID} first={props.first} />
           </Media>
@@ -223,8 +190,51 @@ function Page(props: { entityID: string; first?: boolean }) {
 
 const PageContent = (props: { entityID: string }) => {
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
-  if (pageType === "doc") return <Blocks entityID={props.entityID} />;
+  if (pageType === "doc") return <DocContent entityID={props.entityID} />;
   return <Canvas entityID={props.entityID} />;
+};
+
+const DocContent = (props: { entityID: string }) => {
+  let isFocused = useUIState((s) => {
+    let focusedElement = s.focusedEntity;
+    let focusedPageID =
+      focusedElement?.entityType === "page"
+        ? focusedElement.entityID
+        : focusedElement?.parent;
+    return focusedPageID === props.entityID;
+  });
+  let cardBackgroundImage = useEntity(
+    props.entityID,
+    "theme/card-background-image",
+  );
+  let cardBackgroundImageRepeat = useEntity(
+    props.entityID,
+    "theme/card-background-image-repeat",
+  );
+  return (
+    <>
+      <div
+        className={`pageBackground
+        absolute top-0 left-0 right-0 bottom-0
+        pointer-events-none
+        rounded-lg
+        `}
+        style={{
+          backgroundColor: "rgb(var(--bg-page))",
+          backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
+          backgroundRepeat: cardBackgroundImageRepeat ? "repeat" : "no-repeat",
+          backgroundSize: !cardBackgroundImageRepeat
+            ? "cover"
+            : cardBackgroundImageRepeat?.data.value,
+          opacity: "var(--bg-page-alpha)",
+        }}
+      />
+      <Blocks entityID={props.entityID} />
+      {/* we handle page bg in this sepate div so that
+    we can apply an opacity the background image
+    without affecting the opacity of the rest of the page */}
+    </>
+  );
 };
 
 const PageOptionsMenu = (props: {
@@ -259,7 +269,7 @@ const OptionsMenu = (props: { entityID: string }) => {
         <div
           className={`pageOptionsTrigger
           shrink-0 sm:h-8 sm:w-5 h-5 w-8
-          bg-bg-page text-border 
+          bg-bg-page text-border
           outline-none border sm:border-l-0 border-t-1 border-border sm:rounded-r-md sm:rounded-l-none rounded-b-md
           hover:shadow-[0_1px_0_theme(colors.border)_inset,_0_-1px_0_theme(colors.border)_inset,_-1px_0_0_theme(colors.border)_inset]
           flex items-center justify-center`}

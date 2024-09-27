@@ -1,6 +1,10 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { theme } from "tailwind.config";
 import { PopoverArrow } from "./Icons";
+import {
+  CardThemeProvider,
+  NestedCardThemeProvider,
+} from "./ThemeManager/ThemeProvider";
 
 export const Separator = (props: { classname?: string }) => {
   return (
@@ -21,22 +25,31 @@ export const Menu = (props: {
     <DropdownMenu.Root onOpenChange={props.onOpenChange}>
       <DropdownMenu.Trigger>{props.trigger}</DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          align={props.align ? props.align : "center"}
-          sideOffset={4}
-          collisionPadding={16}
-          className={`dropdownMenu z-20 bg-bg-page flex flex-col py-1 gap-0.5 border border-border rounded-md shadow-md ${props.className}`}
-        >
-          {props.children}
-          <DropdownMenu.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
-            <PopoverArrow
-              arrowFill={
-                props.background ? props.background : theme.colors["bg-page"]
-              }
-              arrowStroke={props.border ? props.border : theme.colors["border"]}
-            />
-          </DropdownMenu.Arrow>
-        </DropdownMenu.Content>
+        <NestedCardThemeProvider>
+          <DropdownMenu.Content
+            align={props.align ? props.align : "center"}
+            sideOffset={4}
+            collisionPadding={16}
+            className={`dropdownMenu z-20 bg-bg-page flex flex-col py-1 gap-0.5 border border-border rounded-md shadow-md ${props.className}`}
+          >
+            {props.children}
+            <DropdownMenu.Arrow
+              asChild
+              width={16}
+              height={8}
+              viewBox="0 0 16 8"
+            >
+              <PopoverArrow
+                arrowFill={
+                  props.background ? props.background : theme.colors["bg-page"]
+                }
+                arrowStroke={
+                  props.border ? props.border : theme.colors["border"]
+                }
+              />
+            </DropdownMenu.Arrow>
+          </DropdownMenu.Content>
+        </NestedCardThemeProvider>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
   );

@@ -1,6 +1,12 @@
 "use client";
 
-import { CSSProperties, useEffect, useState } from "react";
+import {
+  createContext,
+  CSSProperties,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { colorToString, useColorAttribute } from "./useColorAttribute";
 import { Color as AriaColor, parseColor } from "react-aria-components";
 import { parse, contrastLstar, ColorSpace, sRGB } from "colorjs.io/fn";
@@ -134,6 +140,16 @@ export function ThemeProvider(props: {
     </div>
   );
 }
+
+let CardThemeProviderContext = createContext<null | string>(null);
+export function NestedCardThemeProvider(props: { children: React.ReactNode }) {
+  let card = useContext(CardThemeProviderContext);
+  if (!card) return props.children;
+  return (
+    <CardThemeProvider entityID={card}>{props.children}</CardThemeProvider>
+  );
+}
+
 export function CardThemeProvider(props: {
   entityID: string;
   children: React.ReactNode;
@@ -142,18 +158,20 @@ export function CardThemeProvider(props: {
   let primary = useColorAttribute(props.entityID, "theme/primary");
 
   return (
-    <div
-      className="contents text-primary"
-      style={
-        {
-          "--bg-page": colorToString(bgPage, "rgb"),
-          "--bg-page-alpha": bgPage.getChannelValue("alpha"),
-          "--primary": colorToString(primary, "rgb"),
-        } as CSSProperties
-      }
-    >
-      {props.children}
-    </div>
+    <CardThemeProviderContext.Provider value={props.entityID}>
+      <div
+        className="contents text-primary"
+        style={
+          {
+            "--bg-page": colorToString(bgPage, "rgb"),
+            "--bg-page-alpha": bgPage.getChannelValue("alpha"),
+            "--primary": colorToString(primary, "rgb"),
+          } as CSSProperties
+        }
+      >
+        {props.children}
+      </div>
+    </CardThemeProviderContext.Provider>
   );
 }
 

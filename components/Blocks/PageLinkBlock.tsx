@@ -23,6 +23,8 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
   );
 
   let isOpen = useUIState((s) => s.openPages).includes(page?.data.value || "");
+  if (!page)
+    return <div>An error occured, there should be a page linked here!</div>;
 
   return (
     <CardThemeProvider entityID={page?.data.value}>
@@ -133,6 +135,15 @@ export function PagePreview(props: { entityID: string }) {
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
 
+  let cardBackgroundImage = useEntity(
+    props.entityID,
+    "theme/card-background-image",
+  );
+  let cardBackgroundImageRepeat = useEntity(
+    props.entityID,
+    "theme/card-background-image-repeat",
+  );
+
   let pageWidth = `var(--page-width-unitless)`;
   return (
     <div
@@ -140,12 +151,31 @@ export function PagePreview(props: { entityID: string }) {
       className={`pageLinkBlockPreview w-[120px] overflow-clip  mx-3 mt-3 -mb-2 bg-bg-page border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center`}
     >
       <div
-        className="absolute top-0 left-0  h-full origin-top-left pointer-events-none"
+        className="absolute top-0 left-0 origin-top-left pointer-events-none "
         style={{
           width: `calc(1px * ${pageWidth})`,
+          height: `calc(100vh - 64px)`,
           transform: `scale(calc((120 / ${pageWidth} )))`,
         }}
       >
+        <div
+          className={`pageBackground
+      absolute top-0 left-0 right-0 bottom-0
+      pointer-events-none
+      rounded-lg border
+      `}
+          style={{
+            backgroundColor: "rgb(var(--bg-page))",
+            backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
+            backgroundRepeat: cardBackgroundImageRepeat
+              ? "repeat"
+              : "no-repeat",
+            backgroundSize: !cardBackgroundImageRepeat
+              ? "cover"
+              : cardBackgroundImageRepeat?.data.value,
+            opacity: "var(--bg-page-alpha)",
+          }}
+        />
         {blocks.slice(0, 20).map((b, index, arr) => {
           return (
             <BlockPreview
@@ -181,7 +211,7 @@ const CanvasLinkBlock = (props: { entityID: string; preview?: boolean }) => {
         }}
       >
         {props.preview ? (
-          <CanvasBackground />
+          <CanvasBackground entityID={props.entityID} />
         ) : (
           <CanvasContent entityID={props.entityID} preview />
         )}
