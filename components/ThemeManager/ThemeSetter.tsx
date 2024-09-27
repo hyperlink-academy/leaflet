@@ -505,23 +505,36 @@ export const BGPicker = (props: {
                 {props.card && (
                   <>
                     <Separator classname="my-1" />
-                    <ColorField className="w-fit pl-[6px]" channel="alpha">
-                      <Input
-                        onMouseDown={onMouseDown}
-                        onFocus={(e) => {
-                          e.currentTarget.setSelectionRange(
-                            0,
-                            e.currentTarget.value.length - 1,
-                          );
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.currentTarget.blur();
-                          } else return;
-                        }}
-                        className="w-[48px] bg-transparent outline-none text-primary"
-                      />
-                    </ColorField>
+
+                    <SpectrumColorPicker
+                      value={bgColor}
+                      onChange={setColorAttribute(
+                        rep,
+                        props.entityID,
+                      )(
+                        props.card
+                          ? "theme/card-background"
+                          : "theme/page-background",
+                      )}
+                    >
+                      <ColorField className="w-fit pl-[6px]" channel="alpha">
+                        <Input
+                          onMouseDown={onMouseDown}
+                          onFocus={(e) => {
+                            e.currentTarget.setSelectionRange(
+                              0,
+                              e.currentTarget.value.length - 1,
+                            );
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.currentTarget.blur();
+                            } else return;
+                          }}
+                          className="w-[48px] bg-transparent outline-none text-primary"
+                        />
+                      </ColorField>
+                    </SpectrumColorPicker>
                   </>
                 )}
               </>
