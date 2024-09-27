@@ -34,6 +34,7 @@ import {
   PopoverArrow,
   BlockDocPageSmall,
   BlockCanvasPageSmall,
+  PaintSmall,
 } from "./Icons";
 import { useEditorStates } from "src/state/useEditorState";
 import { useIsMobile } from "src/hooks/isMobile";
@@ -217,7 +218,8 @@ const DocContent = (props: { entityID: string }) => {
         className={`pageBackground
         absolute top-0 left-0 right-0 bottom-0
         pointer-events-none
-        rounded-lg
+        rounded-lg border
+        ${isFocused ? " border-border" : "border-border-light"}
         `}
         style={{
           backgroundColor: "rgb(var(--bg-page))",
@@ -262,6 +264,7 @@ const OptionsMenu = (props: { entityID: string }) => {
   let [state, setState] = useState<"normal" | "theme">("normal");
   return (
     <Menu
+      align="end"
       onOpenChange={(open) => {
         if (!open) setState("normal");
       }}
@@ -286,7 +289,7 @@ const OptionsMenu = (props: { entityID: string }) => {
               setState("theme");
             }}
           >
-            Theme Page
+            <PaintSmall /> Theme Page
           </MenuItem>
         </>
       ) : (

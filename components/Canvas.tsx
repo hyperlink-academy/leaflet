@@ -442,7 +442,7 @@ export const CanvasBackground = (props: { entityID: string }) => {
         backgroundColor: "rgb(var(--bg-page))",
         backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
         backgroundRepeat: "repeat",
-        backgroundSize: cardBackgroundImageRepeat?.data.value,
+        backgroundSize: cardBackgroundImageRepeat?.data.value || 500,
         opacity: "var(--bg-page-alpha)",
       }}
     >
@@ -463,7 +463,7 @@ export const CanvasBackgroundPattern = (props: {
         width="100%"
         height="100%"
         xmlns="http://www.w3.org/2000/svg"
-        className=" text-border-light"
+        className="pointer-events-none text-border-light"
       >
         <defs>
           <pattern
@@ -499,7 +499,7 @@ export const CanvasBackgroundPattern = (props: {
         width="100%"
         height="100%"
         xmlns="http://www.w3.org/2000/svg"
-        className={`text-border`}
+        className={`pointer-events-none text-border`}
       >
         <defs>
           <pattern

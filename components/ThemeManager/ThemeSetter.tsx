@@ -624,8 +624,10 @@ const ImageInput = (props: {
   entityID: string;
   setValue: (c: Color) => void;
   onChange?: () => void;
+
   card?: boolean;
 }) => {
+  let pageType = useEntity(props.entityID, "page/type")?.data.value;
   let { rep } = useReplicache();
   return (
     <input
@@ -643,6 +645,15 @@ const ImageInput = (props: {
             : "theme/background-image",
         });
         props.onChange?.();
+
+        if (pageType === "canvas") {
+          rep &&
+            rep.mutate.assertFact({
+              entity: props.entityID,
+              attribute: "canvas/background-pattern",
+              data: { type: "canvas-pattern-union", value: "plain" },
+            });
+        }
       }}
     />
   );
@@ -663,6 +674,7 @@ const ImageSettings = (props: {
       ? "theme/card-background-image-repeat"
       : "theme/background-image-repeat",
   );
+  let pageType = useEntity(props.entityID, "page/type")?.data.value;
   let { rep } = useReplicache();
   return (
     <>
@@ -696,26 +708,29 @@ const ImageSettings = (props: {
         </button>
       </div>
       <div className="themeBGImageControls font-bold flex gap-2 items-center">
-        <label htmlFor="cover" className="flex shrink-0">
-          <input
-            className="appearance-none"
-            type="radio"
-            id="cover"
-            name="bg-image-options"
-            value="cover"
-            checked={!repeat}
-            onChange={async (e) => {
-              if (!e.currentTarget.checked) return;
-              if (!repeat) return;
-              if (repeat) await rep?.mutate.retractFact({ factID: repeat.id });
-            }}
-          />
-          <div
-            className={`shink-0 grow-0 w-fit border border-accent-1 rounded-md px-1 py-0.5 cursor-pointer ${!repeat ? "bg-accent-1 text-accent-2" : "bg-transparent text-accent-1"}`}
-          >
-            cover
-          </div>
-        </label>
+        {pageType !== "canvas" && (
+          <label htmlFor="cover" className="flex shrink-0">
+            <input
+              className="appearance-none"
+              type="radio"
+              id="cover"
+              name="bg-image-options"
+              value="cover"
+              checked={!repeat}
+              onChange={async (e) => {
+                if (!e.currentTarget.checked) return;
+                if (!repeat) return;
+                if (repeat)
+                  await rep?.mutate.retractFact({ factID: repeat.id });
+              }}
+            />
+            <div
+              className={`shink-0 grow-0 w-fit border border-accent-1 rounded-md px-1 py-0.5 cursor-pointer ${!repeat ? "bg-accent-1 text-accent-2" : "bg-transparent text-accent-1"}`}
+            >
+              cover
+            </div>
+          </label>
+        )}
         <label htmlFor="repeat" className="flex shrink-0">
           <input
             className={`appearance-none `}
@@ -742,10 +757,10 @@ const ImageSettings = (props: {
             repeat
           </div>
         </label>
-        {repeat && (
+        {(repeat || pageType === "canvas") && (
           <Slider.Root
             className="relative grow flex items-center select-none touch-none w-full h-fit"
-            value={[repeat.data.value]}
+            value={[repeat?.data.value || 500]}
             max={3000}
             min={10}
             step={10}

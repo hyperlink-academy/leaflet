@@ -33,7 +33,7 @@ export const PageThemeSetter = (props: { entityID: string }) => {
   return (
     <>
       <div className="pageThemeSetterContent w-80 flex flex-col gap-2 overflow-y-scroll no-scrollbar">
-        <div className="pageThemeBG flex flex-col gap-2 z-10 w-full px-2 pt-2">
+        <div className="pageThemeBG flex flex-col gap-2 z-10 w-full p-2">
           {pageType === "canvas" && (
             <>
               <BackgroundPatternPicker entityID={props.entityID} rep={rep} />{" "}
