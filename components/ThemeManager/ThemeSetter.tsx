@@ -469,7 +469,7 @@ export const BGPicker = (props: {
             <strong
               className={`${props.card ? "text-primary" : "text-[#595959]"}`}
             >
-              Background
+              {props.card ? "Page" : "Background"}
             </strong>
           </button>
 

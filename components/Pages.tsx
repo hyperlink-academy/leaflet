@@ -3,11 +3,9 @@ import { useEffect, useState } from "react";
 import { useUIState } from "src/useUIState";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { useSearchParams } from "next/navigation";
-import { useToaster } from "./Toast";
 
 import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
-import { theme } from "tailwind.config";
 
 import { Replicache } from "replicache";
 import {
@@ -27,17 +25,7 @@ import { Canvas } from "./Canvas";
 import { DraftPostOptions } from "./Blocks/MailboxBlock";
 import { Blocks } from "components/Blocks";
 import { MenuItem, Menu } from "./Layout";
-import {
-  MoreOptionsTiny,
-  DeleteSmall,
-  CloseTiny,
-  PopoverArrow,
-  BlockDocPageSmall,
-  BlockCanvasPageSmall,
-  PaintSmall,
-} from "./Icons";
-import { useEditorStates } from "src/state/useEditorState";
-import { useIsMobile } from "src/hooks/isMobile";
+import { MoreOptionsTiny, CloseTiny, PaintSmall } from "./Icons";
 import { HelpPopover } from "./HelpPopover";
 import { CreateNewLeafletButton } from "app/home/CreateNewButton";
 import { scanIndex } from "src/replicache/utils";
