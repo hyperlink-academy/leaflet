@@ -16,6 +16,9 @@ export const useLongPress = (
   let onMouseDown = useCallback(
     (e: React.MouseEvent) => {
       propsOnMouseDown && propsOnMouseDown(e);
+      if (e.button === 2) {
+        return;
+      }
       // Set the starting position
       setStartPosition({ x: e.clientX, y: e.clientY });
       isLongPress.current = false;
