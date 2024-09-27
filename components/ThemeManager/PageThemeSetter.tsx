@@ -27,11 +27,6 @@ export const PageThemeSetter = (props: { entityID: string }) => {
   let accent2Value = useColorAttribute(props.entityID, "theme/accent-text");
   let [openPicker, setOpenPicker] = useState<pickers>("null");
 
-  let primaryFact = useEntity(props.entityID, "theme/primary");
-  let bgFact = useEntity(props.entityID, "theme/card-background");
-  let accent1Fact = useEntity(props.entityID, "theme/accent-background");
-  let accent2Fact = useEntity(props.entityID, "theme/accent-text");
-
   let set = useMemo(() => {
     return setColorAttribute(rep, props.entityID);
   }, [rep, props.entityID]);
@@ -51,14 +46,18 @@ export const PageThemeSetter = (props: { entityID: string }) => {
           className="text-xs font-bold text-accent-contrast"
           onClick={() => {
             if (!rep) return;
-            primaryFact && rep.mutate.retractFact({ factID: primaryFact.id });
-            bgFact && rep.mutate.retractFact({ factID: bgFact.id });
-            accent1Fact && rep.mutate.retractFact({ factID: accent1Fact.id });
-            accent2Fact && rep.mutate.retractFact({ factID: accent2Fact.id });
-            leafletBGImage &&
-              rep.mutate.retractFact({ factID: leafletBGImage.id });
-            leafletBGRepeat &&
-              rep.mutate.retractFact({ factID: leafletBGRepeat.id });
+            rep.mutate.retractAttribute({
+              entity: props.entityID,
+              attribute: [
+                "theme/primary",
+                "theme/card-background",
+                "theme/accent-background",
+                "theme/accent-text",
+                "theme/card-background-image",
+                "theme/card-background-image-repeat",
+                "canvas/background-pattern",
+              ],
+            });
           }}
         >
           reset
