@@ -36,6 +36,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { isIOS, useViewportSize } from "@react-aria/utils";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
 import { HoverButton } from "components/Buttons";
+import { pickThemeColor } from "src/utils/getThemeColor";
 
 export type pickers =
   | "null"
@@ -538,18 +539,9 @@ export const BGPicker = (props: {
             <BlockImageSmall />
           </div>
           <div className="hidden">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={async (e) => {
-                let file = e.currentTarget.files?.[0];
-                if (!file || !rep) return;
-                await addImage(file, rep, {
-                  entityID: props.entityID,
-                  attribute: props.card
-                    ? "theme/card-background-image"
-                    : "theme/background-image",
-                });
+            <ImageInput
+              {...props}
+              onChange={() => {
                 props.setOpenPicker(props.thisPicker);
               }}
             />
@@ -566,7 +558,11 @@ export const BGPicker = (props: {
             )(props.card ? "theme/card-background" : "theme/page-background")}
           >
             {bgImage ? (
-              <ImageSettings entityID={props.entityID} card={props.card} />
+              <ImageSettings
+                entityID={props.entityID}
+                card={props.card}
+                setValue={props.setValue}
+              />
             ) : (
               <>
                 <ColorArea
@@ -611,7 +607,39 @@ export const BGPicker = (props: {
   );
 };
 
-const ImageSettings = (props: { entityID: string; card?: boolean }) => {
+const ImageInput = (props: {
+  entityID: string;
+  setValue: (c: Color) => void;
+  onChange?: () => void;
+  card?: boolean;
+}) => {
+  let { rep } = useReplicache();
+  return (
+    <input
+      type="file"
+      accept="image/*"
+      onChange={async (e) => {
+        let file = e.currentTarget.files?.[0];
+        if (!file || !rep) return;
+        let prominentColor = await pickThemeColor(file);
+        props.setValue(parseColor(`rgb(${prominentColor.join(",")})`));
+        await addImage(file, rep, {
+          entityID: props.entityID,
+          attribute: props.card
+            ? "theme/card-background-image"
+            : "theme/background-image",
+        });
+        props.onChange?.();
+      }}
+    />
+  );
+};
+
+const ImageSettings = (props: {
+  entityID: string;
+  card?: boolean;
+  setValue: (c: Color) => void;
+}) => {
   let image = useEntity(
     props.entityID,
     props.card ? "theme/card-background-image" : "theme/background-image",
@@ -639,20 +667,7 @@ const ImageSettings = (props: { entityID: string; card?: boolean }) => {
             <BlockImageSmall /> Change Image
           </div>
           <div className="hidden">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={async (e) => {
-                let file = e.currentTarget.files?.[0];
-                if (!file || !rep) return;
-                await addImage(file, rep, {
-                  entityID: props.entityID,
-                  attribute: props.card
-                    ? "theme/card-background-image"
-                    : "theme/background-image",
-                });
-              }}
-            />
+            <ImageInput {...props} />
           </div>
         </label>
         <button
