@@ -36,7 +36,6 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { isIOS, useViewportSize } from "@react-aria/utils";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
 import { HoverButton } from "components/Buttons";
-import { pickThemeColor } from "src/utils/getThemeColor";
 
 export type pickers =
   | "null"
@@ -47,7 +46,8 @@ export type pickers =
   | "text"
   | "highlight-1"
   | "highlight-2"
-  | "highlight-3";
+  | "highlight-3"
+  | "page-background-image";
 
 export function setColorAttribute(
   rep: Replicache<ReplicacheMutators> | null,
@@ -134,7 +134,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                   className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full px-2 pt-3`}
                 >
                   <div className="bgPickerBody w-full flex flex-col gap-2 p-2 border border-[#CCCCCC] rounded-md">
-                    <BGPicker
+                    <LeafletBGPicker
                       entityID={props.entityID}
                       thisPicker={"leaflet"}
                       openPicker={openPicker}
@@ -303,11 +303,13 @@ export const ColorPicker = (props: {
   label?: string;
   value: Color | undefined;
   alpha?: boolean;
+  image?: boolean;
   setValue: (c: Color) => void;
   openPicker: pickers;
   thisPicker: pickers;
   setOpenPicker: (thisPicker: pickers) => void;
   closePicker: () => void;
+  children?: React.ReactNode;
 }) => {
   return (
     <SpectrumColorPicker value={props.value} onChange={props.setValue}>
@@ -383,7 +385,7 @@ export const ColorPicker = (props: {
           </div>
         </div>
         {props.openPicker === props.thisPicker && (
-          <div className="w-full flex flex-col gap-2 px-1">
+          <div className="w-full flex flex-col gap-2 px-1 pb-2">
             {
               <>
                 <ColorArea
@@ -415,6 +417,7 @@ export const ColorPicker = (props: {
                     </SliderTrack>
                   </ColorSlider>
                 )}
+                {props.children}
               </>
             }
           </div>
@@ -424,7 +427,7 @@ export const ColorPicker = (props: {
   );
 };
 
-export const BGPicker = (props: {
+export const LeafletBGPicker = (props: {
   entityID: string;
   openPicker: pickers;
   thisPicker: pickers;
@@ -620,11 +623,110 @@ export const BGPicker = (props: {
   );
 };
 
-const ImageInput = (props: {
+export const PageBGPicker = (props: {
   entityID: string;
+  openPicker: pickers;
+  thisPicker: pickers;
+  setOpenPicker: (thisPicker: pickers) => void;
+  closePicker: () => void;
   setValue: (c: Color) => void;
-  onChange?: () => void;
+}) => {
+  let bgImage = useEntity(props.entityID, "theme/card-background-image");
+  let bgColor = useColorAttribute(props.entityID, "theme/card-background");
+  let open = props.openPicker == props.thisPicker;
+  let { rep } = useReplicache();
 
+  return (
+    <>
+      <div className="bgPickerColorLabel flex gap-2 items-center">
+        <button
+          onClick={() => {
+            if (props.openPicker === props.thisPicker) {
+              props.setOpenPicker("null");
+            } else {
+              props.setOpenPicker(props.thisPicker);
+            }
+          }}
+          className="flex gap-2 items-center"
+        >
+          <ColorSwatch
+            color={bgColor}
+            className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
+            style={{
+              backgroundImage: `url(${bgImage?.data.src})`,
+              backgroundSize: "cover",
+            }}
+          />
+          <strong className={`text-primary`}>Background Image</strong>
+        </button>
+
+        <div className="flex"></div>
+        <SpectrumColorPicker
+          value={bgColor}
+          onChange={setColorAttribute(
+            rep,
+            props.entityID,
+          )("theme/card-background")}
+        >
+          <Separator classname="h-5 my-1" />
+          <ColorField className="w-fit pl-[6px]" channel="alpha">
+            <Input
+              onMouseDown={onMouseDown}
+              onFocus={(e) => {
+                e.currentTarget.setSelectionRange(
+                  0,
+                  e.currentTarget.value.length - 1,
+                );
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.currentTarget.blur();
+                } else return;
+              }}
+              className="w-[48px] bg-transparent outline-none text-primary"
+            />
+          </ColorField>
+        </SpectrumColorPicker>
+      </div>
+      {open && (
+        <div className="pageImagePicker flex flex-col gap-2">
+          <ImageSettings
+            entityID={props.entityID}
+            card
+            setValue={props.setValue}
+          />
+
+          <SpectrumColorPicker
+            value={bgColor}
+            onChange={setColorAttribute(
+              rep,
+              props.entityID,
+            )("theme/card-background")}
+          >
+            <ColorSlider
+              colorSpace="hsb"
+              className="w-full mt-1 rounded-full"
+              style={{
+                backgroundImage: `url(./transparent-bg.png)`,
+                backgroundRepeat: "repeat",
+                backgroundSize: "8px",
+              }}
+              channel="alpha"
+            >
+              <SliderTrack className="h-2 w-full rounded-md">
+                <ColorThumb className={`${thumbStyle} mt-[4px]`} />
+              </SliderTrack>
+            </ColorSlider>
+          </SpectrumColorPicker>
+        </div>
+      )}
+    </>
+  );
+};
+
+export const ImageInput = (props: {
+  entityID: string;
+  onChange?: () => void;
   card?: boolean;
 }) => {
   let pageType = useEntity(props.entityID, "page/type")?.data.value;
@@ -636,8 +738,7 @@ const ImageInput = (props: {
       onChange={async (e) => {
         let file = e.currentTarget.files?.[0];
         if (!file || !rep) return;
-        let prominentColor = await pickThemeColor(file);
-        props.setValue(parseColor(`rgb(${prominentColor.join(",")})`));
+
         await addImage(file, rep, {
           entityID: props.entityID,
           attribute: props.card
@@ -659,7 +760,7 @@ const ImageInput = (props: {
   );
 };
 
-const ImageSettings = (props: {
+export const ImageSettings = (props: {
   entityID: string;
   card?: boolean;
   setValue: (c: Color) => void;

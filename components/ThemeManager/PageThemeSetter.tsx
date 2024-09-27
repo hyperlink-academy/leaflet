@@ -2,48 +2,54 @@ import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { useColorAttribute } from "./useColorAttribute";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import {
-  BGPicker,
+  LeafletBGPicker,
   ColorPicker,
   pickers,
   SectionArrow,
   setColorAttribute,
+  PageBGPicker,
+  ImageInput,
 } from "./ThemeSetter";
 import { useMemo, useState } from "react";
 import { CanvasBackgroundPattern } from "components/Canvas";
 import { Replicache } from "replicache";
 import { theme } from "tailwind.config";
 import { PaintSmall } from "components/Icons";
+import { ButtonPrimary } from "components/Buttons";
 
 export const PageThemeSetter = (props: { entityID: string }) => {
   let { rep, rootEntity } = useReplicache();
   let permission = useEntitySetContext().permissions.write;
+  let [openPicker, setOpenPicker] = useState<pickers>("null");
 
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
-  let primaryValue = useColorAttribute(props.entityID, "theme/primary");
+
   let accent1Value = useColorAttribute(
     props.entityID,
     "theme/accent-background",
   );
   let accent2Value = useColorAttribute(props.entityID, "theme/accent-text");
-  let [openPicker, setOpenPicker] = useState<pickers>("null");
+  let pageValue = useColorAttribute(props.entityID, "theme/card-background");
+  let primaryValue = useColorAttribute(props.entityID, "theme/primary");
+
+  let leafletBGImage = useEntity(rootEntity, "theme/background-image");
+  let leafletBGRepeat = useEntity(rootEntity, "theme/background-image-repeat");
+  let pageBGImage = useEntity(props.entityID, "theme/card-background-image");
 
   let set = useMemo(() => {
     return setColorAttribute(rep, props.entityID);
   }, [rep, props.entityID]);
 
-  let leafletBGImage = useEntity(rootEntity, "theme/background-image");
-  let leafletBGRepeat = useEntity(rootEntity, "theme/background-image-repeat");
-
   if (!permission) return null;
 
   return (
     <>
-      <div className=" flex flex-row justify-between px-3 pt-2 pb-1 ">
+      <div className="pageThemeSetter flex flex-row justify-between px-3 py-1 ">
         <div className="gap-2 flex font-bold ">
           <PaintSmall /> Theme Page
         </div>
-        <button
-          className="text-xs font-bold text-accent-contrast"
+        <ButtonPrimary
+          compact
           onClick={() => {
             if (!rep) return;
             rep.mutate.retractAttribute({
@@ -61,10 +67,10 @@ export const PageThemeSetter = (props: { entityID: string }) => {
           }}
         >
           reset
-        </button>
+        </ButtonPrimary>
       </div>
       <div
-        className="bg-bg-leaflet w-80 p-3 pb-0 flex flex-col gap-2 rounded-md -mb-1"
+        className="pageThemeSetterContent bg-bg-leaflet w-80 p-3 pb-0 flex flex-col gap-2 rounded-md -mb-1"
         style={{
           backgroundImage: `url(${leafletBGImage?.data.src})`,
           backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
@@ -74,7 +80,7 @@ export const PageThemeSetter = (props: { entityID: string }) => {
         }}
       >
         <div
-          className="themeLeafletControls text-accent-2 flex flex-col gap-2 h-full  bg-bg-leaflet p-2 rounded-md border border-accent-2 shadow-[0_0_0_1px_rgb(var(--accent-1))]"
+          className="pageAccentControls text-accent-2 flex flex-col gap-2 h-full  bg-bg-leaflet mt-4 p-2 rounded-md border border-accent-2 shadow-[0_0_0_1px_rgb(var(--accent-1))]"
           style={{
             backgroundColor: "rgba(var(--accent-1), 0.6)",
           }}
@@ -98,7 +104,7 @@ export const PageThemeSetter = (props: { entityID: string }) => {
             closePicker={() => setOpenPicker("null")}
           />
         </div>
-        <div className="flex flex-col -mb-[14px] z-10">
+        <div className="flex flex-col -mb-[14px] mt-4 z-10">
           <div
             className="pageThemeBG flex flex-col gap-2 h-full text-primary bg-bg-leaflet p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))]"
             style={{ backgroundColor: "rgba(var(--bg-page), 0.6)" }}
@@ -109,16 +115,35 @@ export const PageThemeSetter = (props: { entityID: string }) => {
                 <hr className="border-border-light w-full" />
               </>
             )}
-            <BGPicker
-              entityID={props.entityID}
-              thisPicker={"leaflet"}
+            <ColorPicker
+              label="Page"
+              value={pageValue}
+              setValue={set("theme/card-background")}
+              thisPicker={"page"}
               openPicker={openPicker}
               setOpenPicker={setOpenPicker}
               closePicker={() => setOpenPicker("null")}
-              setValue={set("theme/card-background")}
-              card
-            />
-
+              alpha={!!!pageBGImage}
+            >
+              {(pageBGImage === null || !pageBGImage) && (
+                <label>
+                  set bg image
+                  <div className="hidden">
+                    <ImageInput entityID={props.entityID} card />
+                  </div>
+                </label>
+              )}
+            </ColorPicker>
+            {pageBGImage && pageBGImage !== null && (
+              <PageBGPicker
+                entityID={props.entityID}
+                thisPicker={"page-background-image"}
+                openPicker={openPicker}
+                setOpenPicker={setOpenPicker}
+                closePicker={() => setOpenPicker("null")}
+                setValue={set("theme/card-background")}
+              />
+            )}
             <ColorPicker
               label="Text"
               value={primaryValue}
@@ -147,11 +172,14 @@ export const PageThemeSetter = (props: { entityID: string }) => {
             <span className="font-bold text-accent-contrast">Leaflet</span>!
             <br /> Buttons and links will appear like this
           </small>
-          <div className="bg-accent-1 text-accent-2 py-1 mt-2 w-full text-center text-sm font-bold rounded-md">
-            Example Button
-          </div>
-          <div className="text-accent-contrast mt-1 font-bold w-full text-center text-sm">
-            Example Link
+          <div className="p-2">
+            {" "}
+            <div className="bg-accent-1 text-accent-2 py-1 mt-2 w-full text-center text-sm font-bold rounded-md">
+              Example Button
+            </div>
+            <div className="text-accent-contrast mt-1 font-bold w-full text-center text-sm">
+              Example Link
+            </div>
           </div>
         </div>
       </div>

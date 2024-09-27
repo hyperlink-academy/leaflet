@@ -19,11 +19,9 @@ export function ButtonPrimary(
       {...props}
       className={`m-0 w-max h-max ${props.compact ? "py-0 px-1" : "px-2 py-0.5 "}
   bg-accent-1 outline-offset-[-2px] outline-transparent
-  border border-accent-1 rounded-md
-  text-base font-bold text-accent-2
+  rounded-md text-base font-bold text-accent-2
   flex gap-2 items-center justify-center shrink-0
-  active:outline active:outline-2
-  disabled:border-border-light
+  active:outline 
   disabled:bg-border-light disabled:text-border disabled:hover:text-border
   ${props.className}
 `}
