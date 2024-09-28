@@ -14,7 +14,7 @@ import { useMemo, useState } from "react";
 import { CanvasBackgroundPattern } from "components/Canvas";
 import { Replicache } from "replicache";
 import { theme } from "tailwind.config";
-import { PaintSmall } from "components/Icons";
+import { BlockImageSmall, PaintSmall } from "components/Icons";
 import { ButtonPrimary } from "components/Buttons";
 
 export const PageThemeSetter = (props: { entityID: string }) => {
@@ -35,6 +35,10 @@ export const PageThemeSetter = (props: { entityID: string }) => {
   let leafletBGImage = useEntity(rootEntity, "theme/background-image");
   let leafletBGRepeat = useEntity(rootEntity, "theme/background-image-repeat");
   let pageBGImage = useEntity(props.entityID, "theme/card-background-image");
+  let pageBGRepeat = useEntity(
+    rootEntity,
+    "theme/card-background-image-repeat",
+  );
 
   let set = useMemo(() => {
     return setColorAttribute(rep, props.entityID);
@@ -44,7 +48,7 @@ export const PageThemeSetter = (props: { entityID: string }) => {
 
   return (
     <>
-      <div className="pageThemeSetter flex flex-row justify-between px-3 py-1 ">
+      <div className="pageThemeSetter flex flex-row gap-2 px-3 py-1 ">
         <div className="gap-2 flex font-bold ">
           <PaintSmall /> Theme Page
         </div>
@@ -127,7 +131,9 @@ export const PageThemeSetter = (props: { entityID: string }) => {
             >
               {(pageBGImage === null || !pageBGImage) && (
                 <label>
-                  set bg image
+                  <ButtonPrimary compact fullWidth>
+                    <BlockImageSmall /> Add Background Image
+                  </ButtonPrimary>
                   <div className="hidden">
                     <ImageInput entityID={props.entityID} card />
                   </div>
@@ -160,25 +166,31 @@ export const PageThemeSetter = (props: { entityID: string }) => {
             className="ml-2"
           />
         </div>
-        <div
-          className="rounded-t-lg p-2  border border-border border-b-transparent shadow-md text-primary"
-          style={{
-            backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-          }}
-        >
-          <p className="font-bold">Theme Each Page!</p>
-          <small className="">
-            You can theme each page individually in{" "}
-            <span className="font-bold text-accent-contrast">Leaflet</span>!
-            <br /> Buttons and links will appear like this
-          </small>
-          <div className="p-2">
-            {" "}
-            <div className="bg-accent-1 text-accent-2 py-1 mt-2 w-full text-center text-sm font-bold rounded-md">
-              Example Button
-            </div>
-            <div className="text-accent-contrast mt-1 font-bold w-full text-center text-sm">
-              Example Link
+        <div className="relative rounded-t-lg p-2 shadow-md text-primary border border-border border-b-transparent">
+          <div
+            className="background absolute top-0 right-0 bottom-0 left-0 z-0  rounded-t-lg"
+            style={{
+              backgroundColor: "rgb(var(--bg-page))",
+              backgroundImage: `url(${pageBGImage?.data.src})`,
+              backgroundRepeat: pageBGRepeat ? "repeat" : "no-repeat",
+              backgroundSize: !pageBGRepeat
+                ? "cover"
+                : `calc(${pageBGRepeat.data.value}px / 2 )`,
+              opacity: "var(--bg-page-alpha)",
+            }}
+          />
+          <div className="relative">
+            <p className="font-bold">Theme Each Page!</p>
+            <small className="">
+              OMG! You can theme each page individually in{" "}
+              <span className="font-bold text-accent-contrast">Leaflet</span>!
+              <br /> Buttons and sections appear like:
+            </small>
+            <div className="p-2 mt-2 border border-border bg-bg-page rounded-md text-sm flex justify-between items-center font-bold text-secondary">
+              Happy Theming!
+              <div className="bg-accent-1 text-accent-2 py-0.5 px-2  w-fit text-center text-sm font-bold rounded-md">
+                Button
+              </div>
             </div>
           </div>
         </div>
