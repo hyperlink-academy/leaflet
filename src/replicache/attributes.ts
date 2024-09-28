@@ -119,6 +119,10 @@ const ThemeAttributes = {
     type: "number",
     cardinality: "one",
   },
+  "theme/card-background-image-opacity": {
+    type: "number",
+    cardinality: "one",
+  },
   "theme/primary": {
     type: "color",
     cardinality: "one",

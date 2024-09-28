@@ -144,6 +144,10 @@ export function PagePreview(props: { entityID: string }) {
     "theme/card-background-image-repeat",
   );
 
+  let cardBackgroundImageOpacity =
+    useEntity(props.entityID, "theme/card-background-image-opacity")?.data
+      .value || 1;
+
   let pageWidth = `var(--page-width-unitless)`;
   return (
     <div
@@ -156,6 +160,8 @@ export function PagePreview(props: { entityID: string }) {
           width: `calc(1px * ${pageWidth})`,
           height: `calc(100vh - 64px)`,
           transform: `scale(calc((120 / ${pageWidth} )))`,
+          backgroundColor: "rgb(var(--bg-page))",
+          opacity: "var(--bg-page-alpha)",
         }}
       >
         <div
@@ -165,7 +171,6 @@ export function PagePreview(props: { entityID: string }) {
       rounded-lg border
       `}
           style={{
-            backgroundColor: "rgb(var(--bg-page))",
             backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
             backgroundRepeat: cardBackgroundImageRepeat
               ? "repeat"
@@ -173,7 +178,9 @@ export function PagePreview(props: { entityID: string }) {
             backgroundSize: !cardBackgroundImageRepeat
               ? "cover"
               : cardBackgroundImageRepeat?.data.value,
-            opacity: "var(--bg-page-alpha)",
+            opacity: cardBackgroundImage?.data.src
+              ? cardBackgroundImageOpacity
+              : 1,
           }}
         />
         {blocks.slice(0, 20).map((b, index, arr) => {

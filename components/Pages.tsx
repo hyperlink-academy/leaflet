@@ -138,6 +138,8 @@ function Page(props: { entityID: string; first?: boolean }) {
           id={elementId.page(props.entityID).container}
           style={{
             width: pageType === "doc" ? "var(--page-width-units)" : undefined,
+            backgroundColor: "rgb(var(--bg-page))",
+            opacity: "var(--bg-page-alpha)",
           }}
           className={`
             ${pageType === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
@@ -200,6 +202,9 @@ const DocContent = (props: { entityID: string }) => {
     props.entityID,
     "theme/card-background-image-repeat",
   );
+  let cardBackgroundImageOpacity =
+    useEntity(props.entityID, "theme/card-background-image-opacity")?.data
+      .value || 1;
   return (
     <>
       <div
@@ -210,13 +215,14 @@ const DocContent = (props: { entityID: string }) => {
         ${isFocused ? " border-border" : "border-border-light"}
         `}
         style={{
-          backgroundColor: "rgb(var(--bg-page))",
           backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
           backgroundRepeat: cardBackgroundImageRepeat ? "repeat" : "no-repeat",
           backgroundSize: !cardBackgroundImageRepeat
             ? "cover"
             : cardBackgroundImageRepeat?.data.value,
-          opacity: "var(--bg-page-alpha)",
+          opacity: cardBackgroundImage?.data.src
+            ? cardBackgroundImageOpacity
+            : 1,
         }}
       />
       <Blocks entityID={props.entityID} />

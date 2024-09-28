@@ -633,6 +633,12 @@ export const PageBGPicker = (props: {
 }) => {
   let bgImage = useEntity(props.entityID, "theme/card-background-image");
   let bgColor = useColorAttribute(props.entityID, "theme/card-background");
+  let bgAlpha =
+    useEntity(props.entityID, "theme/card-background-image-opacity")?.data
+      .value || 1;
+  let alphaColor = useMemo(() => {
+    return parseColor(`rgba(0,0,0,${bgAlpha})`);
+  }, [bgAlpha]);
   let open = props.openPicker == props.thisPicker;
   let { rep } = useReplicache();
 
@@ -662,11 +668,15 @@ export const PageBGPicker = (props: {
 
         <div className="flex"></div>
         <SpectrumColorPicker
-          value={bgColor}
-          onChange={setColorAttribute(
-            rep,
-            props.entityID,
-          )("theme/card-background")}
+          value={alphaColor}
+          onChange={(c) => {
+            let alpha = c.getChannelValue("alpha");
+            rep?.mutate.assertFact({
+              entity: props.entityID,
+              attribute: "theme/card-background-image-opacity",
+              data: { type: "number", value: alpha },
+            });
+          }}
         >
           <Separator classname="h-5 my-1" />
           <ColorField className="w-fit pl-[6px]" channel="alpha">
@@ -697,11 +707,15 @@ export const PageBGPicker = (props: {
           />
 
           <SpectrumColorPicker
-            value={bgColor}
-            onChange={setColorAttribute(
-              rep,
-              props.entityID,
-            )("theme/card-background")}
+            value={alphaColor}
+            onChange={(c) => {
+              let alpha = c.getChannelValue("alpha");
+              rep?.mutate.assertFact({
+                entity: props.entityID,
+                attribute: "theme/card-background-image-opacity",
+                data: { type: "number", value: alpha },
+              });
+            }}
           >
             <ColorSlider
               colorSpace="hsb"

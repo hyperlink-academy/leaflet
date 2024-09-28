@@ -65,6 +65,7 @@ export const PageThemeSetter = (props: { entityID: string }) => {
                 "theme/accent-text",
                 "theme/card-background-image",
                 "theme/card-background-image-repeat",
+                "theme/card-background-image-opacity",
                 "canvas/background-pattern",
               ],
             });
@@ -127,13 +128,19 @@ export const PageThemeSetter = (props: { entityID: string }) => {
               openPicker={openPicker}
               setOpenPicker={setOpenPicker}
               closePicker={() => setOpenPicker("null")}
-              alpha={!!!pageBGImage}
+              alpha
             >
               {(pageBGImage === null || !pageBGImage) && (
-                <label>
-                  <ButtonPrimary compact fullWidth>
-                    <BlockImageSmall /> Add Background Image
-                  </ButtonPrimary>
+                <label
+                  className={`m-0 h-max w-full  py-0 px-1
+                    bg-accent-1  outline-transparent
+                    rounded-md text-base font-bold text-accent-2
+                    hover:cursor-pointer
+                    flex gap-2 items-center justify-center shrink-0
+                    transparent-outline hover:outline-accent-1 outline-offset-1
+                  `}
+                >
+                  <BlockImageSmall /> Add Background Image
                   <div className="hidden">
                     <ImageInput entityID={props.entityID} card />
                   </div>

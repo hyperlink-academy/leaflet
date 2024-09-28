@@ -431,6 +431,9 @@ export const CanvasBackground = (props: { entityID: string }) => {
     props.entityID,
     "theme/card-background-image-repeat",
   );
+  let cardBackgroundImageOpacity =
+    useEntity(props.entityID, "theme/card-background-image-opacity")?.data
+      .value || 1;
 
   let canvasPattern =
     useEntity(props.entityID, "canvas/background-pattern")?.data.value ||
@@ -439,11 +442,10 @@ export const CanvasBackground = (props: { entityID: string }) => {
     <div
       className="w-full h-full pointer-events-none"
       style={{
-        backgroundColor: "rgb(var(--bg-page))",
         backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
         backgroundRepeat: "repeat",
         backgroundSize: cardBackgroundImageRepeat?.data.value || 500,
-        opacity: "var(--bg-page-alpha)",
+        opacity: cardBackgroundImage?.data.src ? cardBackgroundImageOpacity : 1,
       }}
     >
       <CanvasBackgroundPattern pattern={canvasPattern} />
