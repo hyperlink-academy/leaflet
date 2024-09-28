@@ -72,11 +72,17 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
     "theme/accent-background",
   );
   let accent2Value = useColorAttribute(props.entityID, "theme/accent-text");
+
   let permission = useEntitySetContext().permissions.write;
-  let backgroundImage = useEntity(props.entityID, "theme/background-image");
-  let backgroundRepeat = useEntity(
+  let leafletBGImage = useEntity(props.entityID, "theme/background-image");
+  let leafletBGRepeat = useEntity(
     props.entityID,
     "theme/background-image-repeat",
+  );
+  let pageBGImage = useEntity(props.entityID, "theme/card-background-image");
+  let pageBGRepeat = useEntity(
+    props.entityID,
+    "theme/card-background-image-repeat",
   );
 
   let [openPicker, setOpenPicker] = useState<pickers>(
@@ -109,7 +115,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
       <Popover.Root>
         <Popover.Trigger>
           <HoverButton
-            icon=<PaintSmall />
+            icon={<PaintSmall />}
             noLabelOnMobile
             label="Theme"
             background="bg-bg-page"
@@ -157,11 +163,11 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                   e.currentTarget === e.target && setOpenPicker("leaflet");
                 }}
                 style={{
-                  backgroundImage: `url(${backgroundImage?.data.src})`,
-                  backgroundRepeat: backgroundRepeat ? "repeat" : "no-repeat",
-                  backgroundSize: !backgroundRepeat
+                  backgroundImage: `url(${leafletBGImage?.data.src})`,
+                  backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
+                  backgroundSize: !leafletBGRepeat
                     ? "cover"
-                    : `calc(${backgroundRepeat.data.value}px / 2 )`,
+                    : `calc(${leafletBGRepeat.data.value}px / 2 )`,
                 }}
                 className={`bg-bg-leaflet mx-2 p-3  mb-3 flex flex-col rounded-md  border border-border ${props.home ? "" : "pb-0"}`}
               >
@@ -215,35 +221,59 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                 </div>
                 {!props.home && (
                   <>
-                    {/* <hr className="my-3" /> */}
                     <div className="flex flex-col mt-8 -mb-[6px] z-10">
                       <div
                         className="themeLeafletControls flex flex-col gap-2 h-full text-primary bg-bg-leaflet p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))]"
                         style={{ backgroundColor: "rgba(var(--bg-page, 0.6)" }}
                       >
-                        <div className="themeLeafletColor flex items-start ">
-                          <ColorPicker
-                            label="Page"
-                            alpha
-                            value={pageValue}
+                        <ColorPicker
+                          label="Page"
+                          alpha
+                          value={pageValue}
+                          setValue={set("theme/card-background")}
+                          thisPicker={"page"}
+                          openPicker={openPicker}
+                          setOpenPicker={setOpenPicker}
+                          closePicker={() => setOpenPicker("null")}
+                        />
+                        {/* UNCOMMENT WHEN WE WIRE UP BG IMAGES ON FIRST PAGE */}
+                        {/* {(pageBGImage === null || !pageBGImage) && (
+                            <label
+                              className={`m-0 h-max w-full  py-0.5 px-1
+                                bg-accent-1  outline-transparent
+                                rounded-md text-base font-bold text-accent-2
+                                hover:cursor-pointer
+                                flex gap-2 items-center justify-center shrink-0
+                                transparent-outline hover:outline-accent-1 outline-offset-1
+                              `}
+                            >
+                              <BlockImageSmall /> Add Background Image
+                              <div className="hidden">
+                                <ImageInput entityID={props.entityID} card />
+                              </div>
+                            </label>
+                          )}
+                        </ColorPicker>
+                        {pageBGImage && pageBGImage !== null && (
+                          <PageBGPicker
+                            entityID={props.entityID}
+                            thisPicker={"page-background-image"}
+                            openPicker={openPicker}
+                            setOpenPicker={setOpenPicker}
+                            closePicker={() => setOpenPicker("null")}
                             setValue={set("theme/card-background")}
-                            thisPicker={"page"}
-                            openPicker={openPicker}
-                            setOpenPicker={setOpenPicker}
-                            closePicker={() => setOpenPicker("null")}
                           />
-                        </div>
-                        <div className="themeLeafletTextColor w-full flex pr-2 items-start">
-                          <ColorPicker
-                            label="Text"
-                            value={primaryValue}
-                            setValue={set("theme/primary")}
-                            thisPicker={"text"}
-                            openPicker={openPicker}
-                            setOpenPicker={setOpenPicker}
-                            closePicker={() => setOpenPicker("null")}
-                          />
-                        </div>
+                        )} */}
+
+                        <ColorPicker
+                          label="Text"
+                          value={primaryValue}
+                          setValue={set("theme/primary")}
+                          thisPicker={"text"}
+                          openPicker={openPicker}
+                          setOpenPicker={setOpenPicker}
+                          closePicker={() => setOpenPicker("null")}
+                        />
                       </div>
                       <SectionArrow
                         fill={theme.colors["primary"]}
@@ -666,7 +696,6 @@ export const PageBGPicker = (props: {
           <strong className={`text-primary`}>Background Image</strong>
         </button>
 
-        <div className="flex"></div>
         <SpectrumColorPicker
           value={alphaColor}
           onChange={(c) => {

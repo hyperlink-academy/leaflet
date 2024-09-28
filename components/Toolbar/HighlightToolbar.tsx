@@ -92,6 +92,7 @@ export const HighlightToolbar = (props: {
   onClose: () => void;
   lastUsedHighlight: "1" | "2" | "3";
   setLastUsedHighlight: (color: "1" | "2" | "3") => void;
+  pageID: string;
 }) => {
   let focusedBlock = useUIState((s) => s.focusedEntity);
   let focusedEditor = useEditorStates((s) =>
@@ -128,7 +129,7 @@ export const HighlightToolbar = (props: {
         />
 
         <Separator classname="h-6" />
-        <HighlightColorSettings />
+        <HighlightColorSettings pageID={props.pageID} />
       </div>
     </div>
   );
@@ -190,7 +191,7 @@ export const HighlightColorButton = (props: {
   );
 };
 
-export const HighlightColorSettings = () => {
+export const HighlightColorSettings = (props: { pageID: string }) => {
   let { rep, rootEntity } = useReplicache();
   let params = useParams();
   let set = useMemo(() => {
@@ -201,6 +202,15 @@ export const HighlightColorSettings = () => {
 
   let backgroundImage = useEntity(rootEntity, "theme/background-image");
   let backgroundRepeat = useEntity(rootEntity, "theme/background-image-repeat");
+  let pageBGImage = useEntity(props.pageID, "theme/card-background-image");
+  let pageBGRepeat = useEntity(
+    props.pageID,
+    "theme/card-background-image-repeat",
+  );
+  let pageBGOpacity = useEntity(
+    props.pageID,
+    "theme/card-background-image-opacity",
+  );
 
   let color = useEntity(rootEntity, "theme/highlight-1");
   let highlight1Value = useColorAttribute(rootEntity, "theme/highlight-1");
@@ -302,28 +312,41 @@ export const HighlightColorSettings = () => {
                 </div>
 
                 <div
-                  className="rounded-t-lg p-2  border border-border border-b-transparent shadow-md text-primary"
+                  className="rounded-t-lg p-2  relative border border-border border-b-transparent shadow-md text-primary"
                   style={{
                     backgroundColor:
                       "rgba(var(--bg-page), var(--bg-page-alpha))",
                   }}
                 >
-                  <p className="font-bold">Pick your highlights!</p>
-                  <small className="">
-                    This is what{" "}
-                    <span className="highlight bg-highlight-1">
-                      Highlights look like
-                    </span>
-                    <br />
-                    Make them{" "}
-                    <span className="highlight bg-highlight-2">
-                      whatever you want!
-                    </span>
-                    <br />
-                    <span className="highlight bg-highlight-3">
-                      Happy theming!
-                    </span>
-                  </small>
+                  <div
+                    className="background absolute top-0 right-0 bottom-0 left-0 z-0  rounded-t-lg"
+                    style={{
+                      backgroundImage: `url(${pageBGImage?.data.src})`,
+                      backgroundRepeat: pageBGRepeat ? "repeat" : "no-repeat",
+                      backgroundSize: !pageBGRepeat
+                        ? "cover"
+                        : `calc(${pageBGRepeat.data.value}px / 2 )`,
+                      opacity: pageBGOpacity?.data.value || 1,
+                    }}
+                  />
+                  <div className="relative flex flex-col">
+                    <p className="font-bold">Pick your highlights!</p>
+                    <small className="">
+                      This is what{" "}
+                      <span className="highlight bg-highlight-1">
+                        Highlights look like
+                      </span>
+                      <br />
+                      Make them{" "}
+                      <span className="highlight bg-highlight-2">
+                        whatever you want!
+                      </span>
+                      <br />
+                      <span className="highlight bg-highlight-3">
+                        Happy theming!
+                      </span>
+                    </small>
+                  </div>
                 </div>
               </div>
               <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">

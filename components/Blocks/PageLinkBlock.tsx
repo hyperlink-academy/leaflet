@@ -160,8 +160,7 @@ export function PagePreview(props: { entityID: string }) {
           width: `calc(1px * ${pageWidth})`,
           height: `calc(100vh - 64px)`,
           transform: `scale(calc((120 / ${pageWidth} )))`,
-          backgroundColor: "rgb(var(--bg-page))",
-          opacity: "var(--bg-page-alpha)",
+          backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
         }}
       >
         <div

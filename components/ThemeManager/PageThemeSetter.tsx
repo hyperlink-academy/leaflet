@@ -36,8 +36,12 @@ export const PageThemeSetter = (props: { entityID: string }) => {
   let leafletBGRepeat = useEntity(rootEntity, "theme/background-image-repeat");
   let pageBGImage = useEntity(props.entityID, "theme/card-background-image");
   let pageBGRepeat = useEntity(
-    rootEntity,
+    props.entityID,
     "theme/card-background-image-repeat",
+  );
+  let pageBGOpacity = useEntity(
+    props.entityID,
+    "theme/card-background-image-opacity",
   );
 
   let set = useMemo(() => {
@@ -132,7 +136,7 @@ export const PageThemeSetter = (props: { entityID: string }) => {
             >
               {(pageBGImage === null || !pageBGImage) && (
                 <label
-                  className={`m-0 h-max w-full  py-0 px-1
+                  className={`m-0 h-max w-full  py-0.5 px-1
                     bg-accent-1  outline-transparent
                     rounded-md text-base font-bold text-accent-2
                     hover:cursor-pointer
@@ -173,17 +177,21 @@ export const PageThemeSetter = (props: { entityID: string }) => {
             className="ml-2"
           />
         </div>
-        <div className="relative rounded-t-lg p-2 shadow-md text-primary border border-border border-b-transparent">
+        <div
+          className="relative rounded-t-lg p-2 shadow-md text-primary border border-border border-b-transparent"
+          style={{
+            backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
+          }}
+        >
           <div
             className="background absolute top-0 right-0 bottom-0 left-0 z-0  rounded-t-lg"
             style={{
-              backgroundColor: "rgb(var(--bg-page))",
               backgroundImage: `url(${pageBGImage?.data.src})`,
               backgroundRepeat: pageBGRepeat ? "repeat" : "no-repeat",
+              opacity: pageBGOpacity?.data.value || 1,
               backgroundSize: !pageBGRepeat
                 ? "cover"
                 : `calc(${pageBGRepeat.data.value}px / 2 )`,
-              opacity: "var(--bg-page-alpha)",
             }}
           />
           <div className="relative">

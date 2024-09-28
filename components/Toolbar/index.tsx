@@ -91,6 +91,7 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
             />
           ) : toolbarState === "highlight" ? (
             <HighlightToolbar
+              pageID={props.pageID}
               onClose={() => setToolbarState("default")}
               lastUsedHighlight={lastUsedHighlight}
               setLastUsedHighlight={(color: "1" | "2" | "3") =>
