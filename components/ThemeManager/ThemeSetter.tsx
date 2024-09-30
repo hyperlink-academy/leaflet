@@ -165,6 +165,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                 style={{
                   backgroundImage: `url(${leafletBGImage?.data.src})`,
                   backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
+                  backgroundPosition: "center",
                   backgroundSize: !leafletBGRepeat
                     ? "cover"
                     : `calc(${leafletBGRepeat.data.value}px / 2 )`,
@@ -249,7 +250,11 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                             >
                               <BlockImageSmall /> Add Background Image
                               <div className="hidden">
-                                <ImageInput entityID={props.entityID} card />
+                                <ImageInput 
+                                  entityID={props.entityID}                       
+                                  onChange={() => setOpenPicker("page-background-image")}
+                                  card 
+                                />
                               </div>
                             </label>
                           )}
@@ -690,6 +695,7 @@ export const PageBGPicker = (props: {
             className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
             style={{
               backgroundImage: `url(${bgImage?.data.src})`,
+              backgroundPosition: "center",
               backgroundSize: "cover",
             }}
           />
@@ -825,6 +831,8 @@ export const ImageSettings = (props: {
       <div
         style={{
           backgroundImage: `url(${image?.data.src})`,
+          backgroundPosition: "center",
+          backgroundSize: "cover",
         }}
         className="themeBGImagePreview flex gap-2 place-items-center justify-center w-full h-[128px]  bg-cover bg-center bg-no-repeat"
       >

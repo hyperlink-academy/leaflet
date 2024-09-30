@@ -201,6 +201,7 @@ export const ThemeBackgroundProvider = (props: {
       style={
         {
           backgroundImage: `url(${backgroundImage?.data.src}), url(${backgroundImage?.data.fallback})`,
+          backgroundPosition: "center",
           backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
           backgroundSize: !backgroundImageRepeat
             ? "cover"

@@ -82,6 +82,7 @@ export const PageThemeSetter = (props: { entityID: string }) => {
         className="pageThemeSetterContent bg-bg-leaflet w-80 p-3 pb-0 flex flex-col gap-2 rounded-md -mb-1"
         style={{
           backgroundImage: `url(${leafletBGImage?.data.src})`,
+          backgroundPosition: "center",
           backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
           backgroundSize: !leafletBGRepeat
             ? "cover"
@@ -146,7 +147,11 @@ export const PageThemeSetter = (props: { entityID: string }) => {
                 >
                   <BlockImageSmall /> Add Background Image
                   <div className="hidden">
-                    <ImageInput entityID={props.entityID} card />
+                    <ImageInput
+                      entityID={props.entityID}
+                      onChange={() => setOpenPicker("page-background-image")}
+                      card
+                    />
                   </div>
                 </label>
               )}
@@ -187,6 +192,7 @@ export const PageThemeSetter = (props: { entityID: string }) => {
             className="background absolute top-0 right-0 bottom-0 left-0 z-0  rounded-t-lg"
             style={{
               backgroundImage: `url(${pageBGImage?.data.src})`,
+
               backgroundRepeat: pageBGRepeat ? "repeat" : "no-repeat",
               opacity: pageBGOpacity?.data.value || 1,
               backgroundSize: !pageBGRepeat

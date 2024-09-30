@@ -174,6 +174,7 @@ export function PagePreview(props: { entityID: string }) {
             backgroundRepeat: cardBackgroundImageRepeat
               ? "repeat"
               : "no-repeat",
+            backgroundPosition: "center",
             backgroundSize: !cardBackgroundImageRepeat
               ? "cover"
               : cardBackgroundImageRepeat?.data.value,

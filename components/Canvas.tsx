@@ -447,6 +447,7 @@ export const CanvasBackground = (props: { entityID: string }) => {
       style={{
         backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
         backgroundRepeat: "repeat",
+        backgroundPosition: "center",
         backgroundSize: cardBackgroundImageRepeat?.data.value || 500,
         opacity: cardBackgroundImage?.data.src ? cardBackgroundImageOpacity : 1,
       }}

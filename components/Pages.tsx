@@ -215,6 +215,7 @@ const DocContent = (props: { entityID: string }) => {
         style={{
           backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
           backgroundRepeat: cardBackgroundImageRepeat ? "repeat" : "no-repeat",
+          backgroundPosition: "center",
           backgroundSize: !cardBackgroundImageRepeat
             ? "cover"
             : cardBackgroundImageRepeat?.data.value,

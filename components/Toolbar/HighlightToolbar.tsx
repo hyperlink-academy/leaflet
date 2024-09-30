@@ -262,6 +262,7 @@ export const HighlightColorSettings = (props: { pageID: string }) => {
                 style={{
                   backgroundImage: `url(${backgroundImage?.data.src})`,
                   backgroundRepeat: backgroundRepeat ? "repeat" : "no-repeat",
+                  backgroundPosition: "center",
                   backgroundSize: !backgroundRepeat
                     ? "cover"
                     : `calc(${backgroundRepeat.data.value}px / 2 )`,
@@ -323,6 +324,7 @@ export const HighlightColorSettings = (props: { pageID: string }) => {
                     style={{
                       backgroundImage: `url(${pageBGImage?.data.src})`,
                       backgroundRepeat: pageBGRepeat ? "repeat" : "no-repeat",
+                      backgroundPosition: "center",
                       backgroundSize: !pageBGRepeat
                         ? "cover"
                         : `calc(${pageBGRepeat.data.value}px / 2 )`,
