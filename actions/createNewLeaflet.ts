@@ -59,9 +59,9 @@ export async function createNewLeaflet(
       .returning();
     await tx.insert(facts).values({
       id: v7(),
-      entity: first_page.id,
+      entity: root_entity.id,
       attribute: "root/page",
-      data: sql`${{ type: "ordered-reference", value: first_page, position: "a0" }}`,
+      data: sql`${{ type: "ordered-reference", value: first_page.id, position: "a0" }}`,
     });
 
     if (pageType === "canvas") {
