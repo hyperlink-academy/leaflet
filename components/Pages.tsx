@@ -254,6 +254,8 @@ const PageOptionsMenu = (props: {
 
 const OptionsMenu = (props: { entityID: string }) => {
   let [state, setState] = useState<"normal" | "theme">("normal");
+  let { permissions } = useEntitySetContext();
+  if (!permissions.write) return null;
   return (
     <Menu
       align="end"
