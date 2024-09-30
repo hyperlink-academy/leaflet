@@ -73,7 +73,9 @@ export function Pages(props: { rootPage: string }) {
         ) : null}
       </div>
       <div className="flex items-stretch">
-        <Page entityID={firstPage} first />
+        <CardThemeProvider entityID={firstPage}>
+          <Page entityID={firstPage} first />
+        </CardThemeProvider>
       </div>
       {pages.map((page) => (
         <div className="flex items-stretch" key={page}>
