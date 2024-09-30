@@ -7,7 +7,12 @@ import {
 import { useRef, useState } from "react";
 import { Link } from "react-aria-components";
 import { useBlocks } from "src/hooks/queries/useBlocks";
-import { PermissionToken, useEntity } from "src/replicache";
+import {
+  PermissionToken,
+  useEntity,
+  useReferenceToEntity,
+  useReplicache,
+} from "src/replicache";
 import { deleteLeaflet } from "actions/deleteLeaflet";
 import { removeDocFromHome } from "./storage";
 import { mutate } from "swr";
@@ -15,24 +20,30 @@ import useMeasure from "react-use-measure";
 import { ButtonPrimary } from "components/Buttons";
 import { LeafletOptions } from "./LeafletOptions";
 import { CanvasContent } from "components/Canvas";
+import { useSubscribe } from "replicache-react";
 
 export const LeafletPreview = (props: {
   token: PermissionToken;
   leaflet_id: string;
 }) => {
   let [state, setState] = useState<"normal" | "deleting">("normal");
-  let firstPage = useEntity(props.leaflet_id, "root/page")[0];
-  let page = firstPage?.data.value || props.leaflet_id;
+  let parentRootPage = useReferenceToEntity("root/page", props.leaflet_id)[0]
+    ?.entity;
+  let root =
+    useReferenceToEntity("root/page", props.leaflet_id)[0]?.entity ||
+    props.leaflet_id;
+  let firstPage = useEntity(root, "root/page")[0];
+  let page = firstPage?.data.value || root;
   return (
     <div className="relative max-h-40 h-40">
-      <ThemeProvider local entityID={props.leaflet_id}>
+      <ThemeProvider local entityID={root}>
         <div className="rounded-lg hover:shadow-sm overflow-clip border border-border outline outline-transparent hover:outline-border bg-bg-leaflet grow w-full h-full">
           {state === "normal" ? (
             <Link
               href={"/" + props.token.id}
               className={`no-underline hover:no-underline text-primary h-full`}
             >
-              <ThemeBackgroundProvider entityID={props.leaflet_id}>
+              <ThemeBackgroundProvider entityID={root}>
                 <div className="leafletPreview grow shrink-0 h-full w-full px-2 pt-2 sm:px-3 sm:pt-3 flex items-end pointer-events-none">
                   <div
                     className="leafletContentWrapper w-full h-full max-w-48 mx-auto border border-border-light border-b-0 rounded-t-md overflow-clip"

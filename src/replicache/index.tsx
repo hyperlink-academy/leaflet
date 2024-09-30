@@ -86,7 +86,7 @@ export function ReplicacheProvider(props: {
       },
       puller: async (pullRequest) => {
         return {
-          response: await Pull(pullRequest, props.name),
+          response: await Pull(pullRequest, props.token.id),
           httpRequestInfo: { errorMessage: "", httpStatusCode: 200 },
         };
       },
