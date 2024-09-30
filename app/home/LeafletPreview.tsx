@@ -21,6 +21,8 @@ export const LeafletPreview = (props: {
   leaflet_id: string;
 }) => {
   let [state, setState] = useState<"normal" | "deleting">("normal");
+  let firstPage = useEntity(props.leaflet_id, "root/page")[0];
+  let page = firstPage?.data.value || props.leaflet_id;
   return (
     <div className="relative max-h-40 h-40">
       <ThemeProvider local entityID={props.leaflet_id}>
@@ -39,7 +41,7 @@ export const LeafletPreview = (props: {
                         "rgba(var(--bg-page), var(--bg-page-alpha))",
                     }}
                   >
-                    <LeafletContent entityID={props.leaflet_id} />
+                    <LeafletContent entityID={page} />
                   </div>
                 </div>
               </ThemeBackgroundProvider>

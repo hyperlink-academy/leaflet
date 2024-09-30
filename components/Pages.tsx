@@ -33,13 +33,11 @@ import { PageThemeSetter } from "./ThemeManager/PageThemeSetter";
 import { CardThemeProvider } from "./ThemeManager/ThemeProvider";
 
 export function Pages(props: { rootPage: string }) {
+  let rootPage = useEntity(props.rootPage, "root/page")[0];
+  let firstPage = rootPage?.data.value || props.rootPage;
   let openPages = useUIState((s) => s.openPages);
   let params = useSearchParams();
   let openPage = params.get("openPage");
-  useEffect(() => {
-    if (openPage) {
-    }
-  }, [openPage, props.rootPage]);
   let pages = [...openPages];
   if (openPage && !pages.includes(openPage)) pages.push(openPage);
   let entity_set = useEntitySetContext();
@@ -75,7 +73,7 @@ export function Pages(props: { rootPage: string }) {
         ) : null}
       </div>
       <div className="flex items-stretch">
-        <Page entityID={props.rootPage} first />
+        <Page entityID={firstPage} first />
       </div>
       {pages.map((page) => (
         <div className="flex items-stretch" key={page}>

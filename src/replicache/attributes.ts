@@ -1,3 +1,9 @@
+const RootAttributes = {
+  "root/page": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
+} as const;
 const PageAttributes = {
   "card/block": {
     type: "ordered-reference",
@@ -101,7 +107,7 @@ const EmbedBlockAttributes = {
   },
 } as const;
 
-const ThemeAttributes = {
+export const ThemeAttributes = {
   "theme/page-background": {
     type: "color",
     cardinality: "one",
@@ -157,6 +163,7 @@ const ThemeAttributes = {
 } as const;
 
 export const Attributes = {
+  ...RootAttributes,
   ...PageAttributes,
   ...BlockAttributes,
   ...LinkBlockAttributes,
