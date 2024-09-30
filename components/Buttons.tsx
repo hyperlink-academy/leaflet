@@ -2,10 +2,15 @@ import React from "react";
 import * as RadixTooltip from "@radix-ui/react-tooltip";
 import { theme } from "tailwind.config";
 import { PopoverArrow } from "./Icons";
+import {
+  CardThemeProvider,
+  NestedCardThemeProvider,
+} from "./ThemeManager/ThemeProvider";
 
 type ButtonProps = Omit<JSX.IntrinsicElements["button"], "content">;
 export function ButtonPrimary(
   props: {
+    fullWidth?: boolean;
     children: React.ReactNode;
     compact?: boolean;
   } & ButtonProps,
@@ -13,13 +18,11 @@ export function ButtonPrimary(
   return (
     <button
       {...props}
-      className={`m-0 w-max h-max ${props.compact ? "py-0 px-1" : "px-2 py-0.5 "}
-  bg-accent-1 outline-offset-[-2px] outline-transparent
-  border border-accent-1 rounded-md
-  text-base font-bold text-accent-2
+      className={`m-0 h-max ${props.fullWidth ? "w-full" : "w-max"}  ${props.compact ? "py-0 px-1" : "px-2 py-0.5 "}
+  bg-accent-1  outline-transparent
+  rounded-md text-base font-bold text-accent-2
   flex gap-2 items-center justify-center shrink-0
-  active:outline active:outline-2
-  disabled:border-border-light
+  transparent-outline hover:outline-accent-1 outline-offset-1
   disabled:bg-border-light disabled:text-border disabled:hover:text-border
   ${props.className}
 `}
@@ -61,6 +64,7 @@ export const HoverButton = (props: {
 
 export const TooltipButton = (props: {
   onMouseDown?: (e: React.MouseEvent) => void;
+  disabled?: boolean;
   className?: string;
   children: React.ReactNode;
   content: React.ReactNode;
@@ -72,6 +76,7 @@ export const TooltipButton = (props: {
     <RadixTooltip.TooltipProvider>
       <RadixTooltip.Root>
         <RadixTooltip.Trigger
+          disabled={props.disabled}
           className={props.className}
           onMouseDown={(e) => {
             e.preventDefault();
@@ -82,25 +87,27 @@ export const TooltipButton = (props: {
         </RadixTooltip.Trigger>
 
         <RadixTooltip.Portal>
-          <RadixTooltip.Content
-            side={props.side ? props.side : undefined}
-            sideOffset={6}
-            alignOffset={12}
-            className="z-10 bg-border rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
-          >
-            {props.content}
-            <RadixTooltip.Arrow
-              asChild
-              width={16}
-              height={8}
-              viewBox="0 0 16 8"
+          <NestedCardThemeProvider>
+            <RadixTooltip.Content
+              side={props.side ? props.side : undefined}
+              sideOffset={6}
+              alignOffset={12}
+              className="z-10 bg-border rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
             >
-              <PopoverArrow
-                arrowFill={theme.colors["border"]}
-                arrowStroke="transparent"
-              />
-            </RadixTooltip.Arrow>
-          </RadixTooltip.Content>
+              {props.content}
+              <RadixTooltip.Arrow
+                asChild
+                width={16}
+                height={8}
+                viewBox="0 0 16 8"
+              >
+                <PopoverArrow
+                  arrowFill={theme.colors["border"]}
+                  arrowStroke="transparent"
+                />
+              </RadixTooltip.Arrow>
+            </RadixTooltip.Content>
+          </NestedCardThemeProvider>
         </RadixTooltip.Portal>
       </RadixTooltip.Root>
     </RadixTooltip.TooltipProvider>

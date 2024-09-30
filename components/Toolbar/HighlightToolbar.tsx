@@ -29,6 +29,7 @@ import {
 import { Separator, ShortcutKey } from "components/Layout";
 import { isMac } from "@react-aria/utils";
 import { ToolbarButton } from ".";
+import { NestedCardThemeProvider } from "components/ThemeManager/ThemeProvider";
 
 export const HighlightButton = (props: {
   lastUsedHighlight: string;
@@ -91,6 +92,7 @@ export const HighlightToolbar = (props: {
   onClose: () => void;
   lastUsedHighlight: "1" | "2" | "3";
   setLastUsedHighlight: (color: "1" | "2" | "3") => void;
+  pageID: string;
 }) => {
   let focusedBlock = useUIState((s) => s.focusedEntity);
   let focusedEditor = useEditorStates((s) =>
@@ -127,7 +129,7 @@ export const HighlightToolbar = (props: {
         />
 
         <Separator classname="h-6" />
-        <HighlightColorSettings />
+        <HighlightColorSettings pageID={props.pageID} />
       </div>
     </div>
   );
@@ -189,7 +191,7 @@ export const HighlightColorButton = (props: {
   );
 };
 
-export const HighlightColorSettings = () => {
+export const HighlightColorSettings = (props: { pageID: string }) => {
   let { rep, rootEntity } = useReplicache();
   let params = useParams();
   let set = useMemo(() => {
@@ -200,6 +202,15 @@ export const HighlightColorSettings = () => {
 
   let backgroundImage = useEntity(rootEntity, "theme/background-image");
   let backgroundRepeat = useEntity(rootEntity, "theme/background-image-repeat");
+  let pageBGImage = useEntity(props.pageID, "theme/card-background-image");
+  let pageBGRepeat = useEntity(
+    props.pageID,
+    "theme/card-background-image-repeat",
+  );
+  let pageBGOpacity = useEntity(
+    props.pageID,
+    "theme/card-background-image-opacity",
+  );
 
   let color = useEntity(rootEntity, "theme/highlight-1");
   let highlight1Value = useColorAttribute(rootEntity, "theme/highlight-1");
@@ -221,113 +232,131 @@ export const HighlightColorSettings = () => {
         </Popover.Trigger>
 
         <Tooltip.Portal>
-          <Tooltip.Content
-            sideOffset={6}
-            alignOffset={12}
-            className="z-10 bg-border rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
-          >
-            Change Highlight Colors
-            <Tooltip.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
-              <PopoverArrow
-                arrowFill={theme.colors["border"]}
-                arrowStroke="transparent"
-              />
-            </Tooltip.Arrow>
-          </Tooltip.Content>
+          <NestedCardThemeProvider>
+            <Tooltip.Content
+              sideOffset={6}
+              alignOffset={12}
+              className="z-10 bg-border rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
+            >
+              Change Highlight Colors
+              <Tooltip.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
+                <PopoverArrow
+                  arrowFill={theme.colors["border"]}
+                  arrowStroke="transparent"
+                />
+              </Tooltip.Arrow>
+            </Tooltip.Content>
+          </NestedCardThemeProvider>
         </Tooltip.Portal>
 
         <Popover.Portal>
-          <Popover.Content
-            className="themeSetterWrapper z-20 w-80 h-fit max-h-[80vh] bg-white rounded-md border border-border flex"
-            align="center"
-            sideOffset={8}
-            collisionPadding={16}
-          >
-            <div
-              className="bg-bg-leaflet w-full m-2 p-3 pb-0  flex flex-col rounded-md  border border-border"
-              style={{
-                backgroundImage: `url(${backgroundImage?.data.src})`,
-                backgroundRepeat: backgroundRepeat ? "repeat" : "no-repeat",
-                backgroundSize: !backgroundRepeat
-                  ? "cover"
-                  : `calc(${backgroundRepeat.data.value}px / 2 )`,
-              }}
+          <NestedCardThemeProvider>
+            <Popover.Content
+              className="themeSetterWrapper z-20 w-80 h-fit max-h-[80vh] bg-white rounded-md border border-border flex"
+              align="center"
+              sideOffset={8}
+              collisionPadding={16}
             >
-              <div className="flex flex-col -mb-[6px] z-10">
-                <div
-                  className="themeHighlightControls flex flex-col gap-2 h-full text-primary bg-bg-leaflet p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))]"
-                  style={{ backgroundColor: "rgba(var(--bg-page), 0.6)" }}
-                >
-                  <ColorPicker
-                    label="Highlight 1"
-                    value={
-                      color?.data.value === undefined
-                        ? undefined
-                        : highlight1Value
-                    }
-                    setValue={set("theme/highlight-1")}
-                    thisPicker={"highlight-1"}
-                    openPicker={openPicker}
-                    setOpenPicker={setOpenPicker}
-                    closePicker={() => setOpenPicker("null")}
-                  />
-                  <ColorPicker
-                    label="Highlight 2"
-                    value={highlight2Value}
-                    setValue={set("theme/highlight-2")}
-                    thisPicker={"highlight-2"}
-                    openPicker={openPicker}
-                    setOpenPicker={setOpenPicker}
-                    closePicker={() => setOpenPicker("null")}
-                  />
-                  <ColorPicker
-                    label="Highlight 3"
-                    value={highlight3Value}
-                    setValue={set("theme/highlight-3")}
-                    thisPicker={"highlight-3"}
-                    openPicker={openPicker}
-                    setOpenPicker={setOpenPicker}
-                    closePicker={() => setOpenPicker("null")}
-                  />
-                </div>
-                <SectionArrow
-                  fill={theme.colors["primary"]}
-                  stroke={theme.colors["bg-page"]}
-                  className="ml-2"
-                />
-              </div>
-
               <div
-                className="rounded-t-lg p-2  border border-border border-b-transparent shadow-md text-primary"
+                className="bg-bg-leaflet w-full m-2 p-3 pb-0  flex flex-col rounded-md  border border-border"
                 style={{
-                  backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
+                  backgroundImage: `url(${backgroundImage?.data.src})`,
+                  backgroundRepeat: backgroundRepeat ? "repeat" : "no-repeat",
+                  backgroundSize: !backgroundRepeat
+                    ? "cover"
+                    : `calc(${backgroundRepeat.data.value}px / 2 )`,
                 }}
               >
-                <p className="font-bold">Pick your highlights!</p>
-                <small className="">
-                  This is what{" "}
-                  <span className="highlight bg-highlight-1">
-                    Highlights look like
-                  </span>
-                  <br />
-                  Make them{" "}
-                  <span className="highlight bg-highlight-2">
-                    whatever you want!
-                  </span>
-                  <br />
-                  <span className="highlight bg-highlight-3">
-                    Happy theming!
-                  </span>
-                </small>
+                <div className="flex flex-col -mb-[6px] z-10">
+                  <div
+                    className="themeHighlightControls flex flex-col gap-2 h-full text-primary bg-bg-leaflet p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))]"
+                    style={{ backgroundColor: "rgba(var(--bg-page), 0.6)" }}
+                  >
+                    <ColorPicker
+                      label="Highlight 1"
+                      value={
+                        color?.data.value === undefined
+                          ? undefined
+                          : highlight1Value
+                      }
+                      setValue={set("theme/highlight-1")}
+                      thisPicker={"highlight-1"}
+                      openPicker={openPicker}
+                      setOpenPicker={setOpenPicker}
+                      closePicker={() => setOpenPicker("null")}
+                    />
+                    <ColorPicker
+                      label="Highlight 2"
+                      value={highlight2Value}
+                      setValue={set("theme/highlight-2")}
+                      thisPicker={"highlight-2"}
+                      openPicker={openPicker}
+                      setOpenPicker={setOpenPicker}
+                      closePicker={() => setOpenPicker("null")}
+                    />
+                    <ColorPicker
+                      label="Highlight 3"
+                      value={highlight3Value}
+                      setValue={set("theme/highlight-3")}
+                      thisPicker={"highlight-3"}
+                      openPicker={openPicker}
+                      setOpenPicker={setOpenPicker}
+                      closePicker={() => setOpenPicker("null")}
+                    />
+                  </div>
+                  <SectionArrow
+                    fill={theme.colors["primary"]}
+                    stroke={theme.colors["bg-page"]}
+                    className="ml-2"
+                  />
+                </div>
+
+                <div
+                  className="rounded-t-lg p-2  relative border border-border border-b-transparent shadow-md text-primary"
+                  style={{
+                    backgroundColor:
+                      "rgba(var(--bg-page), var(--bg-page-alpha))",
+                  }}
+                >
+                  <div
+                    className="background absolute top-0 right-0 bottom-0 left-0 z-0  rounded-t-lg"
+                    style={{
+                      backgroundImage: `url(${pageBGImage?.data.src})`,
+                      backgroundRepeat: pageBGRepeat ? "repeat" : "no-repeat",
+                      backgroundSize: !pageBGRepeat
+                        ? "cover"
+                        : `calc(${pageBGRepeat.data.value}px / 2 )`,
+                      opacity: pageBGOpacity?.data.value || 1,
+                    }}
+                  />
+                  <div className="relative flex flex-col">
+                    <p className="font-bold">Pick your highlights!</p>
+                    <small className="">
+                      This is what{" "}
+                      <span className="highlight bg-highlight-1">
+                        Highlights look like
+                      </span>
+                      <br />
+                      Make them{" "}
+                      <span className="highlight bg-highlight-2">
+                        whatever you want!
+                      </span>
+                      <br />
+                      <span className="highlight bg-highlight-3">
+                        Happy theming!
+                      </span>
+                    </small>
+                  </div>
+                </div>
               </div>
-            </div>
-            <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
-              <PopoverArrow
-                arrowFill={theme.colors["white"]}
-                arrowStroke={theme.colors["border"]}
-              />
-            </Popover.Arrow>
-          </Popover.Content>
+              <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
+                <PopoverArrow
+                  arrowFill={theme.colors["white"]}
+                  arrowStroke={theme.colors["border"]}
+                />
+              </Popover.Arrow>
+            </Popover.Content>
+          </NestedCardThemeProvider>
         </Popover.Portal>
       </Tooltip.Root>
     </Popover.Root>

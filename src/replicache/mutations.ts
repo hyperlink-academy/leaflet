@@ -497,10 +497,16 @@ const archiveDraft: Mutation<{
 
 const retractAttribute: Mutation<{
   entity: string;
-  attribute: keyof FilterAttributes<{ cardinality: "one" }>;
+  attribute:
+    | keyof FilterAttributes<{ cardinality: "one" }>
+    | Array<keyof FilterAttributes<{ cardinality: "one" }>>;
 }> = async (args, ctx) => {
-  let fact = (await ctx.scanIndex.eav(args.entity, args.attribute))[0];
-  if (fact) await ctx.retractFact(fact.id);
+  for (let a of [args.attribute].flat()) {
+    console.log(a);
+    let fact = (await ctx.scanIndex.eav(args.entity, a))[0];
+    console.log(fact);
+    if (fact) await ctx.retractFact(fact.id);
+  }
 };
 
 const toggleTodoState: Mutation<{ entityID: string }> = async (args, ctx) => {

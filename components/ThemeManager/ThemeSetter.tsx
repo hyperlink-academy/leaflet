@@ -46,7 +46,8 @@ export type pickers =
   | "text"
   | "highlight-1"
   | "highlight-2"
-  | "highlight-3";
+  | "highlight-3"
+  | "page-background-image";
 
 export function setColorAttribute(
   rep: Replicache<ReplicacheMutators> | null,
@@ -71,11 +72,17 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
     "theme/accent-background",
   );
   let accent2Value = useColorAttribute(props.entityID, "theme/accent-text");
+
   let permission = useEntitySetContext().permissions.write;
-  let backgroundImage = useEntity(props.entityID, "theme/background-image");
-  let backgroundRepeat = useEntity(
+  let leafletBGImage = useEntity(props.entityID, "theme/background-image");
+  let leafletBGRepeat = useEntity(
     props.entityID,
     "theme/background-image-repeat",
+  );
+  let pageBGImage = useEntity(props.entityID, "theme/card-background-image");
+  let pageBGRepeat = useEntity(
+    props.entityID,
+    "theme/card-background-image-repeat",
   );
 
   let [openPicker, setOpenPicker] = useState<pickers>(
@@ -108,7 +115,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
       <Popover.Root>
         <Popover.Trigger>
           <HoverButton
-            icon=<PaintSmall />
+            icon={<PaintSmall />}
             noLabelOnMobile
             label="Theme"
             background="bg-bg-page"
@@ -129,14 +136,26 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
           >
             <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
               <div className="themeBGLeaflet flex">
-                <BGPicker
-                  entityID={props.entityID}
-                  thisPicker={"leaflet"}
-                  openPicker={openPicker}
-                  setOpenPicker={setOpenPicker}
-                  closePicker={() => setOpenPicker("null")}
-                  setValue={set("theme/page-background")}
-                />
+                <div
+                  className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full px-2 pt-3`}
+                >
+                  <div className="bgPickerBody w-full flex flex-col gap-2 p-2 border border-[#CCCCCC] rounded-md">
+                    <LeafletBGPicker
+                      entityID={props.entityID}
+                      thisPicker={"leaflet"}
+                      openPicker={openPicker}
+                      setOpenPicker={setOpenPicker}
+                      closePicker={() => setOpenPicker("null")}
+                      setValue={set("theme/page-background")}
+                    />
+                  </div>
+
+                  <SectionArrow
+                    fill="white"
+                    stroke="#CCCCCC"
+                    className="ml-2 -mt-[1px]"
+                  />
+                </div>
               </div>
 
               <div
@@ -144,11 +163,11 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                   e.currentTarget === e.target && setOpenPicker("leaflet");
                 }}
                 style={{
-                  backgroundImage: `url(${backgroundImage?.data.src})`,
-                  backgroundRepeat: backgroundRepeat ? "repeat" : "no-repeat",
-                  backgroundSize: !backgroundRepeat
+                  backgroundImage: `url(${leafletBGImage?.data.src})`,
+                  backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
+                  backgroundSize: !leafletBGRepeat
                     ? "cover"
-                    : `calc(${backgroundRepeat.data.value}px / 2 )`,
+                    : `calc(${leafletBGRepeat.data.value}px / 2 )`,
                 }}
                 className={`bg-bg-leaflet mx-2 p-3  mb-3 flex flex-col rounded-md  border border-border ${props.home ? "" : "pb-0"}`}
               >
@@ -202,35 +221,59 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                 </div>
                 {!props.home && (
                   <>
-                    {/* <hr className="my-3" /> */}
                     <div className="flex flex-col mt-8 -mb-[6px] z-10">
                       <div
                         className="themeLeafletControls flex flex-col gap-2 h-full text-primary bg-bg-leaflet p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))]"
                         style={{ backgroundColor: "rgba(var(--bg-page, 0.6)" }}
                       >
-                        <div className="themeLeafletColor flex items-start ">
-                          <ColorPicker
-                            label="Page"
-                            alpha
-                            value={pageValue}
+                        <ColorPicker
+                          label="Page"
+                          alpha
+                          value={pageValue}
+                          setValue={set("theme/card-background")}
+                          thisPicker={"page"}
+                          openPicker={openPicker}
+                          setOpenPicker={setOpenPicker}
+                          closePicker={() => setOpenPicker("null")}
+                        />
+                        {/* UNCOMMENT WHEN WE WIRE UP BG IMAGES ON FIRST PAGE */}
+                        {/* {(pageBGImage === null || !pageBGImage) && (
+                            <label
+                              className={`m-0 h-max w-full  py-0.5 px-1
+                                bg-accent-1  outline-transparent
+                                rounded-md text-base font-bold text-accent-2
+                                hover:cursor-pointer
+                                flex gap-2 items-center justify-center shrink-0
+                                transparent-outline hover:outline-accent-1 outline-offset-1
+                              `}
+                            >
+                              <BlockImageSmall /> Add Background Image
+                              <div className="hidden">
+                                <ImageInput entityID={props.entityID} card />
+                              </div>
+                            </label>
+                          )}
+                        </ColorPicker>
+                        {pageBGImage && pageBGImage !== null && (
+                          <PageBGPicker
+                            entityID={props.entityID}
+                            thisPicker={"page-background-image"}
+                            openPicker={openPicker}
+                            setOpenPicker={setOpenPicker}
+                            closePicker={() => setOpenPicker("null")}
                             setValue={set("theme/card-background")}
-                            thisPicker={"page"}
-                            openPicker={openPicker}
-                            setOpenPicker={setOpenPicker}
-                            closePicker={() => setOpenPicker("null")}
                           />
-                        </div>
-                        <div className="themeLeafletTextColor w-full flex pr-2 items-start">
-                          <ColorPicker
-                            label="Text"
-                            value={primaryValue}
-                            setValue={set("theme/primary")}
-                            thisPicker={"text"}
-                            openPicker={openPicker}
-                            setOpenPicker={setOpenPicker}
-                            closePicker={() => setOpenPicker("null")}
-                          />
-                        </div>
+                        )} */}
+
+                        <ColorPicker
+                          label="Text"
+                          value={primaryValue}
+                          setValue={set("theme/primary")}
+                          thisPicker={"text"}
+                          openPicker={openPicker}
+                          setOpenPicker={setOpenPicker}
+                          closePicker={() => setOpenPicker("null")}
+                        />
                       </div>
                       <SectionArrow
                         fill={theme.colors["primary"]}
@@ -290,11 +333,13 @@ export const ColorPicker = (props: {
   label?: string;
   value: Color | undefined;
   alpha?: boolean;
+  image?: boolean;
   setValue: (c: Color) => void;
   openPicker: pickers;
   thisPicker: pickers;
   setOpenPicker: (thisPicker: pickers) => void;
   closePicker: () => void;
+  children?: React.ReactNode;
 }) => {
   return (
     <SpectrumColorPicker value={props.value} onChange={props.setValue}>
@@ -370,7 +415,7 @@ export const ColorPicker = (props: {
           </div>
         </div>
         {props.openPicker === props.thisPicker && (
-          <div className="w-full flex flex-col gap-2 px-1">
+          <div className="w-full flex flex-col gap-2 px-1 pb-2">
             {
               <>
                 <ColorArea
@@ -402,6 +447,7 @@ export const ColorPicker = (props: {
                     </SliderTrack>
                   </ColorSlider>
                 )}
+                {props.children}
               </>
             }
           </div>
@@ -411,51 +457,64 @@ export const ColorPicker = (props: {
   );
 };
 
-const BGPicker = (props: {
+export const LeafletBGPicker = (props: {
   entityID: string;
   openPicker: pickers;
   thisPicker: pickers;
   setOpenPicker: (thisPicker: pickers) => void;
   closePicker: () => void;
   setValue: (c: Color) => void;
+  card?: boolean;
 }) => {
-  let bgImage = useEntity(props.entityID, "theme/background-image");
-  let bgColor = useColorAttribute(props.entityID, "theme/page-background");
+  let bgImage = useEntity(
+    props.entityID,
+    props.card ? "theme/card-background-image" : "theme/background-image",
+  );
+  let bgColor = useColorAttribute(
+    props.entityID,
+    props.card ? "theme/card-background" : "theme/page-background",
+  );
   let open = props.openPicker == props.thisPicker;
   let { rep } = useReplicache();
 
   return (
-    <div
-      className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full px-2 pt-3`}
-    >
-      <div className="bgPickerBody w-full flex flex-col gap-2 p-2 border border-[#CCCCCC] rounded-md">
-        <div className="bgPickerLabel flex justify-between place-items-center ">
-          <div className="bgPickerColorLabel flex gap-2 items-center">
-            <button
-              onClick={() => {
-                if (props.openPicker === props.thisPicker) {
-                  props.setOpenPicker("null");
-                } else {
-                  props.setOpenPicker(props.thisPicker);
-                }
+    <>
+      <div className="bgPickerLabel flex justify-between place-items-center ">
+        <div className="bgPickerColorLabel flex gap-2 items-center">
+          <button
+            onClick={() => {
+              if (props.openPicker === props.thisPicker) {
+                props.setOpenPicker("null");
+              } else {
+                props.setOpenPicker(props.thisPicker);
+              }
+            }}
+            className="flex gap-2 items-center"
+          >
+            <ColorSwatch
+              color={bgColor}
+              className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
+              style={{
+                backgroundImage: `url(${bgImage?.data.src})`,
+                backgroundSize: "cover",
               }}
-              className="flex gap-2 items-center"
+            />
+            <strong
+              className={`${props.card ? "text-primary" : "text-[#595959]"}`}
             >
-              <ColorSwatch
-                color={bgColor}
-                className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
-                style={{
-                  backgroundImage: `url(${bgImage?.data.src})`,
-                  backgroundSize: "cover",
-                }}
-              />
-              <strong className="text-[#595959]">Background</strong>
-            </button>
+              {props.card ? "Page" : "Background"}
+            </strong>
+          </button>
 
-            <div className="flex">
-              {bgImage ? (
-                <div>Image</div>
-              ) : (
+          <div className="flex">
+            {bgImage ? (
+              <div
+                className={`${props.card ? "text-secondary" : "text-[#969696]"}`}
+              >
+                Image
+              </div>
+            ) : (
+              <>
                 <ColorField className="w-fit gap-1" value={bgColor}>
                   <Input
                     onMouseDown={onMouseDown}
@@ -473,45 +532,85 @@ const BGPicker = (props: {
                     onBlur={(e) => {
                       props.setValue(parseColor(e.currentTarget.value));
                     }}
-                    className="w-[72px] bg-transparent outline-none text-[#595959]"
+                    className={`w-[72px] bg-transparent outline-none ${props.card ? "text-primary" : "text-[#595959]"}`}
                   />
                 </ColorField>
-              )}
-            </div>
+                {props.card && (
+                  <>
+                    <Separator classname="my-1" />
+
+                    <SpectrumColorPicker
+                      value={bgColor}
+                      onChange={setColorAttribute(
+                        rep,
+                        props.entityID,
+                      )(
+                        props.card
+                          ? "theme/card-background"
+                          : "theme/page-background",
+                      )}
+                    >
+                      <ColorField className="w-fit pl-[6px]" channel="alpha">
+                        <Input
+                          onMouseDown={onMouseDown}
+                          onFocus={(e) => {
+                            e.currentTarget.setSelectionRange(
+                              0,
+                              e.currentTarget.value.length - 1,
+                            );
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.currentTarget.blur();
+                            } else return;
+                          }}
+                          className="w-[48px] bg-transparent outline-none text-primary"
+                        />
+                      </ColorField>
+                    </SpectrumColorPicker>
+                  </>
+                )}
+              </>
+            )}
           </div>
-          <label className="hover:cursor-pointer h-fit">
-            <div className="text-[#8C8C8C] hover:text-[#0000FF]">
-              <BlockImageSmall />
-            </div>
-            <div className="hidden">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-                  let file = e.currentTarget.files?.[0];
-                  if (!file || !rep) return;
-                  await addImage(file, rep, {
-                    entityID: props.entityID,
-                    attribute: "theme/background-image",
-                  });
-                  props.setOpenPicker(props.thisPicker);
-                }}
-              />
-            </div>
-          </label>
         </div>
-        {open && (
-          <div className="bgImageAndColorPicker w-full flex flex-col gap-2 pb-2">
+        <label className="hover:cursor-pointer h-fit">
+          <div
+            className={
+              props.card
+                ? "text-tertiary hover:text-accent-contrast"
+                : "text-[#8C8C8C] hover:text-[#0000FF]"
+            }
+          >
+            <BlockImageSmall />
+          </div>
+          <div className="hidden">
+            <ImageInput
+              {...props}
+              onChange={() => {
+                props.setOpenPicker(props.thisPicker);
+              }}
+            />
+          </div>
+        </label>
+      </div>
+      {open && (
+        <div className="bgImageAndColorPicker w-full flex flex-col gap-2 pb-2">
+          <SpectrumColorPicker
+            value={bgColor}
+            onChange={setColorAttribute(
+              rep,
+              props.entityID,
+            )(props.card ? "theme/card-background" : "theme/page-background")}
+          >
             {bgImage ? (
-              <ImageSettings entityID={props.entityID} />
+              <ImageSettings
+                entityID={props.entityID}
+                card={props.card}
+                setValue={props.setValue}
+              />
             ) : (
-              <SpectrumColorPicker
-                value={bgColor}
-                onChange={setColorAttribute(
-                  rep,
-                  props.entityID,
-                )("theme/page-background")}
-              >
+              <>
                 <ColorArea
                   className="w-full h-[128px] rounded-md"
                   colorSpace="hsb"
@@ -529,19 +628,197 @@ const BGPicker = (props: {
                     <ColorThumb className={`${thumbStyle} mt-[4px]`} />
                   </SliderTrack>
                 </ColorSlider>
-              </SpectrumColorPicker>
+              </>
             )}
-          </div>
-        )}
-      </div>
-      <SectionArrow fill="white" stroke="#CCCCCC" className="ml-2 -mt-[1px]" />
-    </div>
+            {props.card && (
+              <ColorSlider
+                colorSpace="hsb"
+                className="w-full mt-1 rounded-full"
+                style={{
+                  backgroundImage: `url(./transparent-bg.png)`,
+                  backgroundRepeat: "repeat",
+                  backgroundSize: "8px",
+                }}
+                channel="alpha"
+              >
+                <SliderTrack className="h-2 w-full rounded-md">
+                  <ColorThumb className={`${thumbStyle} mt-[4px]`} />
+                </SliderTrack>
+              </ColorSlider>
+            )}
+          </SpectrumColorPicker>
+        </div>
+      )}
+    </>
   );
 };
 
-const ImageSettings = (props: { entityID: string }) => {
-  let image = useEntity(props.entityID, "theme/background-image");
-  let repeat = useEntity(props.entityID, "theme/background-image-repeat");
+export const PageBGPicker = (props: {
+  entityID: string;
+  openPicker: pickers;
+  thisPicker: pickers;
+  setOpenPicker: (thisPicker: pickers) => void;
+  closePicker: () => void;
+  setValue: (c: Color) => void;
+}) => {
+  let bgImage = useEntity(props.entityID, "theme/card-background-image");
+  let bgColor = useColorAttribute(props.entityID, "theme/card-background");
+  let bgAlpha =
+    useEntity(props.entityID, "theme/card-background-image-opacity")?.data
+      .value || 1;
+  let alphaColor = useMemo(() => {
+    return parseColor(`rgba(0,0,0,${bgAlpha})`);
+  }, [bgAlpha]);
+  let open = props.openPicker == props.thisPicker;
+  let { rep } = useReplicache();
+
+  return (
+    <>
+      <div className="bgPickerColorLabel flex gap-2 items-center">
+        <button
+          onClick={() => {
+            if (props.openPicker === props.thisPicker) {
+              props.setOpenPicker("null");
+            } else {
+              props.setOpenPicker(props.thisPicker);
+            }
+          }}
+          className="flex gap-2 items-center"
+        >
+          <ColorSwatch
+            color={bgColor}
+            className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
+            style={{
+              backgroundImage: `url(${bgImage?.data.src})`,
+              backgroundSize: "cover",
+            }}
+          />
+          <strong className={`text-primary`}>Background Image</strong>
+        </button>
+
+        <SpectrumColorPicker
+          value={alphaColor}
+          onChange={(c) => {
+            let alpha = c.getChannelValue("alpha");
+            rep?.mutate.assertFact({
+              entity: props.entityID,
+              attribute: "theme/card-background-image-opacity",
+              data: { type: "number", value: alpha },
+            });
+          }}
+        >
+          <Separator classname="h-5 my-1" />
+          <ColorField className="w-fit pl-[6px]" channel="alpha">
+            <Input
+              onMouseDown={onMouseDown}
+              onFocus={(e) => {
+                e.currentTarget.setSelectionRange(
+                  0,
+                  e.currentTarget.value.length - 1,
+                );
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.currentTarget.blur();
+                } else return;
+              }}
+              className="w-[48px] bg-transparent outline-none text-primary"
+            />
+          </ColorField>
+        </SpectrumColorPicker>
+      </div>
+      {open && (
+        <div className="pageImagePicker flex flex-col gap-2">
+          <ImageSettings
+            entityID={props.entityID}
+            card
+            setValue={props.setValue}
+          />
+
+          <SpectrumColorPicker
+            value={alphaColor}
+            onChange={(c) => {
+              let alpha = c.getChannelValue("alpha");
+              rep?.mutate.assertFact({
+                entity: props.entityID,
+                attribute: "theme/card-background-image-opacity",
+                data: { type: "number", value: alpha },
+              });
+            }}
+          >
+            <ColorSlider
+              colorSpace="hsb"
+              className="w-full mt-1 rounded-full"
+              style={{
+                backgroundImage: `url(./transparent-bg.png)`,
+                backgroundRepeat: "repeat",
+                backgroundSize: "8px",
+              }}
+              channel="alpha"
+            >
+              <SliderTrack className="h-2 w-full rounded-md">
+                <ColorThumb className={`${thumbStyle} mt-[4px]`} />
+              </SliderTrack>
+            </ColorSlider>
+          </SpectrumColorPicker>
+        </div>
+      )}
+    </>
+  );
+};
+
+export const ImageInput = (props: {
+  entityID: string;
+  onChange?: () => void;
+  card?: boolean;
+}) => {
+  let pageType = useEntity(props.entityID, "page/type")?.data.value;
+  let { rep } = useReplicache();
+  return (
+    <input
+      type="file"
+      accept="image/*"
+      onChange={async (e) => {
+        let file = e.currentTarget.files?.[0];
+        if (!file || !rep) return;
+
+        await addImage(file, rep, {
+          entityID: props.entityID,
+          attribute: props.card
+            ? "theme/card-background-image"
+            : "theme/background-image",
+        });
+        props.onChange?.();
+
+        if (pageType === "canvas") {
+          rep &&
+            rep.mutate.assertFact({
+              entity: props.entityID,
+              attribute: "canvas/background-pattern",
+              data: { type: "canvas-pattern-union", value: "plain" },
+            });
+        }
+      }}
+    />
+  );
+};
+
+export const ImageSettings = (props: {
+  entityID: string;
+  card?: boolean;
+  setValue: (c: Color) => void;
+}) => {
+  let image = useEntity(
+    props.entityID,
+    props.card ? "theme/card-background-image" : "theme/background-image",
+  );
+  let repeat = useEntity(
+    props.entityID,
+    props.card
+      ? "theme/card-background-image-repeat"
+      : "theme/background-image-repeat",
+  );
+  let pageType = useEntity(props.entityID, "page/type")?.data.value;
   let { rep } = useReplicache();
   return (
     <>
@@ -559,18 +836,7 @@ const ImageSettings = (props: { entityID: string }) => {
             <BlockImageSmall /> Change Image
           </div>
           <div className="hidden">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={async (e) => {
-                let file = e.currentTarget.files?.[0];
-                if (!file || !rep) return;
-                await addImage(file, rep, {
-                  entityID: props.entityID,
-                  attribute: "theme/background-image",
-                });
-              }}
-            />
+            <ImageInput {...props} />
           </div>
         </label>
         <button
@@ -586,26 +852,29 @@ const ImageSettings = (props: { entityID: string }) => {
         </button>
       </div>
       <div className="themeBGImageControls font-bold flex gap-2 items-center">
-        <label htmlFor="cover" className="flex shrink-0">
-          <input
-            className="appearance-none"
-            type="radio"
-            id="cover"
-            name="bg-image-options"
-            value="cover"
-            checked={!repeat}
-            onChange={async (e) => {
-              if (!e.currentTarget.checked) return;
-              if (!repeat) return;
-              if (repeat) await rep?.mutate.retractFact({ factID: repeat.id });
-            }}
-          />
-          <div
-            className={`shink-0 grow-0 w-fit border border-accent-1 rounded-md px-1 py-0.5 cursor-pointer ${!repeat ? "bg-accent-1 text-accent-2" : "bg-transparent text-accent-1"}`}
-          >
-            cover
-          </div>
-        </label>
+        {pageType !== "canvas" && (
+          <label htmlFor="cover" className="flex shrink-0">
+            <input
+              className="appearance-none"
+              type="radio"
+              id="cover"
+              name="bg-image-options"
+              value="cover"
+              checked={!repeat}
+              onChange={async (e) => {
+                if (!e.currentTarget.checked) return;
+                if (!repeat) return;
+                if (repeat)
+                  await rep?.mutate.retractFact({ factID: repeat.id });
+              }}
+            />
+            <div
+              className={`shink-0 grow-0 w-fit border border-accent-1 rounded-md px-1 py-0.5 cursor-pointer ${!repeat ? "bg-accent-1 text-accent-2" : "bg-transparent text-accent-1"}`}
+            >
+              cover
+            </div>
+          </label>
+        )}
         <label htmlFor="repeat" className="flex shrink-0">
           <input
             className={`appearance-none `}
@@ -619,7 +888,9 @@ const ImageSettings = (props: { entityID: string }) => {
               if (repeat) return;
               await rep?.mutate.assertFact({
                 entity: props.entityID,
-                attribute: "theme/background-image-repeat",
+                attribute: props.card
+                  ? "theme/card-background-image-repeat"
+                  : "theme/background-image-repeat",
                 data: { type: "number", value: 500 },
               });
             }}
@@ -630,17 +901,19 @@ const ImageSettings = (props: { entityID: string }) => {
             repeat
           </div>
         </label>
-        {repeat && (
+        {(repeat || pageType === "canvas") && (
           <Slider.Root
             className="relative grow flex items-center select-none touch-none w-full h-fit"
-            value={[repeat.data.value]}
+            value={[repeat?.data.value || 500]}
             max={3000}
             min={10}
             step={10}
             onValueChange={(value) => {
               rep?.mutate.assertFact({
                 entity: props.entityID,
-                attribute: "theme/background-image-repeat",
+                attribute: props.card
+                  ? "theme/card-background-image-repeat"
+                  : "theme/background-image-repeat",
                 data: { type: "number", value: value[0] },
               });
             }}

@@ -158,3 +158,8 @@ input[type="number"] {
 .multiselected:focus-within .selection-highlight {
   background-color: transparent;
 }
+
+.transparent-outline {
+  @apply outline;
+  @apply outline-transparent;
+}

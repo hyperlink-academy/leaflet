@@ -120,7 +120,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
       }}
       className="relative h-full w-[1272px]"
     >
-      <CanvasBackground />
+      <CanvasBackground entityID={props.entityID} />
       {blocks
         .sort((a, b) => {
           if (a.data.position.y === b.data.position.y) {
@@ -417,8 +417,6 @@ function CanvasBlock(props: {
             w-[8px] h-[8px]
             absolute bottom-0 -right-0
             -translate-y-1/2 -translate-x-1/2
-
-
             rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
           {...rotateHandle.handlers}
         />
@@ -427,34 +425,114 @@ function CanvasBlock(props: {
   );
 }
 
-export const CanvasBackground = () => {
+export const CanvasBackground = (props: { entityID: string }) => {
+  let cardBackgroundImage = useEntity(
+    props.entityID,
+    "theme/card-background-image",
+  );
+  let cardBackgroundImageRepeat = useEntity(
+    props.entityID,
+    "theme/card-background-image-repeat",
+  );
+  let cardBackgroundImageOpacity =
+    useEntity(props.entityID, "theme/card-background-image-opacity")?.data
+      .value || 1;
+
+  let canvasPattern =
+    useEntity(props.entityID, "canvas/background-pattern")?.data.value ||
+    "grid";
   return (
-    <svg
-      width="100%"
-      height="100%"
-      xmlns="http://www.w3.org/2000/svg"
-      className="pointer-events-none text-border-light"
+    <div
+      className="w-full h-full pointer-events-none"
+      style={{
+        backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
+        backgroundRepeat: "repeat",
+        backgroundSize: cardBackgroundImageRepeat?.data.value || 500,
+        opacity: cardBackgroundImage?.data.src ? cardBackgroundImageOpacity : 1,
+      }}
     >
-      <defs>
-        <pattern
-          id="gridPattern"
+      <CanvasBackgroundPattern pattern={canvasPattern} />
+    </div>
+  );
+};
+
+export const CanvasBackgroundPattern = (props: {
+  pattern: "grid" | "dot" | "plain";
+  scale?: number;
+}) => {
+  if (props.pattern === "plain") return null;
+  let patternID = `canvasPattern-${props.pattern}-${props.scale}`;
+  if (props.pattern === "grid")
+    return (
+      <svg
+        width="100%"
+        height="100%"
+        xmlns="http://www.w3.org/2000/svg"
+        className="pointer-events-none text-border-light"
+      >
+        <defs>
+          <pattern
+            id={patternID}
+            x="0"
+            y="0"
+            width={props.scale ? 32 * props.scale : 32}
+            height={props.scale ? 32 * props.scale : 32}
+            viewBox={`${props.scale ? 16 * props.scale : 0} ${props.scale ? 16 * props.scale : 0} ${props.scale ? 32 * props.scale : 32} ${props.scale ? 32 * props.scale : 32}`}
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              fillRule="evenodd"
+              clipRule="evenodd"
+              d="M16.5 0H15.5L15.5 2.06061C15.5 2.33675 15.7239 2.56061 16 2.56061C16.2761 2.56061 16.5 2.33675 16.5 2.06061V0ZM0 16.5V15.5L2.06061 15.5C2.33675 15.5 2.56061 15.7239 2.56061 16C2.56061 16.2761 2.33675 16.5 2.06061 16.5L0 16.5ZM16.5 32H15.5V29.9394C15.5 29.6633 15.7239 29.4394 16 29.4394C16.2761 29.4394 16.5 29.6633 16.5 29.9394V32ZM32 15.5V16.5L29.9394 16.5C29.6633 16.5 29.4394 16.2761 29.4394 16C29.4394 15.7239 29.6633 15.5 29.9394 15.5H32ZM5.4394 16C5.4394 15.7239 5.66325 15.5 5.93939 15.5H10.0606C10.3367 15.5 10.5606 15.7239 10.5606 16C10.5606 16.2761 10.3368 16.5 10.0606 16.5H5.9394C5.66325 16.5 5.4394 16.2761 5.4394 16ZM13.4394 16C13.4394 15.7239 13.6633 15.5 13.9394 15.5H15.5V13.9394C15.5 13.6633 15.7239 13.4394 16 13.4394C16.2761 13.4394 16.5 13.6633 16.5 13.9394V15.5H18.0606C18.3367 15.5 18.5606 15.7239 18.5606 16C18.5606 16.2761 18.3367 16.5 18.0606 16.5H16.5V18.0606C16.5 18.3367 16.2761 18.5606 16 18.5606C15.7239 18.5606 15.5 18.3367 15.5 18.0606V16.5H13.9394C13.6633 16.5 13.4394 16.2761 13.4394 16ZM21.4394 16C21.4394 15.7239 21.6633 15.5 21.9394 15.5H26.0606C26.3367 15.5 26.5606 15.7239 26.5606 16C26.5606 16.2761 26.3367 16.5 26.0606 16.5H21.9394C21.6633 16.5 21.4394 16.2761 21.4394 16ZM16 5.4394C16.2761 5.4394 16.5 5.66325 16.5 5.93939V10.0606C16.5 10.3367 16.2761 10.5606 16 10.5606C15.7239 10.5606 15.5 10.3368 15.5 10.0606V5.9394C15.5 5.66325 15.7239 5.4394 16 5.4394ZM16 21.4394C16.2761 21.4394 16.5 21.6633 16.5 21.9394V26.0606C16.5 26.3367 16.2761 26.5606 16 26.5606C15.7239 26.5606 15.5 26.3367 15.5 26.0606V21.9394C15.5 21.6633 15.7239 21.4394 16 21.4394Z"
+              fill="currentColor"
+            />
+          </pattern>
+        </defs>
+        <rect
+          width="100%"
+          height="100%"
           x="0"
           y="0"
-          width="32"
-          height="32"
-          patternUnits="userSpaceOnUse"
-        >
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M16.5 0H15.5L15.5 2.06061C15.5 2.33675 15.7239 2.56061 16 2.56061C16.2761 2.56061 16.5 2.33675 16.5 2.06061V0ZM0 16.5V15.5L2.06061 15.5C2.33675 15.5 2.56061 15.7239 2.56061 16C2.56061 16.2761 2.33675 16.5 2.06061 16.5L0 16.5ZM16.5 32H15.5V29.9394C15.5 29.6633 15.7239 29.4394 16 29.4394C16.2761 29.4394 16.5 29.6633 16.5 29.9394V32ZM32 15.5V16.5L29.9394 16.5C29.6633 16.5 29.4394 16.2761 29.4394 16C29.4394 15.7239 29.6633 15.5 29.9394 15.5H32ZM5.4394 16C5.4394 15.7239 5.66325 15.5 5.93939 15.5H10.0606C10.3367 15.5 10.5606 15.7239 10.5606 16C10.5606 16.2761 10.3368 16.5 10.0606 16.5H5.9394C5.66325 16.5 5.4394 16.2761 5.4394 16ZM13.4394 16C13.4394 15.7239 13.6633 15.5 13.9394 15.5H15.5V13.9394C15.5 13.6633 15.7239 13.4394 16 13.4394C16.2761 13.4394 16.5 13.6633 16.5 13.9394V15.5H18.0606C18.3367 15.5 18.5606 15.7239 18.5606 16C18.5606 16.2761 18.3367 16.5 18.0606 16.5H16.5V18.0606C16.5 18.3367 16.2761 18.5606 16 18.5606C15.7239 18.5606 15.5 18.3367 15.5 18.0606V16.5H13.9394C13.6633 16.5 13.4394 16.2761 13.4394 16ZM21.4394 16C21.4394 15.7239 21.6633 15.5 21.9394 15.5H26.0606C26.3367 15.5 26.5606 15.7239 26.5606 16C26.5606 16.2761 26.3367 16.5 26.0606 16.5H21.9394C21.6633 16.5 21.4394 16.2761 21.4394 16ZM16 5.4394C16.2761 5.4394 16.5 5.66325 16.5 5.93939V10.0606C16.5 10.3367 16.2761 10.5606 16 10.5606C15.7239 10.5606 15.5 10.3368 15.5 10.0606V5.9394C15.5 5.66325 15.7239 5.4394 16 5.4394ZM16 21.4394C16.2761 21.4394 16.5 21.6633 16.5 21.9394V26.0606C16.5 26.3367 16.2761 26.5606 16 26.5606C15.7239 26.5606 15.5 26.3367 15.5 26.0606V21.9394C15.5 21.6633 15.7239 21.4394 16 21.4394Z"
-            fill="currentColor"
-          />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" x="0" y="0" fill="url(#gridPattern)" />
-    </svg>
-  );
+          fill={`url(#${patternID})`}
+        />
+      </svg>
+    );
+
+  if (props.pattern === "dot") {
+    return (
+      <svg
+        width="100%"
+        height="100%"
+        xmlns="http://www.w3.org/2000/svg"
+        className={`pointer-events-none text-border`}
+      >
+        <defs>
+          <pattern
+            id={patternID}
+            x="0"
+            y="0"
+            width={props.scale ? 24 * props.scale : 24}
+            height={props.scale ? 24 * props.scale : 24}
+            patternUnits="userSpaceOnUse"
+          >
+            <circle
+              cx={props.scale ? 12 * props.scale : 12}
+              cy={props.scale ? 12 * props.scale : 12}
+              r="1"
+              fill="currentColor"
+            />
+          </pattern>
+        </defs>
+        <rect
+          width="100%"
+          height="100%"
+          x="0"
+          y="0"
+          fill={`url(#${patternID})`}
+        />
+      </svg>
+    );
+  }
 };
 
 const Gripper = (props: { onMouseDown: (e: React.MouseEvent) => void }) => {

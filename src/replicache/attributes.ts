@@ -23,6 +23,10 @@ const PageAttributes = {
     type: "boolean",
     cardinality: "one",
   },
+  "canvas/background-pattern": {
+    type: "canvas-pattern-union",
+    cardinality: "one",
+  },
 } as const;
 
 const BlockAttributes = {
@@ -102,8 +106,28 @@ const ThemeAttributes = {
     type: "color",
     cardinality: "one",
   },
+  "theme/background-image": {
+    type: "image",
+    cardinality: "one",
+  },
+  "theme/background-image-repeat": {
+    type: "number",
+    cardinality: "one",
+  },
   "theme/card-background": {
     type: "color",
+    cardinality: "one",
+  },
+  "theme/card-background-image": {
+    type: "image",
+    cardinality: "one",
+  },
+  "theme/card-background-image-repeat": {
+    type: "number",
+    cardinality: "one",
+  },
+  "theme/card-background-image-opacity": {
+    type: "number",
     cardinality: "one",
   },
   "theme/primary": {
@@ -116,14 +140,6 @@ const ThemeAttributes = {
   },
   "theme/accent-text": {
     type: "color",
-    cardinality: "one",
-  },
-  "theme/background-image": {
-    type: "image",
-    cardinality: "one",
-  },
-  "theme/background-image-repeat": {
-    type: "number",
     cardinality: "one",
   },
   "theme/highlight-1": {
@@ -195,6 +211,10 @@ export type Data<A extends keyof typeof Attributes> = {
       | "mailbox"
       | "collection"
       | "embed";
+  };
+  "canvas-pattern-union": {
+    type: "canvas-pattern-union";
+    value: "dot" | "grid" | "plain";
   };
   color: { type: "color"; value: string };
 }[(typeof Attributes)[A]["type"]];

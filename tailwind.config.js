@@ -20,7 +20,8 @@ module.exports = {
 
       //TEXT COLORS.
       primary: "rgb(var(--primary))",
-      secondary: "color-mix(in oklab, rgb(var(--primary)), white 15%)",
+      secondary:
+        "color-mix(in oklab, rgb(var(--primary)),  rgb(var(--bg-page)) 15%)",
       tertiary:
         "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 55%)",
       border:

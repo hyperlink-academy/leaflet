@@ -3,6 +3,7 @@ import * as Popover from "@radix-ui/react-popover";
 import { blockCommands } from "./BlockCommands";
 import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { NestedCardThemeProvider } from "components/ThemeManager/ThemeProvider";
 
 type Props = {
   parent: string;
@@ -110,38 +111,40 @@ export const BlockCommandBar = ({
           onOpenAutoFocus={(e) => e.preventDefault()}
           className={`commandMenuContent group/cmd-menu z-20 h-[292px] w-[264px] flex data-[side=top]:items-end items-start`}
         >
-          <div className="commandMenuResults w-full flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page py-1 gap-0.5 border border-border rounded-md shadow-md">
-            {commandResults.length === 0 ? (
-              <div className="w-full text-tertiary text-center italic py-2 px-2 ">
-                No blocks found
-              </div>
-            ) : (
-              commandResults.map((result, index) => (
-                <>
-                  <CommandResult
-                    key={index}
-                    name={result.name}
-                    icon={result.icon}
-                    onSelect={() => {
-                      rep &&
-                        result.onSelect(rep, {
-                          ...props,
-                          entity_set: entity_set.set,
-                        });
-                    }}
-                    highlighted={highlighted}
-                    setHighlighted={(highlighted) =>
-                      setHighlighted(highlighted)
-                    }
-                  />
-                  {commandResults[index + 1] &&
-                    result.type !== commandResults[index + 1].type && (
-                      <hr className="mx-2 my-0.5 border-border" />
-                    )}
-                </>
-              ))
-            )}
-          </div>
+          <NestedCardThemeProvider>
+            <div className="commandMenuResults w-full flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page py-1 gap-0.5 border border-border rounded-md shadow-md">
+              {commandResults.length === 0 ? (
+                <div className="w-full text-tertiary text-center italic py-2 px-2 ">
+                  No blocks found
+                </div>
+              ) : (
+                commandResults.map((result, index) => (
+                  <>
+                    <CommandResult
+                      key={index}
+                      name={result.name}
+                      icon={result.icon}
+                      onSelect={() => {
+                        rep &&
+                          result.onSelect(rep, {
+                            ...props,
+                            entity_set: entity_set.set,
+                          });
+                      }}
+                      highlighted={highlighted}
+                      setHighlighted={(highlighted) =>
+                        setHighlighted(highlighted)
+                      }
+                    />
+                    {commandResults[index + 1] &&
+                      result.type !== commandResults[index + 1].type && (
+                        <hr className="mx-2 my-0.5 border-border" />
+                      )}
+                  </>
+                ))
+              )}
+            </div>
+          </NestedCardThemeProvider>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
