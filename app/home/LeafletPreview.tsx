@@ -92,8 +92,8 @@ const LeafletContent = (props: { entityID: string }) => {
       <div
         className="absolute top-0 left-0 w-full h-full origin-top-left pointer-events-none"
         style={{
-          width: `calc(var(--page-width) * 1px)`,
-          transform: `scale(calc(${dimensions.width} / var(--page-width)))`,
+          width: `var(--page-width-units)`,
+          transform: `scale(calc(${dimensions.width} / var(--page-width-unitless)))`,
         }}
       >
         {blocks.slice(0, 10).map((b, index, arr) => {
