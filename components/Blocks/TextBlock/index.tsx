@@ -120,9 +120,10 @@ export function RenderedTextBlock(props: {
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
   let headingLevel = useEntity(props.entityID, "block/heading-level");
+  let { permissions } = useEntitySetContext();
 
-  if (!initialFact)
-    // show a blank line if the block is empty. blocks with content are styled elsewhere! update both!
+  if (!initialFact) {
+    if (!permissions.write) return <br />;
     return (
       <pre className={`${props.className} italic text-tertiary`}>
         {/* Render a placeholder if this is a doc and there are no other blocks in the page, or this is a canvas. else just show the blank line*/}
@@ -147,6 +148,8 @@ export function RenderedTextBlock(props: {
         )}
       </pre>
     );
+  }
+  // show a blank line if the block is empty. blocks with content are styled elsewhere! update both!
   let doc = new Y.Doc();
   const update = base64.toByteArray(initialFact.data.value);
   Y.applyUpdate(doc, update);
