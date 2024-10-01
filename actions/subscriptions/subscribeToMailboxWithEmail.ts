@@ -91,12 +91,16 @@ async function getPageTitle(root_entity: string) {
     root: root_entity,
   });
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
-  let blocks = getBlocksWithTypeLocal(initialFacts, root_entity);
+  let firstPage = initialFacts.find((f) => f.attribute === "root/page") as
+    | Fact<"root/page">
+    | undefined;
+  let root = firstPage?.data.value || root_entity;
+  let blocks = getBlocksWithTypeLocal(initialFacts, root);
   let title = blocks.filter(
     (f) => f.type === "text" || f.type === "heading",
   )[0];
   let text = initialFacts.find(
-    (f) => f.entity === title.value && f.attribute === "block/text",
+    (f) => f.entity === title?.value && f.attribute === "block/text",
   ) as Fact<"block/text"> | undefined;
   if (!text) return "Untitled Leaflet";
   let doc = new Y.Doc();
