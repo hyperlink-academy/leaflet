@@ -54,9 +54,11 @@ export const get_url_preview_data = async (url: string) => {
   ]);
 
   let key = await hash(url);
-  supabase.storage.from("url-previews").upload(key, await image.arrayBuffer(), {
-    contentType: image.headers.get("content-type") || undefined,
-  });
+  await supabase.storage
+    .from("url-previews")
+    .upload(key, await image.arrayBuffer(), {
+      contentType: image.headers.get("content-type") || undefined,
+    });
 
   let result = expectedAPIResponse.safeParse(await response.json());
   return {
