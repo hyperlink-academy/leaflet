@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useUIState } from "src/useUIState";
-import { useEntitySetContext } from "./EntitySetProvider";
+import { useEntitySetContext } from "../EntitySetProvider";
 import { useSearchParams } from "next/navigation";
 
 import { focusBlock } from "src/utils/focusBlock";
@@ -16,21 +16,22 @@ import {
   useReplicache,
 } from "src/replicache";
 
-import { Media } from "./Media";
-import { DesktopPageFooter } from "./DesktopFooter";
-import { ShareOptions } from "./ShareOptions";
-import { ThemePopover } from "./ThemeManager/ThemeSetter";
-import { HomeButton } from "./HomeButton";
-import { Canvas } from "./Canvas";
-import { DraftPostOptions } from "./Blocks/MailboxBlock";
+import { Media } from "../Media";
+import { DesktopPageFooter } from "../DesktopFooter";
+import { ShareOptions } from "../ShareOptions";
+import { ThemePopover } from "../ThemeManager/ThemeSetter";
+import { HomeButton } from "../HomeButton";
+import { Canvas } from "../Canvas";
+import { DraftPostOptions } from "../Blocks/MailboxBlock";
 import { Blocks } from "components/Blocks";
-import { MenuItem, Menu } from "./Layout";
-import { MoreOptionsTiny, CloseTiny, PaintSmall } from "./Icons";
-import { HelpPopover } from "./HelpPopover";
+import { MenuItem, Menu } from "../Layout";
+import { MoreOptionsTiny, CloseTiny, PaintSmall, ShareSmall } from "../Icons";
+import { HelpPopover } from "../HelpPopover";
 import { CreateNewLeafletButton } from "app/home/CreateNewButton";
 import { scanIndex } from "src/replicache/utils";
-import { PageThemeSetter } from "./ThemeManager/PageThemeSetter";
-import { CardThemeProvider } from "./ThemeManager/ThemeProvider";
+import { PageThemeSetter } from "../ThemeManager/PageThemeSetter";
+import { CardThemeProvider } from "../ThemeManager/ThemeProvider";
+import { PageShareMenu } from "./PageShareMenu";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -250,13 +251,13 @@ const PageOptionsMenu = (props: {
           <CloseTiny />
         </button>
       )}
-      {<OptionsMenu entityID={props.entityID} />}
+      {<OptionsMenu entityID={props.entityID} first={props.first} />}
     </div>
   );
 };
 
-const OptionsMenu = (props: { entityID: string }) => {
-  let [state, setState] = useState<"normal" | "theme">("normal");
+const OptionsMenu = (props: { entityID: string; first: boolean }) => {
+  let [state, setState] = useState<"normal" | "theme" | "share">("normal");
   let { permissions } = useEntitySetContext();
   if (!permissions.write) return null;
   return (
@@ -280,6 +281,16 @@ const OptionsMenu = (props: { entityID: string }) => {
     >
       {state === "normal" ? (
         <>
+          {!props.first && (
+            <MenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                setState("share");
+              }}
+            >
+              <ShareSmall /> Share Page
+            </MenuItem>
+          )}
           <MenuItem
             onSelect={(e) => {
               e.preventDefault();
@@ -289,9 +300,11 @@ const OptionsMenu = (props: { entityID: string }) => {
             <PaintSmall /> Theme Page
           </MenuItem>
         </>
-      ) : (
+      ) : state === "theme" ? (
         <PageThemeSetter entityID={props.entityID} />
-      )}
+      ) : state === "share" ? (
+        <PageShareMenu entityID={props.entityID} />
+      ) : null}
     </Menu>
   );
 };
