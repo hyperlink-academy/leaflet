@@ -35,12 +35,10 @@ import { PageShareMenu } from "./PageShareMenu";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
-  let firstPage = rootPage?.data.value || props.rootPage;
-  let openPages = useUIState((s) => s.openPages);
+  let pages = useUIState((s) => s.openPages);
   let params = useSearchParams();
-  let openPage = params.get("openPage");
-  let pages = [...openPages];
-  if (openPage && !pages.includes(openPage)) pages.push(openPage);
+  let queryRoot = params.get("page");
+  let firstPage = queryRoot || rootPage?.data.value || props.rootPage;
   let entity_set = useEntitySetContext();
 
   return (

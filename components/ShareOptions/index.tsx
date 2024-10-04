@@ -6,29 +6,37 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { useSmoker } from "components/Toast";
 import { Menu, MenuItem } from "components/Layout";
 import { HoverButton } from "components/Buttons";
+import useSWR from "swr";
 
+export let usePublishLink = () => {
+  let { permission_token, rootEntity } = useReplicache();
+  let entity_set = useEntitySetContext();
+  let { data: publishLink } = useSWR(
+    "publishLink-" + permission_token.id,
+    async () => {
+      if (
+        !permission_token.permission_token_rights.find(
+          (s) => s.entity_set === entity_set.set && s.create_token,
+        )
+      )
+        return;
+      let shareLink = await getShareLink(
+        { id: permission_token.id, entity_set: entity_set.set },
+        rootEntity,
+      );
+      return shareLink?.id;
+    },
+  );
+  return publishLink;
+};
 export function ShareOptions(props: { rootEntity: string }) {
   let { permission_token } = useReplicache();
   let entity_set = useEntitySetContext();
-  let [publishLink, setPublishLink] = useState<null | string>(null);
+  let publishLink = usePublishLink();
   let [collabLink, setCollabLink] = useState<null | string>(null);
   useEffect(() => {
-    setCollabLink(window.location.href);
+    setCollabLink(window.location.pathname);
   }, []);
-  useEffect(() => {
-    if (
-      !permission_token.permission_token_rights.find(
-        (s) => s.entity_set === entity_set.set && s.create_token,
-      )
-    )
-      return;
-    getShareLink(
-      { id: permission_token.id, entity_set: entity_set.set },
-      props.rootEntity,
-    ).then((link) => {
-      setPublishLink(link?.id || null);
-    });
-  }, [entity_set, permission_token, props.rootEntity]);
 
   let smoker = useSmoker();
 
@@ -55,7 +63,7 @@ export function ShareOptions(props: { rootEntity: string }) {
         subtext="Share a read only version of this leaflet"
         smokerText="Publish link copied!"
         id="get-publish-link"
-        link={publishLink}
+        link={publishLink || ""}
       />
       <ShareButton
         text="Collaborate"
