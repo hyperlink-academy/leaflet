@@ -86,6 +86,7 @@ export const CreateNewLeafletButton = (props: {}) => {
       {templates.map((t) => {
         return (
           <MenuItem
+            key={t.id}
             onSelect={async () => {
               let id = await createNewLeafletFromTemplate(t.id, false);
               window.open(`/${id}`, "_blank");
