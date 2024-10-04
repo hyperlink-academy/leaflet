@@ -7,9 +7,8 @@ import { useState } from "react";
 export function HomeButton() {
   let entity_set = useEntitySetContext();
   let [isSubpage, setIsSubpage] = useState(true);
-  if (!entity_set.permissions.write) return;
 
-  if (isSubpage === false) {
+  if (isSubpage === false && entity_set.permissions.write) {
     return (
       <Link href="/home">
         <HoverButton
@@ -21,8 +20,7 @@ export function HomeButton() {
         />
       </Link>
     );
-  }
-  if (isSubpage === true) {
+  } else {
     return (
       <Link href="/">
         <HoverButton
