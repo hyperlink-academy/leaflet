@@ -17,7 +17,8 @@ type Toast = {
 
 type Smoke = {
   position: { x: number; y: number };
-  text: string;
+  text: React.ReactNode;
+  static?: boolean;
   error?: boolean;
 };
 
@@ -45,7 +46,7 @@ export const useToaster = () => {
 export const PopUpProvider: React.FC<React.PropsWithChildren<unknown>> = (
   props,
 ) => {
-  let [state, setState] = useState<Smokes>([]);
+  let [smokes, setState] = useState<Smokes>([]);
   let [toastState, setToastState] = useState<Toast | null>(null);
   let toastTimeout = useRef<number | null>(null);
   let toaster = useCallback(
@@ -64,14 +65,20 @@ export const PopUpProvider: React.FC<React.PropsWithChildren<unknown>> = (
     },
     [setToastState],
   );
+  console.log(smokes);
   return (
     <PopUpContext.Provider
       value={{ setSmokeState: setState, setToastState: toaster }}
     >
       {props.children}
-      {state.map((toast) => (
-        <Smoke {...toast.position} error={toast.error} key={toast.key}>
-          {toast.text}
+      {smokes.map((smoke) => (
+        <Smoke
+          {...smoke.position}
+          error={smoke.error}
+          key={smoke.key}
+          static={smoke.static}
+        >
+          {smoke.text}
         </Smoke>
       ))}
       <Toast toast={toastState} setToast={setToastState} />
@@ -125,7 +132,12 @@ const Toast = (props: {
 };
 
 const Smoke: React.FC<
-  React.PropsWithChildren<{ x: number; y: number; error?: boolean }>
+  React.PropsWithChildren<{
+    x: number;
+    y: number;
+    error?: boolean;
+    static?: boolean;
+  }>
 > = (props) => {
   return (
     <div
@@ -138,18 +150,19 @@ const Smoke: React.FC<
       <style jsx>{`
         .smoke {
           left: ${props.x}px;
+          top: ${props.y}px;
           animation-name: fadeout;
           animation-duration: 2s;
         }
 
         @keyframes fadeout {
           from {
-            top: ${props.y - 20}px;
+            ${props.static ? "" : `top: ${props.y - 20}px;`}
             opacity: 100%;
           }
 
           to {
-            top: ${props.y - 60}px;
+            ${props.static ? "" : `top: ${props.y - 60}px;`}
             opacity: 0%;
           }
         }

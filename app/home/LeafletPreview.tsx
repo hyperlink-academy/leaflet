@@ -23,13 +23,16 @@ import { CanvasContent } from "components/Canvas";
 import { useSubscribe } from "replicache-react";
 import { TemplateSmall } from "components/Icons";
 import { theme } from "tailwind.config";
+import { useTemplateState } from "./CreateNewButton";
 
 export const LeafletPreview = (props: {
   token: PermissionToken;
   leaflet_id: string;
 }) => {
   let [state, setState] = useState<"normal" | "deleting">("normal");
-  let [isTemplate, setIsTemplate] = useState(true);
+  let isTemplate = useTemplateState(
+    (s) => !!s.templates.find((t) => t.id === props.token.id),
+  );
   let root =
     useReferenceToEntity("root/page", props.leaflet_id)[0]?.entity ||
     props.leaflet_id;

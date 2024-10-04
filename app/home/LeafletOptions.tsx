@@ -12,17 +12,24 @@ import { mutate } from "swr";
 import { hideDoc } from "./storage";
 import { useState } from "react";
 import { ButtonPrimary } from "components/Buttons";
+import { useTemplateState } from "./CreateNewButton";
+import { Item } from "@radix-ui/react-dropdown-menu";
+import { useSmoker } from "components/Toast";
 
 export const LeafletOptions = (props: {
   leaflet: PermissionToken;
   isTemplate: boolean;
 }) => {
   let [state, setState] = useState<"normal" | "template">("normal");
+  let [open, setOpen] = useState(false);
+  let smoker = useSmoker();
   return (
     <>
       <Menu
+        open={open}
         align="end"
-        onOpenChange={() => {
+        onOpenChange={(o) => {
+          setOpen(o);
           setState("normal");
         }}
         trigger={
@@ -43,7 +50,23 @@ export const LeafletOptions = (props: {
                 <TemplateSmall /> Designate as Template
               </MenuItem>
             ) : (
-              <MenuItem onSelect={(e) => {}}>
+              <MenuItem
+                onSelect={(e) => {
+                  useTemplateState.getState().removeTemplate(props.leaflet);
+                  let newLeafletButton =
+                    document.getElementById("new-leaflet-button");
+                  if (!newLeafletButton) return;
+                  let rect = newLeafletButton.getBoundingClientRect();
+                  smoker({
+                    static: true,
+                    text: <strong>Removed template!</strong>,
+                    position: {
+                      y: rect.top,
+                      x: rect.right + 5,
+                    },
+                  });
+                }}
+              >
                 <TemplateRemoveSmall /> Remove from Templates
               </MenuItem>
             )}
@@ -58,25 +81,57 @@ export const LeafletOptions = (props: {
             </MenuItem>
           </>
         ) : state === "template" ? (
-          <AddTemplateForm />
+          <AddTemplateForm
+            leaflet={props.leaflet}
+            close={() => setOpen(false)}
+          />
         ) : null}
       </Menu>
     </>
   );
 };
 
-const AddTemplateForm = () => {
+const AddTemplateForm = (props: {
+  leaflet: PermissionToken;
+  close: () => void;
+}) => {
+  let [name, setName] = useState("");
+  let smoker = useSmoker();
   return (
-    <form className="flex flex-col gap-2 px-3 py-1">
+    <div className="flex flex-col gap-2 px-3 py-1">
       <label className="font-bold flex flex-col gap-1 text-secondary">
         Template Name
         <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           type="text"
           className=" text-primary font-normal border border-border rounded-md outline-none px-2 py-1 w-64"
         />
       </label>
 
-      <ButtonPrimary className="place-self-end">Add Template</ButtonPrimary>
-    </form>
+      <ButtonPrimary
+        onClick={() => {
+          useTemplateState.getState().addTemplate({
+            name,
+            id: props.leaflet.id,
+          });
+          let newLeafletButton = document.getElementById("new-leaflet-button");
+          if (!newLeafletButton) return;
+          let rect = newLeafletButton.getBoundingClientRect();
+          smoker({
+            static: true,
+            text: <strong>Added {name}!</strong>,
+            position: {
+              y: rect.top,
+              x: rect.right + 5,
+            },
+          });
+          props.close();
+        }}
+        className="place-self-end"
+      >
+        Add Template
+      </ButtonPrimary>
+    </div>
   );
 };

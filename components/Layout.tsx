@@ -13,6 +13,7 @@ export const Separator = (props: { classname?: string }) => {
 };
 
 export const Menu = (props: {
+  open?: boolean;
   trigger: React.ReactNode;
   children: React.ReactNode;
   align?: "start" | "end" | "center";
@@ -22,7 +23,7 @@ export const Menu = (props: {
   onOpenChange?: (o: boolean) => void;
 }) => {
   return (
-    <DropdownMenu.Root onOpenChange={props.onOpenChange}>
+    <DropdownMenu.Root onOpenChange={props.onOpenChange} open={props.open}>
       <DropdownMenu.Trigger>{props.trigger}</DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <NestedCardThemeProvider>

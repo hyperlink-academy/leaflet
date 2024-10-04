@@ -4,6 +4,7 @@ import { ServiceWorker } from "../components/ServiceWorker";
 import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import localFont from "next/font/local";
+import { PopUpProvider } from "components/Toast";
 
 export const metadata = {
   title: "Leaflet",
@@ -52,7 +53,9 @@ export default function RootLayout({
         <Analytics />
         <ServiceWorker />
         <InitialPageLoad>
-          <ViewportSizeLayout>{children}</ViewportSizeLayout>
+          <PopUpProvider>
+            <ViewportSizeLayout>{children}</ViewportSizeLayout>
+          </PopUpProvider>
         </InitialPageLoad>
       </body>
     </html>
