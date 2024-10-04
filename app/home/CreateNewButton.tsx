@@ -82,7 +82,9 @@ export const CreateNewLeafletButton = (props: {}) => {
           </div>
         </div>
       </MenuItem>
-      {templates.length > 0 && <hr className="border-border-light mx-2" />}
+      {templates.length > 0 && (
+        <hr className="border-border-light mx-2 mb-0.5" />
+      )}
       {templates.map((t) => {
         return (
           <MenuItem
