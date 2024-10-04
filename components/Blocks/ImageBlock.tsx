@@ -35,12 +35,12 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       <div className="grow w-full">
         <label
           className={`
-            group/image-block 
+            group/image-block
             w-full h-[104px] p-2 hover:cursor-pointer
-            text-tertiary hover:text-accent-contrast hover:font-bold  
-            flex flex-auto gap-2 items-center justify-center  
+            text-tertiary hover:text-accent-contrast hover:font-bold
+            flex flex-auto gap-2 items-center justify-center
             hover:border-2 border-dashed  hover:border-accent-contrast rounded-lg
-            ${isSelected ? "border-2 border-tertiary font-bold" : "border border-border"} 
+            ${isSelected ? "border-2 border-tertiary font-bold" : "border border-border"}
             ${props.pageType === "canvas" && "bg-bg-page"}`}
           onMouseDown={(e) => e.preventDefault()}
         >
@@ -49,7 +49,6 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
           />{" "}
           Upload An Image
           <input
-            autoFocus
             className="h-0 w-0"
             type="file"
             accept="image/*"
