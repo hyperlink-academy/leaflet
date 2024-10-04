@@ -21,19 +21,21 @@ import { ButtonPrimary } from "components/Buttons";
 import { LeafletOptions } from "./LeafletOptions";
 import { CanvasContent } from "components/Canvas";
 import { useSubscribe } from "replicache-react";
+import { TemplateSmall } from "components/Icons";
+import { theme } from "tailwind.config";
 
 export const LeafletPreview = (props: {
   token: PermissionToken;
   leaflet_id: string;
 }) => {
   let [state, setState] = useState<"normal" | "deleting">("normal");
-  let parentRootPage = useReferenceToEntity("root/page", props.leaflet_id)[0]
-    ?.entity;
+  let [isTemplate, setIsTemplate] = useState(true);
   let root =
     useReferenceToEntity("root/page", props.leaflet_id)[0]?.entity ||
     props.leaflet_id;
   let firstPage = useEntity(root, "root/page")[0];
   let page = firstPage?.data.value || root;
+
   return (
     <div className="relative max-h-40 h-40">
       <ThemeProvider local entityID={root}>
@@ -62,8 +64,9 @@ export const LeafletPreview = (props: {
           )}
         </div>
         <div className="flex justify-end pt-1 shrink-0">
-          <LeafletOptions leaflet={props.token} setState={setState} />
+          <LeafletOptions leaflet={props.token} isTemplate={isTemplate} />
         </div>
+        <LeafletTemplateIndicator isTemplate={isTemplate} />
       </ThemeProvider>
     </div>
   );
@@ -164,6 +167,16 @@ const LeafletAreYouSure = (props: {
           Nevermind
         </button>
       </div>
+    </div>
+  );
+};
+
+const LeafletTemplateIndicator = (props: { isTemplate: boolean }) => {
+  if (!props.isTemplate) return;
+
+  return (
+    <div className="absolute -top-3 right-1">
+      <TemplateSmall fill={theme.colors["bg-page"]} />
     </div>
   );
 };

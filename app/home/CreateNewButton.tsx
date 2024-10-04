@@ -6,6 +6,7 @@ import {
   AddTiny,
   BlockCanvasPageSmall,
   BlockDocPageSmall,
+  TemplateSmall,
 } from "components/Icons";
 import { Menu, MenuItem } from "components/Layout";
 
@@ -49,6 +50,11 @@ export const CreateNewLeafletButton = (props: {}) => {
             A digital whiteboard
           </div>
         </div>
+      </MenuItem>
+      <hr className="border-border-light mx-2" />
+      <MenuItem onSelect={() => {}}>
+        <TemplateSmall />
+        Template name here
       </MenuItem>
     </Menu>
   );
