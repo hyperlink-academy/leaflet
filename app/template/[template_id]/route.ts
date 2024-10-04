@@ -27,5 +27,5 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { template_id: string } },
 ) {
-  return createNewLeafletFromTemplate(params.template_id);
+  await createNewLeafletFromTemplate(params.template_id, true);
 }
