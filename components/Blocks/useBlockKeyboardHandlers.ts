@@ -140,6 +140,15 @@ async function Enter({ e, props, rep, entity_set }: Args) {
     el.contentEditable === "true"
   )
     return;
+
+  if (e.ctrlKey || e.metaKey) {
+    if (props.listData) {
+      rep?.mutate.toggleTodoState({
+        entityID: props.entityID,
+      });
+    }
+    return;
+  }
   if (props.pageType === "canvas") {
     let el = document.getElementById(elementId.block(props.entityID).container);
     let [position] =
