@@ -32,22 +32,20 @@ export function Leaflet(props: {
       <EntitySetProvider
         set={props.token.permission_token_rights[0].entity_set}
       >
-        <PopUpProvider>
-          <ThemeProvider entityID={props.leaflet_id}>
-            <ThemeBackgroundProvider entityID={props.leaflet_id}>
-              <UpdateLeafletTitle entityID={props.leaflet_id} />
-              <AddLeafletToHomepage />
-              <SelectionManager />
-              <div
-                className="leafletContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full"
-                id="page-carousel"
-              >
-                <Pages rootPage={props.leaflet_id} />
-              </div>
-              <MobileFooter entityID={props.leaflet_id} />
-            </ThemeBackgroundProvider>
-          </ThemeProvider>
-        </PopUpProvider>
+        <ThemeProvider entityID={props.leaflet_id}>
+          <ThemeBackgroundProvider entityID={props.leaflet_id}>
+            <UpdateLeafletTitle entityID={props.leaflet_id} />
+            <AddLeafletToHomepage />
+            <SelectionManager />
+            <div
+              className="leafletContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full"
+              id="page-carousel"
+            >
+              <Pages rootPage={props.leaflet_id} />
+            </div>
+            <MobileFooter entityID={props.leaflet_id} />
+          </ThemeBackgroundProvider>
+        </ThemeProvider>
       </EntitySetProvider>
     </ReplicacheProvider>
   );

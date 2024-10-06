@@ -33,6 +33,7 @@ export function ButtonPrimary(
 }
 
 export const HoverButton = (props: {
+  id?: string;
   icon: React.ReactNode;
   label: string;
   background: string;
@@ -43,6 +44,7 @@ export const HoverButton = (props: {
   return (
     <div className="sm:w-8 sm:h-8 relative ">
       <div
+        id={props.id}
         className={`
           z-10 group/hover-button
           w-max h-max rounded-full p-1 flex gap-2
