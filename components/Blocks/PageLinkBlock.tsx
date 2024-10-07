@@ -214,7 +214,7 @@ const CanvasLinkBlock = (props: { entityID: string; preview?: boolean }) => {
         style={{
           width: `calc(1px * ${pageWidth})`,
           height: "calc(1150px * 2)",
-          transform: `scale(calc((${pageWidth} / 1150 )))`,
+          transform: `scale(calc(((${pageWidth} - 36) / 1272 )))`,
         }}
       >
         {props.preview ? (
