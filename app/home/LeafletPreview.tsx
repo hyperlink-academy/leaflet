@@ -90,9 +90,9 @@ const LeafletContent = (props: { entityID: string }) => {
         <div
           className={`absolute top-0 left-0 origin-top-left pointer-events-none `}
           style={{
-            width: `1150px`,
-            height: "calc(1150px * 2)",
-            transform: `scale(calc((${dimensions.width} / 1150 )))`,
+            width: `1272px`,
+            height: "calc(1272px * 2)",
+            transform: `scale(calc((${dimensions.width} / 1272 )))`,
           }}
         >
           <CanvasContent entityID={props.entityID} preview />
