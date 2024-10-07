@@ -60,7 +60,7 @@ export function ShareOptions(props: { rootEntity: string }) {
     >
       <ShareButton
         text="Publish"
-        subtext="Share a read only version of this leaflet"
+        subtext="Share a read-only version"
         smokerText="Publish link copied!"
         id="get-publish-link"
         link={publishLink || ""}
@@ -79,6 +79,7 @@ export function ShareOptions(props: { rootEntity: string }) {
 export const ShareButton = (props: {
   text: string;
   subtext: string;
+  helptext?: string;
   smokerText: string;
   id: string;
   link: null | string;
@@ -114,6 +115,14 @@ export const ShareButton = (props: {
         >
           {props.subtext}
         </div>
+        {/* optional help text */}
+        {props.helptext && (
+          <div
+            className={`text-sm italic font-normal text-tertiary group-hover/${props.id}:text-accent-contrast`}
+          >
+            {props.helptext}
+          </div>
+        )}
       </div>
     </MenuItem>
   );

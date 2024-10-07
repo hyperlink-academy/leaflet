@@ -11,15 +11,17 @@ export const PageShareMenu = (props: { entityID: string }) => {
   return (
     <div>
       <ShareButton
-        text="Publish This Page"
-        subtext="Share a read only link to this page"
-        smokerText="Share link copied!"
+        text="Publish this Page"
+        subtext="Share a read-only link to this page"
+        helptext="🚨 recipients can view the entire Leaflet"
+        smokerText="Publish link copied!"
         id="get-page-publish-link"
         link={`${publishLink}?page=${props.entityID}`}
       />
       <ShareButton
-        text="Collab on This Page"
-        subtext="Invite people to collab on this page together"
+        text="Collab on this Page"
+        subtext="Invite people to edit this page"
+        helptext="🚨 recipients can edit the entire Leaflet"
         smokerText="Collab link copied!"
         id="get-page-collab-link"
         link={`${collabLink}?page=${props.entityID}`}
