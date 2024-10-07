@@ -237,39 +237,6 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                           setOpenPicker={setOpenPicker}
                           closePicker={() => setOpenPicker("null")}
                         />
-                        {/* UNCOMMENT WHEN WE WIRE UP BG IMAGES ON FIRST PAGE */}
-                        {/* {(pageBGImage === null || !pageBGImage) && (
-                            <label
-                              className={`m-0 h-max w-full  py-0.5 px-1
-                                bg-accent-1  outline-transparent
-                                rounded-md text-base font-bold text-accent-2
-                                hover:cursor-pointer
-                                flex gap-2 items-center justify-center shrink-0
-                                transparent-outline hover:outline-accent-1 outline-offset-1
-                              `}
-                            >
-                              <BlockImageSmall /> Add Background Image
-                              <div className="hidden">
-                                <ImageInput 
-                                  entityID={props.entityID}                       
-                                  onChange={() => setOpenPicker("page-background-image")}
-                                  card 
-                                />
-                              </div>
-                            </label>
-                          )}
-                        </ColorPicker>
-                        {pageBGImage && pageBGImage !== null && (
-                          <PageBGPicker
-                            entityID={props.entityID}
-                            thisPicker={"page-background-image"}
-                            openPicker={openPicker}
-                            setOpenPicker={setOpenPicker}
-                            closePicker={() => setOpenPicker("null")}
-                            setValue={set("theme/card-background")}
-                          />
-                        )} */}
-
                         <ColorPicker
                           label="Text"
                           value={primaryValue}
