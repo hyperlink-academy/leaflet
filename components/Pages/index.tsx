@@ -56,9 +56,9 @@ export function Pages(props: { rootPage: string }) {
           e.currentTarget === e.target && blurPage();
         }}
       >
-        {entity_set.permissions.write ? (
-          <Media mobile={false} className="h-full">
-            <div className="flex flex-col h-full justify-between mr-4 mt-1">
+        <Media mobile={false} className="h-full">
+          <div className="flex flex-col h-full justify-between mr-4 mt-1">
+            {entity_set.permissions.write ? (
               <div className="flex flex-col justify-center gap-2 ">
                 <ShareOptions rootEntity={props.rootPage} />
                 <LeafletOptions entityID={props.rootPage} />
@@ -67,9 +67,14 @@ export function Pages(props: { rootPage: string }) {
                 <hr className="text-border my-3" />
                 <HomeButton />
               </div>
-            </div>
-          </Media>
-        ) : null}
+            ) : (
+              <div>
+                {" "}
+                <HomeButton />{" "}
+              </div>
+            )}
+          </div>
+        </Media>
       </div>
       <div className="flex items-stretch">
         <CardThemeProvider entityID={firstPage}>
