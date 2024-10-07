@@ -44,7 +44,7 @@ export const get_url_preview_data = async (url: string) => {
       },
     }),
     fetch(
-      `https://pro.microlink.io/?url=${url}&screenshot&viewport.width=1247&viewport.height=1080&embed=screenshot.url`,
+      `https://pro.microlink.io/?url=${url}&screenshot&viewport.width=1400&viewport.height=1213&embed=screenshot.url`,
       {
         headers: {
           "x-api-key": process.env.MICROLINK_API_KEY!,
