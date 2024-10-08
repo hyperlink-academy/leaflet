@@ -218,6 +218,14 @@ const createBlockFromHTML = (
 
   if (child.tagName === "LI") {
     let ul = Array.from(child.children).find((f) => f.tagName === "UL");
+    let checked = child.getAttribute("data-checked");
+    if (checked !== null) {
+      rep.mutate.assertFact({
+        entity: entityID,
+        attribute: "block/check-list",
+        data: { type: "boolean", value: checked === "true" ? true : false },
+      });
+    }
     rep.mutate.assertFact({
       entity: entityID,
       attribute: "block/is-list",

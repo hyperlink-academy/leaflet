@@ -35,7 +35,8 @@ async function renderList(l: List, tx: ReadTransaction): Promise<string> {
   let children = (
     await Promise.all(l.children.map(async (c) => await renderList(c, tx)))
   ).join("\n");
-  return `<li>${await renderBlock(l.block, tx, true)} ${
+  let [checked] = await scanIndex(tx).eav(l.block.value, "block/check-list");
+  return `<li ${checked ? `data-checked=${checked.data.value}` : ""}>${await renderBlock(l.block, tx, true)} ${
     l.children.length > 0
       ? `
   <ul>${children}</ul>
