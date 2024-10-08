@@ -14,6 +14,7 @@ import { Replicache } from "replicache";
 import { markdownToHtml } from "src/htmlMarkdownParsers";
 import { betterIsUrl, isUrl } from "src/utils/isURL";
 import { TextSelection } from "prosemirror-state";
+import { FilterAttributes } from "src/replicache/attributes";
 
 const parser = ProsemirrorDOMParser.fromSchema(schema);
 export const useHandlePaste = (
@@ -53,7 +54,7 @@ export const useHandlePaste = (
         let children = flattenHTMLToTextBlocks(xml.body);
         if (
           children.find((c) =>
-            ["P", "H1", "H2", "H3", "UL"].includes(c.tagName),
+            ["P", "H1", "H2", "H3", "UL", "DIV", "IMG"].includes(c.tagName),
           )
         ) {
           children.forEach((child, index) => {
@@ -183,6 +184,14 @@ const createBlockFromHTML = (
       type = "heading";
       break;
     }
+    case "DIV": {
+      type = "card";
+      break;
+    }
+    case "IMG": {
+      type = "image";
+      break;
+    }
     default:
       type = null;
   }
@@ -213,6 +222,87 @@ const createBlockFromHTML = (
         attribute: "block/heading-level",
         data: { type: "number", value: headingLevel },
       });
+    }
+  }
+  if (child.tagName === "IMG") {
+    let src = child.getAttribute("src");
+    if (src) {
+      fetch(src)
+        .then((res) => res.blob())
+        .then((Blob) => {
+          const file = new File([Blob], "image.png", { type: Blob.type });
+          addImage(file, rep, {
+            attribute: "block/image",
+            entityID: entityID,
+          });
+        });
+    }
+  }
+
+  if (child.tagName === "DIV" && child.getAttribute("data-entityID")) {
+    let oldEntityID = child.getAttribute("data-entityID") as string;
+    let factsData = child.getAttribute("data-facts");
+    if (factsData) {
+      let facts = JSON.parse(atob(factsData)) as Fact<any>[];
+
+      let oldEntityIDToNewID = {} as { [k: string]: string };
+      let oldEntities = facts.reduce((acc, f) => {
+        if (!acc.includes(f.entity)) acc.push(f.entity);
+        return acc;
+      }, [] as string[]);
+      let newEntities = [] as string[];
+      for (let oldEntity of oldEntities) {
+        let newEntity = v7();
+        oldEntityIDToNewID[oldEntity] = newEntity;
+        newEntities.push(newEntity);
+      }
+
+      let newFacts = [] as Array<
+        Pick<Fact<any>, "entity" | "attribute" | "data">
+      >;
+      for (let fact of facts) {
+        let entity = oldEntityIDToNewID[fact.entity];
+        let data = fact.data;
+        if (
+          data.type === "ordered-reference" ||
+          data.type == "spatial-reference" ||
+          data.type === "reference"
+        ) {
+          data.value = oldEntityIDToNewID[data.value];
+        }
+        if (data.type === "image") {
+          //idk get it from the clipboard maybe?
+        }
+        newFacts.push({ entity, attribute: fact.attribute, data });
+      }
+      rep.mutate.createEntity(
+        newEntities.map((e) => ({
+          entityID: e,
+          permission_set: entity_set.set,
+        })),
+      );
+      rep.mutate.assertFact(newFacts.filter((f) => f.data.type !== "image"));
+      let newCardEntity = oldEntityIDToNewID[oldEntityID];
+      rep.mutate.assertFact({
+        entity: entityID,
+        attribute: "block/card",
+        data: { type: "reference", value: newCardEntity },
+      });
+      let images: Pick<
+        Fact<keyof FilterAttributes<{ type: "image" }>>,
+        "entity" | "data" | "attribute"
+      >[] = newFacts.filter((f) => f.data.type === "image");
+      for (let image of images) {
+        fetch(image.data.src)
+          .then((res) => res.blob())
+          .then((Blob) => {
+            const file = new File([Blob], "image.png", { type: Blob.type });
+            addImage(file, rep, {
+              attribute: image.attribute,
+              entityID: image.entity,
+            });
+          });
+      }
     }
   }
 
@@ -279,9 +369,10 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
       const elementNode = node as HTMLElement;
       // Collect outer HTML for paragraph-like elements
       if (
-        ["P", "H1", "H2", "H3", "H4", "H5", "H6", "LI", "UL"].includes(
+        ["P", "H1", "H2", "H3", "H4", "H5", "H6", "LI", "UL", "IMG"].includes(
           elementNode.tagName,
-        )
+        ) ||
+        elementNode.getAttribute("data-entityID")
       ) {
         htmlBlocks.push(elementNode);
       } else {
