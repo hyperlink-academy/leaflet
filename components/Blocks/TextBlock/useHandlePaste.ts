@@ -15,6 +15,7 @@ import { markdownToHtml } from "src/htmlMarkdownParsers";
 import { betterIsUrl, isUrl } from "src/utils/isURL";
 import { TextSelection } from "prosemirror-state";
 import { FilterAttributes } from "src/replicache/attributes";
+import { addLinkBlock } from "src/utils/addLinkBlock";
 
 const parser = ProsemirrorDOMParser.fromSchema(schema);
 export const useHandlePaste = (
@@ -192,6 +193,10 @@ const createBlockFromHTML = (
       type = "image";
       break;
     }
+    case "A": {
+      type = "link";
+      break;
+    }
     default:
       type = null;
   }
@@ -222,6 +227,12 @@ const createBlockFromHTML = (
         attribute: "block/heading-level",
         data: { type: "number", value: headingLevel },
       });
+    }
+  }
+  if (child.tagName === "A") {
+    let href = child.getAttribute("href");
+    if (href) {
+      addLinkBlock(href, entityID, rep);
     }
   }
   if (child.tagName === "IMG") {
@@ -369,9 +380,19 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
       const elementNode = node as HTMLElement;
       // Collect outer HTML for paragraph-like elements
       if (
-        ["P", "H1", "H2", "H3", "H4", "H5", "H6", "LI", "UL", "IMG"].includes(
-          elementNode.tagName,
-        ) ||
+        [
+          "P",
+          "H1",
+          "H2",
+          "H3",
+          "H4",
+          "H5",
+          "H6",
+          "LI",
+          "UL",
+          "IMG",
+          "A",
+        ].includes(elementNode.tagName) ||
         elementNode.getAttribute("data-entityID")
       ) {
         htmlBlocks.push(elementNode);
