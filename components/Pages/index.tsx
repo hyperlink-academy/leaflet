@@ -25,7 +25,7 @@ import { Canvas } from "../Canvas";
 import { DraftPostOptions } from "../Blocks/MailboxBlock";
 import { Blocks } from "components/Blocks";
 
-import { Discussion } from "components/Blocks/CommentPanelBlock";
+import { Discussion } from "components/Pages/Discussion";
 import { MenuItem, Menu } from "../Layout";
 import {
   MoreOptionsTiny,
