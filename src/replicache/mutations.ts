@@ -308,10 +308,14 @@ const removeBlock: Mutation<
   }
 };
 
-const assertFact: Mutation<
-  Omit<Fact<keyof typeof Attributes>, "id"> & { id?: string }
-> = async (args, ctx) => {
-  await ctx.assertFact(args);
+type FactInput = Omit<Fact<keyof typeof Attributes>, "id"> & { id?: string };
+const assertFact: Mutation<FactInput | Array<FactInput>> = async (
+  args,
+  ctx,
+) => {
+  for (let f of [args].flat()) {
+    await ctx.assertFact(f);
+  }
 };
 
 const increaseHeadingLevel: Mutation<{ entityID: string }> = async (
@@ -395,6 +399,14 @@ const moveBlockDown: Mutation<{ entityID: string; parent: string }> = async (
       value: args.entityID,
     },
   });
+};
+
+const createEntity: Mutation<
+  Array<{ entityID: string; permission_set: string }>
+> = async (args, ctx) => {
+  for (let newentity of args) {
+    await ctx.createEntity(newentity);
+  }
 };
 
 const createDraft: Mutation<{
@@ -502,9 +514,7 @@ const retractAttribute: Mutation<{
     | Array<keyof FilterAttributes<{ cardinality: "one" }>>;
 }> = async (args, ctx) => {
   for (let a of [args.attribute].flat()) {
-    console.log(a);
     let fact = (await ctx.scanIndex.eav(args.entity, a))[0];
-    console.log(fact);
     if (fact) await ctx.retractFact(fact.id);
   }
 };
@@ -546,4 +556,5 @@ export const mutations = {
   archiveDraft,
   toggleTodoState,
   createDraft,
+  createEntity,
 };

@@ -1,11 +1,12 @@
 import { ReadTransaction, Replicache } from "replicache";
-import { ReplicacheMutators } from "src/replicache";
+import { Fact, ReplicacheMutators } from "src/replicache";
 import { scanIndex } from "src/replicache/utils";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Block } from "components/Blocks/Block";
+import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 
 export async function getBlocksAsHTML(
   rep: Replicache<ReplicacheMutators>,
@@ -45,6 +46,28 @@ async function renderList(l: List, tx: ReadTransaction): Promise<string> {
   }</li>`;
 }
 
+async function getAllFacts(
+  tx: ReadTransaction,
+  entity: string,
+): Promise<Array<Fact<any>>> {
+  let facts = await scanIndex(tx).eav(entity, "");
+  let childFacts = (
+    await Promise.all(
+      facts.map((f) => {
+        if (
+          f.data.type === "reference" ||
+          f.data.type === "ordered-reference" ||
+          f.data.type === "spatial-reference"
+        ) {
+          return getAllFacts(tx, f.data.value);
+        }
+        return [];
+      }),
+    )
+  ).flat();
+  return [...facts, ...childFacts];
+}
+
 async function renderBlock(
   b: Block,
   tx: ReadTransaction,
@@ -72,7 +95,18 @@ async function renderBlock(
       </a>,
     );
   }
-  if (b.type === "card" || b.type === "mailbox") {
+  if (b.type === "card") {
+    let [card] = await scanIndex(tx).eav(b.value, "block/card");
+    let facts = await getAllFacts(tx, card.data.value);
+    return renderToStaticMarkup(
+      <div
+        data-type="card"
+        data-facts={btoa(JSON.stringify(facts))}
+        data-entityID={card.data.value}
+      />,
+    );
+  }
+  if (b.type === "mailbox") {
     return renderToStaticMarkup(
       <div>
         <a href={window.location.href} target="_blank">
