@@ -167,7 +167,6 @@ export function PagePreview(props: { entityID: string }) {
           className={`pageBackground
       absolute top-0 left-0 right-0 bottom-0
       pointer-events-none
-      rounded-lg border
       `}
           style={{
             backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
