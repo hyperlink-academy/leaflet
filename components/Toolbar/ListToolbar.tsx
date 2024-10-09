@@ -94,6 +94,23 @@ export const ListToolbar = (props: { onClose: () => void }) => {
   return (
     <div className="flex items-center gap-[6px]">
       <ToolbarButton
+        disabled={!isList?.data.value}
+        tooltipContent={
+          <div className="flex flex-col gap-1 justify-center">
+            <div className="text-center">Outdent Item</div>
+            <div className="flex gap-1 justify-center">
+              <ShortcutKey>Shift</ShortcutKey> + <ShortcutKey>Tab</ShortcutKey>
+            </div>
+          </div>
+        }
+        onClick={() => {
+          if (!rep || !block) return;
+          outdent(block, previousBlock, rep);
+        }}
+      >
+        <ListIndentDecreaseSmall />
+      </ToolbarButton>
+      <ToolbarButton
         tooltipContent={
           <div className="flex flex-col gap-1 justify-center">
             <div className="text-center">Indent Item</div>
@@ -112,23 +129,6 @@ export const ListToolbar = (props: { onClose: () => void }) => {
         }}
       >
         <ListIndentIncreaseSmall />
-      </ToolbarButton>
-      <ToolbarButton
-        disabled={!isList?.data.value}
-        tooltipContent={
-          <div className="flex flex-col gap-1 justify-center">
-            <div className="text-center">Outdent Item</div>
-            <div className="flex gap-1 justify-center">
-              <ShortcutKey>Shift</ShortcutKey> + <ShortcutKey>Tab</ShortcutKey>
-            </div>
-          </div>
-        }
-        onClick={() => {
-          if (!rep || !block) return;
-          outdent(block, previousBlock, rep);
-        }}
-      >
-        <ListIndentDecreaseSmall />
       </ToolbarButton>
       <Separator classname="h-6" />
       <ToolbarButton

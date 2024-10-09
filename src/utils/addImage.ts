@@ -43,7 +43,11 @@ export async function addImage(
         width: dimensions.width,
       },
     });
-  await client.storage.from("minilink-user-assets").upload(fileID, file);
+  await client.storage
+    .from("minilink-user-assets")
+    .upload(fileID, file, {
+      cacheControl: "public, max-age=31560000, immutable",
+    });
   await rep.mutate.assertFact({
     entity: args.entityID,
     attribute: args.attribute,

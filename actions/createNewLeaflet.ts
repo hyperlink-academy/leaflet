@@ -23,7 +23,13 @@ export async function createNewLeaflet(
     // Create a new entity set
     let [entity_set] = await tx.insert(entity_sets).values({}).returning();
     // Create a root-entity
-    let [entity] = await tx
+
+    let [root_entity] = await tx
+      .insert(entities)
+      // And add it to that permission set
+      .values({ set: entity_set.id, id: v7() })
+      .returning();
+    let [first_page] = await tx
       .insert(entities)
       // And add it to that permission set
       .values({ set: entity_set.id, id: v7() })
@@ -31,7 +37,7 @@ export async function createNewLeaflet(
     //Create a new permission token
     let [permissionToken] = await tx
       .insert(permission_tokens)
-      .values({ root_entity: entity.id })
+      .values({ root_entity: root_entity.id })
       .returning();
     //and give it all the permission on that entity set
     let [rights] = await tx
@@ -51,18 +57,24 @@ export async function createNewLeaflet(
       // And add it to that permission set
       .values({ set: entity_set.id, id: v7() })
       .returning();
+    await tx.insert(facts).values({
+      id: v7(),
+      entity: root_entity.id,
+      attribute: "root/page",
+      data: sql`${{ type: "ordered-reference", value: first_page.id, position: "a0" }}`,
+    });
 
     if (pageType === "canvas") {
       await tx.insert(facts).values([
         {
           id: v7(),
-          entity: entity.id,
+          entity: first_page.id,
           attribute: "page/type",
           data: sql`${{ type: "page-type-union", value: "canvas" }}`,
         },
         {
           id: v7(),
-          entity: entity.id,
+          entity: first_page.id,
           attribute: "canvas/block",
           data: sql`${{ type: "spatial-reference", value: blockEntity.id, position: { x: 8, y: 12 } }}::jsonb`,
         },
@@ -77,7 +89,7 @@ export async function createNewLeaflet(
       await tx.insert(facts).values([
         {
           id: v7(),
-          entity: entity.id,
+          entity: first_page.id,
           attribute: "card/block",
           data: sql`${{ type: "ordered-reference", value: blockEntity.id, position: "a0" }}::jsonb`,
         },
@@ -96,7 +108,7 @@ export async function createNewLeaflet(
       ]);
     }
 
-    return { permissionToken, rights, entity, entity_set };
+    return { permissionToken, rights, root_entity, entity_set };
   });
 
   client.end();

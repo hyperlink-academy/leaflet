@@ -270,6 +270,13 @@ const backspace =
       });
       if (propsRef.current.previousBlock) {
         focusBlock(propsRef.current.previousBlock, { type: "end" });
+      } else {
+        useUIState
+          .getState()
+          .setFocusedBlock({
+            entityType: "page",
+            entityID: propsRef.current.parent,
+          });
       }
       return true;
     }

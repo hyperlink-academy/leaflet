@@ -3,11 +3,10 @@ import { ArrowDownTiny, InfoSmall } from "components/Icons";
 import { Popover } from "components/Popover";
 import { Menu, MenuItem, Separator } from "components/Layout";
 import { useUIState } from "src/useUIState";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSmoker, useToaster } from "components/Toast";
 import { BlockProps } from "./Block";
 import { useEntity, useReplicache } from "src/replicache";
-import { focusBlock } from "src/utils/focusBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { subscribeToMailboxWithEmail } from "actions/subscriptions/subscribeToMailboxWithEmail";
 import { confirmEmailSubscription } from "actions/subscriptions/confirmEmailSubscription";
@@ -27,71 +26,15 @@ import { usePageTitle } from "components/utils/UpdateLeafletTitle";
 
 export const MailboxBlock = (props: BlockProps) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
-  let [areYouSure, setAreYouSure] = useState(false);
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
 
-  let page = useEntity(props.entityID, "block/card");
-  let pageEntity = page ? page.data.value : props.entityID;
   let permission = useEntitySetContext().permissions.write;
-
   let { rep } = useReplicache();
-
   let smoke = useSmoker();
-
-  useEffect(() => {
-    if (!isSelected) {
-      setAreYouSure(false);
-    }
-  }, [isSelected]);
   let draft = useEntity(props.entityID, "mailbox/draft");
   let entity_set = useEntitySetContext();
-  let archive = useEntity(props.entityID, "mailbox/archive");
-
-  useEffect(() => {
-    if (!isSelected) return;
-    let listener = (e: KeyboardEvent) => {
-      let el = e.target as HTMLElement;
-      if (
-        el.tagName === "INPUT" ||
-        el.tagName === "textarea" ||
-        el.contentEditable === "true"
-      )
-        return;
-      if (e.key === "Backspace" && permission) {
-        if (e.defaultPrevented) return;
-        if (areYouSure === false) {
-          setAreYouSure(true);
-        } else {
-          e.preventDefault();
-
-          rep &&
-            rep.mutate.removeBlock({
-              blockEntity: props.entityID,
-            });
-
-          props.previousBlock &&
-            focusBlock(props.previousBlock, { type: "end" });
-
-          draft && useUIState.getState().closePage(draft.data.value);
-          archive && useUIState.getState().closePage(archive.data.value);
-        }
-      }
-    };
-    window.addEventListener("keydown", listener);
-    return () => window.removeEventListener("keydown", listener);
-  }, [
-    draft,
-    archive,
-    areYouSure,
-    pageEntity,
-    isSelected,
-    permission,
-    props.entityID,
-    props.previousBlock,
-    rep,
-  ]);
 
   let subscriber_count = useEntity(props.entityID, "mailbox/subscriber-count");
   if (!permission)

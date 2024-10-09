@@ -7,7 +7,12 @@ import {
 import { useRef, useState } from "react";
 import { Link } from "react-aria-components";
 import { useBlocks } from "src/hooks/queries/useBlocks";
-import { PermissionToken, useEntity } from "src/replicache";
+import {
+  PermissionToken,
+  useEntity,
+  useReferenceToEntity,
+  useReplicache,
+} from "src/replicache";
 import { deleteLeaflet } from "actions/deleteLeaflet";
 import { removeDocFromHome } from "./storage";
 import { mutate } from "swr";
@@ -15,22 +20,35 @@ import useMeasure from "react-use-measure";
 import { ButtonPrimary } from "components/Buttons";
 import { LeafletOptions } from "./LeafletOptions";
 import { CanvasContent } from "components/Canvas";
+import { useSubscribe } from "replicache-react";
+import { TemplateSmall } from "components/Icons";
+import { theme } from "tailwind.config";
+import { useTemplateState } from "./CreateNewButton";
 
 export const LeafletPreview = (props: {
   token: PermissionToken;
   leaflet_id: string;
 }) => {
   let [state, setState] = useState<"normal" | "deleting">("normal");
+  let isTemplate = useTemplateState(
+    (s) => !!s.templates.find((t) => t.id === props.token.id),
+  );
+  let root =
+    useReferenceToEntity("root/page", props.leaflet_id)[0]?.entity ||
+    props.leaflet_id;
+  let firstPage = useEntity(root, "root/page")[0];
+  let page = firstPage?.data.value || root;
+
   return (
     <div className="relative max-h-40 h-40">
-      <ThemeProvider local entityID={props.leaflet_id}>
+      <ThemeProvider local entityID={root}>
         <div className="rounded-lg hover:shadow-sm overflow-clip border border-border outline outline-transparent hover:outline-border bg-bg-leaflet grow w-full h-full">
           {state === "normal" ? (
             <Link
               href={"/" + props.token.id}
               className={`no-underline hover:no-underline text-primary h-full`}
             >
-              <ThemeBackgroundProvider entityID={props.leaflet_id}>
+              <ThemeBackgroundProvider entityID={root}>
                 <div className="leafletPreview grow shrink-0 h-full w-full px-2 pt-2 sm:px-3 sm:pt-3 flex items-end pointer-events-none">
                   <div
                     className="leafletContentWrapper w-full h-full max-w-48 mx-auto border border-border-light border-b-0 rounded-t-md overflow-clip"
@@ -39,7 +57,7 @@ export const LeafletPreview = (props: {
                         "rgba(var(--bg-page), var(--bg-page-alpha))",
                     }}
                   >
-                    <LeafletContent entityID={props.leaflet_id} />
+                    <LeafletContent entityID={page} />
                   </div>
                 </div>
               </ThemeBackgroundProvider>
@@ -49,8 +67,9 @@ export const LeafletPreview = (props: {
           )}
         </div>
         <div className="flex justify-end pt-1 shrink-0">
-          <LeafletOptions leaflet={props.token} setState={setState} />
+          <LeafletOptions leaflet={props.token} isTemplate={isTemplate} />
         </div>
+        <LeafletTemplateIndicator isTemplate={isTemplate} />
       </ThemeProvider>
     </div>
   );
@@ -71,9 +90,9 @@ const LeafletContent = (props: { entityID: string }) => {
         <div
           className={`absolute top-0 left-0 origin-top-left pointer-events-none `}
           style={{
-            width: `1150px`,
-            height: "calc(1150px * 2)",
-            transform: `scale(calc((${dimensions.width} / 1150 )))`,
+            width: `1272px`,
+            height: "calc(1272px * 2)",
+            transform: `scale(calc((${dimensions.width} / 1272 )))`,
           }}
         >
           <CanvasContent entityID={props.entityID} preview />
@@ -90,8 +109,8 @@ const LeafletContent = (props: { entityID: string }) => {
       <div
         className="absolute top-0 left-0 w-full h-full origin-top-left pointer-events-none"
         style={{
-          width: `calc(var(--page-width) * 1px)`,
-          transform: `scale(calc(${dimensions.width} / var(--page-width)))`,
+          width: `var(--page-width-units)`,
+          transform: `scale(calc(${dimensions.width} / var(--page-width-unitless)))`,
         }}
       >
         {blocks.slice(0, 10).map((b, index, arr) => {
@@ -151,6 +170,16 @@ const LeafletAreYouSure = (props: {
           Nevermind
         </button>
       </div>
+    </div>
+  );
+};
+
+const LeafletTemplateIndicator = (props: { isTemplate: boolean }) => {
+  if (!props.isTemplate) return;
+
+  return (
+    <div className="absolute -top-3 right-1">
+      <TemplateSmall fill={theme.colors["bg-page"]} />
     </div>
   );
 };

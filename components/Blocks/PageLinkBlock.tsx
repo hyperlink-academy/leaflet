@@ -10,6 +10,7 @@ import { usePageMetadata } from "src/hooks/queries/usePageMetadata";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { Canvas, CanvasBackground, CanvasContent } from "components/Canvas";
+import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
 
 export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
   let page = useEntity(props.entityID, "block/card");
@@ -22,11 +23,13 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
   );
 
   let isOpen = useUIState((s) => s.openPages).includes(page?.data.value || "");
-  if (!page) return <div>An error occured adding this page!</div>;
+  if (!page)
+    return <div>An error occured, there should be a page linked here!</div>;
 
   return (
-    <div
-      className={`w-full cursor-pointer
+    <CardThemeProvider entityID={page?.data.value}>
+      <div
+        className={`w-full cursor-pointer
         pageLinkBlockWrapper relative group/pageLinkBlock
         bg-bg-page border shadow-sm outline outline-1 rounded-lg
         flex overflow-clip
@@ -38,24 +41,25 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
               : "border-border-light outline-transparent hover:outline-border-light"
         }
         `}
-      onClick={(e) => {
-        if (!page) return;
-        if (e.isDefaultPrevented()) return;
-        if (e.shiftKey) return;
-        e.preventDefault();
-        e.stopPropagation();
-        useUIState.getState().openPage(props.parent, page.data.value);
-        if (rep) focusPage(page.data.value, rep);
-      }}
-    >
-      {type === "canvas" ? (
-        <CanvasLinkBlock entityID={page?.data.value} />
-      ) : type === "discussion" ? (
-        <DiscussionLinkBlock entityID={page?.data.value} />
-      ) : (
-        <DocLinkBlock {...props} />
-      )}
-    </div>
+        onClick={(e) => {
+          if (!page) return;
+          if (e.isDefaultPrevented()) return;
+          if (e.shiftKey) return;
+          e.preventDefault();
+          e.stopPropagation();
+          useUIState.getState().openPage(props.parent, page.data.value);
+          if (rep) focusPage(page.data.value, rep);
+        }}
+      >
+        {type === "canvas" ? (
+          <CanvasLinkBlock entityID={page?.data.value} />
+        ) : type === "discussion" ? (
+          <DiscussionLinkBlock entityID={page?.data.value} />
+        ) : (
+          <DocLinkBlock {...props} />
+        )}
+      </div>
+    </CardThemeProvider>
   );
 }
 export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
@@ -133,6 +137,19 @@ export function PagePreview(props: { entityID: string }) {
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
 
+  let cardBackgroundImage = useEntity(
+    props.entityID,
+    "theme/card-background-image",
+  );
+  let cardBackgroundImageRepeat = useEntity(
+    props.entityID,
+    "theme/card-background-image-repeat",
+  );
+
+  let cardBackgroundImageOpacity =
+    useEntity(props.entityID, "theme/card-background-image-opacity")?.data
+      .value || 1;
+
   let pageWidth = `var(--page-width-unitless)`;
   return (
     <div
@@ -140,12 +157,34 @@ export function PagePreview(props: { entityID: string }) {
       className={`pageLinkBlockPreview w-[120px] overflow-clip  mx-3 mt-3 -mb-2 bg-bg-page border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center`}
     >
       <div
-        className="absolute top-0 left-0  h-full origin-top-left pointer-events-none"
+        className="absolute top-0 left-0 origin-top-left pointer-events-none "
         style={{
           width: `calc(1px * ${pageWidth})`,
+          height: `calc(100vh - 64px)`,
           transform: `scale(calc((120 / ${pageWidth} )))`,
+          backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
         }}
       >
+        <div
+          className={`pageBackground
+      absolute top-0 left-0 right-0 bottom-0
+      pointer-events-none
+      rounded-lg border
+      `}
+          style={{
+            backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
+            backgroundRepeat: cardBackgroundImageRepeat
+              ? "repeat"
+              : "no-repeat",
+            backgroundPosition: "center",
+            backgroundSize: !cardBackgroundImageRepeat
+              ? "cover"
+              : cardBackgroundImageRepeat?.data.value,
+            opacity: cardBackgroundImage?.data.src
+              ? cardBackgroundImageOpacity
+              : 1,
+          }}
+        />
         {blocks.slice(0, 20).map((b, index, arr) => {
           return (
             <BlockPreview
@@ -177,11 +216,11 @@ const CanvasLinkBlock = (props: { entityID: string; preview?: boolean }) => {
         style={{
           width: `calc(1px * ${pageWidth})`,
           height: "calc(1150px * 2)",
-          transform: `scale(calc((${pageWidth} / 1150 )))`,
+          transform: `scale(calc(((${pageWidth} - 36) / 1272 )))`,
         }}
       >
         {props.preview ? (
-          <CanvasBackground />
+          <CanvasBackground entityID={props.entityID} />
         ) : (
           <CanvasContent entityID={props.entityID} preview />
         )}

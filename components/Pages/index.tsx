@@ -1,9 +1,8 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useUIState } from "src/useUIState";
-import { useEntitySetContext } from "./EntitySetProvider";
+import { useEntitySetContext } from "../EntitySetProvider";
 import { useSearchParams } from "next/navigation";
-import { useToaster } from "./Toast";
 
 import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
@@ -17,31 +16,37 @@ import {
   useReplicache,
 } from "src/replicache";
 
-import { Media } from "./Media";
-import { DesktopPageFooter } from "./DesktopFooter";
-import { ShareOptions } from "./ShareOptions";
-import { ThemePopover } from "./ThemeManager/ThemeSetter";
-import { HomeButton } from "./HomeButton";
-import { Canvas } from "./Canvas";
-import { DraftPostOptions } from "./Blocks/MailboxBlock";
+import { Media } from "../Media";
+import { DesktopPageFooter } from "../DesktopFooter";
+import { ShareOptions } from "../ShareOptions";
+import { ThemePopover } from "../ThemeManager/ThemeSetter";
+import { HomeButton } from "../HomeButton";
+import { Canvas } from "../Canvas";
+import { DraftPostOptions } from "../Blocks/MailboxBlock";
 import { Blocks } from "components/Blocks";
-import { MenuItem, Menu } from "./Layout";
-import { MoreOptionsTiny, DeleteSmall, CloseTiny } from "./Icons";
-import { HelpPopover } from "./HelpPopover";
+
+import { Discussion } from "components/Blocks/CommentPanelBlock";
+import { MenuItem, Menu } from "../Layout";
+import {
+  MoreOptionsTiny,
+  DeleteSmall,
+  CloseTiny,
+  PaintSmall,
+  ShareSmall,
+} from "../Icons";
+import { HelpPopover } from "../HelpPopover";
 import { CreateNewLeafletButton } from "app/home/CreateNewButton";
 import { scanIndex } from "src/replicache/utils";
-import { Discussion } from "./Blocks/CommentPanelBlock";
+import { PageThemeSetter } from "../ThemeManager/PageThemeSetter";
+import { CardThemeProvider } from "../ThemeManager/ThemeProvider";
+import { PageShareMenu } from "./PageShareMenu";
 
 export function Pages(props: { rootPage: string }) {
-  let openPages = useUIState((s) => s.openPages);
+  let rootPage = useEntity(props.rootPage, "root/page")[0];
+  let pages = useUIState((s) => s.openPages);
   let params = useSearchParams();
-  let openPage = params.get("openPage");
-  useEffect(() => {
-    if (openPage) {
-    }
-  }, [openPage, props.rootPage]);
-  let pages = [...openPages];
-  if (openPage && !pages.includes(openPage)) pages.push(openPage);
+  let queryRoot = params.get("page");
+  let firstPage = queryRoot || rootPage?.data.value || props.rootPage;
   let entity_set = useEntitySetContext();
 
   return (
@@ -59,9 +64,9 @@ export function Pages(props: { rootPage: string }) {
           e.currentTarget === e.target && blurPage();
         }}
       >
-        {entity_set.permissions.write ? (
-          <Media mobile={false} className="h-full">
-            <div className="flex flex-col h-full justify-between mr-4 mt-1">
+        <Media mobile={false} className="h-full">
+          <div className="flex flex-col h-full justify-between mr-4 mt-1">
+            {entity_set.permissions.write ? (
               <div className="flex flex-col justify-center gap-2 ">
                 <ShareOptions rootEntity={props.rootPage} />
                 <LeafletOptions entityID={props.rootPage} />
@@ -70,16 +75,25 @@ export function Pages(props: { rootPage: string }) {
                 <hr className="text-border my-3" />
                 <HomeButton />
               </div>
-            </div>
-          </Media>
-        ) : null}
+            ) : (
+              <div>
+                {" "}
+                <HomeButton />{" "}
+              </div>
+            )}
+          </div>
+        </Media>
       </div>
       <div className="flex items-stretch">
-        <Page entityID={props.rootPage} first />
+        <CardThemeProvider entityID={firstPage}>
+          <Page entityID={firstPage} first />
+        </CardThemeProvider>
       </div>
       {pages.map((page) => (
         <div className="flex items-stretch" key={page}>
-          <Page entityID={page} />
+          <CardThemeProvider entityID={page}>
+            <Page entityID={page} />
+          </CardThemeProvider>
         </div>
       ))}
       <div
@@ -105,13 +119,15 @@ function Page(props: { entityID: string; first?: boolean }) {
   let { rep } = useReplicache();
   let isDraft = useReferenceToEntity("mailbox/draft", props.entityID);
 
-  let focusedElement = useUIState((s) => s.focusedEntity);
-  let focusedPageID =
-    focusedElement?.entityType === "page"
-      ? focusedElement.entityID
-      : focusedElement?.parent;
-  let isFocused = focusedPageID === props.entityID;
-  let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
+  let isFocused = useUIState((s) => {
+    let focusedElement = s.focusedEntity;
+    let focusedPageID =
+      focusedElement?.entityType === "page"
+        ? focusedElement.entityID
+        : focusedElement?.parent;
+    return focusedPageID === props.entityID;
+  });
+  let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
 
   return (
     <>
@@ -130,16 +146,18 @@ function Page(props: { entityID: string; first?: boolean }) {
           onClick={(e) => {
             if (e.defaultPrevented) return;
             if (rep) {
+              if (isFocused) return;
               focusPage(props.entityID, rep);
             }
           }}
           id={elementId.page(props.entityID).container}
           style={{
             backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-            width: type === "canvas" ? undefined : "var(--page-width-units)",
+            width:
+              pageType === "canvas" ? undefined : "var(--page-width-units)",
           }}
           className={`
-                    ${type === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
+            ${pageType === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
               page
               grow flex flex-col
               overscroll-y-none
@@ -177,10 +195,61 @@ function Page(props: { entityID: string; first?: boolean }) {
 }
 
 const PageContent = (props: { entityID: string }) => {
-  let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
-  if (type === "doc") return <Blocks entityID={props.entityID} />;
-  if (type === "canvas") return <Canvas entityID={props.entityID} />;
-  if (type === "discussion") return <Discussion entityID={props.entityID} />;
+  let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
+  if (pageType === "doc") return <DocContent entityID={props.entityID} />;
+  if (pageType === "discussion")
+    return <Discussion entityID={props.entityID} />;
+  if (pageType === "canvas") return <Canvas entityID={props.entityID} />;
+  return null;
+};
+
+const DocContent = (props: { entityID: string }) => {
+  let isFocused = useUIState((s) => {
+    let focusedElement = s.focusedEntity;
+    let focusedPageID =
+      focusedElement?.entityType === "page"
+        ? focusedElement.entityID
+        : focusedElement?.parent;
+    return focusedPageID === props.entityID;
+  });
+  let cardBackgroundImage = useEntity(
+    props.entityID,
+    "theme/card-background-image",
+  );
+  let cardBackgroundImageRepeat = useEntity(
+    props.entityID,
+    "theme/card-background-image-repeat",
+  );
+  let cardBackgroundImageOpacity =
+    useEntity(props.entityID, "theme/card-background-image-opacity")?.data
+      .value || 1;
+  return (
+    <>
+      <div
+        className={`pageBackground
+        absolute top-0 left-0 right-0 bottom-0
+        pointer-events-none
+        rounded-lg border
+        ${isFocused ? " border-border" : "border-border-light"}
+        `}
+        style={{
+          backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
+          backgroundRepeat: cardBackgroundImageRepeat ? "repeat" : "no-repeat",
+          backgroundPosition: "center",
+          backgroundSize: !cardBackgroundImageRepeat
+            ? "cover"
+            : cardBackgroundImageRepeat?.data.value,
+          opacity: cardBackgroundImage?.data.src
+            ? cardBackgroundImageOpacity
+            : 1,
+        }}
+      />
+      <Blocks entityID={props.entityID} />
+      {/* we handle page bg in this sepate div so that
+    we can apply an opacity the background image
+    without affecting the opacity of the rest of the page */}
+    </>
+  );
 };
 
 const PageOptionsMenu = (props: {
@@ -188,10 +257,10 @@ const PageOptionsMenu = (props: {
   first: boolean | undefined;
 }) => {
   return (
-    <div className=" z-10 w-fit absolute sm:top-2 sm:-right-[18px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
+    <div className=" z-10 w-fit absolute sm:top-3 sm:-right-[19px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
       {!props.first && (
         <button
-          className="p-1 pt-[10px] sm:p-0.5 sm:pl-0 bg-border text-bg-page sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
+          className="pt-[2px] h-5 w-5 p-0.5 mx-auto bg-border text-bg-page sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
           onClick={() => {
             useUIState.getState().closePage(props.entityID);
           }}
@@ -199,35 +268,60 @@ const PageOptionsMenu = (props: {
           <CloseTiny />
         </button>
       )}
+      {<OptionsMenu entityID={props.entityID} first={!!props.first} />}
     </div>
   );
 };
 
-const OptionsMenu = () => {
-  let toaster = useToaster();
+const OptionsMenu = (props: { entityID: string; first: boolean }) => {
+  let [state, setState] = useState<"normal" | "theme" | "share">("normal");
+  let { permissions } = useEntitySetContext();
+  if (!permissions.write) return null;
   return (
     <Menu
+      align="end"
+      onOpenChange={(open) => {
+        if (!open) setState("normal");
+      }}
       trigger={
         <div
           className={`pageOptionsTrigger
-      shrink-0 sm:h-8 sm:w-5 h-5 w-8
-      bg-bg-page text-border
-      border sm:border-l-0 border-t-1 border-border sm:rounded-r-md sm:rounded-l-none rounded-b-md
-      sm:hover:border-r-2 hover:border-b-2 hover:border-y-2 hover:border-t-1
-      flex items-center justify-center`}
+          shrink-0 sm:h-8 sm:w-5 h-5 w-8
+          bg-bg-page text-border
+          outline-none border sm:border-l-0 border-t-1 border-border sm:rounded-r-md sm:rounded-l-none rounded-b-md
+          hover:shadow-[0_1px_0_theme(colors.border)_inset,_0_-1px_0_theme(colors.border)_inset,_-1px_0_0_theme(colors.border)_inset]
+          flex items-center justify-center`}
         >
           <MoreOptionsTiny className="sm:rotate-90" />
         </div>
       }
     >
-      <MenuItem
-        onSelect={(e) => {
-          // TODO: Wire up delete page
-          toaster(DeletePageToast);
-        }}
-      >
-        Delete Page <DeleteSmall />
-      </MenuItem>
+      {state === "normal" ? (
+        <>
+          {!props.first && (
+            <MenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                setState("share");
+              }}
+            >
+              <ShareSmall /> Share Page
+            </MenuItem>
+          )}
+          <MenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              setState("theme");
+            }}
+          >
+            <PaintSmall /> Theme Page
+          </MenuItem>
+        </>
+      ) : state === "theme" ? (
+        <PageThemeSetter entityID={props.entityID} />
+      ) : state === "share" ? (
+        <PageShareMenu entityID={props.entityID} />
+      ) : null}
     </Menu>
   );
 };
@@ -273,11 +367,6 @@ export async function focusPage(
 ) {
   // if this page is already focused,
   let focusedBlock = useUIState.getState().focusedEntity;
-  if (
-    (focusedBlock?.entityType == "page" && focusedBlock.entityID === pageID) ||
-    (focusedBlock?.entityType === "block" && focusedBlock.parent === pageID)
-  )
-    return;
   // else set this page as focused
   useUIState.setState(() => ({
     focusedEntity: {

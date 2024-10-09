@@ -1,3 +1,9 @@
+const RootAttributes = {
+  "root/page": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
+} as const;
 const PageAttributes = {
   "card/block": {
     type: "ordered-reference",
@@ -21,6 +27,10 @@ const PageAttributes = {
   },
   "canvas/narrow-width": {
     type: "boolean",
+    cardinality: "one",
+  },
+  "canvas/background-pattern": {
+    type: "canvas-pattern-union",
     cardinality: "one",
   },
 } as const;
@@ -90,13 +100,40 @@ const LinkBlockAttributes = {
   },
 } as const;
 
-const ThemeAttributes = {
+const EmbedBlockAttributes = {
+  "embed/url": {
+    type: "string",
+    cardinality: "one",
+  },
+} as const;
+
+export const ThemeAttributes = {
   "theme/page-background": {
     type: "color",
     cardinality: "one",
   },
+  "theme/background-image": {
+    type: "image",
+    cardinality: "one",
+  },
+  "theme/background-image-repeat": {
+    type: "number",
+    cardinality: "one",
+  },
   "theme/card-background": {
     type: "color",
+    cardinality: "one",
+  },
+  "theme/card-background-image": {
+    type: "image",
+    cardinality: "one",
+  },
+  "theme/card-background-image-repeat": {
+    type: "number",
+    cardinality: "one",
+  },
+  "theme/card-background-image-opacity": {
+    type: "number",
     cardinality: "one",
   },
   "theme/primary": {
@@ -109,14 +146,6 @@ const ThemeAttributes = {
   },
   "theme/accent-text": {
     type: "color",
-    cardinality: "one",
-  },
-  "theme/background-image": {
-    type: "image",
-    cardinality: "one",
-  },
-  "theme/background-image-repeat": {
-    type: "number",
     cardinality: "one",
   },
   "theme/highlight-1": {
@@ -134,11 +163,13 @@ const ThemeAttributes = {
 } as const;
 
 export const Attributes = {
+  ...RootAttributes,
   ...PageAttributes,
   ...BlockAttributes,
   ...LinkBlockAttributes,
   ...ThemeAttributes,
   ...MailboxAttributes,
+  ...EmbedBlockAttributes,
 };
 type Attribute = typeof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
@@ -181,7 +212,19 @@ export type Data<A extends keyof typeof Attributes> = {
   };
   "block-type-union": {
     type: "block-type-union";
-    value: "text" | "image" | "card" | "heading" | "link" | "mailbox";
+    value:
+      | "text"
+      | "image"
+      | "card"
+      | "heading"
+      | "link"
+      | "mailbox"
+      | "collection"
+      | "embed";
+  };
+  "canvas-pattern-union": {
+    type: "canvas-pattern-union";
+    value: "dot" | "grid" | "plain";
   };
   color: { type: "color"; value: string };
 }[(typeof Attributes)[A]["type"]];

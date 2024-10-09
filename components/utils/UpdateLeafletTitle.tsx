@@ -14,11 +14,14 @@ import { focusBlock } from "src/utils/focusBlock";
 import { useIsMobile } from "src/hooks/isMobile";
 
 export function UpdateLeafletTitle(props: { entityID: string }) {
-  let blocks = useBlocks(props.entityID).filter(
+  let firstPage = useEntity(props.entityID, "root/page")[0];
+  let entityID = firstPage?.data.value || props.entityID;
+
+  let blocks = useBlocks(entityID).filter(
     (b) => b.type === "text" || b.type === "heading",
   );
   let firstBlock = blocks[0];
-  let title = usePageTitle(props.entityID);
+  let title = usePageTitle(entityID);
   useEffect(() => {
     if (title) {
       document.title = title;

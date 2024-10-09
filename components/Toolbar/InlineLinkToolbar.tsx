@@ -2,7 +2,7 @@ import { schema } from "components/Blocks/TextBlock/schema";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { useUIState } from "src/useUIState";
 import { ToolbarButton } from ".";
-import { CheckTiny, CloseTiny, LinkTextToolbarSmall } from "components/Icons";
+import { CheckTiny, CloseTiny, LinkSmall } from "components/Icons";
 import { useEffect, useState } from "react";
 import { Separator } from "components/Layout";
 import { MarkType } from "prosemirror-model";
@@ -42,7 +42,7 @@ export function LinkButton(props: { setToolbarState: (s: "link") => void }) {
         <div className="text-accent-contrast underline">Inline Link</div>
       }
     >
-      <LinkTextToolbarSmall />
+      <LinkSmall />
     </ToolbarButton>
   );
 }
@@ -93,7 +93,7 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
 
   return (
     <div className="w-full flex items-center gap-[6px]  grow">
-      <LinkTextToolbarSmall />
+      <LinkSmall />
       <Separator classname="h-6" />
       <Input
         autoFocus

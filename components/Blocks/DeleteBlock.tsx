@@ -61,6 +61,7 @@ export const AreYouSure = (props: {
             compact
             onClick={async (e) => {
               e.stopPropagation();
+              console.log("yooo");
               if (rep) await deleteBlock(entities, rep);
             }}
           >
@@ -86,92 +87,100 @@ export async function deleteBlock(
   entities: string[],
   rep: Replicache<ReplicacheMutators>,
 ) {
-  let focusedBlock = useUIState.getState().focusedEntity;
-
-  // if the focused thing is a page and not a block, return
-  if (!focusedBlock || focusedBlock?.entityType === "page") return;
-  let [type] = await rep.query((tx) =>
-    scanIndex(tx).eav(focusedBlock.entityID, "block/type"),
-  );
-
   // get what pagess we need to close as a result of deleting this block
   let pagesToClose = [] as string[];
-  if (type.data.value === "card") {
-    let [childPages] = await rep?.query(
-      (tx) => scanIndex(tx).eav(focusedBlock.entityID, "block/card") || [],
+  for (let entity of entities) {
+    let [type] = await rep.query((tx) =>
+      scanIndex(tx).eav(entity, "block/type"),
     );
-    pagesToClose = [childPages?.data.value];
-  }
-  if (type.data.value === "mailbox") {
-    let [archive] = await rep?.query(
-      (tx) => scanIndex(tx).eav(focusedBlock.entityID, "mailbox/archive") || [],
-    );
-    let [draft] = await rep?.query(
-      (tx) => scanIndex(tx).eav(focusedBlock.entityID, "mailbox/draft") || [],
-    );
-    pagesToClose = [archive?.data.value, draft?.data.value];
+    if (type.data.value === "card") {
+      let [childPages] = await rep?.query(
+        (tx) => scanIndex(tx).eav(entity, "block/card") || [],
+      );
+      pagesToClose = [childPages?.data.value];
+    }
+    if (type.data.value === "mailbox") {
+      let [archive] = await rep?.query(
+        (tx) => scanIndex(tx).eav(entity, "mailbox/archive") || [],
+      );
+      let [draft] = await rep?.query(
+        (tx) => scanIndex(tx).eav(entity, "mailbox/draft") || [],
+      );
+      pagesToClose = [archive?.data.value, draft?.data.value];
+    }
   }
 
   //  the next and previous blocks in the block list
+  // if the focused thing is a page and not a block, return
+  let focusedBlock = useUIState.getState().focusedEntity;
+  let parent =
+    focusedBlock?.entityType === "page"
+      ? focusedBlock.entityID
+      : focusedBlock?.parent;
 
-  let parentType = await rep?.query((tx) =>
-    scanIndex(tx).eav(focusedBlock?.parent, "page/type"),
-  );
-  if (parentType[0]?.data.value === "canvas") {
-    useUIState
-      .getState()
-      .setFocusedBlock({ entityType: "page", entityID: focusedBlock.parent });
-    useUIState.getState().setSelectedBlocks([]);
-    return;
-  }
-  let siblings =
-    (await rep?.query((tx) => getBlocksWithType(tx, focusedBlock?.parent))) ||
-    [];
-
-  let selectedBlocks = useUIState.getState().selectedBlocks;
-  let firstSelected = selectedBlocks[0];
-  let lastSelected = selectedBlocks[entities.length - 1];
-
-  let prevBlock =
-    siblings?.[siblings.findIndex((s) => s.value === firstSelected.value) - 1];
-  let prevBlockType = await rep?.query((tx) =>
-    scanIndex(tx).eav(prevBlock?.value, "block/type"),
-  );
-
-  let nextBlock =
-    siblings?.[siblings.findIndex((s) => s.value === lastSelected.value) + 1];
-  let nextBlockType = await rep?.query((tx) =>
-    scanIndex(tx).eav(nextBlock?.value, "block/type"),
-  );
-
-  if (prevBlock) {
-    useUIState.getState().setSelectedBlock({
-      value: prevBlock.value,
-      parent: prevBlock.parent,
-    });
-
-    focusBlock(
-      {
-        value: prevBlock.value,
-        type: prevBlockType?.[0].data.value,
-        parent: prevBlock.parent,
-      },
-      { type: "end" },
+  if (parent) {
+    let parentType = await rep?.query((tx) =>
+      scanIndex(tx).eav(parent, "page/type"),
     );
-  } else {
-    useUIState.getState().setSelectedBlock({
-      value: nextBlock.value,
-      parent: nextBlock.parent,
-    });
+    if (parentType[0]?.data.value === "canvas") {
+      useUIState
+        .getState()
+        .setFocusedBlock({ entityType: "page", entityID: parent });
+      useUIState.getState().setSelectedBlocks([]);
+    } else {
+      let siblings =
+        (await rep?.query((tx) => getBlocksWithType(tx, parent))) || [];
 
-    focusBlock(
-      {
-        value: nextBlock.value,
-        type: nextBlockType?.[0]?.data.value,
-        parent: nextBlock.parent,
-      },
-      { type: "start" },
-    );
+      let selectedBlocks = useUIState.getState().selectedBlocks;
+      let firstSelected = selectedBlocks[0];
+      let lastSelected = selectedBlocks[entities.length - 1];
+
+      let prevBlock =
+        siblings?.[
+          siblings.findIndex((s) => s.value === firstSelected?.value) - 1
+        ];
+      let prevBlockType = await rep?.query((tx) =>
+        scanIndex(tx).eav(prevBlock?.value, "block/type"),
+      );
+
+      let nextBlock =
+        siblings?.[
+          siblings.findIndex((s) => s.value === lastSelected.value) + 1
+        ];
+      let nextBlockType = await rep?.query((tx) =>
+        scanIndex(tx).eav(nextBlock?.value, "block/type"),
+      );
+
+      if (prevBlock) {
+        useUIState.getState().setSelectedBlock({
+          value: prevBlock.value,
+          parent: prevBlock.parent,
+        });
+
+        focusBlock(
+          {
+            value: prevBlock.value,
+            type: prevBlockType?.[0].data.value,
+            parent: prevBlock.parent,
+          },
+          { type: "end" },
+        );
+      } else {
+        useUIState.getState().setSelectedBlock({
+          value: nextBlock.value,
+          parent: nextBlock.parent,
+        });
+
+        focusBlock(
+          {
+            value: nextBlock.value,
+            type: nextBlockType?.[0]?.data.value,
+            parent: nextBlock.parent,
+          },
+          { type: "start" },
+        );
+      }
+    }
   }
 
   pagesToClose.forEach((page) => page && useUIState.getState().closePage(page));

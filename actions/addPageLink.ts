@@ -44,7 +44,7 @@ export const get_url_preview_data = async (url: string) => {
       },
     }),
     fetch(
-      `https://pro.microlink.io/?url=${url}&screenshot&viewport.width=1247&viewport.height=1080&embed=screenshot.url`,
+      `https://pro.microlink.io/?url=${url}&screenshot&viewport.width=1400&viewport.height=1213&embed=screenshot.url`,
       {
         headers: {
           "x-api-key": process.env.MICROLINK_API_KEY!,
@@ -54,9 +54,11 @@ export const get_url_preview_data = async (url: string) => {
   ]);
 
   let key = await hash(url);
-  supabase.storage.from("url-previews").upload(key, await image.arrayBuffer(), {
-    contentType: image.headers.get("content-type") || undefined,
-  });
+  await supabase.storage
+    .from("url-previews")
+    .upload(key, await image.arrayBuffer(), {
+      contentType: image.headers.get("content-type") || undefined,
+    });
 
   let result = expectedAPIResponse.safeParse(await response.json());
   return {

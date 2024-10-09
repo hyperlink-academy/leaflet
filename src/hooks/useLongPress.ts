@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 
 export const useLongPress = (
   cb: () => void,
@@ -16,6 +16,9 @@ export const useLongPress = (
   let onMouseDown = useCallback(
     (e: React.MouseEvent) => {
       propsOnMouseDown && propsOnMouseDown(e);
+      if (e.button === 2) {
+        return;
+      }
       // Set the starting position
       setStartPosition({ x: e.clientX, y: e.clientY });
       isLongPress.current = false;
@@ -61,10 +64,10 @@ export const useLongPress = (
     }
   }, [startPosition, end]);
 
-  let click = (e: React.MouseEvent | React.PointerEvent) => {
+  let click = useCallback((e: React.MouseEvent | React.PointerEvent) => {
     if (isLongPress.current) e.preventDefault();
     if (e.shiftKey) e.preventDefault();
-  };
+  }, []);
 
   useEffect(() => {
     if (cancel) {
@@ -72,14 +75,17 @@ export const useLongPress = (
     }
   }, [cancel, end]);
 
-  return {
-    isLongPress: isLongPress,
-    handlers: {
-      onMouseDown,
-      onMouseUp: end,
-      onTouchStart: onTouchStart,
-      onTouchEnd: end,
-      onClickCapture: click,
-    },
-  };
+  return useMemo(
+    () => ({
+      isLongPress: isLongPress,
+      handlers: {
+        onMouseDown,
+        onMouseUp: end,
+        onTouchStart: onTouchStart,
+        onTouchEnd: end,
+        onClickCapture: click,
+      },
+    }),
+    [isLongPress, end, onMouseDown, onTouchStart, click],
+  );
 };

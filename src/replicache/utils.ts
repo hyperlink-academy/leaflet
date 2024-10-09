@@ -42,12 +42,15 @@ export async function getClientGroup(
 }
 
 export const scanIndex = (tx: ReadTransaction) => ({
-  async eav<A extends keyof typeof Attributes>(entity: string, attribute: A) {
+  async eav<A extends keyof typeof Attributes>(
+    entity: string,
+    attribute: A | "",
+  ) {
     return (
       await tx
         .scan<Fact<A>>({ indexName: "eav", prefix: `${entity}-${attribute}` })
         .toArray()
-    ).filter((f) => f.attribute === attribute);
+    ).filter((f) => attribute === "" || f.attribute === attribute);
   },
   async vae<
     A extends keyof FilterAttributes<{

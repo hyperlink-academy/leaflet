@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { elementId } from "src/utils/elementId";
 import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
@@ -17,7 +17,7 @@ import {
 } from "src/replicache";
 import { isVisible } from "src/utils/isVisible";
 
-import { EditorState, TextSelection } from "prosemirror-state";
+import { EditorState, TextSelection, Transaction } from "prosemirror-state";
 import { ySyncPlugin } from "y-prosemirror";
 import { Replicache } from "replicache";
 import { generateKeyBetween } from "fractional-indexing";
@@ -116,13 +116,14 @@ export function RenderedTextBlock(props: {
   entityID: string;
   className?: string;
   first?: boolean;
-  pageType?: "canvas" | "doc";
+  pageType?: "canvas" | "doc" | "discussion";
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
   let headingLevel = useEntity(props.entityID, "block/heading-level");
+  let { permissions } = useEntitySetContext();
 
-  if (!initialFact)
-    // show a blank line if the block is empty. blocks with content are styled elsewhere! update both!
+  if (!initialFact) {
+    if (!permissions.write) return <br />;
     return (
       <pre className={`${props.className} italic text-tertiary`}>
         {/* Render a placeholder if this is a doc and there are no other blocks in the page, or this is a canvas. else just show the blank line*/}
@@ -147,6 +148,8 @@ export function RenderedTextBlock(props: {
         )}
       </pre>
     );
+  }
+  // show a blank line if the block is empty. blocks with content are styled elsewhere! update both!
   let doc = new Y.Doc();
   const update = base64.toByteArray(initialFact.data.value);
   Y.applyUpdate(doc, update);
@@ -181,8 +184,8 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
     repRef.current = rep.rep;
   }, [rep?.rep]);
 
-  let selected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
+  let selected = useUIState(
+    (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   let headingLevel = useEntity(props.entityID, "block/heading-level");
 
@@ -218,38 +221,45 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
     };
   }, [props.entityID]);
   let handlePaste = useHandlePaste(props.entityID, propsRef, factID);
+  let handleClickOn = useCallback<
+    Exclude<Parameters<typeof ProseMirror>[0]["handleClickOn"], undefined>
+  >((view, _pos, node, _nodePos) => {
+    if (node.nodeSize - 1 <= _pos) return;
+    let mark = node
+      .resolve(_pos)
+      .marks()
+      .find((f) => f.type === schema.marks.link);
+    if (mark) {
+      window.open(mark.attrs.href, "_blank");
+    }
+  }, []);
+  let dispatchTransaction = useCallback(
+    (tr: Transaction) => {
+      useEditorStates.setState((s) => {
+        let existingState = s.editorStates[props.entityID];
+        if (!existingState) return s;
+        return {
+          editorStates: {
+            ...s.editorStates,
+            [props.entityID]: {
+              ...existingState,
+              editor: existingState.editor.apply(tr),
+            },
+          },
+        };
+      });
+    },
+    [props.entityID],
+  );
   if (!editorState) return null;
 
   return (
     <ProseMirror
-      handleClickOn={(view, _pos, node, _nodePos) => {
-        if (node.nodeSize - 1 <= _pos) return;
-        let mark = node
-          .resolve(_pos)
-          .marks()
-          .find((f) => f.type === schema.marks.link);
-        if (mark) {
-          window.open(mark.attrs.href, "_blank");
-        }
-      }}
+      handleClickOn={handleClickOn}
       handlePaste={handlePaste}
       mount={mount}
       state={editorState}
-      dispatchTransaction={(tr) => {
-        useEditorStates.setState((s) => {
-          let existingState = s.editorStates[props.entityID];
-          if (!existingState) return s;
-          return {
-            editorStates: {
-              ...s.editorStates,
-              [props.entityID]: {
-                ...existingState,
-                editor: existingState.editor.apply(tr),
-              },
-            },
-          };
-        });
-      }}
+      dispatchTransaction={dispatchTransaction}
     >
       <div
         className={`flex items-center justify-between w-full ${selected && props.pageType === "canvas" && "bg-bg-page rounded-md"} `}

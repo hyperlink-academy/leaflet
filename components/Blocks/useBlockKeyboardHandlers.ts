@@ -24,15 +24,16 @@ export function useBlockKeyboardHandlers(
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
 
-  let selectedBlocks = useUIState((s) => s.selectedBlocks);
-  let actuallySelected = useUIState(
-    (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
-  let hasSelectionUI =
-    (!isTextBlock[props.type] || selectedBlocks.length > 1) && actuallySelected;
+  let isSelected = useUIState((s) => {
+    let selectedBlocks = s.selectedBlocks;
+    return (
+      (!isTextBlock[props.type] || selectedBlocks.length > 1) &&
+      !!s.selectedBlocks.find((b) => b.value === props.entityID)
+    );
+  });
 
   useEffect(() => {
-    if (!hasSelectionUI || !rep) return;
+    if (!isSelected || !rep) return;
     let listener = async (e: KeyboardEvent) => {
       // keymapping for textBlocks is handled in TextBlock/keymap
       if (e.defaultPrevented) return;
@@ -45,7 +46,7 @@ export function useBlockKeyboardHandlers(
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [entity_set, hasSelectionUI, props, rep, areYouSure, setAreYouSure]);
+  }, [entity_set, isSelected, props, rep, areYouSure, setAreYouSure]);
 }
 
 type Args = {
@@ -116,6 +117,7 @@ async function Backspace({ e, props, rep, areYouSure, setAreYouSure }: Args) {
     // and the user is not in an input or textarea,
     // if there is a page to close, close it and remove the block
     if (areYouSure) {
+      e.preventDefault();
       return deleteBlock([props.entityID].flat(), rep);
     }
   }
@@ -138,6 +140,15 @@ async function Enter({ e, props, rep, entity_set }: Args) {
     el.contentEditable === "true"
   )
     return;
+
+  if (e.ctrlKey || e.metaKey) {
+    if (props.listData) {
+      rep?.mutate.toggleTodoState({
+        entityID: props.entityID,
+      });
+    }
+    return;
+  }
   if (props.pageType === "canvas") {
     let el = document.getElementById(elementId.block(props.entityID).container);
     let [position] =

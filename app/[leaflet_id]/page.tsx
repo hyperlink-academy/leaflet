@@ -74,18 +74,22 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   });
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
   let scan = scanIndexLocal(initialFacts);
-  let pageType = scan.eav(rootEntity, "page/type")[0]?.data.value || "doc";
+  let firstPage =
+    scan.eav(rootEntity, "root/page")[0]?.data.value || rootEntity;
+  let pageType = scan.eav(firstPage, "page/type")[0]?.data.value || "doc";
   let firstBlock, secondBlock;
   if (pageType === "canvas") {
     [firstBlock, secondBlock] = scan
-      .eav(rootEntity, "canvas/block")
+      .eav(firstPage, "canvas/block")
       .map((b) => {
         let type = scan.eav(b.data.value, "block/type");
+        if (!type[0]) return null;
         return {
           ...b.data,
           type: type[0].data.value,
         };
       })
+      .filter((b) => b !== null)
       .filter((b) => b.type === "text" || b.type === "heading")
       .sort((a, b) => {
         if (a.position.y === b.position.y) {
@@ -95,7 +99,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       });
   } else {
     [firstBlock, secondBlock] = scan
-      .eav(rootEntity, "card/block")
+      .eav(firstPage, "card/block")
       .map((b) => {
         let type = scan.eav(b.data.value, "block/type");
         return {

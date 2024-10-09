@@ -4,13 +4,14 @@ import {
   BlockDocPageSmall,
   BlockCanvasPageSmall,
   BlockImageSmall,
-  BlockLinkSmall,
   Header1Small,
   Header2Small,
   Header3Small,
-  MailboxSmall,
+  BlockMailboxSmall,
   ParagraphSmall,
   DiscussionSmall,
+  LinkSmall,
+  BlockEmbedSmall,
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "components/Pages";
@@ -160,10 +161,18 @@ export const blockCommands: Command[] = [
 
   {
     name: "External Link",
-    icon: <BlockLinkSmall />,
+    icon: <LinkSmall />,
     type: "block",
     onSelect: async (rep, props) => {
       createBlockWithType(rep, props, "link");
+    },
+  },
+  {
+    name: "Embed Website",
+    icon: <BlockEmbedSmall />,
+    type: "block",
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "embed");
     },
   },
   {
@@ -182,7 +191,7 @@ export const blockCommands: Command[] = [
 
   {
     name: "Mailbox",
-    icon: <MailboxSmall />,
+    icon: <BlockMailboxSmall />,
     type: "block",
     onSelect: async (rep, props) => {
       let entity;

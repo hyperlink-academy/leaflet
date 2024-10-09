@@ -14,6 +14,8 @@ import { Replicache } from "replicache";
 import { markdownToHtml } from "src/htmlMarkdownParsers";
 import { betterIsUrl, isUrl } from "src/utils/isURL";
 import { TextSelection } from "prosemirror-state";
+import { FilterAttributes } from "src/replicache/attributes";
+import { addLinkBlock } from "src/utils/addLinkBlock";
 
 const parser = ProsemirrorDOMParser.fromSchema(schema);
 export const useHandlePaste = (
@@ -31,6 +33,7 @@ export const useHandlePaste = (
       let text = e.clipboardData.getData("text");
       let editorState = useEditorStates.getState().editorStates[entityID];
       if (!editorState) return;
+      console.log("yo");
       if (text && betterIsUrl(text)) {
         let selection = view.state.selection as TextSelection;
         if (selection.empty) return;
@@ -51,31 +54,31 @@ export const useHandlePaste = (
         let currentPosition = propsRef.current.position;
         let children = flattenHTMLToTextBlocks(xml.body);
         if (
-          !children.find((c) =>
-            ["P", "H1", "H2", "H3", "UL"].includes(c.tagName),
+          children.find((c) =>
+            ["P", "H1", "H2", "H3", "UL", "DIV", "IMG"].includes(c.tagName),
           )
-        )
-          return;
-        children.forEach((child, index) => {
-          createBlockFromHTML(child, {
-            first: index === 0,
-            activeBlockProps: propsRef,
-            entity_set,
-            rep,
-            parent: propsRef.current.listData
-              ? propsRef.current.listData.parent
-              : propsRef.current.parent,
-            getPosition: () => {
-              currentPosition = generateKeyBetween(
-                currentPosition,
-                propsRef.current.nextPosition,
-              );
-              return currentPosition;
-            },
-            last: index === children.length - 1,
+        ) {
+          children.forEach((child, index) => {
+            createBlockFromHTML(child, {
+              first: index === 0,
+              activeBlockProps: propsRef,
+              entity_set,
+              rep,
+              parent: propsRef.current.listData
+                ? propsRef.current.listData.parent
+                : propsRef.current.parent,
+              getPosition: () => {
+                currentPosition = generateKeyBetween(
+                  currentPosition,
+                  propsRef.current.nextPosition,
+                );
+                return currentPosition;
+              },
+              last: index === children.length - 1,
+            });
           });
-        });
-        return true;
+          return true;
+        }
       }
 
       for (let item of e.clipboardData.items) {
@@ -182,6 +185,18 @@ const createBlockFromHTML = (
       type = "heading";
       break;
     }
+    case "DIV": {
+      type = "card";
+      break;
+    }
+    case "IMG": {
+      type = "image";
+      break;
+    }
+    case "A": {
+      type = "link";
+      break;
+    }
     default:
       type = null;
   }
@@ -214,9 +229,104 @@ const createBlockFromHTML = (
       });
     }
   }
+  if (child.tagName === "A") {
+    let href = child.getAttribute("href");
+    if (href) {
+      addLinkBlock(href, entityID, rep);
+    }
+  }
+  if (child.tagName === "IMG") {
+    let src = child.getAttribute("src");
+    if (src) {
+      fetch(src)
+        .then((res) => res.blob())
+        .then((Blob) => {
+          const file = new File([Blob], "image.png", { type: Blob.type });
+          addImage(file, rep, {
+            attribute: "block/image",
+            entityID: entityID,
+          });
+        });
+    }
+  }
+
+  if (child.tagName === "DIV" && child.getAttribute("data-entityID")) {
+    let oldEntityID = child.getAttribute("data-entityID") as string;
+    let factsData = child.getAttribute("data-facts");
+    if (factsData) {
+      let facts = JSON.parse(atob(factsData)) as Fact<any>[];
+
+      let oldEntityIDToNewID = {} as { [k: string]: string };
+      let oldEntities = facts.reduce((acc, f) => {
+        if (!acc.includes(f.entity)) acc.push(f.entity);
+        return acc;
+      }, [] as string[]);
+      let newEntities = [] as string[];
+      for (let oldEntity of oldEntities) {
+        let newEntity = v7();
+        oldEntityIDToNewID[oldEntity] = newEntity;
+        newEntities.push(newEntity);
+      }
+
+      let newFacts = [] as Array<
+        Pick<Fact<any>, "entity" | "attribute" | "data">
+      >;
+      for (let fact of facts) {
+        let entity = oldEntityIDToNewID[fact.entity];
+        let data = fact.data;
+        if (
+          data.type === "ordered-reference" ||
+          data.type == "spatial-reference" ||
+          data.type === "reference"
+        ) {
+          data.value = oldEntityIDToNewID[data.value];
+        }
+        if (data.type === "image") {
+          //idk get it from the clipboard maybe?
+        }
+        newFacts.push({ entity, attribute: fact.attribute, data });
+      }
+      rep.mutate.createEntity(
+        newEntities.map((e) => ({
+          entityID: e,
+          permission_set: entity_set.set,
+        })),
+      );
+      rep.mutate.assertFact(newFacts.filter((f) => f.data.type !== "image"));
+      let newCardEntity = oldEntityIDToNewID[oldEntityID];
+      rep.mutate.assertFact({
+        entity: entityID,
+        attribute: "block/card",
+        data: { type: "reference", value: newCardEntity },
+      });
+      let images: Pick<
+        Fact<keyof FilterAttributes<{ type: "image" }>>,
+        "entity" | "data" | "attribute"
+      >[] = newFacts.filter((f) => f.data.type === "image");
+      for (let image of images) {
+        fetch(image.data.src)
+          .then((res) => res.blob())
+          .then((Blob) => {
+            const file = new File([Blob], "image.png", { type: Blob.type });
+            addImage(file, rep, {
+              attribute: image.attribute,
+              entityID: image.entity,
+            });
+          });
+      }
+    }
+  }
 
   if (child.tagName === "LI") {
     let ul = Array.from(child.children).find((f) => f.tagName === "UL");
+    let checked = child.getAttribute("data-checked");
+    if (checked !== null) {
+      rep.mutate.assertFact({
+        entity: entityID,
+        attribute: "block/check-list",
+        data: { type: "boolean", value: checked === "true" ? true : false },
+      });
+    }
     rep.mutate.assertFact({
       entity: entityID,
       attribute: "block/is-list",
@@ -270,9 +380,20 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
       const elementNode = node as HTMLElement;
       // Collect outer HTML for paragraph-like elements
       if (
-        ["P", "H1", "H2", "H3", "H4", "H5", "H6", "LI", "UL"].includes(
-          elementNode.tagName,
-        )
+        [
+          "P",
+          "H1",
+          "H2",
+          "H3",
+          "H4",
+          "H5",
+          "H6",
+          "LI",
+          "UL",
+          "IMG",
+          "A",
+        ].includes(elementNode.tagName) ||
+        elementNode.getAttribute("data-entityID")
       ) {
         htmlBlocks.push(elementNode);
       } else {

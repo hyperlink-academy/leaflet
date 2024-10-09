@@ -1,6 +1,12 @@
 "use client";
 
-import { CSSProperties, useEffect, useState } from "react";
+import {
+  createContext,
+  CSSProperties,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { colorToString, useColorAttribute } from "./useColorAttribute";
 import { Color as AriaColor, parseColor } from "react-aria-components";
 import { parse, contrastLstar, ColorSpace, sRGB } from "colorjs.io/fn";
@@ -37,7 +43,7 @@ export const ThemeDefaults = {
 function setCSSVariableToColor(
   el: HTMLElement,
   name: string,
-  value: AriaColor
+  value: AriaColor,
 ) {
   el?.style.setProperty(name, colorToString(value, "rgb"));
 }
@@ -72,7 +78,7 @@ export function ThemeProvider(props: {
     setCSSVariableToColor(el, "--bg-page", bgPage);
     el?.style.setProperty(
       "--bg-page-alpha",
-      bgPage.getChannelValue("alpha").toString()
+      bgPage.getChannelValue("alpha").toString(),
     );
     setCSSVariableToColor(el, "--primary", primary);
 
@@ -84,19 +90,19 @@ export function ThemeProvider(props: {
       let color = parseColor(`hsba(${highlight1.data.value})`);
       el?.style.setProperty(
         "--highlight-1",
-        `rgb(${colorToString(color, "rgb")})`
+        `rgb(${colorToString(color, "rgb")})`,
       );
     } else {
       el?.style.setProperty(
         "--highlight-1",
-        "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 75%)"
+        "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 75%)",
       );
     }
     setCSSVariableToColor(el, "--accent-1", accent1);
     setCSSVariableToColor(el, "--accent-2", accent2);
     el?.style.setProperty(
       "--accent-contrast",
-      colorToString(accentContrast, "rgb")
+      colorToString(accentContrast, "rgb"),
     );
   }, [
     props.local,
@@ -110,22 +116,11 @@ export function ThemeProvider(props: {
     accent2,
     accentContrast,
   ]);
-  let [canonicalPageWidth, setCanonicalPageWidth] = useState(0);
-  useEffect(() => {
-    let listener = () => {
-      let el = document.getElementById("canonical-page-width");
-      setCanonicalPageWidth(el?.clientWidth || 0);
-    };
-    listener();
-    window.addEventListener("resize", listener);
-    return () => window.removeEventListener("resize", listener);
-  }, []);
   return (
     <div
       className="leafletWrapper w-full text-primary h-full flex flex-col bg-center items-stretch"
       style={
         {
-          "--page-width": canonicalPageWidth,
           "--bg-leaflet": colorToString(bgLeaflet, "rgb"),
           "--bg-page": colorToString(bgPage, "rgb"),
           "--bg-page-alpha": bgPage.getChannelValue("alpha"),
@@ -141,12 +136,53 @@ export function ThemeProvider(props: {
         } as CSSProperties
       }
     >
-      <div
-        className="h-[0px] w-[calc(100vw-12px)] sm:w-[calc(100vw-128px)] lg:w-[calc(50vw-32px)]  max-w-prose"
-        id="canonical-page-width"
-      />
       {props.children}
     </div>
+  );
+}
+
+let CardThemeProviderContext = createContext<null | string>(null);
+export function NestedCardThemeProvider(props: { children: React.ReactNode }) {
+  let card = useContext(CardThemeProviderContext);
+  if (!card) return props.children;
+  return (
+    <CardThemeProvider entityID={card}>{props.children}</CardThemeProvider>
+  );
+}
+
+export function CardThemeProvider(props: {
+  entityID: string;
+  children: React.ReactNode;
+}) {
+  let bgPage = useColorAttribute(props.entityID, "theme/card-background");
+  let primary = useColorAttribute(props.entityID, "theme/primary");
+  let accent1 = useColorAttribute(props.entityID, "theme/accent-background");
+  let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
+  let accentContrast = [accent1, accent2].sort((a, b) => {
+    return (
+      getColorContrast(colorToString(b, "rgb"), colorToString(bgPage, "rgb")) -
+      getColorContrast(colorToString(a, "rgb"), colorToString(bgPage, "rgb"))
+    );
+  })[0];
+
+  return (
+    <CardThemeProviderContext.Provider value={props.entityID}>
+      <div
+        className="contents text-primary"
+        style={
+          {
+            "--accent-1": colorToString(accent1, "rgb"),
+            "--accent-2": colorToString(accent2, "rgb"),
+            "--accent-contrast": colorToString(accentContrast, "rgb"),
+            "--bg-page": colorToString(bgPage, "rgb"),
+            "--bg-page-alpha": bgPage.getChannelValue("alpha"),
+            "--primary": colorToString(primary, "rgb"),
+          } as CSSProperties
+        }
+      >
+        {props.children}
+      </div>
+    </CardThemeProviderContext.Provider>
   );
 }
 
@@ -157,7 +193,7 @@ export const ThemeBackgroundProvider = (props: {
   let backgroundImage = useEntity(props.entityID, "theme/background-image");
   let backgroundImageRepeat = useEntity(
     props.entityID,
-    "theme/background-image-repeat"
+    "theme/background-image-repeat",
   );
   return (
     <div
@@ -165,6 +201,7 @@ export const ThemeBackgroundProvider = (props: {
       style={
         {
           backgroundImage: `url(${backgroundImage?.data.src}), url(${backgroundImage?.data.fallback})`,
+          backgroundPosition: "center",
           backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
           backgroundSize: !backgroundImageRepeat
             ? "cover"

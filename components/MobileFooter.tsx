@@ -39,7 +39,11 @@ export function MobileFooter(props: { entityID: string }) {
             <ShareOptions rootEntity={props.entityID} />
           </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="pb-2 px-2 z-10">
+          <HomeButton />
+        </div>
+      )}
     </Media>
   );
 }
