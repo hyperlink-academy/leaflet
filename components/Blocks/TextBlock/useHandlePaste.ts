@@ -60,6 +60,7 @@ export const useHandlePaste = (
         ) {
           children.forEach((child, index) => {
             createBlockFromHTML(child, {
+              parentType: propsRef.current.pageType,
               first: index === 0,
               activeBlockProps: propsRef,
               entity_set,
@@ -69,7 +70,7 @@ export const useHandlePaste = (
                 : propsRef.current.parent,
               getPosition: () => {
                 currentPosition = generateKeyBetween(
-                  currentPosition,
+                  currentPosition || null,
                   propsRef.current.nextPosition,
                 );
                 return currentPosition;
@@ -77,7 +78,6 @@ export const useHandlePaste = (
               last: index === children.length - 1,
             });
           });
-          return true;
         }
       }
 
@@ -133,7 +133,9 @@ const createBlockFromHTML = (
     entity_set,
     getPosition,
     parent,
+    parentType,
   }: {
+    parentType: "canvas" | "doc";
     parent: string;
     first: boolean;
     last: boolean;
@@ -160,6 +162,7 @@ const createBlockFromHTML = (
         entity_set,
         getPosition,
         parent,
+        parentType,
       });
     }
   }
@@ -205,22 +208,25 @@ const createBlockFromHTML = (
   let entityID: string;
   let position: string;
   if (
-    first &&
-    (activeBlockProps?.current.type === "heading" ||
-      type === activeBlockProps?.current.type)
+    (parentType === "canvas" && activeBlockProps?.current) ||
+    (first &&
+      (activeBlockProps?.current.type === "heading" ||
+        type === activeBlockProps?.current.type))
   )
     entityID = activeBlockProps.current.entityID;
   else {
     entityID = v7();
-    position = getPosition();
-    rep.mutate.addBlock({
-      permission_set: entity_set.set,
-      factID: v7(),
-      newEntityID: entityID,
-      parent: parent,
-      type: type,
-      position,
-    });
+    if (parentType === "doc") {
+      position = getPosition();
+      rep.mutate.addBlock({
+        permission_set: entity_set.set,
+        factID: v7(),
+        newEntityID: entityID,
+        parent: parent,
+        type: type,
+        position,
+      });
+    }
     if (type === "heading" && headingLevel) {
       rep.mutate.assertFact({
         entity: entityID,
@@ -336,6 +342,7 @@ const createBlockFromHTML = (
       hasChildren = true;
       let currentPosition: string | null = null;
       createBlockFromHTML(ul, {
+        parentType,
         first: false,
         last: last,
         activeBlockProps,
