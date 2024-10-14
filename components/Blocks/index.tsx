@@ -17,7 +17,7 @@ import { Block } from "./Block";
 import { useEffect } from "react";
 import { addShortcut } from "src/shortcuts";
 
-export function Blocks(props: { entityID: string }) {
+export function Blocks(props: { entityID: string; preview?: boolean }) {
   let rep = useReplicache();
   let entity_set = useEntitySetContext();
   let blocks = useBlocks(props.entityID);
@@ -135,6 +135,7 @@ export function Blocks(props: { entityID: string }) {
           else nextPosition = null;
           return (
             <Block
+              preview={props.preview}
               pageType="doc"
               {...f}
               key={f.value}

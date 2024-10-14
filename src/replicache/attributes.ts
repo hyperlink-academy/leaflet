@@ -162,6 +162,21 @@ export const ThemeAttributes = {
   },
 } as const;
 
+const DiscussionAttributes = {
+  "reply/sender": {
+    type: "string",
+    cardinality: "one",
+  },
+  "reply/created-at": {
+    type: "string",
+    cardinality: "one",
+  },
+  "discussion/reply": {
+    type: "reference",
+    cardinality: "one",
+  },
+} as const;
+
 export const Attributes = {
   ...RootAttributes,
   ...PageAttributes,
@@ -170,6 +185,7 @@ export const Attributes = {
   ...ThemeAttributes,
   ...MailboxAttributes,
   ...EmbedBlockAttributes,
+  ...DiscussionAttributes,
 };
 type Attribute = typeof Attributes;
 export type Data<A extends keyof typeof Attributes> = {

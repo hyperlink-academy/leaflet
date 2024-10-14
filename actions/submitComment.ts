@@ -16,7 +16,7 @@ import {
   entity_sets,
   facts,
 } from "drizzle/schema";
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
 let supabase = createServerClient<Database>(
@@ -25,21 +25,26 @@ let supabase = createServerClient<Database>(
   { cookies: {} },
 );
 
-export async function createNewLeafletFromTemplate(
-  template_id: string,
-  redirectUser?: boolean,
+export async function submitComment(
+  commentLeaflet: { id: string },
+  discussionEntity: string,
+  discussionLeafletRoot: string,
 ) {
   let res = await supabase
     .from("permission_tokens")
     .select("*, permission_token_rights(*)")
-    .eq("id", template_id)
+    .eq("id", commentLeaflet.id)
     .single();
   let rootEntity = res.data?.root_entity;
-  if (!rootEntity || !res.data) return null;
+  if (!rootEntity || !res.data) return { title: "Leaflet not found" };
   let { data } = await supabase.rpc("get_facts", {
     root: rootEntity,
   });
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
+  let firstPage = (
+    initialFacts.find((f) => f.attribute === "root/page") as Fact<"root/page">
+  ).data.value;
+  let actual_facts = initialFacts.filter((f) => f.entity !== rootEntity);
 
   let oldEntityIDToNewID = {} as { [k: string]: string };
   let oldEntities = initialFacts.reduce((acc, f) => {
@@ -84,12 +89,28 @@ export async function createNewLeafletFromTemplate(
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
 
-  let { permissionToken } = await db.transaction(async (tx) => {
+  db.transaction(async (tx) => {
+    let [entity] = await tx
+      .select()
+      .from(entities)
+      .where(
+        and(
+          eq(entities.id, discussionEntity),
+          eq(facts.attribute, "page/type"),
+        ),
+      )
+      .innerJoin(facts, eq(facts.entity, entities.id));
+    let fact = entity.facts as Fact<"page/type">;
+    console.log(entity);
+    if (!entity || fact.data.value !== "discussion") {
+      console.log("not a discussion entity!", entity);
+      return;
+    }
+
     // Create a new entity set
-    let [entity_set] = await tx.insert(entity_sets).values({}).returning();
     await tx
       .insert(entities)
-      .values(newEntities.map((e) => ({ id: e, set: entity_set.id })));
+      .values(newEntities.map((e) => ({ id: e, set: entity.entities.set })));
     await tx.insert(facts).values(
       newFacts.map((f) => ({
         id: v7(),
@@ -99,28 +120,35 @@ export async function createNewLeafletFromTemplate(
       })),
     );
 
-    let [permissionToken] = await tx
-      .insert(permission_tokens)
-      .values({ root_entity: oldEntityIDToNewID[rootEntity] })
-      .returning();
-
-    //and give it all the permission on that entity set
-    let [rights] = await tx
-      .insert(permission_token_rights)
-      .values({
-        token: permissionToken.id,
-        entity_set: entity_set.id,
-        read: true,
-        write: true,
-        create_token: true,
-        change_entity_set: true,
-      })
-      .returning();
-
-    return { permissionToken, rights, entity_set };
+    // create a new fact associating the reply with the discussion.
+    let discussionRootCard = oldEntityIDToNewID[firstPage];
+    await tx.insert(facts).values([
+      {
+        id: v7(),
+        entity: discussionEntity,
+        attribute: "discussion/reply",
+        data: sql`${{ type: "reference", value: discussionRootCard }}`,
+      },
+      {
+        id: v7(),
+        entity: discussionRootCard,
+        attribute: "reply/created-at",
+        data: sql`${{ type: "string", value: new Date().toISOString() }}`,
+      },
+      {
+        id: v7(),
+        entity: discussionRootCard,
+        attribute: "reply/sender",
+        data: sql`${{ type: "string", value: "John Doe" }}`,
+      },
+    ]);
   });
 
-  client.end();
-  if (redirectUser) redirect(`/${permissionToken.id}`);
-  return permissionToken;
+  let channel = supabase.channel(`rootEntity:${discussionLeafletRoot}`);
+  await channel.send({
+    type: "broadcast",
+    event: "poke",
+    payload: { message: "poke" },
+  });
+  supabase.removeChannel(channel);
 }

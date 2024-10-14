@@ -56,8 +56,8 @@ export const CreateNewLeafletButton = (props: {}) => {
     >
       <MenuItem
         onSelect={async () => {
-          let id = await createNewLeaflet("doc", false);
-          window.open(`/${id}`, "_blank");
+          let token = await createNewLeaflet("doc", false);
+          window.open(`/${token.id}`, "_blank");
         }}
       >
         <BlockDocPageSmall />{" "}
@@ -90,8 +90,8 @@ export const CreateNewLeafletButton = (props: {}) => {
           <MenuItem
             key={t.id}
             onSelect={async () => {
-              let id = await createNewLeafletFromTemplate(t.id, false);
-              window.open(`/${id}`, "_blank");
+              let token = await createNewLeafletFromTemplate(t.id, false);
+              window.open(`/${token?.id}`, "_blank");
             }}
           >
             <TemplateSmall />

@@ -19,7 +19,7 @@ export async function createNewLeaflet(
 ) {
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
-  let { permissionToken } = await db.transaction(async (tx) => {
+  let { permissionToken, rights } = await db.transaction(async (tx) => {
     // Create a new entity set
     let [entity_set] = await tx.insert(entity_sets).values({}).returning();
     // Create a root-entity
@@ -113,5 +113,5 @@ export async function createNewLeaflet(
 
   client.end();
   if (redirectUser) redirect(`/${permissionToken.id}?focusFirstBlock`);
-  return permissionToken.id;
+  return { ...permissionToken, permission_token_rights: [rights] };
 }
