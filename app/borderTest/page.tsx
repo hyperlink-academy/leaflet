@@ -16,13 +16,13 @@ export default function BorderTest() {
       <ThemeProvider entityID="123">
         <ThemeBackgroundProvider entityID="123">
           <div className="mx-auto h-screen w-fit py-12">
-            <div className="flex flex-col gap-8 bg-bg-page border-border border rounded-lg h-full py-6 px-4 overflow-hidden overflow-y-scroll no-scrollbar">
+            <div className="flex flex-col gap-8  rounded-lg h-full py-6 px-4 overflow-hidden overflow-y-scroll no-scrollbar">
               <MessageComposer />
               <Message
                 borderStyle="custom"
                 author="Breanna"
                 message={
-                  <div className="flex flex-col gap-2">
+                  <>
                     <div>
                       congrats the pouch’s code completeness!! But also, even
                       more congratulations on getting into stationary fest! Just
@@ -34,11 +34,11 @@ export default function BorderTest() {
                       is a great intro to what pouch is all about (love the lil
                       dog)
                     </div>
-                  </div>
+                  </>
                 }
               />
               <Message
-                borderStyle="none"
+                borderStyle="default"
                 author="lee"
                 message={
                   <div>
@@ -50,10 +50,10 @@ export default function BorderTest() {
                 }
               />
               <Message
-                borderStyle="sparkle"
+                borderStyle="double"
                 author="kelin"
                 message={
-                  <div className="flex flex-col gap-2">
+                  <>
                     <div>
                       congratulations!!! loved starting my morning reading this
                       💖 your excitement makes me want to have a great day!!
@@ -63,14 +63,14 @@ export default function BorderTest() {
                       isn't it so satisfying to level up and redesign something
                       you made in the past??
                     </div>
-                  </div>
+                  </>
                 }
               />
               <Message
                 borderStyle="shadow"
                 author="Tiffany"
                 message={
-                  <div className="flex flex-col gap-2">
+                  <>
                     <div>
                       ove the new cover! very exciting that you'll be at
                       stationery fest!!
@@ -82,13 +82,82 @@ export default function BorderTest() {
                       (https://www.stencil.wiki/colors) in Procreate leads to
                       pleasing color combinations (:
                     </div>
-                  </div>
+                  </>
                 }
               />
               <Message
                 borderStyle="wavy"
                 author="JM Boots"
                 message="woohoo!!! big congrats on getting into stationary fest especially!"
+              />
+              <Message
+                borderStyle="sparkle"
+                author="lee"
+                message={
+                  <>
+                    <div>
+                      ooooh, perforation, so fun! i'd love to try to figure out
+                      a reason to perforate something, haha.
+                    </div>
+                    <div>
+                      a local arts-business support org is hosting a craft fair
+                      here that i'll be tabling at, and as part of the lead-up
+                      to it, they gave us a presentation on creating good table
+                      setups, let me know if you'd wanna see the slides! they
+                      inspired me to step up my table game a bit. :){" "}
+                    </div>
+                  </>
+                }
+              />
+              <Message
+                borderStyle="animal"
+                author="vrk"
+                message={
+                  <>
+                    <div>
+                      Yessss it was so satisfying!! I have perforation tips too
+                      if you need them 😆 (Biggest tips: 1) the perforation tool
+                      needs to be held straight up & down and not slanted; 2) I
+                      did my perforating on top of a paper trimmer so that I
+                      could align and measure everything correctly!)
+                    </div>
+                    <div>
+                      Ohh that is SO cool and helpful!! I would love to see the
+                      slides!! Table design can make such a difference!
+                    </div>
+                  </>
+                }
+              />
+              <Message
+                borderStyle="lilGuys"
+                author="Ryan"
+                message={
+                  <>
+                    <div>
+                      This was so lovely to read. I relate so much about wanting
+                      to progress faster. I made a comic last year and it was SO
+                      BELOW the level I wanted it to be. Btw I would be really
+                      interested to know more about what the financial side of
+                      things was like for you. I’d like to go this route myself
+                      but I have a lot of fear around the finances. (E.g. did
+                      you make money during this year?) obvs no pressure if you
+                      don’t want to talk about it just sharing my curiosities.
+                    </div>
+                  </>
+                }
+              />{" "}
+              <Message
+                borderStyle="sprouts"
+                author="Julia"
+                message={
+                  <>
+                    Congrats on all you've given yourself the permission to do
+                    in the past year!! I'm in a similar boat and definitely feel
+                    you on the quitting == infinite time haha. It can be tough
+                    to balance between your passion/vision vs. your physical
+                    limits/time constraints. Excited to see what's next :)
+                  </>
+                }
               />
             </div>
           </div>
@@ -105,15 +174,15 @@ const Message = (props: {
 }) => {
   let selectedSytle = borderStyles[props.borderStyle];
   return (
-    <div className="message base relative w-[65ch]">
+    <div className="message base relative w-[65ch] ">
       <div className="w-full h-full" style={selectedSytle}>
         <div
           className={`
           messageAuthor
           py-0.5 px-2 absolute -top-3 left-2 
           text-tertiary text-sm font-bold italic 
-          bg-bg-page  
-          ${props.borderStyle === "none" ? "" : "border border-border rounded-full"}`}
+          bg-bg-page  rounded-full
+          ${props.borderStyle === "none" ? "" : "border border-border "}`}
         >
           {props.author}
         </div>
@@ -122,6 +191,7 @@ const Message = (props: {
           messageContent
           p-4 w-full 
           text-sm text-primary
+          flex flex-col gap-2 
           `}
         >
           {props.message}

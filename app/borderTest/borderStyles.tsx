@@ -4,15 +4,17 @@ export const borderStyles = {
   default: {
     border: `1px solid ${theme.colors.border}`,
     borderRadius: ` ${theme.borderRadius.md}`,
+    backgroundColor: `${theme.colors["bg-page"]}`,
   },
   none: {},
   double: {
     border: `3px double ${theme.colors.border}`,
     borderRadius: ` ${theme.borderRadius.md}`,
+    backgroundColor: `${theme.colors["bg-page"]}`,
   },
 
   shadow: {
-    borderImageSlice: "8",
+    borderImageSlice: "8 fill",
     borderImageWidth: "8px",
     borderImageRepeat: "round",
     borderImageSource: "url('borders/shadowBorder.svg')",
@@ -21,7 +23,7 @@ export const borderStyles = {
   },
 
   wavy: {
-    borderImageSlice: "16",
+    borderImageSlice: "16 fill",
     borderImageWidth: "16px",
     borderImageRepeat: "round round",
     borderImageSource: "url('borders/wavyBorder.svg')",
@@ -30,7 +32,7 @@ export const borderStyles = {
   },
 
   sparkle: {
-    borderImageSlice: "38 81 45 20",
+    borderImageSlice: "38 81 45 20 fill",
     borderImageWidth: "38px 81px 45px 20px",
     borderImageRepeat: "round",
     borderImageSource: "url('borders/sparkleBorder.svg')",
@@ -38,22 +40,46 @@ export const borderStyles = {
     borderImageOutset: "12px",
   },
 
-  cozy: {},
+  animal: {
+    borderImageSlice: "36 36 16 42 fill",
+    borderImageWidth: "36px 36px 16px 42px",
+    borderImageRepeat: "stretch",
+    borderImageSource: "url('borders/animalBorder.svg')",
+    borderStle: "solid",
+    borderImageOutset: "22px 0px 8px 16px",
+  },
 
-  leaves: {},
+  sprouts: {
+    borderImageSlice: "32 36 16 36 fill",
+    borderImageWidth: "32px 36px 16px 36px",
+    borderImageRepeat: "stretch",
+    borderImageSource: "url('borders/sproutsBorder.svg')",
+    borderStle: "solid",
+    borderImageOutset: "24px 0px 0px 6px",
+  },
+
+  lilGuys: {
+    borderImageSlice: "8 40 28 36 fill",
+    borderImageWidth: "8px 40px 28px 36px",
+    borderImageRepeat: "round",
+    borderImageSource: "url('borders/lilGuysBorder.svg')",
+    borderStle: "solid",
+    borderImageOutset: "0px 0px 12px 0px",
+  },
 
   custom: {
-    // borderImage:
-    //   "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFQAAABUCAYAAAAcaxDBAAAAAXNSR0IArs4c6QAAAgtJREFUeF7t3MFywjAMRdHy/x/dDjNdAGF4vdVLQsJliyzbx7JIs+jla/75nqd4qwyXyWpGg38nFvTmBARdluPIZDTYCu2cxuMVbxzKpG21x4729x+M0YTt3a+Qb7Q/QZcnImi5SlcHHU1Q3uwe6dD+/3LlUcI9drzynGj/gubTEDQboYgxKEqAlnaO4Jc+z668oK8PXtDyxRB0a9CzvX4r+7F01x4qKDN7GS1oEfOaStANQP/y11N5GYdOd9cyn1WooOx8BWVeMVrQSMQC6qBne+yiLU/QUICCshsaowWNRCzgcKB0wYxjGU17PF3f7j2ULljQctMXVNB7AXol1+5RVqgVaoXeCoxuaONtk1f+5jgEXfYnKzT07LVvkA/25R9NQQWdPYl65Wd+i9GCCsoE6GMJy+7ru6lXHO+Vj0QsQFDmFaMFjUQsQFDmFaMFjUQsQFDmFaMFjUQsQFDmFaMFjUQsQFDmFaMFjUQs4PSgjGP7aPryZvc39tsTsRkFZV4xWtBIxALeHpQukG2fR6cfKbrezXsoXSAnYiMEZV4xWtBIxAIOB/puVzxxPwLT9a/eQ+mC0obX/l7QsrCgnwZa3u/m6WjLWr2Hbi5QnlBQQcsC5XS7V2h5P4dLV++hhxMoL1hQQcsC5XRWqKBlgXI6K1TQskA5XazQ8nyflc7/zlg+b0EFLQuU0/0A75zwETbnhi0AAAAASUVORK5CYII=') 28 /  28px / 0 round",
-    // borderWidth: "28px",
-    // borderStyle: "solid",
-
-    borderImageSlice: "33% 33% 33% 33%",
-    borderImageWidth: "1.5em 1.5em 1.5em 1.5em",
-    borderImageOutset: "12px",
-    borderImageRepeat: "round round",
-    borderImageSource:
-      "url('https://mdn.github.io/css-examples/tools/border-image-generator/border-image-2.png')",
+    borderImage:
+      "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAVCAYAAACpF6WWAAAAAXNSR0IArs4c6QAAAJFJREFUOE/NlN0KgDAIRvMh95Q+ZGEgmPm3ZdSugunhfMwERNy35gMMHWNAxKa6Sg0xTigVdxgz5wb1bCJTmZa+L9BVY+4zTSVUG1um2jCEVo21YQkavbZ84FJ8WeSN2TdQzyaL7/WZI/Xf+N5oZPGXRipbXlNQgrX/UZmhvg+H3zJkwPKWmjX0jN/b/E8Ndf8BRlGrJVcg7YAAAAAASUVORK5CYII=') 7 /  7px / 0 round",
+    borderImageWidth: "7px",
     borderStyle: "solid",
+    borderImageOutset: "0",
+
+    // borderImageSlice: "33% 33% 33% 33%",
+    // borderImageWidth: "1.5em 1.5em 1.5em 1.5em",
+    // borderImageOutset: "12px",
+    // borderImageRepeat: "round round",
+    // borderImageSource:
+    //   "url('https://mdn.github.io/css-examples/tools/border-image-generator/border-image-2.png')",
+    // borderStyle: "solid",
   },
 };
