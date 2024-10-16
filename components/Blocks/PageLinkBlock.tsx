@@ -11,6 +11,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { Canvas, CanvasBackground, CanvasContent } from "components/Canvas";
 import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { DiscussionDefaultTiny, DiscussionSmall } from "components/Icons";
 
 export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
   let page = useEntity(props.entityID, "block/card");
@@ -21,6 +22,7 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
+  let isDiscussion = type === "discussion";
 
   let isOpen = useUIState((s) => s.openPages).includes(page?.data.value || "");
   if (!page)
@@ -31,8 +33,10 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
       <div
         className={`w-full cursor-pointer
         pageLinkBlockWrapper relative group/pageLinkBlock
-        bg-bg-page border shadow-sm outline outline-1 rounded-lg
+        
         flex overflow-clip
+        ${isDiscussion ? "border-none" : "bg-bg-page border shadow-sm outline outline-1 rounded-lg"}
+
         ${
           isSelected
             ? "border-tertiary outline-tertiary"
@@ -230,10 +234,12 @@ const CanvasLinkBlock = (props: { entityID: string; preview?: boolean }) => {
 };
 
 const DiscussionLinkBlock = (props: { entityID: string }) => {
-  //just a dummy block for now
   return (
-    <div className="w-full h-[104px] flex items-center justify-center bg-gray-100 text-gray-600">
-      <span className="text-sm">Discussion Preview</span>
+    <div className="w-full flex flex-col gap-2">
+      <div className=" text-sm mx-auto flex gap-2 items-center justify-center font-bold py-1 px-2 rounded-md bg-accent-1 text-accent-2">
+        <DiscussionDefaultTiny />
+        Comments <span className="font-normal">(6)</span>
+      </div>
     </div>
   );
 };
