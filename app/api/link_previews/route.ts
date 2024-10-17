@@ -1,4 +1,7 @@
-"use server";
+export const maxDuration = 60;
+export const runtime = "nodejs";
+
+import { NextRequest } from "next/server";
 import * as z from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
@@ -6,11 +9,6 @@ let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
 );
-
-export async function addPageLink(args: { link: string }) {
-  let result = await get_url_preview_data(args.link);
-  return result;
-}
 
 let expectedAPIResponse = z.object({
   data: z.object({
@@ -35,23 +33,31 @@ let expectedAPIResponse = z.object({
       .optional(),
   }),
 });
+export type LinkPreviewBody = { url: string; type: "meta" | "image" };
+export async function POST(req: NextRequest) {
+  let body = (await req.json()) as LinkPreviewBody;
+  let url = body.url;
+  if (body.type === "meta") {
+    let result = await get_link_metadata(url);
+    return Response.json(result);
+  } else {
+    let result = await get_link_image_preview(url);
+    return Response.json(result);
+  }
+}
 
-export const get_url_preview_data = async (url: string) => {
-  let [response, image] = await Promise.all([
-    fetch(`https://pro.microlink.io/?url=${url}`, {
+export type LinkPreviewMetadataResult = ReturnType<typeof get_link_metadata>;
+export type LinkPreviewImageResult = ReturnType<typeof get_link_image_preview>;
+
+async function get_link_image_preview(url: string) {
+  let image = await fetch(
+    `https://pro.microlink.io/?url=${url}&screenshot&viewport.width=1400&viewport.height=1213&embed=screenshot.url&meta=false&force=true`,
+    {
       headers: {
         "x-api-key": process.env.MICROLINK_API_KEY!,
       },
-    }),
-    fetch(
-      `https://pro.microlink.io/?url=${url}&screenshot&viewport.width=1400&viewport.height=1213&embed=screenshot.url&meta=false`,
-      {
-        headers: {
-          "x-api-key": process.env.MICROLINK_API_KEY!,
-        },
-      },
-    ),
-  ]);
+    },
+  );
 
   let key = await hash(url);
   if (image.status === 200) {
@@ -64,21 +70,30 @@ export const get_url_preview_data = async (url: string) => {
         }),
     );
   } else {
-    console.log("an error occured rendering the website", await image.json());
+    console.log("an error occured rendering the website", await image.text());
   }
 
-  let result = expectedAPIResponse.safeParse(await response.json());
   return {
-    ...result,
-    screenshot: {
-      url: supabase.storage.from("url-previews").getPublicUrl(key, {
-        transform: { width: 240, height: 208, resize: "contain" },
-      }).data.publicUrl,
-      height: 208,
-      width: 240,
-    },
+    url: supabase.storage.from("url-previews").getPublicUrl(key, {
+      transform: { width: 240, height: 208, resize: "contain" },
+    }).data.publicUrl,
+    height: 208,
+    width: 240,
   };
-};
+}
+async function get_link_metadata(url: string) {
+  let response = await fetch(
+    `https://pro.microlink.io/?url=${url}&force=true`,
+    {
+      headers: {
+        "x-api-key": process.env.MICROLINK_API_KEY!,
+      },
+    },
+  );
+
+  let result = expectedAPIResponse.safeParse(await response.json());
+  return result;
+}
 
 const hash = async (str: string) => {
   let hashBuffer = await crypto.subtle.digest(
