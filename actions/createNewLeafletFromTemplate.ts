@@ -54,32 +54,33 @@ export async function createNewLeafletFromTemplate(
     newEntities.push(newEntity);
   }
 
-  let newFacts = [] as Array<Pick<Fact<any>, "entity" | "attribute" | "data">>;
-  for (let fact of initialFacts) {
-    let entity = oldEntityIDToNewID[fact.entity];
-    let data = fact.data;
-    if (
-      data.type === "ordered-reference" ||
-      data.type == "spatial-reference" ||
-      data.type === "reference"
-    ) {
-      data.value = oldEntityIDToNewID[data.value];
-    }
-    if (data.type === "image") {
-      let url = data.src.split("?");
-      let paths = url[0].split("/");
-      let newID = v7();
-      await supabase.storage
-        .from("minilink-user-assets")
-        .copy(paths[paths.length - 1], newID);
-      let newPath = [...paths];
-      newPath[newPath.length - 1] = newID;
-      let newURL = newPath.join("/");
-      if (url[1]) newURL += `?${url[1]}`;
-      data.src = newURL;
-    }
-    newFacts.push({ entity, attribute: fact.attribute, data });
-  }
+  let newFacts = await Promise.all(
+    initialFacts.map(async (fact) => {
+      let entity = oldEntityIDToNewID[fact.entity];
+      let data = fact.data;
+      if (
+        data.type === "ordered-reference" ||
+        data.type == "spatial-reference" ||
+        data.type === "reference"
+      ) {
+        data.value = oldEntityIDToNewID[data.value];
+      }
+      if (data.type === "image") {
+        let url = data.src.split("?");
+        let paths = url[0].split("/");
+        let newID = v7();
+        await supabase.storage
+          .from("minilink-user-assets")
+          .copy(paths[paths.length - 1], newID);
+        let newPath = [...paths];
+        newPath[newPath.length - 1] = newID;
+        let newURL = newPath.join("/");
+        if (url[1]) newURL += `?${url[1]}`;
+        data.src = newURL;
+      }
+      return { entity, attribute: fact.attribute, data };
+    }),
+  );
 
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
