@@ -14,11 +14,10 @@ import { AddTiny } from "components/Icons";
 import Link from "next/link";
 
 export function LeafletTemplate(props: {
-  id: string;
-  image: string;
-  alt: string;
   title: string;
   description?: string;
+  image: string;
+  alt: string;
   idPreview: string;
   idTemplate: string;
 }) {
@@ -40,6 +39,7 @@ export function LeafletTemplate(props: {
             <Link
               href={`https://leaflet.pub/` + props.idPreview}
               target="_blank"
+              className="no-underline hover:no-underline"
             >
               <ButtonPrimary className="bg-primary !border-2 !border-white hover:!outline-none hover:scale-105 hover:rotate-3 transition-all">
                 View Preview
@@ -94,33 +94,35 @@ export function TemplateListThemes() {
     <>
       <TemplateList
         name="Themes"
-        description="Just a few of infinite theme possibilities — a nice starting point for further customization"
+        description="A small sampling of infinite theme possibilities"
       >
         <LeafletTemplate
-          id="TK"
-          image="/templates/template-foliage-548x308.jpg"
-          alt="TK"
           title="Foliage"
+          image="/templates/template-foliage-548x308.jpg"
+          alt="preview image of Foliage theme, with lots of green and leafy bg"
           idPreview="e4323c1d-15c1-407d-afaf-e5d772a35f0e"
-          idTemplate="TK"
+          idTemplate=""
         />
         <LeafletTemplate
-          id="TK"
-          image="/templates/template-foliage-548x308.jpg"
-          alt="TK"
           title="Lunar"
+          image="/templates/template-lunar-548x308.jpg"
+          alt="preview image of Lunar theme, with dark grey, red, and moon bg"
+          idPreview="219d14ab-096c-4b48-83ee-36446e335c3e"
+          idTemplate=""
         />
         <LeafletTemplate
-          id="TK"
-          image="/templates/template-foliage-548x308.jpg"
-          alt="TK"
           title="Paper"
+          image="/templates/template-paper-548x308.jpg"
+          alt="preview image of Paper theme, with red, gold, green and marbled paper bg"
+          idPreview="9b28ceea-0220-42ac-87e6-3976d156f653"
+          idTemplate=""
         />
         <LeafletTemplate
-          id="TK"
-          image="/templates/template-foliage-548x308.jpg"
-          alt="TK"
           title="Oceanic"
+          image="/templates/template-oceanic-548x308.jpg"
+          alt="preview image of Oceanic theme, with dark and light blue and ocean bg"
+          idPreview="a65a56d7-713d-437e-9c42-f18bdc6fe2a7"
+          idTemplate=""
         />
       </TemplateList>
     </>
@@ -131,35 +133,39 @@ export function TemplateListExamples() {
   return (
     <TemplateList
       name="Examples"
-      description="Useful ways to use Leaflet for creative shared documents"
+      description="Creative documents to make and share with Leaflet"
     >
       <LeafletTemplate
-        id="TK"
-        image="/templates/template-foliage-548x308.jpg"
-        alt="TK"
         title="Reading List"
         description="Make a topical list to track your own reading, or share recs with friends!"
-      />
-      <LeafletTemplate
-        id="TK"
         image="/templates/template-foliage-548x308.jpg"
         alt="TK"
+        idPreview=""
+        idTemplate=""
+      />
+      <LeafletTemplate
         title="Travel Planning"
         description="Organize a trip — notes, logistics, itinerary, even a shared journal or scrapbook."
-      />
-      <LeafletTemplate
-        id="TK"
         image="/templates/template-foliage-548x308.jpg"
         alt="TK"
+        idPreview=""
+        idTemplate=""
+      />
+      <LeafletTemplate
         title="Gift Guide"
         description="Share favorite things with friends or loved ones — products, movies, restaurants…"
-      />
-      <LeafletTemplate
-        id="TK"
         image="/templates/template-foliage-548x308.jpg"
         alt="TK"
+        idPreview=""
+        idTemplate=""
+      />
+      <LeafletTemplate
         title="Event Page"
         description="Host an event — from a single party or meetup, to a whole conference or symposium!"
+        image="/templates/template-foliage-548x308.jpg"
+        alt="TK"
+        idPreview=""
+        idTemplate=""
       />
     </TemplateList>
   );
