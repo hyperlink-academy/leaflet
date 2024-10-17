@@ -247,7 +247,7 @@ const outdentBlock: Mutation<{
 };
 
 const addPageLinkBlock: Mutation<{
-  type: "canvas" | "doc";
+  type: "canvas" | "doc" | "discussion";
   permission_set: string;
   blockEntity: string;
   firstBlockEntity: string;

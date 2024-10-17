@@ -19,7 +19,7 @@ import { mutate } from "swr";
 import useMeasure from "react-use-measure";
 import { ButtonPrimary } from "components/Buttons";
 import { LeafletOptions } from "./LeafletOptions";
-import { CanvasContent } from "components/Canvas";
+import { CanvasContent } from "components/Pages/Canvas";
 import { useSubscribe } from "replicache-react";
 import { TemplateSmall } from "components/Icons";
 import { theme } from "tailwind.config";

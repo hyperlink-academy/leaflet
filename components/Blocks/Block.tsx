@@ -140,9 +140,7 @@ export const BaseBlock = (
           ) : props.type === "embed" ? (
             <EmbedBlock {...props} />
           ) : props.type === "mailbox" ? (
-            <div className="flex flex-col gap-4 w-full">
-              <MailboxBlock {...props} />
-            </div>
+            <MailboxBlock {...props} />
           ) : null}
         </>
       )}

@@ -38,6 +38,7 @@ export function serverMutationContext(
     },
     async runOnClient(_cb) {},
     async createEntity({ entityID, permission_set }) {
+      console.log(token_rights, permission_set);
       if (
         !token_rights.find(
           (r) => r.entity_set === permission_set && r.write === true,

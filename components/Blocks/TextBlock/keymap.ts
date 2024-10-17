@@ -271,12 +271,10 @@ const backspace =
       if (propsRef.current.previousBlock) {
         focusBlock(propsRef.current.previousBlock, { type: "end" });
       } else {
-        useUIState
-          .getState()
-          .setFocusedBlock({
-            entityType: "page",
-            entityID: propsRef.current.parent,
-          });
+        useUIState.getState().setFocusedBlock({
+          entityType: "page",
+          entityID: propsRef.current.parent,
+        });
       }
       return true;
     }
@@ -463,6 +461,7 @@ const enter =
       }
       // if the block is not a list, add a new text block after it
       if (!propsRef.current.listData) {
+        console.log("yo?");
         position = generateKeyBetween(
           propsRef.current.position,
           propsRef.current.nextPosition,
