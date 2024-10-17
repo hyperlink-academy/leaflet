@@ -17,16 +17,19 @@ import {
 } from "src/replicache";
 
 import { Media } from "../Media";
+import { scanIndex } from "src/replicache/utils";
+
 import { DesktopPageFooter } from "../DesktopFooter";
 import { ShareOptions } from "../ShareOptions";
 import { ThemePopover } from "../ThemeManager/ThemeSetter";
 import { HomeButton } from "../HomeButton";
-import { Canvas } from "../Canvas";
 import { DraftPostOptions } from "../Blocks/MailboxBlock";
-import { Blocks } from "components/Blocks";
-
-import { Discussion } from "components/Pages/Discussion";
 import { MenuItem, Menu } from "../Layout";
+import { HelpPopover } from "../HelpPopover";
+import { CreateNewLeafletButton } from "app/home/CreateNewButton";
+import { PageThemeSetter } from "../ThemeManager/PageThemeSetter";
+import { CardThemeProvider } from "../ThemeManager/ThemeProvider";
+import { PageShareMenu } from "./PageShareMenu";
 import {
   MoreOptionsTiny,
   DeleteSmall,
@@ -34,12 +37,10 @@ import {
   PaintSmall,
   ShareSmall,
 } from "../Icons";
-import { HelpPopover } from "../HelpPopover";
-import { CreateNewLeafletButton } from "app/home/CreateNewButton";
-import { scanIndex } from "src/replicache/utils";
-import { PageThemeSetter } from "../ThemeManager/PageThemeSetter";
-import { CardThemeProvider } from "../ThemeManager/ThemeProvider";
-import { PageShareMenu } from "./PageShareMenu";
+
+import { Canvas } from "./Canvas";
+import { Blocks } from "./Doc";
+import { Discussion } from "./Discussion";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -153,17 +154,18 @@ function Page(props: { entityID: string; first?: boolean }) {
           id={elementId.page(props.entityID).container}
           style={{
             backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-            width:
-              pageType === "canvas" ? undefined : "var(--page-width-units)",
           }}
           className={`
-            ${pageType === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
               page
               grow flex flex-col
               overscroll-y-none
               overflow-y-scroll no-scrollbar
-              rounded-lg border
-              ${isFocused ? "shadow-md border-border" : "border-border-light"}
+              ${
+                pageType === "discussion"
+                  ? "!border-none !bg-transparent"
+                  : `rounded-lg border ${isFocused ? "shadow-md border-border" : "border-border-light"}`
+              }
+              ${pageType === "canvas" ? "!lg:max-w-[1152px]" : "w-[var(--page-width-units)]"}
             `}
         >
           <Media mobile={true}>

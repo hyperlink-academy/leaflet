@@ -9,7 +9,11 @@ import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { usePageMetadata } from "src/hooks/queries/usePageMetadata";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
-import { Canvas, CanvasBackground, CanvasContent } from "components/Canvas";
+import {
+  Canvas,
+  CanvasBackground,
+  CanvasContent,
+} from "components/Pages/Canvas";
 import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { DiscussionDefaultTiny, DiscussionSmall } from "components/Icons";
 
@@ -236,6 +240,7 @@ const CanvasLinkBlock = (props: { entityID: string; preview?: boolean }) => {
 const DiscussionLinkBlock = (props: { entityID: string }) => {
   return (
     <div className="w-full flex flex-col gap-2">
+      <hr className="border-border-light w-full" />
       <div className=" text-sm mx-auto flex gap-2 items-center justify-center font-bold py-1 px-2 rounded-md bg-accent-1 text-accent-2">
         <DiscussionDefaultTiny />
         Comments <span className="font-normal">(6)</span>

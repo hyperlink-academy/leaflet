@@ -11,7 +11,7 @@ import {
   ImageInput,
 } from "./ThemeSetter";
 import { useMemo, useState } from "react";
-import { CanvasBackgroundPattern } from "components/Canvas";
+import { CanvasBackgroundPattern } from "components/Pages/Canvas";
 import { Replicache } from "replicache";
 import { theme } from "tailwind.config";
 import { BlockImageSmall, PaintSmall } from "components/Icons";

@@ -13,7 +13,7 @@ import { elementId } from "src/utils/elementId";
 import { generateKeyBetween } from "fractional-indexing";
 import { v7 } from "uuid";
 
-import { Block } from "./Block";
+import { Block } from "../../Blocks/Block";
 import { useEffect } from "react";
 import { addShortcut } from "src/shortcuts";
 

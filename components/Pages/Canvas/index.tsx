@@ -1,14 +1,14 @@
 import { useEntity, useReplicache } from "src/replicache";
-import { useEntitySetContext } from "./EntitySetProvider";
+import { useEntitySetContext } from "../../EntitySetProvider";
 import { v7 } from "uuid";
-import { BaseBlock, Block } from "./Blocks/Block";
+import { BaseBlock, Block } from "../../Blocks/Block";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AddBlockLarge,
   AddSmall,
   CanvasShrinkSmall,
   CanvasWidenSmall,
-} from "./Icons";
+} from "../../Icons";
 import { useDrag } from "src/hooks/useDrag";
 import { useLongPress } from "src/hooks/useLongPress";
 import { focusBlock } from "src/utils/focusBlock";
@@ -16,9 +16,9 @@ import { elementId } from "src/utils/elementId";
 import { useUIState } from "src/useUIState";
 import useMeasure from "react-use-measure";
 import { useIsMobile } from "src/hooks/isMobile";
-import { Media } from "./Media";
-import { TooltipButton } from "./Buttons";
-import { useBlockKeyboardHandlers } from "./Blocks/useBlockKeyboardHandlers";
+import { Media } from "../../Media";
+import { TooltipButton } from "../../Buttons";
+import { useBlockKeyboardHandlers } from "../../Blocks/useBlockKeyboardHandlers";
 
 export function Canvas(props: { entityID: string; preview?: boolean }) {
   let entity_set = useEntitySetContext();
