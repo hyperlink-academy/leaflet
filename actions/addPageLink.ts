@@ -44,7 +44,7 @@ export const get_url_preview_data = async (url: string) => {
       },
     }),
     fetch(
-      `https://pro.microlink.io/?url=${url}&screenshot&viewport.width=1400&viewport.height=1213&embed=screenshot.url&timeout=5s`,
+      `https://pro.microlink.io/?url=${url}&screenshot&viewport.width=1400&viewport.height=1213&embed=screenshot.url&timeout=12s`,
       {
         headers: {
           "x-api-key": process.env.MICROLINK_API_KEY!,
@@ -54,11 +54,18 @@ export const get_url_preview_data = async (url: string) => {
   ]);
 
   let key = await hash(url);
-  await supabase.storage
-    .from("url-previews")
-    .upload(key, await image.arrayBuffer(), {
-      contentType: image.headers.get("content-type") || undefined,
-    });
+  if (image.status === 200) {
+    console.log(
+      await supabase.storage
+        .from("url-previews")
+        .upload(key, await image.arrayBuffer(), {
+          contentType: image.headers.get("content-type") || undefined,
+          upsert: true,
+        }),
+    );
+  } else {
+    console.log("an error occured rendering the website", await image.json());
+  }
 
   let result = expectedAPIResponse.safeParse(await response.json());
   return {
