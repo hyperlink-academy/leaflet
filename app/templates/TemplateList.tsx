@@ -41,7 +41,19 @@ export function LeafletTemplate(props: {
               Preview
             </ButtonPrimary>
           </Link>
-          <NewFromTemplateButton templateID={props.templateID} />
+          <ButtonPrimary
+            className="!w-fit !border-2 !border-white hover:!outline-none hover:scale-105 hover:-rotate-2 transition-all"
+            onClick={async () => {
+              let id = await createNewLeafletFromTemplate(
+                props.templateID,
+                false,
+              );
+              window.open(`/${id}`, "_blank");
+            }}
+          >
+            Create
+            <AddTiny />
+          </ButtonPrimary>
         </div>
       </div>
     </div>
@@ -137,20 +149,5 @@ export function TemplateListExamples() {
         templateID="23d8a4ec-b2f6-438a-933d-726d2188974d"
       />
     </TemplateList>
-  );
-}
-
-export function NewFromTemplateButton(props: { templateID: string }) {
-  return (
-    <ButtonPrimary
-      className="!w-fit !border-2 !border-white hover:!outline-none hover:scale-105 hover:-rotate-2 transition-all"
-      onClick={async () => {
-        let id = await createNewLeafletFromTemplate(props.templateID, false);
-        window.open(`/${id}`, "_blank");
-      }}
-    >
-      Create
-      <AddTiny />
-    </ButtonPrimary>
   );
 }
