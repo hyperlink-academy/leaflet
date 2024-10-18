@@ -21,24 +21,24 @@ export function LeafletTemplate(props: {
             width={274}
             height={154}
           />
-          <div className="absolute w-full max-w-[274px] h-full max-h-[154px] flex flex-col gap-2 items-center place-content-center">
-            <Link
-              href={`https://leaflet.pub/` + props.templateID}
-              target="_blank"
-              className="no-underline hover:no-underline"
-            >
-              <ButtonPrimary className="bg-primary !border-2 !border-white hover:!outline-none hover:scale-105 hover:rotate-3 transition-all">
-                View Preview
-              </ButtonPrimary>
-            </Link>
-            <NewFromTemplateButton templateID={props.templateID} />
-          </div>
         </div>
       </div>
       <div className="flex flex-col gap-2">
-        <div className="font-bold">{props.title}</div>
-        <div className="text-tertiary text-sm font-normal">
+        <h3 className="font-bold text-center">{props.title}</h3>
+        <div className="text-tertiary text-sm font-normal text-center">
           {props.description}
+        </div>
+        <div className="flex gap-2 justify-center items-end bottom-4">
+          <Link
+            href={`https://leaflet.pub/` + props.templateID}
+            target="_blank"
+            className="no-underline hover:no-underline"
+          >
+            <ButtonPrimary className="bg-primary !border-2 !border-white hover:!outline-none hover:scale-105 hover:rotate-3 transition-all">
+              Preview
+            </ButtonPrimary>
+          </Link>
+          <NewFromTemplateButton templateID={props.templateID} />
         </div>
       </div>
     </div>
@@ -107,28 +107,28 @@ export function TemplateListExamples() {
     >
       <LeafletTemplate
         title="Reading List"
-        description="Make a topical list to track your own reading, or share recs with friends!"
+        description="Make a list for your own reading, or share recs with friends!"
         image="/templates/template-reading-548x308.jpg"
         alt="preview image of Reading List template, with a few sections and example books as sub-pages"
         templateID="a5655b68-fe7a-4494-bda6-c9847523b2f6"
       />
       <LeafletTemplate
         title="Travel Planning"
-        description="Organize a trip — notes, logistics, itinerary, even a shared journal or scrapbook."
+        description="Organize a trip — notes, logistics, itinerary, even a shared scrapbook"
         image="/templates/template-travel-548x308.jpg"
         alt="preview image of a Travel Planning template, with pages for itinerary, logistics, research, and a travel diary canvas"
         templateID="4d6f1392-dfd3-4015-925d-df55b7da5566"
       />
       <LeafletTemplate
         title="Gift Guide"
-        description="Share favorite things with friends or loved ones — products, movies, restaurants…"
+        description="Share your favorite things — products, restaurants movies…"
         image="/templates/template-gift-548x308.jpg"
         alt="preview image for a Gift Guide template, with three blank canvases for different categories"
         templateID="de73df29-35d9-4a43-a441-7ce45ad3b498"
       />
       <LeafletTemplate
         title="Event Page"
-        description="Host an event — from a single party or meetup, to a whole conference or symposium!"
+        description="Host an event — from a single meetup, to a whole conference!"
         image="/templates/template-event-548x308.jpg"
         alt="preview image for an Event Page template, with an event info section and linked pages / canvases for more info"
         templateID="23d8a4ec-b2f6-438a-933d-726d2188974d"

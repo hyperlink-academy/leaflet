@@ -7,16 +7,13 @@ import { AddTiny } from "components/Icons";
 export function NewFromTemplateButton(props: { templateID: string }) {
   return (
     <ButtonPrimary
-      className="!w-fit mx-4 !border-2 !border-white hover:!outline-none hover:scale-105 hover:-rotate-2 transition-all"
-      // TODO: make client component for the onClick to work?
-      // NB: do we need the edit link or will the readonly one work?
-
+      className="!w-fit !border-2 !border-white hover:!outline-none hover:scale-105 hover:-rotate-2 transition-all"
       onClick={async () => {
         let id = await createNewLeafletFromTemplate(props.templateID, false);
         window.open(`/${id}`, "_blank");
       }}
     >
-      New from Template
+      Create
       <AddTiny />
     </ButtonPrimary>
   );
