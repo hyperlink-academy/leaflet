@@ -36,7 +36,7 @@ let expectedAPIResponse = z.object({
 export type LinkPreviewBody = { url: string; type: "meta" | "image" };
 export async function POST(req: NextRequest) {
   let body = (await req.json()) as LinkPreviewBody;
-  let url = body.url;
+  let url = encodeURIComponent(body.url);
   if (body.type === "meta") {
     let result = await get_link_metadata(url);
     return Response.json(result);
