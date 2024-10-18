@@ -1,33 +1,19 @@
-import { useEffect, useState, version } from "react";
-import { getHomeDocs, HomeDoc } from "app/home/storage";
-import useSWR from "swr";
-import { ReplicacheProvider } from "src/replicache";
-import { LeafletPreview } from "app/home/LeafletPreview";
-import { PermissionToken } from "src/replicache";
 import { ButtonPrimary } from "components/Buttons";
-import { createNewLeafletFromTemplate } from "actions/createNewLeafletFromTemplate";
-
-import { Database } from "../../supabase/database.types";
-import { createServerClient } from "@supabase/ssr";
 import Image from "next/image";
-import { AddTiny } from "components/Icons";
 import Link from "next/link";
+import { NewFromTemplateButton } from "./NewFromTemplateButton";
 
 export function LeafletTemplate(props: {
   title: string;
   description?: string;
   image: string;
   alt: string;
-  idPreview: string;
-  idTemplate: string;
+  templateID: string; // readonly id for the leaflet that will be duplicated
 }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-col gap-2">
-        {/* TODO: add preview with LeafletPreview */}
-        {/* OR could just use a static image with text overlay maybe */}
         <div className="max-w-[274px] h-[154px] relative">
-          {/* TEMPLATE PLACEHOLDER - PREVIEW WILL GO HERE! */}
           <Image
             className="absolute top-0 left-0 rounded-md w-full h-full object-cover"
             src={props.image}
@@ -37,7 +23,7 @@ export function LeafletTemplate(props: {
           />
           <div className="absolute w-full max-w-[274px] h-full max-h-[154px] flex flex-col gap-2 items-center place-content-center">
             <Link
-              href={`https://leaflet.pub/` + props.idPreview}
+              href={`https://leaflet.pub/` + props.templateID}
               target="_blank"
               className="no-underline hover:no-underline"
             >
@@ -45,19 +31,7 @@ export function LeafletTemplate(props: {
                 View Preview
               </ButtonPrimary>
             </Link>
-            <ButtonPrimary
-              className="!w-fit mx-4 !border-2 !border-white hover:!outline-none hover:scale-105 hover:-rotate-2 transition-all"
-              // TODO: make client component for the onClick to work?
-              // NB: do we need the edit link or will the readonly one work?
-
-              //   onClick={async () => {
-              //     let id = await createNewLeafletFromTemplate(props.idTemplate, false);
-              //     window.open(`/${props.idTemplate}`, "_blank");
-              //   }}
-            >
-              New from Template
-              <AddTiny />
-            </ButtonPrimary>
+            <NewFromTemplateButton templateID={props.templateID} />
           </div>
         </div>
       </div>
@@ -94,35 +68,31 @@ export function TemplateListThemes() {
     <>
       <TemplateList
         name="Themes"
-        description="A small sampling of infinite theme possibilities"
+        description="A small sampling of Leaflet's infinite theme possibilities!"
       >
         <LeafletTemplate
           title="Foliage"
           image="/templates/template-foliage-548x308.jpg"
           alt="preview image of Foliage theme, with lots of green and leafy bg"
-          idPreview="e4323c1d-15c1-407d-afaf-e5d772a35f0e"
-          idTemplate=""
+          templateID="e4323c1d-15c1-407d-afaf-e5d772a35f0e"
         />
         <LeafletTemplate
           title="Lunar"
           image="/templates/template-lunar-548x308.jpg"
           alt="preview image of Lunar theme, with dark grey, red, and moon bg"
-          idPreview="219d14ab-096c-4b48-83ee-36446e335c3e"
-          idTemplate=""
+          templateID="219d14ab-096c-4b48-83ee-36446e335c3e"
         />
         <LeafletTemplate
           title="Paper"
           image="/templates/template-paper-548x308.jpg"
           alt="preview image of Paper theme, with red, gold, green and marbled paper bg"
-          idPreview="9b28ceea-0220-42ac-87e6-3976d156f653"
-          idTemplate=""
+          templateID="9b28ceea-0220-42ac-87e6-3976d156f653"
         />
         <LeafletTemplate
           title="Oceanic"
           image="/templates/template-oceanic-548x308.jpg"
           alt="preview image of Oceanic theme, with dark and light blue and ocean bg"
-          idPreview="a65a56d7-713d-437e-9c42-f18bdc6fe2a7"
-          idTemplate=""
+          templateID="a65a56d7-713d-437e-9c42-f18bdc6fe2a7"
         />
       </TemplateList>
     </>
@@ -133,39 +103,35 @@ export function TemplateListExamples() {
   return (
     <TemplateList
       name="Examples"
-      description="Creative documents to make and share with Leaflet"
+      description="Creative documents you can make and share with Leaflet"
     >
       <LeafletTemplate
         title="Reading List"
         description="Make a topical list to track your own reading, or share recs with friends!"
-        image="/templates/template-foliage-548x308.jpg"
-        alt="TK"
-        idPreview=""
-        idTemplate=""
+        image="/templates/template-reading-548x308.jpg"
+        alt="preview image of Reading List template, with a few sections and example books as sub-pages"
+        templateID="a5655b68-fe7a-4494-bda6-c9847523b2f6"
       />
       <LeafletTemplate
         title="Travel Planning"
         description="Organize a trip — notes, logistics, itinerary, even a shared journal or scrapbook."
-        image="/templates/template-foliage-548x308.jpg"
-        alt="TK"
-        idPreview=""
-        idTemplate=""
+        image="/templates/template-travel-548x308.jpg"
+        alt="preview image of a Travel Planning template, with pages for itinerary, logistics, research, and a travel diary canvas"
+        templateID="4d6f1392-dfd3-4015-925d-df55b7da5566"
       />
       <LeafletTemplate
         title="Gift Guide"
         description="Share favorite things with friends or loved ones — products, movies, restaurants…"
-        image="/templates/template-foliage-548x308.jpg"
-        alt="TK"
-        idPreview=""
-        idTemplate=""
+        image="/templates/template-gift-548x308.jpg"
+        alt="preview image for a Gift Guide template, with three blank canvases for different categories"
+        templateID="de73df29-35d9-4a43-a441-7ce45ad3b498"
       />
       <LeafletTemplate
         title="Event Page"
         description="Host an event — from a single party or meetup, to a whole conference or symposium!"
-        image="/templates/template-foliage-548x308.jpg"
-        alt="TK"
-        idPreview=""
-        idTemplate=""
+        image="/templates/template-event-548x308.jpg"
+        alt="preview image for an Event Page template, with an event info section and linked pages / canvases for more info"
+        templateID="23d8a4ec-b2f6-438a-933d-726d2188974d"
       />
     </TemplateList>
   );

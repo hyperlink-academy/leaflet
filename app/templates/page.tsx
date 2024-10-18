@@ -1,7 +1,5 @@
 import Link from "next/link";
-import TemplateHomeButton from "./TemplateHomeButton";
 import { TemplateListExamples, TemplateListThemes } from "./TemplateList";
-import { HomeButton } from "components/HomeButton";
 import { HoverButton } from "components/Buttons";
 import { HomeSmall } from "components/Icons";
 
