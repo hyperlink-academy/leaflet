@@ -128,15 +128,15 @@ export function TemplateListExamples() {
         templateID="a5655b68-fe7a-4494-bda6-c9847523b2f6"
       />
       <LeafletTemplate
-        title="Travel Planning"
+        title="Travel Plan"
         description="Organize a trip — notes, logistics, itinerary, even a shared scrapbook"
         image="/templates/template-travel-548x308.jpg"
-        alt="preview image of a Travel Planning template, with pages for itinerary, logistics, research, and a travel diary canvas"
+        alt="preview image of a Travel Plan template, with pages for itinerary, logistics, research, and a travel diary canvas"
         templateID="4d6f1392-dfd3-4015-925d-df55b7da5566"
       />
       <LeafletTemplate
         title="Gift Guide"
-        description="Share your favorite things — products, restaurants movies…"
+        description="Share your favorite things — products, restaurants, movies…"
         image="/templates/template-gift-548x308.jpg"
         alt="preview image for a Gift Guide template, with three blank canvases for different categories"
         templateID="de73df29-35d9-4a43-a441-7ce45ad3b498"
