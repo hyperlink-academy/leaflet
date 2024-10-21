@@ -67,6 +67,10 @@ export const HelpPopover = () => {
             {/* cmd/ctrl-a: first selects all text in a block; again selects all blocks on page */}
             {/* cmd/ctrl + up/down arrows: go to beginning / end of doc */}
 
+            <Label>Canvas Shortcuts</Label>
+            <OtherShortcut name="Add Block" description="Double click" />
+            <OtherShortcut name="Select Block" description="Long press" />
+
             <Label>Outliner Shortcuts</Label>
             <KeyboardShortcut
               name="Make List"
@@ -105,6 +109,17 @@ const KeyboardShortcut = (props: { name: string; keys: string[] }) => {
           return <ShortcutKey key={index}>{key}</ShortcutKey>;
         })}
       </div>
+    </div>
+  );
+};
+
+const OtherShortcut = (props: { name: string; description: string }) => {
+  return (
+    <div className="flex justify-between items-center">
+      <span>{props.name}</span>
+      <span>
+        <strong>{props.description}</strong>
+      </span>
     </div>
   );
 };
