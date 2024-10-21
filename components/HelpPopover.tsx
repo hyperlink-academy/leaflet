@@ -5,6 +5,8 @@ import { Media } from "./Media";
 import { Popover } from "./Popover";
 import { metaKey } from "src/utils/metaKey";
 import { useEntitySetContext } from "./EntitySetProvider";
+import Link from "next/link";
+import { useState } from "react";
 
 export const HelpPopover = () => {
   let entity_set = useEntitySetContext();
@@ -17,35 +19,24 @@ export const HelpPopover = () => {
         </div>
       }
     >
-      <div className="flex flex-col  text-sm gap-1  text-secondary">
-        {/* <div className="font-bold text-base">Welcome to Leaflet!</div> */}
+      <div className="flex flex-col text-sm gap-2 text-secondary">
         <div>
           Welcome to <strong>Leaflet</strong> — a fun, fast, easy-to-share
           document editor.
         </div>
-        <div
-          className="py-2 px-1 -mx-1 rounded-md "
-          style={{
-            backgroundColor:
-              "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
-          }}
-        >
-          <a
-            href="https://leaflet.pub/0325b34c-1948-412c-a6fb-d155fd2fe6ed"
-            target="_blank"
-          >
-            <strong>Learn more</strong>
-          </a>{" "}
-          &{" "}
-          <a href="https://buttondown.com/leaflet" target="_blank">
-            <strong>sign up for updates!</strong>
-          </a>{" "}
-          <a href="mailto:contact@hyperlink.academy">
-            <strong>Email us</strong>
-          </a>{" "}
-          questions or feedback 🍃
-        </div>
-        {/* <div>Leaflet&apos;s in alpha. Sign up for updates!</div> */}
+        <HelpLink
+          text="💡 Learn more"
+          url="https://leaflet.pub/0325b34c-1948-412c-a6fb-d155fd2fe6ed"
+        />
+        <HelpLink text="💌 Get updates" url="https://buttondown.com/leaflet" />
+        <HelpLink
+          text="📖 Explore templates"
+          url="https://leaflet.pub/templates"
+        />
+        <HelpLink
+          text="🍃 Email us feedback"
+          url="mailto:contact@hyperlink.academy"
+        />
         <Media mobile={false}>
           <hr className="text-border my-1" />
           <div className="flex flex-col gap-1">
@@ -120,4 +111,30 @@ const KeyboardShortcut = (props: { name: string; keys: string[] }) => {
 
 const Label = (props: { children: React.ReactNode }) => {
   return <div className="text-tertiary font-bold pt-2 ">{props.children}</div>;
+};
+
+const HelpLink = (props: { url: string; text: string }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+  };
+  return (
+    <a
+      href={props.url}
+      target="_blank"
+      className="py-2 px-2 rounded-md flex flex-col gap-1 bg-border-light hover:bg-border hover:no-underline"
+      style={{
+        backgroundColor: isHovered
+          ? "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)"
+          : "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 75%)",
+      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <strong>{props.text}</strong>
+    </a>
+  );
 };
