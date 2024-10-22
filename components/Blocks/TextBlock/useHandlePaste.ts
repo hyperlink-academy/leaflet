@@ -118,6 +118,7 @@ export const useHandlePaste = (
       }
       e.preventDefault();
       e.stopPropagation();
+      return true;
     },
     [rep, entity_set, entityID, propsRef, factID],
   );
