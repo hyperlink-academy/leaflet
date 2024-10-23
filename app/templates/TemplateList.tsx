@@ -14,7 +14,7 @@ export function LeafletTemplate(props: {
   templateID: string; // readonly id for the leaflet that will be duplicated
 }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <div className="max-w-[274px] h-[154px] relative">
           <Image
@@ -26,10 +26,16 @@ export function LeafletTemplate(props: {
           />
         </div>
       </div>
-      <div className="flex flex-col gap-2">
-        <h3 className="font-bold text-center">{props.title}</h3>
-        <div className="text-tertiary text-sm font-normal text-center">
-          {props.description}
+      <div className={`flex flex-col ${props.description ? "gap-4" : "gap-2"}`}>
+        <div className="gap-0">
+          <h3 className="font-bold text-center text-secondary">
+            {props.title}
+          </h3>
+          {props.description && (
+            <div className="text-tertiary text-sm font-normal text-center">
+              {props.description}
+            </div>
+          )}
         </div>
         <div className="flex gap-2 justify-center items-end bottom-4">
           <Link
@@ -37,12 +43,12 @@ export function LeafletTemplate(props: {
             target="_blank"
             className="no-underline hover:no-underline"
           >
-            <ButtonPrimary className="bg-primary !border-2 !border-white hover:!outline-none hover:scale-105 hover:rotate-3 transition-all">
+            <ButtonPrimary className="bg-primary hover:!outline-none hover:scale-105 hover:rotate-3 transition-all">
               Preview
             </ButtonPrimary>
           </Link>
           <ButtonPrimary
-            className="!w-fit !border-2 !border-white hover:!outline-none hover:scale-105 hover:-rotate-2 transition-all"
+            className=" hover:!outline-none hover:scale-105 hover:-rotate-2 transition-all"
             onClick={async () => {
               let id = await createNewLeafletFromTemplate(
                 props.templateID,
@@ -66,10 +72,10 @@ export function TemplateList(props: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="templateLeafletGrid flex flex-col gap-4">
-      <div className="flex flex-col gap-2 text-center">
-        <h2 className="">{props.name}</h2>
-        <p className="">{props.description}</p>
+    <div className="templateLeafletGrid flex flex-col gap-6">
+      <div className="flex flex-col gap-0 text-center">
+        <h3 className="">{props.name}</h3>
+        <p className="text-secondary">{props.description}</p>
       </div>
       <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-8 gap-x-4 sm:gap-6 grow pb-8">
         {props.children}
