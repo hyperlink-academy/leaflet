@@ -240,10 +240,9 @@ const CanvasLinkBlock = (props: { entityID: string; preview?: boolean }) => {
 const DiscussionLinkBlock = (props: { entityID: string }) => {
   return (
     <div className="w-full flex flex-col gap-2">
-      <hr className="border-border-light w-full" />
-      <div className=" text-sm mx-auto flex gap-2 items-center justify-center font-bold py-1 px-2 rounded-md bg-accent-1 text-accent-2">
+      <div className=" text-sm w-fit flex gap-2 items-center justify-center font-bold py-1 px-2 rounded-md bg-accent-1 text-accent-2">
         <DiscussionDefaultTiny />
-        Comments <span className="font-normal">(6)</span>
+        Discussion<span className="font-normal">(6)</span>
       </div>
     </div>
   );

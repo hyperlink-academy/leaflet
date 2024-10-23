@@ -6,6 +6,7 @@ import {
   CardThemeProvider,
   NestedCardThemeProvider,
 } from "./ThemeManager/ThemeProvider";
+import { useSmoker } from "./Toast";
 
 type ButtonProps = Omit<JSX.IntrinsicElements["button"], "content">;
 export function ButtonPrimary(
@@ -13,17 +14,47 @@ export function ButtonPrimary(
     fullWidth?: boolean;
     children: React.ReactNode;
     compact?: boolean;
+    errorMeassage?: string;
+    isDisabled?: boolean;
   } & ButtonProps,
 ) {
+  let buttonRef = React.useRef<HTMLButtonElement>(null);
+  let smoker = useSmoker();
+
   return (
     <button
+      ref={buttonRef}
       {...props}
+      onClick={(e) => {
+        if (props.isDisabled) {
+          e.preventDefault();
+        } else {
+          props.onClick && props.onClick(e);
+        }
+      }}
+      onMouseDown={(e) => {
+        if (props.isDisabled) {
+          e.preventDefault();
+          console.log("disabled");
+
+          if (props.errorMeassage) {
+            let rect = buttonRef.current?.getBoundingClientRect();
+            smoker({
+              text: props.errorMeassage,
+              position: {
+                y: (rect && rect.top + 20) || 0,
+                x: (rect && rect.left - 5) || 0,
+              },
+            });
+          }
+        }
+      }}
       className={`m-0 h-max ${props.fullWidth ? "w-full" : "w-max"}  ${props.compact ? "py-0 px-1" : "px-2 py-0.5 "}
-  bg-accent-1  outline-transparent
-  rounded-md text-base font-bold text-accent-2
+  rounded-md text-base font-bold 
   flex gap-2 items-center justify-center shrink-0
-  transparent-outline hover:outline-accent-1 outline-offset-1
-  disabled:bg-border-light disabled:text-border disabled:hover:text-border
+  transparent-outline 
+  ${props.isDisabled ? "bg-border-light text-tertiary hover:outline-none cursor-default" : "text-accent-2 bg-accent-1 hover:outline-accent-1 outline-offset-1"}
+  disabled:bg-border-light disabled:text-tertiary disabled:hover:outline-none
   ${props.className}
 `}
     >

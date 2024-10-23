@@ -48,7 +48,6 @@ export function Pages(props: { rootPage: string }) {
   let params = useSearchParams();
   let queryRoot = params.get("page");
   let firstPage = queryRoot || rootPage?.data.value || props.rootPage;
-  let entity_set = useEntitySetContext();
 
   return (
     <div
@@ -59,31 +58,13 @@ export function Pages(props: { rootPage: string }) {
       }}
     >
       <div
-        className="spacer flex justify-end items-start"
+        className="flex justify-end items-start"
         style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
         onClick={(e) => {
           e.currentTarget === e.target && blurPage();
         }}
       >
-        <Media mobile={false} className="h-full">
-          <div className="flex flex-col h-full justify-between mr-4 mt-1">
-            {entity_set.permissions.write ? (
-              <div className="flex flex-col justify-center gap-2 ">
-                <ShareOptions rootEntity={props.rootPage} />
-                <LeafletOptions entityID={props.rootPage} />
-                <CreateNewLeafletButton />
-                <HelpPopover />
-                <hr className="text-border my-3" />
-                <HomeButton />
-              </div>
-            ) : (
-              <div>
-                {" "}
-                <HomeButton />{" "}
-              </div>
-            )}
-          </div>
-        </Media>
+        <LeafletMenu rootPage={props.rootPage} />
       </div>
       <div className="flex items-stretch">
         <CardThemeProvider entityID={firstPage}>
@@ -108,11 +89,28 @@ export function Pages(props: { rootPage: string }) {
   );
 }
 
-export const LeafletOptions = (props: { entityID: string }) => {
+const LeafletMenu = (props: { rootPage: string }) => {
+  let entity_set = useEntitySetContext();
+
   return (
-    <>
-      <ThemePopover entityID={props.entityID} />
-    </>
+    <Media mobile={false} className="h-full">
+      <div className="leafletMenu flex flex-col h-full justify-between mr-4 mt-1">
+        {entity_set.permissions.write ? (
+          <div className="flex flex-col justify-center gap-2 ">
+            <ShareOptions rootEntity={props.rootPage} />
+            <ThemePopover entityID={props.rootPage} />
+            <CreateNewLeafletButton />
+            <HelpPopover />
+            <hr className="text-border my-3" />
+            <HomeButton />
+          </div>
+        ) : (
+          <div>
+            <HomeButton />
+          </div>
+        )}
+      </div>
+    </Media>
   );
 };
 
@@ -160,9 +158,10 @@ function Page(props: { entityID: string; first?: boolean }) {
               grow flex flex-col
               overscroll-y-none
               overflow-y-scroll no-scrollbar
+              
               ${
                 pageType === "discussion"
-                  ? "!border-none !bg-transparent"
+                  ? "border-none !bg-transparent"
                   : `rounded-lg border ${isFocused ? "shadow-md border-border" : "border-border-light"}`
               }
               ${pageType === "canvas" ? "!lg:max-w-[1152px]" : "w-[var(--page-width-units)]"}
@@ -259,7 +258,7 @@ const PageOptionsMenu = (props: {
   first: boolean | undefined;
 }) => {
   return (
-    <div className=" z-10 w-fit absolute sm:top-3 sm:-right-[19px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
+    <div className=" sm:border-l sm:border-border sm:py-[6px] z-10 w-fit absolute sm:top-[6px] sm:-right-[20px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
       {!props.first && (
         <button
           className="pt-[2px] h-5 w-5 p-0.5 mx-auto bg-border text-bg-page sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
@@ -325,22 +324,6 @@ const OptionsMenu = (props: { entityID: string; first: boolean }) => {
         <PageShareMenu entityID={props.entityID} />
       ) : null}
     </Menu>
-  );
-};
-
-const PageMenuItem = (props: {
-  children: React.ReactNode;
-  onClick: () => void;
-}) => {
-  return (
-    <button
-      className="pageOptionsMenuItem z-10 text-left text-secondary py-1 px-2 flex gap-2 hover:bg-accent-1 hover:text-accent-2"
-      onClick={() => {
-        props.onClick();
-      }}
-    >
-      {props.children}
-    </button>
   );
 };
 

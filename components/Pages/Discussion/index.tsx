@@ -2,12 +2,13 @@ import { borderStyles } from "app/borderTest/borderStyles";
 import { Block } from "components/Blocks/Block";
 import { PaintSmall } from "components/Icons";
 import { Popover } from "components/Popover";
-import React from "react";
+import React, { useState } from "react";
 import { useSubscribe } from "replicache-react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEntity, useReplicache } from "src/replicache";
 import { scanIndex } from "src/replicache/utils";
 import { MessageComposer } from "./MessageComposer";
+import { theme } from "tailwind.config";
 
 type Message = {
   id: string;
@@ -33,11 +34,43 @@ export const Discussion = (props: { entityID: string }) => {
         }),
       );
     }) || [];
+
+  let [messagesScrollPos, setMessagesScrollPos] = useState<number>(0);
+  let [discussionName, setDiscussionName] = useState<string>("");
+
   return (
-    <div className="discussion relative sm:p-4 p-3 w-full h-full text-sm text-secondary flex flex-col justify-between">
-      <div className="flex flex-col gap-2">
+    <div className="discussion w-full h-full text-sm text-secondary flex flex-col items-stretch">
+      <input
+        type="text"
+        value={discussionName}
+        onChange={(e) => setDiscussionName(e.currentTarget.value)}
+        placeholder="Discussion"
+        className="sm:px-4 px-3 pt-3 font-bold text-lg bg-transparent outline-none"
+        style={
+          messagesScrollPos > 10
+            ? {
+                fontSize: theme.fontSize["sm"],
+                paddingBottom: "0.25rem",
+              }
+            : { fontSize: theme.fontSize["lg"], paddingBottom: "1rem" }
+        }
+      />
+      {messagesScrollPos > 10 && (
+        <hr className="w-full border-border-light sm:mx-4 mx-3" />
+      )}
+
+      <div
+        className="no-scrollbar grow flex flex-col gap-8 overflow-y-scroll pb-8 pt-3"
+        id={`messages-${props.entityID}`}
+        onScroll={(e) => {
+          setMessagesScrollPos(e.currentTarget.scrollTop);
+        }}
+      >
         {messages.map((m) => (
-          <Message key={m.entityID} {...m} borderStyle="default" />
+          <div key={m.entityID} className="sm:px-4 px-3">
+            {" "}
+            <Message {...m} borderStyle="default" />
+          </div>
         ))}
       </div>
       <MessageComposer
@@ -104,7 +137,7 @@ const Message = (props: {
     minute: "2-digit",
   });
   return (
-    <div className="message relative w-full h-full mt-3 " style={selectedSytle}>
+    <div className="message relative w-full h-full" style={selectedSytle}>
       <div
         className={`
           messageAuthor

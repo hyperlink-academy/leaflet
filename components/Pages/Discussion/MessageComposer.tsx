@@ -5,7 +5,7 @@ import { ButtonPrimary } from "components/Buttons";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { PaintSmall } from "components/Icons";
 import { Popover } from "components/Popover";
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { useState } from "react";
 import {
   PermissionToken,
@@ -22,6 +22,7 @@ export const MessageComposer = (props: {
   let key = `message-draft-${props.entityID}`;
   let { rootEntity } = useReplicache();
 
+  let messages = document.getElementById(`messages-${props.entityID}`);
   let { data: leafletDraft, mutate } = useSWR(key, (key) => {
     let data = localStorage.getItem(key);
     if (data) return JSON.parse(data) as PermissionToken;
@@ -31,6 +32,7 @@ export const MessageComposer = (props: {
   let [name, setName] = useState("");
   let [borderStyle, setBorderStyle] =
     useState<keyof typeof borderStyles>("default");
+
   if (leafletDraft === undefined) return "loading";
   if (leafletDraft === null)
     return (
@@ -44,7 +46,6 @@ export const MessageComposer = (props: {
         Reply
       </ButtonPrimary>
     );
-  console.log(leafletDraft);
   return (
     <ReplicacheProvider
       token={leafletDraft}
@@ -55,7 +56,7 @@ export const MessageComposer = (props: {
       <EntitySetProvider
         set={leafletDraft.permission_token_rights[0].entity_set}
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3 sm:px-4 px-3 pb-2">
           <hr className="mb-2 border-border" />
           <div
             className={`w-full relative text-sm outline-none bg-transparent`}
@@ -71,9 +72,17 @@ export const MessageComposer = (props: {
           <div className="flex gap-4 place-self-end">
             <MessageThemeSetter setBorderStyle={setBorderStyle} />
             <ButtonPrimary
+              isDisabled={name === "" || !name}
+              errorMeassage="add a name!"
               onClick={async () => {
                 await submitComment(leafletDraft, props.entityID, rootEntity);
                 props.onSubmit();
+                setTimeout(() => {
+                  messages?.scrollTo({
+                    behavior: "smooth",
+                    top: messages.scrollHeight,
+                  });
+                }, 200);
               }}
             >
               send
@@ -190,7 +199,7 @@ const MessageAuthorInput = (props: {
             type="text"
             value={props.name}
             onChange={(e) => props.setName(e.currentTarget.value)}
-            placeholder="name (optional)"
+            placeholder="add a name..."
             className=" text-sm text-tertiary outline-none font-bold bg-transparent"
             style={{ width: "auto" }}
           />
@@ -202,7 +211,7 @@ const MessageAuthorInput = (props: {
             ref={spanRef}
             className={`invisible absolute whitespace-pre text-sm font-bold ${props.name ? "" : "italic"}`}
           >
-            {props.name || "name (optional)"}
+            {props.name || "add a name..."}
           </span>
         </div>
       </div>

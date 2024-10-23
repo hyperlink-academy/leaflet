@@ -32,8 +32,8 @@ export const borderStyles = {
   },
 
   sparkle: {
-    borderImageSlice: "38 81 45 20 fill",
-    borderImageWidth: "38px 81px 45px 20px",
+    borderImageSlice: "36 80 45 20 fill",
+    borderImageWidth: "36px 80px 45px 20px",
     borderImageRepeat: "round",
     borderImageSource: "url('borders/sparkleBorder.svg')",
     borderStyle: "solid",
