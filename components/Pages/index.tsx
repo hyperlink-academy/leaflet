@@ -17,21 +17,30 @@ import {
 } from "src/replicache";
 
 import { Media } from "../Media";
+import { scanIndex } from "src/replicache/utils";
+
 import { DesktopPageFooter } from "../DesktopFooter";
 import { ShareOptions } from "../ShareOptions";
 import { ThemePopover } from "../ThemeManager/ThemeSetter";
 import { HomeButton } from "../HomeButton";
-import { Canvas } from "../Canvas";
 import { DraftPostOptions } from "../Blocks/MailboxBlock";
-import { Blocks } from "components/Blocks";
 import { MenuItem, Menu } from "../Layout";
-import { MoreOptionsTiny, CloseTiny, PaintSmall, ShareSmall } from "../Icons";
 import { HelpPopover } from "../HelpPopover";
 import { CreateNewLeafletButton } from "app/home/CreateNewButton";
-import { scanIndex } from "src/replicache/utils";
 import { PageThemeSetter } from "../ThemeManager/PageThemeSetter";
 import { CardThemeProvider } from "../ThemeManager/ThemeProvider";
 import { PageShareMenu } from "./PageShareMenu";
+import {
+  MoreOptionsTiny,
+  DeleteSmall,
+  CloseTiny,
+  PaintSmall,
+  ShareSmall,
+} from "../Icons";
+
+import { Canvas } from "./Canvas";
+import { Blocks } from "./Doc";
+import { Discussion } from "./Discussion";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -39,7 +48,6 @@ export function Pages(props: { rootPage: string }) {
   let params = useSearchParams();
   let queryRoot = params.get("page");
   let firstPage = queryRoot || rootPage?.data.value || props.rootPage;
-  let entity_set = useEntitySetContext();
 
   return (
     <div
@@ -50,31 +58,13 @@ export function Pages(props: { rootPage: string }) {
       }}
     >
       <div
-        className="spacer flex justify-end items-start"
+        className="flex justify-end items-start"
         style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
         onClick={(e) => {
           e.currentTarget === e.target && blurPage();
         }}
       >
-        <Media mobile={false} className="h-full">
-          <div className="flex flex-col h-full justify-between mr-4 mt-1">
-            {entity_set.permissions.write ? (
-              <div className="flex flex-col justify-center gap-2 ">
-                <ShareOptions rootEntity={props.rootPage} />
-                <LeafletOptions entityID={props.rootPage} />
-                <CreateNewLeafletButton />
-                <HelpPopover />
-                <hr className="text-border my-3" />
-                <HomeButton />
-              </div>
-            ) : (
-              <div>
-                {" "}
-                <HomeButton />{" "}
-              </div>
-            )}
-          </div>
-        </Media>
+        <LeafletMenu rootPage={props.rootPage} />
       </div>
       <div className="flex items-stretch">
         <CardThemeProvider entityID={firstPage}>
@@ -99,11 +89,28 @@ export function Pages(props: { rootPage: string }) {
   );
 }
 
-export const LeafletOptions = (props: { entityID: string }) => {
+const LeafletMenu = (props: { rootPage: string }) => {
+  let entity_set = useEntitySetContext();
+
   return (
-    <>
-      <ThemePopover entityID={props.entityID} />
-    </>
+    <Media mobile={false} className="h-full">
+      <div className="leafletMenu flex flex-col h-full justify-between mr-4 mt-1">
+        {entity_set.permissions.write ? (
+          <div className="flex flex-col justify-center gap-2 ">
+            <ShareOptions rootEntity={props.rootPage} />
+            <ThemePopover entityID={props.rootPage} />
+            <CreateNewLeafletButton />
+            <HelpPopover />
+            <hr className="text-border my-3" />
+            <HomeButton />
+          </div>
+        ) : (
+          <div>
+            <HomeButton />
+          </div>
+        )}
+      </div>
+    </Media>
   );
 };
 
@@ -131,6 +138,8 @@ function Page(props: { entityID: string; first?: boolean }) {
           }}
         />
       )}
+      {/* // pageWrapper is required so that items absolutely positioned items on the page border
+      (like canvasWidthHandle) can overflow the page itself */}
       <div className="pageWrapper w-fit flex relative snap-center">
         <div
           onClick={(e) => {
@@ -142,17 +151,20 @@ function Page(props: { entityID: string; first?: boolean }) {
           }}
           id={elementId.page(props.entityID).container}
           style={{
-            width: pageType === "doc" ? "var(--page-width-units)" : undefined,
             backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
           }}
           className={`
-            ${pageType === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
               page
               grow flex flex-col
               overscroll-y-none
               overflow-y-scroll no-scrollbar
-              rounded-lg border
-              ${isFocused ? "shadow-md border-border" : "border-border-light"}
+              
+              ${
+                pageType === "discussion"
+                  ? "border-none !bg-transparent"
+                  : `rounded-lg border ${isFocused ? "shadow-md border-border" : "border-border-light"}`
+              }
+              ${pageType === "canvas" ? "!lg:max-w-[1152px]" : "w-[var(--page-width-units)]"}
             `}
         >
           <Media mobile={true}>
@@ -186,7 +198,10 @@ function Page(props: { entityID: string; first?: boolean }) {
 const PageContent = (props: { entityID: string }) => {
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
   if (pageType === "doc") return <DocContent entityID={props.entityID} />;
-  return <Canvas entityID={props.entityID} />;
+  if (pageType === "discussion")
+    return <Discussion entityID={props.entityID} />;
+  if (pageType === "canvas") return <Canvas entityID={props.entityID} />;
+  return null;
 };
 
 const DocContent = (props: { entityID: string }) => {
@@ -243,7 +258,7 @@ const PageOptionsMenu = (props: {
   first: boolean | undefined;
 }) => {
   return (
-    <div className=" z-10 w-fit absolute sm:top-3 sm:-right-[19px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
+    <div className=" sm:border-l sm:border-border sm:py-[6px] z-10 w-fit absolute sm:top-[6px] sm:-right-[20px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
       {!props.first && (
         <button
           className="pt-[2px] h-5 w-5 p-0.5 mx-auto bg-border text-bg-page sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2"
@@ -309,22 +324,6 @@ const OptionsMenu = (props: { entityID: string; first: boolean }) => {
         <PageShareMenu entityID={props.entityID} />
       ) : null}
     </Menu>
-  );
-};
-
-const PageMenuItem = (props: {
-  children: React.ReactNode;
-  onClick: () => void;
-}) => {
-  return (
-    <button
-      className="pageOptionsMenuItem z-10 text-left text-secondary py-1 px-2 flex gap-2 hover:bg-accent-1 hover:text-accent-2"
-      onClick={() => {
-        props.onClick();
-      }}
-    >
-      {props.children}
-    </button>
   );
 };
 

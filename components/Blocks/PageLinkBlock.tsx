@@ -9,8 +9,13 @@ import { RenderedTextBlock } from "components/Blocks/TextBlock";
 import { usePageMetadata } from "src/hooks/queries/usePageMetadata";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
-import { Canvas, CanvasBackground, CanvasContent } from "components/Canvas";
+import {
+  Canvas,
+  CanvasBackground,
+  CanvasContent,
+} from "components/Pages/Canvas";
 import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { DiscussionDefaultTiny, DiscussionSmall } from "components/Icons";
 
 export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
   let page = useEntity(props.entityID, "block/card");
@@ -21,6 +26,7 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
+  let isDiscussion = type === "discussion";
 
   let isOpen = useUIState((s) => s.openPages).includes(page?.data.value || "");
   if (!page)
@@ -31,8 +37,10 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
       <div
         className={`w-full cursor-pointer
         pageLinkBlockWrapper relative group/pageLinkBlock
-        bg-bg-page border shadow-sm outline outline-1 rounded-lg
+        
         flex overflow-clip
+        ${isDiscussion ? "border-none" : "bg-bg-page border shadow-sm outline outline-1 rounded-lg"}
+
         ${
           isSelected
             ? "border-tertiary outline-tertiary"
@@ -51,8 +59,10 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
           if (rep) focusPage(page.data.value, rep);
         }}
       >
-        {type === "canvas" && page ? (
+        {type === "canvas" ? (
           <CanvasLinkBlock entityID={page?.data.value} />
+        ) : type === "discussion" ? (
+          <DiscussionLinkBlock entityID={page?.data.value} />
         ) : (
           <DocLinkBlock {...props} />
         )}
@@ -221,6 +231,17 @@ const CanvasLinkBlock = (props: { entityID: string; preview?: boolean }) => {
         ) : (
           <CanvasContent entityID={props.entityID} preview />
         )}
+      </div>
+    </div>
+  );
+};
+
+const DiscussionLinkBlock = (props: { entityID: string }) => {
+  return (
+    <div className="w-full flex flex-col gap-2">
+      <div className=" text-sm w-fit flex gap-2 items-center justify-center font-bold py-1 px-2 rounded-md bg-accent-1 text-accent-2">
+        <DiscussionDefaultTiny />
+        Discussion<span className="font-normal">(6)</span>
       </div>
     </div>
   );

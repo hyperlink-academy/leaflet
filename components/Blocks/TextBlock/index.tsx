@@ -116,7 +116,7 @@ export function RenderedTextBlock(props: {
   entityID: string;
   className?: string;
   first?: boolean;
-  pageType?: "canvas" | "doc";
+  pageType?: "canvas" | "doc" | "discussion";
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
   let headingLevel = useEntity(props.entityID, "block/heading-level");
