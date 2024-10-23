@@ -37,7 +37,7 @@ export function LeafletTemplate(props: {
             </div>
           )}
         </div>
-        <div className="flex gap-2 justify-center items-end bottom-4">
+        <div className="flex sm:flex-row flex-col gap-2 justify-center items-center bottom-4">
           <Link
             href={`https://leaflet.pub/` + props.templateID}
             target="_blank"
@@ -74,10 +74,10 @@ export function TemplateList(props: {
   return (
     <div className="templateLeafletGrid flex flex-col gap-6">
       <div className="flex flex-col gap-0 text-center">
-        <h3 className="">{props.name}</h3>
+        <h3 className="text-[24px]">{props.name}</h3>
         <p className="text-secondary">{props.description}</p>
       </div>
-      <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-8 gap-x-4 sm:gap-6 grow pb-8">
+      <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-8 gap-x-6 sm:gap-6 grow pb-8">
         {props.children}
       </div>
     </div>
