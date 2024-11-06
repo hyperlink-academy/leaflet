@@ -6,6 +6,7 @@ import { isTextBlock } from "src/utils/isTextBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useReplicache } from "src/replicache";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
+import { focusBlock } from "src/utils/focusBlock";
 
 let debounce: number | null = null;
 export function useBlockMouseHandlers(props: Block) {
@@ -24,7 +25,6 @@ export function useBlockMouseHandlers(props: Block) {
         e.preventDefault();
         useUIState.getState().addBlockToSelection(props);
       } else {
-        if (!isTextBlock[props.type]) return;
         useUIState.getState().setFocusedBlock({
           entityType: "block",
           entityID: props.value,

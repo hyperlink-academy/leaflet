@@ -52,7 +52,7 @@ export const Block = memo(function Block(
   let mouseHandlers = useBlockMouseHandlers(props);
 
   // focus block on longpress, shouldnt the type be based on the block type (?)
-  let { isLongPress, handlers } = useLongPress(() => {
+  let { isLongPress, handlers: longPressHandlers } = useLongPress(() => {
     if (isLongPress.current) {
       focusBlock(
         { type: props.type, value: props.entityID, parent: props.parent },
@@ -77,7 +77,7 @@ export const Block = memo(function Block(
 
   return (
     <div
-      {...(!props.preview ? { ...mouseHandlers, ...handlers } : {})}
+      {...(!props.preview ? { ...mouseHandlers, ...longPressHandlers } : {})}
       className={`
         blockWrapper relative
         flex flex-row gap-2
