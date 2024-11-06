@@ -65,7 +65,6 @@ export const PopUpProvider: React.FC<React.PropsWithChildren<unknown>> = (
     },
     [setToastState],
   );
-  console.log(smokes);
   return (
     <PopUpContext.Provider
       value={{ setSmokeState: setState, setToastState: toaster }}

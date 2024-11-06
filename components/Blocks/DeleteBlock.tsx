@@ -61,7 +61,6 @@ export const AreYouSure = (props: {
             compact
             onClick={async (e) => {
               e.stopPropagation();
-              console.log("yooo");
               if (rep) await deleteBlock(entities, rep);
             }}
           >

@@ -266,7 +266,6 @@ function CanvasBlock(props: {
 
   let widthOnDragEnd = useCallback(
     (dragPosition: { x: number; y: number }) => {
-      console.log(dragPosition, rep);
       rep?.mutate.assertFact({
         entity: props.entityID,
         attribute: "canvas/block/width",

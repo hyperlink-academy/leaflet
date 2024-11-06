@@ -33,7 +33,6 @@ export const useHandlePaste = (
       let text = e.clipboardData.getData("text");
       let editorState = useEditorStates.getState().editorStates[entityID];
       if (!editorState) return;
-      console.log("yo");
       if (text && betterIsUrl(text)) {
         let selection = view.state.selection as TextSelection;
         if (selection.empty) return;

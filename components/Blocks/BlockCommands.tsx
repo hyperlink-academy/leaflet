@@ -68,12 +68,10 @@ function clearCommandSearchText(entityID: string) {
   useEditorStates.setState((s) => {
     let existingState = s.editorStates[entityID];
     if (!existingState) {
-      console.log("no existing state???");
       return s;
     }
 
     let tr = existingState.editor.tr;
-    console.log("deleting!");
     tr.deleteRange(1, tr.doc.content.size - 1);
     return {
       editorStates: {
@@ -182,7 +180,6 @@ export const blockCommands: Command[] = [
       let entity = await createBlockWithType(rep, props, "image");
       setTimeout(() => {
         let el = document.getElementById(elementId.block(entity).input);
-        console.log(el);
         el?.focus();
       }, 100);
     },

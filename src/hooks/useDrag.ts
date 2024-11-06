@@ -57,7 +57,6 @@ export const useDrag = (args: {
   let currentDragDelta = useRef({ x: 0, y: 0 });
   let end = useCallback(
     (e: { preventDefault: () => void }) => {
-      console.log("end???");
       isLongPress.current = false;
       if (timeout.current) {
         window.clearTimeout(timeout.current);
@@ -65,7 +64,6 @@ export const useDrag = (args: {
         return;
       }
       if (args.delay) e.preventDefault();
-      console.log(currentDragDelta.current);
       args.onDragEnd({ ...currentDragDelta.current });
       currentDragDelta.current = { x: 0, y: 0 };
       setDragStart(null);

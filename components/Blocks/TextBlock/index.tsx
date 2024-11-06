@@ -347,7 +347,6 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
                 editor?.view?.focus();
                 let tr = editorState.tr.insertText("/", 1);
                 tr.setSelection(TextSelection.create(tr.doc, 2));
-                console.log(tr);
                 useEditorStates.setState((s) => ({
                   editorStates: {
                     ...s.editorStates,

@@ -581,7 +581,6 @@ const metaA =
       repRef.current?.query(async (tx) => {
         let allBlocks =
           (await getBlocksWithType(tx, propsRef.current.parent)) || [];
-        console.log("allBlocks", allBlocks);
         useUIState.setState({
           selectedBlocks: allBlocks.map((b) => ({
             value: b.value,

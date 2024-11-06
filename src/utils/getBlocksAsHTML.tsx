@@ -187,7 +187,6 @@ function parseBlocks(blocks: Block[]) {
       }
     }
   }
-  console.log(parsed);
   return parsed;
 }
 

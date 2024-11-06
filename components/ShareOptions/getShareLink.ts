@@ -8,7 +8,6 @@ export async function getShareLink(
   token: { id: string; entity_set: string },
   rootEntity: string,
 ) {
-  console.log("Get share link");
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
   let link = await db.transaction(async (tx) => {
