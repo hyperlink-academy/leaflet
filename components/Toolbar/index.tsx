@@ -18,6 +18,7 @@ import { MultiselectToolbar } from "./MultiSelectToolbar";
 import { focusPage } from "components/Pages";
 import { AreYouSure, deleteBlock } from "components/Blocks/DeleteBlock";
 import { TooltipButton } from "components/Buttons";
+import { TextAlignmentToolbar } from "./TextAlignmentToolbar";
 
 export type ToolbarTypes =
   | "areYouSure"
@@ -25,6 +26,7 @@ export type ToolbarTypes =
   | "highlight"
   | "link"
   | "heading"
+  | "text-alignment"
   | "list"
   | "linkBlock"
   | "block"
@@ -109,18 +111,12 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
             />
           ) : toolbarState === "heading" ? (
             <TextBlockTypeToolbar onClose={() => setToolbarState("default")} />
+          ) : toolbarState === "text-alignment" ? (
+            <TextAlignmentToolbar />
           ) : toolbarState === "block" ? (
-            <BlockToolbar
-              setToolbarState={(state) => {
-                setToolbarState(state);
-              }}
-            />
+            <BlockToolbar setToolbarState={setToolbarState} />
           ) : toolbarState === "multiselect" ? (
-            <MultiselectToolbar
-              setToolbarState={(state) => {
-                setToolbarState(state);
-              }}
-            />
+            <MultiselectToolbar setToolbarState={setToolbarState} />
           ) : toolbarState === "areYouSure" ? (
             <AreYouSure
               compact

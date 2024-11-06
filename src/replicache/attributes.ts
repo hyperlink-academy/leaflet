@@ -48,6 +48,10 @@ const BlockAttributes = {
     type: "boolean",
     cardinality: "one",
   },
+  "block/text-alignment": {
+    type: "text-alignment-type-union",
+    cardinality: "one",
+  },
   "block/text": {
     type: "text",
     cardinality: "one",
@@ -206,6 +210,10 @@ export type Data<A extends keyof typeof Attributes> = {
     value: string;
   };
   reference: { type: "reference"; value: string };
+  "text-alignment-type-union": {
+    type: "text-alignment-type-union";
+    value: "right" | "left" | "center";
+  };
   "page-type-union": { type: "page-type-union"; value: "doc" | "canvas" };
   "block-type-union": {
     type: "block-type-union";

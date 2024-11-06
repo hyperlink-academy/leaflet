@@ -271,12 +271,10 @@ const backspace =
       if (propsRef.current.previousBlock) {
         focusBlock(propsRef.current.previousBlock, { type: "end" });
       } else {
-        useUIState
-          .getState()
-          .setFocusedBlock({
-            entityType: "page",
-            entityID: propsRef.current.parent,
-          });
+        useUIState.getState().setFocusedBlock({
+          entityType: "page",
+          entityID: propsRef.current.parent,
+        });
       }
       return true;
     }
@@ -491,6 +489,19 @@ const enter =
           entity: newEntityID,
           attribute: "block/heading-level",
           data: { type: "number", value: headingLevel.data.value || 0 },
+        });
+      }
+      let alignment = await repRef.current?.query((tx) =>
+        scanIndex(tx).eav(propsRef.current.entityID, "block/text-alignment"),
+      );
+      if (alignment?.[0] && alignment?.[0].data.value !== "left") {
+        await repRef.current?.mutate.assertFact({
+          entity: newEntityID,
+          attribute: "block/text-alignment",
+          data: {
+            type: "text-alignment-type-union",
+            value: alignment?.[0].data.value,
+          },
         });
       }
     };
