@@ -223,12 +223,12 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
   let handlePaste = useHandlePaste(props.entityID, propsRef, factID);
   let handleClickOn = useCallback<
     Exclude<Parameters<typeof ProseMirror>[0]["handleClickOn"], undefined>
-  >((view, _pos, node, _nodePos) => {
-    if (node.nodeSize - 1 <= _pos) return;
-    let mark = node
-      .resolve(_pos)
-      .marks()
-      .find((f) => f.type === schema.marks.link);
+  >((view, _pos, node, _nodePos, _event, direct) => {
+    if (!direct) return;
+    if (node.nodeSize - 2 <= _pos) return;
+    let mark =
+      node.nodeAt(_pos - 1)?.marks.find((f) => f.type === schema.marks.link) ||
+      node.nodeAt(_pos - 2)?.marks.find((f) => f.type === schema.marks.link);
     if (mark) {
       window.open(mark.attrs.href, "_blank");
     }
