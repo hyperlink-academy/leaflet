@@ -12,7 +12,7 @@ export const HelpPopover = () => {
   let entity_set = useEntitySetContext();
   return entity_set.permissions.write ? (
     <Popover
-      className="max-w-xs w-full"
+      className="max-w-xs w-full max-h-[60vh] overflow-y-scroll"
       trigger={
         <div className="p-1 rounded-full bg-accent-1 text-accent-2">
           <HelpSmall />{" "}
