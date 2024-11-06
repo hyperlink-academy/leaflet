@@ -35,7 +35,7 @@ export const ExternalLinkBlock = (
     } else input?.blur();
   }, [isSelected, props.entityID, props.preview]);
 
-  if (!url) {
+  if (url === undefined) {
     if (!permissions.write) return null;
     return (
       <label
@@ -115,9 +115,9 @@ const BlockLinkInput = (props: BlockProps) => {
   let [linkValue, setLinkValue] = useState("");
   let { rep } = useReplicache();
   let submit = async () => {
-    let entity = props.entityID;
-    if (!entity) {
-      entity = v7();
+    let linkEntity = props.entityID;
+    if (!linkEntity) {
+      linkEntity = v7();
 
       await rep?.mutate.addBlock({
         permission_set: entity_set.set,
@@ -125,12 +125,31 @@ const BlockLinkInput = (props: BlockProps) => {
         parent: props.parent,
         type: "card",
         position: generateKeyBetween(props.position, props.nextPosition),
-        newEntityID: entity,
+        newEntityID: linkEntity,
       });
     }
     let link = linkValue;
     if (!linkValue.startsWith("http")) link = `https://${linkValue}`;
-    addLinkBlock(link, entity, rep);
+    addLinkBlock(link, linkEntity, rep);
+
+    let textEntity = v7();
+    await rep?.mutate.addBlock({
+      permission_set: entity_set.set,
+      factID: v7(),
+      parent: props.parent,
+      type: "text",
+      position: generateKeyBetween(props.position, props.nextPosition),
+      newEntityID: textEntity,
+    });
+
+    focusBlock(
+      {
+        value: textEntity,
+        type: "text",
+        parent: props.parent,
+      },
+      { type: "start" },
+    );
   };
   let smoke = useSmoker();
 
@@ -169,6 +188,7 @@ const BlockLinkInput = (props: BlockProps) => {
         />
         <div className="flex items-center gap-3 ">
           <button
+            autoFocus={false}
             className={`p-1 ${isSelected ? "text-accent-contrast" : "text-border"}`}
             onMouseDown={(e) => {
               e.preventDefault();

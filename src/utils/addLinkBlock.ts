@@ -12,19 +12,22 @@ export async function addLinkBlock(
   rep?: Replicache<ReplicacheMutators> | null,
 ) {
   if (!rep) return;
-  await rep.mutate.assertFact({
-    entity: entityID,
-    attribute: "block/type",
-    data: { type: "block-type-union", value: "link" },
-  });
-  await rep?.mutate.assertFact({
-    entity: entityID,
-    attribute: "link/url",
-    data: {
-      type: "text",
-      value: url,
+
+  await rep?.mutate.assertFact([
+    {
+      entity: entityID,
+      attribute: "link/url",
+      data: {
+        type: "text",
+        value: url,
+      },
     },
-  });
+    {
+      entity: entityID,
+      attribute: "block/type",
+      data: { type: "block-type-union", value: "link" },
+    },
+  ]);
   fetch("/api/link_previews", {
     headers: { "Content-Type": "application/json" },
     method: "POST",

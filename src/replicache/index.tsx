@@ -160,7 +160,9 @@ export function useEntity<A extends keyof typeof Attributes>(
   let d = data || fallbackData;
   return Attributes[attribute].cardinality === "many"
     ? (d as CardinalityResult<A>)
-    : (d[0] as CardinalityResult<A>);
+    : d.length === 0 && data === null
+      ? (null as CardinalityResult<A>)
+      : (d[0] as CardinalityResult<A>);
 }
 
 export function useReferenceToEntity<
