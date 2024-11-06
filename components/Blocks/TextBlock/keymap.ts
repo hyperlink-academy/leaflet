@@ -374,9 +374,15 @@ const enter =
           type: blockType,
           position: {
             x: position.data.position.x,
-            y: position.data.position.y + box.height + 12,
+            y: position.data.position.y + box.height,
           },
         });
+        if (propsRef.current.listData)
+          repRef.current?.mutate.assertFact({
+            entity: newEntityID,
+            attribute: "block/is-list",
+            data: { type: "boolean", value: true },
+          });
         return;
       }
       if (propsRef.current.listData) {
