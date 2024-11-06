@@ -2,6 +2,11 @@ import { useUIState } from "src/useUIState";
 import { ToolbarButton } from ".";
 import { useCallback } from "react";
 import { useEntity, useReplicache } from "src/replicache";
+import {
+  AlignCenterSmall,
+  AlignLeftSmall,
+  AlignRightSmall,
+} from "components/Icons";
 
 export function TextAlignmentToolbar() {
   let focusedBlock = useUIState((s) => s.focusedEntity);
@@ -18,26 +23,26 @@ export function TextAlignmentToolbar() {
     [focusedBlock, rep],
   );
   return (
-    <div className="flex w-full justify-between items-center gap-4">
+    <>
       <ToolbarButton
         onClick={() => setAlignment("left")}
         tooltipContent="Align Text Left"
       >
-        left
+        <AlignLeftSmall />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => setAlignment("center")}
         tooltipContent="Align Text Center"
       >
-        center
+        <AlignCenterSmall />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => setAlignment("right")}
         tooltipContent="Align Text Right"
       >
-        right
+        <AlignRightSmall />
       </ToolbarButton>
-    </div>
+    </>
   );
 }
 
@@ -57,7 +62,13 @@ export function TextAlignmentButton(props: {
         props.setToolbarState("text-alignment");
       }}
     >
-      {alignment}
+      {alignment === "left" ? (
+        <AlignLeftSmall />
+      ) : alignment === "center" ? (
+        <AlignCenterSmall />
+      ) : (
+        <AlignRightSmall />
+      )}
     </ToolbarButton>
   );
 }
