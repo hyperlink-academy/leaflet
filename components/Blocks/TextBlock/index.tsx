@@ -120,6 +120,13 @@ export function RenderedTextBlock(props: {
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
   let headingLevel = useEntity(props.entityID, "block/heading-level");
+  let alignment =
+    useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
+  let alignmentClass = {
+    left: "text-left",
+    right: "text-right",
+    center: "text-center",
+  }[alignment];
   let { permissions } = useEntitySetContext();
 
   if (!initialFact) {
@@ -161,6 +168,7 @@ export function RenderedTextBlock(props: {
     <pre
       style={{ wordBreak: "break-word" }} // better than tailwind break-all!
       className={`
+        ${alignmentClass}
       w-full whitespace-pre-wrap outline-none ${props.className} `}
     >
       {nodes.length === 0 && <br />}
@@ -188,6 +196,13 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
     (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   let headingLevel = useEntity(props.entityID, "block/heading-level");
+  let alignment =
+    useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
+  let alignmentClass = {
+    left: "text-left",
+    right: "text-right",
+    center: "text-center",
+  }[alignment];
 
   let [value, factID] = useYJSValue(props.entityID);
 
@@ -293,6 +308,7 @@ export function BaseTextBlock(props: BlockProps & { className: string }) {
           // forces break if a single text string (e.g. a url) spans more than a full line
           style={{ wordBreak: "break-word" }}
           className={`
+            ${alignmentClass}
           grow resize-none align-top whitespace-pre-wrap bg-transparent
           outline-none
           ${props.className}`}

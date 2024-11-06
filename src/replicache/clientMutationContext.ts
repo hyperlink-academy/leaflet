@@ -1,7 +1,7 @@
 import { WriteTransaction } from "replicache";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
-import { FactWithIndexes } from "./utils";
+import { FactWithIndexes, scanIndex } from "./utils";
 import { Attributes, FilterAttributes } from "./attributes";
 import { Fact } from ".";
 import { MutationContext } from "./mutations";
@@ -21,13 +21,7 @@ export function clientMutationContext(tx: WriteTransaction) {
     },
     scanIndex: {
       async eav(entity, attribute) {
-        let existingFact = await tx
-          .scan<Fact<typeof attribute>>({
-            indexName: "eav",
-            prefix: attribute ? `${entity}-${attribute}` : entity,
-          })
-          .toArray();
-        return existingFact;
+        return scanIndex(tx).eav(entity, attribute);
       },
     },
     async assertFact(f) {
@@ -36,12 +30,7 @@ export function clientMutationContext(tx: WriteTransaction) {
       let id = f.id || v7();
       let data = { ...f.data };
       if (attribute.cardinality === "one") {
-        let existingFact = await tx
-          .scan<Fact<typeof f.attribute>>({
-            indexName: "eav",
-            prefix: `${f.entity}-${f.attribute}`,
-          })
-          .toArray();
+        let existingFact = await scanIndex(tx).eav(f.entity, f.attribute);
         if (existingFact[0]) {
           id = existingFact[0].id;
           if (attribute.type === "text") {

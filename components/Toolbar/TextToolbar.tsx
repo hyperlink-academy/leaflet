@@ -9,6 +9,7 @@ import { TextDecorationButton } from "./TextDecorationButton";
 import { HighlightButton } from "./HighlightToolbar";
 import { ToolbarTypes } from ".";
 import { schema } from "components/Blocks/TextBlock/schema";
+import { TextAlignmentButton } from "./TextAlignmentToolbar";
 
 export const TextToolbar = (props: {
   lastUsedHighlight: string;
@@ -72,6 +73,7 @@ export const TextToolbar = (props: {
       />
       <Separator classname="h-6" />
       <TextBlockTypeButton setToolbarState={props.setToolbarState} />
+      <TextAlignmentButton setToolbarState={props.setToolbarState} />
       <Separator classname="h-6" />
       <ListButton setToolbarState={props.setToolbarState} />
       <Separator classname="h-6" />
