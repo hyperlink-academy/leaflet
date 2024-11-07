@@ -65,8 +65,9 @@ export const ExternalLinkBlock = (
       className={`
         externalLinkBlock flex relative group/linkBlock
         h-[104px] w-full bg-bg-page overflow-hidden text-primary hover:no-underline no-underline
-        border  hover:border-accent-contrast outline outline-1 -outline-offset-0 rounded-lg shadow-sm
-        ${isSelected ? "outline-accent-contrast border-accent-contrast" : "outline-transparent border-border-light"}
+        hover:border-accent-contrast  shadow-sm
+        ${isSelected ? "block-border-selected !outline-accent-contrast !border-accent-contrast" : "block-border"}
+
         `}
     >
       <div className="pt-2 pb-2 px-3 grow min-w-0">

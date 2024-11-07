@@ -99,9 +99,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
         }
         height={image?.data.height}
         width={image?.data.width}
-        className={`
-          outline outline-1 border rounded-lg
-          ${isSelected ? "border-tertiary outline-tertiary" : "border-transparent  outline-transparent"}`}
+        className={isSelected ? "block-border-selected " : "block-border"}
       />
     </div>
   );

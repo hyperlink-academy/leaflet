@@ -31,15 +31,10 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
       <div
         className={`w-full cursor-pointer
         pageLinkBlockWrapper relative group/pageLinkBlock
-        bg-bg-page border shadow-sm outline outline-1 rounded-lg
+        bg-bg-page shadow-sm 
         flex overflow-clip
-        ${
-          isSelected
-            ? "border-tertiary outline-tertiary"
-            : isOpen
-              ? "border-border outline-transparent hover:outline-border-light"
-              : "border-border-light outline-transparent hover:outline-border-light"
-        }
+        ${isSelected ? "block-border-selected " : "block-border"}
+        ${isOpen && "!border-tertiary"}
         `}
         onClick={(e) => {
           if (!page) return;

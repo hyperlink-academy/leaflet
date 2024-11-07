@@ -63,8 +63,7 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
       <iframe
         className={`
               flex flex-col relative w-full overflow-hidden group/embedBlock
-              border  outline outline-1 -outline-offset-0 rounded-lg
-              ${isSelected ? "border-tertiary outline-tertiary" : "border-border-light outline-transparent"}
+              ${isSelected ? "block-border-selected " : "block-border"}
               `}
         width="100%"
         height="100%"
@@ -77,7 +76,7 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
         href={url?.data.value}
         target="_blank"
         style={{ wordBreak: "break-word" }} // better than tailwind break-all!
-        className={`py-0.5 min-w-0 w-full line-clamp-1 text-xs italic text-accent-contrast`}
+        className={`py-0.5 min-w-0 w-max line-clamp-1 text-xs italic text-accent-contrast`}
       >
         {url?.data.value}
       </a>

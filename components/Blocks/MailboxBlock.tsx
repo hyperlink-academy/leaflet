@@ -45,11 +45,8 @@ export const MailboxBlock = (props: BlockProps) => {
   return (
     <div className={`mailboxContent relative w-full flex flex-col gap-1`}>
       <div
-        className={`flex flex-col gap-2 items-center justify-center w-full rounded-lg border outline ${
-          isSelected
-            ? "border-tertiary outline-tertiary"
-            : "border-border-light outline-transparent"
-        }`}
+        className={`flex flex-col gap-2 items-center justify-center w-full 
+          ${isSelected ? "block-border-selected " : "block-border"} `}
         style={{
           backgroundColor:
             "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
