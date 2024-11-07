@@ -167,6 +167,7 @@ input[type="number"] {
   @apply outline-offset-1;
   @apply outline-1;
   @apply outline-transparent;
+  @apply hover:border-border;
 }
 
 .block-border-selected {
