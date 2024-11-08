@@ -18,6 +18,7 @@ import { HeadingBlock } from "./HeadingBlock";
 import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
 import { AreYouSure } from "./DeleteBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { DateTimeBlock } from "./DateTimeBlock";
 
 export type Block = {
   factID: string;
@@ -52,7 +53,7 @@ export const Block = memo(function Block(
   let mouseHandlers = useBlockMouseHandlers(props);
 
   // focus block on longpress, shouldnt the type be based on the block type (?)
-  let { isLongPress, handlers: longPressHandlers } = useLongPress(() => {
+  let { isLongPress, handlers } = useLongPress(() => {
     if (isLongPress.current) {
       focusBlock(
         { type: props.type, value: props.entityID, parent: props.parent },
@@ -77,7 +78,7 @@ export const Block = memo(function Block(
 
   return (
     <div
-      {...(!props.preview ? { ...mouseHandlers, ...longPressHandlers } : {})}
+      {...(!props.preview ? { ...mouseHandlers, ...handlers } : {})}
       className={`
         blockWrapper relative
         flex flex-row gap-2
@@ -114,6 +115,7 @@ export const BaseBlock = (
   },
 ) => {
   // BaseBlock renders the actual block content
+  let BlockTypeComponent = BlockTypeComponents[props.type];
   return (
     <div className="grow flex gap-2">
       {props.listData && <ListMarker {...props} />}
@@ -126,28 +128,25 @@ export const BaseBlock = (
           entityID={props.entityID}
         />
       ) : (
-        <>
-          {props.type === "card" ? (
-            <PageLinkBlock {...props} preview={!props.preview} />
-          ) : props.type === "text" ? (
-            <TextBlock {...props} className="" preview={props.preview} />
-          ) : props.type === "heading" ? (
-            <HeadingBlock {...props} preview={props.preview} />
-          ) : props.type === "image" ? (
-            <ImageBlock {...props} />
-          ) : props.type === "link" ? (
-            <ExternalLinkBlock {...props} />
-          ) : props.type === "embed" ? (
-            <EmbedBlock {...props} />
-          ) : props.type === "mailbox" ? (
-            <div className="flex flex-col gap-4 w-full">
-              <MailboxBlock {...props} />
-            </div>
-          ) : null}
-        </>
+        <BlockTypeComponent {...props} preview={props.preview} />
       )}
     </div>
   );
+};
+
+const BlockTypeComponents: {
+  [K in Fact<"block/type">["data"]["value"]]: React.ComponentType<
+    BlockProps & { preview?: boolean }
+  >;
+} = {
+  card: PageLinkBlock,
+  text: TextBlock,
+  heading: HeadingBlock,
+  image: ImageBlock,
+  link: ExternalLinkBlock,
+  embed: EmbedBlock,
+  mailbox: MailboxBlock,
+  datetime: DateTimeBlock,
 };
 
 export const BlockMultiselectIndicator = (props: BlockProps) => {
