@@ -8,6 +8,7 @@ import { HomeButton } from "./HomeButton";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { HelpPopover } from "./HelpPopover";
 import { CreateNewLeafletButton } from "app/home/CreateNewButton";
+import { Watermark } from "./Watermark";
 
 export function MobileFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedEntity);
@@ -40,8 +41,8 @@ export function MobileFooter(props: { entityID: string }) {
           </div>
         </div>
       ) : (
-        <div className="pb-2 px-2 z-10">
-          <HomeButton />
+        <div className="pb-2 px-2 z-10 place-self-end">
+          <Watermark mobile />
         </div>
       )}
     </Media>

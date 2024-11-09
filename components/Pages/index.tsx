@@ -8,7 +8,6 @@ import { useSearchParams } from "next/navigation";
 import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
 
-import Link from "next/link";
 import { Replicache } from "replicache";
 import {
   Fact,
@@ -34,6 +33,7 @@ import { scanIndex } from "src/replicache/utils";
 import { PageThemeSetter } from "../ThemeManager/PageThemeSetter";
 import { CardThemeProvider } from "../ThemeManager/ThemeProvider";
 import { PageShareMenu } from "./PageShareMenu";
+import { Watermark } from "components/Watermark";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -75,15 +75,7 @@ export function Pages(props: { rootPage: string }) {
                 <HomeButton />{" "}
               </div>
             )}
-            <div
-              className="whitespace-nowrap text-xs rotate-180 text-tertiary pt-2 mr-0 "
-              style={{ writingMode: "vertical-lr" }}
-            >
-              made using{" "}
-              <Link className="font-bold" href="/">
-                Leaflet
-              </Link>
-            </div>
+            <Watermark />
           </div>
         </Media>
       </div>
