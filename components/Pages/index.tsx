@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useUIState } from "src/useUIState";
 import { useEntitySetContext } from "../EntitySetProvider";
@@ -7,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { focusBlock } from "src/utils/focusBlock";
 import { elementId } from "src/utils/elementId";
 
+import Link from "next/link";
 import { Replicache } from "replicache";
 import {
   Fact,
@@ -57,9 +59,9 @@ export function Pages(props: { rootPage: string }) {
         }}
       >
         <Media mobile={false} className="h-full">
-          <div className="flex flex-col h-full justify-between mr-4 mt-1">
+          <div className="flex flex-col h-full justify-between  mt-1">
             {entity_set.permissions.write ? (
-              <div className="flex flex-col justify-center gap-2 ">
+              <div className="flex flex-col justify-center gap-2 mr-4">
                 <ShareOptions rootEntity={props.rootPage} />
                 <LeafletOptions entityID={props.rootPage} />
                 <CreateNewLeafletButton />
@@ -73,6 +75,15 @@ export function Pages(props: { rootPage: string }) {
                 <HomeButton />{" "}
               </div>
             )}
+            <div
+              className="whitespace-nowrap text-xs rotate-180 text-tertiary pt-2 mr-0 "
+              style={{ writingMode: "vertical-lr" }}
+            >
+              made using{" "}
+              <Link className="font-bold" href="/">
+                Leaflet
+              </Link>
+            </div>
           </div>
         </Media>
       </div>
