@@ -19,6 +19,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import {
   BlockImageSmall,
+  CheckboxEmpty,
   CloseContrastSmall,
   PaintSmall,
   PopoverArrow,
@@ -170,7 +171,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                     ? "cover"
                     : `calc(${leafletBGRepeat.data.value}px / 2 )`,
                 }}
-                className={`bg-bg-leaflet mx-2 p-3  mb-3 flex flex-col rounded-md  border border-border ${props.home ? "" : "pb-0"}`}
+                className={`bg-bg-leaflet mx-2 p-3  mb-2 flex flex-col rounded-md  border border-border ${props.home ? "" : "pb-0"}`}
               >
                 <div className={`flex flex-col z-10 mt-4 -mb-[6px] `}>
                   <div
@@ -284,6 +285,19 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                   </>
                 )}
               </div>
+              <label className="px-3 pb-3 flex gap-2 items-start cursor-pointer">
+                <input type="checkbox" className="hidden" />
+                <CheckboxEmpty className="shrink-0 mt-1 text-[#595959]" />
+                <div className="flex flex-col gap-0">
+                  <div className="text-sm font-bold text-[#595959]">
+                    Show Leaflet Watermark
+                  </div>
+                  <div className="text-sm text-[#969696]">
+                    If you like using Leaflet, consider helping us spread the
+                    word!
+                  </div>
+                </div>
+              </label>
             </div>
             <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
               <PopoverArrow
