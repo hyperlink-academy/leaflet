@@ -57,12 +57,21 @@ export async function createNewLeaflet(
       // And add it to that permission set
       .values({ set: entity_set.id, id: v7() })
       .returning();
-    await tx.insert(facts).values({
-      id: v7(),
-      entity: root_entity.id,
-      attribute: "root/page",
-      data: sql`${{ type: "ordered-reference", value: first_page.id, position: "a0" }}`,
-    });
+    await tx.insert(facts).values([
+      {
+        id: v7(),
+        entity: root_entity.id,
+        attribute: "root/page",
+        data: sql`${{ type: "ordered-reference", value: first_page.id, position: "a0" }}`,
+      },
+      //Set theme/page-leaflet-watermark to true by default for new leaflets
+      {
+        id: v7(),
+        entity: root_entity.id,
+        attribute: "theme/page-leaflet-watermark",
+        data: sql`${{ type: "boolean", value: true }}`,
+      },
+    ]);
 
     if (pageType === "canvas") {
       await tx.insert(facts).values([

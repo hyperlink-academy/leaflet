@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { LogoSmall, LogoTiny } from "./Icons";
 import { theme } from "tailwind.config";
+import { useEntity, useReplicache } from "src/replicache";
 
 export const Watermark = (props: { mobile?: boolean }) => {
+  let { rootEntity } = useReplicache();
+  let showWatermark = useEntity(rootEntity, "theme/page-leaflet-watermark");
+  if (!showWatermark?.data.value) return null;
   return (
     <Link href="/" className="hover:no-underline">
       <div className="sm:mb-2 sm:mr-4 group/watermark flex sm:flex-col gap-2 items-center justify-center ">
