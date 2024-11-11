@@ -112,6 +112,10 @@ const EmbedBlockAttributes = {
 } as const;
 
 export const ThemeAttributes = {
+  "theme/page-leaflet-watermark": {
+    type: "boolean",
+    cardinality: "one",
+  },
   "theme/page-background": {
     type: "color",
     cardinality: "one",

@@ -19,6 +19,8 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import {
   BlockImageSmall,
+  CheckboxChecked,
+  CheckboxEmpty,
   CloseContrastSmall,
   PaintSmall,
   PopoverArrow,
@@ -170,7 +172,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                     ? "cover"
                     : `calc(${leafletBGRepeat.data.value}px / 2 )`,
                 }}
-                className={`bg-bg-leaflet mx-2 p-3  mb-3 flex flex-col rounded-md  border border-border ${props.home ? "" : "pb-0"}`}
+                className={`bg-bg-leaflet mx-2 p-3  mb-2 flex flex-col rounded-md  border border-border ${props.home ? "" : "pb-0"}`}
               >
                 <div className={`flex flex-col z-10 mt-4 -mb-[6px] `}>
                   <div
@@ -284,6 +286,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                   </>
                 )}
               </div>
+              <WatermarkSetter entityID={props.entityID} />
             </div>
             <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
               <PopoverArrow
@@ -297,7 +300,39 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
     </>
   );
 };
-
+function WatermarkSetter(props: { entityID: string }) {
+  let { rep } = useReplicache();
+  let checked = useEntity(props.entityID, "theme/page-leaflet-watermark");
+  return (
+    <label className="px-3 pb-3 flex gap-2 items-start cursor-pointer">
+      <input
+        type="checkbox"
+        checked={!!checked?.data.value}
+        className="hidden"
+        onChange={(e) => {
+          rep?.mutate.assertFact({
+            entity: props.entityID,
+            attribute: "theme/page-leaflet-watermark",
+            data: { type: "boolean", value: e.currentTarget.checked },
+          });
+        }}
+      />
+      {!checked?.data.value ? (
+        <CheckboxEmpty className="shrink-0 mt-1 text-[#595959]" />
+      ) : (
+        <CheckboxChecked className="shrink-0 mt-1 text-[#595959]" />
+      )}
+      <div className="flex flex-col gap-0">
+        <div className="text-sm font-bold text-[#595959]">
+          Show Leaflet Watermark
+        </div>
+        <div className="text-sm text-[#969696]">
+          If you like using Leaflet, consider helping us spread the word!
+        </div>
+      </div>
+    </label>
+  );
+}
 let thumbStyle =
   "w-4 h-4 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C,_inset_0_0_0_1px_#8C8C8C]";
 
