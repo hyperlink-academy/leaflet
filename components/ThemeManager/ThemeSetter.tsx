@@ -288,8 +288,8 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
               </div>
               <label className="px-3 pb-3 flex gap-2 items-start cursor-pointer">
                 <input type="checkbox" className="hidden" />
-                <CheckboxEmpty className="shrink-0 mt-1 text-[#595959]" />
-                <CheckboxChecked className="shrink-0 mt-1 text-accent-1" />
+                {/* <CheckboxEmpty className="shrink-0 mt-1 text-[#595959]" /> */}
+                <CheckboxChecked className="shrink-0 mt-1 text-[#595959]" />
                 <div className="flex flex-col gap-0">
                   <div className="text-sm font-bold text-[#595959]">
                     Show Leaflet Watermark
