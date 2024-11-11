@@ -1,9 +1,9 @@
 import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps } from "./Block";
-import { DayPicker } from "react-day-picker";
+import { ChevronProps, DayPicker } from "react-day-picker";
 import * as Popover from "@radix-ui/react-popover";
 import { useMemo, useState } from "react";
-import { BlockCalendarSmall } from "components/Icons";
+import { ArrowRightTiny, BlockCalendarSmall } from "components/Icons";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useUIState } from "src/useUIState";
 
@@ -24,19 +24,21 @@ export function DateTimeBlock(props: BlockProps) {
     <Popover.Root open={!permissions.write ? false : undefined}>
       <Popover.Trigger>
         <button
-          className={`flex flex-row gap-1 italic
-          ${isSelected ? "block-border" : "border border-transparent"}
+          className={`flex flex-row gap-2 group/date w-64
+          ${isSelected ? "block-border-selected !border-transparent" : "border border-transparent"}
           `}
         >
-          <BlockCalendarSmall />{" "}
+          <BlockCalendarSmall />
           {date ? (
-            selectedDate.toLocaleDateString(undefined, {
-              month: "short",
-              year: "numeric",
-              day: "numeric",
-            })
+            <div className="group-hover/date:underline font-bold ">
+              {selectedDate.toLocaleDateString(undefined, {
+                month: "short",
+                year: "numeric",
+                day: "numeric",
+              })}
+            </div>
           ) : (
-            <div className="italic rounded-md border border-border px-1 text-border w-48 text-left">
+            <div className="italic text-tertiary  text-left group-hover/date:underline">
               {permissions.write ? "add a date..." : "TBD..."}
             </div>
           )}
@@ -44,15 +46,26 @@ export function DateTimeBlock(props: BlockProps) {
       </Popover.Trigger>
 
       <Popover.Portal>
-        <Popover.Content
-          className="w-48"
-          sideOffset={4}
-          align="start"
-          alignOffset={28}
-        >
+        <Popover.Content className="w-64" sideOffset={8} align="start">
           <DayPicker
+            components={{
+              Chevron: (props: ChevronProps) => <CustomChevron {...props} />,
+            }}
             classNames={{
-              selected: "bg-accent-1",
+              months: "relative",
+              month_caption:
+                "font-bold text-center w-full bg-border-light mb-1 py-1 rounded-md",
+              button_next:
+                "absolute top-1 right-0 p-1 text-secondary hover:text-accent-contrast  flex align-center",
+              button_previous:
+                "absolute top-1 left-0 p-1 text-secondary hover:text-accent-contrast rotate-180 flex align-center ",
+              chevron: "text-inherit",
+              month_grid: "w-full table-fixed",
+              weekdays: "text-secondary",
+              day: "h-[34px]  text-center",
+              outside: "text-border",
+              today: "font-bold",
+              selected: "bg-accent-1 text-accent-2 rounded-md font-bold ",
               root: "bg-bg-page border p-2 rounded-md border-border",
             }}
             mode="single"
@@ -71,3 +84,11 @@ export function DateTimeBlock(props: BlockProps) {
     </Popover.Root>
   );
 }
+
+const CustomChevron = (props: ChevronProps) => {
+  return (
+    <button {...props}>
+      <ArrowRightTiny />
+    </button>
+  );
+};
