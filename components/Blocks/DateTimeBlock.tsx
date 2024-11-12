@@ -6,19 +6,65 @@ import { useMemo, useState } from "react";
 import { ArrowRightTiny, BlockCalendarSmall } from "components/Icons";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useUIState } from "src/useUIState";
+import { setHours, setMinutes } from "date-fns";
 
 export function DateTimeBlock(props: BlockProps) {
   let { rep } = useReplicache();
   let { permissions } = useEntitySetContext();
-  let date = useEntity(props.entityID, "block/date-time");
+  let dateFact = useEntity(props.entityID, "block/date-time");
+
+  const [timeValue, setTimeValue] = useState<string>("00:00");
   let selectedDate = useMemo(() => {
-    if (!date) return new Date();
-    return new Date(date.data.value);
-  }, [date]);
+    if (!dateFact) return new Date();
+    return new Date(dateFact.data.value);
+  }, [dateFact]);
 
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
+  const handleTimeChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const time = e.target.value;
+    if (!dateFact) {
+      setTimeValue(time);
+      return;
+    }
+    const [hours, minutes] = time.split(":").map((str) => parseInt(str, 10));
+    const newSelectedDate = setHours(setMinutes(selectedDate, minutes), hours);
+    rep?.mutate.assertFact({
+      entity: props.entityID,
+      data: { type: "string", value: newSelectedDate.toISOString() },
+      attribute: "block/date-time",
+    });
+    setTimeValue(time);
+  };
+
+  const handleDaySelect = (date: Date | undefined) => {
+    if (!timeValue || !date) {
+      if (date)
+        rep?.mutate.assertFact({
+          entity: props.entityID,
+          data: { type: "string", value: date.toISOString() },
+          attribute: "block/date-time",
+        });
+      return;
+    }
+    const [hours, minutes] = timeValue
+      .split(":")
+      .map((str) => parseInt(str, 10));
+    const newDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      hours,
+      minutes,
+    );
+
+    rep?.mutate.assertFact({
+      entity: props.entityID,
+      data: { type: "string", value: newDate.toISOString() },
+      attribute: "block/date-time",
+    });
+  };
 
   return (
     <Popover.Root open={!permissions.write ? false : undefined}>
@@ -28,12 +74,17 @@ export function DateTimeBlock(props: BlockProps) {
         `}
       >
         <BlockCalendarSmall className="text-secondary" />
-        {date ? (
+        {dateFact ? (
           <div className="group-hover/date:underline font-bold ">
             {selectedDate.toLocaleDateString(undefined, {
               month: "short",
               year: "numeric",
               day: "numeric",
+            })}{" "}
+            |{" "}
+            {selectedDate.toLocaleTimeString(undefined, {
+              hour: "numeric",
+              minute: "numeric",
             })}
           </div>
         ) : (
@@ -45,38 +96,38 @@ export function DateTimeBlock(props: BlockProps) {
 
       <Popover.Portal>
         <Popover.Content className="w-64 z-10" sideOffset={8} align="start">
-          <DayPicker
-            components={{
-              Chevron: (props: ChevronProps) => <CustomChevron {...props} />,
-            }}
-            classNames={{
-              months: "relative",
-              month_caption:
-                "font-bold text-center w-full bg-border-light mb-2 py-1 rounded-md",
-              button_next:
-                "absolute right-0 top-1 p-1 text-secondary hover:text-accent-contrast  flex align-center",
-              button_previous:
-                "absolute left-0 top-1  p-1 text-secondary hover:text-accent-contrast rotate-180 flex align-center ",
-              chevron: "text-inherit",
-              month_grid: "w-full table-fixed",
-              weekdays: "text-secondary text-sm",
-              day: "h-[34px]  text-center",
-              outside: "text-border",
-              today: "font-bold",
-              selected: "bg-accent-1 text-accent-2 rounded-md font-bold ",
-              root: "bg-bg-page border p-2 rounded-md border-border",
-            }}
-            mode="single"
-            selected={selectedDate}
-            onSelect={(date) => {
-              if (date)
-                rep?.mutate.assertFact({
-                  entity: props.entityID,
-                  data: { type: "string", value: date.toISOString() },
-                  attribute: "block/date-time",
-                });
-            }}
-          />
+          <div className="bg-bg-page border p-2 rounded-md border-border">
+            <DayPicker
+              components={{
+                Chevron: (props: ChevronProps) => <CustomChevron {...props} />,
+              }}
+              classNames={{
+                months: "relative",
+                month_caption:
+                  "font-bold text-center w-full bg-border-light mb-2 py-1 rounded-md",
+                button_next:
+                  "absolute right-0 top-1 p-1 text-secondary hover:text-accent-contrast  flex align-center",
+                button_previous:
+                  "absolute left-0 top-1  p-1 text-secondary hover:text-accent-contrast rotate-180 flex align-center ",
+                chevron: "text-inherit",
+                month_grid: "w-full table-fixed",
+                weekdays: "text-secondary text-sm",
+                day: "h-[34px]  text-center",
+                outside: "text-border",
+                today: "font-bold",
+                selected: "bg-accent-1 text-accent-2 rounded-md font-bold ",
+              }}
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleDaySelect}
+            />
+            <input
+              type="time"
+              value={timeValue}
+              onChange={handleTimeChange}
+              className="w-full border"
+            />
+          </div>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
