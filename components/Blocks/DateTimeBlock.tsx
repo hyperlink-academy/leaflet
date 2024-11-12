@@ -22,27 +22,25 @@ export function DateTimeBlock(props: BlockProps) {
 
   return (
     <Popover.Root open={!permissions.write ? false : undefined}>
-      <Popover.Trigger>
-        <button
-          className={`flex flex-row gap-2 group/date w-64
-          ${isSelected ? "block-border-selected !border-transparent" : "border border-transparent"}
-          `}
-        >
-          <BlockCalendarSmall />
-          {date ? (
-            <div className="group-hover/date:underline font-bold ">
-              {selectedDate.toLocaleDateString(undefined, {
-                month: "short",
-                year: "numeric",
-                day: "numeric",
-              })}
-            </div>
-          ) : (
-            <div className="italic text-tertiary  text-left group-hover/date:underline">
-              {permissions.write ? "add a date..." : "TBD..."}
-            </div>
-          )}
-        </button>
+      <Popover.Trigger
+        className={`flex flex-row gap-2 group/date w-64
+        ${isSelected ? "block-border-selected !border-transparent" : "border border-transparent"}
+        `}
+      >
+        <BlockCalendarSmall />
+        {date ? (
+          <div className="group-hover/date:underline font-bold ">
+            {selectedDate.toLocaleDateString(undefined, {
+              month: "short",
+              year: "numeric",
+              day: "numeric",
+            })}
+          </div>
+        ) : (
+          <div className="italic text-tertiary  text-left group-hover/date:underline">
+            {permissions.write ? "add a date..." : "TBD..."}
+          </div>
+        )}
       </Popover.Trigger>
 
       <Popover.Portal>
@@ -87,8 +85,8 @@ export function DateTimeBlock(props: BlockProps) {
 
 const CustomChevron = (props: ChevronProps) => {
   return (
-    <button {...props}>
+    <div {...props} className="w-full bg-test">
       <ArrowRightTiny />
-    </button>
+    </div>
   );
 };
