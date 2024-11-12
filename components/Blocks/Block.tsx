@@ -115,7 +115,7 @@ export const BaseBlock = (
 ) => {
   // BaseBlock renders the actual block content
   return (
-    <div className="grow flex gap-2">
+    <div className="grow flex">
       {props.listData && <ListMarker {...props} />}
       {props.areYouSure ? (
         <AreYouSure
@@ -202,7 +202,7 @@ export const ListMarker = (
   let { rep } = useReplicache();
   return (
     <div
-      className={`shrink-0  flex gap-[8px] justify-end items-center h-3 z-[1]
+      className={`shrink-0  flex justify-end items-center h-3 z-[1]
                   ${props.className}
                   ${
                     props.type === "heading"
@@ -225,7 +225,7 @@ export const ListMarker = (
           if (children.length > 0)
             useUIState.getState().toggleFold(props.value);
         }}
-        className={`listMarker group/list-marker ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
+        className={`listMarker group/list-marker p-2 ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >
         <div
           className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline outline-1  outline-offset-1
@@ -246,7 +246,7 @@ export const ListMarker = (
                 data: { type: "boolean", value: !checklist.data.value },
               });
           }}
-          className={`${checklist?.data.value ? "text-accent-contrast" : "text-border"} ${permissions.write ? "cursor-default" : ""}`}
+          className={`pr-2 ${checklist?.data.value ? "text-accent-contrast" : "text-border"} ${permissions.write ? "cursor-default" : ""}`}
         >
           {checklist?.data.value ? <CheckboxChecked /> : <CheckboxEmpty />}
         </button>
