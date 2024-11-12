@@ -15,12 +15,12 @@ export function MobileFooter(props: { entityID: string }) {
   let entity_set = useEntitySetContext();
 
   return (
-    <Media mobile className="mobileFooter w-full z-10 touch-none">
+    <Media mobile className="mobileFooter w-full z-10 touch-none -mt-4">
       {focusedBlock &&
       focusedBlock.entityType == "block" &&
       entity_set.permissions.write ? (
         <div
-          className="w-full z-10 p-2 flex bg-bg-page "
+          className="w-full z-10 p-2 flex bg-bg-page"
           onMouseDown={(e) => {
             if (e.currentTarget === e.target) e.preventDefault();
           }}
@@ -31,7 +31,7 @@ export function MobileFooter(props: { entityID: string }) {
           />
         </div>
       ) : entity_set.permissions.write ? (
-        <div className="z-10 pb-2 px-2 flex justify-between">
+        <div className="z-10 pb-2 px-2 pt-0.5 flex justify-between">
           <HomeButton />
           <div className="flex flex-row gap-[6px] items-center ">
             <HelpPopover />
@@ -41,7 +41,7 @@ export function MobileFooter(props: { entityID: string }) {
           </div>
         </div>
       ) : (
-        <div className="pb-2 px-2 z-10 place-self-end">
+        <div className="pb-2 px-2 z-10 justify-end place-self-end">
           <Watermark mobile />
         </div>
       )}

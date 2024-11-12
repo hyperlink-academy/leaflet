@@ -18,6 +18,7 @@ import { HeadingBlock } from "./HeadingBlock";
 import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
 import { AreYouSure } from "./DeleteBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export type Block = {
   factID: string;
@@ -190,6 +191,7 @@ export const ListMarker = (
     className?: string;
   },
 ) => {
+  let isMobile = useIsMobile();
   let checklist = useEntity(props.value, "block/check-list");
   let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
   let children = useEntity(props.value, "card/block");
@@ -217,7 +219,7 @@ export const ListMarker = (
       style={{
         width:
           depth &&
-          `calc(${depth} * ${`var(--list-marker-width) ${checklist ? " + 20px" : ""} - 12px)`} `,
+          `calc(${depth} * ${`var(--list-marker-width) ${checklist ? " + 20px" : ""} - ${isMobile ? "6px" : "12px"})`} `,
       }}
     >
       <button
@@ -232,7 +234,7 @@ export const ListMarker = (
                       ${
                         folded
                           ? "outline-secondary"
-                          : ` ${children.length > 0 ? "group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`
+                          : ` ${children.length > 0 ? "sm:group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`
                       }`}
         />
       </button>
