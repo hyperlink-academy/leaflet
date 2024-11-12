@@ -27,7 +27,7 @@ export function DateTimeBlock(props: BlockProps) {
         ${isSelected ? "block-border-selected !border-transparent" : "border border-transparent"}
         `}
       >
-        <BlockCalendarSmall />
+        <BlockCalendarSmall className="text-secondary" />
         {date ? (
           <div className="group-hover/date:underline font-bold ">
             {selectedDate.toLocaleDateString(undefined, {
@@ -44,7 +44,7 @@ export function DateTimeBlock(props: BlockProps) {
       </Popover.Trigger>
 
       <Popover.Portal>
-        <Popover.Content className="w-64" sideOffset={8} align="start">
+        <Popover.Content className="w-64 z-10" sideOffset={8} align="start">
           <DayPicker
             components={{
               Chevron: (props: ChevronProps) => <CustomChevron {...props} />,
@@ -52,14 +52,14 @@ export function DateTimeBlock(props: BlockProps) {
             classNames={{
               months: "relative",
               month_caption:
-                "font-bold text-center w-full bg-border-light mb-1 py-1 rounded-md",
+                "font-bold text-center w-full bg-border-light mb-2 py-1 rounded-md",
               button_next:
-                "absolute top-1 right-0 p-1 text-secondary hover:text-accent-contrast  flex align-center",
+                "absolute right-0 top-1 p-1 text-secondary hover:text-accent-contrast  flex align-center",
               button_previous:
-                "absolute top-1 left-0 p-1 text-secondary hover:text-accent-contrast rotate-180 flex align-center ",
+                "absolute left-0 top-1  p-1 text-secondary hover:text-accent-contrast rotate-180 flex align-center ",
               chevron: "text-inherit",
               month_grid: "w-full table-fixed",
-              weekdays: "text-secondary",
+              weekdays: "text-secondary text-sm",
               day: "h-[34px]  text-center",
               outside: "text-border",
               today: "font-bold",
@@ -85,7 +85,7 @@ export function DateTimeBlock(props: BlockProps) {
 
 const CustomChevron = (props: ChevronProps) => {
   return (
-    <div {...props} className="w-full bg-test">
+    <div {...props} className="w-full  pointer-events-none">
       <ArrowRightTiny />
     </div>
   );
