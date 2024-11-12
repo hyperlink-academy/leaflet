@@ -46,13 +46,17 @@ import { AddTiny, MoreOptionsTiny } from "components/Icons";
 export function TextBlock(
   props: BlockProps & { className: string; preview?: boolean },
 ) {
+  let isLocked = useEntity(props.entityID, "block/is-locked");
   let initialized = useInitialPageLoad();
   let first = props.previousBlock === null;
   let permission = useEntitySetContext().permissions.write;
 
   return (
     <>
-      {(!initialized || !permission || props.preview) && (
+      {(!initialized ||
+        !permission ||
+        props.preview ||
+        isLocked?.data.value) && (
         <RenderedTextBlock
           entityID={props.entityID}
           className={props.className}
@@ -60,7 +64,7 @@ export function TextBlock(
           pageType={props.pageType}
         />
       )}
-      {permission && !props.preview && (
+      {permission && !props.preview && !isLocked?.data.value && (
         <div
           className={`w-full relative group/text ${!initialized ? "hidden" : ""}`}
         >

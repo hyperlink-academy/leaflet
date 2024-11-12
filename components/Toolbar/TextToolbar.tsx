@@ -10,6 +10,7 @@ import { HighlightButton } from "./HighlightToolbar";
 import { ToolbarTypes } from ".";
 import { schema } from "components/Blocks/TextBlock/schema";
 import { TextAlignmentButton } from "./TextAlignmentToolbar";
+import { LockBlockButton } from "./LockBlockButton";
 
 export const TextToolbar = (props: {
   lastUsedHighlight: string;
@@ -78,6 +79,7 @@ export const TextToolbar = (props: {
       <ListButton setToolbarState={props.setToolbarState} />
       <Separator classname="h-6" />
       <LinkButton setToolbarState={props.setToolbarState} />
+      <LockBlockButton />
     </>
   );
 };
