@@ -15,7 +15,7 @@ import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { EmbedBlock } from "./EmbedBlock";
 import { MailboxBlock } from "./MailboxBlock";
 import { HeadingBlock } from "./HeadingBlock";
-import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
+import { CheckboxChecked, CheckboxEmpty, LockTiny } from "components/Icons";
 import { AreYouSure } from "./DeleteBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 
@@ -113,9 +113,9 @@ export const BaseBlock = (
     setAreYouSure?: (value: boolean) => void;
   },
 ) => {
-  // BaseBlock renders the actual block content
+  // BaseBlock renders the actual block content, delete states, controls spacing between block and list markers
   return (
-    <div className="grow flex gap-2">
+    <div className="blockContentWrapper grow flex gap-2 z-[1]">
       {props.listData && <ListMarker {...props} />}
       {props.areYouSure ? (
         <AreYouSure
@@ -159,6 +159,11 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
       s.selectedBlocks.length > 1,
   );
 
+  let isSelected = useUIState((s) =>
+    s.selectedBlocks.find((b) => b.value === props.entityID),
+  );
+  let isLocked = useEntity(props.value, "block/is-locked")?.data.value;
+
   let nextBlockSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.nextBlock?.value),
   );
@@ -166,19 +171,44 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
     s.selectedBlocks.find((b) => b.value === props.previousBlock?.value),
   );
 
-  if (isMultiselected)
-    // not sure what multiselected and selected is doing (?)
+  if (isMultiselected || (isLocked && isSelected))
+    // not sure what multiselected and selected classes are doing (?)
+    // use a hashed pattern for locked things. show this pattern if the block is selected, even if it isn't multiselected
+
     return (
-      <div
-        className={`
-      blockSelectionBG multiselected selected
-      pointer-events-none bg-border-light
-      absolute right-2 left-2 bottom-0
-      ${first ? "top-2" : "top-0"}
-      ${!prevBlockSelected && "rounded-t-md"}
-      ${!nextBlockSelected && "rounded-b-md"}
-      `}
-      />
+      <>
+        <div
+          className={`
+          blockSelectionBG multiselected selected
+          pointer-events-none
+          bg-border-light
+          absolute right-2 left-2 bottom-0
+          ${first ? "top-2" : "top-0"}
+          ${!prevBlockSelected && "rounded-t-md"}
+          ${!nextBlockSelected && "rounded-b-md"}
+          `}
+          style={
+            isLocked
+              ? {
+                  maskImage: "var(--hatchSVG)",
+                  maskRepeat: "repeat repeat",
+                }
+              : {}
+          }
+        ></div>
+        {isLocked && (
+          <div
+            className={`
+            blockSelectionLockIndicator 
+            flex items-center 
+            text-tertiary  p-1 rounded-full 
+            absolute right-2 
+            ${props.type === "text" || props.type === "heading" ? "top-0 bottom-0" : "top-2"}`}
+          >
+            <LockTiny className="" />
+          </div>
+        )}
+      </>
     );
 };
 

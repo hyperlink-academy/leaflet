@@ -141,7 +141,7 @@ export function RenderedTextBlock(props: {
         {(props.pageType === "doc" && props.first) ||
         props.pageType === "canvas" ? (
           <div
-            className={`${props.className} pointer-events-none italic text-tertiary flex flex-col`}
+            className={`${props.className} pointer-events-none italic text-tertiary flex flex-col `}
           >
             {headingLevel?.data.value === 1
               ? "Title"

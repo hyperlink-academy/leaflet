@@ -1,6 +1,7 @@
 import { useUIState } from "src/useUIState";
 import { ToolbarButton } from ".";
 import { useEntity, useReplicache } from "src/replicache";
+import { LockSmall, UnlockSmall } from "components/Icons";
 
 export function LockBlockButton() {
   let focusedBlock = useUIState((s) => s.focusedEntity);
@@ -20,13 +21,9 @@ export function LockBlockButton() {
           rep?.mutate.retractFact({ factID: locked.id });
         }
       }}
-      tooltipContent={
-        <span>
-          You can lock a block to prevent editing it without unlocking it first
-        </span>
-      }
+      tooltipContent={<span>Lock Editing</span>}
     >
-      {!locked?.data.value ? "lock" : "unlock"}
+      {!locked?.data.value ? <LockSmall /> : <UnlockSmall />}
     </ToolbarButton>
   );
 }

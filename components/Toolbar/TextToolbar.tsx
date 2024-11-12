@@ -32,13 +32,15 @@ export const TextToolbar = (props: {
         icon={<BoldSmall />}
       />
       <TextDecorationButton
-        tooltipContent=<div className="flex flex-col gap-1 justify-center">
-          <div className="italic font-normal text-center">Italic</div>
-          <div className="flex gap-1">
-            <ShortcutKey>{metaKey()}</ShortcutKey> +{" "}
-            <ShortcutKey> I </ShortcutKey>
+        tooltipContent={
+          <div className="flex flex-col gap-1 justify-center">
+            <div className="italic font-normal text-center">Italic</div>
+            <div className="flex gap-1">
+              <ShortcutKey>{metaKey()}</ShortcutKey> +{" "}
+              <ShortcutKey> I </ShortcutKey>
+            </div>
           </div>
-        </div>
+        }
         mark={schema.marks.em}
         icon={<ItalicSmall />}
       />
@@ -73,12 +75,13 @@ export const TextToolbar = (props: {
         setToolbarState={props.setToolbarState}
       />
       <Separator classname="h-6" />
+      <LinkButton setToolbarState={props.setToolbarState} />
+      <Separator classname="h-6" />
       <TextBlockTypeButton setToolbarState={props.setToolbarState} />
       <TextAlignmentButton setToolbarState={props.setToolbarState} />
-      <Separator classname="h-6" />
       <ListButton setToolbarState={props.setToolbarState} />
       <Separator classname="h-6" />
-      <LinkButton setToolbarState={props.setToolbarState} />
+
       <LockBlockButton />
     </>
   );

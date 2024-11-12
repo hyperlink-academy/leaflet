@@ -543,13 +543,15 @@ const Gripper = (props: { onMouseDown: (e: React.MouseEvent) => void }) => {
       className="w-[9px] shrink-0 py-1 mr-1 bg-bg-card cursor-grab touch-none"
     >
       <Media mobile={false} className="h-full grid grid-cols-1 grid-rows-1 ">
+        {/* the gripper is two svg's stacked on top of each other. 
+        One for the actual gripper, the other is an outline to endure the gripper stays visible on image backgrounds */}
         <div
           className="h-full col-start-1 col-end-2 row-start-1 row-end-2 bg-bg-page hidden group-hover/canvas-block:block"
-          style={{ maskImage: "var(--gripperSVG2)", maskRepeat: "space" }}
+          style={{ maskImage: "var(--gripperSVG2)", maskRepeat: "repeat" }}
         />
         <div
           className="h-full col-start-1 col-end-2 row-start-1 row-end-2 bg-tertiary hidden group-hover/canvas-block:block"
-          style={{ maskImage: "var(--gripperSVG)", maskRepeat: "space" }}
+          style={{ maskImage: "var(--gripperSVG)", maskRepeat: "repeat" }}
         />
       </Media>
     </div>
