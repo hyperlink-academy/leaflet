@@ -22,6 +22,7 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
+
   useEffect(() => {
     if (props.preview) return;
     let input = document.getElementById(elementId.block(props.entityID).input);
@@ -90,6 +91,8 @@ const BlockLinkInput = (props: BlockProps) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
+  let isLocked = useEntity(props.entityID, "block/is-locked")?.data.value;
+
   let entity_set = useEntitySetContext();
   let [linkValue, setLinkValue] = useState("");
   let { rep } = useReplicache();
@@ -139,6 +142,7 @@ const BlockLinkInput = (props: BlockProps) => {
           className="w-full grow border-none outline-none bg-transparent "
           placeholder="www.example.com"
           value={linkValue}
+          disabled={isLocked}
           onChange={(e) => setLinkValue(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Backspace" && linkValue === "") {
@@ -162,7 +166,7 @@ const BlockLinkInput = (props: BlockProps) => {
         />
         <div className="flex items-center gap-3 ">
           <button
-            className={`p-1 ${isSelected ? "text-accent-contrast" : "text-border"}`}
+            className={`p-1 ${isSelected && !isLocked ? "text-accent-contrast" : "text-border"}`}
             onMouseDown={(e) => {
               e.preventDefault();
               if (!linkValue || linkValue === "") {
