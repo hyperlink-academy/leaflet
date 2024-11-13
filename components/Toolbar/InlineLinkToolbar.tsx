@@ -107,11 +107,9 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
             let editor = focusedEditor?.editor;
             if (!editor || start === null || !end || !focusedBlock) return;
             let tr = editor.tr;
-            tr.addMark(
-              start,
-              end,
-              schema.marks.link.create({ href: linkValue }),
-            );
+            let href = linkValue;
+            if (!href.startsWith("http")) href = `https://${href}`;
+            tr.addMark(start, end, schema.marks.link.create({ href }));
             tr.setSelection(TextSelection.create(tr.doc, tr.selection.to));
             setEditorState(focusedBlock?.entityID, {
               editor: editor.apply(tr),
@@ -143,11 +141,10 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
             let editor = focusedEditor?.editor;
             if (!editor || !start || !end || !focusedBlock) return;
             let tr = editor.tr;
-            tr.addMark(
-              start,
-              end,
-              schema.marks.link.create({ href: linkValue }),
-            );
+
+            let href = linkValue;
+            if (!href.startsWith("http")) href = `https://${href}`;
+            tr.addMark(start, end, schema.marks.link.create({ href }));
             setEditorState(focusedBlock?.entityID, {
               editor: editor.apply(tr),
             });

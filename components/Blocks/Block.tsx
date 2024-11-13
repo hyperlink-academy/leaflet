@@ -18,6 +18,7 @@ import { HeadingBlock } from "./HeadingBlock";
 import { CheckboxChecked, CheckboxEmpty } from "components/Icons";
 import { AreYouSure } from "./DeleteBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { useIsMobile } from "src/hooks/isMobile";
 import { DateTimeBlock } from "./DateTimeBlock";
 
 export type Block = {
@@ -117,7 +118,7 @@ export const BaseBlock = (
   // BaseBlock renders the actual block content
   let BlockTypeComponent = BlockTypeComponents[props.type];
   return (
-    <div className="grow flex gap-2">
+    <div className="grow flex">
       {props.listData && <ListMarker {...props} />}
       {props.areYouSure ? (
         <AreYouSure
@@ -189,6 +190,7 @@ export const ListMarker = (
     className?: string;
   },
 ) => {
+  let isMobile = useIsMobile();
   let checklist = useEntity(props.value, "block/check-list");
   let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
   let children = useEntity(props.value, "card/block");
@@ -201,7 +203,7 @@ export const ListMarker = (
   let { rep } = useReplicache();
   return (
     <div
-      className={`shrink-0  flex gap-[8px] justify-end items-center h-3 z-[1]
+      className={`shrink-0  flex justify-end items-center h-3 z-[1]
                   ${props.className}
                   ${
                     props.type === "heading"
@@ -216,7 +218,7 @@ export const ListMarker = (
       style={{
         width:
           depth &&
-          `calc(${depth} * ${`var(--list-marker-width) ${checklist ? " + 20px" : ""} - 12px)`} `,
+          `calc(${depth} * ${`var(--list-marker-width) ${checklist ? " + 20px" : ""} - ${isMobile ? "6px" : "12px"})`} `,
       }}
     >
       <button
@@ -224,14 +226,14 @@ export const ListMarker = (
           if (children.length > 0)
             useUIState.getState().toggleFold(props.value);
         }}
-        className={`listMarker group/list-marker ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
+        className={`listMarker group/list-marker p-2 ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >
         <div
           className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline outline-1  outline-offset-1
                       ${
                         folded
                           ? "outline-secondary"
-                          : ` ${children.length > 0 ? "group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`
+                          : ` ${children.length > 0 ? "sm:group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`
                       }`}
         />
       </button>
@@ -245,7 +247,7 @@ export const ListMarker = (
                 data: { type: "boolean", value: !checklist.data.value },
               });
           }}
-          className={`${checklist?.data.value ? "text-accent-contrast" : "text-border"} ${permissions.write ? "cursor-default" : ""}`}
+          className={`pr-2 ${checklist?.data.value ? "text-accent-contrast" : "text-border"} ${permissions.write ? "cursor-default" : ""}`}
         >
           {checklist?.data.value ? <CheckboxChecked /> : <CheckboxEmpty />}
         </button>

@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useUIState } from "src/useUIState";
 import { useEntitySetContext } from "../EntitySetProvider";
@@ -32,6 +33,7 @@ import { scanIndex } from "src/replicache/utils";
 import { PageThemeSetter } from "../ThemeManager/PageThemeSetter";
 import { CardThemeProvider } from "../ThemeManager/ThemeProvider";
 import { PageShareMenu } from "./PageShareMenu";
+import { Watermark } from "components/Watermark";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -57,9 +59,9 @@ export function Pages(props: { rootPage: string }) {
         }}
       >
         <Media mobile={false} className="h-full">
-          <div className="flex flex-col h-full justify-between mr-4 mt-1">
+          <div className="flex flex-col h-full justify-between  mt-1">
             {entity_set.permissions.write ? (
-              <div className="flex flex-col justify-center gap-2 ">
+              <div className="flex flex-col justify-center gap-2 mr-4">
                 <ShareOptions rootEntity={props.rootPage} />
                 <LeafletOptions entityID={props.rootPage} />
                 <CreateNewLeafletButton />
@@ -73,6 +75,7 @@ export function Pages(props: { rootPage: string }) {
                 <HomeButton />{" "}
               </div>
             )}
+            <Watermark />
           </div>
         </Media>
       </div>

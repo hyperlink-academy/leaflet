@@ -56,7 +56,7 @@ export function TextAlignmentButton(props: {
       .value || "left";
   return (
     <ToolbarButton
-      tooltipContent={<div>Text Size</div>}
+      tooltipContent={<div>Align Text</div>}
       className={`${props.className}`}
       onClick={() => {
         props.setToolbarState("text-alignment");
