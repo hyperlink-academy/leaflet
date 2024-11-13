@@ -179,23 +179,28 @@ export const ToolbarButton = (props: {
   active?: boolean;
   disabled?: boolean;
 }) => {
+  let focusedBlock = useUIState((s) => s.focusedEntity);
+  let isLocked = useEntity(focusedBlock?.entityID || null, "block/is-locked");
+  let isDisabled =
+    props.disabled === undefined ? !!isLocked?.data.value : props.disabled;
+
   return (
     <TooltipButton
       onMouseDown={(e) => {
         e.preventDefault();
         props.onClick && props.onClick(e);
       }}
-      disabled={props.disabled}
+      disabled={isDisabled}
       content={props.tooltipContent}
       className={`
-        flex items-center rounded-md border border-transparent hover:border-border  active:bg-border-light active:text-primary
+        flex items-center rounded-md border border-transparent 
         ${props.className}
         ${
-          props.active
+          props.active && !isDisabled
             ? "bg-border-light text-primary"
-            : props.disabled
+            : isDisabled
               ? "text-border cursor-not-allowed"
-              : "text-secondary  hover:text-primary"
+              : "text-secondary  hover:text-primary hover:border-border  active:bg-border-light active:text-primary"
         }
         `}
     >

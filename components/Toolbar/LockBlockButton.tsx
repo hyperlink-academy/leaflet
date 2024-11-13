@@ -12,6 +12,7 @@ export function LockBlockButton() {
   if (focusedBlock?.entityType !== "block") return;
   return (
     <ToolbarButton
+      disabled={false}
       onClick={async () => {
         if (!locked?.data.value)
           rep?.mutate.assertFact({
@@ -33,7 +34,7 @@ export function LockBlockButton() {
           );
       }}
       tooltipContent={
-        <span>{!locked?.data.value ? "Lock Editing" : " Unlock Editing"}</span>
+        <span>{!locked?.data.value ? "Lock Editing" : " Unlock to Edit"}</span>
       }
     >
       {!locked?.data.value ? <LockSmall /> : <UnlockSmall />}
