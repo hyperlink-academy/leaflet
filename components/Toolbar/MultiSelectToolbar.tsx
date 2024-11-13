@@ -37,6 +37,7 @@ export const MultiselectToolbar = (props: {
           <TrashSmall />
         </ToolbarButton>
         <ToolbarButton
+          disabled={false}
           tooltipContent="Copy Selected Blocks"
           onClick={handleCopy}
         >
