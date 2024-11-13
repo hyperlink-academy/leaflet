@@ -15,7 +15,13 @@ import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { EmbedBlock } from "./EmbedBlock";
 import { MailboxBlock } from "./MailboxBlock";
 import { HeadingBlock } from "./HeadingBlock";
-import { CheckboxChecked, CheckboxEmpty, LockTiny } from "components/Icons";
+import {
+  CheckboxChecked,
+  CheckboxEmpty,
+  LockTiny,
+  UnlockSmall,
+  UnlockTiny,
+} from "components/Icons";
 import { AreYouSure } from "./DeleteBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 
@@ -151,6 +157,8 @@ export const BaseBlock = (
 };
 
 export const BlockMultiselectIndicator = (props: BlockProps) => {
+  let { rep } = useReplicache();
+
   let first = props.previousBlock === null;
 
   let isMultiselected = useUIState(
@@ -162,7 +170,7 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
-  let isLocked = useEntity(props.value, "block/is-locked")?.data.value;
+  let isLocked = useEntity(props.value, "block/is-locked");
 
   let nextBlockSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.nextBlock?.value),
@@ -171,7 +179,9 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
     s.selectedBlocks.find((b) => b.value === props.previousBlock?.value),
   );
 
-  if (isMultiselected || (isLocked && isSelected))
+  const [isHovered, setIsHovered] = useState(false);
+
+  if (isMultiselected || (isLocked?.data.value && isSelected))
     // not sure what multiselected and selected classes are doing (?)
     // use a hashed pattern for locked things. show this pattern if the block is selected, even if it isn't multiselected
 
@@ -188,7 +198,7 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
           ${!nextBlockSelected && "rounded-b-md"}
           `}
           style={
-            isLocked
+            isLocked?.data.value
               ? {
                   maskImage: "var(--hatchSVG)",
                   maskRepeat: "repeat repeat",
@@ -196,17 +206,31 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
               : {}
           }
         ></div>
-        {isLocked && (
-          <div
+        {isLocked?.data.value && (
+          <button
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onClick={() => {
+              rep?.mutate.retractFact({ factID: isLocked.id });
+            }}
             className={`
-            blockSelectionLockIndicator 
+            blockSelectionLockIndicator z-10
             flex items-center 
-            text-tertiary  p-1 rounded-full 
-            absolute right-2 
-            ${props.type === "text" || props.type === "heading" ? "top-0 bottom-0" : "top-2"}`}
+            text-tertiary hover:text-accent-contrast rounded-full 
+            absolute right-3
+            
+            ${
+              props.type === "heading" || props.type === "text"
+                ? "top-[6px]"
+                : "top-0"
+            }`}
           >
-            <LockTiny className="" />
-          </div>
+            {isHovered ? (
+              <UnlockTiny className="bg-bg-page p-0.5 rounded-full w-5 h-5" />
+            ) : (
+              <LockTiny className="bg-bg-page p-0.5 rounded-full w-5 h-5" />
+            )}
+          </button>
         )}
       </>
     );

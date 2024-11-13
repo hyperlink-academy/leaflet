@@ -21,7 +21,9 @@ export function LockBlockButton() {
           rep?.mutate.retractFact({ factID: locked.id });
         }
       }}
-      tooltipContent={<span>Lock Editing</span>}
+      tooltipContent={
+        <span>{!locked?.data.value ? "Lock Editing" : " Unlock Editing"}</span>
+      }
     >
       {!locked?.data.value ? <LockSmall /> : <UnlockSmall />}
     </ToolbarButton>
