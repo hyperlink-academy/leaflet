@@ -24,6 +24,8 @@ import {
 } from "components/Icons";
 import { AreYouSure } from "./DeleteBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { Media } from "components/Media";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export type Block = {
   factID: string;
@@ -158,6 +160,7 @@ export const BaseBlock = (
 
 export const BlockMultiselectIndicator = (props: BlockProps) => {
   let { rep } = useReplicache();
+  let isMobile = useIsMobile();
 
   let first = props.previousBlock === null;
 
@@ -178,8 +181,6 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
   let prevBlockSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.previousBlock?.value),
   );
-
-  const [isHovered, setIsHovered] = useState(false);
 
   if (isMultiselected || (isLocked?.data.value && isSelected))
     // not sure what multiselected and selected classes are doing (?)
@@ -207,16 +208,11 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
           }
         ></div>
         {isLocked?.data.value && (
-          <button
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            onClick={() => {
-              rep?.mutate.retractFact({ factID: isLocked.id });
-            }}
+          <div
             className={`
             blockSelectionLockIndicator z-10
             flex items-center 
-            text-tertiary hover:text-accent-contrast rounded-full 
+            text-border rounded-full 
             absolute right-3
             
             ${
@@ -225,12 +221,8 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
                 : "top-0"
             }`}
           >
-            {isHovered ? (
-              <UnlockTiny className="bg-bg-page p-0.5 rounded-full w-5 h-5" />
-            ) : (
-              <LockTiny className="bg-bg-page p-0.5 rounded-full w-5 h-5" />
-            )}
-          </button>
+            <LockTiny className="bg-bg-page p-0.5 rounded-full w-5 h-5" />
+          </div>
         )}
       </>
     );

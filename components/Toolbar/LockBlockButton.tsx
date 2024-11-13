@@ -2,15 +2,17 @@ import { useUIState } from "src/useUIState";
 import { ToolbarButton } from ".";
 import { useEntity, useReplicache } from "src/replicache";
 import { LockSmall, UnlockSmall } from "components/Icons";
+import { focusBlock } from "src/utils/focusBlock";
 
 export function LockBlockButton() {
   let focusedBlock = useUIState((s) => s.focusedEntity);
+  let type = useEntity(focusedBlock?.entityID || null, "block/type");
   let locked = useEntity(focusedBlock?.entityID || null, "block/is-locked");
   let { rep } = useReplicache();
   if (focusedBlock?.entityType !== "block") return;
   return (
     <ToolbarButton
-      onClick={() => {
+      onClick={async () => {
         if (!locked?.data.value)
           rep?.mutate.assertFact({
             entity: focusedBlock.entityID,
@@ -18,8 +20,17 @@ export function LockBlockButton() {
             data: { value: true, type: "boolean" },
           });
         else {
-          rep?.mutate.retractFact({ factID: locked.id });
+          await rep?.mutate.retractFact({ factID: locked.id });
         }
+        type &&
+          focusBlock(
+            {
+              type: type.data.value,
+              parent: focusedBlock.parent,
+              value: focusedBlock.entityID,
+            },
+            { type: "end" },
+          );
       }}
       tooltipContent={
         <span>{!locked?.data.value ? "Lock Editing" : " Unlock Editing"}</span>
