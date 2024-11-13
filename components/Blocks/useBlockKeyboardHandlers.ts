@@ -23,11 +23,12 @@ export function useBlockKeyboardHandlers(
 ) {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
+  let isLocked = !!useEntity(props.entityID, "block/is-locked")?.data.value;
 
   let isSelected = useUIState((s) => {
     let selectedBlocks = s.selectedBlocks;
     return (
-      (!isTextBlock[props.type] || selectedBlocks.length > 1) &&
+      (!isTextBlock[props.type] || selectedBlocks.length > 1 || isLocked) &&
       !!s.selectedBlocks.find((b) => b.value === props.entityID)
     );
   });
