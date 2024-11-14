@@ -123,7 +123,7 @@ const BlockLinkInput = (props: BlockProps) => {
       entity: entity,
       attribute: "embed/url",
       data: {
-        type: "text",
+        type: "string",
         value: link,
       },
     });
