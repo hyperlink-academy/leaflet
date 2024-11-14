@@ -5,6 +5,7 @@ import { NestedCardThemeProvider } from "./ThemeManager/ThemeProvider";
 
 export const Popover = (props: {
   trigger: React.ReactNode;
+  disabled?: boolean;
   children: React.ReactNode;
   align?: "start" | "end" | "center";
   background?: string;
@@ -14,7 +15,9 @@ export const Popover = (props: {
 }) => {
   return (
     <RadixPopover.Root open={props.open}>
-      <RadixPopover.Trigger>{props.trigger}</RadixPopover.Trigger>
+      <RadixPopover.Trigger disabled={props.disabled}>
+        {props.trigger}
+      </RadixPopover.Trigger>
       <RadixPopover.Portal>
         <NestedCardThemeProvider>
           <RadixPopover.Content

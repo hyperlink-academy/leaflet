@@ -24,7 +24,7 @@ export function DateTimeBlock(props: BlockProps) {
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
 
-  // let isLocked = useEntity(props.entityID, "block/locked")?.data.value;
+  let isLocked = !!useEntity(props.entityID, "block/is-locked")?.data.value;
 
   const handleTimeChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const time = e.target.value;
@@ -72,17 +72,21 @@ export function DateTimeBlock(props: BlockProps) {
 
   return (
     <Popover
+      disabled={isLocked}
       className="w-64 z-10 !px-2"
       trigger={
         <div
           className={`flex flex-row gap-2 group/date w-64 z-[1]
       ${isSelected ? "block-border-selected !border-transparent" : "border border-transparent"}
-      ${!permissions.write ? "pointer-events-none" : ""}
       `}
         >
           <BlockCalendarSmall className="text-tertiary" />
           {dateFact ? (
-            <div className="group-hover/date:underline font-bold ">
+            <div
+              className={`font-bold
+              ${!permissions.write || isLocked ? "" : "group-hover/date:underline"}
+              `}
+            >
               {selectedDate.toLocaleDateString(undefined, {
                 month: "short",
                 year: "numeric",
@@ -140,6 +144,7 @@ export function DateTimeBlock(props: BlockProps) {
       </div>
     </Popover>
   );
+  dis;
 }
 
 const CustomChevron = (props: ChevronProps) => {
