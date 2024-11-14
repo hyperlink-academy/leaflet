@@ -1,7 +1,7 @@
 import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps } from "./Block";
 import { ChevronProps, DayPicker } from "react-day-picker";
-import * as Popover from "@radix-ui/react-popover";
+import { Popover } from "components/Popover";
 import { useMemo, useState } from "react";
 import { ArrowRightTiny, BlockCalendarSmall } from "components/Icons";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -71,74 +71,74 @@ export function DateTimeBlock(props: BlockProps) {
   };
 
   return (
-    <Popover.Root open={!permissions.write ? false : undefined}>
-      <Popover.Trigger
-        className={`flex flex-row gap-2 group/date w-64 z-[1]
-        ${isSelected ? "block-border-selected !border-transparent" : "border border-transparent"}
-        ${!permissions.write ? "pointer-events-none" : ""}
-        `}
-      >
-        <BlockCalendarSmall className="text-tertiary" />
-        {dateFact ? (
-          <div className="group-hover/date:underline font-bold ">
-            {selectedDate.toLocaleDateString(undefined, {
-              month: "short",
-              year: "numeric",
-              day: "numeric",
-            })}{" "}
-            |{" "}
-            {selectedDate.toLocaleTimeString(undefined, {
-              hour: "numeric",
-              minute: "numeric",
-            })}
-          </div>
-        ) : (
-          <div
-            className={`italic text-tertiary  text-left group-hover/date:underline`}
-          >
-            {permissions.write ? "add a date and time..." : "TBD..."}
-          </div>
-        )}
-      </Popover.Trigger>
+    <Popover
+      className="w-64 z-10 !px-2"
+      trigger={
+        <div
+          className={`flex flex-row gap-2 group/date w-64 z-[1]
+      ${isSelected ? "block-border-selected !border-transparent" : "border border-transparent"}
+      ${!permissions.write ? "pointer-events-none" : ""}
+      `}
+        >
+          <BlockCalendarSmall className="text-tertiary" />
+          {dateFact ? (
+            <div className="group-hover/date:underline font-bold ">
+              {selectedDate.toLocaleDateString(undefined, {
+                month: "short",
+                year: "numeric",
+                day: "numeric",
+              })}{" "}
+              |{" "}
+              {selectedDate.toLocaleTimeString(undefined, {
+                hour: "numeric",
+                minute: "numeric",
+              })}
+            </div>
+          ) : (
+            <div
+              className={`italic text-tertiary  text-left group-hover/date:underline`}
+            >
+              {permissions.write ? "add a date and time..." : "TBD..."}
+            </div>
+          )}
+        </div>
+      }
+    >
+      <div className=" flex flex-col gap-2 ">
+        <DayPicker
+          components={{
+            Chevron: (props: ChevronProps) => <CustomChevron {...props} />,
+          }}
+          classNames={{
+            months: "relative",
+            month_caption:
+              "font-bold text-center w-full bg-border-light mb-2 py-1 rounded-md",
+            button_next:
+              "absolute right-0 top-1 p-1 text-secondary hover:text-accent-contrast  flex align-center",
+            button_previous:
+              "absolute left-0 top-1  p-1 text-secondary hover:text-accent-contrast rotate-180 flex align-center ",
+            chevron: "text-inherit",
+            month_grid: "w-full table-fixed",
+            weekdays: "text-secondary text-sm",
+            selected: "bg-accent-1 text-accent-2 rounded-md font-bold ",
 
-      <Popover.Portal>
-        <Popover.Content className="w-64 z-10" sideOffset={8} align="start">
-          <div className="bg-bg-page border p-2 rounded-md border-border flex flex-col gap-2 shadow-md">
-            <DayPicker
-              components={{
-                Chevron: (props: ChevronProps) => <CustomChevron {...props} />,
-              }}
-              classNames={{
-                months: "relative",
-                month_caption:
-                  "font-bold text-center w-full bg-border-light mb-2 py-1 rounded-md",
-                button_next:
-                  "absolute right-0 top-1 p-1 text-secondary hover:text-accent-contrast  flex align-center",
-                button_previous:
-                  "absolute left-0 top-1  p-1 text-secondary hover:text-accent-contrast rotate-180 flex align-center ",
-                chevron: "text-inherit",
-                month_grid: "w-full table-fixed",
-                weekdays: "text-secondary text-sm",
-                day: "h-[34px]  text-center",
-                outside: "text-border",
-                today: "font-bold",
-                selected: "bg-accent-1 text-accent-2 rounded-md font-bold ",
-              }}
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDaySelect}
-            />
-            <Separator className="border-border" />
-            <input
-              type="time"
-              value={timeValue}
-              onChange={handleTimeChange}
-              className="dateBlockTimeInput input-border w-full mb-1 "
-            />
-          </div>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+            day: "h-[34px]  text-center rounded-md sm:hover:bg-border-light",
+            outside: "text-border",
+            today: "font-bold",
+          }}
+          mode="single"
+          selected={dateFact ? selectedDate : undefined}
+          onSelect={handleDaySelect}
+        />
+        <Separator className="border-border" />
+        <input
+          type="time"
+          value={timeValue}
+          onChange={handleTimeChange}
+          className="dateBlockTimeInput input-border w-full mb-1 "
+        />
+      </div>
+    </Popover>
   );
 }
 
