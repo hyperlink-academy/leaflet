@@ -103,7 +103,7 @@ export function DateTimeBlock(props: BlockProps) {
 
       <Popover.Portal>
         <Popover.Content className="w-64 z-10" sideOffset={8} align="start">
-          <div className="bg-bg-page border p-2 rounded-md border-border flex flex-col gap-2 ">
+          <div className="bg-bg-page border p-2 rounded-md border-border flex flex-col gap-2 shadow-md">
             <DayPicker
               components={{
                 Chevron: (props: ChevronProps) => <CustomChevron {...props} />,

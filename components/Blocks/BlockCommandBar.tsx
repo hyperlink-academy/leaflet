@@ -109,10 +109,14 @@ export const BlockCommandBar = ({
           collisionPadding={16}
           ref={ref}
           onOpenAutoFocus={(e) => e.preventDefault()}
-          className={`commandMenuContent group/cmd-menu z-20 h-[292px] w-[264px] flex data-[side=top]:items-end items-start`}
+          className={`
+            commandMenuContent group/cmd-menu 
+            z-20 w-[264px] 
+            flex data-[side=top]:items-end items-start 
+            `}
         >
           <NestedCardThemeProvider>
-            <div className="commandMenuResults w-full flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page py-1 gap-0.5 border border-border rounded-md shadow-md">
+            <div className="commandMenuResults w-full max-h-[var(--radix-popper-available-height)] overflow-scroll no-scrollbar flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page py-1 gap-0.5 border border-border rounded-md shadow-md">
               {commandResults.length === 0 ? (
                 <div className="w-full text-tertiary text-center italic py-2 px-2 ">
                   No blocks found

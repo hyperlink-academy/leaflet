@@ -12,15 +12,15 @@ export const HelpPopover = () => {
   let entity_set = useEntitySetContext();
   return entity_set.permissions.write ? (
     <Popover
-      className="max-w-xs w-full max-h-[60vh] overflow-y-scroll"
+      className="max-w-xs w-full"
       trigger={
         <div className="p-1 rounded-full bg-accent-1 text-accent-2">
           <HelpSmall />{" "}
         </div>
       }
     >
-      <div className="flex flex-col text-sm gap-2 text-secondary">
-        <div>
+      <div className="flex flex-col text-sm gap-2 text-secondary ">
+        <div className="text-lg">
           Welcome to <strong>Leaflet</strong> — a fun, fast, easy-to-share
           document editor.
         </div>

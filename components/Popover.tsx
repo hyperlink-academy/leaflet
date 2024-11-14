@@ -17,7 +17,7 @@ export const Popover = (props: {
       <RadixPopover.Portal>
         <NestedCardThemeProvider>
           <RadixPopover.Content
-            className={`z-20 bg-bg-page border border-border rounded-md px-3 py-2 ${props.className}`}
+            className={`z-20 bg-bg-page border border-border rounded-md px-3 py-2 max-h-[var(--radix-popper-available-height)] overflow-y-scroll no-scrollbar shadow-md ${props.className}`}
             align={props.align ? props.align : "center"}
             sideOffset={4}
             collisionPadding={16}
