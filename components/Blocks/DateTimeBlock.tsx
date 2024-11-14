@@ -8,13 +8,17 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { useUIState } from "src/useUIState";
 import { setHours, setMinutes } from "date-fns";
 import { Separator } from "react-aria-components";
+import { Checkbox } from "components/Checkbox";
 
 export function DateTimeBlock(props: BlockProps) {
   let { rep } = useReplicache();
   let { permissions } = useEntitySetContext();
   let dateFact = useEntity(props.entityID, "block/date-time");
 
-  const [timeValue, setTimeValue] = useState<string>("00:00");
+  const [timeValue, setTimeValue] = useState<string>(
+    () =>
+      `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`,
+  );
   let selectedDate = useMemo(() => {
     if (!dateFact) return new Date();
     return new Date(dateFact.data.value);
@@ -36,7 +40,11 @@ export function DateTimeBlock(props: BlockProps) {
     const newSelectedDate = setHours(setMinutes(selectedDate, minutes), hours);
     rep?.mutate.assertFact({
       entity: props.entityID,
-      data: { type: "string", value: newSelectedDate.toISOString() },
+      data: {
+        type: "date-time",
+        value: newSelectedDate.toISOString(),
+        dateOnly: dateFact?.data.dateOnly,
+      },
       attribute: "block/date-time",
     });
     setTimeValue(time);
@@ -47,7 +55,11 @@ export function DateTimeBlock(props: BlockProps) {
       if (date)
         rep?.mutate.assertFact({
           entity: props.entityID,
-          data: { type: "string", value: date.toISOString() },
+          data: {
+            type: "date-time",
+            value: date.toISOString(),
+            dateOnly: dateFact?.data.dateOnly,
+          },
           attribute: "block/date-time",
         });
       return;
@@ -65,7 +77,7 @@ export function DateTimeBlock(props: BlockProps) {
 
     rep?.mutate.assertFact({
       entity: props.entityID,
-      data: { type: "string", value: newDate.toISOString() },
+      data: { type: "date-time", value: newDate.toISOString() },
       attribute: "block/date-time",
     });
   };
@@ -92,11 +104,15 @@ export function DateTimeBlock(props: BlockProps) {
                 year: "numeric",
                 day: "numeric",
               })}{" "}
-              |{" "}
-              {selectedDate.toLocaleTimeString(undefined, {
-                hour: "numeric",
-                minute: "numeric",
-              })}
+              {!dateFact.data.dateOnly ? (
+                <span>
+                  |{" "}
+                  {selectedDate.toLocaleTimeString(undefined, {
+                    hour: "numeric",
+                    minute: "numeric",
+                  })}
+                </span>
+              ) : null}
             </div>
           ) : (
             <div
@@ -136,12 +152,30 @@ export function DateTimeBlock(props: BlockProps) {
         />
         <Separator className="border-border" />
         <input
+          disabled={dateFact?.data.dateOnly}
           type="time"
           value={timeValue}
           onChange={handleTimeChange}
           className="dateBlockTimeInput input-border bg-bg-page text-primary w-full mb-1 "
         />
       </div>
+      <Checkbox
+        checked={!!dateFact?.data.dateOnly}
+        onChange={(e) => {
+          if (!dateFact) return;
+          rep?.mutate.assertFact({
+            entity: props.entityID,
+            data: {
+              type: "date-time",
+              value: dateFact.data.value,
+              dateOnly: e.currentTarget.checked,
+            },
+            attribute: "block/date-time",
+          });
+        }}
+      >
+        All day
+      </Checkbox>
     </Popover>
   );
 }

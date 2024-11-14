@@ -313,7 +313,9 @@ const removeBlock: Mutation<
   }
 };
 
-type FactInput = Omit<Fact<keyof typeof Attributes>, "id"> & { id?: string };
+type FactInput = {
+  [k in keyof typeof Attributes]: Omit<Fact<k>, "id"> & { id?: string };
+}[keyof typeof Attributes];
 const assertFact: Mutation<FactInput | Array<FactInput>> = async (
   args,
   ctx,
