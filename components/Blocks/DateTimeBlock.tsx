@@ -7,6 +7,7 @@ import { ArrowRightTiny, BlockCalendarSmall } from "components/Icons";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useUIState } from "src/useUIState";
 import { setHours, setMinutes } from "date-fns";
+import { Separator } from "react-aria-components";
 
 export function DateTimeBlock(props: BlockProps) {
   let { rep } = useReplicache();
@@ -22,6 +23,9 @@ export function DateTimeBlock(props: BlockProps) {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
+
+  // let isLocked = useEntity(props.entityID, "block/locked")?.data.value;
+
   const handleTimeChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const time = e.target.value;
     if (!dateFact) {
@@ -69,11 +73,12 @@ export function DateTimeBlock(props: BlockProps) {
   return (
     <Popover.Root open={!permissions.write ? false : undefined}>
       <Popover.Trigger
-        className={`flex flex-row gap-2 group/date w-64
+        className={`flex flex-row gap-2 group/date w-64 z-[1]
         ${isSelected ? "block-border-selected !border-transparent" : "border border-transparent"}
+        ${!permissions.write ? "pointer-events-none" : ""}
         `}
       >
-        <BlockCalendarSmall className="text-secondary" />
+        <BlockCalendarSmall className="text-tertiary" />
         {dateFact ? (
           <div className="group-hover/date:underline font-bold ">
             {selectedDate.toLocaleDateString(undefined, {
@@ -88,15 +93,17 @@ export function DateTimeBlock(props: BlockProps) {
             })}
           </div>
         ) : (
-          <div className="italic text-tertiary  text-left group-hover/date:underline">
-            {permissions.write ? "add a date..." : "TBD..."}
+          <div
+            className={`italic text-tertiary  text-left group-hover/date:underline`}
+          >
+            {permissions.write ? "add a date and time..." : "TBD..."}
           </div>
         )}
       </Popover.Trigger>
 
       <Popover.Portal>
         <Popover.Content className="w-64 z-10" sideOffset={8} align="start">
-          <div className="bg-bg-page border p-2 rounded-md border-border">
+          <div className="bg-bg-page border p-2 rounded-md border-border flex flex-col gap-2 ">
             <DayPicker
               components={{
                 Chevron: (props: ChevronProps) => <CustomChevron {...props} />,
@@ -121,11 +128,12 @@ export function DateTimeBlock(props: BlockProps) {
               selected={selectedDate}
               onSelect={handleDaySelect}
             />
+            <Separator className="border-border" />
             <input
               type="time"
               value={timeValue}
               onChange={handleTimeChange}
-              className="w-full border"
+              className="dateBlockTimeInput input-border w-full mb-1 "
             />
           </div>
         </Popover.Content>
