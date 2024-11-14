@@ -56,6 +56,10 @@ const BlockAttributes = {
     type: "text-alignment-type-union",
     cardinality: "one",
   },
+  "block/date-time": {
+    type: "string",
+    cardinality: "one",
+  },
   "block/text": {
     type: "text",
     cardinality: "one",
@@ -226,13 +230,13 @@ export type Data<A extends keyof typeof Attributes> = {
   "block-type-union": {
     type: "block-type-union";
     value:
+      | "datetime"
       | "text"
       | "image"
       | "card"
       | "heading"
       | "link"
       | "mailbox"
-      | "collection"
       | "embed";
   };
   "canvas-pattern-union": {

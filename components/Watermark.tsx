@@ -17,7 +17,7 @@ export const Watermark = (props: { mobile?: boolean }) => {
             backgroundColor: "rgba(var(--bg-page), 0.7)",
           }}
         >
-          made using <span className="text-accent-1">Leaflet</span>
+          made using <span className="text-accent-1 font-bold">Leaflet</span>
         </div>
         <LogoSmall
           strokeColor={theme.colors["bg-page"]}

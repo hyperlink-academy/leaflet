@@ -161,6 +161,16 @@ input[type="number"] {
   background-color: transparent;
 }
 
+.input-border {
+  @apply border;
+  @apply border-border;
+  @apply rounded-md;
+  @apply px-1;
+  @apply py-0.5;
+  @apply hover:border-tertiary;
+  @apply active:border-tertiary;
+}
+
 .block-border {
   @apply border;
   @apply border-border-light;

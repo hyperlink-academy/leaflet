@@ -119,7 +119,7 @@ export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
               </div>
             )}
           </div>
-          {props.preview && <PagePreview entityID={pageEntity} />}
+          {!props.preview && <PagePreview entityID={pageEntity} />}
         </div>
       </>
     </div>
