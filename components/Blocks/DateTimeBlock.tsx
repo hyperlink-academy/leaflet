@@ -124,7 +124,7 @@ export function DateTimeBlock(props: BlockProps) {
         </div>
       }
     >
-      <div className=" flex flex-col gap-2 ">
+      <div className="flex flex-col gap-3 ">
         <DayPicker
           components={{
             Chevron: (props: ChevronProps) => <CustomChevron {...props} />,
@@ -140,7 +140,7 @@ export function DateTimeBlock(props: BlockProps) {
             chevron: "text-inherit",
             month_grid: "w-full table-fixed",
             weekdays: "text-secondary text-sm",
-            selected: "bg-accent-1 text-accent-2 rounded-md font-bold ",
+            selected: "!bg-accent-1 text-accent-2 rounded-md font-bold",
 
             day: "h-[34px]  text-center rounded-md sm:hover:bg-border-light",
             outside: "text-border",
@@ -151,31 +151,33 @@ export function DateTimeBlock(props: BlockProps) {
           onSelect={handleDaySelect}
         />
         <Separator className="border-border" />
-        <input
-          disabled={dateFact?.data.dateOnly}
-          type="time"
-          value={timeValue}
-          onChange={handleTimeChange}
-          className="dateBlockTimeInput input-border bg-bg-page text-primary w-full mb-1 "
-        />
+        <div className="flex gap-4 pb-1 items-center">
+          <Checkbox
+            checked={!!dateFact?.data.dateOnly}
+            onChange={(e) => {
+              if (!dateFact) return;
+              rep?.mutate.assertFact({
+                entity: props.entityID,
+                data: {
+                  type: "date-time",
+                  value: dateFact.data.value,
+                  dateOnly: e.currentTarget.checked,
+                },
+                attribute: "block/date-time",
+              });
+            }}
+          >
+            All day
+          </Checkbox>
+          <input
+            disabled={dateFact?.data.dateOnly}
+            type="time"
+            value={timeValue}
+            onChange={handleTimeChange}
+            className="dateBlockTimeInput input-with-border bg-bg-page text-primary w-full "
+          />
+        </div>
       </div>
-      <Checkbox
-        checked={!!dateFact?.data.dateOnly}
-        onChange={(e) => {
-          if (!dateFact) return;
-          rep?.mutate.assertFact({
-            entity: props.entityID,
-            data: {
-              type: "date-time",
-              value: dateFact.data.value,
-              dateOnly: e.currentTarget.checked,
-            },
-            attribute: "block/date-time",
-          });
-        }}
-      >
-        All day
-      </Checkbox>
     </Popover>
   );
 }
