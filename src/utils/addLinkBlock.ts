@@ -18,7 +18,7 @@ export async function addLinkBlock(
       entity: entityID,
       attribute: "link/url",
       data: {
-        type: "text",
+        type: "string",
         value: url,
       },
     },
@@ -39,7 +39,7 @@ export async function addLinkBlock(
         entity: entityID,
         attribute: "link/title",
         data: {
-          type: "text",
+          type: "string",
           value: data.data.data.title || "",
         },
       });
@@ -47,7 +47,7 @@ export async function addLinkBlock(
         entity: entityID,
         attribute: "link/description",
         data: {
-          type: "text",
+          type: "string",
           value: data.data.data.description || "",
         },
       });

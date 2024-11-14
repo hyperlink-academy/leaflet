@@ -89,11 +89,12 @@ export const inputrules = (
 
       //Checklist
       new InputRule(/^\[(\ |x)?\]\s$/, (state, match) => {
-        if (!propsRef.current.listData) repRef.current?.mutate.assertFact({
-          entity: propsRef.current.entityID,
-          attribute: "block/is-list",
-          data: { type: "boolean", value: true },
-        });
+        if (!propsRef.current.listData)
+          repRef.current?.mutate.assertFact({
+            entity: propsRef.current.entityID,
+            attribute: "block/is-list",
+            data: { type: "boolean", value: true },
+          });
         let tr = state.tr;
         tr.delete(0, match[0].length);
         repRef.current?.mutate.assertFact({
@@ -125,7 +126,7 @@ export const inputrules = (
         repRef.current?.mutate.assertFact({
           entity: propsRef.current.entityID,
           attribute: "block/type",
-          data: { type: "string", value: "heading" },
+          data: { type: "block-type-union", value: "heading" },
         });
         repRef.current?.mutate.assertFact({
           entity: propsRef.current.entityID,
