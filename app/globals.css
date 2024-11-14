@@ -139,6 +139,17 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+::-webkit-calendar-picker-indicator {
+  mask-image: url(/timeInputIcon.svg);
+  mask-size: 100% 100%;
+  background-image: url(/gripperPattern1.svg);
+  background-color: color-mix(
+    in oklab,
+    rgb(var(--primary)),
+    rgb(var(--bg-page)) 55%
+  );
+}
+
 .highlight {
   @apply px-[1px];
   @apply py-[1px];

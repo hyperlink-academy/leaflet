@@ -139,12 +139,11 @@ export function DateTimeBlock(props: BlockProps) {
           type="time"
           value={timeValue}
           onChange={handleTimeChange}
-          className="dateBlockTimeInput input-border w-full mb-1 "
+          className="dateBlockTimeInput input-border bg-bg-page text-primary w-full mb-1 "
         />
       </div>
     </Popover>
   );
-  dis;
 }
 
 const CustomChevron = (props: ChevronProps) => {
