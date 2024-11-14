@@ -57,7 +57,7 @@ const BlockAttributes = {
     cardinality: "one",
   },
   "block/date-time": {
-    type: "string",
+    type: "date-time",
     cardinality: "one",
   },
   "block/text": {
@@ -195,6 +195,11 @@ export type Data<A extends keyof typeof Attributes> = {
     type: "spatial-reference";
     position: { x: number; y: number };
     value: string;
+  };
+  "date-time": {
+    type: "date-time";
+    value: string;
+    dateOnly?: boolean;
   };
   "ordered-reference": {
     type: "ordered-reference";

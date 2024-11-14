@@ -172,14 +172,18 @@ input[type="number"] {
   background-color: transparent;
 }
 
-.input-border {
+.input-with-border {
   @apply border;
   @apply border-border;
+  @apply bg-bg-page;
   @apply rounded-md;
   @apply px-1;
   @apply py-0.5;
   @apply hover:border-tertiary;
   @apply active:border-tertiary;
+  @apply disabled:border-border-light;
+  @apply disabled:bg-border-light;
+  @apply disabled:text-tertiary;
 }
 
 .block-border {
