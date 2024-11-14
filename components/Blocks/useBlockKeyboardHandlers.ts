@@ -43,6 +43,17 @@ export function useBlockKeyboardHandlers(
       let command = { Tab, ArrowUp, ArrowDown, Backspace, Enter, Escape }[
         e.key
       ];
+
+      let el = e.target as HTMLElement;
+      if (
+        el.tagName === "LABEL" ||
+        el.tagName === "INPUT" ||
+        el.tagName === "TEXTAREA" ||
+        el.contentEditable === "true"
+      ) {
+        if ((el as HTMLInputElement).value !== "") return;
+      }
+
       command?.({
         e,
         props,
