@@ -26,7 +26,7 @@ export const TextBlockTypeToolbar = (props: {
   let { rep } = useReplicache();
 
   let setLevel = useCallback(
-    (level: number) => {
+    async (level: number) => {
       if (!focusedBlock) return;
       if (
         blockType?.data.value !== "text" &&
@@ -35,12 +35,25 @@ export const TextBlockTypeToolbar = (props: {
         return;
       }
       if (blockType.data.value === "text") {
-        keepFocus(focusedBlock.entityID);
-        rep?.mutate.assertFact({
+        let existingEditor =
+          useEditorStates.getState().editorStates[focusedBlock.entityID];
+        let selection = existingEditor?.editor.selection;
+        await rep?.mutate.assertFact({
           entity: focusedBlock.entityID,
           attribute: "block/type",
           data: { type: "block-type-union", value: "heading" },
         });
+
+        let newEditor =
+          useEditorStates.getState().editorStates[focusedBlock.entityID];
+        if (!newEditor || !selection) return;
+        newEditor.view?.dispatch(
+          newEditor.editor.tr.setSelection(
+            TextSelection.create(newEditor.editor.doc, selection.anchor),
+          ),
+        );
+
+        newEditor.view?.focus();
       }
       rep?.mutate.assertFact({
         entity: focusedBlock.entityID,
@@ -58,7 +71,6 @@ export const TextBlockTypeToolbar = (props: {
           className={props.className}
           onClick={() => {
             setLevel(1);
-            focusedBlock && keepFocus(focusedBlock.entityID);
           }}
           active={
             blockType?.data.value === "heading" &&
@@ -80,7 +92,6 @@ export const TextBlockTypeToolbar = (props: {
           className={props.className}
           onClick={() => {
             setLevel(2);
-            focusedBlock && keepFocus(focusedBlock.entityID);
           }}
           active={
             blockType?.data.value === "heading" &&
@@ -102,7 +113,6 @@ export const TextBlockTypeToolbar = (props: {
           className={props.className}
           onClick={() => {
             setLevel(3);
-            focusedBlock && keepFocus(focusedBlock.entityID);
           }}
           active={
             blockType?.data.value === "heading" &&
@@ -122,17 +132,30 @@ export const TextBlockTypeToolbar = (props: {
         </ToolbarButton>
         <ToolbarButton
           className={`px-[6px] ${props.className}`}
-          onClick={() => {
+          onClick={async () => {
             if (headingLevel)
-              rep?.mutate.retractFact({ factID: headingLevel.id });
+              await rep?.mutate.retractFact({ factID: headingLevel.id });
             if (!focusedBlock || !blockType) return;
             if (blockType.data.value !== "text") {
-              keepFocus(focusedBlock.entityID);
-              rep?.mutate.assertFact({
+              let existingEditor =
+                useEditorStates.getState().editorStates[focusedBlock.entityID];
+              let selection = existingEditor?.editor.selection;
+              await rep?.mutate.assertFact({
                 entity: focusedBlock?.entityID,
                 attribute: "block/type",
                 data: { type: "block-type-union", value: "text" },
               });
+
+              let newEditor =
+                useEditorStates.getState().editorStates[focusedBlock.entityID];
+              if (!newEditor || !selection) return;
+              newEditor.view?.dispatch(
+                newEditor.editor.tr.setSelection(
+                  TextSelection.create(newEditor.editor.doc, selection.anchor),
+                ),
+              );
+
+              newEditor.view?.focus();
             }
           }}
           active={blockType?.data.value === "text"}
@@ -146,20 +169,7 @@ export const TextBlockTypeToolbar = (props: {
 };
 
 export function keepFocus(entityID: string) {
-  let existingEditor = useEditorStates.getState().editorStates[entityID];
-  let selection = existingEditor?.editor.selection;
-  setTimeout(() => {
-    let existingEditor = useEditorStates.getState().editorStates[entityID];
-    if (!selection || !existingEditor) return;
-    existingEditor.view?.focus();
-    setEditorState(entityID, {
-      editor: existingEditor.editor.apply(
-        existingEditor.editor.tr.setSelection(
-          TextSelection.create(existingEditor.editor.doc, selection.anchor),
-        ),
-      ),
-    });
-  }, 20);
+  setTimeout(() => {}, 1000);
 }
 
 export function TextBlockTypeButton(props: {

@@ -144,7 +144,8 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
         {toolbarState !== "areYouSure" && (
           <button
             className="toolbarBackToDefault hover:text-accent-contrast"
-            onClick={() => {
+            onMouseDown={(e) => {
+              e.preventDefault();
               if (
                 toolbarState === "multiselect" ||
                 toolbarState === "block" ||
