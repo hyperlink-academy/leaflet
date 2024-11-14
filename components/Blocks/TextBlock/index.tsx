@@ -44,7 +44,7 @@ import { inputrules } from "./inputRules";
 import { AddTiny, MoreOptionsTiny } from "components/Icons";
 
 export function TextBlock(
-  props: BlockProps & { className: string; preview?: boolean },
+  props: BlockProps & { className?: string; preview?: boolean },
 ) {
   let initialized = useInitialPageLoad();
   let first = props.previousBlock === null;
@@ -179,7 +179,7 @@ export function RenderedTextBlock(props: {
   );
 }
 
-export function BaseTextBlock(props: BlockProps & { className: string }) {
+export function BaseTextBlock(props: BlockProps & { className?: string }) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
   let entity_set = useEntitySetContext();

@@ -11,6 +11,7 @@ import {
   ParagraphSmall,
   LinkSmall,
   BlockEmbedSmall,
+  BlockCalendarSmall,
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "components/Pages";
@@ -193,6 +194,17 @@ export const blockCommands: Command[] = [
       createBlockWithType(rep, props, "mailbox");
     },
   },
+
+  // EVENT STUFF
+
+  {
+    name: "Date and Time",
+    icon: <BlockCalendarSmall />,
+    type: "block",
+    onSelect: (rep, props) => createBlockWithType(rep, props, "datetime"),
+  },
+
+  // PAGE TYPES
 
   {
     name: "New Page",
