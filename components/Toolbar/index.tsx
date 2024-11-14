@@ -82,8 +82,8 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
 
   return (
     <Tooltip.Provider>
-      <div className="toolbar flex items-center justify-between w-full gap-6">
-        <div className="toolbarOptions flex gap-[6px] items-center grow">
+      <div className="toolbar flex items-center justify-between w-full gap-6 h-[26px]">
+        <div className="toolbarOptions flex gap-1 sm:gap-[6px] items-center grow">
           {toolbarState === "default" ? (
             <TextToolbar
               lastUsedHighlight={lastUsedHighlight}
@@ -180,23 +180,28 @@ export const ToolbarButton = (props: {
   active?: boolean;
   disabled?: boolean;
 }) => {
+  let focusedBlock = useUIState((s) => s.focusedEntity);
+  let isLocked = useEntity(focusedBlock?.entityID || null, "block/is-locked");
+  let isDisabled =
+    props.disabled === undefined ? !!isLocked?.data.value : props.disabled;
+
   return (
     <TooltipButton
       onMouseDown={(e) => {
         e.preventDefault();
         props.onClick && props.onClick(e);
       }}
-      disabled={props.disabled}
+      disabled={isDisabled}
       content={props.tooltipContent}
       className={`
-        flex items-center rounded-md border border-transparent hover:border-border  active:bg-border-light active:text-primary
+        flex items-center rounded-md border border-transparent 
         ${props.className}
         ${
-          props.active
+          props.active && !isDisabled
             ? "bg-border-light text-primary"
-            : props.disabled
+            : isDisabled
               ? "text-border cursor-not-allowed"
-              : "text-secondary  hover:text-primary"
+              : "text-secondary  hover:text-primary hover:border-border  active:bg-border-light active:text-primary"
         }
         `}
     >

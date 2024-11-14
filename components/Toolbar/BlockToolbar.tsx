@@ -5,6 +5,7 @@ import { Separator, ShortcutKey } from "components/Layout";
 import { metaKey } from "src/utils/metaKey";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { useUIState } from "src/useUIState";
+import { LockBlockButton } from "./LockBlockButton";
 
 export const BlockToolbar = (props: {
   setToolbarState: (state: "areYouSure" | "block") => void;
@@ -28,10 +29,15 @@ export const BlockToolbar = (props: {
         >
           <DeleteSmall />
         </ToolbarButton>
-
+        <Separator classname="h-6" />
         {focusedEntityType?.data.value !== "canvas" ? (
-          <MoveBlockButtons />
+          <>
+            <MoveBlockButtons />
+            <Separator classname="h-6" />
+          </>
         ) : null}
+
+        <LockBlockButton />
       </div>
     </div>
   );
@@ -52,7 +58,6 @@ const MoveBlockButtons = () => {
   };
   return (
     <>
-      <Separator classname="h-5" />
       <ToolbarButton
         onClick={async () => {
           let [sortedBlocks, siblings] = await getSortedSelection();

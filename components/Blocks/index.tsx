@@ -1,6 +1,6 @@
 "use client";
 
-import { Fact, useReplicache } from "src/replicache";
+import { Fact, useEntity, useReplicache } from "src/replicache";
 
 import { useUIState } from "src/useUIState";
 import { useBlocks } from "src/hooks/queries/useBlocks";
@@ -169,9 +169,11 @@ function NewBlockButton(props: { lastBlock: Block | null; entityID: string }) {
       : null,
   );
 
+  let isLocked = useEntity(props.lastBlock?.value || null, "block/is-locked");
   if (!entity_set.permissions.write) return null;
   if (
-    (props.lastBlock?.type === "text" || props.lastBlock?.type === "heading") &&
+    ((props.lastBlock?.type === "text" && !isLocked?.data.value) ||
+      props.lastBlock?.type === "heading") &&
     (!editorState?.editor || editorState.editor.doc.content.size <= 2)
   )
     return null;

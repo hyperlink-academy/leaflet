@@ -8,6 +8,7 @@ import { copySelection } from "src/utils/copySelection";
 import { useSmoker } from "components/Toast";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { Replicache } from "replicache";
+import { LockBlockButton } from "./LockBlockButton";
 
 export const MultiselectToolbar = (props: {
   setToolbarState: (state: "areYouSure" | "multiselect") => void;
@@ -37,11 +38,13 @@ export const MultiselectToolbar = (props: {
           <TrashSmall />
         </ToolbarButton>
         <ToolbarButton
+          disabled={false}
           tooltipContent="Copy Selected Blocks"
           onClick={handleCopy}
         >
           <CopySmall />
         </ToolbarButton>
+        <LockBlockButton />
         {/* Add more multi-select toolbar buttons here */}
       </div>
     </div>

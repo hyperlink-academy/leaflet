@@ -23,11 +23,12 @@ export function useBlockKeyboardHandlers(
 ) {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
+  let isLocked = !!useEntity(props.entityID, "block/is-locked")?.data.value;
 
   let isSelected = useUIState((s) => {
     let selectedBlocks = s.selectedBlocks;
     return (
-      (!isTextBlock[props.type] || selectedBlocks.length > 1) &&
+      (!isTextBlock[props.type] || selectedBlocks.length > 1 || isLocked) &&
       !!s.selectedBlocks.find((b) => b.value === props.entityID)
     );
   });
@@ -42,15 +43,24 @@ export function useBlockKeyboardHandlers(
       let command = { Tab, ArrowUp, ArrowDown, Backspace, Enter, Escape }[
         e.key
       ];
-      command?.({ e, props, rep, entity_set, areYouSure, setAreYouSure });
+      command?.({
+        e,
+        props,
+        rep,
+        entity_set,
+        areYouSure,
+        setAreYouSure,
+        isLocked,
+      });
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [entity_set, isSelected, props, rep, areYouSure, setAreYouSure]);
+  }, [entity_set, isSelected, props, rep, areYouSure, setAreYouSure, isLocked]);
 }
 
 type Args = {
   e: KeyboardEvent;
+  isLocked: boolean;
   props: BlockProps;
   rep: Replicache<ReplicacheMutators>;
   entity_set: { set: string };
@@ -93,8 +103,16 @@ function ArrowUp({ e, props }: Args) {
   if (!prevBlock) return;
 }
 
-async function Backspace({ e, props, rep, areYouSure, setAreYouSure }: Args) {
+async function Backspace({
+  e,
+  props,
+  rep,
+  areYouSure,
+  setAreYouSure,
+  isLocked,
+}: Args) {
   // if this is a textBlock, let the textBlock/keymap handle the backspace
+  if (isLocked) return;
   if (isTextBlock[props.type]) return;
   let el = e.target as HTMLElement;
   if (

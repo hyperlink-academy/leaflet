@@ -44,6 +44,10 @@ const BlockAttributes = {
     type: "boolean",
     cardinality: "one",
   },
+  "block/is-locked": {
+    type: "boolean",
+    cardinality: "one",
+  },
   "block/check-list": {
     type: "boolean",
     cardinality: "one",

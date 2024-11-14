@@ -24,7 +24,9 @@
 
     --gripperSVG: url("/gripperPattern.svg");
     --gripperSVG2: url("/gripperPattern2.svg");
+    --hatchSVG: url("/hatchPattern.svg");
   }
+
   @media (max-width: 640px) {
     :root {
       --list-marker-width: 20px;

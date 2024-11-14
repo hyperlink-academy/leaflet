@@ -8,13 +8,13 @@ export function focusBlock(
   block: Pick<Block, "type" | "value" | "parent">,
   position: Position,
 ) {
+  useUIState.getState().setSelectedBlock(block);
+  useUIState.getState().setFocusedBlock({
+    entityType: "block",
+    entityID: block.value,
+    parent: block.parent,
+  });
   if (block.type !== "text" && block.type !== "heading") {
-    useUIState.getState().setSelectedBlock(block);
-    useUIState.getState().setFocusedBlock({
-      entityType: "block",
-      entityID: block.value,
-      parent: block.parent,
-    });
     return true;
   }
   let nextBlockID = block.value;

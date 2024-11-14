@@ -19,6 +19,8 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.value),
   );
+  let isLocked = useEntity(props.value, "block/is-locked")?.data.value;
+
   useEffect(() => {
     if (props.preview) return;
     let input = document.getElementById(elementId.block(props.entityID).input);
@@ -40,7 +42,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             text-tertiary hover:text-accent-contrast hover:font-bold
             flex flex-auto gap-2 items-center justify-center
             hover:border-2 border-dashed  hover:border-accent-contrast rounded-lg
-            ${isSelected ? "border-2 border-tertiary font-bold" : "border border-border"}
+            ${isSelected && !isLocked ? "border-2 border-tertiary font-bold" : "border border-border"}
             ${props.pageType === "canvas" && "bg-bg-page"}`}
           onMouseDown={(e) => e.preventDefault()}
         >
@@ -49,6 +51,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
           />{" "}
           Upload An Image
           <input
+            disabled={isLocked}
             className="h-0 w-0"
             type="file"
             accept="image/*"
