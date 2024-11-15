@@ -17,6 +17,7 @@ export const HelpPopover = () => {
       trigger={
         <HoverButton
           icon={<HelpSmall />}
+          noLabelOnMobile
           label="About This App"
           background="bg-accent-1"
           text="text-accent-2"

@@ -8,7 +8,8 @@ export const HomeHelp = () => {
     <Popover.Root>
       <Popover.Trigger>
         <HoverButton
-          icon=<InfoSmall />
+          icon={<InfoSmall />}
+          noLabelOnMobile
           label="Info"
           background="bg-accent-1"
           text="text-accent-2"

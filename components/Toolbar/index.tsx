@@ -82,7 +82,7 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
 
   return (
     <Tooltip.Provider>
-      <div className="toolbar flex items-center justify-between w-full gap-6 h-[26px]">
+      <div className="toolbar flex items-center justify-between w-full  h-[26px]">
         <div className="toolbarOptions flex gap-1 sm:gap-[6px] items-center grow">
           {toolbarState === "default" ? (
             <TextToolbar
