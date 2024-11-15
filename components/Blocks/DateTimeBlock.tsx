@@ -44,6 +44,7 @@ export function DateTimeBlock(props: BlockProps) {
         type: "date-time",
         value: newSelectedDate.toISOString(),
         dateOnly: dateFact?.data.dateOnly,
+        originalTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       },
       attribute: "block/date-time",
     });
@@ -56,6 +57,7 @@ export function DateTimeBlock(props: BlockProps) {
         rep?.mutate.assertFact({
           entity: props.entityID,
           data: {
+            originalTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             type: "date-time",
             value: date.toISOString(),
             dateOnly: dateFact?.data.dateOnly,
@@ -77,7 +79,13 @@ export function DateTimeBlock(props: BlockProps) {
 
     rep?.mutate.assertFact({
       entity: props.entityID,
-      data: { type: "date-time", value: newDate.toISOString() },
+      data: {
+        type: "date-time",
+        value: newDate.toISOString(),
+
+        originalTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        dateOnly: dateFact?.data.dateOnly,
+      },
       attribute: "block/date-time",
     });
   };
@@ -155,12 +163,13 @@ export function DateTimeBlock(props: BlockProps) {
           <Checkbox
             checked={!!dateFact?.data.dateOnly}
             onChange={(e) => {
-              if (!dateFact) return;
               rep?.mutate.assertFact({
                 entity: props.entityID,
                 data: {
                   type: "date-time",
-                  value: dateFact.data.value,
+                  value: new Date().toISOString(),
+                  originalTimezone:
+                    Intl.DateTimeFormat().resolvedOptions().timeZone,
                   dateOnly: e.currentTarget.checked,
                 },
                 attribute: "block/date-time",

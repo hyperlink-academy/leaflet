@@ -199,6 +199,7 @@ export type Data<A extends keyof typeof Attributes> = {
   "date-time": {
     type: "date-time";
     value: string;
+    originalTimezone: string;
     dateOnly?: boolean;
   };
   "ordered-reference": {
