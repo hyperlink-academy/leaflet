@@ -41,7 +41,9 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
             let listener = () => {
+              console.log("firing listener", window.innerHeight, window.innerWidth)
               let el = document.querySelector(":root");
+              console.log(el)
               el.style.setProperty("--leaflet-height-unitless", window.innerHeight)
               el.style.setProperty("--leaflet-width-unitless", window.innerWidth)
             }
