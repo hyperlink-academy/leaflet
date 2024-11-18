@@ -45,12 +45,24 @@ export default function RootLayout({
               let el = document.querySelector(":root");
               el.style.setProperty("--leaflet-height-unitless", window.innerHeight)
               el.style.setProperty("--leaflet-width-unitless", window.innerWidth)
+              el.style.setProperty("--test", "THIS IS A TEST")
             }
             if (document.readyState === 'complete') {
               listener();
             } else {
               document.addEventListener('DOMContentLoaded', listener);
             }
+            window.addEventListener("resize", listener)
+            const styleObserver = new MutationObserver((mutations) => {
+              const currentValue = mutations[0].target.style.getPropertyValue('--leaflet-width-unitless');
+              console.log(currentValue)
+              console.log(mutations[0].target.style.getPropertyValue('--test'));
+            });
+
+            styleObserver.observe(document.documentElement, {
+              attributes: true,
+              attributeFilter: ['style'],
+            });
             `,
           }}
         />
