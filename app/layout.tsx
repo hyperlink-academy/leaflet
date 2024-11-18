@@ -45,7 +45,11 @@ export default function RootLayout({
               el.style.setProperty("--leaflet-height-unitless", window.innerHeight)
               el.style.setProperty("--leaflet-width-unitless", window.innerWidth)
             }
-            listener()
+            if (document.readyState === 'complete') {
+              listener();
+            } else {
+              document.addEventListener('DOMContentLoaded', listener);
+            }
             window.addEventListener("resize", listener)
             `,
           }}
