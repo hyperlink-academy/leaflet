@@ -103,6 +103,7 @@ export function DateTimeBlock(props: BlockProps) {
           <BlockCalendarSmall className="text-tertiary" />
           {dateFact ? (
             <div
+              suppressHydrationWarning={true}
               className={`font-bold
               ${!permissions.write || isLocked ? "" : "group-hover/date:underline"}
               `}
@@ -113,7 +114,7 @@ export function DateTimeBlock(props: BlockProps) {
                 day: "numeric",
               })}{" "}
               {!dateFact.data.dateOnly ? (
-                <span>
+                <span suppressHydrationWarning={true}>
                   |{" "}
                   {selectedDate.toLocaleTimeString(undefined, {
                     hour: "numeric",
