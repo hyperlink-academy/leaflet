@@ -87,6 +87,7 @@ export const Block = memo(function Block(
   return (
     <div
       {...(!props.preview ? { ...mouseHandlers, ...handlers } : {})}
+      id={`block/${props.entityID}/container`}
       className={`
         blockWrapper relative
         flex flex-row gap-2

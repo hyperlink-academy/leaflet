@@ -34,6 +34,7 @@ import { PageThemeSetter } from "../ThemeManager/PageThemeSetter";
 import { CardThemeProvider } from "../ThemeManager/ThemeProvider";
 import { PageShareMenu } from "./PageShareMenu";
 import { Watermark } from "components/Watermark";
+import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -366,10 +367,12 @@ export async function focusPage(
 
   setTimeout(async () => {
     //scroll to page
-    document.getElementById(elementId.page(pageID).container)?.scrollIntoView({
-      behavior: "smooth",
-      inline: "nearest",
-    });
+
+    scrollIntoViewIfNeeded(
+      document.getElementById(elementId.page(pageID).container),
+      false,
+      "smooth",
+    );
 
     // if we asked that the function focus the first block, focus the first block
     if (focusFirstBlock === "focusFirstBlock") {
