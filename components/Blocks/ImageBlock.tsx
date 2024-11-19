@@ -102,7 +102,11 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
         }
         height={image?.data.height}
         width={image?.data.width}
-        className={isSelected ? "block-border-selected " : "block-border"}
+        className={
+          isSelected
+            ? "block-border-selected !border-transparent "
+            : "block-border !border-transparent"
+        }
       />
     </div>
   );
