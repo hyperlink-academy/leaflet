@@ -124,6 +124,7 @@ export const BaseBlock = (
 ) => {
   // BaseBlock renders the actual block content, delete states, controls spacing between block and list markers
   let BlockTypeComponent = BlockTypeComponents[props.type];
+  if (!BlockTypeComponent) return <div>unknown block</div>;
   return (
     <div className="blockContentWrapper grow flex gap-2 z-[1]">
       {props.listData && <ListMarker {...props} />}
