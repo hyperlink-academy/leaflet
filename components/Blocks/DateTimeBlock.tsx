@@ -92,7 +92,7 @@ export function DateTimeBlock(props: BlockProps) {
 
   return (
     <Popover
-      disabled={isLocked}
+      disabled={isLocked || !permissions.write}
       className="w-64 z-10 !px-2"
       trigger={
         <div
