@@ -196,6 +196,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
     repRef.current = rep.rep;
   }, [rep?.rep]);
 
+  let focused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
   let selected = useUIState(
     (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
   );
@@ -318,29 +319,28 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           ${props.className}`}
           ref={setMount}
         />
-        {/* if this is the only block on the page and is empty*/}
         {editorState.doc.textContent.length === 0 &&
-          props.previousBlock === null &&
-          props.nextBlock === null && (
-            <div
-              className={`${props.className} pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col`}
-            >
-              {props.type === "text"
-                ? "write something..."
-                : headingLevel?.data.value === 3
-                  ? "Subheader"
-                  : headingLevel?.data.value === 2
-                    ? "Header"
-                    : "Title"}
-              <div className=" text-xs font-normal">
-                or type &quot;/&quot; for commands
-              </div>
+        props.previousBlock === null &&
+        props.nextBlock === null ? (
+          // if this is the only block on the page and is empty or is a canvas, show placeholder
+          <div
+            className={`${props.className} pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col`}
+          >
+            {props.type === "text"
+              ? "write something..."
+              : headingLevel?.data.value === 3
+                ? "Subheader"
+                : headingLevel?.data.value === 2
+                  ? "Header"
+                  : "Title"}
+            <div className=" text-xs font-normal">
+              or type &quot;/&quot; to add a block
             </div>
-          )}
-        {/* if this is the block is empty and selected */}
-        {editorState.doc.textContent.length === 0 && selected ? (
+          </div>
+        ) : editorState.doc.textContent.length === 0 && focused ? (
+          // if not the only block on page but is the block is empty and selected, but NOT multiselected show add button
           <button
-            className={`absolute top-0.5 right-0 w-5 h-5 rounded border border-border outline outline-transparent hover:outline-border hover:text-tertiary  font-bold  rounded-md  text-sm text-border ${props.pageType === "canvas" && "mr-[6px]"}`}
+            className={`absolute top-0.5 right-0 w-fit h-5 hover:text-accent-contrast font-bold  rounded-md  text-sm text-border ${props.pageType === "canvas" && "mr-[6px]"}`}
             onMouseDown={(e) => {
               e.preventDefault();
               let editor =
@@ -363,8 +363,10 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
               }
             }}
           >
-            <div className={`flex items-center justify-center `}>
-              <MoreOptionsTiny />
+            <div
+              className={`flex items-center justify-center gap-2 italic font-normal`}
+            >
+              Add a Block <AddTiny />
             </div>
           </button>
         ) : null}

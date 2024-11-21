@@ -71,12 +71,13 @@ export const TooltipButton = (props: {
   children: React.ReactNode;
   content: React.ReactNode;
   side?: "top" | "right" | "bottom" | "left" | undefined;
+  open?: boolean;
 }) => {
   return (
     // toolbar button does not control the highlight theme setter
     // if toolbar button is updated, be sure to update there as well
     <RadixTooltip.TooltipProvider>
-      <RadixTooltip.Root>
+      <RadixTooltip.Root open={props.open}>
         <RadixTooltip.Trigger
           disabled={props.disabled}
           className={props.className}

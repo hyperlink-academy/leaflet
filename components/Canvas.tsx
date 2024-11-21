@@ -147,7 +147,6 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
 function CanvasWidthHandle(props: { entityID: string }) {
   let canvasFocused = useUIState((s) => s.focusedEntity?.entityType === "page");
   let { rep } = useReplicache();
-  let { permissions } = useEntitySetContext();
   let narrowWidth = useEntity(props.entityID, "canvas/narrow-width")?.data
     .value;
   return (
@@ -178,15 +177,16 @@ const AddCanvasBlockButton = (props: {
 }) => {
   let { rep } = useReplicache();
   let { permissions } = useEntitySetContext();
-  let narrowWidth = useEntity(props.entityID, "canvas/narrow-width")?.data
-    .value;
+  let blocks = useEntity(props.entityID, "canvas/block");
+
   if (!permissions.write) return null;
   return (
     <div className="absolute right-2 sm:top-4 sm:right-4 bottom-2 sm:bottom-auto z-10 flex flex-col gap-1 justify-center">
       <TooltipButton
         side="left"
+        open={blocks.length === 0 ? true : undefined}
         content={
-          <div className="flex flex-col justify-end text-center ">
+          <div className="flex flex-col justify-end text-center px-1 leading-snug ">
             <div>Add a Block!</div>
             <div className="font-normal">or double click anywhere</div>
           </div>
