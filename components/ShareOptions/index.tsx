@@ -35,7 +35,8 @@ export function ShareOptions(props: { rootEntity: string }) {
   let publishLink = usePublishLink();
   let [collabLink, setCollabLink] = useState<null | string>(null);
   useEffect(() => {
-    setCollabLink(window.location.pathname);
+    // strip leading '/' character from pathname
+    setCollabLink(window.location.pathname.slice(1));
   }, []);
 
   let smoker = useSmoker();
