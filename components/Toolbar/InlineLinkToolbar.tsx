@@ -132,7 +132,7 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
 
         if the user changes the link, then the button reverts to a check mark.
         */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 w-4">
         <button
           disabled={!linkValue || linkValue === ""}
           className="hover:text-accent-contrast -mr-6 disabled:text-border"
