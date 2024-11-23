@@ -2,7 +2,7 @@ import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps } from "./Block";
 import { ChevronProps, DayPicker } from "react-day-picker";
 import { Popover } from "components/Popover";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRightTiny, BlockCalendarSmall } from "components/Icons";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useUIState } from "src/useUIState";
@@ -14,15 +14,21 @@ export function DateTimeBlock(props: BlockProps) {
   let { rep } = useReplicache();
   let { permissions } = useEntitySetContext();
   let dateFact = useEntity(props.entityID, "block/date-time");
-
-  const [timeValue, setTimeValue] = useState<string>(
-    () =>
-      `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`,
-  );
   let selectedDate = useMemo(() => {
     if (!dateFact) return new Date();
     return new Date(dateFact.data.value);
   }, [dateFact]);
+
+  const [timeValue, setTimeValue] = useState<string>(
+    () =>
+      `${selectedDate.getHours().toString().padStart(2, "0")}:${selectedDate.getMinutes().toString().padStart(2, "0")}`,
+  );
+
+  useEffect(() => {
+    setTimeValue(
+      `${selectedDate.getHours().toString().padStart(2, "0")}:${selectedDate.getMinutes().toString().padStart(2, "0")}`,
+    );
+  }, [selectedDate]);
 
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
