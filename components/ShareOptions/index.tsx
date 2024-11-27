@@ -7,6 +7,7 @@ import { useSmoker } from "components/Toast";
 import { Menu, MenuItem } from "components/Layout";
 import { HoverButton } from "components/Buttons";
 import useSWR from "swr";
+import { useTemplateState } from "app/home/CreateNewButton";
 
 export let usePublishLink = () => {
   let { permission_token, rootEntity } = useReplicache();
@@ -29,6 +30,7 @@ export let usePublishLink = () => {
   );
   return publishLink;
 };
+
 export function ShareOptions(props: { rootEntity: string }) {
   let { permission_token } = useReplicache();
   let entity_set = useEntitySetContext();
@@ -41,15 +43,13 @@ export function ShareOptions(props: { rootEntity: string }) {
 
   let smoker = useSmoker();
 
-  if (
-    !permission_token.permission_token_rights.find(
-      (s) => s.entity_set === entity_set.set && s.create_token,
-    )
-  )
-    return null;
+  let isTemplate = useTemplateState(
+    (s) => !!s.templates.find((t) => t.id === permission_token.id),
+  );
 
   return (
     <Menu
+      className="max-w-xs"
       trigger={
         <HoverButton
           icon=<ShareSmall />
@@ -59,19 +59,31 @@ export function ShareOptions(props: { rootEntity: string }) {
         />
       }
     >
-      <ShareButton
-        text="Publish"
-        subtext="Share a read-only version"
-        smokerText="Publish link copied!"
-        id="get-publish-link"
-        link={publishLink || ""}
-      />
+      {isTemplate && (
+        <>
+          <ShareButton
+            text="Offer Template"
+            subtext="Let people create new leaflets using this as a template"
+            smokerText="Template link copied!"
+            id="get-template-link"
+            link={`template/${publishLink}` || ""}
+          />
+          <hr className="border-border my-1" />
+        </>
+      )}
       <ShareButton
         text="Collaborate"
         subtext="Invite people to edit together"
         smokerText="Collab link copied!"
         id="get-collab-link"
         link={collabLink}
+      />
+      <ShareButton
+        text="Publish"
+        subtext="Share a read-only version"
+        smokerText="Publish link copied!"
+        id="get-publish-link"
+        link={publishLink || ""}
       />
     </Menu>
   );
