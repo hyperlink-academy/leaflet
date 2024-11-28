@@ -420,7 +420,7 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
   useEditorEffect((view) => {
     if (isMobile) return;
     if (!view.hasFocus()) return;
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       if (!view.hasFocus()) return;
       if (previousFocused === props.entityID) return;
       previousFocused = props.entityID;
@@ -455,7 +455,7 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
           });
         }
       }
-    });
+    }, 800);
   });
   useEditorEffect(
     (view) => {
