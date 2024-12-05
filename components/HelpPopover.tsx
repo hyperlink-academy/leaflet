@@ -42,6 +42,10 @@ export const HelpPopover = () => {
           text="🍃 Email us feedback"
           url="mailto:contact@hyperlink.academy"
         />
+        <HelpLink
+          text="📄 Terms and Privacy Policy"
+          url="https://leaflet.pub/legal"
+        />
         <Media mobile={false}>
           <hr className="text-border my-1" />
           <div className="flex flex-col gap-1">
