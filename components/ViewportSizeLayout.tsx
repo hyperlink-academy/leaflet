@@ -1,11 +1,15 @@
 "use client";
-import { useViewportSize } from "@react-aria/utils";
+import { isIOS, useViewportSize } from "@react-aria/utils";
 import { useEffect, useState } from "react";
 
 export function ViewportSizeLayout(props: { children: React.ReactNode }) {
   let viewheight = useViewportSize().height;
   let difference = useViewportDifference();
-  return <div style={{ height: viewheight || "100%" }}>{props.children}</div>;
+  return (
+    <div style={{ height: isIOS() ? viewheight : "100%" }}>
+      {props.children}
+    </div>
+  );
 }
 
 function useViewportDifference(): number {

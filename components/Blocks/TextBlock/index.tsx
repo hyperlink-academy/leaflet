@@ -66,7 +66,7 @@ export function TextBlock(
       )}
       {permission && !props.preview && !isLocked?.data.value && (
         <div
-          className={`w-full relative group/text ${!initialized ? "hidden" : ""}`}
+          className={`w-full relative group ${!initialized ? "hidden" : ""}`}
         >
           <IOSBS {...props} />
           <BaseTextBlock {...props} />
@@ -77,17 +77,14 @@ export function TextBlock(
 }
 
 export function IOSBS(props: BlockProps) {
-  let selected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
   let [initialRender, setInitialRender] = useState(true);
   useEffect(() => {
     setInitialRender(false);
   }, []);
-  if (selected || initialRender || !isIOS()) return null;
+  if (initialRender || !isIOS()) return null;
   return (
     <div
-      className="h-full w-full absolute cursor-text"
+      className="h-full w-full absolute cursor-text group-focus-within:hidden"
       onMouseDown={(e) => {
         e.preventDefault();
         focusBlock(props, {
