@@ -1,10 +1,6 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 
-export const useLongPress = (
-  cb: () => void,
-  propsOnMouseDown?: (e: React.MouseEvent) => void,
-  cancel?: boolean,
-) => {
+export const useLongPress = (cb: () => void, cancel?: boolean) => {
   let longPressTimer = useRef<number>();
   let isLongPress = useRef(false);
   let [startPosition, setStartPosition] = useState<{
@@ -14,7 +10,6 @@ export const useLongPress = (
 
   let onPointerDown = useCallback(
     (e: React.MouseEvent) => {
-      propsOnMouseDown?.(e);
       if (e.button === 2) {
         return;
       }
@@ -26,7 +21,7 @@ export const useLongPress = (
         cb();
       }, 500);
     },
-    [propsOnMouseDown, cb],
+    [cb],
   );
 
   let end = useCallback(() => {

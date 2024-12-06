@@ -27,6 +27,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { Media } from "components/Media";
 import { useIsMobile } from "src/hooks/isMobile";
 import { DateTimeBlock } from "./DateTimeBlock";
+import { elementId } from "src/utils/elementId";
 
 export type Block = {
   factID: string;
@@ -68,7 +69,7 @@ export const Block = memo(function Block(
         { type: "start" },
       );
     }
-  }, mouseHandlers.onMouseDown);
+  });
 
   let selected = useUIState(
     (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
@@ -87,7 +88,9 @@ export const Block = memo(function Block(
   return (
     <div
       {...(!props.preview ? { ...mouseHandlers, ...handlers } : {})}
-      id={`block/${props.entityID}/container`}
+      id={
+        !props.preview ? elementId.block(props.entityID).container : undefined
+      }
       className={`
         blockWrapper relative
         flex flex-row gap-2
