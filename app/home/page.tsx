@@ -25,7 +25,18 @@ let supabase = createServerClient<Database>(
 );
 export default async function Home() {
   let cookieStore = cookies();
-  let identity = cookieStore.get("identity")?.value;
+
+  let auth_token = cookieStore.get("auth_token")?.value;
+  let auth_res = auth_token
+    ? await supabase
+        .from("email_auth_tokens")
+        .select("*, identities(*)")
+        .eq("id", auth_token)
+        .single()
+    : null;
+  let identity: string | undefined;
+  if (auth_res?.data?.identities) identity = auth_res.data?.identities.id;
+  else identity = cookieStore.get("identity")?.value;
   let needstosetcookie = false;
   if (!identity) {
     const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
@@ -51,6 +62,7 @@ export default async function Home() {
     )
     .eq("id", identity)
     .single();
+
   if (!res.data) return <div>{JSON.stringify(res.error)}</div>;
   if (!res.data.permission_tokens) return <div>no home page wierdly</div>;
   let { data } = await supabase.rpc("get_facts", {

@@ -34,6 +34,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_auth_tokens: {
+        Row: {
+          confirmation_code: string
+          confirmed: boolean
+          created_at: string
+          email: string
+          id: string
+          identity: string | null
+        }
+        Insert: {
+          confirmation_code: string
+          confirmed?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          identity?: string | null
+        }
+        Update: {
+          confirmation_code?: string
+          confirmed?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          identity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_auth_tokens_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_subscriptions_to_entity: {
         Row: {
           confirmation_code: string
@@ -161,16 +196,19 @@ export type Database = {
       identities: {
         Row: {
           created_at: string
+          email: string | null
           home_page: string
           id: string
         }
         Insert: {
           created_at?: string
+          email?: string | null
           home_page: string
           id?: string
         }
         Update: {
           created_at?: string
+          email?: string | null
           home_page?: string
           id?: string
         }
@@ -178,6 +216,39 @@ export type Database = {
           {
             foreignKeyName: "identities_home_page_fkey"
             columns: ["home_page"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      permission_token_on_homepage: {
+        Row: {
+          created_at: string
+          identity: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          identity: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          identity?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permission_token_creator_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "permission_token_creator_token_fkey"
+            columns: ["token"]
             isOneToOne: false
             referencedRelation: "permission_tokens"
             referencedColumns: ["id"]
@@ -270,6 +341,24 @@ export type Database = {
         }
         Relationships: []
       }
+      user_identities: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: number
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -291,7 +380,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      rsvp_status: "GOING" | "NOT_GOING" | "MAYBE"
     }
     CompositeTypes: {
       [_ in never]: never
