@@ -7,15 +7,14 @@ export const useLongPress = (
 ) => {
   let longPressTimer = useRef<number>();
   let isLongPress = useRef(false);
-  // Change isDown to store the starting position
   let [startPosition, setStartPosition] = useState<{
     x: number;
     y: number;
   } | null>(null);
 
-  let onMouseDown = useCallback(
+  let onPointerDown = useCallback(
     (e: React.MouseEvent) => {
-      propsOnMouseDown && propsOnMouseDown(e);
+      propsOnMouseDown?.(e);
       if (e.button === 2) {
         return;
       }
@@ -30,20 +29,13 @@ export const useLongPress = (
     [propsOnMouseDown, cb],
   );
 
-  let onTouchStart = useCallback(() => {
-    isLongPress.current = false;
-    longPressTimer.current = window.setTimeout(() => {
-      isLongPress.current = true;
-      cb();
-    }, 500);
-  }, [cb]);
-
   let end = useCallback(() => {
     // Clear the starting position
     setStartPosition(null);
     window.clearTimeout(longPressTimer.current);
     longPressTimer.current = undefined;
   }, []);
+
   useEffect(() => {
     if (startPosition) {
       let listener = (e: MouseEvent) => {
@@ -79,13 +71,11 @@ export const useLongPress = (
     () => ({
       isLongPress: isLongPress,
       handlers: {
-        onMouseDown,
-        onMouseUp: end,
-        onTouchStart: onTouchStart,
-        onTouchEnd: end,
+        onPointerDown,
+        onPointerUp: end,
         onClickCapture: click,
       },
     }),
-    [isLongPress, end, onMouseDown, onTouchStart, click],
+    [isLongPress, end, onPointerDown, click],
   );
 };
