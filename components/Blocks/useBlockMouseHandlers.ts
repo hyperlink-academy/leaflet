@@ -7,13 +7,16 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { useReplicache } from "src/replicache";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { focusBlock } from "src/utils/focusBlock";
+import { useIsMobile } from "src/hooks/isMobile";
 
 let debounce: number | null = null;
 export function useBlockMouseHandlers(props: Block) {
   let entity_set = useEntitySetContext();
+  let isMobile = useIsMobile();
   let { rep } = useReplicache();
   let onMouseDown = useCallback(
     (e: MouseEvent) => {
+      if (isMobile) return;
       if (!entity_set.permissions.write) return;
       useSelectingMouse.setState({ start: props.value });
       if (e.shiftKey) {
@@ -33,10 +36,11 @@ export function useBlockMouseHandlers(props: Block) {
         useUIState.getState().setSelectedBlock(props);
       }
     },
-    [props],
+    [props, entity_set.permissions.write, isMobile],
   );
   let onMouseEnter = useCallback(
     async (e: MouseEvent) => {
+      if (isMobile) return;
       if (!entity_set.permissions.write) return;
       if (debounce) window.clearTimeout(debounce);
       debounce = window.setTimeout(async () => {
@@ -59,7 +63,7 @@ export function useBlockMouseHandlers(props: Block) {
         useUIState.getState().setSelectedBlocks(selected);
       }, 15);
     },
-    [rep, props, entity_set.permissions.write],
+    [rep, props, entity_set.permissions.write, isMobile],
   );
   return { onMouseDown, onMouseEnter };
 }

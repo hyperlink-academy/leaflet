@@ -16,6 +16,7 @@ import { elementId } from "src/utils/elementId";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 import { copySelection } from "src/utils/copySelection";
 import { isTextBlock } from "src/utils/isTextBlock";
+import { useIsMobile } from "src/hooks/isMobile";
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
@@ -27,8 +28,10 @@ export function SelectionManager() {
   let moreThanOneSelected = useUIState((s) => s.selectedBlocks.length > 1);
   let entity_set = useEntitySetContext();
   let { rep } = useReplicache();
+  let isMobile = useIsMobile();
   useEffect(() => {
     if (!entity_set.permissions.write) return;
+    if (isMobile) return;
     const getSortedSelection = async () => {
       let selectedBlocks = useUIState.getState().selectedBlocks;
       let foldedBlocks = useUIState.getState().foldedBlocks;
@@ -479,12 +482,13 @@ export function SelectionManager() {
       removeListener();
       window.removeEventListener("keydown", listener);
     };
-  }, [moreThanOneSelected, rep, entity_set.permissions.write]);
+  }, [moreThanOneSelected, rep, entity_set.permissions.write, isMobile]);
 
   let [mouseDown, setMouseDown] = useState(false);
   let initialContentEditableParent = useRef<null | Node>(null);
   let savedSelection = useRef<SavedRange[] | null>();
   useEffect(() => {
+    if (isMobile) return;
     if (!entity_set.permissions.write) return;
     let mouseDownListener = (e: MouseEvent) => {
       setMouseDown(true);
@@ -517,9 +521,10 @@ export function SelectionManager() {
       window.removeEventListener("mousedown", mouseDownListener);
       window.removeEventListener("mouseup", mouseUpListener);
     };
-  }, [entity_set.permissions.write]);
+  }, [entity_set.permissions.write, isMobile]);
   useEffect(() => {
     if (!mouseDown) return;
+    if (isMobile) return;
     let mouseMoveListener = (e: MouseEvent) => {
       if (e.buttons !== 1) return;
       if (initialContentEditableParent.current) {
@@ -541,7 +546,7 @@ export function SelectionManager() {
     return () => {
       window.removeEventListener("mousemove", mouseMoveListener);
     };
-  }, [mouseDown]);
+  }, [mouseDown, isMobile]);
   return null;
 }
 
