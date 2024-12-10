@@ -12,6 +12,15 @@ export const metadata = {
   metadataBase: `https://leaflet.pub`,
 };
 
+export const viewport = {
+  minimumScale: 1,
+  initialScale: 1,
+  maximumScale: 1,
+  width: "device-width",
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
+};
+
 export const preferredRegion = ["sfo1"];
 
 const quattro = localFont({

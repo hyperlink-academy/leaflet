@@ -40,19 +40,21 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             group/image-block
             w-full h-[104px] p-2 hover:cursor-pointer
             text-tertiary hover:text-accent-contrast hover:font-bold
-            flex flex-auto gap-2 items-center justify-center
+            flex flex-col items-center justify-center
             hover:border-2 border-dashed  hover:border-accent-contrast rounded-lg
             ${isSelected && !isLocked ? "border-2 border-tertiary font-bold" : "border border-border"}
             ${props.pageType === "canvas" && "bg-bg-page"}`}
           onMouseDown={(e) => e.preventDefault()}
         >
-          <BlockImageSmall
-            className={`shrink-0 group-hover/image-block:text-accent-contrast ${isSelected ? "text-tertiary" : "text-border"}`}
-          />{" "}
-          Upload An Image
+          <div className="flex gap-2">
+            <BlockImageSmall
+              className={`shrink-0 group-hover/image-block:text-accent-contrast ${isSelected ? "text-tertiary" : "text-border"}`}
+            />
+            Upload An Image
+          </div>
           <input
             disabled={isLocked}
-            className="h-0 w-0"
+            className="h-0 w-0 hidden"
             type="file"
             accept="image/*"
             onChange={async (e) => {

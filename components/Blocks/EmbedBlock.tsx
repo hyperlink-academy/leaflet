@@ -38,9 +38,9 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
         id={props.preview ? undefined : elementId.block(props.entityID).input}
         className={`
           w-full h-[420px] p-2
-          text-tertiary hover:text-accent-contrast hover:cursor-pointer 
-          flex flex-auto gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg 
-          ${isSelected ? "border-2 border-tertiary" : "border border-border"} 
+          text-tertiary hover:text-accent-contrast hover:cursor-pointer
+          flex flex-auto gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg
+          ${isSelected ? "border-2 border-tertiary" : "border border-border"}
           ${props.pageType === "canvas" && "bg-bg-page"}`}
         onMouseDown={() => {
           focusBlock(
@@ -55,11 +55,11 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   }
 
   return (
-    <div className={`w-full aspect-[4/3]`}>
+    <div className="w-full aspect-[4/3]">
       {/*
-	  the iframe! 
+	  the iframe!
 	  very simple, just a fixed height (could add as an option)
-	  can also add 'allow' and 'referrerpolicy' attributes later if needed 
+	  can also add 'allow' and 'referrerpolicy' attributes later if needed
 	  */}
       <iframe
         className={`
@@ -72,15 +72,15 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
         allow="fullscreen"
         loading="lazy"
       ></iframe>
-
-      <a
-        href={url?.data.value}
-        target="_blank"
-        style={{ wordBreak: "break-word" }} // better than tailwind break-all!
-        className={`py-0.5 min-w-0 w-max line-clamp-1 text-xs italic text-accent-contrast`}
-      >
-        {url?.data.value}
-      </a>
+      <div className="w-full overflow-x-hidden truncate text-xs italic text-accent-contrast">
+        <a
+          href={url?.data.value}
+          target="_blank"
+          className={`py-0.5 min-w-0 w-full whitespace-nowrap`}
+        >
+          {url?.data.value}
+        </a>
+      </div>
     </div>
   );
 };
