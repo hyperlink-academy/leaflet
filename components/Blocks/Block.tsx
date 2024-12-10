@@ -130,7 +130,7 @@ export const BaseBlock = (
   let BlockTypeComponent = BlockTypeComponents[props.type];
   if (!BlockTypeComponent) return <div>unknown block</div>;
   return (
-    <div className="blockContentWrapper grow flex gap-2 z-[1]">
+    <div className="blockContentWrapper w-full grow flex gap-2 z-[1]">
       {props.listData && <ListMarker {...props} />}
       {props.areYouSure ? (
         <AreYouSure
