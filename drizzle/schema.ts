@@ -1,4 +1,4 @@
-import { pgTable, unique, pgEnum, bigint, timestamp, text, foreignKey, uuid, boolean, jsonb, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, pgEnum, uuid, timestamp, boolean, text, jsonb, bigint, primaryKey } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const aal_level = pgEnum("aal_level", ['aal1', 'aal2', 'aal3'])
@@ -13,18 +13,6 @@ export const rsvp_status = pgEnum("rsvp_status", ['GOING', 'NOT_GOING', 'MAYBE']
 export const action = pgEnum("action", ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'ERROR'])
 export const equality_op = pgEnum("equality_op", ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'in'])
 
-
-export const user_identities = pgTable("user_identities", {
-	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
-	id: bigint("id", { mode: "number" }).primaryKey().notNull(),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	email: text("email"),
-},
-(table) => {
-	return {
-		user_identities_email_key: unique("user_identities_email_key").on(table.email),
-	}
-});
 
 export const email_auth_tokens = pgTable("email_auth_tokens", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
