@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import LoginForm from "./LoginForm";
+import { logout } from "actions/logout";
 
 export default function LoginPage() {
   let cookieStore = cookies();
@@ -11,12 +12,6 @@ export default function LoginPage() {
         <LoginForm />
       </div>
     );
-  let logout = async function () {
-    "use server";
-    console.log("this work?");
-    cookies().delete("auth_token");
-    cookies().delete("identity");
-  };
   return (
     <div>
       identity: {identity}

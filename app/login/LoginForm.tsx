@@ -5,6 +5,7 @@ import {
 } from "actions/emailAuth";
 import { loginWithEmailToken } from "actions/login";
 import React, { useState } from "react";
+import { mutate } from "swr";
 
 export default function LoginForm() {
   type FormState =
@@ -43,6 +44,7 @@ export default function LoginForm() {
       formState.confirmationCode,
     );
     await loginWithEmailToken();
+    mutate("identity");
   };
 
   if (formState.stage === "code") {
