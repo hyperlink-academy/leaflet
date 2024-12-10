@@ -4,6 +4,8 @@ import {
   requestAuthEmailToken,
 } from "actions/emailAuth";
 import { loginWithEmailToken } from "actions/login";
+import { ButtonPrimary } from "components/Buttons";
+import { InputWithLabel } from "components/Layout";
 import React, { useState } from "react";
 import { mutate } from "swr";
 
@@ -49,73 +51,61 @@ export default function LoginForm() {
 
   if (formState.stage === "code") {
     return (
-      <div className="w-full max-w-md">
-        <form onSubmit={handleSubmitCode} className="space-y-4">
-          <div>
-            <label
-              htmlFor="code"
-              className="block text-sm font-bold text-primary"
-            >
-              Enter confirmation code
-            </label>
-            <div className="text-sm text-tertiary mb-2">
-              Code sent to {formState.email}
-            </div>
-            <input
-              id="code"
-              type="text"
-              value={formState.confirmationCode}
-              onChange={(e) =>
-                setFormState({
-                  ...formState,
-                  confirmationCode: e.target.value,
-                })
-              }
-              className="w-full px-3 py-2 border rounded-md text-primary bg-bg-page"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full px-4 py-2 text-accent-2 bg-accent-1 rounded-md font-bold"
-          >
+      <div className="w-full max-w-md flex flex-col gap-3 py-1">
+        <div className=" text-secondary font-bold">
+          Please enter the code we sent to
+          <div className="italic truncate">{formState.email}</div>
+        </div>
+        <form onSubmit={handleSubmitCode} className="flex flex-col gap-2 ">
+          <InputWithLabel
+            label="code"
+            type="text"
+            placeholder="000000"
+            value={formState.confirmationCode}
+            onChange={(e) =>
+              setFormState({
+                ...formState,
+                confirmationCode: e.target.value,
+              })
+            }
+            required
+          />
+
+          <ButtonPrimary type="submit" className="place-self-end">
             Verify Code
-          </button>
+          </ButtonPrimary>
         </form>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-md">
-      <form onSubmit={handleSubmitEmail} className="space-y-4">
-        <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-bold text-primary"
-          >
-            Email address
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={formState.email}
-            onChange={(e) =>
-              setFormState({
-                ...formState,
-                email: e.target.value,
-              })
-            }
-            className="w-full px-3 py-2 border rounded-md text-primary bg-bg-page"
-            required
-          />
+    <div className="flex flex-col gap-3 w-full max-w-sm pb-1">
+      <div className="flex flex-col gap-0.5">
+        <h3>Log In or Sign Up</h3>
+        <div className="text-sm text-secondary">
+          Save all your leaflets and share them over multiple devices!
         </div>
-        <button
-          type="submit"
-          className="w-full px-4 py-2 text-accent-2 bg-accent-1 rounded-md font-bold"
-        >
-          Continue with Email
-        </button>
+      </div>
+      <form onSubmit={handleSubmitEmail} className="flex flex-col gap-2">
+        <InputWithLabel
+          label="Email"
+          type="email"
+          placeholder="email@example.com"
+          value={formState.email}
+          className=""
+          onChange={(e) =>
+            setFormState({
+              ...formState,
+              email: e.target.value,
+            })
+          }
+          required
+        />
+
+        <ButtonPrimary type="submit" className="place-self-end">
+          Log In / Sign Up
+        </ButtonPrimary>
       </form>
     </div>
   );

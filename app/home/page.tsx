@@ -90,7 +90,10 @@ export default async function Home() {
                     <CreateNewLeafletButton />
                     <HomeHelp />
                     <ThemePopover entityID={root_entity} home />
-                    <LoginButton />
+                    <hr className="border-border w-full my-2" />
+                    <div className="">
+                      <LoginButton />
+                    </div>
                   </div>
                   <LeafletList />
                 </div>
