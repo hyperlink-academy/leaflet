@@ -35,7 +35,7 @@ export function MobileFooter(props: { entityID: string }) {
           <HomeButton />
           <div className="flex flex-row gap-[6px] items-center ">
             <HelpPopover />
-            <CreateNewLeafletButton />
+            <CreateNewLeafletButton noLabelOnMobile />
             <ThemePopover entityID={props.entityID} />
             <ShareOptions rootEntity={props.entityID} />
           </div>

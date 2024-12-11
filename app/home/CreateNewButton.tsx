@@ -39,14 +39,16 @@ export const useTemplateState = create(
     },
   ),
 );
-export const CreateNewLeafletButton = (props: {}) => {
+export const CreateNewLeafletButton = (props: {
+  noLabelOnMobile?: boolean;
+}) => {
   let templates = useTemplateState((s) => s.templates);
   return (
     <Menu
       trigger={
         <HoverButton
           id="new-leaflet-button"
-          noLabelOnMobile
+          noLabelOnMobile={props.noLabelOnMobile}
           icon=<AddTiny className="m-1 shrink-0" />
           label="New Leaflet"
           background="bg-accent-1"

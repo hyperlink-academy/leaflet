@@ -92,7 +92,7 @@ export default async function Home() {
                   </div>
 
                   <hr className="border-border w-full my-3 hidden sm:block" />
-                  <div className="grow relative w-8 h-7">
+                  <div className="grow relative w-8 h-8">
                     <div className="origin-top-left absolute top-0 left-0.5 sm:-rotate-90 whitespace-nowrap sm:translate-y-[66px]">
                       <LoginButton />
                     </div>

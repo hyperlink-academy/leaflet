@@ -9,7 +9,14 @@ export function LoginButton() {
   let identityData = useIdentityData();
   if (identityData.identity) return;
   return (
-    <Popover trigger={<ButtonPrimary>Log In</ButtonPrimary>}>
+    <Popover
+      asChild
+      trigger={
+        <ButtonPrimary className="!rounded-full !py-1 !px-3">
+          Log In
+        </ButtonPrimary>
+      }
+    >
       <LoginForm />
     </Popover>
   );
