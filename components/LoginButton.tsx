@@ -7,11 +7,16 @@ import { ButtonPrimary } from "./Buttons";
 
 export function LoginButton() {
   let identityData = useIdentityData();
-  if (identityData.identity)
-    return <button onClick={() => logout()}>logout</button>;
+  if (identityData.identity) return;
   return (
     <Popover trigger={<ButtonPrimary>Log In</ButtonPrimary>}>
       <LoginForm />
     </Popover>
   );
+}
+
+export function LogoutButton() {
+  let identityData = useIdentityData();
+  if (!identityData.identity) return;
+  return <ButtonPrimary onClick={() => logout()}>logout</ButtonPrimary>;
 }

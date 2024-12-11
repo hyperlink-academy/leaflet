@@ -6,6 +6,7 @@ import {
 import { loginWithEmailToken } from "actions/login";
 import { ButtonPrimary } from "components/Buttons";
 import { InputWithLabel } from "components/Layout";
+import { useSmoker } from "components/Toast";
 import React, { useState } from "react";
 import { mutate } from "swr";
 
@@ -49,6 +50,8 @@ export default function LoginForm() {
     mutate("identity");
   };
 
+  let smoker = useSmoker();
+
   if (formState.stage === "code") {
     return (
       <div className="w-full max-w-md flex flex-col gap-3 py-1">
@@ -71,8 +74,22 @@ export default function LoginForm() {
             required
           />
 
-          <ButtonPrimary type="submit" className="place-self-end">
-            Verify Code
+          <ButtonPrimary
+            type="submit"
+            className="place-self-end"
+            disabled={formState.confirmationCode === ""}
+            onMouseDown={(e) => {
+              // smoker({
+              //   error: true,
+              //   text: "incorrect code!",
+              //   position: {
+              //     y: e.clientY,
+              //     x: e.clientX,
+              //   },
+              // });
+            }}
+          >
+            Confirm
           </ButtonPrimary>
         </form>
       </div>
@@ -83,8 +100,8 @@ export default function LoginForm() {
     <div className="flex flex-col gap-3 w-full max-w-sm pb-1">
       <div className="flex flex-col gap-0.5">
         <h3>Log In or Sign Up</h3>
-        <div className="text-sm text-secondary">
-          Save all your leaflets and share them over multiple devices!
+        <div className=" text-secondary">
+          Save your leaflets and access them on multiple devices!
         </div>
       </div>
       <form onSubmit={handleSubmitEmail} className="flex flex-col gap-2">
