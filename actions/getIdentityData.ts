@@ -19,7 +19,8 @@ export async function getIdentityData() {
           `*,
           identities(
             *,
-            permission_tokens!identities_home_page_fkey(*, permission_token_rights(*))
+            home_leaflet:permission_tokens!identities_home_page_fkey(*, permission_token_rights(*)),
+            permission_token_on_homepage(permission_tokens!inner(*, permission_token_rights(*)))
           )`,
         )
         .eq("id", auth_token)
