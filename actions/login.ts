@@ -8,13 +8,16 @@ import {
   entities,
   permission_tokens,
   permission_token_rights,
+  permission_token_on_homepage,
 } from "drizzle/schema";
 import { and, eq, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { v7 } from "uuid";
 
-export async function loginWithEmailToken() {
+export async function loginWithEmailToken(
+  localLeaflets: { token: { id: string }; added_at: string }[],
+) {
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
   let token_id = cookies().get("auth_token")?.value;
@@ -97,6 +100,13 @@ export async function loginWithEmailToken() {
       .update(email_auth_tokens)
       .set({ identity: identity.id })
       .where(eq(email_auth_tokens.id, token_id));
+
+    await tx.insert(permission_token_on_homepage).values(
+      localLeaflets.map((l) => ({
+        identity: identity.id,
+        token: l.token.id,
+      })),
+    );
 
     return token;
   });

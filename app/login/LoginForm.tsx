@@ -4,11 +4,12 @@ import {
   requestAuthEmailToken,
 } from "actions/emailAuth";
 import { loginWithEmailToken } from "actions/login";
+import { getHomeDocs } from "app/home/storage";
 import { ButtonPrimary } from "components/Buttons";
 import { InputWithLabel } from "components/Layout";
 import { useSmoker, useToaster } from "components/Toast";
 import React, { useState } from "react";
-import { mutate } from "swr";
+import useSWR, { mutate } from "swr";
 
 export default function LoginForm() {
   type FormState =
@@ -26,6 +27,10 @@ export default function LoginForm() {
   const [formState, setFormState] = useState<FormState>({
     stage: "email",
     email: "",
+  });
+
+  let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
+    fallbackData: [],
   });
 
   const handleSubmitEmail = async (e: React.FormEvent) => {
@@ -62,14 +67,13 @@ export default function LoginForm() {
         },
       });
     } else {
+      await loginWithEmailToken(localLeaflets.filter((l) => !l.hidden));
+      mutate("identity");
       toaster({
         content: <div className="font-bold">Logged in! Welcome!</div>,
         type: "success",
       });
     }
-
-    await loginWithEmailToken();
-    mutate("identity");
   };
 
   if (formState.stage === "code") {
