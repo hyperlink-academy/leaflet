@@ -45,8 +45,22 @@ export const useLongPress = (cb: () => void, cancel?: boolean) => {
         }
       };
       window.addEventListener("mousemove", listener);
+      let touchListener = (e: TouchEvent) => {
+        if (e.touches[0]) {
+          const distance = Math.sqrt(
+            Math.pow(e.touches[0].clientX - startPosition.x, 2) +
+              Math.pow(e.touches[0].clientY - startPosition.y, 2),
+          );
+          if (distance > 16) {
+            end();
+          }
+        }
+      };
+      window.addEventListener("touchmove", touchListener);
+
       return () => {
         window.removeEventListener("mousemove", listener);
+        window.removeEventListener("touchmove", touchListener);
       };
     }
   }, [startPosition, end]);
