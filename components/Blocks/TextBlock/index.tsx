@@ -85,7 +85,7 @@ export function IOSBS(props: BlockProps) {
   return (
     <div
       className="h-full w-full absolute cursor-text group-focus-within:hidden"
-      onMouseDown={(e) => {
+      onPointerDown={(e) => {
         e.preventDefault();
         focusBlock(props, {
           type: "coord",
