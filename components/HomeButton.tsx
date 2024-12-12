@@ -11,28 +11,31 @@ export function HomeButton() {
   let params = useParams();
   let isSubpage = !!searchParams.get("page");
 
-  if (isSubpage)
+  if (permissions.write)
     return (
-      <Link href={`/${params.leaflet_id}`}>
-        <HoverButton
-          noLabelOnMobile
-          icon={<BackToLeafletSmall />}
-          label="See Full Leaflet"
-          background="bg-accent-1"
-          text="text-accent-2"
-        />
-      </Link>
+      <>
+        {isSubpage && (
+          <Link href={`/${params.leaflet_id}`}>
+            <HoverButton
+              noLabelOnMobile
+              icon={<BackToLeafletSmall />}
+              label="See Full Leaflet"
+              background="bg-accent-1"
+              text="text-accent-2"
+            />
+          </Link>
+        )}
+
+        <Link href="/home">
+          <HoverButton
+            noLabelOnMobile
+            icon={<HomeSmall />}
+            label="Go Home"
+            background="bg-accent-1"
+            text="text-accent-2"
+          />
+        </Link>
+      </>
     );
-  if (!permissions.write) return null;
-  return (
-    <Link href="/home">
-      <HoverButton
-        noLabelOnMobile
-        icon={<HomeSmall />}
-        label="Go Home"
-        background="bg-accent-1"
-        text="text-accent-2"
-      />
-    </Link>
-  );
+  return null;
 }

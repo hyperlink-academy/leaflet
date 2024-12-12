@@ -7,23 +7,17 @@ import { ButtonPrimary } from "./Buttons";
 
 export function LoginButton() {
   let identityData = useIdentityData();
-  if (identityData.identity) return;
+  if (identityData.identity) return null;
   return (
     <Popover
       asChild
       trigger={
         <ButtonPrimary className="!rounded-full !py-1 !px-3">
-          Log In
+          Log In!
         </ButtonPrimary>
       }
     >
       <LoginForm />
     </Popover>
   );
-}
-
-export function LogoutButton() {
-  let identityData = useIdentityData();
-  if (!identityData.identity) return;
-  return <ButtonPrimary onClick={() => logout()}>logout</ButtonPrimary>;
 }

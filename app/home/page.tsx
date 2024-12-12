@@ -1,4 +1,3 @@
-import { AddTiny } from "components/Icons";
 import { cookies } from "next/headers";
 import { Fact, ReplicacheProvider } from "src/replicache";
 import { createServerClient } from "@supabase/ssr";
@@ -18,7 +17,9 @@ import { HomeHelp } from "./HomeHelp";
 import { LeafletList } from "./LeafletList";
 import { CreateNewLeafletButton } from "./CreateNewButton";
 import { getIdentityData } from "actions/getIdentityData";
-import { LoginButton, LogoutButton } from "components/LoginButton";
+import { LoginButton } from "components/LoginButton";
+import { HelpPopover } from "components/HelpPopover";
+import { AccountSettings } from "./AccountSettings";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -68,6 +69,7 @@ export default async function Home() {
     root: permission_token.root_entity,
   });
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
+
   let root_entity = permission_token.root_entity;
   return (
     <ReplicacheProvider
@@ -84,20 +86,23 @@ export default async function Home() {
           <div className="flex h-full bg-bg-leaflet">
             <ThemeBackgroundProvider entityID={root_entity}>
               <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col-reverse px-2 sm:px-6 ">
-                <div className="homeOptions z-10 shrink-0 sm:static absolute bottom-0 left-2 right-2 place-self-end sm:place-self-start flex sm:flex-col flex-row-reverse sm:w-fit w-full items-center px-2 sm:px-0 pb-2 pt-2 sm:pt-7 sm:bg-transparent bg-bg-leaflet border-border border-t sm:border-none">
-                  <div className="flex sm:flex-col gap-2 shrink-0">
+                <div className="homeOptions z-10 shrink-0 sm:static absolute bottom-0 left-2 right-2 place-self-end sm:place-self-start flex sm:flex-col flex-row sm:w-fit w-full items-center px-2 sm:px-0 pb-2 pt-2 sm:pt-7 sm:bg-transparent bg-bg-leaflet border-border border-t sm:border-none">
+                  <div className="flex sm:flex-col gap-2 shrink-0 place-self-end">
                     <CreateNewLeafletButton />
-                    <HomeHelp />
                     <ThemePopover entityID={root_entity} home />
+                    <HelpPopover noShortcuts />
+                    {auth_res && <AccountSettings />}
                   </div>
-
-                  <hr className="border-border w-full my-3 hidden sm:block" />
-                  <div className="grow relative w-8 h-8">
-                    <div className="origin-top-left absolute top-0 left-0.5 sm:-rotate-90 whitespace-nowrap sm:translate-y-[66px]">
-                      <LoginButton />
-                    </div>
-                    <LogoutButton />
-                  </div>
+                  {!auth_res && (
+                    <>
+                      <hr className="border-border w-full my-3 hidden sm:block" />
+                      <div className="grow relative w-8 h-8">
+                        <div className="origin-top-left absolute top-0 left-0 sm:-rotate-90 whitespace-nowrap sm:translate-y-[84px]">
+                          <LoginButton />
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <LeafletList />
               </div>
