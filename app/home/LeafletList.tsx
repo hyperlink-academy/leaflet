@@ -16,21 +16,23 @@ export function LeafletList() {
   return (
     <div className="homeLeafletGrid grow w-full h-full overflow-y-scroll no-scrollbar  ">
       <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-8 gap-x-4 sm:gap-6 grow pt-3 pb-28 sm:pt-6 sm:pb-12 sm:pl-6">
-        {identity?.permission_token_on_homepage.map((t) => (
-          <ReplicacheProvider
-            key={t.permission_tokens.id}
-            rootEntity={t.permission_tokens.root_entity}
-            token={t.permission_tokens}
-            name={t.permission_tokens.root_entity}
-            initialFacts={[]}
-          >
-            <LeafletPreview
+        {identity?.permission_token_on_homepage
+          .sort((a, b) => (a.created_at > b.created_at ? -1 : 1))
+          .map((t) => (
+            <ReplicacheProvider
               key={t.permission_tokens.id}
+              rootEntity={t.permission_tokens.root_entity}
               token={t.permission_tokens}
-              leaflet_id={t.permission_tokens.root_entity}
-            />
-          </ReplicacheProvider>
-        ))}
+              name={t.permission_tokens.root_entity}
+              initialFacts={[]}
+            >
+              <LeafletPreview
+                key={t.permission_tokens.id}
+                token={t.permission_tokens}
+                leaflet_id={t.permission_tokens.root_entity}
+              />
+            </ReplicacheProvider>
+          ))}
         {leaflets
           .sort((a, b) => (a.added_at > b.added_at ? -1 : 1))
           .filter((d) => !d.hidden)
