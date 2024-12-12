@@ -46,17 +46,17 @@ export async function confirmEmailAuthToken(tokenId: string, code: string) {
 
   if (!token) {
     client.end();
-    throw new Error("Invalid token");
+    return null;
   }
 
   if (token.confirmation_code !== code) {
     client.end();
-    throw new Error("Invalid confirmation code");
+    return null;
   }
 
   if (token.confirmed) {
     client.end();
-    throw new Error("Token already confirmed");
+    return null;
   }
 
   let [identity] = await db

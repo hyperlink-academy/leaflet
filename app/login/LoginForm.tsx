@@ -6,7 +6,7 @@ import {
 import { loginWithEmailToken } from "actions/login";
 import { ButtonPrimary } from "components/Buttons";
 import { InputWithLabel } from "components/Layout";
-import { useSmoker } from "components/Toast";
+import { useSmoker, useToaster } from "components/Toast";
 import React, { useState } from "react";
 import { mutate } from "swr";
 
@@ -39,18 +39,38 @@ export default function LoginForm() {
     });
   };
 
+  let smoker = useSmoker();
+  let toaster = useToaster();
+
   const handleSubmitCode = async (e: React.FormEvent) => {
     e.preventDefault();
+    let rect = e.currentTarget.getBoundingClientRect();
+
     if (formState.stage !== "code") return;
     const confirmedToken = await confirmEmailAuthToken(
       formState.tokenId,
       formState.confirmationCode,
     );
+
+    if (!confirmedToken) {
+      smoker({
+        error: true,
+        text: "incorrect code!",
+        position: {
+          y: rect.bottom - 16,
+          x: rect.right - 220,
+        },
+      });
+    } else {
+      toaster({
+        content: <div className="font-bold">Logged in! Welcome!</div>,
+        type: "success",
+      });
+    }
+
     await loginWithEmailToken();
     mutate("identity");
   };
-
-  let smoker = useSmoker();
 
   if (formState.stage === "code") {
     return (
@@ -78,16 +98,7 @@ export default function LoginForm() {
             type="submit"
             className="place-self-end"
             disabled={formState.confirmationCode === ""}
-            onMouseDown={(e) => {
-              // smoker({
-              //   error: true,
-              //   text: "incorrect code!",
-              //   position: {
-              //     y: e.clientY,
-              //     x: e.clientX,
-              //   },
-              // });
-            }}
+            onMouseDown={(e) => {}}
           >
             Confirm
           </ButtonPrimary>
