@@ -129,7 +129,7 @@ export default async function Home() {
                     </>
                   )}
                 </div>
-                <div>
+                <div className="h-full">
                   <div className="sm:block hidden">
                     <LoggedOutWarning />
                   </div>
