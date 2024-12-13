@@ -84,7 +84,7 @@ export function IOSBS(props: BlockProps) {
   if (initialRender || !isIOS()) return null;
   return (
     <div
-      className="h-full w-full absolute cursor-text group-focus-within:hidden"
+      className="h-full w-full absolute cursor-text group-focus-within:hidden py-[18px]"
       onPointerUp={(e) => {
         e.preventDefault();
         focusBlock(props, {
