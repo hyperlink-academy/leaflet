@@ -35,12 +35,15 @@ export async function loginWithEmailToken(
     if (!token) return null;
     if (token.identity) {
       let id = token.identity;
-      await tx.insert(permission_token_on_homepage).values(
-        localLeaflets.map((l) => ({
-          identity: id,
-          token: l.token.id,
-        })),
-      );
+      await tx
+        .insert(permission_token_on_homepage)
+        .values(
+          localLeaflets.map((l) => ({
+            identity: id,
+            token: l.token.id,
+          })),
+        )
+        .onConflictDoNothing();
       return token;
     }
     let [existingIdentity] = await tx

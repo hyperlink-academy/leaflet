@@ -7,6 +7,7 @@ import { Fact, ReplicacheProvider } from "src/replicache";
 import { LeafletPreview } from "./LeafletPreview";
 import { useIdentityData } from "components/IdentityProvider";
 import { Attributes } from "src/replicache/attributes";
+import { getLeafletData } from "actions/getLeafletData";
 
 export function LeafletList(props: {
   initialFacts: {
@@ -17,6 +18,18 @@ export function LeafletList(props: {
     fallbackData: [],
   });
   let { identity } = useIdentityData();
+  let { data: initialFacts } = useSWR(
+    "home-leaflet-data",
+    () => {
+      if (identity)
+        return getLeafletData(
+          identity.permission_token_on_homepage.map(
+            (ptrh) => ptrh.permission_tokens.root_entity,
+          ),
+        );
+    },
+    { fallbackData: props.initialFacts },
+  );
   let leaflets = identity
     ? identity.permission_token_on_homepage
         .sort((a, b) => (a.created_at > b.created_at ? -1 : 1))
@@ -36,7 +49,7 @@ export function LeafletList(props: {
             rootEntity={leaflet.root_entity}
             token={leaflet}
             name={leaflet.root_entity}
-            initialFacts={props.initialFacts[leaflet.root_entity] || []}
+            initialFacts={initialFacts?.[leaflet.root_entity] || []}
           >
             <LeafletPreview token={leaflet} leaflet_id={leaflet.root_entity} />
           </ReplicacheProvider>
