@@ -8,6 +8,7 @@ import { LeafletPreview } from "./LeafletPreview";
 import { useIdentityData } from "components/IdentityProvider";
 import { Attributes } from "src/replicache/attributes";
 import { getLeafletData } from "actions/getLeafletData";
+import { getIdentityData } from "actions/getIdentityData";
 
 export function LeafletList(props: {
   initialFacts: {
@@ -41,7 +42,7 @@ export function LeafletList(props: {
 
   return (
     <div className="homeLeafletGrid grow w-full h-full overflow-y-scroll no-scrollbar  ">
-      <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-8 gap-x-4 sm:gap-6 grow pt-3 pb-28 sm:pt-6 sm:pb-12 sm:pl-6 sm:pr-1">
+      <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-6 gap-x-4 sm:gap-6 grow pt-3 pb-28 sm:pt-6 sm:pb-12 sm:pl-6 sm:pr-1">
         {leaflets.map((leaflet) => (
           <ReplicacheProvider
             initialFactsOnly={!!identity}

@@ -12,7 +12,7 @@ export function LoginButton() {
     <Popover
       asChild
       trigger={
-        <ButtonPrimary className="!rounded-full !py-[3px] !px-3">
+        <ButtonPrimary className="place-self-start text-sm">
           Log In!
         </ButtonPrimary>
       }
