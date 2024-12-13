@@ -1,15 +1,3 @@
-CREATE OR REPLACE FUNCTION public.get_facts_for_roots(roots uuid[], max_depth integer)
- RETURNS TABLE(root_id uuid, id uuid, entity uuid, attribute text, data jsonb, created_at timestamp without time zone, updated_at timestamp without time zone, version bigint)
- LANGUAGE sql
-AS $function$
-    SELECT
-      root_id,
-      f.*
-    FROM unnest(roots) AS root_id
-    CROSS JOIN LATERAL get_facts_with_depth(root_id, max_depth) f;
-$function$
-;
-
 CREATE OR REPLACE FUNCTION public.get_facts_with_depth(root uuid, max_depth integer)
  RETURNS TABLE("like" facts)
  LANGUAGE sql
@@ -42,4 +30,16 @@ select
  id, entity, attribute, data, created_at, updated_at, version
 from
   all_facts;$function$
+;
+
+CREATE OR REPLACE FUNCTION public.get_facts_for_roots(roots uuid[], max_depth integer)
+ RETURNS TABLE(root_id uuid, id uuid, entity uuid, attribute text, data jsonb, created_at timestamp without time zone, updated_at timestamp without time zone, version bigint)
+ LANGUAGE sql
+AS $function$
+    SELECT
+      root_id,
+      f.*
+    FROM unnest(roots) AS root_id
+    CROSS JOIN LATERAL get_facts_with_depth(root_id, max_depth) f;
+$function$
 ;
