@@ -33,7 +33,16 @@ export async function loginWithEmailToken(
         ),
       );
     if (!token) return null;
-    if (token.identity) return token;
+    if (token.identity) {
+      let id = token.identity;
+      await tx.insert(permission_token_on_homepage).values(
+        localLeaflets.map((l) => ({
+          identity: id,
+          token: l.token.id,
+        })),
+      );
+      return token;
+    }
     let [existingIdentity] = await tx
       .select()
       .from(identities)
@@ -101,11 +110,13 @@ export async function loginWithEmailToken(
       .set({ identity: identity.id })
       .where(eq(email_auth_tokens.id, token_id));
 
-    await tx.insert(permission_token_on_homepage).values(
-      localLeaflets.map((l) => ({
-        identity: identity.id,
-        token: l.token.id,
-      })),
+    console.log(
+      await tx.insert(permission_token_on_homepage).values(
+        localLeaflets.map((l) => ({
+          identity: identity.id,
+          token: l.token.id,
+        })),
+      ),
     );
 
     return token;
