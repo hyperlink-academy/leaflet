@@ -98,7 +98,7 @@ export const InputWithLabel = (
           {props.label}
           <input
             {...inputProps}
-            className={`appearance-none w-full font-normal text-base text-primary focus:outline-0 ${props.className}`}
+            className={`appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 ${props.className}`}
           />
         </label>
       </div>
