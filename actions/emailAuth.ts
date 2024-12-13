@@ -8,8 +8,22 @@ import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 
 async function sendAuthCode(email: string, code: string) {
-  // TODO: Actually send email, for now just log
-  console.log(`Sending auth code ${code} to ${email}`);
+  let res = await fetch("https://api.postmarkapp.com/email", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Postmark-Server-Token": process.env.POSTMARK_API_KEY!,
+    },
+    body: JSON.stringify({
+      From: "Leaflet <accounts@leaflet.pub>",
+      Subject: `Your authentication code for Leaflet is ${code}`,
+      To: email,
+      TextBody: `Paste this code to login to Leaflet:
+
+${code}
+      `,
+    }),
+  });
 }
 
 export async function requestAuthEmailToken(email: string) {
