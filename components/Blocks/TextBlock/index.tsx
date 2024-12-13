@@ -107,7 +107,7 @@ export function IOSBS(props: BlockProps) {
               behavior: "smooth",
             });
           }
-        }, 750);
+        }, 100);
       }}
     />
   );
