@@ -71,6 +71,28 @@ export default async function Home() {
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
 
   let root_entity = permission_token.root_entity;
+  let home_docs_initialFacts: {
+    [root_entity: string]: Fact<keyof typeof Attributes>[];
+  } = {};
+  if (auth_res) {
+    let all_facts = await supabase.rpc("get_facts_for_roots", {
+      max_depth: 3,
+      roots: auth_res.permission_token_on_homepage.map(
+        (r) => r.permission_tokens.root_entity,
+      ),
+    });
+    if (all_facts.data)
+      home_docs_initialFacts = all_facts.data.reduce(
+        (acc, fact) => {
+          if (!acc[fact.root_id]) acc[fact.root_id] = [];
+          acc[fact.root_id].push(
+            fact as unknown as Fact<keyof typeof Attributes>,
+          );
+          return acc;
+        },
+        {} as { [key: string]: Fact<keyof typeof Attributes>[] },
+      );
+  }
   return (
     <ReplicacheProvider
       rootEntity={root_entity}
@@ -104,7 +126,7 @@ export default async function Home() {
                     </>
                   )}
                 </div>
-                <LeafletList />
+                <LeafletList initialFacts={home_docs_initialFacts} />
               </div>
             </ThemeBackgroundProvider>
           </div>

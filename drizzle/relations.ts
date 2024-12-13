@@ -1,21 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { identities, email_auth_tokens, entity_sets, entities, facts, permission_tokens, email_subscriptions_to_entity, permission_token_on_homepage, permission_token_rights } from "./schema";
-
-export const email_auth_tokensRelations = relations(email_auth_tokens, ({one}) => ({
-	identity: one(identities, {
-		fields: [email_auth_tokens.identity],
-		references: [identities.id]
-	}),
-}));
-
-export const identitiesRelations = relations(identities, ({one, many}) => ({
-	email_auth_tokens: many(email_auth_tokens),
-	permission_token: one(permission_tokens, {
-		fields: [identities.home_page],
-		references: [permission_tokens.id]
-	}),
-	permission_token_on_homepages: many(permission_token_on_homepage),
-}));
+import { entity_sets, entities, facts, permission_tokens, identities, email_subscriptions_to_entity, email_auth_tokens, permission_token_on_homepage, permission_token_rights } from "./schema";
 
 export const entitiesRelations = relations(entities, ({one, many}) => ({
 	entity_set: one(entity_sets, {
@@ -39,6 +23,15 @@ export const factsRelations = relations(facts, ({one}) => ({
 	}),
 }));
 
+export const identitiesRelations = relations(identities, ({one, many}) => ({
+	permission_token: one(permission_tokens, {
+		fields: [identities.home_page],
+		references: [permission_tokens.id]
+	}),
+	email_auth_tokens: many(email_auth_tokens),
+	permission_token_on_homepages: many(permission_token_on_homepage),
+}));
+
 export const permission_tokensRelations = relations(permission_tokens, ({one, many}) => ({
 	identities: many(identities),
 	entity: one(entities, {
@@ -58,6 +51,13 @@ export const email_subscriptions_to_entityRelations = relations(email_subscripti
 	permission_token: one(permission_tokens, {
 		fields: [email_subscriptions_to_entity.token],
 		references: [permission_tokens.id]
+	}),
+}));
+
+export const email_auth_tokensRelations = relations(email_auth_tokens, ({one}) => ({
+	identity: one(identities, {
+		fields: [email_auth_tokens.identity],
+		references: [identities.id]
 	}),
 }));
 

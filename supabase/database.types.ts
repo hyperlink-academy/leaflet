@@ -360,9 +360,34 @@ export type Database = {
           version: number
         }[]
       }
+      get_facts_for_roots: {
+        Args: {
+          roots: string[]
+          max_depth: number
+        }
+        Returns: {
+          root_id: string
+          id: string
+          entity: string
+          attribute: string
+          data: Json
+          created_at: string
+          updated_at: string
+          version: number
+        }[]
+      }
+      get_facts_with_depth: {
+        Args: {
+          root: string
+          max_depth: number
+        }
+        Returns: {
+          like: unknown
+        }[]
+      }
     }
     Enums: {
-      rsvp_status: "GOING" | "NOT_GOING" | "MAYBE"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never

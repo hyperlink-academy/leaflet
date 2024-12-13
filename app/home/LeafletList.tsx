@@ -3,11 +3,16 @@
 import { useEffect, useState } from "react";
 import { getHomeDocs, HomeDoc } from "./storage";
 import useSWR from "swr";
-import { ReplicacheProvider } from "src/replicache";
+import { Fact, ReplicacheProvider } from "src/replicache";
 import { LeafletPreview } from "./LeafletPreview";
 import { useIdentityData } from "components/IdentityProvider";
+import { Attributes } from "src/replicache/attributes";
 
-export function LeafletList() {
+export function LeafletList(props: {
+  initialFacts: {
+    [root_entity: string]: Fact<keyof typeof Attributes>[];
+  };
+}) {
   let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
     fallbackData: [],
   });
@@ -26,11 +31,12 @@ export function LeafletList() {
       <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-8 gap-x-4 sm:gap-6 grow pt-3 pb-28 sm:pt-6 sm:pb-12 sm:pl-6">
         {leaflets.map((leaflet) => (
           <ReplicacheProvider
+            initialFactsOnly={!!identity}
             key={leaflet.id}
             rootEntity={leaflet.root_entity}
             token={leaflet}
             name={leaflet.root_entity}
-            initialFacts={[]}
+            initialFacts={props.initialFacts[leaflet.root_entity] || []}
           >
             <LeafletPreview token={leaflet} leaflet_id={leaflet.root_entity} />
           </ReplicacheProvider>

@@ -54,9 +54,11 @@ export function ReplicacheProvider(props: {
   token: PermissionToken;
   name: string;
   children: React.ReactNode;
+  initialFactsOnly?: boolean;
 }) {
   let [rep, setRep] = useState<null | Replicache<ReplicacheMutators>>(null);
   useEffect(() => {
+    if (props.initialFactsOnly) return;
     let supabase = supabaseBrowserClient();
     let newRep = new Replicache({
       pushDelay: 500,
@@ -109,7 +111,7 @@ export function ReplicacheProvider(props: {
       setRep(null);
       channel.unsubscribe();
     };
-  }, [props.name]);
+  }, [props.name, props.initialFactsOnly, props.token]);
   return (
     <ReplicacheContext.Provider
       value={{

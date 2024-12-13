@@ -1,4 +1,4 @@
-import { pgTable, foreignKey, pgEnum, uuid, timestamp, boolean, text, jsonb, bigint, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, pgEnum, uuid, timestamp, text, jsonb, bigint, boolean, primaryKey } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const aal_level = pgEnum("aal_level", ['aal1', 'aal2', 'aal3'])
@@ -9,19 +9,9 @@ export const one_time_token_type = pgEnum("one_time_token_type", ['confirmation_
 export const request_status = pgEnum("request_status", ['PENDING', 'SUCCESS', 'ERROR'])
 export const key_status = pgEnum("key_status", ['default', 'valid', 'invalid', 'expired'])
 export const key_type = pgEnum("key_type", ['aead-ietf', 'aead-det', 'hmacsha512', 'hmacsha256', 'auth', 'shorthash', 'generichash', 'kdf', 'secretbox', 'secretstream', 'stream_xchacha20'])
-export const rsvp_status = pgEnum("rsvp_status", ['GOING', 'NOT_GOING', 'MAYBE'])
 export const action = pgEnum("action", ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'ERROR'])
 export const equality_op = pgEnum("equality_op", ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'in'])
 
-
-export const email_auth_tokens = pgTable("email_auth_tokens", {
-	id: uuid("id").defaultRandom().primaryKey().notNull(),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	confirmed: boolean("confirmed").default(false).notNull(),
-	email: text("email").notNull(),
-	confirmation_code: text("confirmation_code").notNull(),
-	identity: uuid("identity").references(() => identities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
-});
 
 export const entities = pgTable("entities", {
 	id: uuid("id").primaryKey().notNull(),
@@ -72,6 +62,15 @@ export const email_subscriptions_to_entity = pgTable("email_subscriptions_to_ent
 	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
 	confirmed: boolean("confirmed").default(false).notNull(),
 	confirmation_code: text("confirmation_code").notNull(),
+});
+
+export const email_auth_tokens = pgTable("email_auth_tokens", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	confirmed: boolean("confirmed").default(false).notNull(),
+	email: text("email").notNull(),
+	confirmation_code: text("confirmation_code").notNull(),
+	identity: uuid("identity").references(() => identities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 });
 
 export const permission_token_on_homepage = pgTable("permission_token_on_homepage", {
