@@ -108,7 +108,19 @@ export default async function Home() {
           <div className="flex h-full bg-bg-leaflet">
             <ThemeBackgroundProvider entityID={root_entity}>
               <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col-reverse px-2 sm:px-6 ">
-                <div className="homeOptions z-10 shrink-0 sm:static absolute bottom-0 left-2 right-2 place-self-end sm:place-self-start flex sm:flex-col flex-row-reverse sm:w-fit w-full items-center px-2 sm:px-0 pb-2 pt-2 sm:pt-7 sm:bg-transparent bg-bg-leaflet border-border border-t sm:border-none">
+                <div className="homeWarning  z-10 shrink-0  absolute bottom-2 sm:bottom-14 left-2 right-2 bg-bg-page rounded-md">
+                  <div className="px-2 py-1 text-sm text-tertiary flex flex-col gap-1 ">
+                    <p className="font-bold">
+                      Log In to save Leaflets to your account so they&apos;ll
+                      never disappear!
+                    </p>
+                    <p>
+                      Currently, we&apos;re saving them for you in cookies. They
+                      will disappear if you clear your cookies.
+                    </p>
+                  </div>
+                </div>
+                <div className="homeOptions z-10 shrink-0 sm:static absolute bottom-0 left-2 right-2 place-self-end sm:place-self-start flex sm:flex-col flex-row-reverse sm:w-fit w-full items-center px-2 sm:px-0 pb-2 pt-2 sm:pt-7 sm:bg-transparent bg-bg-page border-border border-t sm:border-none">
                   <div className="flex sm:flex-col flex-row-reverse gap-2 shrink-0 place-self-end">
                     <CreateNewLeafletButton />
                     <ThemePopover entityID={root_entity} home />

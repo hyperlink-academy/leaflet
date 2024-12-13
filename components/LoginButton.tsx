@@ -12,7 +12,7 @@ export function LoginButton() {
     <Popover
       asChild
       trigger={
-        <ButtonPrimary className="!rounded-full !py-1 !px-3">
+        <ButtonPrimary className="!rounded-full !py-[3px] !px-3">
           Log In!
         </ButtonPrimary>
       }

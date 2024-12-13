@@ -28,7 +28,7 @@ export function LeafletList(props: {
 
   return (
     <div className="homeLeafletGrid grow w-full h-full overflow-y-scroll no-scrollbar  ">
-      <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-8 gap-x-4 sm:gap-6 grow pt-3 pb-28 sm:pt-6 sm:pb-12 sm:pl-6">
+      <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-8 gap-x-4 sm:gap-6 grow pt-3 pb-28 sm:pt-6 sm:pb-12 sm:pl-6 sm:pr-1">
         {leaflets.map((leaflet) => (
           <ReplicacheProvider
             initialFactsOnly={!!identity}

@@ -42,7 +42,7 @@ export const LeafletPreview = (props: {
   return (
     <div className="relative max-h-40 h-40">
       <ThemeProvider local entityID={root}>
-        <div className="rounded-lg hover:shadow-sm overflow-clip border border-border outline outline-transparent hover:outline-border bg-bg-leaflet grow w-full h-full">
+        <div className="rounded-lg hover:shadow-sm overflow-clip border border-border outline outline-2 outline-transparent outline-offset-1 hover:outline-border bg-bg-leaflet grow w-full h-full">
           {state === "normal" ? (
             <Link
               href={"/" + props.token.id}

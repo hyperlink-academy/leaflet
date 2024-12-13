@@ -28,7 +28,6 @@ import { Blocks } from "components/Blocks";
 import { MenuItem, Menu } from "../Layout";
 import { MoreOptionsTiny, CloseTiny, PaintSmall, ShareSmall } from "../Icons";
 import { HelpPopover } from "../HelpPopover";
-import { CreateNewLeafletButton } from "app/home/CreateNewButton";
 import { scanIndex } from "src/replicache/utils";
 import { PageThemeSetter } from "../ThemeManager/PageThemeSetter";
 import { CardThemeProvider } from "../ThemeManager/ThemeProvider";
