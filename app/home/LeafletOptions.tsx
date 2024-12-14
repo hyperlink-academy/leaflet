@@ -8,7 +8,6 @@ import {
 } from "components/Icons";
 import { Menu, MenuItem } from "components/Layout";
 import { PermissionToken } from "src/replicache";
-import { mutate } from "swr";
 import { hideDoc } from "./storage";
 import { useState } from "react";
 import { ButtonPrimary } from "components/Buttons";
@@ -23,6 +22,7 @@ export const LeafletOptions = (props: {
   isTemplate: boolean;
   loggedIn: boolean;
 }) => {
+  let { mutate } = useIdentityData();
   let [state, setState] = useState<"normal" | "template">("normal");
   let [open, setOpen] = useState(false);
   let smoker = useSmoker();
@@ -75,11 +75,26 @@ export const LeafletOptions = (props: {
             )}
             <MenuItem
               onSelect={async () => {
+                console.log(props.loggedIn);
                 if (props.loggedIn) {
+                  mutate(
+                    (s) => {
+                      if (!s) return s;
+                      return {
+                        ...s,
+                        permission_token_on_homepage:
+                          s.permission_token_on_homepage.filter(
+                            (ptrh) =>
+                              ptrh.permission_tokens.id !== props.leaflet.id,
+                          ),
+                      };
+                    },
+                    { revalidate: false },
+                  );
                   await removeLeafletFromHome([props.leaflet.id]);
+                  mutate();
                 } else {
                   hideDoc(props.leaflet);
-                  mutate("identity");
                 }
               }}
             >
