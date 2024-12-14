@@ -8,7 +8,7 @@ import {
 } from "components/Icons";
 import { Menu, MenuItem } from "components/Layout";
 import { PermissionToken } from "src/replicache";
-import { mutate, mutate } from "swr";
+import { mutate } from "swr";
 import { hideDoc } from "./storage";
 import { useState } from "react";
 import { ButtonPrimary } from "components/Buttons";
