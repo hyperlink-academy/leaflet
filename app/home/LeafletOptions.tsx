@@ -8,17 +8,20 @@ import {
 } from "components/Icons";
 import { Menu, MenuItem } from "components/Layout";
 import { PermissionToken } from "src/replicache";
-import { mutate } from "swr";
+import { mutate, mutate } from "swr";
 import { hideDoc } from "./storage";
 import { useState } from "react";
 import { ButtonPrimary } from "components/Buttons";
 import { useTemplateState } from "./CreateNewButton";
 import { Item } from "@radix-ui/react-dropdown-menu";
 import { useSmoker } from "components/Toast";
+import { removeLeafletFromHome } from "actions/removeLeafletFromHome";
+import { useIdentityData } from "components/IdentityProvider";
 
 export const LeafletOptions = (props: {
   leaflet: PermissionToken;
   isTemplate: boolean;
+  loggedIn: boolean;
 }) => {
   let [state, setState] = useState<"normal" | "template">("normal");
   let [open, setOpen] = useState(false);
@@ -71,9 +74,13 @@ export const LeafletOptions = (props: {
               </MenuItem>
             )}
             <MenuItem
-              onSelect={() => {
-                hideDoc(props.leaflet);
-                mutate("leaflets");
+              onSelect={async () => {
+                if (props.loggedIn) {
+                  await removeLeafletFromHome([props.leaflet.id]);
+                } else {
+                  hideDoc(props.leaflet);
+                  mutate("identity");
+                }
               }}
             >
               <HideSmall />

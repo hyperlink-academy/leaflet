@@ -28,6 +28,7 @@ import styles from "./LeafletPreview.module.css";
 export const LeafletPreview = (props: {
   token: PermissionToken;
   leaflet_id: string;
+  loggedIn: boolean;
 }) => {
   let [state, setState] = useState<"normal" | "deleting">("normal");
   let isTemplate = useTemplateState(
@@ -68,7 +69,11 @@ export const LeafletPreview = (props: {
           )}
         </div>
         <div className="flex justify-end pt-1 shrink-0">
-          <LeafletOptions leaflet={props.token} isTemplate={isTemplate} />
+          <LeafletOptions
+            leaflet={props.token}
+            isTemplate={isTemplate}
+            loggedIn={props.loggedIn}
+          />
         </div>
         <LeafletTemplateIndicator isTemplate={isTemplate} />
       </ThemeProvider>
