@@ -28,13 +28,13 @@ import { Blocks } from "components/Blocks";
 import { MenuItem, Menu } from "../Layout";
 import { MoreOptionsTiny, CloseTiny, PaintSmall, ShareSmall } from "../Icons";
 import { HelpPopover } from "../HelpPopover";
-import { CreateNewLeafletButton } from "app/home/CreateNewButton";
 import { scanIndex } from "src/replicache/utils";
 import { PageThemeSetter } from "../ThemeManager/PageThemeSetter";
 import { CardThemeProvider } from "../ThemeManager/ThemeProvider";
 import { PageShareMenu } from "./PageShareMenu";
 import { Watermark } from "components/Watermark";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
+import { LoginButton } from "components/LoginButton";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -65,15 +65,13 @@ export function Pages(props: { rootPage: string }) {
               <div className="flex flex-col justify-center gap-2 mr-4">
                 <ShareOptions rootEntity={props.rootPage} />
                 <LeafletOptions entityID={props.rootPage} />
-                <CreateNewLeafletButton />
                 <HelpPopover />
                 <hr className="text-border my-3" />
                 <HomeButton />
               </div>
             ) : (
               <div>
-                {" "}
-                <HomeButton />{" "}
+                <HomeButton />
               </div>
             )}
             <Watermark />

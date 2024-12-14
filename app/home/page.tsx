@@ -1,4 +1,3 @@
-import { AddTiny } from "components/Icons";
 import { cookies } from "next/headers";
 import { Fact, ReplicacheProvider } from "src/replicache";
 import { createServerClient } from "@supabase/ssr";
@@ -17,6 +16,11 @@ import { IdentitySetter } from "./IdentitySetter";
 import { HomeHelp } from "./HomeHelp";
 import { LeafletList } from "./LeafletList";
 import { CreateNewLeafletButton } from "./CreateNewButton";
+import { getIdentityData } from "actions/getIdentityData";
+import { LoginButton } from "components/LoginButton";
+import { HelpPopover } from "components/HelpPopover";
+import { AccountSettings } from "./AccountSettings";
+import { LoggedOutWarning } from "./LoggedOutWarning";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -25,7 +29,12 @@ let supabase = createServerClient<Database>(
 );
 export default async function Home() {
   let cookieStore = cookies();
-  let identity = cookieStore.get("identity")?.value;
+
+  let auth_token = cookieStore.get("auth_token")?.value;
+  let auth_res = auth_token ? await getIdentityData() : null;
+  let identity: string | undefined;
+  if (auth_res) identity = auth_res.id;
+  else identity = cookieStore.get("identity")?.value;
   let needstosetcookie = false;
   if (!identity) {
     const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
@@ -42,43 +51,87 @@ export default async function Home() {
     cookies().set("identity", identity as string, { sameSite: "strict" });
   }
 
-  let res = await supabase
-    .from("identities")
-    .select(
-      `*,
-      permission_tokens!identities_home_page_fkey(*, permission_token_rights(*))
-    `,
-    )
-    .eq("id", identity)
-    .single();
-  if (!res.data) return <div>{JSON.stringify(res.error)}</div>;
-  if (!res.data.permission_tokens) return <div>no home page wierdly</div>;
+  let permission_token = auth_res?.home_leaflet;
+  if (!permission_token) {
+    let res = await supabase
+      .from("identities")
+      .select(
+        `*,
+        permission_tokens!identities_home_page_fkey(*, permission_token_rights(*))
+      `,
+      )
+      .eq("id", identity)
+      .single();
+    permission_token = res.data?.permission_tokens;
+  }
+
+  if (!permission_token) return <div>no home page wierdly</div>;
   let { data } = await supabase.rpc("get_facts", {
-    root: res.data.permission_tokens?.root_entity,
+    root: permission_token.root_entity,
   });
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
-  let root_entity = res.data.permission_tokens.root_entity;
+
+  let root_entity = permission_token.root_entity;
+  let home_docs_initialFacts: {
+    [root_entity: string]: Fact<keyof typeof Attributes>[];
+  } = {};
+  if (auth_res) {
+    let all_facts = await supabase.rpc("get_facts_for_roots", {
+      max_depth: 3,
+      roots: auth_res.permission_token_on_homepage.map(
+        (r) => r.permission_tokens.root_entity,
+      ),
+    });
+    if (all_facts.data)
+      home_docs_initialFacts = all_facts.data.reduce(
+        (acc, fact) => {
+          if (!acc[fact.root_id]) acc[fact.root_id] = [];
+          acc[fact.root_id].push(
+            fact as unknown as Fact<keyof typeof Attributes>,
+          );
+          return acc;
+        },
+        {} as { [key: string]: Fact<keyof typeof Attributes>[] },
+      );
+  }
   return (
     <ReplicacheProvider
       rootEntity={root_entity}
-      token={res.data.permission_tokens}
+      token={permission_token}
       name={root_entity}
       initialFacts={initialFacts}
     >
       <IdentitySetter cb={setCookie} call={needstosetcookie} />
       <EntitySetProvider
-        set={res.data.permission_tokens.permission_token_rights[0].entity_set}
+        set={permission_token.permission_token_rights[0].entity_set}
       >
         <ThemeProvider entityID={root_entity}>
           <div className="flex h-full bg-bg-leaflet">
             <ThemeBackgroundProvider entityID={root_entity}>
-              <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col-reverse px-2 sm:px-6 ">
-                <div className="homeOptions z-10 shrink-0 sm:static absolute bottom-0  place-self-end sm:place-self-start flex sm:flex-col flex-row-reverse gap-2 sm:w-fit w-full items-center pb-2 pt-1 sm:pt-7">
-                  <CreateNewLeafletButton />
-                  <HomeHelp />
-                  <ThemePopover entityID={root_entity} home />
+              <div className="home relative max-w-screen-lg w-full h-screen mx-auto flex sm:flex-row sm:items-stretch flex-col-reverse px-2 sm:px-6 ">
+                {!auth_res && (
+                  <div className="sm:hidden block">
+                    <LoggedOutWarning />
+                  </div>
+                )}
+                <div className="homeOptions z-10 shrink-0 sm:static absolute bottom-0 left-2 right-2 place-self-end sm:place-self-start flex sm:flex-col flex-row-reverse sm:w-fit w-full items-center px-2 sm:px-0 pb-2 pt-2 sm:pt-7 sm:bg-transparent bg-bg-page border-border border-t sm:border-none">
+                  <div className="flex sm:flex-col flex-row-reverse gap-2 shrink-0 place-self-end">
+                    <CreateNewLeafletButton />
+                    <ThemePopover entityID={root_entity} home />
+                    <HelpPopover noShortcuts />
+                    {auth_res && <AccountSettings />}
+                  </div>
                 </div>
-                <LeafletList />
+                <div
+                  className={`h-full w-full flex flex-col ${!auth_res && "sm:pb-0 pb-16"}`}
+                >
+                  {!auth_res && (
+                    <div className="sm:block hidden">
+                      <LoggedOutWarning />
+                    </div>
+                  )}
+                  <LeafletList initialFacts={home_docs_initialFacts} />
+                </div>
               </div>
             </ThemeBackgroundProvider>
           </div>

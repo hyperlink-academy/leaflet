@@ -7,7 +7,6 @@ import { ShareOptions } from "./ShareOptions";
 import { HomeButton } from "./HomeButton";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { HelpPopover } from "./HelpPopover";
-import { CreateNewLeafletButton } from "app/home/CreateNewButton";
 import { Watermark } from "./Watermark";
 
 export function MobileFooter(props: { entityID: string }) {
@@ -35,7 +34,6 @@ export function MobileFooter(props: { entityID: string }) {
           <HomeButton />
           <div className="flex flex-row gap-[6px] items-center ">
             <HelpPopover />
-            <CreateNewLeafletButton />
             <ThemePopover entityID={props.entityID} />
             <ShareOptions rootEntity={props.entityID} />
           </div>

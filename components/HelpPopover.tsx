@@ -1,3 +1,4 @@
+"use client";
 import { isMac } from "@react-aria/utils";
 import { HelpSmall } from "./Icons";
 import { ShortcutKey } from "./Layout";
@@ -9,7 +10,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { HoverButton } from "./Buttons";
 
-export const HelpPopover = () => {
+export const HelpPopover = (props: { noShortcuts?: boolean }) => {
   let entity_set = useEntitySetContext();
   return entity_set.permissions.write ? (
     <Popover
@@ -47,62 +48,66 @@ export const HelpPopover = () => {
           url="https://leaflet.pub/legal"
         />
         <Media mobile={false}>
-          <hr className="text-border my-1" />
-          <div className="flex flex-col gap-1">
-            <Label>Text Shortcuts</Label>
-            <KeyboardShortcut name="Bold" keys={[metaKey(), "B"]} />
-            <KeyboardShortcut name="Italic" keys={[metaKey(), "I"]} />
-            <KeyboardShortcut name="Underline" keys={[metaKey(), "U"]} />
-            <KeyboardShortcut
-              name="Highlight"
-              keys={[metaKey(), isMac() ? "Ctrl" : "Meta", "H"]}
-            />
-            <KeyboardShortcut
-              name="Strikethrough"
-              keys={[metaKey(), isMac() ? "Ctrl" : "Meta", "X"]}
-            />
-            <KeyboardShortcut name="Inline Link" keys={[metaKey(), "K"]} />
+          {!props.noShortcuts && (
+            <>
+              <hr className="text-border my-1" />
+              <div className="flex flex-col gap-1">
+                <Label>Text Shortcuts</Label>
+                <KeyboardShortcut name="Bold" keys={[metaKey(), "B"]} />
+                <KeyboardShortcut name="Italic" keys={[metaKey(), "I"]} />
+                <KeyboardShortcut name="Underline" keys={[metaKey(), "U"]} />
+                <KeyboardShortcut
+                  name="Highlight"
+                  keys={[metaKey(), isMac() ? "Ctrl" : "Meta", "H"]}
+                />
+                <KeyboardShortcut
+                  name="Strikethrough"
+                  keys={[metaKey(), isMac() ? "Ctrl" : "Meta", "X"]}
+                />
+                <KeyboardShortcut name="Inline Link" keys={[metaKey(), "K"]} />
 
-            <Label>Block Shortcuts</Label>
-            {/* shift + up/down arrows (or click + drag): select multiple blocks */}
-            <KeyboardShortcut
-              name="Move Block Up"
-              keys={["Shift", metaKey(), "↑"]}
-            />
-            <KeyboardShortcut
-              name="Move Block Down"
-              keys={["Shift", metaKey(), "↓"]}
-            />
-            {/* cmd/ctrl-a: first selects all text in a block; again selects all blocks on page */}
-            {/* cmd/ctrl + up/down arrows: go to beginning / end of doc */}
+                <Label>Block Shortcuts</Label>
+                {/* shift + up/down arrows (or click + drag): select multiple blocks */}
+                <KeyboardShortcut
+                  name="Move Block Up"
+                  keys={["Shift", metaKey(), "↑"]}
+                />
+                <KeyboardShortcut
+                  name="Move Block Down"
+                  keys={["Shift", metaKey(), "↓"]}
+                />
+                {/* cmd/ctrl-a: first selects all text in a block; again selects all blocks on page */}
+                {/* cmd/ctrl + up/down arrows: go to beginning / end of doc */}
 
-            <Label>Canvas Shortcuts</Label>
-            <OtherShortcut name="Add Block" description="Double click" />
-            <OtherShortcut name="Select Block" description="Long press" />
+                <Label>Canvas Shortcuts</Label>
+                <OtherShortcut name="Add Block" description="Double click" />
+                <OtherShortcut name="Select Block" description="Long press" />
 
-            <Label>Outliner Shortcuts</Label>
-            <KeyboardShortcut
-              name="Make List"
-              keys={[metaKey(), isMac() ? "Opt" : "Alt", "L"]}
-            />
-            {/* tab / shift + tab: indent / outdent */}
-            <KeyboardShortcut
-              name="Toggle Checkbox"
-              keys={[metaKey(), "Enter"]}
-            />
-            <KeyboardShortcut
-              name="Toggle Fold"
-              keys={[metaKey(), "Shift", "Enter"]}
-            />
-            <KeyboardShortcut
-              name="Fold All"
-              keys={[metaKey(), isMac() ? "Opt" : "Alt", "Shift", "↑"]}
-            />
-            <KeyboardShortcut
-              name="Unfold All"
-              keys={[metaKey(), isMac() ? "Opt" : "Alt", "Shift", "↓"]}
-            />
-          </div>
+                <Label>Outliner Shortcuts</Label>
+                <KeyboardShortcut
+                  name="Make List"
+                  keys={[metaKey(), isMac() ? "Opt" : "Alt", "L"]}
+                />
+                {/* tab / shift + tab: indent / outdent */}
+                <KeyboardShortcut
+                  name="Toggle Checkbox"
+                  keys={[metaKey(), "Enter"]}
+                />
+                <KeyboardShortcut
+                  name="Toggle Fold"
+                  keys={[metaKey(), "Shift", "Enter"]}
+                />
+                <KeyboardShortcut
+                  name="Fold All"
+                  keys={[metaKey(), isMac() ? "Opt" : "Alt", "Shift", "↑"]}
+                />
+                <KeyboardShortcut
+                  name="Unfold All"
+                  keys={[metaKey(), isMac() ? "Opt" : "Alt", "Shift", "↓"]}
+                />
+              </div>
+            </>
+          )}
         </Media>
       </div>
     </Popover>

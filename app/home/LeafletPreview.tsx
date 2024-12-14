@@ -16,7 +16,6 @@ import {
 import { deleteLeaflet } from "actions/deleteLeaflet";
 import { removeDocFromHome } from "./storage";
 import { mutate } from "swr";
-import useMeasure from "react-use-measure";
 import { ButtonPrimary } from "components/Buttons";
 import { LeafletOptions } from "./LeafletOptions";
 import { CanvasContent } from "components/Canvas";
@@ -24,10 +23,12 @@ import { useSubscribe } from "replicache-react";
 import { TemplateSmall } from "components/Icons";
 import { theme } from "tailwind.config";
 import { useTemplateState } from "./CreateNewButton";
+import styles from "./LeafletPreview.module.css";
 
 export const LeafletPreview = (props: {
   token: PermissionToken;
   leaflet_id: string;
+  loggedIn: boolean;
 }) => {
   let [state, setState] = useState<"normal" | "deleting">("normal");
   let isTemplate = useTemplateState(
@@ -42,16 +43,17 @@ export const LeafletPreview = (props: {
   return (
     <div className="relative max-h-40 h-40">
       <ThemeProvider local entityID={root}>
-        <div className="rounded-lg hover:shadow-sm overflow-clip border border-border outline outline-transparent hover:outline-border bg-bg-leaflet grow w-full h-full">
+        <div className="rounded-lg hover:shadow-sm overflow-clip border border-border outline outline-2 outline-transparent outline-offset-1 hover:outline-border bg-bg-leaflet grow w-full h-full">
           {state === "normal" ? (
-            <Link
-              href={"/" + props.token.id}
-              className={`no-underline hover:no-underline text-primary h-full`}
-            >
+            <div className="relative w-full h-full">
+              <Link
+                href={"/" + props.token.id}
+                className={`no-underline hover:no-underline text-primary absolute inset-0 z-10 w-full h-full`}
+              ></Link>
               <ThemeBackgroundProvider entityID={root}>
                 <div className="leafletPreview grow shrink-0 h-full w-full px-2 pt-2 sm:px-3 sm:pt-3 flex items-end pointer-events-none">
                   <div
-                    className="leafletContentWrapper w-full h-full max-w-48 mx-auto border border-border-light border-b-0 rounded-t-md overflow-clip"
+                    className="leafletContentWrapper h-full  sm:w-48 w-40 mx-auto border border-border-light border-b-0 rounded-t-md overflow-clip"
                     style={{
                       backgroundColor:
                         "rgba(var(--bg-page), var(--bg-page-alpha))",
@@ -61,13 +63,17 @@ export const LeafletPreview = (props: {
                   </div>
                 </div>
               </ThemeBackgroundProvider>
-            </Link>
+            </div>
           ) : (
             <LeafletAreYouSure token={props.token} setState={setState} />
           )}
         </div>
         <div className="flex justify-end pt-1 shrink-0">
-          <LeafletOptions leaflet={props.token} isTemplate={isTemplate} />
+          <LeafletOptions
+            leaflet={props.token}
+            isTemplate={isTemplate}
+            loggedIn={props.loggedIn}
+          />
         </div>
         <LeafletTemplateIndicator isTemplate={isTemplate} />
       </ThemeProvider>
@@ -79,20 +85,17 @@ const LeafletContent = (props: { entityID: string }) => {
   let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
-  let [ref, dimensions] = useMeasure();
 
   if (type === "canvas")
     return (
       <div
-        ref={ref}
-        className={`pageLinkBlockPreview shrink-0 h-full w-full overflow-clip relative bg-bg-page shadow-sm  rounded-md`}
+        className={`pageLinkBlockPreview shrink-0 h-full overflow-clip relative bg-bg-page shadow-sm  rounded-md`}
       >
         <div
-          className={`absolute top-0 left-0 origin-top-left pointer-events-none `}
+          className={`absolute top-0 left-0 origin-top-left pointer-events-none ${styles.scaleLeafletCanvasPreview}`}
           style={{
             width: `1272px`,
             height: "calc(1272px * 2)",
-            transform: `scale(calc((${dimensions.width} / 1272 )))`,
           }}
         >
           <CanvasContent entityID={props.entityID} preview />
@@ -103,14 +106,12 @@ const LeafletContent = (props: { entityID: string }) => {
   return (
     <div
       ref={previewRef}
-      className={`pageLinkBlockPreview w-full h-full overflow-clip flex flex-col gap-0.5 no-underline relative`}
+      className={`pageLinkBlockPreview h-full overflow-clip flex flex-col gap-0.5 no-underline relative`}
     >
-      <div className="w-full" ref={ref} />
       <div
-        className="absolute top-0 left-0 w-full h-full origin-top-left pointer-events-none"
+        className={`absolute top-0 left-0 w-full h-full origin-top-left pointer-events-none ${styles.scaleLeafletDocPreview}`}
         style={{
           width: `var(--page-width-units)`,
-          transform: `scale(calc(${dimensions.width} / var(--page-width-unitless)))`,
         }}
       >
         {blocks.slice(0, 10).map((b, index, arr) => {

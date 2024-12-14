@@ -85,6 +85,27 @@ export const MenuItem = (props: {
   );
 };
 
+export const InputWithLabel = (
+  props: {
+    label: string;
+  } & JSX.IntrinsicElements["input"],
+) => {
+  let { label, ...inputProps } = props;
+  return (
+    <div>
+      <div className="input-with-border flex flex-col">
+        <label className="text-sm text-tertiary font-bold italic">
+          {props.label}
+          <input
+            {...inputProps}
+            className={`appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 ${props.className}`}
+          />
+        </label>
+      </div>
+    </div>
+  );
+};
+
 export const ShortcutKey = (props: { children: React.ReactNode }) => {
   return (
     <span>

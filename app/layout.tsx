@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import localFont from "next/font/local";
 import { PopUpProvider } from "components/Toast";
+import { IdentityProviderServer } from "components/IdentityProviderServer";
 
 export const metadata = {
   title: "Leaflet",
@@ -63,7 +64,9 @@ export default function RootLayout({
         <ServiceWorker />
         <InitialPageLoad>
           <PopUpProvider>
-            <ViewportSizeLayout>{children}</ViewportSizeLayout>
+            <IdentityProviderServer>
+              <ViewportSizeLayout>{children}</ViewportSizeLayout>
+            </IdentityProviderServer>
           </PopUpProvider>
         </InitialPageLoad>
       </body>
