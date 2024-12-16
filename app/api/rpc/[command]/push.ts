@@ -59,20 +59,21 @@ export const push = makeRoute({
         result: { error: "VersionNotSupported", versionType: "push" } as const,
       };
     }
-    let clientGroup = await getClientGroup(db, pushRequest.clientGroupID);
-    let token_rights = await db
-      .select()
-      .from(permission_token_rights)
-      .where(eq(permission_token_rights.token, token.id));
-    for (let mutation of pushRequest.mutations) {
-      let lastMutationID = clientGroup[mutation.clientID] || 0;
-      if (mutation.id <= lastMutationID) continue;
-      clientGroup[mutation.clientID] = mutation.id;
-      let name = mutation.name as keyof typeof mutations;
-      if (!mutations[name]) {
-        continue;
-      }
-      await db.transaction(async (tx) => {
+
+    await db.transaction(async (tx) => {
+      let clientGroup = await getClientGroup(tx, pushRequest.clientGroupID);
+      let token_rights = await tx
+        .select()
+        .from(permission_token_rights)
+        .where(eq(permission_token_rights.token, token.id));
+      for (let mutation of pushRequest.mutations) {
+        let lastMutationID = clientGroup[mutation.clientID] || 0;
+        if (mutation.id <= lastMutationID) continue;
+        clientGroup[mutation.clientID] = mutation.id;
+        let name = mutation.name as keyof typeof mutations;
+        if (!mutations[name]) {
+          continue;
+        }
         try {
           await mutations[name](
             mutation.args as any,
@@ -96,8 +97,8 @@ export const push = makeRoute({
             target: replicache_clients.client_id,
             set: { last_mutation: mutation.id },
           });
-      });
-    }
+      }
+    });
 
     let channel = supabase.channel(`rootEntity:${rootEntity}`);
     await channel.send({
