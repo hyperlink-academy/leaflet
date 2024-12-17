@@ -7,8 +7,8 @@ import { Fact, ReplicacheProvider } from "src/replicache";
 import { LeafletPreview } from "./LeafletPreview";
 import { useIdentityData } from "components/IdentityProvider";
 import { Attributes } from "src/replicache/attributes";
-import { getLeafletData } from "actions/getLeafletData";
 import { getIdentityData } from "actions/getIdentityData";
+import { callRPC } from "app/api/rpc/client";
 
 export function LeafletList(props: {
   initialFacts: {
@@ -21,13 +21,15 @@ export function LeafletList(props: {
   let { identity } = useIdentityData();
   let { data: initialFacts, mutate } = useSWR(
     "home-leaflet-data",
-    () => {
-      if (identity)
-        return getLeafletData(
-          identity.permission_token_on_homepage.map(
+    async () => {
+      if (identity) {
+        let { result } = await callRPC("getFactsFromHomeLeaflets", {
+          tokens: identity.permission_token_on_homepage.map(
             (ptrh) => ptrh.permission_tokens.root_entity,
           ),
-        );
+        });
+        return result;
+      }
     },
     { fallbackData: props.initialFacts },
   );

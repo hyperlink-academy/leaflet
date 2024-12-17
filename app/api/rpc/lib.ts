@@ -8,7 +8,7 @@ type Route<
 > = {
   route: Cmd;
   input: Input;
-  handler: (msg: z.infer<Input>, env: Env, request: Request) => Promise<Result>;
+  handler: (msg: z.infer<Input>, env: Env) => Promise<Result>;
 };
 
 type Routes<Env extends {}> = Route<string, any, any, Env>[];
@@ -59,11 +59,7 @@ export const makeRouter = <Env extends {}>(routes: Routes<Env>) => {
           break;
         }
         try {
-          result = (await handler.handler(
-            msg.data as any,
-            env,
-            request,
-          )) as object;
+          result = (await handler.handler(msg.data as any, env)) as object;
           break;
         } catch (e) {
           console.log(e);
