@@ -3,7 +3,7 @@ import { ZodObject, ZodRawShape, ZodUnion, z } from "zod";
 type Route<
   Cmd extends string,
   Input extends ZodObject<ZodRawShape> | ZodUnion<any>,
-  Result extends object,
+  Result extends object | null,
   Env extends {},
 > = {
   route: Cmd;
@@ -93,7 +93,7 @@ export const makeRouter = <Env extends {}>(routes: Routes<Env>) => {
 export function makeRoute<
   Cmd extends string,
   Input extends ZodObject<ZodRawShape> | ZodUnion<any>,
-  Result extends object,
+  Result extends object | null,
   Env extends {},
 >(d: Route<Cmd, Input, Result, Env>) {
   return d;
