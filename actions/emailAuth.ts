@@ -93,6 +93,7 @@ export async function confirmEmailAuthToken(tokenId: string, code: string) {
     .returning();
 
   cookies().set("auth_token", confirmedToken.id, {
+    maxAge: 60 * 60 * 24 * 365,
     secure: process.env.NODE_ENV === "production",
     httpOnly: true,
     sameSite: "strict",
