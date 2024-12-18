@@ -8,7 +8,7 @@ export const Watermark = (props: { mobile?: boolean }) => {
   let showWatermark = useEntity(rootEntity, "theme/page-leaflet-watermark");
   if (!showWatermark?.data.value) return null;
   return (
-    <Link href="/" className="hover:no-underline w-fit italic">
+    <Link href="/" className="hover:no-underline w-fit italic" prefetch={false}>
       <div className="sm:mb-2 sm:mr-4 group/watermark flex sm:flex-col gap-2 items-center justify-center ">
         <div
           className="sm:hidden group-hover/watermark:block sm:rotate-180 sm:py-1 sm:px-0 px-1 w-max rounded-md h-fit whitespace-nowrap text-sm  text-tertiary"
