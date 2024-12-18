@@ -22,7 +22,7 @@ export const LeafletOptions = (props: {
   isTemplate: boolean;
   loggedIn: boolean;
 }) => {
-  let { mutate } = useIdentityData();
+  let { mutate: mutateIdentity } = useIdentityData();
   let [state, setState] = useState<"normal" | "template">("normal");
   let [open, setOpen] = useState(false);
   let smoker = useSmoker();
@@ -77,7 +77,7 @@ export const LeafletOptions = (props: {
               onSelect={async () => {
                 console.log(props.loggedIn);
                 if (props.loggedIn) {
-                  mutate(
+                  mutateIdentity(
                     (s) => {
                       if (!s) return s;
                       return {
@@ -92,7 +92,7 @@ export const LeafletOptions = (props: {
                     { revalidate: false },
                   );
                   await removeLeafletFromHome([props.leaflet.id]);
-                  mutate();
+                  mutateIdentity();
                 } else {
                   hideDoc(props.leaflet);
                 }
