@@ -115,12 +115,15 @@ export async function loginWithEmailToken(
       .where(eq(email_auth_tokens.id, token_id));
 
     if (localLeaflets.length > 0)
-      await tx.insert(permission_token_on_homepage).values(
-        localLeaflets.map((l) => ({
-          identity: identity.id,
-          token: l.token.id,
-        })),
-      );
+      await tx
+        .insert(permission_token_on_homepage)
+        .values(
+          localLeaflets.map((l) => ({
+            identity: identity.id,
+            token: l.token.id,
+          })),
+        )
+        .onConflictDoNothing();
 
     return token;
   });
