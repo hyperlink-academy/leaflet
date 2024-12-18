@@ -51,7 +51,9 @@ const PullRequestSchema = z.union([pullRequestV0, pullRequestV1]);
 export const pull = makeRoute({
   route: "pull",
   input: z.object({ pullRequest: PullRequestSchema, token_id: z.string() }),
-  handler: async ({ pullRequest, token_id }, { db, supabase }: Env) => {
+  handler: async ({ pullRequest, token_id }, { supabase }: Env) => {
+    const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+    const db = drizzle(client);
     let body = pullRequest;
     if (body.pullVersion === 0) return versionNotSupported;
     let [facts, clientGroup] = await db.transaction(async (tx) => {
@@ -90,7 +92,7 @@ export const pull = makeRoute({
       }
       return [];
     });
-
+    client.end();
     return {
       cookie: Date.now(),
       lastMutationIDChanges: clientGroup,

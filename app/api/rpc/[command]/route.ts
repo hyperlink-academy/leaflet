@@ -16,7 +16,6 @@ const db = drizzle(client);
 
 const Env = {
   supabase,
-  db,
 };
 export type Env = typeof Env;
 export type Routes = typeof Routes;

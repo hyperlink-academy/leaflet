@@ -7,6 +7,8 @@ import { getClientGroup } from "src/replicache/utils";
 import { makeRoute } from "../lib";
 import { z } from "zod";
 import { Env } from "./route";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 
 const mutationV0Schema = z.object({
   id: z.number(),
@@ -50,15 +52,15 @@ export const push = makeRoute({
     rootEntity: z.string(),
     token: z.object({ id: z.string() }),
   }),
-  handler: async (
-    { pushRequest, rootEntity, token },
-    { db, supabase }: Env,
-  ) => {
+  handler: async ({ pushRequest, rootEntity, token }, { supabase }: Env) => {
     if (pushRequest.pushVersion !== 1) {
       return {
         result: { error: "VersionNotSupported", versionType: "push" } as const,
       };
     }
+
+    const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+    const db = drizzle(client);
 
     await db.transaction(async (tx) => {
       let clientGroup = await getClientGroup(tx, pushRequest.clientGroupID);
@@ -106,6 +108,7 @@ export const push = makeRoute({
       event: "poke",
       payload: { message: "poke" },
     });
+    client.end();
     supabase.removeChannel(channel);
     return { result: undefined } as const;
   },
