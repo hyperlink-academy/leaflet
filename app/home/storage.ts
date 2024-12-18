@@ -1,4 +1,5 @@
 import { PermissionToken } from "src/replicache";
+import { mutate } from "swr";
 
 export type HomeDoc = {
   token: PermissionToken;
@@ -55,4 +56,5 @@ export function hideDoc(doc: PermissionToken) {
     docs: newDocs,
   };
   window.localStorage.setItem(key, JSON.stringify(newValue));
+  mutate("leaflets");
 }
