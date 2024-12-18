@@ -107,7 +107,7 @@ export default async function Home() {
                     <LoggedOutWarning />
                   </div>
                 )}
-                <div className="homeOptions z-10 shrink-0 sm:static absolute bottom-0 left-2 right-2 place-self-end sm:place-self-start flex sm:flex-col flex-row-reverse sm:w-fit w-full items-center px-2 sm:px-0 pb-2 pt-2 sm:pt-7 sm:bg-transparent bg-bg-page border-border border-t sm:border-none">
+                <div className="homeOptions z-10 shrink-0 sm:static absolute bottom-0 left-0 right-0 place-self-end sm:place-self-start flex sm:flex-col flex-row-reverse sm:w-fit w-full items-center px-2 sm:px-0 pb-2 pt-2 sm:pt-7 sm:bg-transparent bg-bg-page border-border border-t sm:border-none">
                   <div className="flex sm:flex-col flex-row-reverse gap-2 shrink-0 place-self-end">
                     <CreateNewLeafletButton />
                     <ThemePopover entityID={root_entity} home />
