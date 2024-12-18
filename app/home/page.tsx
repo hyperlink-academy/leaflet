@@ -21,6 +21,7 @@ import { LoginButton } from "components/LoginButton";
 import { HelpPopover } from "components/HelpPopover";
 import { AccountSettings } from "./AccountSettings";
 import { LoggedOutWarning } from "./LoggedOutWarning";
+import { getFactsFromHomeLeaflets } from "app/api/rpc/[command]/getFactsFromHomeLeaflets";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -66,34 +67,26 @@ export default async function Home() {
   }
 
   if (!permission_token) return <div>no home page wierdly</div>;
-  let { data } = await supabase.rpc("get_facts", {
-    root: permission_token.root_entity,
-  });
-  let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
+  let [homeLeafletFacts, allLeafletFacts] = await Promise.all([
+    supabase.rpc("get_facts", {
+      root: permission_token.root_entity,
+    }),
+    auth_res
+      ? getFactsFromHomeLeaflets.handler(
+          {
+            tokens: auth_res.permission_token_on_homepage.map(
+              (r) => r.permission_tokens.root_entity,
+            ),
+          },
+          { supabase },
+        )
+      : undefined,
+  ]);
+  let initialFacts =
+    (homeLeafletFacts.data as unknown as Fact<keyof typeof Attributes>[]) || [];
 
   let root_entity = permission_token.root_entity;
-  let home_docs_initialFacts: {
-    [root_entity: string]: Fact<keyof typeof Attributes>[];
-  } = {};
-  if (auth_res) {
-    let all_facts = await supabase.rpc("get_facts_for_roots", {
-      max_depth: 3,
-      roots: auth_res.permission_token_on_homepage.map(
-        (r) => r.permission_tokens.root_entity,
-      ),
-    });
-    if (all_facts.data)
-      home_docs_initialFacts = all_facts.data.reduce(
-        (acc, fact) => {
-          if (!acc[fact.root_id]) acc[fact.root_id] = [];
-          acc[fact.root_id].push(
-            fact as unknown as Fact<keyof typeof Attributes>,
-          );
-          return acc;
-        },
-        {} as { [key: string]: Fact<keyof typeof Attributes>[] },
-      );
-  }
+  let home_docs_initialFacts = allLeafletFacts?.result || {};
   return (
     <ReplicacheProvider
       rootEntity={root_entity}

@@ -8,12 +8,11 @@ import {
   Replicache,
   WriteTransaction,
 } from "replicache";
-import { Pull } from "./pull";
 import { mutations } from "./mutations";
 import { Attributes, Data, FilterAttributes } from "./attributes";
-import { Push } from "./push";
 import { clientMutationContext } from "./clientMutationContext";
 import { supabaseBrowserClient } from "supabase/browserClient";
+import { callRPC } from "app/api/rpc/client";
 
 export type Fact<A extends keyof typeof Attributes> = {
   id: string;
@@ -82,13 +81,23 @@ export function ReplicacheProvider(props: {
           mutations: pushRequest.mutations.slice(0, 250),
         } as PushRequest;
         return {
-          response: await Push(smolpushRequest, props.name, props.token),
+          response: (
+            await callRPC("push", {
+              pushRequest: smolpushRequest,
+              token: props.token,
+              rootEntity: props.name,
+            })
+          ).result,
           httpRequestInfo: { errorMessage: "", httpStatusCode: 200 },
         };
       },
       puller: async (pullRequest) => {
+        let res = await callRPC("pull", {
+          pullRequest,
+          token_id: props.token.id,
+        });
         return {
-          response: await Pull(pullRequest, props.token.id),
+          response: res,
           httpRequestInfo: { errorMessage: "", httpStatusCode: 200 },
         };
       },

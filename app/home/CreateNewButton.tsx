@@ -59,7 +59,7 @@ export const CreateNewLeafletButton = (props: {
       <MenuItem
         onSelect={async () => {
           let id = await createNewLeaflet("doc", false);
-          window.open(`/${id}`, "_blank");
+          window.open(`/${id}?focusFirstBlock`, "_blank");
         }}
       >
         <BlockDocPageSmall />{" "}
@@ -73,7 +73,7 @@ export const CreateNewLeafletButton = (props: {
       <MenuItem
         onSelect={async () => {
           let id = await createNewLeaflet("canvas", false);
-          window.open(`/${id}`, "_blank");
+          window.open(`/${id}?focusFirstBlock`, "_blank");
         }}
       >
         <BlockCanvasPageSmall />
