@@ -101,7 +101,7 @@ export default async function Home() {
         <ThemeProvider entityID={root_entity}>
           <div className="flex h-full bg-bg-leaflet">
             <ThemeBackgroundProvider entityID={root_entity}>
-              <div className="home relative max-w-screen-lg w-full h-screen mx-auto flex sm:flex-row sm:items-stretch flex-col-reverse px-2 sm:px-6 ">
+              <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row sm:items-stretch flex-col-reverse px-2 sm:px-6 ">
                 {!auth_res && (
                   <div className="sm:hidden block">
                     <LoggedOutWarning />
