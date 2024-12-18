@@ -4,7 +4,7 @@ import {
   ThemeBackgroundProvider,
   ThemeProvider,
 } from "components/ThemeManager/ThemeProvider";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-aria-components";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import {
@@ -26,6 +26,7 @@ import { useTemplateState } from "./CreateNewButton";
 import styles from "./LeafletPreview.module.css";
 
 export const LeafletPreview = (props: {
+  index: number;
   token: PermissionToken;
   leaflet_id: string;
   loggedIn: boolean;
@@ -59,7 +60,7 @@ export const LeafletPreview = (props: {
                         "rgba(var(--bg-page), var(--bg-page-alpha))",
                     }}
                   >
-                    <LeafletContent entityID={page} />
+                    <LeafletContent entityID={page} index={props.index} />
                   </div>
                 </div>
               </ThemeBackgroundProvider>
@@ -81,10 +82,28 @@ export const LeafletPreview = (props: {
   );
 };
 
-const LeafletContent = (props: { entityID: string }) => {
+const LeafletContent = (props: { entityID: string; index: number }) => {
   let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
+  let [isVisible, setIsVisible] = useState(props.index > 16 ? false : true);
+  useEffect(() => {
+    if (!previewRef.current) return;
+    let observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          } else {
+            setIsVisible(false);
+          }
+        });
+      },
+      { threshold: 0.1, root: null },
+    );
+    observer.observe(previewRef.current);
+    return () => observer.disconnect();
+  }, [previewRef]);
 
   if (type === "canvas")
     return (
@@ -98,7 +117,7 @@ const LeafletContent = (props: { entityID: string }) => {
             height: "calc(1272px * 2)",
           }}
         >
-          <CanvasContent entityID={props.entityID} preview />
+          {isVisible && <CanvasContent entityID={props.entityID} preview />}
         </div>
       </div>
     );
@@ -114,20 +133,21 @@ const LeafletContent = (props: { entityID: string }) => {
           width: `var(--page-width-units)`,
         }}
       >
-        {blocks.slice(0, 10).map((b, index, arr) => {
-          return (
-            <BlockPreview
-              pageType="doc"
-              entityID={b.value}
-              previousBlock={arr[index - 1] || null}
-              nextBlock={arr[index + 1] || null}
-              nextPosition={""}
-              previewRef={previewRef}
-              {...b}
-              key={b.factID}
-            />
-          );
-        })}
+        {isVisible &&
+          blocks.slice(0, 10).map((b, index, arr) => {
+            return (
+              <BlockPreview
+                pageType="doc"
+                entityID={b.value}
+                previousBlock={arr[index - 1] || null}
+                nextBlock={arr[index + 1] || null}
+                nextPosition={""}
+                previewRef={previewRef}
+                {...b}
+                key={b.factID}
+              />
+            );
+          })}
       </div>
     </div>
   );
