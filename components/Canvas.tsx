@@ -76,7 +76,7 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   let blocks = useEntity(props.entityID, "canvas/block");
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
-  let height = Math.max(...blocks.map((f) => f.data.position.y));
+  let height = Math.max(...blocks.map((f) => f.data.position.y), 0);
   return (
     <div
       onClick={async (e) => {
