@@ -5,6 +5,7 @@ import {
   CardThemeProvider,
   NestedCardThemeProvider,
 } from "./ThemeManager/ThemeProvider";
+import { Input } from "./Input";
 
 export const Separator = (props: { classname?: string }) => {
   return (
@@ -96,7 +97,7 @@ export const InputWithLabel = (
       <div className="input-with-border flex flex-col">
         <label className="text-sm text-tertiary font-bold italic">
           {props.label}
-          <input
+          <Input
             {...inputProps}
             className={`appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 ${props.className}`}
           />
