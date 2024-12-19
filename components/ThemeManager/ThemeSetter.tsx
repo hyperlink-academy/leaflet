@@ -38,6 +38,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { isIOS, useViewportSize } from "@react-aria/utils";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
 import { HoverButton } from "components/Buttons";
+import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 
 export type pickers =
   | "null"
@@ -65,6 +66,7 @@ export function setColorAttribute(
 }
 export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   let { rep } = useReplicache();
+  let pageLoaded = useInitialPageLoad();
   // I need to get these variables from replicache and then write them to the DB. I also need to parse them into a state that can be used here.
   let leafletValue = useColorAttribute(props.entityID, "theme/page-background");
   let pageValue = useColorAttribute(props.entityID, "theme/card-background");
@@ -97,12 +99,14 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   let randomPositions = useMemo(() => {
     let values = [] as string[];
     for (let i = 0; i < 3; i++) {
-      values.push(
-        `${Math.floor(Math.random() * 100)}% ${Math.floor(Math.random() * 100)}%`,
-      );
+      if (!pageLoaded) values.push(`100% 100%`);
+      else
+        values.push(
+          `${Math.floor(Math.random() * 100)}% ${Math.floor(Math.random() * 100)}%`,
+        );
     }
     return values;
-  }, []);
+  }, [pageLoaded]);
 
   let gradient = [
     `radial-gradient(at ${randomPositions[0]}, ${accent1Value.toString("hex")}80 2px, transparent 70%)`,
