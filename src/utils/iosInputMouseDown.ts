@@ -5,7 +5,7 @@ export function onMouseDown(e: React.MouseEvent<HTMLInputElement>) {
   e.preventDefault();
   let target = e.currentTarget;
   target.style.transform = "translateY(-2000px)";
-  target.setSelectionRange(0, target.value.length);
+  if (target.type === "text") target.setSelectionRange(0, target.value.length);
   target.focus();
   requestAnimationFrame(() => {
     target.style.transform = "";
