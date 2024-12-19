@@ -1,3 +1,11 @@
+.scaleLeafletDocPreview {
+  transform: scale(calc(160 / var(--page-width-unitless)));
+}
+
+.scaleLeafletCanvasPreview {
+  transform: scale(calc(160 / 1272));
+}
+
 @media (min-width: 640px) {
   .scaleLeafletDocPreview {
     transform: scale(calc(192 / var(--page-width-unitless)));
@@ -5,12 +13,4 @@
   .scaleLeafletCanvasPreview {
     transform: scale(calc(192 / 1272));
   }
-}
-
-.scaleLeafletDocPreview {
-  transform: scale(calc(160 / var(--page-width-unitless)));
-}
-
-.scaleLeafletCanvasPreview {
-  transform: scale(calc(160 / 1272));
 }
