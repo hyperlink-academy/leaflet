@@ -10,6 +10,7 @@ import {
   TemplateSmall,
 } from "components/Icons";
 import { Menu, MenuItem } from "components/Layout";
+import { useIsMobile } from "src/hooks/isMobile";
 import { create } from "zustand";
 import { combine, createJSONStorage, persist } from "zustand/middleware";
 
@@ -42,7 +43,15 @@ export const useTemplateState = create(
 export const CreateNewLeafletButton = (props: {
   noLabelOnMobile?: boolean;
 }) => {
+  let isMobile = useIsMobile();
   let templates = useTemplateState((s) => s.templates);
+  let openNewLeaflet = (id: string) => {
+    if (isMobile) {
+      window.location.href = `/${id}?focusFirstBlock`;
+    } else {
+      window.open(`/${id}?focusFirstBlock`, "_blank");
+    }
+  };
   return (
     <Menu
       trigger={
@@ -59,7 +68,7 @@ export const CreateNewLeafletButton = (props: {
       <MenuItem
         onSelect={async () => {
           let id = await createNewLeaflet("doc", false);
-          window.open(`/${id}?focusFirstBlock`, "_blank");
+          openNewLeaflet(id);
         }}
       >
         <BlockDocPageSmall />{" "}
@@ -73,7 +82,7 @@ export const CreateNewLeafletButton = (props: {
       <MenuItem
         onSelect={async () => {
           let id = await createNewLeaflet("canvas", false);
-          window.open(`/${id}?focusFirstBlock`, "_blank");
+          openNewLeaflet(id);
         }}
       >
         <BlockCanvasPageSmall />
@@ -93,7 +102,7 @@ export const CreateNewLeafletButton = (props: {
             key={t.id}
             onSelect={async () => {
               let id = await createNewLeafletFromTemplate(t.id, false);
-              window.open(`/${id}`, "_blank");
+              if (!id.error) openNewLeaflet(id.id);
             }}
           >
             <TemplateSmall />

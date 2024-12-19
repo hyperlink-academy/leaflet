@@ -35,7 +35,7 @@ export async function createNewLeafletFromTemplate(
     .eq("id", template_id)
     .single();
   let rootEntity = res.data?.root_entity;
-  if (!rootEntity || !res.data) return { title: "Leaflet not found" };
+  if (!rootEntity || !res.data) return { error: "Leaflet not found" } as const;
   let { data } = await supabase.rpc("get_facts", {
     root: rootEntity,
   });
@@ -123,5 +123,5 @@ export async function createNewLeafletFromTemplate(
 
   client.end();
   if (redirectUser) redirect(`/${permissionToken.id}`);
-  return permissionToken.id;
+  return { id: permissionToken.id, error: null } as const;
 }
