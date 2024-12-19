@@ -200,7 +200,9 @@ export const ThemeBackgroundProvider = (props: {
       className="LeafletBackgroundWrapper w-full bg-bg-leaflet text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
       style={
         {
-          backgroundImage: `url(${backgroundImage?.data.src}), url(${backgroundImage?.data.fallback})`,
+          backgroundImage: backgroundImage
+            ? `url(${backgroundImage?.data.src}), url(${backgroundImage?.data.fallback})`
+            : undefined,
           backgroundPosition: "center",
           backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
           backgroundSize: !backgroundImageRepeat
