@@ -47,10 +47,6 @@ export const LeafletPreview = (props: {
         <div className="rounded-lg hover:shadow-sm overflow-clip border border-border outline outline-2 outline-transparent outline-offset-1 hover:outline-border bg-bg-leaflet grow w-full h-full">
           {state === "normal" ? (
             <div className="relative w-full h-full">
-              <Link
-                href={"/" + props.token.id}
-                className={`no-underline hover:no-underline text-primary absolute inset-0 z-10 w-full h-full`}
-              ></Link>
               <ThemeBackgroundProvider entityID={root}>
                 <div className="leafletPreview grow shrink-0 h-full w-full px-2 pt-2 sm:px-3 sm:pt-3 flex items-end pointer-events-none">
                   <div
@@ -64,6 +60,10 @@ export const LeafletPreview = (props: {
                   </div>
                 </div>
               </ThemeBackgroundProvider>
+              <Link
+                href={"/" + props.token.id}
+                className={`no-underline hover:no-underline text-primary absolute inset-0 w-full h-full`}
+              ></Link>
             </div>
           ) : (
             <LeafletAreYouSure token={props.token} setState={setState} />
