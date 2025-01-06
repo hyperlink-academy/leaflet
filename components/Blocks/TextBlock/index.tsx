@@ -487,17 +487,26 @@ function useYJSValue(entityID: string) {
 
   useEffect(() => {
     if (!rep.rep) return;
+    let timeout = null as null | number;
     const f = async () => {
-      const update = Y.encodeStateAsUpdate(ydoc);
-      await rep.rep?.mutate.assertFact({
-        entity: entityID,
-        attribute: "block/text",
-        data: {
-          value: base64.fromByteArray(update),
-          type: "text",
-        },
-      });
+      const updateReplicache = async () => {
+        const update = Y.encodeStateAsUpdate(ydoc);
+        await rep.rep?.mutate.assertFact({
+          entity: entityID,
+          attribute: "block/text",
+          data: {
+            value: base64.fromByteArray(update),
+            type: "text",
+          },
+        });
+      };
+      if (timeout) clearTimeout(timeout);
+      updateReplicache();
+      timeout = window.setTimeout(async () => {
+        updateReplicache();
+      }, 20);
     };
+
     yText.observeDeep(f);
     return () => {
       yText.unobserveDeep(f);
