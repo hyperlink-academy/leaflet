@@ -169,7 +169,9 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                   e.currentTarget === e.target && setOpenPicker("leaflet");
                 }}
                 style={{
-                  backgroundImage: `url(${leafletBGImage?.data.src})`,
+                  backgroundImage: leafletBGImage
+                    ? `url(${leafletBGImage.data.src})`
+                    : undefined,
                   backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
                   backgroundPosition: "center",
                   backgroundSize: !leafletBGRepeat
@@ -510,7 +512,9 @@ export const LeafletBGPicker = (props: {
               color={bgColor}
               className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
               style={{
-                backgroundImage: `url(${bgImage?.data.src})`,
+                backgroundImage: bgImage?.data.src
+                  ? `url(${bgImage.data.src})`
+                  : undefined,
                 backgroundSize: "cover",
               }}
             />
@@ -704,7 +708,9 @@ export const PageBGPicker = (props: {
             color={bgColor}
             className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
             style={{
-              backgroundImage: `url(${bgImage?.data.src})`,
+              backgroundImage: bgImage?.data.src
+                ? `url(${bgImage.data.src})`
+                : undefined,
               backgroundPosition: "center",
               backgroundSize: "cover",
             }}
@@ -840,7 +846,9 @@ export const ImageSettings = (props: {
     <>
       <div
         style={{
-          backgroundImage: `url(${image?.data.src})`,
+          backgroundImage: image?.data.src
+            ? `url(${image.data.src})`
+            : undefined,
           backgroundPosition: "center",
           backgroundSize: "cover",
         }}

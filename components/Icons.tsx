@@ -975,6 +975,7 @@ export const UnderlineSmall = (props: Props) => {
 };
 
 export const HighlightSmall = (props: { highlightColor: string } & Props) => {
+  let { highlightColor, ...svgProps } = props;
   return (
     <svg
       width="24"
@@ -982,7 +983,7 @@ export const HighlightSmall = (props: { highlightColor: string } & Props) => {
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      {...props}
+      {...svgProps}
     >
       <path
         fillRule="evenodd"
@@ -994,7 +995,7 @@ export const HighlightSmall = (props: { highlightColor: string } & Props) => {
         fillRule="evenodd"
         clipRule="evenodd"
         d="M20.5 12C20.5 16.6944 16.6944 20.5 12 20.5C7.30558 20.5 3.5 16.6944 3.5 12C3.5 7.93801 6.34926 4.54152 10.1582 3.70007L9.84791 4.18296C9.77021 4.30389 9.72889 4.4446 9.72888 4.58835L9.72851 10.0093L8.63101 11.7402C8.62242 11.7537 8.61431 11.7675 8.60666 11.7814C8.60016 11.7908 8.59388 11.8004 8.58781 11.8101C8.38051 12.1418 8.46302 12.6162 8.76836 13.1359L7.24363 15.6498C6.74131 16.4779 7.3311 17.5381 8.29965 17.5479L11.6224 17.5818C12.2379 17.5881 12.8114 17.2705 13.1328 16.7455L13.4985 16.148C13.9182 16.1939 14.2769 16.1567 14.5378 16.0308C14.6916 15.9756 14.8266 15.8704 14.9178 15.7265L16.0178 13.9918L20.4981 11.8164C20.4994 11.8775 20.5 11.9387 20.5 12ZM12.7875 14.4388C12.5032 14.1651 12.1383 13.8821 11.7882 13.6755C11.5214 13.5181 11.1621 13.3284 10.8268 13.1808C10.733 13.1395 10.6444 13.1029 10.5629 13.072L8.75514 16.0525L11.6391 16.0819C11.727 16.0828 11.809 16.0374 11.8549 15.9624L12.7875 14.4388Z"
-        fill={props.highlightColor}
+        fill={highlightColor}
       />
     </svg>
   );
