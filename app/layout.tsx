@@ -8,6 +8,7 @@ import { PopUpProvider } from "components/Toast";
 import { IdentityProviderServer } from "components/IdentityProviderServer";
 import { headers } from "next/headers";
 import { IPLocationProvider } from "components/Providers/IPLocationProvider";
+import { RouteUIStateManager } from "components/RouteUIStateManger";
 
 export const metadata = {
   title: "Leaflet",
@@ -48,7 +49,7 @@ export default function RootLayout({
 }) {
   let ipLocation = headers().get("X-Vercel-IP-Country");
   return (
-    <html lang="en" className={`${quattro.variable}`}>
+    <html suppressHydrationWarning lang="en" className={`${quattro.variable}`}>
       <body>
         <script
           dangerouslySetInnerHTML={{
@@ -70,6 +71,7 @@ export default function RootLayout({
             <IdentityProviderServer>
               <IPLocationProvider country={ipLocation}>
                 <ViewportSizeLayout>{children}</ViewportSizeLayout>
+                <RouteUIStateManager />
               </IPLocationProvider>
             </IdentityProviderServer>
           </PopUpProvider>
