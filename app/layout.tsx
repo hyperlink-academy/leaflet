@@ -6,6 +6,8 @@ import "./globals.css";
 import localFont from "next/font/local";
 import { PopUpProvider } from "components/Toast";
 import { IdentityProviderServer } from "components/IdentityProviderServer";
+import { headers } from "next/headers";
+import { IPLocationProvider } from "components/Providers/IPLocationProvider";
 
 export const metadata = {
   title: "Leaflet",
@@ -44,6 +46,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  let ipLocation = headers().get("X-Vercel-IP-Country");
   return (
     <html lang="en" className={`${quattro.variable}`}>
       <body>
@@ -65,7 +68,9 @@ export default function RootLayout({
         <InitialPageLoad>
           <PopUpProvider>
             <IdentityProviderServer>
-              <ViewportSizeLayout>{children}</ViewportSizeLayout>
+              <IPLocationProvider country={ipLocation}>
+                <ViewportSizeLayout>{children}</ViewportSizeLayout>
+              </IPLocationProvider>
             </IdentityProviderServer>
           </PopUpProvider>
         </InitialPageLoad>

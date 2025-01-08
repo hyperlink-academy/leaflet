@@ -180,16 +180,19 @@ input[type="number"] {
   @apply px-1;
   @apply py-0.5;
   @apply hover:border-tertiary;
+
   @apply focus:border-tertiary;
   @apply focus:outline;
   @apply focus:outline-tertiary;
   @apply focus:outline-2;
   @apply focus:outline-offset-1;
+
   @apply focus-within:border-tertiary;
   @apply focus-within:outline;
   @apply focus-within:outline-tertiary;
   @apply focus-within:outline-2;
   @apply focus-within:outline-offset-1;
+
   @apply disabled:border-border-light;
   @apply disabled:bg-border-light;
   @apply disabled:text-tertiary;

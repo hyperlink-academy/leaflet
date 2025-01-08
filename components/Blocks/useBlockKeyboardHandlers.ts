@@ -51,7 +51,7 @@ export function useBlockKeyboardHandlers(
         el.tagName === "TEXTAREA" ||
         el.contentEditable === "true"
       ) {
-        if ((el as HTMLInputElement).value !== "") return;
+        if ((el as HTMLInputElement).value !== "" || e.key === "Tab") return;
       }
 
       command?.({

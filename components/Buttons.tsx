@@ -47,6 +47,59 @@ export const ButtonPrimary = forwardRef<
 });
 ButtonPrimary.displayName = "ButtonPrimary";
 
+export const ButtonSecondary = forwardRef<
+  HTMLButtonElement,
+  {
+    fullWidth?: boolean;
+    children: React.ReactNode;
+    compact?: boolean;
+  } & ButtonProps
+>((props, ref) => {
+  return (
+    <button
+      {...props}
+      ref={ref}
+      className={`m-0 h-max ${props.fullWidth ? "w-full" : "w-max"}  ${props.compact ? "py-0 px-1" : "px-2 py-0.5 "}
+  bg-bg-page outline-transparent
+  rounded-md text-base font-bold text-accent-contrast
+  flex gap-2 items-center justify-center shrink-0
+  transparent-outline hover:outline-accent-contrast outline-offset-1
+  border border-accent-contrast
+  disabled:bg-border-light disabled:text-border disabled:hover:text-border
+  ${props.className}
+`}
+    >
+      {props.children}
+    </button>
+  );
+});
+ButtonSecondary.displayName = "ButtonSecondary";
+
+export const ButtonTertiary = forwardRef<
+  HTMLButtonElement,
+  {
+    fullWidth?: boolean;
+    children: React.ReactNode;
+    compact?: boolean;
+  } & ButtonProps
+>((props, ref) => {
+  return (
+    <button
+      {...props}
+      ref={ref}
+      className={`m-0 h-max ${props.fullWidth ? "w-full" : "w-max"}  ${props.compact ? "px-0" : "px-1"}
+  bg-transparent text-base font-bold text-accent-contrast
+  flex gap-2 items-center justify-center shrink-0
+  hover:underline disabled:text-border
+  ${props.className}
+`}
+    >
+      {props.children}
+    </button>
+  );
+});
+ButtonTertiary.displayName = "ButtonTertiary";
+
 export const HoverButton = (props: {
   id?: string;
   icon: React.ReactNode;

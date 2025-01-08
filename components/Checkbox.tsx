@@ -9,7 +9,7 @@ export function Checkbox(props: {
 }) {
   return (
     <label
-      className={`flex gap-2 items-start cursor-pointer shrink-0 ${props.checked ? "text-primary font-bold " : " text-tertiary font-normal"}`}
+      className={`flex w-full gap-2 items-start cursor-pointer ${props.checked ? "text-primary font-bold " : " text-tertiary font-normal"}`}
     >
       <input
         type="checkbox"

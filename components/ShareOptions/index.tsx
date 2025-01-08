@@ -111,7 +111,7 @@ export const ShareButton = (props: {
           );
           smoker({
             position: {
-              x: rect ? rect.left + 80 : 0,
+              x: rect ? rect.left + (rect.right - rect.left) / 2 : 0,
               y: rect ? rect.top + 26 : 0,
             },
             text: props.smokerText,
