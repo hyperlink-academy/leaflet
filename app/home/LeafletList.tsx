@@ -38,7 +38,15 @@ export function LeafletList(props: {
   }, [localLeaflets.length, mutate]);
   let leaflets = identity
     ? identity.permission_token_on_homepage
-        .sort((a, b) => (a.created_at > b.created_at ? -1 : 1))
+        .sort((a, b) =>
+          a.created_at === b.created_at
+            ? a.permission_tokens.id > b.permission_tokens.id
+              ? -1
+              : 1
+            : a.created_at > b.created_at
+              ? -1
+              : 1,
+        )
         .map((ptoh) => ptoh.permission_tokens)
     : localLeaflets
         .sort((a, b) => (a.added_at > b.added_at ? -1 : 1))
