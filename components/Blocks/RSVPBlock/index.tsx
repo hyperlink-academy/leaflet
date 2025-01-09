@@ -300,7 +300,7 @@ function SendUpdateButton(props: { entityID: string }) {
         <label className="flex flex-col font-bold text-secondary">
           <p>Send a Text Blast</p>
           <small className="font-normal text-secondary">
-            Send a short text message to everyone who is <b>Going</b> or a{" "}
+            Send a short message to everyone RSVP&apos;d <b>Going</b> or{" "}
             <b>Maybe</b>.
           </small>
 

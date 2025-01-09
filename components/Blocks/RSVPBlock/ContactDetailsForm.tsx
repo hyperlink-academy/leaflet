@@ -73,7 +73,18 @@ export function ContactDetailsForm({
     return true;
   };
   return state.state === "details" ? (
-    <div className="rsvpForm flex flex-col gap-2">
+    <form
+      className="rsvpForm flex flex-col gap-2"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (data?.authToken) {
+          submit(data.authToken);
+        } else {
+          let tokenId = await createPhoneAuthToken(formState);
+          setState({ state: "confirm", token: tokenId });
+        }
+      }}
+    >
       <div className="rsvpInputs flex sm:flex-row flex-col gap-2 w-fit place-self-center ">
         <label
           htmlFor="rsvp-name-input"
@@ -177,19 +188,12 @@ export function ContactDetailsForm({
             !name
           }
           className="place-self-end"
-          onClick={async () => {
-            if (data?.authToken) {
-              submit(data.authToken);
-            } else {
-              let tokenId = await createPhoneAuthToken(formState);
-              setState({ state: "confirm", token: tokenId });
-            }
-          }}
+          type="submit"
         >
           RSVP as {status === "GOING" ? "Going" : "Maybe"}
         </ButtonPrimary>
       </div>
-    </div>
+    </form>
   ) : (
     <ConfirmationForm
       token={state.token}
@@ -212,7 +216,30 @@ const ConfirmationForm = (props: {
 }) => {
   let smoker = useSmoker();
   return (
-    <div className="flex flex-col gap-2">
+    <form
+      className="flex flex-col gap-2"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        let rect = document
+          .getElementById("rsvp-code-confirm-button")
+          ?.getBoundingClientRect();
+        try {
+          let token = await confirmPhoneAuthToken(props.token, props.value);
+          props.submit(token);
+        } catch (error) {
+          smoker({
+            alignOnMobile: "left",
+            error: true,
+            text: "invalid code!",
+            position: {
+              x: rect ? rect.left + (rect.right - rect.left) / 2 : 0,
+              y: rect ? rect.top + 26 : 0,
+            },
+          });
+          return;
+        }
+      }}
+    >
       <label className="rsvpNameInput relative w-full flex flex-col gap-0.5">
         <div className="absolute top-0.5 left-[6px] text-xs font-bold italic text-tertiary">
           confirmation code
@@ -231,25 +258,13 @@ const ConfirmationForm = (props: {
       <hr className="border-border" />
 
       <ButtonPrimary
+        id="rsvp-code-confirm-button"
         className="place-self-end"
-        onMouseDown={async (e) => {
-          try {
-            let token = await confirmPhoneAuthToken(props.token, props.value);
-            props.submit(token);
-          } catch (error) {
-            smoker({
-              alignOnMobile: "left",
-              error: true,
-              text: "invalid code!",
-              position: { x: e.clientX, y: e.clientY },
-            });
-            return;
-          }
-        }}
+        type="submit"
       >
         Confirm
       </ButtonPrimary>
-    </div>
+    </form>
   );
 };
 
@@ -257,8 +272,8 @@ const ConsentPopover = (props: {}) => {
   return (
     <Popover trigger={<InfoSmall className="text-accent-contrast" />}>
       <div className="text-sm text-secondary">
-        RSVP'ing means you consent to receive WhatsApp messages from the host of
-        this event, via Leaflet!
+        RSVP&apos;ing means you consent to receive WhatsApp messages from the
+        host of this event, via Leaflet!
       </div>
     </Popover>
   );
