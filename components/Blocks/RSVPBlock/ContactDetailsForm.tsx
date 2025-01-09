@@ -13,6 +13,8 @@ import { Separator } from "components/Layout";
 import { createPhoneAuthToken } from "actions/phone_auth/request_phone_auth_token";
 import { Input } from "components/Input";
 import { IPLocationContext } from "components/Providers/IPLocationProvider";
+import { Popover } from "components/Popover";
+import { InfoSmall } from "components/Icons";
 
 export function ContactDetailsForm({
   status,
@@ -148,8 +150,8 @@ export function ContactDetailsForm({
             </div>
           </label>
           <div className="text-xs italic text-tertiary leading-tight">
-            Non-US numbers will receive messages through{" "}
-            <strong>WhatsApp</strong>
+            Currently, all communication will be routed through{" "}
+            <strong>WhatsApp</strong>. SMS coming soon!
           </div>
         </div>
       </div>
@@ -247,16 +249,11 @@ const ConsentPopover = (props: {
   setChecked: (checked: boolean) => void;
 }) => {
   return (
-    <Checkbox
-      checked={props.checked}
-      onChange={() => {
-        props.setChecked(!props.checked);
-      }}
-    >
+    <Popover trigger={<InfoSmall className="text-accent-contrast" />}>
       <div className="text-sm text-secondary">
-        Clicking RSVP means that you are consenting to receive WhatsApp messages
-        from the host of this event, via Leaflet!
+        RSVP'ing means you consent to receive WhatsApp messages from the host of
+        this event, via Leaflet!
       </div>
-    </Checkbox>
+    </Popover>
   );
 };

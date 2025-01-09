@@ -218,7 +218,7 @@ function YourRSVPStatus(props: { entityID: string; compact?: boolean }) {
 function Attendees(props: { entityID: string; className?: string }) {
   let { data, mutate } = useRSVPData();
   let attendees =
-    data?.rsvps.filter((rsvp) => rsvp.entity === props.entityID) || [];
+    data?.rsvps?.filter((rsvp) => rsvp.entity === props.entityID) || [];
   let going = attendees.filter((rsvp) => rsvp.status === "GOING");
   let maybe = attendees.filter((rsvp) => rsvp.status === "MAYBE");
   let notGoing = attendees.filter((rsvp) => rsvp.status === "NOT_GOING");
