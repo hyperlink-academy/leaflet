@@ -21,6 +21,7 @@ import { useToaster } from "components/Toast";
 import { sendUpdateToRSVPS } from "actions/sendUpdateToRSVPS";
 import { useReplicache } from "src/replicache";
 import { ContactDetailsForm } from "./ContactDetailsForm";
+import { Checkbox } from "components/Checkbox";
 
 export type RSVP_Status = Database["public"]["Enums"]["rsvp_status"];
 let Statuses = ["GOING", "NOT_GOING", "MAYBE"];
@@ -283,6 +284,11 @@ function SendUpdateButton(props: { entityID: string }) {
   let [input, setInput] = useState("");
   let toaster = useToaster();
   let [open, setOpen] = useState(false);
+  let [checkedRecipients, setCheckedRecipients] = useState({
+    GOING: true,
+    MAYBE: true,
+    NOT_GOING: false,
+  });
 
   if (!!!permissions.write) return;
   return (
@@ -296,13 +302,13 @@ function SendUpdateButton(props: { entityID: string }) {
         </ButtonPrimary>
       }
     >
-      <div className="rsvpMessageComposer flex flex-col gap-2 w-auto max-w-md">
-        <label className="flex flex-col font-bold text-secondary">
-          <p>Send a Text Blast</p>
-          <small className="font-normal text-secondary">
-            Send a short message to everyone RSVP&apos;d <b>Going</b> or{" "}
-            <b>Maybe</b>.
-          </small>
+      <div className="rsvpMessageComposer flex flex-col gap-2 w-[1000px] max-w-full sm:max-w-md">
+        <div className="flex flex-col font-bold text-secondary">
+          <p>Send a Text Update to</p>
+          <RecipientPicker
+            checked={checkedRecipients}
+            setChecked={setCheckedRecipients}
+          />
 
           <textarea
             id="rsvp-message-input"
@@ -310,9 +316,9 @@ function SendUpdateButton(props: { entityID: string }) {
             onChange={(e) => {
               setInput(e.target.value);
             }}
-            className="input-with-border w-full h-[150px] mt-1 pt-0.5 font-normal text-primary"
+            className="input-with-border w-full h-[150px] mt-3 pt-0.5 font-normal text-primary"
           />
-        </label>
+        </div>
         <div className="flex justify-between items-start">
           <div
             className={`rsvpMessageCharCounter text-sm text-tertiary`}
@@ -337,7 +343,8 @@ function SendUpdateButton(props: { entityID: string }) {
               await sendUpdateToRSVPS(permission_token, {
                 entity: props.entityID,
                 message: input,
-                eventName: "Idk still figuring this out",
+                eventName: document.title,
+                sendto: checkedRecipients,
               });
               toaster({
                 content: <div className="font-bold">Update sent!</div>,
@@ -346,13 +353,68 @@ function SendUpdateButton(props: { entityID: string }) {
               setOpen(false);
             }}
           >
-            Send
+            Send Update
           </ButtonPrimary>
         </div>
       </div>
     </Popover>
   );
 }
+
+const RecipientPicker = (props: {
+  checked: { GOING: boolean; MAYBE: boolean; NOT_GOING: boolean };
+  setChecked: (checked: {
+    GOING: boolean;
+    MAYBE: boolean;
+    NOT_GOING: boolean;
+  }) => void;
+}) => {
+  return (
+    <div className="flex flex-col gap-0.5">
+      {/* <small className="font-normal">
+        Send a text to everyone who RSVP&apos;d:
+      </small> */}
+      <div className="flex gap-4 text-secondary">
+        <Checkbox
+          className="!w-fit"
+          checked={props.checked.GOING}
+          onChange={() => {
+            props.setChecked({
+              ...props.checked, // Spread the existing values
+              GOING: !props.checked.GOING,
+            });
+          }}
+        >
+          Going
+        </Checkbox>
+        <Checkbox
+          className="!w-fit"
+          checked={props.checked.MAYBE}
+          onChange={() => {
+            props.setChecked({
+              ...props.checked, // Spread the existing values
+              MAYBE: !props.checked.MAYBE,
+            });
+          }}
+        >
+          Maybe
+        </Checkbox>
+        <Checkbox
+          className="!w-fit"
+          checked={props.checked.NOT_GOING}
+          onChange={() => {
+            props.setChecked({
+              ...props.checked, // Spread the existing values
+              NOT_GOING: !props.checked.NOT_GOING,
+            });
+          }}
+        >
+          Can&apos;t Go
+        </Checkbox>
+      </div>
+    </div>
+  );
+};
 
 export let useRSVPNameState = create(
   persist(

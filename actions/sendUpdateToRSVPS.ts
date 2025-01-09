@@ -10,7 +10,6 @@ import {
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 import twilio from "twilio";
-import { Message } from "twilio/lib/twiml/MessagingResponse";
 
 const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
 let supabase = createClient<Database>(
@@ -25,7 +24,13 @@ export async function sendUpdateToRSVPS(
     entity,
     message,
     eventName,
-  }: { entity: string; message: string; eventName: string },
+    sendto,
+  }: {
+    entity: string;
+    message: string;
+    eventName: string;
+    sendto: { GOING: boolean; MAYBE: boolean; NOT_GOING: boolean };
+  },
 ) {
   let token_rights = await db
     .select()
@@ -50,13 +55,13 @@ export async function sendUpdateToRSVPS(
   const client = twilio(accountSid, authToken);
 
   for (let rsvp of rsvps) {
-    const result = await client.messages.create({
-      contentSid: "HX2755dab400476ade5effd90e2d964e6c",
-      contentVariables: JSON.stringify({ 1: eventName, 2: message }),
-      from: "whatsapp:+18449523391",
-      messagingServiceSid: "MGffbf9a66770350b25caf3b80b9aac481",
-      to: `whatsapp:${rsvp.phone_rsvps_to_entity.phone_number}`,
-    });
-    console.log(result);
+    if (sendto[rsvp.phone_rsvps_to_entity.status])
+      await client.messages.create({
+        contentSid: "HX2755dab400476ade5effd90e2d964e6c",
+        contentVariables: JSON.stringify({ 1: eventName, 2: message }),
+        from: "whatsapp:+18449523391",
+        messagingServiceSid: "MGffbf9a66770350b25caf3b80b9aac481",
+        to: `whatsapp:${rsvp.phone_rsvps_to_entity.phone_number}`,
+      });
   }
 }
