@@ -202,7 +202,7 @@ function YourRSVPStatus(props: { entityID: string; compact?: boolean }) {
           onClick={() => {
             updateStatus("GOING");
             toaster({
-              content: <div className="font-bold">RSVP updated to Going!</div>,
+              content: <div className="font-bold">Yay! You&apos;re Going!</div>,
               type: "success",
             });
           }}
@@ -217,7 +217,7 @@ function YourRSVPStatus(props: { entityID: string; compact?: boolean }) {
           onClick={() => {
             updateStatus("MAYBE");
             toaster({
-              content: <div className="font-bold">RSVP updated to Maybe</div>,
+              content: <div className="font-bold">You&apos;re a Maybe</div>,
               type: "success",
             });
           }}
@@ -233,9 +233,7 @@ function YourRSVPStatus(props: { entityID: string; compact?: boolean }) {
             updateStatus("NOT_GOING");
             toaster({
               content: (
-                <div className="font-bold">
-                  RSVP updated to Can&apos;t Go...
-                </div>
+                <div className="font-bold">Sorry you can&apos;t make it D:</div>
               ),
               type: "success",
             });
@@ -403,7 +401,7 @@ function SendUpdateButton(props: { entityID: string; primary?: boolean }) {
               setOpen(false);
             }}
           >
-            Text {allRecipients} {allRecipients === 1 ? "Person" : "People"}
+            Text {allRecipients} {allRecipients === 1 ? "Person" : "People"}!
           </ButtonPrimary>
         </div>
       </div>

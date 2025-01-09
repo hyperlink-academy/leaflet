@@ -1,5 +1,5 @@
 "use client";
-import { useSmoker } from "components/Toast";
+import { useSmoker, useToaster } from "components/Toast";
 import { RSVP_Status, State, useRSVPNameState } from ".";
 import { createContext, useContext, useState } from "react";
 import { useRSVPData } from "src/hooks/useRSVPData";
@@ -27,8 +27,7 @@ export function ContactDetailsForm({
 }) {
   let focusWithinStyles =
     "focus-within:border-tertiary focus-within:outline focus-within:outline-2 focus-within:outline-tertiary focus-within:outline-offset-1";
-  let [checked, setChecked] = useState(false);
-
+  let toaster = useToaster();
   let { data, mutate } = useRSVPData();
   let [state, setState] = useState<
     { state: "details" } | { state: "confirm"; token: string }
@@ -79,6 +78,18 @@ export function ContactDetailsForm({
         e.preventDefault();
         if (data?.authToken) {
           submit(data.authToken);
+          toaster({
+            content: (
+              <div className="font-bold">
+                {status === "GOING"
+                  ? "Yay! You're Going!"
+                  : status === "MAYBE"
+                    ? "You're a Maybe"
+                    : "Sorry you can't make it D:"}
+              </div>
+            ),
+            type: "success",
+          });
         } else {
           let tokenId = await createPhoneAuthToken(formState);
           setState({ state: "confirm", token: tokenId });
@@ -184,13 +195,17 @@ export function ContactDetailsForm({
           disabled={
             (!data?.authToken?.phone_number &&
               (!formState.phone_number || !formState.country_code)) ||
-            !!data?.authToken?.phone_number ||
             !name
           }
           className="place-self-end"
           type="submit"
         >
-          RSVP as {status === "GOING" ? "Going" : "Maybe"}
+          RSVP as{" "}
+          {status === "GOING"
+            ? "Going"
+            : status === "MAYBE"
+              ? "Maybe"
+              : "Can't Go"}
         </ButtonPrimary>
       </div>
     </form>
@@ -199,6 +214,7 @@ export function ContactDetailsForm({
       token={state.token}
       value={formState.confirmationCode}
       submit={submit}
+      status={status}
       onChange={(value) =>
         setFormState((state) => ({ ...state, confirmationCode: value }))
       }
@@ -209,12 +225,14 @@ export function ContactDetailsForm({
 const ConfirmationForm = (props: {
   value: string;
   token: string;
+  status: RSVP_Status;
   submit: (
     token: Awaited<ReturnType<typeof confirmPhoneAuthToken>>,
   ) => Promise<boolean>;
   onChange: (v: string) => void;
 }) => {
   let smoker = useSmoker();
+  let toaster = useToaster();
   return (
     <form
       className="flex flex-col gap-2"
@@ -226,6 +244,18 @@ const ConfirmationForm = (props: {
         try {
           let token = await confirmPhoneAuthToken(props.token, props.value);
           props.submit(token);
+          toaster({
+            content: (
+              <div className="font-bold">
+                {props.status === "GOING"
+                  ? "Yay! You're Going!"
+                  : props.status === "MAYBE"
+                    ? "You're a Maybe"
+                    : "Sorry you can't make it D:"}
+              </div>
+            ),
+            type: "success",
+          });
         } catch (error) {
           smoker({
             alignOnMobile: "left",
