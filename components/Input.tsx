@@ -39,3 +39,26 @@ export function Input(
     />
   );
 }
+
+export const InputWithLabel = (
+  props: {
+    label: string;
+  } & JSX.IntrinsicElements["input"],
+) => {
+  let { label, ...inputProps } = props;
+  return (
+    <div>
+      <div className="input-with-border flex flex-col">
+        <label>
+          <div className="text-sm text-tertiary font-bold italic leading-none pt-0.5">
+            {props.label}
+          </div>
+          <Input
+            {...inputProps}
+            className={`appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 ${props.className}`}
+          />
+        </label>
+      </div>
+    </div>
+  );
+};

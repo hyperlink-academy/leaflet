@@ -115,7 +115,7 @@
   }
 
   ::placeholder {
-    @apply text-tertiary !important;
+    @apply text-tertiary;
     @apply italic;
   }
   /*END FONT STYLING*/

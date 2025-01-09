@@ -1,6 +1,6 @@
 import { useReplicache } from "src/replicache";
 import { ShareSmall } from "components/Icons";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getShareLink } from "./getShareLink";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useSmoker } from "components/Toast";
@@ -8,6 +8,15 @@ import { Menu, MenuItem } from "components/Layout";
 import { HoverButton } from "components/Buttons";
 import useSWR from "swr";
 import { useTemplateState } from "app/home/CreateNewButton";
+import LoginForm from "app/login/LoginForm";
+import { AddDomain, DomainOptions } from "./DomainOptions";
+import { useIdentityData } from "components/IdentityProvider";
+
+export type ShareMenuStates =
+  | "default"
+  | "login"
+  | "chooseDomain"
+  | "addDomain";
 
 export let usePublishLink = () => {
   let { permission_token, rootEntity } = useReplicache();
@@ -31,25 +40,17 @@ export let usePublishLink = () => {
   return publishLink;
 };
 
-export function ShareOptions(props: { rootEntity: string }) {
+export function ShareOptions() {
   let { permission_token } = useReplicache();
-  let entity_set = useEntitySetContext();
-  let publishLink = usePublishLink();
-  let [collabLink, setCollabLink] = useState<null | string>(null);
-  useEffect(() => {
-    // strip leading '/' character from pathname
-    setCollabLink(window.location.pathname.slice(1));
-  }, []);
-
-  let smoker = useSmoker();
-
-  let isTemplate = useTemplateState(
-    (s) => !!s.templates.find((t) => t.id === permission_token.id),
-  );
+  let [menuState, setMenuState] = useState<ShareMenuStates>("default");
+  let domainConnected = false;
 
   return (
     <Menu
       className="max-w-xs"
+      onOpenChange={() => {
+        setMenuState("default");
+      }}
       trigger={
         <HoverButton
           icon=<ShareSmall />
@@ -59,6 +60,44 @@ export function ShareOptions(props: { rootEntity: string }) {
         />
       }
     >
+      {menuState === "login" ? (
+        <div className="px-3 py-1">
+          <LoginForm />
+        </div>
+      ) : menuState === "chooseDomain" ? (
+        <DomainOptions
+          setMenuState={setMenuState}
+          domainConnected={domainConnected}
+        />
+      ) : menuState === "addDomain" ? (
+        <AddDomain setMenuState={setMenuState} />
+      ) : (
+        <DefaultOptions
+          setMenuState={setMenuState}
+          domainConnected={domainConnected}
+        />
+      )}
+    </Menu>
+  );
+}
+
+const DefaultOptions = (props: {
+  setMenuState: (state: ShareMenuStates) => void;
+  domainConnected: boolean;
+}) => {
+  let { permission_token } = useReplicache();
+  let publishLink = usePublishLink();
+  let [collabLink, setCollabLink] = useState<null | string>(null);
+  useEffect(() => {
+    // strip leading '/' character from pathname
+    setCollabLink(window.location.pathname.slice(1));
+  }, []);
+
+  let isTemplate = useTemplateState(
+    (s) => !!s.templates.find((t) => t.id === permission_token.id),
+  );
+  return (
+    <>
       {isTemplate && (
         <>
           <ShareButton
@@ -80,18 +119,32 @@ export function ShareOptions(props: { rootEntity: string }) {
       />
       <ShareButton
         text="Publish"
-        subtext="Share a read-only version"
+        subtext=<>
+          {props.domainConnected ? (
+            <>
+              This leaflet is published on{" "}
+              <span className="italic underline">cozylittle.house/recipes</span>
+            </>
+          ) : (
+            "Send the read-only version"
+          )}
+        </>
         smokerText="Publish link copied!"
         id="get-publish-link"
         link={publishLink || ""}
       />
-    </Menu>
+      <hr className="border-border mt-1" />
+      <DomainMenuItem
+        setMenuState={props.setMenuState}
+        domainConnected={props.domainConnected}
+      />
+    </>
   );
-}
+};
 
 export const ShareButton = (props: {
   text: string;
-  subtext: string;
+  subtext: React.ReactNode;
   helptext?: string;
   smokerText: string;
   id: string;
@@ -139,4 +192,51 @@ export const ShareButton = (props: {
       </div>
     </MenuItem>
   );
+};
+
+const DomainMenuItem = (props: {
+  setMenuState: (state: ShareMenuStates) => void;
+  domainConnected: boolean;
+}) => {
+  let { identity } = useIdentityData();
+
+  if (identity === null)
+    return (
+      <div className="text-tertiary font-normal text-sm px-3 py-1">
+        <button
+          className="text-accent-contrast hover:font-bold"
+          onClick={() => {
+            props.setMenuState("login");
+          }}
+        >
+          Log In
+        </button>{" "}
+        to publish on a custom domain!
+      </div>
+    );
+  else
+    return (
+      <>
+        {props.domainConnected ? (
+          <button
+            className="px-3 py-1 text-accent-contrast text-sm hover:font-bold w-fit text-left"
+            onMouseDown={() => {
+              props.setMenuState("chooseDomain");
+            }}
+          >
+            edit custom domain
+          </button>
+        ) : (
+          <MenuItem
+            className="font-normal text-tertiary text-sm"
+            onSelect={(e) => {
+              e.preventDefault();
+              props.setMenuState("chooseDomain");
+            }}
+          >
+            Publish on a custom domain
+          </MenuItem>
+        )}
+      </>
+    );
 };

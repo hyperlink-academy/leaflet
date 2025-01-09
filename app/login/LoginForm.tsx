@@ -6,7 +6,7 @@ import {
 import { loginWithEmailToken } from "actions/login";
 import { getHomeDocs } from "app/home/storage";
 import { ButtonPrimary } from "components/Buttons";
-import { InputWithLabel } from "components/Layout";
+import { InputWithLabel } from "components/Input";
 import { useSmoker, useToaster } from "components/Toast";
 import React, { useState } from "react";
 import useSWR, { mutate } from "swr";
@@ -113,7 +113,7 @@ export default function LoginForm() {
 
   return (
     <div className="flex flex-col gap-3 w-full max-w-sm pb-1">
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col">
         <h3>Log In or Sign Up</h3>
         <div className=" text-secondary">
           Save your leaflets and access them on multiple devices!
