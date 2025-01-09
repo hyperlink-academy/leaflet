@@ -22,6 +22,7 @@ import { sendUpdateToRSVPS } from "actions/sendUpdateToRSVPS";
 import { useReplicache } from "src/replicache";
 import { ContactDetailsForm } from "./ContactDetailsForm";
 import { Checkbox } from "components/Checkbox";
+import { rsvp_status } from "drizzle/schema";
 
 export type RSVP_Status = Database["public"]["Enums"]["rsvp_status"];
 let Statuses = ["GOING", "NOT_GOING", "MAYBE"];
@@ -69,14 +70,17 @@ function RSVPForm(props: { entityID: string }) {
     return permissions.write ? (
       //AND YOU'RE A HOST
       <>
-        <div className="flex sm:flex-row flex-col-reverse sm:gap-0 gap-2 justify-between items-start sm:items-center">
-          <Attendees entityID={props.entityID} className="font-bold" />
+        <div className="flex sm:flex-row flex-col sm:gap-0 gap-2 justify-between">
+          <YourRSVPStatus entityID={props.entityID} />
           <hr className="block border-border sm:hidden w-full my-1" />
-
-          <SendUpdateButton entityID={props.entityID} />
+          <SendUpdateButton entityID={props.entityID} primary />
         </div>
-        <hr className="border-border w-full hidden sm:block" />
-        <YourRSVPStatus entityID={props.entityID} compact />
+        <hr className="border-border sm:block hidden" />
+
+        <Attendees
+          entityID={props.entityID}
+          className="text-sm font-normal sm:pt-0 sm:place-self-start place-self-center pt-1"
+        />
       </>
     ) : (
       // AND YOU'RE A GUEST
@@ -92,39 +96,24 @@ function RSVPForm(props: { entityID: string }) {
     return permissions.write ? (
       //YOU'RE A HOST
       <>
-        <div className="flex sm:flex-row flex-col-reverse sm:gap-0 gap-2 justify-between">
-          <div className="flex flex-row gap-2 items-center">
-            <ButtonPrimary onClick={() => setStatus("GOING")}>
-              Going!
-            </ButtonPrimary>
-            <ButtonSecondary onClick={() => setStatus("MAYBE")}>
-              Maybe
-            </ButtonSecondary>
-            <ButtonTertiary onClick={() => setStatus("NOT_GOING")}>
-              Can&apos;t Go
-            </ButtonTertiary>
-          </div>
-          <hr className="block border-border sm:hidden w-full my-1" />
+        <div className="flex sm:flex-row flex-col sm:gap-0 gap-2 justify-between">
+          <RSVPButtons setStatus={setStatus} />
 
+          <hr className="block border-border sm:hidden w-full my-1" />
           <SendUpdateButton entityID={props.entityID} />
         </div>
         <hr className="border-border sm:block hidden" />
-        <Attendees entityID={props.entityID} className="text-sm sm:pt-0 pt-2" />
+
+        <Attendees
+          entityID={props.entityID}
+          className="font-normal text-sm sm:pt-0 sm:place-self-start place-self-center pt-1"
+        />
       </>
     ) : (
       //YOU'RE A GUEST
       <div className="flex sm:flex-row flex-col justify-between">
-        <div className="flex flex-row gap-2 items-center">
-          <ButtonPrimary onClick={() => setStatus("GOING")}>
-            Going!
-          </ButtonPrimary>
-          <ButtonSecondary onClick={() => setStatus("MAYBE")}>
-            Maybe
-          </ButtonSecondary>
-          <ButtonTertiary onClick={() => setStatus("NOT_GOING")}>
-            Can&apos;t Go
-          </ButtonTertiary>
-        </div>
+        <RSVPButtons setStatus={setStatus} />
+
         <hr className="block border-border sm:hidden w-full my-2" />
 
         <Attendees entityID={props.entityID} className="text-sm" />
@@ -142,9 +131,29 @@ function RSVPForm(props: { entityID: string }) {
     );
 }
 
+const RSVPButtons = (props: { setStatus: (status: RSVP_Status) => void }) => {
+  return (
+    <div className="grid grid-cols-3 sm:flex w-full sm:w-fit  gap-2 items-center">
+      <ButtonPrimary fullWidthOnMobile onClick={() => props.setStatus("GOING")}>
+        Going!
+      </ButtonPrimary>
+      <ButtonPrimary fullWidthOnMobile onClick={() => props.setStatus("MAYBE")}>
+        Maybe
+      </ButtonPrimary>
+      <ButtonPrimary
+        fullWidthOnMobile
+        onClick={() => props.setStatus("NOT_GOING")}
+      >
+        Can&apos;t Go
+      </ButtonPrimary>
+    </div>
+  );
+};
+
 function YourRSVPStatus(props: { entityID: string; compact?: boolean }) {
   let { data, mutate } = useRSVPData();
   let { name } = useRSVPNameState();
+  let toaster = useToaster();
 
   let rsvpStatus = data?.rsvps?.find(
     (rsvp) =>
@@ -177,7 +186,7 @@ function YourRSVPStatus(props: { entityID: string; compact?: boolean }) {
   };
   return (
     <div
-      className={`flex flex-row gap-1 sm:gap-2 font-bold items-center ${props.compact ? "text-sm sm:font-bold font-normal" : ""}`}
+      className={`flex flex-row gap-1 sm:gap-2 font-bold items-center ${props.compact ? "text-sm font-bold " : ""}`}
     >
       {rsvpStatus !== undefined &&
         {
@@ -187,37 +196,60 @@ function YourRSVPStatus(props: { entityID: string; compact?: boolean }) {
         }[rsvpStatus]}
       <Separator classname="mx-1 h-6" />
       {rsvpStatus !== "GOING" && (
-        <ButtonPrimary
+        <ButtonSecondary
           className={props.compact ? "text-sm  !font-normal" : ""}
-          compact={props.compact}
-          onClick={() => updateStatus("GOING")}
+          compact
+          onClick={() => {
+            updateStatus("GOING");
+            toaster({
+              content: <div className="font-bold">RSVP updated to Going!</div>,
+              type: "success",
+            });
+          }}
         >
           Going
-        </ButtonPrimary>
+        </ButtonSecondary>
       )}
       {rsvpStatus !== "MAYBE" && (
         <ButtonSecondary
           className={props.compact ? "text-sm  !font-normal" : ""}
-          compact={props.compact}
-          onClick={() => updateStatus("MAYBE")}
+          compact
+          onClick={() => {
+            updateStatus("MAYBE");
+            toaster({
+              content: <div className="font-bold">RSVP updated to Maybe</div>,
+              type: "success",
+            });
+          }}
         >
           Maybe
         </ButtonSecondary>
       )}
       {rsvpStatus !== "NOT_GOING" && (
-        <ButtonTertiary
+        <ButtonSecondary
+          compact
           className={props.compact ? "text-sm  !font-normal" : ""}
-          onClick={() => updateStatus("NOT_GOING")}
+          onClick={() => {
+            updateStatus("NOT_GOING");
+            toaster({
+              content: (
+                <div className="font-bold">
+                  RSVP updated to Can&apos;t Go...
+                </div>
+              ),
+              type: "success",
+            });
+          }}
         >
           Can&apos;t Go
-        </ButtonTertiary>
+        </ButtonSecondary>
       )}
     </div>
   );
 }
 
 function Attendees(props: { entityID: string; className?: string }) {
-  let { data, mutate } = useRSVPData();
+  let { data } = useRSVPData();
   let attendees =
     data?.rsvps?.filter((rsvp) => rsvp.entity === props.entityID) || [];
   let going = attendees.filter((rsvp) => rsvp.status === "GOING");
@@ -278,7 +310,7 @@ function Attendees(props: { entityID: string; className?: string }) {
   );
 }
 
-function SendUpdateButton(props: { entityID: string }) {
+function SendUpdateButton(props: { entityID: string; primary?: boolean }) {
   let { permissions } = useEntitySetContext();
   let { permission_token } = useReplicache();
   let [input, setInput] = useState("");
@@ -290,6 +322,18 @@ function SendUpdateButton(props: { entityID: string }) {
     NOT_GOING: false,
   });
 
+  let { data, mutate } = useRSVPData();
+  let attendees =
+    data?.rsvps?.filter((rsvp) => rsvp.entity === props.entityID) || [];
+  let going = attendees.filter((rsvp) => rsvp.status === "GOING");
+  let maybe = attendees.filter((rsvp) => rsvp.status === "MAYBE");
+  let notGoing = attendees.filter((rsvp) => rsvp.status === "NOT_GOING");
+
+  let allRecipients =
+    ((checkedRecipients.GOING && going.length) || 0) +
+    ((checkedRecipients.MAYBE && maybe.length) || 0) +
+    ((checkedRecipients.NOT_GOING && notGoing.length) || 0);
+
   if (!!!permissions.write) return;
   return (
     <Popover
@@ -297,14 +341,20 @@ function SendUpdateButton(props: { entityID: string }) {
       open={open}
       onOpenChange={(open) => setOpen(open)}
       trigger={
-        <ButtonPrimary fullWidthOnMobile>
-          <UpdateSmall /> Send an Update
-        </ButtonPrimary>
+        props.primary ? (
+          <ButtonPrimary fullWidthOnMobile>
+            <UpdateSmall /> Send a Text Blast
+          </ButtonPrimary>
+        ) : (
+          <ButtonSecondary fullWidthOnMobile>
+            <UpdateSmall /> Send a Text Blast
+          </ButtonSecondary>
+        )
       }
     >
       <div className="rsvpMessageComposer flex flex-col gap-2 w-[1000px] max-w-full sm:max-w-md">
         <div className="flex flex-col font-bold text-secondary">
-          <p>Send a Text Update to</p>
+          <h3>Send a Text Blast to</h3>
           <RecipientPicker
             checked={checkedRecipients}
             setChecked={setCheckedRecipients}
@@ -353,7 +403,7 @@ function SendUpdateButton(props: { entityID: string }) {
               setOpen(false);
             }}
           >
-            Send Update
+            Text {allRecipients} {allRecipients === 1 ? "Person" : "People"}
           </ButtonPrimary>
         </div>
       </div>
