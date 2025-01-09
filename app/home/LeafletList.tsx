@@ -40,7 +40,7 @@ export function LeafletList(props: {
     ? identity.permission_token_on_homepage
         .sort((a, b) =>
           a.created_at === b.created_at
-            ? a.permission_tokens.id > b.permission_tokens.id
+            ? a.permission_tokens.root_entity > b.permission_tokens.root_entity
               ? -1
               : 1
             : a.created_at > b.created_at
