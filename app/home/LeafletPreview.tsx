@@ -5,7 +5,6 @@ import {
   ThemeProvider,
 } from "components/ThemeManager/ThemeProvider";
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-aria-components";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import {
   PermissionToken,
@@ -24,6 +23,8 @@ import { TemplateSmall } from "components/Icons";
 import { theme } from "tailwind.config";
 import { useTemplateState } from "./CreateNewButton";
 import styles from "./LeafletPreview.module.css";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export const LeafletPreview = (props: {
   index: number;
@@ -40,6 +41,7 @@ export const LeafletPreview = (props: {
     props.leaflet_id;
   let firstPage = useEntity(root, "root/page")[0];
   let page = firstPage?.data.value || root;
+  let router = useRouter();
 
   return (
     <div className="relative max-h-40 h-40">
@@ -60,10 +62,7 @@ export const LeafletPreview = (props: {
                   </div>
                 </div>
               </ThemeBackgroundProvider>
-              <Link
-                href={"/" + props.token.id}
-                className={`no-underline hover:no-underline text-primary absolute inset-0 w-full h-full`}
-              ></Link>
+              <LeafletPreviewLink id={props.token.id} />
             </div>
           ) : (
             <LeafletAreYouSure token={props.token} setState={setState} />
@@ -202,5 +201,18 @@ const LeafletTemplateIndicator = (props: { isTemplate: boolean }) => {
     <div className="absolute -top-3 right-1">
       <TemplateSmall fill={theme.colors["bg-page"]} />
     </div>
+  );
+};
+
+const LeafletPreviewLink = (props: { id: string }) => {
+  let [prefetch, setPrefetch] = useState(false);
+  return (
+    <Link
+      onMouseEnter={() => setPrefetch(true)}
+      onPointerDown={() => setPrefetch(true)}
+      prefetch={prefetch}
+      href={`/${props.id}`}
+      className={`no-underline hover:no-underline text-primary absolute inset-0 w-full h-full`}
+    />
   );
 };

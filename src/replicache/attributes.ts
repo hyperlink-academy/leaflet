@@ -237,6 +237,7 @@ export type Data<A extends keyof typeof Attributes> = {
     type: "block-type-union";
     value:
       | "datetime"
+      | "rsvp"
       | "text"
       | "image"
       | "card"

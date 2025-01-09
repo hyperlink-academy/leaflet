@@ -9,6 +9,8 @@ import { createServerClient } from "@supabase/ssr";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Leaflet } from "./Leaflet";
 import { scanIndexLocal } from "src/replicache/utils";
+import { getRSVPData } from "actions/getRSVPData";
+import { RSVPDataProvider } from "components/RSVPDataProvider";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -48,16 +50,21 @@ export default async function LeafletPage(props: Props) {
       </div>
     );
 
-  let { data } = await supabase.rpc("get_facts", {
-    root: rootEntity,
-  });
+  let [{ data }, identity_data] = await Promise.all([
+    supabase.rpc("get_facts", {
+      root: rootEntity,
+    }),
+    getRSVPData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
+  ]);
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
   return (
-    <Leaflet
-      initialFacts={initialFacts}
-      leaflet_id={rootEntity}
-      token={res.data}
-    />
+    <RSVPDataProvider data={identity_data}>
+      <Leaflet
+        initialFacts={initialFacts}
+        leaflet_id={rootEntity}
+        token={res.data}
+      />
+    </RSVPDataProvider>
   );
 }
 

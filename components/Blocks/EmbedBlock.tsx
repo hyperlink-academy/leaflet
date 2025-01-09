@@ -128,7 +128,7 @@ const BlockLinkInput = (props: BlockProps) => {
       },
     });
   };
-  let smoke = useSmoker();
+  let smoker = useSmoker();
 
   return (
     <div>
@@ -153,7 +153,7 @@ const BlockLinkInput = (props: BlockProps) => {
               if (!linkValue) return;
               if (!isUrl(linkValue)) {
                 let rect = e.currentTarget.getBoundingClientRect();
-                smoke({
+                smoker({
                   error: true,
                   text: "invalid url!",
                   position: { x: rect.left, y: rect.top - 8 },
@@ -170,7 +170,7 @@ const BlockLinkInput = (props: BlockProps) => {
             onMouseDown={(e) => {
               e.preventDefault();
               if (!linkValue || linkValue === "") {
-                smoke({
+                smoker({
                   error: true,
                   text: "no url!",
                   position: { x: e.clientX, y: e.clientY },
@@ -178,7 +178,7 @@ const BlockLinkInput = (props: BlockProps) => {
                 return;
               }
               if (!isUrl(linkValue)) {
-                smoke({
+                smoker({
                   error: true,
                   text: "invalid url!",
                   position: { x: e.clientX, y: e.clientY },

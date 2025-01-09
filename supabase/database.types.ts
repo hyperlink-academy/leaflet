@@ -323,6 +323,71 @@ export type Database = {
           },
         ]
       }
+      phone_number_auth_tokens: {
+        Row: {
+          confirmation_code: string
+          confirmed: boolean
+          country_code: string
+          created_at: string
+          id: string
+          phone_number: string
+        }
+        Insert: {
+          confirmation_code: string
+          confirmed?: boolean
+          country_code: string
+          created_at?: string
+          id?: string
+          phone_number: string
+        }
+        Update: {
+          confirmation_code?: string
+          confirmed?: boolean
+          country_code?: string
+          created_at?: string
+          id?: string
+          phone_number?: string
+        }
+        Relationships: []
+      }
+      phone_rsvps_to_entity: {
+        Row: {
+          country_code: string
+          created_at: string
+          entity: string
+          id: string
+          name: string
+          phone_number: string
+          status: Database["public"]["Enums"]["rsvp_status"]
+        }
+        Insert: {
+          country_code: string
+          created_at?: string
+          entity: string
+          id?: string
+          name?: string
+          phone_number: string
+          status: Database["public"]["Enums"]["rsvp_status"]
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          entity?: string
+          id?: string
+          name?: string
+          phone_number?: string
+          status?: Database["public"]["Enums"]["rsvp_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phone_rsvps_to_entity_entity_fkey"
+            columns: ["entity"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       replicache_clients: {
         Row: {
           client_group: string
@@ -387,7 +452,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      rsvp_status: "GOING" | "NOT_GOING" | "MAYBE"
     }
     CompositeTypes: {
       [_ in never]: never

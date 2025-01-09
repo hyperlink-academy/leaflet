@@ -20,6 +20,7 @@ type Smoke = {
   text: React.ReactNode;
   static?: boolean;
   error?: boolean;
+  alignOnMobile?: "left" | "right" | "center" | undefined;
 };
 
 type Smokes = Array<Smoke & { key: string }>;
@@ -76,6 +77,7 @@ export const PopUpProvider: React.FC<React.PropsWithChildren<unknown>> = (
           error={smoke.error}
           key={smoke.key}
           static={smoke.static}
+          alignOnMobile={smoke.alignOnMobile}
         >
           {smoke.text}
         </Smoke>
@@ -136,15 +138,23 @@ const Smoke: React.FC<
     y: number;
     error?: boolean;
     static?: boolean;
+    alignOnMobile?: "left" | "right" | "center" | undefined;
   }>
 > = (props) => {
   return (
     <div
-      className={`smoke text-center pointer-events-none absolute z-50 rounded-full px-2 py-1 text-sm  ${
-        props.error
-          ? "border-white bg-[#dc143c] text-white border font-bold"
-          : "bg-accent-1 text-accent-2"
-      }`}
+      className={`smoke w-max text-center pointer-events-none absolute z-50 rounded-full px-2 py-1 text-sm sm:-translate-x-1/2  ${
+        props.alignOnMobile === "left"
+          ? "-translate-x-full"
+          : props.alignOnMobile === "right"
+            ? ""
+            : "-translate-x-1/2"
+      }
+        ${
+          props.error
+            ? "border-white bg-[#dc143c] text-white border font-bold"
+            : "bg-accent-1 text-accent-2"
+        }`}
     >
       <style jsx>{`
         .smoke {

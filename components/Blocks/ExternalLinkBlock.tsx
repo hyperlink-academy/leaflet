@@ -42,9 +42,9 @@ export const ExternalLinkBlock = (
         id={props.preview ? undefined : elementId.block(props.entityID).input}
         className={`
           w-full h-[104px] p-2
-          text-tertiary hover:text-accent-contrast hover:cursor-pointer 
-          flex flex-auto gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg 
-          ${isSelected ? "border-2 border-tertiary" : "border border-border"} 
+          text-tertiary hover:text-accent-contrast hover:cursor-pointer
+          flex flex-auto gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg
+          ${isSelected ? "border-2 border-tertiary" : "border border-border"}
           ${props.pageType === "canvas" && "bg-bg-page"}`}
         onMouseDown={() => {
           focusBlock(
@@ -153,7 +153,7 @@ const BlockLinkInput = (props: BlockProps) => {
       { type: "start" },
     );
   };
-  let smoke = useSmoker();
+  let smoker = useSmoker();
 
   return (
     <div className={`max-w-sm flex gap-2 rounded-md text-secondary`}>
@@ -178,7 +178,8 @@ const BlockLinkInput = (props: BlockProps) => {
               if (!linkValue) return;
               if (!isUrl(linkValue)) {
                 let rect = e.currentTarget.getBoundingClientRect();
-                smoke({
+                smoker({
+                  alignOnMobile: "left",
                   error: true,
                   text: "invalid url!",
                   position: { x: rect.left, y: rect.top - 8 },
@@ -196,7 +197,8 @@ const BlockLinkInput = (props: BlockProps) => {
             onMouseDown={(e) => {
               e.preventDefault();
               if (!linkValue || linkValue === "") {
-                smoke({
+                smoker({
+                  alignOnMobile: "left",
                   error: true,
                   text: "no url!",
                   position: { x: e.clientX, y: e.clientY },
@@ -204,7 +206,8 @@ const BlockLinkInput = (props: BlockProps) => {
                 return;
               }
               if (!isUrl(linkValue)) {
-                smoke({
+                smoker({
+                  alignOnMobile: "left",
                   error: true,
                   text: "invalid url!",
                   position: { x: e.clientX, y: e.clientY },

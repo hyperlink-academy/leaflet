@@ -15,7 +15,7 @@ export function HomeButton() {
     return (
       <>
         {isSubpage && (
-          <Link href={`/${params.leaflet_id}`}>
+          <Link href={`/${params.leaflet_id}`} prefetch>
             <HoverButton
               noLabelOnMobile
               icon={<BackToLeafletSmall />}
@@ -26,7 +26,7 @@ export function HomeButton() {
           </Link>
         )}
 
-        <Link href="/home">
+        <Link href="/home" prefetch>
           <HoverButton
             noLabelOnMobile
             icon={<HomeSmall />}
