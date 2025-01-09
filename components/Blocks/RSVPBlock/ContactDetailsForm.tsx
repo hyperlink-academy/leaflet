@@ -15,6 +15,7 @@ import { Input } from "components/Input";
 import { IPLocationContext } from "components/Providers/IPLocationProvider";
 import { Popover } from "components/Popover";
 import { InfoSmall } from "components/Icons";
+import { theme } from "tailwind.config";
 
 export function ContactDetailsForm({
   status,
@@ -105,14 +106,23 @@ export function ContactDetailsForm({
             </div>
             <div className="flex gap-2 ">
               <div className="flex items-center gap-1">
-                <span>+</span>
+                <span
+                  style={{
+                    color:
+                      formState.country_code === ""
+                        ? theme.colors.tertiary
+                        : theme.colors.primary,
+                  }}
+                >
+                  +
+                </span>
                 <Input
                   onKeyDown={(e) => {
                     if (e.key === "Backspace" && !e.currentTarget.value)
                       e.preventDefault();
                   }}
                   disabled={!!data?.authToken?.phone_number}
-                  className="w-10 bg-transparent"
+                  className="w-10 bg-transparent appearance-none focus:outline-0"
                   placeholder="1"
                   maxLength={4}
                   inputMode="numeric"
@@ -158,14 +168,13 @@ export function ContactDetailsForm({
 
       <hr className="border-border" />
       <div className="flex flex-row gap-2 w-full items-center justify-end">
-        <ConsentPopover checked={checked} setChecked={setChecked} />
+        <ConsentPopover />
         <ButtonPrimary
           disabled={
             (!data?.authToken?.phone_number &&
-              (!checked ||
-                !formState.phone_number ||
-                !formState.country_code)) ||
-            (!!data?.authToken?.phone_number && !checked)
+              (!formState.phone_number || !formState.country_code)) ||
+            !!data?.authToken?.phone_number ||
+            !name
           }
           className="place-self-end"
           onClick={async () => {
@@ -244,10 +253,7 @@ const ConfirmationForm = (props: {
   );
 };
 
-const ConsentPopover = (props: {
-  checked: boolean;
-  setChecked: (checked: boolean) => void;
-}) => {
+const ConsentPopover = (props: {}) => {
   return (
     <Popover trigger={<InfoSmall className="text-accent-contrast" />}>
       <div className="text-sm text-secondary">
