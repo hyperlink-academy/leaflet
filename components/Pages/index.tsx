@@ -221,7 +221,9 @@ const DocContent = (props: { entityID: string }) => {
         ${isFocused ? " border-border" : "border-border-light"}
         `}
         style={{
-          backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
+          backgroundImage: cardBackgroundImage
+            ? `url(${cardBackgroundImage.data.src}), url(${cardBackgroundImage.data.fallback})`
+            : undefined,
           backgroundRepeat: cardBackgroundImageRepeat ? "repeat" : "no-repeat",
           backgroundPosition: "center",
           backgroundSize: !cardBackgroundImageRepeat

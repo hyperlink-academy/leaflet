@@ -441,7 +441,9 @@ export const CanvasBackground = (props: { entityID: string }) => {
     <div
       className="w-full h-full pointer-events-none"
       style={{
-        backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
+        backgroundImage: cardBackgroundImage
+          ? `url(${cardBackgroundImage.data.src}), url(${cardBackgroundImage.data.fallback})`
+          : undefined,
         backgroundRepeat: "repeat",
         backgroundPosition: "center",
         backgroundSize: cardBackgroundImageRepeat?.data.value || 500,
