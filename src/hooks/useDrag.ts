@@ -76,7 +76,6 @@ export const useDrag = (args: {
     window.addEventListener(
       "touchmove",
       (e) => {
-        e.preventDefault();
         if (args.delay && touchStart.current) {
           const deltaX = e.touches[0].clientX - touchStart.current.x;
           const deltaY = e.touches[0].clientY - touchStart.current.y;
