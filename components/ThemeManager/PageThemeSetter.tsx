@@ -81,7 +81,9 @@ export const PageThemeSetter = (props: { entityID: string }) => {
       <div
         className="pageThemeSetterContent bg-bg-leaflet w-80 p-3 pb-0 flex flex-col gap-2 rounded-md -mb-1"
         style={{
-          backgroundImage: `url(${leafletBGImage?.data.src})`,
+          backgroundImage: leafletBGImage
+            ? `url(${leafletBGImage.data.src})`
+            : undefined,
           backgroundPosition: "center",
           backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
           backgroundSize: !leafletBGRepeat
@@ -191,7 +193,9 @@ export const PageThemeSetter = (props: { entityID: string }) => {
           <div
             className="background absolute top-0 right-0 bottom-0 left-0 z-0  rounded-t-lg"
             style={{
-              backgroundImage: `url(${pageBGImage?.data.src})`,
+              backgroundImage: pageBGImage
+                ? `url(${pageBGImage.data.src})`
+                : undefined,
 
               backgroundRepeat: pageBGRepeat ? "repeat" : "no-repeat",
               opacity: pageBGOpacity?.data.value || 1,

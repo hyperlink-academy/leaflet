@@ -31,7 +31,7 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
       <div
         className={`w-full cursor-pointer
         pageLinkBlockWrapper relative group/pageLinkBlock
-        bg-bg-page shadow-sm 
+        bg-bg-page shadow-sm
         flex overflow-clip
         ${isSelected ? "block-border-selected " : "block-border"}
         ${isOpen && "!border-tertiary"}
@@ -164,7 +164,9 @@ export function PagePreview(props: { entityID: string }) {
       pointer-events-none
       `}
           style={{
-            backgroundImage: `url(${cardBackgroundImage?.data.src}), url(${cardBackgroundImage?.data.fallback})`,
+            backgroundImage: cardBackgroundImage
+              ? `url(${cardBackgroundImage.data.src}), url(${cardBackgroundImage.data.fallback})`
+              : undefined,
             backgroundRepeat: cardBackgroundImageRepeat
               ? "repeat"
               : "no-repeat",
