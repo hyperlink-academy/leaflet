@@ -76,6 +76,7 @@ export const useDrag = (args: {
     window.addEventListener(
       "touchmove",
       (e) => {
+        e.preventDefault();
         if (args.delay && touchStart.current) {
           const deltaX = e.touches[0].clientX - touchStart.current.x;
           const deltaY = e.touches[0].clientY - touchStart.current.y;
@@ -102,6 +103,7 @@ export const useDrag = (args: {
     window.addEventListener(
       "pointermove",
       (e: PointerEvent) => {
+        e.preventDefault();
         currentDragDelta.current.x = e.clientX - dragStart.x;
         currentDragDelta.current.y = e.clientY - dragStart.y;
         setDragDelta({ ...currentDragDelta.current });
