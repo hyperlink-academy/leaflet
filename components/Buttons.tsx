@@ -137,14 +137,17 @@ export const TooltipButton = (props: {
   disabled?: boolean;
   className?: string;
   children: React.ReactNode;
-  content: React.ReactNode;
+  tooltipContent: React.ReactNode;
   side?: "top" | "right" | "bottom" | "left" | undefined;
   open?: boolean;
+  delayDuration?: number;
 }) => {
   return (
     // toolbar button does not control the highlight theme setter
     // if toolbar button is updated, be sure to update there as well
-    <RadixTooltip.TooltipProvider>
+    <RadixTooltip.TooltipProvider
+      delayDuration={props.delayDuration ? props.delayDuration : 400}
+    >
       <RadixTooltip.Root open={props.open}>
         <RadixTooltip.Trigger
           disabled={props.disabled}
@@ -165,7 +168,7 @@ export const TooltipButton = (props: {
               alignOffset={12}
               className="z-10 bg-border rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
             >
-              {props.content}
+              {props.tooltipContent}
               <RadixTooltip.Arrow
                 asChild
                 width={16}
