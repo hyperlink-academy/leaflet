@@ -114,6 +114,7 @@ function ArrowUp({ e, props }: Args) {
   if (!prevBlock) return;
 }
 
+let debounced: null | number = null;
 async function Backspace({
   e,
   props,
@@ -140,6 +141,9 @@ async function Backspace({
     // ...and areYouSure state is false, set it to true
     if (!areYouSure) {
       setAreYouSure(true);
+      debounced = window.setTimeout(() => {
+        debounced = null;
+      }, 300);
       return;
     }
     // ... and areYouSure state is true,
@@ -147,6 +151,13 @@ async function Backspace({
     // if there is a page to close, close it and remove the block
     if (areYouSure) {
       e.preventDefault();
+      if (debounced) {
+        window.clearTimeout(debounced);
+        debounced = window.setTimeout(() => {
+          debounced = null;
+        }, 300);
+        return;
+      }
       return deleteBlock([props.entityID].flat(), rep);
     }
   }
