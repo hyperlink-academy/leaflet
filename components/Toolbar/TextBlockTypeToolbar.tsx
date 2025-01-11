@@ -28,38 +28,39 @@ export const TextBlockTypeToolbar = (props: {
   let setLevel = useCallback(
     async (level: number) => {
       if (!focusedBlock) return;
+      let entityID = focusedBlock.entityID;
       if (
         blockType?.data.value !== "text" &&
         blockType?.data.value !== "heading"
       ) {
         return;
       }
+      await rep?.mutate.assertFact({
+        entity: entityID,
+        attribute: "block/heading-level",
+        data: { type: "number", value: level },
+      });
       if (blockType.data.value === "text") {
-        let existingEditor =
-          useEditorStates.getState().editorStates[focusedBlock.entityID];
+        let existingEditor = useEditorStates.getState().editorStates[entityID];
         let selection = existingEditor?.editor.selection;
         await rep?.mutate.assertFact({
-          entity: focusedBlock.entityID,
+          entity: entityID,
           attribute: "block/type",
           data: { type: "block-type-union", value: "heading" },
         });
 
-        let newEditor =
-          useEditorStates.getState().editorStates[focusedBlock.entityID];
-        if (!newEditor || !selection) return;
-        newEditor.view?.dispatch(
-          newEditor.editor.tr.setSelection(
-            TextSelection.create(newEditor.editor.doc, selection.anchor),
-          ),
-        );
+        setTimeout(() => {
+          let newEditor = useEditorStates.getState().editorStates[entityID];
+          if (!newEditor || !selection) return;
+          newEditor.view?.dispatch(
+            newEditor.editor.tr.setSelection(
+              TextSelection.create(newEditor.editor.doc, selection.anchor),
+            ),
+          );
 
-        newEditor.view?.focus();
+          newEditor.view?.focus();
+        }, 20);
       }
-      rep?.mutate.assertFact({
-        entity: focusedBlock.entityID,
-        attribute: "block/heading-level",
-        data: { type: "number", value: level },
-      });
     },
     [rep, focusedBlock, blockType],
   );
