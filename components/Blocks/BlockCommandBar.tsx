@@ -110,9 +110,9 @@ export const BlockCommandBar = ({
           ref={ref}
           onOpenAutoFocus={(e) => e.preventDefault()}
           className={`
-            commandMenuContent group/cmd-menu 
-            z-20 w-[264px] 
-            flex data-[side=top]:items-end items-start 
+            commandMenuContent group/cmd-menu
+            z-20 w-[264px]
+            flex data-[side=top]:items-end items-start
             `}
         >
           <NestedCardThemeProvider>
@@ -172,7 +172,10 @@ const CommandResult = (props: {
           ? props.setHighlighted(undefined)
           : props.setHighlighted(props.name);
       }}
-      onMouseDown={() => props.onSelect()}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        props.onSelect();
+      }}
     >
       <div className="text-tertiary w-8 shrink-0 flex justify-center">
         {props.icon}
