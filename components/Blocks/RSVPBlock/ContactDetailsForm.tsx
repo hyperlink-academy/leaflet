@@ -8,7 +8,7 @@ import { submitRSVP } from "actions/phone_rsvp_to_event";
 
 import { countryCodes } from "src/constants/countryCodes";
 import { Checkbox } from "components/Checkbox";
-import { ButtonPrimary } from "components/Buttons";
+import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { Separator } from "components/Layout";
 import { createPhoneAuthToken } from "actions/phone_auth/request_phone_auth_token";
 import { Input } from "components/Input";
@@ -17,19 +17,17 @@ import { Popover } from "components/Popover";
 import { InfoSmall } from "components/Icons";
 import { theme } from "tailwind.config";
 
-export function ContactDetailsForm({
-  status,
-  entityID,
-}: {
+export function ContactDetailsForm(props: {
   status: RSVP_Status;
   entityID: string;
   setState: (s: State) => void;
 }) {
+  let { status, entityID, setState } = props;
   let focusWithinStyles =
     "focus-within:border-tertiary focus-within:outline focus-within:outline-2 focus-within:outline-tertiary focus-within:outline-offset-1";
   let toaster = useToaster();
   let { data, mutate } = useRSVPData();
-  let [state, setState] = useState<
+  let [contactFormState, setContactFormState] = useState<
     { state: "details" } | { state: "confirm"; token: string }
   >({ state: "details" });
   let { name, setName } = useRSVPNameState();
@@ -40,7 +38,6 @@ export function ContactDetailsForm({
     phone_number: "",
     confirmationCode: "",
   });
-  let [enterNewNumber, setEnterNewNumber] = useState(false);
 
   let submit = async (
     token: Awaited<ReturnType<typeof confirmPhoneAuthToken>>,
@@ -71,7 +68,7 @@ export function ContactDetailsForm({
     });
     return true;
   };
-  return state.state === "details" ? (
+  return contactFormState.state === "details" ? (
     <form
       className="rsvpForm flex flex-col gap-2"
       onSubmit={async (e) => {
@@ -92,7 +89,7 @@ export function ContactDetailsForm({
           });
         } else {
           let tokenId = await createPhoneAuthToken(formState);
-          setState({ state: "confirm", token: tokenId });
+          setContactFormState({ state: "confirm", token: tokenId });
         }
       }}
     >
@@ -191,6 +188,13 @@ export function ContactDetailsForm({
       <hr className="border-border" />
       <div className="flex flex-row gap-2 w-full items-center justify-end">
         <ConsentPopover />
+        <ButtonTertiary
+          onMouseDown={() => {
+            setState({ state: "default" });
+          }}
+        >
+          Back
+        </ButtonTertiary>
         <ButtonPrimary
           disabled={
             (!data?.authToken?.phone_number &&
@@ -211,7 +215,7 @@ export function ContactDetailsForm({
     </form>
   ) : (
     <ConfirmationForm
-      token={state.token}
+      token={contactFormState.token}
       value={formState.confirmationCode}
       submit={submit}
       status={status}

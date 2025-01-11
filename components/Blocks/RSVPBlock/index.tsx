@@ -38,16 +38,34 @@ export function RSVPBlock(props: BlockProps) {
   );
   return (
     <div
-      className={`rsvp flex flex-col sm:gap-2 border bg-test p-3 w-full rounded-lg ${isSelected ? "block-border-selected " : "block-border"}`}
+      className={`rsvp relative flex flex-col gap-1 border  p-3 w-full rounded-lg  place-items-center justify-center ${isSelected ? "block-border-selected " : "block-border"}`}
       style={{
         backgroundColor:
-          "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
+          "color-mix(in oklab, rgb(var(--accent-1)), rgb(var(--bg-page)) 85%)",
       }}
     >
       <RSVPForm entityID={props.entityID} />
     </div>
   );
 }
+
+const RSVPBackground = () => {
+  return (
+    <div
+      className="absolute top-0 bottom-0 left-0 right-0 bg-accent-1 z-0"
+      style={{
+        opacity:
+          theme.colors["accent-contrast"] === theme.colors["accent-1"]
+            ? 1
+            : 0.4,
+        maskImage: "url(./RSVPBackground/wavy.svg)",
+        maskRepeat: "repeat repeat",
+        maskPosition: "center",
+        maskSize: "64px",
+      }}
+    />
+  );
+};
 
 function RSVPForm(props: { entityID: string }) {
   let [state, setState] = useState<State>({ state: "default" });
@@ -67,57 +85,23 @@ function RSVPForm(props: { entityID: string }) {
 
   // IF YOU HAVE ALREADY RSVP'D
   if (rsvpStatus)
-    return permissions.write ? (
-      //AND YOU'RE A HOST
+    return (
       <>
-        <div className="flex sm:flex-row flex-col sm:gap-0 gap-2 justify-between">
-          <YourRSVPStatus entityID={props.entityID} />
-          <hr className="block border-border sm:hidden w-full my-1" />
-          <SendUpdateButton entityID={props.entityID} primary />
-        </div>
-        <hr className="border-border sm:block hidden" />
+        {permissions.write && <SendUpdateButton entityID={props.entityID} />}
 
-        <Attendees
-          entityID={props.entityID}
-          className="text-sm font-normal sm:pt-0 sm:place-self-start place-self-center pt-1"
-        />
-      </>
-    ) : (
-      // AND YOU'RE A GUEST
-      <div className="flex sm:flex-row flex-col justify-between items-start sm:items-center">
         <YourRSVPStatus entityID={props.entityID} />
-        <hr className="block border-border sm:hidden w-full my-2" />
-        <Attendees entityID={props.entityID} className="font-normal text-sm" />
-      </div>
+        <Attendees entityID={props.entityID} />
+      </>
     );
 
   // IF YOU HAVEN'T RSVP'D
   if (state.state === "default")
-    return permissions.write ? (
-      //YOU'RE A HOST
+    return (
       <>
-        <div className="flex sm:flex-row flex-col sm:gap-0 gap-2 justify-between">
-          <RSVPButtons setStatus={setStatus} />
-
-          <hr className="block border-border sm:hidden w-full my-1" />
-          <SendUpdateButton entityID={props.entityID} />
-        </div>
-        <hr className="border-border sm:block hidden" />
-
-        <Attendees
-          entityID={props.entityID}
-          className="font-normal text-sm sm:pt-0 sm:place-self-start place-self-center pt-1"
-        />
-      </>
-    ) : (
-      //YOU'RE A GUEST
-      <div className="flex sm:flex-row flex-col justify-between">
+        {permissions.write && <SendUpdateButton entityID={props.entityID} />}
         <RSVPButtons setStatus={setStatus} />
-
-        <hr className="block border-border sm:hidden w-full my-2" />
-
-        <Attendees entityID={props.entityID} className="text-sm" />
-      </div>
+        <Attendees entityID={props.entityID} className="" />
+      </>
     );
 
   // IF YOU ARE CURRENTLY CONFIRMING YOUR CONTACT DETAILS
@@ -133,19 +117,26 @@ function RSVPForm(props: { entityID: string }) {
 
 const RSVPButtons = (props: { setStatus: (status: RSVP_Status) => void }) => {
   return (
-    <div className="grid grid-cols-3 sm:flex w-full sm:w-fit  gap-2 items-center">
-      <ButtonPrimary fullWidthOnMobile onClick={() => props.setStatus("GOING")}>
-        Going!
-      </ButtonPrimary>
-      <ButtonPrimary fullWidthOnMobile onClick={() => props.setStatus("MAYBE")}>
-        Maybe
-      </ButtonPrimary>
-      <ButtonPrimary
-        fullWidthOnMobile
-        onClick={() => props.setStatus("NOT_GOING")}
-      >
-        Can&apos;t Go
-      </ButtonPrimary>
+    <div className="relative w-full sm:p-6  py-4 px-3 rounded-md border-[1.5px] border-accent-1">
+      <RSVPBackground />
+      <div className="relative flex flex-row gap-2 items-center place-self-center z-[1]">
+        <ButtonSecondary className="" onClick={() => props.setStatus("MAYBE")}>
+          Maybe
+        </ButtonSecondary>
+        <ButtonPrimary
+          className="text-lg animate-bounce"
+          onClick={() => props.setStatus("GOING")}
+        >
+          Going!
+        </ButtonPrimary>
+
+        <ButtonSecondary
+          className=""
+          onClick={() => props.setStatus("NOT_GOING")}
+        >
+          Can&apos;t Go
+        </ButtonSecondary>
+      </div>
     </div>
   );
 };
@@ -186,62 +177,79 @@ function YourRSVPStatus(props: { entityID: string; compact?: boolean }) {
   };
   return (
     <div
-      className={`flex flex-row gap-1 sm:gap-2 font-bold items-center ${props.compact ? "text-sm font-bold " : ""}`}
+      className={`relative w-full p-4 pb-5 rounded-md border-[1.5px] border-accent-1 font-bold items-center`}
     >
-      {rsvpStatus !== undefined &&
-        {
-          GOING: `You're Going!`,
-          MAYBE: "You're a Maybe",
-          NOT_GOING: "Can't Make It",
-        }[rsvpStatus]}
-      <Separator classname="mx-1 h-6" />
-      {rsvpStatus !== "GOING" && (
-        <ButtonSecondary
-          className={props.compact ? "text-sm  !font-normal" : ""}
-          compact
-          onClick={() => {
-            updateStatus("GOING");
-            toaster({
-              content: <div className="font-bold">Yay! You&apos;re Going!</div>,
-              type: "success",
-            });
+      <RSVPBackground />
+      <div className=" relative flex flex-col gap-1 sm:gap-2 z-[1] justify-center">
+        <div
+          className="text-xl text-center text-accent-2 text-with-outline"
+          style={{
+            WebkitTextStroke: `3px ${theme.colors["accent-1"]}`,
+            textShadow: `-4px 3px 0 ${theme.colors["accent-1"]}`,
+            paintOrder: "stroke fill",
           }}
         >
-          Going
-        </ButtonSecondary>
-      )}
-      {rsvpStatus !== "MAYBE" && (
-        <ButtonSecondary
-          className={props.compact ? "text-sm  !font-normal" : ""}
-          compact
-          onClick={() => {
-            updateStatus("MAYBE");
-            toaster({
-              content: <div className="font-bold">You&apos;re a Maybe</div>,
-              type: "success",
-            });
-          }}
-        >
-          Maybe
-        </ButtonSecondary>
-      )}
-      {rsvpStatus !== "NOT_GOING" && (
-        <ButtonSecondary
-          compact
-          className={props.compact ? "text-sm  !font-normal" : ""}
-          onClick={() => {
-            updateStatus("NOT_GOING");
-            toaster({
-              content: (
-                <div className="font-bold">Sorry you can&apos;t make it D:</div>
-              ),
-              type: "success",
-            });
-          }}
-        >
-          Can&apos;t Go
-        </ButtonSecondary>
-      )}
+          {rsvpStatus !== undefined &&
+            {
+              GOING: `You're Going!`,
+              MAYBE: "You're a Maybe",
+              NOT_GOING: "Can't Make It",
+            }[rsvpStatus]}
+        </div>
+        <div className="flex gap-4 place-items-center justify-center">
+          {rsvpStatus !== "GOING" && (
+            <ButtonSecondary
+              className={props.compact ? "text-sm  !font-normal" : ""}
+              compact
+              onClick={() => {
+                updateStatus("GOING");
+                toaster({
+                  content: (
+                    <div className="font-bold">Yay! You&apos;re Going!</div>
+                  ),
+                  type: "success",
+                });
+              }}
+            >
+              Going
+            </ButtonSecondary>
+          )}
+          {rsvpStatus !== "MAYBE" && (
+            <ButtonSecondary
+              className={props.compact ? "text-sm  !font-normal" : ""}
+              compact
+              onClick={() => {
+                updateStatus("MAYBE");
+                toaster({
+                  content: <div className="font-bold">You&apos;re a Maybe</div>,
+                  type: "success",
+                });
+              }}
+            >
+              Maybe
+            </ButtonSecondary>
+          )}
+          {rsvpStatus !== "NOT_GOING" && (
+            <ButtonSecondary
+              compact
+              className={props.compact ? "text-sm  !font-normal" : ""}
+              onClick={() => {
+                updateStatus("NOT_GOING");
+                toaster({
+                  content: (
+                    <div className="font-bold">
+                      Sorry you can&apos;t make it D:
+                    </div>
+                  ),
+                  type: "success",
+                });
+              }}
+            >
+              Can&apos;t Go
+            </ButtonSecondary>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -262,12 +270,12 @@ function Attendees(props: { entityID: string; className?: string }) {
       trigger={
         going.length === 0 && maybe.length === 0 ? (
           <button
-            className={`w-max text-tertiary italic hover:underline ${props.className}`}
+            className={`text-sm font-normal w-max text-tertiary italic hover:underline ${props.className}`}
           >
             No RSVPs yet
           </button>
         ) : (
-          <ButtonTertiary className={props.className}>
+          <ButtonTertiary className={`text-sm font-normal ${props.className}`}>
             {going.length > 0 && `${going.length} Going`}
             {maybe.length > 0 &&
               `${going.length > 0 ? ", " : ""}${maybe.length} Maybe`}
@@ -308,7 +316,7 @@ function Attendees(props: { entityID: string; className?: string }) {
   );
 }
 
-function SendUpdateButton(props: { entityID: string; primary?: boolean }) {
+function SendUpdateButton(props: { entityID: string }) {
   let { permissions } = useEntitySetContext();
   let { permission_token } = useReplicache();
   let [input, setInput] = useState("");
@@ -339,15 +347,9 @@ function SendUpdateButton(props: { entityID: string; primary?: boolean }) {
       open={open}
       onOpenChange={(open) => setOpen(open)}
       trigger={
-        props.primary ? (
-          <ButtonPrimary fullWidthOnMobile>
-            <UpdateSmall /> Send a Text Blast
-          </ButtonPrimary>
-        ) : (
-          <ButtonSecondary fullWidthOnMobile>
-            <UpdateSmall /> Send a Text Blast
-          </ButtonSecondary>
-        )
+        <ButtonPrimary fullWidth className="mb-2">
+          <UpdateSmall /> Send a Text Blast
+        </ButtonPrimary>
       }
     >
       <div className="rsvpMessageComposer flex flex-col gap-2 w-[1000px] max-w-full sm:max-w-md">
@@ -373,7 +375,7 @@ function SendUpdateButton(props: { entityID: string; primary?: boolean }) {
             style={
               input.length > 300
                 ? {
-                    color: theme.colors["accent-contrast"],
+                    color: theme.colors["accent-1"],
                     fontWeight: "bold",
                   }
                 : {
