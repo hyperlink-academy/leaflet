@@ -9,7 +9,7 @@ import { parseHSBToRGB } from "src/utils/parseHSB";
 export const revalidate = 0;
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
+export const fetchCache = "default-no-store";
 
 // Image metadata
 export const size = {
