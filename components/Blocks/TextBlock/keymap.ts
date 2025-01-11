@@ -37,9 +37,11 @@ export const TextBlockKeymap = (
     "Meta-i": toggleMark(schema.marks.em),
     "Ctrl-i": toggleMark(schema.marks.em),
     "Ctrl-Meta-x": toggleMark(schema.marks.strikethrough),
-    "Ctrl-Meta-h": toggleMark(schema.marks.highlight, {
-      color: useUIState.getState().lastUsedHighlight,
-    }),
+    "Ctrl-Meta-h": (...args) => {
+      return toggleMark(schema.marks.highlight, {
+        color: useUIState.getState().lastUsedHighlight,
+      })(...args);
+    },
     "Ctrl-a": metaA(propsRef, repRef),
     "Meta-a": metaA(propsRef, repRef),
     Tab: () => {
