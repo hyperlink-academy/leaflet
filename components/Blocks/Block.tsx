@@ -15,16 +15,9 @@ import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { EmbedBlock } from "./EmbedBlock";
 import { MailboxBlock } from "./MailboxBlock";
 import { HeadingBlock } from "./HeadingBlock";
-import {
-  CheckboxChecked,
-  CheckboxEmpty,
-  LockTiny,
-  UnlockSmall,
-  UnlockTiny,
-} from "components/Icons";
+import { CheckboxChecked, CheckboxEmpty, LockTiny } from "components/Icons";
 import { AreYouSure } from "./DeleteBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { Media } from "components/Media";
 import { useIsMobile } from "src/hooks/isMobile";
 import { DateTimeBlock } from "./DateTimeBlock";
 import { RSVPBlock } from "./RSVPBlock";
@@ -84,6 +77,7 @@ export const Block = memo(function Block(
     }
   }, [selected]);
 
+  // THIS IS WHERE YOU SET WHETHER OR NOT AREYOUSURE IS TRIGGERED ON THE DELETE KEY
   useBlockKeyboardHandlers(props, areYouSure, setAreYouSure);
 
   return (
