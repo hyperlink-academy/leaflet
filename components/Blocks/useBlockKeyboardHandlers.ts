@@ -137,7 +137,11 @@ async function Backspace({
   }
 
   // if the block is a card or mailbox...
-  if (props.type === "card" || props.type === "mailbox") {
+  if (
+    props.type === "card" ||
+    props.type === "mailbox" ||
+    props.type === "rsvp"
+  ) {
     // ...and areYouSure state is false, set it to true
     if (!areYouSure) {
       setAreYouSure(true);

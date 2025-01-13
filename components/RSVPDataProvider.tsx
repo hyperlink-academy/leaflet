@@ -7,7 +7,7 @@ export function RSVPDataProvider(props: {
   children: React.ReactNode;
 }) {
   return (
-    <SWRConfig value={{ fallback: { identity: props.data } }}>
+    <SWRConfig value={{ fallback: { rsvp_data: props.data } }}>
       {props.children}
     </SWRConfig>
   );

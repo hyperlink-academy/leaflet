@@ -13,6 +13,7 @@
     --accent-1: 0, 0, 225;
     --accent-2: 255, 255, 255;
     --accent-contrast: 0, 0, 225;
+    --accent-1-is-contrast: "true";
 
     --highlight-1: 255, 177, 177;
     --highlight-2: 253, 245, 203;
@@ -25,6 +26,7 @@
     --gripperSVG: url("/gripperPattern.svg");
     --gripperSVG2: url("/gripperPattern2.svg");
     --hatchSVG: url("/hatchPattern.svg");
+    --wavySVG: (url("/RSVPBackground/wavy.svg"));
   }
 
   @media (max-width: 640px) {
@@ -222,4 +224,19 @@ input[type="number"] {
 .transparent-outline {
   @apply outline;
   @apply outline-transparent;
+}
+
+.text-with-outline {
+  position: relative;
+  -webkit-text-stroke: 1px purple;
+  z-index: 1;
+
+  ::before {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: blue;
+    z-index: 0;
+  }
 }

@@ -49,17 +49,28 @@ ButtonPrimary.displayName = "ButtonPrimary";
 
 export const ButtonSecondary = forwardRef<
   HTMLButtonElement,
-  {
+  ButtonProps & {
     fullWidth?: boolean;
+    fullWidthOnMobile?: boolean;
     children: React.ReactNode;
     compact?: boolean;
-  } & ButtonProps
+  }
 >((props, ref) => {
+  let {
+    className,
+    fullWidth,
+    fullWidthOnMobile,
+    compact,
+    children,
+    ...buttonProps
+  } = props;
   return (
     <button
       {...props}
       ref={ref}
-      className={`m-0 h-max ${props.fullWidth ? "w-full" : "w-max"}  ${props.compact ? "py-0 px-1" : "px-2 py-0.5 "}
+      className={`m-0 h-max
+        ${fullWidth ? "w-full" : fullWidthOnMobile ? "w-full sm:w-max" : "w-max"}
+        ${props.compact ? "py-0 px-1" : "px-2 py-0.5 "}
   bg-bg-page outline-transparent
   rounded-md text-base font-bold text-accent-contrast
   flex gap-2 items-center justify-center shrink-0
