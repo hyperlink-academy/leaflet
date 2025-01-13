@@ -50,7 +50,7 @@ export default async function LeafletPage(props: Props) {
       </div>
     );
 
-  let [{ data }, identity_data] = await Promise.all([
+  let [{ data }, rsvp_data] = await Promise.all([
     supabase.rpc("get_facts", {
       root: rootEntity,
     }),
@@ -58,7 +58,7 @@ export default async function LeafletPage(props: Props) {
   ]);
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
   return (
-    <RSVPDataProvider data={identity_data}>
+    <RSVPDataProvider data={rsvp_data}>
       <Leaflet
         initialFacts={initialFacts}
         leaflet_id={rootEntity}
