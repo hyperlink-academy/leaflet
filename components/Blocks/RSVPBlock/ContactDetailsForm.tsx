@@ -306,8 +306,8 @@ const ConsentPopover = (props: {}) => {
   return (
     <Popover trigger={<InfoSmall className="text-accent-contrast" />}>
       <div className="text-sm text-secondary">
-        RSVP&apos;ing means you consent to receive WhatsApp messages from the
-        host of this event, via Leaflet!
+        By RSVPing I to consent to receive WhatsApp messages from the event
+        host, via Leaflet!
       </div>
     </Popover>
   );
