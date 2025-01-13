@@ -22,6 +22,7 @@ import { useReplicache } from "src/replicache";
 import { ContactDetailsForm } from "./ContactDetailsForm";
 import { Checkbox } from "components/Checkbox";
 import styles from "./RSVPBackground.module.css";
+import { usePublishLink } from "components/ShareOptions";
 
 export type RSVP_Status = Database["public"]["Enums"]["rsvp_status"];
 let Statuses = ["GOING", "NOT_GOING", "MAYBE"];
@@ -308,6 +309,7 @@ function Attendees(props: { entityID: string; className?: string }) {
 }
 
 function SendUpdateButton(props: { entityID: string }) {
+  let publishLink = usePublishLink();
   let { permissions } = useEntitySetContext();
   let { permission_token } = useReplicache();
   let [input, setInput] = useState("");
@@ -380,12 +382,13 @@ function SendUpdateButton(props: { entityID: string }) {
             disabled={input.length > 300}
             className="place-self-end "
             onClick={async () => {
-              if (!permission_token) return;
+              if (!permission_token || !publishLink) return;
               await sendUpdateToRSVPS(permission_token, {
                 entity: props.entityID,
                 message: input,
                 eventName: document.title,
                 sendto: checkedRecipients,
+                publicLeafletID: publishLink,
               });
               toaster({
                 content: <div className="font-bold">Update sent!</div>,

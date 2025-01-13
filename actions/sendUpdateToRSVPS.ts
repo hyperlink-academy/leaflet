@@ -25,10 +25,12 @@ export async function sendUpdateToRSVPS(
     message,
     eventName,
     sendto,
+    publicLeafletID,
   }: {
     entity: string;
     message: string;
     eventName: string;
+    publicLeafletID: string;
     sendto: { GOING: boolean; MAYBE: boolean; NOT_GOING: boolean };
   },
 ) {
@@ -57,8 +59,12 @@ export async function sendUpdateToRSVPS(
   for (let rsvp of rsvps) {
     if (sendto[rsvp.phone_rsvps_to_entity.status])
       await client.messages.create({
-        contentSid: "HX2755dab400476ade5effd90e2d964e6c",
-        contentVariables: JSON.stringify({ 1: eventName, 2: message }),
+        contentSid: "HX64fdc0318535cba817ef3097af0cad5c",
+        contentVariables: JSON.stringify({
+          1: eventName,
+          2: message,
+          3: `https://leaflet.pub/${publicLeafletID}`,
+        }),
         from: "whatsapp:+18449523391",
         messagingServiceSid: "MGffbf9a66770350b25caf3b80b9aac481",
         to: `whatsapp:${rsvp.phone_rsvps_to_entity.phone_number}`,
