@@ -13,6 +13,7 @@
     --accent-1: 0, 0, 225;
     --accent-2: 255, 255, 255;
     --accent-contrast: 0, 0, 225;
+    --accent-1-is-contrast: "true";
 
     --highlight-1: 255, 177, 177;
     --highlight-2: 253, 245, 203;

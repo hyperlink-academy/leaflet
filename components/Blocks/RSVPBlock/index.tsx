@@ -15,14 +15,13 @@ import { Popover } from "components/Popover";
 import { create } from "zustand";
 import { combine, createJSONStorage, persist } from "zustand/middleware";
 import { useUIState } from "src/useUIState";
-import { Separator } from "components/Layout";
 import { theme } from "tailwind.config";
 import { useToaster } from "components/Toast";
 import { sendUpdateToRSVPS } from "actions/sendUpdateToRSVPS";
 import { useReplicache } from "src/replicache";
 import { ContactDetailsForm } from "./ContactDetailsForm";
 import { Checkbox } from "components/Checkbox";
-import { rsvp_status } from "drizzle/schema";
+import styles from "./RSVPBackground.module.css";
 
 export type RSVP_Status = Database["public"]["Enums"]["rsvp_status"];
 let Statuses = ["GOING", "NOT_GOING", "MAYBE"];
@@ -51,19 +50,11 @@ export function RSVPBlock(props: BlockProps) {
 
 const RSVPBackground = () => {
   return (
-    <div
-      className="absolute top-0 bottom-0 left-0 right-0 bg-accent-1 z-0"
-      style={{
-        opacity:
-          theme.colors["accent-contrast"] === theme.colors["accent-1"]
-            ? 1
-            : 0.4,
-        maskImage: "url(./RSVPBackground/wavy.svg)",
-        maskRepeat: "repeat repeat",
-        maskPosition: "center",
-        maskSize: "64px",
-      }}
-    />
+    <div className="overflow-hidden absolute top-0 bottom-0 left-0 right-0 ">
+      <div
+        className={`rsvp-background w-full h-full bg-accent-1 z-0 ${styles.RSVPWavyBG} `}
+      />
+    </div>
   );
 };
 
@@ -124,7 +115,7 @@ const RSVPButtons = (props: { setStatus: (status: RSVP_Status) => void }) => {
           Maybe
         </ButtonSecondary>
         <ButtonPrimary
-          className="text-lg animate-bounce"
+          className="text-lg"
           onClick={() => props.setStatus("GOING")}
         >
           Going!
