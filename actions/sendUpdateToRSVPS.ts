@@ -59,7 +59,7 @@ export async function sendUpdateToRSVPS(
   for (let rsvp of rsvps) {
     if (sendto[rsvp.phone_rsvps_to_entity.status])
       await client.messages.create({
-        contentSid: "HX64fdc0318535cba817ef3097af0cad5c",
+        contentSid: "HX8e1217f791d38fa4cf7b7b24a02fe10c",
         contentVariables: JSON.stringify({
           1: eventName,
           2: message,
