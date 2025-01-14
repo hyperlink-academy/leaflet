@@ -245,7 +245,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                       closePicker={() => setOpenPicker("null")}
                     />
                     <ColorPicker
-                      label={props.home ? "Menu Text" : "Page"}
+                      label={props.home ? "Menu Text" : "Text"}
                       value={primaryValue}
                       setValue={set("theme/primary")}
                       thisPicker={"text"}

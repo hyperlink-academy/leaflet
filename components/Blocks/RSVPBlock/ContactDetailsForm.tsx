@@ -239,7 +239,7 @@ const ConfirmationForm = (props: {
   let toaster = useToaster();
   return (
     <form
-      className="flex flex-col gap-2"
+      className="flex flex-col gap-3"
       onSubmit={async (e) => {
         e.preventDefault();
         let rect = document
@@ -289,7 +289,6 @@ const ConfirmationForm = (props: {
           we texted a confirmation code to your phone number!
         </div>
       </label>
-      <hr className="border-border" />
 
       <ButtonPrimary
         id="rsvp-code-confirm-button"
