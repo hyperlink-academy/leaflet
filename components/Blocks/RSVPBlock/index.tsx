@@ -111,7 +111,7 @@ const RSVPButtons = (props: { setStatus: (status: RSVP_Status) => void }) => {
   return (
     <div className="relative w-full sm:p-6  py-4 px-3 rounded-md border-[1.5px] border-accent-1">
       <RSVPBackground />
-      <div className="relative flex flex-row gap-2 items-center mx-auto z-[1]">
+      <div className="relative flex flex-row gap-2 items-center mx-auto z-[1] w-fit">
         <ButtonSecondary className="" onClick={() => props.setStatus("MAYBE")}>
           Maybe
         </ButtonSecondary>
