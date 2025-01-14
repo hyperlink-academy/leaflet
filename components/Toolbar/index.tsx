@@ -192,9 +192,9 @@ export const ToolbarButton = (props: {
         props.onClick && props.onClick(e);
       }}
       disabled={isDisabled}
-      content={props.tooltipContent}
+      tooltipContent={props.tooltipContent}
       className={`
-        flex items-center rounded-md border border-transparent 
+        flex items-center rounded-md border border-transparent
         ${props.className}
         ${
           props.active && !isDisabled
