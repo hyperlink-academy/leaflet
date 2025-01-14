@@ -453,6 +453,14 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
                     },
                   }));
                 }
+                focusBlock(
+                  {
+                    type: props.type,
+                    value: props.entityID,
+                    parent: props.parent,
+                  },
+                  { type: "end" },
+                );
               }}
               side="bottom"
               tooltipContent={
