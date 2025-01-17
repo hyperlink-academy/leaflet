@@ -117,6 +117,10 @@ const EmbedBlockAttributes = {
     type: "string",
     cardinality: "one",
   },
+  "embed/height": {
+    type: "number",
+    cardinality: "one",
+  },
 } as const;
 
 export const ThemeAttributes = {

@@ -198,12 +198,12 @@ export const blockCommands: Command[] = [
 
   // EVENT STUFF
 
-  // {
-  //   name: "RSVP",
-  //   icon: <RSVPSmall />,
-  //   type: "event",
-  //   onSelect: (rep, props) => createBlockWithType(rep, props, "rsvp"),
-  // },
+  {
+    name: "RSVP",
+    icon: <RSVPSmall />,
+    type: "event",
+    onSelect: (rep, props) => createBlockWithType(rep, props, "rsvp"),
+  },
   {
     name: "Date and Time",
     icon: <BlockCalendarSmall />,

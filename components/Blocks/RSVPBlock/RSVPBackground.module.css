@@ -1,0 +1,7 @@
+.RSVPWavyBG {
+  opacity: calc(1 - (var(--accent-1-is-contrast) * 0.6));
+  mask-image: url("/RSVPBackground/wavy.svg");
+  mask-repeat: repeat repeat;
+  mask-position: center;
+  mask-size: 64px;
+}

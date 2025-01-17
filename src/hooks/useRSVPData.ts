@@ -4,7 +4,7 @@ import useSWR from "swr";
 
 export function useRSVPData() {
   let { permission_token } = useReplicache();
-  return useSWR(`identity`, () =>
+  return useSWR(`rsvp_data`, () =>
     getRSVPData(
       permission_token.permission_token_rights.map((pr) => pr.entity_set),
     ),

@@ -1,6 +1,6 @@
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { BlockProps } from "./Block";
@@ -13,15 +13,35 @@ import { isUrl } from "src/utils/isURL";
 import { elementId } from "src/utils/elementId";
 import { deleteBlock } from "./DeleteBlock";
 import { focusBlock } from "src/utils/focusBlock";
+import { useDrag } from "src/hooks/useDrag";
 
 export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
+  let { rep } = useReplicache();
   let url = useEntity(props.entityID, "embed/url");
   let isCanvasBlock = props.pageType === "canvas";
 
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
+
+  let height = useEntity(props.entityID, "embed/height")?.data.value || 360;
+
+  let heightOnDragEnd = useCallback(
+    (dragPosition: { x: number; y: number }) => {
+      rep?.mutate.assertFact({
+        entity: props.entityID,
+        attribute: "embed/height",
+        data: {
+          type: "number",
+          value: height + dragPosition.y,
+        },
+      });
+    },
+    [props, rep, height],
+  );
+
+  let heightHandle = useDrag({ onDragEnd: heightOnDragEnd });
 
   useEffect(() => {
     if (props.preview) return;
@@ -55,10 +75,11 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   }
 
   return (
-    <div className="w-full aspect-[4/3]">
+    <div
+      className={`w-full ${heightHandle.dragDelta ? "pointer-events-none" : ""}`}
+    >
       {/*
 	  the iframe!
-	  very simple, just a fixed height (could add as an option)
 	  can also add 'allow' and 'referrerpolicy' attributes later if needed
 	  */}
       <iframe
@@ -67,12 +88,12 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
               ${isSelected ? "block-border-selected " : "block-border"}
               `}
         width="100%"
-        height="100%"
+        height={height + (heightHandle.dragDelta?.y || 0)}
         src={url?.data.value}
         allow="fullscreen"
         loading="lazy"
       ></iframe>
-      <div className="w-full overflow-x-hidden truncate text-xs italic text-accent-contrast">
+      {/* <div className="w-full overflow-x-hidden truncate text-xs italic text-accent-contrast">
         <a
           href={url?.data.value}
           target="_blank"
@@ -80,7 +101,21 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
         >
           {url?.data.value}
         </a>
-      </div>
+      </div> */}
+
+      {!props.preview && permissions.write && (
+        <>
+          <div
+            data-draggable
+            className={`resizeHandle
+          cursor-ns-resize shrink-0 z-10 w-6 h-[5px]
+          absolute bottom-2 right-1/2 translate-x-1/2 translate-y-[2px]
+          rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]
+          ${isCanvasBlock ? "hidden group-hover/canvas-block:block" : ""}`}
+            {...heightHandle.handlers}
+          />
+        </>
+      )}
     </div>
   );
 };

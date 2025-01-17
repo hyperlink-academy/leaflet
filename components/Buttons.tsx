@@ -49,17 +49,28 @@ ButtonPrimary.displayName = "ButtonPrimary";
 
 export const ButtonSecondary = forwardRef<
   HTMLButtonElement,
-  {
+  ButtonProps & {
     fullWidth?: boolean;
+    fullWidthOnMobile?: boolean;
     children: React.ReactNode;
     compact?: boolean;
-  } & ButtonProps
+  }
 >((props, ref) => {
+  let {
+    className,
+    fullWidth,
+    fullWidthOnMobile,
+    compact,
+    children,
+    ...buttonProps
+  } = props;
   return (
     <button
       {...props}
       ref={ref}
-      className={`m-0 h-max ${props.fullWidth ? "w-full" : "w-max"}  ${props.compact ? "py-0 px-1" : "px-2 py-0.5 "}
+      className={`m-0 h-max
+        ${fullWidth ? "w-full" : fullWidthOnMobile ? "w-full sm:w-max" : "w-max"}
+        ${props.compact ? "py-0 px-1" : "px-2 py-0.5 "}
   bg-bg-page outline-transparent
   rounded-md text-base font-bold text-accent-contrast
   flex gap-2 items-center justify-center shrink-0
@@ -137,14 +148,17 @@ export const TooltipButton = (props: {
   disabled?: boolean;
   className?: string;
   children: React.ReactNode;
-  content: React.ReactNode;
+  tooltipContent: React.ReactNode;
   side?: "top" | "right" | "bottom" | "left" | undefined;
   open?: boolean;
+  delayDuration?: number;
 }) => {
   return (
     // toolbar button does not control the highlight theme setter
     // if toolbar button is updated, be sure to update there as well
-    <RadixTooltip.TooltipProvider>
+    <RadixTooltip.TooltipProvider
+      delayDuration={props.delayDuration ? props.delayDuration : 400}
+    >
       <RadixTooltip.Root open={props.open}>
         <RadixTooltip.Trigger
           disabled={props.disabled}
@@ -165,7 +179,7 @@ export const TooltipButton = (props: {
               alignOffset={12}
               className="z-10 bg-border rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
             >
-              {props.content}
+              {props.tooltipContent}
               <RadixTooltip.Arrow
                 asChild
                 width={16}

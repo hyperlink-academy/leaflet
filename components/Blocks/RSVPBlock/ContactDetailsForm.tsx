@@ -1,5 +1,5 @@
 "use client";
-import { useSmoker } from "components/Toast";
+import { useSmoker, useToaster } from "components/Toast";
 import { RSVP_Status, State, useRSVPNameState } from ".";
 import { createContext, useContext, useState } from "react";
 import { useRSVPData } from "src/hooks/useRSVPData";
@@ -8,26 +8,26 @@ import { submitRSVP } from "actions/phone_rsvp_to_event";
 
 import { countryCodes } from "src/constants/countryCodes";
 import { Checkbox } from "components/Checkbox";
-import { ButtonPrimary } from "components/Buttons";
+import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { Separator } from "components/Layout";
 import { createPhoneAuthToken } from "actions/phone_auth/request_phone_auth_token";
 import { Input } from "components/Input";
 import { IPLocationContext } from "components/Providers/IPLocationProvider";
+import { Popover } from "components/Popover";
+import { InfoSmall } from "components/Icons";
+import { theme } from "tailwind.config";
 
-export function ContactDetailsForm({
-  status,
-  entityID,
-}: {
+export function ContactDetailsForm(props: {
   status: RSVP_Status;
   entityID: string;
   setState: (s: State) => void;
 }) {
+  let { status, entityID, setState } = props;
   let focusWithinStyles =
     "focus-within:border-tertiary focus-within:outline focus-within:outline-2 focus-within:outline-tertiary focus-within:outline-offset-1";
-  let [checked, setChecked] = useState(false);
-
+  let toaster = useToaster();
   let { data, mutate } = useRSVPData();
-  let [state, setState] = useState<
+  let [contactFormState, setContactFormState] = useState<
     { state: "details" } | { state: "confirm"; token: string }
   >({ state: "details" });
   let { name, setName } = useRSVPNameState();
@@ -38,7 +38,6 @@ export function ContactDetailsForm({
     phone_number: "",
     confirmationCode: "",
   });
-  let [enterNewNumber, setEnterNewNumber] = useState(false);
 
   let submit = async (
     token: Awaited<ReturnType<typeof confirmPhoneAuthToken>>,
@@ -69,8 +68,31 @@ export function ContactDetailsForm({
     });
     return true;
   };
-  return state.state === "details" ? (
-    <div className="rsvpForm flex flex-col gap-2">
+  return contactFormState.state === "details" ? (
+    <form
+      className="rsvpForm flex flex-col gap-2"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (data?.authToken) {
+          submit(data.authToken);
+          toaster({
+            content: (
+              <div className="font-bold">
+                {status === "GOING"
+                  ? "Yay! You're Going!"
+                  : status === "MAYBE"
+                    ? "You're a Maybe"
+                    : "Sorry you can't make it D:"}
+              </div>
+            ),
+            type: "success",
+          });
+        } else {
+          let tokenId = await createPhoneAuthToken(formState);
+          setContactFormState({ state: "confirm", token: tokenId });
+        }
+      }}
+    >
       <div className="rsvpInputs flex sm:flex-row flex-col gap-2 w-fit place-self-center ">
         <label
           htmlFor="rsvp-name-input"
@@ -103,14 +125,23 @@ export function ContactDetailsForm({
             </div>
             <div className="flex gap-2 ">
               <div className="flex items-center gap-1">
-                <span>+</span>
+                <span
+                  style={{
+                    color:
+                      formState.country_code === ""
+                        ? theme.colors.tertiary
+                        : theme.colors.primary,
+                  }}
+                >
+                  +
+                </span>
                 <Input
                   onKeyDown={(e) => {
                     if (e.key === "Backspace" && !e.currentTarget.value)
                       e.preventDefault();
                   }}
                   disabled={!!data?.authToken?.phone_number}
-                  className="w-10 bg-transparent"
+                  className="w-10 bg-transparent appearance-none focus:outline-0"
                   placeholder="1"
                   maxLength={4}
                   inputMode="numeric"
@@ -148,42 +179,46 @@ export function ContactDetailsForm({
             </div>
           </label>
           <div className="text-xs italic text-tertiary leading-tight">
-            Non-US numbers will receive messages through{" "}
-            <strong>WhatsApp</strong>
+            Currently, all communication will be routed through{" "}
+            <strong>WhatsApp</strong>. SMS coming soon!
           </div>
         </div>
       </div>
 
       <hr className="border-border" />
       <div className="flex flex-row gap-2 w-full items-center justify-end">
-        <ConsentPopover checked={checked} setChecked={setChecked} />
+        <ConsentPopover />
+        <ButtonTertiary
+          onMouseDown={() => {
+            setState({ state: "default" });
+          }}
+        >
+          Back
+        </ButtonTertiary>
         <ButtonPrimary
           disabled={
             (!data?.authToken?.phone_number &&
-              (!checked ||
-                !formState.phone_number ||
-                !formState.country_code)) ||
-            (!!data?.authToken?.phone_number && !checked)
+              (!formState.phone_number || !formState.country_code)) ||
+            !name
           }
           className="place-self-end"
-          onClick={async () => {
-            if (data?.authToken) {
-              submit(data.authToken);
-            } else {
-              let tokenId = await createPhoneAuthToken(formState);
-              setState({ state: "confirm", token: tokenId });
-            }
-          }}
+          type="submit"
         >
-          RSVP as {status === "GOING" ? "Going" : "Maybe"}
+          RSVP as{" "}
+          {status === "GOING"
+            ? "Going"
+            : status === "MAYBE"
+              ? "Maybe"
+              : "Can't Go"}
         </ButtonPrimary>
       </div>
-    </div>
+    </form>
   ) : (
     <ConfirmationForm
-      token={state.token}
+      token={contactFormState.token}
       value={formState.confirmationCode}
       submit={submit}
+      status={status}
       onChange={(value) =>
         setFormState((state) => ({ ...state, confirmationCode: value }))
       }
@@ -194,14 +229,51 @@ export function ContactDetailsForm({
 const ConfirmationForm = (props: {
   value: string;
   token: string;
+  status: RSVP_Status;
   submit: (
     token: Awaited<ReturnType<typeof confirmPhoneAuthToken>>,
   ) => Promise<boolean>;
   onChange: (v: string) => void;
 }) => {
   let smoker = useSmoker();
+  let toaster = useToaster();
   return (
-    <div className="flex flex-col gap-2">
+    <form
+      className="flex flex-col gap-3"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        let rect = document
+          .getElementById("rsvp-code-confirm-button")
+          ?.getBoundingClientRect();
+        try {
+          let token = await confirmPhoneAuthToken(props.token, props.value);
+          props.submit(token);
+          toaster({
+            content: (
+              <div className="font-bold">
+                {props.status === "GOING"
+                  ? "Yay! You're Going!"
+                  : props.status === "MAYBE"
+                    ? "You're a Maybe"
+                    : "Sorry you can't make it D:"}
+              </div>
+            ),
+            type: "success",
+          });
+        } catch (error) {
+          smoker({
+            alignOnMobile: "left",
+            error: true,
+            text: "invalid code!",
+            position: {
+              x: rect ? rect.left + (rect.right - rect.left) / 2 : 0,
+              y: rect ? rect.top + 26 : 0,
+            },
+          });
+          return;
+        }
+      }}
+    >
       <label className="rsvpNameInput relative w-full flex flex-col gap-0.5">
         <div className="absolute top-0.5 left-[6px] text-xs font-bold italic text-tertiary">
           confirmation code
@@ -217,46 +289,25 @@ const ConfirmationForm = (props: {
           we texted a confirmation code to your phone number!
         </div>
       </label>
-      <hr className="border-border" />
 
       <ButtonPrimary
+        id="rsvp-code-confirm-button"
         className="place-self-end"
-        onMouseDown={async (e) => {
-          try {
-            let token = await confirmPhoneAuthToken(props.token, props.value);
-            props.submit(token);
-          } catch (error) {
-            smoker({
-              alignOnMobile: "left",
-              error: true,
-              text: "invalid code!",
-              position: { x: e.clientX, y: e.clientY },
-            });
-            return;
-          }
-        }}
+        type="submit"
       >
         Confirm
       </ButtonPrimary>
-    </div>
+    </form>
   );
 };
 
-const ConsentPopover = (props: {
-  checked: boolean;
-  setChecked: (checked: boolean) => void;
-}) => {
+const ConsentPopover = (props: {}) => {
   return (
-    <Checkbox
-      checked={props.checked}
-      onChange={() => {
-        props.setChecked(!props.checked);
-      }}
-    >
+    <Popover trigger={<InfoSmall className="text-accent-contrast" />}>
       <div className="text-sm text-secondary">
-        Clicking RSVP means that you are consenting to receive WhatsApp messages
-        from the host of this event, via Leaflet!
+        By RSVPing I to consent to receive WhatsApp messages from the event
+        host, via Leaflet!
       </div>
-    </Checkbox>
+    </Popover>
   );
 };

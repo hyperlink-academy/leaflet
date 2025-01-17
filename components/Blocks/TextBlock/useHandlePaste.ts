@@ -361,6 +361,8 @@ const createBlockFromHTML = (
     let block = useEditorStates.getState().editorStates[entityID];
     if (block) {
       let tr = block.editor.tr;
+      if (block.editor.selection.from && block.editor.selection.to)
+        tr.delete(block.editor.selection.from, block.editor.selection.to);
       tr.insert(block.editor.selection.from || 0, content.content);
       let newState = block.editor.apply(tr);
       setEditorState(entityID, {
@@ -368,6 +370,7 @@ const createBlockFromHTML = (
       });
     }
     if (last && !hasChildren) {
+      if (block?.editor.selection.from !== undefined) return;
       focusBlock(
         {
           value: entityID,

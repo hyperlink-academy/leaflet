@@ -1,22 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
-import { drizzle } from "drizzle-orm/postgres-js";
 import { NextRequest } from "next/server";
-import postgres from "postgres";
-import { Fact } from "src/replicache";
-import { Attributes } from "src/replicache/attributes";
 import { Database } from "supabase/database.types";
-import { v7 } from "uuid";
-
-import {
-  entities,
-  permission_tokens,
-  permission_token_rights,
-  entity_sets,
-  facts,
-} from "drizzle/schema";
-import { sql } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { createNewLeafletFromTemplate } from "actions/createNewLeafletFromTemplate";
+
+export const preferredRegion = ["sfo1"];
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,

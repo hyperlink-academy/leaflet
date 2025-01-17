@@ -185,7 +185,7 @@ const AddCanvasBlockButton = (props: {
       <TooltipButton
         side="left"
         open={blocks.length === 0 ? true : undefined}
-        content={
+        tooltipContent={
           <div className="flex flex-col justify-end text-center px-1 leading-snug ">
             <div>Add a Block!</div>
             <div className="font-normal">or double click anywhere</div>

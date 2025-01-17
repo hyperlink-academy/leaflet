@@ -104,6 +104,10 @@ export function ThemeProvider(props: {
       "--accent-contrast",
       colorToString(accentContrast, "rgb"),
     );
+    el?.style.setProperty(
+      "--accent-1-is-contrast",
+      accentContrast === accent1 ? "1" : "0",
+    );
   }, [
     props.local,
     bgLeaflet,
@@ -128,6 +132,7 @@ export function ThemeProvider(props: {
           "--accent-1": colorToString(accent1, "rgb"),
           "--accent-2": colorToString(accent2, "rgb"),
           "--accent-contrast": colorToString(accentContrast, "rgb"),
+          "--accent-1-is-contrast": accentContrast === accent1 ? 1 : 0,
           "--highlight-1": highlight1
             ? `rgb(${colorToString(parseColor(`hsba(${highlight1.data.value})`), "rgb")})`
             : "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 75%)",
@@ -216,7 +221,7 @@ export const ThemeBackgroundProvider = (props: {
   );
 };
 
-function getColorContrast(color1: string, color2: string) {
+export function getColorContrast(color1: string, color2: string) {
   ColorSpace.register(sRGB);
 
   let parsedColor1 = parse(`rgb(${color1})`);

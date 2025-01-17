@@ -41,7 +41,17 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { useHandlePaste } from "./useHandlePaste";
 import { highlightSelectionPlugin } from "./plugins";
 import { inputrules } from "./inputRules";
-import { AddTiny, MoreOptionsTiny } from "components/Icons";
+import {
+  AddSmall,
+  AddTiny,
+  BlockDocPageSmall,
+  BlockImageSmall,
+  MoreOptionsTiny,
+} from "components/Icons";
+import { ToolbarButton } from "components/Toolbar";
+import { TooltipButton } from "components/Buttons";
+import { v7 } from "uuid";
+import { focusPage } from "components/Pages";
 
 export function TextBlock(
   props: BlockProps & { className?: string; preview?: boolean },
@@ -182,6 +192,7 @@ export function RenderedTextBlock(props: {
 
 export function BaseTextBlock(props: BlockProps & { className?: string }) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
+
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
   let entity_set = useEntitySetContext();
   let propsRef = useRef({ ...props, entity_set });
@@ -336,36 +347,131 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           </div>
         ) : editorState.doc.textContent.length === 0 && focused ? (
           // if not the only block on page but is the block is empty and selected, but NOT multiselected show add button
-          <button
-            className={`absolute top-0.5 right-0 w-fit h-5 hover:text-accent-contrast font-bold  rounded-md  text-sm text-border ${props.pageType === "canvas" && "mr-[6px]"}`}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              let editor =
-                useEditorStates.getState().editorStates[props.entityID];
-
-              let editorState = editor?.editor;
-              if (editorState) {
-                editor?.view?.focus();
-                let tr = editorState.tr.insertText("/", 1);
-                tr.setSelection(TextSelection.create(tr.doc, 2));
-                useEditorStates.setState((s) => ({
-                  editorStates: {
-                    ...s.editorStates,
-                    [props.entityID]: {
-                      ...s.editorStates[props.entityID]!,
-                      editor: editorState!.apply(tr),
-                    },
-                  },
-                }));
-              }
-            }}
+          <div
+            className={`absolute top-0 right-0 w-fit flex gap-[6px] items-center font-bold  rounded-md  text-sm text-border ${props.pageType === "canvas" && "mr-[6px]"}`}
           >
-            <div
-              className={`flex items-center justify-center gap-2 italic font-normal`}
+            <TooltipButton
+              className={props.className}
+              onMouseDown={async () => {
+                let entity;
+                if (!props.entityID) {
+                  entity = v7();
+                  await rep.rep?.mutate.addBlock({
+                    parent: props.parent,
+                    factID: v7(),
+                    permission_set: entity_set.set,
+                    type: "image",
+                    position: generateKeyBetween(
+                      props.position,
+                      props.nextPosition,
+                    ),
+                    newEntityID: entity,
+                  });
+                } else {
+                  entity = props.entityID;
+                  await rep.rep?.mutate.assertFact({
+                    entity,
+                    attribute: "block/type",
+                    data: { type: "block-type-union", value: "image" },
+                  });
+                }
+                return entity;
+              }}
+              side="bottom"
+              tooltipContent={
+                <div className="flex gap-1 font-bold">Add an Image</div>
+              }
             >
-              Add a Block <AddTiny />
-            </div>
-          </button>
+              <BlockImageSmall className="hover:text-accent-contrast text-border" />
+            </TooltipButton>
+
+            <TooltipButton
+              className={props.className}
+              onMouseDown={async () => {
+                let entity;
+                if (!props.entityID) {
+                  entity = v7();
+                  await rep.rep?.mutate.addBlock({
+                    parent: props.parent,
+                    factID: v7(),
+                    permission_set: entity_set.set,
+                    type: "card",
+                    position: generateKeyBetween(
+                      props.position,
+                      props.nextPosition,
+                    ),
+                    newEntityID: entity,
+                  });
+                } else {
+                  entity = props.entityID;
+                  await rep.rep?.mutate.assertFact({
+                    entity,
+                    attribute: "block/type",
+                    data: { type: "block-type-union", value: "card" },
+                  });
+                }
+
+                let newPage = v7();
+                await rep.rep?.mutate.addPageLinkBlock({
+                  blockEntity: entity,
+                  firstBlockFactID: v7(),
+                  firstBlockEntity: v7(),
+                  pageEntity: newPage,
+                  type: "doc",
+                  permission_set: entity_set.set,
+                });
+                useUIState.getState().openPage(props.parent, newPage);
+                rep.rep && focusPage(newPage, rep.rep, "focusFirstBlock");
+              }}
+              side="bottom"
+              tooltipContent={
+                <div className="flex gap-1 font-bold">Add a Subpage</div>
+              }
+            >
+              <BlockDocPageSmall className="hover:text-accent-contrast text-border" />
+            </TooltipButton>
+
+            <TooltipButton
+              className={props.className}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                let editor =
+                  useEditorStates.getState().editorStates[props.entityID];
+
+                let editorState = editor?.editor;
+                if (editorState) {
+                  editor?.view?.focus();
+                  let tr = editorState.tr.insertText("/", 1);
+                  tr.setSelection(TextSelection.create(tr.doc, 2));
+                  useEditorStates.setState((s) => ({
+                    editorStates: {
+                      ...s.editorStates,
+                      [props.entityID]: {
+                        ...s.editorStates[props.entityID]!,
+                        editor: editorState!.apply(tr),
+                      },
+                    },
+                  }));
+                }
+                focusBlock(
+                  {
+                    type: props.type,
+                    value: props.entityID,
+                    parent: props.parent,
+                  },
+                  { type: "end" },
+                );
+              }}
+              side="bottom"
+              tooltipContent={
+                <div className="flex gap-1 font-bold">Add More!</div>
+              }
+            >
+              <div className="w-6 h-6 flex place-items-center justify-center">
+                <AddTiny className="text-accent-contrast" />
+              </div>
+            </TooltipButton>
+          </div>
         ) : null}
         {editorState.doc.textContent.startsWith("/") && selected && (
           <BlockCommandBar

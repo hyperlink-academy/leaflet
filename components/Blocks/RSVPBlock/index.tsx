@@ -15,12 +15,14 @@ import { Popover } from "components/Popover";
 import { create } from "zustand";
 import { combine, createJSONStorage, persist } from "zustand/middleware";
 import { useUIState } from "src/useUIState";
-import { Separator } from "components/Layout";
 import { theme } from "tailwind.config";
 import { useToaster } from "components/Toast";
 import { sendUpdateToRSVPS } from "actions/sendUpdateToRSVPS";
 import { useReplicache } from "src/replicache";
 import { ContactDetailsForm } from "./ContactDetailsForm";
+import { Checkbox } from "components/Checkbox";
+import styles from "./RSVPBackground.module.css";
+import { usePublishLink } from "components/ShareOptions";
 
 export type RSVP_Status = Database["public"]["Enums"]["rsvp_status"];
 let Statuses = ["GOING", "NOT_GOING", "MAYBE"];
@@ -36,16 +38,26 @@ export function RSVPBlock(props: BlockProps) {
   );
   return (
     <div
-      className={`rsvp flex flex-col sm:gap-2 border bg-test p-3 w-full rounded-lg ${isSelected ? "block-border-selected " : "block-border"}`}
+      className={`rsvp relative flex flex-col gap-1 border  p-3 w-full rounded-lg  place-items-center justify-center ${isSelected ? "block-border-selected " : "block-border"}`}
       style={{
         backgroundColor:
-          "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
+          "color-mix(in oklab, rgb(var(--accent-1)), rgb(var(--bg-page)) 85%)",
       }}
     >
       <RSVPForm entityID={props.entityID} />
     </div>
   );
 }
+
+const RSVPBackground = () => {
+  return (
+    <div className="overflow-hidden absolute top-0 bottom-0 left-0 right-0 ">
+      <div
+        className={`rsvp-background w-full h-full bg-accent-1 z-0 ${styles.RSVPWavyBG} `}
+      />
+    </div>
+  );
+};
 
 function RSVPForm(props: { entityID: string }) {
   let [state, setState] = useState<State>({ state: "default" });
@@ -65,69 +77,23 @@ function RSVPForm(props: { entityID: string }) {
 
   // IF YOU HAVE ALREADY RSVP'D
   if (rsvpStatus)
-    return permissions.write ? (
-      //AND YOU'RE A HOST
+    return (
       <>
-        <div className="flex sm:flex-row flex-col-reverse sm:gap-0 gap-2 justify-between items-start sm:items-center">
-          <Attendees entityID={props.entityID} className="font-bold" />
-          <hr className="block border-border sm:hidden w-full my-1" />
+        {permissions.write && <SendUpdateButton entityID={props.entityID} />}
 
-          <SendUpdateButton entityID={props.entityID} />
-        </div>
-        <hr className="border-border w-full hidden sm:block" />
-        <YourRSVPStatus entityID={props.entityID} compact />
-      </>
-    ) : (
-      // AND YOU'RE A GUEST
-      <div className="flex sm:flex-row flex-col justify-between items-start sm:items-center">
         <YourRSVPStatus entityID={props.entityID} />
-        <hr className="block border-border sm:hidden w-full my-2" />
-        <Attendees entityID={props.entityID} className="font-normal text-sm" />
-      </div>
+        <Attendees entityID={props.entityID} />
+      </>
     );
 
   // IF YOU HAVEN'T RSVP'D
   if (state.state === "default")
-    return permissions.write ? (
-      //YOU'RE A HOST
+    return (
       <>
-        <div className="flex sm:flex-row flex-col-reverse sm:gap-0 gap-2 justify-between">
-          <div className="flex flex-row gap-2 items-center">
-            <ButtonPrimary onClick={() => setStatus("GOING")}>
-              Going!
-            </ButtonPrimary>
-            <ButtonSecondary onClick={() => setStatus("MAYBE")}>
-              Maybe
-            </ButtonSecondary>
-            <ButtonTertiary onClick={() => setStatus("NOT_GOING")}>
-              Can&apos;t Go
-            </ButtonTertiary>
-          </div>
-          <hr className="block border-border sm:hidden w-full my-1" />
-
-          <SendUpdateButton entityID={props.entityID} />
-        </div>
-        <hr className="border-border sm:block hidden" />
-        <Attendees entityID={props.entityID} className="text-sm sm:pt-0 pt-2" />
+        {permissions.write && <SendUpdateButton entityID={props.entityID} />}
+        <RSVPButtons setStatus={setStatus} />
+        <Attendees entityID={props.entityID} className="" />
       </>
-    ) : (
-      //YOU'RE A GUEST
-      <div className="flex sm:flex-row flex-col justify-between">
-        <div className="flex flex-row gap-2 items-center">
-          <ButtonPrimary onClick={() => setStatus("GOING")}>
-            Going!
-          </ButtonPrimary>
-          <ButtonSecondary onClick={() => setStatus("MAYBE")}>
-            Maybe
-          </ButtonSecondary>
-          <ButtonTertiary onClick={() => setStatus("NOT_GOING")}>
-            Can&apos;t Go
-          </ButtonTertiary>
-        </div>
-        <hr className="block border-border sm:hidden w-full my-2" />
-
-        <Attendees entityID={props.entityID} className="text-sm" />
-      </div>
     );
 
   // IF YOU ARE CURRENTLY CONFIRMING YOUR CONTACT DETAILS
@@ -141,9 +107,36 @@ function RSVPForm(props: { entityID: string }) {
     );
 }
 
+const RSVPButtons = (props: { setStatus: (status: RSVP_Status) => void }) => {
+  return (
+    <div className="relative w-full sm:p-6  py-4 px-3 rounded-md border-[1.5px] border-accent-1">
+      <RSVPBackground />
+      <div className="relative flex flex-row gap-2 items-center mx-auto z-[1] w-fit">
+        <ButtonSecondary className="" onClick={() => props.setStatus("MAYBE")}>
+          Maybe
+        </ButtonSecondary>
+        <ButtonPrimary
+          className="text-lg"
+          onClick={() => props.setStatus("GOING")}
+        >
+          Going!
+        </ButtonPrimary>
+
+        <ButtonSecondary
+          className=""
+          onClick={() => props.setStatus("NOT_GOING")}
+        >
+          Can&apos;t Go
+        </ButtonSecondary>
+      </div>
+    </div>
+  );
+};
+
 function YourRSVPStatus(props: { entityID: string; compact?: boolean }) {
   let { data, mutate } = useRSVPData();
   let { name } = useRSVPNameState();
+  let toaster = useToaster();
 
   let rsvpStatus = data?.rsvps?.find(
     (rsvp) =>
@@ -176,49 +169,87 @@ function YourRSVPStatus(props: { entityID: string; compact?: boolean }) {
   };
   return (
     <div
-      className={`flex flex-row gap-1 sm:gap-2 font-bold items-center ${props.compact ? "text-sm sm:font-bold font-normal" : ""}`}
+      className={`relative w-full p-4 pb-5 rounded-md border-[1.5px] border-accent-1 font-bold items-center`}
     >
-      {rsvpStatus !== undefined &&
-        {
-          GOING: `You're Going!`,
-          MAYBE: "You're a Maybe",
-          NOT_GOING: "Can't Make It",
-        }[rsvpStatus]}
-      <Separator classname="mx-1 h-6" />
-      {rsvpStatus !== "GOING" && (
-        <ButtonPrimary
-          className={props.compact ? "text-sm  !font-normal" : ""}
-          compact={props.compact}
-          onClick={() => updateStatus("GOING")}
+      <RSVPBackground />
+      <div className=" relative flex flex-col gap-1 sm:gap-2 z-[1] justify-center">
+        <div
+          className="text-xl text-center text-accent-2 text-with-outline"
+          style={{
+            WebkitTextStroke: `3px ${theme.colors["accent-1"]}`,
+            textShadow: `-4px 3px 0 ${theme.colors["accent-1"]}`,
+            paintOrder: "stroke fill",
+          }}
         >
-          Going
-        </ButtonPrimary>
-      )}
-      {rsvpStatus !== "MAYBE" && (
-        <ButtonSecondary
-          className={props.compact ? "text-sm  !font-normal" : ""}
-          compact={props.compact}
-          onClick={() => updateStatus("MAYBE")}
-        >
-          Maybe
-        </ButtonSecondary>
-      )}
-      {rsvpStatus !== "NOT_GOING" && (
-        <ButtonTertiary
-          className={props.compact ? "text-sm  !font-normal" : ""}
-          onClick={() => updateStatus("NOT_GOING")}
-        >
-          Can&apos;t Go
-        </ButtonTertiary>
-      )}
+          {rsvpStatus !== undefined &&
+            {
+              GOING: `You're Going!`,
+              MAYBE: "You're a Maybe",
+              NOT_GOING: "Can't Make It",
+            }[rsvpStatus]}
+        </div>
+        <div className="flex gap-4 place-items-center justify-center">
+          {rsvpStatus !== "GOING" && (
+            <ButtonSecondary
+              className={props.compact ? "text-sm  !font-normal" : ""}
+              compact
+              onClick={() => {
+                updateStatus("GOING");
+                toaster({
+                  content: (
+                    <div className="font-bold">Yay! You&apos;re Going!</div>
+                  ),
+                  type: "success",
+                });
+              }}
+            >
+              Going
+            </ButtonSecondary>
+          )}
+          {rsvpStatus !== "MAYBE" && (
+            <ButtonSecondary
+              className={props.compact ? "text-sm  !font-normal" : ""}
+              compact
+              onClick={() => {
+                updateStatus("MAYBE");
+                toaster({
+                  content: <div className="font-bold">You&apos;re a Maybe</div>,
+                  type: "success",
+                });
+              }}
+            >
+              Maybe
+            </ButtonSecondary>
+          )}
+          {rsvpStatus !== "NOT_GOING" && (
+            <ButtonSecondary
+              compact
+              className={props.compact ? "text-sm  !font-normal" : ""}
+              onClick={() => {
+                updateStatus("NOT_GOING");
+                toaster({
+                  content: (
+                    <div className="font-bold">
+                      Sorry you can&apos;t make it D:
+                    </div>
+                  ),
+                  type: "success",
+                });
+              }}
+            >
+              Can&apos;t Go
+            </ButtonSecondary>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
 function Attendees(props: { entityID: string; className?: string }) {
-  let { data, mutate } = useRSVPData();
+  let { data } = useRSVPData();
   let attendees =
-    data?.rsvps.filter((rsvp) => rsvp.entity === props.entityID) || [];
+    data?.rsvps?.filter((rsvp) => rsvp.entity === props.entityID) || [];
   let going = attendees.filter((rsvp) => rsvp.status === "GOING");
   let maybe = attendees.filter((rsvp) => rsvp.status === "MAYBE");
   let notGoing = attendees.filter((rsvp) => rsvp.status === "NOT_GOING");
@@ -231,12 +262,12 @@ function Attendees(props: { entityID: string; className?: string }) {
       trigger={
         going.length === 0 && maybe.length === 0 ? (
           <button
-            className={`w-max text-tertiary italic hover:underline ${props.className}`}
+            className={`text-sm font-normal w-max text-tertiary italic hover:underline ${props.className}`}
           >
             No RSVPs yet
           </button>
         ) : (
-          <ButtonTertiary className={props.className}>
+          <ButtonTertiary className={`text-sm font-normal ${props.className}`}>
             {going.length > 0 && `${going.length} Going`}
             {maybe.length > 0 &&
               `${going.length > 0 ? ", " : ""}${maybe.length} Maybe`}
@@ -278,11 +309,29 @@ function Attendees(props: { entityID: string; className?: string }) {
 }
 
 function SendUpdateButton(props: { entityID: string }) {
+  let publishLink = usePublishLink();
   let { permissions } = useEntitySetContext();
   let { permission_token } = useReplicache();
   let [input, setInput] = useState("");
   let toaster = useToaster();
   let [open, setOpen] = useState(false);
+  let [checkedRecipients, setCheckedRecipients] = useState({
+    GOING: true,
+    MAYBE: true,
+    NOT_GOING: false,
+  });
+
+  let { data, mutate } = useRSVPData();
+  let attendees =
+    data?.rsvps?.filter((rsvp) => rsvp.entity === props.entityID) || [];
+  let going = attendees.filter((rsvp) => rsvp.status === "GOING");
+  let maybe = attendees.filter((rsvp) => rsvp.status === "MAYBE");
+  let notGoing = attendees.filter((rsvp) => rsvp.status === "NOT_GOING");
+
+  let allRecipients =
+    ((checkedRecipients.GOING && going.length) || 0) +
+    ((checkedRecipients.MAYBE && maybe.length) || 0) +
+    ((checkedRecipients.NOT_GOING && notGoing.length) || 0);
 
   if (!!!permissions.write) return;
   return (
@@ -291,18 +340,18 @@ function SendUpdateButton(props: { entityID: string }) {
       open={open}
       onOpenChange={(open) => setOpen(open)}
       trigger={
-        <ButtonPrimary fullWidthOnMobile>
-          <UpdateSmall /> Send an Update
+        <ButtonPrimary fullWidth className="mb-2">
+          <UpdateSmall /> Send a Text Blast
         </ButtonPrimary>
       }
     >
-      <div className="rsvpMessageComposer flex flex-col gap-2 w-auto max-w-md">
-        <label className="flex flex-col font-bold text-secondary">
-          <p>Send a Text Blast</p>
-          <small className="font-normal text-secondary">
-            Send a short text message to everyone who is <b>Going</b> or a{" "}
-            <b>Maybe</b>.
-          </small>
+      <div className="rsvpMessageComposer flex flex-col gap-2 w-[1000px] max-w-full sm:max-w-md">
+        <div className="flex flex-col font-bold text-secondary">
+          <h3>Send a Text Blast to</h3>
+          <RecipientPicker
+            checked={checkedRecipients}
+            setChecked={setCheckedRecipients}
+          />
 
           <textarea
             id="rsvp-message-input"
@@ -310,16 +359,16 @@ function SendUpdateButton(props: { entityID: string }) {
             onChange={(e) => {
               setInput(e.target.value);
             }}
-            className="input-with-border w-full h-[150px] mt-1 pt-0.5 font-normal text-primary"
+            className="input-with-border w-full h-[150px] mt-3 pt-0.5 font-normal text-primary"
           />
-        </label>
+        </div>
         <div className="flex justify-between items-start">
           <div
             className={`rsvpMessageCharCounter text-sm text-tertiary`}
             style={
               input.length > 300
                 ? {
-                    color: theme.colors["accent-contrast"],
+                    color: theme.colors["accent-1"],
                     fontWeight: "bold",
                   }
                 : {
@@ -333,11 +382,13 @@ function SendUpdateButton(props: { entityID: string }) {
             disabled={input.length > 300}
             className="place-self-end "
             onClick={async () => {
-              if (!permission_token) return;
+              if (!permission_token || !publishLink) return;
               await sendUpdateToRSVPS(permission_token, {
                 entity: props.entityID,
                 message: input,
-                eventName: "Idk still figuring this out",
+                eventName: document.title,
+                sendto: checkedRecipients,
+                publicLeafletID: publishLink,
               });
               toaster({
                 content: <div className="font-bold">Update sent!</div>,
@@ -346,13 +397,68 @@ function SendUpdateButton(props: { entityID: string }) {
               setOpen(false);
             }}
           >
-            Send
+            Text {allRecipients} {allRecipients === 1 ? "Person" : "People"}!
           </ButtonPrimary>
         </div>
       </div>
     </Popover>
   );
 }
+
+const RecipientPicker = (props: {
+  checked: { GOING: boolean; MAYBE: boolean; NOT_GOING: boolean };
+  setChecked: (checked: {
+    GOING: boolean;
+    MAYBE: boolean;
+    NOT_GOING: boolean;
+  }) => void;
+}) => {
+  return (
+    <div className="flex flex-col gap-0.5">
+      {/* <small className="font-normal">
+        Send a text to everyone who RSVP&apos;d:
+      </small> */}
+      <div className="flex gap-4 text-secondary">
+        <Checkbox
+          className="!w-fit"
+          checked={props.checked.GOING}
+          onChange={() => {
+            props.setChecked({
+              ...props.checked, // Spread the existing values
+              GOING: !props.checked.GOING,
+            });
+          }}
+        >
+          Going
+        </Checkbox>
+        <Checkbox
+          className="!w-fit"
+          checked={props.checked.MAYBE}
+          onChange={() => {
+            props.setChecked({
+              ...props.checked, // Spread the existing values
+              MAYBE: !props.checked.MAYBE,
+            });
+          }}
+        >
+          Maybe
+        </Checkbox>
+        <Checkbox
+          className="!w-fit"
+          checked={props.checked.NOT_GOING}
+          onChange={() => {
+            props.setChecked({
+              ...props.checked, // Spread the existing values
+              NOT_GOING: !props.checked.NOT_GOING,
+            });
+          }}
+        >
+          Can&apos;t Go
+        </Checkbox>
+      </div>
+    </div>
+  );
+};
 
 export let useRSVPNameState = create(
   persist(

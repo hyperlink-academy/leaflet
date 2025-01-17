@@ -491,6 +491,7 @@ export function SelectionManager() {
     if (isMobile) return;
     if (!entity_set.permissions.write) return;
     let mouseDownListener = (e: MouseEvent) => {
+      if ((e.target as Element).getAttribute("data-draggable")) return;
       setMouseDown(true);
       let contentEditableParent = getContentEditableParent(e.target as Node);
       if (contentEditableParent) {

@@ -102,6 +102,7 @@ export const useDrag = (args: {
     window.addEventListener(
       "pointermove",
       (e: PointerEvent) => {
+        e.preventDefault();
         currentDragDelta.current.x = e.clientX - dragStart.x;
         currentDragDelta.current.y = e.clientY - dragStart.y;
         setDragDelta({ ...currentDragDelta.current });

@@ -275,12 +275,12 @@ export const HighlightColorSettings = (props: { pageID: string }) => {
                   >
                     <ColorPicker
                       label="Highlight 1"
-                      value={
-                        color?.data.value === undefined
-                          ? undefined
-                          : highlight1Value
-                      }
-                      setValue={set("theme/highlight-1")}
+                      value={highlight1Value}
+                      setValue={(color) => {
+                        set("theme/highlight-1")(
+                          color.withChannelValue("alpha", 1),
+                        );
+                      }}
                       thisPicker={"highlight-1"}
                       openPicker={openPicker}
                       setOpenPicker={setOpenPicker}
