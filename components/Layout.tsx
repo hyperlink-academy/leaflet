@@ -93,17 +93,13 @@ export const InputWithLabel = (
 ) => {
   let { label, ...inputProps } = props;
   return (
-    <div>
-      <div className="input-with-border flex flex-col">
-        <label className="text-sm text-tertiary font-bold italic">
-          {props.label}
-          <Input
-            {...inputProps}
-            className={`appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 ${props.className}`}
-          />
-        </label>
-      </div>
-    </div>
+    <label className="text-xs text-tertiary font-bold italic input-with-border flex flex-col w-full">
+      {props.label}
+      <Input
+        {...inputProps}
+        className={`appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 ${props.className}`}
+      />
+    </label>
   );
 };
 

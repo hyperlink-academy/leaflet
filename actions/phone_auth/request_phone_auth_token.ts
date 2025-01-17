@@ -7,6 +7,8 @@ import { phone_number_auth_tokens } from "drizzle/schema";
 import twilio from "twilio";
 
 async function sendAuthCode(phoneNumber: string, code: string) {
+  console.log("HERE IS THE CODE: " + code);
+  return;
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
   const client = twilio(accountSid, authToken);

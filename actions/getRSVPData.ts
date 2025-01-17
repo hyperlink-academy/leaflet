@@ -52,12 +52,14 @@ export async function getRSVPData(entity_sets: string[]) {
           name: rsvp.phone_rsvps_to_entity.name,
           entity: rsvp.entities.id,
           status: rsvp.phone_rsvps_to_entity.status,
+          plus_ones: rsvp.phone_rsvps_to_entity.plus_ones,
         };
       else
         return {
           name: rsvp.phone_rsvps_to_entity.name,
           entity: rsvp.entities.id,
           status: rsvp.phone_rsvps_to_entity.status,
+          plus_ones: rsvp.phone_rsvps_to_entity.plus_ones,
         };
     }),
   };

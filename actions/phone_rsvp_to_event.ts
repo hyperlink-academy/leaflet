@@ -18,6 +18,7 @@ export async function submitRSVP(args: {
   entity: string;
   status: Database["public"]["Enums"]["rsvp_status"];
   name: string;
+  plus_ones: number;
 }) {
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
@@ -41,6 +42,7 @@ export async function submitRSVP(args: {
           phone_number: auth_token.phone_number,
           country_code: auth_token.country_code,
           name: args.name,
+          plus_ones: args.plus_ones,
         },
       ])
       .onConflictDoUpdate({
@@ -51,6 +53,7 @@ export async function submitRSVP(args: {
         set: {
           name: args.name,
           status: args.status,
+          plus_ones: args.plus_ones,
         },
       });
   });
