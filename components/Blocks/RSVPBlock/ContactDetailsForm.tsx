@@ -325,7 +325,7 @@ const ConfirmationForm = (props: {
           onChange={(e) => props.onChange(e.target.value)}
         />
         <div className="text-sm  italic text-tertiary leading-tight">
-          Code was sent to <strong>{props.phoneNumber}</strong>!
+          Code was sent to your <strong>WhatsApp</strong>!
         </div>
       </label>
 

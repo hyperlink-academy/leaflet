@@ -59,6 +59,10 @@ export function SendUpdateButton(props: { entityID: string }) {
 
           <textarea
             id="rsvp-message-input"
+            onKeyDown={(e) => {
+              if (e.key === "Backspace" && !e.currentTarget.value)
+                e.preventDefault();
+            }}
             value={input}
             onChange={(e) => {
               setInput(e.target.value);
@@ -83,7 +87,9 @@ export function SendUpdateButton(props: { entityID: string }) {
             {input.length}/300 {input.length > 300 && " (too long!)"}
           </div>
           <ButtonPrimary
-            disabled={input.length > 300}
+            disabled={
+              input.length > 300 || input.length === 0 || allRecipients === 0
+            }
             className="place-self-end "
             onClick={async () => {
               if (!permission_token || !publishLink) return;
