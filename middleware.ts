@@ -1,4 +1,6 @@
+import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { Database } from "supabase/database.types";
 
 export const config = {
   matcher: [
@@ -13,8 +15,22 @@ export const config = {
   ],
 };
 
+let supabase = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
+  process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+);
 export default async function middleware(req: NextRequest) {
   let hostname = req.headers.get("host")!;
+  if (hostname === "leaflet.pub") return;
+  let { data: route } = await supabase
+    .from("custom_domain_routes")
+    .select("*")
+    .eq("domain", hostname)
+    .eq("route", req.nextUrl.pathname)
+    .single();
+  if (route)
+    return NextResponse.rewrite(new URL(`/${route.permission_token}`, req.url));
+
   if (hostname === "guilds.nyc")
     return NextResponse.rewrite(
       new URL("/b64bc712-c9c1-4ed3-a8f4-d33f33d3bfdb", req.url),

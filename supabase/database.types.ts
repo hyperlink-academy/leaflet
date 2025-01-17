@@ -34,6 +34,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      custom_domain_routes: {
+        Row: {
+          domain: string
+          id: string
+          permission_token: string
+          route: string
+        }
+        Insert: {
+          domain: string
+          id?: string
+          permission_token: string
+          route: string
+        }
+        Update: {
+          domain?: string
+          id?: string
+          permission_token?: string
+          route?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_domain_routes_domain_fkey"
+            columns: ["domain"]
+            isOneToOne: false
+            referencedRelation: "custom_domains"
+            referencedColumns: ["domain"]
+          },
+          {
+            foreignKeyName: "custom_domain_routes_permission_token_fkey"
+            columns: ["permission_token"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_domains: {
+        Row: {
+          confirmed: boolean
+          domain: string
+          identity: string
+        }
+        Insert: {
+          confirmed: boolean
+          domain: string
+          identity?: string
+        }
+        Update: {
+          confirmed?: boolean
+          domain?: string
+          identity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_domains_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["email"]
+          },
+        ]
+      }
       email_auth_tokens: {
         Row: {
           confirmation_code: string
@@ -358,6 +420,7 @@ export type Database = {
           id: string
           name: string
           phone_number: string
+          plus_ones: number
           status: Database["public"]["Enums"]["rsvp_status"]
         }
         Insert: {
@@ -367,6 +430,7 @@ export type Database = {
           id?: string
           name?: string
           phone_number: string
+          plus_ones?: number
           status: Database["public"]["Enums"]["rsvp_status"]
         }
         Update: {
@@ -376,6 +440,7 @@ export type Database = {
           id?: string
           name?: string
           phone_number?: string
+          plus_ones?: number
           status?: Database["public"]["Enums"]["rsvp_status"]
         }
         Relationships: [
