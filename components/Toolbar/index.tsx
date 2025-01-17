@@ -130,12 +130,13 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
                   );
               }}
               closeAreYouSure={() => {
-                let state: ToolbarTypes =
+                setToolbarState(
                   selectedBlocks.length > 1
                     ? "multiselect"
                     : blockType !== "heading" && blockType !== "text"
                       ? "block"
-                      : "default";
+                      : "default",
+                );
               }}
             />
           ) : null}

@@ -17,6 +17,7 @@ export function useBlockMouseHandlers(props: Block) {
   let onMouseDown = useCallback(
     (e: MouseEvent) => {
       if ((e.target as Element).getAttribute("data-draggable")) return;
+      if ((e.target as Element).tagName === "BUTTON") return;
       if (isMobile) return;
       if (!entity_set.permissions.write) return;
       useSelectingMouse.setState({ start: props.value });
