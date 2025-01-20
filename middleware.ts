@@ -30,9 +30,4 @@ export default async function middleware(req: NextRequest) {
     .single();
   if (route)
     return NextResponse.rewrite(new URL(`/${route.permission_token}`, req.url));
-
-  if (hostname === "guilds.nyc")
-    return NextResponse.rewrite(
-      new URL("/b64bc712-c9c1-4ed3-a8f4-d33f33d3bfdb", req.url),
-    );
 }
