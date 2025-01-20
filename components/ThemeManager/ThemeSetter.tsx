@@ -178,7 +178,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                     ? "cover"
                     : `calc(${leafletBGRepeat.data.value}px / 2 )`,
                 }}
-                className={`bg-bg-leaflet mx-2 p-3  mb-2 flex flex-col rounded-md  border border-border ${props.home ? "" : "pb-0"}`}
+                className={`bg-bg-leaflet mx-2 p-3  mb-2 flex flex-col rounded-md  border border-border pb-0`}
               >
                 <div className={`flex flex-col z-10 mt-4 -mb-[6px] `}>
                   <div
