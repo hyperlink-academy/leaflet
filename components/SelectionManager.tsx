@@ -474,6 +474,7 @@ export function SelectionManager() {
       if (e.key === "c" && (e.metaKey || e.ctrlKey)) {
         if (!rep) return;
         let [, , selectionWithFoldedChildren] = await getSortedSelection();
+        if (!selectionWithFoldedChildren) return;
         await copySelection(rep, selectionWithFoldedChildren);
       }
     };

@@ -122,6 +122,11 @@ const DefaultOptions = (props: {
         </>
         smokerText="Publish link copied!"
         id="get-publish-link"
+        fullLink={
+          domains?.[0]
+            ? `http://${domains[0].domain}${domains[0].route}`
+            : undefined
+        }
         link={publishLink || ""}
       />
       <hr className="border-border mt-1" />
@@ -137,6 +142,7 @@ export const ShareButton = (props: {
   smokerText: string;
   id: string;
   link: null | string;
+  fullLink?: string;
 }) => {
   let smoker = useSmoker();
 
@@ -146,9 +152,11 @@ export const ShareButton = (props: {
       onSelect={(e) => {
         e.preventDefault();
         let rect = document.getElementById(props.id)?.getBoundingClientRect();
-        if (props.link) {
+        if (props.link || props.fullLink) {
           navigator.clipboard.writeText(
-            `${location.protocol}//${location.host}/${props.link}`,
+            props.fullLink
+              ? props.fullLink
+              : `${location.protocol}//${location.host}/${props.link}`,
           );
           smoker({
             position: {
