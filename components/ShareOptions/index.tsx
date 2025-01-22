@@ -113,7 +113,8 @@ const DefaultOptions = (props: {
             <>
               This leaflet is published on{" "}
               <span className="italic underline">
-                {domains[0].domain}/{domains[0].route}
+                {domains[0].domain}
+                {domains[0].route}
               </span>
             </>
           ) : (
