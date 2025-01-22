@@ -154,7 +154,11 @@ export const DomainOptions = (props: {
               content: (
                 <div className="font-bold">
                   Published to custom domain!{" "}
-                  <a className="underline text-accent-2" href="/">
+                  <a
+                    className="underline text-accent-2"
+                    href={`https://${selectedDomain}/${selectedRoute}`}
+                    target="_blank"
+                  >
                     View
                   </a>
                 </div>
