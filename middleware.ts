@@ -29,5 +29,7 @@ export default async function middleware(req: NextRequest) {
     .eq("route", req.nextUrl.pathname)
     .single();
   if (route)
-    return NextResponse.rewrite(new URL(`/${route.permission_token}`, req.url));
+    return NextResponse.rewrite(
+      new URL(`/${route.view_permission_token}`, req.url),
+    );
 }

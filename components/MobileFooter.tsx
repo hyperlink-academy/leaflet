@@ -35,7 +35,7 @@ export function MobileFooter(props: { entityID: string }) {
           <div className="flex flex-row gap-[6px] items-center ">
             <HelpPopover />
             <ThemePopover entityID={props.entityID} />
-            <ShareOptions rootEntity={props.entityID} />
+            <ShareOptions />
           </div>
         </div>
       ) : (

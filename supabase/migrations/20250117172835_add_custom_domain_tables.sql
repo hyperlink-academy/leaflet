@@ -14,8 +14,6 @@ create table "public"."custom_domains" (
 
 alter table "public"."custom_domains" enable row level security;
 
-alter table "public"."phone_rsvps_to_entity" add column "plus_ones" smallint not null default '0'::smallint;
-
 CREATE UNIQUE INDEX custom_domain_routes_domain_route_key ON public.custom_domain_routes USING btree (domain, route);
 
 CREATE UNIQUE INDEX custom_domain_routes_pkey ON public.custom_domain_routes USING btree (id);

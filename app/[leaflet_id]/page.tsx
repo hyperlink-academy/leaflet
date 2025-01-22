@@ -10,7 +10,7 @@ import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragme
 import { Leaflet } from "./Leaflet";
 import { scanIndexLocal } from "src/replicache/utils";
 import { getRSVPData } from "actions/getRSVPData";
-import { RSVPDataProvider } from "components/RSVPDataProvider";
+import { PageSWRDataProvider } from "components/PageSWRDataProvider";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -28,7 +28,9 @@ type Props = {
 export default async function LeafletPage(props: Props) {
   let res = await supabase
     .from("permission_tokens")
-    .select("*, permission_token_rights(*) ")
+    .select(
+      "*, permission_token_rights(*), custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*) ",
+    )
     .eq("id", props.params.leaflet_id)
     .single();
   let rootEntity = res.data?.root_entity;
@@ -58,13 +60,17 @@ export default async function LeafletPage(props: Props) {
   ]);
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
   return (
-    <RSVPDataProvider data={rsvp_data}>
+    <PageSWRDataProvider
+      rsvp_data={rsvp_data}
+      leaflet_id={res.data.id}
+      domains={res.data.custom_domain_routes}
+    >
       <Leaflet
         initialFacts={initialFacts}
         leaflet_id={rootEntity}
         token={res.data}
       />
-    </RSVPDataProvider>
+    </PageSWRDataProvider>
   );
 }
 

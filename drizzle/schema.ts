@@ -1,4 +1,4 @@
-import { pgTable, foreignKey, pgEnum, text, boolean, unique, uuid, jsonb, timestamp, bigint, uniqueIndex, smallint, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, pgEnum, uuid, text, jsonb, timestamp, bigint, unique, boolean, uniqueIndex, smallint, primaryKey } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const aal_level = pgEnum("aal_level", ['aal1', 'aal2', 'aal3'])
@@ -13,24 +13,6 @@ export const rsvp_status = pgEnum("rsvp_status", ['GOING', 'NOT_GOING', 'MAYBE']
 export const action = pgEnum("action", ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'ERROR'])
 export const equality_op = pgEnum("equality_op", ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'in'])
 
-
-export const custom_domains = pgTable("custom_domains", {
-	domain: text("domain").primaryKey().notNull(),
-	identity: text("identity").default('').notNull().references(() => identities.email, { onDelete: "cascade", onUpdate: "cascade" } ),
-	confirmed: boolean("confirmed").notNull(),
-});
-
-export const custom_domain_routes = pgTable("custom_domain_routes", {
-	id: uuid("id").defaultRandom().primaryKey().notNull(),
-	domain: text("domain").notNull().references(() => custom_domains.domain),
-	route: text("route").notNull(),
-	permission_token: uuid("permission_token").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
-},
-(table) => {
-	return {
-		custom_domain_routes_domain_route_key: unique("custom_domain_routes_domain_route_key").on(table.domain, table.route),
-	}
-});
 
 export const facts = pgTable("facts", {
 	id: uuid("id").primaryKey().notNull(),
@@ -106,14 +88,33 @@ export const phone_number_auth_tokens = pgTable("phone_number_auth_tokens", {
 	country_code: text("country_code").notNull(),
 });
 
+export const custom_domain_routes = pgTable("custom_domain_routes", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	domain: text("domain").notNull().references(() => custom_domains.domain),
+	route: text("route").notNull(),
+	view_permission_token: uuid("view_permission_token").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	edit_permission_token: uuid("edit_permission_token").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+},
+(table) => {
+	return {
+		custom_domain_routes_domain_route_key: unique("custom_domain_routes_domain_route_key").on(table.domain, table.route),
+	}
+});
+
+export const custom_domains = pgTable("custom_domains", {
+	domain: text("domain").primaryKey().notNull(),
+	identity: text("identity").default('').notNull().references(() => identities.email, { onDelete: "cascade", onUpdate: "cascade" } ),
+	confirmed: boolean("confirmed").notNull(),
+});
+
 export const phone_rsvps_to_entity = pgTable("phone_rsvps_to_entity", {
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	phone_number: text("phone_number").notNull(),
+	country_code: text("country_code").notNull(),
 	status: rsvp_status("status").notNull(),
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	entity: uuid("entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 	name: text("name").default('').notNull(),
-	country_code: text("country_code").notNull(),
 	plus_ones: smallint("plus_ones").default(0).notNull(),
 },
 (table) => {

@@ -111,7 +111,7 @@ const Toast = (props: {
         <div
           className={`toast absolute right-2 w-max  shadow-md px-3 py-1 flex flex-row gap-2 rounded-full border text-center ${
             props.toast?.type === "error"
-              ? "bg-accent-red text-white border-white"
+              ? "border-white bg-[#dc143c] text-white border font-bold"
               : props.toast?.type === "success"
                 ? "bg-accent-1 text-accent-2 border border-accent-2"
                 : "bg-accent-1 text-accent-2 border border-accent-2"

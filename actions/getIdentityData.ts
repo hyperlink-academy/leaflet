@@ -19,6 +19,7 @@ export async function getIdentityData() {
           `*,
           identities(
             *,
+            custom_domains(*),
             home_leaflet:permission_tokens!identities_home_page_fkey(*, permission_token_rights(*)),
             permission_token_on_homepage(created_at, permission_tokens!inner(*, permission_token_rights(*)))
           )`,

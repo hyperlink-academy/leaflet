@@ -3,7 +3,7 @@ import { Database } from "supabase/database.types";
 import { BlockProps } from "components/Blocks/Block";
 import { useState } from "react";
 import { submitRSVP } from "actions/phone_rsvp_to_event";
-import { useRSVPData } from "src/hooks/useRSVPData";
+import { useRSVPData } from "components/PageSWRDataProvider";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { ButtonSecondary } from "components/Buttons";
 import { create } from "zustand";

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useRSVPData } from "src/hooks/useRSVPData";
+import { useRSVPData } from "components/PageSWRDataProvider";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { ButtonPrimary } from "components/Buttons";
 import { UpdateSmall } from "components/Icons";

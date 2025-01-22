@@ -6,6 +6,8 @@ import { createClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 import { pull } from "./pull";
 import { getFactsFromHomeLeaflets } from "./getFactsFromHomeLeaflets";
+import { Vercel } from "@vercel/sdk";
+import { get_domain_status } from "./get_domain_status";
 
 const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
 let supabase = createClient<Database>(
@@ -14,12 +16,17 @@ let supabase = createClient<Database>(
 );
 const db = drizzle(client);
 
+const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
+const vercel = new Vercel({
+  bearerToken: VERCEL_TOKEN,
+});
 const Env = {
   supabase,
+  vercel,
 };
 export type Env = typeof Env;
 export type Routes = typeof Routes;
-let Routes = [push, pull, getFactsFromHomeLeaflets];
+let Routes = [push, pull, getFactsFromHomeLeaflets, get_domain_status];
 export async function POST(
   req: Request,
   { params }: { params: { command: string } },

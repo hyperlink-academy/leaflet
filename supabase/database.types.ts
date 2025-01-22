@@ -37,21 +37,24 @@ export type Database = {
       custom_domain_routes: {
         Row: {
           domain: string
+          edit_permission_token: string
           id: string
-          permission_token: string
           route: string
+          view_permission_token: string
         }
         Insert: {
           domain: string
+          edit_permission_token: string
           id?: string
-          permission_token: string
           route: string
+          view_permission_token: string
         }
         Update: {
           domain?: string
+          edit_permission_token?: string
           id?: string
-          permission_token?: string
           route?: string
+          view_permission_token?: string
         }
         Relationships: [
           {
@@ -62,8 +65,15 @@ export type Database = {
             referencedColumns: ["domain"]
           },
           {
-            foreignKeyName: "custom_domain_routes_permission_token_fkey"
-            columns: ["permission_token"]
+            foreignKeyName: "custom_domain_routes_edit_permission_token_fkey"
+            columns: ["edit_permission_token"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_domain_routes_view_permission_token_fkey"
+            columns: ["view_permission_token"]
             isOneToOne: false
             referencedRelation: "permission_tokens"
             referencedColumns: ["id"]

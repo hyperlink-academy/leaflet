@@ -2,7 +2,7 @@
 import { useSmoker, useToaster } from "components/Toast";
 import { RSVP_Status, RSVPButtons, State, useRSVPNameState } from ".";
 import { createContext, useContext, useState } from "react";
-import { useRSVPData } from "src/hooks/useRSVPData";
+import { useRSVPData } from "components/PageSWRDataProvider";
 import { confirmPhoneAuthToken } from "actions/phone_auth/confirm_phone_auth_token";
 import { submitRSVP } from "actions/phone_rsvp_to_event";
 
