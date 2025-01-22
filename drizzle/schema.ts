@@ -88,23 +88,25 @@ export const phone_number_auth_tokens = pgTable("phone_number_auth_tokens", {
 	country_code: text("country_code").notNull(),
 });
 
+export const custom_domains = pgTable("custom_domains", {
+	domain: text("domain").primaryKey().notNull(),
+	identity: text("identity").default('').notNull().references(() => identities.email, { onDelete: "cascade", onUpdate: "cascade" } ),
+	confirmed: boolean("confirmed").notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+});
+
 export const custom_domain_routes = pgTable("custom_domain_routes", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	domain: text("domain").notNull().references(() => custom_domains.domain),
 	route: text("route").notNull(),
 	view_permission_token: uuid("view_permission_token").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 	edit_permission_token: uuid("edit_permission_token").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 },
 (table) => {
 	return {
 		custom_domain_routes_domain_route_key: unique("custom_domain_routes_domain_route_key").on(table.domain, table.route),
 	}
-});
-
-export const custom_domains = pgTable("custom_domains", {
-	domain: text("domain").primaryKey().notNull(),
-	identity: text("identity").default('').notNull().references(() => identities.email, { onDelete: "cascade", onUpdate: "cascade" } ),
-	confirmed: boolean("confirmed").notNull(),
 });
 
 export const phone_rsvps_to_entity = pgTable("phone_rsvps_to_entity", {

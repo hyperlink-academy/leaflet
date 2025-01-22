@@ -69,6 +69,14 @@ export const email_auth_tokensRelations = relations(email_auth_tokens, ({one}) =
 	}),
 }));
 
+export const custom_domainsRelations = relations(custom_domains, ({one, many}) => ({
+	identity: one(identities, {
+		fields: [custom_domains.identity],
+		references: [identities.email]
+	}),
+	custom_domain_routes: many(custom_domain_routes),
+}));
+
 export const custom_domain_routesRelations = relations(custom_domain_routes, ({one}) => ({
 	custom_domain: one(custom_domains, {
 		fields: [custom_domain_routes.domain],
@@ -83,14 +91,6 @@ export const custom_domain_routesRelations = relations(custom_domain_routes, ({o
 		fields: [custom_domain_routes.view_permission_token],
 		references: [permission_tokens.id],
 		relationName: "custom_domain_routes_view_permission_token_permission_tokens_id"
-	}),
-}));
-
-export const custom_domainsRelations = relations(custom_domains, ({one, many}) => ({
-	custom_domain_routes: many(custom_domain_routes),
-	identity: one(identities, {
-		fields: [custom_domains.identity],
-		references: [identities.email]
 	}),
 }));
 

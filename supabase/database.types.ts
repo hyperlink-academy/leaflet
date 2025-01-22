@@ -36,6 +36,7 @@ export type Database = {
     Tables: {
       custom_domain_routes: {
         Row: {
+          created_at: string
           domain: string
           edit_permission_token: string
           id: string
@@ -43,6 +44,7 @@ export type Database = {
           view_permission_token: string
         }
         Insert: {
+          created_at?: string
           domain: string
           edit_permission_token: string
           id?: string
@@ -50,6 +52,7 @@ export type Database = {
           view_permission_token: string
         }
         Update: {
+          created_at?: string
           domain?: string
           edit_permission_token?: string
           id?: string
@@ -83,16 +86,19 @@ export type Database = {
       custom_domains: {
         Row: {
           confirmed: boolean
+          created_at: string
           domain: string
           identity: string
         }
         Insert: {
           confirmed: boolean
+          created_at?: string
           domain: string
           identity?: string
         }
         Update: {
           confirmed?: boolean
+          created_at?: string
           domain?: string
           identity?: string
         }
