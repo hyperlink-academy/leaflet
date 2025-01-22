@@ -63,7 +63,7 @@ export function Pages(props: { rootPage: string }) {
           <div className="flex flex-col h-full justify-between  mt-1">
             {entity_set.permissions.write ? (
               <div className="flex flex-col justify-center gap-2 mr-4">
-                <ShareOptions rootEntity={props.rootPage} />
+                <ShareOptions />
                 <LeafletOptions entityID={props.rootPage} />
                 <HelpPopover />
                 <hr className="text-border my-3" />

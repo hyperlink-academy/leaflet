@@ -9,6 +9,11 @@ import { cookies } from "next/headers";
 
 async function sendAuthCode(email: string, code: string) {
   console.log(code);
+  if (process.env.NODE_ENV === "development") {
+    console.log("Auth code:", code);
+    return;
+  }
+
   let res = await fetch("https://api.postmarkapp.com/email", {
     method: "POST",
     headers: {

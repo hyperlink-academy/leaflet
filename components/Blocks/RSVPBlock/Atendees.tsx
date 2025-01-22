@@ -1,5 +1,5 @@
 "use client";
-import { useRSVPData } from "src/hooks/useRSVPData";
+import { useRSVPData } from "components/PageSWRDataProvider";
 import { ButtonTertiary } from "components/Buttons";
 import { Popover } from "components/Popover";
 

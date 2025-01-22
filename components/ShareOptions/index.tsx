@@ -9,14 +9,11 @@ import { HoverButton } from "components/Buttons";
 import useSWR from "swr";
 import { useTemplateState } from "app/home/CreateNewButton";
 import LoginForm from "app/login/LoginForm";
-import { AddDomain, DomainOptions } from "./DomainOptions";
+import { AddDomain, CustomDomainMenu, DomainOptions } from "./DomainOptions";
 import { useIdentityData } from "components/IdentityProvider";
+import { useLeafletDomains } from "components/PageSWRDataProvider";
 
-export type ShareMenuStates =
-  | "default"
-  | "login"
-  | "chooseDomain"
-  | "addDomain";
+export type ShareMenuStates = "default" | "login" | "domain";
 
 export let usePublishLink = () => {
   let { permission_token, rootEntity } = useReplicache();
@@ -43,7 +40,6 @@ export let usePublishLink = () => {
 export function ShareOptions() {
   let { permission_token } = useReplicache();
   let [menuState, setMenuState] = useState<ShareMenuStates>("default");
-  let domainConnected = false;
 
   return (
     <Menu
@@ -64,18 +60,10 @@ export function ShareOptions() {
         <div className="px-3 py-1">
           <LoginForm />
         </div>
-      ) : menuState === "chooseDomain" ? (
-        <DomainOptions
-          setMenuState={setMenuState}
-          domainConnected={domainConnected}
-        />
-      ) : menuState === "addDomain" ? (
-        <AddDomain setMenuState={setMenuState} />
+      ) : menuState === "domain" ? (
+        <CustomDomainMenu setShareMenuState={setMenuState} />
       ) : (
-        <DefaultOptions
-          setMenuState={setMenuState}
-          domainConnected={domainConnected}
-        />
+        <DefaultOptions setMenuState={setMenuState} domainConnected={false} />
       )}
     </Menu>
   );
@@ -92,6 +80,7 @@ const DefaultOptions = (props: {
     // strip leading '/' character from pathname
     setCollabLink(window.location.pathname.slice(1));
   }, []);
+  let { data: domains } = useLeafletDomains();
 
   let isTemplate = useTemplateState(
     (s) => !!s.templates.find((t) => t.id === permission_token.id),
@@ -120,10 +109,12 @@ const DefaultOptions = (props: {
       <ShareButton
         text="Publish"
         subtext=<>
-          {props.domainConnected ? (
+          {domains?.[0] ? (
             <>
               This leaflet is published on{" "}
-              <span className="italic underline">cozylittle.house/recipes</span>
+              <span className="italic underline">
+                {domains[0].domain}/{domains[0].route}
+              </span>
             </>
           ) : (
             "Send the read-only version"
@@ -134,10 +125,7 @@ const DefaultOptions = (props: {
         link={publishLink || ""}
       />
       <hr className="border-border mt-1" />
-      <DomainMenuItem
-        setMenuState={props.setMenuState}
-        domainConnected={props.domainConnected}
-      />
+      <DomainMenuItem setMenuState={props.setMenuState} />
     </>
   );
 };
@@ -196,9 +184,9 @@ export const ShareButton = (props: {
 
 const DomainMenuItem = (props: {
   setMenuState: (state: ShareMenuStates) => void;
-  domainConnected: boolean;
 }) => {
   let { identity } = useIdentityData();
+  let { data: domains } = useLeafletDomains();
 
   if (identity === null)
     return (
@@ -217,11 +205,11 @@ const DomainMenuItem = (props: {
   else
     return (
       <>
-        {props.domainConnected ? (
+        {domains?.[0] ? (
           <button
             className="px-3 py-1 text-accent-contrast text-sm hover:font-bold w-fit text-left"
             onMouseDown={() => {
-              props.setMenuState("chooseDomain");
+              props.setMenuState("domain");
             }}
           >
             edit custom domain
@@ -231,7 +219,7 @@ const DomainMenuItem = (props: {
             className="font-normal text-tertiary text-sm"
             onSelect={(e) => {
               e.preventDefault();
-              props.setMenuState("chooseDomain");
+              props.setMenuState("domain");
             }}
           >
             Publish on a custom domain
