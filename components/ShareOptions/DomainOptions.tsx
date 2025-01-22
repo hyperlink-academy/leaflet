@@ -194,7 +194,10 @@ const DomainOption = (props: {
         value={props.domain}
         checked={props.checked}
         className="hidden appearance-none"
-        onChange={() => props.setChecked(props.domain)}
+        onChange={() => {
+          if (pending) return;
+          props.setChecked(props.domain);
+        }}
       />
       <div
         className={`
