@@ -40,6 +40,10 @@ export async function addDomainPath({
   )
     return null;
 
+  await supabase
+    .from("custom_domain_routes")
+    .delete()
+    .eq("view_permission_token", edit_permission_token);
   await supabase.from("custom_domain_routes").insert({
     domain,
     route,
