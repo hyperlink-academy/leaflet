@@ -125,7 +125,7 @@ const DefaultOptions = (props: {
         id="get-publish-link"
         fullLink={
           domains?.[0]
-            ? `http://${domains[0].domain}${domains[0].route}`
+            ? `https://${domains[0].domain}${domains[0].route}`
             : undefined
         }
         link={publishLink || ""}
