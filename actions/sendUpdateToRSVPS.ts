@@ -57,7 +57,9 @@ export async function sendUpdateToRSVPS(
   const client = twilio(accountSid, authToken);
 
   for (let rsvp of rsvps) {
-    if (sendto[rsvp.phone_rsvps_to_entity.status])
+    if (sendto[rsvp.phone_rsvps_to_entity.status]) {
+      let { country_code, phone_number } = rsvp.phone_rsvps_to_entity;
+      let number = `+${country_code}${phone_number}`;
       await client.messages.create({
         contentSid: "HX8e1217f791d38fa4cf7b7b24a02fe10c",
         contentVariables: JSON.stringify({
@@ -65,9 +67,10 @@ export async function sendUpdateToRSVPS(
           2: message,
           3: `https://leaflet.pub/${publicLeafletID}`,
         }),
-        from: "whatsapp:+18449523391",
+        from: `${country_code === "1" ? "" : "whatsapp:"}+18449523391`,
         messagingServiceSid: "MGffbf9a66770350b25caf3b80b9aac481",
-        to: `whatsapp:${rsvp.phone_rsvps_to_entity.phone_number}`,
+        to: country_code === "1" ? number : `whatsapp:${number}`,
       });
+    }
   }
 }

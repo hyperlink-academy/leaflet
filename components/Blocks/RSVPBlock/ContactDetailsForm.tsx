@@ -137,7 +137,7 @@ export function ContactDetailsForm(props: {
               ${!!data?.authToken?.phone_number && "bg-border-light border-border-light text-tertiary"}`}
             >
               <div className=" text-xs font-bold italic text-tertiary">
-                WhatsApp Number
+                Phone Number
               </div>
               <div className="flex gap-2 ">
                 <div className="flex items-center gap-1">
@@ -198,8 +198,12 @@ export function ContactDetailsForm(props: {
               </div>
             </label>
             <div className="text-xs italic text-tertiary leading-tight">
-              Currently, all communication will be routed through{" "}
-              <strong>WhatsApp</strong>. SMS coming soon!
+              {formState.country_code !== "1" ? (
+                <>
+                  Messages to non-US/Canada numbers will be sent via{" "}
+                  <strong>WhatsApp</strong>
+                </>
+              ) : null}
             </div>
           </div>
           <div className="flex flex-row gap-2 w-full sm:w-32 h-fit">
