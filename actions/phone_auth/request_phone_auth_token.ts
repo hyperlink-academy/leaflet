@@ -6,23 +6,35 @@ import postgres from "postgres";
 import { phone_number_auth_tokens } from "drizzle/schema";
 import twilio from "twilio";
 
-async function sendAuthCode(phoneNumber: string, code: string) {
-  if (process.env.NODE_ENV === "development") {
-    console.log(`[auth code for ${phoneNumber}:`, code, "]");
-    return;
-  }
+async function sendAuthCode({
+  country_code,
+  phone_number,
+  code,
+}: {
+  country_code: string;
+  phone_number: string;
+  code: string;
+}) {
+  let phoneNumber = `+${country_code}${phone_number}`;
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
   const client = twilio(accountSid, authToken);
-
-  const message = await client.messages.create({
-    contentSid: "HX5ebfae4d2a423808486e773e8a22488d",
-    contentVariables: JSON.stringify({ 1: code }),
-    from: "whatsapp:+18449523391",
-    messagingServiceSid: "MGffbf9a66770350b25caf3b80b9aac481",
-    to: `whatsapp:${phoneNumber}`,
-  });
-  console.log(message.body);
+  if (country_code === "1") {
+    const message = await client.messages.create({
+      body: `${code} is your verification code`,
+      from: `+18449523391`,
+      to: phoneNumber,
+    });
+    console.log(message);
+  } else {
+    const message = await client.messages.create({
+      contentSid: "HX5ebfae4d2a423808486e773e8a22488d",
+      contentVariables: JSON.stringify({ 1: code }),
+      from: "whatsapp:+18449523391",
+      messagingServiceSid: "MGffbf9a66770350b25caf3b80b9aac481",
+      to: `whatsapp:${phoneNumber}`,
+    });
+  }
 }
 
 export async function createPhoneAuthToken({
@@ -49,7 +61,7 @@ export async function createPhoneAuthToken({
       id: phone_number_auth_tokens.id,
     });
 
-  await sendAuthCode(`+${country_code}${phone_number}`, code);
+  await sendAuthCode({ country_code, phone_number, code });
 
   client.end();
   return token.id;
