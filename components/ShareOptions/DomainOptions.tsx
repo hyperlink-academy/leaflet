@@ -262,7 +262,12 @@ export const AddDomain = (props: {
   let [value, setValue] = useState("");
   return (
     <div className="flex flex-col gap-1 px-3 py-1 max-w-full w-[600px]">
-      <h3 className="text-secondary">Add a New Domain</h3>
+      <div>
+        <h3 className="text-secondary">Add a New Domain</h3>
+        <div className="text-xs italic text-secondary">
+          Don't include the protocol or path, just the base domain name for now
+        </div>
+      </div>
 
       <Input
         className="input-with-border"
