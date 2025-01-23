@@ -226,7 +226,7 @@ export function ContactDetailsForm(props: {
 
         <hr className="border-border" />
         <div className="flex flex-row gap-2 w-full items-center justify-end">
-          <ConsentPopover />
+          <ConsentPopover country_code={formState.country_code} />
           <ButtonTertiary
             onMouseDown={() => {
               setState({ state: "default" });
@@ -255,6 +255,7 @@ export function ContactDetailsForm(props: {
     </>
   ) : (
     <ConfirmationForm
+      country_code={formState.country_code}
       phoneNumber={formState.phone_number}
       token={contactFormState.token}
       value={formState.confirmationCode}
@@ -268,6 +269,7 @@ export function ContactDetailsForm(props: {
 }
 
 const ConfirmationForm = (props: {
+  country_code: string;
   phoneNumber: string;
   value: string;
   token: string;
@@ -329,7 +331,9 @@ const ConfirmationForm = (props: {
           onChange={(e) => props.onChange(e.target.value)}
         />
         <div className="text-sm  italic text-tertiary leading-tight">
-          Code was sent to your <strong>WhatsApp</strong>!
+          Code was sent to your{" "}
+          {props.country_code === "1" ? "phone" : <strong>WhatsApp</strong>}{" "}
+          number: +{props.country_code} {props.phoneNumber}!
         </div>
       </label>
 
@@ -344,11 +348,12 @@ const ConfirmationForm = (props: {
   );
 };
 
-const ConsentPopover = (props: {}) => {
+const ConsentPopover = (props: { country_code: string }) => {
   return (
     <Popover trigger={<InfoSmall className="text-accent-contrast" />}>
       <div className="text-sm text-secondary">
-        By RSVPing I to consent to receive WhatsApp messages from the event
+        By RSVPing I to consent to receive
+        {props.country_code === "1" ? "" : " WhatsApp"} messages from the event
         host, via Leaflet!
       </div>
     </Popover>
