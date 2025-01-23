@@ -260,6 +260,7 @@ export const AddDomain = (props: {
   setDomainMenuState: (state: DomainMenuState) => void;
 }) => {
   let [value, setValue] = useState("");
+  let smoker = useSmoker();
   return (
     <div className="flex flex-col gap-1 px-3 py-1 max-w-full w-[600px]">
       <div>
@@ -279,9 +280,25 @@ export const AddDomain = (props: {
       <ButtonPrimary
         disabled={!value}
         className="place-self-end mt-2"
-        onMouseDown={async () => {
+        onMouseDown={async (e) => {
           // call the vercel api, set the thing...
-          await addDomain(value);
+          let { error } = await addDomain(value);
+          if (error) {
+            smoker({
+              error: true,
+              text:
+                error === "invalid_domain"
+                  ? "Invalid domain! Use just the base domain"
+                  : error === "domain_already_in_use"
+                    ? "That domain is already in use!"
+                    : "An unknown error occured",
+              position: {
+                y: e.clientY,
+                x: e.clientX - 5,
+              },
+            });
+            return;
+          }
           props.setDomainMenuState({ state: "domain-settings", domain: value });
         }}
       >

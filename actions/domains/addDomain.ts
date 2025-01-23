@@ -18,7 +18,34 @@ let supabase = createServerClient<Database>(
 
 export async function addDomain(domain: string) {
   let auth_token = cookies().get("auth_token")?.value;
-  if (!auth_token) return null;
+  if (!auth_token) return {};
+
+  try {
+    await vercel.projects.addProjectDomain({
+      idOrName: "prj_9jX4tmYCISnm176frFxk07fF74kG",
+      teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
+      requestBody: {
+        name: domain,
+      },
+    });
+  } catch (e) {
+    console.log(e);
+    let error: "unknown-error" | "invalid_domain" | "domain_already_in_use" =
+      "unknown-error";
+    if ((e as any).rawValue) {
+      error =
+        (e as { rawValue?: { error?: { code?: "invalid_domain" } } })?.rawValue
+          ?.error?.code || "unknown-error";
+    }
+    if ((e as any).body) {
+      try {
+        error = JSON.parse((e as any).body)?.error?.code || "unknown-error";
+      } catch (e) {}
+    }
+
+    return { error };
+  }
+
   let { data: auth_data } = await supabase
     .from("email_auth_tokens")
     .select(
@@ -31,21 +58,12 @@ export async function addDomain(domain: string) {
     .eq("id", auth_token)
     .eq("confirmed", true)
     .single();
-  if (!auth_data || !auth_data.email) return null;
+  if (!auth_data || !auth_data.email) return {};
 
   await supabase.from("custom_domains").insert({
     domain,
     identity: auth_data.email,
     confirmed: false,
   });
-
-  console.log(
-    await vercel.projects.addProjectDomain({
-      idOrName: "prj_9jX4tmYCISnm176frFxk07fF74kG",
-      teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
-      requestBody: {
-        name: domain,
-      },
-    }),
-  );
+  return {};
 }
