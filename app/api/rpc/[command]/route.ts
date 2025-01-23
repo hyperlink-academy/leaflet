@@ -7,7 +7,7 @@ import { Database } from "supabase/database.types";
 import { pull } from "./pull";
 import { getFactsFromHomeLeaflets } from "./getFactsFromHomeLeaflets";
 import { Vercel } from "@vercel/sdk";
-import { get_domain_status } from "./get_domain_status";
+import { get_domain_status, get_leaflet_domains } from "./domain_routes";
 
 const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
 let supabase = createClient<Database>(
@@ -26,7 +26,13 @@ const Env = {
 };
 export type Env = typeof Env;
 export type Routes = typeof Routes;
-let Routes = [push, pull, getFactsFromHomeLeaflets, get_domain_status];
+let Routes = [
+  push,
+  pull,
+  getFactsFromHomeLeaflets,
+  get_domain_status,
+  get_leaflet_domains,
+];
 export async function POST(
   req: Request,
   { params }: { params: { command: string } },

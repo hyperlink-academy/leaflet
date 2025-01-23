@@ -3,7 +3,7 @@ import { getRSVPData } from "actions/getRSVPData";
 import { SWRConfig } from "swr";
 import { useReplicache } from "src/replicache";
 import useSWR from "swr";
-import { getLeafletDomains } from "actions/domains/getLeafletDomains";
+import { callRPC } from "app/api/rpc/client";
 
 export function PageSWRDataProvider(props: {
   leaflet_id: string;
@@ -35,7 +35,9 @@ export function useRSVPData() {
 }
 export function useLeafletDomains() {
   let { permission_token } = useReplicache();
-  return useSWR(`${permission_token.id}-domains`, () =>
-    getLeafletDomains(permission_token.id),
+  return useSWR(
+    `${permission_token.id}-domains`,
+    async () =>
+      await callRPC("get_leaflet_domains", { id: permission_token.id }),
   );
 }
