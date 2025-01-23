@@ -8,18 +8,21 @@ export const get_domain_status = makeRoute({
     domain: z.string(),
   }),
   handler: async ({ domain }, { vercel }: Pick<Env, "vercel">) => {
-    let [status, config] = await Promise.all([
-      vercel.domains.getDomain({
-        domain,
-        teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
-      }),
-      vercel.domains.getDomainConfig({
-        domain,
-        teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
-      }),
-    ]);
-
-    return { status, config };
+    try {
+      let [status, config] = await Promise.all([
+        vercel.domains.getDomain({
+          domain,
+          teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
+        }),
+        vercel.domains.getDomainConfig({
+          domain,
+          teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
+        }),
+      ]);
+      return { status, config };
+    } catch (e) {
+      return { error: true };
+    }
   },
 });
 

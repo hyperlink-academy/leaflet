@@ -12,6 +12,7 @@ import { useLeafletDomains } from "components/PageSWRDataProvider";
 import { usePublishLink } from ".";
 import { addDomainPath } from "actions/domains/addDomainPath";
 import { useReplicache } from "src/replicache";
+import { deleteDomain } from "actions/domains/deleteDomain";
 
 type DomainMenuState =
   | {
@@ -188,7 +189,7 @@ const DomainOption = (props: {
   let { data } = useSWR(props.domain, async (domain) => {
     return await callRPC("get_domain_status", { domain });
   });
-  let pending = data?.config.misconfigured;
+  let pending = data?.config?.misconfigured || data?.error;
   return (
     <label htmlFor={props.domain}>
       <input
@@ -365,7 +366,8 @@ const DomainSettings = (props: {
       <div className="flex gap-3 justify-between items-center mt-2">
         <button
           className="text-accent-contrast font-bold "
-          onMouseDown={() => {
+          onMouseDown={async () => {
+            await deleteDomain({ domain: props.domain });
             props.setDomainMenuState({ state: "default" });
           }}
         >
