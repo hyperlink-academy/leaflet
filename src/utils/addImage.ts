@@ -20,7 +20,7 @@ export async function addImage(
     .data.publicUrl;
   let dimensions = await getImageDimensions(file);
   await cache.put(
-    url,
+    url + "?local",
     new Response(file, {
       headers: {
         "Content-Type": file.type,
@@ -43,11 +43,9 @@ export async function addImage(
         width: dimensions.width,
       },
     });
-  await client.storage
-    .from("minilink-user-assets")
-    .upload(fileID, file, {
-      cacheControl: "public, max-age=31560000, immutable",
-    });
+  await client.storage.from("minilink-user-assets").upload(fileID, file, {
+    cacheControl: "public, max-age=31560000, immutable",
+  });
   await rep.mutate.assertFact({
     entity: args.entityID,
     attribute: args.attribute,

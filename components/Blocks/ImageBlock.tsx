@@ -100,7 +100,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
         src={
           image?.data.local && image.data.local !== rep?.clientID
             ? image?.data.fallback
-            : image?.data.src
+            : `${image?.data.src}${image?.data.local ? "?local" : ""}`
         }
         height={image?.data.height}
         width={image?.data.width}
