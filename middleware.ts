@@ -22,14 +22,22 @@ let supabase = createClient<Database>(
 export default async function middleware(req: NextRequest) {
   let hostname = req.headers.get("host")!;
   if (hostname === "leaflet.pub") return;
-  let { data: route } = await supabase
-    .from("custom_domain_routes")
-    .select("*")
+  if (req.nextUrl.pathname === "/not-found") return;
+  let { data: routes } = await supabase
+    .from("custom_domains")
+    .select("*, custom_domain_routes(*)")
     .eq("domain", hostname)
-    .eq("route", req.nextUrl.pathname)
     .single();
-  if (route)
-    return NextResponse.rewrite(
-      new URL(`/${route.view_permission_token}`, req.url),
+  if (routes) {
+    let route = routes.custom_domain_routes.find(
+      (r) => r.route === req.nextUrl.pathname,
     );
+    if (route)
+      return NextResponse.rewrite(
+        new URL(`/${route.view_permission_token}`, req.url),
+      );
+    else {
+      return NextResponse.redirect(new URL("/not-found", req.url));
+    }
+  }
 }
