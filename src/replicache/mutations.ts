@@ -306,7 +306,7 @@ const removeBlock: Mutation<
     ctx.runOnClient(async () => {
       let cache = await caches.open("minilink-user-assets");
       for (let image of images) {
-        await cache.delete(image.data.src);
+        await cache.delete(image.data.src + "?local");
       }
     });
     await ctx.deleteEntity(block.blockEntity);

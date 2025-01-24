@@ -1,4 +1,5 @@
 self.addEventListener("fetch", (event) => {
+  if (!event.request.url.includes("?local")) return;
   event.respondWith(
     caches.open("minilink-user-assets").then(async (cache) => {
       return cache
