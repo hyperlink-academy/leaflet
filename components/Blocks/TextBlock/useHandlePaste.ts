@@ -55,7 +55,8 @@ export const useHandlePaste = (
         if (
           children.find((c) =>
             ["P", "H1", "H2", "H3", "UL", "DIV", "IMG"].includes(c.tagName),
-          )
+          ) &&
+          !(children.length === 1 && children[0].tagName === "IMG")
         ) {
           children.forEach((child, index) => {
             createBlockFromHTML(child, {
