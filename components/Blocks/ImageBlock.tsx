@@ -111,7 +111,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       ) : (
         <Image
           alt=""
-          src={image.data.src}
+          src={new URL(image.data.src).pathname.split("/").slice(5).join("/")}
           height={image?.data.height}
           width={image?.data.width}
         />
