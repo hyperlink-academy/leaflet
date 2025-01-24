@@ -20,7 +20,7 @@ export async function addImage(
     .data.publicUrl;
   let dimensions = await getImageDimensions(file);
   await cache.put(
-    url + "?local",
+    new URL(url + "?local"),
     new Response(file, {
       headers: {
         "Content-Type": file.type,
