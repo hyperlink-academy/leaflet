@@ -4,10 +4,11 @@ import { useEntity, useReplicache } from "src/replicache";
 import { Block, BlockProps } from "./Block";
 import { useUIState } from "src/useUIState";
 import { BlockImageSmall } from "components/Icons";
+import Image from "next/image";
 import { v7 } from "uuid";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
-import { addImage } from "src/utils/addImage";
+import { addImage, localImages } from "src/utils/addImage";
 import { elementId } from "src/utils/elementId";
 import { useEffect } from "react";
 import { deleteBlock } from "./DeleteBlock";
@@ -91,25 +92,31 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     );
   }
 
+  let className = isSelected
+    ? "block-border-selected !border-transparent "
+    : "block-border !border-transparent";
+  let isLocalUpload = localImages.get(image.data.src);
   return (
     <div className="relative group/image flex w-full justify-center">
-      <img
-        loading="lazy"
-        decoding="async"
-        alt={""}
-        src={
-          image?.data.local && image.data.local !== rep?.clientID
-            ? image?.data.fallback
-            : `${image?.data.src}${image?.data.local ? "?local" : ""}`
-        }
-        height={image?.data.height}
-        width={image?.data.width}
-        className={
-          isSelected
-            ? "block-border-selected !border-transparent "
-            : "block-border !border-transparent"
-        }
-      />
+      {isLocalUpload || image.data.local ? (
+        <img
+          loading="lazy"
+          decoding="async"
+          alt={""}
+          src={isLocalUpload ? image.data.src + "?local" : image.data.fallback}
+          height={image?.data.height}
+          width={image?.data.width}
+          className={className}
+        />
+      ) : (
+        <Image
+          alt=""
+          src={new URL(image.data.src).pathname.split("/").slice(5).join("/")}
+          height={image?.data.height}
+          width={image?.data.width}
+          className={className}
+        />
+      )}
     </div>
   );
 }

@@ -12,8 +12,11 @@ const nextConfig = {
   },
   pageExtensions: ["js", "jsx", "ts", "tsx", "md", "mdx"],
   images: {
+    loader: "custom",
+    loaderFile: "./supabase/supabase-image-loader.js",
     remotePatterns: [
       { protocol: "http", hostname: "127.0.0.1", port: "54321" },
+      { protocol: "https", hostname: "bdefzwcumgzjwllsnaej.supabase.co" },
     ],
   },
   experimental: {
