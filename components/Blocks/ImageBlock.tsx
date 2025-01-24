@@ -4,6 +4,7 @@ import { useEntity, useReplicache } from "src/replicache";
 import { Block, BlockProps } from "./Block";
 import { useUIState } from "src/useUIState";
 import { BlockImageSmall } from "components/Icons";
+import Image from "next/image";
 import { v7 } from "uuid";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
@@ -93,23 +94,28 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
 
   return (
     <div className="relative group/image flex w-full justify-center">
-      <img
-        loading="lazy"
-        decoding="async"
-        alt={""}
-        src={
-          image?.data.local && image.data.local !== rep?.clientID
-            ? image?.data.fallback
-            : `${image?.data.src}${image?.data.local ? "?local" : ""}`
-        }
-        height={image?.data.height}
-        width={image?.data.width}
-        className={
-          isSelected
-            ? "block-border-selected !border-transparent "
-            : "block-border !border-transparent"
-        }
-      />
+      {image.data.local && image.data.local === rep?.clientID ? (
+        <img
+          loading="lazy"
+          decoding="async"
+          alt={""}
+          src={image.data.src + "?local"}
+          height={image?.data.height}
+          width={image?.data.width}
+          className={
+            isSelected
+              ? "block-border-selected !border-transparent "
+              : "block-border !border-transparent"
+          }
+        />
+      ) : (
+        <Image
+          alt=""
+          src={image.data.src}
+          height={image?.data.height}
+          width={image?.data.width}
+        />
+      )}
     </div>
   );
 }
