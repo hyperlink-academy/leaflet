@@ -8,7 +8,7 @@ import Image from "next/image";
 import { v7 } from "uuid";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
-import { addImage } from "src/utils/addImage";
+import { addImage, localImages } from "src/utils/addImage";
 import { elementId } from "src/utils/elementId";
 import { useEffect } from "react";
 import { deleteBlock } from "./DeleteBlock";
@@ -92,28 +92,30 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     );
   }
 
+  let className = isSelected
+    ? "block-border-selected !border-transparent "
+    : "block-border !border-transparent";
+  let isLocalUpload = localImages.get(image.data.src);
   return (
     <div className="relative group/image flex w-full justify-center">
-      {image.data.local && image.data.local === rep?.clientID ? (
+      {isLocalUpload || image.data.local ? (
         <img
           loading="lazy"
           decoding="async"
           alt={""}
-          src={image.data.src + "?local"}
+          src={isLocalUpload ? image.data.src + "?local" : image.data.fallback}
           height={image?.data.height}
           width={image?.data.width}
-          className={
-            isSelected
-              ? "block-border-selected !border-transparent "
-              : "block-border !border-transparent"
-          }
+          className={className}
         />
       ) : (
         <Image
           alt=""
+          placeholder={image.data.fallback as `data:image/${string}`}
           src={new URL(image.data.src).pathname.split("/").slice(5).join("/")}
           height={image?.data.height}
           width={image?.data.width}
+          className={className}
         />
       )}
     </div>

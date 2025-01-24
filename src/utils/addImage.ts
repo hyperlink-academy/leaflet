@@ -5,6 +5,7 @@ import { FilterAttributes } from "src/replicache/attributes";
 import { rgbaToDataURL, rgbaToThumbHash, thumbHashToDataURL } from "thumbhash";
 import { v7 } from "uuid";
 
+export const localImages = new Map<string, boolean>();
 export async function addImage(
   file: File,
   rep: Replicache<ReplicacheMutators>,
@@ -28,6 +29,7 @@ export async function addImage(
       },
     }),
   );
+  localImages.set(url, true);
 
   let thumbhash = await getThumbHash(file);
   if (navigator.serviceWorker)
