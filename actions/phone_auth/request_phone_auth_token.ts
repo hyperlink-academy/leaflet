@@ -21,7 +21,9 @@ async function sendAuthCode({
   const client = twilio(accountSid, authToken);
   if (country_code === "1") {
     const message = await client.messages.create({
-      body: `${code} is your verification code`,
+      body: `${code} is your verification code
+
+@leaflet.pub #${code}`,
       from: `+18449523391`,
       to: phoneNumber,
     });

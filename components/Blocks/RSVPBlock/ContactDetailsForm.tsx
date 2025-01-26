@@ -328,6 +328,7 @@ const ConfirmationForm = (props: {
           placeholder="000000"
           className="input-with-border !pt-5 w-full "
           value={props.value}
+          autoComplete="one-time-code"
           onChange={(e) => props.onChange(e.target.value)}
         />
         <div className="text-sm  italic text-tertiary leading-tight">
