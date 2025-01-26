@@ -12,20 +12,31 @@ export function Input(
   useEffect(() => {
     if (!isIOS()) return;
     if (props.autoFocus) {
+      let fakeInput = document.createElement("input");
+      fakeInput.setAttribute("type", "text");
+      fakeInput.style.position = "fixed";
+      fakeInput.style.height = "0px";
+      fakeInput.style.width = "0px";
+      fakeInput.style.fontSize = "16px"; // disable auto zoom
+      document.body.appendChild(fakeInput);
+      fakeInput.focus();
       setTimeout(() => {
         if (!ref.current) return;
         ref.current.style.transform = "translateY(-2000px)";
         ref.current?.focus();
+        fakeInput.remove();
         ref.current.value = " ";
         ref.current.setSelectionRange(1, 1);
+        requestAnimationFrame(() => {
+          if (ref.current) {
+            ref.current.style.transform = "";
+          }
+        });
         setTimeout(() => {
           if (!ref.current) return;
           ref.current.value = "";
           ref.current.setSelectionRange(0, 0);
-        }, 10);
-        requestAnimationFrame(() => {
-          if (ref.current) ref.current.style.transform = "";
-        });
+        }, 50);
       }, 20);
     }
   }, [props.autoFocus]);
