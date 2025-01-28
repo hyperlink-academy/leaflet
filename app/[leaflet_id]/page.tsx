@@ -125,6 +125,11 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       .sort((a, b) => (a.position > b.position ? 1 : -1));
   }
   let metadata: Metadata = { title: "Untitled Leaflet", description: " " };
+  let [rootMetadataTitle] = scan.eav(rootEntity, "root/page-metadata-title");
+  let [rootMetadataDescription] = scan.eav(
+    rootEntity,
+    "root/page-metadata-description",
+  );
 
   let titleFact = initialFacts.find(
     (f) => f.entity === firstBlock?.value && f.attribute === "block/text",
@@ -147,6 +152,10 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     let nodes = doc.getXmlElement("prosemirror").toArray();
     metadata.description = YJSFragmentToString(nodes[0]);
   }
+  if (rootMetadataTitle.data.value)
+    metadata.title = rootMetadataTitle.data.value;
+  if (rootMetadataDescription.data.value)
+    metadata.description = rootMetadataDescription.data.value;
 
   return metadata;
 }

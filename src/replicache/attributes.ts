@@ -3,6 +3,14 @@ const RootAttributes = {
     type: "ordered-reference",
     cardinality: "many",
   },
+  "root/page-metadata-title": {
+    type: "string",
+    cardinality: "one",
+  },
+  "root/page-metadata-description": {
+    type: "string",
+    cardinality: "one",
+  },
   "root/webindex": {
     type: "boolean",
     cardinality: "one",

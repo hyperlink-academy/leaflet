@@ -22,11 +22,17 @@ export function UpdateLeafletTitle(props: { entityID: string }) {
   );
   let firstBlock = blocks[0];
   let title = usePageTitle(entityID);
+  let rootMetadataTitle = useEntity(props.entityID, "root/page-metadata-title");
   useEffect(() => {
+    if (rootMetadataTitle?.data.value) {
+      document.title = rootMetadataTitle.data.value;
+      return;
+    }
     if (title) {
       document.title = title;
     }
-  }, [title]);
+    document.title = "Untitled Leaflet";
+  }, [title, rootMetadataTitle]);
   let params = useSearchParams();
   let focusFirstBlock = params.get("focusFirstBlock");
   let router = useRouter();

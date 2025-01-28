@@ -74,7 +74,25 @@ export function ShareOptions() {
 
 const SEOOptions = () => {
   let { rootEntity, rep } = useReplicache();
+  let metadataTitle = useEntity(rootEntity, "root/page-metadata-title");
+  let metadataDescription = useEntity(
+    rootEntity,
+    "root/page-metadata-description",
+  );
   let toIndex = useEntity(rootEntity, "root/webindex");
+
+  let [title, setTitle] = useState(metadataTitle?.data.value || "");
+  let [description, setDescription] = useState(
+    metadataDescription?.data.value || "",
+  );
+
+  useEffect(() => {
+    setTitle(metadataTitle?.data.value || "");
+  }, [metadataTitle]);
+  useEffect(() => {
+    setDescription(metadataDescription?.data.value || "");
+  }, [metadataDescription]);
+
   return (
     <div>
       <Checkbox
@@ -89,6 +107,30 @@ const SEOOptions = () => {
       >
         index
       </Checkbox>
+      title:{" "}
+      <input
+        value={title}
+        onChange={async (e) => {
+          setTitle(e.currentTarget.value);
+          await rep?.mutate.assertFact({
+            entity: rootEntity,
+            attribute: "root/page-metadata-title",
+            data: { type: "string", value: e.currentTarget.value },
+          });
+        }}
+      />
+      description:
+      <textarea
+        value={description}
+        onChange={async (e) => {
+          setDescription(e.currentTarget.value);
+          await rep?.mutate.assertFact({
+            entity: rootEntity,
+            attribute: "root/page-metadata-description",
+            data: { type: "string", value: e.currentTarget.value },
+          });
+        }}
+      />
     </div>
   );
 };
