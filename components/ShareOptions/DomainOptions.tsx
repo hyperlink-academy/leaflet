@@ -358,9 +358,9 @@ const DomainSettings = (props: {
           )}
         </div>
         <div>
-          Once you do this, your provider may be pending for up to a few hours.
+          Once you do this, the status may be pending for up to a few hours.
         </div>
-        <div>Check back later to see if verfication was successful.</div>
+        <div>Check back later to see if verification was successful.</div>
       </div>
 
       <div className="flex gap-3 justify-between items-center mt-2">
