@@ -19,6 +19,28 @@ let supabase = createServerClient<Database>(
 export async function addDomain(domain: string) {
   let auth_token = cookies().get("auth_token")?.value;
   if (!auth_token) return {};
+  let { data: auth_data } = await supabase
+    .from("email_auth_tokens")
+    .select(
+      `*,
+          identities(
+            *,
+            custom_domains(*)
+          )`,
+    )
+    .eq("id", auth_token)
+    .eq("confirmed", true)
+    .single();
+  if (!auth_data || !auth_data.email) return {};
+  if (
+    domain.includes("leaflet.pub") &&
+    ![
+      "celine@hyperlink.academy",
+      "brendan@hyperlink.academy",
+      "jared@hyperlink.academy",
+    ].includes(auth_data.email)
+  )
+    return {};
 
   try {
     await vercel.projects.addProjectDomain({
@@ -45,20 +67,6 @@ export async function addDomain(domain: string) {
 
     return { error };
   }
-
-  let { data: auth_data } = await supabase
-    .from("email_auth_tokens")
-    .select(
-      `*,
-          identities(
-            *,
-            custom_domains(*)
-          )`,
-    )
-    .eq("id", auth_token)
-    .eq("confirmed", true)
-    .single();
-  if (!auth_data || !auth_data.email) return {};
 
   await supabase.from("custom_domains").insert({
     domain,
