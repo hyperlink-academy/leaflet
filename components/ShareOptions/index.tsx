@@ -1,4 +1,4 @@
-import { useReplicache } from "src/replicache";
+import { useEntity, useReplicache } from "src/replicache";
 import { ShareSmall } from "components/Icons";
 import React, { useEffect, useState } from "react";
 import { getShareLink } from "./getShareLink";
@@ -12,8 +12,9 @@ import LoginForm from "app/login/LoginForm";
 import { AddDomain, CustomDomainMenu, DomainOptions } from "./DomainOptions";
 import { useIdentityData } from "components/IdentityProvider";
 import { useLeafletDomains } from "components/PageSWRDataProvider";
+import { Checkbox } from "components/Checkbox";
 
-export type ShareMenuStates = "default" | "login" | "domain";
+export type ShareMenuStates = "default" | "login" | "domain" | "seo";
 
 export let usePublishLink = () => {
   let { permission_token, rootEntity } = useReplicache();
@@ -62,12 +63,35 @@ export function ShareOptions() {
         </div>
       ) : menuState === "domain" ? (
         <CustomDomainMenu setShareMenuState={setMenuState} />
+      ) : menuState === "seo" ? (
+        <SEOOptions />
       ) : (
         <DefaultOptions setMenuState={setMenuState} domainConnected={false} />
       )}
     </Menu>
   );
 }
+
+const SEOOptions = () => {
+  let { rootEntity, rep } = useReplicache();
+  let toIndex = useEntity(rootEntity, "root/webindex");
+  return (
+    <div>
+      <Checkbox
+        onChange={(e) => {
+          rep?.mutate.assertFact({
+            entity: rootEntity,
+            attribute: "root/webindex",
+            data: { type: "boolean", value: e.currentTarget.checked },
+          });
+        }}
+        checked={!!toIndex?.data.value}
+      >
+        index
+      </Checkbox>
+    </div>
+  );
+};
 
 const DefaultOptions = (props: {
   setMenuState: (state: ShareMenuStates) => void;
@@ -132,6 +156,8 @@ const DefaultOptions = (props: {
       />
       <hr className="border-border mt-1" />
       <DomainMenuItem setMenuState={props.setMenuState} />
+      <hr className="border-border mt-1" />
+      <button onClick={() => props.setMenuState("seo")}>seo</button>
     </>
   );
 };
@@ -214,7 +240,7 @@ const DomainMenuItem = (props: {
   else
     return (
       <>
-        {domains?.[0] ? (
+        {domains?.custom_domain_routes?.[0] ? (
           <button
             className="px-3 py-1 text-accent-contrast text-sm hover:font-bold w-fit text-left"
             onMouseDown={() => {

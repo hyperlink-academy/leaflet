@@ -3,6 +3,10 @@ const RootAttributes = {
     type: "ordered-reference",
     cardinality: "many",
   },
+  "root/webindex": {
+    type: "boolean",
+    cardinality: "one",
+  },
 } as const;
 const PageAttributes = {
   "card/block": {
