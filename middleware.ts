@@ -29,20 +29,12 @@ export default async function middleware(req: NextRequest) {
     .eq("domain", hostname)
     .single();
   if (routes) {
-    let internalRoute = routes.custom_domain_routes.find((r) => {
-      req.nextUrl.pathname.startsWith("/" + r.view_permission_token);
-    });
-    if (internalRoute) return;
-    let route = routes.custom_domain_routes.find((r) =>
-      req.nextUrl.pathname.startsWith(r.route),
+    let route = routes.custom_domain_routes.find(
+      (r) => r.route === req.nextUrl.pathname,
     );
     if (route)
       return NextResponse.rewrite(
-        new URL(
-          `/${route.view_permission_token}` +
-            req.nextUrl.pathname.slice(route.route.length),
-          req.url,
-        ),
+        new URL(`/${route.view_permission_token}`, req.url),
       );
     else {
       return NextResponse.redirect(new URL("/not-found", req.url));
