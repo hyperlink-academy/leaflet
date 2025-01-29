@@ -29,6 +29,10 @@ export default async function middleware(req: NextRequest) {
     .eq("domain", hostname)
     .single();
   if (routes) {
+    let internalRoute = routes.custom_domain_routes.find((r) => {
+      req.nextUrl.pathname.startsWith("/" + r.view_permission_token);
+    });
+    if (internalRoute) return;
     let route = routes.custom_domain_routes.find((r) =>
       req.nextUrl.pathname.startsWith(r.route),
     );
