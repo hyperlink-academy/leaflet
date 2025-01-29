@@ -38,6 +38,7 @@ export async function addDomain(domain: string) {
       "celine@hyperlink.academy",
       "brendan@hyperlink.academy",
       "jared@hyperlink.academy",
+      "brendan.schlagel@gmail.com",
     ].includes(auth_data.email)
   )
     return {};
