@@ -114,7 +114,7 @@ export default function LoginForm() {
   return (
     <div className="flex flex-col gap-3 w-full max-w-sm pb-1">
       <div className="flex flex-col">
-        <h3>Log In or Sign Up</h3>
+        <h3 className="text-primary">Log In or Sign Up</h3>
         <div className=" text-secondary">
           Save your leaflets and access them on multiple devices!
         </div>

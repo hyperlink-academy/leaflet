@@ -272,7 +272,7 @@ export const AddDomain = (props: {
       </div>
 
       <Input
-        className="input-with-border"
+        className="input-with-border text-primary"
         placeholder="www.example.com"
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -333,11 +333,15 @@ const DomainSettings = (props: {
               </div>
               <div className="flex flex-col">
                 <div className="text-tertiary">Name</div>
-                <div>{props.domain.split(".").slice(0, -2).join(".")}</div>
+                <div style={{ wordBreak: "break-word" }}>
+                  {props.domain.split(".").slice(0, -2).join(".")}
+                </div>
               </div>
               <div className="flex flex-col">
                 <div className="text-tertiary">Value</div>
-                <div>cname.vercel-dns.com</div>
+                <div style={{ wordBreak: "break-word" }}>
+                  cname.vercel-dns.com
+                </div>
               </div>
             </div>
           ) : (
