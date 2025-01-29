@@ -90,6 +90,24 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
     }
   }
   let [linkValue, setLinkValue] = useState(content);
+  let setLink = () => {
+    let href =
+      !linkValue.startsWith("http") &&
+      !linkValue.startsWith("mailto") &&
+      !linkValue.startsWith("tel:")
+        ? `https://${linkValue}`
+        : linkValue;
+
+    let editor = focusedEditor?.editor;
+    if (!editor || start === null || !end || !focusedBlock) return;
+    let tr = editor.tr;
+    tr.addMark(start, end, schema.marks.link.create({ href }));
+    tr.setSelection(TextSelection.create(tr.doc, tr.selection.to));
+    setEditorState(focusedBlock?.entityID, {
+      editor: editor.apply(tr),
+    });
+    props.onClose();
+  };
 
   return (
     <div className="w-full flex items-center gap-[6px]  grow">
@@ -104,22 +122,7 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
-            let editor = focusedEditor?.editor;
-            if (!editor || start === null || !end || !focusedBlock) return;
-            let tr = editor.tr;
-            let href = linkValue;
-            if (
-              !href.startsWith("http") &&
-              !href.startsWith("mailto") &&
-              !href.startsWith("tel:")
-            )
-              href = `https://${href}`;
-            tr.addMark(start, end, schema.marks.link.create({ href }));
-            tr.setSelection(TextSelection.create(tr.doc, tr.selection.to));
-            setEditorState(focusedBlock?.entityID, {
-              editor: editor.apply(tr),
-            });
-            props.onClose();
+            setLink();
           }
           if (e.key === "Escape") {
             props.onClose();
@@ -143,18 +146,7 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
           className="hover:text-accent-contrast -mr-6 disabled:text-border"
           onMouseDown={(e) => {
             e.preventDefault();
-            let editor = focusedEditor?.editor;
-            if (!editor || !start || !end || !focusedBlock) return;
-            let tr = editor.tr;
-
-            let href = linkValue;
-            if (!href.startsWith("http") && !href.startsWith("mailto"))
-              href = `https://${href}`;
-            tr.addMark(start, end, schema.marks.link.create({ href }));
-            setEditorState(focusedBlock?.entityID, {
-              editor: editor.apply(tr),
-            });
-            props.onClose();
+            setLink();
           }}
         >
           <CheckTiny />
