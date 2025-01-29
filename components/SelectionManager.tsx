@@ -493,15 +493,15 @@ export function SelectionManager() {
     if (!entity_set.permissions.write) return;
     let mouseDownListener = (e: MouseEvent) => {
       if ((e.target as Element).getAttribute("data-draggable")) return;
-      setMouseDown(true);
       let contentEditableParent = getContentEditableParent(e.target as Node);
       if (contentEditableParent) {
+        setMouseDown(true);
         let entityID = (contentEditableParent as Element).getAttribute(
           "data-entityid",
         );
         useSelectingMouse.setState({ start: entityID });
+        initialContentEditableParent.current = contentEditableParent;
       }
-      initialContentEditableParent.current = contentEditableParent;
     };
     let mouseUpListener = (e: MouseEvent) => {
       savedSelection.current = null;
@@ -541,8 +541,8 @@ export function SelectionManager() {
           return;
         }
         if (!savedSelection.current) savedSelection.current = saveSelection();
+        window.getSelection()?.removeAllRanges();
       }
-      window.getSelection()?.removeAllRanges();
     };
     window.addEventListener("mousemove", mouseMoveListener);
     return () => {
