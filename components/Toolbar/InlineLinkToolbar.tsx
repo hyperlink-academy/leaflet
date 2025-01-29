@@ -108,7 +108,11 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
             if (!editor || start === null || !end || !focusedBlock) return;
             let tr = editor.tr;
             let href = linkValue;
-            if (!href.startsWith("http") && !href.startsWith("mailto"))
+            if (
+              !href.startsWith("http") &&
+              !href.startsWith("mailto") &&
+              !href.startsWith("tel:")
+            )
               href = `https://${href}`;
             tr.addMark(start, end, schema.marks.link.create({ href }));
             tr.setSelection(TextSelection.create(tr.doc, tr.selection.to));
