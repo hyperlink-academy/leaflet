@@ -22,6 +22,7 @@ import { useIsMobile } from "src/hooks/isMobile";
 import { DateTimeBlock } from "./DateTimeBlock";
 import { RSVPBlock } from "./RSVPBlock";
 import { elementId } from "src/utils/elementId";
+import { ButtonBlock } from "./ButtonBlock";
 
 export type Block = {
   factID: string;
@@ -156,6 +157,7 @@ const BlockTypeComponents: {
   mailbox: MailboxBlock,
   datetime: DateTimeBlock,
   rsvp: RSVPBlock,
+  button: ButtonBlock,
 };
 
 export const BlockMultiselectIndicator = (props: BlockProps) => {

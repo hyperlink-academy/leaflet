@@ -187,6 +187,14 @@ export const blockCommands: Command[] = [
     },
   },
   {
+    name: "Button",
+    icon: <LinkSmall />, //TODO: replace with button icon!
+    type: "block",
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "button");
+    },
+  },
+  {
     name: "Mailbox",
     icon: <BlockMailboxSmall />,
     type: "block",
