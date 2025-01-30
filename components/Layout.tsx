@@ -74,7 +74,7 @@ export const MenuItem = (props: {
         font-bold z-10 py-1 px-3
         text-left text-secondary
         flex gap-2
-        data-[highlighted]:bg-border-light data-[highlighted]:text-secondary
+        data-[highlighted]:bg-[color-mix(in_oklab,rgb(var(--accent-1)),rgb(var(--bg-page))_85%)] data-[highlighted]:text-secondary
         hover:bg-border-light hover:text-secondary
         outline-none
         cursor-pointer
@@ -83,23 +83,6 @@ export const MenuItem = (props: {
     >
       {props.children}
     </DropdownMenu.Item>
-  );
-};
-
-export const InputWithLabel = (
-  props: {
-    label: string;
-  } & JSX.IntrinsicElements["input"],
-) => {
-  let { label, ...inputProps } = props;
-  return (
-    <label className="text-xs text-tertiary font-bold italic input-with-border flex flex-col w-full">
-      {props.label}
-      <Input
-        {...inputProps}
-        className={`appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 ${props.className}`}
-      />
-    </label>
   );
 };
 

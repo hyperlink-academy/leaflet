@@ -152,9 +152,9 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     let nodes = doc.getXmlElement("prosemirror").toArray();
     metadata.description = YJSFragmentToString(nodes[0]);
   }
-  if (rootMetadataTitle.data.value)
+  if (rootMetadataTitle?.data.value)
     metadata.title = rootMetadataTitle.data.value;
-  if (rootMetadataDescription.data.value)
+  if (rootMetadataDescription?.data.value)
     metadata.description = rootMetadataDescription.data.value;
 
   return metadata;

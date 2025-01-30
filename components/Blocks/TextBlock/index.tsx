@@ -158,7 +158,7 @@ export function RenderedTextBlock(props: {
                   ? "Subheader"
                   : "write something..."}
             <div className=" text-xs font-normal">
-              or type &quot;/&quot; for commands
+              or type &quot;/&quot; to add a block
             </div>
           </div>
         ) : (

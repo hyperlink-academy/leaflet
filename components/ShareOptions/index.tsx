@@ -5,7 +5,7 @@ import { getShareLink } from "./getShareLink";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useSmoker } from "components/Toast";
 import { Menu, MenuItem } from "components/Layout";
-import { HoverButton } from "components/Buttons";
+import { ButtonPrimary, HoverButton } from "components/Buttons";
 import useSWR from "swr";
 import { useTemplateState } from "app/home/CreateNewButton";
 import LoginForm from "app/login/LoginForm";
@@ -13,8 +13,10 @@ import { AddDomain, CustomDomainMenu, DomainOptions } from "./DomainOptions";
 import { useIdentityData } from "components/IdentityProvider";
 import { useLeafletDomains } from "components/PageSWRDataProvider";
 import { Checkbox } from "components/Checkbox";
+import { Toggle } from "components/Toggle";
+import { InputWithLabel } from "components/Input";
 
-export type ShareMenuStates = "default" | "login" | "domain" | "seo";
+export type ShareMenuStates = "default" | "login" | "domain" | "settings";
 
 export let usePublishLink = () => {
   let { permission_token, rootEntity } = useReplicache();
@@ -63,7 +65,7 @@ export function ShareOptions() {
         </div>
       ) : menuState === "domain" ? (
         <CustomDomainMenu setShareMenuState={setMenuState} />
-      ) : menuState === "seo" ? (
+      ) : menuState === "settings" ? (
         <SEOOptions />
       ) : (
         <DefaultOptions setMenuState={setMenuState} domainConnected={false} />
@@ -80,7 +82,7 @@ const SEOOptions = () => {
     "root/page-metadata-description",
   );
   let toIndex = useEntity(rootEntity, "root/webindex");
-
+  let [seo, setSeo] = useState(!!toIndex?.data.value);
   let [title, setTitle] = useState(metadataTitle?.data.value || "");
   let [description, setDescription] = useState(
     metadataDescription?.data.value || "",
@@ -94,44 +96,93 @@ const SEOOptions = () => {
   }, [metadataDescription]);
 
   return (
-    <div>
-      <Checkbox
-        onChange={(e) => {
-          rep?.mutate.assertFact({
-            entity: rootEntity,
-            attribute: "root/webindex",
-            data: { type: "boolean", value: e.currentTarget.checked },
-          });
-        }}
-        checked={!!toIndex?.data.value}
-      >
-        index
-      </Checkbox>
-      title:{" "}
-      <input
-        value={title}
-        onChange={async (e) => {
-          setTitle(e.currentTarget.value);
-          await rep?.mutate.assertFact({
-            entity: rootEntity,
-            attribute: "root/page-metadata-title",
-            data: { type: "string", value: e.currentTarget.value },
-          });
-        }}
-      />
-      description:
-      <textarea
-        value={description}
-        onChange={async (e) => {
-          setDescription(e.currentTarget.value);
-          await rep?.mutate.assertFact({
-            entity: rootEntity,
-            attribute: "root/page-metadata-description",
-            data: { type: "string", value: e.currentTarget.value },
-          });
-        }}
-      />
-    </div>
+    <form
+      className="flex flex-col gap-3 px-3 py-1 "
+      onSubmit={async () => {
+        // set seo on/off
+        rep?.mutate.assertFact({
+          entity: rootEntity,
+          attribute: "root/webindex",
+          data: { type: "boolean", value: seo },
+        });
+
+        // if seo is off, do nothing else
+        if (toIndex?.data.value === false) return;
+
+        //set title
+        await rep?.mutate.assertFact({
+          entity: rootEntity,
+          attribute: "root/page-metadata-title",
+          data: { type: "string", value: title },
+        });
+
+        //set description
+        await rep?.mutate.assertFact({
+          entity: rootEntity,
+          attribute: "root/page-metadata-description",
+          data: { type: "string", value: description },
+        });
+      }}
+    >
+      <div className="flex flex-col">
+        <Toggle
+          checked={seo}
+          onChange={(e) => {
+            e.preventDefault();
+            setSeo(!toIndex?.data.value);
+          }}
+        >
+          <h4>Search Engine Indexing</h4>
+        </Toggle>
+        <div className=" text-sm text-tertiary font-normal">
+          {toIndex?.data.value === true
+            ? "Search Engines can find this Leaflet!"
+            : "Search engines will not find this Leaflet unless it is linked to from somewhere else (like social media)."}
+        </div>
+      </div>
+      {seo === true ? (
+        <>
+          <div>
+            <h4>Metadata</h4>
+            <div className=" text-sm text-tertiary font-normal">
+              How should this Leaflet appear in search results?
+            </div>
+          </div>
+
+          <InputWithLabel
+            label="Title"
+            value={title}
+            onChange={async (e) => {
+              setTitle(e.currentTarget.value);
+            }}
+          />
+          {/* <label className="flex flex-col ">
+            <div className="font-bold text-secondary">Title</div>
+            <input
+              className="input-with-border w-[1000px] max-w-full"
+              value={title}
+              onChange={async (e) => {
+                setTitle(e.currentTarget.value);
+              }}
+            />
+          </label> */}
+          <label className="flex flex-col ">
+            <div className="font-bold text-secondary">Description</div>
+            <textarea
+              rows={3}
+              className="input-with-border w-[1000px] max-w-full resize-none h-24"
+              value={description}
+              onChange={async (e) => {
+                setDescription(e.currentTarget.value);
+              }}
+            />
+          </label>
+        </>
+      ) : null}
+      <ButtonPrimary type="submit" className="place-self-end">
+        Save
+      </ButtonPrimary>
+    </form>
   );
 };
 
@@ -166,27 +217,30 @@ const DefaultOptions = (props: {
         </>
       )}
       <ShareButton
-        text="Collaborate"
+        text="Get Edit Link"
         subtext="Invite people to edit together"
         smokerText="Collab link copied!"
         id="get-collab-link"
         link={collabLink}
       />
       <ShareButton
-        text="Publish"
-        subtext=<>
-          {domains?.[0] ? (
-            <>
-              This leaflet is published on{" "}
-              <span className="italic underline">
-                {domains[0].domain}
-                {domains[0].route}
-              </span>
-            </>
-          ) : (
-            "Send the read-only version"
-          )}
-        </>
+        text="Get View Link"
+        subtext={
+          <div className="leading-tight">
+            {domains?.[0] ? (
+              <>
+                This leaflet is published on{" "}
+                <span className="italic underline">
+                  {domains[0].domain}
+                  {domains[0].route}
+                </span>
+              </>
+            ) : (
+              "Share the read-only version"
+            )}
+            <DomainSettings setMenuState={props.setMenuState} />
+          </div>
+        }
         smokerText="Publish link copied!"
         id="get-publish-link"
         fullLink={
@@ -197,9 +251,16 @@ const DefaultOptions = (props: {
         link={publishLink || ""}
       />
       <hr className="border-border mt-1" />
-      <DomainMenuItem setMenuState={props.setMenuState} />
-      <hr className="border-border mt-1" />
-      <button onClick={() => props.setMenuState("seo")}>seo</button>
+      <MenuItem
+        className="text-sm text-tertiary font-normal"
+        onSelect={(e) => {
+          e.preventDefault();
+          props.setMenuState("settings");
+          console.log("settings");
+        }}
+      >
+        Settings
+      </MenuItem>
     </>
   );
 };
@@ -259,7 +320,7 @@ export const ShareButton = (props: {
   );
 };
 
-const DomainMenuItem = (props: {
+const DomainSettings = (props: {
   setMenuState: (state: ShareMenuStates) => void;
 }) => {
   let { identity } = useIdentityData();
@@ -267,10 +328,11 @@ const DomainMenuItem = (props: {
 
   if (identity === null)
     return (
-      <div className="text-tertiary font-normal text-sm px-3 py-1">
+      <div className="text-tertiary font-normal">
         <button
           className="text-accent-contrast hover:font-bold"
-          onClick={() => {
+          onClick={(e) => {
+            e.target === e.currentTarget && e.stopPropagation();
             props.setMenuState("login");
           }}
         >
@@ -284,23 +346,25 @@ const DomainMenuItem = (props: {
       <>
         {domains?.custom_domain_routes?.[0] ? (
           <button
-            className="px-3 py-1 text-accent-contrast text-sm hover:font-bold w-fit text-left"
-            onMouseDown={() => {
+            className="text-accent-contrast text-sm hover:font-bold w-fit text-left"
+            onMouseDown={(e) => {
+              e.target === e.currentTarget && e.stopPropagation();
               props.setMenuState("domain");
             }}
           >
-            edit custom domain
+            Edit domain
           </button>
         ) : (
-          <MenuItem
-            className="font-normal text-tertiary text-sm"
+          <button
+            className="text-accent-contrast text-sm hover:font-bold w-fit text-left"
             onSelect={(e) => {
+              e.target === e.currentTarget && e.stopPropagation();
               e.preventDefault();
               props.setMenuState("domain");
             }}
           >
             Publish on a custom domain
-          </MenuItem>
+          </button>
         )}
       </>
     );
