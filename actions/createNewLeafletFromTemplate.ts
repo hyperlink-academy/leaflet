@@ -18,6 +18,7 @@ import {
 } from "drizzle/schema";
 import { sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -29,6 +30,7 @@ export async function createNewLeafletFromTemplate(
   template_id: string,
   redirectUser?: boolean,
 ) {
+  let auth_token = cookies().get("auth_token")?.value;
   let res = await supabase
     .from("permission_tokens")
     .select("*, permission_token_rights(*)")
@@ -118,6 +120,21 @@ export async function createNewLeafletFromTemplate(
       })
       .returning();
 
+    if (auth_token) {
+      await tx.execute(sql`
+            WITH auth_token AS (
+              SELECT identities.id as identity_id
+              FROM email_auth_tokens
+              LEFT JOIN identities ON email_auth_tokens.identity = identities.id
+              WHERE email_auth_tokens.id = ${auth_token}
+              AND email_auth_tokens.confirmed = true
+              AND identities.id IS NOT NULL
+            )
+            INSERT INTO permission_token_on_homepage (token, identity)
+            SELECT ${permissionToken.id}, identity_id
+            FROM auth_token
+          `);
+    }
     return { permissionToken, rights, entity_set };
   });
 
