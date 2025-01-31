@@ -34,13 +34,15 @@ export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
   }
 
   return (
-    <form
-      action={url?.data.value}
+    <a
+      href={url?.data.value}
       target="_blank"
       className={`hover:outline-accent-contrast !rounded-md  ${isSelected ? "block-border-selected !border-0" : "block-border !border-transparent !border-0"}`}
     >
-      <ButtonPrimary type="submit">{text?.data.value}</ButtonPrimary>
-    </form>
+      <ButtonPrimary role="link" type="submit">
+        {text?.data.value}
+      </ButtonPrimary>
+    </>
   );
 };
 
@@ -186,7 +188,7 @@ const ButtonBlockSettings = (props: BlockProps) => {
             />
             <Separator />
             <Input
-              type="url"
+              type="text"
               id="button-block-url-input"
               className="w-full grow border-none outline-none bg-transparent"
               placeholder="www.example.com"

@@ -200,7 +200,7 @@ const BlockLinkInput = (props: BlockProps) => {
         />
         <Separator />
         <Input
-          type="url"
+          type="text"
           className="w-full grow border-none outline-none bg-transparent "
           placeholder="www.example.com"
           value={linkValue}
