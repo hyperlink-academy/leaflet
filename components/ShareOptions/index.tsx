@@ -221,7 +221,7 @@ const DomainMenuItem = (props: {
               props.setMenuState("domain");
             }}
           >
-            edit custom domain
+            Edit custom domain
           </button>
         ) : (
           <MenuItem
