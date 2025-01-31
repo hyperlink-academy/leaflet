@@ -42,7 +42,7 @@ export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
       <ButtonPrimary role="link" type="submit">
         {text?.data.value}
       </ButtonPrimary>
-    </>
+    </a>
   );
 };
 
