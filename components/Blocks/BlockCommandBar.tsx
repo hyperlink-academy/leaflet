@@ -52,6 +52,8 @@ export const BlockCommandBar = ({
       );
 
       if (reverseDir ? e.key === "ArrowUp" : e.key === "ArrowDown") {
+        console.log(highlighted, commandResults[currentHighlightIndex]);
+
         setHighlighted(
           commandResults[
             currentHighlightIndex === commandResults.length - 1 ||
@@ -63,6 +65,8 @@ export const BlockCommandBar = ({
         return;
       }
       if (reverseDir ? e.key === "ArrowDown" : e.key === "ArrowUp") {
+        console.log(highlighted, commandResults[currentHighlightIndex]);
+
         setHighlighted(
           commandResults[
             currentHighlightIndex === 0 ||
@@ -78,6 +82,7 @@ export const BlockCommandBar = ({
       // on enter, select the highlighted item
       if (e.key === "Enter") {
         e.preventDefault();
+        console.log(highlighted, commandResults[currentHighlightIndex]);
         rep &&
           commandResults[currentHighlightIndex]?.onSelect(rep, {
             ...props,
@@ -168,9 +173,8 @@ const CommandResult = (props: {
     <button
       className={`commandResult text-left flex gap-2 mx-1 pr-2 py-0.5 rounded-md text-secondary ${isHighlighted && "bg-border-light"}`}
       onMouseOver={() => {
-        isHighlighted
-          ? props.setHighlighted(undefined)
-          : props.setHighlighted(props.name);
+        props.setHighlighted(props.name);
+        console.log(props.highlighted);
       }}
       onMouseDown={(e) => {
         e.preventDefault();

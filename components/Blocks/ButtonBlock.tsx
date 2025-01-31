@@ -6,18 +6,20 @@ import { useUIState } from "src/useUIState";
 import { BlockProps } from "./Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
-import { BlockEmbedSmall, CheckTiny } from "components/Icons";
+import {
+  BlockEmbedSmall,
+  LinkSmall,
+  CheckTiny,
+  BlockButtonSmall,
+} from "components/Icons";
 import { Separator } from "components/Layout";
 import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
-import { elementId } from "src/utils/elementId";
 import { deleteBlock } from "./DeleteBlock";
-import { focusBlock } from "src/utils/focusBlock";
-import { useDrag } from "src/hooks/useDrag";
+import { ButtonPrimary } from "components/Buttons";
 
 export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
-  let { rep } = useReplicache();
 
   let text = useEntity(props.entityID, "button/text");
   let url = useEntity(props.entityID, "button/url");
@@ -26,73 +28,36 @@ export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
 
-  useEffect(() => {
-    if (props.preview) return;
-    let input = document.getElementById(elementId.block(props.entityID).input);
-    if (isSelected) {
-      input?.focus();
-    } else input?.blur();
-  }, [isSelected, props.entityID, props.preview]);
-
   if (!url) {
     if (!permissions.write) return null;
-    return (
-      <label
-        id={props.preview ? undefined : elementId.block(props.entityID).input}
-        className={`
-		  w-full h-[120px] p-2
-		  text-tertiary hover:text-accent-contrast hover:cursor-pointer
-		  flex flex-auto gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg
-		  ${isSelected ? "border-2 border-tertiary" : "border border-border"}
-		  ${props.pageType === "canvas" && "bg-bg-page"}`}
-        onMouseDown={() => {
-          focusBlock(
-            { type: props.type, value: props.entityID, parent: props.parent },
-            { type: "start" },
-          );
-        }}
-      >
-        <BlockInput {...props} />
-      </label>
-    );
+    return <ButtonBlockSettings {...props} />;
   }
 
   return (
-    // let's use ButtonPrimary styles, but render in a link, just <a> tag
-    // TODO: add block selected state
-    // TODO: add alignment options
-    <div>
-      <a
-        className={`
-        m-0 h-max w-max
-        px-2 py-0.5 rounded-md 
-        bg-accent-1 outline-transparent border border-accent-1
-        text-base font-bold text-accent-2 !no-underline
-        flex gap-2 items-center justify-center shrink-0
-        transparent-outline hover:outline-accent-1 outline-offset-1
-        disabled:bg-border-light disabled:border-border-light disabled:text-border disabled:hover:text-border
-      `}
-        href={url?.data.value}
-        target="_blank"
-      >
-        {text?.data.value}
-      </a>
-    </div>
+    <form
+      action={url?.data.value}
+      target="_blank"
+      className={`mx-auto hover:outline-accent-contrast !rounded-md  ${isSelected ? "block-border-selected !border-0" : "block-border !border-transparent !border-0"}`}
+    >
+      <ButtonPrimary type="submit">{text?.data.value}</ButtonPrimary>
+    </form>
   );
 };
 
-const BlockInput = (props: BlockProps) => {
+const ButtonBlockSettings = (props: BlockProps) => {
+  let { rep } = useReplicache();
+  let smoker = useSmoker();
+  let entity_set = useEntitySetContext();
+
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   let isLocked = useEntity(props.entityID, "block/is-locked")?.data.value;
 
-  let entity_set = useEntitySetContext();
-
   let [textValue, setTextValue] = useState("");
   let [urlValue, setUrlValue] = useState("");
-
-  let { rep } = useReplicache();
+  let text = textValue;
+  let url = urlValue;
 
   let submit = async () => {
     let entity = props.entityID;
@@ -107,8 +72,6 @@ const BlockInput = (props: BlockProps) => {
         newEntityID: entity,
       });
     }
-    let text = textValue;
-    let url = urlValue;
 
     //TODO: exceptions for mailto and tel as well?
     if (!urlValue.startsWith("http")) url = `https://${urlValue}`;
@@ -137,121 +100,124 @@ const BlockInput = (props: BlockProps) => {
       },
     });
   };
-  let smoker = useSmoker();
 
   return (
-    <div>
-      <div className="max-w-sm flex gap-2 rounded-md text-secondary">
-        <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
-            {/* TODO: replace icon */}
-            <BlockEmbedSmall
+    <div className="buttonBlockSettingsWrapper flex flex-col gap-2 w-full">
+      <ButtonPrimary className="mx-auto">
+        {text !== "" ? text : "Button"}
+      </ButtonPrimary>
+
+      <form
+        className={`
+        buttonBlockSettingsBorder
+        w-full bg-bg-page
+    		text-tertiary hover:text-accent-contrast hover:cursor-pointer hover:p-0
+    		flex flex-col gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg
+  		  ${isSelected ? "border-2 border-tertiary p-0" : "border border-border p-[1px]"}
+  		  `}
+        onSubmit={(e) => {
+          e.preventDefault();
+          let rect = document
+            .getElementById("button-block-settings")
+            ?.getBoundingClientRect();
+
+          console.log(rect);
+
+          if (!textValue) {
+            smoker({
+              error: true,
+              text: "missing button text!",
+              position: {
+                y: rect ? rect.top : 0,
+                x: rect ? rect.left + 12 : 0,
+              },
+            });
+            return;
+          }
+          if (!urlValue) {
+            smoker({
+              error: true,
+              text: "missing url!",
+              position: {
+                y: rect ? rect.top : 0,
+                x: rect ? rect.left + 12 : 0,
+              },
+            });
+            return;
+          }
+          if (!isUrl(urlValue)) {
+            smoker({
+              error: true,
+              text: "invalid url!",
+              position: {
+                y: rect ? rect.top : 0,
+                x: rect ? rect.left + 12 : 0,
+              },
+            });
+            return;
+          }
+          submit();
+        }}
+      >
+        <div className="buttonBlockSettingsContent w-full flex flex-col sm:flex-row gap-2 text-secondary px-2 py-3 sm:pb-3 pb-1">
+          <div className="buttonBlockSettingsTitleInput flex gap-2 w-full sm:w-52">
+            <BlockButtonSmall
               className={`shrink-0  ${isSelected ? "text-tertiary" : "text-border"} `}
             />
             <Separator />
             <Input
               type="text"
+              onFocus={(e) => {
+                console.log(e);
+              }}
+              onBlur={(e) => {
+                console.log(e);
+              }}
               className="w-full grow border-none outline-none bg-transparent"
               placeholder="button text"
               value={textValue}
               disabled={isLocked}
               onChange={(e) => setTextValue(e.target.value)}
               onKeyDown={(e) => {
-                // TODO: fix! it's deleting even if non-empty idk
+                console.log(urlValue);
                 if (
                   e.key === "Backspace" &&
-                  textValue === "" &&
-                  urlValue === ""
-                ) {
-                  rep && deleteBlock([props.entityID].flat(), rep);
-                  return;
-                }
-                if (e.key === "Enter") {
-                  if (!textValue || !urlValue) return;
-                  if (!isUrl(urlValue)) {
-                    let rect = e.currentTarget.getBoundingClientRect();
-                    smoker({
-                      error: true,
-                      text: "invalid url!",
-                      position: { x: rect.left, y: rect.top - 8 },
-                    });
-                    return;
-                  }
-                  submit();
-                }
+                  !e.currentTarget.value &&
+                  urlValue !== ""
+                )
+                  e.preventDefault();
               }}
             />
           </div>
-          <div className="flex gap-2">
-            {/* TODO: replace icon */}
-            <BlockEmbedSmall
+          <div className="buttonBlockSettingsLinkInput grow flex gap-2 w-full">
+            <LinkSmall
               className={`shrink-0  ${isSelected ? "text-tertiary" : "text-border"} `}
             />
             <Separator />
             <Input
               type="url"
+              id="button-block-url-input"
               className="w-full grow border-none outline-none bg-transparent"
               placeholder="www.example.com"
               value={urlValue}
               disabled={isLocked}
               onChange={(e) => setUrlValue(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Backspace" && urlValue === "") {
-                  // TODO: focus prev input - ???
-                }
-                if (e.key === "Enter") {
-                  if (!textValue || !urlValue) return;
-                  if (!isUrl(urlValue)) {
-                    let rect = e.currentTarget.getBoundingClientRect();
-                    smoker({
-                      error: true,
-                      text: "invalid url!",
-                      position: { x: rect.left, y: rect.top - 8 },
-                    });
-                    return;
-                  }
-                  submit();
-                }
+                if (e.key === "Backspace" && !e.currentTarget.value)
+                  e.preventDefault();
               }}
             />
           </div>
+          <button
+            id="button-block-settings"
+            type="submit"
+            className={`p-1 shrink-0 w-fit flex gap-2 items-center place-self-end ${isSelected && !isLocked ? "text-accent-contrast" : "text-accent-contrast sm:text-border"}`}
+          >
+            <div className="sm:hidden block">Save</div>
+            <CheckTiny />
+          </button>
         </div>
-        {/* <div className="flex items-center gap-3 "> */}
-        <button
-          className={`p-1 ${isSelected && !isLocked ? "text-accent-contrast" : "text-border"}`}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            if (!textValue) {
-              smoker({
-                error: true,
-                text: "missing button text!",
-                position: { x: e.clientX, y: e.clientY },
-              });
-              return;
-            }
-            if (!urlValue) {
-              smoker({
-                error: true,
-                text: "missing url!",
-                position: { x: e.clientX, y: e.clientY },
-              });
-              return;
-            }
-            if (!isUrl(urlValue)) {
-              smoker({
-                error: true,
-                text: "invalid url!",
-                position: { x: e.clientX, y: e.clientY },
-              });
-              return;
-            }
-            submit();
-          }}
-        >
-          <CheckTiny />
-        </button>
-        {/* </div> */}
-      </div>
+      </form>
     </div>
   );
 };

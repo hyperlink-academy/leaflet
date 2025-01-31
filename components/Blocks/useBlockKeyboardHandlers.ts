@@ -126,6 +126,7 @@ async function Backspace({
   // if this is a textBlock, let the textBlock/keymap handle the backspace
   if (isLocked) return;
   if (isTextBlock[props.type]) return;
+  // if its an input, label, or teatarea with content, do nothing (do the broswer default instead)
   let el = e.target as HTMLElement;
   if (
     el.tagName === "LABEL" ||
@@ -151,8 +152,8 @@ async function Backspace({
       return;
     }
     // ... and areYouSure state is true,
-    // and the user is not in an input or textarea,
-    // if there is a page to close, close it and remove the block
+    // and the user is not in an input or textarea, remove it
+    // if there is a page to close, close it
     if (areYouSure) {
       e.preventDefault();
       if (debounced) {

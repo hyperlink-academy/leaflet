@@ -11,6 +11,7 @@ import {
   ParagraphSmall,
   LinkSmall,
   BlockEmbedSmall,
+  BlockButtonSmall,
   BlockCalendarSmall,
   RSVPSmall,
 } from "components/Icons";
@@ -188,7 +189,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "Button",
-    icon: <LinkSmall />, //TODO: replace with button icon!
+    icon: <BlockButtonSmall />,
     type: "block",
     onSelect: async (rep, props) => {
       createBlockWithType(rep, props, "button");

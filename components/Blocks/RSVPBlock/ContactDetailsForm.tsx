@@ -123,6 +123,10 @@ export function ContactDetailsForm(props: {
               placeholder="..."
               className=" bg-transparent disabled:text-tertiary w-full appearance-none focus:outline-0"
               value={name}
+              onKeyDown={(e) => {
+                if (e.key === "Backspace" && !e.currentTarget.value)
+                  e.preventDefault();
+              }}
               onChange={(e) => setName(e.target.value)}
             />
           </label>
