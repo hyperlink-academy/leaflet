@@ -6,9 +6,10 @@ import { metaKey } from "src/utils/metaKey";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { useUIState } from "src/useUIState";
 import { LockBlockButton } from "./LockBlockButton";
+import { TextAlignmentButton } from "./TextAlignmentToolbar";
 
 export const BlockToolbar = (props: {
-  setToolbarState: (state: "areYouSure" | "block") => void;
+  setToolbarState: (state: "areYouSure" | "block" | "text-alignment") => void;
 }) => {
   let focusedEntity = useUIState((s) => s.focusedEntity);
   let focusedEntityType = useEntity(
@@ -17,6 +18,10 @@ export const BlockToolbar = (props: {
       : focusedEntity?.parent || null,
     "page/type",
   );
+  let blockType = useEntity(
+    focusedEntity?.entityType === "block" ? focusedEntity?.entityID : null,
+    "block/type",
+  )?.data.value;
 
   return (
     <div className="flex items-center gap-2 justify-between w-full">
@@ -34,6 +39,14 @@ export const BlockToolbar = (props: {
           <>
             <MoveBlockButtons />
             <Separator classname="h-6" />
+            {(blockType === "image" ||
+              blockType === "button" ||
+              blockType === "datetime") && (
+              <>
+                <TextAlignmentButton setToolbarState={props.setToolbarState} />
+                <Separator classname="h-6" />
+              </>
+            )}
           </>
         ) : null}
 

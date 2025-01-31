@@ -97,7 +97,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     : "block-border !border-transparent";
   let isLocalUpload = localImages.get(image.data.src);
   return (
-    <div className="relative group/image flex w-full justify-center">
+    <div className="relative group/image">
       {isLocalUpload || image.data.local ? (
         <img
           loading="lazy"

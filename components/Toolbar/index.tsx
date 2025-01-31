@@ -160,7 +160,12 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
                   selectedBlocks: [],
                 }));
               } else {
-                setToolbarState("default");
+                if (blockType !== "heading" && blockType !== "text") {
+                  setToolbarState("block");
+                } else {
+                  setToolbarState("default");
+                }
+
                 focusedEntity && keepFocus(focusedEntity.entityID);
               }
             }}

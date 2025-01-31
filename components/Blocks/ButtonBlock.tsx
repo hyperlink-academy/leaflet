@@ -37,7 +37,7 @@ export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
     <form
       action={url?.data.value}
       target="_blank"
-      className={`mx-auto hover:outline-accent-contrast !rounded-md  ${isSelected ? "block-border-selected !border-0" : "block-border !border-transparent !border-0"}`}
+      className={`hover:outline-accent-contrast !rounded-md  ${isSelected ? "block-border-selected !border-0" : "block-border !border-transparent !border-0"}`}
     >
       <ButtonPrimary type="submit">{text?.data.value}</ButtonPrimary>
     </form>
