@@ -64,6 +64,11 @@ export function SendUpdateButton(props: { entityID: string }) {
                 e.preventDefault();
             }}
             value={input}
+            placeholder={
+              allRecipients === 0
+                ? "Send an event update…but first…share this Leaflet to invite people!"
+                : "Send people an event update!"
+            }
             onChange={(e) => {
               setInput(e.target.value);
             }}
