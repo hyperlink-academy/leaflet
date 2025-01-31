@@ -26,8 +26,8 @@ export const HomeHelp = () => {
           <strong>If you clear your cookies, they&apos;ll disappear.</strong>
         </p>
         <p>
-          Please <a href="mailto:contact@hyperlink.academy">contact us</a> for
-          help recovering Leaflets!
+          Please <a href="mailto:contact@leaflet.pub">contact us</a> for help
+          recovering Leaflets!
         </p>
       </div>
     </Popover>

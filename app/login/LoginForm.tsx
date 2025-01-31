@@ -116,7 +116,7 @@ export default function LoginForm() {
       <div className="flex flex-col">
         <h3 className="text-primary">Log In or Sign Up</h3>
         <div className=" text-secondary">
-          Save your leaflets and access them on multiple devices!
+          Save your Leaflets and access them on multiple devices!
         </div>
       </div>
       <form onSubmit={handleSubmitEmail} className="flex flex-col gap-2">

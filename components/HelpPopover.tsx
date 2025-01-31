@@ -41,7 +41,7 @@ export const HelpPopover = (props: { noShortcuts?: boolean }) => {
         />
         <HelpLink
           text="🍃 Email us feedback"
-          url="mailto:contact@hyperlink.academy"
+          url="mailto:contact@leaflet.pub"
         />
         <HelpLink
           text="📄 Terms and Privacy Policy"

@@ -91,7 +91,7 @@ const DefaultOptions = (props: {
         <>
           <ShareButton
             text="Offer Template"
-            subtext="Let people create new leaflets using this as a template"
+            subtext="Let people create new Leaflets using this as a template"
             smokerText="Template link copied!"
             id="get-template-link"
             link={`template/${publishLink}` || ""}
@@ -111,7 +111,7 @@ const DefaultOptions = (props: {
         subtext=<>
           {domains?.[0] ? (
             <>
-              This leaflet is published on{" "}
+              This Leaflet is published on{" "}
               <span className="italic underline">
                 {domains[0].domain}
                 {domains[0].route}
