@@ -123,6 +123,17 @@ const EmbedBlockAttributes = {
   },
 } as const;
 
+const ButtonBlockAttributes = {
+  "button/text": {
+    type: "string",
+    cardinality: "one",
+  },
+  "button/url": {
+    type: "string",
+    cardinality: "one",
+  },
+} as const;
+
 export const ThemeAttributes = {
   "theme/page-leaflet-watermark": {
     type: "boolean",
@@ -190,6 +201,7 @@ export const Attributes = {
   ...ThemeAttributes,
   ...MailboxAttributes,
   ...EmbedBlockAttributes,
+  ...ButtonBlockAttributes,
 };
 type Attribute = typeof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
@@ -248,7 +260,8 @@ export type Data<A extends keyof typeof Attributes> = {
       | "heading"
       | "link"
       | "mailbox"
-      | "embed";
+      | "embed"
+      | "button";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";

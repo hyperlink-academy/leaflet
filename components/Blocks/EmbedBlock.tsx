@@ -166,7 +166,34 @@ const BlockLinkInput = (props: BlockProps) => {
   let smoker = useSmoker();
 
   return (
-    <div>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        let rect = document
+          .getElementById("embed-block-submit")
+          ?.getBoundingClientRect();
+        if (!linkValue || linkValue === "") {
+          smoker({
+            error: true,
+            text: "no url!",
+            position: { x: rect ? rect.left + 12 : 0, y: rect ? rect.top : 0 },
+          });
+          return;
+        }
+        if (!isUrl(linkValue)) {
+          smoker({
+            error: true,
+            text: "invalid url!",
+            position: {
+              x: rect ? rect.left + 12 : 0,
+              y: rect ? rect.top : 0,
+            },
+          });
+          return;
+        }
+        submit();
+      }}
+    >
       <div className={`max-w-sm flex gap-2 rounded-md text-secondary`}>
         <BlockEmbedSmall
           className={`shrink-0  ${isSelected ? "text-tertiary" : "text-border"} `}
@@ -179,54 +206,35 @@ const BlockLinkInput = (props: BlockProps) => {
           value={linkValue}
           disabled={isLocked}
           onChange={(e) => setLinkValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Backspace" && linkValue === "") {
-              rep && deleteBlock([props.entityID].flat(), rep);
+        />
+        <button
+          type="submit"
+          id="embed-block-submit"
+          className={`p-1 ${isSelected && !isLocked ? "text-accent-contrast" : "text-border"}`}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            if (!linkValue || linkValue === "") {
+              smoker({
+                error: true,
+                text: "no url!",
+                position: { x: e.clientX + 12, y: e.clientY },
+              });
               return;
             }
-            if (e.key === "Enter") {
-              if (!linkValue) return;
-              if (!isUrl(linkValue)) {
-                let rect = e.currentTarget.getBoundingClientRect();
-                smoker({
-                  error: true,
-                  text: "invalid url!",
-                  position: { x: rect.left, y: rect.top - 8 },
-                });
-                return;
-              }
-              submit();
+            if (!isUrl(linkValue)) {
+              smoker({
+                error: true,
+                text: "invalid url!",
+                position: { x: e.clientX + 12, y: e.clientY },
+              });
+              return;
             }
+            submit();
           }}
-        />
-        <div className="flex items-center gap-3 ">
-          <button
-            className={`p-1 ${isSelected && !isLocked ? "text-accent-contrast" : "text-border"}`}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              if (!linkValue || linkValue === "") {
-                smoker({
-                  error: true,
-                  text: "no url!",
-                  position: { x: e.clientX, y: e.clientY },
-                });
-                return;
-              }
-              if (!isUrl(linkValue)) {
-                smoker({
-                  error: true,
-                  text: "invalid url!",
-                  position: { x: e.clientX, y: e.clientY },
-                });
-                return;
-              }
-              submit();
-            }}
-          >
-            <CheckTiny />
-          </button>
-        </div>
+        >
+          <CheckTiny />
+        </button>
       </div>
-    </div>
+    </form>
   );
 };

@@ -75,7 +75,6 @@ export const LeafletOptions = (props: {
             )}
             <MenuItem
               onSelect={async () => {
-                console.log(props.loggedIn);
                 if (props.loggedIn) {
                   mutateIdentity(
                     (s) => {

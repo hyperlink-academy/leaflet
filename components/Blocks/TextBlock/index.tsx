@@ -473,12 +473,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
             </TooltipButton>
           </div>
         ) : null}
-        {editorState.doc.textContent.startsWith("/") && selected && (
-          <BlockCommandBar
-            props={props}
-            searchValue={editorState.doc.textContent.slice(1)}
-          />
-        )}
+
         {editorState.doc.textContent.startsWith("/") && selected && (
           <BlockCommandBar
             props={props}

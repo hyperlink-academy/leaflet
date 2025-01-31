@@ -168,9 +168,7 @@ const CommandResult = (props: {
     <button
       className={`commandResult text-left flex gap-2 mx-1 pr-2 py-0.5 rounded-md text-secondary ${isHighlighted && "bg-border-light"}`}
       onMouseOver={() => {
-        isHighlighted
-          ? props.setHighlighted(undefined)
-          : props.setHighlighted(props.name);
+        props.setHighlighted(props.name);
       }}
       onMouseDown={(e) => {
         e.preventDefault();

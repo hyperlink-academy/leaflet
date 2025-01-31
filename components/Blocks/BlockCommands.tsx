@@ -11,6 +11,7 @@ import {
   ParagraphSmall,
   LinkSmall,
   BlockEmbedSmall,
+  BlockButtonSmall,
   BlockCalendarSmall,
   RSVPSmall,
 } from "components/Icons";
@@ -184,6 +185,14 @@ export const blockCommands: Command[] = [
         let el = document.getElementById(elementId.block(entity).input);
         el?.focus();
       }, 100);
+    },
+  },
+  {
+    name: "Button",
+    icon: <BlockButtonSmall />,
+    type: "block",
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "button");
     },
   },
   {
