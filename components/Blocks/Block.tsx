@@ -125,17 +125,18 @@ export const BaseBlock = (
   // BaseBlock renders the actual block content, delete states, controls spacing between block and list markers
   let BlockTypeComponent = BlockTypeComponents[props.type];
   let alignment = useEntity(props.value, "block/text-alignment")?.data.value;
+
   let alignmentStyle =
-    alignment === "left"
-      ? "justify-start"
-      : alignment === "right"
-        ? "justify-end"
-        : alignment === "center"
-          ? "justify-center"
-          : alignment === undefined &&
-              (props.type === "button" || props.type === "image")
-            ? "justify-center"
-            : "justify-start";
+    props.type === "button" || props.type === "image"
+      ? "justify-center"
+      : "justify-start";
+
+  if (alignment)
+    alignmentStyle = {
+      left: "justify-start",
+      right: "justify-end",
+      center: "justify-center",
+    }[alignment];
 
   if (!BlockTypeComponent) return <div>unknown block</div>;
   return (
