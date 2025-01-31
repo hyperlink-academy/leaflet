@@ -90,8 +90,8 @@ const DefaultOptions = (props: {
       {isTemplate && (
         <>
           <ShareButton
-            text="Offer Template"
-            subtext="Let people create new Leaflets using this as a template"
+            text="Share Template"
+            subtext="Let others make new Leaflets as copies of this template"
             smokerText="Template link copied!"
             id="get-template-link"
             link={`template/${publishLink}` || ""}
@@ -100,14 +100,14 @@ const DefaultOptions = (props: {
         </>
       )}
       <ShareButton
-        text="Collaborate"
-        subtext="Invite people to edit together"
-        smokerText="Collab link copied!"
-        id="get-collab-link"
+        text="Share Edit Link"
+        subtext=""
+        smokerText="Edit link copied!"
+        id="get-edit-link"
         link={collabLink}
       />
       <ShareButton
-        text="Publish"
+        text="Share View Link"
         subtext=<>
           {domains?.[0] ? (
             <>
@@ -118,11 +118,11 @@ const DefaultOptions = (props: {
               </span>
             </>
           ) : (
-            "Send the read-only version"
+            ""
           )}
         </>
-        smokerText="Publish link copied!"
-        id="get-publish-link"
+        smokerText="View link copied!"
+        id="get-view-link"
         fullLink={
           domains?.[0]
             ? `https://${domains[0].domain}${domains[0].route}`
