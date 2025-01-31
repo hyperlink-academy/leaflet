@@ -120,9 +120,6 @@ const ButtonBlockSettings = (props: BlockProps) => {
           let rect = document
             .getElementById("button-block-settings")
             ?.getBoundingClientRect();
-
-          console.log(rect);
-
           if (!textValue) {
             smoker({
               error: true,
@@ -167,19 +164,13 @@ const ButtonBlockSettings = (props: BlockProps) => {
             <Separator />
             <Input
               type="text"
-              onFocus={(e) => {
-                console.log(e);
-              }}
-              onBlur={(e) => {
-                console.log(e);
-              }}
+              autoFocus
               className="w-full grow border-none outline-none bg-transparent"
               placeholder="button text"
               value={textValue}
               disabled={isLocked}
               onChange={(e) => setTextValue(e.target.value)}
               onKeyDown={(e) => {
-                console.log(urlValue);
                 if (
                   e.key === "Backspace" &&
                   !e.currentTarget.value &&
