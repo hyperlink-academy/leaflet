@@ -54,6 +54,7 @@ export function BaseDateTimeBlock(
   );
 
   let isLocked = !!useEntity(props.entityID, "block/is-locked")?.data.value;
+  let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   const handleTimeChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const time = e.target.value;
@@ -122,6 +123,7 @@ export function BaseDateTimeBlock(
         <div
           className={`flex flex-row gap-2 group/date w-64 z-[1]
       ${isSelected ? "block-border-selected !border-transparent" : "border border-transparent"}
+      ${alignment === "center" ? "justify-center" : alignment === "right" ? "justify-end" : "justify-start"}
       `}
         >
           <BlockCalendarSmall className="text-tertiary" />
