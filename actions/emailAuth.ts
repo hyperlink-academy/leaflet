@@ -28,6 +28,13 @@ async function sendAuthCode(email: string, code: string) {
 
 ${code}
       `,
+      HtmlBody: `
+      <html>
+        <body>
+          <p>Paste this code to login to Leaflet: <strong>${code}</strong></p>
+        </body>
+      </html>
+      `,
     }),
   });
 }

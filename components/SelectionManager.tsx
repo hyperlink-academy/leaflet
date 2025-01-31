@@ -500,8 +500,8 @@ export function SelectionManager() {
           "data-entityid",
         );
         useSelectingMouse.setState({ start: entityID });
-        initialContentEditableParent.current = contentEditableParent;
       }
+      initialContentEditableParent.current = contentEditableParent;
     };
     let mouseUpListener = (e: MouseEvent) => {
       savedSelection.current = null;
@@ -514,6 +514,7 @@ export function SelectionManager() {
           window.getSelection()?.removeAllRanges();
         }, 5);
       }
+      initialContentEditableParent.current = null;
       useSelectingMouse.setState({ start: null });
       setMouseDown(false);
     };
