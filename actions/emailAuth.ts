@@ -109,7 +109,7 @@ export async function confirmEmailAuthToken(tokenId: string, code: string) {
     maxAge: 60 * 60 * 24 * 365,
     secure: process.env.NODE_ENV === "production",
     httpOnly: true,
-    sameSite: "strict",
+    sameSite: "lax",
   });
 
   client.end();
