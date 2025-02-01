@@ -31,7 +31,9 @@ export function MobileFooter(props: { entityID: string }) {
         </div>
       ) : entity_set.permissions.write ? (
         <div className="z-10 pb-2 px-2 pt-0.5 flex justify-between">
-          <HomeButton />
+          <div className="flex flex-row gap-[6px]">
+            <HomeButton />
+          </div>
           <div className="flex flex-row gap-[6px] items-center ">
             <HelpPopover />
             <ThemePopover entityID={props.entityID} />
