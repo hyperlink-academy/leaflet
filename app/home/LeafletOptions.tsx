@@ -50,7 +50,7 @@ export const LeafletOptions = (props: {
                   setState("template");
                 }}
               >
-                <TemplateSmall /> Designate as Template
+                <TemplateSmall /> Add as Template
               </MenuItem>
             ) : (
               <MenuItem
@@ -98,7 +98,7 @@ export const LeafletOptions = (props: {
               }}
             >
               <HideSmall />
-              Remove from home
+              Remove from Home
             </MenuItem>
           </>
         ) : state === "template" ? (
