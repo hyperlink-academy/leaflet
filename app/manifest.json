@@ -1,5 +1,7 @@
 {
   "name": "Leaflet",
+  "id": "leaflet",
+  "description": "An app for delightful documents",
   "short_name": "Leaflet",
   "start_url": "/home",
   "shortcuts": [

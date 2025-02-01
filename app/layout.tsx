@@ -14,6 +14,13 @@ export const metadata = {
   title: "Leaflet",
   description: "tiny interconnected social documents",
   metadataBase: new URL(`https://leaflet.pub`),
+  icons: [
+    {
+      type: "apple-touch-icon",
+      sizes: "180x180",
+      url: "/apple-touch-icon.png",
+    },
+  ],
   appleWebApp: {
     title: "Leaflet",
     statusBarStyle: "black-translucent",
