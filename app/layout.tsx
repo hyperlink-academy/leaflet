@@ -15,7 +15,7 @@ export const metadata = {
   description: "tiny interconnected social documents",
   metadataBase: new URL(`https://leaflet.pub`),
   appleWebApp: {
-    title: "Hyperlink Academy",
+    title: "Leaflet",
     statusBarStyle: "black-translucent",
     capable: true,
   },
