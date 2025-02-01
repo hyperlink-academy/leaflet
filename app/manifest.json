@@ -1,6 +1,13 @@
 {
   "name": "Leaflet",
   "short_name": "Leaflet",
+  "start_url": "/home",
+  "shortcuts": [
+    {
+      "name": "New Leaflet",
+      "url": "/"
+    }
+  ],
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
