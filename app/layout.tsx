@@ -13,7 +13,12 @@ import { RouteUIStateManager } from "components/RouteUIStateManger";
 export const metadata = {
   title: "Leaflet",
   description: "tiny interconnected social documents",
-  metadataBase: `https://leaflet.pub`,
+  metadataBase: new URL(`https://leaflet.pub`),
+  appleWebApp: {
+    title: "Hyperlink Academy",
+    statusBarStyle: "black-translucent",
+    capable: true,
+  },
 };
 
 export const viewport = {
