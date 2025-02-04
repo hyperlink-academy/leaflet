@@ -240,3 +240,10 @@ input[type="number"] {
     z-index: 0;
   }
 }
+
+.pwa-padding {
+  padding-top: max(calc(env(safe-area-inset-top) - 8px)) !important;
+}
+.pwa-padding-bottom {
+  padding-bottom: max(calc(env(safe-area-inset-bottom) - 14px), 8px);
+}

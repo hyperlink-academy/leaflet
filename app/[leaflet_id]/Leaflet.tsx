@@ -37,10 +37,10 @@ export function Leaflet(props: {
             <UpdateLeafletTitle entityID={props.leaflet_id} />
             <AddLeafletToHomepage />
             <SelectionManager />
-            {/* we need the padding bottom here because if we don't have it the mobile footer will cut off 
+            {/* we need the padding bottom here because if we don't have it the mobile footer will cut off
             the dropshadow on the page... the padding is compensated by a negative top margin in mobile footer  */}
             <div
-              className="leafletContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full pb-4"
+              className="leafletContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full pb-4 pwa-padding"
               id="page-carousel"
             >
               <Pages rootPage={props.leaflet_id} />
