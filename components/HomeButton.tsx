@@ -37,7 +37,8 @@ const AddToHomeButton = (props: {}) => {
   if (
     identity?.permission_token_on_homepage.find(
       (pth) => pth.permission_tokens.id === permission_token.id,
-    )
+    ) ||
+    !identity
   )
     return null;
   return (
