@@ -134,7 +134,7 @@ export const HoverButton = (props: {
       >
         {props.icon}
         <div
-          className={`font-bold pr-[6px] group-hover/hover-button:block ${props.noLabelOnMobile ? "hidden" : "sm:hidden"}`}
+          className={`font-bold pr-[6px] sm:group-hover/hover-button:block ${props.noLabelOnMobile ? "hidden" : "sm:hidden"}`}
         >
           {props.label}
         </div>
