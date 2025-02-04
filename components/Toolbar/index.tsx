@@ -23,14 +23,15 @@ import { TextAlignmentToolbar } from "./TextAlignmentToolbar";
 export type ToolbarTypes =
   | "areYouSure"
   | "default"
+  | "block"
+  | "multiselect"
   | "highlight"
   | "link"
   | "heading"
   | "text-alignment"
   | "list"
   | "linkBlock"
-  | "block"
-  | "multiselect";
+  | "img-alt-text";
 
 export const Toolbar = (props: { pageID: string; blockID: string }) => {
   let { rep } = useReplicache();
@@ -185,12 +186,21 @@ export const ToolbarButton = (props: {
   children: React.ReactNode;
   active?: boolean;
   disabled?: boolean;
+  hiddenOnCanvas?: boolean;
 }) => {
-  let focusedBlock = useUIState((s) => s.focusedEntity);
-  let isLocked = useEntity(focusedBlock?.entityID || null, "block/is-locked");
+  let focusedEntity = useUIState((s) => s.focusedEntity);
+  let isLocked = useEntity(focusedEntity?.entityID || null, "block/is-locked");
   let isDisabled =
     props.disabled === undefined ? !!isLocked?.data.value : props.disabled;
 
+  let focusedEntityType = useEntity(
+    focusedEntity?.entityType === "page"
+      ? focusedEntity.entityID
+      : focusedEntity?.parent || null,
+    "page/type",
+  );
+  if (focusedEntityType?.data.value === "canvas" && props.hiddenOnCanvas)
+    return;
   return (
     <TooltipButton
       onMouseDown={(e) => {

@@ -221,7 +221,7 @@ const BlockListBottom = (props: {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
 
-  if (!entity_set.permissions.write) return <div className="h-4 min-h-4" />;
+  if (!entity_set.permissions.write) return;
   return (
     <div
       className="blockListClickableBottomArea shrink-0 h-[50vh]"

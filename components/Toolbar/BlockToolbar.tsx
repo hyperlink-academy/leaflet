@@ -7,6 +7,7 @@ import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { useUIState } from "src/useUIState";
 import { LockBlockButton } from "./LockBlockButton";
 import { TextAlignmentButton } from "./TextAlignmentToolbar";
+import { ImageFullBleedButton } from "./ImageToolbar";
 
 export const BlockToolbar = (props: {
   setToolbarState: (state: "areYouSure" | "block" | "text-alignment") => void;
@@ -35,20 +36,24 @@ export const BlockToolbar = (props: {
           <DeleteSmall />
         </ToolbarButton>
         <Separator classname="h-6" />
-        {focusedEntityType?.data.value !== "canvas" ? (
+        <MoveBlockButtons />
+        {blockType === "image" && (
           <>
-            <MoveBlockButtons />
-            <Separator classname="h-6" />
-            {(blockType === "image" ||
-              blockType === "button" ||
-              blockType === "datetime") && (
-              <>
-                <TextAlignmentButton setToolbarState={props.setToolbarState} />
-                <Separator classname="h-6" />
-              </>
+            <TextAlignmentButton setToolbarState={props.setToolbarState} />
+            <ImageFullBleedButton />
+            {focusedEntityType?.data.value !== "canvas" && (
+              <Separator classname="h-6" />
             )}
           </>
-        ) : null}
+        )}
+        {(blockType === "button" || blockType === "datetime") && (
+          <>
+            <TextAlignmentButton setToolbarState={props.setToolbarState} />
+            {focusedEntityType?.data.value !== "canvas" && (
+              <Separator classname="h-6" />
+            )}
+          </>
+        )}
 
         <LockBlockButton />
       </div>
@@ -72,6 +77,7 @@ const MoveBlockButtons = () => {
   return (
     <>
       <ToolbarButton
+        hiddenOnCanvas
         onClick={async () => {
           let [sortedBlocks, siblings] = await getSortedSelection();
           if (sortedBlocks.length > 1) return;
@@ -128,6 +134,7 @@ const MoveBlockButtons = () => {
       </ToolbarButton>
 
       <ToolbarButton
+        hiddenOnCanvas
         onClick={async () => {
           let [sortedBlocks, siblings] = await getSortedSelection();
           if (sortedBlocks.length > 1) return;
@@ -173,6 +180,7 @@ const MoveBlockButtons = () => {
       >
         <MoveBlockDown />
       </ToolbarButton>
+      <Separator classname="h-6" />
     </>
   );
 };

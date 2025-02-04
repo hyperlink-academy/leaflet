@@ -21,6 +21,18 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     s.selectedBlocks.find((b) => b.value === props.value),
   );
   let isLocked = useEntity(props.value, "block/is-locked")?.data.value;
+  let isFullBleed = useEntity(props.value, "image/full-bleed")?.data.value;
+  let isFirst = props.previousBlock === null;
+  let isLast = props.nextBlock === null;
+
+  let nextIsFullBleed = useEntity(
+    props.nextBlock && props.nextBlock.value,
+    "image/full-bleed",
+  )?.data.value;
+  let prevIsFullBleed = useEntity(
+    props.previousBlock && props.previousBlock.value,
+    "image/full-bleed",
+  )?.data.value;
 
   useEffect(() => {
     if (props.preview) return;
@@ -39,7 +51,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
         <label
           className={`
             group/image-block
-            w-full h-[104px] p-2 hover:cursor-pointer
+            w-full h-[104px] hover:cursor-pointer p-2
             text-tertiary hover:text-accent-contrast hover:font-bold
             flex flex-col items-center justify-center
             hover:border-2 border-dashed  hover:border-accent-contrast rounded-lg
@@ -92,12 +104,23 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     );
   }
 
-  let className = isSelected
-    ? "block-border-selected !border-transparent "
-    : "block-border !border-transparent";
+  let className = isFullBleed
+    ? ""
+    : isSelected
+      ? "block-border-selected !border-transparent "
+      : "block-border !border-transparent";
+
   let isLocalUpload = localImages.get(image.data.src);
+
   return (
-    <div className="relative group/image">
+    <div
+      className={`relative group/image
+        ${className}
+        ${isFullBleed && "-mx-3 sm:-mx-4"}
+        ${isFullBleed ? (isFirst ? "-mt-3 sm:-mt-4" : prevIsFullBleed ? "-mt-1" : "") : ""}
+        ${isFullBleed ? (isLast ? "-mb-4" : nextIsFullBleed ? "-mb-2" : "") : ""} `}
+    >
+      {isFullBleed && isSelected ? <FullBleedSelectionIndicator /> : null}
       {isLocalUpload || image.data.local ? (
         <img
           loading="lazy"
@@ -106,7 +129,6 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
           src={isLocalUpload ? image.data.src + "?local" : image.data.fallback}
           height={image?.data.height}
           width={image?.data.width}
-          className={className}
         />
       ) : (
         <Image
@@ -120,3 +142,11 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     </div>
   );
 }
+
+export const FullBleedSelectionIndicator = () => {
+  return (
+    <div
+      className={`absolute top-3 sm:top-4 bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 border-2 border-bg-page rounded-lg outline-offset-1 outline outline-2 outline-tertiary`}
+    />
+  );
+};

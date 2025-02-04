@@ -26,19 +26,19 @@ export function TextAlignmentToolbar() {
     <>
       <ToolbarButton
         onClick={() => setAlignment("left")}
-        tooltipContent="Align Text Left"
+        tooltipContent="Align Left"
       >
         <AlignLeftSmall />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => setAlignment("center")}
-        tooltipContent="Align Text Center"
+        tooltipContent="Align Center"
       >
         <AlignCenterSmall />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => setAlignment("right")}
-        tooltipContent="Align Text Right"
+        tooltipContent="Align Right"
       >
         <AlignRightSmall />
       </ToolbarButton>
@@ -56,7 +56,8 @@ export function TextAlignmentButton(props: {
       .value || "left";
   return (
     <ToolbarButton
-      tooltipContent={<div>Align Text</div>}
+      hiddenOnCanvas
+      tooltipContent={<div>Align</div>}
       className={`${props.className}`}
       onClick={() => {
         props.setToolbarState("text-alignment");

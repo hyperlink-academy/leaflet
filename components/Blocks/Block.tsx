@@ -92,10 +92,12 @@ export const Block = memo(function Block(
         flex flex-row gap-2
         px-3 sm:px-4
       ${
-        props.type === "heading" ||
-        (props.listData && props.nextBlock?.listData)
-          ? "pb-0"
-          : "pb-2"
+        !props.nextBlock
+          ? "pb-3 sm:pb-4"
+          : props.type === "heading" ||
+              (props.listData && props.nextBlock?.listData)
+            ? "pb-0"
+            : "pb-2"
       }
       ${
         !props.previousBlock

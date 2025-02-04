@@ -134,6 +134,13 @@ const ButtonBlockAttributes = {
   },
 } as const;
 
+const ImageBlockAttributes = {
+  "image/full-bleed": {
+    type: "boolean",
+    cardinality: "one",
+  },
+} as const;
+
 export const ThemeAttributes = {
   "theme/page-leaflet-watermark": {
     type: "boolean",
@@ -202,6 +209,7 @@ export const Attributes = {
   ...MailboxAttributes,
   ...EmbedBlockAttributes,
   ...ButtonBlockAttributes,
+  ...ImageBlockAttributes,
 };
 type Attribute = typeof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
