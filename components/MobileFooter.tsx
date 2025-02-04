@@ -14,7 +14,7 @@ export function MobileFooter(props: { entityID: string }) {
   let entity_set = useEntitySetContext();
 
   return (
-    <Media mobile className="mobileFooter w-full z-10 touch-none -mt-4">
+    <Media mobile className="mobileFooter w-full z-10 touch-none -mt-4 ">
       {focusedBlock &&
       focusedBlock.entityType == "block" &&
       entity_set.permissions.write ? (
@@ -30,7 +30,7 @@ export function MobileFooter(props: { entityID: string }) {
           />
         </div>
       ) : entity_set.permissions.write ? (
-        <div className="z-10 pb-2 px-2 pt-0.5 flex justify-between">
+        <div className="z-10 pwa-padding-bottom px-2 pt-0.5 flex justify-between">
           <div className="flex flex-row gap-[6px]">
             <HomeButton />
           </div>

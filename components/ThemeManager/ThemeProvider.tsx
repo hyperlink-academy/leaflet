@@ -76,6 +76,9 @@ export function ThemeProvider(props: {
     if (!el) return;
     setCSSVariableToColor(el, "--bg-leaflet", bgLeaflet);
     setCSSVariableToColor(el, "--bg-page", bgPage);
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", `rgb(${colorToString(bgLeaflet, "rgb")})`);
     el?.style.setProperty(
       "--bg-page-alpha",
       bgPage.getChannelValue("alpha").toString(),
