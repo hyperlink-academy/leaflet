@@ -122,7 +122,7 @@ export function ThemeProvider(props: {
   ]);
   return (
     <div
-      className="leafletWrapper w-full text-primary h-full flex flex-col bg-center items-stretch"
+      className="leafletWrapper w-full text-primary h-full flex flex-col bg-center items-stretch "
       style={
         {
           "--bg-leaflet": colorToString(bgLeaflet, "rgb"),

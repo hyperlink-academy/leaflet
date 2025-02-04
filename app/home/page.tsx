@@ -99,7 +99,7 @@ export default async function Home() {
         set={permission_token.permission_token_rights[0].entity_set}
       >
         <ThemeProvider entityID={root_entity}>
-          <div className="flex h-full bg-bg-leaflet">
+          <div className="flex h-full bg-bg-leaflet pwa-padding">
             <ThemeBackgroundProvider entityID={root_entity}>
               <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row sm:items-stretch flex-col-reverse px-2 sm:px-6 ">
                 {!auth_res && (

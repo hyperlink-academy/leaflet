@@ -6,7 +6,13 @@ export function ViewportSizeLayout(props: { children: React.ReactNode }) {
   let viewheight = useViewportSize().height;
   let difference = useViewportDifference();
   return (
-    <div style={{ height: isIOS() ? viewheight : "100%" }}>
+    <div
+      style={{
+        height: isIOS()
+          ? `calc(${viewheight}px + env(safe-area-inset-top)`
+          : "calc(100% + env(safe-area-inset-top)",
+      }}
+    >
       {props.children}
     </div>
   );
