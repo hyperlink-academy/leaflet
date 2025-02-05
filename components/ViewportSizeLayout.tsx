@@ -8,9 +8,10 @@ export function ViewportSizeLayout(props: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        height: isIOS()
-          ? `calc(${viewheight}px + env(safe-area-inset-top)`
-          : "calc(100% + env(safe-area-inset-top)",
+        height:
+          isIOS() && difference !== 0
+            ? `calc(${viewheight}px + 10px)`
+            : "calc(100% + env(safe-area-inset-top)",
       }}
     >
       {props.children}

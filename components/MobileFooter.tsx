@@ -19,7 +19,7 @@ export function MobileFooter(props: { entityID: string }) {
       focusedBlock.entityType == "block" &&
       entity_set.permissions.write ? (
         <div
-          className="w-full z-10 p-2 flex bg-bg-page"
+          className="w-full z-10 p-2 flex bg-bg-page pwa-padding-bottom"
           onMouseDown={(e) => {
             if (e.currentTarget === e.target) e.preventDefault();
           }}
