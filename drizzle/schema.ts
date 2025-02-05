@@ -1,4 +1,4 @@
-import { pgTable, foreignKey, pgEnum, uuid, text, jsonb, timestamp, bigint, unique, boolean, uniqueIndex, smallint, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, pgEnum, text, jsonb, foreignKey, uuid, timestamp, bigint, unique, boolean, uniqueIndex, smallint, primaryKey } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const aal_level = pgEnum("aal_level", ['aal1', 'aal2', 'aal3'])
@@ -13,6 +13,16 @@ export const rsvp_status = pgEnum("rsvp_status", ['GOING', 'NOT_GOING', 'MAYBE']
 export const action = pgEnum("action", ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'ERROR'])
 export const equality_op = pgEnum("equality_op", ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'in'])
 
+
+export const oauth_state_store = pgTable("oauth_state_store", {
+	key: text("key").primaryKey().notNull(),
+	state: jsonb("state").notNull(),
+});
+
+export const oauth_session_store = pgTable("oauth_session_store", {
+	key: text("key").primaryKey().notNull(),
+	session: jsonb("session").notNull(),
+});
 
 export const facts = pgTable("facts", {
 	id: uuid("id").primaryKey().notNull(),

@@ -21,6 +21,14 @@ export const AccountSettings = () => {
       }
     >
       <MenuItem
+        onSelect={() => {
+          //I guess redirect them to the bluesky oauth endpoint?
+        }}
+      >
+        Link to Bluesky
+      </MenuItem>
+      o
+      <MenuItem
         onSelect={async () => {
           await logout();
           mutate("identity");

@@ -300,6 +300,36 @@ export type Database = {
           },
         ]
       }
+      oauth_session_store: {
+        Row: {
+          key: string
+          session: Json
+        }
+        Insert: {
+          key: string
+          session: Json
+        }
+        Update: {
+          key?: string
+          session?: Json
+        }
+        Relationships: []
+      }
+      oauth_state_store: {
+        Row: {
+          key: string
+          state: Json
+        }
+        Insert: {
+          key: string
+          state: Json
+        }
+        Update: {
+          key?: string
+          state?: Json
+        }
+        Relationships: []
+      }
       permission_token_on_homepage: {
         Row: {
           created_at: string
