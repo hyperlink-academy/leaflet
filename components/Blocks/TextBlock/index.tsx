@@ -523,7 +523,7 @@ let SyncView = (props: { entityID: string; parentID: string }) => {
       if (previousFocused === props.entityID) return;
       previousFocused = props.entityID;
       if (
-        !view.state.selection.anchor ||
+        view.state.selection.anchor === undefined ||
         //@ts-ignore I'm not sure why this type isn't here because it's used in the function underneath
         !view.docView
       )
