@@ -200,8 +200,9 @@ export function BaseDateTimeBlock(
                 entity: props.entityID,
                 data: {
                   type: "date-time",
-                  value: new Date().toISOString(),
+                  value: dateFact?.data.value || new Date().toISOString(),
                   originalTimezone:
+                    dateFact?.data.originalTimezone ||
                     Intl.DateTimeFormat().resolvedOptions().timeZone,
                   dateOnly: e.currentTarget.checked,
                 },
