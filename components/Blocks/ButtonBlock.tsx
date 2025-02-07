@@ -75,8 +75,13 @@ const ButtonBlockSettings = (props: BlockProps) => {
       });
     }
 
-    //TODO: exceptions for mailto and tel as well?
-    if (!urlValue.startsWith("http")) url = `https://${urlValue}`;
+    // if no valid url prefix, default to https
+    if (
+      !urlValue.startsWith("http") &&
+      !urlValue.startsWith("mailto") &&
+      !urlValue.startsWith("tel:")
+    )
+      url = `https://${urlValue}`;
 
     // these mutations = simpler subset of addLinkBlock
     if (!rep) return;
