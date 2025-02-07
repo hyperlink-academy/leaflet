@@ -39,7 +39,8 @@ ${code}
   });
 }
 
-export async function requestAuthEmailToken(email: string) {
+export async function requestAuthEmailToken(emailNonNormalized: string) {
+  let email = emailNonNormalized.toLowerCase();
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
 
