@@ -19,10 +19,19 @@ import { addShortcut } from "src/shortcuts";
 
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
+  let isPageFocused = useUIState((s) => {
+    let focusedElement = s.focusedEntity;
+    let focusedPageID =
+      focusedElement?.entityType === "page"
+        ? focusedElement.entityID
+        : focusedElement?.parent;
+    return focusedPageID === props.entityID;
+  });
   let entity_set = useEntitySetContext();
   let blocks = useBlocks(props.entityID);
   let foldedBlocks = useUIState((s) => s.foldedBlocks);
   useEffect(() => {
+    if (!isPageFocused) return;
     return addShortcut([
       {
         altKey: true,
@@ -68,7 +77,7 @@ export function Blocks(props: { entityID: string }) {
         },
       },
     ]);
-  }, [blocks]);
+  }, [blocks, isPageFocused]);
 
   let lastRootBlock = blocks.findLast(
     (f) => !f.listData || f.listData.depth === 1,
