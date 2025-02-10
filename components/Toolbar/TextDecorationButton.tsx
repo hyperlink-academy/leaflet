@@ -3,10 +3,10 @@ import { useUIState } from "src/useUIState";
 import { ToolbarButton } from ".";
 import { toggleMark } from "prosemirror-commands";
 import { TextSelection } from "prosemirror-state";
-import { publishAppEvent } from "src/eventBus";
 import { useEditorStates } from "src/state/useEditorState";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 import { ShortcutKey } from "components/Layout";
+import { setMark } from "src/utils/prosemirror/setMark";
 
 export function TextDecorationButton(props: {
   mark: MarkType;
@@ -49,8 +49,25 @@ export function TextDecorationButton(props: {
   );
 }
 
-export function toggleMarkInFocusedBlock(mark: MarkType, attrs?: any) {
+export function toggleMarkInFocusedBlock(markT: MarkType, attrs?: any) {
   let focusedBlock = useUIState.getState().focusedEntity;
-  if (!focusedBlock) return;
-  publishAppEvent(focusedBlock.entityID, "toggleMark", { mark, attrs });
+  let editor = focusedBlock
+    ? useEditorStates.getState().editorStates[focusedBlock?.entityID]
+    : null;
+  if (!editor) return;
+  let { view } = editor;
+  let { to, from, $cursor, $to, $from } = view.state.selection as TextSelection;
+  let mark = rangeHasMark(view.state, markT, from, to);
+  if (
+    to === from &&
+    markT?.isInSet(view.state.storedMarks || $cursor?.marks() || [])
+  ) {
+    return toggleMark(markT, attrs)(view.state, view.dispatch);
+  }
+  if (
+    mark &&
+    (!attrs || JSON.stringify(attrs) === JSON.stringify(mark.attrs))
+  ) {
+    toggleMark(markT, attrs)(view.state, view.dispatch);
+  } else setMark(markT, attrs)(view.state, view.dispatch);
 }
