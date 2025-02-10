@@ -114,7 +114,10 @@ const moveBlock: Mutation<{
   oldParent: string;
   block: string;
   newParent: string;
-  position: { type: "first" } | { type: "end" };
+  position:
+    | { type: "first" }
+    | { type: "end" }
+    | { type: "after"; entity: string };
 }> = async (args, ctx) => {
   let children = (
     await ctx.scanIndex.eav(args.oldParent, "card/block")
@@ -126,7 +129,8 @@ const moveBlock: Mutation<{
   if (!block) return;
   await ctx.retractFact(block.id);
   let newPosition;
-  switch (args.position.type) {
+  let pos = args.position;
+  switch (pos.type) {
     case "first": {
       newPosition = generateKeyBetween(
         null,
@@ -140,6 +144,13 @@ const moveBlock: Mutation<{
         null,
       );
       break;
+    }
+    case "after": {
+      let index = newSiblings.findIndex((f) => f.data.value == pos?.entity);
+      newPosition = generateKeyBetween(
+        newSiblings[index]?.data.position || null,
+        newSiblings[index + 1]?.data.position || null,
+      );
     }
   }
   await ctx.assertFact({

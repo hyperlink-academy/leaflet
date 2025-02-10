@@ -11,12 +11,19 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { metaKey } from "src/utils/metaKey";
 import { ToolbarButton } from ".";
-import { indent, outdent } from "src/utils/list-operations";
+import { indent, outdent, outdentFull } from "src/utils/list-operations";
 import { useEffect } from "react";
 
 export const ListButton = (props: { setToolbarState: (s: "list") => void }) => {
   let focusedBlock = useUIState((s) => s.focusedEntity);
   let isList = useEntity(focusedBlock?.entityID || null, "block/is-list");
+  let siblings = useBlocks(
+    focusedBlock?.entityType === "block" ? focusedBlock.parent : null,
+  );
+
+  let block = siblings.find((s) => s.value === focusedBlock?.entityID);
+  let previousBlock =
+    siblings[siblings.findIndex((b) => b.value === focusedBlock?.entityID) - 1];
 
   let { rep } = useReplicache();
 
@@ -39,15 +46,17 @@ export const ListButton = (props: { setToolbarState: (s: "list") => void }) => {
         }
         onClick={(e) => {
           e.preventDefault();
-          if (!focusedBlock) return;
+          if (!focusedBlock || !block) return;
           if (!isList?.data.value) {
             rep?.mutate.assertFact({
               entity: focusedBlock?.entityID,
               attribute: "block/is-list",
               data: { value: true, type: "boolean" },
             });
+          } else {
+            outdentFull(block, previousBlock, rep);
           }
-          props.setToolbarState("list");
+          // props.setToolbarState("list");
         }}
       >
         <ListUnorderedSmall />
