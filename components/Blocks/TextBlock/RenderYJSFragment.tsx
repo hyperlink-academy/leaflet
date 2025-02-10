@@ -6,16 +6,18 @@ import { theme } from "tailwind.config";
 export function RenderYJSFragment({
   node,
   wrapper,
+  attrs,
 }: {
   node: XmlElement | XmlText | XmlHook;
   wrapper?: "h1" | "h2" | "h3" | null;
+  attrs?: { [k: string]: any };
 }) {
   if (node.constructor === XmlElement) {
     switch (node.nodeName as keyof typeof nodes) {
       case "paragraph": {
         let children = node.toArray();
         return (
-          <BlockWrapper wrapper={wrapper}>
+          <BlockWrapper wrapper={wrapper} attrs={attrs}>
             {children.length === 0 ? (
               <br />
             ) : (
@@ -49,7 +51,7 @@ export function RenderYJSFragment({
               </a>
             );
           return (
-            <span key={index} {...attributesToStyle(d)}>
+            <span key={index} {...attributesToStyle(d)} {...attrs}>
               {d.insert}
             </span>
           );
@@ -63,16 +65,17 @@ export function RenderYJSFragment({
 const BlockWrapper = (props: {
   wrapper?: "h1" | "h2" | "h3" | null;
   children: React.ReactNode;
+  attrs?: { [k: string]: any };
 }) => {
   if (props.wrapper === null) return <>{props.children}</>;
-  if (!props.wrapper) return <p>{props.children}</p>;
+  if (!props.wrapper) return <p {...props.attrs}>{props.children}</p>;
   switch (props.wrapper) {
     case "h1":
-      return <h1>{props.children}</h1>;
+      return <h1 {...props.attrs}>{props.children}</h1>;
     case "h2":
-      return <h2>{props.children}</h2>;
+      return <h2 {...props.attrs}>{props.children}</h2>;
     case "h3":
-      return <h3>{props.children}</h3>;
+      return <h3 {...props.attrs}>{props.children}</h3>;
   }
 };
 

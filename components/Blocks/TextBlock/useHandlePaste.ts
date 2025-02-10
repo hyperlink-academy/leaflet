@@ -54,14 +54,7 @@ export const useHandlePaste = (
         let xml = new DOMParser().parseFromString(textHTML, "text/html");
         let currentPosition = propsRef.current.position;
         let children = flattenHTMLToTextBlocks(xml.body);
-        if (
-          children.find((c) =>
-            ["P", "H1", "H2", "H3", "UL", "DIV", "SPAN", "IMG"].includes(
-              c.tagName,
-            ),
-          ) &&
-          !(children.length === 1 && children[0].tagName === "IMG")
-        ) {
+        if (!(children.length === 1 && children[0].tagName === "IMG")) {
           children.forEach((child, index) => {
             createBlockFromHTML(child, {
               parentType: propsRef.current.pageType,
@@ -243,10 +236,42 @@ const createBlockFromHTML = (
       });
     }
   }
+  let alignment = child.getAttribute("data-alignment");
+  if (alignment && ["right", "left", "center"].includes(alignment)) {
+    rep.mutate.assertFact({
+      entity: entityID,
+      attribute: "block/text-alignment",
+      data: {
+        type: "text-alignment-type-union",
+        value: alignment as "right" | "left" | "center",
+      },
+    });
+  }
   if (child.tagName === "A") {
     let href = child.getAttribute("href");
+    let dataType = child.getAttribute("data-type");
     if (href) {
-      addLinkBlock(href, entityID, rep);
+      if (dataType === "button") {
+        rep.mutate.assertFact([
+          {
+            entity: entityID,
+            attribute: "block/type",
+            data: { type: "block-type-union", value: "button" },
+          },
+          {
+            entity: entityID,
+            attribute: "button/text",
+            data: { type: "string", value: child.textContent || "" },
+          },
+          {
+            entity: entityID,
+            attribute: "button/url",
+            data: { type: "string", value: href },
+          },
+        ]);
+      } else {
+        addLinkBlock(href, entityID, rep);
+      }
     }
   }
   if (child.tagName === "IMG") {

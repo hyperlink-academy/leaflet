@@ -74,10 +74,27 @@ async function renderBlock(
   ignoreWrapper?: boolean,
 ) {
   let wrapper: undefined | "h1" | "h2" | "h3";
+  let [alignment] = await scanIndex(tx).eav(b.value, "block/text-alignment");
   if (b.type === "image") {
     let [src] = await scanIndex(tx).eav(b.value, "block/image");
     if (!src) return "";
-    return renderToStaticMarkup(<img src={src.data.src} />);
+    return renderToStaticMarkup(
+      <img src={src.data.src} data-alignment={alignment?.data.value} />,
+    );
+  }
+  if (b.type === "button") {
+    let [text] = await scanIndex(tx).eav(b.value, "button/text");
+    let [url] = await scanIndex(tx).eav(b.value, "button/url");
+    if (!text || !url) return "";
+    return renderToStaticMarkup(
+      <a
+        href={url.data.value}
+        data-type="button"
+        data-alignment={alignment?.data.value}
+      >
+        {text.data.value}
+      </a>,
+    );
   }
   if (b.type === "heading") {
     let headingLevel =
@@ -125,6 +142,9 @@ async function renderBlock(
   let nodes = doc.getXmlElement("prosemirror").toArray();
   return renderToStaticMarkup(
     <RenderYJSFragment
+      attrs={{
+        "data-alignment": alignment?.data.value,
+      }}
       node={nodes[0]}
       wrapper={ignoreWrapper ? null : wrapper}
     />,
