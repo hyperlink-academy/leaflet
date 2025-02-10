@@ -45,16 +45,20 @@ export const useHandlePaste = (
         });
         return true;
       }
+      // if there is no html, but there is text, convert the text to markdown
       if (!textHTML && text) {
         textHTML = markdownToHtml(text);
       }
+      // if thre is html
       if (textHTML) {
         let xml = new DOMParser().parseFromString(textHTML, "text/html");
         let currentPosition = propsRef.current.position;
         let children = flattenHTMLToTextBlocks(xml.body);
         if (
           children.find((c) =>
-            ["P", "H1", "H2", "H3", "UL", "DIV", "IMG"].includes(c.tagName),
+            ["P", "H1", "H2", "H3", "UL", "DIV", "SPAN", "IMG"].includes(
+              c.tagName,
+            ),
           ) &&
           !(children.length === 1 && children[0].tagName === "IMG")
         ) {
@@ -169,7 +173,10 @@ const createBlockFromHTML = (
   }
   switch (child.tagName) {
     case "LI":
-    case "SPAN":
+    case "SPAN": {
+      type = "text";
+      break;
+    }
     case "P": {
       type = "text";
       break;
@@ -403,6 +410,7 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
           "UL",
           "IMG",
           "A",
+          "SPAN",
         ].includes(elementNode.tagName) ||
         elementNode.getAttribute("data-entityID")
       ) {
