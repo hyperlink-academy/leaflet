@@ -117,7 +117,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
         let type = scan.eav(b.data.value, "block/type");
         return {
           ...b.data,
-          type: type[0].data.value,
+          type: type[0]?.data.value,
         };
       })
 
