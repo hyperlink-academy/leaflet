@@ -9,7 +9,7 @@ import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { v7 } from "uuid";
-import { indent, outdent } from "src/utils/list-operations";
+import { indent, outdent, outdentFull } from "src/utils/list-operations";
 import { addShortcut } from "src/shortcuts";
 import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 import { elementId } from "src/utils/elementId";
@@ -120,6 +120,8 @@ export function SelectionManager() {
                 attribute: "block/is-list",
                 data: { type: "boolean", value: true },
               });
+            } else {
+              outdentFull(block, rep);
             }
           }
         },

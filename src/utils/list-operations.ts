@@ -27,10 +27,8 @@ export function indent(
 
 export function outdentFull(
   block: Block,
-  previousBlock: Block | null,
   rep?: Replicache<ReplicacheMutators> | null,
 ) {
-  console.log("yo? ", block);
   if (!block.listData) return;
 
   // make this block not a list
@@ -44,7 +42,7 @@ export function outdentFull(
   // If there are none or this block is a level 1 list item, we don't need to move anything
 
   let after = block.listData?.path.find((f) => f.depth === 1)?.entity;
-  console.log({ after });
+
   // move this block to be after that block
   after &&
     after !== block.value &&

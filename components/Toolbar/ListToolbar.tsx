@@ -54,9 +54,8 @@ export const ListButton = (props: { setToolbarState: (s: "list") => void }) => {
               data: { value: true, type: "boolean" },
             });
           } else {
-            outdentFull(block, previousBlock, rep);
+            outdentFull(block, rep);
           }
-          // props.setToolbarState("list");
         }}
       >
         <ListUnorderedSmall />
