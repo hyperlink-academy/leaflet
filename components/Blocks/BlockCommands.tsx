@@ -204,6 +204,15 @@ export const blockCommands: Command[] = [
       createBlockWithType(rep, props, "mailbox");
     },
   },
+  {
+    name: "Poll",
+    icon: <BlockMailboxSmall />,
+    type: "block",
+    onSelect: async (rep, props) => {
+      let entity;
+      createBlockWithType(rep, props, "poll");
+    },
+  },
 
   // EVENT STUFF
 

@@ -269,7 +269,8 @@ export type Data<A extends keyof typeof Attributes> = {
       | "link"
       | "mailbox"
       | "embed"
-      | "button";
+      | "button"
+      | "poll";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";
