@@ -129,7 +129,7 @@ export const ListToolbar = (props: { onClose: () => void }) => {
         }
         disabled={
           !previousBlock?.listData ||
-          previousBlock.listData.depth !== block?.listData?.depth
+          previousBlock.listData.depth < block?.listData?.depth!
         }
         onClick={() => {
           if (!rep || !block || !previousBlock) return;
