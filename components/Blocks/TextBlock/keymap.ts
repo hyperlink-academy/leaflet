@@ -23,11 +23,13 @@ import { scanIndex } from "src/replicache/utils";
 import { indent, outdent } from "src/utils/list-operations";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { isTextBlock } from "src/utils/isTextBlock";
+import { UndoManager } from "src/undoManager";
 
 type PropsRef = MutableRefObject<BlockProps & { entity_set: { set: string } }>;
 export const TextBlockKeymap = (
   propsRef: PropsRef,
   repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+  um: UndoManager,
 ) =>
   ({
     "Meta-b": toggleMark(schema.marks.strong),
@@ -45,12 +47,20 @@ export const TextBlockKeymap = (
     "Ctrl-a": metaA(propsRef, repRef),
     "Meta-a": metaA(propsRef, repRef),
     Tab: () => {
-      if (useUIState.getState().selectedBlocks.length > 1) return false;
-      if (!repRef.current || !propsRef.current.previousBlock) return false;
-      indent(propsRef.current, propsRef.current.previousBlock, repRef.current);
-      return true;
+      return um.withUndoGroup(() => {
+        if (useUIState.getState().selectedBlocks.length > 1) return false;
+        if (!repRef.current || !propsRef.current.previousBlock) return false;
+        indent(
+          propsRef.current,
+          propsRef.current.previousBlock,
+          repRef.current,
+        );
+        return true;
+      });
     },
-    "Shift-Tab": shifttab(propsRef, repRef),
+    "Shift-Tab": () => {
+      return um.withUndoGroup(shifttab(propsRef, repRef));
+    },
     Escape: (_state, _dispatch, view) => {
       view?.dom.blur();
       useUIState.setState(() => ({
@@ -164,10 +174,21 @@ export const TextBlockKeymap = (
       }
       return true;
     },
-    Backspace: backspace(propsRef, repRef),
+    Backspace: (state, dispatch, view) =>
+      um.withUndoGroup(() =>
+        backspace(propsRef, repRef)(state, dispatch, view),
+      ),
     "Shift-Backspace": backspace(propsRef, repRef),
-    Enter: enter(propsRef, repRef),
-    "Shift-Enter": enter(propsRef, repRef),
+    Enter: (state, dispatch, view) => {
+      return um.withUndoGroup(() =>
+        enter(propsRef, repRef)(state, dispatch, view),
+      );
+    },
+    "Shift-Enter": (state, dispatch, view) => {
+      return um.withUndoGroup(() =>
+        enter(propsRef, repRef)(state, dispatch, view),
+      );
+    },
     "Ctrl-Enter": CtrlEnter(propsRef, repRef),
     "Meta-Enter": CtrlEnter(propsRef, repRef),
   }) as { [key: string]: Command };
