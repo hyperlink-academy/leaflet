@@ -100,7 +100,7 @@ export function ReplicacheProvider(props: {
         Object.keys(mutations).map((m) => {
           return [
             m,
-            async (tx: WriteTransaction, args: any, ...rest) => {
+            async (tx: WriteTransaction, args: any) => {
               await mutations[m as keyof typeof mutations](
                 args,
                 clientMutationContext(tx, {
