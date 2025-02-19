@@ -123,6 +123,13 @@ const EmbedBlockAttributes = {
   },
 } as const;
 
+const BlueskyPostBlockAttributes = {
+  "bluesky-post/url": {
+    type: "string",
+    cardinality: "one",
+  },
+} as const;
+
 const ButtonBlockAttributes = {
   "button/text": {
     type: "string",
@@ -208,6 +215,7 @@ export const Attributes = {
   ...ThemeAttributes,
   ...MailboxAttributes,
   ...EmbedBlockAttributes,
+  ...BlueskyPostBlockAttributes,
   ...ButtonBlockAttributes,
   ...ImageBlockAttributes,
 };
