@@ -141,6 +141,17 @@ const ImageBlockAttributes = {
   },
 } as const;
 
+const PollBlockAttributes = {
+  "poll/options": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
+  "poll-option/name": {
+    type: "string",
+    cardinality: "one",
+  },
+} as const;
+
 export const ThemeAttributes = {
   "theme/page-leaflet-watermark": {
     type: "boolean",
@@ -210,6 +221,7 @@ export const Attributes = {
   ...EmbedBlockAttributes,
   ...ButtonBlockAttributes,
   ...ImageBlockAttributes,
+  ...PollBlockAttributes,
 };
 type Attribute = typeof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
