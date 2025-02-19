@@ -21,7 +21,7 @@ export async function getIdentityData() {
             *,
             custom_domains(*),
             home_leaflet:permission_tokens!identities_home_page_fkey(*, permission_token_rights(*)),
-            permission_token_on_homepage(created_at, permission_tokens!inner(*, permission_token_rights(*)))
+            permission_token_on_homepage(created_at, permission_tokens!inner(id, root_entity, permission_token_rights(*)))
           )`,
         )
         .eq("id", auth_token)
