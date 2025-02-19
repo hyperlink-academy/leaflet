@@ -73,6 +73,7 @@ export function clientMutationContext(
             } else {
               if (attribute.cardinality === "one" && !f.id)
                 rep.mutate.retractAttribute({
+                  ignoreUndo: true,
                   attribute: f.attribute as keyof FilterAttributes<{
                     cardinality: "one";
                   }>,

@@ -226,7 +226,6 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
     if (!editorState) {
       let km = TextBlockKeymap(propsRef, repRef, rep.undoManager);
       setEditorState(props.entityID, {
-        keymap: km,
         editor: EditorState.create({
           schema,
           plugins: [
@@ -269,18 +268,17 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
         if (!existingState) return s;
         let newState = existingState.editor.apply(tr);
         let addToHistory = tr.getMeta("addToHistory");
-        console.log(addToHistory);
         if (addToHistory !== false) {
+        let docHasChanges = !tr.steps.length || tr.docChanged;
+        if (addToHistory !== false && docHasChanges) {
           if (actionTimeout.current) {
             window.clearTimeout(actionTimeout.current);
           } else {
-            console.log("starting group");
             rep.undoManager.startGroup();
           }
 
           actionTimeout.current = window.setTimeout(() => {
             rep.undoManager.endGroup();
-            console.log("ending group");
             actionTimeout.current = null;
           }, 200);
           rep.undoManager.add({

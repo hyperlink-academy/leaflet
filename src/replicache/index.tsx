@@ -100,13 +100,13 @@ export function ReplicacheProvider(props: {
         Object.keys(mutations).map((m) => {
           return [
             m,
-            async (tx: WriteTransaction, args: any) => {
+            async (tx: WriteTransaction, args: any, ...rest) => {
               await mutations[m as keyof typeof mutations](
                 args,
                 clientMutationContext(tx, {
                   undoManager,
                   rep: newRep,
-                  ignoreUndo: args.ignoreUndo,
+                  ignoreUndo: args.ignoreUndo || tx.reason !== "initial",
                   defaultEntitySet:
                     props.token.permission_token_rights[0]?.entity_set,
                 }),
