@@ -168,7 +168,7 @@ async function Backspace({
   }
 
   e.preventDefault();
-  rep.mutate.removeBlock({ blockEntity: props.entityID });
+  await rep.mutate.removeBlock({ blockEntity: props.entityID });
   useUIState.getState().closePage(props.entityID);
   let prevBlock = props.previousBlock;
   if (prevBlock) focusBlock(prevBlock, { type: "end" });
