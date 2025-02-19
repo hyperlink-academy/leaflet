@@ -34,7 +34,7 @@ export default async function LeafletPage(props: Props) {
     .eq("id", props.params.leaflet_id)
     .single();
   let rootEntity = res.data?.root_entity;
-  if (!rootEntity || !res.data)
+  if (!rootEntity || !res.data || res.data.blocked_by_admin)
     return (
       <div className="w-screen h-screen flex place-items-center bg-bg-leaflet">
         <div className="bg-bg-page mx-auto p-4 border border-border rounded-md flex flex-col text-center justify-centergap-1 w-fit">

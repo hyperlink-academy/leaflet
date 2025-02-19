@@ -380,14 +380,17 @@ export type Database = {
       }
       permission_tokens: {
         Row: {
+          blocked_by_admin: boolean | null
           id: string
           root_entity: string
         }
         Insert: {
+          blocked_by_admin?: boolean | null
           id?: string
           root_entity: string
         }
         Update: {
+          blocked_by_admin?: boolean | null
           id?: string
           root_entity?: string
         }
@@ -815,6 +818,10 @@ export type Database = {
           metadata: Json
           updated_at: string
         }[]
+      }
+      operation: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       search: {
         Args: {

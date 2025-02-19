@@ -19,7 +19,7 @@ export function RenderYJSFragment({
         return (
           <BlockWrapper wrapper={wrapper} attrs={attrs}>
             {children.length === 0 ? (
-              <br />
+              <div />
             ) : (
               node
                 .toArray()
@@ -29,7 +29,7 @@ export function RenderYJSFragment({
         );
       }
       case "hard_break":
-        return <br />;
+        return <div />;
       default:
         return null;
     }
