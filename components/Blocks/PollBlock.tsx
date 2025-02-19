@@ -9,6 +9,8 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { theme } from "tailwind.config";
 import { useEntity, useReplicache } from "src/replicache";
 import { v7 } from "uuid";
+import { usePollData } from "components/PageSWRDataProvider";
+import { voteOnPoll } from "actions/pollActions";
 
 export const PollBlock = (props: BlockProps) => {
   let { rep } = useReplicache();
@@ -22,24 +24,33 @@ export const PollBlock = (props: BlockProps) => {
   );
 
   let dataPollOptions = useEntity(props.entityID, "poll/options");
+  let { data: pollData } = usePollData();
+  console.log(pollData);
 
-  let [pollOptions, setPollOptions] = useState<
-    { value: string; votes: number }[]
-  >([
-    { value: "hello", votes: 2 },
-    { value: "hi", votes: 4 },
-  ]);
   let [localPollOptionNames, setLocalPollOptionNames] = useState<{
     [k: string]: string;
   }>({});
+  let votes =
+    pollData?.polls.filter(
+      (v) => v.poll_votes_on_entity.poll_entity === props.entityID,
+    ) || [];
+  let totalVotes = votes.length;
 
-  let totalVotes = pollOptions.reduce((sum, option) => sum + option.votes, 0);
+  let votesByOptions = votes.reduce<{ [option: string]: number }>(
+    (results, vote) => {
+      results[vote.poll_votes_on_entity.option_entity] =
+        (results[vote.poll_votes_on_entity.option_entity] || 0) + 1;
+      return results;
+    },
+    {},
+  );
 
-  let highestVotes = Math.max(...pollOptions.map((option) => option.votes));
-  let winningIndexes = pollOptions.reduce<number[]>(
-    (indexes, option, index) => {
-      if (option.votes === highestVotes) indexes.push(index);
-      return indexes;
+  let highestVotes = Math.max(...Object.values(votesByOptions));
+
+  let winningOptionEntities = Object.entries(votesByOptions).reduce<string[]>(
+    (winningEntities, [entity, votes]) => {
+      if (votes === highestVotes) winningEntities.push(entity);
+      return winningEntities;
     },
     [],
   );
@@ -60,42 +71,24 @@ export const PollBlock = (props: BlockProps) => {
       )}
 
       {/* Empty state if no options yet */}
-      {(pollOptions.every((option) => option.value === "") ||
-        pollOptions.length === 0) &&
-        pollState !== "editing" && (
-          <div className="text-center italic text-tertiary text-sm">
-            no options yet...
-          </div>
-        )}
+      {dataPollOptions.length === 0 && pollState !== "editing" && (
+        <div className="text-center italic text-tertiary text-sm">
+          no options yet...
+        </div>
+      )}
 
       {dataPollOptions.map((option, index) => (
         <PollOption
+          pollEntity={props.entityID}
           localNameState={localPollOptionNames[option.data.value]}
           setLocalNameState={setLocalPollOptionNames}
           entityID={option.data.value}
           key={option.data.value}
           state={pollState}
           setState={setPollState}
-          votes={0}
-          setVotes={(newVotes) => {
-            setPollOptions((oldOptions) => {
-              let newOptions = [...oldOptions];
-              newOptions[index] = {
-                value: oldOptions[index].value,
-                votes: newVotes,
-              };
-              return newOptions;
-            });
-          }}
+          votes={votesByOptions[option.data.value] || 0}
           totalVotes={totalVotes}
-          winner={winningIndexes.includes(index)}
-          removeOption={() => {
-            setPollOptions((oldOptions) => {
-              let newOptions = [...oldOptions];
-              newOptions.splice(index, 1);
-              return newOptions;
-            });
-          }}
+          winner={winningOptionEntities.includes(option.data.value)}
         />
       ))}
       {!permissions.write ? null : pollState === "editing" ? (
@@ -133,6 +126,7 @@ export const PollBlock = (props: BlockProps) => {
 
 const PollOption = (props: {
   entityID: string;
+  pollEntity: string;
   localNameState: string | undefined;
   setLocalNameState: (
     s: (s: { [k: string]: string }) => { [k: string]: string },
@@ -140,12 +134,12 @@ const PollOption = (props: {
   state: "editing" | "voting" | "results";
   setState: (state: "editing" | "voting" | "results") => void;
   votes: number;
-  setVotes: (votes: number) => void;
   totalVotes: number;
   winner: boolean;
-  removeOption: () => void;
 }) => {
   let { rep } = useReplicache();
+  let { mutate } = usePollData();
+
   let optionName = useEntity(props.entityID, "poll-option/name")?.data.value;
   useEffect(() => {
     props.setLocalNameState((s) => ({
@@ -172,7 +166,7 @@ const PollOption = (props: {
         onKeyDown={(e) => {
           if (e.key === "Backspace" && !e.currentTarget.value) {
             e.preventDefault();
-            props.removeOption();
+            rep?.mutate.removePollOption({ optionEntity: props.entityID });
           }
         }}
       />
@@ -181,7 +175,7 @@ const PollOption = (props: {
         disabled={props.votes > 0}
         className="text-accent-contrast disabled:text-border"
         onMouseDown={() => {
-          props.removeOption();
+          rep?.mutate.removePollOption({ optionEntity: props.entityID });
         }}
       >
         <CloseTiny />
@@ -193,7 +187,8 @@ const PollOption = (props: {
         className={`pollOption grow max-w-full`}
         onClick={() => {
           props.setState("results");
-          props.setVotes(props.votes + 1);
+          voteOnPoll(props.pollEntity, props.entityID);
+          mutate();
         }}
       >
         {optionName}

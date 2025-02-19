@@ -591,6 +591,12 @@ const addPollOption: Mutation<{
   });
 };
 
+const removePollOption: Mutation<{
+  optionEntity: string;
+}> = async (args, ctx) => {
+  ctx.deleteEntity(args.optionEntity);
+};
+
 export const mutations = {
   retractAttribute,
   addBlock,
@@ -611,4 +617,5 @@ export const mutations = {
   createDraft,
   createEntity,
   addPollOption,
+  removePollOption,
 };
