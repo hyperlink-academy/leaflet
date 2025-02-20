@@ -268,7 +268,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
         if (!existingState) return s;
         let newState = existingState.editor.apply(tr);
         let addToHistory = tr.getMeta("addToHistory");
-        let docHasChanges = !tr.steps.length || tr.docChanged;
+        let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
         if (addToHistory !== false && docHasChanges) {
           if (actionTimeout.current) {
             window.clearTimeout(actionTimeout.current);
