@@ -6,6 +6,7 @@ import {
   CardThemeProvider,
   NestedCardThemeProvider,
 } from "./ThemeManager/ThemeProvider";
+import { useReplicache } from "src/replicache";
 
 type ButtonProps = Omit<JSX.IntrinsicElements["button"], "content">;
 export const ButtonPrimary = forwardRef<
@@ -153,6 +154,7 @@ export const TooltipButton = (props: {
   open?: boolean;
   delayDuration?: number;
 }) => {
+  let { undoManager } = useReplicache();
   return (
     // toolbar button does not control the highlight theme setter
     // if toolbar button is updated, be sure to update there as well
@@ -165,7 +167,9 @@ export const TooltipButton = (props: {
           className={props.className}
           onMouseDown={(e) => {
             e.preventDefault();
+            undoManager.startGroup();
             props.onMouseDown && props.onMouseDown(e);
+            undoManager.endGroup();
           }}
         >
           {props.children}

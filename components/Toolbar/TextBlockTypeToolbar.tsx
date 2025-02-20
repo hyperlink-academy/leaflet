@@ -170,7 +170,28 @@ export const TextBlockTypeToolbar = (props: {
 };
 
 export function keepFocus(entityID: string) {
-  setTimeout(() => {}, 1000);
+  let existingEditor = useEditorStates.getState().editorStates[entityID];
+
+  let selection = existingEditor?.editor.selection;
+
+  setTimeout(() => {
+    let existingEditor = useEditorStates.getState().editorStates[entityID];
+
+    if (!existingEditor) return;
+
+    existingEditor.view?.focus();
+
+    setEditorState(entityID, {
+      editor: existingEditor.editor.apply(
+        existingEditor.editor.tr.setSelection(
+          TextSelection.create(
+            existingEditor.editor.doc,
+            selection?.anchor || 1,
+          ),
+        ),
+      ),
+    });
+  }, 50);
 }
 
 export function TextBlockTypeButton(props: {

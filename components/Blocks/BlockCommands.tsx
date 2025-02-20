@@ -106,10 +106,19 @@ export const blockCommands: Command[] = [
     name: "Text",
     icon: <ParagraphSmall />,
     type: "text",
-    onSelect: async (rep, props) => {
+    onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "text");
       clearCommandSearchText(entity);
+      um.add({
+        undo: () => {
+          keepFocus(entity);
+        },
+        redo: () => {
+          keepFocus(entity);
+        },
+      });
+
       keepFocus(entity);
     },
   },
@@ -117,13 +126,21 @@ export const blockCommands: Command[] = [
     name: "Title",
     icon: <Header1Small />,
     type: "text",
-    onSelect: async (rep, props) => {
-      props.entityID && clearCommandSearchText(props.entityID);
+    onSelect: async (rep, props, um) => {
       let entity = await createBlockWithType(rep, props, "heading");
       await rep.mutate.assertFact({
         entity,
         attribute: "block/heading-level",
         data: { type: "number", value: 1 },
+      });
+      clearCommandSearchText(entity);
+      um.add({
+        undo: () => {
+          keepFocus(entity);
+        },
+        redo: () => {
+          keepFocus(entity);
+        },
       });
 
       keepFocus(entity);
@@ -133,13 +150,20 @@ export const blockCommands: Command[] = [
     name: "Header",
     icon: <Header2Small />,
     type: "text",
-    onSelect: async (rep, props) => {
-      props.entityID && clearCommandSearchText(props.entityID);
+    onSelect: async (rep, props, um) => {
       let entity = await createBlockWithType(rep, props, "heading");
-      rep.mutate.assertFact({
+      await rep.mutate.assertFact({
         entity,
         attribute: "block/heading-level",
         data: { type: "number", value: 2 },
+      });
+      um.add({
+        undo: () => {
+          keepFocus(entity);
+        },
+        redo: () => {
+          keepFocus(entity);
+        },
       });
       clearCommandSearchText(entity);
       keepFocus(entity);
@@ -149,13 +173,20 @@ export const blockCommands: Command[] = [
     name: "Subheader",
     icon: <Header3Small />,
     type: "text",
-    onSelect: async (rep, props) => {
-      props.entityID && clearCommandSearchText(props.entityID);
+    onSelect: async (rep, props, um) => {
       let entity = await createBlockWithType(rep, props, "heading");
-      rep.mutate.assertFact({
+      await rep.mutate.assertFact({
         entity,
         attribute: "block/heading-level",
         data: { type: "number", value: 3 },
+      });
+      um.add({
+        undo: () => {
+          keepFocus(entity);
+        },
+        redo: () => {
+          keepFocus(entity);
+        },
       });
       clearCommandSearchText(entity);
       keepFocus(entity);
@@ -166,36 +197,67 @@ export const blockCommands: Command[] = [
     name: "External Link",
     icon: <LinkSmall />,
     type: "block",
-    onSelect: async (rep, props) => {
-      createBlockWithType(rep, props, "link");
+    onSelect: async (rep, props, um) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "link");
+      um.add({
+        undo: () => {
+          props.entityID && keepFocus(props.entityID);
+        },
+        redo: () => {},
+      });
     },
   },
   {
     name: "Embed Website",
     icon: <BlockEmbedSmall />,
     type: "block",
-    onSelect: async (rep, props) => {
-      createBlockWithType(rep, props, "embed");
+    onSelect: async (rep, props, um) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "embed");
+      um.add({
+        undo: () => {
+          props.entityID && keepFocus(props.entityID);
+        },
+        redo: () => {},
+      });
     },
   },
   {
     name: "Image",
     icon: <BlockImageSmall />,
     type: "block",
-    onSelect: async (rep, props) => {
+    onSelect: async (rep, props, um) => {
+      props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "image");
       setTimeout(() => {
         let el = document.getElementById(elementId.block(entity).input);
         el?.focus();
       }, 100);
+      um.add({
+        undo: () => {
+          keepFocus(entity);
+        },
+        redo: () => {
+          let el = document.getElementById(elementId.block(entity).input);
+          el?.focus();
+        },
+      });
     },
   },
   {
     name: "Button",
     icon: <BlockButtonSmall />,
     type: "block",
-    onSelect: async (rep, props) => {
-      createBlockWithType(rep, props, "button");
+    onSelect: async (rep, props, um) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "button");
+      um.add({
+        undo: () => {
+          props.entityID && keepFocus(props.entityID);
+        },
+        redo: () => {},
+      });
     },
   },
   {
@@ -203,8 +265,8 @@ export const blockCommands: Command[] = [
     icon: <BlockMailboxSmall />,
     type: "block",
     onSelect: async (rep, props) => {
-      let entity;
-      createBlockWithType(rep, props, "mailbox");
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "mailbox");
     },
   },
 
@@ -214,13 +276,19 @@ export const blockCommands: Command[] = [
     name: "RSVP",
     icon: <RSVPSmall />,
     type: "event",
-    onSelect: (rep, props) => createBlockWithType(rep, props, "rsvp"),
+    onSelect: (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      return createBlockWithType(rep, props, "rsvp");
+    },
   },
   {
     name: "Date and Time",
     icon: <BlockCalendarSmall />,
     type: "event",
-    onSelect: (rep, props) => createBlockWithType(rep, props, "datetime"),
+    onSelect: (rep, props) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      return createBlockWithType(rep, props, "datetime");
+    },
   },
 
   // PAGE TYPES
@@ -230,6 +298,7 @@ export const blockCommands: Command[] = [
     icon: <BlockDocPageSmall />,
     type: "page",
     onSelect: async (rep, props, um) => {
+      props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "card");
 
       let newPage = v7();
@@ -268,6 +337,7 @@ export const blockCommands: Command[] = [
     icon: <BlockCanvasPageSmall />,
     type: "page",
     onSelect: async (rep, props, um) => {
+      props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "card");
 
       let newPage = v7();
