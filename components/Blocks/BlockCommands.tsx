@@ -14,6 +14,7 @@ import {
   BlockButtonSmall,
   BlockCalendarSmall,
   RSVPSmall,
+  BlockPollSmall,
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "components/Pages";
@@ -207,7 +208,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "Poll",
-    icon: <BlockMailboxSmall />,
+    icon: <BlockPollSmall />,
     type: "block",
     onSelect: async (rep, props) => {
       let entity = await createBlockWithType(rep, props, "poll");
