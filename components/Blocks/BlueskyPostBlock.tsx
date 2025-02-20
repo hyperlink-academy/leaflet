@@ -106,7 +106,13 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
                 <span className="text-sm font-medium">
                   {author?.displayName}
                 </span>
-                <span className="text-xs text-tertiary">@{author?.handle}</span>
+                <a
+                  className="text-xs hover:text-primary hover:no-underline"
+                  target="_blank"
+                  href={`https://bsky.app/profile/${author?.handle}`}
+                >
+                  <span>@{author?.handle}</span>
+                </a>
               </div>
               <div className="flex gap-2 items-center p-2">
                 <span className="text-sm">{datetimeFormatted}</span>
