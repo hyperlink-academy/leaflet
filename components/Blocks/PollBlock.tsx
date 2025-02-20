@@ -25,7 +25,6 @@ export const PollBlock = (props: BlockProps) => {
 
   let dataPollOptions = useEntity(props.entityID, "poll/options");
   let { data: pollData } = usePollData();
-  console.log(pollData);
 
   let [localPollOptionNames, setLocalPollOptionNames] = useState<{
     [k: string]: string;
@@ -99,15 +98,24 @@ export const PollBlock = (props: BlockProps) => {
             className="place-self-end"
             onMouseDown={() => {
               setPollState("voting");
-              rep?.mutate.assertFact(
-                Object.entries(localPollOptionNames).map(([entity, name]) => ({
-                  entity,
-                  attribute: "poll-option/name",
-                  data: { type: "string", value: name },
-                })),
+
+              // Update the poll option names
+              // rep?.mutate.assertFact(
+              //   Object.entries(localPollOptionNames).map(([entity, name]) => ({
+              //     entity,
+              //     attribute: "poll-option/name",
+              //     data: { type: "string", value: name },
+              //   })),
+              // );
+
+              // remove any poll options that have no name
+              // look through the localPollOptionNames object and remove any options that have no name
+              let emptyOptions = Object.entries(localPollOptionNames).filter(
+                ([optionEntity, optionName]) => {
+                  optionName === "";
+                },
               );
-              // TODO: Currently, the options are updated onChange in thier inputs in PollOption.
-              // However, they should instead be updated when this save button is clicked!
+              console.log(emptyOptions);
             }}
           >
             Save <CheckTiny />

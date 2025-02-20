@@ -16,7 +16,6 @@ export async function getPollData(entity_sets: string[]) {
     .from(poll_votes_on_entity)
     .innerJoin(entities, eq(entities.id, poll_votes_on_entity.poll_entity))
     .where(and(inArray(entities.set, entity_sets)));
-  console.log(polls);
   return { polls, voter_token };
 }
 
