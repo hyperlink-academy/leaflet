@@ -22,6 +22,7 @@ import { Replicache } from "replicache";
 import { keepFocus } from "components/Toolbar/TextBlockTypeToolbar";
 import { useEditorStates } from "src/state/useEditorState";
 import { elementId } from "src/utils/elementId";
+import { usePollBlockUIState } from "./PollBlock";
 
 type Props = {
   parent: string;
@@ -209,8 +210,22 @@ export const blockCommands: Command[] = [
     icon: <BlockMailboxSmall />,
     type: "block",
     onSelect: async (rep, props) => {
-      let entity;
-      createBlockWithType(rep, props, "poll");
+      let entity = await createBlockWithType(rep, props, "poll");
+      await rep.mutate.addPollOption({
+        pollEntity: entity,
+        pollOptionEntity: v7(),
+        pollOptionName: "",
+        factID: v7(),
+        permission_set: props.entity_set,
+      });
+      await rep.mutate.addPollOption({
+        pollEntity: entity,
+        pollOptionEntity: v7(),
+        pollOptionName: "",
+        factID: v7(),
+        permission_set: props.entity_set,
+      });
+      usePollBlockUIState.setState((s) => ({ [entity]: { state: "editing" } }));
     },
   },
 

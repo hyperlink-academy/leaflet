@@ -1,7 +1,7 @@
 import { useUIState } from "src/useUIState";
 import { BlockProps } from "./Block";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Input } from "components/Input";
 import { CheckTiny, CloseTiny, InfoSmall } from "components/Icons";
 import { Separator } from "components/Layout";
@@ -11,7 +11,14 @@ import { useEntity, useReplicache } from "src/replicache";
 import { v7 } from "uuid";
 import { usePollData } from "components/PageSWRDataProvider";
 import { voteOnPoll } from "actions/pollActions";
+import { create } from "zustand";
 
+export let usePollBlockUIState = create(
+  () =>
+    ({}) as {
+      [entity: string]: { state: "editing" | "voting" | "results" } | undefined;
+    },
+);
 export const PollBlock = (props: BlockProps) => {
   let { rep } = useReplicache();
   let isSelected = useUIState((s) =>
@@ -19,12 +26,28 @@ export const PollBlock = (props: BlockProps) => {
   );
   let { permissions } = useEntitySetContext();
 
-  let [pollState, setPollState] = useState<"editing" | "voting" | "results">(
-    !permissions.write ? "voting" : "editing",
-  );
-
   let dataPollOptions = useEntity(props.entityID, "poll/options");
   let { data: pollData } = usePollData();
+  let hasVoted =
+    pollData?.voter_token &&
+    pollData.polls.find(
+      (v) =>
+        v.poll_votes_on_entity.voter_token === pollData.voter_token &&
+        v.poll_votes_on_entity.poll_entity === props.entityID,
+    );
+
+  let pollState = usePollBlockUIState((s) => s[props.entityID]?.state);
+  if (!pollState) {
+    if (hasVoted) pollState = "results";
+    else pollState = "voting";
+  }
+
+  const setPollState = useCallback(
+    (state: "editing" | "voting" | "results") => {
+      usePollBlockUIState.setState((s) => ({ [props.entityID]: { state } }));
+    },
+    [],
+  );
 
   let [localPollOptionNames, setLocalPollOptionNames] = useState<{
     [k: string]: string;
@@ -99,23 +122,26 @@ export const PollBlock = (props: BlockProps) => {
             onMouseDown={() => {
               setPollState("voting");
 
-              // Update the poll option names
-              // rep?.mutate.assertFact(
-              //   Object.entries(localPollOptionNames).map(([entity, name]) => ({
-              //     entity,
-              //     attribute: "poll-option/name",
-              //     data: { type: "string", value: name },
-              //   })),
-              // );
-
               // remove any poll options that have no name
               // look through the localPollOptionNames object and remove any options that have no name
               let emptyOptions = Object.entries(localPollOptionNames).filter(
-                ([optionEntity, optionName]) => {
-                  optionName === "";
-                },
+                ([optionEntity, optionName]) => optionName === "",
               );
-              console.log(emptyOptions);
+              emptyOptions.forEach(([entity]) =>
+                rep?.mutate.removePollOption({ optionEntity: entity }),
+              );
+
+              console.log(emptyOptions, Object.entries(localPollOptionNames));
+
+              rep?.mutate.assertFact(
+                Object.entries(localPollOptionNames)
+                  .filter(([, name]) => !!name)
+                  .map(([entity, name]) => ({
+                    entity,
+                    attribute: "poll-option/name",
+                    data: { type: "string", value: name },
+                  })),
+              );
             }}
           >
             Save <CheckTiny />
