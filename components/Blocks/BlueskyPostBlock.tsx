@@ -6,7 +6,11 @@ import { useUIState } from "src/useUIState";
 import { BlockProps } from "./Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
-import { BlockEmbedSmall, BlueskySolid, CheckTiny } from "components/Icons";
+import {
+  BlueskySolidSmall,
+  BlueskySolidTiny,
+  CheckTiny,
+} from "components/Icons";
 import { Separator } from "components/Layout";
 import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
@@ -20,9 +24,9 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
   let { rep } = useReplicache();
 
   // TODO: get saved bsky data!
+  // orig entered post url, author, record, etc.
+  // maybe embed data too (several types)
   let url = useEntity(props.entityID, "bluesky-post/url");
-
-  let isCanvasBlock = props.pageType === "canvas";
 
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
@@ -37,44 +41,57 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
   }, [isSelected, props.entityID, props.preview]);
 
   // bluesky post data
+  // init
   let [author, setAuthor] = useState<any>();
   let [record, setRecord] = useState<any>();
+  // get the data
   useEffect(() => {
     const fetchPost = async () => {
-      // TODO: replace hardcoded link!
-      let testPost = await getBlueskyPost(
-        "at://schlage.town/app.bsky.feed.post/3las6z4q7vs26",
-        // "at://schlage.town/app.bsky.feed.post/3lii5opjswk2w",
-      );
-      setAuthor(testPost?.data.thread.post.author);
-      setRecord(testPost?.data.thread.post.record);
+      // TODO: test with various embed types
+
+      // construct bsky post uri from url!
+      // go from e.g.: https://bsky.app/profile/schlage.town/post/3las6z4q7vs26
+      // to uid, e.g.: at://schlage.town/app.bsky.feed.post/3las6z4q7vs26
+      // or: https://bsky.app/profile/did:plc:jjsc5rflv3cpv6hgtqhn2dcm/post/3lggvlrhu3s2l
+      // to: at://did:plc:jjsc5rflv3cpv6hgtqhn2dcm/app.bsky.feed.post/3lggvlrhu3s2l
+
+      const urlParts = url?.data.value.split("/");
+      const userDidOrHandle = urlParts ? urlParts[4] : ""; // "schlage.town" or "did:plc:jjsc5rflv3cpv6hgtqhn2dcm"
+      const collection = "app.bsky.feed.post";
+      const postId = urlParts ? urlParts[6] : "";
+
+      const uri = `at://${userDidOrHandle}/${collection}/${postId}`;
+      console.log(uri);
+
+      let post = await getBlueskyPost(uri);
+      setAuthor(post?.data.thread.post.author);
+      setRecord(post?.data.thread.post.record);
     };
     fetchPost();
   }, []);
 
-  // TODO - re-enable input later!
-  // if (!url) {
-  //   if (!permissions.write) return null;
-  //   return (
-  //     <label
-  //       id={props.preview ? undefined : elementId.block(props.entityID).input}
-  //       className={`
-  // 	  w-full h-[104px] p-2
-  // 	  text-tertiary hover:text-accent-contrast hover:cursor-pointer
-  // 	  flex flex-auto gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg
-  // 	  ${isSelected ? "border-2 border-tertiary" : "border border-border"}
-  // 	  ${props.pageType === "canvas" && "bg-bg-page"}`}
-  //       onMouseDown={() => {
-  //         focusBlock(
-  //           { type: props.type, value: props.entityID, parent: props.parent },
-  //           { type: "start" },
-  //         );
-  //       }}
-  //     >
-  //       <BlockLinkInput {...props} />
-  //     </label>
-  //   );
-  // }
+  if (!url) {
+    if (!permissions.write) return null;
+    return (
+      <label
+        id={props.preview ? undefined : elementId.block(props.entityID).input}
+        className={`
+  	  w-full h-[104px] p-2
+  	  text-tertiary hover:text-accent-contrast hover:cursor-pointer
+  	  flex flex-auto gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg
+  	  ${isSelected ? "border-2 border-tertiary" : "border border-border"}
+  	  ${props.pageType === "canvas" && "bg-bg-page"}`}
+        onMouseDown={() => {
+          focusBlock(
+            { type: props.type, value: props.entityID, parent: props.parent },
+            { type: "start" },
+          );
+        }}
+      >
+        <BlockLinkInput {...props} />
+      </label>
+    );
+  }
 
   let datetime = new Date(record?.createdAt);
   let datetimeFormatted = datetime.toLocaleString("en-US", {
@@ -94,7 +111,7 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
 			  ${isSelected ? "block-border-selected " : "block-border"}
 			  `}
       >
-        {author && record && (
+        {author && record ? (
           <>
             <div className="flex justify-between">
               <div className="flex items-center gap-2 p-2">
@@ -117,13 +134,12 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
               <div className="flex gap-2 items-center p-2">
                 <span className="text-sm">{datetimeFormatted}</span>
                 <span>
-                  {/* TODO: replace hardcoded link! */}
                   <a
                     className="hover:text-primary"
                     target="_blank"
-                    href="https://bsky.app/profile/schlage.town/post/3las6z4q7vs26"
+                    href={url?.data.value}
                   >
-                    <BlueskySolid />
+                    <BlueskySolidTiny />
                   </a>
                 </span>
               </div>
@@ -131,10 +147,15 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
             <div className="p-2 flex flex-col gap-2">
               {/* TODO: maybe add attachments (embeds) + a toggle open? */}
               <div>
-                <pre>{record?.text}</pre>
+                <pre className="whitespace-pre-wrap">{record?.text}</pre>
               </div>
             </div>
           </>
+        ) : (
+          <div className="p-4 italic">
+            Sorry, we couldn't get data for that post! Please make sure you
+            pasted a publicly viewable bsky.app post link.
+          </div>
         )}
       </div>
     </div>
@@ -166,28 +187,36 @@ const BlockLinkInput = (props: BlockProps) => {
         newEntityID: entity,
       });
     }
-    let link = linkValue;
-    if (!linkValue.startsWith("http")) link = `https://${linkValue}`;
+
+    // let link = linkValue;
+    // if (!linkValue.startsWith("http")) link = `https://${linkValue}`;
 
     // TODO: validate bsky post url
+    // go from e.g.: https://bsky.app/profile/schlage.town/post/3las6z4q7vs26
+    // to uid, e.g.: at://schlage.town/app.bsky.feed.post/3las6z4q7vs26
+    // maybe handle case where did is in url?
+    // can maybe do here first…or move in new function (see below)
 
-    // these mutations = simpler subset of addLinkBlock
     // TODO: add various bsky post facts instead of the ones below
+    // AND MOVE TO SEPARATE ASYNC FUNCTION
+    // with all the data we need + maybe more durable user did for good measure
+    // see e.g. addLinkBlock
 
-    // if (!rep) return;
-    // await rep.mutate.assertFact({
-    //   entity: entity,
-    //   attribute: "block/type",
-    //   data: { type: "block-type-union", value: "embed" },
-    // });
-    // await rep?.mutate.assertFact({
-    //   entity: entity,
-    //   attribute: "embed/url",
-    //   data: {
-    // 	type: "string",
-    // 	value: link,
-    //   },
-    // });
+    // TEMP TEST MUTATIONS
+    if (!rep) return;
+    await rep.mutate.assertFact({
+      entity: entity,
+      attribute: "block/type",
+      data: { type: "block-type-union", value: "bluesky-post" },
+    });
+    await rep?.mutate.assertFact({
+      entity: entity,
+      attribute: "bluesky-post/url",
+      data: {
+        type: "string",
+        value: linkValue,
+      },
+    });
   };
   let smoker = useSmoker();
 
@@ -222,9 +251,9 @@ const BlockLinkInput = (props: BlockProps) => {
     >
       <div className={`max-w-sm flex gap-2 rounded-md text-secondary`}>
         {/* TODO: bsky icon? */}
-        {/* <BlockEmbedSmall
-		  className={`shrink-0  ${isSelected ? "text-tertiary" : "text-border"} `}
-		/> */}
+        <BlueskySolidSmall
+          className={`shrink-0  ${isSelected ? "text-tertiary" : "text-border"} `}
+        />
         <Separator />
         <Input
           type="text"
@@ -275,6 +304,9 @@ at://bnewbold.bsky.team/app.bsky.feed.post/3jwdwj2ctlk26
 
 NB: getPosts isn't working, and getPost doesn't get the full hydrated post
 but getPostThread works so just using that for now!
+
+// TODO: catch errors
+// e.g. seeing one like "uri must be a valid at-uri"
 */
 export async function getBlueskyPost(uri: string) {
   const agent = new AtpAgent({ service: "https://public.api.bsky.app" });

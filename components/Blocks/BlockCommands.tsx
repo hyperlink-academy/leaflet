@@ -14,6 +14,8 @@ import {
   BlockButtonSmall,
   BlockCalendarSmall,
   RSVPSmall,
+  BlueskySolidSmall,
+  BlueskySquareSmall,
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "components/Pages";
@@ -176,8 +178,8 @@ export const blockCommands: Command[] = [
     },
   },
   {
-    name: "Embed Bluesky Post",
-    icon: <BlockEmbedSmall />,
+    name: "Bluesky Post",
+    icon: <BlueskySquareSmall />,
     type: "block",
     onSelect: async (rep, props) => {
       createBlockWithType(rep, props, "bluesky-post");
