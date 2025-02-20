@@ -23,6 +23,7 @@ import { DateTimeBlock } from "./DateTimeBlock";
 import { RSVPBlock } from "./RSVPBlock";
 import { elementId } from "src/utils/elementId";
 import { ButtonBlock } from "./ButtonBlock";
+import { BlueskyPostBlock } from "./BlueskyPostBlock";
 
 export type Block = {
   factID: string;
@@ -176,6 +177,7 @@ const BlockTypeComponents: {
   datetime: DateTimeBlock,
   rsvp: RSVPBlock,
   button: ButtonBlock,
+  "bluesky-post": BlueskyPostBlock,
 };
 
 export const BlockMultiselectIndicator = (props: BlockProps) => {

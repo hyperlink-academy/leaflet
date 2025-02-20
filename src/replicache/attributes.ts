@@ -277,6 +277,7 @@ export type Data<A extends keyof typeof Attributes> = {
       | "link"
       | "mailbox"
       | "embed"
+      | "bluesky-post"
       | "button";
   };
   "canvas-pattern-union": {

@@ -15,7 +15,12 @@ import { deleteBlock } from "./DeleteBlock";
 import { focusBlock } from "src/utils/focusBlock";
 import { useDrag } from "src/hooks/useDrag";
 
+import { AtpAgent } from "@atproto/api";
+
 export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
+  //testing bsky post!
+  //NB: moving to separate function!
+
   let { permissions } = useEntitySetContext();
   let { rep } = useReplicache();
   let url = useEntity(props.entityID, "bluesky-post/url");
@@ -33,56 +38,109 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
     } else input?.blur();
   }, [isSelected, props.entityID, props.preview]);
 
-  if (!url) {
-    if (!permissions.write) return null;
-    return (
-      <label
-        id={props.preview ? undefined : elementId.block(props.entityID).input}
-        className={`
-		  w-full h-[420px] p-2
-		  text-tertiary hover:text-accent-contrast hover:cursor-pointer
-		  flex flex-auto gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg
-		  ${isSelected ? "border-2 border-tertiary" : "border border-border"}
-		  ${props.pageType === "canvas" && "bg-bg-page"}`}
-        onMouseDown={() => {
-          focusBlock(
-            { type: props.type, value: props.entityID, parent: props.parent },
-            { type: "start" },
-          );
-        }}
-      >
-        <BlockLinkInput {...props} />
-      </label>
-    );
-  }
+  //bsky test…
+  //moved inside useEffect async function hmmmm…
+  let [author, setAuthor] = useState<any>();
+  let [record, setRecord] = useState<any>();
+  useEffect(() => {
+    const fetchPost = async () => {
+      let testPost = await getBlueskyPost(
+        "at://schlage.town/app.bsky.feed.post/3las6z4q7vs26",
+      );
+      setAuthor(testPost?.data.thread.post.author);
+      setRecord(testPost?.data.thread.post.record);
+
+      // if (!!author) {
+      //   console.log("author display name: " + author.displayName);
+      //   console.log("author handle: " + author.handle);
+      //   console.log("author avatar: " + author.avatar);
+      // }
+      // if (!!record) {
+      //   console.log("record created: " + record.createdAt);
+      //   console.log("record text: " + record.text);
+      // }
+    };
+    fetchPost();
+  }, []);
+
+  // TODO - re-enable input later!
+  // if (!url) {
+  //   if (!permissions.write) return null;
+  //   return (
+  //     <label
+  //       id={props.preview ? undefined : elementId.block(props.entityID).input}
+  //       className={`
+  // 	  w-full h-[104px] p-2
+  // 	  text-tertiary hover:text-accent-contrast hover:cursor-pointer
+  // 	  flex flex-auto gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg
+  // 	  ${isSelected ? "border-2 border-tertiary" : "border border-border"}
+  // 	  ${props.pageType === "canvas" && "bg-bg-page"}`}
+  //       onMouseDown={() => {
+  //         focusBlock(
+  //           { type: props.type, value: props.entityID, parent: props.parent },
+  //           { type: "start" },
+  //         );
+  //       }}
+  //     >
+  //       <BlockLinkInput {...props} />
+  //     </label>
+  //   );
+  // }
+
+  let datetime = new Date(record?.createdAt);
+  let datetimeFormatted = datetime.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: true,
+  });
 
   return (
     <div className={`w-full`}>
-      {/* TODO: main bsky post */}
+      {/* TODO: render the actual bsky post */}
       <div
         className={`
 			  flex flex-col relative w-full overflow-hidden group/blueskyPostBlock
 			  ${isSelected ? "block-border-selected " : "block-border"}
 			  `}
-        // width="100%"
-        // height={height + (heightHandle.dragDelta?.y || 0)}
-        // src={url?.data.value}
-        // allow="fullscreen"
-        // loading="lazy"
-      ></div>
-
-      {!props.preview && permissions.write && (
-        <>
-          <div
-            data-draggable
-            className={`resizeHandle
-		  cursor-ns-resize shrink-0 z-10 w-6 h-[5px]
-		  absolute bottom-2 right-1/2 translate-x-1/2 translate-y-[2px]
-		  rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]
-		  ${isCanvasBlock ? "hidden group-hover/canvas-block:block" : ""}`}
-          />
-        </>
-      )}
+      >
+        {author && record && (
+          <>
+            <div className="flex justify-between">
+              <div className="flex items-center gap-2 p-2">
+                <img
+                  src={author?.avatar}
+                  alt="avatar"
+                  className="w-8 h-8 rounded-full"
+                />
+                {/* <div className="flex flex-col"></div> */}
+                <span className="text-sm font-medium">
+                  {author?.displayName}
+                </span>
+                <span className="text-xs text-tertiary">@{author?.handle}</span>
+              </div>
+              <div className="flex gap-2 items-center p-2">
+                {/* <span>{record?.createdAt}</span> */}
+                <span className="text-sm">{datetimeFormatted}</span>
+                <span>
+                  {/* TODO: replace hardcoded link! */}
+                  {/* <a href="https://bsky.app/profile/schlage.town/post/3las6z4q7vs26">
+                    src
+                  </a> */}
+                </span>
+              </div>
+            </div>
+            <div className="p-2 flex flex-col gap-2">
+              {/* TODO: maybe add attachments (embeds) + a toggle open? */}
+              <div>
+                <pre>{record?.text}</pre>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };
@@ -119,6 +177,7 @@ const BlockLinkInput = (props: BlockProps) => {
     // TODO: validate bsky post url
 
     // these mutations = simpler subset of addLinkBlock
+    // TODO: add various bsky post facts
 
     // if (!rep) return;
     // await rep.mutate.assertFact({
@@ -211,3 +270,38 @@ const BlockLinkInput = (props: BlockProps) => {
     </form>
   );
 };
+
+/*
+separate function to get bluesky post data
+
+test posts:
+https://bsky.app/profile/schlage.town/post/3las6z4q7vs26
+https://bsky.app/profile/schlage.town/post/3lii5opjswk2w
+
+uri is either w/ did or handle e.g.:
+at://did:plc:44ybard66vv44zksje25o7dz/app.bsky.feed.post/3jwdwj2ctlk26
+at://bnewbold.bsky.team/app.bsky.feed.post/3jwdwj2ctlk26
+*/
+export async function getBlueskyPost(uri: string) {
+  const agent = new AtpAgent({ service: "https://public.api.bsky.app" });
+
+  //test!
+  // uri = "at://schlage.town/app.bsky.feed.post/3las6z4q7vs26";
+
+  let blueskyPost: any = await agent
+    // .getPosts({
+    //   uris: [uri],
+    // })
+    .getPostThread({
+      uri: uri,
+      depth: 0,
+      parentHeight: 0,
+    })
+    // .getPost({
+    //   uri: uri,
+    // })
+    .then((res) => {
+      return res;
+    });
+  return blueskyPost;
+}
