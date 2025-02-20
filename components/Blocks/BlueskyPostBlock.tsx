@@ -6,24 +6,22 @@ import { useUIState } from "src/useUIState";
 import { BlockProps } from "./Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
-import { BlockEmbedSmall, CheckTiny } from "components/Icons";
+import { BlockEmbedSmall, BlueskySolid, CheckTiny } from "components/Icons";
 import { Separator } from "components/Layout";
 import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
 import { elementId } from "src/utils/elementId";
 import { deleteBlock } from "./DeleteBlock";
 import { focusBlock } from "src/utils/focusBlock";
-import { useDrag } from "src/hooks/useDrag";
-
 import { AtpAgent } from "@atproto/api";
 
 export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
-  //testing bsky post!
-  //NB: moving to separate function!
-
   let { permissions } = useEntitySetContext();
   let { rep } = useReplicache();
+
+  // TODO: get saved bsky data!
   let url = useEntity(props.entityID, "bluesky-post/url");
+
   let isCanvasBlock = props.pageType === "canvas";
 
   let isSelected = useUIState((s) =>
@@ -38,27 +36,18 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
     } else input?.blur();
   }, [isSelected, props.entityID, props.preview]);
 
-  //bsky test…
-  //moved inside useEffect async function hmmmm…
+  // bluesky post data
   let [author, setAuthor] = useState<any>();
   let [record, setRecord] = useState<any>();
   useEffect(() => {
     const fetchPost = async () => {
+      // TODO: replace hardcoded link!
       let testPost = await getBlueskyPost(
         "at://schlage.town/app.bsky.feed.post/3las6z4q7vs26",
+        // "at://schlage.town/app.bsky.feed.post/3lii5opjswk2w",
       );
       setAuthor(testPost?.data.thread.post.author);
       setRecord(testPost?.data.thread.post.record);
-
-      // if (!!author) {
-      //   console.log("author display name: " + author.displayName);
-      //   console.log("author handle: " + author.handle);
-      //   console.log("author avatar: " + author.avatar);
-      // }
-      // if (!!record) {
-      //   console.log("record created: " + record.createdAt);
-      //   console.log("record text: " + record.text);
-      // }
     };
     fetchPost();
   }, []);
@@ -99,7 +88,6 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
 
   return (
     <div className={`w-full`}>
-      {/* TODO: render the actual bsky post */}
       <div
         className={`
 			  flex flex-col relative w-full overflow-hidden group/blueskyPostBlock
@@ -115,20 +103,22 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
                   alt="avatar"
                   className="w-8 h-8 rounded-full"
                 />
-                {/* <div className="flex flex-col"></div> */}
                 <span className="text-sm font-medium">
                   {author?.displayName}
                 </span>
                 <span className="text-xs text-tertiary">@{author?.handle}</span>
               </div>
               <div className="flex gap-2 items-center p-2">
-                {/* <span>{record?.createdAt}</span> */}
                 <span className="text-sm">{datetimeFormatted}</span>
                 <span>
                   {/* TODO: replace hardcoded link! */}
-                  {/* <a href="https://bsky.app/profile/schlage.town/post/3las6z4q7vs26">
-                    src
-                  </a> */}
+                  <a
+                    className="hover:text-primary"
+                    target="_blank"
+                    href="https://bsky.app/profile/schlage.town/post/3las6z4q7vs26"
+                  >
+                    <BlueskySolid />
+                  </a>
                 </span>
               </div>
             </div>
@@ -146,8 +136,7 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
 };
 
 // TODO: maybe extract into a component…
-// would just have to branch for the mutations (addLinkBlock or addEmbedBlock)
-// OR now addBlueskyPostBlock!
+// would have to branch for mutations (addLinkBlock or addEmbedBlock or addBlueskyPostBlock)
 const BlockLinkInput = (props: BlockProps) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
@@ -177,7 +166,7 @@ const BlockLinkInput = (props: BlockProps) => {
     // TODO: validate bsky post url
 
     // these mutations = simpler subset of addLinkBlock
-    // TODO: add various bsky post facts
+    // TODO: add various bsky post facts instead of the ones below
 
     // if (!rep) return;
     // await rep.mutate.assertFact({
@@ -272,34 +261,24 @@ const BlockLinkInput = (props: BlockProps) => {
 };
 
 /*
-separate function to get bluesky post data
-
-test posts:
-https://bsky.app/profile/schlage.town/post/3las6z4q7vs26
-https://bsky.app/profile/schlage.town/post/3lii5opjswk2w
+get bluesky post data
 
 uri is either w/ did or handle e.g.:
 at://did:plc:44ybard66vv44zksje25o7dz/app.bsky.feed.post/3jwdwj2ctlk26
 at://bnewbold.bsky.team/app.bsky.feed.post/3jwdwj2ctlk26
+
+NB: getPosts isn't working, and getPost doesn't get the full hydrated post
+but getPostThread works so just using that for now!
 */
 export async function getBlueskyPost(uri: string) {
   const agent = new AtpAgent({ service: "https://public.api.bsky.app" });
 
-  //test!
-  // uri = "at://schlage.town/app.bsky.feed.post/3las6z4q7vs26";
-
   let blueskyPost: any = await agent
-    // .getPosts({
-    //   uris: [uri],
-    // })
     .getPostThread({
       uri: uri,
       depth: 0,
       parentHeight: 0,
     })
-    // .getPost({
-    //   uri: uri,
-    // })
     .then((res) => {
       return res;
     });
