@@ -84,6 +84,14 @@ export function ReplicacheProvider(props: {
       {
         metaKey: true,
         shift: true,
+        key: "z",
+        handler: () => {
+          undoManager.redo();
+        },
+      },
+      {
+        metaKey: true,
+        shift: true,
         key: "Z",
         handler: () => {
           undoManager.redo();

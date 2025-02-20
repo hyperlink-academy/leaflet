@@ -22,6 +22,8 @@ import { Replicache } from "replicache";
 import { keepFocus } from "components/Toolbar/TextBlockTypeToolbar";
 import { useEditorStates } from "src/state/useEditorState";
 import { elementId } from "src/utils/elementId";
+import { UndoManager } from "src/undoManager";
+import { focusBlock } from "src/utils/focusBlock";
 
 type Props = {
   parent: string;
@@ -95,7 +97,8 @@ type Command = {
   onSelect: (
     rep: Replicache<ReplicacheMutators>,
     props: Props & { entity_set: string },
-  ) => void;
+    undoManager: UndoManager,
+  ) => Promise<any>;
 };
 export const blockCommands: Command[] = [
   // please keep these in the order that they appear in the menu, grouped by type
@@ -226,7 +229,7 @@ export const blockCommands: Command[] = [
     name: "New Page",
     icon: <BlockDocPageSmall />,
     type: "page",
-    onSelect: async (rep, props) => {
+    onSelect: async (rep, props, um) => {
       let entity = await createBlockWithType(rep, props, "card");
 
       let newPage = v7();
@@ -238,7 +241,25 @@ export const blockCommands: Command[] = [
         type: "doc",
         permission_set: props.entity_set,
       });
+
       useUIState.getState().openPage(props.parent, newPage);
+      um.add({
+        undo: () => {
+          useUIState.getState().closePage(newPage);
+          setTimeout(
+            () =>
+              focusBlock(
+                { parent: props.parent, value: entity, type: "text" },
+                { type: "end" },
+              ),
+            100,
+          );
+        },
+        redo: () => {
+          useUIState.getState().openPage(props.parent, newPage);
+          focusPage(newPage, rep, "focusFirstBlock");
+        },
+      });
       focusPage(newPage, rep, "focusFirstBlock");
     },
   },
@@ -246,7 +267,7 @@ export const blockCommands: Command[] = [
     name: "New Canvas",
     icon: <BlockCanvasPageSmall />,
     type: "page",
-    onSelect: async (rep, props) => {
+    onSelect: async (rep, props, um) => {
       let entity = await createBlockWithType(rep, props, "card");
 
       let newPage = v7();
@@ -260,6 +281,23 @@ export const blockCommands: Command[] = [
       });
       useUIState.getState().openPage(props.parent, newPage);
       focusPage(newPage, rep, "focusFirstBlock");
+      um.add({
+        undo: () => {
+          useUIState.getState().closePage(newPage);
+          setTimeout(
+            () =>
+              focusBlock(
+                { parent: props.parent, value: entity, type: "text" },
+                { type: "end" },
+              ),
+            100,
+          );
+        },
+        redo: () => {
+          useUIState.getState().openPage(props.parent, newPage);
+          focusPage(newPage, rep, "focusFirstBlock");
+        },
+      });
     },
   },
 ];

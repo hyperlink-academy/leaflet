@@ -21,7 +21,7 @@ export function useBlockKeyboardHandlers(
   areYouSure: boolean,
   setAreYouSure: (value: boolean) => void,
 ) {
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
   let isLocked = !!useEntity(props.entityID, "block/is-locked")?.data.value;
 
@@ -54,6 +54,7 @@ export function useBlockKeyboardHandlers(
         if ((el as HTMLInputElement).value !== "" || e.key === "Tab") return;
       }
 
+      undoManager.startGroup();
       command?.({
         e,
         props,
@@ -63,6 +64,7 @@ export function useBlockKeyboardHandlers(
         setAreYouSure,
         isLocked,
       });
+      undoManager.endGroup();
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
