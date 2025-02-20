@@ -10,6 +10,7 @@ export function PageSWRDataProvider(props: {
   leaflet_id: string;
   domains: { domain: string }[];
   rsvp_data: Awaited<ReturnType<typeof getRSVPData>>;
+  poll_data: Awaited<ReturnType<typeof getPollData>>;
   children: React.ReactNode;
 }) {
   return (
