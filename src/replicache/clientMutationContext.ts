@@ -109,7 +109,6 @@ export function clientMutationContext(
       await tx.del(id);
     },
     async deleteEntity(entity) {
-      console.trace("deleting entity ");
       let existingFacts = await tx
         .scan<Fact<keyof typeof Attributes>>({
           indexName: "eav",
@@ -127,7 +126,6 @@ export function clientMutationContext(
       if (!ignoreUndo && facts.length > 0) {
         undoManager.add({
           undo: async () => {
-            console.log("undoin!");
             let input: FactInput[] & { ignoreUndo?: true } = facts.map(
               (f) =>
                 ({
