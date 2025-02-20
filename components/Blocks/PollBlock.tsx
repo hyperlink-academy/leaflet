@@ -12,6 +12,7 @@ import { v7 } from "uuid";
 import { usePollData } from "components/PageSWRDataProvider";
 import { voteOnPoll } from "actions/pollActions";
 import { create } from "zustand";
+import { poll_votes_on_entity } from "drizzle/schema";
 
 export let usePollBlockUIState = create(
   () =>
@@ -20,13 +21,11 @@ export let usePollBlockUIState = create(
     },
 );
 export const PollBlock = (props: BlockProps) => {
-  let { rep } = useReplicache();
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   let { permissions } = useEntitySetContext();
 
-  let dataPollOptions = useEntity(props.entityID, "poll/options");
   let { data: pollData } = usePollData();
   let hasVoted =
     pollData?.voter_token &&
@@ -49,26 +48,165 @@ export const PollBlock = (props: BlockProps) => {
     [],
   );
 
-  let [localPollOptionNames, setLocalPollOptionNames] = useState<{
-    [k: string]: string;
-  }>({});
   let votes =
     pollData?.polls.filter(
       (v) => v.poll_votes_on_entity.poll_entity === props.entityID,
     ) || [];
   let totalVotes = votes.length;
 
-  let votesByOptions = votes.reduce<{ [option: string]: number }>(
+  return (
+    <div
+      className={`poll flex flex-col gap-2  p-3 w-full
+            ${isSelected ? "block-border-selected " : "block-border"}`}
+      style={{
+        backgroundColor:
+          "color-mix(in oklab, rgb(var(--accent-1)), rgb(var(--bg-page)) 85%)",
+      }}
+    >
+      {pollState === "editing" ? (
+        <EditPoll
+          totalVotes={totalVotes}
+          votes={votes.map((v) => v.poll_votes_on_entity)}
+          entityID={props.entityID}
+          close={() => {
+            if (hasVoted) setPollState("results");
+            setPollState("voting");
+          }}
+        />
+      ) : pollState === "results" ? (
+        <PollResults
+          entityID={props.entityID}
+          votes={votes.map((v) => v.poll_votes_on_entity)}
+        />
+      ) : (
+        <PollVote
+          entityID={props.entityID}
+          onSubmit={() => setPollState("results")}
+        />
+      )}
+
+      {pollState !== "editing" && (
+        <div className="flex justify-end gap-2">
+          {permissions.write && (
+            <button
+              className="pollEditOptions w-fit flex gap-2 items-center justify-start text-sm text-accent-contrast"
+              onClick={() => {
+                setPollState("editing");
+              }}
+            >
+              Edit Options{" "}
+            </button>
+          )}
+
+          {!hasVoted && <Separator classname="h-6" />}
+          <PollStateToggle
+            setPollState={setPollState}
+            pollState={pollState}
+            hasVoted={!!hasVoted}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PollVote = (props: { entityID: string; onSubmit: () => void }) => {
+  let pollOptions = useEntity(props.entityID, "poll/options");
+  let [selectedPollOptions, setSelectedPollOptions] = useState<string[]>([]);
+  let { mutate } = usePollData();
+
+  return (
+    <>
+      {pollOptions.map((option, index) => (
+        <PollVoteButton
+          key={option.data.value}
+          selected={selectedPollOptions.includes(option.data.value)}
+          toggleSelected={() =>
+            setSelectedPollOptions((s) =>
+              s.includes(option.data.value)
+                ? s.filter((s) => s !== option.data.value)
+                : [...s, option.data.value],
+            )
+          }
+          entityID={option.data.value}
+        />
+      ))}
+      <ButtonPrimary
+        className="place-self-end"
+        onClick={async () => {
+          await voteOnPoll(props.entityID, selectedPollOptions);
+          mutate((oldState) => {
+            if (!oldState || !oldState.voter_token) return;
+            return {
+              ...oldState,
+              polls: [
+                ...oldState.polls,
+                ...selectedPollOptions.map((option_entity) => ({
+                  poll_votes_on_entity: {
+                    option_entity,
+                    poll_entity: props.entityID,
+                    voter_token: oldState.voter_token!,
+                  },
+                })),
+              ],
+            };
+          });
+          props.onSubmit();
+        }}
+        disabled={selectedPollOptions.length === 0}
+      >
+        Vote!
+      </ButtonPrimary>
+    </>
+  );
+};
+const PollVoteButton = (props: {
+  entityID: string;
+  selected: boolean;
+  toggleSelected: () => void;
+}) => {
+  let optionName = useEntity(props.entityID, "poll-option/name")?.data.value;
+  if (!optionName) return null;
+  if (props.selected)
+    return (
+      <div className="flex gap-2 items-center">
+        <ButtonPrimary
+          className={`pollOption grow max-w-full flex`}
+          onClick={() => {
+            props.toggleSelected();
+          }}
+        >
+          {optionName}
+        </ButtonPrimary>
+      </div>
+    );
+  return (
+    <div className="flex gap-2 items-center">
+      <ButtonSecondary
+        className={`pollOption grow max-w-full flex`}
+        onClick={() => {
+          props.toggleSelected();
+        }}
+      >
+        {optionName}
+      </ButtonSecondary>
+    </div>
+  );
+};
+
+const PollResults = (props: {
+  entityID: string;
+  votes: { option_entity: string }[];
+}) => {
+  let pollOptions = useEntity(props.entityID, "poll/options");
+  let votesByOptions = props.votes.reduce<{ [option: string]: number }>(
     (results, vote) => {
-      results[vote.poll_votes_on_entity.option_entity] =
-        (results[vote.poll_votes_on_entity.option_entity] || 0) + 1;
+      results[vote.option_entity] = (results[vote.option_entity] || 0) + 1;
       return results;
     },
     {},
   );
-
   let highestVotes = Math.max(...Object.values(votesByOptions));
-
   let winningOptionEntities = Object.entries(votesByOptions).reduce<string[]>(
     (winningEntities, [entity, votes]) => {
       if (votes === highestVotes) winningEntities.push(entity);
@@ -76,159 +214,31 @@ export const PollBlock = (props: BlockProps) => {
     },
     [],
   );
-
   return (
-    <div
-      className={`poll flex flex-col gap-2  p-3 w-full
-        ${isSelected ? "block-border-selected " : "block-border"}`}
-      style={{
-        backgroundColor:
-          "color-mix(in oklab, rgb(var(--accent-1)), rgb(var(--bg-page)) 85%)",
-      }}
-    >
-      {pollState === "editing" && totalVotes > 0 && (
-        <div className="text-sm italic text-tertiary">
-          You can&apos;t edit options people already voted for!
-        </div>
-      )}
-
-      {/* Empty state if no options yet */}
-      {dataPollOptions.length === 0 && pollState !== "editing" && (
-        <div className="text-center italic text-tertiary text-sm">
-          no options yet...
-        </div>
-      )}
-
-      {dataPollOptions.map((option, index) => (
-        <PollOption
-          pollEntity={props.entityID}
-          localNameState={localPollOptionNames[option.data.value]}
-          setLocalNameState={setLocalPollOptionNames}
-          entityID={option.data.value}
-          key={option.data.value}
-          state={pollState}
-          setState={setPollState}
-          votes={votesByOptions[option.data.value] || 0}
-          totalVotes={totalVotes}
-          winner={winningOptionEntities.includes(option.data.value)}
+    <>
+      {pollOptions.map((p) => (
+        <PollResult
+          key={p.id}
+          winner={winningOptionEntities.includes(p.data.value)}
+          entityID={p.data.value}
+          totalVotes={props.votes.length}
+          votes={
+            props.votes.filter((f) => f.option_entity === p.data.value).length
+          }
         />
       ))}
-      {!permissions.write ? null : pollState === "editing" ? (
-        <>
-          <AddPollOptionButton entityID={props.entityID} />
-          <hr className="border-border" />
-          <ButtonPrimary
-            className="place-self-end"
-            onMouseDown={() => {
-              setPollState("voting");
-
-              // remove any poll options that have no name
-              // look through the localPollOptionNames object and remove any options that have no name
-              let emptyOptions = Object.entries(localPollOptionNames).filter(
-                ([optionEntity, optionName]) => optionName === "",
-              );
-              emptyOptions.forEach(([entity]) =>
-                rep?.mutate.removePollOption({ optionEntity: entity }),
-              );
-
-              console.log(emptyOptions, Object.entries(localPollOptionNames));
-
-              rep?.mutate.assertFact(
-                Object.entries(localPollOptionNames)
-                  .filter(([, name]) => !!name)
-                  .map(([entity, name]) => ({
-                    entity,
-                    attribute: "poll-option/name",
-                    data: { type: "string", value: name },
-                  })),
-              );
-            }}
-          >
-            Save <CheckTiny />
-          </ButtonPrimary>
-        </>
-      ) : (
-        <div className="flex justify-end gap-2">
-          <EditPollOptionsButton state={pollState} setState={setPollState} />
-          <Separator classname="h-6" />
-          <PollStateToggle setPollState={setPollState} pollState={pollState} />
-        </div>
-      )}
-    </div>
+    </>
   );
 };
 
-const PollOption = (props: {
+const PollResult = (props: {
   entityID: string;
-  pollEntity: string;
-  localNameState: string | undefined;
-  setLocalNameState: (
-    s: (s: { [k: string]: string }) => { [k: string]: string },
-  ) => void;
-  state: "editing" | "voting" | "results";
-  setState: (state: "editing" | "voting" | "results") => void;
   votes: number;
   totalVotes: number;
   winner: boolean;
 }) => {
-  let { rep } = useReplicache();
-  let { mutate } = usePollData();
-
   let optionName = useEntity(props.entityID, "poll-option/name")?.data.value;
-  useEffect(() => {
-    props.setLocalNameState((s) => ({
-      ...s,
-      [props.entityID]: optionName || "",
-    }));
-  }, [optionName, props.setLocalNameState, props.entityID]);
-  return props.state === "editing" ? (
-    <div className="flex gap-2 items-center">
-      <Input
-        type="text"
-        className="pollOptionInput w-full input-with-border"
-        placeholder="Option here..."
-        disabled={props.votes > 0}
-        value={
-          props.localNameState === undefined ? optionName : props.localNameState
-        }
-        onChange={(e) => {
-          props.setLocalNameState((s) => ({
-            ...s,
-            [props.entityID]: e.target.value,
-          }));
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Backspace" && !e.currentTarget.value) {
-            e.preventDefault();
-            rep?.mutate.removePollOption({ optionEntity: props.entityID });
-          }
-        }}
-      />
-
-      <button
-        disabled={props.votes > 0}
-        className="text-accent-contrast disabled:text-border"
-        onMouseDown={() => {
-          rep?.mutate.removePollOption({ optionEntity: props.entityID });
-        }}
-      >
-        <CloseTiny />
-      </button>
-    </div>
-  ) : optionName === "" ? null : props.state === "voting" ? (
-    <div className="flex gap-2 items-center">
-      <ButtonSecondary
-        className={`pollOption grow max-w-full`}
-        onClick={() => {
-          props.setState("results");
-          voteOnPoll(props.pollEntity, props.entityID);
-          mutate();
-        }}
-      >
-        {optionName}
-      </ButtonSecondary>
-    </div>
-  ) : (
+  return (
     <div
       className={`pollResult relative grow py-0.5 px-2 border-accent-contrast rounded-md overflow-hidden ${props.winner ? "font-bold border-2" : "border"}`}
     >
@@ -262,52 +272,157 @@ const PollOption = (props: {
   );
 };
 
-const AddPollOptionButton = (props: { entityID: string }) => {
+const EditPoll = (props: {
+  votes: { option_entity: string }[];
+  totalVotes: number;
+  entityID: string;
+  close: () => void;
+}) => {
+  let pollOptions = useEntity(props.entityID, "poll/options");
   let { rep } = useReplicache();
   let permission_set = useEntitySetContext();
-  let options = useEntity(props.entityID, "poll/options");
+  let [localPollOptionNames, setLocalPollOptionNames] = useState<{
+    [k: string]: string;
+  }>({});
   return (
-    <button
-      className="pollAddOption w-fit flex gap-2 items-center justify-start text-sm text-accent-contrast"
-      onClick={() => {
-        rep?.mutate.addPollOption({
-          pollEntity: props.entityID,
-          pollOptionEntity: v7(),
-          pollOptionName: "",
-          permission_set: permission_set.set,
-          factID: v7(),
-        });
-      }}
-    >
-      Add an Option
-    </button>
+    <>
+      {props.totalVotes > 0 && (
+        <div className="text-sm italic text-tertiary">
+          You can&apos;t edit options people already voted for!
+        </div>
+      )}
+
+      {pollOptions.length === 0 && (
+        <div className="text-center italic text-tertiary text-sm">
+          no options yet...
+        </div>
+      )}
+      {pollOptions.map((p) => (
+        <EditPollOption
+          entityID={p.data.value}
+          pollEntity={props.entityID}
+          disabled={!!props.votes.find((v) => v.option_entity === p.data.value)}
+          localNameState={localPollOptionNames[p.data.value]}
+          setLocalNameState={setLocalPollOptionNames}
+        />
+      ))}
+
+      <button
+        className="pollAddOption w-fit flex gap-2 items-center justify-start text-sm text-accent-contrast"
+        onClick={() => {
+          rep?.mutate.addPollOption({
+            pollEntity: props.entityID,
+            pollOptionEntity: v7(),
+            pollOptionName: "",
+            permission_set: permission_set.set,
+            factID: v7(),
+          });
+        }}
+      >
+        Add an Option
+      </button>
+
+      <hr className="border-border" />
+      <ButtonPrimary
+        className="place-self-end"
+        onClick={async () => {
+          // remove any poll options that have no name
+          // look through the localPollOptionNames object and remove any options that have no name
+          let emptyOptions = Object.entries(localPollOptionNames).filter(
+            ([optionEntity, optionName]) => optionName === "",
+          );
+          await Promise.all(
+            emptyOptions.map(
+              async ([entity]) =>
+                await rep?.mutate.removePollOption({
+                  optionEntity: entity,
+                }),
+            ),
+          );
+
+          await rep?.mutate.assertFact(
+            Object.entries(localPollOptionNames)
+              .filter(([, name]) => !!name)
+              .map(([entity, name]) => ({
+                entity,
+                attribute: "poll-option/name",
+                data: { type: "string", value: name },
+              })),
+          );
+          props.close();
+        }}
+      >
+        Save <CheckTiny />
+      </ButtonPrimary>
+    </>
   );
 };
 
-const EditPollOptionsButton = (props: {
-  state: "editing" | "voting" | "results";
-  setState: (state: "editing" | "voting" | "results") => void;
+const EditPollOption = (props: {
+  entityID: string;
+  pollEntity: string;
+  localNameState: string | undefined;
+  setLocalNameState: (
+    s: (s: { [k: string]: string }) => { [k: string]: string },
+  ) => void;
+  disabled: boolean;
 }) => {
+  let { rep } = useReplicache();
+  let optionName = useEntity(props.entityID, "poll-option/name")?.data.value;
+  useEffect(() => {
+    props.setLocalNameState((s) => ({
+      ...s,
+      [props.entityID]: optionName || "",
+    }));
+  }, [optionName, props.setLocalNameState, props.entityID]);
+
   return (
-    <button
-      className="pollEditOptions w-fit flex gap-2 items-center justify-start text-sm text-accent-contrast"
-      onClick={() => {
-        props.setState("editing");
-      }}
-    >
-      Edit Options{" "}
-    </button>
+    <div className="flex gap-2 items-center">
+      <Input
+        type="text"
+        className="pollOptionInput w-full input-with-border"
+        placeholder="Option here..."
+        disabled={props.disabled}
+        value={
+          props.localNameState === undefined ? optionName : props.localNameState
+        }
+        onChange={(e) => {
+          props.setLocalNameState((s) => ({
+            ...s,
+            [props.entityID]: e.target.value,
+          }));
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Backspace" && !e.currentTarget.value) {
+            e.preventDefault();
+            rep?.mutate.removePollOption({ optionEntity: props.entityID });
+          }
+        }}
+      />
+
+      <button
+        disabled={props.disabled}
+        className="text-accent-contrast disabled:text-border"
+        onMouseDown={() => {
+          rep?.mutate.removePollOption({ optionEntity: props.entityID });
+        }}
+      >
+        <CloseTiny />
+      </button>
+    </div>
   );
 };
 
 const PollStateToggle = (props: {
   setPollState: (pollState: "editing" | "voting" | "results") => void;
+  hasVoted: boolean;
   pollState: "editing" | "voting" | "results";
 }) => {
+  if (props.pollState === "results" && props.hasVoted) return null;
   return (
     <button
       className="text-sm text-accent-contrast sm:hover:underline"
-      onMouseDown={() => {
+      onClick={() => {
         props.setPollState(props.pollState === "voting" ? "results" : "voting");
       }}
     >

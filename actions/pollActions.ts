@@ -12,14 +12,23 @@ export async function getPollData(entity_sets: string[]) {
 
   const db = drizzle(client);
   const polls = await db
-    .select()
+    .select({
+      poll_votes_on_entity: {
+        poll_entity: poll_votes_on_entity.poll_entity,
+        voter_token: poll_votes_on_entity.voter_token,
+        option_entity: poll_votes_on_entity.option_entity,
+      },
+    })
     .from(poll_votes_on_entity)
     .innerJoin(entities, eq(entities.id, poll_votes_on_entity.poll_entity))
     .where(and(inArray(entities.set, entity_sets)));
   return { polls, voter_token };
 }
 
-export async function voteOnPoll(poll_entity: string, option_entity: string) {
+export async function voteOnPoll(
+  poll_entity: string,
+  option_entities: string[],
+) {
   let voter_token = cookies().get("poll_voter_token")?.value;
   if (!voter_token) {
     voter_token = v7();
@@ -42,5 +51,11 @@ export async function voteOnPoll(poll_entity: string, option_entity: string) {
 
   await db
     .insert(poll_votes_on_entity)
-    .values({ option_entity, poll_entity, voter_token });
+    .values(
+      option_entities.map((option_entity) => ({
+        option_entity,
+        poll_entity,
+        voter_token,
+      })),
+    );
 }

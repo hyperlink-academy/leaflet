@@ -18,6 +18,7 @@ export function PageSWRDataProvider(props: {
       value={{
         fallback: {
           rsvp_data: props.rsvp_data,
+          poll_data: props.poll_data,
           [`${props.leaflet_id}-domains`]: props.domains,
         },
       }}
