@@ -70,7 +70,7 @@ export const PollBlock = (props: BlockProps) => {
           entityID={props.entityID}
           close={() => {
             if (hasVoted) setPollState("results");
-            setPollState("voting");
+            else setPollState("voting");
           }}
         />
       ) : pollState === "results" ? (
@@ -98,7 +98,7 @@ export const PollBlock = (props: BlockProps) => {
             </button>
           )}
 
-          {!hasVoted && <Separator classname="h-6" />}
+          {permissions.write && <Separator classname="h-6" />}
           <PollStateToggle
             setPollState={setPollState}
             pollState={pollState}
@@ -140,7 +140,14 @@ const PollVote = (props: { entityID: string; onSubmit: () => void }) => {
             return {
               ...oldState,
               polls: [
-                ...oldState.polls,
+                ...oldState.polls.filter(
+                  (p) =>
+                    !(
+                      p.poll_votes_on_entity.voter_token ===
+                        oldState.voter_token &&
+                      p.poll_votes_on_entity.poll_entity == props.entityID
+                    ),
+                ),
                 ...selectedPollOptions.map((option_entity) => ({
                   poll_votes_on_entity: {
                     option_entity,
@@ -418,7 +425,6 @@ const PollStateToggle = (props: {
   hasVoted: boolean;
   pollState: "editing" | "voting" | "results";
 }) => {
-  if (props.pollState === "results" && props.hasVoted) return null;
   return (
     <button
       className="text-sm text-accent-contrast sm:hover:underline"
@@ -426,7 +432,11 @@ const PollStateToggle = (props: {
         props.setPollState(props.pollState === "voting" ? "results" : "voting");
       }}
     >
-      {props.pollState === "voting" ? "See Results" : "Back to Poll"}
+      {props.pollState === "voting"
+        ? "See Results"
+        : props.hasVoted
+          ? "Change Vote"
+          : "Back to Poll"}
     </button>
   );
 };

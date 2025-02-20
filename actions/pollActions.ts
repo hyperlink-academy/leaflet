@@ -22,7 +22,18 @@ export async function getPollData(entity_sets: string[]) {
     .from(poll_votes_on_entity)
     .innerJoin(entities, eq(entities.id, poll_votes_on_entity.poll_entity))
     .where(and(inArray(entities.set, entity_sets)));
-  return { polls, voter_token };
+  return {
+    polls: polls.map((p) => ({
+      poll_votes_on_entity: {
+        ...p.poll_votes_on_entity,
+        voter_token:
+          voter_token === p.poll_votes_on_entity.voter_token
+            ? voter_token
+            : undefined,
+      },
+    })),
+    voter_token,
+  };
 }
 
 export async function voteOnPoll(
@@ -46,16 +57,22 @@ export async function voteOnPoll(
     pollVote.find((v) => {
       return v.voter_token === voter_token;
     })
-  )
-    return;
+  ) {
+    await db
+      .delete(poll_votes_on_entity)
+      .where(
+        and(
+          eq(poll_votes_on_entity.voter_token, voter_token),
+          eq(poll_votes_on_entity.poll_entity, poll_entity),
+        ),
+      );
+  }
 
-  await db
-    .insert(poll_votes_on_entity)
-    .values(
-      option_entities.map((option_entity) => ({
-        option_entity,
-        poll_entity,
-        voter_token,
-      })),
-    );
+  await db.insert(poll_votes_on_entity).values(
+    option_entities.map((option_entity) => ({
+      option_entity,
+      poll_entity,
+      voter_token,
+    })),
+  );
 }
