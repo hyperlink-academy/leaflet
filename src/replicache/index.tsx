@@ -172,8 +172,19 @@ export function useEntity<A extends keyof typeof Attributes>(
     },
   );
   let d = data || fallbackData;
-  return Attributes[attribute].cardinality === "many"
-    ? (d as CardinalityResult<A>)
+  let a = Attributes[attribute];
+  return a.cardinality === "many"
+    ? ((a.type === "ordered-reference"
+        ? d.sort((a, b) => {
+            return (
+              a as Fact<keyof FilterAttributes<{ type: "ordered-reference" }>>
+            ).data.position >
+              (b as Fact<keyof FilterAttributes<{ type: "ordered-reference" }>>)
+                .data.position
+              ? 1
+              : -1;
+          })
+        : d) as CardinalityResult<A>)
     : d.length === 0 && data === null
       ? (null as CardinalityResult<A>)
       : (d[0] as CardinalityResult<A>);

@@ -556,6 +556,47 @@ const toggleTodoState: Mutation<{ entityID: string }> = async (args, ctx) => {
   }
 };
 
+const addPollOption: Mutation<{
+  pollEntity: string;
+  pollOptionEntity: string;
+  pollOptionName: string;
+  permission_set: string;
+  factID: string;
+}> = async (args, ctx) => {
+  await ctx.createEntity({
+    entityID: args.pollOptionEntity,
+    permission_set: args.permission_set,
+  });
+
+  await ctx.assertFact({
+    entity: args.pollOptionEntity,
+    attribute: "poll-option/name",
+    data: { type: "string", value: args.pollOptionName },
+  });
+
+  let children = await ctx.scanIndex.eav(args.pollEntity, "poll/options");
+  let lastChild = children.toSorted((a, b) =>
+    a.data.position > b.data.position ? 1 : -1,
+  )[children.length - 1];
+
+  await ctx.assertFact({
+    entity: args.pollEntity,
+    id: args.factID,
+    attribute: "poll/options",
+    data: {
+      type: "ordered-reference",
+      value: args.pollOptionEntity,
+      position: generateKeyBetween(lastChild?.data.position || null, null),
+    },
+  });
+};
+
+const removePollOption: Mutation<{
+  optionEntity: string;
+}> = async (args, ctx) => {
+  await ctx.deleteEntity(args.optionEntity);
+};
+
 export const mutations = {
   retractAttribute,
   addBlock,
@@ -575,4 +616,6 @@ export const mutations = {
   toggleTodoState,
   createDraft,
   createEntity,
+  addPollOption,
+  removePollOption,
 };

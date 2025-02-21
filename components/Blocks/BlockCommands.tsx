@@ -14,6 +14,7 @@ import {
   BlockButtonSmall,
   BlockCalendarSmall,
   RSVPSmall,
+  BlockPollSmall,
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "components/Pages";
@@ -22,6 +23,8 @@ import { Replicache } from "replicache";
 import { keepFocus } from "components/Toolbar/TextBlockTypeToolbar";
 import { useEditorStates } from "src/state/useEditorState";
 import { elementId } from "src/utils/elementId";
+import { usePollBlockUIState } from "./PollBlock";
+import { focusElement } from "components/Input";
 
 type Props = {
   parent: string;
@@ -202,6 +205,37 @@ export const blockCommands: Command[] = [
     onSelect: async (rep, props) => {
       let entity;
       createBlockWithType(rep, props, "mailbox");
+    },
+  },
+  {
+    name: "Poll",
+    icon: <BlockPollSmall />,
+    type: "block",
+    onSelect: async (rep, props) => {
+      let entity = await createBlockWithType(rep, props, "poll");
+      let pollOptionEntity = v7();
+      await rep.mutate.addPollOption({
+        pollEntity: entity,
+        pollOptionEntity,
+        pollOptionName: "",
+        factID: v7(),
+        permission_set: props.entity_set,
+      });
+      await rep.mutate.addPollOption({
+        pollEntity: entity,
+        pollOptionEntity: v7(),
+        pollOptionName: "",
+        factID: v7(),
+        permission_set: props.entity_set,
+      });
+      usePollBlockUIState.setState((s) => ({ [entity]: { state: "editing" } }));
+      setTimeout(() => {
+        focusElement(
+          document.getElementById(
+            elementId.block(entity).pollInput(pollOptionEntity),
+          ) as HTMLInputElement | null,
+        );
+      }, 20);
     },
   },
 
