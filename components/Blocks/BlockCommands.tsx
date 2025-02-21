@@ -24,6 +24,7 @@ import { keepFocus } from "components/Toolbar/TextBlockTypeToolbar";
 import { useEditorStates } from "src/state/useEditorState";
 import { elementId } from "src/utils/elementId";
 import { usePollBlockUIState } from "./PollBlock";
+import { focusElement } from "components/Input";
 
 type Props = {
   parent: string;
@@ -212,9 +213,10 @@ export const blockCommands: Command[] = [
     type: "block",
     onSelect: async (rep, props) => {
       let entity = await createBlockWithType(rep, props, "poll");
+      let pollOptionEntity = v7();
       await rep.mutate.addPollOption({
         pollEntity: entity,
-        pollOptionEntity: v7(),
+        pollOptionEntity,
         pollOptionName: "",
         factID: v7(),
         permission_set: props.entity_set,
@@ -227,6 +229,13 @@ export const blockCommands: Command[] = [
         permission_set: props.entity_set,
       });
       usePollBlockUIState.setState((s) => ({ [entity]: { state: "editing" } }));
+      setTimeout(() => {
+        focusElement(
+          document.getElementById(
+            elementId.block(entity).pollInput(pollOptionEntity),
+          ) as HTMLInputElement | null,
+        );
+      }, 20);
     },
   },
 

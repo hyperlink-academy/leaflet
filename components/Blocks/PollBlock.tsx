@@ -2,7 +2,7 @@ import { useUIState } from "src/useUIState";
 import { BlockProps } from "./Block";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useCallback, useEffect, useState } from "react";
-import { Input } from "components/Input";
+import { focusElement, Input } from "components/Input";
 import { CheckTiny, CloseTiny, InfoSmall } from "components/Icons";
 import { Separator } from "components/Layout";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -13,6 +13,7 @@ import { usePollData } from "components/PageSWRDataProvider";
 import { voteOnPoll } from "actions/pollActions";
 import { create } from "zustand";
 import { poll_votes_on_entity } from "drizzle/schema";
+import { elementId } from "src/utils/elementId";
 
 export let usePollBlockUIState = create(
   () =>
@@ -316,14 +317,21 @@ const EditPoll = (props: {
 
       <button
         className="pollAddOption w-fit flex gap-2 items-center justify-start text-sm text-accent-contrast"
-        onClick={() => {
-          rep?.mutate.addPollOption({
+        onClick={async () => {
+          let pollOptionEntity = v7();
+          await rep?.mutate.addPollOption({
             pollEntity: props.entityID,
-            pollOptionEntity: v7(),
+            pollOptionEntity,
             pollOptionName: "",
             permission_set: permission_set.set,
             factID: v7(),
           });
+
+          focusElement(
+            document.getElementById(
+              elementId.block(props.entityID).pollInput(pollOptionEntity),
+            ) as HTMLInputElement | null,
+          );
         }}
       >
         Add an Option
@@ -386,6 +394,7 @@ const EditPollOption = (props: {
   return (
     <div className="flex gap-2 items-center">
       <Input
+        id={elementId.block(props.pollEntity).pollInput(props.entityID)}
         type="text"
         className="pollOptionInput w-full input-with-border"
         placeholder="Option here..."
