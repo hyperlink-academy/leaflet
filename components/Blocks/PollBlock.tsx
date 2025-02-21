@@ -75,41 +75,35 @@ export const PollBlock = (props: BlockProps) => {
           }}
         />
       ) : pollState === "results" ? (
-        <PollResults entityID={props.entityID} />
+        <PollResults
+          entityID={props.entityID}
+          pollState={pollState}
+          setPollState={setPollState}
+          hasVoted={!!hasVoted}
+        />
       ) : (
         <PollVote
           entityID={props.entityID}
           onSubmit={() => setPollState("results")}
+          pollState={pollState}
+          setPollState={setPollState}
+          hasVoted={!!hasVoted}
         />
-      )}
-
-      {pollState !== "editing" && (
-        <div className="flex justify-end gap-2">
-          {permissions.write && (
-            <button
-              className="pollEditOptions w-fit flex gap-2 items-center justify-start text-sm text-accent-contrast"
-              onClick={() => {
-                setPollState("editing");
-              }}
-            >
-              Edit Options{" "}
-            </button>
-          )}
-
-          {permissions.write && <Separator classname="h-6" />}
-          <PollStateToggle
-            setPollState={setPollState}
-            pollState={pollState}
-            hasVoted={!!hasVoted}
-          />
-        </div>
       )}
     </div>
   );
 };
 
-const PollVote = (props: { entityID: string; onSubmit: () => void }) => {
+const PollVote = (props: {
+  entityID: string;
+  onSubmit: () => void;
+  pollState: "editing" | "voting" | "results";
+  setPollState: (pollState: "editing" | "voting" | "results") => void;
+  hasVoted: boolean;
+}) => {
   let { data, mutate } = usePollData();
+  let { permissions } = useEntitySetContext();
+
   let pollOptions = useEntity(props.entityID, "poll/options");
   let currentVotes = data?.voter_token
     ? data.polls
@@ -139,43 +133,64 @@ const PollVote = (props: { entityID: string; onSubmit: () => void }) => {
           entityID={option.data.value}
         />
       ))}
-      <ButtonPrimary
-        className="place-self-end"
-        onClick={async () => {
-          await voteOnPoll(props.entityID, selectedPollOptions);
-          mutate((oldState) => {
-            if (!oldState || !oldState.voter_token) return;
-            return {
-              ...oldState,
-              polls: [
-                ...oldState.polls.filter(
-                  (p) =>
-                    !(
-                      p.poll_votes_on_entity.voter_token ===
-                        oldState.voter_token &&
-                      p.poll_votes_on_entity.poll_entity == props.entityID
-                    ),
-                ),
-                ...selectedPollOptions.map((option_entity) => ({
-                  poll_votes_on_entity: {
-                    option_entity,
-                    poll_entity: props.entityID,
-                    voter_token: oldState.voter_token!,
-                  },
-                })),
-              ],
-            };
-          });
-          props.onSubmit();
-        }}
-        disabled={
-          selectedPollOptions.length === 0 ||
-          (selectedPollOptions.length === currentVotes.length &&
-            selectedPollOptions.every((s) => currentVotes.includes(s)))
-        }
-      >
-        Vote!
-      </ButtonPrimary>
+      <div className="flex justify-between items-center">
+        <div className="flex justify-end gap-2">
+          {permissions.write && (
+            <button
+              className="pollEditOptions w-fit flex gap-2 items-center justify-start text-sm text-accent-contrast"
+              onClick={() => {
+                props.setPollState("editing");
+              }}
+            >
+              Edit Options
+            </button>
+          )}
+
+          {permissions.write && <Separator classname="h-6" />}
+          <PollStateToggle
+            setPollState={props.setPollState}
+            pollState={props.pollState}
+            hasVoted={props.hasVoted}
+          />
+        </div>
+        <ButtonPrimary
+          className="place-self-end"
+          onClick={async () => {
+            await voteOnPoll(props.entityID, selectedPollOptions);
+            mutate((oldState) => {
+              if (!oldState || !oldState.voter_token) return;
+              return {
+                ...oldState,
+                polls: [
+                  ...oldState.polls.filter(
+                    (p) =>
+                      !(
+                        p.poll_votes_on_entity.voter_token ===
+                          oldState.voter_token &&
+                        p.poll_votes_on_entity.poll_entity == props.entityID
+                      ),
+                  ),
+                  ...selectedPollOptions.map((option_entity) => ({
+                    poll_votes_on_entity: {
+                      option_entity,
+                      poll_entity: props.entityID,
+                      voter_token: oldState.voter_token!,
+                    },
+                  })),
+                ],
+              };
+            });
+            props.onSubmit();
+          }}
+          disabled={
+            selectedPollOptions.length === 0 ||
+            (selectedPollOptions.length === currentVotes.length &&
+              selectedPollOptions.every((s) => currentVotes.includes(s)))
+          }
+        >
+          Vote!
+        </ButtonPrimary>
+      </div>
     </>
   );
 };
@@ -213,8 +228,14 @@ const PollVoteButton = (props: {
   );
 };
 
-const PollResults = (props: { entityID: string }) => {
+const PollResults = (props: {
+  entityID: string;
+  pollState: "editing" | "voting" | "results";
+  setPollState: (pollState: "editing" | "voting" | "results") => void;
+  hasVoted: boolean;
+}) => {
   let { data } = usePollData();
+  let { permissions } = useEntitySetContext();
   let pollOptions = useEntity(props.entityID, "poll/options");
   let pollData = data?.pollVotes.find((p) => p.poll_entity === props.entityID);
   let votesByOptions = pollData?.votesByOption || {};
@@ -237,6 +258,25 @@ const PollResults = (props: { entityID: string }) => {
           votes={pollData?.votesByOption[p.data.value] || 0}
         />
       ))}
+      <div className="flex  gap-2">
+        {permissions.write && (
+          <button
+            className="pollEditOptions w-fit flex gap-2 items-center justify-start text-sm text-accent-contrast"
+            onClick={() => {
+              props.setPollState("editing");
+            }}
+          >
+            Edit Options
+          </button>
+        )}
+
+        {permissions.write && <Separator classname="h-6" />}
+        <PollStateToggle
+          setPollState={props.setPollState}
+          pollState={props.pollState}
+          hasVoted={props.hasVoted}
+        />
+      </div>
     </>
   );
 };
@@ -309,6 +349,7 @@ const EditPoll = (props: {
       )}
       {pollOptions.map((p) => (
         <EditPollOption
+          key={p.id}
           entityID={p.data.value}
           pollEntity={props.entityID}
           disabled={!!props.votes.find((v) => v.option_entity === p.data.value)}
