@@ -1,10 +1,14 @@
 import { UndoManager as RociUndoManager } from "@rocicorp/undo";
+import { create } from "zustand";
 
 export type UndoManager = ReturnType<typeof createUndoManager>;
+export const useUndoState = create(() => ({ canUndo: false, canRedo: false }));
 export const createUndoManager = () => {
   let isGrouping = false;
   let undoManager = new RociUndoManager({
-    onChange: (state) => {},
+    onChange: (state) => {
+      useUndoState.setState(state);
+    },
   });
   let um = {
     add: (args: {

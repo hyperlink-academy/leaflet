@@ -42,6 +42,8 @@ import { PageShareMenu } from "./PageShareMenu";
 import { Watermark } from "components/Watermark";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 import { LoginButton } from "components/LoginButton";
+import { useUndoState } from "src/undoManager";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -249,20 +251,19 @@ const DocContent = (props: { entityID: string }) => {
   );
 };
 
-const PageOptions = (props: {
-  entityID: string;
-  first: boolean | undefined;
-}) => {
-  let greyButtonStyle =
-    "pt-[2px] h-5 w-5 p-0.5 mx-auto bg-border text-bg-page sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2";
-  let whiteButtonStyle = `
+let greyButtonStyle =
+  "pt-[2px] h-5 w-5 p-0.5 mx-auto bg-border text-bg-page sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2";
+let whiteButtonStyle = `
     pageOptionsTrigger
     shrink-0
     bg-bg-page text-border
     outline-none border sm:border-l-0 border-t-1 border-border sm:rounded-r-md sm:rounded-l-none rounded-b-md
     hover:shadow-[0_1px_0_theme(colors.border)_inset,_0_-1px_0_theme(colors.border)_inset,_-1px_0_0_theme(colors.border)_inset]
     flex items-center justify-center`;
-
+const PageOptions = (props: {
+  entityID: string;
+  first: boolean | undefined;
+}) => {
   return (
     <div className=" z-10 w-fit absolute sm:top-3 sm:-right-[19px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
       {!props.first && (
@@ -280,15 +281,37 @@ const PageOptions = (props: {
         first={!!props.first}
         buttonStyle={whiteButtonStyle}
       />
-      <div className="gap-1 flex sm:flex-col">
-        <button className={`${whiteButtonStyle}  h-5 w-5 p-0.5`}>
-          <UndoTiny />
-        </button>
-        <button className={`${whiteButtonStyle}  h-5 w-5 p-0.5`}>
-          <RedoTiny />
-        </button>
-      </div>
+      <UndoButtons />
     </div>
+  );
+};
+
+const UndoButtons = () => {
+  let undoState = useUndoState();
+  let { undoManager } = useReplicache();
+  return (
+    <Media mobile>
+      <div className="gap-1 flex sm:flex-col">
+        {undoState.canUndo && (
+          <button
+            className={`${whiteButtonStyle}  h-5 w-5 p-0.5`}
+            onClick={() => undoManager.undo()}
+          >
+            <UndoTiny />
+          </button>
+        )}
+        {undoState.canRedo ? (
+          <button
+            className={`${whiteButtonStyle}  h-5 w-5 p-0.5`}
+            onClick={() => undoManager.undo()}
+          >
+            <RedoTiny />
+          </button>
+        ) : (
+          <div className="h-5 w-5 p-0.5" />
+        )}
+      </div>
+    </Media>
   );
 };
 
