@@ -22,7 +22,44 @@ export async function getPollData(entity_sets: string[]) {
     .from(poll_votes_on_entity)
     .innerJoin(entities, eq(entities.id, poll_votes_on_entity.poll_entity))
     .where(and(inArray(entities.set, entity_sets)));
+
+  let pollVotes = polls
+    .reduce<
+      Array<{
+        poll_entity: string;
+        votes: { option_entity: string; voter_token: string }[];
+      }>
+    >((acc, p) => {
+      let x = acc.find(
+        (a) => a.poll_entity === p.poll_votes_on_entity.poll_entity,
+      );
+      if (!x)
+        acc.push({
+          poll_entity: p.poll_votes_on_entity.poll_entity,
+          votes: [p.poll_votes_on_entity],
+        });
+      else x.votes.push(p.poll_votes_on_entity);
+      return acc;
+    }, [])
+    .map((poll) => {
+      return {
+        poll_entity: poll.poll_entity,
+        unique_votes: poll.votes.reduce<string[]>((acc, v) => {
+          if (!acc.includes(v.voter_token)) acc.push(v.voter_token);
+          return acc;
+        }, []).length,
+        votesByOption: poll.votes.reduce<{
+          [key: string]: number;
+        }>((acc, v) => {
+          if (!acc[v.option_entity]) acc[v.option_entity] = 0;
+          acc[v.option_entity] = acc[v.option_entity] + 1;
+          return acc;
+        }, {}),
+      };
+    });
+
   return {
+    pollVotes,
     polls: polls.map((p) => ({
       poll_votes_on_entity: {
         ...p.poll_votes_on_entity,

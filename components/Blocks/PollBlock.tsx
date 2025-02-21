@@ -75,10 +75,7 @@ export const PollBlock = (props: BlockProps) => {
           }}
         />
       ) : pollState === "results" ? (
-        <PollResults
-          entityID={props.entityID}
-          votes={votes.map((v) => v.poll_votes_on_entity)}
-        />
+        <PollResults entityID={props.entityID} />
       ) : (
         <PollVote
           entityID={props.entityID}
@@ -216,18 +213,11 @@ const PollVoteButton = (props: {
   );
 };
 
-const PollResults = (props: {
-  entityID: string;
-  votes: { option_entity: string }[];
-}) => {
+const PollResults = (props: { entityID: string }) => {
+  let { data } = usePollData();
   let pollOptions = useEntity(props.entityID, "poll/options");
-  let votesByOptions = props.votes.reduce<{ [option: string]: number }>(
-    (results, vote) => {
-      results[vote.option_entity] = (results[vote.option_entity] || 0) + 1;
-      return results;
-    },
-    {},
-  );
+  let pollData = data?.pollVotes.find((p) => p.poll_entity === props.entityID);
+  let votesByOptions = pollData?.votesByOption || {};
   let highestVotes = Math.max(...Object.values(votesByOptions));
   let winningOptionEntities = Object.entries(votesByOptions).reduce<string[]>(
     (winningEntities, [entity, votes]) => {
@@ -243,10 +233,8 @@ const PollResults = (props: {
           key={p.id}
           winner={winningOptionEntities.includes(p.data.value)}
           entityID={p.data.value}
-          totalVotes={props.votes.length}
-          votes={
-            props.votes.filter((f) => f.option_entity === p.data.value).length
-          }
+          totalVotes={pollData?.unique_votes || 0}
+          votes={pollData?.votesByOption[p.data.value] || 0}
         />
       ))}
     </>
