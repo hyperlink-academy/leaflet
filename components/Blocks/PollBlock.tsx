@@ -431,6 +431,7 @@ const EditPollOption = (props: {
       />
 
       <button
+        tabIndex={-1}
         disabled={props.disabled}
         className="text-accent-contrast disabled:text-border"
         onMouseDown={async () => {
