@@ -1,5 +1,13 @@
 "use client";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useSubscribe } from "replicache-react";
 import {
   DeepReadonlyObject,
@@ -13,6 +21,9 @@ import { Attributes, Data, FilterAttributes } from "./attributes";
 import { clientMutationContext } from "./clientMutationContext";
 import { supabaseBrowserClient } from "supabase/browserClient";
 import { callRPC } from "app/api/rpc/client";
+import { UndoManager } from "@rocicorp/undo";
+import { addShortcut } from "src/shortcuts";
+import { createUndoManager } from "src/undoManager";
 
 export type Fact<A extends keyof typeof Attributes> = {
   id: string;
@@ -22,6 +33,7 @@ export type Fact<A extends keyof typeof Attributes> = {
 };
 
 let ReplicacheContext = createContext({
+  undoManager: createUndoManager(),
   rootEntity: "" as string,
   rep: null as null | Replicache<ReplicacheMutators>,
   initialFacts: [] as Fact<keyof typeof Attributes>[],
@@ -59,6 +71,34 @@ export function ReplicacheProvider(props: {
   initialFactsOnly?: boolean;
 }) {
   let [rep, setRep] = useState<null | Replicache<ReplicacheMutators>>(null);
+  let [undoManager] = useState(createUndoManager());
+  useEffect(() => {
+    return addShortcut([
+      {
+        metaKey: true,
+        key: "z",
+        handler: () => {
+          undoManager.undo();
+        },
+      },
+      {
+        metaKey: true,
+        shift: true,
+        key: "z",
+        handler: () => {
+          undoManager.redo();
+        },
+      },
+      {
+        metaKey: true,
+        shift: true,
+        key: "Z",
+        handler: () => {
+          undoManager.redo();
+        },
+      },
+    ]);
+  }, [undoManager]);
   useEffect(() => {
     if (props.initialFactsOnly) return;
     let supabase = supabaseBrowserClient();
@@ -71,7 +111,13 @@ export function ReplicacheProvider(props: {
             async (tx: WriteTransaction, args: any) => {
               await mutations[m as keyof typeof mutations](
                 args,
-                clientMutationContext(tx),
+                clientMutationContext(tx, {
+                  undoManager,
+                  rep: newRep,
+                  ignoreUndo: args.ignoreUndo || tx.reason !== "initial",
+                  defaultEntitySet:
+                    props.token.permission_token_rights[0]?.entity_set,
+                }),
               );
             },
           ];
@@ -127,6 +173,7 @@ export function ReplicacheProvider(props: {
   return (
     <ReplicacheContext.Provider
       value={{
+        undoManager,
         rep,
         rootEntity: props.rootEntity,
         initialFacts: props.initialFacts,

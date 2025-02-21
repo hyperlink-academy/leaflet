@@ -52,6 +52,7 @@ import { ToolbarButton } from "components/Toolbar";
 import { TooltipButton } from "components/Buttons";
 import { v7 } from "uuid";
 import { focusPage } from "components/Pages";
+import { blockCommands } from "../BlockCommands";
 
 export function TextBlock(
   props: BlockProps & { className?: string; preview?: boolean },
@@ -224,9 +225,8 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
   )?.editor;
   useEffect(() => {
     if (!editorState) {
-      let km = TextBlockKeymap(propsRef, repRef);
+      let km = TextBlockKeymap(propsRef, repRef, rep.undoManager);
       setEditorState(props.entityID, {
-        keymap: km,
         editor: EditorState.create({
           schema,
           plugins: [
@@ -261,11 +261,60 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
       window.open(mark.attrs.href, "_blank");
     }
   }, []);
+  let actionTimeout = useRef<number | null>(null);
   let dispatchTransaction = useCallback(
     (tr: Transaction) => {
       useEditorStates.setState((s) => {
         let existingState = s.editorStates[props.entityID];
         if (!existingState) return s;
+        let newState = existingState.editor.apply(tr);
+        let addToHistory = tr.getMeta("addToHistory");
+        let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
+        if (addToHistory !== false && docHasChanges) {
+          if (actionTimeout.current) {
+            window.clearTimeout(actionTimeout.current);
+          } else {
+            rep.undoManager.startGroup();
+          }
+
+          actionTimeout.current = window.setTimeout(() => {
+            rep.undoManager.endGroup();
+            actionTimeout.current = null;
+          }, 200);
+          rep.undoManager.add({
+            redo: () => {
+              useEditorStates.setState((oldState) => {
+                let view = oldState.editorStates[props.entityID]?.view;
+                if (!view?.hasFocus()) view?.focus();
+                return {
+                  editorStates: {
+                    ...oldState.editorStates,
+                    [props.entityID]: {
+                      ...oldState.editorStates[props.entityID]!,
+                      editor: newState,
+                    },
+                  },
+                };
+              });
+            },
+            undo: () => {
+              useEditorStates.setState((oldState) => {
+                let view = oldState.editorStates[props.entityID]?.view;
+                if (!view?.hasFocus()) view?.focus();
+                return {
+                  editorStates: {
+                    ...oldState.editorStates,
+                    [props.entityID]: {
+                      ...oldState.editorStates[props.entityID]!,
+                      editor: existingState.editor,
+                    },
+                  },
+                };
+              });
+            },
+          });
+        }
+
         return {
           editorStates: {
             ...s.editorStates,
@@ -277,7 +326,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
         };
       });
     },
-    [props.entityID],
+    [props.entityID, rep.undoManager],
   );
   if (!editorState) return null;
 
@@ -295,6 +344,11 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
         <pre
           data-entityid={props.entityID}
           onBlur={async () => {
+            if (actionTimeout.current) {
+              rep.undoManager.endGroup();
+              window.clearTimeout(actionTimeout.current);
+              actionTimeout.current = null;
+            }
             if (editorState.doc.textContent.startsWith("http")) {
               await addLinkBlock(
                 editorState.doc.textContent,
@@ -353,29 +407,13 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
             <TooltipButton
               className={props.className}
               onMouseDown={async () => {
-                let entity;
-                if (!props.entityID) {
-                  entity = v7();
-                  await rep.rep?.mutate.addBlock({
-                    parent: props.parent,
-                    factID: v7(),
-                    permission_set: entity_set.set,
-                    type: "image",
-                    position: generateKeyBetween(
-                      props.position,
-                      props.nextPosition,
-                    ),
-                    newEntityID: entity,
-                  });
-                } else {
-                  entity = props.entityID;
-                  await rep.rep?.mutate.assertFact({
-                    entity,
-                    attribute: "block/type",
-                    data: { type: "block-type-union", value: "image" },
-                  });
-                }
-                return entity;
+                let command = blockCommands.find((f) => f.name === "Image");
+                if (!rep.rep) return;
+                await command?.onSelect(
+                  rep.rep,
+                  { ...props, entity_set: entity_set.set },
+                  rep.undoManager,
+                );
               }}
               side="bottom"
               tooltipContent={
@@ -388,40 +426,13 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
             <TooltipButton
               className={props.className}
               onMouseDown={async () => {
-                let entity;
-                if (!props.entityID) {
-                  entity = v7();
-                  await rep.rep?.mutate.addBlock({
-                    parent: props.parent,
-                    factID: v7(),
-                    permission_set: entity_set.set,
-                    type: "card",
-                    position: generateKeyBetween(
-                      props.position,
-                      props.nextPosition,
-                    ),
-                    newEntityID: entity,
-                  });
-                } else {
-                  entity = props.entityID;
-                  await rep.rep?.mutate.assertFact({
-                    entity,
-                    attribute: "block/type",
-                    data: { type: "block-type-union", value: "card" },
-                  });
-                }
-
-                let newPage = v7();
-                await rep.rep?.mutate.addPageLinkBlock({
-                  blockEntity: entity,
-                  firstBlockFactID: v7(),
-                  firstBlockEntity: v7(),
-                  pageEntity: newPage,
-                  type: "doc",
-                  permission_set: entity_set.set,
-                });
-                useUIState.getState().openPage(props.parent, newPage);
-                rep.rep && focusPage(newPage, rep.rep, "focusFirstBlock");
+                let command = blockCommands.find((f) => f.name === "New Page");
+                if (!rep.rep) return;
+                await command?.onSelect(
+                  rep.rep,
+                  { ...props, entity_set: entity_set.set },
+                  rep.undoManager,
+                );
               }}
               side="bottom"
               tooltipContent={
@@ -593,6 +604,8 @@ function useYJSValue(entityID: string) {
       const updateReplicache = async () => {
         const update = Y.encodeStateAsUpdate(ydoc);
         await rep.rep?.mutate.assertFact({
+          //These undos are handled above in the Prosemirror context
+          ignoreUndo: true,
           entity: entityID,
           attribute: "block/text",
           data: {

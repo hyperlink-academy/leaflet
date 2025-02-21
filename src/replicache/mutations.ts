@@ -1,5 +1,5 @@
-import { DeepReadonly } from "replicache";
-import { Fact } from ".";
+import { DeepReadonly, Replicache } from "replicache";
+import { Fact, ReplicacheMutators } from ".";
 import { Attributes, FilterAttributes } from "./attributes";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
@@ -29,7 +29,10 @@ export type MutationContext = {
   ): Promise<void>;
 };
 
-type Mutation<T> = (args: T, ctx: MutationContext) => Promise<void>;
+type Mutation<T> = (
+  args: T & { ignoreUndo?: true },
+  ctx: MutationContext,
+) => Promise<void>;
 
 const addCanvasBlock: Mutation<{
   parent: string;
@@ -324,7 +327,11 @@ const removeBlock: Mutation<
   }
 };
 
-type FactInput = {
+const deleteEntity: Mutation<{ entity: string }> = async (args, ctx) => {
+  await ctx.deleteEntity(args.entity);
+};
+
+export type FactInput = {
   [k in keyof typeof Attributes]: Omit<Fact<k>, "id"> & { id?: string };
 }[keyof typeof Attributes];
 const assertFact: Mutation<FactInput | Array<FactInput>> = async (
@@ -610,6 +617,7 @@ export const mutations = {
   assertFact,
   retractFact,
   removeBlock,
+  deleteEntity,
   moveChildren,
   increaseHeadingLevel,
   archiveDraft,
