@@ -31,7 +31,7 @@ export const ThemeDefaults = {
   "theme/primary": "#272727",
   "theme/highlight-1": "#FFFFFF",
   "theme/highlight-2": "#EDD280",
-  "theme/highlight-3": "#9FC4C2",
+  "theme/highlight-3": "#FFCDC3",
 
   //everywhere else, accent-background = accent-1 and accent-text = accent-2.
   // we just need to create a migration pipeline before we can change this
@@ -98,7 +98,7 @@ export function ThemeProvider(props: {
     } else {
       el?.style.setProperty(
         "--highlight-1",
-        "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 75%)",
+        "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 75%)",
       );
     }
     setCSSVariableToColor(el, "--accent-1", accent1);
@@ -138,7 +138,7 @@ export function ThemeProvider(props: {
           "--accent-1-is-contrast": accentContrast === accent1 ? 1 : 0,
           "--highlight-1": highlight1
             ? `rgb(${colorToString(parseColor(`hsba(${highlight1.data.value})`), "rgb")})`
-            : "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 75%)",
+            : "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 75%)",
           "--highlight-2": colorToString(highlight2, "rgb"),
           "--highlight-3": colorToString(highlight3, "rgb"),
         } as CSSProperties

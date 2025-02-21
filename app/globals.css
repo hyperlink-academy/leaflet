@@ -17,7 +17,7 @@
 
     --highlight-1: 255, 177, 177;
     --highlight-2: 253, 245, 203;
-    --highlight-3: 224, 244, 255;
+    --highlight-3: 255, 205, 195;
 
     --list-marker-width: 36px;
     --page-width-unitless: min(624, calc(var(--leaflet-width-unitless) - 12));
