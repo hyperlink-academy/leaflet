@@ -5,6 +5,7 @@ import postgres from "postgres";
 import { entities, poll_votes_on_entity } from "drizzle/schema";
 import { cookies } from "next/headers";
 import { v7 } from "uuid";
+import { getIdentityData } from "./getIdentityData";
 
 export async function getPollData(entity_sets: string[]) {
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
@@ -79,8 +80,15 @@ export async function voteOnPoll(
 ) {
   let voter_token = cookies().get("poll_voter_token")?.value;
   if (!voter_token) {
-    voter_token = v7();
-    cookies().set("poll_voter_token", voter_token);
+    let identity = await getIdentityData();
+    if (identity) voter_token = identity.id;
+    else voter_token = v7();
+    cookies().set("poll_voter_token", voter_token, {
+      maxAge: 60 * 60 * 24 * 365,
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      sameSite: "lax",
+    });
   }
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
