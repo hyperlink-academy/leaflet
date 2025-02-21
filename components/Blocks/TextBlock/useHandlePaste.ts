@@ -16,6 +16,7 @@ import { betterIsUrl, isUrl } from "src/utils/isURL";
 import { TextSelection } from "prosemirror-state";
 import { FilterAttributes } from "src/replicache/attributes";
 import { addLinkBlock } from "src/utils/addLinkBlock";
+import { UndoManager } from "src/undoManager";
 
 const parser = ProsemirrorDOMParser.fromSchema(schema);
 export const useHandlePaste = (
@@ -23,7 +24,7 @@ export const useHandlePaste = (
   propsRef: MutableRefObject<BlockProps>,
   factID?: string,
 ) => {
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
   return useCallback(
     (view: EditorView, e: ClipboardEvent) => {
@@ -57,6 +58,7 @@ export const useHandlePaste = (
         if (!(children.length === 1 && children[0].tagName === "IMG")) {
           children.forEach((child, index) => {
             createBlockFromHTML(child, {
+              undoManager,
               parentType: propsRef.current.pageType,
               first: index === 0,
               activeBlockProps: propsRef,
@@ -128,6 +130,7 @@ const createBlockFromHTML = (
     last,
     activeBlockProps,
     rep,
+    undoManager,
     entity_set,
     getPosition,
     parent,
@@ -139,6 +142,7 @@ const createBlockFromHTML = (
     last: boolean;
     activeBlockProps?: MutableRefObject<BlockProps>;
     rep: Replicache<ReplicacheMutators>;
+    undoManager: UndoManager;
     entity_set: { set: string };
     getPosition: () => string;
   },
@@ -157,6 +161,7 @@ const createBlockFromHTML = (
         last: last && c === children[children.length - 1],
         activeBlockProps,
         rep,
+        undoManager,
         entity_set,
         getPosition,
         parent,
@@ -380,6 +385,7 @@ const createBlockFromHTML = (
         last: last,
         activeBlockProps,
         rep,
+        undoManager,
         entity_set,
         getPosition: () => {
           currentPosition = generateKeyBetween(currentPosition, null);
@@ -400,6 +406,39 @@ const createBlockFromHTML = (
       let newState = block.editor.apply(tr);
       setEditorState(entityID, {
         editor: newState,
+      });
+
+      undoManager.add({
+        redo: () => {
+          useEditorStates.setState((oldState) => {
+            let view = oldState.editorStates[entityID]?.view;
+            if (!view?.hasFocus()) view?.focus();
+            return {
+              editorStates: {
+                ...oldState.editorStates,
+                [entityID]: {
+                  ...oldState.editorStates[entityID]!,
+                  editor: newState,
+                },
+              },
+            };
+          });
+        },
+        undo: () => {
+          useEditorStates.setState((oldState) => {
+            let view = oldState.editorStates[entityID]?.view;
+            if (!view?.hasFocus()) view?.focus();
+            return {
+              editorStates: {
+                ...oldState.editorStates,
+                [entityID]: {
+                  ...oldState.editorStates[entityID]!,
+                  editor: block.editor,
+                },
+              },
+            };
+          });
+        },
       });
     }
     if (last && !hasChildren) {
