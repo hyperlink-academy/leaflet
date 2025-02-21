@@ -3,6 +3,7 @@ export const elementId = {
     text: `block/${id}/content`,
     container: `block/${id}/container`,
     input: `block/${id}/input`,
+    pollInput: (entity: string) => `block/${id}/poll-input/${entity}`,
   }),
   page: (id: string) => ({
     container: `page/${id}/container`,

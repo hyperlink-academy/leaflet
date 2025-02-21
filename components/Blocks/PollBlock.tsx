@@ -112,9 +112,19 @@ export const PollBlock = (props: BlockProps) => {
 };
 
 const PollVote = (props: { entityID: string; onSubmit: () => void }) => {
+  let { data, mutate } = usePollData();
   let pollOptions = useEntity(props.entityID, "poll/options");
-  let [selectedPollOptions, setSelectedPollOptions] = useState<string[]>([]);
-  let { mutate } = usePollData();
+  let currentVotes = data?.voter_token
+    ? data.polls
+        .filter(
+          (p) =>
+            p.poll_votes_on_entity.poll_entity === props.entityID &&
+            p.poll_votes_on_entity.voter_token === data.voter_token,
+        )
+        .map((v) => v.poll_votes_on_entity.option_entity)
+    : [];
+  let [selectedPollOptions, setSelectedPollOptions] =
+    useState<string[]>(currentVotes);
 
   return (
     <>
@@ -161,7 +171,11 @@ const PollVote = (props: { entityID: string; onSubmit: () => void }) => {
           });
           props.onSubmit();
         }}
-        disabled={selectedPollOptions.length === 0}
+        disabled={
+          selectedPollOptions.length === 0 ||
+          (selectedPollOptions.length === currentVotes.length &&
+            selectedPollOptions.every((s) => currentVotes.includes(s)))
+        }
       >
         Vote!
       </ButtonPrimary>
@@ -419,8 +433,8 @@ const EditPollOption = (props: {
       <button
         disabled={props.disabled}
         className="text-accent-contrast disabled:text-border"
-        onMouseDown={() => {
-          rep?.mutate.removePollOption({ optionEntity: props.entityID });
+        onMouseDown={async () => {
+          await rep?.mutate.removePollOption({ optionEntity: props.entityID });
         }}
       >
         <CloseTiny />
