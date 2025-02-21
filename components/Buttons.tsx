@@ -145,7 +145,7 @@ export const HoverButton = (props: {
 };
 
 export const TooltipButton = (props: {
-  onMouseDown?: (e: React.MouseEvent) => void;
+  onMouseDown?: (e: React.MouseEvent) => void | Promise<void>;
   disabled?: boolean;
   className?: string;
   children: React.ReactNode;
@@ -165,10 +165,10 @@ export const TooltipButton = (props: {
         <RadixTooltip.Trigger
           disabled={props.disabled}
           className={props.className}
-          onMouseDown={(e) => {
+          onMouseDown={async (e) => {
             e.preventDefault();
             undoManager.startGroup();
-            props.onMouseDown && props.onMouseDown(e);
+            props.onMouseDown && (await props.onMouseDown(e));
             undoManager.endGroup();
           }}
         >

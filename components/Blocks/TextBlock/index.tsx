@@ -52,6 +52,7 @@ import { ToolbarButton } from "components/Toolbar";
 import { TooltipButton } from "components/Buttons";
 import { v7 } from "uuid";
 import { focusPage } from "components/Pages";
+import { blockCommands } from "../BlockCommands";
 
 export function TextBlock(
   props: BlockProps & { className?: string; preview?: boolean },
@@ -406,29 +407,13 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
             <TooltipButton
               className={props.className}
               onMouseDown={async () => {
-                let entity;
-                if (!props.entityID) {
-                  entity = v7();
-                  await rep.rep?.mutate.addBlock({
-                    parent: props.parent,
-                    factID: v7(),
-                    permission_set: entity_set.set,
-                    type: "image",
-                    position: generateKeyBetween(
-                      props.position,
-                      props.nextPosition,
-                    ),
-                    newEntityID: entity,
-                  });
-                } else {
-                  entity = props.entityID;
-                  await rep.rep?.mutate.assertFact({
-                    entity,
-                    attribute: "block/type",
-                    data: { type: "block-type-union", value: "image" },
-                  });
-                }
-                return entity;
+                let command = blockCommands.find((f) => f.name === "Image");
+                if (!rep.rep) return;
+                await command?.onSelect(
+                  rep.rep,
+                  { ...props, entity_set: entity_set.set },
+                  rep.undoManager,
+                );
               }}
               side="bottom"
               tooltipContent={
@@ -441,40 +426,13 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
             <TooltipButton
               className={props.className}
               onMouseDown={async () => {
-                let entity;
-                if (!props.entityID) {
-                  entity = v7();
-                  await rep.rep?.mutate.addBlock({
-                    parent: props.parent,
-                    factID: v7(),
-                    permission_set: entity_set.set,
-                    type: "card",
-                    position: generateKeyBetween(
-                      props.position,
-                      props.nextPosition,
-                    ),
-                    newEntityID: entity,
-                  });
-                } else {
-                  entity = props.entityID;
-                  await rep.rep?.mutate.assertFact({
-                    entity,
-                    attribute: "block/type",
-                    data: { type: "block-type-union", value: "card" },
-                  });
-                }
-
-                let newPage = v7();
-                await rep.rep?.mutate.addPageLinkBlock({
-                  blockEntity: entity,
-                  firstBlockFactID: v7(),
-                  firstBlockEntity: v7(),
-                  pageEntity: newPage,
-                  type: "doc",
-                  permission_set: entity_set.set,
-                });
-                useUIState.getState().openPage(props.parent, newPage);
-                rep.rep && focusPage(newPage, rep.rep, "focusFirstBlock");
+                let command = blockCommands.find((f) => f.name === "New Page");
+                if (!rep.rep) return;
+                await command?.onSelect(
+                  rep.rep,
+                  { ...props, entity_set: entity_set.set },
+                  rep.undoManager,
+                );
               }}
               side="bottom"
               tooltipContent={
