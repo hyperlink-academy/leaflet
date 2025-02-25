@@ -11,6 +11,8 @@ import {
 import { useSubscribe } from "replicache-react";
 import {
   DeepReadonlyObject,
+  PatchOperation,
+  PullResponseV1,
   PushRequest,
   PushRequestV1,
   Replicache,
@@ -24,6 +26,8 @@ import { callRPC } from "app/api/rpc/client";
 import { UndoManager } from "@rocicorp/undo";
 import { addShortcut } from "src/shortcuts";
 import { createUndoManager } from "src/undoManager";
+import { CVR } from "app/api/rpc/[command]/pull";
+import { FactWithIndexes } from "./utils";
 
 export type Fact<A extends keyof typeof Attributes> = {
   id: string;
@@ -141,12 +145,66 @@ export function ReplicacheProvider(props: {
         };
       },
       puller: async (pullRequest) => {
+        let oldCVR: CVR =
+          typeof pullRequest.cookie === "object"
+            ? (pullRequest.cookie as any)?.cvr
+            : [];
         let res = await callRPC("pull", {
-          pullRequest,
+          pullRequest: { ...pullRequest, cookie: null },
           token_id: props.token.id,
         });
+        if (res.error === "VersionNotSupported")
+          return {
+            response: res,
+            httpRequestInfo: { errorMessage: "", httpStatusCode: 200 },
+          };
+
+        let patch: PatchOperation[] = [];
+        let facts = res.facts;
+
+        const newFactsMap = new Map<string, number>();
+        const oldFactsMap = new Map<string, number>();
+        const newCVR: CVR = new Array(facts.length);
+
+        for (let i = 0; i < facts.length; i++) {
+          const f = facts[i];
+          newFactsMap.set(f.id, f.version);
+          newCVR[i] = [f.id, f.version];
+        }
+
+        if (!oldCVR) {
+          patch.push({ op: "clear" });
+          patch.push({ op: "put", key: "initialized", value: true });
+        } else {
+          // Process deletions in a single loop
+          for (const [id, version] of oldCVR) {
+            oldFactsMap.set(id, version);
+            if (!newFactsMap.has(id)) {
+              patch.push({ op: "del", key: id });
+            }
+          }
+        }
+
+        for (const f of facts) {
+          const oldVersion = oldFactsMap.get(f.id);
+          if (oldVersion === undefined || oldVersion < f.version) {
+            patch.push({
+              op: "put",
+              key: f.id,
+              value: FactWithIndexes(
+                f as unknown as Fact<keyof typeof Attributes>,
+              ),
+            });
+          }
+        }
+
+        let response = {
+          cookie: { order: Date.now().toString(), cvr: newCVR },
+          lastMutationIDChanges: res.clientGroup,
+          patch,
+        } as PullResponseV1;
         return {
-          response: res,
+          response,
           httpRequestInfo: { errorMessage: "", httpStatusCode: 200 },
         };
       },

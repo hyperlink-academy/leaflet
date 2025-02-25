@@ -49,12 +49,14 @@ const pullRequestV1 = z.object({
 // Combined PullRequest type
 const PullRequestSchema = z.union([pullRequestV0, pullRequestV1]);
 
-type CVR = Array<[string, number]>;
+export type CVR = Array<[string, number]>;
 export const pull = makeRoute({
   route: "pull",
   input: z.object({ pullRequest: PullRequestSchema, token_id: z.string() }),
   handler: async ({ pullRequest, token_id }, { supabase }: Env) => {
-    const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+    const client = postgres(process.env.DB_URL as string, {
+      idle_timeout: 5,
+    });
     const db = drizzle(client);
     let body = pullRequest;
     if (body.pullVersion === 0) return versionNotSupported;
@@ -95,49 +97,13 @@ export const pull = makeRoute({
       return [];
     });
     client.end();
-    let oldCVR: CVR = typeof body.cookie === "object" ? body.cookie?.cvr : [];
-    let patch: PatchOperation[] = [];
     facts = facts || [];
 
-    const newFactsMap = new Map<string, number>();
-    const oldFactsMap = new Map<string, number>();
-    const newCVR: CVR = new Array(facts.length);
-
-    for (let i = 0; i < facts.length; i++) {
-      const f = facts[i];
-      newFactsMap.set(f.id, f.version);
-      newCVR[i] = [f.id, f.version];
-    }
-
-    if (!oldCVR) {
-      patch.push({ op: "clear" });
-      patch.push({ op: "put", key: "initialized", value: true });
-    } else {
-      // Process deletions in a single loop
-      for (const [id, version] of oldCVR) {
-        oldFactsMap.set(id, version);
-        if (!newFactsMap.has(id)) {
-          patch.push({ op: "del", key: id });
-        }
-      }
-    }
-
-    for (const f of facts) {
-      const oldVersion = oldFactsMap.get(f.id);
-      if (oldVersion === undefined || oldVersion < f.version) {
-        patch.push({
-          op: "put",
-          key: f.id,
-          value: FactWithIndexes(f as unknown as Fact<keyof typeof Attributes>),
-        });
-      }
-    }
-
     return {
-      cookie: { order: Date.now().toString(), cvr: newCVR },
-      lastMutationIDChanges: clientGroup,
-      patch,
-    } as PullResponseV1;
+      facts,
+      clientGroup,
+      error: null,
+    };
   },
 });
 
