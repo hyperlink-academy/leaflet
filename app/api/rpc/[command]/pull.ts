@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  PatchOperation,
   PullRequest,
   PullResponseV1,
   VersionNotSupportedResponse,
@@ -48,6 +49,7 @@ const pullRequestV1 = z.object({
 // Combined PullRequest type
 const PullRequestSchema = z.union([pullRequestV0, pullRequestV1]);
 
+type CVR = Array<[string, number]>;
 export const pull = makeRoute({
   route: "pull",
   input: z.object({ pullRequest: PullRequestSchema, token_id: z.string() }),
@@ -93,22 +95,44 @@ export const pull = makeRoute({
       return [];
     });
     client.end();
-    return {
-      cookie: Date.now(),
-      lastMutationIDChanges: clientGroup,
-      patch: [
-        { op: "clear" },
-        { op: "put", key: "initialized", value: true },
-        ...(facts || []).map((f) => {
-          return {
+    let oldCvr: CVR = typeof body.cookie === "object" ? body.cookie?.cvr : [];
+    let cvr: CVR = (facts || []).map((f) => [f.id, f.version]);
+    let patch: PatchOperation[] = [];
+    if (!oldCvr) {
+      patch.push({ op: "clear" });
+      patch.push({ op: "put", key: "initialized", value: true });
+    }
+    if (oldCvr) {
+      let deletions = oldCvr.reduce<{ op: "del"; key: string }[]>((acc, f) => {
+        if (!cvr.find((newF) => newF[0] === f[0]))
+          acc.push({ op: "del", key: f[0] });
+        return acc;
+      }, []);
+      patch = patch.concat(deletions);
+    }
+
+    let puts = (facts || []).reduce<{ op: "put"; key: string; value: any }[]>(
+      (acc, f) => {
+        let oldFact = oldCvr?.find((oldF) => oldF[0] === f.id);
+        if (!oldFact || oldFact[1] < f.version)
+          acc.push({
             op: "put",
             key: f.id,
             value: FactWithIndexes(
               f as unknown as Fact<keyof typeof Attributes>,
             ),
-          } as const;
-        }),
-      ],
+          });
+
+        return acc;
+      },
+      [],
+    );
+    patch = patch.concat(puts);
+
+    return {
+      cookie: { order: Date.now().toString(), cvr },
+      lastMutationIDChanges: clientGroup,
+      patch,
     } as PullResponseV1;
   },
 });

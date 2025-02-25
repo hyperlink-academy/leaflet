@@ -128,7 +128,11 @@ export function serverMutationContext(
             })
             .onConflictDoUpdate({
               target: facts.id,
-              set: { data: driz.sql`${f.data}::jsonb` },
+              set: {
+                data: driz.sql`${f.data}::jsonb`,
+                updated_at: driz.sql`now()`,
+                version: driz.sql`${facts.version} + 1`,
+              },
             })
             .catch((e) => {
               console.log(`error on inserting fact: `, JSON.stringify(e));
