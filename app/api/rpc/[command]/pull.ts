@@ -95,42 +95,46 @@ export const pull = makeRoute({
       return [];
     });
     client.end();
-    let oldCvr: CVR = typeof body.cookie === "object" ? body.cookie?.cvr : [];
-    let cvr: CVR = (facts || []).map((f) => [f.id, f.version]);
+    let oldCVR: CVR = typeof body.cookie === "object" ? body.cookie?.cvr : [];
     let patch: PatchOperation[] = [];
-    if (!oldCvr) {
+    facts = facts || [];
+
+    const newFactsMap = new Map<string, number>();
+    const oldFactsMap = new Map<string, number>();
+    const newCVR: CVR = new Array(facts.length);
+
+    for (let i = 0; i < facts.length; i++) {
+      const f = facts[i];
+      newFactsMap.set(f.id, f.version);
+      newCVR[i] = [f.id, f.version];
+    }
+
+    if (!oldCVR) {
       patch.push({ op: "clear" });
       patch.push({ op: "put", key: "initialized", value: true });
-    }
-    if (oldCvr) {
-      let deletions = oldCvr.reduce<{ op: "del"; key: string }[]>((acc, f) => {
-        if (!cvr.find((newF) => newF[0] === f[0]))
-          acc.push({ op: "del", key: f[0] });
-        return acc;
-      }, []);
-      patch = patch.concat(deletions);
+    } else {
+      // Process deletions in a single loop
+      for (const [id, version] of oldCVR) {
+        oldFactsMap.set(id, version);
+        if (!newFactsMap.has(id)) {
+          patch.push({ op: "del", key: id });
+        }
+      }
     }
 
-    let puts = (facts || []).reduce<{ op: "put"; key: string; value: any }[]>(
-      (acc, f) => {
-        let oldFact = oldCvr?.find((oldF) => oldF[0] === f.id);
-        if (!oldFact || oldFact[1] < f.version)
-          acc.push({
-            op: "put",
-            key: f.id,
-            value: FactWithIndexes(
-              f as unknown as Fact<keyof typeof Attributes>,
-            ),
-          });
-
-        return acc;
-      },
-      [],
-    );
-    patch = patch.concat(puts);
+    for (const f of facts) {
+      const oldVersion = oldFactsMap.get(f.id);
+      if (oldVersion === undefined || oldVersion < f.version) {
+        patch.push({
+          op: "put",
+          key: f.id,
+          value: FactWithIndexes(f as unknown as Fact<keyof typeof Attributes>),
+        });
+      }
+    }
 
     return {
-      cookie: { order: Date.now().toString(), cvr },
+      cookie: { order: Date.now().toString(), cvr: newCVR },
       lastMutationIDChanges: clientGroup,
       patch,
     } as PullResponseV1;
