@@ -1,3 +1,9 @@
+import { AppBskyFeedGetPostThread } from "@atproto/api";
+import {
+  PostView,
+  ThreadViewPost,
+} from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+
 const RootAttributes = {
   "root/page": {
     type: "ordered-reference",
@@ -74,6 +80,10 @@ const BlockAttributes = {
   },
   "block/card": {
     type: "reference",
+    cardinality: "one",
+  },
+  "block/bluesky-post": {
+    type: "bluesky-post",
     cardinality: "one",
   },
 } as const;
@@ -238,6 +248,10 @@ export type Data<A extends keyof typeof Attributes> = {
     type: "ordered-reference";
     position: string;
     value: string;
+  };
+  "bluesky-post": {
+    type: "bluesky-post";
+    value: AppBskyFeedGetPostThread.OutputSchema["thread"];
   };
   image: {
     type: "image";
