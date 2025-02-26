@@ -12,7 +12,6 @@ import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
 import { AppBskyFeedDefs, AtpAgent } from "@atproto/api";
 
-// would have to branch for mutations (addLinkBlock or addEmbedBlock or addBlueskyPostBlock)
 export const BlueSkyPostEmpty = (props: BlockProps) => {
   let { rep } = useReplicache();
   let isSelected = useUIState((s) =>
@@ -39,15 +38,27 @@ export const BlueSkyPostEmpty = (props: BlockProps) => {
       });
     }
 
-    if (!rep) return;
-
     //construct bsky post uri from url
     let urlParts = urlValue?.split("/");
     let userDidOrHandle = urlParts ? urlParts[4] : ""; // "schlage.town" or "did:plc:jjsc5rflv3cpv6hgtqhn2dcm"
     let collection = "app.bsky.feed.post";
     let postId = urlParts ? urlParts[6] : "";
     let uri = `at://${userDidOrHandle}/${collection}/${postId}`;
-    let post = await getBlueskyPost(uri);
+
+    let post = await getBlueskyPost(uri, () => {
+      let rect = document
+        .getElementById("bluesky-post-block-submit")
+        ?.getBoundingClientRect();
+      smoker({
+        error: true,
+        text: "post not found!",
+        position: {
+          x: (rect && rect.left + 12) || 0,
+          y: (rect && rect.top) || 0,
+        },
+      });
+    });
+    if (!rep || !post || post === undefined) return;
 
     await rep.mutate.assertFact({
       entity: entity,
@@ -64,8 +75,31 @@ export const BlueSkyPostEmpty = (props: BlockProps) => {
       },
     });
   };
-
   let smoker = useSmoker();
+  function errorSmokers(x: number, y: number) {
+    if (!urlValue || urlValue === "") {
+      smoker({
+        error: true,
+        text: "no url!",
+        position: {
+          x: x,
+          y: y,
+        },
+      });
+      return;
+    }
+    if (!isUrl(urlValue) || !urlValue.includes("bsky.app")) {
+      smoker({
+        error: true,
+        text: "invalid bluesky url!",
+        position: {
+          x: x,
+          y: y,
+        },
+      });
+      return;
+    }
+  }
 
   return (
     <form
@@ -74,25 +108,8 @@ export const BlueSkyPostEmpty = (props: BlockProps) => {
         let rect = document
           .getElementById("bluesky-post-block-submit")
           ?.getBoundingClientRect();
-        if (!urlValue || urlValue === "") {
-          smoker({
-            error: true,
-            text: "no url!",
-            position: { x: rect ? rect.left + 12 : 0, y: rect ? rect.top : 0 },
-          });
-          return;
-        }
-        if (!isUrl(urlValue)) {
-          smoker({
-            error: true,
-            text: "invalid url!",
-            position: {
-              x: rect ? rect.left + 12 : 0,
-              y: rect ? rect.top : 0,
-            },
-          });
-          return;
-        }
+
+        rect && errorSmokers(rect.left + 12, rect.top);
         submit();
       }}
     >
@@ -127,22 +144,7 @@ export const BlueSkyPostEmpty = (props: BlockProps) => {
           className={`p-1 ${isSelected && !isLocked ? "text-accent-contrast" : "text-border"}`}
           onMouseDown={(e) => {
             e.preventDefault();
-            if (!urlValue || urlValue === "") {
-              smoker({
-                error: true,
-                text: "no url!",
-                position: { x: e.clientX + 12, y: e.clientY },
-              });
-              return;
-            }
-            if (!isUrl(urlValue)) {
-              smoker({
-                error: true,
-                text: "invalid url!",
-                position: { x: e.clientX + 12, y: e.clientY },
-              });
-              return;
-            }
+            errorSmokers(e.clientX + 12, e.clientY);
             submit();
           }}
         >
@@ -154,29 +156,34 @@ export const BlueSkyPostEmpty = (props: BlockProps) => {
 };
 
 /*
-get bluesky post data
+  get bluesky post data
 
-uri is either w/ did or handle e.g.:
-at://did:plc:44ybard66vv44zksje25o7dz/app.bsky.feed.post/3jwdwj2ctlk26
-at://bnewbold.bsky.team/app.bsky.feed.post/3jwdwj2ctlk26
+  uri is either w/ did or handle e.g.:
+  at://did:plc:44ybard66vv44zksje25o7dz/app.bsky.feed.post/3jwdwj2ctlk26
+  at://bnewbold.bsky.team/app.bsky.feed.post/3jwdwj2ctlk26
 
-NB: getPosts isn't working, and getPost doesn't get the full hydrated post
-but getPostThread works so just using that for now!
+  NB: getPosts isn't working, and getPost doesn't get the full hydrated post
+  but getPostThread works so just using that for now!
 
-// TODO: catch errors
-// e.g. seeing one like "uri must be a valid at-uri"
-*/
-async function getBlueskyPost(uri: string) {
+  // TODO: catch errors
+  // e.g. seeing one like "uri must be a valid at-uri"
+  */
+async function getBlueskyPost(uri: string, notFoundSmoker: () => void) {
   const agent = new AtpAgent({ service: "https://public.api.bsky.app" });
-
-  let blueskyPost = await agent
-    .getPostThread({
-      uri: uri,
-      depth: 0,
-      parentHeight: 0,
-    })
-    .then((res) => {
-      return res;
-    });
-  return blueskyPost;
+  try {
+    let blueskyPost = await agent
+      .getPostThread({
+        uri: uri,
+        depth: 0,
+        parentHeight: 0,
+      })
+      .then((res) => {
+        return res;
+      });
+    return blueskyPost;
+  } catch (error) {
+    let rect = document;
+    notFoundSmoker();
+    return;
+  }
 }

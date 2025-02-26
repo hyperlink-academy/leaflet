@@ -83,7 +83,7 @@ export const BlueskyEmbed = (props: {
             }
             className={`overflow-hidden w-full object-cover`}
           />
-          <div className="absolute w-max top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-3 rounded-md bg-border-light text-tertiary italic font-bold text-center">
+          <div className="absolute w-max top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-border-light rounded-md">
             <SeePostOnBlueSky postUrl={props.postUrl} />
           </div>
         </div>
@@ -168,15 +168,13 @@ const SeePostOnBlueSky = (props: { postUrl: string | undefined }) => {
     <a
       href={props.postUrl}
       target="_blank"
-      className="block-border p-3 font-normal rounded-md  border text-tertiary italic text-center hover:no-underline group "
+      className="block-border flex flex-col p-3 font-normal !rounded-md  border text-tertiary italic text-center hover:no-underline hover:border-accent-contrast"
     >
-      This media is not supported...
-      <br />
-      See the{" "}
-      <span className="group-hover:font-bold text-accent-contrast">
-        full post
-      </span>{" "}
-      on BlueSky !
+      <div> This media is not supported... </div>{" "}
+      <div>
+        See the <span className=" text-accent-contrast">full post</span> on
+        BlueSky!
+      </div>
     </a>
   );
 };
