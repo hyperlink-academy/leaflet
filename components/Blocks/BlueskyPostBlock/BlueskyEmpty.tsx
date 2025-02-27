@@ -6,7 +6,7 @@ import { useUIState } from "src/useUIState";
 import { BlockProps } from "../Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
-import { BlueskySolidSmall, CheckTiny } from "components/Icons";
+import { BlockBlueskySmall, CheckTiny } from "components/Icons";
 import { Separator } from "components/Layout";
 import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
@@ -115,7 +115,7 @@ export const BlueSkyPostEmpty = (props: BlockProps) => {
     >
       <div className={`max-w-sm flex gap-2 rounded-md text-secondary`}>
         {/* TODO: bsky icon? */}
-        <BlueskySolidSmall
+        <BlockBlueskySmall
           className={`shrink-0  ${isSelected ? "text-tertiary" : "text-border"} `}
         />
         <Separator />
@@ -134,8 +134,10 @@ export const BlueSkyPostEmpty = (props: BlockProps) => {
               e.key === "Backspace" &&
               !e.currentTarget.value &&
               urlValue !== ""
-            )
+            ) {
               e.preventDefault();
+              console.log("hello!");
+            }
           }}
         />
         <button

@@ -14,8 +14,7 @@ import {
   BlockButtonSmall,
   BlockCalendarSmall,
   RSVPSmall,
-  BlueskySolidSmall,
-  BlueskySquareSmall,
+  BlockBlueskySmall,
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "components/Pages";
@@ -160,31 +159,6 @@ export const blockCommands: Command[] = [
       keepFocus(entity);
     },
   },
-
-  {
-    name: "External Link",
-    icon: <LinkSmall />,
-    type: "block",
-    onSelect: async (rep, props) => {
-      createBlockWithType(rep, props, "link");
-    },
-  },
-  {
-    name: "Embed Website",
-    icon: <BlockEmbedSmall />,
-    type: "block",
-    onSelect: async (rep, props) => {
-      createBlockWithType(rep, props, "embed");
-    },
-  },
-  {
-    name: "Bluesky Post",
-    icon: <BlueskySquareSmall />,
-    type: "block",
-    onSelect: async (rep, props) => {
-      createBlockWithType(rep, props, "bluesky-post");
-    },
-  },
   {
     name: "Image",
     icon: <BlockImageSmall />,
@@ -195,6 +169,14 @@ export const blockCommands: Command[] = [
         let el = document.getElementById(elementId.block(entity).input);
         el?.focus();
       }, 100);
+    },
+  },
+  {
+    name: "External Link",
+    icon: <LinkSmall />,
+    type: "block",
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "link");
     },
   },
   {
@@ -212,6 +194,22 @@ export const blockCommands: Command[] = [
     onSelect: async (rep, props) => {
       let entity;
       createBlockWithType(rep, props, "mailbox");
+    },
+  },
+  {
+    name: "Embed Website",
+    icon: <BlockEmbedSmall />,
+    type: "block",
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "embed");
+    },
+  },
+  {
+    name: "Bluesky Post",
+    icon: <BlockBlueskySmall />,
+    type: "block",
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "bluesky-post");
     },
   },
 
