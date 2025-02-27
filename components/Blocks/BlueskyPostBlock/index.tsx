@@ -5,10 +5,11 @@ import { useUIState } from "src/useUIState";
 import { BlockProps } from "../Block";
 import { elementId } from "src/utils/elementId";
 import { focusBlock } from "src/utils/focusBlock";
-import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api";
+import { AppBskyFeedDefs, AppBskyFeedPost, RichText } from "@atproto/api";
 import { BlueskyEmbed, PostNotAvailable } from "./BlueskyEmbed";
 import { BlueskyPostEmpty } from "./BlueskyEmpty";
 import { BlueskyTiny } from "components/Icons";
+import { BlueskyRichText } from "./BlueskyRichText";
 
 export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
@@ -61,15 +62,19 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
 
     case AppBskyFeedDefs.isThreadViewPost(post):
       let record = post.post.record;
-      let postId = post.post.uri.split("/")[4];
-      let url = `https://bsky.app/profile/${post.post.author.handle}/post/${postId}`;
-      // silliness to get the text and timestamp from the record
+      let facets = record.facets;
+
+      // silliness to get the text and timestamp from the record with proper types
       let text: string | null = null;
       let timestamp: string | undefined = undefined;
       if (AppBskyFeedPost.isRecord(record)) {
         text = (record as AppBskyFeedPost.Record).text;
         timestamp = (record as AppBskyFeedPost.Record).createdAt;
       }
+
+      //getting the url to the post
+      let postId = post.post.uri.split("/")[4];
+      let url = `https://bsky.app/profile/${post.post.author.handle}/post/${postId}`;
 
       let datetime = new Date(timestamp ? timestamp : "");
       let datetimeFormatted = datetime.toLocaleString("en-US", {
@@ -81,6 +86,7 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
         hour12: true,
       });
 
+      console.log(post);
       return (
         <div
           className={`
@@ -112,7 +118,11 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
 
               <div className="flex flex-col gap-2 ">
                 <div>
-                  <pre className="whitespace-pre-wrap">{text}</pre>
+                  <pre className="whitespace-pre-wrap">
+                    {BlueskyRichText({
+                      record: record as AppBskyFeedPost.Record | null,
+                    })}
+                  </pre>
                 </div>
                 {post.post.embed && (
                   <BlueskyEmbed embed={post.post.embed} postUrl={url} />
