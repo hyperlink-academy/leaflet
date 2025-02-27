@@ -12,7 +12,7 @@ import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
 import { AppBskyFeedDefs, AtpAgent } from "@atproto/api";
 
-export const BlueSkyPostEmpty = (props: BlockProps) => {
+export const BlueskyPostEmpty = (props: BlockProps) => {
   let { rep } = useReplicache();
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),

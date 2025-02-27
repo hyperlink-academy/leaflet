@@ -79,12 +79,12 @@ export const BlueskyEmbed = (props: {
           <img
             src={videoEmbed.thumbnail}
             alt={
-              "Thumbnail from embedded video. Go to BlueSky to see the full post."
+              "Thumbnail from embedded video. Go to Bluesky to see the full post."
             }
             className={`overflow-hidden w-full object-cover`}
           />
           <div className="absolute w-max top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-border-light rounded-md">
-            <SeePostOnBlueSky postUrl={props.postUrl} />
+            <SeePostOnBluesky postUrl={props.postUrl} />
           </div>
         </div>
       );
@@ -140,7 +140,7 @@ export const BlueskyEmbed = (props: {
         AppBskyLabelerDefs.isLabelerView(record) ||
         AppBskyGraphDefs.isStarterPackViewBasic(record)
       )
-        return <SeePostOnBlueSky postUrl={props.postUrl} />;
+        return <SeePostOnBluesky postUrl={props.postUrl} />;
 
       // post is blocked or not found
       if (
@@ -151,7 +151,7 @@ export const BlueskyEmbed = (props: {
 
       if (AppBskyEmbedRecord.isViewDetached(record)) return null;
 
-      return <SeePostOnBlueSky postUrl={props.postUrl} />;
+      return <SeePostOnBluesky postUrl={props.postUrl} />;
 
     // I am not sure when this case will be used? so I'm commenting it out for now
     // case AppBskyEmbedRecordWithMedia.isView(props.embed):
@@ -159,11 +159,11 @@ export const BlueskyEmbed = (props: {
     //   return <div>This is a record with Media </div>;
 
     default:
-      return <SeePostOnBlueSky postUrl={props.postUrl} />;
+      return <SeePostOnBluesky postUrl={props.postUrl} />;
   }
 };
 
-const SeePostOnBlueSky = (props: { postUrl: string | undefined }) => {
+const SeePostOnBluesky = (props: { postUrl: string | undefined }) => {
   return (
     <a
       href={props.postUrl}
@@ -173,7 +173,7 @@ const SeePostOnBlueSky = (props: { postUrl: string | undefined }) => {
       <div> This media is not supported... </div>{" "}
       <div>
         See the <span className=" text-accent-contrast">full post</span> on
-        BlueSky!
+        Bluesky!
       </div>
     </a>
   );
@@ -182,7 +182,7 @@ const SeePostOnBlueSky = (props: { postUrl: string | undefined }) => {
 export const PostNotAvailable = () => {
   return (
     <div className="px-3 py-6 w-full rounded-md bg-border-light text-tertiary italic text-center">
-      This BlueSky post is not available...
+      This Bluesky post is not available...
     </div>
   );
 };

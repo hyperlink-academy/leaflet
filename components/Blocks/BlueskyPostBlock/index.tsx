@@ -7,7 +7,7 @@ import { elementId } from "src/utils/elementId";
 import { focusBlock } from "src/utils/focusBlock";
 import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api";
 import { BlueskyEmbed, PostNotAvailable } from "./BlueskyEmbed";
-import { BlueSkyPostEmpty } from "./BlueskyEmpty";
+import { BlueskyPostEmpty } from "./BlueskyEmpty";
 import { BlueskyTiny } from "components/Icons";
 
 export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
@@ -44,7 +44,7 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
             );
           }}
         >
-          <BlueSkyPostEmpty {...props} />
+          <BlueskyPostEmpty {...props} />
         </label>
       );
 
