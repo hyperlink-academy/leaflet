@@ -91,7 +91,6 @@ export const BlueskyEmbed = (props: {
       );
     case AppBskyEmbedVideo.isView(props.embed):
       let videoEmbed = props.embed;
-      console.log(videoEmbed);
       return (
         <div className="rounded-md overflow-hidden relative">
           <img
