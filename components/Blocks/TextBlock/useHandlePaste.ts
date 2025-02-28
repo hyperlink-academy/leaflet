@@ -78,7 +78,13 @@ export const useHandlePaste = (
         let xml = new DOMParser().parseFromString(textHTML, "text/html");
         let currentPosition = propsRef.current.position;
         let children = flattenHTMLToTextBlocks(xml.body);
-        if (!(children.length === 1 && children[0].tagName === "IMG")) {
+        if (
+          !(
+            children.length === 1 &&
+            children[0].tagName === "IMG" &&
+            e.clipboardData.items.length > 0
+          )
+        ) {
           children.forEach((child, index) => {
             createBlockFromHTML(child, {
               undoManager,
