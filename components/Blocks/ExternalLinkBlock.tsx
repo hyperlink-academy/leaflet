@@ -12,7 +12,6 @@ import { Separator } from "components/Layout";
 import { focusElement, Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
 import { elementId } from "src/utils/elementId";
-import { deleteBlock } from "./DeleteBlock";
 import { focusBlock } from "src/utils/focusBlock";
 
 export const ExternalLinkBlock = (
@@ -175,11 +174,6 @@ const BlockLinkInput = (props: BlockProps) => {
           value={linkValue}
           onChange={(e) => setLinkValue(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Backspace" && linkValue === "") {
-              e.preventDefault();
-              rep && deleteBlock([props.entityID].flat(), rep);
-              return;
-            }
             if (e.key === "Enter") {
               e.preventDefault();
               if (!linkValue) return;
