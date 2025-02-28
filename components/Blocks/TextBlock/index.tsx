@@ -454,7 +454,7 @@ const BlockifyLink = (props: { entityID: string }) => {
         }}
         className="absolute right-0 top-0 px-1 py-0.5 text-xs text-tertiary sm:hover:text-accent-contrast border border-border-light sm:hover:border-accent-contrast sm:outline-accent-tertiary rounded-md bg-bg-page selected-outline "
       >
-        {isBlueskyPost ? "embed" : "pretty"}
+        embed
       </button>
     );
   } else return null;
