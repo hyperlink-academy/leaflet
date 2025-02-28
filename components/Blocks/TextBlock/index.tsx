@@ -422,6 +422,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
 
 const BlockifyLink = (props: { entityID: string }) => {
   let rep = useReplicache();
+  let isLocked = useEntity(props.entityID, "block/is-locked");
   let focused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
   let editorState = useEditorStates(
     (s) => s.editorStates[props.entityID],
@@ -433,6 +434,7 @@ const BlockifyLink = (props: { entityID: string }) => {
   // only if the line stats with http or https and doesn't have other content
   // if its bluesky, change text to embed post
   if (
+    !isLocked &&
     focused &&
     editorState &&
     betterIsUrl(editorState.doc.textContent) &&
