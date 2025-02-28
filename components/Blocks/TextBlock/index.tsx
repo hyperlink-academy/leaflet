@@ -41,6 +41,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { useHandlePaste } from "./useHandlePaste";
 import { highlightSelectionPlugin } from "./plugins";
 import { inputrules } from "./inputRules";
+import { autolink } from "./autolink-plugin";
 import {
   AddSmall,
   AddTiny,
@@ -237,6 +238,11 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
             inputrules(propsRef, repRef),
             keymap(baseKeymap),
             highlightSelectionPlugin,
+            autolink({
+              type: schema.marks.link,
+              shouldAutoLink: () => true,
+              defaultProtocol: "https",
+            }),
           ],
         }),
       });
