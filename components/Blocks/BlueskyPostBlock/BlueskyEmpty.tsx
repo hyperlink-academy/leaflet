@@ -11,6 +11,7 @@ import { Separator } from "components/Layout";
 import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
 import { AppBskyFeedDefs, AtpAgent } from "@atproto/api";
+import { addBlueskyPostBlock } from "src/utils/addLinkBlock";
 
 export const BlueskyPostEmpty = (props: BlockProps) => {
   let { rep } = useReplicache();
@@ -23,29 +24,11 @@ export const BlueskyPostEmpty = (props: BlockProps) => {
   let [urlValue, setUrlValue] = useState("");
 
   let submit = async () => {
+    if (!rep) return;
     let entity = props.entityID;
 
-    // create a new block
-    if (!entity) {
-      entity = v7();
-      await rep?.mutate.addBlock({
-        permission_set: entity_set.set,
-        factID: v7(),
-        parent: props.parent,
-        type: "card",
-        position: generateKeyBetween(props.position, props.nextPosition),
-        newEntityID: entity,
-      });
-    }
-
-    //construct bsky post uri from url
-    let urlParts = urlValue?.split("/");
-    let userDidOrHandle = urlParts ? urlParts[4] : ""; // "schlage.town" or "did:plc:jjsc5rflv3cpv6hgtqhn2dcm"
-    let collection = "app.bsky.feed.post";
-    let postId = urlParts ? urlParts[6] : "";
-    let uri = `at://${userDidOrHandle}/${collection}/${postId}`;
-
-    let post = await getBlueskyPost(uri, () => {
+    let blueskyPostBlock = await addBlueskyPostBlock(urlValue, entity, rep);
+    if (blueskyPostBlock === false) {
       let rect = document
         .getElementById("bluesky-post-block-submit")
         ?.getBoundingClientRect();
@@ -57,23 +40,7 @@ export const BlueskyPostEmpty = (props: BlockProps) => {
           y: (rect && rect.top) || 0,
         },
       });
-    });
-    if (!rep || !post || post === undefined) return;
-
-    await rep.mutate.assertFact({
-      entity: entity,
-      attribute: "block/type",
-      data: { type: "block-type-union", value: "bluesky-post" },
-    });
-    await rep?.mutate.assertFact({
-      entity: entity,
-      attribute: "block/bluesky-post",
-      data: {
-        type: "bluesky-post",
-        //TODO: this is a hack to get rid of a nested Array buffer which cannot be frozen, which replicache does on write.
-        value: JSON.parse(JSON.stringify(post.data.thread)),
-      },
-    });
+    }
   };
   let smoker = useSmoker();
   function errorSmokers(x: number, y: number) {
@@ -156,36 +123,3 @@ export const BlueskyPostEmpty = (props: BlockProps) => {
     </form>
   );
 };
-
-/*
-  get bluesky post data
-
-  uri is either w/ did or handle e.g.:
-  at://did:plc:44ybard66vv44zksje25o7dz/app.bsky.feed.post/3jwdwj2ctlk26
-  at://bnewbold.bsky.team/app.bsky.feed.post/3jwdwj2ctlk26
-
-  NB: getPosts isn't working, and getPost doesn't get the full hydrated post
-  but getPostThread works so just using that for now!
-
-  // TODO: catch errors
-  // e.g. seeing one like "uri must be a valid at-uri"
-  */
-async function getBlueskyPost(uri: string, notFoundSmoker: () => void) {
-  const agent = new AtpAgent({ service: "https://public.api.bsky.app" });
-  try {
-    let blueskyPost = await agent
-      .getPostThread({
-        uri: uri,
-        depth: 0,
-        parentHeight: 0,
-      })
-      .then((res) => {
-        return res;
-      });
-    return blueskyPost;
-  } catch (error) {
-    let rect = document;
-    notFoundSmoker();
-    return;
-  }
-}

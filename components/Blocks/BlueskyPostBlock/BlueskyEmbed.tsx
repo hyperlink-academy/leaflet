@@ -186,7 +186,7 @@ const SeePostOnBluesky = (props: { postUrl: string | undefined }) => {
     <a
       href={props.postUrl}
       target="_blank"
-      className="block-border flex flex-col p-3 font-normal !rounded-md  border text-tertiary italic text-center hover:no-underline hover:border-accent-contrast"
+      className={`block-border flex flex-col p-3 font-normal !rounded-md  border text-tertiary italic text-center hover:no-underline hover:border-accent-contrast ${props.postUrl === undefined && "pointer-events-none"} `}
     >
       <div> This media is not supported... </div>{" "}
       {props.postUrl === undefined ? null : (
