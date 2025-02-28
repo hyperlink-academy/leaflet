@@ -29,12 +29,15 @@ export const BlueskyEmbed = (props: {
                 src={image.fullsize}
                 alt={image.alt || "Post image"}
                 className={`
-                  overflow-hidden w-full object-cover aspect-[3/2]
-                  ${
-                    imageEmbed.images.length > 3
-                      ? "basis-1/2"
-                      : `basis-1/${imageEmbed.images.length} `
-                  }
+                  overflow-hidden w-full object-cover
+                  ${imageEmbed.images.length === 1 && "h-auto max-h-[800px]"}
+                  ${imageEmbed.images.length === 2 && "basis-1/2 aspect-1/1"}
+                  ${imageEmbed.images.length === 3 && "basis-1/3 aspect-2/3"}
+                    ${
+                      imageEmbed.images.length === 4
+                        ? "basis-1/2 aspect-[3/2]"
+                        : `basis-1/${imageEmbed.images.length} `
+                    }
                 `}
               />
             ),
@@ -44,36 +47,51 @@ export const BlueskyEmbed = (props: {
     case AppBskyEmbedExternal.isView(props.embed):
       let externalEmbed = props.embed;
       let isGif = externalEmbed.external.uri.includes(".gif");
+      if (isGif) {
+        return (
+          <div className="flex flex-col border border-border-light rounded-md overflow-hidden">
+            <img
+              src={externalEmbed.external.uri}
+              alt={externalEmbed.external.title}
+              className="object-cover"
+            />
+          </div>
+        );
+      }
       return (
-        <div className="flex flex-col border border-border-light rounded-md overflow-hidden">
-          <img
-            src={
-              isGif ? externalEmbed.external.uri : externalEmbed.external.thumb
-            }
-            alt={externalEmbed.external.title}
-            className="object-cover"
-          />
-          {!isGif && (
+        <a
+          href={externalEmbed.external.uri}
+          target="_blank"
+          className="group flex flex-col border border-border-light rounded-md overflow-hidden hover:no-underline sm:hover:border-accent-contrast selected-border"
+        >
+          {externalEmbed.external.thumb === undefined ? null : (
             <>
+              <img
+                src={externalEmbed.external.thumb}
+                alt={externalEmbed.external.title}
+                className="object-cover"
+              />
+
               <hr className="border-border-light " />
-              <div className="p-2 flex flex-col gap-1">
-                <div className="flex flex-col">
-                  <h4>{externalEmbed.external.title}</h4>
-                  <p className="text-secondary">
-                    {externalEmbed.external.description}
-                  </p>
-                </div>
-                <hr className="border-border-light mt-1" />
-                <div className="text-tertiary text-xs">
-                  {externalEmbed.external.uri}
-                </div>
-              </div>
             </>
           )}
-        </div>
+          <div className="p-2 flex flex-col gap-1">
+            <div className="flex flex-col">
+              <h4>{externalEmbed.external.title}</h4>
+              <p className="text-secondary">
+                {externalEmbed.external.description}
+              </p>
+            </div>
+            <hr className="border-border-light mt-1" />
+            <div className="text-tertiary text-xs sm:group-hover:text-accent-contrast">
+              {externalEmbed.external.uri}
+            </div>
+          </div>
+        </a>
       );
     case AppBskyEmbedVideo.isView(props.embed):
       let videoEmbed = props.embed;
+      console.log(videoEmbed);
       return (
         <div className="rounded-md overflow-hidden relative">
           <img
@@ -83,6 +101,7 @@ export const BlueskyEmbed = (props: {
             }
             className={`overflow-hidden w-full object-cover`}
           />
+          <div className="overlay absolute top-0 right-0 left-0 bottom-0 bg-primary opacity-65" />
           <div className="absolute w-max top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-border-light rounded-md">
             <SeePostOnBluesky postUrl={props.postUrl} />
           </div>
@@ -171,10 +190,12 @@ const SeePostOnBluesky = (props: { postUrl: string | undefined }) => {
       className="block-border flex flex-col p-3 font-normal !rounded-md  border text-tertiary italic text-center hover:no-underline hover:border-accent-contrast"
     >
       <div> This media is not supported... </div>{" "}
-      <div>
-        See the <span className=" text-accent-contrast">full post</span> on
-        Bluesky!
-      </div>
+      {props.postUrl === undefined ? null : (
+        <div>
+          See the <span className=" text-accent-contrast">full post</span> on
+          Bluesky!
+        </div>
+      )}
     </a>
   );
 };

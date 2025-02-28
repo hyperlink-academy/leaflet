@@ -8,8 +8,9 @@ import { focusBlock } from "src/utils/focusBlock";
 import { AppBskyFeedDefs, AppBskyFeedPost, RichText } from "@atproto/api";
 import { BlueskyEmbed, PostNotAvailable } from "./BlueskyEmbed";
 import { BlueskyPostEmpty } from "./BlueskyEmpty";
-import { BlueskyTiny } from "components/Icons";
+import { BlueskyTiny, CommentTiny } from "components/Icons";
 import { BlueskyRichText } from "./BlueskyRichText";
+import { Separator } from "components/Layout";
 
 export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
@@ -86,7 +87,6 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
         hour12: true,
       });
 
-      console.log(post);
       return (
         <div
           className={`
@@ -132,10 +132,25 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
           )}
           <div className="w-full flex gap-2 items-center justify-between">
             <div className="text-xs text-tertiary">{datetimeFormatted}</div>
+            <div className="flex gap-2 items-center">
+              {post.post.replyCount && post.post.replyCount > 0 && (
+                <>
+                  <a
+                    className="flex items-center gap-1 hover:no-underline"
+                    target="_blank"
+                    href={url}
+                  >
+                    {post.post.replyCount}
+                    <CommentTiny />
+                  </a>
+                  <Separator classname="h-4" />
+                </>
+              )}
 
-            <a className="" target="_blank" href={url}>
-              <BlueskyTiny />
-            </a>
+              <a className="" target="_blank" href={url}>
+                <BlueskyTiny />
+              </a>
+            </div>
           </div>
         </div>
       );
