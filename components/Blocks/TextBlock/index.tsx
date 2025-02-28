@@ -444,15 +444,17 @@ const BlockifyLink = (props: { entityID: string }) => {
           if (isBlueskyPost) {
             console.log("bluesky embed coming soon!");
           }
+          rep.undoManager.startGroup();
           await addLinkBlock(
             editorState.doc.textContent,
             props.entityID,
             rep.rep,
           );
+          rep.undoManager.endGroup();
         }}
         className="absolute right-0 top-0 px-1 py-0.5 text-xs text-tertiary sm:hover:text-accent-contrast border border-border-light sm:hover:border-accent-contrast sm:outline-accent-tertiary rounded-md bg-bg-page selected-outline "
       >
-        {isBlueskyPost ? "embed" : "expand"}
+        {isBlueskyPost ? "embed" : "pretty"}
       </button>
     );
   } else return null;
