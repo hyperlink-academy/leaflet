@@ -494,6 +494,7 @@ export function SelectionManager() {
           if (!rep) return;
           let [, , selectionWithFoldedChildren] = await getSortedSelection();
           if (!selectionWithFoldedChildren) return;
+          e.preventDefault();
           await copySelection(rep, selectionWithFoldedChildren);
         }
       });
