@@ -36,10 +36,18 @@ export const useHandlePaste = (
       if (!editorState) return;
       if (text && betterIsUrl(text)) {
         let selection = view.state.selection as TextSelection;
-        if (selection.empty) return;
         let tr = view.state.tr;
         let { from, to } = selection;
-        tr.addMark(from, to, schema.marks.link.create({ href: text }));
+        if (selection.empty) {
+          tr.insertText(text, selection.from);
+          tr.addMark(
+            from,
+            from + text.length,
+            schema.marks.link.create({ href: text }),
+          );
+        } else {
+          tr.addMark(from, to, schema.marks.link.create({ href: text }));
+        }
         let oldState = view.state;
         let newState = view.state.apply(tr);
         undoManager.add({
