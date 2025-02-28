@@ -177,6 +177,19 @@ input[type="number"] {
   background-color: transparent;
 }
 
+.selected-outline {
+  @apply border;
+  @apply focus:outline;
+  @apply focus:outline-2;
+  @apply focus:outline-offset-1;
+  @apply focus-within:outline;
+  @apply focus-within:outline-2;
+  @apply focus-within:outline-offset-1;
+  @apply hover:outline;
+  @apply hover:outline-2;
+  @apply hover:outline-offset-1;
+}
+
 .input-with-border {
   @apply border;
   @apply border-border;

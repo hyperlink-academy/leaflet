@@ -54,6 +54,7 @@ import { v7 } from "uuid";
 import { focusPage } from "components/Pages";
 import { blockCommands } from "../BlockCommands";
 import { CommandPage } from "twilio/lib/rest/wireless/v1/command";
+import { betterIsUrl, isUrl } from "src/utils/isURL";
 
 export function TextBlock(
   props: BlockProps & { className?: string; preview?: boolean },
@@ -412,16 +413,49 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           />
         )}
       </div>
-      <BlockifyLink />
+      <BlockifyLink entityID={props.entityID} />
       <SyncView entityID={props.entityID} parentID={props.parent} />
       <CommandHandler entityID={props.entityID} />
     </ProseMirror>
   );
 }
 
-const BlockifyLink = () => {
+const BlockifyLink = (props: { entityID: string }) => {
+  let rep = useReplicache();
+  let focused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
+  let editorState = useEditorStates(
+    (s) => s.editorStates[props.entityID],
+  )?.editor;
+
+  let isBlueskyPost =
+    editorState?.doc.textContent.includes("bsky.app/") &&
+    editorState?.doc.textContent.includes("post");
   // only if the line stats with http or https and doesn't have other content
-  return <div className="absolute right-0 top-0"></div>;
+  // if its bluesky, change text to embed post
+  if (
+    focused &&
+    editorState &&
+    betterIsUrl(editorState.doc.textContent) &&
+    !editorState.doc.textContent.includes(" ")
+  ) {
+    return (
+      <button
+        onClick={async () => {
+          if (isBlueskyPost) {
+            console.log("bluesky embed coming soon!");
+          }
+          await addLinkBlock(
+            editorState.doc.textContent,
+            props.entityID,
+            rep.rep,
+          );
+        }}
+        className="absolute right-0 top-0 px-1 py-0.5 text-xs text-tertiary sm:hover:text-accent-contrast border border-border-light sm:hover:border-accent-contrast sm:outline-accent-tertiary rounded-md bg-bg-page selected-outline "
+      >
+        {isBlueskyPost ? "embed" : "expand"}
+      </button>
+    );
+  } else return null;
 };
 
 const CommandOptions = (props: BlockProps & { className?: string }) => {

@@ -30,7 +30,6 @@ export const ExternalLinkBlock = (
   useEffect(() => {
     if (props.preview) return;
     let input = document.getElementById(elementId.block(props.entityID).input);
-    console.log(isSelected, input);
     if (isSelected) {
       setTimeout(() => {
         let input = document.getElementById(
