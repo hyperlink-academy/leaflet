@@ -53,6 +53,8 @@ import { TooltipButton } from "components/Buttons";
 import { v7 } from "uuid";
 import { focusPage } from "components/Pages";
 import { blockCommands } from "../BlockCommands";
+import { CommandPage } from "twilio/lib/rest/wireless/v1/command";
+import { betterIsUrl, isUrl } from "src/utils/isURL";
 
 export function TextBlock(
   props: BlockProps & { className?: string; preview?: boolean },
@@ -349,13 +351,13 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
               window.clearTimeout(actionTimeout.current);
               actionTimeout.current = null;
             }
-            if (editorState.doc.textContent.startsWith("http")) {
-              await addLinkBlock(
-                editorState.doc.textContent,
-                props.entityID,
-                rep.rep,
-              );
-            }
+            // if (editorState.doc.textContent.startsWith("http")) {
+            //   await addLinkBlock(
+            //     editorState.doc.textContent,
+            //     props.entityID,
+            //     rep.rep,
+            //   );
+            // }
           }}
           onFocus={() => {
             setTimeout(() => {
@@ -386,7 +388,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
         props.nextBlock === null ? (
           // if this is the only block on the page and is empty or is a canvas, show placeholder
           <div
-            className={`${props.className} pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col`}
+            className={`${props.className} ${alignmentClass} w-full pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col`}
           >
             {props.type === "text"
               ? "write something..."
@@ -401,88 +403,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           </div>
         ) : editorState.doc.textContent.length === 0 && focused ? (
           // if not the only block on page but is the block is empty and selected, but NOT multiselected show add button
-          <div
-            className={`absolute top-0 right-0 w-fit flex gap-[6px] items-center font-bold  rounded-md  text-sm text-border ${props.pageType === "canvas" && "mr-[6px]"}`}
-          >
-            <TooltipButton
-              className={props.className}
-              onMouseDown={async () => {
-                let command = blockCommands.find((f) => f.name === "Image");
-                if (!rep.rep) return;
-                await command?.onSelect(
-                  rep.rep,
-                  { ...props, entity_set: entity_set.set },
-                  rep.undoManager,
-                );
-              }}
-              side="bottom"
-              tooltipContent={
-                <div className="flex gap-1 font-bold">Add an Image</div>
-              }
-            >
-              <BlockImageSmall className="hover:text-accent-contrast text-border" />
-            </TooltipButton>
-
-            <TooltipButton
-              className={props.className}
-              onMouseDown={async () => {
-                let command = blockCommands.find((f) => f.name === "New Page");
-                if (!rep.rep) return;
-                await command?.onSelect(
-                  rep.rep,
-                  { ...props, entity_set: entity_set.set },
-                  rep.undoManager,
-                );
-              }}
-              side="bottom"
-              tooltipContent={
-                <div className="flex gap-1 font-bold">Add a Subpage</div>
-              }
-            >
-              <BlockDocPageSmall className="hover:text-accent-contrast text-border" />
-            </TooltipButton>
-
-            <TooltipButton
-              className={props.className}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                let editor =
-                  useEditorStates.getState().editorStates[props.entityID];
-
-                let editorState = editor?.editor;
-                if (editorState) {
-                  editor?.view?.focus();
-                  let tr = editorState.tr.insertText("/", 1);
-                  tr.setSelection(TextSelection.create(tr.doc, 2));
-                  useEditorStates.setState((s) => ({
-                    editorStates: {
-                      ...s.editorStates,
-                      [props.entityID]: {
-                        ...s.editorStates[props.entityID]!,
-                        editor: editorState!.apply(tr),
-                      },
-                    },
-                  }));
-                }
-                focusBlock(
-                  {
-                    type: props.type,
-                    value: props.entityID,
-                    parent: props.parent,
-                  },
-                  { type: "end" },
-                );
-              }}
-              side="bottom"
-              tooltipContent={
-                <div className="flex gap-1 font-bold">Add More!</div>
-              }
-            >
-              <div className="w-6 h-6 flex place-items-center justify-center">
-                <AddTiny className="text-accent-contrast" />
-              </div>
-            </TooltipButton>
-          </div>
+          <CommandOptions {...props} className={props.className} />
         ) : null}
 
         {editorState.doc.textContent.startsWith("/") && selected && (
@@ -492,11 +413,140 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           />
         )}
       </div>
+      <BlockifyLink entityID={props.entityID} />
       <SyncView entityID={props.entityID} parentID={props.parent} />
       <CommandHandler entityID={props.entityID} />
     </ProseMirror>
   );
 }
+
+const BlockifyLink = (props: { entityID: string }) => {
+  let rep = useReplicache();
+  let isLocked = useEntity(props.entityID, "block/is-locked");
+  let focused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
+  let editorState = useEditorStates(
+    (s) => s.editorStates[props.entityID],
+  )?.editor;
+
+  let isBlueskyPost =
+    editorState?.doc.textContent.includes("bsky.app/") &&
+    editorState?.doc.textContent.includes("post");
+  // only if the line stats with http or https and doesn't have other content
+  // if its bluesky, change text to embed post
+  if (
+    !isLocked &&
+    focused &&
+    editorState &&
+    betterIsUrl(editorState.doc.textContent) &&
+    !editorState.doc.textContent.includes(" ")
+  ) {
+    return (
+      <button
+        onClick={async () => {
+          if (isBlueskyPost) {
+            console.log("bluesky embed coming soon!");
+          }
+          rep.undoManager.startGroup();
+          await addLinkBlock(
+            editorState.doc.textContent,
+            props.entityID,
+            rep.rep,
+          );
+          rep.undoManager.endGroup();
+        }}
+        className="absolute right-0 top-0 px-1 py-0.5 text-xs text-tertiary sm:hover:text-accent-contrast border border-border-light sm:hover:border-accent-contrast sm:outline-accent-tertiary rounded-md bg-bg-page selected-outline "
+      >
+        embed
+      </button>
+    );
+  } else return null;
+};
+
+const CommandOptions = (props: BlockProps & { className?: string }) => {
+  let rep = useReplicache();
+  let entity_set = useEntitySetContext();
+  return (
+    <div
+      className={`absolute top-0 right-0 w-fit flex gap-[6px] items-center font-bold  rounded-md  text-sm text-border ${props.pageType === "canvas" && "mr-[6px]"}`}
+    >
+      <TooltipButton
+        className={props.className}
+        onMouseDown={async () => {
+          let command = blockCommands.find((f) => f.name === "Image");
+          if (!rep.rep) return;
+          await command?.onSelect(
+            rep.rep,
+            { ...props, entity_set: entity_set.set },
+            rep.undoManager,
+          );
+        }}
+        side="bottom"
+        tooltipContent={
+          <div className="flex gap-1 font-bold">Add an Image</div>
+        }
+      >
+        <BlockImageSmall className="hover:text-accent-contrast text-border" />
+      </TooltipButton>
+
+      <TooltipButton
+        className={props.className}
+        onMouseDown={async () => {
+          let command = blockCommands.find((f) => f.name === "New Page");
+          if (!rep.rep) return;
+          await command?.onSelect(
+            rep.rep,
+            { ...props, entity_set: entity_set.set },
+            rep.undoManager,
+          );
+        }}
+        side="bottom"
+        tooltipContent={
+          <div className="flex gap-1 font-bold">Add a Subpage</div>
+        }
+      >
+        <BlockDocPageSmall className="hover:text-accent-contrast text-border" />
+      </TooltipButton>
+
+      <TooltipButton
+        className={props.className}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          let editor = useEditorStates.getState().editorStates[props.entityID];
+
+          let editorState = editor?.editor;
+          if (editorState) {
+            editor?.view?.focus();
+            let tr = editorState.tr.insertText("/", 1);
+            tr.setSelection(TextSelection.create(tr.doc, 2));
+            useEditorStates.setState((s) => ({
+              editorStates: {
+                ...s.editorStates,
+                [props.entityID]: {
+                  ...s.editorStates[props.entityID]!,
+                  editor: editorState!.apply(tr),
+                },
+              },
+            }));
+          }
+          focusBlock(
+            {
+              type: props.type,
+              value: props.entityID,
+              parent: props.parent,
+            },
+            { type: "end" },
+          );
+        }}
+        side="bottom"
+        tooltipContent={<div className="flex gap-1 font-bold">Add More!</div>}
+      >
+        <div className="w-6 h-6 flex place-items-center justify-center">
+          <AddTiny className="text-accent-contrast" />
+        </div>
+      </TooltipButton>
+    </div>
+  );
+};
 
 function CommandHandler(props: { entityID: string }) {
   let cb = useEditorEventCallback(
