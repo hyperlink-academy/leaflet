@@ -9,6 +9,7 @@ import { MarkType } from "prosemirror-model";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 import { Input } from "components/Input";
+import { useReplicache } from "src/replicache";
 
 export function LinkButton(props: { setToolbarState: (s: "link") => void }) {
   let focusedBlock = useUIState((s) => s.focusedEntity);
@@ -52,6 +53,7 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
   let focusedEditor = useEditorStates((s) =>
     focusedBlock ? s.editorStates[focusedBlock.entityID] : null,
   );
+  let { undoManager } = useReplicache();
   useEffect(() => {
     if (focusedEditor) {
       let isLink;
@@ -103,8 +105,25 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
     let tr = editor.tr;
     tr.addMark(start, end, schema.marks.link.create({ href }));
     tr.setSelection(TextSelection.create(tr.doc, tr.selection.to));
+
+    let oldState = editor;
+    let newState = editor.apply(tr);
+    undoManager.add({
+      undo: () => {
+        if (!focusedEditor?.view?.hasFocus()) focusedEditor?.view?.focus();
+        setEditorState(focusedBlock.entityID, {
+          editor: oldState,
+        });
+      },
+      redo: () => {
+        if (!focusedEditor?.view?.hasFocus()) focusedEditor?.view?.focus();
+        setEditorState(focusedBlock.entityID, {
+          editor: newState,
+        });
+      },
+    });
     setEditorState(focusedBlock?.entityID, {
-      editor: editor.apply(tr),
+      editor: newState,
     });
     props.onClose();
   };
