@@ -4,6 +4,7 @@ import { blockCommands } from "./BlockCommands";
 import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { NestedCardThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { UndoManager } from "src/undoManager";
 
 type Props = {
   parent: string;
@@ -26,7 +27,7 @@ export const BlockCommandBar = ({
 
   let [highlighted, setHighlighted] = useState<string | undefined>(undefined);
 
-  let { rep } = useReplicache();
+  let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
 
   let commandResults = blockCommands.filter((command) =>
@@ -44,7 +45,6 @@ export const BlockCommandBar = ({
   }, [commandResults, setHighlighted, highlighted]);
   useEffect(() => {
     let listener = async (e: KeyboardEvent) => {
-      let input = document.getElementById("block-search");
       let reverseDir = ref.current?.dataset.side === "top";
       let currentHighlightIndex = commandResults.findIndex(
         (command: { name: string }) =>
@@ -77,22 +77,23 @@ export const BlockCommandBar = ({
 
       // on enter, select the highlighted item
       if (e.key === "Enter") {
+        undoManager.startGroup();
         e.preventDefault();
         rep &&
-          commandResults[currentHighlightIndex]?.onSelect(rep, {
-            ...props,
-            entity_set: entity_set.set,
-          });
+          (await commandResults[currentHighlightIndex]?.onSelect(
+            rep,
+            {
+              ...props,
+              entity_set: entity_set.set,
+            },
+            undoManager,
+          ));
+        undoManager.endGroup();
         return;
       }
 
       // radix menu component handles esc
       if (e.key === "Escape") return;
-
-      // any keypress that is not up down, left right, enter, esc, space focuses the search
-      if (input) {
-        input.focus();
-      }
     };
     window.addEventListener("keydown", listener);
 
@@ -130,10 +131,14 @@ export const BlockCommandBar = ({
                       icon={result.icon}
                       onSelect={() => {
                         rep &&
-                          result.onSelect(rep, {
-                            ...props,
-                            entity_set: entity_set.set,
-                          });
+                          result.onSelect(
+                            rep,
+                            {
+                              ...props,
+                              entity_set: entity_set.set,
+                            },
+                            undoManager,
+                          );
                       }}
                       highlighted={highlighted}
                       setHighlighted={(highlighted) =>

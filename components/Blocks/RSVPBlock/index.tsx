@@ -209,7 +209,7 @@ function YourRSVPStatus(props: {
       <RSVPBackground />
       <div className=" relative flex flex-col gap-1 sm:gap-2 z-[1] justify-center w-fit mx-auto">
         <div
-          className=" w-fit text-xl text-center text-accent-2 text-with-outline"
+          className=" w-fit text-xl text-center text-accent-2"
           style={{
             WebkitTextStroke: `3px ${theme.colors["accent-1"]}`,
             textShadow: `-4px 3px 0 ${theme.colors["accent-1"]}`,

@@ -158,6 +158,17 @@ const ImageBlockAttributes = {
   },
 } as const;
 
+const PollBlockAttributes = {
+  "poll/options": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
+  "poll-option/name": {
+    type: "string",
+    cardinality: "one",
+  },
+} as const;
+
 export const ThemeAttributes = {
   "theme/page-leaflet-watermark": {
     type: "boolean",
@@ -228,6 +239,7 @@ export const Attributes = {
   ...BlueskyPostBlockAttributes,
   ...ButtonBlockAttributes,
   ...ImageBlockAttributes,
+  ...PollBlockAttributes,
 };
 type Attribute = typeof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
@@ -291,8 +303,9 @@ export type Data<A extends keyof typeof Attributes> = {
       | "link"
       | "mailbox"
       | "embed"
-      | "bluesky-post"
-      | "button";
+      | "button"
+      | "poll"
+      | "bluesky-post";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";

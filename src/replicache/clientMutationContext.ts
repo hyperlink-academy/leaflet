@@ -1,14 +1,28 @@
-import { WriteTransaction } from "replicache";
+import { Replicache, WriteTransaction } from "replicache";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { FactWithIndexes, scanIndex } from "./utils";
 import { Attributes, FilterAttributes } from "./attributes";
-import { Fact } from ".";
-import { MutationContext } from "./mutations";
+import { Fact, ReplicacheMutators } from ".";
+import { FactInput, MutationContext } from "./mutations";
 import { supabaseBrowserClient } from "supabase/browserClient";
 import { v7 } from "uuid";
+import { UndoManager } from "src/undoManager";
 
-export function clientMutationContext(tx: WriteTransaction) {
+export function clientMutationContext(
+  tx: WriteTransaction,
+  {
+    rep,
+    undoManager,
+    ignoreUndo,
+    defaultEntitySet,
+  }: {
+    undoManager: UndoManager;
+    rep: Replicache<ReplicacheMutators>;
+    ignoreUndo: boolean;
+    defaultEntitySet: string;
+  },
+) {
   let ctx: MutationContext = {
     async runOnServer(cb) {},
     async runOnClient(cb) {
@@ -29,8 +43,9 @@ export function clientMutationContext(tx: WriteTransaction) {
       if (!attribute) return;
       let id = f.id || v7();
       let data = { ...f.data };
+      let existingFact = [] as Fact<any>[];
       if (attribute.cardinality === "one") {
-        let existingFact = await scanIndex(tx).eav(f.entity, f.attribute);
+        existingFact = await scanIndex(tx).eav(f.entity, f.attribute);
         if (existingFact[0]) {
           id = existingFact[0].id;
           if (attribute.type === "text") {
@@ -50,9 +65,47 @@ export function clientMutationContext(tx: WriteTransaction) {
           }
         }
       }
+      if (!ignoreUndo)
+        undoManager.add({
+          undo: () => {
+            if (existingFact[0]) {
+              rep.mutate.assertFact({ ignoreUndo: true, ...existingFact[0] });
+            } else {
+              if (attribute.cardinality === "one" && !f.id)
+                rep.mutate.retractAttribute({
+                  ignoreUndo: true,
+                  attribute: f.attribute as keyof FilterAttributes<{
+                    cardinality: "one";
+                  }>,
+                  entity: f.entity,
+                });
+              rep.mutate.retractFact({ ignoreUndo: true, factID: id });
+            }
+          },
+          redo: () => {
+            rep.mutate.assertFact({ ignoreUndo: true, ...(f as Fact<any>) });
+          },
+        });
       await tx.set(id, FactWithIndexes({ id, ...f, data }));
     },
     async retractFact(id) {
+      let fact = await tx.get(id);
+      if (!ignoreUndo)
+        undoManager.add({
+          undo: () => {
+            if (fact) {
+              rep.mutate.assertFact({
+                ignoreUndo: true,
+                ...(fact as Fact<any>),
+              });
+            } else {
+              rep.mutate.retractFact({ ignoreUndo: true, factID: id });
+            }
+          },
+          redo: () => {
+            rep.mutate.assertFact({ ignoreUndo: true, ...(fact as Fact<any>) });
+          },
+        });
       await tx.del(id);
     },
     async deleteEntity(entity) {
@@ -68,9 +121,31 @@ export function clientMutationContext(tx: WriteTransaction) {
           prefix: entity,
         })
         .toArray();
-      await Promise.all(
-        [...existingFacts, ...references].map((f) => tx.del(f.id)),
-      );
+      let facts = [...existingFacts, ...references];
+      await Promise.all(facts.map((f) => tx.del(f.id)));
+      if (!ignoreUndo && facts.length > 0) {
+        undoManager.add({
+          undo: async () => {
+            let input: FactInput[] & { ignoreUndo?: true } = facts.map(
+              (f) =>
+                ({
+                  id: f.id,
+                  attribute: f.attribute,
+                  entity: f.entity,
+                  data: f.data,
+                }) as FactInput,
+            );
+            input.ignoreUndo = true;
+            await rep.mutate.createEntity([
+              { entityID: entity, permission_set: defaultEntitySet },
+            ]);
+            await rep.mutate.assertFact(input);
+          },
+          redo: () => {
+            rep.mutate.deleteEntity({ entity, ignoreUndo: true });
+          },
+        });
+      }
     },
   };
   return ctx;

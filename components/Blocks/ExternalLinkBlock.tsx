@@ -9,7 +9,7 @@ import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
 import { CheckTiny, LinkSmall } from "components/Icons";
 import { Separator } from "components/Layout";
-import { Input } from "components/Input";
+import { focusElement, Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
 import { elementId } from "src/utils/elementId";
 import { deleteBlock } from "./DeleteBlock";
@@ -31,7 +31,12 @@ export const ExternalLinkBlock = (
     if (props.preview) return;
     let input = document.getElementById(elementId.block(props.entityID).input);
     if (isSelected) {
-      input?.focus();
+      setTimeout(() => {
+        let input = document.getElementById(
+          elementId.block(props.entityID).input,
+        );
+        focusElement(input as HTMLInputElement | null);
+      }, 20);
     } else input?.blur();
   }, [isSelected, props.entityID, props.preview]);
 
@@ -39,7 +44,6 @@ export const ExternalLinkBlock = (
     if (!permissions.write) return null;
     return (
       <label
-        id={props.preview ? undefined : elementId.block(props.entityID).input}
         className={`
           w-full h-[104px] p-2
           text-tertiary hover:text-accent-contrast hover:cursor-pointer
@@ -163,6 +167,7 @@ const BlockLinkInput = (props: BlockProps) => {
         />
         <Separator />
         <Input
+          id={elementId.block(props.entityID).input}
           type="url"
           disabled={isLocked}
           className="w-full grow border-none outline-none bg-transparent "
@@ -171,10 +176,12 @@ const BlockLinkInput = (props: BlockProps) => {
           onChange={(e) => setLinkValue(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Backspace" && linkValue === "") {
+              e.preventDefault();
               rep && deleteBlock([props.entityID].flat(), rep);
               return;
             }
             if (e.key === "Enter") {
+              e.preventDefault();
               if (!linkValue) return;
               if (!isUrl(linkValue)) {
                 let rect = e.currentTarget.getBoundingClientRect();

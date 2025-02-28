@@ -9,6 +9,7 @@ import {
   permission_tokens,
   permission_token_rights,
   permission_token_on_homepage,
+  poll_votes_on_entity,
 } from "drizzle/schema";
 import { and, eq, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
@@ -21,6 +22,7 @@ export async function loginWithEmailToken(
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
   let token_id = cookies().get("auth_token")?.value;
+  let voter_token = cookies().get("poll_voter_token")?.value;
   if (!token_id) return null;
   let result = await db.transaction(async (tx) => {
     let [token] = await tx
@@ -127,6 +129,22 @@ export async function loginWithEmailToken(
 
     return token;
   });
+  if (result?.identity) {
+    if (result.identity !== voter_token) {
+      if (voter_token)
+        await db
+          .update(poll_votes_on_entity)
+          .set({ voter_token: result.identity })
+          .where(eq(poll_votes_on_entity.voter_token, voter_token));
+
+      cookies().set("poll_voter_token", result.identity, {
+        maxAge: 60 * 60 * 24 * 365,
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+        sameSite: "lax",
+      });
+    }
+  }
 
   client.end();
   redirect("/home");

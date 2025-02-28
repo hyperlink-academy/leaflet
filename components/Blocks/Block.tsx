@@ -23,6 +23,7 @@ import { DateTimeBlock } from "./DateTimeBlock";
 import { RSVPBlock } from "./RSVPBlock";
 import { elementId } from "src/utils/elementId";
 import { ButtonBlock } from "./ButtonBlock";
+import { PollBlock } from "./PollBlock";
 import { BlueskyPostBlock } from "./BlueskyPostBlock";
 
 export type Block = {
@@ -72,7 +73,6 @@ export const Block = memo(function Block(
   );
 
   let [areYouSure, setAreYouSure] = useState(false);
-
   useEffect(() => {
     if (!selected) {
       setAreYouSure(false);
@@ -177,6 +177,7 @@ const BlockTypeComponents: {
   datetime: DateTimeBlock,
   rsvp: RSVPBlock,
   button: ButtonBlock,
+  poll: PollBlock,
   "bluesky-post": BlueskyPostBlock,
 };
 

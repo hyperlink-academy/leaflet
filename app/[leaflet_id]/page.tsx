@@ -11,6 +11,7 @@ import { Leaflet } from "./Leaflet";
 import { scanIndexLocal } from "src/replicache/utils";
 import { getRSVPData } from "actions/getRSVPData";
 import { PageSWRDataProvider } from "components/PageSWRDataProvider";
+import { getPollData } from "actions/pollActions";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -34,7 +35,7 @@ export default async function LeafletPage(props: Props) {
     .eq("id", props.params.leaflet_id)
     .single();
   let rootEntity = res.data?.root_entity;
-  if (!rootEntity || !res.data)
+  if (!rootEntity || !res.data || res.data.blocked_by_admin)
     return (
       <div className="w-screen h-screen flex place-items-center bg-bg-leaflet">
         <div className="bg-bg-page mx-auto p-4 border border-border rounded-md flex flex-col text-center justify-centergap-1 w-fit">
@@ -52,16 +53,18 @@ export default async function LeafletPage(props: Props) {
       </div>
     );
 
-  let [{ data }, rsvp_data] = await Promise.all([
+  let [{ data }, rsvp_data, poll_data] = await Promise.all([
     supabase.rpc("get_facts", {
       root: rootEntity,
     }),
     getRSVPData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
+    getPollData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
   ]);
   let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
   return (
     <PageSWRDataProvider
       rsvp_data={rsvp_data}
+      poll_data={poll_data}
       leaflet_id={res.data.id}
       domains={res.data.custom_domain_routes}
     >
