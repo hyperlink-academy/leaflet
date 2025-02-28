@@ -40,9 +40,24 @@ export const useHandlePaste = (
         let tr = view.state.tr;
         let { from, to } = selection;
         tr.addMark(from, to, schema.marks.link.create({ href: text }));
-
+        let oldState = view.state;
+        let newState = view.state.apply(tr);
+        undoManager.add({
+          undo: () => {
+            if (!view?.hasFocus()) view?.focus();
+            setEditorState(entityID, {
+              editor: oldState,
+            });
+          },
+          redo: () => {
+            if (!view?.hasFocus()) view?.focus();
+            setEditorState(entityID, {
+              editor: newState,
+            });
+          },
+        });
         setEditorState(entityID, {
-          editor: view.state.apply(tr),
+          editor: newState,
         });
         return true;
       }
