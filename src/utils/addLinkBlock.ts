@@ -5,6 +5,8 @@ import {
 } from "app/api/link_previews/route";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
+import { AtpAgent } from "@atproto/api";
+import { v7 } from "uuid";
 
 export async function addLinkBlock(
   url: string,
@@ -73,4 +75,54 @@ export async function addLinkBlock(
       },
     });
   });
+}
+
+export async function addBlueskyPostBlock(
+  url: string,
+  entityID: string,
+  rep: Replicache<ReplicacheMutators>,
+) {
+  //construct bsky post uri from url
+  let urlParts = url?.split("/");
+  let userDidOrHandle = urlParts ? urlParts[4] : ""; // "schlage.town" or "did:plc:jjsc5rflv3cpv6hgtqhn2dcm"
+  let collection = "app.bsky.feed.post";
+  let postId = urlParts ? urlParts[6] : "";
+  let uri = `at://${userDidOrHandle}/${collection}/${postId}`;
+
+  let post = await getBlueskyPost(uri);
+  if (!post || post === undefined) return false;
+
+  await rep.mutate.assertFact({
+    entity: entityID,
+    attribute: "block/type",
+    data: { type: "block-type-union", value: "bluesky-post" },
+  });
+  await rep?.mutate.assertFact({
+    entity: entityID,
+    attribute: "block/bluesky-post",
+    data: {
+      type: "bluesky-post",
+      //TODO: this is a hack to get rid of a nested Array buffer which cannot be frozen, which replicache does on write.
+      value: JSON.parse(JSON.stringify(post.data.thread)),
+    },
+  });
+  return true;
+}
+async function getBlueskyPost(uri: string) {
+  const agent = new AtpAgent({ service: "https://public.api.bsky.app" });
+  try {
+    let blueskyPost = await agent
+      .getPostThread({
+        uri: uri,
+        depth: 0,
+        parentHeight: 0,
+      })
+      .then((res) => {
+        return res;
+      });
+    return blueskyPost;
+  } catch (error) {
+    let rect = document;
+    return;
+  }
 }

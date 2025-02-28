@@ -15,6 +15,7 @@ import {
   BlockCalendarSmall,
   RSVPSmall,
   BlockPollSmall,
+  BlockBlueskySmall,
 } from "components/Icons";
 import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "components/Pages";
@@ -197,36 +198,6 @@ export const blockCommands: Command[] = [
   },
 
   {
-    name: "External Link",
-    icon: <LinkSmall />,
-    type: "block",
-    onSelect: async (rep, props, um) => {
-      props.entityID && clearCommandSearchText(props.entityID);
-      await createBlockWithType(rep, props, "link");
-      um.add({
-        undo: () => {
-          props.entityID && keepFocus(props.entityID);
-        },
-        redo: () => {},
-      });
-    },
-  },
-  {
-    name: "Embed Website",
-    icon: <BlockEmbedSmall />,
-    type: "block",
-    onSelect: async (rep, props, um) => {
-      props.entityID && clearCommandSearchText(props.entityID);
-      await createBlockWithType(rep, props, "embed");
-      um.add({
-        undo: () => {
-          props.entityID && keepFocus(props.entityID);
-        },
-        redo: () => {},
-      });
-    },
-  },
-  {
     name: "Image",
     icon: <BlockImageSmall />,
     type: "block",
@@ -246,6 +217,14 @@ export const blockCommands: Command[] = [
           el?.focus();
         },
       });
+    },
+  },
+  {
+    name: "External Link",
+    icon: <LinkSmall />,
+    type: "block",
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "link");
     },
   },
   {
@@ -321,6 +300,22 @@ export const blockCommands: Command[] = [
           }, 20);
         },
       });
+    },
+  },
+  {
+    name: "Embed Website",
+    icon: <BlockEmbedSmall />,
+    type: "block",
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "embed");
+    },
+  },
+  {
+    name: "Bluesky Post",
+    icon: <BlockBlueskySmall />,
+    type: "block",
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "bluesky-post");
     },
   },
 
