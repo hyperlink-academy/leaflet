@@ -12,6 +12,7 @@ import { BlueskyTiny, CommentTiny } from "components/Icons";
 import { BlueskyRichText } from "./BlueskyRichText";
 import { Separator } from "components/Layout";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 
 export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
@@ -27,6 +28,8 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
       input?.focus();
     } else input?.blur();
   }, [isSelected, props.entityID, props.preview]);
+
+  let initialPageLoad = useInitialPageLoad();
 
   switch (true) {
     case !post:
@@ -79,15 +82,16 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
       let postId = post.post.uri.split("/")[4];
       let url = `https://bsky.app/profile/${post.post.author.handle}/post/${postId}`;
 
-      let datetime = new Date(timestamp ? timestamp : "");
-      let datetimeFormatted = datetime.toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "numeric",
-        hour12: true,
-      });
+      let datetimeFormatted = initialPageLoad
+        ? new Date(timestamp ? timestamp : "").toLocaleString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "numeric",
+            hour12: true,
+          })
+        : "";
 
       return (
         <div
