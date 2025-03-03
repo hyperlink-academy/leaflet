@@ -145,7 +145,9 @@ export const BlueskyEmbed = (props: {
             <div className="flex flex-col gap-2 ">
               {text && <pre className="whitespace-pre-wrap">{text}</pre>}
               {record.embeds !== undefined
-                ? record.embeds.map((embed) => <BlueskyEmbed embed={embed} />)
+                ? record.embeds.map((embed, index) => (
+                    <BlueskyEmbed embed={embed} key={index} />
+                  ))
                 : null}
             </div>
           </div>
