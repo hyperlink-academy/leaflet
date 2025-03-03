@@ -48,10 +48,10 @@ export const scanIndex = (tx: ReadTransaction) => ({
   ) {
     return (
       (
-        (await tx
-          .scan({ indexName: "eav", prefix: `${entity}-${attribute}` })
+        await tx
+          .scan<Fact<A>>({ indexName: "eav", prefix: `${entity}-${attribute}` })
           // Hack rn because of the rich bluesky-post type
-          .toArray()) as unknown as Fact<A>[]
+          .toArray()
       ).filter((f) => attribute === "" || f.attribute === attribute)
     );
   },
@@ -75,3 +75,19 @@ export const scanIndexLocal = (initialFacts: Fact<any>[]) => ({
     ) as Fact<A>[];
   },
 });
+
+// Base utility type for making types compatible with ReadonlyJSONObject
+export type AsReadonlyJSONObject<T> = T & {
+  [key: string]: undefined;
+};
+
+// Recursive utility type for nested objects
+export type DeepAsReadonlyJSONValue<T> = T extends object
+  ? T extends Array<infer U>
+    ? ReadonlyArray<DeepAsReadonlyJSONValue<U>> // Handle arrays
+    : AsReadonlyJSONObject<{
+        [K in keyof T]: DeepAsReadonlyJSONValue<T[K]>;
+      }>
+  : T extends string | number | boolean | null
+    ? T // Primitive types that already match ReadonlyJSONValue
+    : never; // For other types that can't be converted

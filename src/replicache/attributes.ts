@@ -3,6 +3,7 @@ import {
   PostView,
   ThreadViewPost,
 } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { DeepAsReadonlyJSONValue } from "./utils";
 
 const RootAttributes = {
   "root/page": {
@@ -263,7 +264,9 @@ export type Data<A extends keyof typeof Attributes> = {
   };
   "bluesky-post": {
     type: "bluesky-post";
-    value: AppBskyFeedGetPostThread.OutputSchema["thread"];
+    value: DeepAsReadonlyJSONValue<
+      AppBskyFeedGetPostThread.OutputSchema["thread"]
+    >;
   };
   image: {
     type: "image";
