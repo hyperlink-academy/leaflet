@@ -47,10 +47,13 @@ export const scanIndex = (tx: ReadTransaction) => ({
     attribute: A | "",
   ) {
     return (
-      await tx
-        .scan<Fact<A>>({ indexName: "eav", prefix: `${entity}-${attribute}` })
-        .toArray()
-    ).filter((f) => attribute === "" || f.attribute === attribute);
+      (
+        (await tx
+          .scan({ indexName: "eav", prefix: `${entity}-${attribute}` })
+          // Hack rn because of the rich bluesky-post type
+          .toArray()) as unknown as Fact<A>[]
+      ).filter((f) => attribute === "" || f.attribute === attribute)
+    );
   },
   async vae<
     A extends keyof FilterAttributes<{
