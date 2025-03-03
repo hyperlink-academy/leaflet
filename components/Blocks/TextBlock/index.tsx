@@ -452,21 +452,21 @@ const BlockifyLink = (props: { entityID: string }) => {
       <button
         onClick={async (e) => {
           rep.undoManager.startGroup();
-
           if (isBlueskyPost && rep.rep) {
-            await addBlueskyPostBlock(
+            let success = await addBlueskyPostBlock(
               editorState.doc.textContent,
               props.entityID,
               rep.rep,
             );
-            smoker({
-              error: true,
-              text: "post not found!",
-              position: {
-                x: e.clientX + 12,
-                y: e.clientY,
-              },
-            });
+            if (!success)
+              smoker({
+                error: true,
+                text: "post not found!",
+                position: {
+                  x: e.clientX + 12,
+                  y: e.clientY,
+                },
+              });
           } else {
             await addLinkBlock(
               editorState.doc.textContent,
