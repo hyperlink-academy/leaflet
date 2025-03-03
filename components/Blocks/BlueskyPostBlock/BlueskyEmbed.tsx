@@ -174,9 +174,19 @@ export const BlueskyEmbed = (props: {
       return <SeePostOnBluesky postUrl={props.postUrl} />;
 
     // I am not sure when this case will be used? so I'm commenting it out for now
-    // case AppBskyEmbedRecordWithMedia.isView(props.embed):
-    //   const recordWithMediaEmbed = props.embed;
-    //   return <div>This is a record with Media </div>;
+    case AppBskyEmbedRecordWithMedia.isView(props.embed) &&
+      AppBskyEmbedRecord.isViewRecord(props.embed.record.record):
+      return (
+        <div className={`flex flex-col gap-2`}>
+          <BlueskyEmbed embed={props.embed.media} />
+          <BlueskyEmbed
+            embed={{
+              $type: "app.bsky.embed.record#view",
+              record: props.embed.record.record,
+            }}
+          />
+        </div>
+      );
 
     default:
       return <SeePostOnBluesky postUrl={props.postUrl} />;
