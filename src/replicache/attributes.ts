@@ -1,3 +1,10 @@
+import { AppBskyFeedGetPostThread } from "@atproto/api";
+import {
+  PostView,
+  ThreadViewPost,
+} from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { DeepAsReadonlyJSONValue } from "./utils";
+
 const RootAttributes = {
   "root/page": {
     type: "ordered-reference",
@@ -76,6 +83,10 @@ const BlockAttributes = {
     type: "reference",
     cardinality: "one",
   },
+  "block/bluesky-post": {
+    type: "bluesky-post",
+    cardinality: "one",
+  },
 } as const;
 
 const MailboxAttributes = {
@@ -119,6 +130,13 @@ const EmbedBlockAttributes = {
   },
   "embed/height": {
     type: "number",
+    cardinality: "one",
+  },
+} as const;
+
+const BlueskyPostBlockAttributes = {
+  "bluesky-post/url": {
+    type: "string",
     cardinality: "one",
   },
 } as const;
@@ -219,6 +237,7 @@ export const Attributes = {
   ...ThemeAttributes,
   ...MailboxAttributes,
   ...EmbedBlockAttributes,
+  ...BlueskyPostBlockAttributes,
   ...ButtonBlockAttributes,
   ...ImageBlockAttributes,
   ...PollBlockAttributes,
@@ -242,6 +261,12 @@ export type Data<A extends keyof typeof Attributes> = {
     type: "ordered-reference";
     position: string;
     value: string;
+  };
+  "bluesky-post": {
+    type: "bluesky-post";
+    value: DeepAsReadonlyJSONValue<
+      AppBskyFeedGetPostThread.OutputSchema["thread"]
+    >;
   };
   image: {
     type: "image";
@@ -282,7 +307,8 @@ export type Data<A extends keyof typeof Attributes> = {
       | "mailbox"
       | "embed"
       | "button"
-      | "poll";
+      | "poll"
+      | "bluesky-post";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";

@@ -30,7 +30,7 @@ import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { MarkType, DOMParser as ProsemirrorDOMParser } from "prosemirror-model";
 import { useAppEventListener } from "src/eventBus";
-import { addLinkBlock } from "src/utils/addLinkBlock";
+import { addBlueskyPostBlock, addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockCommandBar } from "components/Blocks/BlockCommandBar";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { isIOS } from "@react-aria/utils";
@@ -56,6 +56,7 @@ import { focusPage } from "components/Pages";
 import { blockCommands } from "../BlockCommands";
 import { CommandPage } from "twilio/lib/rest/wireless/v1/command";
 import { betterIsUrl, isUrl } from "src/utils/isURL";
+import { useSmoker } from "components/Toast";
 
 export function TextBlock(
   props: BlockProps & { className?: string; preview?: boolean },
@@ -428,6 +429,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
 
 const BlockifyLink = (props: { entityID: string }) => {
   let rep = useReplicache();
+  let smoker = useSmoker();
   let isLocked = useEntity(props.entityID, "block/is-locked");
   let focused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
   let editorState = useEditorStates(
@@ -448,16 +450,30 @@ const BlockifyLink = (props: { entityID: string }) => {
   ) {
     return (
       <button
-        onClick={async () => {
-          if (isBlueskyPost) {
-            console.log("bluesky embed coming soon!");
-          }
+        onClick={async (e) => {
           rep.undoManager.startGroup();
-          await addLinkBlock(
-            editorState.doc.textContent,
-            props.entityID,
-            rep.rep,
-          );
+
+          if (isBlueskyPost && rep.rep) {
+            await addBlueskyPostBlock(
+              editorState.doc.textContent,
+              props.entityID,
+              rep.rep,
+            );
+            smoker({
+              error: true,
+              text: "post not found!",
+              position: {
+                x: e.clientX + 12,
+                y: e.clientY,
+              },
+            });
+          } else {
+            await addLinkBlock(
+              editorState.doc.textContent,
+              props.entityID,
+              rep.rep,
+            );
+          }
           rep.undoManager.endGroup();
         }}
         className="absolute right-0 top-0 px-1 py-0.5 text-xs text-tertiary sm:hover:text-accent-contrast border border-border-light sm:hover:border-accent-contrast sm:outline-accent-tertiary rounded-md bg-bg-page selected-outline "

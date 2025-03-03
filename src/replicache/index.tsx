@@ -208,10 +208,16 @@ export function useEntity<A extends keyof typeof Attributes>(
       let initialized = await tx.get("initialized");
       if (!initialized) return null;
       return (
-        await tx
-          .scan<Fact<A>>({ indexName: "eav", prefix: `${entity}-${attribute}` })
-          .toArray()
-      ).filter((f) => f.attribute === attribute);
+        (
+          await tx
+            .scan<Fact<A>>({
+              indexName: "eav",
+              prefix: `${entity}-${attribute}`,
+            })
+            // hack to handle rich bluesky-post type
+            .toArray()
+        ).filter((f) => f.attribute === attribute)
+      );
     },
     {
       default: null,
