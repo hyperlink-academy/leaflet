@@ -11,6 +11,7 @@ import { BlueskyPostEmpty } from "./BlueskyEmpty";
 import { BlueskyTiny, CommentTiny } from "components/Icons";
 import { BlueskyRichText } from "./BlueskyRichText";
 import { Separator } from "components/Layout";
+import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 
 export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
@@ -62,7 +63,8 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
       );
 
     case AppBskyFeedDefs.isThreadViewPost(post):
-      let record = post.post.record;
+      let record = post.post
+        .record as AppBskyFeedDefs.FeedViewPost["post"]["record"];
       let facets = record.facets;
 
       // silliness to get the text and timestamp from the record with proper types
