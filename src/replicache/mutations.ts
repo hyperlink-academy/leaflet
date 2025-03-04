@@ -651,6 +651,52 @@ const addTableRow: Mutation<{
   }
 };
 
+const addTableColumn: Mutation<{
+  tableEntity: string;
+  cellEntities: string[];
+  position: string;
+  permission_set: string;
+}> = async (args, ctx) => {
+  // get rows
+  let rows = await ctx.scanIndex.eav(args.tableEntity, "table/row");
+
+  // map across rows and add a cell to each row
+  await Promise.all(
+    args.cellEntities.map(async (cell, index) => {
+      console.log(rows[index].data.value + "|" + cell);
+
+      // create the cell entity
+      await ctx.createEntity({
+        entityID: cell,
+        permission_set: args.permission_set,
+      });
+
+      // point the cell entity to the row
+      let cells = await ctx.scanIndex.eav(rows[index].data.value, "row/cell");
+      let prevCellPosition = cells.map((c) => c.data.position).sort()[
+        cells.length - 1
+      ];
+      let position = generateKeyBetween(prevCellPosition, null);
+      await ctx.assertFact({
+        entity: rows[index].data.value,
+        attribute: "row/cell",
+        data: {
+          type: "ordered-reference",
+          value: cell,
+          position: position,
+        },
+      });
+
+      // make all those cells into text blocks
+      await ctx.assertFact({
+        entity: cell,
+        attribute: "block/type",
+        data: { type: "block-type-union", value: "text" },
+      });
+    }),
+  );
+};
+
 export const mutations = {
   retractAttribute,
   addBlock,
@@ -674,4 +720,5 @@ export const mutations = {
   addPollOption,
   removePollOption,
   addTableRow,
+  addTableColumn,
 };

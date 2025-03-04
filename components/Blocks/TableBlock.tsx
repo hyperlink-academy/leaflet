@@ -13,6 +13,8 @@ export const TableBlock = (props: BlockProps) => {
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   let rows = useEntity(props.entityID, "table/row");
+  let firstRowCells = useEntity(rows[0]?.data.value, "row/cell");
+
   return (
     <div className="w-full flex flex-col ">
       <div
@@ -20,7 +22,12 @@ export const TableBlock = (props: BlockProps) => {
       >
         {rows &&
           rows.map((row) => {
-            return <Row rowEnitiy={row.data.value} />;
+            return (
+              <Row
+                rowEnitiy={row.data.value}
+                first={row.data.value === rows[0].data.value}
+              />
+            );
           })}
       </div>
 
@@ -35,7 +42,9 @@ export const TableBlock = (props: BlockProps) => {
               null,
             ),
             permission_set: entity_set.set,
-            cellEntities: [v7(), v7(), v7(), v7()],
+            cellEntities: rows
+              ? firstRowCells.map(() => v7())
+              : [v7(), v7(), v7(), v7()],
           });
         }}
       >
@@ -43,8 +52,15 @@ export const TableBlock = (props: BlockProps) => {
       </button>
       <button
         onClick={() => {
-          // we need to map accross the rows and add a cell to each row.
-          // probably need to write a mutation to do this.
+          rep?.mutate.addTableColumn({
+            tableEntity: props.entityID,
+            position: generateKeyBetween(
+              rows[rows.length - 1]?.data.position || null,
+              null,
+            ),
+            cellEntities: rows?.map(() => v7()) || null,
+            permission_set: entity_set.set,
+          });
         }}
       >
         add column
@@ -53,17 +69,19 @@ export const TableBlock = (props: BlockProps) => {
   );
 };
 
-const Row = (props: { rowEnitiy: string }) => {
+const Row = (props: { rowEnitiy: string; first: boolean }) => {
   let cells = useBlocks(props.rowEnitiy, "row/cell");
 
   return (
     <div
-      className={`w-full grid grid-cols-4 h-max items-start `}
-      // style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}
+      className={`w-full grid  h-max items-start `}
+      style={{ gridTemplateColumns: `repeat(${cells.length}, minmax(0, 1fr))` }}
     >
       {cells.map((cell, index) => {
         return (
-          <div className="w-full border-t border-l border-t-border border-l-border">
+          <div
+            className={`w-full border-t border-l  border-l-border-light first:border-l-transparent ${props.first ? "border-t-transparent" : "border-t-border-light"}`}
+          >
             <Block
               key={cell.value}
               {...cell}
