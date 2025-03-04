@@ -79,7 +79,7 @@ export const DomainOptions = (props: {
   return (
     <div className="px-3 py-1 flex flex-col gap-3 max-w-full w-[600px]">
       <h3 className="text-secondary">Choose a Domain</h3>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 text-secondary">
         {identity?.custom_domains.map((domain) => {
           return (
             <DomainOption
