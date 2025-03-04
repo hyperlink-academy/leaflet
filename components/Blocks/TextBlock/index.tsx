@@ -357,13 +357,6 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
               window.clearTimeout(actionTimeout.current);
               actionTimeout.current = null;
             }
-            // if (editorState.doc.textContent.startsWith("http")) {
-            //   await addLinkBlock(
-            //     editorState.doc.textContent,
-            //     props.entityID,
-            //     rep.rep,
-            //   );
-            // }
           }}
           onFocus={() => {
             setTimeout(() => {
@@ -392,7 +385,9 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
         {editorState.doc.textContent.length === 0 &&
         props.previousBlock === null &&
         props.nextBlock === null ? (
-          // if this is the only block on the page and is empty or is a canvas, show placeholder
+          // if this is block is empty AND the only one on the page
+          // or if this block is a canvas
+          // show placeholder
           <div
             className={`${props.className} ${alignmentClass} w-full pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col`}
           >
@@ -408,7 +403,9 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
             </div>
           </div>
         ) : editorState.doc.textContent.length === 0 && focused ? (
-          // if not the only block on page but is the block is empty and selected, but NOT multiselected show add button
+          // if this block is empty and selected,
+          // and NOT multiselected, and NOT the only block (we show placeholder instead if it's the only block)
+          // show command options
           <CommandOptions {...props} className={props.className} />
         ) : null}
 
@@ -473,7 +470,7 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
   let entity_set = useEntitySetContext();
   return (
     <div
-      className={`absolute top-0 right-0 w-fit flex gap-[6px] items-center font-bold  rounded-md  text-sm text-border ${props.pageType === "canvas" && "mr-[6px]"}`}
+      className={`commandOptions absolute top-0 right-0 w-fit flex gap-[6px] items-center font-bold  rounded-md  text-sm text-border ${props.pageType === "canvas" && "mr-[6px]"}`}
     >
       <TooltipButton
         className={props.className}
@@ -488,7 +485,9 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
         }}
         side="bottom"
         tooltipContent={
-          <div className="flex gap-1 font-bold">Add an Image</div>
+          <div className="commandOptionImage flex gap-1 font-bold">
+            Add an Image
+          </div>
         }
       >
         <BlockImageSmall className="hover:text-accent-contrast text-border" />
@@ -507,7 +506,9 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
         }}
         side="bottom"
         tooltipContent={
-          <div className="flex gap-1 font-bold">Add a Subpage</div>
+          <div className="commandOptionPage flex gap-1 font-bold">
+            Add a Subpage
+          </div>
         }
       >
         <BlockDocPageSmall className="hover:text-accent-contrast text-border" />
@@ -544,7 +545,11 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
           );
         }}
         side="bottom"
-        tooltipContent={<div className="flex gap-1 font-bold">Add More!</div>}
+        tooltipContent={
+          <div className="commandOptionMore flex gap-1 font-bold">
+            Add More!
+          </div>
+        }
       >
         <div className="w-6 h-6 flex place-items-center justify-center">
           <AddTiny className="text-accent-contrast" />

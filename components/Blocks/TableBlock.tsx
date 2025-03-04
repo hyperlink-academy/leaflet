@@ -1,5 +1,5 @@
 import { useEntity, useReplicache } from "src/replicache";
-import { Block, BlockProps } from "./Block";
+import { BaseBlock, Block, BlockProps } from "./Block";
 import { v7 } from "uuid";
 import { useUIState } from "src/useUIState";
 import { generateKeyBetween } from "fractional-indexing";
@@ -22,10 +22,13 @@ export const TableBlock = (props: BlockProps) => {
       >
         {rows &&
           rows.map((row) => {
+            console.log(row.data.value + " | " + rows[0].data.value);
+
             return (
               <Row
                 rowEnitiy={row.data.value}
                 first={row.data.value === rows[0].data.value}
+                pageType={props.pageType}
               />
             );
           })}
@@ -34,6 +37,7 @@ export const TableBlock = (props: BlockProps) => {
       <button
         onClick={() => {
           // create a row of entities
+
           rep?.mutate.addTableRow({
             tableEntity: props.entityID,
             rowEntity: v7(),
@@ -42,10 +46,13 @@ export const TableBlock = (props: BlockProps) => {
               null,
             ),
             permission_set: entity_set.set,
-            cellEntities: rows
-              ? firstRowCells.map(() => v7())
-              : [v7(), v7(), v7(), v7()],
+            cellEntities:
+              rows.length === 0 || !rows
+                ? [v7(), v7(), v7(), v7()]
+                : firstRowCells.map(() => v7()),
           });
+          console.log("Added!");
+          console.log(rows);
         }}
       >
         add row
@@ -69,23 +76,33 @@ export const TableBlock = (props: BlockProps) => {
   );
 };
 
-const Row = (props: { rowEnitiy: string; first: boolean }) => {
+const Row = (props: {
+  rowEnitiy: string;
+  first: boolean;
+  pageType: "doc" | "canvas";
+}) => {
   let cells = useBlocks(props.rowEnitiy, "row/cell");
 
   return (
     <div
-      className={`w-full grid  h-max items-start `}
+      className={`tableRow w-full grid  h-max items-start `}
       style={{ gridTemplateColumns: `repeat(${cells.length}, minmax(0, 1fr))` }}
     >
       {cells.map((cell, index) => {
         return (
           <div
-            className={`w-full border-t border-l  border-l-border-light first:border-l-transparent ${props.first ? "border-t-transparent" : "border-t-border-light"}`}
+            className={`
+              tableCell
+              w-full h-full px-2 sm:px-3 py-1 sm:py-2
+              border-t border-l
+              first:border-l-transparent border-l-border-light
+              ${props.first ? "border-t-transparent" : "border-t-border-light"}
+              `}
           >
-            <Block
+            <BaseBlock
               key={cell.value}
               {...cell}
-              pageType="block"
+              pageType={props.pageType}
               entityID={cell.value}
               parent={props.rowEnitiy}
               position={cell.position}
@@ -95,7 +112,7 @@ const Row = (props: { rowEnitiy: string; first: boolean }) => {
             />
           </div>
         );
-      })}{" "}
+      })}
     </div>
   );
 };

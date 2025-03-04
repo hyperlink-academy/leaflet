@@ -282,7 +282,7 @@ export type Data<A extends keyof typeof Attributes> = {
   };
   "page-type-union": {
     type: "page-type-union";
-    value: "doc" | "canvas" | "block";
+    value: "doc" | "canvas";
   };
   "block-type-union": {
     type: "block-type-union";
