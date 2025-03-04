@@ -650,6 +650,26 @@ const addTableRow: Mutation<{
     });
   }
 };
+const deleteTableRow: Mutation<{
+  tableEntity: string;
+  rowEntity: string;
+}> = async (args, ctx) => {
+  // get cells in row
+  let cells = await ctx.scanIndex.eav(args.rowEntity, "row/cell");
+
+  // delete all the cells
+  await Promise.all(cells.map((cell) => ctx.deleteEntity(cell.data.value)));
+
+  // delete the row
+  await ctx.deleteEntity(args.rowEntity);
+
+  // if this this the only row, delete the table
+
+  let rows = await ctx.scanIndex.eav(args.tableEntity, "table/row");
+  if (rows.length === 0 && args.tableEntity) {
+    await ctx.deleteEntity(args.tableEntity);
+  }
+};
 
 const addTableColumn: Mutation<{
   tableEntity: string;
@@ -720,5 +740,6 @@ export const mutations = {
   addPollOption,
   removePollOption,
   addTableRow,
+  deleteTableRow,
   addTableColumn,
 };

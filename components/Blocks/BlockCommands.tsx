@@ -283,8 +283,25 @@ export const blockCommands: Command[] = [
     icon: <BlockPollSmall />,
     type: "block",
     onSelect: async (rep, props, um) => {
-      props.entityID && clearCommandSearchText(props.entityID);
+      if (!props.entityID) return;
+      clearCommandSearchText(props.entityID);
       await createBlockWithType(rep, props, "table");
+      let firstPosition = generateKeyBetween(null, null);
+      await rep?.mutate.addTableRow({
+        tableEntity: props.entityID,
+        rowEntity: v7(),
+        position: firstPosition,
+        permission_set: props.entity_set,
+        cellEntities: [v7(), v7(), v7()],
+      });
+      await rep?.mutate.addTableRow({
+        tableEntity: props.entityID,
+        rowEntity: v7(),
+        position: generateKeyBetween(firstPosition, null),
+        permission_set: props.entity_set,
+        cellEntities: [v7(), v7(), v7()],
+      });
+
       um.add({
         undo: () => {
           props.entityID && keepFocus(props.entityID);

@@ -5,6 +5,8 @@ import { useUIState } from "src/useUIState";
 import { generateKeyBetween } from "fractional-indexing";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useBlocks } from "src/hooks/queries/useBlocks";
+import { TrashSmall } from "components/Icons";
+import { scanIndex } from "src/replicache/utils";
 
 export const TableBlock = (props: BlockProps) => {
   let { rep } = useReplicache();
@@ -22,13 +24,12 @@ export const TableBlock = (props: BlockProps) => {
       >
         {rows &&
           rows.map((row) => {
-            console.log(row.data.value + " | " + rows[0].data.value);
-
             return (
               <Row
-                rowEnitiy={row.data.value}
+                rowEntity={row.data.value}
                 first={row.data.value === rows[0].data.value}
                 pageType={props.pageType}
+                tableEntity={props.entityID}
               />
             );
           })}
@@ -51,8 +52,6 @@ export const TableBlock = (props: BlockProps) => {
                 ? [v7(), v7(), v7(), v7()]
                 : firstRowCells.map(() => v7()),
           });
-          console.log("Added!");
-          console.log(rows);
         }}
       >
         add row
@@ -77,17 +76,27 @@ export const TableBlock = (props: BlockProps) => {
 };
 
 const Row = (props: {
-  rowEnitiy: string;
+  rowEntity: string;
   first: boolean;
   pageType: "doc" | "canvas";
+  tableEntity: string;
 }) => {
-  let cells = useBlocks(props.rowEnitiy, "row/cell");
+  let cells = useBlocks(props.rowEntity, "row/cell");
+  let cellIsSelected = useUIState((s) =>
+    s.selectedBlocks.find((b) => cells.some((cell) => b.value === cell.value)),
+  );
 
   return (
     <div
-      className={`tableRow w-full grid  h-max items-start `}
+      className={`tableRow relative w-full grid  h-max items-start `}
       style={{ gridTemplateColumns: `repeat(${cells.length}, minmax(0, 1fr))` }}
     >
+      {cellIsSelected && (
+        <DeleteRowButton
+          rowEntity={props.rowEntity}
+          tableEntity={props.tableEntity}
+        />
+      )}
       {cells.map((cell, index) => {
         return (
           <div
@@ -104,7 +113,7 @@ const Row = (props: {
               {...cell}
               pageType={props.pageType}
               entityID={cell.value}
-              parent={props.rowEnitiy}
+              parent={props.rowEntity}
               position={cell.position}
               previousBlock={cells[index - 1] || null}
               nextBlock={cells[index + 1] || null}
@@ -116,3 +125,21 @@ const Row = (props: {
     </div>
   );
 };
+
+function DeleteRowButton(props: { rowEntity: string; tableEntity: string }) {
+  let rep = useReplicache();
+  return (
+    <button
+      className="absolute -left-6 top-1"
+      onMouseDown={() => {
+        rep.rep?.mutate.deleteTableRow({
+          rowEntity: props.rowEntity,
+          tableEntity: props.tableEntity,
+        });
+        console.log("deleting! we hope...");
+      }}
+    >
+      <TrashSmall />
+    </button>
+  );
+}
