@@ -24,6 +24,7 @@ import { RSVPBlock } from "./RSVPBlock";
 import { elementId } from "src/utils/elementId";
 import { ButtonBlock } from "./ButtonBlock";
 import { PollBlock } from "./PollBlock";
+import { TableBlock } from "./TableBlock";
 
 export type Block = {
   factID: string;
@@ -92,7 +93,7 @@ export const Block = memo(function Block(
         flex flex-row gap-2
         px-3 sm:px-4
       ${
-        !props.nextBlock
+        !props.nextBlock && props.pageType !== "block"
           ? "pb-3 sm:pb-4"
           : props.type === "heading" ||
               (props.listData && props.nextBlock?.listData)
@@ -100,7 +101,7 @@ export const Block = memo(function Block(
             : "pb-2"
       }
       ${
-        !props.previousBlock
+        !props.previousBlock && props.pageType !== "block"
           ? props.type === "heading" || props.type === "text"
             ? "pt-2 sm:pt-3"
             : "pt-3 sm:pt-4"
@@ -175,6 +176,7 @@ const BlockTypeComponents: {
   mailbox: MailboxBlock,
   datetime: DateTimeBlock,
   rsvp: RSVPBlock,
+  table: TableBlock,
   button: ButtonBlock,
   poll: PollBlock,
 };

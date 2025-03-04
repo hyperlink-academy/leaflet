@@ -279,6 +279,22 @@ export const blockCommands: Command[] = [
     },
   },
   {
+    name: "Table",
+    icon: <BlockPollSmall />,
+    type: "block",
+    onSelect: async (rep, props, um) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "table");
+      um.add({
+        undo: () => {
+          props.entityID && keepFocus(props.entityID);
+        },
+        redo: () => {},
+      });
+    },
+  },
+
+  {
     name: "Poll",
     icon: <BlockPollSmall />,
     type: "block",

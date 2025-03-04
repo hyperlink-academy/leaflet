@@ -604,6 +604,53 @@ const removePollOption: Mutation<{
   await ctx.deleteEntity(args.optionEntity);
 };
 
+const addTableRow: Mutation<{
+  tableEntity: string;
+  rowEntity: string;
+  position: string;
+  permission_set: string;
+  cellEntities: string[];
+}> = async (args, ctx) => {
+  // create the row entity
+  await ctx.createEntity({
+    entityID: args.rowEntity,
+    permission_set: args.permission_set,
+  });
+  // point the row entity to the table
+  await ctx.assertFact({
+    entity: args.tableEntity,
+    attribute: "table/row",
+    data: {
+      type: "ordered-reference",
+      value: args.rowEntity,
+      position: args.position,
+    },
+  });
+  let prevPosition: null | string = null;
+  for (let cell of args.cellEntities) {
+    // create the cell entity
+    await ctx.createEntity({
+      entityID: cell,
+      permission_set: args.permission_set,
+    });
+    prevPosition = generateKeyBetween(prevPosition, null);
+
+    // point the cell entity to the row
+    await ctx.assertFact({
+      entity: args.rowEntity,
+      attribute: "row/cell",
+      data: { type: "ordered-reference", value: cell, position: prevPosition },
+    });
+
+    // make all those cells into text blocks
+    await ctx.assertFact({
+      entity: cell,
+      attribute: "block/type",
+      data: { type: "block-type-union", value: "text" },
+    });
+  }
+};
+
 export const mutations = {
   retractAttribute,
   addBlock,
@@ -626,4 +673,5 @@ export const mutations = {
   createEntity,
   addPollOption,
   removePollOption,
+  addTableRow,
 };

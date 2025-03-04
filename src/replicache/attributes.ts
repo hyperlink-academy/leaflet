@@ -152,6 +152,17 @@ const PollBlockAttributes = {
   },
 } as const;
 
+const TableBlockAttributes = {
+  "table/row": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
+  "row/cell": {
+    type: "ordered-reference",
+    cardinality: "many",
+  },
+} as const;
+
 export const ThemeAttributes = {
   "theme/page-leaflet-watermark": {
     type: "boolean",
@@ -222,6 +233,7 @@ export const Attributes = {
   ...ButtonBlockAttributes,
   ...ImageBlockAttributes,
   ...PollBlockAttributes,
+  ...TableBlockAttributes,
 };
 type Attribute = typeof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
@@ -268,7 +280,10 @@ export type Data<A extends keyof typeof Attributes> = {
     type: "text-alignment-type-union";
     value: "right" | "left" | "center";
   };
-  "page-type-union": { type: "page-type-union"; value: "doc" | "canvas" };
+  "page-type-union": {
+    type: "page-type-union";
+    value: "doc" | "canvas" | "block";
+  };
   "block-type-union": {
     type: "block-type-union";
     value:
@@ -282,7 +297,8 @@ export type Data<A extends keyof typeof Attributes> = {
       | "mailbox"
       | "embed"
       | "button"
-      | "poll";
+      | "poll"
+      | "table";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";
