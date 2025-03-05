@@ -4,14 +4,9 @@ import {
   PullResponseV1,
   VersionNotSupportedResponse,
 } from "replicache";
-import { Database } from "supabase/database.types";
 import { Fact } from "src/replicache";
-import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
-import { FactWithIndexes, getClientGroup } from "src/replicache/utils";
+import { FactWithIndexes } from "src/replicache/utils";
 import { Attributes } from "src/replicache/attributes";
-import { permission_tokens } from "drizzle/schema";
-import { eq, sql } from "drizzle-orm";
 import { makeRoute } from "../lib";
 import { Env } from "./route";
 
@@ -52,47 +47,44 @@ export const pull = makeRoute({
   route: "pull",
   input: z.object({ pullRequest: PullRequestSchema, token_id: z.string() }),
   handler: async ({ pullRequest, token_id }, { supabase }: Env) => {
-    const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
-    const db = drizzle(client);
     let body = pullRequest;
     if (body.pullVersion === 0) return versionNotSupported;
-    let [facts, clientGroup] = await db.transaction(async (tx) => {
-      let [token] = await tx
-        .select({ root_entity: permission_tokens.root_entity })
-        .from(permission_tokens)
-        .where(eq(permission_tokens.id, token_id));
-
-      let facts: {
-        attribute: string;
-        created_at: string;
-        data: any;
-        entity: string;
-        id: string;
-        updated_at: string | null;
-        version: number;
-      }[] = [];
-      let clientGroup = {};
-
-      if (token) {
-        let data = (await tx.execute(
-          sql`select * from get_facts(${token.root_entity}) as get_facts`,
-        )) as {
-          attribute: string;
-          created_at: string;
-          data: any;
-          entity: string;
-          id: string;
-          updated_at: string | null;
-          version: number;
-        }[];
-
-        clientGroup = await getClientGroup(tx, body.clientGroupID);
-        facts = data || [];
-        return [facts, clientGroup];
-      }
-      return [];
+    let { data, error } = await supabase.rpc("pull_data", {
+      token_id,
+      client_group_id: body.clientGroupID,
     });
-    client.end();
+    if (!data) {
+      console.log(error);
+
+      return {
+        error: "ClientStateNotFound",
+      } as const;
+    }
+
+    let facts = data.facts as {
+      attribute: string;
+      created_at: string;
+      data: any;
+      entity: string;
+      id: string;
+      updated_at: string | null;
+      version: number;
+    }[];
+
+    let clientGroup = (
+      (data.client_groups as {
+        client_id: string;
+        client_group: string;
+        last_mutation: number;
+      }[]) || []
+    ).reduce(
+      (acc, clientRecord) => {
+        acc[clientRecord.client_id] = clientRecord.last_mutation;
+        return acc;
+      },
+      {} as { [clientID: string]: number },
+    );
+
     return {
       cookie: Date.now(),
       lastMutationIDChanges: clientGroup,

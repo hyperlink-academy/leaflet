@@ -472,6 +472,45 @@ export type Database = {
           },
         ]
       }
+      poll_votes_on_entity: {
+        Row: {
+          created_at: string
+          id: string
+          option_entity: string
+          poll_entity: string
+          voter_token: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_entity: string
+          poll_entity: string
+          voter_token: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_entity?: string
+          poll_entity?: string
+          voter_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_on_entity_option_entity_fkey"
+            columns: ["option_entity"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_votes_on_entity_poll_entity_fkey"
+            columns: ["poll_entity"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       replicache_clients: {
         Row: {
           client_group: string
@@ -534,12 +573,22 @@ export type Database = {
           like: unknown
         }[]
       }
+      pull_data: {
+        Args: {
+          token_id: string
+          client_group_id: string
+        }
+        Returns: Database["public"]["CompositeTypes"]["pull_result"]
+      }
     }
     Enums: {
       rsvp_status: "GOING" | "NOT_GOING" | "MAYBE"
     }
     CompositeTypes: {
-      [_ in never]: never
+      pull_result: {
+        client_groups: Json | null
+        facts: Json | null
+      }
     }
   }
   storage: {
@@ -818,10 +867,6 @@ export type Database = {
           metadata: Json
           updated_at: string
         }[]
-      }
-      operation: {
-        Args: Record<PropertyKey, never>
-        Returns: string
       }
       search: {
         Args: {

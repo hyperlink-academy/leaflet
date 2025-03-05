@@ -1,4 +1,4 @@
-import { pgTable, foreignKey, pgEnum, uuid, timestamp, text, jsonb, bigint, unique, boolean, uniqueIndex, smallint, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, pgEnum, uuid, text, jsonb, timestamp, bigint, boolean, unique, uniqueIndex, smallint, primaryKey } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const aal_level = pgEnum("aal_level", ['aal1', 'aal2', 'aal3'])
@@ -13,20 +13,6 @@ export const rsvp_status = pgEnum("rsvp_status", ['GOING', 'NOT_GOING', 'MAYBE']
 export const action = pgEnum("action", ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'ERROR'])
 export const equality_op = pgEnum("equality_op", ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'in'])
 
-
-export const poll_votes_on_entity = pgTable("poll_votes_on_entity", {
-	id: uuid("id").defaultRandom().primaryKey().notNull(),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	poll_entity: uuid("poll_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
-	option_entity: uuid("option_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
-	voter_token: uuid("voter_token").notNull(),
-});
-
-export const entities = pgTable("entities", {
-	id: uuid("id").primaryKey().notNull(),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	set: uuid("set").notNull().references(() => entity_sets.id, { onDelete: "cascade", onUpdate: "cascade" } ),
-});
 
 export const facts = pgTable("facts", {
 	id: uuid("id").primaryKey().notNull(),
@@ -46,9 +32,21 @@ export const replicache_clients = pgTable("replicache_clients", {
 	last_mutation: bigint("last_mutation", { mode: "number" }).notNull(),
 });
 
+export const entities = pgTable("entities", {
+	id: uuid("id").primaryKey().notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	set: uuid("set").notNull().references(() => entity_sets.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+});
+
 export const entity_sets = pgTable("entity_sets", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+});
+
+export const permission_tokens = pgTable("permission_tokens", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	root_entity: uuid("root_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	blocked_by_admin: boolean("blocked_by_admin"),
 });
 
 export const identities = pgTable("identities", {
@@ -61,11 +59,6 @@ export const identities = pgTable("identities", {
 	return {
 		identities_email_key: unique("identities_email_key").on(table.email),
 	}
-});
-
-export const permission_tokens = pgTable("permission_tokens", {
-	id: uuid("id").defaultRandom().primaryKey().notNull(),
-	root_entity: uuid("root_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 });
 
 export const email_subscriptions_to_entity = pgTable("email_subscriptions_to_entity", {
@@ -131,6 +124,14 @@ export const custom_domains = pgTable("custom_domains", {
 	identity: text("identity").default('').notNull().references(() => identities.email, { onDelete: "cascade", onUpdate: "cascade" } ),
 	confirmed: boolean("confirmed").notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+});
+
+export const poll_votes_on_entity = pgTable("poll_votes_on_entity", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	poll_entity: uuid("poll_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	option_entity: uuid("option_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	voter_token: uuid("voter_token").notNull(),
 });
 
 export const permission_token_on_homepage = pgTable("permission_token_on_homepage", {
