@@ -717,6 +717,31 @@ const addTableColumn: Mutation<{
   );
 };
 
+const deleteTableColumn: Mutation<{
+  tableEntity: string;
+  columnIndex: number;
+}> = async (args, ctx) => {
+  // get all cells by row sorted by position
+  let rows = await ctx.scanIndex.eav(args.tableEntity, "table/row");
+
+  await Promise.all(
+    rows.map(async (row) => {
+      // sort the cells in row by position
+      let cells = (
+        await ctx.scanIndex.eav(row.data.value, "row/cell")
+      ).toSorted(
+        (
+          a: DeepReadonly<Fact<"row/cell">>,
+          b: DeepReadonly<Fact<"row/cell">>,
+        ) => (a.data.position > b.data.position ? 1 : -1),
+      );
+
+      // delete the cell at the column index
+      await ctx.deleteEntity(cells[args.columnIndex].data.value);
+    }),
+  );
+};
+
 export const mutations = {
   retractAttribute,
   addBlock,
@@ -742,4 +767,5 @@ export const mutations = {
   addTableRow,
   deleteTableRow,
   addTableColumn,
+  deleteTableColumn,
 };

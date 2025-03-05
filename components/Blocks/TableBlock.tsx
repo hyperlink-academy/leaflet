@@ -37,8 +37,6 @@ export const TableBlock = (props: BlockProps) => {
 
       <button
         onClick={() => {
-          // create a row of entities
-
           rep?.mutate.addTableRow({
             tableEntity: props.entityID,
             rowEntity: v7(),
@@ -81,33 +79,53 @@ const Row = (props: {
   pageType: "doc" | "canvas";
   tableEntity: string;
 }) => {
-  let cells = useBlocks(props.rowEntity, "row/cell");
-  let cellIsSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => cells.some((cell) => b.value === cell.value)),
+  let rowCells = useBlocks(props.rowEntity, "row/cell");
+  let selectedCellInRow = useUIState((s) =>
+    s.selectedBlocks.find((b) =>
+      rowCells.some((cell) => b.value === cell.value),
+    ),
   );
+  let selectedCellInRowIndex = rowCells.findIndex(
+    (cell) => selectedCellInRow && selectedCellInRow.value === cell.value,
+  );
+
+  // to check if a cell in the same column is selected, we need to get a list of cells that are at the same sorted index as the selected cell
+  // get all cells by row
+
+  // sort cells by position
+  // make a new array of cells that are at the same index
+  // check if any of those cells are selected
 
   return (
     <div
       className={`tableRow relative w-full grid  h-max items-start `}
-      style={{ gridTemplateColumns: `repeat(${cells.length}, minmax(0, 1fr))` }}
+      style={{
+        gridTemplateColumns: `repeat(${rowCells.length}, minmax(0, 1fr))`,
+      }}
     >
-      {cellIsSelected && (
+      {selectedCellInRow && (
         <DeleteRowButton
           rowEntity={props.rowEntity}
           tableEntity={props.tableEntity}
         />
       )}
-      {cells.map((cell, index) => {
+      {rowCells.map((cell, index) => {
         return (
           <div
             className={`
-              tableCell
+              tableCell relative
               w-full h-full px-2 sm:px-3 py-1 sm:py-2
               border-t border-l
               first:border-l-transparent border-l-border-light
               ${props.first ? "border-t-transparent" : "border-t-border-light"}
               `}
           >
+            {props.first && selectedCellInRowIndex === index && (
+              <DeleteColumnButton
+                tableEntity={props.tableEntity}
+                columnIndex={selectedCellInRowIndex}
+              />
+            )}
             <BaseBlock
               key={cell.value}
               {...cell}
@@ -115,8 +133,8 @@ const Row = (props: {
               entityID={cell.value}
               parent={props.rowEntity}
               position={cell.position}
-              previousBlock={cells[index - 1] || null}
-              nextBlock={cells[index + 1] || null}
+              previousBlock={rowCells[index - 1] || null}
+              nextBlock={rowCells[index + 1] || null}
               nextPosition={null}
             />
           </div>
@@ -136,10 +154,41 @@ function DeleteRowButton(props: { rowEntity: string; tableEntity: string }) {
           rowEntity: props.rowEntity,
           tableEntity: props.tableEntity,
         });
+      }}
+    >
+      <TrashSmall />
+    </button>
+  );
+}
+
+function DeleteColumnButton(props: {
+  tableEntity: string;
+  columnIndex: number;
+}) {
+  let rep = useReplicache();
+  return (
+    <button
+      className="absolute left-2 -top-6"
+      onMouseDown={() => {
+        rep.rep?.mutate.deleteTableColumn({
+          tableEntity: props.tableEntity,
+          columnIndex: props.columnIndex,
+        });
         console.log("deleting! we hope...");
       }}
     >
       <TrashSmall />
     </button>
   );
+}
+
+function getColumnCells(tableEntity: string, index: number) {
+  let rows = useEntity(tableEntity, "table/row");
+  let columnCells = [];
+
+  rows.map((row) => {
+    let cells = useEntity(row.data.value, "row/cell");
+    let sortedCells = cells.sort();
+    columnCells.push(sortedCells[index]);
+  });
 }
