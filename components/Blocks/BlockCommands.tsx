@@ -301,6 +301,11 @@ export const blockCommands: Command[] = [
         permission_set: props.entity_set,
         cellEntities: [v7(), v7(), v7()],
       });
+      await rep?.mutate.assertFact({
+        entity: props.entityID,
+        attribute: "table/column-widths",
+        data: { type: "array", value: [null, null, null] },
+      });
 
       um.add({
         undo: () => {

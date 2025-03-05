@@ -654,6 +654,8 @@ const deleteTableRow: Mutation<{
   tableEntity: string;
   rowEntity: string;
 }> = async (args, ctx) => {
+  if (!args.rowEntity || !args.tableEntity) return;
+
   // get cells in row
   let cells = await ctx.scanIndex.eav(args.rowEntity, "row/cell");
 
@@ -715,6 +717,17 @@ const addTableColumn: Mutation<{
       });
     }),
   );
+  // add a new column width array to the table
+  let [columnWidths] = await ctx.scanIndex.eav(
+    args.tableEntity,
+    "table/column-widths",
+  );
+  let newColumnWidths = [...columnWidths.data.value, null];
+  await ctx.assertFact({
+    entity: args.tableEntity,
+    attribute: "table/column-widths",
+    data: { type: "array", value: newColumnWidths },
+  });
 };
 
 const deleteTableColumn: Mutation<{
@@ -740,6 +753,45 @@ const deleteTableColumn: Mutation<{
       await ctx.deleteEntity(cells[args.columnIndex].data.value);
     }),
   );
+
+  // delete the column width at that index
+  let [columnWidths] = await ctx.scanIndex.eav(
+    args.tableEntity,
+    "table/column-widths",
+  );
+  let newColumnWidths = columnWidths.data.value.toSpliced(args.columnIndex, 1);
+
+  await ctx.assertFact({
+    entity: args.tableEntity,
+    attribute: "table/column-widths",
+    data: { type: "array", value: newColumnWidths },
+  });
+};
+
+const resizeTableColumn: Mutation<{
+  tableEntity: string;
+  columnIndex: number;
+  width: number;
+}> = async (args, ctx) => {
+  // get the column widths
+  let [columnWidths] = await ctx.scanIndex.eav(
+    args.tableEntity,
+    "table/column-widths",
+  );
+  console.log(columnWidths);
+
+  //modify the column width at the index
+  let newColumnWidths = columnWidths.data.value.toSpliced(
+    args.columnIndex,
+    1,
+    args.width,
+  );
+  args.width &&
+    (await ctx.assertFact({
+      entity: args.tableEntity,
+      attribute: "table/column-widths",
+      data: { type: "array", value: newColumnWidths },
+    }));
 };
 
 export const mutations = {
@@ -768,4 +820,5 @@ export const mutations = {
   deleteTableRow,
   addTableColumn,
   deleteTableColumn,
+  resizeTableColumn,
 };

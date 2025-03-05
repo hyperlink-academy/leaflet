@@ -157,6 +157,10 @@ const TableBlockAttributes = {
     type: "ordered-reference",
     cardinality: "many",
   },
+  "table/column-widths": {
+    type: "array",
+    cardinality: "one",
+  },
   "row/cell": {
     type: "ordered-reference",
     cardinality: "many",
@@ -271,6 +275,10 @@ export type Data<A extends keyof typeof Attributes> = {
     type: "number";
     value: number;
   };
+  array: {
+    type: "array";
+    value: any[];
+  };
   awareness: {
     type: "awareness";
     value: string;
@@ -280,6 +288,7 @@ export type Data<A extends keyof typeof Attributes> = {
     type: "text-alignment-type-union";
     value: "right" | "left" | "center";
   };
+
   "page-type-union": {
     type: "page-type-union";
     value: "doc" | "canvas";

@@ -93,6 +93,7 @@ const Row = (props: {
       rowCells.some((cell) => b.value === cell.value),
     ),
   );
+  let columnWidths = useEntity(props.tableEntity, "table/column-widths");
   useEffect(() => {
     if (selectedCell) {
       let foundIndex = rowCells.findIndex(
@@ -116,22 +117,33 @@ const Row = (props: {
         />
       )}
       {rowCells.map((cell, index) => {
+        let columnWidth = columnWidths?.data.value[index];
         return (
           <div
             className={`
               tableCell relative
-              w-full h-full px-2 sm:px-3 py-1 sm:py-2
+              h-full px-2 sm:px-3 py-1 sm:py-2
               border-t border-l
               first:border-l-transparent border-l-border-light
               ${props.first ? "border-t-transparent" : "border-t-border-light"}
+              ${columnWidth ? `w-[${columnWidth}px]` : "w-full"}
               `}
           >
+            {props.first && props.selectedCellIndex !== undefined && (
+              <ColumnResizeGripper
+                tableEntity={props.tableEntity}
+                columnIndex={props.selectedCellIndex}
+                cellEntity={cell.value}
+              />
+            )}
+
             {props.first && props.selectedCellIndex === index && (
               <DeleteColumnButton
                 tableEntity={props.tableEntity}
                 columnIndex={props.selectedCellIndex}
               />
             )}
+            <div>{columnWidth ? columnWidth : "x"}</div>
             <BaseBlock
               key={cell.value}
               {...cell}
@@ -176,13 +188,53 @@ function DeleteColumnButton(props: {
     <button
       className="absolute left-2 -top-6"
       onMouseDown={() => {
-        rep.rep?.mutate.deleteTableColumn({
-          tableEntity: props.tableEntity,
-          columnIndex: props.columnIndex,
-        });
+        props.columnIndex &&
+          rep.rep?.mutate.deleteTableColumn({
+            tableEntity: props.tableEntity,
+            columnIndex: props.columnIndex,
+          });
       }}
     >
       <TrashSmall />
     </button>
   );
 }
+
+const ColumnResizeGripper = (props: {
+  tableEntity: string;
+  cellEntity: string;
+  columnIndex: number;
+}) => {
+  let widths = useEntity(props.tableEntity, "table/column-widths")?.data.value;
+  let width =
+    Number(
+      useEntity(props.tableEntity, "table/column-widths")?.data.value[
+        props.columnIndex
+      ],
+    ) || undefined;
+  let [widthValue, setWidthValue] = useState<number | undefined>(width);
+
+  let rep = useReplicache();
+
+  return (
+    <div className="gripper absolute p-1 -top-9 right-0 translate-x-1/2 h-fit w-fit bg-test">
+      <input
+        className="w-5 text-xs p-0.5"
+        type="number"
+        value={widthValue}
+        onChange={(e) => {
+          setWidthValue(e.currentTarget.valueAsNumber);
+        }}
+        onBlur={() => {
+          widthValue &&
+            rep.rep?.mutate.resizeTableColumn({
+              tableEntity: props.tableEntity,
+              columnIndex: props.columnIndex,
+              width: widthValue,
+            });
+          console.log("resized column to " + widthValue);
+        }}
+      />
+    </div>
+  );
+};
