@@ -19,34 +19,29 @@ export const HelpPopover = (props: { noShortcuts?: boolean }) => {
         <HoverButton
           icon={<HelpSmall />}
           noLabelOnMobile
-          label="About This App"
+          label="About"
           background="bg-accent-1"
           text="text-accent-2"
         />
       }
     >
-      <div className="flex flex-col text-sm gap-2 text-secondary ">
-        <div>
+      <div className="flex flex-col text-sm gap-2 text-secondary">
+        {/* about leaflet */}
+        {/* <div>
           Welcome to <strong>Leaflet</strong> — a fun, fast, easy-to-share
           document editor.
+        </div> */}
+        <HelpLink text="📖 Leaflet Manual" url="https://about.leaflet.pub" />
+        <HelpLink text="💡 Make with Leaflet" url="https://make.leaflet.pub" />
+        <HelpLink text="📣 Newsletter" url="https://buttondown.com/leaflet" />
+        <div className="columns-2 gap-2">
+          <HelpLink
+            text="🦋 Bluesky"
+            url="https://bsky.app/profile/leaflet.pub"
+          />
+          <HelpLink text="💌 Email" url="mailto:contact@leaflet.pub" />
         </div>
-        <HelpLink
-          text="💡 Learn more"
-          url="https://leaflet.pub/0325b34c-1948-412c-a6fb-d155fd2fe6ed"
-        />
-        <HelpLink text="💌 Get updates" url="https://buttondown.com/leaflet" />
-        <HelpLink
-          text="📖 Explore templates"
-          url="https://leaflet.pub/templates"
-        />
-        <HelpLink
-          text="🍃 Email us feedback"
-          url="mailto:contact@leaflet.pub"
-        />
-        <HelpLink
-          text="📄 Terms and Privacy Policy"
-          url="https://leaflet.pub/legal"
-        />
+        {/* keyboard shortcuts: desktop only */}
         <Media mobile={false}>
           {!props.noShortcuts && (
             <>
@@ -109,6 +104,17 @@ export const HelpPopover = (props: { noShortcuts?: boolean }) => {
             </>
           )}
         </Media>
+        {/* links: terms and privacy */}
+        <hr className="text-border my-1" />
+        {/* <HelpLink
+          text="Terms and Privacy Policy"
+          url="https://leaflet.pub/legal"
+        /> */}
+        <div>
+          <a href="https://leaflet.pub/legal" target="_blank">
+            Terms and Privacy Policy
+          </a>
+        </div>
       </div>
     </Popover>
   ) : null;
@@ -116,7 +122,7 @@ export const HelpPopover = (props: { noShortcuts?: boolean }) => {
 
 const KeyboardShortcut = (props: { name: string; keys: string[] }) => {
   return (
-    <div className="flex justify-between items-center">
+    <div className="flex gap-2 justify-between items-center">
       {props.name}
       <div className="flex gap-1 items-center font-bold">
         {props.keys.map((key, index) => {
