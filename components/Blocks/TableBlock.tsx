@@ -7,6 +7,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { TrashSmall } from "components/Icons";
 import { scanIndex } from "src/replicache/utils";
+import { useEffect, useState } from "react";
 
 export const TableBlock = (props: BlockProps) => {
   let { rep } = useReplicache();
@@ -16,6 +17,9 @@ export const TableBlock = (props: BlockProps) => {
   );
   let rows = useEntity(props.entityID, "table/row");
   let firstRowCells = useEntity(rows[0]?.data.value, "row/cell");
+  let [selectedCellIndex, setSelectedCellIndex] = useState<number | undefined>(
+    undefined,
+  );
 
   return (
     <div className="w-full flex flex-col ">
@@ -30,6 +34,8 @@ export const TableBlock = (props: BlockProps) => {
                 first={row.data.value === rows[0].data.value}
                 pageType={props.pageType}
                 tableEntity={props.entityID}
+                setSelectedCellIndex={setSelectedCellIndex}
+                selectedCellIndex={selectedCellIndex}
               />
             );
           })}
@@ -78,23 +84,23 @@ const Row = (props: {
   first: boolean;
   pageType: "doc" | "canvas";
   tableEntity: string;
+  selectedCellIndex: number | undefined;
+  setSelectedCellIndex: (index: number) => void;
 }) => {
   let rowCells = useBlocks(props.rowEntity, "row/cell");
-  let selectedCellInRow = useUIState((s) =>
+  let selectedCell = useUIState((s) =>
     s.selectedBlocks.find((b) =>
       rowCells.some((cell) => b.value === cell.value),
     ),
   );
-  let selectedCellInRowIndex = rowCells.findIndex(
-    (cell) => selectedCellInRow && selectedCellInRow.value === cell.value,
-  );
-
-  // to check if a cell in the same column is selected, we need to get a list of cells that are at the same sorted index as the selected cell
-  // get all cells by row
-
-  // sort cells by position
-  // make a new array of cells that are at the same index
-  // check if any of those cells are selected
+  useEffect(() => {
+    if (selectedCell) {
+      let foundIndex = rowCells.findIndex(
+        (cell) => selectedCell.value === cell.value,
+      );
+      props.setSelectedCellIndex(foundIndex);
+    }
+  }, [selectedCell, rowCells, props.setSelectedCellIndex]);
 
   return (
     <div
@@ -103,7 +109,7 @@ const Row = (props: {
         gridTemplateColumns: `repeat(${rowCells.length}, minmax(0, 1fr))`,
       }}
     >
-      {selectedCellInRow && (
+      {selectedCell && (
         <DeleteRowButton
           rowEntity={props.rowEntity}
           tableEntity={props.tableEntity}
@@ -120,10 +126,10 @@ const Row = (props: {
               ${props.first ? "border-t-transparent" : "border-t-border-light"}
               `}
           >
-            {props.first && selectedCellInRowIndex === index && (
+            {props.first && props.selectedCellIndex === index && (
               <DeleteColumnButton
                 tableEntity={props.tableEntity}
-                columnIndex={selectedCellInRowIndex}
+                columnIndex={props.selectedCellIndex}
               />
             )}
             <BaseBlock
@@ -174,21 +180,9 @@ function DeleteColumnButton(props: {
           tableEntity: props.tableEntity,
           columnIndex: props.columnIndex,
         });
-        console.log("deleting! we hope...");
       }}
     >
       <TrashSmall />
     </button>
   );
-}
-
-function getColumnCells(tableEntity: string, index: number) {
-  let rows = useEntity(tableEntity, "table/row");
-  let columnCells = [];
-
-  rows.map((row) => {
-    let cells = useEntity(row.data.value, "row/cell");
-    let sortedCells = cells.sort();
-    columnCells.push(sortedCells[index]);
-  });
 }
