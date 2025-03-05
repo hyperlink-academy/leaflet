@@ -46,7 +46,7 @@ export const LeafletPreview = (props: {
   return (
     <div className="relative max-h-40 h-40">
       <ThemeProvider local entityID={root}>
-        <div className="rounded-lg hover:shadow-sm overflow-clip border border-border outline outline-2 outline-transparent outline-offset-1 hover:outline-border bg-bg-leaflet grow w-full h-full">
+        <div className="rounded-lg sm:hover:shadow-sm overflow-clip border border-border outline outline-2 outline-transparent outline-offset-1 sm:hover:outline-border bg-bg-leaflet grow w-full h-full">
           {state === "normal" ? (
             <div className="relative w-full h-full">
               <ThemeBackgroundProvider entityID={root}>
@@ -212,7 +212,7 @@ const LeafletPreviewLink = (props: { id: string }) => {
       onPointerDown={() => setPrefetch(true)}
       prefetch={prefetch}
       href={`/${props.id}`}
-      className={`no-underline hover:no-underline text-primary absolute inset-0 w-full h-full`}
+      className={`no-underline sm:hover:no-underline text-primary absolute inset-0 w-full h-full`}
     />
   );
 };
