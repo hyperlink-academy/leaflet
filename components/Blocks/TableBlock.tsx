@@ -93,7 +93,9 @@ const Row = (props: {
       rowCells.some((cell) => b.value === cell.value),
     ),
   );
-  let columnWidths = useEntity(props.tableEntity, "table/column-widths");
+  let columnWidths = useEntity(props.tableEntity, "table/column-widths")?.data
+    .value;
+
   useEffect(() => {
     if (selectedCell) {
       let foundIndex = rowCells.findIndex(
@@ -103,11 +105,19 @@ const Row = (props: {
     }
   }, [selectedCell, rowCells, props.setSelectedCellIndex]);
 
+  let gridTemplateColumnsStyle = columnWidths
+    ?.map((width) =>
+      width !== null && width !== undefined
+        ? width + "px"
+        : "minmax(104px, 1fr)",
+    )
+    .join(" ");
+
   return (
     <div
       className={`tableRow relative w-full grid  h-max items-start `}
       style={{
-        gridTemplateColumns: `repeat(${rowCells.length}, minmax(0, 1fr))`,
+        gridTemplateColumns: `${gridTemplateColumnsStyle}`,
       }}
     >
       {selectedCell && (
@@ -117,7 +127,7 @@ const Row = (props: {
         />
       )}
       {rowCells.map((cell, index) => {
-        let columnWidth = columnWidths?.data.value[index];
+        let columnWidth = columnWidths && columnWidths[index];
         return (
           <div
             className={`
@@ -126,13 +136,12 @@ const Row = (props: {
               border-t border-l
               first:border-l-transparent border-l-border-light
               ${props.first ? "border-t-transparent" : "border-t-border-light"}
-              ${columnWidth ? `w-[${columnWidth}px]` : "w-full"}
               `}
           >
             {props.first && props.selectedCellIndex !== undefined && (
               <ColumnResizeGripper
                 tableEntity={props.tableEntity}
-                columnIndex={props.selectedCellIndex}
+                columnIndex={index}
                 cellEntity={cell.value}
               />
             )}
@@ -232,7 +241,6 @@ const ColumnResizeGripper = (props: {
               columnIndex: props.columnIndex,
               width: widthValue,
             });
-          console.log("resized column to " + widthValue);
         }}
       />
     </div>

@@ -685,8 +685,6 @@ const addTableColumn: Mutation<{
   // map across rows and add a cell to each row
   await Promise.all(
     args.cellEntities.map(async (cell, index) => {
-      console.log(rows[index].data.value + "|" + cell);
-
       // create the cell entity
       await ctx.createEntity({
         entityID: cell,
@@ -717,7 +715,7 @@ const addTableColumn: Mutation<{
       });
     }),
   );
-  // add a new column width array to the table
+  // add a new column width to the table
   let [columnWidths] = await ctx.scanIndex.eav(
     args.tableEntity,
     "table/column-widths",
@@ -778,7 +776,6 @@ const resizeTableColumn: Mutation<{
     args.tableEntity,
     "table/column-widths",
   );
-  console.log(columnWidths);
 
   //modify the column width at the index
   let newColumnWidths = columnWidths.data.value.toSpliced(
@@ -792,6 +789,7 @@ const resizeTableColumn: Mutation<{
       attribute: "table/column-widths",
       data: { type: "array", value: newColumnWidths },
     }));
+  console.log(newColumnWidths);
 };
 
 export const mutations = {
