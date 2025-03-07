@@ -789,7 +789,6 @@ const resizeTableColumn: Mutation<{
       attribute: "table/column-widths",
       data: { type: "array", value: newColumnWidths },
     }));
-  console.log(newColumnWidths);
 };
 
 export const mutations = {

@@ -6,8 +6,10 @@ import { generateKeyBetween } from "fractional-indexing";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { TrashSmall } from "components/Icons";
-import { scanIndex } from "src/replicache/utils";
 import { useEffect, useState } from "react";
+import * as Popover from "@radix-ui/react-popover";
+import { useSubscribe } from "replicache-react";
+import { scanIndex } from "src/replicache/utils";
 
 export const TableBlock = (props: BlockProps) => {
   let { rep } = useReplicache();
@@ -15,32 +17,72 @@ export const TableBlock = (props: BlockProps) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
+  let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
+
   let rows = useEntity(props.entityID, "table/row");
-  let firstRowCells = useEntity(rows[0]?.data.value, "row/cell");
-  let [selectedCellIndex, setSelectedCellIndex] = useState<number | undefined>(
-    undefined,
+  let focusedEntity = useUIState((s) => s.focusedEntity);
+  let selectedColumnIndex = useSubscribe(
+    rep,
+    async (tx) => {
+      if (!focusedEntity || focusedEntity.entityType === "page") return null;
+      let rows = (
+        await scanIndex(tx).eav(props.entityID, "table/row")
+      ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+      for (let row of rows) {
+        let cells = (
+          await scanIndex(tx).eav(row.data.value, "row/cell")
+        ).toSorted((a, b) => (a.data.position > b.data.position ? 1 : -1));
+        let index = cells.findIndex(
+          (s) => s.data.value === focusedEntity.entityID,
+        );
+        if (index !== -1) return index;
+      }
+    },
+    {
+      default: null,
+      dependencies: [props.entityID, focusedEntity],
+    },
   );
 
+  let [, setSelectedColumnIndex] = useState<number | undefined>(undefined);
+
+  let columnWidths =
+    useEntity(props.entityID, "table/column-widths")?.data.value || [];
+  let tableWidthFixed =
+    columnWidths?.find((width) => width === null) === undefined;
+
   return (
-    <div className="w-full flex flex-col ">
+    <div
+      className={`flex flex-col w-full
+`}
+    >
       <div
-        className={`table focused-within:block-border-selected ${isSelected ? "block-border-selected" : "block-border"}`}
+        className={`tableWrapper  flex flex-col max-w-full overflow-scroll focused-within:block-border-selected
+        ${isSelected ? "block-border-selected" : "block-border"}
+        ${tableWidthFixed ? "w-fit max-w-full" : "w-full"}
+        ${
+          alignment === "center"
+            ? "place-self-center"
+            : alignment === "left"
+              ? "place-self-start"
+              : alignment === "right"
+                ? "place-self-end"
+                : ""
+        }`}
       >
         {rows &&
           rows.map((row) => {
             return (
               <Row
                 rowEntity={row.data.value}
-                first={row.data.value === rows[0].data.value}
+                firstRow={row.data.value === rows[0].data.value}
                 pageType={props.pageType}
                 tableEntity={props.entityID}
-                setSelectedCellIndex={setSelectedCellIndex}
-                selectedCellIndex={selectedCellIndex}
+                selectedColumnIndex={selectedColumnIndex}
               />
             );
           })}
       </div>
-
       <button
         onClick={() => {
           rep?.mutate.addTableRow({
@@ -54,7 +96,7 @@ export const TableBlock = (props: BlockProps) => {
             cellEntities:
               rows.length === 0 || !rows
                 ? [v7(), v7(), v7(), v7()]
-                : firstRowCells.map(() => v7()),
+                : columnWidths.map(() => v7()),
           });
         }}
       >
@@ -81,11 +123,10 @@ export const TableBlock = (props: BlockProps) => {
 
 const Row = (props: {
   rowEntity: string;
-  first: boolean;
+  firstRow: boolean;
   pageType: "doc" | "canvas";
   tableEntity: string;
-  selectedCellIndex: number | undefined;
-  setSelectedCellIndex: (index: number) => void;
+  selectedColumnIndex: number | null;
 }) => {
   let rowCells = useBlocks(props.rowEntity, "row/cell");
   let selectedCell = useUIState((s) =>
@@ -95,15 +136,6 @@ const Row = (props: {
   );
   let columnWidths = useEntity(props.tableEntity, "table/column-widths")?.data
     .value;
-
-  useEffect(() => {
-    if (selectedCell) {
-      let foundIndex = rowCells.findIndex(
-        (cell) => selectedCell.value === cell.value,
-      );
-      props.setSelectedCellIndex(foundIndex);
-    }
-  }, [selectedCell, rowCells, props.setSelectedCellIndex]);
 
   let gridTemplateColumnsStyle = columnWidths
     ?.map((width) =>
@@ -115,19 +147,12 @@ const Row = (props: {
 
   return (
     <div
-      className={`tableRow relative w-full grid  h-max items-start `}
+      className={`tableRow relative grid  h-max items-start `}
       style={{
         gridTemplateColumns: `${gridTemplateColumnsStyle}`,
       }}
     >
-      {selectedCell && (
-        <DeleteRowButton
-          rowEntity={props.rowEntity}
-          tableEntity={props.tableEntity}
-        />
-      )}
-      {rowCells.map((cell, index) => {
-        let columnWidth = columnWidths && columnWidths[index];
+      {rowCells.map((cell, columnIndex) => {
         return (
           <div
             className={`
@@ -135,38 +160,50 @@ const Row = (props: {
               h-full px-2 sm:px-3 py-1 sm:py-2
               border-t border-l
               first:border-l-transparent border-l-border-light
-              ${props.first ? "border-t-transparent" : "border-t-border-light"}
+              ${props.firstRow ? "border-t-transparent" : "border-t-border-light"}
               `}
           >
-            {props.first && props.selectedCellIndex !== undefined && (
-              <ColumnResizeGripper
-                tableEntity={props.tableEntity}
-                columnIndex={index}
-                cellEntity={cell.value}
-              />
-            )}
+            {props.firstRow &&
+              props.selectedColumnIndex !== undefined &&
+              props.selectedColumnIndex === columnIndex && (
+                <DeleteColumnButton
+                  tableEntity={props.tableEntity}
+                  columnIndex={props.selectedColumnIndex}
+                />
+              )}
 
-            {props.first && props.selectedCellIndex === index && (
-              <DeleteColumnButton
-                tableEntity={props.tableEntity}
-                columnIndex={props.selectedCellIndex}
+            <ColumnResizeGripper
+              tableEntity={props.tableEntity}
+              columnIndex={columnIndex}
+              cellEntity={cell.value}
+              open={
+                props.firstRow &&
+                props.selectedColumnIndex !== undefined &&
+                (props.selectedColumnIndex === columnIndex ||
+                  props.selectedColumnIndex === columnIndex + 1)
+              }
+            >
+              <BaseBlock
+                key={cell.value}
+                {...cell}
+                pageType={props.pageType}
+                entityID={cell.value}
+                parent={props.rowEntity}
+                position={cell.position}
+                previousBlock={rowCells[columnIndex - 1] || null}
+                nextBlock={rowCells[columnIndex + 1] || null}
+                nextPosition={null}
               />
-            )}
-            <div>{columnWidth ? columnWidth : "x"}</div>
-            <BaseBlock
-              key={cell.value}
-              {...cell}
-              pageType={props.pageType}
-              entityID={cell.value}
-              parent={props.rowEntity}
-              position={cell.position}
-              previousBlock={rowCells[index - 1] || null}
-              nextBlock={rowCells[index + 1] || null}
-              nextPosition={null}
-            />
+            </ColumnResizeGripper>
           </div>
         );
       })}
+      {selectedCell && (
+        <DeleteRowButton
+          rowEntity={props.rowEntity}
+          tableEntity={props.tableEntity}
+        />
+      )}
     </div>
   );
 };
@@ -213,6 +250,8 @@ const ColumnResizeGripper = (props: {
   tableEntity: string;
   cellEntity: string;
   columnIndex: number;
+  open: boolean;
+  children: React.ReactNode;
 }) => {
   let widths = useEntity(props.tableEntity, "table/column-widths")?.data.value;
   let width =
@@ -226,23 +265,39 @@ const ColumnResizeGripper = (props: {
   let rep = useReplicache();
 
   return (
-    <div className="gripper absolute p-1 -top-9 right-0 translate-x-1/2 h-fit w-fit bg-test">
-      <input
-        className="w-5 text-xs p-0.5"
-        type="number"
-        value={widthValue}
-        onChange={(e) => {
-          setWidthValue(e.currentTarget.valueAsNumber);
-        }}
-        onBlur={() => {
-          widthValue &&
-            rep.rep?.mutate.resizeTableColumn({
-              tableEntity: props.tableEntity,
-              columnIndex: props.columnIndex,
-              width: widthValue,
-            });
-        }}
-      />
-    </div>
+    <Popover.Root open={props.open}>
+      <Popover.Anchor>{props.children}</Popover.Anchor>
+      <Popover.Portal>
+        <Popover.Content
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          align="end"
+          alignOffset={0}
+          side="top"
+          sideOffset={-20}
+        >
+          <div className="gripper absolute p-1 -top-9 right-0 translate-x-1/2 h-fit w-fit bg-test">
+            <input
+              autoFocus={false}
+              className="w-5 text-xs p-0.5"
+              type="number"
+              value={widthValue}
+              onChange={(e) => {
+                setWidthValue(e.currentTarget.valueAsNumber);
+              }}
+              onBlur={() => {
+                widthValue &&
+                  rep.rep?.mutate.resizeTableColumn({
+                    tableEntity: props.tableEntity,
+                    columnIndex: props.columnIndex,
+                    width: widthValue,
+                  });
+              }}
+            />
+          </div>
+          <Popover.Close />
+          <Popover.Arrow />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 };

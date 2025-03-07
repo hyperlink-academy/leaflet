@@ -106,6 +106,8 @@ export const Block = memo(function Block(
             ? "pt-2 sm:pt-3"
             : "pt-3 sm:pt-4"
           : "pt-1"
+      }
+
       }`}
     >
       {!props.preview && <BlockMultiselectIndicator {...props} />}

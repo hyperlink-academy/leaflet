@@ -46,7 +46,9 @@ export const BlockToolbar = (props: {
             )}
           </>
         )}
-        {(blockType === "button" || blockType === "datetime") && (
+        {(blockType === "button" ||
+          blockType === "datetime" ||
+          blockType === "table") && (
           <>
             <TextAlignmentButton setToolbarState={props.setToolbarState} />
             {focusedEntityType?.data.value !== "canvas" && (
