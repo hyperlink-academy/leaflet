@@ -88,7 +88,7 @@ export const inputrules = (
       }),
 
       //Checklist
-      new InputRule(/^\[(\ |x)?\]\s$/, (state, match) => {
+      new InputRule(/^\-?\[(\ |x)?\]\s$/, (state, match) => {
         if (!propsRef.current.listData)
           repRef.current?.mutate.assertFact({
             entity: propsRef.current.entityID,
