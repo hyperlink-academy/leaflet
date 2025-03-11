@@ -62,7 +62,7 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
         max-w-[calc(100vw-12px)]
         ${!narrowWidth ? "sm:max-w-[calc(100vw-128px)] lg:max-w-[calc(var(--page-width-units)*2 + 24px))]" : " sm:max-w-[var(--page-width-units)]"}
         rounded-lg
-        overflow-y-scroll no-scrollbar
+        overflow-y-scroll
       `}
     >
       <AddCanvasBlockButton entityID={props.entityID} entity_set={entity_set} />
