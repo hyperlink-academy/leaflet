@@ -1,0 +1,38 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.document",
+  "revision": 1,
+  "description": "A lexicon for long form rich media documents",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "description": "Record containing a document",
+      "record": {
+        "type": "object",
+        "required": [
+          "pages",
+          "author",
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "type": "union",
+              "refs": [
+                "pub.leaflet.pages.linearDocument"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

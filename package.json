@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
+    "lexgen": "tsx ./lexicons/build.ts && lex gen-api ./lexicons/src ./lexicons/out/* ./lexicons/com/atproto/*/* --yes",
     "wrangler-dev": "wrangler dev"
   },
   "keywords": [],
@@ -12,6 +13,11 @@
   "license": "ISC",
   "dependencies": {
     "@atproto/api": "^0.14.2",
+    "@atproto/common": "^0.4.8",
+    "@atproto/identity": "^0.4.6",
+    "@atproto/sync": "^0.1.17",
+    "@atproto/syntax": "^0.3.3",
+    "@atproto/xrpc": "^0.6.9",
     "@mdx-js/loader": "^3.1.0",
     "@mdx-js/react": "^3.1.0",
     "@next/mdx": "^15.0.3",
@@ -35,6 +41,7 @@
     "drizzle-orm": "^0.30.10",
     "fractional-indexing": "^3.2.0",
     "linkifyjs": "^4.2.0",
+    "multiformats": "^13.3.2",
     "next": "^14.2.4",
     "postgres": "^3.4.4",
     "prosemirror-commands": "^1.5.2",
@@ -68,6 +75,8 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@atproto/lex-cli": "^0.6.1",
+    "@atproto/lexicon": "^0.4.7",
     "@cloudflare/workers-types": "^4.20240512.0",
     "@types/react": "18.3.2",
     "@types/react-dom": "^18.3.0",
@@ -80,6 +89,7 @@
     "prettier": "3.2.5",
     "supabase": "^1.187.3",
     "tailwindcss": "^3.4.3",
+    "tsx": "^4.19.3",
     "typescript": "^5.5.3",
     "wrangler": "^3.56.0"
   },

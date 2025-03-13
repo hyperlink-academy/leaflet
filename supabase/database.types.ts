@@ -511,6 +511,24 @@ export type Database = {
           },
         ]
       }
+      publications: {
+        Row: {
+          did: string
+          name: string
+          rkey: string
+        }
+        Insert: {
+          did: string
+          name: string
+          rkey: string
+        }
+        Update: {
+          did?: string
+          name?: string
+          rkey?: string
+        }
+        Relationships: []
+      }
       replicache_clients: {
         Row: {
           client_group: string
