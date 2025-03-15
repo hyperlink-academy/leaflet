@@ -1,6 +1,6 @@
 "use server";
 import { TID } from "@atproto/common";
-import { AtpBaseClient, PubLeafletPagesLinearDocument } from "lexicons/src";
+import { AtpBaseClient } from "lexicons/src";
 import { CredentialSession } from "@atproto/api";
 
 export async function createPublication(name: string) {

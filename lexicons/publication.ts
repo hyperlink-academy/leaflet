@@ -24,6 +24,7 @@ export const PubLeafletPublicationPost = l.lexicon({
       record: l.object({
         required: ["post", "publishedAt"],
         properties: {
+          publication: l.string({ format: "at-uri" }),
           post: { type: "ref", ref: "com.atproto.repo.strongRef" },
           publishedAt: { type: "string", format: "datetime" },
         },

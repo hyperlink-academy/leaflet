@@ -4,7 +4,7 @@ import { IdResolver } from "@atproto/identity";
 const idResolver = new IdResolver();
 import { Firehose, MemoryRunner } from "@atproto/sync";
 import { ids } from "lexicons/src/lexicons";
-import { PubLeafletPublication } from "lexicons/src";
+import { PubLeafletPost, PubLeafletPublication } from "lexicons/src";
 
 const cursorFile = "./cursor";
 
@@ -17,25 +17,32 @@ async function main() {
     excludeAccount: true,
     excludeIdentity: true,
     idResolver,
-    filterCollections: ["pub.leaflet.document", ids.PubLeafletPublication],
+    filterCollections: [
+      "pub.leaflet.document",
+      ids.PubLeafletPublication,
+      ids.PubLeafletPost,
+    ],
     handleEvent: async (evt) => {
-      if (evt.event === "create" || evt.event === "update") {
-        console.log("creating record in " + evt.collection);
-        if (evt.collection === ids.PubLeafletPublication) {
+      if (
+        evt.event == "account" ||
+        evt.event === "identity" ||
+        evt.event === "sync"
+      )
+        return;
+      if (evt.collection === ids.PubLeafletPublication) {
+        if (evt.event === "create" || evt.event === "update") {
           let record = PubLeafletPublication.validateRecord(evt.record);
           if (!record.success) return;
           console.log(
-            await supabase.from("publications").insert({
+            await supabase.from("publications").upsert({
               did: evt.did,
               name: record.value.name,
               rkey: evt.rkey,
             }),
           );
         }
-      }
-      if (evt.event === "delete") {
-        console.log("deleting ", evt.rkey);
-        if (evt.collection === ids.PubLeafletPublication) {
+        if (evt.event === "delete") {
+          console.log("deleting ", evt.rkey);
           console.log(
             await supabase
               .from("publications")
@@ -43,6 +50,12 @@ async function main() {
               .eq("did", evt.did)
               .eq("rkey", evt.rkey),
           );
+        }
+      }
+      if (evt.collection === ids.PubLeafletPost) {
+        if (evt.event === "create" || evt.event === "update") {
+          let record = PubLeafletPost.validateRecord(evt.record);
+          if (!record.success) return;
         }
       }
     },
@@ -63,3 +76,7 @@ async function main() {
 }
 
 main();
+
+//Should I make a helper for writing these hmmm... I need to make create / updates for all of these
+// Creates should basically be the same as updates right? Ya, as long as you make sure to upsert stuff!
+//
