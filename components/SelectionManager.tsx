@@ -494,6 +494,13 @@ export function SelectionManager() {
           if (!rep) return;
           let [, , selectionWithFoldedChildren] = await getSortedSelection();
           if (!selectionWithFoldedChildren) return;
+
+          let el = document.activeElement as HTMLElement;
+          if (
+            el.contentEditable === "true" &&
+            selectionWithFoldedChildren.length <= 1
+          )
+            return;
           e.preventDefault();
           await copySelection(rep, selectionWithFoldedChildren);
         }
