@@ -4,41 +4,47 @@ import { MoreOptionsTiny, ShareSmall } from "components/Icons";
 import { isSubscribed } from "../LishHome";
 import { Menu, MenuItem } from "components/Layout";
 import Link from "next/link";
+import { Footer } from "../Footer";
 
 export default function Publication() {
   return (
-    <div className="pubPage w-full h-fit min-h-full bg-bg-leaflet">
-      <div className="pubContent max-w-prose p-4 mx-auto flex flex-col gap-6 ">
-        <div className="pubHeader flex flex-col gap-3">
-          <div className="flex flex-col gap-1">
-            <h2>Leaflet Explorers</h2>
-            <div className="pubDescription ">
-              We're making Leaflet, a fast fun web app for making delightful
-              documents. Sign up to follow along as we build Leaflet! We
-              typically send updates every week or two.
+    <div className="pubPage w-full h-screen bg-bg-leaflet flex items-stretch">
+      <div className="pubWrapper flex flex-col">
+        <div className="pubContent flex flex-col gap-6 p-4 mx-auto max-w-prose h-full overflow-scroll">
+          <div className="pubHeader flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <h2>Leaflet Explorers</h2>
+              <div className="pubDescription ">
+                We're making Leaflet, a fast fun web app for making delightful
+                documents. Sign up to follow along as we build Leaflet! We
+                typically send updates every week or two.
+              </div>
+            </div>
+            <div className="pubSubStatus flex gap-2">
+              {isSubscribed ? (
+                <>
+                  <div className="font-bold">You're Subscribed!</div>
+                  <ManageSubscriptionMenu />
+                </>
+              ) : (
+                <>
+                  <SubscribeButton />
+                  <ShareButton />
+                </>
+              )}
             </div>
           </div>
-          <div className="pubSubStatus flex gap-2">
-            {isSubscribed ? (
-              <>
-                <div>You Subscribe!</div>
-                <ManageSubscriptionMenu />
-              </>
-            ) : (
-              <>
-                <SubscribeButton />
-                <ShareButton />
-              </>
-            )}
-          </div>
+          <PostList />
+          <PostList />
         </div>
-        <PostList />
+        <Footer />
       </div>
     </div>
   );
 }
 
 const SubscribeButton = () => {
+  if (isSubscribed) return;
   return <ButtonPrimary>Subscribe</ButtonPrimary>;
 };
 
@@ -52,7 +58,7 @@ const ShareButton = () => {
 
 const ManageSubscriptionMenu = () => {
   return (
-    <Menu trigger={<MoreOptionsTiny />}>
+    <Menu trigger={<MoreOptionsTiny className="rotate-90" />}>
       <MenuItem onSelect={() => {}}>Unsub!</MenuItem>
     </Menu>
   );

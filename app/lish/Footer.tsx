@@ -3,6 +3,7 @@ import { onScroll } from "@react-spring/shared";
 import { MoreOptionsTiny, ShareSmall } from "components/Icons";
 import { Menu, MenuItem, Separator } from "components/Layout";
 import { useEffect, useState } from "react";
+import { isSubscribed } from "./LishHome";
 
 export const Footer = () => {
   return (
@@ -11,10 +12,16 @@ export const Footer = () => {
       <div className="px-4 py-2 flex justify-between items-center">
         <MoreOptions />
         <div className="flex gap-2 w-fit items-center">
-          <button className="font-bold text-accent-contrast">Subscribe</button>
-          <Separator classname="h-6" />
-          <button className="text-accent-contrast">
-            <ShareSmall />
+          {!isSubscribed && (
+            <>
+              <button className="font-bold text-accent-contrast">
+                Subscribe
+              </button>
+              <Separator classname="h-6" />
+            </>
+          )}
+          <button className="text-accent-contrast flex gap-2 font-bold">
+            {isSubscribed && "Share"} <ShareSmall />
           </button>
         </div>
       </div>
