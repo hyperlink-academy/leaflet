@@ -13,14 +13,25 @@
         "required": [
           "pages",
           "author",
-          "title"
+          "title",
+          "publication"
         ],
         "properties": {
           "title": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 128
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "publication": {
+            "type": "string",
+            "format": "at-uri"
           },
           "author": {
-            "type": "string"
+            "type": "string",
+            "format": "at-identifier"
           },
           "pages": {
             "type": "array",

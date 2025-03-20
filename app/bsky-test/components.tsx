@@ -1,19 +1,6 @@
 "use client";
 import { useState } from "react";
-import { createRecord } from "./createRecord";
 import { createPublication } from "./createPublication";
-
-export function CreateDocument() {
-  return (
-    <button
-      onClick={() => {
-        console.log(createRecord());
-      }}
-    >
-      press me
-    </button>
-  );
-}
 
 export function CreatePublication() {
   let [state, setState] = useState("");
@@ -33,7 +20,7 @@ export function CreatePublication() {
             createPublication(state);
           }}
         >
-          Submit
+          create a publication
         </button>
       </form>
     </div>

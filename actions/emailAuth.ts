@@ -72,7 +72,7 @@ export async function confirmEmailAuthToken(tokenId: string, code: string) {
     .from(email_auth_tokens)
     .where(eq(email_auth_tokens.id, tokenId));
 
-  if (!token) {
+  if (!token || !token.email) {
     client.end();
     return null;
   }

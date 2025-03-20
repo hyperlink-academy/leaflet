@@ -13,6 +13,7 @@ const id = 'pub.leaflet.post'
 
 export interface Record {
   $type: 'pub.leaflet.post'
+  publication?: string
   post: ComAtprotoRepoStrongRef.Main
   publishedAt: string
   [k: string]: unknown

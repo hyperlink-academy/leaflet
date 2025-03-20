@@ -13,7 +13,12 @@
         ],
         "properties": {
           "name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 2000
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
           }
         }
       }

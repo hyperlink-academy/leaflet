@@ -29,5 +29,14 @@ export async function getIdentityData() {
         .single()
     : null;
   if (!auth_res?.data?.identities) return null;
-  return auth_res.data.identities;
+  if (auth_res.data.identities.atp_did) {
+    //I should create a relationship table so I can do this in the above query
+    let { data: publications } = await supabase
+      .from("publications")
+      .select("*")
+      .eq("identity_did", auth_res.data.identities.atp_did);
+    return { ...auth_res.data.identities, publications: publications || [] };
+  }
+
+  return { ...auth_res.data.identities, publications: [] };
 }

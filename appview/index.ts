@@ -1,10 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
-import { Database } from "supabase/database.types";
+import { Database, Json } from "supabase/database.types";
 import { IdResolver } from "@atproto/identity";
 const idResolver = new IdResolver();
 import { Firehose, MemoryRunner } from "@atproto/sync";
 import { ids } from "lexicons/src/lexicons";
-import { PubLeafletPost, PubLeafletPublication } from "lexicons/src";
+import {
+  PubLeafletDocument,
+  PubLeafletPost,
+  PubLeafletPublication,
+} from "lexicons/src";
 
 const cursorFile = "./cursor";
 
@@ -18,7 +22,7 @@ async function main() {
     excludeIdentity: true,
     idResolver,
     filterCollections: [
-      "pub.leaflet.document",
+      ids.PubLeafletDocument,
       ids.PubLeafletPublication,
       ids.PubLeafletPost,
     ],
@@ -29,15 +33,30 @@ async function main() {
         evt.event === "sync"
       )
         return;
+      if (evt.collection === ids.PubLeafletDocument) {
+        if (evt.event === "create" || evt.event === "update") {
+          let record = PubLeafletDocument.validateRecord(evt.record);
+          if (!record.success) return;
+          await supabase.from("documents").upsert({
+            uri: evt.uri.toString(),
+            data: record.value as Json,
+          });
+          // I should verify that the author is authorized to post in this publication!
+          await supabase.from("documents_in_publications").insert({
+            publication: record.value.publication,
+            document: evt.uri.toString(),
+          });
+        }
+      }
       if (evt.collection === ids.PubLeafletPublication) {
         if (evt.event === "create" || evt.event === "update") {
           let record = PubLeafletPublication.validateRecord(evt.record);
           if (!record.success) return;
           console.log(
             await supabase.from("publications").upsert({
-              did: evt.did,
+              uri: evt.uri.toString(),
+              identity_did: evt.did,
               name: record.value.name,
-              rkey: evt.rkey,
             }),
           );
         }
@@ -47,8 +66,7 @@ async function main() {
             await supabase
               .from("publications")
               .delete()
-              .eq("did", evt.did)
-              .eq("rkey", evt.rkey),
+              .eq("uri", evt.uri.toString()),
           );
         }
       }

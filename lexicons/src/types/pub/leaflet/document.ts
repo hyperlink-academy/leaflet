@@ -14,6 +14,8 @@ const id = 'pub.leaflet.document'
 export interface Record {
   $type: 'pub.leaflet.document'
   title: string
+  publishedAt?: string
+  publication: string
   author: string
   pages: ($Typed<PubLeafletPagesLinearDocument.Main> | { $type: string })[]
   [k: string]: unknown

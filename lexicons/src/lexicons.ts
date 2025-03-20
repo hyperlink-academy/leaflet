@@ -37,13 +37,23 @@ export const schemaDict = {
         description: 'Record containing a document',
         record: {
           type: 'object',
-          required: ['pages', 'author', 'title'],
+          required: ['pages', 'author', 'title', 'publication'],
           properties: {
             title: {
               type: 'string',
+              maxLength: 128,
+            },
+            publishedAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+            publication: {
+              type: 'string',
+              format: 'at-uri',
             },
             author: {
               type: 'string',
+              format: 'at-identifier',
             },
             pages: {
               type: 'array',
@@ -83,6 +93,11 @@ export const schemaDict = {
           },
           alignment: {
             type: 'string',
+            knownValues: [
+              'lex:pub.leaflet.pages.linearDocument#textAlignLeft',
+              'lex:pub.leaflet.pages.linearDocument#textAlignCenter',
+              'lex:pub.leaflet.pages.linearDocument#textAlignRight',
+            ],
           },
         },
       },
@@ -109,6 +124,10 @@ export const schemaDict = {
           type: 'object',
           required: ['post', 'publishedAt'],
           properties: {
+            publication: {
+              type: 'string',
+              format: 'at-uri',
+            },
             post: {
               type: 'ref',
               ref: 'lex:com.atproto.repo.strongRef',
@@ -136,6 +155,11 @@ export const schemaDict = {
           properties: {
             name: {
               type: 'string',
+              maxLength: 2000,
+            },
+            description: {
+              type: 'string',
+              maxLength: 2000,
             },
           },
         },

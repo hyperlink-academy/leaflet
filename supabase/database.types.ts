@@ -112,12 +112,63 @@ export type Database = {
           },
         ]
       }
+      documents: {
+        Row: {
+          data: Json
+          indexed_at: string
+          uri: string
+        }
+        Insert: {
+          data: Json
+          indexed_at?: string
+          uri: string
+        }
+        Update: {
+          data?: Json
+          indexed_at?: string
+          uri?: string
+        }
+        Relationships: []
+      }
+      documents_in_publications: {
+        Row: {
+          document: string
+          indexed_at: string
+          publication: string
+        }
+        Insert: {
+          document: string
+          indexed_at?: string
+          publication: string
+        }
+        Update: {
+          document?: string
+          indexed_at?: string
+          publication?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_in_publications_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "documents_in_publications_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       email_auth_tokens: {
         Row: {
           confirmation_code: string
           confirmed: boolean
           created_at: string
-          email: string
+          email: string | null
           id: string
           identity: string | null
         }
@@ -125,7 +176,7 @@ export type Database = {
           confirmation_code: string
           confirmed?: boolean
           created_at?: string
-          email: string
+          email?: string | null
           id?: string
           identity?: string | null
         }
@@ -133,7 +184,7 @@ export type Database = {
           confirmation_code?: string
           confirmed?: boolean
           created_at?: string
-          email?: string
+          email?: string | null
           id?: string
           identity?: string | null
         }
@@ -273,18 +324,21 @@ export type Database = {
       }
       identities: {
         Row: {
+          atp_did: string | null
           created_at: string
           email: string | null
           home_page: string
           id: string
         }
         Insert: {
+          atp_did?: string | null
           created_at?: string
           email?: string | null
           home_page: string
           id?: string
         }
         Update: {
+          atp_did?: string | null
           created_at?: string
           email?: string | null
           home_page?: string
@@ -543,19 +597,22 @@ export type Database = {
       }
       publications: {
         Row: {
-          did: string
+          identity_did: string
+          indexed_at: string
           name: string
-          rkey: string
+          uri: string
         }
         Insert: {
-          did: string
+          identity_did: string
+          indexed_at?: string
           name: string
-          rkey: string
+          uri: string
         }
         Update: {
-          did?: string
+          identity_did?: string
+          indexed_at?: string
           name?: string
-          rkey?: string
+          uri?: string
         }
         Relationships: []
       }

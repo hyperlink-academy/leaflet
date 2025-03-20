@@ -29,7 +29,11 @@ export function validateMain<V>(v: V) {
 export interface Block {
   $type?: 'pub.leaflet.pages.linearDocument#block'
   block: $Typed<PubLeafletBlocksText.Main> | { $type: string }
-  alignment?: string
+  alignment?:
+    | 'lex:pub.leaflet.pages.linearDocument#textAlignLeft'
+    | 'lex:pub.leaflet.pages.linearDocument#textAlignCenter'
+    | 'lex:pub.leaflet.pages.linearDocument#textAlignRight'
+    | (string & {})
 }
 
 const hashBlock = 'block'

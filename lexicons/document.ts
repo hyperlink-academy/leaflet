@@ -10,9 +10,11 @@ export const PubLeafletDocument = l.lexicon({
       key: "tid",
       description: "Record containing a document",
       record: l.object({
-        required: ["pages", "author", "title"],
+        required: ["pages", "author", "title", "publication"],
         properties: {
           title: l.string({ maxLength: 128 }),
+          publishedAt: l.string({ format: "datetime" }),
+          publication: l.string({ format: "at-uri" }),
           author: l.string({ format: "at-identifier" }),
           pages: l.array({
             items: l.union({ refs: [PubLeafletPagesLinearDocument.id] }),

@@ -13,6 +13,10 @@
           "publishedAt"
         ],
         "properties": {
+          "publication": {
+            "type": "string",
+            "format": "at-uri"
+          },
           "post": {
             "type": "ref",
             "ref": "com.atproto.repo.strongRef"

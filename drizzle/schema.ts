@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, text, jsonb, foreignKey, uuid, timestamp, bigint, boolean, unique, uniqueIndex, smallint, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, pgEnum, text, jsonb, timestamp, foreignKey, uuid, bigint, boolean, unique, uniqueIndex, smallint, primaryKey } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const aal_level = pgEnum("aal_level", ['aal1', 'aal2', 'aal3'])
@@ -24,6 +24,13 @@ export const oauth_session_store = pgTable("oauth_session_store", {
 	session: jsonb("session").notNull(),
 });
 
+export const publications = pgTable("publications", {
+	uri: text("uri").primaryKey().notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	name: text("name").notNull(),
+	identity_did: text("identity_did").notNull(),
+});
+
 export const facts = pgTable("facts", {
 	id: uuid("id").primaryKey().notNull(),
 	entity: uuid("entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "restrict" } ),
@@ -33,6 +40,12 @@ export const facts = pgTable("facts", {
 	updated_at: timestamp("updated_at", { mode: 'string' }),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	version: bigint("version", { mode: "number" }).default(0).notNull(),
+});
+
+export const documents = pgTable("documents", {
+	uri: text("uri").primaryKey().notNull(),
+	data: jsonb("data").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 });
 
 export const replicache_clients = pgTable("replicache_clients", {
@@ -64,10 +77,12 @@ export const identities = pgTable("identities", {
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	home_page: uuid("home_page").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
 	email: text("email"),
+	atp_did: text("atp_did"),
 },
 (table) => {
 	return {
 		identities_email_key: unique("identities_email_key").on(table.email),
+		identities_atp_did_key: unique("identities_atp_did_key").on(table.atp_did),
 	}
 });
 
@@ -85,7 +100,7 @@ export const email_auth_tokens = pgTable("email_auth_tokens", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	confirmed: boolean("confirmed").default(false).notNull(),
-	email: text("email").notNull(),
+	email: text("email"),
 	confirmation_code: text("confirmation_code").notNull(),
 	identity: uuid("identity").references(() => identities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 });
@@ -144,17 +159,6 @@ export const poll_votes_on_entity = pgTable("poll_votes_on_entity", {
 	voter_token: uuid("voter_token").notNull(),
 });
 
-export const publications = pgTable("publications", {
-	did: text("did").notNull(),
-	rkey: text("rkey").notNull(),
-	name: text("name").notNull(),
-},
-(table) => {
-	return {
-		publications_pkey: primaryKey({ columns: [table.did, table.rkey], name: "publications_pkey"}),
-	}
-});
-
 export const permission_token_on_homepage = pgTable("permission_token_on_homepage", {
 	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
 	identity: uuid("identity").notNull().references(() => identities.id, { onDelete: "cascade" } ),
@@ -163,6 +167,17 @@ export const permission_token_on_homepage = pgTable("permission_token_on_homepag
 (table) => {
 	return {
 		permission_token_creator_pkey: primaryKey({ columns: [table.token, table.identity], name: "permission_token_creator_pkey"}),
+	}
+});
+
+export const documents_in_publications = pgTable("documents_in_publications", {
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade" } ),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		documents_in_publications_pkey: primaryKey({ columns: [table.publication, table.document], name: "documents_in_publications_pkey"}),
 	}
 });
 

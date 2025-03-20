@@ -27,7 +27,12 @@
           ]
         },
         "alignment": {
-          "type": "string"
+          "type": "string",
+          "knownValues": [
+            "#textAlignLeft",
+            "#textAlignCenter",
+            "#textAlignRight"
+          ]
         }
       }
     },

@@ -1,14 +1,14 @@
 "use server";
 import { TID } from "@atproto/common";
 import { AtpBaseClient } from "lexicons/src";
-import { CredentialSession } from "@atproto/api";
+import { createOauthClient } from "src/atproto-oauth";
+import { getIdentityData } from "actions/getIdentityData";
 
 export async function createPublication(name: string) {
-  let credentialSession = new CredentialSession(new URL("https://bsky.social"));
-  await credentialSession.login({
-    identifier: "awarm.space",
-    password: "gaz7-pigt-3j5u-raq3",
-  });
+  const oauthClient = await createOauthClient();
+  let identity = await getIdentityData();
+  if (!identity || !identity.atp_did) return;
+  let credentialSession = await oauthClient.restore(identity.atp_did);
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );

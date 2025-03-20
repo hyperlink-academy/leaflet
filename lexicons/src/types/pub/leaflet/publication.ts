@@ -13,6 +13,7 @@ const id = 'pub.leaflet.publication'
 export interface Record {
   $type: 'pub.leaflet.publication'
   name: string
+  description?: string
   [k: string]: unknown
 }
 

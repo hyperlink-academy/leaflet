@@ -46,11 +46,18 @@ export const record = (
 });
 
 export const string = (args?: Omit<LexString, "type">) =>
-  ({ type: "string" }) as const;
+  ({ type: "string", ...args }) as const;
 export const token = (l?: { description: string }): LexToken => ({
   type: "token",
   description: l?.description,
 });
+
+export const integer = (args?: Omit<LexInteger, "type">) =>
+  ({
+    type: "integer",
+    ...args,
+  }) as const;
+
 export const ref = (ref: string): LexRef => ({ type: "ref", ref });
 
 export const array = (args: Omit<LexArray, "type">): LexArray => ({
@@ -87,6 +94,10 @@ export const object = <
   ...args,
 });
 
+export const blob = (args: Omit<LexBlob, "type">): LexBlob => ({
+  type: "blob",
+  ...args,
+});
 export const union = (args: Omit<LexRefUnion, "type">): LexRefUnion => ({
   type: "union",
   ...args,

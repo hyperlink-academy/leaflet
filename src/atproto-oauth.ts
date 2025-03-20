@@ -9,6 +9,12 @@ import { oauth_metadata } from "app/api/oauth/[route]/route";
 import { supabaseServerClient } from "supabase/serverClient";
 
 export async function createOauthClient() {
+  let keyset =
+    process.env.NODE_ENV === "production"
+      ? await Promise.all([
+          JoseKey.fromImportable(process.env.JOSE_PRIVATE_KEY_1!),
+        ])
+      : undefined;
   return new NodeOAuthClient({
     // This object will be used to build the payload of the /client-metadata.json
     // endpoint metadata, exposing the client metadata to the OAuth server.
@@ -16,9 +22,7 @@ export async function createOauthClient() {
 
     // Used to authenticate the client to the token endpoint. Will be used to
     // build the jwks object to be exposed on the "jwks_uri" endpoint.
-    keyset: await Promise.all([
-      JoseKey.fromImportable(process.env.JOSE_PRIVATE_KEY_1!),
-    ]),
+    keyset,
 
     // Interface to store authorization state data (during authorization flows)
     stateStore,

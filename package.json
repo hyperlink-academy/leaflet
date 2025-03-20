@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "next dev",
     "lexgen": "tsx ./lexicons/build.ts && lex gen-api ./lexicons/src ./lexicons/out/* ./lexicons/com/atproto/*/* --yes",
-    "wrangler-dev": "wrangler dev"
+    "wrangler-dev": "wrangler dev",
+    "run-appview": "tsx ./appview/index.ts"
   },
   "keywords": [],
   "author": "",

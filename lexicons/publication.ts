@@ -9,6 +9,7 @@ export const PubLeafletPublication = l.lexicon({
         required: ["name"],
         properties: {
           name: l.string({ maxLength: 2000 }),
+          description: l.string({ maxLength: 2000 }),
         },
       }),
     }),
