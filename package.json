@@ -7,7 +7,7 @@
     "dev": "next dev",
     "lexgen": "tsx ./lexicons/build.ts && lex gen-api ./lexicons/src ./lexicons/out/* ./lexicons/com/atproto/*/* --yes",
     "wrangler-dev": "wrangler dev",
-    "run-appview": "tsx ./appview/index.ts"
+    "start-appview": "tsx --env-file='./.env.local' --watch appview/index.ts"
   },
   "keywords": [],
   "author": "",
