@@ -1,16 +1,28 @@
 "use client";
+import { createPublication } from "app/bsky-test/createPublication";
 import { ButtonPrimary } from "components/Buttons";
+import { useIdentityData } from "components/IdentityProvider";
 import { InputWithLabel } from "components/Input";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
 export const CreatePubForm = () => {
   let [nameValue, setNameValue] = useState("");
   let [descriptionValue, setDescriptionValue] = useState("");
+
+  let router = useRouter();
+  let { identity } = useIdentityData();
   return (
     <form
       className="createPubForm w-full flex flex-col gap-3 bg-bg-page rounded-lg p-3 border border-border-light"
-      onSubmit={() => {}}
+      onSubmit={async (e) => {
+        e.preventDefault();
+        await createPublication(nameValue);
+        router.push(
+          `/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${nameValue}/`,
+        );
+      }}
     >
       <InputWithLabel
         type="text"
@@ -22,7 +34,7 @@ export const CreatePubForm = () => {
         }}
       />
 
-      <InputWithLabel
+      {/* <InputWithLabel
         label="Description"
         textarea
         rows={3}
@@ -31,7 +43,8 @@ export const CreatePubForm = () => {
         onChange={(e) => {
           setDescriptionValue(e.currentTarget.value);
         }}
-      />
+      /> */}
+
       <div className="flex justify-between items-center">
         <Link
           className="hover:no-underline font-bold text-accent-contrast"

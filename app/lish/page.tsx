@@ -1,7 +1,6 @@
 import { LishHome } from "./LishHome";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
-import { CreatePublication } from "./components";
 import { AtpBaseClient, PubLeafletPagesLinearDocument } from "lexicons/src";
 import { CredentialSession } from "@atproto/api";
 import { createOauthClient } from "src/atproto-oauth";
