@@ -1,29 +1,19 @@
 "use client";
-import { onScroll } from "@react-spring/shared";
-import { MoreOptionsTiny, ShareSmall } from "components/Icons";
-import { Menu, MenuItem, Separator } from "components/Layout";
+import { MoreOptionsTiny } from "components/Icons";
+import { Menu, MenuItem } from "components/Layout";
 import { useEffect, useState } from "react";
-import { isSubscribed } from "./LishHome";
+import { isSubscribed, isAuthor } from "./LishHome";
+import { ShareButton, SubscribeButton } from "./Subscribe";
+import Link from "next/link";
+import { ButtonPrimary } from "components/Buttons";
 
-export const Footer = () => {
+export const Footer = (props: { pageType: "post" | "pub" }) => {
   return (
-    <div className="w-full bg-bg-page  border-0 border-t border-border flex flex-col ">
+    <div className="footer w-full bg-bg-page  border-0 border-t border-border flex flex-col ">
       <ScrollProgress />
-      <div className="px-4 py-2 flex justify-between items-center">
-        <MoreOptions />
-        <div className="flex gap-2 w-fit items-center">
-          {!isSubscribed && (
-            <>
-              <button className="font-bold text-accent-contrast">
-                Subscribe
-              </button>
-              <Separator classname="h-6" />
-            </>
-          )}
-          <button className="text-accent-contrast flex gap-2 font-bold">
-            {isSubscribed && "Share"} <ShareSmall />
-          </button>
-        </div>
+      <div className="footerContent w-full min-h-12 h-fit max-w-prose mx-auto px-4 py-2 flex justify-between items-center gap-6">
+        <MoreOptionsMenu />
+        <FooterSubscribeButton pageType={props.pageType} />
       </div>
     </div>
   );
@@ -45,7 +35,7 @@ const ScrollProgress = () => {
     return () => post?.removeEventListener("scroll", onScroll);
   }, []);
   return (
-    <div className="w-full h-1 bg-bg-page">
+    <div className="footerScrollProgress w-full h-1 bg-bg-page">
       <div
         className={`h-full bg-accent-contrast`}
         style={{ width: `${scrollPercent}%` }}
@@ -54,17 +44,50 @@ const ScrollProgress = () => {
   );
 };
 
-const MoreOptions = () => {
+const FooterSubscribeButton = (props: { pageType: "post" | "pub" }) => {
+  let [pubHeaderIsVisible, setPubHeaderIsVisible] = useState(
+    props.pageType === "pub" ? true : false,
+  );
+
+  useEffect(() => {
+    let pubHeader = document.getElementById("pub-header");
+    if (!pubHeader) return;
+    let observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          setPubHeaderIsVisible(entry.isIntersecting);
+        });
+      },
+      { threshold: 0 },
+    );
+    observer.observe(pubHeader);
+    return () => observer.unobserve(pubHeader);
+  }, []);
+
+  if (isSubscribed || pubHeaderIsVisible) return;
+  if (isAuthor)
+    return (
+      <div className="flex gap-2">
+        <ButtonPrimary>Write a Draft</ButtonPrimary> <ShareButton />
+      </div>
+    );
+  return <SubscribeButton compact />;
+};
+const MoreOptionsMenu = () => {
   return (
-    <Menu trigger={<MoreOptionsTiny />}>
+    <Menu trigger={<MoreOptionsTiny className="footerMoreOptions rotate-90" />}>
       <MenuItem onSelect={() => {}}>Log in</MenuItem>
       <hr className="border-border-light" />
 
       <small className="text-tertiary px-3 leading-none pt-2 font-bold">
         Back to...
       </small>
-      <MenuItem onSelect={() => {}}>Leaflet Explorers</MenuItem>
-      <MenuItem onSelect={() => {}}>Your Feed</MenuItem>
+      <MenuItem onSelect={() => {}}>
+        <Link href="./publication">Leaflet Explorers</Link>
+      </MenuItem>
+      <MenuItem onSelect={() => {}}>
+        <Link href="./">Your Feed</Link>
+      </MenuItem>
     </Menu>
   );
 };

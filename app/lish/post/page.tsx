@@ -4,10 +4,10 @@ import { Footer } from "../Footer";
 export default function Post() {
   return (
     <div className="postPage relative w-full h-screen flex items-stretch bg-bg-leaflet">
-      <div className="postWrapper h-full flex flex-col">
+      <div className="postWrapper h-full w-full flex flex-col">
         <div
           id="post"
-          className="postContent h-full overflow-scroll max-w-prose w-full p-4 mx-auto flex flex-col"
+          className="postContent h-full overflow-scroll max-w-prose w-full px-4 py-6 mx-auto flex flex-col"
         >
           <Link href="./publication" className="hover:no-underline font-bold">
             Leaflet Explorers
@@ -22,7 +22,7 @@ export default function Post() {
           </small>
           <PostContent />
         </div>
-        <Footer />
+        <Footer pageType="post" />
       </div>
     </div>
   );
