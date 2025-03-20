@@ -31,7 +31,7 @@ const PostListItem = (props: {
       )}
       <Link
         href="./lish/post"
-        className="pubPostListContent flex flex-col hover:no-underline"
+        className="pubPostListContent flex flex-col hover:no-underline hover:text-accent-contrast"
       >
         <h4>{props.title}</h4>
         <div className="text-secondary text-sm pt-1">{props.description}</div>

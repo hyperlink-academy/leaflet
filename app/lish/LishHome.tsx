@@ -7,7 +7,7 @@ import Publication from "./publication/page";
 
 export const isSubscribed = false;
 export const isAuthor = false;
-export const isLoggedIn = false;
+export const isBskyConnected = true;
 
 export const LishHome = () => {
   let [state, setState] = useState<"posts" | "subscriptions">("posts");
@@ -15,20 +15,19 @@ export const LishHome = () => {
     <div className="w-full h-fit min-h-full p-4 bg-bg-leaflet">
       <div className="flex flex-col gap-6 justify-center  place-items-center max-w-prose w-full mx-auto">
         <div
-          className="p-4 w-full rounded-md"
+          className="p-4 rounded-md w-full"
           style={{
-            background:
+            backgroundColor:
               "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
           }}
         >
-          <PublicationList publications={Publications} isAuthor />
+          <MyPublicationList />
         </div>
-
         {Publications.length === 0 && (
           <ButtonPrimary> Start a Publication </ButtonPrimary>
         )}
         <div className="homeFeed w-full flex flex-col">
-          <div className="flex gap-1 justify-center">
+          <div className="flex gap-1 justify-center pb-2">
             <Tab
               name="updates"
               active={state === "posts"}
@@ -63,6 +62,46 @@ const Tab = (props: { name: string; active: boolean; onClick: () => void }) => {
   );
 };
 
+const MyPublicationList = () => {
+  if (!isBskyConnected) {
+    return (
+      <div className="flex flex-col justify-center text-center place-items-center">
+        <div className="font-bold text-center">
+          Connect to Bluesky <br className="sm:hidden" />
+          to start publishing!
+        </div>
+        <small className="text-tertiary text-center pt-1">
+          We use the ATProtocol to store all your publication data on the open
+          web. That means we cannot lock you into our platform, you will ALWAYS
+          be free to easily move elsewhere. <a>Learn More.</a>
+        </small>
+        <ButtonPrimary className="mt-4"> Connect to Bluesky </ButtonPrimary>
+      </div>
+    );
+  }
+  if (Publications.length === 0) {
+    return (
+      <div>
+        <Link href={"./lish/createPub"}>
+          <ButtonPrimary>Start a Publication!</ButtonPrimary>
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <div className="w-full flex flex-col gap-2">
+      <PublicationList publications={Publications} isAuthor={true} />
+      {/* <hr className="border-border" /> */}
+      <Link
+        href={"./lish/createPub"}
+        className="text-sm place-self-start text-tertiary hover:text-accent-contrast"
+      >
+        New Publication
+      </Link>
+    </div>
+  );
+};
+
 const PublicationList = (props: {
   isAuthor?: boolean;
   publications: { title: string; description: string }[];
@@ -70,67 +109,48 @@ const PublicationList = (props: {
   return (
     <div className="w-full flex flex-col gap-2">
       {props.publications.map((pub) => {
-        return <PublicationListItem {...pub} isAuthor={props.isAuthor} />;
+        if (props.isAuthor) {
+          return <PublicationListItem {...pub} />;
+        }
+        return <SubscriptionListItem {...pub} />;
       })}
-      {props.isAuthor && (
-        <button className="text-sm">Start a new Publication</button>
-      )}
     </div>
   );
 };
 
-const PublicationListItem = (props: {
+const SubscriptionListItem = (props: {
   title: string;
   description: string;
-  isAuthor?: boolean;
 }) => {
   return (
     <Link
-      href="./publication"
-      className={`pubPostListItem flex ${!props.isAuthor && "flex-col"} hover:no-underline justify-between items-center`}
+      href="./lish/publication"
+      className={`pubPostListItem flex flex-col hover:no-underline justify-between items-center`}
     >
       <h4 className="justify-self-start">{props.title}</h4>
 
-      {props.isAuthor ? (
-        <ButtonPrimary>Post</ButtonPrimary>
-      ) : (
-        <>
-          <div className="text-secondary text-sm pt-1">{props.description}</div>
-          <hr className="border-border-light mt-3" />{" "}
-        </>
-      )}
+      <div className="text-secondary text-sm pt-1">{props.description}</div>
+      <hr className="border-border-light mt-3" />
     </Link>
+  );
+};
+const PublicationListItem = (props: { title: string; description: string }) => {
+  return (
+    <div
+      className={`pubPostListItem flex hover:no-underline justify-between items-center`}
+    >
+      <Link href="./lish/publication">
+        <h4 className="justify-self-start">{props.title}</h4>
+      </Link>
+
+      <ButtonPrimary>Post</ButtonPrimary>
+    </div>
   );
 };
 
 const PostFeed = () => {
   return <PostList subList />;
 };
-
-let Posts = [
-  {
-    title: "Bluesky post blocks and Make with Leaflet",
-    description:
-      "This is a small but meaningful start in playing with the Bluesky / AT Protocol ecosystem.",
-    date: "Mar 6, 2025",
-    author: "brendan",
-    pub: "Leaflet Explorers",
-  },
-  {
-    title: "undo/redo & polls",
-    description: "Unduly unruly undo — unto you!",
-    date: "Feb 21, 2025",
-    author: "brendan",
-    pub: "Leaflet Explorers",
-  },
-  {
-    title: "PWA support, block betterment & more",
-    description: "Hi all, lots of Leaflet improvements in the past week or so!",
-    date: "Feb 6, 2025",
-    author: "brendan",
-    pub: "Leaflet Explorers",
-  },
-];
 
 let Subscriptions = [
   {

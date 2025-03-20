@@ -2,6 +2,7 @@ import { ButtonPrimary } from "components/Buttons";
 import { ArrowRightTiny, ShareSmall } from "components/Icons";
 import { useEffect, useState } from "react";
 import { isSubscribed } from "./LishHome";
+import { Input } from "components/Input";
 
 export const SubscribeButton = (props: { compact?: boolean }) => {
   if (isSubscribed) return;
@@ -22,7 +23,7 @@ export const SubscribeButton = (props: { compact?: boolean }) => {
     return (
       <div className="flex gap-2">
         <div className="flex relative w-full max-w-sm">
-          <input
+          <Input
             type="email"
             className="input-with-border !pr-[104px] !py-1 grow w-full"
             placeholder={
