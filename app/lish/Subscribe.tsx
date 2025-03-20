@@ -116,7 +116,7 @@ const ConfirmCodeInput = (props: {
 }) => {
   return (
     <div className="relative w-fit mt-2">
-      <input
+      <Input
         type="text"
         pattern="[0-9]"
         className="input-with-border !pr-[88px] !py-1 max-w-[156px]"

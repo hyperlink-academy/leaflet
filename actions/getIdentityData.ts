@@ -1,5 +1,6 @@
 "use server";
 
+import { IdResolver } from "@atproto/identity";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { Database } from "supabase/database.types";
@@ -9,6 +10,7 @@ let supabase = createServerClient<Database>(
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
   { cookies: {} },
 );
+let idResolver = new IdResolver();
 export async function getIdentityData() {
   let cookieStore = cookies();
   let auth_token = cookieStore.get("auth_token")?.value;
@@ -35,8 +37,15 @@ export async function getIdentityData() {
       .from("publications")
       .select("*")
       .eq("identity_did", auth_res.data.identities.atp_did);
-    return { ...auth_res.data.identities, publications: publications || [] };
+    let resolved_did = await idResolver.did.resolve(
+      auth_res.data.identities.atp_did,
+    );
+    return {
+      ...auth_res.data.identities,
+      publications: publications || [],
+      resolved_did,
+    };
   }
 
-  return { ...auth_res.data.identities, publications: [] };
+  return { ...auth_res.data.identities, publications: [], resolved_did: null };
 }

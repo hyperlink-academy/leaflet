@@ -3,7 +3,9 @@ import { ButtonPrimary } from "components/Buttons";
 import Link from "next/link";
 import { useState } from "react";
 import { PostList } from "./PostList";
-import Publication from "./publication/page";
+
+import { Input } from "components/Input";
+import { useIdentityData } from "components/IdentityProvider";
 
 export const isSubscribed = false;
 export const isAuthor = false;
@@ -23,9 +25,7 @@ export const LishHome = () => {
         >
           <MyPublicationList />
         </div>
-        {Publications.length === 0 && (
-          <ButtonPrimary> Start a Publication </ButtonPrimary>
-        )}
+
         <div className="homeFeed w-full flex flex-col">
           <div className="flex gap-1 justify-center pb-2">
             <Tab
@@ -43,7 +43,7 @@ export const LishHome = () => {
           {state === "posts" ? (
             <PostFeed />
           ) : (
-            <PublicationList publications={Subscriptions} isAuthor={false} />
+            <SubscriptionList publications={Subscriptions} />
           )}
         </div>
       </div>
@@ -63,19 +63,39 @@ const Tab = (props: { name: string; active: boolean; onClick: () => void }) => {
 };
 
 const MyPublicationList = () => {
-  if (!isBskyConnected) {
+  let { identity } = useIdentityData();
+  if (!identity || !identity?.atp_did) {
     return (
       <div className="flex flex-col justify-center text-center place-items-center">
         <div className="font-bold text-center">
           Connect to Bluesky <br className="sm:hidden" />
           to start publishing!
         </div>
-        <small className="text-tertiary text-center pt-1">
+        <small className="text-secondary text-center pt-1">
           We use the ATProtocol to store all your publication data on the open
           web. That means we cannot lock you into our platform, you will ALWAYS
           be free to easily move elsewhere. <a>Learn More.</a>
         </small>
-        <ButtonPrimary className="mt-4"> Connect to Bluesky </ButtonPrimary>
+        <form
+          action="/api/oauth/login?redirect_url=/lish"
+          method="GET"
+          className="relative w-fit mt-4 "
+        >
+          <Input
+            type="text"
+            className="input-with-border !pr-[88px] !py-1 grow w-full"
+            name="handle"
+            placeholder="Enter Bluesky handle..."
+            required
+          />
+          <ButtonPrimary
+            compact
+            className="absolute right-1 top-1 !outline-0"
+            type="submit"
+          >
+            Connect
+          </ButtonPrimary>
+        </form>
       </div>
     );
   }
@@ -90,8 +110,7 @@ const MyPublicationList = () => {
   }
   return (
     <div className="w-full flex flex-col gap-2">
-      <PublicationList publications={Publications} isAuthor={true} />
-      {/* <hr className="border-border" /> */}
+      <PublicationList publications={identity.publications} />
       <Link
         href={"./lish/createPub"}
         className="text-sm place-self-start text-tertiary hover:text-accent-contrast"
@@ -103,15 +122,41 @@ const MyPublicationList = () => {
 };
 
 const PublicationList = (props: {
-  isAuthor?: boolean;
+  publications: {
+    identity_did: string;
+    indexed_at: string;
+    name: string;
+    uri: string;
+  }[];
+}) => {
+  let { identity } = useIdentityData();
+
+  return (
+    <div className="w-full flex flex-col gap-2">
+      {props.publications?.map((d) => (
+        <div
+          key={d.uri}
+          className={`pubPostListItem flex hover:no-underline justify-between items-center`}
+        >
+          <Link
+            className="justify-self-start font-bold hover:no-underline"
+            href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${d.name}/`}
+          >
+            <div key={d.uri}>{d.name}</div>
+          </Link>
+          <ButtonPrimary>Post</ButtonPrimary>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const SubscriptionList = (props: {
   publications: { title: string; description: string }[];
 }) => {
   return (
     <div className="w-full flex flex-col gap-2">
       {props.publications.map((pub) => {
-        if (props.isAuthor) {
-          return <PublicationListItem {...pub} />;
-        }
         return <SubscriptionListItem {...pub} />;
       })}
     </div>
@@ -132,19 +177,6 @@ const SubscriptionListItem = (props: {
       <div className="text-secondary text-sm pt-1">{props.description}</div>
       <hr className="border-border-light mt-3" />
     </Link>
-  );
-};
-const PublicationListItem = (props: { title: string; description: string }) => {
-  return (
-    <div
-      className={`pubPostListItem flex hover:no-underline justify-between items-center`}
-    >
-      <Link href="./lish/publication">
-        <h4 className="justify-self-start">{props.title}</h4>
-      </Link>
-
-      <ButtonPrimary>Post</ButtonPrimary>
-    </div>
   );
 };
 
