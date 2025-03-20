@@ -49,6 +49,9 @@ const prodconfig: OAuthClientMetadata = {
 export const oauth_metadata =
   process.env.NODE_ENV === "development" ? localconfig : prodconfig;
 
+type OauthRequestClientState = {
+  redirect: string | null;
+};
 export async function GET(
   req: NextRequest,
   { params }: { params: { route: string; handle?: string } },
@@ -63,7 +66,8 @@ export async function GET(
       const searchParams = req.nextUrl.searchParams;
       const handle = searchParams.get("handle") as string;
       // Put originating page here!
-      const state = "434321";
+      let redirect = searchParams.get("redirect_url");
+      let state: OauthRequestClientState = { redirect };
 
       // Revoke any pending authentication requests if the connection is closed (optional)
       const ac = new AbortController();
@@ -71,7 +75,7 @@ export async function GET(
       const url = await client.authorize(handle, {
         scope: "atproto transition:generic",
         signal: ac.signal,
-        state,
+        state: JSON.stringify(state),
         // Only supported if OAuth server is openid-compliant
         ui_locales: "fr-CA fr en",
       });
@@ -82,8 +86,11 @@ export async function GET(
       const params = new URLSearchParams(req.url.split("?")[1]);
       console.log(params);
 
+      let redirectPath = "/lish";
       try {
         const { session, state } = await client.callback(params);
+        let s: OauthRequestClientState = JSON.parse(state || "{}");
+        redirectPath = s.redirect || "/lish";
         let { data: identity } = await supabaseServerClient
           .from("identities")
           .select()
@@ -119,9 +126,9 @@ export async function GET(
 
         console.log("User authenticated as:", session.did);
       } catch (e) {
-        redirect("/bsky-test");
+        redirect(redirectPath);
       }
-      return redirect("/bsky-test");
+      return redirect(redirectPath);
     }
     default:
       return NextResponse.json({ error: "Invalid route" }, { status: 404 });
