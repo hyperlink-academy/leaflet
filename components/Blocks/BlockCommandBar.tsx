@@ -117,7 +117,7 @@ export const BlockCommandBar = ({
             `}
         >
           <NestedCardThemeProvider>
-            <div className="commandMenuResults w-full max-h-[var(--radix-popover-content-available-height)] overflow-scroll no-scrollbar flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page py-1 gap-0.5 border border-border rounded-md shadow-md">
+            <div className="commandMenuResults w-full max-h-[var(--radix-popover-content-available-height)] overflow-auto flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page py-1 gap-0.5 border border-border rounded-md shadow-md">
               {commandResults.length === 0 ? (
                 <div className="w-full text-tertiary text-center italic py-2 px-2 ">
                   No blocks found
