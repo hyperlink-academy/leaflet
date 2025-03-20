@@ -6,6 +6,8 @@ import { CID } from 'multiformats/cid'
 import { validate as _validate } from '../../../../lexicons'
 import { $Typed, is$typed as _is$typed, OmitKey } from '../../../../util'
 import type * as PubLeafletBlocksText from '../blocks/text.js'
+import type * as PubLeafletBlocksHeader from '../blocks/header.js'
+import type * as PubLeafletBlocksImage from '../blocks/image.js'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -28,7 +30,11 @@ export function validateMain<V>(v: V) {
 
 export interface Block {
   $type?: 'pub.leaflet.pages.linearDocument#block'
-  block: $Typed<PubLeafletBlocksText.Main> | { $type: string }
+  block:
+    | $Typed<PubLeafletBlocksText.Main>
+    | $Typed<PubLeafletBlocksHeader.Main>
+    | $Typed<PubLeafletBlocksImage.Main>
+    | { $type: string }
   alignment?:
     | 'lex:pub.leaflet.pages.linearDocument#textAlignLeft'
     | 'lex:pub.leaflet.pages.linearDocument#textAlignCenter'

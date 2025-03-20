@@ -9,6 +9,7 @@ import {
   PubLeafletPost,
   PubLeafletPublication,
 } from "lexicons/src";
+import { AtUri } from "@atproto/syntax";
 
 const cursorFile = "./cursor";
 
@@ -41,11 +42,12 @@ async function main() {
             uri: evt.uri.toString(),
             data: record.value as Json,
           });
-          // I should verify that the author is authorized to post in this publication!
-          await supabase.from("documents_in_publications").insert({
-            publication: record.value.publication,
-            document: evt.uri.toString(),
-          });
+          let publicationURI = new AtUri(record.value.publication);
+          if (publicationURI.host === evt.uri.host)
+            await supabase.from("documents_in_publications").insert({
+              publication: record.value.publication,
+              document: evt.uri.toString(),
+            });
         }
       }
       if (evt.collection === ids.PubLeafletPublication) {

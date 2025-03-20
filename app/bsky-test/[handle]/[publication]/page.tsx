@@ -8,6 +8,7 @@ import { getPds, IdResolver } from "@atproto/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { getIdentityData } from "actions/getIdentityData";
 import { AtUri } from "@atproto/syntax";
+import Link from "next/link";
 
 const idResolver = new IdResolver();
 export default async function RecordPage(props: {
@@ -49,7 +50,16 @@ export default async function RecordPage(props: {
         <h2>Posts</h2>
         {publication.documents_in_publications.map((p) => {
           let d = p.documents?.data as PubLeafletDocument.Record;
-          return <div key={p.documents?.uri}>{d.title}</div>;
+          let uri = new AtUri(p.documents?.uri!);
+          return (
+            <Link
+              key={p.documents?.uri}
+              href={`/bsky-test/${props.params.handle}/${props.params.publication}/${uri.rkey}
+`}
+            >
+              {d.title}
+            </Link>
+          );
         })}
       </div>
     );

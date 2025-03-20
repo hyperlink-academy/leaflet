@@ -1,5 +1,5 @@
 import * as PageLexicons from "./pages";
-import { PubLeafletBlocksText } from "./blocks";
+import { BlockLexicons } from "./blocks";
 import { PubLeafletDocument } from "./document";
 import * as PublicationLexicons from "./publication";
 
@@ -14,7 +14,7 @@ fs.mkdirSync(outdir);
 const lexicons = [
   PubLeafletDocument,
   PageLexicons.PubLeafletPagesLinearDocument,
-  PubLeafletBlocksText,
+  ...BlockLexicons,
   ...Object.values(PublicationLexicons),
 ];
 

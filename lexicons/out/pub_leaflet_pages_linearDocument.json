@@ -23,7 +23,9 @@
         "block": {
           "type": "union",
           "refs": [
-            "pub.leaflet.blocks.text"
+            "pub.leaflet.blocks.text",
+            "pub.leaflet.blocks.header",
+            "pub.leaflet.blocks.image"
           ]
         },
         "alignment": {

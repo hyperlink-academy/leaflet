@@ -1,0 +1,20 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.blocks.header",
+  "defs": {
+    "main": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "plaintext": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
