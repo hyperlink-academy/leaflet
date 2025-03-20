@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { entities, facts, entity_sets, permission_tokens, identities, email_subscriptions_to_entity, email_auth_tokens, phone_rsvps_to_entity, custom_domains, custom_domain_routes, poll_votes_on_entity, permission_token_on_homepage, permission_token_rights } from "./schema";
+import { entities, facts, entity_sets, permission_tokens, identities, email_subscriptions_to_entity, email_auth_tokens, phone_rsvps_to_entity, custom_domains, custom_domain_routes, poll_votes_on_entity, permission_token_on_homepage, documents, documents_in_publications, publications, permission_token_rights } from "./schema";
 
 export const factsRelations = relations(facts, ({one}) => ({
 	entity: one(entities, {
@@ -129,6 +129,25 @@ export const permission_token_on_homepageRelations = relations(permission_token_
 		fields: [permission_token_on_homepage.token],
 		references: [permission_tokens.id]
 	}),
+}));
+
+export const documents_in_publicationsRelations = relations(documents_in_publications, ({one}) => ({
+	document: one(documents, {
+		fields: [documents_in_publications.document],
+		references: [documents.uri]
+	}),
+	publication: one(publications, {
+		fields: [documents_in_publications.publication],
+		references: [publications.uri]
+	}),
+}));
+
+export const documentsRelations = relations(documents, ({many}) => ({
+	documents_in_publications: many(documents_in_publications),
+}));
+
+export const publicationsRelations = relations(publications, ({many}) => ({
+	documents_in_publications: many(documents_in_publications),
 }));
 
 export const permission_token_rightsRelations = relations(permission_token_rights, ({one}) => ({

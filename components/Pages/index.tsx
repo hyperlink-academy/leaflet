@@ -161,7 +161,7 @@ function Page(props: { entityID: string; first?: boolean }) {
               page
               grow flex flex-col
               overscroll-y-none
-              overflow-y-scroll no-scrollbar
+              overflow-y-scroll
               rounded-lg border
               ${isFocused ? "shadow-md border-border" : "border-border-light"}
             `}

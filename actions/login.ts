@@ -15,6 +15,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { v7 } from "uuid";
+import { createIdentity } from "./createIdentity";
 
 export async function loginWithEmailToken(
   localLeaflets: { token: { id: string }; added_at: string }[],
@@ -34,7 +35,7 @@ export async function loginWithEmailToken(
           eq(email_auth_tokens.confirmed, true),
         ),
       );
-    if (!token) return null;
+    if (!token || !token.email) return null;
     if (token.identity) {
       let id = token.identity;
       if (localLeaflets.length > 0)
@@ -75,39 +76,8 @@ export async function loginWithEmailToken(
           identity = existingIdentityFromCookie;
         }
       } else {
-        // Create a new entity set
-        let [entity_set] = await tx.insert(entity_sets).values({}).returning();
-        // Create a root-entity
-        let [entity] = await tx
-          .insert(entities)
-          // And add it to that permission set
-          .values({ set: entity_set.id, id: v7() })
-          .returning();
-        //Create a new permission token
-        let [permissionToken] = await tx
-          .insert(permission_tokens)
-          .values({ root_entity: entity.id })
-          .returning();
-        //and give it all the permission on that entity set
-        let [rights] = await tx
-          .insert(permission_token_rights)
-          .values({
-            token: permissionToken.id,
-            entity_set: entity_set.id,
-            read: true,
-            write: true,
-            create_token: true,
-            change_entity_set: true,
-          })
-          .returning();
-        let [newIdentity] = await tx
-          .insert(identities)
-          .values({
-            home_page: permissionToken.id,
-            email: token.email,
-          })
-          .returning();
-        identity = newIdentity;
+        // Create a new identity
+        identity = await createIdentity(tx, { email: token.email });
       }
     }
 

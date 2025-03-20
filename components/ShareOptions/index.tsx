@@ -12,6 +12,7 @@ import LoginForm from "app/login/LoginForm";
 import { AddDomain, CustomDomainMenu, DomainOptions } from "./DomainOptions";
 import { useIdentityData } from "components/IdentityProvider";
 import { useLeafletDomains } from "components/PageSWRDataProvider";
+import { AddToPublicationMenu } from "./PublicationOptions";
 
 export type ShareMenuStates = "default" | "login" | "domain";
 
@@ -132,6 +133,7 @@ const DefaultOptions = (props: {
       />
       <hr className="border-border mt-1" />
       <DomainMenuItem setMenuState={props.setMenuState} />
+      <AddToPublicationMenu />
     </>
   );
 };

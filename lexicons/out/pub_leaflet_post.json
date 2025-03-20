@@ -1,0 +1,32 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.post",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "description": "Record putting a post in a document",
+      "record": {
+        "type": "object",
+        "required": [
+          "post",
+          "publishedAt"
+        ],
+        "properties": {
+          "publication": {
+            "type": "string",
+            "format": "at-uri"
+          },
+          "post": {
+            "type": "ref",
+            "ref": "com.atproto.repo.strongRef"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    }
+  }
+}
