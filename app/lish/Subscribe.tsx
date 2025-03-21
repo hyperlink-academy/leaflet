@@ -1,3 +1,4 @@
+"use client";
 import { ButtonPrimary } from "components/Buttons";
 import { ArrowRightTiny, ShareSmall } from "components/Icons";
 import { useEffect, useState } from "react";
@@ -48,7 +49,7 @@ export const SubscribeButton = (props: { compact?: boolean }) => {
             )}
           </ButtonPrimary>
         </div>
-        <ShareButton />
+        {/* <ShareButton /> */}
       </div>
     );
   }
@@ -94,7 +95,8 @@ export const SubscribeButton = (props: { compact?: boolean }) => {
         }}
       >
         <div className="flex gap-2 leading-snug font-bold italic">
-          <div>You're subscribed!</div> <ShareButton />
+          <div>You're subscribed!</div>
+          {/* <ShareButton /> */}
         </div>
       </div>
     );

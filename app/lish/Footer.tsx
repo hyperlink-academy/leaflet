@@ -68,7 +68,8 @@ const FooterSubscribeButton = (props: { pageType: "post" | "pub" }) => {
   if (isAuthor)
     return (
       <div className="flex gap-2">
-        <ButtonPrimary>Write a Draft</ButtonPrimary> <ShareButton />
+        <ButtonPrimary>Write a Draft</ButtonPrimary>
+        {/* <ShareButton /> */}
       </div>
     );
   return <SubscribeButton compact />;

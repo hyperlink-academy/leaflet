@@ -181,7 +181,7 @@ const SubscriptionListItem = (props: {
 };
 
 const PostFeed = () => {
-  return <PostList subList />;
+  return <PostList isFeed posts={[]} />;
 };
 
 let Subscriptions = [
