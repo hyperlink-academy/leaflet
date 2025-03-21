@@ -2,10 +2,11 @@
 import { MoreOptionsTiny } from "components/Icons";
 import { Menu, MenuItem } from "components/Layout";
 import { useEffect, useState } from "react";
-import { isSubscribed, isAuthor } from "./LishHome";
-import { ShareButton, SubscribeButton } from "./Subscribe";
+import { SubscribeButton } from "./Subscribe";
 import Link from "next/link";
 import { ButtonPrimary } from "components/Buttons";
+import { usePublicationRelationship } from "./[handle]/[publication]/usePublicationRelationship";
+import { usePublicationContext } from "components/Providers/PublicationContext";
 
 export const Footer = (props: { pageType: "post" | "pub" }) => {
   return (
@@ -48,6 +49,8 @@ const FooterSubscribeButton = (props: { pageType: "post" | "pub" }) => {
   let [pubHeaderIsVisible, setPubHeaderIsVisible] = useState(
     props.pageType === "pub" ? true : false,
   );
+  let rel = usePublicationRelationship();
+  let { publication } = usePublicationContext();
 
   useEffect(() => {
     let pubHeader = document.getElementById("pub-header");
@@ -64,15 +67,15 @@ const FooterSubscribeButton = (props: { pageType: "post" | "pub" }) => {
     return () => observer.unobserve(pubHeader);
   }, []);
 
-  if (isSubscribed || pubHeaderIsVisible) return;
-  if (isAuthor)
+  if (rel?.isSubscribed || pubHeaderIsVisible || !publication) return;
+  if (rel?.isAuthor)
     return (
       <div className="flex gap-2">
         <ButtonPrimary>Write a Draft</ButtonPrimary>
         {/* <ShareButton /> */}
       </div>
     );
-  return <SubscribeButton compact />;
+  return <SubscribeButton compact publication={publication?.uri} />;
 };
 const MoreOptionsMenu = () => {
   return (

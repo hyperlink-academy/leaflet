@@ -674,6 +674,39 @@ export type Database = {
         }
         Relationships: []
       }
+      subscribers_to_publications: {
+        Row: {
+          created_at: string
+          identity: string
+          publication: string
+        }
+        Insert: {
+          created_at?: string
+          identity: string
+          publication: string
+        }
+        Update: {
+          created_at?: string
+          identity?: string
+          publication?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscribers_to_publications_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["email"]
+          },
+          {
+            foreignKeyName: "subscribers_to_publications_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

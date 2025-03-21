@@ -97,6 +97,19 @@ export async function GET(
           .eq("atp_did", session.did)
           .single();
         if (!identity) {
+          let existingIdentity = cookies().get("auth_token");
+          if (existingIdentity) {
+            let data = await supabaseServerClient
+              .from("email_auth_tokens")
+              .select("*, identities(*)")
+              .single();
+            if (data.data?.identity && data.data.confirmed)
+              await supabaseServerClient
+                .from("identities")
+                .update({ atp_did: session.did })
+                .eq("id", data.data.identity);
+            return;
+          }
           const client = postgres(process.env.DB_URL as string, {
             idle_timeout: 5,
           });

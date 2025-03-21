@@ -1,7 +1,5 @@
 import { ButtonPrimary } from "components/Buttons";
-import { ArrowRightTiny, MoreOptionsTiny, ShareSmall } from "components/Icons";
-import { isSubscribed, isAuthor } from "../../LishHome";
-import { Menu, MenuItem } from "components/Layout";
+import { isSubscribed } from "../../LishHome";
 import Link from "next/link";
 import { Footer } from "../../Footer";
 import { SubscribeButton, ShareButton } from "../../Subscribe";
@@ -17,6 +15,8 @@ import {
 } from "lexicons/src";
 import { createPublicationDraft } from "actions/createPublicationDraft";
 import { NewDraftButton } from "./NewDraftButton";
+import { CallToActionAction } from "twilio/lib/rest/content/v1/content";
+import { CallToActionButton } from "./CallToActionButton";
 
 const idResolver = new IdResolver();
 
@@ -63,26 +63,8 @@ export default async function Publication(props: {
             >
               <div className="flex flex-col gap-1">
                 <h2>{publication.name}</h2>
-                {/* <div className="pubDescription ">
-                  We're making Leaflet, a fast fun web app for making delightful
-                  documents. Sign up to follow along as we build Leaflet! We
-                  send updates every week or two.
-                </div> */}
               </div>
-              {isAuthor ? (
-                publication.documents_in_publications.length === 0 ? null : (
-                  <NewDraftButton publication={publication.uri} />
-                )
-              ) : isSubscribed ? (
-                <div className="flex gap-2">
-                  <div className="font-bold">You're Subscribed!</div>
-                  <ManageSubscriptionMenu />
-                </div>
-              ) : (
-                <>
-                  <SubscribeButton />
-                </>
-              )}
+              <CallToActionButton />
             </div>
             <PostList posts={publication.documents_in_publications} />
           </div>
@@ -95,14 +77,6 @@ export default async function Publication(props: {
     return <pre>{JSON.stringify(e, undefined, 2)}</pre>;
   }
 }
-
-const ManageSubscriptionMenu = () => {
-  return (
-    <Menu trigger={<MoreOptionsTiny className="rotate-90" />}>
-      <MenuItem onSelect={() => {}}>Unsub!</MenuItem>
-    </Menu>
-  );
-};
 
 const PubNotFound = () => {
   return <div>ain't no pub here</div>;

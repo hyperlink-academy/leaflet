@@ -159,6 +159,17 @@ export const poll_votes_on_entity = pgTable("poll_votes_on_entity", {
 	voter_token: uuid("voter_token").notNull(),
 });
 
+export const subscribers_to_publications = pgTable("subscribers_to_publications", {
+	identity: text("identity").notNull().references(() => identities.email, { onUpdate: "cascade" } ),
+	publication: text("publication").notNull().references(() => publications.uri),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		subscribers_to_publications_pkey: primaryKey({ columns: [table.identity, table.publication], name: "subscribers_to_publications_pkey"}),
+	}
+});
+
 export const permission_token_on_homepage = pgTable("permission_token_on_homepage", {
 	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
 	identity: uuid("identity").notNull().references(() => identities.id, { onDelete: "cascade" } ),

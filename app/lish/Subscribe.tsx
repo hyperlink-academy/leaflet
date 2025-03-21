@@ -2,25 +2,29 @@
 import { ButtonPrimary } from "components/Buttons";
 import { ArrowRightTiny, ShareSmall } from "components/Icons";
 import { useEffect, useState } from "react";
-import { isSubscribed } from "./LishHome";
 import { Input } from "components/Input";
+import { useIdentityData } from "components/IdentityProvider";
+import { SecondaryAuthTokenContextImpl } from "twilio/lib/rest/accounts/v1/secondaryAuthToken";
+import {
+  confirmEmailAuthToken,
+  requestAuthEmailToken,
+} from "actions/emailAuth";
+import { subscribeToPublicationWithEmail } from "actions/subscribeToPublicationWithEmail";
 
-export const SubscribeButton = (props: { compact?: boolean }) => {
-  if (isSubscribed) return;
+type State =
+  | { state: "email" }
+  | { state: "code"; token: string }
+  | { state: "success" };
+export const SubscribeButton = (props: {
+  compact?: boolean;
+  publication: string;
+}) => {
+  let { identity, mutate } = useIdentityData();
   let [emailInputValue, setEmailInputValue] = useState("");
   let [codeInputValue, setCodeInputValue] = useState("");
-  let [state, setState] = useState<"email" | "code" | "success">("email");
+  let [state, setState] = useState<State>({ state: "email" });
 
-  useEffect(() => {
-    if (props.compact === false) return;
-    if (state === "success") {
-      setTimeout(() => {
-        setState("email");
-      }, 2500);
-    }
-  }, [state]);
-
-  if (state === "email") {
+  if (state.state === "email") {
     return (
       <div className="flex gap-2">
         <div className="flex relative w-full max-w-sm">
@@ -30,7 +34,8 @@ export const SubscribeButton = (props: { compact?: boolean }) => {
             placeholder={
               props.compact ? "subscribe with email..." : "email here..."
             }
-            value={emailInputValue}
+            disabled={!!identity?.email}
+            value={identity?.email ? identity.email : emailInputValue}
             onChange={(e) => {
               setEmailInputValue(e.currentTarget.value);
             }}
@@ -38,8 +43,15 @@ export const SubscribeButton = (props: { compact?: boolean }) => {
           <ButtonPrimary
             compact
             className="absolute right-1 top-1 !outline-0"
-            onClick={() => {
-              setState("code");
+            onClick={async () => {
+              if (identity?.email) {
+                await subscribeToPublicationWithEmail(props.publication);
+                //optimistically could add!
+                await mutate();
+                return;
+              }
+              let tokenID = await requestAuthEmailToken(emailInputValue);
+              setState({ state: "code", token: tokenID });
             }}
           >
             {props.compact ? (
@@ -53,7 +65,7 @@ export const SubscribeButton = (props: { compact?: boolean }) => {
       </div>
     );
   }
-  if (state === "code") {
+  if (state.state === "code") {
     return (
       <div
         className="w-full flex flex-col justify-center place-items-center p-4 rounded-md"
@@ -68,6 +80,8 @@ export const SubscribeButton = (props: { compact?: boolean }) => {
         </div>
 
         <ConfirmCodeInput
+          publication={props.publication}
+          token={state.token}
           codeInputValue={codeInputValue}
           setCodeInputValue={setCodeInputValue}
           setState={setState}
@@ -76,7 +90,7 @@ export const SubscribeButton = (props: { compact?: boolean }) => {
         <button
           className="text-accent-contrast text-sm mt-1"
           onClick={() => {
-            setState("email");
+            setState({ state: "email" });
           }}
         >
           Re-enter Email
@@ -85,7 +99,7 @@ export const SubscribeButton = (props: { compact?: boolean }) => {
     );
   }
 
-  if (state === "success") {
+  if (state.state === "success") {
     return (
       <div
         className={`w-full flex flex-col gap-2 justify-center place-items-center p-4 rounded-md text-secondary ${props.compact ? "py-1 animate-bounce" : "p-4"}`}
@@ -113,9 +127,12 @@ export const ShareButton = () => {
 
 const ConfirmCodeInput = (props: {
   codeInputValue: string;
+  token: string;
   setCodeInputValue: (value: string) => void;
-  setState: (state: "email" | "code" | "success") => void;
+  setState: (state: State) => void;
+  publication: string;
 }) => {
+  let { mutate } = useIdentityData();
   return (
     <div className="relative w-fit mt-2">
       <Input
@@ -131,8 +148,16 @@ const ConfirmCodeInput = (props: {
       <ButtonPrimary
         compact
         className="absolute right-1 top-1 !outline-0"
-        onClick={() => {
-          props.setState("success");
+        onClick={async () => {
+          console.log(
+            await confirmEmailAuthToken(props.token, props.codeInputValue),
+          );
+
+          await subscribeToPublicationWithEmail(props.publication);
+          //optimistically could add!
+          await mutate();
+          props.setState({ state: "success" });
+          return;
         }}
       >
         Confirm
