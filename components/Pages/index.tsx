@@ -44,6 +44,13 @@ import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 import { LoginButton } from "components/LoginButton";
 import { useUndoState } from "src/undoManager";
 import { useIsMobile } from "src/hooks/isMobile";
+import {
+  AddToPublicationMenu,
+  PublishToPublication,
+} from "components/ShareOptions/PublicationOptions";
+import { ButtonPrimary } from "components/Buttons";
+import { Popover } from "components/Popover";
+import { InputWithLabel } from "components/Input";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -71,9 +78,14 @@ export function Pages(props: { rootPage: string }) {
         <Media mobile={false} className="h-full">
           <div className="flex flex-col h-full justify-between  mt-1">
             {entity_set.permissions.write ? (
-              <div className="flex flex-col justify-center gap-2 mr-4">
+              <div className=" flex flex-col justify-center gap-2 mr-4">
+                <div className="relative w-[30px] h-[76px]">
+                  <div className="origin-top-left -rotate-90 absolute translate-y-[76px]">
+                    <PublishToPublication />
+                  </div>
+                </div>
                 <ShareOptions />
-                <LeafletOptions entityID={props.rootPage} />
+                <ThemePopover entityID={props.rootPage} />
                 <HelpPopover />
                 <hr className="text-border my-3" />
                 <HomeButton />

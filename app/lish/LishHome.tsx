@@ -154,6 +154,12 @@ const PublicationList = (props: {
 const SubscriptionList = (props: {
   publications: { title: string; description: string }[];
 }) => {
+  if (props.publications.length === 0)
+    return (
+      <div className="w-full text-center text-tertiary italic pt-4">
+        No subscriptions yet!
+      </div>
+    );
   return (
     <div className="w-full flex flex-col gap-2">
       {props.publications.map((pub) => {

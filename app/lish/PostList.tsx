@@ -17,7 +17,7 @@ export const PostList = (props: {
   if (props.posts.length === 0) {
     if (props.isFeed) {
       return (
-        <div className="italic text-tertiary">
+        <div className="italic text-tertiary w-full text-center pt-4">
           Subscribe to publications to see posts in your feed
         </div>
       );

@@ -134,8 +134,8 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content
-            style={{ maxHeight: viewheight ? viewheight * 0.8 : "80vh" }}
-            className="z-20 themeSetterWrapper w-80 h-fit bg-white rounded-md border border-border flex"
+            className="z-20 themeSetterWrapper w-80 h-fit bg-white rounded-md border border-border flex max-w-[var(--radix-popover-content-available-width)]
+            max-h-[var(--radix-popover-content-available-height)]"
             align="center"
             sideOffset={4}
             collisionPadding={16}
