@@ -21,8 +21,10 @@ import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragme
 import { ids } from "lexicons/src/lexicons";
 import { OmitKey } from "lexicons/src/util";
 import { BlobRef } from "@atproto/lexicon";
+import { IdResolver } from "@atproto/identity";
 
-export async function publishtoPublication(
+const idResolver = new IdResolver();
+export async function publishToPublication(
   root_entity: string,
   blocks: Block[],
   publication_uri: string,
@@ -136,10 +138,11 @@ export async function publishtoPublication(
       },
     ],
   };
+  let rkey = TID.nextStr();
   let result = await agent.pub.leaflet.document.create(
-    { repo: credentialSession.did!, rkey: TID.nextStr(), validate: false },
+    { repo: credentialSession.did!, rkey, validate: false },
     record,
   );
-  // I need to add this to the db, associate it with the account creating it, and then also add records that do stuff...
-  console.log(result);
+  let handle = await idResolver.did.resolve(credentialSession.did!);
+  return { handle, rkey };
 }

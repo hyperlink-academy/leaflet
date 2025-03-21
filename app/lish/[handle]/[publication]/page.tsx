@@ -15,6 +15,8 @@ import {
   PubLeafletDocument,
   PubLeafletPublication,
 } from "lexicons/src";
+import { createPublicationDraft } from "actions/createPublicationDraft";
+import { NewDraftButton } from "./NewDraftButton";
 
 const idResolver = new IdResolver();
 
@@ -26,7 +28,9 @@ export default async function Publication(props: {
 
   let { data: publication } = await supabaseServerClient
     .from("publications")
-    .select("*, documents_in_publications(documents(*))")
+    .select(
+      "*, documents_in_publications(documents(*)), leaflets_in_publications(*, permission_tokens(*, permission_token_rights(*), custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*) ))",
+    )
     .eq("identity_did", did)
     .eq("name", decodeURIComponent(props.params.publication))
     .single();
@@ -67,10 +71,7 @@ export default async function Publication(props: {
               </div>
               {isAuthor ? (
                 publication.documents_in_publications.length === 0 ? null : (
-                  <div className="flex gap-2">
-                    <ButtonPrimary>New Draft</ButtonPrimary>
-                    {/* <ShareButton /> */}
-                  </div>
+                  <NewDraftButton publication={publication.uri} />
                 )
               ) : isSubscribed ? (
                 <div className="flex gap-2">

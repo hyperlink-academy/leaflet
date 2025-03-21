@@ -43,7 +43,7 @@ export default async function PublicationPostPage(props: {
               <img
                 height={b.block.aspectRatio?.height}
                 width={b.block.aspectRatio?.width}
-                src={`https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${b.block.image.ref["$link"]}`}
+                src={`https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${(b.block.image.ref as unknown as { $link: string })["$link"]}`}
               />
             );
           }

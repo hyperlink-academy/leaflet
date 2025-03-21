@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { entities, facts, entity_sets, permission_tokens, identities, email_subscriptions_to_entity, email_auth_tokens, phone_rsvps_to_entity, custom_domains, custom_domain_routes, poll_votes_on_entity, permission_token_on_homepage, documents, documents_in_publications, publications, permission_token_rights } from "./schema";
+import { entities, facts, entity_sets, permission_tokens, identities, email_subscriptions_to_entity, email_auth_tokens, phone_rsvps_to_entity, custom_domains, custom_domain_routes, poll_votes_on_entity, permission_token_on_homepage, documents, documents_in_publications, publications, leaflets_in_publications, permission_token_rights } from "./schema";
 
 export const factsRelations = relations(facts, ({one}) => ({
 	entity: one(entities, {
@@ -44,6 +44,7 @@ export const permission_tokensRelations = relations(permission_tokens, ({one, ma
 		relationName: "custom_domain_routes_view_permission_token_permission_tokens_id"
 	}),
 	permission_token_on_homepages: many(permission_token_on_homepage),
+	leaflets_in_publications: many(leaflets_in_publications),
 	permission_token_rights: many(permission_token_rights),
 }));
 
@@ -144,10 +145,27 @@ export const documents_in_publicationsRelations = relations(documents_in_publica
 
 export const documentsRelations = relations(documents, ({many}) => ({
 	documents_in_publications: many(documents_in_publications),
+	leaflets_in_publications: many(leaflets_in_publications),
 }));
 
 export const publicationsRelations = relations(publications, ({many}) => ({
 	documents_in_publications: many(documents_in_publications),
+	leaflets_in_publications: many(leaflets_in_publications),
+}));
+
+export const leaflets_in_publicationsRelations = relations(leaflets_in_publications, ({one}) => ({
+	document: one(documents, {
+		fields: [leaflets_in_publications.doc],
+		references: [documents.uri]
+	}),
+	permission_token: one(permission_tokens, {
+		fields: [leaflets_in_publications.leaflet],
+		references: [permission_tokens.id]
+	}),
+	publication: one(publications, {
+		fields: [leaflets_in_publications.publication],
+		references: [publications.uri]
+	}),
 }));
 
 export const permission_token_rightsRelations = relations(permission_token_rights, ({one}) => ({

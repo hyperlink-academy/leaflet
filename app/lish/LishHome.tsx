@@ -6,6 +6,7 @@ import { PostList } from "./PostList";
 
 import { Input } from "components/Input";
 import { useIdentityData } from "components/IdentityProvider";
+import { NewDraftButton } from "./[handle]/[publication]/NewDraftButton";
 
 export const isSubscribed = false;
 export const isAuthor = false;
@@ -144,7 +145,7 @@ const PublicationList = (props: {
           >
             <div key={d.uri}>{d.name}</div>
           </Link>
-          <ButtonPrimary>Post</ButtonPrimary>
+          <NewDraftButton publication={d.uri} />
         </div>
       ))}
     </div>

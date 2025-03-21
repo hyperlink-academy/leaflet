@@ -1,4 +1,4 @@
-import { publishtoPublication } from "actions/publishToPublication";
+import { publishToPublication } from "actions/publishToPublication";
 import { ButtonPrimary } from "components/Buttons";
 import { useIdentityData } from "components/IdentityProvider";
 import { InputWithLabel } from "components/Input";
@@ -6,58 +6,62 @@ import { useState } from "react";
 import { Popover } from "components/Popover";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEntity, useReplicache } from "src/replicache";
+import { usePublicationContext } from "components/Providers/PublicationContext";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
-export const AddToPublicationMenu = () => {
-  let { identity } = useIdentityData();
+export const PublishToPublication = () => {
+  type PublishState =
+    | { state: "default" }
+    | { state: "test" }
+    | { state: "testSuccess" }
+    | { state: "success"; link: string };
+
+  let [state, setState] = useState<PublishState>({ state: "default" });
+  let publication = usePublicationContext();
   let rep = useReplicache();
   let rootPage = useEntity(rep.rootEntity, "root/page")[0];
   let blocks = useBlocks(rootPage?.data.value);
-  if (!identity || identity.publications.length === 0) return null;
-
-  return (
-    <div>
-      {identity.publications.map((p) => (
-        <button
-          onClick={() => {
-            publishtoPublication(rep.rootEntity, blocks, p.uri);
-          }}
-        >
-          publish to {p.name}
-        </button>
-      ))}
-    </div>
-  );
-};
-
-export const PublishToPublication = () => {
-  let [state, setState] = useState<
-    "default" | "test" | "testSuccess" | "success"
-  >("default");
+  let router = useRouter();
 
   let [titleValue, setTitleValue] = useState("");
   let [descriptionValue, setDescriptionValue] = useState("");
   let [testValue, setTestValue] = useState("");
+  if (!publication.publication) return null;
 
   return (
     <Popover
-      onOpenChange={() => setState("default")}
+      onOpenChange={() => setState({ state: "default" })}
       asChild
       trigger={<ButtonPrimary className="">Publish</ButtonPrimary>}
     >
       <div className="publishMenu w-96 flex flex-col gap-3">
-        {state === "default" ? (
+        {state.state === "default" ? (
           <>
             <div className="w-full flex flex-col">
-              <h3 className="place-self-start">Publish to Pub Name Here</h3>
-              <small className="text-tertiary">
+              <h3 className="place-self-start">
+                Publish to {publication.publication.name}
+              </h3>
+              {/* <small className="text-tertiary">
                 Publish this post to a PUBLICATION HERE and send it as an email
                 to your XX subscribers.
-              </small>
+              </small> */}
             </div>
             <form
               className="flex flex-col gap-3 w-full"
-              onSubmit={() => {
-                setState("success");
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!publication.publication) return;
+                let data = await publishToPublication(
+                  rep.rootEntity,
+                  blocks,
+                  publication.publication.uri,
+                );
+                if (data)
+                  setState({
+                    state: "success",
+                    link: `/lish/${data.handle?.alsoKnownAs?.[0].slice(5)}/${publication.publication.name}/${data.rkey}`,
+                  });
               }}
             >
               <InputWithLabel
@@ -77,25 +81,25 @@ export const PublishToPublication = () => {
                 }}
               />
               <div className="flex gap-3 justify-end w-full">
-                <button
+                {/* <button
                   onClick={() => {
-                    setState("test");
+                    setState({ state: "test" });
                   }}
                   className="font-bold text-accent-contrast"
                 >
                   Send Test
-                </button>
+                </button> */}
                 <ButtonPrimary>Publish </ButtonPrimary>
               </div>
             </form>
           </>
-        ) : state === "test" ? (
+        ) : state.state === "test" ? (
           <>
             <h3>Send out a test</h3>
             <form
               className="flex flex-col gap-3"
               onSubmit={() => {
-                setState("testSuccess");
+                setState({ state: "testSuccess" });
               }}
             >
               <InputWithLabel
@@ -112,7 +116,7 @@ export const PublishToPublication = () => {
               </ButtonPrimary>
             </form>
           </>
-        ) : state === "testSuccess" ? (
+        ) : state.state === "testSuccess" ? (
           <>
             <div
               className="w-full p-4 rounded-md flex flex-col text-center"
@@ -125,7 +129,7 @@ export const PublishToPublication = () => {
               <div className="italic font-bold">{testValue}</div>
               <button
                 onClick={() => {
-                  setState("default");
+                  setState({ state: "default" });
                 }}
                 className="w-fit mx-auto font-bold text-accent-contrast mt-3"
               >
@@ -133,7 +137,7 @@ export const PublishToPublication = () => {
               </button>
             </div>
           </>
-        ) : state === "success" ? (
+        ) : state.state === "success" ? (
           <div
             className="w-full p-4 rounded-md flex flex-col text-center"
             style={{
@@ -142,14 +146,12 @@ export const PublishToPublication = () => {
             }}
           >
             <div className="font-bold">Woot! It's Published!</div>
-            <button
-              onClick={() => {
-                setState("test");
-              }}
+            <Link
+              href={state.link}
               className="w-fit mx-auto font-bold text-accent-contrast mt-1"
             >
               View Post
-            </button>
+            </Link>
           </div>
         ) : null}
       </div>

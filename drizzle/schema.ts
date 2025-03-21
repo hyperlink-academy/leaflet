@@ -181,6 +181,17 @@ export const documents_in_publications = pgTable("documents_in_publications", {
 	}
 });
 
+export const leaflets_in_publications = pgTable("leaflets_in_publications", {
+	publication: text("publication").notNull().references(() => publications.uri),
+	doc: text("doc").default('').references(() => documents.uri),
+	leaflet: uuid("leaflet").notNull().references(() => permission_tokens.id),
+},
+(table) => {
+	return {
+		leaflets_in_publications_pkey: primaryKey({ columns: [table.publication, table.leaflet], name: "leaflets_in_publications_pkey"}),
+	}
+});
+
 export const permission_token_rights = pgTable("permission_token_rights", {
 	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 	entity_set: uuid("entity_set").notNull().references(() => entity_sets.id, { onDelete: "cascade", onUpdate: "cascade" } ),

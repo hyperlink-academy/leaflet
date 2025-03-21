@@ -354,6 +354,46 @@ export type Database = {
           },
         ]
       }
+      leaflets_in_publications: {
+        Row: {
+          doc: string | null
+          leaflet: string
+          publication: string
+        }
+        Insert: {
+          doc?: string | null
+          leaflet: string
+          publication: string
+        }
+        Update: {
+          doc?: string | null
+          leaflet?: string
+          publication?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaflets_in_publications_doc_fkey"
+            columns: ["doc"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "leaflets_in_publications_leaflet_fkey"
+            columns: ["leaflet"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaflets_in_publications_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       oauth_session_store: {
         Row: {
           key: string
