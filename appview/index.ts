@@ -47,11 +47,11 @@ async function main() {
         evt.event === "sync"
       )
         return;
+      console.log(`${evt.event} in ${evt.collection}`);
       if (evt.collection === ids.PubLeafletDocument) {
         if (evt.event === "create" || evt.event === "update") {
           let record = PubLeafletDocument.validateRecord(evt.record);
           if (!record.success) {
-            console.log(record.error);
             return;
           }
           await supabase.from("documents").upsert({
@@ -64,34 +64,27 @@ async function main() {
             console.log("Unauthorized to create post!");
             return;
           }
-          console.log(
-            await supabase.from("documents_in_publications").insert({
-              publication: record.value.publication,
-              document: evt.uri.toString(),
-            }),
-          );
+          await supabase.from("documents_in_publications").insert({
+            publication: record.value.publication,
+            document: evt.uri.toString(),
+          });
         }
       }
       if (evt.collection === ids.PubLeafletPublication) {
         if (evt.event === "create" || evt.event === "update") {
           let record = PubLeafletPublication.validateRecord(evt.record);
           if (!record.success) return;
-          console.log(
-            await supabase.from("publications").upsert({
-              uri: evt.uri.toString(),
-              identity_did: evt.did,
-              name: record.value.name,
-            }),
-          );
+          await supabase.from("publications").upsert({
+            uri: evt.uri.toString(),
+            identity_did: evt.did,
+            name: record.value.name,
+          });
         }
         if (evt.event === "delete") {
-          console.log("deleting ", evt.rkey);
-          console.log(
-            await supabase
-              .from("publications")
-              .delete()
-              .eq("uri", evt.uri.toString()),
-          );
+          await supabase
+            .from("publications")
+            .delete()
+            .eq("uri", evt.uri.toString());
         }
       }
       if (evt.collection === ids.PubLeafletPost) {
