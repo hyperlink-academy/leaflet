@@ -72,7 +72,7 @@ const PostListItem = (
         <div className="flex gap-2 text-sm text-tertiary">
           {/* <div className="">{props.publishedAt}</div> */}
           {/* <Separator classname="h-4" /> */}
-          <div>by {identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}</div>
+          <div>by {params.handle}</div>
         </div>
         <hr className="border-border-light mt-3" />
       </Link>
