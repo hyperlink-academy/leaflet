@@ -56,15 +56,15 @@ export default async function Publication(props: {
     return (
       <div className="pubPage w-full h-screen bg-bg-leaflet flex items-stretch">
         <div className="pubWrapper flex flex-col w-full ">
-          <div className="pubContent flex flex-col gap-8 px-4 py-6 mx-auto max-w-prose h-full overflow-scroll">
+          <div className="pubContent flex flex-col gap-8 px-4 py-6 mx-auto max-w-prose h-full w-full overflow-auto">
             <div
               id="pub-header"
               className="pubHeader flex flex-col gap-6 justify-center text-center"
             >
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 w-full place-items-center">
                 <h2>{publication.name}</h2>
+                <CallToActionButton />
               </div>
-              <CallToActionButton />
             </div>
             <PostList posts={publication.documents_in_publications} />
           </div>

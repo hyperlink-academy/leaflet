@@ -27,7 +27,7 @@ export const LishHome = () => {
           <MyPublicationList />
         </div>
 
-        <div className="homeFeed w-full flex flex-col">
+        {/* <div className="homeFeed w-full flex flex-col">
           <div className="flex gap-1 justify-center pb-2">
             <Tab
               name="updates"
@@ -46,7 +46,7 @@ export const LishHome = () => {
           ) : (
             <SubscriptionList publications={Subscriptions} />
           )}
-        </div>
+        </div> */}
       </div>
     </div>
   );
