@@ -13,7 +13,7 @@ export const Footer = (props: { pageType: "post" | "pub" }) => {
     <div className="footer w-full bg-bg-page  border-0 border-t border-border flex flex-col ">
       <ScrollProgress />
       <div className="footerContent w-full min-h-12 h-fit max-w-prose mx-auto px-4 py-2 flex justify-between items-center gap-6">
-        <MoreOptionsMenu />
+        {/* <MoreOptionsMenu /> */}
         <FooterSubscribeButton pageType={props.pageType} />
       </div>
     </div>
