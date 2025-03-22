@@ -68,7 +68,7 @@ export async function GET(
                 .from("identities")
                 .update({ atp_did: session.did })
                 .eq("id", data.data.identity);
-            return;
+            return redirect(redirectPath);
           }
           const client = postgres(process.env.DB_URL as string, {
             idle_timeout: 5,
