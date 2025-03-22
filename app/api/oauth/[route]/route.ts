@@ -62,6 +62,7 @@ export async function GET(
             let data = await supabaseServerClient
               .from("email_auth_tokens")
               .select("*, identities(*)")
+              .eq("id", existingIdentity.value)
               .single();
             if (data.data?.identity && data.data.confirmed)
               await supabaseServerClient
