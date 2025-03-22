@@ -7,7 +7,7 @@ import { NewDraftButton } from "./NewDraftButton";
 import { Menu, MenuItem } from "components/Layout";
 import { ArrowRightTiny, MoreOptionsTiny, ShareSmall } from "components/Icons";
 import { useIdentityData } from "components/IdentityProvider";
-import { unsubscribeFromPublication } from "actions/unsubscribeFromPubliction";
+import { unsubscribeFromPublication } from "actions/unsubscribeFromPublication";
 
 export function CallToActionButton() {
   let rel = usePublicationRelationship();
