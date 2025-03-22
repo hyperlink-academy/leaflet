@@ -1,5 +1,5 @@
 "use client";
-import { createPublication } from "app/bsky-test/createPublication";
+import { createPublication } from "actions/createPublication";
 import { ButtonPrimary } from "components/Buttons";
 import { useIdentityData } from "components/IdentityProvider";
 import { InputWithLabel } from "components/Input";

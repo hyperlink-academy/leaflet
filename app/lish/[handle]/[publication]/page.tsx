@@ -1,21 +1,13 @@
-import { ButtonPrimary } from "components/Buttons";
-import { isSubscribed } from "../../LishHome";
-import Link from "next/link";
 import { Footer } from "../../Footer";
-import { SubscribeButton, ShareButton } from "../../Subscribe";
 import { PostList } from "../../PostList";
 import { getPds, IdResolver } from "@atproto/identity";
 import { supabaseServerClient } from "supabase/serverClient";
-import { getIdentityData } from "actions/getIdentityData";
 import { AtUri } from "@atproto/syntax";
 import {
   AtpBaseClient,
   PubLeafletDocument,
   PubLeafletPublication,
 } from "lexicons/src";
-import { createPublicationDraft } from "actions/createPublicationDraft";
-import { NewDraftButton } from "./NewDraftButton";
-import { CallToActionAction } from "twilio/lib/rest/content/v1/content";
 import { CallToActionButton } from "./CallToActionButton";
 
 const idResolver = new IdResolver();

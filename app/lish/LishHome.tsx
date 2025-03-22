@@ -8,10 +8,6 @@ import { Input } from "components/Input";
 import { useIdentityData } from "components/IdentityProvider";
 import { NewDraftButton } from "./[handle]/[publication]/NewDraftButton";
 
-export const isSubscribed = false;
-export const isAuthor = false;
-export const isBskyConnected = true;
-
 export const LishHome = () => {
   let [state, setState] = useState<"posts" | "subscriptions">("posts");
   return (
