@@ -11,8 +11,27 @@ import {
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
 } from "lexicons/src";
+import { Metadata } from "next";
 
 const idResolver = new IdResolver();
+export async function generateMetadata(props: {
+  params: { publication: string; handle: string; rkey: string };
+}): Promise<Metadata> {
+  let did = await idResolver.handle.resolve(props.params.handle);
+  if (!did) return { title: "Publication 404" };
+
+  let { data: document } = await supabaseServerClient
+    .from("documents")
+    .select("*")
+    .eq("uri", AtUri.make(did, ids.PubLeafletDocument, props.params.rkey))
+    .single();
+
+  if (!document) return { title: "404" };
+  let record = document.data as PubLeafletDocument.Record;
+  return {
+    title: record.title + " - " + decodeURIComponent(props.params.publication),
+  };
+}
 export default async function Post(props: {
   params: { publication: string; handle: string; rkey: string };
 }) {

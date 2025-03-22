@@ -9,8 +9,27 @@ import {
   PubLeafletPublication,
 } from "lexicons/src";
 import { CallToActionButton } from "./CallToActionButton";
+import { Metadata } from "next";
 
 const idResolver = new IdResolver();
+
+export async function generateMetadata(props: {
+  params: { publication: string; handle: string };
+}): Promise<Metadata> {
+  let did = await idResolver.handle.resolve(props.params.handle);
+  if (!did) return { title: "Publication 404" };
+
+  let { data: publication } = await supabaseServerClient
+    .from("publications")
+    .select(
+      "*, documents_in_publications(documents(*)), leaflets_in_publications(*, permission_tokens(*, permission_token_rights(*), custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*) ))",
+    )
+    .eq("identity_did", did)
+    .eq("name", decodeURIComponent(props.params.publication))
+    .single();
+  if (!publication) return { title: "404 Publication" };
+  return { title: decodeURIComponent(props.params.publication) };
+}
 
 export default async function Publication(props: {
   params: { publication: string; handle: string };
