@@ -12,6 +12,7 @@ import { scanIndexLocal } from "src/replicache/utils";
 import { getRSVPData } from "actions/getRSVPData";
 import { PageSWRDataProvider } from "components/PageSWRDataProvider";
 import { getPollData } from "actions/pollActions";
+import { PublicationContextProvider } from "components/Providers/PublicationContext";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -30,7 +31,7 @@ export default async function LeafletPage(props: Props) {
   let res = await supabase
     .from("permission_tokens")
     .select(
-      "*, permission_token_rights(*), custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*) ",
+      "*, permission_token_rights(*), custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*),leaflets_in_publications(publications(*)) ",
     )
     .eq("id", props.params.leaflet_id)
     .single();
@@ -68,11 +69,15 @@ export default async function LeafletPage(props: Props) {
       leaflet_id={res.data.id}
       domains={res.data.custom_domain_routes}
     >
-      <Leaflet
-        initialFacts={initialFacts}
-        leaflet_id={rootEntity}
-        token={res.data}
-      />
+      <PublicationContextProvider
+        publication={res.data.leaflets_in_publications[0]?.publications}
+      >
+        <Leaflet
+          initialFacts={initialFacts}
+          leaflet_id={rootEntity}
+          token={res.data}
+        />
+      </PublicationContextProvider>
     </PageSWRDataProvider>
   );
 }

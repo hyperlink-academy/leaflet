@@ -1,3 +1,4 @@
+"use client";
 import { isIOS } from "@react-aria/utils";
 import { useCallback, useEffect, useRef } from "react";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
@@ -63,22 +64,20 @@ export const focusElement = (el?: HTMLInputElement | null) => {
 export const InputWithLabel = (
   props: {
     label: string;
-  } & JSX.IntrinsicElements["input"],
+    textarea?: boolean;
+  } & JSX.IntrinsicElements["input"] &
+    JSX.IntrinsicElements["textarea"],
 ) => {
   let { label, ...inputProps } = props;
+  let style = `appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 ${props.className}`;
   return (
-    <div>
-      <div className="input-with-border flex flex-col">
-        <label>
-          <div className="text-sm text-tertiary font-bold italic leading-none pt-0.5">
-            {props.label}
-          </div>
-          <Input
-            {...inputProps}
-            className={`appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 ${props.className}`}
-          />
-        </label>
-      </div>
-    </div>
+    <label className=" input-with-border flex flex-col text-sm text-tertiary font-bold italic leading-tight !py-1 !px-[6px]">
+      {props.label}
+      {props.textarea ? (
+        <textarea {...inputProps} className={style} />
+      ) : (
+        <Input {...inputProps} className={style} />
+      )}
+    </label>
   );
 };

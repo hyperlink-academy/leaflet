@@ -112,12 +112,63 @@ export type Database = {
           },
         ]
       }
+      documents: {
+        Row: {
+          data: Json
+          indexed_at: string
+          uri: string
+        }
+        Insert: {
+          data: Json
+          indexed_at?: string
+          uri: string
+        }
+        Update: {
+          data?: Json
+          indexed_at?: string
+          uri?: string
+        }
+        Relationships: []
+      }
+      documents_in_publications: {
+        Row: {
+          document: string
+          indexed_at: string
+          publication: string
+        }
+        Insert: {
+          document: string
+          indexed_at?: string
+          publication: string
+        }
+        Update: {
+          document?: string
+          indexed_at?: string
+          publication?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_in_publications_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "documents_in_publications_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       email_auth_tokens: {
         Row: {
           confirmation_code: string
           confirmed: boolean
           created_at: string
-          email: string
+          email: string | null
           id: string
           identity: string | null
         }
@@ -125,7 +176,7 @@ export type Database = {
           confirmation_code: string
           confirmed?: boolean
           created_at?: string
-          email: string
+          email?: string | null
           id?: string
           identity?: string | null
         }
@@ -133,7 +184,7 @@ export type Database = {
           confirmation_code?: string
           confirmed?: boolean
           created_at?: string
-          email?: string
+          email?: string | null
           id?: string
           identity?: string | null
         }
@@ -273,18 +324,21 @@ export type Database = {
       }
       identities: {
         Row: {
+          atp_did: string | null
           created_at: string
           email: string | null
           home_page: string
           id: string
         }
         Insert: {
+          atp_did?: string | null
           created_at?: string
           email?: string | null
           home_page: string
           id?: string
         }
         Update: {
+          atp_did?: string | null
           created_at?: string
           email?: string | null
           home_page?: string
@@ -299,6 +353,76 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      leaflets_in_publications: {
+        Row: {
+          doc: string | null
+          leaflet: string
+          publication: string
+        }
+        Insert: {
+          doc?: string | null
+          leaflet: string
+          publication: string
+        }
+        Update: {
+          doc?: string | null
+          leaflet?: string
+          publication?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaflets_in_publications_doc_fkey"
+            columns: ["doc"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "leaflets_in_publications_leaflet_fkey"
+            columns: ["leaflet"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaflets_in_publications_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      oauth_session_store: {
+        Row: {
+          key: string
+          session: Json
+        }
+        Insert: {
+          key: string
+          session: Json
+        }
+        Update: {
+          key?: string
+          session?: Json
+        }
+        Relationships: []
+      }
+      oauth_state_store: {
+        Row: {
+          key: string
+          state: Json
+        }
+        Insert: {
+          key: string
+          state: Json
+        }
+        Update: {
+          key?: string
+          state?: Json
+        }
+        Relationships: []
       }
       permission_token_on_homepage: {
         Row: {
@@ -511,6 +635,27 @@ export type Database = {
           },
         ]
       }
+      publications: {
+        Row: {
+          identity_did: string
+          indexed_at: string
+          name: string
+          uri: string
+        }
+        Insert: {
+          identity_did: string
+          indexed_at?: string
+          name: string
+          uri: string
+        }
+        Update: {
+          identity_did?: string
+          indexed_at?: string
+          name?: string
+          uri?: string
+        }
+        Relationships: []
+      }
       replicache_clients: {
         Row: {
           client_group: string
@@ -528,6 +673,39 @@ export type Database = {
           last_mutation?: number
         }
         Relationships: []
+      }
+      subscribers_to_publications: {
+        Row: {
+          created_at: string
+          identity: string
+          publication: string
+        }
+        Insert: {
+          created_at?: string
+          identity: string
+          publication: string
+        }
+        Update: {
+          created_at?: string
+          identity?: string
+          publication?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscribers_to_publications_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["email"]
+          },
+          {
+            foreignKeyName: "subscribers_to_publications_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
       }
     }
     Views: {

@@ -12,7 +12,10 @@ import postgres from "postgres";
 import { v7 } from "uuid";
 import { sql } from "drizzle-orm";
 import { cookies } from "next/headers";
-export async function createIdentity(db: PostgresJsDatabase) {
+export async function createIdentity(
+  db: PostgresJsDatabase,
+  data?: { email?: string; atp_did?: string },
+) {
   return db.transaction(async (tx) => {
     // Create a new entity set
     let [entity_set] = await tx.insert(entity_sets).values({}).returning();
@@ -41,7 +44,7 @@ export async function createIdentity(db: PostgresJsDatabase) {
       .returning();
     let [identity] = await tx
       .insert(identities)
-      .values({ home_page: permissionToken.id })
+      .values({ home_page: permissionToken.id, ...data })
       .returning();
     return identity;
   });

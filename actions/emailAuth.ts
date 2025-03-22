@@ -6,9 +6,9 @@ import postgres from "postgres";
 import { email_auth_tokens, identities } from "drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
+import { createIdentity } from "./createIdentity";
 
 async function sendAuthCode(email: string, code: string) {
-  console.log(code);
   if (process.env.NODE_ENV === "development") {
     console.log("Auth code:", code);
     return;
@@ -72,31 +72,61 @@ export async function confirmEmailAuthToken(tokenId: string, code: string) {
     .from(email_auth_tokens)
     .where(eq(email_auth_tokens.id, tokenId));
 
-  if (!token) {
+  if (!token || !token.email) {
+    console.log("no token?");
     client.end();
     return null;
   }
 
   if (token.confirmation_code !== code) {
+    console.log("wrong code???");
     client.end();
     return null;
   }
 
   if (token.confirmed) {
+    console.log("already confirmed?????");
     client.end();
     return null;
   }
+  let authToken = cookies().get("auth_token");
+  if (authToken) {
+    let [existingToken] = await db
+      .select()
+      .from(email_auth_tokens)
+      .rightJoin(identities, eq(identities.id, email_auth_tokens.identity))
+      .where(eq(email_auth_tokens.id, authToken.value));
 
+    if (existingToken) {
+      if (existingToken.identities?.email) {
+        console.log("wat");
+      }
+      await db
+        .update(identities)
+        .set({ email: token.email })
+        .where(eq(identities.id, existingToken.identities.id));
+      client.end();
+      return existingToken;
+    }
+  }
+
+  let identityID;
   let [identity] = await db
     .select()
     .from(identities)
     .where(eq(identities.email, token.email));
+  if (!identity) {
+    let newIdentity = await createIdentity(db, { email: token.email });
+    identityID = newIdentity.id;
+  } else {
+    identityID = identity.id;
+  }
 
   const [confirmedToken] = await db
     .update(email_auth_tokens)
     .set({
       confirmed: true,
-      identity: identity?.id,
+      identity: identityID,
     })
     .where(
       and(

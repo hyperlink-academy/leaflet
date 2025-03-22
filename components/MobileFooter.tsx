@@ -8,6 +8,7 @@ import { HomeButton } from "./HomeButton";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { HelpPopover } from "./HelpPopover";
 import { Watermark } from "./Watermark";
+import { PublishToPublication } from "./ShareOptions/PublicationOptions";
 
 export function MobileFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedEntity);
@@ -38,6 +39,7 @@ export function MobileFooter(props: { entityID: string }) {
             <HelpPopover />
             <ThemePopover entityID={props.entityID} />
             <ShareOptions />
+            <PublishToPublication />
           </div>
         </div>
       ) : (

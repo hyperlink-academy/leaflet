@@ -9,7 +9,7 @@ import { HoverButton } from "components/Buttons";
 import useSWR from "swr";
 import { useTemplateState } from "app/home/CreateNewButton";
 import LoginForm from "app/login/LoginForm";
-import { AddDomain, CustomDomainMenu, DomainOptions } from "./DomainOptions";
+import { CustomDomainMenu } from "./DomainOptions";
 import { useIdentityData } from "components/IdentityProvider";
 import { useLeafletDomains } from "components/PageSWRDataProvider";
 
@@ -63,13 +63,13 @@ export function ShareOptions() {
       ) : menuState === "domain" ? (
         <CustomDomainMenu setShareMenuState={setMenuState} />
       ) : (
-        <DefaultOptions setMenuState={setMenuState} domainConnected={false} />
+        <ShareMenu setMenuState={setMenuState} domainConnected={false} />
       )}
     </Menu>
   );
 }
 
-const DefaultOptions = (props: {
+const ShareMenu = (props: {
   setMenuState: (state: ShareMenuStates) => void;
   domainConnected: boolean;
 }) => {
