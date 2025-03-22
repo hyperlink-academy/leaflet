@@ -27,12 +27,7 @@ export const PostList = (props: {
         </div>
       );
     }
-    return (
-      <div className="italic text-tertiary flex flex-col gap-2 justify-center place-items-center">
-        <div>Welcome to your new Publication</div>
-        <ButtonPrimary>Start Drafting!</ButtonPrimary>
-      </div>
-    );
+    return null;
   }
 
   return (
