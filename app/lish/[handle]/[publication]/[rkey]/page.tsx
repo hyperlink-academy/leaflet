@@ -12,33 +12,6 @@ import {
   PubLeafletPagesLinearDocument,
 } from "lexicons/src";
 
-// export default function Post() {
-//   return (
-//     <div className="postPage relative w-full h-screen flex items-stretch bg-bg-leaflet">
-//       <div className="postWrapper h-full w-full flex flex-col">
-//         <div
-//           id="post"
-//           className="postContent h-full overflow-scroll max-w-prose w-full px-4 py-6 mx-auto flex flex-col"
-//         >
-//           <Link href="./publication" className="hover:no-underline font-bold">
-//             Leaflet Explorers
-//           </Link>
-
-//           <h2 className="leading-tight">
-//             Bluesky post blocks and Make with Leaflet
-//           </h2>
-//           <small className="flex gap-3 text-tertiary italic pt-2">
-//             <div className="font-bold">Mar 6, 2025</div>
-//             <div>brendan</div>
-//           </small>
-//           <PostContent />
-//         </div>
-//         <Footer pageType="post" />
-//       </div>
-//     </div>
-//   );
-// }
-
 const idResolver = new IdResolver();
 export default async function Post(props: {
   params: { publication: string; handle: string; rkey: string };
