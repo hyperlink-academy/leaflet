@@ -5,7 +5,7 @@ import {
   Session,
 } from "@atproto/oauth-client-node";
 import { JoseKey } from "@atproto/jwk-jose";
-import { oauth_metadata } from "app/api/oauth/[route]/route";
+import { oauth_metadata } from "app/api/oauth/[route]/oauth-metadata";
 import { supabaseServerClient } from "supabase/serverClient";
 
 export async function createOauthClient() {
