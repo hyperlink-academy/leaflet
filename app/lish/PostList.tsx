@@ -32,14 +32,18 @@ export const PostList = (props: {
 
   return (
     <div className="pubPostList flex flex-col gap-3">
-      {props.posts.map((post, index) => {
-        let p = post.documents?.data as PubLeafletDocument.Record;
-        let uri = new AtUri(post.documents?.uri!);
+      {props.posts
+        .sort((a, b) => {
+          return a.documents?.indexed_at! > b.documents?.indexed_at! ? -1 : 1;
+        })
+        .map((post, index) => {
+          let p = post.documents?.data as PubLeafletDocument.Record;
+          let uri = new AtUri(post.documents?.uri!);
 
-        return (
-          <PostListItem {...p} key={index} isFeed={props.isFeed} uri={uri} />
-        );
-      })}
+          return (
+            <PostListItem {...p} key={index} isFeed={props.isFeed} uri={uri} />
+          );
+        })}
     </div>
   );
 };
