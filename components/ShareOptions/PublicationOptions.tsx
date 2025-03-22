@@ -35,7 +35,7 @@ export const PublishToPublication = () => {
       asChild
       trigger={<ButtonPrimary className="">Publish</ButtonPrimary>}
     >
-      <div className="publishMenu w-96 flex flex-col gap-3">
+      <div className="publishMenu w-72 flex flex-col gap-3">
         {state.state === "default" ? (
           <>
             <div className="w-full flex flex-col">
@@ -64,13 +64,6 @@ export const PublishToPublication = () => {
                   });
               }}
             >
-              <InputWithLabel
-                label="Title"
-                value={titleValue}
-                onChange={(e) => {
-                  setTitleValue(e.currentTarget.value);
-                }}
-              />
               <InputWithLabel
                 textarea
                 rows={3}
