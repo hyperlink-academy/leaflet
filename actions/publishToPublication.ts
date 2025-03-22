@@ -23,6 +23,7 @@ import { OmitKey } from "lexicons/src/util";
 import { BlobRef } from "@atproto/lexicon";
 import { IdResolver } from "@atproto/identity";
 import { AtUri } from "@atproto/syntax";
+import { Json } from "supabase/database.types";
 
 const idResolver = new IdResolver();
 export async function publishToPublication(
@@ -97,8 +98,23 @@ export async function publishToPublication(
     { repo: credentialSession.did!, rkey, validate: false },
     record,
   );
-  let html = blocksToHtml(blocks, imageMap, scan, publication_uri);
-  await sendPostToEmailSubscribers(publication_uri, { title, content: html });
+
+  await Promise.all([
+    //Optimistically put these in!
+    supabaseServerClient.from("documents").upsert({
+      uri: result.uri,
+      data: record as Json,
+    }),
+    supabaseServerClient.from("documents_in_publications").insert({
+      publication: record.publication,
+      document: result.uri,
+    }),
+    sendPostToEmailSubscribers(publication_uri, {
+      title,
+      content: blocksToHtml(blocks, imageMap, scan, publication_uri),
+    }),
+  ]);
+
   let handle = await idResolver.did.resolve(credentialSession.did!);
   return { handle, rkey };
 }
