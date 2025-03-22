@@ -64,7 +64,7 @@ const PostListItem = (
       )}
 
       <Link
-        href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${params.publication}/${props.uri.rkey}/`}
+        href={`/lish/${params.handle}/${params.publication}/${props.uri.rkey}/`}
         className="pubPostListContent flex flex-col hover:no-underline hover:text-accent-contrast"
       >
         <h4>{props.title}</h4>
