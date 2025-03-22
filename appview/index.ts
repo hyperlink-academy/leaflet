@@ -10,6 +10,7 @@ import {
   PubLeafletPublication,
 } from "lexicons/src";
 import { AtUri } from "@atproto/syntax";
+import { writeFile, readFile } from "fs/promises";
 
 const cursorFile = "./cursor";
 
@@ -18,9 +19,21 @@ let supabase = createClient<Database>(
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
 );
 async function main() {
+  let startCursor;
+  try {
+    startCursor = parseInt((await readFile(cursorFile)).toString());
+  } catch (e) {}
+  const runner = new MemoryRunner({
+    startCursor,
+    setCursor: async (cursor) => {
+      await writeFile(cursorFile, cursor.toString());
+      // persist cursor
+    },
+  });
   let firehose = new Firehose({
     excludeAccount: true,
     excludeIdentity: true,
+    runner,
     idResolver,
     filterCollections: [
       ids.PubLeafletDocument,
@@ -97,6 +110,7 @@ async function main() {
   const cleanup = () => {
     console.log("shutting down firehose...");
     firehose.destroy();
+    runner.destroy();
     process.exit();
   };
 
