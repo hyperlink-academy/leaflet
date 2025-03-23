@@ -69,6 +69,12 @@ async function main() {
             document: evt.uri.toString(),
           });
         }
+        if (evt.event === "delete") {
+          await supabase
+            .from("documents")
+            .delete()
+            .eq("uri", evt.uri.toString());
+        }
       }
       if (evt.collection === ids.PubLeafletPublication) {
         if (evt.event === "create" || evt.event === "update") {
