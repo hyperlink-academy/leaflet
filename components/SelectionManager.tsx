@@ -17,6 +17,7 @@ import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 import { copySelection } from "src/utils/copySelection";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { useIsMobile } from "src/hooks/isMobile";
+import { deleteBlock } from "./Blocks/DeleteBlock";
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
@@ -227,7 +228,8 @@ export function SelectionManager() {
     );
     let listener = async (e: KeyboardEvent) =>
       undoManager.withUndoGroup(async () => {
-        if (e.key === "Backspace" || e.key === "Delete") {
+        //used here and in cut
+        const deleteBlocks = async () => {
           if (!entity_set.permissions.write) return;
           if (moreThanOneSelected) {
             e.preventDefault();
@@ -267,6 +269,9 @@ export function SelectionManager() {
                 );
             }
           }
+        };
+        if (e.key === "Backspace" || e.key === "Delete") {
+          deleteBlocks();
         }
         if (e.key === "ArrowUp") {
           let [sortedBlocks, siblings] = await getSortedSelection();
@@ -490,7 +495,7 @@ export function SelectionManager() {
             }
           }
         }
-        if (e.key === "c" && (e.metaKey || e.ctrlKey)) {
+        if ((e.key === "c" || e.key === "x") && (e.metaKey || e.ctrlKey)) {
           if (!rep) return;
           let [, , selectionWithFoldedChildren] = await getSortedSelection();
           if (!selectionWithFoldedChildren) return;
@@ -503,6 +508,7 @@ export function SelectionManager() {
             return;
           e.preventDefault();
           await copySelection(rep, selectionWithFoldedChildren);
+          if (e.key === "x") deleteBlocks();
         }
       });
     window.addEventListener("keydown", listener);
