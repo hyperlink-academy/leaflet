@@ -249,7 +249,7 @@ const DomainOption = (props: {
               });
             }}
           >
-            details
+            pending
           </button>
         )}
       </div>
