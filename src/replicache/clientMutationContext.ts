@@ -103,7 +103,7 @@ export function clientMutationContext(
             }
           },
           redo: () => {
-            rep.mutate.assertFact({ ignoreUndo: true, ...(fact as Fact<any>) });
+            rep.mutate.retractFact({ factID: id });
           },
         });
       await tx.del(id);
