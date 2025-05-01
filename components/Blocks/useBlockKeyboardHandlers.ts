@@ -40,9 +40,16 @@ export function useBlockKeyboardHandlers(
       if (e.defaultPrevented) return;
       //if no permissions, do nothing
       if (!entity_set.permissions.write) return;
-      let command = { Tab, ArrowUp, ArrowDown, Backspace, Enter, Escape }[
-        e.key
-      ];
+      let command = {
+        Tab,
+        ArrowUp,
+        ArrowDown,
+        Backspace,
+        Enter,
+        Escape,
+        j,
+        k,
+      }[e.key];
 
       let el = e.target as HTMLElement;
       if (
@@ -93,6 +100,9 @@ function Tab({ e, props, rep }: Args) {
   }
 }
 
+function j(args: Args) {
+  if (args.e.ctrlKey || args.e.metaKey) ArrowDown(args);
+}
 function ArrowDown({ e, props }: Args) {
   e.preventDefault();
   let nextBlock = props.nextBlock;
@@ -104,6 +114,9 @@ function ArrowDown({ e, props }: Args) {
   if (!nextBlock) return;
 }
 
+function k(args: Args) {
+  if (args.e.ctrlKey || args.e.metaKey) ArrowUp(args);
+}
 function ArrowUp({ e, props }: Args) {
   e.preventDefault();
   let prevBlock = props.previousBlock;

@@ -117,43 +117,10 @@ export const TextBlockKeymap = (
       }
       return false;
     },
-    ArrowUp: (state, _tr, view) => {
-      if (!view) return false;
-      if (state.doc.textContent.startsWith("/")) return true;
-      if (useUIState.getState().selectedBlocks.length > 1) return true;
-      if (view.state.selection.from !== view.state.selection.to) return false;
-      const viewClientRect = view.dom.getBoundingClientRect();
-      const coords = view.coordsAtPos(view.state.selection.anchor);
-      if (coords.top - viewClientRect.top < 12) {
-        let block = propsRef.current.previousBlock;
-        if (block) {
-          view.dom.blur();
-          focusBlock(block, { left: coords.left, type: "bottom" });
-          return true;
-        }
-        return false;
-      }
-      return false;
-    },
-    ArrowDown: (state, tr, view) => {
-      if (!view) return true;
-      if (state.doc.textContent.startsWith("/")) return true;
-      if (useUIState.getState().selectedBlocks.length > 1) return true;
-      if (view.state.selection.from !== view.state.selection.to) return false;
-      const viewClientRect = view.dom.getBoundingClientRect();
-      const coords = view.coordsAtPos(view.state.selection.anchor);
-      let isBottom = viewClientRect.bottom - coords.bottom < 12;
-      if (isBottom) {
-        let block = propsRef.current.nextBlock;
-        if (block) {
-          view.dom.blur();
-          focusBlock(block, { left: coords.left, type: "top" });
-          return true;
-        }
-        return false;
-      }
-      return false;
-    },
+    "Ctrl-k": moveCursorUp(propsRef, repRef, true),
+    ArrowUp: moveCursorUp(propsRef, repRef),
+    "Ctrl-j": moveCursorDown(propsRef, repRef, true),
+    ArrowDown: moveCursorDown(propsRef, repRef),
     ArrowLeft: (state, tr, view) => {
       if (state.selection.content().size > 0) return false;
       if (state.selection.anchor > 1) return false;
@@ -192,6 +159,64 @@ export const TextBlockKeymap = (
     "Ctrl-Enter": CtrlEnter(propsRef, repRef),
     "Meta-Enter": CtrlEnter(propsRef, repRef),
   }) as { [key: string]: Command };
+
+const moveCursorDown =
+  (
+    propsRef: PropsRef,
+    repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+    jumpToNextBlock: boolean = false,
+  ) =>
+  (
+    state: EditorState,
+    dispatch?: (tr: Transaction) => void,
+    view?: EditorView,
+  ) => {
+    if (!view) return true;
+    if (state.doc.textContent.startsWith("/")) return true;
+    if (useUIState.getState().selectedBlocks.length > 1) return true;
+    if (view.state.selection.from !== view.state.selection.to) return false;
+    const viewClientRect = view.dom.getBoundingClientRect();
+    const coords = view.coordsAtPos(view.state.selection.anchor);
+    let isBottom = viewClientRect.bottom - coords.bottom < 12;
+    if (isBottom || jumpToNextBlock) {
+      let block = propsRef.current.nextBlock;
+      if (block) {
+        view.dom.blur();
+        focusBlock(block, { left: coords.left, type: "top" });
+        return true;
+      }
+      return false || jumpToNextBlock;
+    }
+    return false;
+  };
+const moveCursorUp =
+  (
+    propsRef: PropsRef,
+    repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+    jumpToNextBlock: boolean = false,
+  ) =>
+  (
+    state: EditorState,
+    dispatch?: (tr: Transaction) => void,
+    view?: EditorView,
+  ) => {
+    if (!view) return false;
+    if (state.doc.textContent.startsWith("/")) return true;
+    if (useUIState.getState().selectedBlocks.length > 1) return true;
+    if (view.state.selection.from !== view.state.selection.to) return false;
+    const viewClientRect = view.dom.getBoundingClientRect();
+    const coords = view.coordsAtPos(view.state.selection.anchor);
+    if (coords.top - viewClientRect.top < 12 || jumpToNextBlock) {
+      let block = propsRef.current.previousBlock;
+      if (block) {
+        view.dom.blur();
+        focusBlock(block, { left: coords.left, type: "bottom" });
+        return true;
+      }
+      return false || jumpToNextBlock;
+    }
+    return false;
+  };
 
 const backspace =
   (
@@ -399,7 +424,7 @@ const enter =
           },
         });
         if (propsRef.current.listData)
-          repRef.current?.mutate.assertFact({
+          await repRef.current?.mutate.assertFact({
             entity: newEntityID,
             attribute: "block/is-list",
             data: { type: "boolean", value: true },
