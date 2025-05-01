@@ -131,7 +131,7 @@ export function SelectionManager() {
         {
           metaKey: true,
           shift: true,
-          key: ["ArrowDown"],
+          key: ["ArrowDown", "J"],
           handler: async () => {
             let [sortedBlocks, siblings] = await getSortedSelection();
             let block = sortedBlocks[0];
@@ -167,7 +167,7 @@ export function SelectionManager() {
         {
           metaKey: true,
           shift: true,
-          key: ["ArrowUp"],
+          key: ["ArrowUp", "K"],
           handler: async () => {
             let [sortedBlocks, siblings] = await getSortedSelection();
             let block = sortedBlocks[0];
