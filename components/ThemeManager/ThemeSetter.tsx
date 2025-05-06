@@ -543,6 +543,9 @@ export const LeafletBGPicker = (props: {
                         e.currentTarget.value.length,
                       );
                     }}
+                    onPaste={(e) => {
+                      console.log(e);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.currentTarget.blur();

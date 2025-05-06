@@ -7,7 +7,7 @@ import {
   AtpBaseClient,
   PubLeafletDocument,
   PubLeafletPublication,
-} from "lexicons/src";
+} from "lexicons/api";
 import { CallToActionButton } from "./CallToActionButton";
 import { Metadata } from "next";
 

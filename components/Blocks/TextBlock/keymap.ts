@@ -46,21 +46,6 @@ export const TextBlockKeymap = (
     },
     "Ctrl-a": metaA(propsRef, repRef),
     "Meta-a": metaA(propsRef, repRef),
-    Tab: () => {
-      return um.withUndoGroup(() => {
-        if (useUIState.getState().selectedBlocks.length > 1) return false;
-        if (!repRef.current || !propsRef.current.previousBlock) return false;
-        indent(
-          propsRef.current,
-          propsRef.current.previousBlock,
-          repRef.current,
-        );
-        return true;
-      });
-    },
-    "Shift-Tab": () => {
-      return um.withUndoGroup(shifttab(propsRef, repRef));
-    },
     Escape: (_state, _dispatch, view) => {
       view?.dom.blur();
       useUIState.setState(() => ({
@@ -395,6 +380,10 @@ const enter =
 
     let newEntityID = v7();
     let position: string;
+    useUIState.getState().setSelectedBlock({
+      value: newEntityID,
+      parent: propsRef.current.parent,
+    });
     let asyncRun = async () => {
       let blockType =
         propsRef.current.type === "heading" && state.selection.anchor <= 2

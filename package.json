@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
-    "lexgen": "tsx ./lexicons/build.ts && lex gen-api ./lexicons/src ./lexicons/out/* ./lexicons/com/atproto/*/* --yes",
+    "lexgen": "tsx ./lexicons/build.ts && lex gen-api ./lexicons/api ./lexicons/pub/leaflet/* ./lexicons/pub/leaflet/*/* ./lexicons/com/atproto/*/* --yes",
     "wrangler-dev": "wrangler dev",
     "start-appview": "tsx --env-file='./.env.local' --watch appview/index.ts"
   },

@@ -1,0 +1,33 @@
+import { LexiconDoc } from "@atproto/lexicon";
+import { PubLeafletPagesLinearDocument } from "./pages/LinearDocument";
+
+export const PubLeafletDocument: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.document",
+  revision: 1,
+  description: "A lexicon for long form rich media documents",
+  defs: {
+    main: {
+      type: "record",
+      key: "tid",
+      description: "Record containing a document",
+      record: {
+        type: "object",
+        required: ["pages", "author", "title", "publication"],
+        properties: {
+          title: { type: "string", maxLength: 128 },
+          publishedAt: { type: "string", format: "datetime" },
+          publication: { type: "string", format: "at-uri" },
+          author: { type: "string", format: "at-identifier" },
+          pages: {
+            type: "array",
+            items: {
+              type: "union",
+              refs: [PubLeafletPagesLinearDocument.id],
+            },
+          },
+        },
+      },
+    },
+  },
+};

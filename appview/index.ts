@@ -3,12 +3,12 @@ import { Database, Json } from "supabase/database.types";
 import { IdResolver } from "@atproto/identity";
 const idResolver = new IdResolver();
 import { Firehose, MemoryRunner } from "@atproto/sync";
-import { ids } from "lexicons/src/lexicons";
+import { ids } from "lexicons/api/lexicons";
 import {
   PubLeafletDocument,
   PubLeafletPost,
   PubLeafletPublication,
-} from "lexicons/src";
+} from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 

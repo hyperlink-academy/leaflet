@@ -10,79 +10,6 @@ import {
 import { $Typed, is$typed, maybe$typed } from './util.js'
 
 export const schemaDict = {
-  PubLeafletBlocksHeader: {
-    lexicon: 1,
-    id: 'pub.leaflet.blocks.header',
-    defs: {
-      main: {
-        type: 'object',
-        required: [],
-        properties: {
-          level: {
-            type: 'integer',
-            minimum: 1,
-            maximum: 6,
-          },
-          plaintext: {
-            type: 'string',
-          },
-        },
-      },
-    },
-  },
-  PubLeafletBlocksImage: {
-    lexicon: 1,
-    id: 'pub.leaflet.blocks.image',
-    defs: {
-      main: {
-        type: 'object',
-        required: ['image'],
-        properties: {
-          image: {
-            type: 'blob',
-            accept: ['image/*'],
-            maxSize: 1000000,
-          },
-          alt: {
-            type: 'string',
-            description:
-              'Alt text description of the image, for accessibility.',
-          },
-          aspectRatio: {
-            type: 'ref',
-            ref: 'lex:pub.leaflet.blocks.image#aspectRatio',
-          },
-        },
-      },
-      aspectRatio: {
-        type: 'object',
-        required: ['width', 'height'],
-        properties: {
-          width: {
-            type: 'integer',
-          },
-          height: {
-            type: 'integer',
-          },
-        },
-      },
-    },
-  },
-  PubLeafletBlocksText: {
-    lexicon: 1,
-    id: 'pub.leaflet.blocks.text',
-    defs: {
-      main: {
-        type: 'object',
-        required: [],
-        properties: {
-          plaintext: {
-            type: 'string',
-          },
-        },
-      },
-    },
-  },
   PubLeafletDocument: {
     lexicon: 1,
     id: 'pub.leaflet.document',
@@ -122,55 +49,6 @@ export const schemaDict = {
             },
           },
         },
-      },
-    },
-  },
-  PubLeafletPagesLinearDocument: {
-    lexicon: 1,
-    id: 'pub.leaflet.pages.linearDocument',
-    defs: {
-      main: {
-        type: 'object',
-        properties: {
-          blocks: {
-            type: 'array',
-            items: {
-              type: 'ref',
-              ref: 'lex:pub.leaflet.pages.linearDocument#block',
-            },
-          },
-        },
-      },
-      block: {
-        type: 'object',
-        required: ['block'],
-        properties: {
-          block: {
-            type: 'union',
-            refs: [
-              'lex:pub.leaflet.blocks.text',
-              'lex:pub.leaflet.blocks.header',
-              'lex:pub.leaflet.blocks.image',
-            ],
-          },
-          alignment: {
-            type: 'string',
-            knownValues: [
-              'lex:pub.leaflet.pages.linearDocument#textAlignLeft',
-              'lex:pub.leaflet.pages.linearDocument#textAlignCenter',
-              'lex:pub.leaflet.pages.linearDocument#textAlignRight',
-            ],
-          },
-        },
-      },
-      textAlignLeft: {
-        type: 'token',
-      },
-      textAlignCenter: {
-        type: 'token',
-      },
-      textAlignRight: {
-        type: 'token',
       },
     },
   },
@@ -225,6 +103,128 @@ export const schemaDict = {
             },
           },
         },
+      },
+    },
+  },
+  PubLeafletBlocksHeader: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.header',
+    defs: {
+      main: {
+        type: 'object',
+        required: [],
+        properties: {
+          level: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 6,
+          },
+          plaintext: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksImage: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.image',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['image', 'aspectRatio'],
+        properties: {
+          image: {
+            type: 'blob',
+            accept: ['image/*'],
+            maxSize: 1000000,
+          },
+          alt: {
+            type: 'string',
+            description:
+              'Alt text description of the image, for accessibility.',
+          },
+          aspectRatio: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.blocks.image#aspectRatio',
+          },
+        },
+      },
+      aspectRatio: {
+        type: 'object',
+        required: ['width', 'height'],
+        properties: {
+          width: {
+            type: 'integer',
+          },
+          height: {
+            type: 'integer',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksText: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.text',
+    defs: {
+      main: {
+        type: 'object',
+        required: [],
+        properties: {
+          plaintext: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletPagesLinearDocument: {
+    lexicon: 1,
+    id: 'pub.leaflet.pages.linearDocument',
+    defs: {
+      main: {
+        type: 'object',
+        properties: {
+          blocks: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.pages.linearDocument#block',
+            },
+          },
+        },
+      },
+      block: {
+        type: 'object',
+        required: ['block'],
+        properties: {
+          block: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.blocks.text',
+              'lex:pub.leaflet.blocks.header',
+              'lex:pub.leaflet.blocks.image',
+            ],
+          },
+          alignment: {
+            type: 'string',
+            knownValues: [
+              'lex:pub.leaflet.pages.linearDocument#textAlignLeft',
+              'lex:pub.leaflet.pages.linearDocument#textAlignCenter',
+              'lex:pub.leaflet.pages.linearDocument#textAlignRight',
+            ],
+          },
+        },
+      },
+      textAlignLeft: {
+        type: 'token',
+      },
+      textAlignCenter: {
+        type: 'token',
+      },
+      textAlignRight: {
+        type: 'token',
       },
     },
   },
@@ -1207,13 +1207,13 @@ export function validate(
 }
 
 export const ids = {
+  PubLeafletDocument: 'pub.leaflet.document',
+  PubLeafletPost: 'pub.leaflet.post',
+  PubLeafletPublication: 'pub.leaflet.publication',
   PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
-  PubLeafletDocument: 'pub.leaflet.document',
   PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
-  PubLeafletPost: 'pub.leaflet.post',
-  PubLeafletPublication: 'pub.leaflet.publication',
   ComAtprotoLabelDefs: 'com.atproto.label.defs',
   ComAtprotoRepoApplyWrites: 'com.atproto.repo.applyWrites',
   ComAtprotoRepoCreateRecord: 'com.atproto.repo.createRecord',

@@ -5,7 +5,8 @@
     "main": {
       "type": "object",
       "required": [
-        "image"
+        "image",
+        "aspectRatio"
       ],
       "properties": {
         "image": {

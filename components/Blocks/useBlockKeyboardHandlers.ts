@@ -27,10 +27,7 @@ export function useBlockKeyboardHandlers(
 
   let isSelected = useUIState((s) => {
     let selectedBlocks = s.selectedBlocks;
-    return (
-      (!isTextBlock[props.type] || selectedBlocks.length > 1 || isLocked) &&
-      !!s.selectedBlocks.find((b) => b.value === props.entityID)
-    );
+    return !!s.selectedBlocks.find((b) => b.value === props.entityID);
   });
 
   useEffect(() => {
@@ -53,10 +50,11 @@ export function useBlockKeyboardHandlers(
 
       let el = e.target as HTMLElement;
       if (
-        el.tagName === "LABEL" ||
-        el.tagName === "INPUT" ||
-        el.tagName === "TEXTAREA" ||
-        el.contentEditable === "true"
+        (el.tagName === "LABEL" ||
+          el.tagName === "INPUT" ||
+          el.tagName === "TEXTAREA" ||
+          el.contentEditable === "true") &&
+        !isTextBlock[props.type]
       ) {
         if ((el as HTMLInputElement).value !== "" || e.key === "Tab") return;
       }
@@ -89,8 +87,7 @@ type Args = {
 };
 
 function Tab({ e, props, rep }: Args) {
-  // if tab or shift tab & not a textBlock, indent or outdent
-  if (isTextBlock[props.type]) return;
+  // if tab or shift tab, indent or outdent
   if (e.shiftKey) {
     e.preventDefault();
     outdent(props, props.previousBlock, rep);
@@ -104,6 +101,7 @@ function j(args: Args) {
   if (args.e.ctrlKey || args.e.metaKey) ArrowDown(args);
 }
 function ArrowDown({ e, props }: Args) {
+  if (isTextBlock[props.type]) return;
   e.preventDefault();
   let nextBlock = props.nextBlock;
   if (nextBlock && useUIState.getState().selectedBlocks.length <= 1)
@@ -118,6 +116,7 @@ function k(args: Args) {
   if (args.e.ctrlKey || args.e.metaKey) ArrowUp(args);
 }
 function ArrowUp({ e, props }: Args) {
+  if (isTextBlock[props.type]) return;
   e.preventDefault();
   let prevBlock = props.previousBlock;
   if (prevBlock && useUIState.getState().selectedBlocks.length <= 1) {
@@ -190,6 +189,7 @@ async function Backspace({
 }
 
 async function Enter({ e, props, rep, entity_set }: Args) {
+  if (isTextBlock[props.type]) return;
   let newEntityID = v7();
   let position;
   let el = e.target as HTMLElement;
@@ -279,6 +279,7 @@ async function Enter({ e, props, rep, entity_set }: Args) {
 }
 
 function Escape({ e, props, areYouSure, setAreYouSure }: Args) {
+  if (isTextBlock[props.type]) return;
   e.preventDefault();
   if (areYouSure) {
     setAreYouSure(false);

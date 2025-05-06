@@ -1,6 +1,6 @@
 "use server";
 import { TID } from "@atproto/common";
-import { AtpBaseClient } from "lexicons/src";
+import { AtpBaseClient } from "lexicons/api";
 import { createOauthClient } from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";

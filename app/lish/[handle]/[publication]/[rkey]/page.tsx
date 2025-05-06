@@ -3,14 +3,14 @@ import { Footer } from "../../../Footer";
 import { getPds, IdResolver } from "@atproto/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
-import { ids } from "lexicons/src/lexicons";
+import { ids } from "lexicons/api/lexicons";
 import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
   PubLeafletBlocksText,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
-} from "lexicons/src";
+} from "lexicons/api";
 import { Metadata } from "next";
 
 const idResolver = new IdResolver();

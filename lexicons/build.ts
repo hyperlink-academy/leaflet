@@ -1,15 +1,17 @@
-import * as PageLexicons from "./pages";
-import { BlockLexicons } from "./blocks";
-import { PubLeafletDocument } from "./document";
-import * as PublicationLexicons from "./publication";
+import * as PageLexicons from "./src/pages";
+import { BlockLexicons } from "./src/blocks";
+import { PubLeafletDocument } from "./src/document";
+import * as PublicationLexicons from "./src/publication";
 
 import * as fs from "fs";
 import * as path from "path";
-import { PublicKeyPage } from "twilio/lib/rest/accounts/v1/credential/publicKey";
-const outdir = path.join("lexicons", "out");
 
-fs.rmSync(outdir, { recursive: true });
-fs.mkdirSync(outdir);
+const outdir = path.join("lexicons", "pub", "leaflet");
+
+if (fs.existsSync(outdir)) {
+  fs.rmSync(outdir, { recursive: true });
+}
+fs.mkdirSync(outdir, { recursive: true });
 
 const lexicons = [
   PubLeafletDocument,
@@ -20,6 +22,9 @@ const lexicons = [
 
 // Write each lexicon to a file
 lexicons.forEach((lexicon) => {
-  const filename = path.join(outdir, lexicon.id.replace(/\./g, "_") + ".json");
+  let id = lexicon.id.split(".");
+  let folder = path.join(outdir, ...id.slice(2, -1));
+  if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
+  const filename = path.join(folder, id[id.length - 1] + ".json");
   fs.writeFileSync(filename, JSON.stringify(lexicon, null, 2));
 });

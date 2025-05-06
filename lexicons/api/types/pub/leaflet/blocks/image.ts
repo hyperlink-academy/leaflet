@@ -15,7 +15,7 @@ export interface Main {
   image: BlobRef
   /** Alt text description of the image, for accessibility. */
   alt?: string
-  aspectRatio?: AspectRatio
+  aspectRatio: AspectRatio
 }
 
 const hashMain = 'main'

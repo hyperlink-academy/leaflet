@@ -10,7 +10,7 @@ import {
   PubLeafletBlocksText,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
-} from "lexicons/src";
+} from "lexicons/api";
 import { Block } from "components/Blocks/Block";
 import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -18,8 +18,8 @@ import { scanIndex, scanIndexLocal } from "src/replicache/utils";
 import { Fact } from "src/replicache";
 import { Attributes } from "src/replicache/attributes";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
-import { ids } from "lexicons/src/lexicons";
-import { OmitKey } from "lexicons/src/util";
+import { ids } from "lexicons/api/lexicons";
+import { OmitKey } from "lexicons/api/util";
 import { BlobRef } from "@atproto/lexicon";
 import { IdResolver } from "@atproto/identity";
 import { AtUri } from "@atproto/syntax";

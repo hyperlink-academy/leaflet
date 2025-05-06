@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Separator } from "components/Layout";
 import { Json } from "supabase/database.types";
-import { PubLeafletDocument } from "lexicons/src";
+import { PubLeafletDocument } from "lexicons/api";
 import { ButtonPrimary } from "components/Buttons";
 import { useIdentityData } from "components/IdentityProvider";
 import { usePublicationRelationship } from "./[handle]/[publication]/usePublicationRelationship";
