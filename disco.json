@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "services": {
+    "worker": {
+      "image": "appview",
+      "volumes": [
+        {
+          "name": "cursor",
+          "destinationPath": "/cursor"
+        }
+      ]
+    }
+  },
+  "images": {
+    "appview": {
+      "dockerfile": "appview/Dockerfile"
+    }
+  }
+}

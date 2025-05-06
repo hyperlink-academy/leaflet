@@ -12,7 +12,7 @@ import {
 import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 
-const cursorFile = "./cursor";
+const cursorFile = "/cursor/cursor";
 
 let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
