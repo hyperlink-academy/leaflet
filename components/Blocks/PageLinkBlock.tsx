@@ -225,7 +225,7 @@ const CanvasLinkBlock = (props: { entityID: string; preview?: boolean }) => {
 
 export function BlockPreview(
   b: BlockProps & {
-    previewRef: React.RefObject<HTMLDivElement>;
+    previewRef: React.RefObject<HTMLDivElement | null>;
   },
 ) {
   let ref = useRef<HTMLDivElement | null>(null);

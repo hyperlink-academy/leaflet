@@ -2,6 +2,9 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  turbopack: {
+    resolveExtensions: [".mdx", ".tsx", ".ts", ".jsx", ".js", ".mjs", ".json"],
+  },
   webpack: (config) => {
     config.resolve.extensionAlias = {
       ".js": [".ts", ".tsx", ".js"],
@@ -27,7 +30,6 @@ const nextConfig = {
     ],
   },
   experimental: {
-    instrumentationHook: true,
     serverActions: {
       bodySizeLimit: "5mb",
     },

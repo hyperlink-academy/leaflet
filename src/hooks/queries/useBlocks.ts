@@ -1,7 +1,7 @@
 import { Block } from "components/Blocks/Block";
 import { useMemo } from "react";
 import { ReadTransaction } from "replicache";
-import { useSubscribe } from "replicache-react";
+import { useSubscribe } from "src/replicache/useSubscribe";
 import { Fact, useReplicache } from "src/replicache";
 import { scanIndex, scanIndexLocal } from "src/replicache/utils";
 

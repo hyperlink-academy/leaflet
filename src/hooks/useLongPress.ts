@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 
 export const useLongPress = (cb: () => void, cancel?: boolean) => {
-  let longPressTimer = useRef<number>();
+  let longPressTimer = useRef<number>(undefined);
   let isLongPress = useRef(false);
   let [startPosition, setStartPosition] = useState<{
     x: number;

@@ -12,7 +12,7 @@ let supabase = createServerClient<Database>(
 );
 let idResolver = new IdResolver();
 export async function getIdentityData() {
-  let cookieStore = cookies();
+  let cookieStore = await cookies();
   let auth_token = cookieStore.get("auth_token")?.value;
   let auth_res = auth_token
     ? await supabase

@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useSubscribe } from "replicache-react";
+import { useSubscribe } from "src/replicache/useSubscribe";
 import {
   DeepReadonlyObject,
   PushRequest,

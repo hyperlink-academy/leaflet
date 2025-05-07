@@ -5,12 +5,12 @@ import { supabaseServerClient } from "supabase/serverClient";
 const idResolver = new IdResolver();
 export default async function PublicationLayout(props: {
   children: React.ReactNode;
-  params: {
+  params: Promise<{
     publication: string;
     handle: string;
-  };
+  }>;
 }) {
-  let did = await idResolver.handle.resolve(props.params.handle);
+  let did = await idResolver.handle.resolve((await props.params).handle);
   if (!did) return <>{props.children}</>;
   let { data: publication } = await supabaseServerClient
     .from("publications")
@@ -18,7 +18,7 @@ export default async function PublicationLayout(props: {
       "*, documents_in_publications(documents(*)), leaflets_in_publications(*, permission_tokens(*, permission_token_rights(*), custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*) ))",
     )
     .eq("identity_did", did)
-    .eq("name", decodeURIComponent(props.params.publication))
+    .eq("name", decodeURIComponent((await props.params).publication))
     .single();
 
   if (!publication) return <>{props.children}</>;

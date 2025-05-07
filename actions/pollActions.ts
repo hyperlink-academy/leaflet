@@ -9,7 +9,7 @@ import { getIdentityData } from "./getIdentityData";
 
 export async function getPollData(entity_sets: string[]) {
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
-  let voter_token = cookies().get("poll_voter_token")?.value;
+  let voter_token = (await cookies()).get("poll_voter_token")?.value;
 
   const db = drizzle(client);
   const polls = await db
@@ -78,12 +78,12 @@ export async function voteOnPoll(
   poll_entity: string,
   option_entities: string[],
 ) {
-  let voter_token = cookies().get("poll_voter_token")?.value;
+  let voter_token = (await cookies()).get("poll_voter_token")?.value;
   if (!voter_token) {
     let identity = await getIdentityData();
     if (identity) voter_token = identity.id;
     else voter_token = v7();
-    cookies().set("poll_voter_token", voter_token, {
+    (await cookies()).set("poll_voter_token", voter_token, {
       maxAge: 60 * 60 * 24 * 365,
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,

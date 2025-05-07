@@ -8,7 +8,7 @@ export default async function OpenGraphImage(props: {
   params: { leaflet_id: string };
 }) {
   if (process.env.NODE_ENV === "development") return;
-  const headersList = headers();
+  const headersList = await headers();
   const hostname = headersList.get("x-forwarded-host");
   let protocol = headersList.get("x-forwarded-proto");
   let path = `${protocol}://${hostname}/${props.params.leaflet_id}`;

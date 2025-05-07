@@ -89,7 +89,7 @@ export async function confirmEmailAuthToken(tokenId: string, code: string) {
     client.end();
     return null;
   }
-  let authToken = cookies().get("auth_token");
+  let authToken = (await cookies()).get("auth_token");
   if (authToken) {
     let [existingToken] = await db
       .select()
@@ -136,7 +136,7 @@ export async function confirmEmailAuthToken(tokenId: string, code: string) {
     )
     .returning();
 
-  cookies().set("auth_token", confirmedToken.id, {
+  (await cookies()).set("auth_token", confirmedToken.id, {
     maxAge: 60 * 60 * 24 * 365,
     secure: process.env.NODE_ENV === "production",
     httpOnly: true,

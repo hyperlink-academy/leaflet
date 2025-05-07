@@ -22,7 +22,7 @@ export async function createNewLeaflet(
   redirectUser: boolean,
 ) {
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
-  let auth_token = cookies().get("auth_token")?.value;
+  let auth_token = (await cookies()).get("auth_token")?.value;
   const db = drizzle(client);
   let { permissionToken } = await db.transaction(async (tx) => {
     // Create a new entity set

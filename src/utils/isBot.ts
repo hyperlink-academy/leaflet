@@ -1,6 +1,6 @@
-import { cookies, headers } from "next/headers";
+import { cookies, headers, type UnsafeUnwrappedHeaders } from "next/headers";
 export function getIsBot() {
-  const userAgent = headers().get("user-agent") || "";
+  const userAgent = (headers() as unknown as UnsafeUnwrappedHeaders).get("user-agent") || "";
   console.log("User agent: ", userAgent);
   const botPatterns = [
     /bot/i,

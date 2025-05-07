@@ -3,6 +3,6 @@
 import { cookies } from "next/headers";
 
 export async function logout() {
-  cookies().delete("auth_token");
-  cookies().delete("identity");
+  (await cookies()).delete("auth_token");
+  (await cookies()).delete("identity");
 }
