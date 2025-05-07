@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { CloseTiny, PopoverArrow } from "components/Icons";
-import { keepFocus, TextBlockTypeToolbar } from "./TextBlockTypeToolbar";
+import { CloseTiny } from "components/Icons";
+import { TextBlockTypeToolbar } from "./TextBlockTypeToolbar";
 import { InlineLinkToolbar } from "./InlineLinkToolbar";
-import { theme } from "../../tailwind.config";
 import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
 import { useEntity, useReplicache } from "src/replicache";
@@ -15,7 +14,6 @@ import { HighlightToolbar } from "./HighlightToolbar";
 import { TextToolbar } from "./TextToolbar";
 import { BlockToolbar } from "./BlockToolbar";
 import { MultiselectToolbar } from "./MultiSelectToolbar";
-import { focusPage } from "components/Pages";
 import { AreYouSure, deleteBlock } from "components/Blocks/DeleteBlock";
 import { TooltipButton } from "components/Buttons";
 import { TextAlignmentToolbar } from "./TextAlignmentToolbar";
@@ -166,8 +164,6 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
                 } else {
                   setToolbarState("default");
                 }
-
-                focusedEntity && keepFocus(focusedEntity.entityID);
               }
             }}
           >
