@@ -6,7 +6,8 @@ import {
 import { loginWithEmailToken } from "actions/login";
 import { getHomeDocs } from "app/home/storage";
 import { ButtonPrimary } from "components/Buttons";
-import { InputWithLabel } from "components/Input";
+import { ArrowRightTiny, BlueskySmall } from "components/Icons";
+import { InputWithLabel, Input } from "components/Input";
 import { useSmoker, useToaster } from "components/Toast";
 import React, { useState } from "react";
 import useSWR, { mutate } from "swr";
@@ -84,9 +85,9 @@ export default function LoginForm() {
           <div className="italic truncate">{formState.email}</div>
         </div>
         <form onSubmit={handleSubmitCode} className="flex flex-col gap-2 ">
-          <InputWithLabel
-            label="code"
+          <Input
             type="text"
+            className="input-with-border"
             placeholder="000000"
             value={formState.confirmationCode}
             onChange={(e) =>
@@ -112,20 +113,30 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="flex flex-col gap-3 w-full max-w-sm pb-1">
+    <div className="flex flex-col gap-3 w-full max-w-xs pb-1">
       <div className="flex flex-col">
-        <h3 className="text-primary">Log In or Sign Up</h3>
-        <div className=" text-secondary">
+        <h4 className="text-primary">Log In or Sign Up</h4>
+        <div className=" text-tertiary text-sm">
           Save your Leaflets and access them on multiple devices!
         </div>
       </div>
-      <form onSubmit={handleSubmitEmail} className="flex flex-col gap-2">
-        <InputWithLabel
-          label="Email"
+
+      <BlueskyLogin />
+
+      <div className="flex gap-2 text-border italic w-full items-center">
+        <hr className="border-border-light w-full" />
+        <div>or</div>
+        <hr className="border-border-light w-full" />
+      </div>
+      <form
+        onSubmit={handleSubmitEmail}
+        className="flex flex-col gap-2 relative"
+      >
+        <Input
           type="email"
           placeholder="email@example.com"
           value={formState.email}
-          className=""
+          className="input-with-border p-7"
           onChange={(e) =>
             setFormState({
               ...formState,
@@ -135,10 +146,55 @@ export default function LoginForm() {
           required
         />
 
-        <ButtonPrimary type="submit" className="place-self-end">
-          Log In / Sign Up
+        <ButtonPrimary
+          type="submit"
+          className="place-self-end !px-[2px] absolute right-1 bottom-1"
+        >
+          <ArrowRightTiny />{" "}
         </ButtonPrimary>
       </form>
     </div>
+  );
+}
+
+function BlueskyLogin() {
+  const [signingWithHandle, setSigningWithHandle] = useState(false);
+  const [handle, setHandle] = useState("");
+
+  return (
+    <form action="/api/oauth/login?redirect_url=/" method="GET">
+      {signingWithHandle ? (
+        <div className="w-full flex flex-col gap-2">
+          <Input
+            type="text"
+            name="handle"
+            id="handle"
+            placeholder="you.bsky.social"
+            value={handle}
+            className="input-with-border"
+            onChange={(e) => setHandle(e.target.value)}
+            required
+          />
+          <ButtonPrimary type="submit" fullWidth className="py-2">
+            <BlueskySmall />
+            Sign In
+          </ButtonPrimary>
+        </div>
+      ) : (
+        <div className="flex flex-col">
+          <ButtonPrimary fullWidth className="py-2">
+            <BlueskySmall />
+            Log In/Sign Up with Bluesky
+          </ButtonPrimary>
+          <button
+            type="button"
+            className="text-sm text-tertiary place-self-end mt-1"
+            onClick={() => setSigningWithHandle(true)}
+          >
+            sign in with your handle
+          </button>
+        </div>
+      )}
+    </form>
   );
 }
