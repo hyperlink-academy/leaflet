@@ -60,46 +60,7 @@ export function Pages(props: { rootPage: string }) {
   let publication = usePublicationContext();
 
   return (
-    <div
-      id="pages"
-      className="pages flex pt-2 pb-1 sm:pb-8 sm:py-6"
-      onClick={(e) => {
-        e.currentTarget === e.target && blurPage();
-      }}
-    >
-      <div
-        className="spacer flex justify-end items-start"
-        style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
-        onClick={(e) => {
-          e.currentTarget === e.target && blurPage();
-        }}
-      >
-        <Media mobile={false} className="h-full">
-          <div className="flex flex-col h-full justify-between  mt-1">
-            {entity_set.permissions.write ? (
-              <div className=" flex flex-col justify-center gap-2 mr-4">
-                {publication.publication && (
-                  <div className="relative w-[30px] h-[76px]">
-                    <div className="origin-top-left -rotate-90 absolute translate-y-[76px]">
-                      <PublishToPublication />
-                    </div>
-                  </div>
-                )}
-                <ShareOptions />
-                <ThemePopover entityID={props.rootPage} />
-                <HelpPopover />
-                <hr className="text-border my-3" />
-                <HomeButton />
-              </div>
-            ) : (
-              <div>
-                <HomeButton />
-              </div>
-            )}
-            <Watermark />
-          </div>
-        </Media>
-      </div>
+    <>
       <div className="flex items-stretch">
         <CardThemeProvider entityID={firstPage}>
           <Page entityID={firstPage} first />
@@ -119,7 +80,7 @@ export function Pages(props: { rootPage: string }) {
           e.currentTarget === e.target && blurPage();
         }}
       />
-    </div>
+    </>
   );
 }
 

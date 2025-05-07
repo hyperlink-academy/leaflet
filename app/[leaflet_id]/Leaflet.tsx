@@ -1,7 +1,6 @@
+"use client";
 import { Fact, PermissionToken, ReplicacheProvider } from "src/replicache";
-import { Database } from "../../supabase/database.types";
 import { Attributes } from "src/replicache/attributes";
-import { createServerClient } from "@supabase/ssr";
 import { SelectionManager } from "components/SelectionManager";
 import { Pages } from "components/Pages";
 import {
@@ -9,14 +8,12 @@ import {
   ThemeProvider,
 } from "components/ThemeManager/ThemeProvider";
 import { MobileFooter } from "components/MobileFooter";
-import { PopUpProvider } from "components/Toast";
-import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
-import {
-  EntitySetContext,
-  EntitySetProvider,
-} from "components/EntitySetProvider";
+import { EntitySetProvider } from "components/EntitySetProvider";
 import { AddLeafletToHomepage } from "components/utils/AddLeafletToHomepage";
 import { UpdateLeafletTitle } from "components/utils/UpdateLeafletTitle";
+import { useUIState } from "src/useUIState";
+import { LeafletSidebar } from "./Sidebar";
+
 export function Leaflet(props: {
   token: PermissionToken;
   initialFacts: Fact<keyof typeof Attributes>[];
@@ -43,7 +40,16 @@ export function Leaflet(props: {
               className="leafletContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full pb-4 pwa-padding"
               id="page-carousel"
             >
-              <Pages rootPage={props.leaflet_id} />
+              <div
+                id="pages"
+                className="pages flex pt-2 pb-1 sm:pb-8 sm:py-6"
+                onClick={(e) => {
+                  e.currentTarget === e.target && blurPage();
+                }}
+              >
+                <LeafletSidebar leaflet_id={props.leaflet_id} />
+                <Pages rootPage={props.leaflet_id} />
+              </div>
             </div>
             <MobileFooter entityID={props.leaflet_id} />
           </ThemeBackgroundProvider>
@@ -52,3 +58,10 @@ export function Leaflet(props: {
     </ReplicacheProvider>
   );
 }
+
+const blurPage = () => {
+  useUIState.setState(() => ({
+    focusedEntity: null,
+    selectedBlocks: [],
+  }));
+};
