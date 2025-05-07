@@ -133,19 +133,6 @@ export const inputrules = (
           attribute: "block/heading-level",
           data: { type: "number", value: headingLevel },
         });
-
-        setTimeout(
-          () =>
-            focusBlock(
-              {
-                value: propsRef.current.entityID,
-                type: "heading",
-                parent: propsRef.current.parent,
-              },
-              { type: "start" },
-            ),
-          10,
-        );
         return tr;
       }),
     ],

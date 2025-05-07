@@ -7,7 +7,8 @@ export let useEditorStates = create(() => ({
     [entity: string]:
       | {
           editor: InstanceType<typeof EditorState>;
-          view?: InstanceType<typeof EditorView>;
+          initial?: boolean;
+          view: InstanceType<typeof EditorView>;
           keymap?: { [key: string]: Command };
         }
       | undefined;
@@ -18,11 +19,11 @@ export const setEditorState = (
   entityID: string,
   s: {
     editor: InstanceType<typeof EditorState>;
-    keymap?: { [key: string]: Command };
   },
 ) => {
   useEditorStates.setState((oldState) => {
     let existingState = oldState.editorStates[entityID];
+    if (!existingState) return oldState;
     return {
       editorStates: {
         ...oldState.editorStates,
