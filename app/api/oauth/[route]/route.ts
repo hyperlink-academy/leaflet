@@ -32,7 +32,7 @@ export async function GET(
       // Revoke any pending authentication requests if the connection is closed (optional)
       const ac = new AbortController();
 
-      const url = await client.authorize(handle, {
+      const url = await client.authorize(handle || "https://bsky.social", {
         scope: "atproto transition:generic",
         signal: ac.signal,
         state: JSON.stringify(state),
@@ -46,11 +46,12 @@ export async function GET(
       const params = new URLSearchParams(req.url.split("?")[1]);
       console.log(params);
 
+      //TODO remember to reset this to a better default!
       let redirectPath = "/lish";
       try {
         const { session, state } = await client.callback(params);
         let s: OauthRequestClientState = JSON.parse(state || "{}");
-        redirectPath = s.redirect || "/lish";
+        redirectPath = s.redirect || "/";
         let { data: identity } = await supabaseServerClient
           .from("identities")
           .select()

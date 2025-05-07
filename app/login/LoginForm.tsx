@@ -120,10 +120,9 @@ export default function LoginForm() {
           Save your Leaflets and access them on multiple devices!
         </div>
       </div>
-      <ButtonPrimary fullWidth className="py-2">
-        <BlueskySmall />
-        Log In/Sign Up with Bluesky
-      </ButtonPrimary>
+
+      <BlueskyLogin />
+
       <div className="flex gap-2 text-border italic w-full items-center">
         <hr className="border-border-light w-full" />
         <div>or</div>
@@ -155,5 +154,47 @@ export default function LoginForm() {
         </ButtonPrimary>
       </form>
     </div>
+  );
+}
+
+function BlueskyLogin() {
+  const [signingWithHandle, setSigningWithHandle] = useState(false);
+  const [handle, setHandle] = useState("");
+
+  return (
+    <form action="/api/oauth/login?redirect_url=/" method="GET">
+      {signingWithHandle ? (
+        <div className="w-full flex flex-col gap-2">
+          <Input
+            type="text"
+            name="handle"
+            id="handle"
+            placeholder="you.bsky.social"
+            value={handle}
+            className="input-with-border"
+            onChange={(e) => setHandle(e.target.value)}
+            required
+          />
+          <ButtonPrimary type="submit" fullWidth className="py-2">
+            <BlueskySmall />
+            Sign In
+          </ButtonPrimary>
+        </div>
+      ) : (
+        <div className="flex flex-col">
+          <ButtonPrimary fullWidth className="py-2">
+            <BlueskySmall />
+            Log In/Sign Up with Bluesky
+          </ButtonPrimary>
+          <button
+            type="button"
+            className="text-sm text-tertiary place-self-end mt-1"
+            onClick={() => setSigningWithHandle(true)}
+          >
+            sign in with your handle
+          </button>
+        </div>
+      )}
+    </form>
   );
 }
