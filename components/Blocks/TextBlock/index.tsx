@@ -386,7 +386,9 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
         props.nextBlock === null ? (
           // if this is the only block on the page and is empty or is a canvas, show placeholder
           <div
-            className={`${props.className} ${alignmentClass} w-full pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col`}
+            className={`${props.className} ${alignmentClass} w-full pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col
+              ${headingLevel ? HeadingStyle[headingLevel?.data.value || 1] : ""}
+              `}
           >
             {props.type === "text"
               ? "write something..."
