@@ -55,6 +55,7 @@ export function TextBlock(
         props.preview ||
         isLocked?.data.value) && (
         <RenderedTextBlock
+          type={props.type}
           entityID={props.entityID}
           className={props.className}
           first={first}
@@ -115,6 +116,7 @@ export function RenderedTextBlock(props: {
   className?: string;
   first?: boolean;
   pageType?: "canvas" | "doc";
+  type: BlockProps["type"];
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
   let headingLevel = useEntity(props.entityID, "block/heading-level");
@@ -165,7 +167,7 @@ export function RenderedTextBlock(props: {
       style={{ wordBreak: "break-word" }} // better than tailwind break-all!
       className={`
         ${alignmentClass}
-        ${headingLevel ? HeadingStyle[headingLevel?.data.value || 1] : ""}
+        ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
       w-full whitespace-pre-wrap outline-none ${props.className} `}
     >
       {content}
@@ -377,7 +379,8 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
             ${alignmentClass}
           grow resize-none align-top whitespace-pre-wrap bg-transparent
           outline-none
-          ${headingLevel ? HeadingStyle[headingLevel?.data.value || 1] : ""}
+
+          ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
           ${props.className}`}
           ref={mountRef}
         />
@@ -387,7 +390,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           // if this is the only block on the page and is empty or is a canvas, show placeholder
           <div
             className={`${props.className} ${alignmentClass} w-full pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col
-              ${headingLevel ? HeadingStyle[headingLevel?.data.value || 1] : ""}
+              ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
               `}
           >
             {props.type === "text"
