@@ -1,20 +1,32 @@
 import { ButtonPrimary } from "components/Buttons";
 import { Media } from "components/Media";
+import { createContext, useState } from "react";
+
+export const SidebarOpenContext = createContext(false);
 
 export function Sidebar(props: { children?: React.ReactNode }) {
+  let [sidebarExpanded, setSidebarExpanded] = useState(false);
   return (
     <Media mobile={false}>
-      <div className="flex flex-col justify-between  mt-1 border rounded-md border-bg-page bg-bg-page bg-opacity-50 h-fit items-center py-1 px-0.5 ">
-        {props.children}
-      </div>
+      <SidebarOpenContext value={sidebarExpanded}>
+        <div
+          className={`
+          sidebar
+          absolute top-0 left-0 z-10
+          h-fit w-max p-[6px]
+          flex flex-col gap-2 justify-start border
+          rounded-md  bg-bg-page ${sidebarExpanded ? "border-border-light" : "bg-opacity-50 border-bg-page"}
+          `}
+          onMouseOver={() => {
+            setSidebarExpanded(true);
+          }}
+          onMouseLeave={() => {
+            setSidebarExpanded(false);
+          }}
+        >
+          {props.children}
+        </div>
+      </SidebarOpenContext>
     </Media>
   );
-}
-
-export function SidebarButton(props: {
-  icon: React.ReactNode;
-  content: React.ReactNode;
-  onClick: (e: React.MouseEvent) => void;
-}) {
-  return <button>{props.icon}</button>;
 }

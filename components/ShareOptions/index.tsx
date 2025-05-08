@@ -50,6 +50,7 @@ export function ShareOptions() {
       trigger={
         <ActionButton
           icon=<ShareSmall />
+          primary
           label="Share"
           background="bg-accent-1"
           text="text-accent-2"

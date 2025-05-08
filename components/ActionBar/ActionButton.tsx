@@ -1,32 +1,40 @@
+import { useContext } from "react";
+import { SidebarOpenContext } from "./Sidebar";
+
 export const ActionButton = (props: {
   id?: string;
   icon: React.ReactNode;
   label: string;
   primary?: boolean;
   secondary?: boolean;
+  expanded?: boolean;
+
   background: string;
   text: string;
   backgroundImage?: React.CSSProperties;
   noLabelOnMobile?: boolean;
 }) => {
+  let sidebarExpanded = useContext(SidebarOpenContext);
   return (
-    <div className="sm:w-8 sm:h-8 relative ">
+    <div
+      className={`
+      actionButton relative rounded-md border
+      ${sidebarExpanded ? "w-full" : props.primary || props.secondary ? "sm:w-full w-8" : "w-8"}
+      ${
+        props.primary
+          ? "bg-accent-1 border-accent-1 text-accent-2"
+          : props.secondary
+            ? "bg-accent-2 border-accent-1 text-accent-1"
+            : "border-transparent text-accent-1"
+      }
+      `}
+    >
       <div
         id={props.id}
-        className={`
-          z-10 group/action-button
-          w-max h-max rounded-full p-1 flex gap-2
-          sm:absolute top-0 left-0
-          place-items-center justify-center
-          ${props.background} ${props.text}`}
-        style={props.backgroundImage}
+        className={`w-full flex gap-2 place-items-center justify-start font-bold py-1 px-1 `}
       >
-        {props.icon}
-        <div
-          className={`font-bold pr-[6px] sm:group-hover/action-button:block ${props.noLabelOnMobile ? "hidden" : "sm:hidden"}`}
-        >
-          {props.label}
-        </div>
+        <div className="shrink-0">{props.icon}</div>
+        {sidebarExpanded && <div>{props.label}</div>}
       </div>
     </div>
   );
