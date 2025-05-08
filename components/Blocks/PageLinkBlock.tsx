@@ -95,7 +95,10 @@ export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
                     }
                   />
                 )}
-                <RenderedTextBlock entityID={leafletMetadata[0].value} />
+                <RenderedTextBlock
+                  entityID={leafletMetadata[0].value}
+                  type="text"
+                />
               </div>
             )}
             {leafletMetadata[1] && (
@@ -105,7 +108,10 @@ export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
                 {leafletMetadata[1].listData && (
                   <ListMarker {...leafletMetadata[1]} className="!pt-[8px]" />
                 )}
-                <RenderedTextBlock entityID={leafletMetadata[1].value} />
+                <RenderedTextBlock
+                  entityID={leafletMetadata[1].value}
+                  type="text"
+                />
               </div>
             )}
             {leafletMetadata[2] && (
@@ -115,7 +121,10 @@ export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
                 {leafletMetadata[2].listData && (
                   <ListMarker {...leafletMetadata[2]} className="!pt-[8px]" />
                 )}
-                <RenderedTextBlock entityID={leafletMetadata[2].value} />
+                <RenderedTextBlock
+                  entityID={leafletMetadata[2].value}
+                  type="text"
+                />
               </div>
             )}
           </div>
