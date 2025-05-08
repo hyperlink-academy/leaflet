@@ -58,6 +58,8 @@ export function useBlockKeyboardHandlers(
       ) {
         if ((el as HTMLInputElement).value !== "" || e.key === "Tab") return;
       }
+      if (!AllowedIfTextBlock.includes(e.key) && isTextBlock[props.type])
+        return;
 
       undoManager.startGroup();
       command?.({
@@ -86,6 +88,8 @@ type Args = {
   setAreYouSure: (value: boolean) => void;
 };
 
+const AllowedIfTextBlock = ["Tab"];
+
 function Tab({ e, props, rep }: Args) {
   // if tab or shift tab, indent or outdent
   if (e.shiftKey) {
@@ -101,7 +105,6 @@ function j(args: Args) {
   if (args.e.ctrlKey || args.e.metaKey) ArrowDown(args);
 }
 function ArrowDown({ e, props }: Args) {
-  if (isTextBlock[props.type]) return;
   e.preventDefault();
   let nextBlock = props.nextBlock;
   if (nextBlock && useUIState.getState().selectedBlocks.length <= 1)
@@ -116,7 +119,6 @@ function k(args: Args) {
   if (args.e.ctrlKey || args.e.metaKey) ArrowUp(args);
 }
 function ArrowUp({ e, props }: Args) {
-  if (isTextBlock[props.type]) return;
   e.preventDefault();
   let prevBlock = props.previousBlock;
   if (prevBlock && useUIState.getState().selectedBlocks.length <= 1) {
@@ -139,7 +141,6 @@ async function Backspace({
 }: Args) {
   // if this is a textBlock, let the textBlock/keymap handle the backspace
   if (isLocked) return;
-  if (isTextBlock[props.type]) return;
   // if its an input, label, or teatarea with content, do nothing (do the broswer default instead)
   let el = e.target as HTMLElement;
   if (
@@ -189,7 +190,6 @@ async function Backspace({
 }
 
 async function Enter({ e, props, rep, entity_set }: Args) {
-  if (isTextBlock[props.type]) return;
   let newEntityID = v7();
   let position;
   let el = e.target as HTMLElement;
@@ -279,7 +279,6 @@ async function Enter({ e, props, rep, entity_set }: Args) {
 }
 
 function Escape({ e, props, areYouSure, setAreYouSure }: Args) {
-  if (isTextBlock[props.type]) return;
   e.preventDefault();
   if (areYouSure) {
     setAreYouSure(false);

@@ -254,6 +254,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
         },
         dispatchTransaction(tr) {
           useEditorStates.setState((s) => {
+            let oldEditorState = this.state;
             let newState = this.state.apply(tr);
             let addToHistory = tr.getMeta("addToHistory");
             let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
@@ -293,7 +294,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
                         ...oldState.editorStates,
                         [props.entityID]: {
                           ...oldState.editorStates[props.entityID]!,
-                          editor: this.state,
+                          editor: oldEditorState,
                         },
                       },
                     };
@@ -328,7 +329,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
         },
       }));
     };
-  }, [props.entityID, props.parent, value, handlePaste]);
+  }, [props.entityID, props.parent, value, handlePaste, rep]);
 
   return (
     <>
@@ -342,20 +343,6 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
               rep.undoManager.endGroup();
               window.clearTimeout(actionTimeout.current);
               actionTimeout.current = null;
-              if (editorState?.doc.textContent.startsWith("http")) {
-                await addLinkBlock(
-                  editorState.doc.textContent,
-                  props.entityID,
-                  rep.rep,
-                );
-              }
-              // if (editorState.doc.textContent.startsWith("http")) {
-              //   await addLinkBlock(
-              //     editorState.doc.textContent,
-              //     props.entityID,
-              //     rep.rep,
-              //   );
-              // }
             }
           }}
           onFocus={() => {
