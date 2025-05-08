@@ -120,13 +120,7 @@ export const blockCommands: Command[] = [
     icon: <Header1Small />,
     type: "text",
     onSelect: async (rep, props, um) => {
-      let entity = await createBlockWithType(rep, props, "heading");
-      await rep.mutate.assertFact({
-        entity,
-        attribute: "block/heading-level",
-        data: { type: "number", value: 1 },
-      });
-      clearCommandSearchText(entity);
+      await setHeaderCommand(1, rep, props);
     },
   },
   {
@@ -134,12 +128,7 @@ export const blockCommands: Command[] = [
     icon: <Header2Small />,
     type: "text",
     onSelect: async (rep, props, um) => {
-      let entity = await createBlockWithType(rep, props, "heading");
-      await rep.mutate.assertFact({
-        entity,
-        attribute: "block/heading-level",
-        data: { type: "number", value: 2 },
-      });
+      await setHeaderCommand(2, rep, props);
     },
   },
   {
@@ -147,12 +136,7 @@ export const blockCommands: Command[] = [
     icon: <Header3Small />,
     type: "text",
     onSelect: async (rep, props, um) => {
-      let entity = await createBlockWithType(rep, props, "heading");
-      await rep.mutate.assertFact({
-        entity,
-        attribute: "block/heading-level",
-        data: { type: "number", value: 3 },
-      });
+      await setHeaderCommand(3, rep, props);
     },
   },
 
@@ -380,6 +364,19 @@ export const blockCommands: Command[] = [
   },
 ];
 
+async function setHeaderCommand(
+  level: number,
+  rep: Replicache<ReplicacheMutators>,
+  props: Props & { entity_set: string },
+) {
+  let entity = await createBlockWithType(rep, props, "heading");
+  await rep.mutate.assertFact({
+    entity,
+    attribute: "block/heading-level",
+    data: { type: "number", value: level },
+  });
+  clearCommandSearchText(entity);
+}
 function focusTextBlock(entityID: string) {
   document.getElementById(elementId.block(entityID).text)?.focus();
 }
