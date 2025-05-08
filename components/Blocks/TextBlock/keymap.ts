@@ -278,6 +278,7 @@ const backspace =
 
         return false;
       }
+      return true;
     }
 
     let block = !!propsRef.current.previousBlock
