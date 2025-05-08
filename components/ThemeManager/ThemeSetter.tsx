@@ -37,7 +37,7 @@ import { Separator } from "components/Layout";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { isIOS, useViewportSize } from "@react-aria/utils";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
-import { HoverButton } from "components/Buttons";
+import { ActionButton } from "components/ActionBar/ActionButton";
 import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 
 export type pickers =
@@ -120,7 +120,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
     <>
       <Popover.Root>
         <Popover.Trigger>
-          <HoverButton
+          <ActionButton
             icon={<PaintSmall />}
             noLabelOnMobile
             label="Theme"

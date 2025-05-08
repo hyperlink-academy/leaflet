@@ -2,7 +2,7 @@
 
 import { createNewLeaflet } from "actions/createNewLeaflet";
 import { createNewLeafletFromTemplate } from "actions/createNewLeafletFromTemplate";
-import { HoverButton } from "components/Buttons";
+import { ActionButton } from "components/ActionBar/ActionButton";
 import {
   AddTiny,
   BlockCanvasPageSmall,
@@ -55,7 +55,7 @@ export const CreateNewLeafletButton = (props: {
   return (
     <Menu
       trigger={
-        <HoverButton
+        <ActionButton
           id="new-leaflet-button"
           noLabelOnMobile={props.noLabelOnMobile}
           icon=<AddTiny className="m-1 shrink-0" />

@@ -5,7 +5,7 @@ import { getShareLink } from "./getShareLink";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useSmoker } from "components/Toast";
 import { Menu, MenuItem } from "components/Layout";
-import { HoverButton } from "components/Buttons";
+import { ActionButton } from "components/ActionBar/ActionButton";
 import useSWR from "swr";
 import { useTemplateState } from "app/home/CreateNewButton";
 import LoginForm from "app/login/LoginForm";
@@ -48,7 +48,7 @@ export function ShareOptions() {
         setMenuState("default");
       }}
       trigger={
-        <HoverButton
+        <ActionButton
           icon=<ShareSmall />
           label="Share"
           background="bg-accent-1"

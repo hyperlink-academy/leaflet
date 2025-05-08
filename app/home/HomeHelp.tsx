@@ -1,6 +1,6 @@
 "use client";
 import { HelpSmall } from "components/Icons";
-import { HoverButton } from "components/Buttons";
+import { ActionButton } from "components/ActionBar/ActionButton";
 import { Popover } from "components/Popover";
 
 export const HomeHelp = () => {
@@ -8,7 +8,7 @@ export const HomeHelp = () => {
     <Popover
       className="max-w-sm"
       trigger={
-        <HoverButton
+        <ActionButton
           icon={<HelpSmall />}
           noLabelOnMobile
           label="Info"

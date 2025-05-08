@@ -8,7 +8,7 @@ import { metaKey } from "src/utils/metaKey";
 import { useEntitySetContext } from "./EntitySetProvider";
 import Link from "next/link";
 import { useState } from "react";
-import { HoverButton } from "./Buttons";
+import { ActionButton } from "components/ActionBar/ActionButton";
 
 export const HelpPopover = (props: { noShortcuts?: boolean }) => {
   let entity_set = useEntitySetContext();
@@ -16,7 +16,7 @@ export const HelpPopover = (props: { noShortcuts?: boolean }) => {
     <Popover
       className="max-w-xs w-full"
       trigger={
-        <HoverButton
+        <ActionButton
           icon={<HelpSmall />}
           noLabelOnMobile
           label="About"
