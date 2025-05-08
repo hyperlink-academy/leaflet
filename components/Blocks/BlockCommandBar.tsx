@@ -124,9 +124,8 @@ export const BlockCommandBar = ({
                 </div>
               ) : (
                 commandResults.map((result, index) => (
-                  <>
+                  <div key={index} className="contents">
                     <CommandResult
-                      key={index}
                       name={result.name}
                       icon={result.icon}
                       onSelect={() => {
@@ -149,7 +148,7 @@ export const BlockCommandBar = ({
                       result.type !== commandResults[index + 1].type && (
                         <hr className="mx-2 my-0.5 border-border" />
                       )}
-                  </>
+                  </div>
                 ))
               )}
             </div>

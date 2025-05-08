@@ -2,7 +2,6 @@ import {
   Header1Small,
   Header2Small,
   Header3Small,
-  ParagraphSmall,
   TextSizeSmall,
 } from "components/Icons";
 import { ShortcutKey } from "components/Layout";
@@ -10,7 +9,7 @@ import { ToolbarButton } from "components/Toolbar";
 import { TextSelection } from "prosemirror-state";
 import { useCallback } from "react";
 import { useEntity, useReplicache } from "src/replicache";
-import { setEditorState, useEditorStates } from "src/state/useEditorState";
+import { useEditorStates } from "src/state/useEditorState";
 import { useUIState } from "src/useUIState";
 
 export const TextBlockTypeToolbar = (props: {
@@ -41,25 +40,11 @@ export const TextBlockTypeToolbar = (props: {
         data: { type: "number", value: level },
       });
       if (blockType.data.value === "text") {
-        let existingEditor = useEditorStates.getState().editorStates[entityID];
-        let selection = existingEditor?.editor.selection;
         await rep?.mutate.assertFact({
           entity: entityID,
           attribute: "block/type",
           data: { type: "block-type-union", value: "heading" },
         });
-
-        setTimeout(() => {
-          let newEditor = useEditorStates.getState().editorStates[entityID];
-          if (!newEditor || !selection) return;
-          newEditor.view?.dispatch(
-            newEditor.editor.tr.setSelection(
-              TextSelection.create(newEditor.editor.doc, selection.anchor),
-            ),
-          );
-
-          newEditor.view?.focus();
-        }, 20);
       }
     },
     [rep, focusedBlock, blockType],
@@ -169,36 +154,10 @@ export const TextBlockTypeToolbar = (props: {
   );
 };
 
-export function keepFocus(entityID: string) {
-  let existingEditor = useEditorStates.getState().editorStates[entityID];
-
-  let selection = existingEditor?.editor.selection;
-
-  setTimeout(() => {
-    let existingEditor = useEditorStates.getState().editorStates[entityID];
-
-    if (!existingEditor) return;
-
-    existingEditor.view?.focus();
-
-    setEditorState(entityID, {
-      editor: existingEditor.editor.apply(
-        existingEditor.editor.tr.setSelection(
-          TextSelection.create(
-            existingEditor.editor.doc,
-            selection?.anchor || 1,
-          ),
-        ),
-      ),
-    });
-  }, 50);
-}
-
 export function TextBlockTypeButton(props: {
   setToolbarState: (s: "heading") => void;
   className?: string;
 }) {
-  let focusedBlock = useUIState((s) => s.focusedEntity);
   return (
     <ToolbarButton
       tooltipContent={<div>Text Size</div>}

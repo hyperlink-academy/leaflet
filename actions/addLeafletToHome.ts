@@ -19,7 +19,7 @@ import { cookies } from "next/headers";
 
 export async function addLeafletToHome(leaflet: string) {
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
-  let auth_token = cookies().get("auth_token")?.value;
+  let auth_token = (await cookies()).get("auth_token")?.value;
   const db = drizzle(client);
   await db.transaction(async (tx) => {
     if (auth_token) {

@@ -2,8 +2,8 @@ import { cookies } from "next/headers";
 import LoginForm from "./LoginForm";
 import { logout } from "actions/logout";
 
-export default function LoginPage() {
-  let cookieStore = cookies();
+export default async function LoginPage() {
+  let cookieStore = await cookies();
   let identity = cookieStore.get("auth_token")?.value;
   if (!identity)
     return (

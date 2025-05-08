@@ -22,7 +22,6 @@ const parser = ProsemirrorDOMParser.fromSchema(schema);
 export const useHandlePaste = (
   entityID: string,
   propsRef: MutableRefObject<BlockProps>,
-  factID?: string,
 ) => {
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
@@ -121,7 +120,10 @@ export const useHandlePaste = (
                 attribute: "block/type",
                 data: { type: "block-type-union", value: "image" },
               });
-              if (factID) rep.mutate.retractFact({ factID: factID });
+              rep.mutate.retractAttribute({
+                entity: propsRef.current.entityID,
+                attribute: "block/text",
+              });
             } else {
               entity = v7();
               rep.mutate.addBlock({
@@ -148,7 +150,7 @@ export const useHandlePaste = (
       e.stopPropagation();
       return true;
     },
-    [rep, entity_set, entityID, propsRef, factID],
+    [rep, entity_set, entityID, propsRef],
   );
 };
 

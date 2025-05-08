@@ -15,7 +15,7 @@ const vercel = new Vercel({
   bearerToken: VERCEL_TOKEN,
 });
 export async function deleteDomain({ domain }: { domain: string }) {
-  let auth_token = cookies().get("auth_token")?.value;
+  let auth_token = (await cookies()).get("auth_token")?.value;
   if (!auth_token) return null;
   let { data: auth_data } = await supabase
     .from("email_auth_tokens")

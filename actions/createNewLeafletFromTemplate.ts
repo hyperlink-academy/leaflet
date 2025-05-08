@@ -30,7 +30,7 @@ export async function createNewLeafletFromTemplate(
   template_id: string,
   redirectUser?: boolean,
 ) {
-  let auth_token = cookies().get("auth_token")?.value;
+  let auth_token = (await cookies()).get("auth_token")?.value;
   let res = await supabase
     .from("permission_tokens")
     .select("*, permission_token_rights(*)")

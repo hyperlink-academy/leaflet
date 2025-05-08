@@ -11,7 +11,7 @@ import {
 import { cookies } from "next/headers";
 
 export async function getRSVPData(entity_sets: string[]) {
-  const token = cookies().get("phone_auth_token");
+  const token = (await cookies()).get("phone_auth_token");
 
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);

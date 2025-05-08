@@ -19,7 +19,7 @@ export async function addDomainPath({
   edit_permission_token: string;
   route: string;
 }) {
-  let auth_token = cookies().get("auth_token")?.value;
+  let auth_token = (await cookies()).get("auth_token")?.value;
   if (!auth_token) return null;
   let { data: auth_data } = await supabase
     .from("email_auth_tokens")

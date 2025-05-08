@@ -520,7 +520,7 @@ export function SelectionManager() {
 
   let [mouseDown, setMouseDown] = useState(false);
   let initialContentEditableParent = useRef<null | Node>(null);
-  let savedSelection = useRef<SavedRange[] | null>();
+  let savedSelection = useRef<SavedRange[] | null>(undefined);
   useEffect(() => {
     if (isMobile) return;
     if (!entity_set.permissions.write) return;

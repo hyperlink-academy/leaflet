@@ -1,4 +1,4 @@
-import React, { forwardRef } from "react";
+import React, { forwardRef, type JSX } from "react";
 import * as RadixTooltip from "@radix-ui/react-tooltip";
 import { theme } from "tailwind.config";
 import { PopoverArrow } from "./Icons";

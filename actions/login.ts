@@ -22,8 +22,8 @@ export async function loginWithEmailToken(
 ) {
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   const db = drizzle(client);
-  let token_id = cookies().get("auth_token")?.value;
-  let voter_token = cookies().get("poll_voter_token")?.value;
+  let token_id = (await cookies()).get("auth_token")?.value;
+  let voter_token = (await cookies()).get("poll_voter_token")?.value;
   if (!token_id) return null;
   let result = await db.transaction(async (tx) => {
     let [token] = await tx
@@ -57,7 +57,7 @@ export async function loginWithEmailToken(
 
     let identity = existingIdentity;
     if (!existingIdentity) {
-      let identityCookie = cookies().get("identity");
+      let identityCookie = (await cookies()).get("identity");
       if (identityCookie) {
         let [existingIdentityFromCookie] = await tx
           .select()
@@ -107,7 +107,7 @@ export async function loginWithEmailToken(
           .set({ voter_token: result.identity })
           .where(eq(poll_votes_on_entity.voter_token, voter_token));
 
-      cookies().set("poll_voter_token", result.identity, {
+      (await cookies()).set("poll_voter_token", result.identity, {
         maxAge: 60 * 60 * 24 * 365,
         secure: process.env.NODE_ENV === "production",
         httpOnly: true,

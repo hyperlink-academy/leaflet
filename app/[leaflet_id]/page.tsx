@@ -25,7 +25,7 @@ let supabase = createServerClient<Database>(
 );
 type Props = {
   // this is now a token id not leaflet! Should probs rename
-  params: { leaflet_id: string };
+  params: Promise<{ leaflet_id: string }>;
 };
 export default async function LeafletPage(props: Props) {
   let res = await supabase
@@ -33,7 +33,7 @@ export default async function LeafletPage(props: Props) {
     .select(
       "*, permission_token_rights(*), custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*),leaflets_in_publications(publications(*)) ",
     )
-    .eq("id", props.params.leaflet_id)
+    .eq("id", (await props.params).leaflet_id)
     .single();
   let rootEntity = res.data?.root_entity;
   if (!rootEntity || !res.data || res.data.blocked_by_admin)
@@ -86,7 +86,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   let res = await supabase
     .from("permission_tokens")
     .select("*, permission_token_rights(*)")
-    .eq("id", props.params.leaflet_id)
+    .eq("id", (await props.params).leaflet_id)
     .single();
   let rootEntity = res.data?.root_entity;
   if (!rootEntity || !res.data) return { title: "Leaflet not found" };

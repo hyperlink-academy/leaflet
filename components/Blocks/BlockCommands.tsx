@@ -21,7 +21,6 @@ import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "components/Pages";
 import { v7 } from "uuid";
 import { Replicache } from "replicache";
-import { keepFocus } from "components/Toolbar/TextBlockTypeToolbar";
 import { useEditorStates } from "src/state/useEditorState";
 import { elementId } from "src/utils/elementId";
 import { UndoManager } from "src/undoManager";
@@ -114,16 +113,6 @@ export const blockCommands: Command[] = [
       props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "text");
       clearCommandSearchText(entity);
-      um.add({
-        undo: () => {
-          keepFocus(entity);
-        },
-        redo: () => {
-          keepFocus(entity);
-        },
-      });
-
-      keepFocus(entity);
     },
   },
   {
@@ -131,23 +120,7 @@ export const blockCommands: Command[] = [
     icon: <Header1Small />,
     type: "text",
     onSelect: async (rep, props, um) => {
-      let entity = await createBlockWithType(rep, props, "heading");
-      await rep.mutate.assertFact({
-        entity,
-        attribute: "block/heading-level",
-        data: { type: "number", value: 1 },
-      });
-      clearCommandSearchText(entity);
-      um.add({
-        undo: () => {
-          keepFocus(entity);
-        },
-        redo: () => {
-          keepFocus(entity);
-        },
-      });
-
-      keepFocus(entity);
+      await setHeaderCommand(1, rep, props);
     },
   },
   {
@@ -155,22 +128,7 @@ export const blockCommands: Command[] = [
     icon: <Header2Small />,
     type: "text",
     onSelect: async (rep, props, um) => {
-      let entity = await createBlockWithType(rep, props, "heading");
-      await rep.mutate.assertFact({
-        entity,
-        attribute: "block/heading-level",
-        data: { type: "number", value: 2 },
-      });
-      um.add({
-        undo: () => {
-          keepFocus(entity);
-        },
-        redo: () => {
-          keepFocus(entity);
-        },
-      });
-      clearCommandSearchText(entity);
-      keepFocus(entity);
+      await setHeaderCommand(2, rep, props);
     },
   },
   {
@@ -178,22 +136,7 @@ export const blockCommands: Command[] = [
     icon: <Header3Small />,
     type: "text",
     onSelect: async (rep, props, um) => {
-      let entity = await createBlockWithType(rep, props, "heading");
-      await rep.mutate.assertFact({
-        entity,
-        attribute: "block/heading-level",
-        data: { type: "number", value: 3 },
-      });
-      um.add({
-        undo: () => {
-          keepFocus(entity);
-        },
-        redo: () => {
-          keepFocus(entity);
-        },
-      });
-      clearCommandSearchText(entity);
-      keepFocus(entity);
+      await setHeaderCommand(3, rep, props);
     },
   },
 
@@ -210,7 +153,7 @@ export const blockCommands: Command[] = [
       }, 100);
       um.add({
         undo: () => {
-          keepFocus(entity);
+          focusTextBlock(entity);
         },
         redo: () => {
           let el = document.getElementById(elementId.block(entity).input);
@@ -236,7 +179,7 @@ export const blockCommands: Command[] = [
       await createBlockWithType(rep, props, "button");
       um.add({
         undo: () => {
-          props.entityID && keepFocus(props.entityID);
+          props.entityID && focusTextBlock(props.entityID);
         },
         redo: () => {},
       });
@@ -251,7 +194,7 @@ export const blockCommands: Command[] = [
       await createBlockWithType(rep, props, "mailbox");
       um.add({
         undo: () => {
-          props.entityID && keepFocus(props.entityID);
+          props.entityID && focusTextBlock(props.entityID);
         },
         redo: () => {},
       });
@@ -288,7 +231,7 @@ export const blockCommands: Command[] = [
       }, 20);
       um.add({
         undo: () => {
-          props.entityID && keepFocus(props.entityID);
+          props.entityID && focusTextBlock(props.entityID);
         },
         redo: () => {
           setTimeout(() => {
@@ -420,3 +363,20 @@ export const blockCommands: Command[] = [
     },
   },
 ];
+
+async function setHeaderCommand(
+  level: number,
+  rep: Replicache<ReplicacheMutators>,
+  props: Props & { entity_set: string },
+) {
+  let entity = await createBlockWithType(rep, props, "heading");
+  await rep.mutate.assertFact({
+    entity,
+    attribute: "block/heading-level",
+    data: { type: "number", value: level },
+  });
+  clearCommandSearchText(entity);
+}
+function focusTextBlock(entityID: string) {
+  document.getElementById(elementId.block(entityID).text)?.focus();
+}

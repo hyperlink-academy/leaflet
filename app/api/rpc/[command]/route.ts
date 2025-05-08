@@ -35,8 +35,9 @@ let Routes = [
 ];
 export async function POST(
   req: Request,
-  { params }: { params: { command: string } },
+  { params }: { params: Promise<{ command: string }> },
 ) {
+  let p = await params;
   let router = makeRouter(Routes);
-  return router(params.command, req, Env);
+  return router(p.command, req, Env);
 }

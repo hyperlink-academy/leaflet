@@ -15,32 +15,32 @@ import { Metadata } from "next";
 
 const idResolver = new IdResolver();
 export async function generateMetadata(props: {
-  params: { publication: string; handle: string; rkey: string };
+  params: Promise<{ publication: string; handle: string; rkey: string }>;
 }): Promise<Metadata> {
-  let did = await idResolver.handle.resolve(props.params.handle);
+  let did = await idResolver.handle.resolve((await props.params).handle);
   if (!did) return { title: "Publication 404" };
 
   let { data: document } = await supabaseServerClient
     .from("documents")
     .select("*")
-    .eq("uri", AtUri.make(did, ids.PubLeafletDocument, props.params.rkey))
+    .eq("uri", AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey))
     .single();
 
   if (!document) return { title: "404" };
   let record = document.data as PubLeafletDocument.Record;
   return {
-    title: record.title + " - " + decodeURIComponent(props.params.publication),
+    title: record.title + " - " + decodeURIComponent((await props.params).publication),
   };
 }
 export default async function Post(props: {
-  params: { publication: string; handle: string; rkey: string };
+  params: Promise<{ publication: string; handle: string; rkey: string }>;
 }) {
-  let did = await idResolver.handle.resolve(props.params.handle);
+  let did = await idResolver.handle.resolve((await props.params).handle);
   if (!did) return <div> can't resolve handle</div>;
   let { data: document } = await supabaseServerClient
     .from("documents")
     .select("*")
-    .eq("uri", AtUri.make(did, ids.PubLeafletDocument, props.params.rkey))
+    .eq("uri", AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey))
     .single();
   if (!document?.data) return <div>notfound</div>;
   let record = document.data as PubLeafletDocument.Record;
@@ -50,14 +50,14 @@ export default async function Post(props: {
     blocks = firstPage.blocks || [];
   }
   return (
-    <div className="postPage w-full h-screen bg-bg-leaflet flex items-stretch">
+    (<div className="postPage w-full h-screen bg-bg-leaflet flex items-stretch">
       <div className="pubWrapper flex flex-col w-full ">
         <div className="pubContent flex flex-col px-4 py-6 mx-auto max-w-prose h-full w-full overflow-auto">
           <Link
             className="font-bold hover:no-underline text-accent-contrast -mb-2 sm:-mb-3"
-            href={`/lish/${props.params.handle}/${props.params.publication}`}
+            href={`/lish/${(await props.params).handle}/${(await props.params).publication}`}
           >
-            {decodeURIComponent(props.params.publication)}
+            {decodeURIComponent((await props.params).publication)}
           </Link>
           {/* <h1>{record.title}</h1> */}
           {blocks.map((b) => {
@@ -99,6 +99,6 @@ export default async function Post(props: {
 
         <Footer pageType="post" />
       </div>
-    </div>
+    </div>)
   );
 }

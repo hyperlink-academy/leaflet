@@ -43,7 +43,7 @@ export async function confirmPhoneAuthToken(tokenId: string, code: string) {
     )
     .returning();
 
-  cookies().set("phone_auth_token", confirmedToken.id, {
+  (await cookies()).set("phone_auth_token", confirmedToken.id, {
     maxAge: 60 * 60 * 24 * 30,
     secure: process.env.NODE_ENV === "production",
     httpOnly: true,

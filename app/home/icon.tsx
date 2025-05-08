@@ -26,7 +26,7 @@ let supabase = createServerClient<Database>(
   { cookies: {} },
 );
 export default async function Icon() {
-  let cookieStore = cookies();
+  let cookieStore = await cookies();
   let identity = cookieStore.get("identity");
   let rootEntity: string | null = null;
   if (identity) {
@@ -67,7 +67,7 @@ export default async function Icon() {
   return new ImageResponse(
     (
       // ImageResponse JSX element
-      <div style={{ display: "flex" }}>
+      (<div style={{ display: "flex" }}>
         <svg
           width="32"
           height="32"
@@ -91,7 +91,7 @@ export default async function Icon() {
             fill={fillColor ? fillColor : "#272727"}
           />
         </svg>
-      </div>
+      </div>)
     ),
     // ImageResponse options
     {

@@ -14,8 +14,9 @@ type OauthRequestClientState = {
 };
 export async function GET(
   req: NextRequest,
-  { params }: { params: { route: string; handle?: string } },
+  props: { params: Promise<{ route: string; handle?: string }> }
 ) {
+  const params = await props.params;
   let client = await createOauthClient();
   switch (params.route) {
     case "metadata":
@@ -58,7 +59,7 @@ export async function GET(
           .eq("atp_did", session.did)
           .single();
         if (!identity) {
-          let existingIdentity = cookies().get("auth_token");
+          let existingIdentity = (await cookies()).get("auth_token");
           if (existingIdentity) {
             let data = await supabaseServerClient
               .from("email_auth_tokens")
@@ -89,7 +90,7 @@ export async function GET(
           .single();
 
         if (token)
-          cookies().set("auth_token", token.id, {
+          (await cookies()).set("auth_token", token.id, {
             maxAge: 60 * 60 * 24 * 365,
             secure: process.env.NODE_ENV === "production",
             httpOnly: true,

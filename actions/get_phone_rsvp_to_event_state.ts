@@ -11,7 +11,7 @@ import { cookies } from "next/headers";
 import { Database } from "supabase/database.types";
 
 export async function getPhoneRSVPToEventState(entityId: string) {
-  const token = cookies().get("phone_auth_token");
+  const token = (await cookies()).get("phone_auth_token");
 
   if (!token) {
     return null;

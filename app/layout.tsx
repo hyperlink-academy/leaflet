@@ -55,12 +55,14 @@ const quattro = localFont({
   variable: "--font-quattro",
 });
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  let ipLocation = headers().get("X-Vercel-IP-Country");
+export default async function RootLayout(
+  {
+    children,
+  }: {
+    children: React.ReactNode;
+  }
+) {
+  let ipLocation = (await headers()).get("X-Vercel-IP-Country");
   return (
     <html suppressHydrationWarning lang="en" className={`${quattro.variable}`}>
       <body>

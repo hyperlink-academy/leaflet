@@ -29,7 +29,7 @@ let supabase = createServerClient<Database>(
   { cookies: {} },
 );
 export default async function Home() {
-  let cookieStore = cookies();
+  let cookieStore = await cookies();
 
   let auth_token = cookieStore.get("auth_token")?.value;
   let auth_res = auth_token ? await getIdentityData() : null;
@@ -49,7 +49,7 @@ export default async function Home() {
   async function setCookie() {
     "use server";
 
-    cookies().set("identity", identity as string, { sameSite: "strict" });
+    (await cookies()).set("identity", identity as string, { sameSite: "strict" });
   }
 
   let permission_token = auth_res?.home_leaflet;

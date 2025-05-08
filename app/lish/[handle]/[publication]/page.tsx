@@ -14,9 +14,9 @@ import { Metadata } from "next";
 const idResolver = new IdResolver();
 
 export async function generateMetadata(props: {
-  params: { publication: string; handle: string };
+  params: Promise<{ publication: string; handle: string }>;
 }): Promise<Metadata> {
-  let did = await idResolver.handle.resolve(props.params.handle);
+  let did = await idResolver.handle.resolve((await props.params).handle);
   if (!did) return { title: "Publication 404" };
 
   let { data: publication } = await supabaseServerClient
@@ -25,16 +25,16 @@ export async function generateMetadata(props: {
       "*, documents_in_publications(documents(*)), leaflets_in_publications(*, permission_tokens(*, permission_token_rights(*), custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*) ))",
     )
     .eq("identity_did", did)
-    .eq("name", decodeURIComponent(props.params.publication))
+    .eq("name", decodeURIComponent((await props.params).publication))
     .single();
   if (!publication) return { title: "404 Publication" };
-  return { title: decodeURIComponent(props.params.publication) };
+  return { title: decodeURIComponent((await props.params).publication) };
 }
 
 export default async function Publication(props: {
-  params: { publication: string; handle: string };
+  params: Promise<{ publication: string; handle: string }>;
 }) {
-  let did = await idResolver.handle.resolve(props.params.handle);
+  let did = await idResolver.handle.resolve((await props.params).handle);
   if (!did) return <PubNotFound />;
 
   let { data: publication } = await supabaseServerClient
@@ -43,7 +43,7 @@ export default async function Publication(props: {
       "*, documents_in_publications(documents(*)), leaflets_in_publications(*, permission_tokens(*, permission_token_rights(*), custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*) ))",
     )
     .eq("identity_did", did)
-    .eq("name", decodeURIComponent(props.params.publication))
+    .eq("name", decodeURIComponent((await props.params).publication))
     .single();
   if (!publication) return <PubNotFound />;
 
@@ -57,7 +57,7 @@ export default async function Publication(props: {
   try {
     let uri = new AtUri(publication.uri);
     let publication_record = await agent.pub.leaflet.publication.get({
-      repo: props.params.handle,
+      repo: (await props.params).handle,
       rkey: uri.rkey,
     });
     if (!PubLeafletPublication.isRecord(publication_record.value)) {

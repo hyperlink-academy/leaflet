@@ -3,7 +3,7 @@ import { useUIState } from "src/useUIState";
 import { Block } from "components/Blocks/Block";
 import { elementId } from "src/utils/elementId";
 
-import { setEditorState, useEditorStates } from "src/state/useEditorState";
+import { useEditorStates } from "src/state/useEditorState";
 import { scrollIntoViewIfNeeded } from "./scrollIntoViewIfNeeded";
 
 export function focusBlock(

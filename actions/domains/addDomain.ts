@@ -17,7 +17,7 @@ let supabase = createServerClient<Database>(
 );
 
 export async function addDomain(domain: string) {
-  let auth_token = cookies().get("auth_token")?.value;
+  let auth_token = (await cookies()).get("auth_token")?.value;
   if (!auth_token) return {};
   let { data: auth_data } = await supabase
     .from("email_auth_tokens")

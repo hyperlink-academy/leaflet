@@ -14,7 +14,6 @@ import { PageLinkBlock } from "./PageLinkBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { EmbedBlock } from "./EmbedBlock";
 import { MailboxBlock } from "./MailboxBlock";
-import { HeadingBlock } from "./HeadingBlock";
 import { CheckboxChecked, CheckboxEmpty, LockTiny } from "components/Icons";
 import { AreYouSure } from "./DeleteBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -169,7 +168,7 @@ const BlockTypeComponents: {
 } = {
   card: PageLinkBlock,
   text: TextBlock,
-  heading: HeadingBlock,
+  heading: TextBlock,
   image: ImageBlock,
   link: ExternalLinkBlock,
   embed: EmbedBlock,
