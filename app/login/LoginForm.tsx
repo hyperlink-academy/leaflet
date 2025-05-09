@@ -188,10 +188,10 @@ function BlueskyLogin() {
           </ButtonPrimary>
           <button
             type="button"
-            className="text-sm text-tertiary place-self-end mt-1"
+            className="text-sm text-accent-contrast place-self-center mt-[6px]"
             onClick={() => setSigningWithHandle(true)}
           >
-            sign in with your handle
+            or use an ATProto handle
           </button>
         </div>
       )}
