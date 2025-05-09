@@ -13,7 +13,7 @@ export const Watermark = (props: { mobile?: boolean }) => {
       className="hover:no-underline w-fit italic"
       target="_blank"
     >
-      <div className="sm:mb-2 sm:mr-4 group/watermark flex sm:flex-col gap-2 items-center justify-center ">
+      <div className="sm:mb-2 sm:ml-4 group/watermark flex sm:flex-col gap-2 items-center justify-center ">
         <div
           className="sm:hidden group-hover/watermark:block sm:rotate-180 sm:py-1 sm:px-0 px-1 w-max rounded-md h-fit whitespace-nowrap text-sm  text-tertiary"
           style={{

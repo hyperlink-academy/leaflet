@@ -4,7 +4,10 @@ import { createContext, useState } from "react";
 
 export const SidebarOpenContext = createContext(false);
 
-export function Sidebar(props: { children?: React.ReactNode }) {
+export function Sidebar(props: {
+  children?: React.ReactNode;
+  alwaysOpen?: boolean;
+}) {
   let [sidebarExpanded, setSidebarExpanded] = useState(false);
   return (
     <Media mobile={false}>
@@ -21,7 +24,7 @@ export function Sidebar(props: { children?: React.ReactNode }) {
             setSidebarExpanded(true);
           }}
           onMouseLeave={() => {
-            setSidebarExpanded(false);
+            !props.alwaysOpen && setSidebarExpanded(true);
           }}
         >
           {props.children}

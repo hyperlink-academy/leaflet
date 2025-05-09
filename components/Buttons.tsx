@@ -37,7 +37,7 @@ export const ButtonPrimary = forwardRef<
         bg-accent-1  outline-transparent border border-accent-1
         rounded-md text-base font-bold text-accent-2
         flex gap-2 items-center justify-center shrink-0
-        transparent-outline hover:outline-accent-1 outline-offset-1
+        transparent-outline focus:outline-accent-1 hover:outline-accent-1 outline-offset-1
         disabled:bg-border-light disabled:border-border-light disabled:text-border disabled:hover:text-border
         ${className}
       `}
@@ -75,7 +75,7 @@ export const ButtonSecondary = forwardRef<
   bg-bg-page outline-transparent
   rounded-md text-base font-bold text-accent-contrast
   flex gap-2 items-center justify-center shrink-0
-  transparent-outline hover:outline-accent-contrast outline-offset-1
+  transparent-outline focus:outline-accent-contrast hover:outline-accent-contrast outline-offset-1
   border border-accent-contrast
   disabled:bg-border-light disabled:text-border disabled:hover:text-border
   ${props.className}

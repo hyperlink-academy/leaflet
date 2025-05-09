@@ -15,7 +15,11 @@ export function HomeButton() {
   if (permissions.write)
     return (
       <>
-        <Link href="/home" prefetch>
+        <Link
+          href="/home"
+          prefetch
+          style={{ textDecorationLine: "none !important" }}
+        >
           <ActionButton
             noLabelOnMobile
             icon={<HomeSmall />}
