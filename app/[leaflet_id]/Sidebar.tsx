@@ -3,6 +3,7 @@ import { Sidebar } from "components/ActionBar/Sidebar";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { HelpPopover } from "components/HelpPopover";
 import { HomeButton } from "components/HomeButton";
+import { Media } from "components/Media";
 import { usePublicationContext } from "components/Providers/PublicationContext";
 import { ShareOptions } from "components/ShareOptions";
 import { PublishToPublication } from "components/ShareOptions/PublicationOptions";
@@ -21,24 +22,26 @@ export function LeafletSidebar(props: { leaflet_id: string }) {
         e.currentTarget === e.target && blurPage();
       }}
     >
-      <div className="sidebarContainer relative flex flex-col justify-between h-full w-16 bg-bg-pge bg-opacity-50 border-bg-page">
-        <Sidebar>
-          {entity_set.permissions.write ? (
-            <>
-              <ShareOptions />
-              <ThemePopover entityID={props.leaflet_id} />
-              <HelpPopover />
-              <hr className="text-border" />
-              <HomeButton />
-            </>
-          ) : (
-            <div>
-              <HomeButton />
-            </div>
-          )}
-        </Sidebar>
-        <Watermark />
-      </div>
+      <Media mobile={false}>
+        <div className="sidebarContainer relative flex flex-col justify-between h-full w-16 bg-bg-pge bg-opacity-50 border-bg-page">
+          <Sidebar>
+            {entity_set.permissions.write ? (
+              <>
+                <ShareOptions />
+                <ThemePopover entityID={props.leaflet_id} />
+                <HelpPopover />
+                <hr className="text-border" />
+                <HomeButton />
+              </>
+            ) : (
+              <div>
+                <HomeButton />
+              </div>
+            )}
+          </Sidebar>
+          <Watermark />
+        </div>
+      </Media>
     </div>
   );
 }

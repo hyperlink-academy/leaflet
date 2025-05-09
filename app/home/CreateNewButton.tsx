@@ -40,9 +40,7 @@ export const useTemplateState = create(
     },
   ),
 );
-export const CreateNewLeafletButton = (props: {
-  noLabelOnMobile?: boolean;
-}) => {
+export const CreateNewLeafletButton = (props: {}) => {
   let isMobile = useIsMobile();
   let templates = useTemplateState((s) => s.templates);
   let openNewLeaflet = (id: string) => {
@@ -54,6 +52,7 @@ export const CreateNewLeafletButton = (props: {
   };
   return (
     <Menu
+      asChild
       trigger={
         <ActionButton
           id="new-leaflet-button"
