@@ -7,7 +7,7 @@ import {
   ThemeBackgroundProvider,
   ThemeProvider,
 } from "components/ThemeManager/ThemeProvider";
-import { MobileFooter } from "components/MobileFooter";
+import { Footer } from "./Footer";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { AddLeafletToHomepage } from "components/utils/AddLeafletToHomepage";
 import { UpdateLeafletTitle } from "components/utils/UpdateLeafletTitle";
@@ -51,7 +51,7 @@ export function Leaflet(props: {
                 <Pages rootPage={props.leaflet_id} />
               </div>
             </div>
-            <MobileFooter entityID={props.leaflet_id} />
+            <Footer entityID={props.leaflet_id} />
           </ThemeBackgroundProvider>
         </ThemeProvider>
       </EntitySetProvider>

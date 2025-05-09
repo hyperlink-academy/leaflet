@@ -1,43 +1,53 @@
 import { useContext } from "react";
 import { SidebarOpenContext } from "./Sidebar";
+import React, { forwardRef, type JSX } from "react";
 
-export const ActionButton = (props: {
-  id?: string;
-  icon: React.ReactNode;
-  label: string;
-  primary?: boolean;
-  secondary?: boolean;
-  expanded?: boolean;
+type ButtonProps = Omit<JSX.IntrinsicElements["button"], "content">;
 
-  background: string;
-  text: string;
-  backgroundImage?: React.CSSProperties;
-  noLabelOnMobile?: boolean;
-}) => {
+export const ActionButton = forwardRef<
+  HTMLButtonElement,
+  ButtonProps & {
+    id?: string;
+    icon: React.ReactNode;
+    label: string;
+    primary?: boolean;
+    secondary?: boolean;
+
+    background: string;
+    text: string;
+    backgroundImage?: React.CSSProperties;
+    noLabelOnMobile?: boolean;
+  }
+>((props, ref) => {
+  let { id, icon, label, primary, secondary, ...buttonProps } = props;
+
   let sidebarExpanded = useContext(SidebarOpenContext);
   return (
-    <div
+    <button
+      {...buttonProps}
+      ref={ref}
+      id={props.id}
       className={`
-      actionButton relative rounded-md border
-      ${sidebarExpanded ? "w-full" : props.primary || props.secondary ? "sm:w-full w-8" : "w-8"}
+      actionButton relative
+      rounded-md border
+      flex gap-2 items-center font-bold p-1 sm:justify-start justify-center
       ${
         props.primary
-          ? "bg-accent-1 border-accent-1 text-accent-2 transparent-outline hover:outline-accent-contrast focus:outline-accent-1 outline-offset-1"
+          ? "w-full bg-accent-1 border-accent-1 text-accent-2 transparent-outline hover:outline-accent-contrast focus:outline-accent-1 outline-offset-1"
           : props.secondary
-            ? "bg-bg-page border-accent-contrast text-accent-contrast transparent-outline focus:outline-accent-contrast hover:outline-accent-contrast outline-offset-1"
-            : "border-transparent text-accent-1 hover:border-accent-1 "
+            ? "w-full bg-bg-page border-accent-contrast text-accent-contrast transparent-outline focus:outline-accent-contrast hover:outline-accent-contrast outline-offset-1"
+            : "sm:w-full w-max border-transparent text-accent-1 hover:border-accent-1 "
       }
       `}
     >
+      <div className="shrink-0">{props.icon}</div>
       <div
-        id={props.id}
-        className={`w-full flex gap-2 place-items-center justify-start font-bold py-1 px-1 no-underline`}
+        className={`${sidebarExpanded ? "block" : props.primary || props.secondary ? "sm:hidden block" : "hidden"}`}
       >
-        <div className="shrink-0">{props.icon}</div>
-        {sidebarExpanded && (
-          <div className="!hover:no-underline">{props.label}</div>
-        )}
+        {props.label}
       </div>
-    </div>
+    </button>
   );
-};
+});
+
+ActionButton.displayName = "ActionButton";

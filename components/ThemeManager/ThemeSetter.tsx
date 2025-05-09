@@ -119,7 +119,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   return (
     <>
       <Popover.Root>
-        <Popover.Trigger>
+        <Popover.Trigger asChild>
           <ActionButton
             icon={<PaintSmall />}
             noLabelOnMobile

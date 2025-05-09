@@ -18,6 +18,7 @@ export function HomeButton() {
         <Link
           href="/home"
           prefetch
+          className="hover:no-underline"
           style={{ textDecorationLine: "none !important" }}
         >
           <ActionButton

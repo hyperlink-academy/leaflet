@@ -14,6 +14,7 @@ export const HelpPopover = (props: { noShortcuts?: boolean }) => {
   let entity_set = useEntitySetContext();
   return entity_set.permissions.write ? (
     <Popover
+      asChild
       className="max-w-xs w-full"
       trigger={
         <ActionButton

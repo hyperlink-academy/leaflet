@@ -1,4 +1,3 @@
-import { ButtonPrimary } from "components/Buttons";
 import { Media } from "components/Media";
 import { createContext, useState } from "react";
 
@@ -14,7 +13,7 @@ export function Sidebar(props: {
       <SidebarOpenContext value={sidebarExpanded}>
         <div
           className={`
-          sidebar
+          actionSidebar
           absolute top-0 left-0 z-10
           h-fit w-max p-[6px]
           flex flex-col gap-2 justify-start border
@@ -24,7 +23,7 @@ export function Sidebar(props: {
             setSidebarExpanded(true);
           }}
           onMouseLeave={() => {
-            !props.alwaysOpen && setSidebarExpanded(true);
+            !props.alwaysOpen && setSidebarExpanded(false);
           }}
         >
           {props.children}

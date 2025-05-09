@@ -43,6 +43,7 @@ export function ShareOptions() {
 
   return (
     <Menu
+      asChild
       className="max-w-xs"
       onOpenChange={() => {
         setMenuState("default");
