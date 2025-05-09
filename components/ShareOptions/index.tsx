@@ -48,15 +48,7 @@ export function ShareOptions() {
       onOpenChange={() => {
         setMenuState("default");
       }}
-      trigger={
-        <ActionButton
-          icon=<ShareSmall />
-          primary
-          label="Share"
-          background="bg-accent-1"
-          text="text-accent-2"
-        />
-      }
+      trigger={<ActionButton icon=<ShareSmall /> primary label="Share" />}
     >
       {menuState === "login" ? (
         <div className="px-3 py-1">

@@ -57,11 +57,8 @@ export const CreateNewLeafletButton = (props: {
       trigger={
         <ActionButton
           id="new-leaflet-button"
-          noLabelOnMobile={props.noLabelOnMobile}
           icon=<AddTiny className="m-1 shrink-0" />
           label="New Leaflet"
-          background="bg-accent-1"
-          text="text-accent-2"
         />
       }
     >

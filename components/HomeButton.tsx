@@ -21,13 +21,7 @@ export function HomeButton() {
           className="hover:no-underline"
           style={{ textDecorationLine: "none !important" }}
         >
-          <ActionButton
-            noLabelOnMobile
-            icon={<HomeSmall />}
-            label="Go Home"
-            background="bg-accent-1"
-            text="text-accent-2"
-          />
+          <ActionButton icon={<HomeSmall />} label="Go Home" />
         </Link>
         <AddToHomeButton />
       </>
@@ -72,13 +66,7 @@ const AddToHomeButton = (props: {}) => {
         });
       }}
     >
-      <ActionButton
-        noLabelOnMobile
-        icon={<AddToHomeSmall />}
-        label="Add to Home"
-        background="bg-accent-1"
-        text="text-accent-2"
-      />
+      <ActionButton icon={<AddToHomeSmall />} label="Add to Home" />
     </button>
   );
 };

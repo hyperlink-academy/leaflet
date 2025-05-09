@@ -7,15 +7,7 @@ export const HomeHelp = () => {
   return (
     <Popover
       className="max-w-sm"
-      trigger={
-        <ActionButton
-          icon={<HelpSmall />}
-          noLabelOnMobile
-          label="Info"
-          background="bg-accent-1"
-          text="text-accent-2"
-        />
-      }
+      trigger={<ActionButton icon={<HelpSmall />} label="Info" />}
     >
       <div className="flex flex-col gap-2">
         <p>

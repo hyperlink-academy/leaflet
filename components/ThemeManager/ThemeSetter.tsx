@@ -120,17 +120,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
     <>
       <Popover.Root>
         <Popover.Trigger asChild>
-          <ActionButton
-            icon={<PaintSmall />}
-            noLabelOnMobile
-            label="Theme"
-            background="bg-bg-page"
-            text="text-bg-page"
-            backgroundImage={{
-              backgroundColor: leafletValue.toString("hex"),
-              backgroundImage: gradient,
-            }}
-          />
+          <ActionButton icon={<PaintSmall />} label="Theme" />
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content

@@ -9,17 +9,7 @@ import { mutate } from "swr";
 // it was going have a popover with a log out button
 export const AccountSettings = () => {
   return (
-    <Menu
-      trigger={
-        <ActionButton
-          icon=<AccountSmall />
-          label="Settings"
-          noLabelOnMobile
-          background="bg-accent-1"
-          text="text-accent-2"
-        />
-      }
-    >
+    <Menu trigger={<ActionButton icon=<AccountSmall /> label="Settings" />}>
       <MenuItem
         onSelect={async () => {
           await logout();

@@ -12,11 +12,6 @@ export const ActionButton = forwardRef<
     label: string;
     primary?: boolean;
     secondary?: boolean;
-
-    background: string;
-    text: string;
-    backgroundImage?: React.CSSProperties;
-    noLabelOnMobile?: boolean;
   }
 >((props, ref) => {
   let { id, icon, label, primary, secondary, ...buttonProps } = props;

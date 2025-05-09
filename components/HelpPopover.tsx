@@ -16,15 +16,7 @@ export const HelpPopover = (props: { noShortcuts?: boolean }) => {
     <Popover
       asChild
       className="max-w-xs w-full"
-      trigger={
-        <ActionButton
-          icon={<HelpSmall />}
-          noLabelOnMobile
-          label="About"
-          background="bg-accent-1"
-          text="text-accent-2"
-        />
-      }
+      trigger={<ActionButton icon={<HelpSmall />} label="About" />}
     >
       <div className="flex flex-col text-sm gap-2 text-secondary">
         {/* about leaflet */}
