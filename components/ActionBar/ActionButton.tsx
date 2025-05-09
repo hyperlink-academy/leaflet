@@ -37,7 +37,7 @@ export const ActionButton = forwardRef<
     >
       <div className="shrink-0">{props.icon}</div>
       <div
-        className={`${sidebarExpanded ? "block" : props.primary || props.secondary ? "sm:hidden block" : "hidden"}`}
+        className={`pr-1 ${sidebarExpanded ? "block" : props.primary || props.secondary ? "sm:hidden block" : "hidden"}`}
       >
         {props.label}
       </div>

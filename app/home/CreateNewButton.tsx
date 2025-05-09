@@ -56,6 +56,7 @@ export const CreateNewLeafletButton = (props: {}) => {
       trigger={
         <ActionButton
           id="new-leaflet-button"
+          primary
           icon=<AddTiny className="m-1 shrink-0" />
           label="New Leaflet"
         />

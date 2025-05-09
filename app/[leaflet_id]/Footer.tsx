@@ -10,7 +10,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { HelpPopover } from "components/HelpPopover";
 import { Watermark } from "components/Watermark";
 
-export function Footer(props: { entityID: string }) {
+export function LeafletFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedEntity);
   let entity_set = useEntitySetContext();
 
