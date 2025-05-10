@@ -244,6 +244,14 @@ input[type="number"] {
   @apply outline-transparent;
 }
 
+.container {
+  @apply bg-bg-page;
+  @apply border;
+  @apply border-bg-page;
+  @apply bg-opacity-50;
+  @apply rounded-md;
+}
+
 .pwa-padding {
   padding-top: max(calc(env(safe-area-inset-top) - 8px)) !important;
 }

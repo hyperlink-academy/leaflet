@@ -14,6 +14,7 @@ export const PubLeafletPublication: LexiconDoc = {
         properties: {
           name: { type: "string", maxLength: 2000 },
           description: { type: "string", maxLength: 2000 },
+          icon: { type: "blob", accept: ["image/*"], maxSize: 1000000 },
         },
       },
     },

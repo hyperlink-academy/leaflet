@@ -8,22 +8,13 @@ import {
   ThemeProvider,
 } from "components/ThemeManager/ThemeProvider";
 import { EntitySetProvider } from "components/EntitySetProvider";
-import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { createIdentity } from "actions/createIdentity";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { IdentitySetter } from "./IdentitySetter";
-import { HomeHelp } from "./HomeHelp";
 import { LeafletList } from "./LeafletList";
-import { CreateNewLeafletButton } from "./CreateNewButton";
 import { getIdentityData } from "actions/getIdentityData";
-import { LoginButton } from "components/LoginButton";
-import { HelpPopover } from "components/HelpPopover";
-import { AccountSettings } from "./AccountSettings";
-import { LoggedOutWarning } from "./LoggedOutWarning";
 import { getFactsFromHomeLeaflets } from "app/api/rpc/[command]/getFactsFromHomeLeaflets";
-import { Media } from "components/Media";
-import { Sidebar } from "components/ActionBar/Sidebar";
 import { HomeSidebar } from "./HomeSidebar";
 import { HomeFooter } from "./HomeFooter";
 

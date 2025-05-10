@@ -14,6 +14,7 @@ export interface Record {
   $type: 'pub.leaflet.publication'
   name: string
   description?: string
+  icon?: BlobRef
   [k: string]: unknown
 }
 

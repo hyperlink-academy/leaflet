@@ -2,14 +2,11 @@ import { Footer } from "../../Footer";
 import { PostList } from "../../PostList";
 import { getPds, IdResolver } from "@atproto/identity";
 import { supabaseServerClient } from "supabase/serverClient";
-import { AtUri } from "@atproto/syntax";
-import {
-  AtpBaseClient,
-  PubLeafletDocument,
-  PubLeafletPublication,
-} from "lexicons/api";
 import { CallToActionButton } from "./CallToActionButton";
 import { Metadata } from "next";
+import { Fact } from "src/replicache";
+import { Attributes } from "src/replicache/attributes";
+import { DraftList } from "./DraftList";
 
 const idResolver = new IdResolver();
 
@@ -36,7 +33,6 @@ export default async function Publication(props: {
 }) {
   let did = await idResolver.handle.resolve((await props.params).handle);
   if (!did) return <PubNotFound />;
-
   let { data: publication } = await supabaseServerClient
     .from("publications")
     .select(
@@ -47,23 +43,25 @@ export default async function Publication(props: {
     .single();
   if (!publication) return <PubNotFound />;
 
-  let repo = await idResolver.did.resolve(did);
-  if (!repo) return <PubNotFound />;
-  const pds = getPds(repo);
-  let agent = new AtpBaseClient((url, init) => {
-    return fetch(new URL(url, pds), init);
+  let all_facts = await supabaseServerClient.rpc("get_facts_for_roots", {
+    max_depth: 2,
+    roots: publication.leaflets_in_publications.map(
+      (l) => l.permission_tokens?.root_entity!,
+    ),
   });
+  let facts =
+    all_facts.data?.reduce(
+      (acc, fact) => {
+        if (!acc[fact.root_id]) acc[fact.root_id] = [];
+        acc[fact.root_id].push(
+          fact as unknown as Fact<keyof typeof Attributes>,
+        );
+        return acc;
+      },
+      {} as { [key: string]: Fact<keyof typeof Attributes>[] },
+    ) || {};
 
   try {
-    let uri = new AtUri(publication.uri);
-    let publication_record = await agent.pub.leaflet.publication.get({
-      repo: (await props.params).handle,
-      rkey: uri.rkey,
-    });
-    if (!PubLeafletPublication.isRecord(publication_record.value)) {
-      return <pre>not a publication?</pre>;
-    }
-
     return (
       <div className="pubPage w-full h-screen bg-bg-leaflet flex items-stretch">
         <div className="pubWrapper flex flex-col w-full ">
@@ -77,6 +75,13 @@ export default async function Publication(props: {
                 <CallToActionButton />
               </div>
             </div>
+            <DraftList
+              drafts={publication.leaflets_in_publications.map((d) => ({
+                ...d.permission_tokens!,
+                initialFacts: facts[d.permission_tokens?.root_entity!],
+              }))}
+            />
+
             <PostList posts={publication.documents_in_publications} />
           </div>
           <Footer pageType="pub" />
