@@ -7,9 +7,9 @@ export function Footer(props: { children?: React.ReactNode }) {
       className={`
         actionFooter touch-none
         w-full z-10
-        px-2 pt-1 pb-2 pwa-padding-bottom
+        px-2 pt-1 pwa-padding-bottom
         flex justify-start
-        h-[45px]
+        h-[calc(45px+var(--safe-padding-bottom))]
         bg-bg-page bg-opacity-50 border-top border-bg-page`}
     >
       {props.children}
