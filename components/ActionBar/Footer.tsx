@@ -9,6 +9,7 @@ export function Footer(props: { children?: React.ReactNode }) {
         w-full z-10
         px-2 pt-1 pb-2 pwa-padding-bottom
         flex justify-start
+        h-[45px]
         bg-bg-page bg-opacity-50 border-top border-bg-page`}
     >
       {props.children}
