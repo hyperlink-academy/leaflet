@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { TemplateListExamples, TemplateListThemes } from "./TemplateList";
-import { HoverButton } from "components/Buttons";
+import { ActionButton } from "components/ActionBar/ActionButton";
 import { HomeSmall } from "components/Icons";
 
 export const metadata = {
@@ -15,13 +15,7 @@ export default function Templates() {
         <div className="homeOptions z-10 shrink-0 sm:static absolute bottom-0  place-self-end sm:place-self-start flex sm:flex-col flex-row-reverse gap-2 sm:w-fit w-full items-center pb-2 pt-1 sm:pt-7">
           {/* NOT using <HomeButton /> b/c it does a permission check we don't need */}
           <Link href="/home">
-            <HoverButton
-              noLabelOnMobile
-              icon={<HomeSmall />}
-              label="Go Home"
-              background="bg-accent-1"
-              text="text-accent-2"
-            />
+            <ActionButton icon={<HomeSmall />} label="Go Home" />
           </Link>
         </div>
         <div className="flex flex-col gap-10 py-6 pt-3 sm:pt-6 sm:pb-12 sm:pl-6 grow w-full h-full overflow-y-scroll no-scrollbar">

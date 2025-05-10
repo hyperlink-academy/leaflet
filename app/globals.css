@@ -27,6 +27,8 @@
     --gripperSVG2: url("/gripperPattern2.svg");
     --hatchSVG: url("/hatchPattern.svg");
     --wavySVG: (url("/RSVPBackground/wavy.svg"));
+
+    --safe-padding-bottom: max(calc(env(safe-area-inset-bottom) - 8px), 16px);
   }
 
   @media (max-width: 640px) {
@@ -246,5 +248,5 @@ input[type="number"] {
   padding-top: max(calc(env(safe-area-inset-top) - 8px)) !important;
 }
 .pwa-padding-bottom {
-  padding-bottom: max(calc(env(safe-area-inset-bottom) - 14px), 8px);
+  padding-bottom: var(--safe-padding-bottom);
 }

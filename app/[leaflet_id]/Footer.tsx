@@ -1,16 +1,16 @@
 "use client";
 import { useUIState } from "src/useUIState";
-import { Media } from "./Media";
-import { ThemePopover } from "./ThemeManager/ThemeSetter";
+import { Footer as ActionFooter } from "components/ActionBar/Footer";
+import { Media } from "components/Media";
+import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { Toolbar } from "components/Toolbar";
-import { ShareOptions } from "./ShareOptions";
-import { HomeButton } from "./HomeButton";
-import { useEntitySetContext } from "./EntitySetProvider";
-import { HelpPopover } from "./HelpPopover";
-import { Watermark } from "./Watermark";
-import { PublishToPublication } from "./ShareOptions/PublicationOptions";
+import { ShareOptions } from "components/ShareOptions";
+import { HomeButton } from "components/HomeButton";
+import { useEntitySetContext } from "components/EntitySetProvider";
+import { HelpPopover } from "components/HelpPopover";
+import { Watermark } from "components/Watermark";
 
-export function MobileFooter(props: { entityID: string }) {
+export function LeafletFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedEntity);
   let entity_set = useEntitySetContext();
 
@@ -31,17 +31,12 @@ export function MobileFooter(props: { entityID: string }) {
           />
         </div>
       ) : entity_set.permissions.write ? (
-        <div className="z-10 pwa-padding-bottom px-2 pt-0.5 flex justify-between">
-          <div className="flex flex-row gap-[6px]">
-            <HomeButton />
-          </div>
-          <div className="flex flex-row gap-[6px] items-center ">
-            <HelpPopover />
-            <ThemePopover entityID={props.entityID} />
-            <ShareOptions />
-            <PublishToPublication />
-          </div>
-        </div>
+        <ActionFooter>
+          <HomeButton />
+          <ShareOptions />
+          <HelpPopover />
+          <ThemePopover entityID={props.entityID} />
+        </ActionFooter>
       ) : (
         <div className="pb-2 px-2 z-10 flex justify-end">
           <Watermark mobile />

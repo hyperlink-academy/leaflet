@@ -8,22 +8,15 @@ import { metaKey } from "src/utils/metaKey";
 import { useEntitySetContext } from "./EntitySetProvider";
 import Link from "next/link";
 import { useState } from "react";
-import { HoverButton } from "./Buttons";
+import { ActionButton } from "components/ActionBar/ActionButton";
 
 export const HelpPopover = (props: { noShortcuts?: boolean }) => {
   let entity_set = useEntitySetContext();
   return entity_set.permissions.write ? (
     <Popover
+      asChild
       className="max-w-xs w-full"
-      trigger={
-        <HoverButton
-          icon={<HelpSmall />}
-          noLabelOnMobile
-          label="About"
-          background="bg-accent-1"
-          text="text-accent-2"
-        />
-      }
+      trigger={<ActionButton icon={<HelpSmall />} label="About" />}
     >
       <div className="flex flex-col text-sm gap-2 text-secondary">
         {/* about leaflet */}

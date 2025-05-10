@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { AddToHomeSmall, HomeSmall } from "./Icons";
-import { HoverButton } from "./Buttons";
+import { ActionButton } from "components/ActionBar/ActionButton";
 import { useParams, useSearchParams } from "next/navigation";
 import { useIdentityData } from "./IdentityProvider";
 import { useReplicache } from "src/replicache";
@@ -15,14 +15,13 @@ export function HomeButton() {
   if (permissions.write)
     return (
       <>
-        <Link href="/home" prefetch>
-          <HoverButton
-            noLabelOnMobile
-            icon={<HomeSmall />}
-            label="Go Home"
-            background="bg-accent-1"
-            text="text-accent-2"
-          />
+        <Link
+          href="/home"
+          prefetch
+          className="hover:no-underline first:mr-2"
+          style={{ textDecorationLine: "none !important" }}
+        >
+          <ActionButton icon={<HomeSmall />} label="Go Home" />
         </Link>
         <AddToHomeButton />
       </>
@@ -67,13 +66,7 @@ const AddToHomeButton = (props: {}) => {
         });
       }}
     >
-      <HoverButton
-        noLabelOnMobile
-        icon={<AddToHomeSmall />}
-        label="Add to Home"
-        background="bg-accent-1"
-        text="text-accent-2"
-      />
+      <ActionButton icon={<AddToHomeSmall />} label="Add to Home" />
     </button>
   );
 };

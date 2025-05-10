@@ -1,21 +1,13 @@
 "use client";
 import { HelpSmall } from "components/Icons";
-import { HoverButton } from "components/Buttons";
+import { ActionButton } from "components/ActionBar/ActionButton";
 import { Popover } from "components/Popover";
 
 export const HomeHelp = () => {
   return (
     <Popover
       className="max-w-sm"
-      trigger={
-        <HoverButton
-          icon={<HelpSmall />}
-          noLabelOnMobile
-          label="Info"
-          background="bg-accent-1"
-          text="text-accent-2"
-        />
-      }
+      trigger={<ActionButton icon={<HelpSmall />} label="Info" />}
     >
       <div className="flex flex-col gap-2">
         <p>

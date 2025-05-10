@@ -2,7 +2,7 @@
 
 import { createNewLeaflet } from "actions/createNewLeaflet";
 import { createNewLeafletFromTemplate } from "actions/createNewLeafletFromTemplate";
-import { HoverButton } from "components/Buttons";
+import { ActionButton } from "components/ActionBar/ActionButton";
 import {
   AddTiny,
   BlockCanvasPageSmall,
@@ -40,9 +40,7 @@ export const useTemplateState = create(
     },
   ),
 );
-export const CreateNewLeafletButton = (props: {
-  noLabelOnMobile?: boolean;
-}) => {
+export const CreateNewLeafletButton = (props: {}) => {
   let isMobile = useIsMobile();
   let templates = useTemplateState((s) => s.templates);
   let openNewLeaflet = (id: string) => {
@@ -54,14 +52,13 @@ export const CreateNewLeafletButton = (props: {
   };
   return (
     <Menu
+      asChild
       trigger={
-        <HoverButton
+        <ActionButton
           id="new-leaflet-button"
-          noLabelOnMobile={props.noLabelOnMobile}
+          primary
           icon=<AddTiny className="m-1 shrink-0" />
-          label="New Leaflet"
-          background="bg-accent-1"
-          text="text-accent-2"
+          label="New Doc"
         />
       }
     >

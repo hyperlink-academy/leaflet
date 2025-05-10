@@ -1615,7 +1615,7 @@ export const PopoverArrow = (
   let { arrowFill, arrowStroke, ...passDownProps } = props;
   return (
     <svg
-      {...{ passDownProps }}
+      {...passDownProps}
       width="16"
       height="8"
       viewBox="0 0 16 8"

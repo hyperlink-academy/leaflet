@@ -37,7 +37,7 @@ export const ButtonPrimary = forwardRef<
         bg-accent-1  outline-transparent border border-accent-1
         rounded-md text-base font-bold text-accent-2
         flex gap-2 items-center justify-center shrink-0
-        transparent-outline hover:outline-accent-1 outline-offset-1
+        transparent-outline focus:outline-accent-1 hover:outline-accent-1 outline-offset-1
         disabled:bg-border-light disabled:border-border-light disabled:text-border disabled:hover:text-border
         ${className}
       `}
@@ -75,7 +75,7 @@ export const ButtonSecondary = forwardRef<
   bg-bg-page outline-transparent
   rounded-md text-base font-bold text-accent-contrast
   flex gap-2 items-center justify-center shrink-0
-  transparent-outline hover:outline-accent-contrast outline-offset-1
+  transparent-outline focus:outline-accent-contrast hover:outline-accent-contrast outline-offset-1
   border border-accent-contrast
   disabled:bg-border-light disabled:text-border disabled:hover:text-border
   ${props.className}
@@ -111,38 +111,6 @@ export const ButtonTertiary = forwardRef<
   );
 });
 ButtonTertiary.displayName = "ButtonTertiary";
-
-export const HoverButton = (props: {
-  id?: string;
-  icon: React.ReactNode;
-  label: string;
-  background: string;
-  text: string;
-  backgroundImage?: React.CSSProperties;
-  noLabelOnMobile?: boolean;
-}) => {
-  return (
-    <div className="sm:w-8 sm:h-8 relative ">
-      <div
-        id={props.id}
-        className={`
-          z-10 group/hover-button
-          w-max h-max rounded-full p-1 flex gap-2
-          sm:absolute top-0 left-0
-          place-items-center justify-center
-          ${props.background} ${props.text}`}
-        style={props.backgroundImage}
-      >
-        {props.icon}
-        <div
-          className={`font-bold pr-[6px] sm:group-hover/hover-button:block ${props.noLabelOnMobile ? "hidden" : "sm:hidden"}`}
-        >
-          {props.label}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export const TooltipButton = (props: {
   onMouseDown?: (e: React.MouseEvent) => void | Promise<void>;

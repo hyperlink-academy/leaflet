@@ -22,10 +22,13 @@ export const Menu = (props: {
   border?: string;
   className?: string;
   onOpenChange?: (o: boolean) => void;
+  asChild?: boolean;
 }) => {
   return (
     <DropdownMenu.Root onOpenChange={props.onOpenChange} open={props.open}>
-      <DropdownMenu.Trigger>{props.trigger}</DropdownMenu.Trigger>
+      <DropdownMenu.Trigger asChild={props.asChild}>
+        {props.trigger}
+      </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <NestedCardThemeProvider>
           <DropdownMenu.Content

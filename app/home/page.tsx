@@ -22,6 +22,10 @@ import { HelpPopover } from "components/HelpPopover";
 import { AccountSettings } from "./AccountSettings";
 import { LoggedOutWarning } from "./LoggedOutWarning";
 import { getFactsFromHomeLeaflets } from "app/api/rpc/[command]/getFactsFromHomeLeaflets";
+import { Media } from "components/Media";
+import { Sidebar } from "components/ActionBar/Sidebar";
+import { HomeSidebar } from "./HomeSidebar";
+import { HomeFooter } from "./HomeFooter";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -49,7 +53,9 @@ export default async function Home() {
   async function setCookie() {
     "use server";
 
-    (await cookies()).set("identity", identity as string, { sameSite: "strict" });
+    (await cookies()).set("identity", identity as string, {
+      sameSite: "strict",
+    });
   }
 
   let permission_token = auth_res?.home_leaflet;
@@ -99,38 +105,14 @@ export default async function Home() {
         set={permission_token.permission_token_rights[0].entity_set}
       >
         <ThemeProvider entityID={root_entity}>
-          <div className="flex h-full bg-bg-leaflet pwa-padding">
+          <div className="homeWrapper flex h-full bg-bg-leaflet pwa-padding">
             <ThemeBackgroundProvider entityID={root_entity}>
-              <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row sm:items-stretch flex-col-reverse px-2 sm:px-6 ">
-                {!auth_res && (
-                  <div className="sm:hidden block">
-                    <LoggedOutWarning />
-                  </div>
-                )}
-                <div
-                  className={`homeOptions z-10 shrink-0
-                    sm:static absolute bottom-0 left-0 right-0
-                    place-self-end sm:place-self-start flex sm:flex-col flex-row-reverse sm:w-fit w-full items-center
-                  px-2 sm:px-0 pwa-padding-bottom pt-2 sm:pt-7 sm:bg-transparent
-                  bg-bg-page border-border border-t sm:border-none`}
-                >
-                  <div className="flex sm:flex-col flex-row-reverse gap-2 shrink-0 place-self-end">
-                    <CreateNewLeafletButton />
-                    <ThemePopover entityID={root_entity} home />
-                    <HelpPopover noShortcuts />
-                    {auth_res && <AccountSettings />}
-                  </div>
-                </div>
-                <div
-                  className={`h-full w-full flex flex-col ${!auth_res && "sm:pb-0 pb-16"}`}
-                >
-                  {!auth_res && (
-                    <div className="sm:block hidden">
-                      <LoggedOutWarning />
-                    </div>
-                  )}
+              <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6 ">
+                <HomeSidebar />
+                <div className={`h-full overflow-y-scroll`}>
                   <LeafletList initialFacts={home_docs_initialFacts} />
                 </div>
+                <HomeFooter />
               </div>
             </ThemeBackgroundProvider>
           </div>

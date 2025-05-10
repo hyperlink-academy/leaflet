@@ -5,7 +5,7 @@ import { getShareLink } from "./getShareLink";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useSmoker } from "components/Toast";
 import { Menu, MenuItem } from "components/Layout";
-import { HoverButton } from "components/Buttons";
+import { ActionButton } from "components/ActionBar/ActionButton";
 import useSWR from "swr";
 import { useTemplateState } from "app/home/CreateNewButton";
 import LoginForm from "app/login/LoginForm";
@@ -43,18 +43,12 @@ export function ShareOptions() {
 
   return (
     <Menu
+      asChild
       className="max-w-xs"
       onOpenChange={() => {
         setMenuState("default");
       }}
-      trigger={
-        <HoverButton
-          icon=<ShareSmall />
-          label="Share"
-          background="bg-accent-1"
-          text="text-accent-2"
-        />
-      }
+      trigger={<ActionButton icon=<ShareSmall /> primary label="Share" />}
     >
       {menuState === "login" ? (
         <div className="px-3 py-1">
