@@ -1,3 +1,4 @@
+"use client";
 import { Media } from "components/Media";
 import { createContext, useState } from "react";
 
