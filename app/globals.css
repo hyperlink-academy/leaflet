@@ -244,6 +244,13 @@ input[type="number"] {
   @apply outline-transparent;
 }
 
+.container {
+  background: rgba(var(--bg-page), 0.5);
+  @apply border;
+  @apply border-bg-page;
+  @apply rounded-md;
+}
+
 .pwa-padding {
   padding-top: max(calc(env(safe-area-inset-top) - 8px)) !important;
 }

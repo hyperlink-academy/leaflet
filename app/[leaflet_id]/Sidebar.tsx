@@ -23,7 +23,7 @@ export function LeafletSidebar(props: { leaflet_id: string }) {
       }}
     >
       <Media mobile={false}>
-        <div className="sidebarContainer relative flex flex-col justify-between h-full w-16 bg-bg-pge bg-opacity-50 border-bg-page">
+        <div className="sidebarContainer relative flex flex-col justify-between h-full w-16 bg-bg-page/50  border-bg-page">
           <Sidebar>
             {entity_set.permissions.write ? (
               <>

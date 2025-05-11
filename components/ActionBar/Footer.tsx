@@ -10,7 +10,7 @@ export function Footer(props: { children?: React.ReactNode }) {
         px-2 pt-1 pwa-padding-bottom
         flex justify-start
         h-[calc(45px+var(--safe-padding-bottom))]
-        bg-bg-page bg-opacity-50 border-top border-bg-page`}
+        bg-[rgba(var(--bg-page),0.5)] border-top border-bg-page`}
     >
       {props.children}
     </Media>
