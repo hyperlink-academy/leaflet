@@ -27,7 +27,7 @@ export const MyPublicationList = () => {
       </div>
     );
   return (
-    <div className="w-full flex flex-col gap-2">
+    <div className="w-full flex flex-col gap-2 container mx-8 mt-8">
       <PublicationList publications={identity.publications} />
       <Link
         href={"./lish/createPub"}
@@ -50,20 +50,26 @@ const PublicationList = (props: {
   let { identity } = useIdentityData();
 
   return (
-    <div className="w-full flex flex-col gap-2">
+    <div className="w-full grid auto-rows-max p-4">
       {props.publications?.map((d) => (
-        <div
+        <Publication
+          {...d}
           key={d.uri}
-          className={`pubPostListItem flex hover:no-underline justify-between items-center`}
-        >
-          <Link
-            className="justify-self-start font-bold hover:no-underline"
-            href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${d.name}/`}
-          >
-            <div key={d.uri}>{d.name}</div>
-          </Link>
-        </div>
+          handle={identity?.resolved_did?.alsoKnownAs?.[0].slice(5)!}
+        />
       ))}
     </div>
   );
 };
+
+function Publication(props: { uri: string; name: string; handle: string }) {
+  return (
+    <Link
+      className="p-3 rounded-lg bg-bg-page flex flex-col gap-1 text-primary justify-center w-min"
+      href={`/lish/${props.handle}/${props.name}/`}
+    >
+      <div className="w-8 h-8 rounded-full bg-test" />
+      <div className="text-lg font-bold">{props.name}</div>
+    </Link>
+  );
+}

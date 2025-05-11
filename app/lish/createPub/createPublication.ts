@@ -9,14 +9,12 @@ import { Un$Typed } from "@atproto/api";
 export async function createPublication({
   name,
   description,
-  logoFile,
+  iconFile,
 }: {
   name: string;
   description: string;
-  logoFile: File | null;
+  iconFile: File | null;
 }) {
-  console.log(logoFile);
-  return;
   const oauthClient = await createOauthClient();
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) return;

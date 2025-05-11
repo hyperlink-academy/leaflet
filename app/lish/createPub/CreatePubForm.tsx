@@ -26,7 +26,7 @@ export const CreatePubForm = () => {
         await createPublication({
           name: nameValue,
           description: descriptionValue,
-          logoFile,
+          iconFile: logoFile,
         });
         router.push(
           `/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${nameValue}/`,
