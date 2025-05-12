@@ -2,7 +2,6 @@ import { schema } from "components/Blocks/TextBlock/schema";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { useUIState } from "src/useUIState";
 import { ToolbarButton } from ".";
-import { CheckTiny, CloseTiny, LinkSmall } from "components/Icons";
 import { useEffect, useState } from "react";
 import { Separator } from "components/Layout";
 import { MarkType } from "prosemirror-model";
@@ -10,6 +9,8 @@ import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 import { Input } from "components/Input";
 import { useReplicache } from "src/replicache";
+import { CheckTiny } from "components/Icons/CheckTiny";
+import { LinkSmall } from "components/Icons/LinkSmall";
 
 export function LinkButton(props: { setToolbarState: (s: "link") => void }) {
   let focusedBlock = useUIState((s) => s.focusedEntity);

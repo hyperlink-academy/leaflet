@@ -6,17 +6,14 @@ import { useUIState } from "src/useUIState";
 import { BlockProps } from "./Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
-import {
-  BlockEmbedSmall,
-  LinkSmall,
-  CheckTiny,
-  BlockButtonSmall,
-} from "components/Icons";
+
 import { Separator } from "components/Layout";
 import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
-import { deleteBlock } from "./DeleteBlock";
 import { ButtonPrimary } from "components/Buttons";
+import { BlockButtonSmall } from "components/Icons/BlockButtonSmall";
+import { CheckTiny } from "components/Icons/CheckTiny";
+import { LinkSmall } from "components/Icons/LinkSmall";
 
 export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();

@@ -1,11 +1,10 @@
 "use client";
-import { logout } from "actions/logout";
 import { useIdentityData } from "./IdentityProvider";
 import { Popover } from "./Popover";
 import LoginForm from "app/login/LoginForm";
 import { ButtonPrimary } from "./Buttons";
 import { ActionButton } from "./ActionBar/ActionButton";
-import { AccountSmall } from "./Icons";
+import { AccountSmall } from "./Icons/AccountSmall";
 
 export function LoginButton() {
   let identityData = useIdentityData();

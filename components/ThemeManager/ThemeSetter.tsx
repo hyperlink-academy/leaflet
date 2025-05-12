@@ -17,14 +17,6 @@ import {
 } from "react-aria-components";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  BlockImageSmall,
-  CheckboxChecked,
-  CheckboxEmpty,
-  CloseContrastSmall,
-  PaintSmall,
-  PopoverArrow,
-} from "components/Icons";
 import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { Replicache } from "replicache";
 import { FilterAttributes } from "src/replicache/attributes";
@@ -39,6 +31,11 @@ import { isIOS, useViewportSize } from "@react-aria/utils";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { useInitialPageLoad } from "components/InitialPageLoadProvider";
+import { BlockImageSmall } from "components/Icons/BlockImageSmall";
+import { CheckboxChecked } from "components/Icons/CheckboxChecked";
+import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
+import { CloseContrastSmall } from "components/Icons/CloseContrastSmall";
+import { PaintSmall } from "components/Icons/PaintSmall";
 
 export type pickers =
   | "null"

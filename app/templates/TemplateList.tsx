@@ -4,7 +4,7 @@ import { ButtonPrimary } from "components/Buttons";
 import Image from "next/image";
 import Link from "next/link";
 import { createNewLeafletFromTemplate } from "actions/createNewLeafletFromTemplate";
-import { AddTiny } from "components/Icons";
+import { AddTiny } from "components/Icons/AddTiny";
 
 export function LeafletTemplate(props: {
   title: string;

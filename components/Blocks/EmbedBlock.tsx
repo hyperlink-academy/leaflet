@@ -6,7 +6,6 @@ import { useUIState } from "src/useUIState";
 import { BlockProps } from "./Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
-import { BlockEmbedSmall, CheckTiny } from "components/Icons";
 import { Separator } from "components/Layout";
 import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
@@ -14,6 +13,8 @@ import { elementId } from "src/utils/elementId";
 import { deleteBlock } from "./DeleteBlock";
 import { focusBlock } from "src/utils/focusBlock";
 import { useDrag } from "src/hooks/useDrag";
+import { BlockEmbedSmall } from "components/Icons/BlockEmbedSmall";
+import { CheckTiny } from "components/Icons/CheckTiny";
 
 export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();

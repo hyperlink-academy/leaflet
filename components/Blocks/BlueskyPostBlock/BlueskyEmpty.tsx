@@ -6,12 +6,12 @@ import { useUIState } from "src/useUIState";
 import { BlockProps } from "../Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
-import { BlockBlueskySmall, CheckTiny } from "components/Icons";
 import { Separator } from "components/Layout";
 import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
-import { AppBskyFeedDefs, AtpAgent } from "@atproto/api";
 import { addBlueskyPostBlock } from "src/utils/addLinkBlock";
+import { BlockBlueskySmall } from "components/Icons/BlockBlueskySmall";
+import { CheckTiny } from "components/Icons/CheckTiny";
 
 export const BlueskyPostEmpty = (props: BlockProps) => {
   let { rep } = useReplicache();

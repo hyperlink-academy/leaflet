@@ -1,22 +1,6 @@
 import { Fact, ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import {
-  BlockDocPageSmall,
-  BlockCanvasPageSmall,
-  BlockImageSmall,
-  Header1Small,
-  Header2Small,
-  Header3Small,
-  BlockMailboxSmall,
-  ParagraphSmall,
-  LinkSmall,
-  BlockEmbedSmall,
-  BlockButtonSmall,
-  BlockCalendarSmall,
-  RSVPSmall,
-  BlockPollSmall,
-  BlockBlueskySmall,
-} from "components/Icons";
+
 import { generateKeyBetween } from "fractional-indexing";
 import { focusPage } from "components/Pages";
 import { v7 } from "uuid";
@@ -27,6 +11,23 @@ import { UndoManager } from "src/undoManager";
 import { focusBlock } from "src/utils/focusBlock";
 import { usePollBlockUIState } from "./PollBlock";
 import { focusElement } from "components/Input";
+import { BlockBlueskySmall } from "components/Icons/BlockBlueskySmall";
+import { BlockButtonSmall } from "components/Icons/BlockButtonSmall";
+import { BlockCalendarSmall } from "components/Icons/BlockCalendarSmall";
+import { BlockCanvasPageSmall } from "components/Icons/BlockCanvasPageSmall";
+import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
+import { BlockEmbedSmall } from "components/Icons/BlockEmbedSmall";
+import { BlockImageSmall } from "components/Icons/BlockImageSmall";
+import { BlockMailboxSmall } from "components/Icons/BlockMailboxSmall";
+import { BlockPollSmall } from "components/Icons/BlockPollSmall";
+import {
+  ParagraphSmall,
+  Header1Small,
+  Header2Small,
+  Header3Small,
+} from "components/Icons/BlockTextSmall";
+import { LinkSmall } from "components/Icons/LinkSmall";
+import { BlockRSVPSmall } from "components/Icons/BlockRSVPSmall";
 
 type Props = {
   parent: string;
@@ -266,7 +267,7 @@ export const blockCommands: Command[] = [
 
   {
     name: "RSVP",
-    icon: <RSVPSmall />,
+    icon: <BlockRSVPSmall />,
     type: "event",
     onSelect: (rep, props) => {
       props.entityID && clearCommandSearchText(props.entityID);

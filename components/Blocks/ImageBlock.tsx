@@ -3,7 +3,6 @@
 import { useEntity, useReplicache } from "src/replicache";
 import { Block, BlockProps } from "./Block";
 import { useUIState } from "src/useUIState";
-import { BlockImageSmall } from "components/Icons";
 import Image from "next/image";
 import { v7 } from "uuid";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -12,6 +11,7 @@ import { addImage, localImages } from "src/utils/addImage";
 import { elementId } from "src/utils/elementId";
 import { useEffect } from "react";
 import { deleteBlock } from "./DeleteBlock";
+import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 
 export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let { rep } = useReplicache();

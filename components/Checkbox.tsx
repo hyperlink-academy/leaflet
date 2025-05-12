@@ -1,9 +1,6 @@
-import {
-  CheckboxChecked,
-  CheckboxEmpty,
-  RadioChecked,
-  RadioEmpty,
-} from "./Icons";
+import { CheckboxChecked } from "./Icons/CheckboxChecked";
+import { CheckboxEmpty } from "./Icons/CheckboxEmpty";
+import { Props } from "./Icons/Props";
 
 export function Checkbox(props: {
   checked: boolean;
@@ -73,3 +70,47 @@ export function Radio(props: {
     </label>
   );
 }
+
+const RadioEmpty = (props: Props) => {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M6 11C8.76142 11 11 8.76142 11 6C11 3.23858 8.76142 1 6 1C3.23858 1 1 3.23858 1 6C1 8.76142 3.23858 11 6 11ZM6 12C9.31371 12 12 9.31371 12 6C12 2.68629 9.31371 0 6 0C2.68629 0 0 2.68629 0 6C0 9.31371 2.68629 12 6 12Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
+const RadioChecked = (props: Props) => {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M6 10.5C8.48528 10.5 10.5 8.48528 10.5 6C10.5 3.51472 8.48528 1.5 6 1.5C3.51472 1.5 1.5 3.51472 1.5 6C1.5 8.48528 3.51472 10.5 6 10.5ZM6 12C9.31371 12 12 9.31371 12 6C12 2.68629 9.31371 0 6 0C2.68629 0 0 2.68629 0 6C0 9.31371 2.68629 12 6 12Z"
+        fill="currentColor"
+      />
+      <path
+        d="M9 6C9 7.65685 7.65685 9 6 9C4.34315 9 3 7.65685 3 6C3 4.34315 4.34315 3 6 3C7.65685 3 9 4.34315 9 6Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};

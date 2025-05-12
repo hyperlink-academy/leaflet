@@ -7,12 +7,13 @@ import { addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockProps } from "./Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
-import { CheckTiny, LinkSmall } from "components/Icons";
 import { Separator } from "components/Layout";
 import { focusElement, Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
 import { elementId } from "src/utils/elementId";
 import { focusBlock } from "src/utils/focusBlock";
+import { CheckTiny } from "components/Icons/CheckTiny";
+import { LinkSmall } from "components/Icons/LinkSmall";
 
 export const ExternalLinkBlock = (
   props: BlockProps & { preview?: boolean },

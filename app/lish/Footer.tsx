@@ -1,5 +1,4 @@
 "use client";
-import { MoreOptionsTiny } from "components/Icons";
 import { Menu, MenuItem } from "components/Layout";
 import { useEffect, useState } from "react";
 import { SubscribeButton } from "./Subscribe";
@@ -7,6 +6,7 @@ import Link from "next/link";
 import { ButtonPrimary } from "components/Buttons";
 import { usePublicationRelationship } from "./[handle]/[publication]/usePublicationRelationship";
 import { usePublicationContext } from "components/Providers/PublicationContext";
+import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 
 export const Footer = (props: { pageType: "post" | "pub" }) => {
   return (

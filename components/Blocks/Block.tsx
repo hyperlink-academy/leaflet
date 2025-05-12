@@ -14,7 +14,6 @@ import { PageLinkBlock } from "./PageLinkBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { EmbedBlock } from "./EmbedBlock";
 import { MailboxBlock } from "./MailboxBlock";
-import { CheckboxChecked, CheckboxEmpty, LockTiny } from "components/Icons";
 import { AreYouSure } from "./DeleteBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useIsMobile } from "src/hooks/isMobile";
@@ -24,6 +23,9 @@ import { elementId } from "src/utils/elementId";
 import { ButtonBlock } from "./ButtonBlock";
 import { PollBlock } from "./PollBlock";
 import { BlueskyPostBlock } from "./BlueskyPostBlock";
+import { CheckboxChecked } from "components/Icons/CheckboxChecked";
+import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
+import { LockTiny } from "components/Icons/LockTiny";
 
 export type Block = {
   factID: string;

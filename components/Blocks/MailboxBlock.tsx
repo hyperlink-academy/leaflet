@@ -1,5 +1,4 @@
 import { ButtonPrimary } from "components/Buttons";
-import { ArrowDownTiny, InfoSmall } from "components/Icons";
 import { Popover } from "components/Popover";
 import { Menu, MenuItem, Separator } from "components/Layout";
 import { useUIState } from "src/useUIState";
@@ -23,6 +22,8 @@ import {
   useSubscriptionStatus,
 } from "src/hooks/useSubscriptionStatus";
 import { usePageTitle } from "components/utils/UpdateLeafletTitle";
+import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
+import { InfoSmall } from "components/Icons/InfoSmall";
 
 export const MailboxBlock = (props: BlockProps) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
@@ -45,7 +46,7 @@ export const MailboxBlock = (props: BlockProps) => {
   return (
     <div className={`mailboxContent relative w-full flex flex-col gap-1`}>
       <div
-        className={`flex flex-col gap-2 items-center justify-center w-full 
+        className={`flex flex-col gap-2 items-center justify-center w-full
           ${isSelected ? "block-border-selected " : "block-border"} `}
         style={{
           backgroundColor:
@@ -371,45 +372,11 @@ const SubscribeForm = (props: {
   );
 };
 
-const ChannelSelector = (props: {
-  channel: "email" | "sms";
-  setChannel: (channel: "email" | "sms") => void;
-}) => {
-  return (
-    <Menu
-      className="w-20"
-      trigger={
-        <div className="flex gap-2 w-16 items-center justify-between text-secondary">
-          {props.channel === "email" ? "Email" : "SMS"}{" "}
-          <ArrowDownTiny className="shrink-0 text-accent-contrast" />
-        </div>
-      }
-    >
-      <MenuItem
-        className="font-normal"
-        onSelect={() => {
-          props.setChannel("email");
-        }}
-      >
-        Email
-      </MenuItem>
-      <MenuItem
-        className="font-normal"
-        onSelect={() => {
-          props.setChannel("sms");
-        }}
-      >
-        SMS
-      </MenuItem>
-    </Menu>
-  );
-};
 export const DraftPostOptions = (props: { mailboxEntity: string }) => {
   let toaster = useToaster();
   let draft = useEntity(props.mailboxEntity, "mailbox/draft");
   let { rep, permission_token } = useReplicache();
   let entity_set = useEntitySetContext();
-  let archive = useEntity(props.mailboxEntity, "mailbox/archive");
   let pagetitle = usePageTitle(permission_token.root_entity);
   let subscriber_count = useEntity(
     props.mailboxEntity,

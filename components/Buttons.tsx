@@ -1,12 +1,13 @@
 import React, { forwardRef, type JSX } from "react";
 import * as RadixTooltip from "@radix-ui/react-tooltip";
 import { theme } from "tailwind.config";
-import { PopoverArrow } from "./Icons";
+
 import {
   CardThemeProvider,
   NestedCardThemeProvider,
 } from "./ThemeManager/ThemeProvider";
 import { useReplicache } from "src/replicache";
+import { PopoverArrow } from "./Icons/PopoverArrow";
 
 type ButtonProps = Omit<JSX.IntrinsicElements["button"], "content">;
 export const ButtonPrimary = forwardRef<

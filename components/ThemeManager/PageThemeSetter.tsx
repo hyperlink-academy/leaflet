@@ -14,8 +14,9 @@ import { useMemo, useState } from "react";
 import { CanvasBackgroundPattern } from "components/Canvas";
 import { Replicache } from "replicache";
 import { theme } from "tailwind.config";
-import { BlockImageSmall, PaintSmall } from "components/Icons";
 import { ButtonPrimary } from "components/Buttons";
+import { BlockImageSmall } from "components/Icons/BlockImageSmall";
+import { PaintSmall } from "components/Icons/PaintSmall";
 
 export const PageThemeSetter = (props: { entityID: string }) => {
   let { rep, rootEntity } = useReplicache();

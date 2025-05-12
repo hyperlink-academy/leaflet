@@ -1,6 +1,6 @@
 "use client";
-import { HelpSmall } from "components/Icons";
 import { ActionButton } from "components/ActionBar/ActionButton";
+import { HelpSmall } from "components/Icons/HelpSmall";
 import { Popover } from "components/Popover";
 
 export const HomeHelp = () => {

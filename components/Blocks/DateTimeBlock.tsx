@@ -3,7 +3,6 @@ import { BlockProps } from "./Block";
 import { ChevronProps, DayPicker } from "react-day-picker";
 import { Popover } from "components/Popover";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRightTiny, BlockCalendarSmall } from "components/Icons";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useUIState } from "src/useUIState";
 import { setHours, setMinutes } from "date-fns";
@@ -11,6 +10,8 @@ import { Separator } from "react-aria-components";
 import { Checkbox } from "components/Checkbox";
 import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 import { useSpring, animated } from "@react-spring/web";
+import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
+import { BlockCalendarSmall } from "components/Icons/BlockCalendarSmall";
 
 export function DateTimeBlock(props: BlockProps) {
   const [isClient, setIsClient] = useState(false);

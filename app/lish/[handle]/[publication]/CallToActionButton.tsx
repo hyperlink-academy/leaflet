@@ -5,9 +5,9 @@ import { usePublicationRelationship } from "./usePublicationRelationship";
 import { usePublicationContext } from "components/Providers/PublicationContext";
 import { NewDraftButton } from "./NewDraftButton";
 import { Menu, MenuItem } from "components/Layout";
-import { ArrowRightTiny, MoreOptionsTiny, ShareSmall } from "components/Icons";
 import { useIdentityData } from "components/IdentityProvider";
 import { unsubscribeFromPublication } from "actions/unsubscribeFromPublication";
+import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 
 export function CallToActionButton() {
   let rel = usePublicationRelationship();

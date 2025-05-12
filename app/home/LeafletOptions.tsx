@@ -1,11 +1,5 @@
 "use client";
-import {
-  DeleteSmall,
-  HideSmall,
-  MoreOptionsTiny,
-  TemplateRemoveSmall,
-  TemplateSmall,
-} from "components/Icons";
+
 import { Menu, MenuItem } from "components/Layout";
 import { PermissionToken } from "src/replicache";
 import { hideDoc } from "./storage";
@@ -16,6 +10,10 @@ import { Item } from "@radix-ui/react-dropdown-menu";
 import { useSmoker } from "components/Toast";
 import { removeLeafletFromHome } from "actions/removeLeafletFromHome";
 import { useIdentityData } from "components/IdentityProvider";
+import { HideSmall } from "components/Icons/HideSmall";
+import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
+import { TemplateRemoveSmall } from "components/Icons/TemplateRemoveSmall";
+import { TemplateSmall } from "components/Icons/TemplateSmall";
 
 export const LeafletOptions = (props: {
   leaflet: PermissionToken;

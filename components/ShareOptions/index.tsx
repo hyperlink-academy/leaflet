@@ -1,5 +1,4 @@
 import { useReplicache } from "src/replicache";
-import { ShareSmall } from "components/Icons";
 import React, { useEffect, useState } from "react";
 import { getShareLink } from "./getShareLink";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -12,6 +11,7 @@ import LoginForm from "app/login/LoginForm";
 import { CustomDomainMenu } from "./DomainOptions";
 import { useIdentityData } from "components/IdentityProvider";
 import { useLeafletDomains } from "components/PageSWRDataProvider";
+import { ShareSmall } from "components/Icons/ShareSmall";
 
 export type ShareMenuStates = "default" | "login" | "domain";
 
