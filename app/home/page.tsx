@@ -26,6 +26,7 @@ import { Media } from "components/Media";
 import { Sidebar } from "components/ActionBar/Sidebar";
 import { HomeSidebar } from "./HomeSidebar";
 import { HomeFooter } from "./HomeFooter";
+import { ThemeDefaultsProvider } from "components/ThemeManager/useColorAttribute";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -104,19 +105,21 @@ export default async function Home() {
       <EntitySetProvider
         set={permission_token.permission_token_rights[0].entity_set}
       >
-        <ThemeProvider entityID={root_entity}>
-          <div className="homeWrapper flex h-full bg-bg-leaflet pwa-padding">
-            <ThemeBackgroundProvider entityID={root_entity}>
-              <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6 ">
-                <HomeSidebar />
-                <div className={`h-full overflow-y-scroll`}>
-                  <LeafletList initialFacts={home_docs_initialFacts} />
+        <ThemeDefaultsProvider value={{ "theme/page-background": "#DCEAF1" }}>
+          <ThemeProvider entityID={root_entity}>
+            <div className="homeWrapper flex h-full bg-bg-leaflet pwa-padding">
+              <ThemeBackgroundProvider entityID={root_entity}>
+                <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6 ">
+                  <HomeSidebar />
+                  <div className={`h-full overflow-y-scroll`}>
+                    <LeafletList initialFacts={home_docs_initialFacts} />
+                  </div>
+                  <HomeFooter />
                 </div>
-                <HomeFooter />
-              </div>
-            </ThemeBackgroundProvider>
-          </div>
-        </ThemeProvider>
+              </ThemeBackgroundProvider>
+            </div>
+          </ThemeProvider>
+        </ThemeDefaultsProvider>
       </EntitySetProvider>
     </ReplicacheProvider>
   );
