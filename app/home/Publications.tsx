@@ -5,19 +5,29 @@ import Link from "next/link";
 import { useIdentityData } from "components/IdentityProvider";
 import { theme } from "tailwind.config";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
+import { GoToArrow } from "components/Icons/GoToArrow";
 
 export const MyPublicationList = () => {
   let { identity } = useIdentityData();
   // if (!identity || !identity.atp_did) return <PubListEmpty />;
   return (
-    <div className="pubList w-[200px] flex flex-col gap-2 ">
+    <div className="pubList w-full sm:w-[200px] flex flex-col gap-1 sm:gap-2 ">
       <PublicationList />
-      <Link
-        href={"./lish/createPub"}
-        className="text-sm place-self-start text-accent-contrast font-bold hover:text-accent-contrast"
-      >
-        New Publication
-      </Link>
+      <div className="flex justify-between">
+        <Link
+          href={"./lish/createPub"}
+          className="pubListCreateNew  text-accent-contrast font-bold hover:text-accent-contrast"
+        >
+          new
+        </Link>
+        {identity && identity?.publications.length > 2}
+        <Link
+          href={"./lish/createPub"}
+          className="pubListSeeAll flex items-center gap-2 text-accent-contrast font-bold hover:text-accent-contrast"
+        >
+          all <GoToArrow />
+        </Link>
+      </div>
     </div>
   );
 };
@@ -33,10 +43,13 @@ const PublicationList = (props: {
   let { identity } = useIdentityData();
 
   return (
-    <div className="pubList w-full flex flex-col gap-2">
-      <HardCodePublication name="Leaflet Explorers" />
+    <div className="pubList w-full flex flex-row sm:flex-col gap-3 sm:gap-2">
+      <div className="sm:block hidden">
+        <HardCodePublication name="Leaflet Explorers" />
+      </div>
       <HardCodePublication name="Arboretum" />
       <HardCodePublication name="This Very Long Title Might Have Ramifications on the UI" />
+
       {/* {props.publications?.map((d) => (
         <Publication
           {...d}
@@ -51,7 +64,7 @@ const PublicationList = (props: {
 function Publication(props: { uri: string; name: string; handle: string }) {
   return (
     <Link
-      className="pubListItem w-full p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline hover:outline-border"
+      className="pubListItem w-full p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline hover:outline-border "
       href={`/lish/${props.handle}/${props.name}/`}
     >
       <div className="w-6 h-6 rounded-full bg-test" />
@@ -63,7 +76,7 @@ function Publication(props: { uri: string; name: string; handle: string }) {
 function HardCodePublication(props: { name: string }) {
   return (
     <Link
-      className="hardcodepubListItem w-full p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline outline-2 outline-offset-1 hover:outline-border"
+      className="hardcodepubListItem w-full p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline outline-2 outline-offset-1 hover:outline-border basis-0 grow min-w-0"
       href={`/`}
     >
       <div className="w-6 h-6 rounded-full bg-test" />
