@@ -245,10 +245,9 @@ input[type="number"] {
 }
 
 .container {
-  @apply bg-bg-page;
+  background: rgba(var(--bg-page), 0.5);
   @apply border;
   @apply border-bg-page;
-  @apply bg-opacity-50;
   @apply rounded-md;
 }
 
