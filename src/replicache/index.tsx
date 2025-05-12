@@ -24,6 +24,7 @@ import { callRPC } from "app/api/rpc/client";
 import { UndoManager } from "@rocicorp/undo";
 import { addShortcut } from "src/shortcuts";
 import { createUndoManager } from "src/undoManager";
+import { RealtimeChannel } from "@supabase/supabase-js";
 
 export type Fact<A extends keyof typeof Attributes> = {
   id: string;
@@ -69,6 +70,7 @@ export function ReplicacheProvider(props: {
   name: string;
   children: React.ReactNode;
   initialFactsOnly?: boolean;
+  disablePull?: boolean;
 }) {
   let [rep, setRep] = useState<null | Replicache<ReplicacheMutators>>(null);
   let [undoManager] = useState(createUndoManager());
@@ -103,6 +105,7 @@ export function ReplicacheProvider(props: {
     if (props.initialFactsOnly) return;
     let supabase = supabaseBrowserClient();
     let newRep = new Replicache({
+      pullInterval: props.disablePull ? null : undefined,
       pushDelay: 500,
       mutators: Object.fromEntries(
         Object.keys(mutations).map((m) => {
@@ -158,16 +161,19 @@ export function ReplicacheProvider(props: {
       },
     });
     setRep(newRep);
-    let channel = supabase.channel(`rootEntity:${props.name}`);
+    let channel: RealtimeChannel | null = null;
+    if (!props.disablePull) {
+      channel = supabase.channel(`rootEntity:${props.name}`);
 
-    channel.on("broadcast", { event: "poke" }, () => {
-      newRep.pull();
-    });
-    channel.subscribe();
+      channel.on("broadcast", { event: "poke" }, () => {
+        newRep.pull();
+      });
+      channel.subscribe();
+    }
     return () => {
       newRep.close();
       setRep(null);
-      channel.unsubscribe();
+      channel?.unsubscribe();
     };
   }, [props.name, props.initialFactsOnly, props.token]);
   return (

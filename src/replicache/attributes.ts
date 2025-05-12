@@ -1,9 +1,5 @@
-import { AppBskyFeedGetPostThread } from "@atproto/api";
-import {
-  PostView,
-  ThreadViewPost,
-} from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { DeepAsReadonlyJSONValue } from "./utils";
+import type { AppBskyFeedGetPostThread } from "@atproto/api";
+import type { DeepAsReadonlyJSONValue } from "./utils";
 
 const RootAttributes = {
   "root/page": {

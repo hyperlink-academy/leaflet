@@ -1,7 +1,5 @@
 import { cookies } from "next/headers";
 import { Fact, ReplicacheProvider } from "src/replicache";
-import { createServerClient } from "@supabase/ssr";
-import { Database } from "supabase/database.types";
 import { Attributes } from "src/replicache/attributes";
 import {
   ThemeBackgroundProvider,
@@ -18,12 +16,8 @@ import { getFactsFromHomeLeaflets } from "app/api/rpc/[command]/getFactsFromHome
 import { HomeSidebar } from "./HomeSidebar";
 import { HomeFooter } from "./HomeFooter";
 import { MyPublicationList } from "./Publications";
+import { supabaseServerClient } from "supabase/serverClient";
 
-let supabase = createServerClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
-  process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-  { cookies: {} },
-);
 export default async function Home() {
   let cookieStore = await cookies();
 
@@ -52,7 +46,7 @@ export default async function Home() {
 
   let permission_token = auth_res?.home_leaflet;
   if (!permission_token) {
-    let res = await supabase
+    let res = await supabaseServerClient
       .from("identities")
       .select(
         `*,
@@ -66,7 +60,7 @@ export default async function Home() {
 
   if (!permission_token) return <div>no home page wierdly</div>;
   let [homeLeafletFacts, allLeafletFacts] = await Promise.all([
-    supabase.rpc("get_facts", {
+    supabaseServerClient.rpc("get_facts", {
       root: permission_token.root_entity,
     }),
     auth_res
@@ -76,7 +70,7 @@ export default async function Home() {
               (r) => r.permission_tokens.root_entity,
             ),
           },
-          { supabase },
+          { supabase: supabaseServerClient },
         )
       : undefined,
   ]);
