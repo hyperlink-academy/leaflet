@@ -1,12 +1,15 @@
-import { Footer } from "../../Footer";
-import { PostList } from "../../PostList";
-import { getPds, IdResolver } from "@atproto/identity";
+import { IdResolver } from "@atproto/identity";
 import { supabaseServerClient } from "supabase/serverClient";
-import { CallToActionButton } from "./CallToActionButton";
 import { Metadata } from "next";
 import { Fact } from "src/replicache";
 import { Attributes } from "src/replicache/attributes";
-import { DraftList } from "./DraftList";
+import { ActionButton } from "components/ActionBar/ActionButton";
+import { Sidebar } from "components/ActionBar/Sidebar";
+
+import { Media } from "components/Media";
+import { Footer } from "components/ActionBar/Footer";
+import { PublicationDashboard } from "./PublicationDashboard";
+import { AddTiny } from "components/Icons/AddTiny";
 
 const idResolver = new IdResolver();
 
@@ -63,29 +66,28 @@ export default async function Publication(props: {
 
   try {
     return (
-      <div className="pubPage w-full h-screen bg-bg-leaflet flex items-stretch">
-        <div className="pubWrapper flex flex-col w-full ">
-          <div className="pubContent flex flex-col gap-8 px-4 py-6 mx-auto max-w-prose h-full w-full overflow-auto">
-            <div
-              id="pub-header"
-              className="pubHeader flex flex-col gap-6 justify-center text-center"
-            >
-              <div className="flex flex-col gap-1 w-full place-items-center">
-                <h2>{publication.name}</h2>
-                <CallToActionButton />
-              </div>
-            </div>
-            <DraftList
-              drafts={publication.leaflets_in_publications.map((d) => ({
-                ...d.permission_tokens!,
-                initialFacts: facts[d.permission_tokens?.root_entity!],
-              }))}
-            />
-
-            <PostList posts={publication.documents_in_publications} />
-          </div>
-          <Footer pageType="pub" />
+      <div className="relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6">
+        <Sidebar className="mt-6">
+          <ActionButton
+            id="new-leaflet-button"
+            primary
+            icon=<AddTiny className="m-1 shrink-0" />
+            label="Create Draft"
+          />
+        </Sidebar>
+        <div className={`h-full overflow-y-scroll pl-8 pt-8 w-full`}>
+          <PublicationDashboard name={publication.name} />
         </div>
+        <Media mobile>
+          <Footer>
+            <ActionButton
+              id="new-leaflet-button"
+              primary
+              icon=<AddTiny className="m-1 shrink-0" />
+              label="New Doc"
+            />
+          </Footer>
+        </Media>
       </div>
     );
   } catch (e) {
@@ -96,4 +98,17 @@ export default async function Publication(props: {
 
 const PubNotFound = () => {
   return <div>ain't no pub here</div>;
+};
+
+const Actions = () => {
+  return (
+    <>
+      <ActionButton
+        id="new-leaflet-button"
+        primary
+        icon=<AddTiny className="m-1 shrink-0" />
+        label="Create Draft"
+      />
+    </>
+  );
 };

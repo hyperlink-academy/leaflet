@@ -17,6 +17,7 @@ import { getIdentityData } from "actions/getIdentityData";
 import { getFactsFromHomeLeaflets } from "app/api/rpc/[command]/getFactsFromHomeLeaflets";
 import { HomeSidebar } from "./HomeSidebar";
 import { HomeFooter } from "./HomeFooter";
+import { MyPublicationList } from "./Publications";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -101,6 +102,7 @@ export default async function Home() {
               <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6 ">
                 <HomeSidebar />
                 <div className={`h-full overflow-y-scroll`}>
+                  <MyPublicationList />
                   <LeafletList initialFacts={home_docs_initialFacts} />
                 </div>
                 <HomeFooter />
