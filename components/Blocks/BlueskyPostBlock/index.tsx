@@ -8,11 +8,11 @@ import { focusBlock } from "src/utils/focusBlock";
 import { AppBskyFeedDefs, AppBskyFeedPost, RichText } from "@atproto/api";
 import { BlueskyEmbed, PostNotAvailable } from "./BlueskyEmbed";
 import { BlueskyPostEmpty } from "./BlueskyEmpty";
-import { BlueskyTiny, CommentTiny } from "components/Icons";
 import { BlueskyRichText } from "./BlueskyRichText";
 import { Separator } from "components/Layout";
-import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { useInitialPageLoad } from "components/InitialPageLoadProvider";
+import { BlueskyTiny } from "components/Icons/BlueskyTiny";
+import { CommentTiny } from "components/Icons/CommentTiny";
 
 export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();

@@ -3,7 +3,6 @@ import { BlockProps } from "./Block";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useCallback, useEffect, useState } from "react";
 import { focusElement, Input } from "components/Input";
-import { CheckTiny, CloseTiny, InfoSmall } from "components/Icons";
 import { Separator } from "components/Layout";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { theme } from "tailwind.config";
@@ -12,8 +11,9 @@ import { v7 } from "uuid";
 import { usePollData } from "components/PageSWRDataProvider";
 import { voteOnPoll } from "actions/pollActions";
 import { create } from "zustand";
-import { poll_votes_on_entity } from "drizzle/schema";
 import { elementId } from "src/utils/elementId";
+import { CheckTiny } from "components/Icons/CheckTiny";
+import { CloseTiny } from "components/Icons/CloseTiny";
 
 export let usePollBlockUIState = create(
   () =>

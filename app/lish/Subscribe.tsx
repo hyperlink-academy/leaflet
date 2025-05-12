@@ -1,6 +1,5 @@
 "use client";
 import { ButtonPrimary } from "components/Buttons";
-import { ArrowRightTiny, ShareSmall } from "components/Icons";
 import { useEffect, useState } from "react";
 import { Input } from "components/Input";
 import { useIdentityData } from "components/IdentityProvider";
@@ -10,6 +9,8 @@ import {
   requestAuthEmailToken,
 } from "actions/emailAuth";
 import { subscribeToPublicationWithEmail } from "actions/subscribeToPublicationWithEmail";
+import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
+import { ShareSmall } from "components/Icons/ShareSmall";
 
 type State =
   | { state: "email" }

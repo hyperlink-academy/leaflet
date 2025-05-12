@@ -1,14 +1,13 @@
 "use client";
 import { isMac } from "@react-aria/utils";
-import { HelpSmall } from "./Icons";
 import { ShortcutKey } from "./Layout";
 import { Media } from "./Media";
 import { Popover } from "./Popover";
 import { metaKey } from "src/utils/metaKey";
 import { useEntitySetContext } from "./EntitySetProvider";
-import Link from "next/link";
 import { useState } from "react";
 import { ActionButton } from "components/ActionBar/ActionButton";
+import { HelpSmall } from "./Icons/HelpSmall";
 
 export const HelpPopover = (props: { noShortcuts?: boolean }) => {
   let entity_set = useEntitySetContext();

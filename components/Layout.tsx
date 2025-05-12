@@ -1,11 +1,7 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { theme } from "tailwind.config";
-import { PopoverArrow } from "./Icons";
-import {
-  CardThemeProvider,
-  NestedCardThemeProvider,
-} from "./ThemeManager/ThemeProvider";
-import { Input } from "./Input";
+import { NestedCardThemeProvider } from "./ThemeManager/ThemeProvider";
+import { PopoverArrow } from "./Icons/PopoverArrow";
 
 export const Separator = (props: { classname?: string }) => {
   return (

@@ -14,8 +14,8 @@ import { createPhoneAuthToken } from "actions/phone_auth/request_phone_auth_toke
 import { Input, InputWithLabel } from "components/Input";
 import { IPLocationContext } from "components/Providers/IPLocationProvider";
 import { Popover } from "components/Popover";
-import { InfoSmall } from "components/Icons";
 import { theme } from "tailwind.config";
+import { InfoSmall } from "components/Icons/InfoSmall";
 
 export function ContactDetailsForm(props: {
   status: RSVP_Status;

@@ -6,8 +6,9 @@ import {
 import { loginWithEmailToken } from "actions/login";
 import { getHomeDocs } from "app/home/storage";
 import { ButtonPrimary } from "components/Buttons";
-import { ArrowRightTiny, BlueskySmall } from "components/Icons";
-import { InputWithLabel, Input } from "components/Input";
+import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
+import { BlueskySmall } from "components/Icons/BlueskySmall";
+import { Input } from "components/Input";
 import { useSmoker, useToaster } from "components/Toast";
 import React, { useState } from "react";
 import useSWR, { mutate } from "swr";

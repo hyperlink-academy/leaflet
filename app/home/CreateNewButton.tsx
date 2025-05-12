@@ -3,12 +3,10 @@
 import { createNewLeaflet } from "actions/createNewLeaflet";
 import { createNewLeafletFromTemplate } from "actions/createNewLeafletFromTemplate";
 import { ActionButton } from "components/ActionBar/ActionButton";
-import {
-  AddTiny,
-  BlockCanvasPageSmall,
-  BlockDocPageSmall,
-  TemplateSmall,
-} from "components/Icons";
+import { AddTiny } from "components/Icons/AddTiny";
+import { BlockCanvasPageSmall } from "components/Icons/BlockCanvasPageSmall";
+import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
+import { TemplateSmall } from "components/Icons/TemplateSmall";
 import { Menu, MenuItem } from "components/Layout";
 import { useIsMobile } from "src/hooks/isMobile";
 import { create } from "zustand";

@@ -18,12 +18,12 @@ import { mutate } from "swr";
 import { ButtonPrimary } from "components/Buttons";
 import { LeafletOptions } from "./LeafletOptions";
 import { CanvasContent } from "components/Canvas";
-import { TemplateSmall } from "components/Icons";
 import { theme } from "tailwind.config";
 import { useTemplateState } from "./CreateNewButton";
 import styles from "./LeafletPreview.module.css";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { TemplateSmall } from "components/Icons/TemplateSmall";
 
 export const LeafletPreview = (props: {
   index: number;

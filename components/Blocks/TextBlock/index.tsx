@@ -28,11 +28,13 @@ import { useHandlePaste } from "./useHandlePaste";
 import { highlightSelectionPlugin } from "./plugins";
 import { inputrules } from "./inputRules";
 import { autolink } from "./autolink-plugin";
-import { AddTiny, BlockDocPageSmall, BlockImageSmall } from "components/Icons";
 import { TooltipButton } from "components/Buttons";
 import { blockCommands } from "../BlockCommands";
 import { betterIsUrl } from "src/utils/isURL";
 import { useSmoker } from "components/Toast";
+import { AddTiny } from "components/Icons/AddTiny";
+import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
+import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 
 const HeadingStyle = {
   1: "text-xl font-bold",

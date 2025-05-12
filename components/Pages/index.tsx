@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useUIState } from "src/useUIState";
 import { useEntitySetContext } from "../EntitySetProvider";
 import { useSearchParams } from "next/navigation";
@@ -19,36 +19,22 @@ import {
 
 import { Media } from "../Media";
 import { DesktopPageFooter } from "../DesktopFooter";
-import { ShareOptions } from "../ShareOptions";
 import { ThemePopover } from "../ThemeManager/ThemeSetter";
-import { HomeButton } from "../HomeButton";
 import { Canvas } from "../Canvas";
 import { DraftPostOptions } from "../Blocks/MailboxBlock";
 import { Blocks } from "components/Blocks";
 import { MenuItem, Menu } from "../Layout";
-import {
-  MoreOptionsTiny,
-  CloseTiny,
-  PaintSmall,
-  ShareSmall,
-  UndoTiny,
-  RedoTiny,
-} from "../Icons";
-import { HelpPopover } from "../HelpPopover";
 import { scanIndex } from "src/replicache/utils";
 import { PageThemeSetter } from "../ThemeManager/PageThemeSetter";
 import { CardThemeProvider } from "../ThemeManager/ThemeProvider";
 import { PageShareMenu } from "./PageShareMenu";
-import { Watermark } from "components/Watermark";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
-import { LoginButton } from "components/LoginButton";
 import { useUndoState } from "src/undoManager";
-import { useIsMobile } from "src/hooks/isMobile";
-import { PublishToPublication } from "components/ShareOptions/PublicationOptions";
-import { ButtonPrimary } from "components/Buttons";
-import { Popover } from "components/Popover";
-import { InputWithLabel } from "components/Input";
 import { usePublicationContext } from "components/Providers/PublicationContext";
+import { CloseTiny } from "components/Icons/CloseTiny";
+import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
+import { PaintSmall } from "components/Icons/PaintSmall";
+import { ShareSmall } from "components/Icons/ShareSmall";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -449,4 +435,41 @@ const blurPage = () => {
     focusedEntity: null,
     selectedBlocks: [],
   }));
+};
+const UndoTiny = () => {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M5.98775 3.14543C6.37828 2.75491 6.37828 2.12174 5.98775 1.73122C5.59723 1.34069 4.96407 1.34069 4.57354 1.73122L1.20732 5.09744C0.816798 5.48796 0.816798 6.12113 1.20732 6.51165L4.57354 9.87787C4.96407 10.2684 5.59723 10.2684 5.98775 9.87787C6.37828 9.48735 6.37828 8.85418 5.98775 8.46366L4.32865 6.80456H9.6299C12.1732 6.80456 13.0856 8.27148 13.0856 9.21676C13.0856 9.84525 12.8932 10.5028 12.5318 10.9786C12.1942 11.4232 11.6948 11.7367 10.9386 11.7367H9.43173C8.87944 11.7367 8.43173 12.1844 8.43173 12.7367C8.43173 13.2889 8.87944 13.7367 9.43173 13.7367H10.9386C12.3587 13.7367 13.4328 13.0991 14.1246 12.1883C14.7926 11.3086 15.0856 10.2062 15.0856 9.21676C15.0856 6.92612 13.0205 4.80456 9.6299 4.80456L4.32863 4.80456L5.98775 3.14543Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
+const RedoTiny = () => {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M10.0122 3.14543C9.62172 2.75491 9.62172 2.12174 10.0122 1.73122C10.4028 1.34069 11.0359 1.34069 11.4265 1.73122L14.7927 5.09744C15.1832 5.48796 15.1832 6.12113 14.7927 6.51165L11.4265 9.87787C11.0359 10.2684 10.4028 10.2684 10.0122 9.87787C9.62172 9.48735 9.62172 8.85418 10.0122 8.46366L11.6713 6.80456H6.3701C3.82678 6.80456 2.91443 8.27148 2.91443 9.21676C2.91443 9.84525 3.10681 10.5028 3.46817 10.9786C3.8058 11.4232 4.30523 11.7367 5.06143 11.7367H6.56827C7.12056 11.7367 7.56827 12.1844 7.56827 12.7367C7.56827 13.2889 7.12056 13.7367 6.56827 13.7367H5.06143C3.6413 13.7367 2.56723 13.0991 1.87544 12.1883C1.20738 11.3086 0.914429 10.2062 0.914429 9.21676C0.914429 6.92612 2.97946 4.80456 6.3701 4.80456L11.6714 4.80456L10.0122 3.14543Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
 };

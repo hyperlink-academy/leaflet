@@ -1,7 +1,6 @@
-import Link from "next/link";
-import { LogoSmall, LogoTiny } from "./Icons";
 import { theme } from "tailwind.config";
 import { useEntity, useReplicache } from "src/replicache";
+import { LogoSmall } from "./Icons/LogoSmall";
 
 export const Watermark = (props: { mobile?: boolean }) => {
   let { rootEntity } = useReplicache();

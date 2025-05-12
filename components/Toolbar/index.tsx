@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { CloseTiny } from "components/Icons";
 import { TextBlockTypeToolbar } from "./TextBlockTypeToolbar";
 import { InlineLinkToolbar } from "./InlineLinkToolbar";
 import { useEditorStates } from "src/state/useEditorState";
@@ -17,6 +16,8 @@ import { MultiselectToolbar } from "./MultiSelectToolbar";
 import { AreYouSure, deleteBlock } from "components/Blocks/DeleteBlock";
 import { TooltipButton } from "components/Buttons";
 import { TextAlignmentToolbar } from "./TextAlignmentToolbar";
+import { useIsMobile } from "src/hooks/isMobile";
+import { CloseTiny } from "components/Icons/CloseTiny";
 
 export type ToolbarTypes =
   | "areYouSure"
@@ -78,10 +79,14 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
       setToolbarState("default");
     }
   }, [selectedBlocks.length, toolbarState]);
+  let isMobile = useIsMobile();
 
   return (
     <Tooltip.Provider>
-      <div className="toolbar flex gap-2 items-center justify-between w-full h-[calc(21px+var(--safe-padding-bottom))]">
+      <div
+        className={`toolbar flex gap-2 items-center justify-between w-full
+        ${isMobile ? "h-[calc(21px+var(--safe-padding-bottom))]" : "h-[26px]"}`}
+      >
         <div className="toolbarOptions flex gap-1 sm:gap-[6px] items-center grow">
           {toolbarState === "default" ? (
             <TextToolbar

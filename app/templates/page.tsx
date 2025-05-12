@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { TemplateListExamples, TemplateListThemes } from "./TemplateList";
 import { ActionButton } from "components/ActionBar/ActionButton";
-import { HomeSmall } from "components/Icons";
+import { HomeSmall } from "components/Icons/HomeSmall";
 
 export const metadata = {
   title: "Leaflet Templates",

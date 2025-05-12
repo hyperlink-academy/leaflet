@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { CloseTiny } from "./Icons";
+import { CloseTiny } from "./Icons/CloseTiny";
 
 type Toast = {
   content: React.ReactNode;

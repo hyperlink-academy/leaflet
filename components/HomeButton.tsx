@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { useEntitySetContext } from "./EntitySetProvider";
-import { AddToHomeSmall, HomeSmall } from "./Icons";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { useParams, useSearchParams } from "next/navigation";
 import { useIdentityData } from "./IdentityProvider";
 import { useReplicache } from "src/replicache";
 import { addLeafletToHome } from "actions/addLeafletToHome";
 import { useSmoker } from "./Toast";
+import { AddToHomeSmall } from "./Icons/AddToHomeSmall";
+import { HomeSmall } from "./Icons/HomeSmall";
 
 export function HomeButton() {
   let { permissions } = useEntitySetContext();

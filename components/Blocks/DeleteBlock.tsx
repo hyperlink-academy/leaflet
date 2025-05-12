@@ -10,7 +10,7 @@ import { scanIndex } from "src/replicache/utils";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { focusBlock } from "src/utils/focusBlock";
 import { ButtonPrimary } from "components/Buttons";
-import { CloseTiny } from "components/Icons";
+import { CloseTiny } from "components/Icons/CloseTiny";
 
 export const AreYouSure = (props: {
   entityID: string[] | string;

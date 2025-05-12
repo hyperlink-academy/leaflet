@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ButtonPrimary } from "components/Buttons";
 
-import { AddTiny } from "components/Icons";
 import { useSmoker, useToaster } from "components/Toast";
 import { Input, InputWithLabel } from "components/Input";
 import useSWR from "swr";
@@ -13,6 +12,7 @@ import { usePublishLink } from ".";
 import { addDomainPath } from "actions/domains/addDomainPath";
 import { useReplicache } from "src/replicache";
 import { deleteDomain } from "actions/domains/deleteDomain";
+import { AddTiny } from "components/Icons/AddTiny";
 
 type DomainMenuState =
   | {

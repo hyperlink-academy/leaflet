@@ -1,8 +1,8 @@
 import * as RadixPopover from "@radix-ui/react-popover";
-import { PopoverArrow } from "./Icons";
 import { theme } from "tailwind.config";
 import { NestedCardThemeProvider } from "./ThemeManager/ThemeProvider";
 import { createContext, useState } from "react";
+import { PopoverArrow } from "./Icons/PopoverArrow";
 
 export const PopoverOpenContext = createContext(false);
 export const Popover = (props: {
