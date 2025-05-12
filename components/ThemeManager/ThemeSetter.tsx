@@ -1,5 +1,5 @@
 "use client";
-import * as Popover from "@radix-ui/react-popover";
+import { Popover } from "components/Popover";
 import * as Slider from "@radix-ui/react-slider";
 import { theme } from "../../tailwind.config";
 
@@ -118,152 +118,137 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
 
   return (
     <>
-      <Popover.Root>
-        <Popover.Trigger asChild>
-          <ActionButton icon={<PaintSmall />} label="Theme" />
-        </Popover.Trigger>
-        <Popover.Portal>
-          <Popover.Content
-            className="z-20 themeSetterWrapper w-80 h-fit bg-white rounded-md border border-border flex max-w-[var(--radix-popover-content-available-width)]
-            max-h-[var(--radix-popover-content-available-height)]"
-            align="center"
-            sideOffset={4}
-            collisionPadding={16}
-          >
-            <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
-              <div className="themeBGLeaflet flex">
-                <div
-                  className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full px-2 pt-3`}
-                >
-                  <div className="bgPickerBody w-full flex flex-col gap-2 p-2 border border-[#CCCCCC] rounded-md">
-                    <LeafletBGPicker
-                      entityID={props.entityID}
-                      thisPicker={"leaflet"}
-                      openPicker={openPicker}
-                      setOpenPicker={setOpenPicker}
-                      closePicker={() => setOpenPicker("null")}
-                      setValue={set("theme/page-background")}
-                    />
-                  </div>
-
-                  <SectionArrow
-                    fill="white"
-                    stroke="#CCCCCC"
-                    className="ml-2 -mt-[1px]"
-                  />
-                </div>
+      <Popover
+        className="w-80"
+        asChild
+        trigger={<ActionButton icon={<PaintSmall />} label="Theme" />}
+      >
+        <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
+          <div className="themeBGLeaflet flex">
+            <div
+              className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full px-2 pt-3`}
+            >
+              <div className="bgPickerBody w-full flex flex-col gap-2 p-2 border border-[#CCCCCC] rounded-md">
+                <LeafletBGPicker
+                  entityID={props.entityID}
+                  thisPicker={"leaflet"}
+                  openPicker={openPicker}
+                  setOpenPicker={setOpenPicker}
+                  closePicker={() => setOpenPicker("null")}
+                  setValue={set("theme/page-background")}
+                />
               </div>
 
-              <div
-                onClick={(e) => {
-                  e.currentTarget === e.target && setOpenPicker("leaflet");
-                }}
-                style={{
-                  backgroundImage: leafletBGImage
-                    ? `url(${leafletBGImage.data.src})`
-                    : undefined,
-                  backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
-                  backgroundPosition: "center",
-                  backgroundSize: !leafletBGRepeat
-                    ? "cover"
-                    : `calc(${leafletBGRepeat.data.value}px / 2 )`,
-                }}
-                className={`bg-bg-leaflet mx-2 p-3  mb-2 flex flex-col rounded-md  border border-border pb-0`}
-              >
-                <div className={`flex flex-col z-10 mt-4 -mb-[6px] `}>
-                  <div
-                    className="themeLeafletControls text-accent-2 flex flex-col gap-2 h-full  bg-bg-leaflet p-2 rounded-md border border-accent-2 shadow-[0_0_0_1px_rgb(var(--accent-1))]"
-                    style={{
-                      backgroundColor: "rgba(var(--accent-1), 0.6)",
-                    }}
-                  >
-                    <ColorPicker
-                      label="Accent"
-                      value={accent1Value}
-                      setValue={set("theme/accent-background")}
-                      thisPicker={"accent-1"}
-                      openPicker={openPicker}
-                      setOpenPicker={setOpenPicker}
-                      closePicker={() => setOpenPicker("null")}
-                    />
-                    <ColorPicker
-                      label="Text on Accent"
-                      value={accent2Value}
-                      setValue={set("theme/accent-text")}
-                      thisPicker={"accent-2"}
-                      openPicker={openPicker}
-                      setOpenPicker={setOpenPicker}
-                      closePicker={() => setOpenPicker("null")}
-                    />
-                  </div>
-                  <SectionArrow
-                    fill={theme.colors["accent-2"]}
-                    stroke={theme.colors["accent-1"]}
-                    className="ml-2"
-                  />
-                </div>
-
-                <div
-                  onClick={(e) => {
-                    e.target === e.currentTarget && setOpenPicker("accent-1");
-                  }}
-                  className="pointer-cursor font-bold relative text-center text-lg py-2  rounded-md bg-accent-1 text-accent-2 shadow-md flex items-center justify-center"
-                >
-                  <div
-                    className="cursor-pointer w-fit"
-                    onClick={() => {
-                      setOpenPicker("accent-2");
-                    }}
-                  >
-                    Example Button
-                  </div>
-                </div>
-
-                <div className="flex flex-col mt-8 -mb-[6px] z-10">
-                  <div
-                    className="themeLeafletControls flex flex-col gap-2 h-full text-primary bg-bg-leaflet p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))]"
-                    style={{ backgroundColor: "rgba(var(--bg-page, 0.6)" }}
-                  >
-                    <ColorPicker
-                      label={props.home ? "Menu" : "Page"}
-                      alpha
-                      value={pageValue}
-                      setValue={set("theme/card-background")}
-                      thisPicker={"page"}
-                      openPicker={openPicker}
-                      setOpenPicker={setOpenPicker}
-                      closePicker={() => setOpenPicker("null")}
-                    />
-                    <ColorPicker
-                      label={props.home ? "Menu Text" : "Text"}
-                      value={primaryValue}
-                      setValue={set("theme/primary")}
-                      thisPicker={"text"}
-                      openPicker={openPicker}
-                      setOpenPicker={setOpenPicker}
-                      closePicker={() => setOpenPicker("null")}
-                    />
-                  </div>
-                  <SectionArrow
-                    fill={theme.colors["primary"]}
-                    stroke={theme.colors["bg-page"]}
-                    className=" ml-2"
-                  />
-                </div>
-
-                <SamplePage setOpenPicker={setOpenPicker} home={props.home} />
-              </div>
-              {!props.home && <WatermarkSetter entityID={props.entityID} />}
-            </div>
-            <Popover.Arrow asChild width={16} height={8} viewBox="0 0 16 8">
-              <PopoverArrow
-                arrowFill={theme.colors["white"]}
-                arrowStroke={theme.colors["border"]}
+              <SectionArrow
+                fill="white"
+                stroke="#CCCCCC"
+                className="ml-2 -mt-[1px]"
               />
-            </Popover.Arrow>
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover.Root>
+            </div>
+          </div>
+
+          <div
+            onClick={(e) => {
+              e.currentTarget === e.target && setOpenPicker("leaflet");
+            }}
+            style={{
+              backgroundImage: leafletBGImage
+                ? `url(${leafletBGImage.data.src})`
+                : undefined,
+              backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
+              backgroundPosition: "center",
+              backgroundSize: !leafletBGRepeat
+                ? "cover"
+                : `calc(${leafletBGRepeat.data.value}px / 2 )`,
+            }}
+            className={`bg-bg-leaflet mx-2 p-3  mb-2 flex flex-col rounded-md  border border-border pb-0`}
+          >
+            <div className={`flex flex-col z-10 mt-4 -mb-[6px] `}>
+              <div
+                className="themeLeafletControls text-accent-2 flex flex-col gap-2 h-full  bg-bg-leaflet p-2 rounded-md border border-accent-2 shadow-[0_0_0_1px_rgb(var(--accent-1))]"
+                style={{
+                  backgroundColor: "rgba(var(--accent-1), 0.6)",
+                }}
+              >
+                <ColorPicker
+                  label="Accent"
+                  value={accent1Value}
+                  setValue={set("theme/accent-background")}
+                  thisPicker={"accent-1"}
+                  openPicker={openPicker}
+                  setOpenPicker={setOpenPicker}
+                  closePicker={() => setOpenPicker("null")}
+                />
+                <ColorPicker
+                  label="Text on Accent"
+                  value={accent2Value}
+                  setValue={set("theme/accent-text")}
+                  thisPicker={"accent-2"}
+                  openPicker={openPicker}
+                  setOpenPicker={setOpenPicker}
+                  closePicker={() => setOpenPicker("null")}
+                />
+              </div>
+              <SectionArrow
+                fill={theme.colors["accent-2"]}
+                stroke={theme.colors["accent-1"]}
+                className="ml-2"
+              />
+            </div>
+
+            <div
+              onClick={(e) => {
+                e.target === e.currentTarget && setOpenPicker("accent-1");
+              }}
+              className="pointer-cursor font-bold relative text-center text-lg py-2  rounded-md bg-accent-1 text-accent-2 shadow-md flex items-center justify-center"
+            >
+              <div
+                className="cursor-pointer w-fit"
+                onClick={() => {
+                  setOpenPicker("accent-2");
+                }}
+              >
+                Example Button
+              </div>
+            </div>
+
+            <div className="flex flex-col mt-8 -mb-[6px] z-10">
+              <div
+                className="themeLeafletControls flex flex-col gap-2 h-full text-primary bg-bg-leaflet p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))]"
+                style={{ backgroundColor: "rgba(var(--bg-page, 0.6)" }}
+              >
+                <ColorPicker
+                  label={props.home ? "Menu" : "Page"}
+                  alpha
+                  value={pageValue}
+                  setValue={set("theme/card-background")}
+                  thisPicker={"page"}
+                  openPicker={openPicker}
+                  setOpenPicker={setOpenPicker}
+                  closePicker={() => setOpenPicker("null")}
+                />
+                <ColorPicker
+                  label={props.home ? "Menu Text" : "Text"}
+                  value={primaryValue}
+                  setValue={set("theme/primary")}
+                  thisPicker={"text"}
+                  openPicker={openPicker}
+                  setOpenPicker={setOpenPicker}
+                  closePicker={() => setOpenPicker("null")}
+                />
+              </div>
+              <SectionArrow
+                fill={theme.colors["primary"]}
+                stroke={theme.colors["bg-page"]}
+                className=" ml-2"
+              />
+            </div>
+
+            <SamplePage setOpenPicker={setOpenPicker} home={props.home} />
+          </div>
+          {!props.home && <WatermarkSetter entityID={props.entityID} />}
+        </div>
+      </Popover>
     </>
   );
 };

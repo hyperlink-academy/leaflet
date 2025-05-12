@@ -2,7 +2,9 @@ import * as RadixPopover from "@radix-ui/react-popover";
 import { PopoverArrow } from "./Icons";
 import { theme } from "tailwind.config";
 import { NestedCardThemeProvider } from "./ThemeManager/ThemeProvider";
+import { createContext, useState } from "react";
 
+export const PopoverOpenContext = createContext(false);
 export const Popover = (props: {
   trigger: React.ReactNode;
   disabled?: boolean;
@@ -15,15 +17,23 @@ export const Popover = (props: {
   onOpenChange?: (open: boolean) => void;
   asChild?: boolean;
 }) => {
+  let [open, setOpen] = useState(props.open || false);
   return (
-    <RadixPopover.Root open={props.open} onOpenChange={props.onOpenChange}>
-      <RadixPopover.Trigger disabled={props.disabled} asChild={props.asChild}>
-        {props.trigger}
-      </RadixPopover.Trigger>
-      <RadixPopover.Portal>
-        <NestedCardThemeProvider>
-          <RadixPopover.Content
-            className={`
+    <RadixPopover.Root
+      open={props.open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        props.onOpenChange?.(open);
+      }}
+    >
+      <PopoverOpenContext value={open}>
+        <RadixPopover.Trigger disabled={props.disabled} asChild={props.asChild}>
+          {props.trigger}
+        </RadixPopover.Trigger>
+        <RadixPopover.Portal>
+          <NestedCardThemeProvider>
+            <RadixPopover.Content
+              className={`
               z-20 bg-bg-page
               px-3 py-2
               max-w-[var(--radix-popover-content-available-width)]
@@ -32,29 +42,32 @@ export const Popover = (props: {
               overflow-y-scroll no-scrollbar
               ${props.className}
             `}
-            align={props.align ? props.align : "center"}
-            sideOffset={4}
-            collisionPadding={16}
-          >
-            {props.children}
-            <RadixPopover.Arrow
-              asChild
-              width={16}
-              height={8}
-              viewBox="0 0 16 8"
+              align={props.align ? props.align : "center"}
+              sideOffset={4}
+              collisionPadding={16}
             >
-              <PopoverArrow
-                arrowFill={
-                  props.background ? props.background : theme.colors["bg-page"]
-                }
-                arrowStroke={
-                  props.border ? props.border : theme.colors["border"]
-                }
-              />
-            </RadixPopover.Arrow>
-          </RadixPopover.Content>
-        </NestedCardThemeProvider>
-      </RadixPopover.Portal>
+              {props.children}
+              <RadixPopover.Arrow
+                asChild
+                width={16}
+                height={8}
+                viewBox="0 0 16 8"
+              >
+                <PopoverArrow
+                  arrowFill={
+                    props.background
+                      ? props.background
+                      : theme.colors["bg-page"]
+                  }
+                  arrowStroke={
+                    props.border ? props.border : theme.colors["border"]
+                  }
+                />
+              </RadixPopover.Arrow>
+            </RadixPopover.Content>
+          </NestedCardThemeProvider>
+        </RadixPopover.Portal>
+      </PopoverOpenContext>
     </RadixPopover.Root>
   );
 };

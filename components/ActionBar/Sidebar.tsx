@@ -1,8 +1,12 @@
 "use client";
+import { uv } from "colorjs.io/fn";
 import { Media } from "components/Media";
 import { createContext, useState } from "react";
 
-export const SidebarOpenContext = createContext(false);
+export const SidebarContext = createContext({
+  open: false,
+  setChildForceOpen: (b: boolean) => {},
+});
 
 export function Sidebar(props: {
   children?: React.ReactNode;
@@ -10,16 +14,23 @@ export function Sidebar(props: {
   className?: string;
 }) {
   let [sidebarExpanded, setSidebarExpanded] = useState(false);
+  let [childForceOpen, setChildForceOpen] = useState(false);
+  let open = sidebarExpanded || childForceOpen;
   return (
     <Media mobile={false}>
-      <SidebarOpenContext value={props.alwaysOpen ? true : sidebarExpanded}>
+      <SidebarContext
+        value={{
+          open: props.alwaysOpen ? true : open,
+          setChildForceOpen,
+        }}
+      >
         <div
           className={`
           actionSidebar
           ${!props.alwaysOpen && "absolute top-0 left-0 z-10"}
           h-fit w-max p-[6px]
           flex flex-col gap-2 justify-start border
-          rounded-md  bg-bg-page ${sidebarExpanded && !props.alwaysOpen ? "border-border-light" : "container"}
+          rounded-md  bg-bg-page ${open && !props.alwaysOpen ? "border-border-light" : "container"}
           ${props.className}
           `}
           onMouseOver={() => {
@@ -31,7 +42,7 @@ export function Sidebar(props: {
         >
           {props.children}
         </div>
-      </SidebarOpenContext>
+      </SidebarContext>
     </Media>
   );
 }
