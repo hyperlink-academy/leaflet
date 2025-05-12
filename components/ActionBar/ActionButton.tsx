@@ -1,3 +1,4 @@
+"use client";
 import { useContext, useEffect } from "react";
 import { SidebarContext } from "./Sidebar";
 import React, { forwardRef, type JSX } from "react";
