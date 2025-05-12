@@ -1,6 +1,7 @@
-import { useContext } from "react";
-import { SidebarOpenContext } from "./Sidebar";
+import { useContext, useEffect } from "react";
+import { SidebarContext } from "./Sidebar";
 import React, { forwardRef, type JSX } from "react";
+import { PopoverOpenContext } from "components/Popover";
 
 type ButtonProps = Omit<JSX.IntrinsicElements["button"], "content">;
 
@@ -15,8 +16,17 @@ export const ActionButton = forwardRef<
   }
 >((props, ref) => {
   let { id, icon, label, primary, secondary, ...buttonProps } = props;
-
-  let sidebarExpanded = useContext(SidebarOpenContext);
+  let sidebar = useContext(SidebarContext);
+  let inOpenPopover = useContext(PopoverOpenContext);
+  useEffect(() => {
+    if (inOpenPopover) {
+      console.log("inOpenPopover");
+      sidebar.setChildForceOpen(true);
+      return () => {
+        sidebar.setChildForceOpen(false);
+      };
+    }
+  }, [sidebar, inOpenPopover]);
   return (
     <button
       {...buttonProps}
@@ -38,7 +48,7 @@ export const ActionButton = forwardRef<
     >
       <div className="shrink-0">{props.icon}</div>
       <div
-        className={`pr-1 w-max ${sidebarExpanded ? "block" : props.primary || props.secondary ? "sm:hidden block" : "hidden"}`}
+        className={`pr-1 w-max ${sidebar.open ? "block" : props.primary || props.secondary ? "sm:hidden block" : "hidden"}`}
       >
         {props.label}
       </div>
