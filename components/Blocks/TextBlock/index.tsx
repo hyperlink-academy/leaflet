@@ -403,19 +403,20 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           />
         )}
       </div>
-      <BlockifyLink entityID={props.entityID} />
+      <BlockifyLink entityID={props.entityID} editorState={editorState} />
     </>
   );
 }
 
-const BlockifyLink = (props: { entityID: string }) => {
+const BlockifyLink = (props: {
+  entityID: string;
+  editorState: EditorState | undefined;
+}) => {
+  let { editorState } = props;
   let rep = useReplicache();
   let smoker = useSmoker();
   let isLocked = useEntity(props.entityID, "block/is-locked");
   let focused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
-  let editorState = useEditorStates(
-    (s) => s.editorStates[props.entityID],
-  )?.editor;
 
   let isBlueskyPost =
     editorState?.doc.textContent.includes("bsky.app/") &&
