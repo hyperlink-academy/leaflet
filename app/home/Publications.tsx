@@ -1,15 +1,10 @@
 "use client";
-import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
+import { ButtonSecondary } from "components/Buttons";
 import Link from "next/link";
-import { useState } from "react";
 
-import { Input } from "components/Input";
 import { useIdentityData } from "components/IdentityProvider";
-import { NewDraftButton } from "app/lish/[handle]/[publication]/NewDraftButton";
-import { Popover } from "components/Popover";
-import { BlueskyLogin } from "app/login/LoginForm";
 import { theme } from "tailwind.config";
-import { BlueskyTiny } from "components/Icons";
+import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 
 export const MyPublicationList = () => {
   let { identity } = useIdentityData();
