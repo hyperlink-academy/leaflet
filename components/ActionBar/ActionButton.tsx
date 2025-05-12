@@ -37,7 +37,7 @@ export const ActionButton = forwardRef<
       actionButton relative font-bold
       rounded-md border
       flex gap-2 items-center sm:justify-start justify-center
-      p-1 sm:mr-0 last:mr-0 first:mr-2
+      p-1 sm:mr-0 last:mr-0 first:mr-2 sm:first:mr-0
       ${
         props.primary
           ? "w-full bg-accent-1 border-accent-1 text-accent-2 transparent-outline sm:hover:outline-accent-contrast focus:outline-accent-1 outline-offset-1 mr-2"
