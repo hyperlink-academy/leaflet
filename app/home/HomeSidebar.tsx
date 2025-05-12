@@ -7,6 +7,7 @@ import { Sidebar } from "components/ActionBar/Sidebar";
 import { useIdentityData } from "components/IdentityProvider";
 import { useReplicache } from "src/replicache";
 import { LoginActionButton } from "components/LoginButton";
+import { MyPublicationList } from "./Publications";
 
 export const HomeSidebar = () => {
   let { identity } = useIdentityData();
@@ -18,6 +19,8 @@ export const HomeSidebar = () => {
       {identity ? <AccountSettings /> : <LoginActionButton />}
       <HelpPopover noShortcuts />
       <ThemePopover entityID={rootEntity} home />
+      <hr className="border-bg-page" />
+      <MyPublicationList />
     </Sidebar>
   );
 };

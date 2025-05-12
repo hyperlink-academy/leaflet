@@ -251,6 +251,22 @@ input[type="number"] {
   @apply rounded-md;
 }
 
+.opaque-container {
+  @apply bg-bg-page;
+  @apply border;
+  @apply border-border-light;
+  @apply rounded-md;
+}
+
+.accent-container {
+  background: color-mix(
+    in oklab,
+    rgb(var(--accent-contrast)),
+    rgb(var(--bg-page)) 85%
+  );
+  @apply rounded-md;
+}
+
 .pwa-padding {
   padding-top: max(calc(env(safe-area-inset-top) - 8px)) !important;
 }
