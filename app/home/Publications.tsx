@@ -11,7 +11,7 @@ export const MyPublicationList = () => {
   let { identity } = useIdentityData();
   if (!identity || !identity.atp_did) return <PubListEmpty />;
   return (
-    <div className="pubList w-full sm:w-[200px] flex flex-col gap-1 sm:gap-2 container p-2 sm:p-0 sm:bg-transparent sm:border-0 ">
+    <div className="pubListWrapper w-full sm:w-[200px] flex flex-col gap-1 sm:gap-2 container p-2 sm:p-1 sm:-m-1 sm:bg-transparent sm:border-0">
       <div className="flex justify-between items-center font-bold text-tertiary text-sm">
         Publications
         <Link
