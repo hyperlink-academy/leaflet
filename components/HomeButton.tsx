@@ -19,7 +19,7 @@ export function HomeButton() {
         <Link
           href="/home"
           prefetch
-          className="hover:no-underline first:mr-2"
+          className="hover:no-underline"
           style={{ textDecorationLine: "none !important" }}
         >
           <ActionButton icon={<HomeSmall />} label="Go Home" />
