@@ -9,7 +9,7 @@ import { AddTiny } from "components/Icons/AddTiny";
 
 export const MyPublicationList = () => {
   let { identity } = useIdentityData();
-  // if (!identity || !identity.atp_did) return <PubListEmpty />;
+  if (!identity || !identity.atp_did) return <PubListEmpty />;
   return (
     <div className="pubList w-full sm:w-[200px] flex flex-col gap-1 sm:gap-2 container p-2 sm:p-0 sm:bg-transparent sm:border-0 ">
       <div className="flex justify-between items-center font-bold text-tertiary text-sm">
@@ -21,13 +21,13 @@ export const MyPublicationList = () => {
           <AddTiny />
         </Link>
       </div>
-      <PublicationList />
+      <PublicationList publications={identity.publications} />
     </div>
   );
 };
 
 const PublicationList = (props: {
-  publications?: {
+  publications: {
     identity_did: string;
     indexed_at: string;
     name: string;
@@ -38,30 +38,17 @@ const PublicationList = (props: {
 
   return (
     <div className="pubList w-full flex flex-row sm:flex-col gap-3 sm:gap-2">
-      <HardcodePublication name="Leaflet Explorers" />
-      <HardcodePublication name="Leaflet Explorers" />
-
-      {/* {props.publications?.map((d) => (
+      {props.publications?.map((d) => (
         <Publication
           {...d}
           key={d.uri}
           handle={identity?.resolved_did?.alsoKnownAs?.[0].slice(5)!}
         />
-      ))} */}
+      ))}
     </div>
   );
 };
-function HardcodePublication(props: { name: string }) {
-  return (
-    <Link
-      className="pubListItem w-full p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline outline-2 outline-offset-1 hover:outline-border basis-0 grow min-w-0"
-      href={`/`}
-    >
-      <div className="w-6 h-6 rounded-full bg-test" />
-      <h4 className="font-bold w-full truncate">{props.name}</h4>
-    </Link>
-  );
-}
+
 function Publication(props: { uri: string; name: string; handle: string }) {
   return (
     <Link
