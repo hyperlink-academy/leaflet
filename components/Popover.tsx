@@ -16,6 +16,7 @@ export const Popover = (props: {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   asChild?: boolean;
+  arrowFill?: string;
 }) => {
   let [open, setOpen] = useState(props.open || false);
   return (
@@ -55,9 +56,11 @@ export const Popover = (props: {
               >
                 <PopoverArrow
                   arrowFill={
-                    props.background
-                      ? props.background
-                      : theme.colors["bg-page"]
+                    props.arrowFill
+                      ? props.arrowFill
+                      : props.background
+                        ? props.background
+                        : theme.colors["bg-page"]
                   }
                   arrowStroke={
                     props.border ? props.border : theme.colors["border"]

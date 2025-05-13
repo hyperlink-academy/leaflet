@@ -161,6 +161,7 @@ const PageContent = (props: { entityID: string }) => {
 };
 
 const DocContent = (props: { entityID: string }) => {
+  let { rootEntity } = useReplicache();
   let isFocused = useUIState((s) => {
     let focusedElement = s.focusedEntity;
     let focusedPageID =
@@ -169,17 +170,30 @@ const DocContent = (props: { entityID: string }) => {
         : focusedElement?.parent;
     return focusedPageID === props.entityID;
   });
-  let cardBackgroundImage = useEntity(
-    props.entityID,
+  let rootBackgroundImage = useEntity(
+    rootEntity,
     "theme/card-background-image",
   );
-  let cardBackgroundImageRepeat = useEntity(
-    props.entityID,
+  let rootBackgroundRepeat = useEntity(
+    rootEntity,
     "theme/card-background-image-repeat",
   );
+  let rootBackgroundOpacity = useEntity(
+    rootEntity,
+    "theme/card-background-image-opacity",
+  );
+
+  let cardBackgroundImage =
+    useEntity(props.entityID, "theme/card-background-image") ||
+    rootBackgroundImage;
+  let cardBackgroundImageRepeat =
+    useEntity(props.entityID, "theme/card-background-image-repeat") ||
+    rootBackgroundRepeat;
   let cardBackgroundImageOpacity =
     useEntity(props.entityID, "theme/card-background-image-opacity")?.data
-      .value || 1;
+      .value ||
+    rootBackgroundOpacity?.data.value ||
+    1;
   return (
     <>
       <div

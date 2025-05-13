@@ -138,20 +138,32 @@ export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
 export function PagePreview(props: { entityID: string }) {
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
+  let { rootEntity } = useReplicache();
 
-  let cardBackgroundImage = useEntity(
-    props.entityID,
+  let rootBackgroundImage = useEntity(
+    rootEntity,
     "theme/card-background-image",
   );
-  let cardBackgroundImageRepeat = useEntity(
-    props.entityID,
+  let rootBackgroundRepeat = useEntity(
+    rootEntity,
     "theme/card-background-image-repeat",
   );
+  let rootBackgroundOpacity = useEntity(
+    rootEntity,
+    "theme/card-background-image-opacity",
+  );
 
+  let cardBackgroundImage =
+    useEntity(props.entityID, "theme/card-background-image") ||
+    rootBackgroundImage;
+  let cardBackgroundImageRepeat =
+    useEntity(props.entityID, "theme/card-background-image-repeat") ||
+    rootBackgroundRepeat;
   let cardBackgroundImageOpacity =
     useEntity(props.entityID, "theme/card-background-image-opacity")?.data
-      .value || 1;
-
+      .value ||
+    rootBackgroundOpacity?.data.value ||
+    1;
   let pageWidth = `var(--page-width-unitless)`;
   return (
     <div
@@ -168,7 +180,7 @@ export function PagePreview(props: { entityID: string }) {
         }}
       >
         <div
-          className={`pageBackground
+          className={`pageLinkBlockBackground
       absolute top-0 left-0 right-0 bottom-0
       pointer-events-none
       `}
