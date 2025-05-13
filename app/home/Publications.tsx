@@ -5,16 +5,14 @@ import Link from "next/link";
 import { useIdentityData } from "components/IdentityProvider";
 import { theme } from "tailwind.config";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
-import { GoToArrow } from "components/Icons/GoToArrow";
-import { AddSmall } from "components/Icons/AddSmall";
 import { AddTiny } from "components/Icons/AddTiny";
 
 export const MyPublicationList = () => {
   let { identity } = useIdentityData();
   // if (!identity || !identity.atp_did) return <PubListEmpty />;
   return (
-    <div className="pubList w-full sm:w-[200px] flex flex-col gap-1 sm:gap-2 ">
-      <div className="flex justify-between items-end font-bold text-tertiary text-sm">
+    <div className="pubList w-full sm:w-[200px] flex flex-col gap-1 sm:gap-2 container p-2 sm:p-0 sm:bg-transparent sm:border-0 ">
+      <div className="flex justify-between items-center font-bold text-tertiary text-sm">
         Publications
         <Link
           href={"./lish/createPub"}
@@ -40,11 +38,8 @@ const PublicationList = (props: {
 
   return (
     <div className="pubList w-full flex flex-row sm:flex-col gap-3 sm:gap-2">
-      <div className="sm:block hidden">
-        <HardCodePublication name="Leaflet Explorers" />
-      </div>
-      <HardCodePublication name="Arboretum" />
-      <HardCodePublication name="This Very Long Title Might Have Ramifications on the UI" />
+      <HardcodePublication name="Leaflet Explorers" />
+      <HardcodePublication name="Leaflet Explorers" />
 
       {/* {props.publications?.map((d) => (
         <Publication
@@ -56,24 +51,22 @@ const PublicationList = (props: {
     </div>
   );
 };
-
-function Publication(props: { uri: string; name: string; handle: string }) {
+function HardcodePublication(props: { name: string }) {
   return (
     <Link
-      className="pubListItem w-full p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline hover:outline-border "
-      href={`/lish/${props.handle}/${props.name}/`}
+      className="pubListItem w-full p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline outline-2 outline-offset-1 hover:outline-border basis-0 grow min-w-0"
+      href={`/`}
     >
       <div className="w-6 h-6 rounded-full bg-test" />
-      <h4 className="font-bold ">{props.name}</h4>
+      <h4 className="font-bold w-full truncate">{props.name}</h4>
     </Link>
   );
 }
-
-function HardCodePublication(props: { name: string }) {
+function Publication(props: { uri: string; name: string; handle: string }) {
   return (
     <Link
-      className="hardcodepubListItem w-full p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline outline-2 outline-offset-1 hover:outline-border basis-0 grow min-w-0"
-      href={`/`}
+      className="pubListItem w-full p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline outline-2 outline-offset-1 hover:outline-border basis-0 grow min-w-0"
+      href={`/lish/${props.handle}/${props.name}/`}
     >
       <div className="w-6 h-6 rounded-full bg-test" />
       <h4 className="font-bold w-full truncate">{props.name}</h4>
@@ -84,19 +77,23 @@ function HardCodePublication(props: { name: string }) {
 const PubListEmpty = () => {
   let { identity } = useIdentityData();
   return (
-    <div className="pubListEmpty accent-container text-sm text-center py-4 px-3 max-w-[200px] w-full flex flex-col place-items-center justify-center gap-1">
-      <PubListEmptyIllo />
-      <strong>Publish with Leaflet!</strong>
-      <div className="text-secondary">
-        {!identity
-          ? "Link a Bluesky account to publish your writing to a blog or newletter"
-          : identity && !!identity.atp_did
-            ? "Publish your writing to a blog or newletter on the ATmosphere"
-            : ""}
+    <div className="pubListEmpty accent-container text-sm sm:text-center py-4 px-3 w-full sm:max-w-[200px] flex flex-row sm:flex-col items-start sm:place-items-center justify-center gap-3 sm:gap-1">
+      <div className="shrink-0">
+        <PubListEmptyIllo />
       </div>
-      <ButtonSecondary compact className="text-sm mt-3">
-        <BlueskyTiny /> Link Bluesky
-      </ButtonSecondary>
+      <div className="flex flex-col sm:place-items-center">
+        <strong>Publish with Leaflet!</strong>
+        <div className="text-tertiary">
+          {!identity
+            ? "Link a Bluesky account to publish your writing to a blog or newletter"
+            : identity && !!identity.atp_did
+              ? "Publish your writing to a blog or newletter on the ATmosphere"
+              : ""}
+        </div>
+        <ButtonSecondary compact className="text-sm mt-3">
+          <BlueskyTiny /> Link Bluesky
+        </ButtonSecondary>
+      </div>
     </div>
   );
 };

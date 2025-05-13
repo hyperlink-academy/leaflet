@@ -99,9 +99,7 @@ export default async function Home() {
                 <div className={`h-full overflow-y-scroll`}>
                   <Media mobile>
                     <div className="pubListWrapper p-2 ">
-                      <div className="pubList container p-3 ">
-                        <MyPublicationList />
-                      </div>
+                      <MyPublicationList />
                     </div>
                   </Media>
                   <LeafletList initialFacts={home_docs_initialFacts} />
