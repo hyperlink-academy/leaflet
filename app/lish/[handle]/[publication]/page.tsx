@@ -10,6 +10,7 @@ import { Media } from "components/Media";
 import { Footer } from "components/ActionBar/Footer";
 import { PublicationDashboard } from "./PublicationDashboard";
 import { AddTiny } from "components/Icons/AddTiny";
+import { DraftList } from "./DraftList";
 
 const idResolver = new IdResolver();
 
@@ -67,7 +68,7 @@ export default async function Publication(props: {
   try {
     return (
       <div className="relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6">
-        <Sidebar className="mt-6">
+        <Sidebar className="mt-6 p-2">
           <ActionButton
             id="new-leaflet-button"
             primary
@@ -76,7 +77,21 @@ export default async function Publication(props: {
           />
         </Sidebar>
         <div className={`h-full overflow-y-scroll pl-8 pt-8 w-full`}>
-          <PublicationDashboard name={publication.name} />
+          <PublicationDashboard
+            name={publication.name}
+            tabs={{
+              Drafts: (
+                <DraftList
+                  drafts={publication.leaflets_in_publications.map((d) => ({
+                    ...d.permission_tokens!,
+                    initialFacts: facts[d.permission_tokens?.root_entity!],
+                  }))}
+                />
+              ),
+              Published: <div>none yet lol</div>,
+            }}
+            defaultTab={"Drafts"}
+          />
         </div>
         <Media mobile>
           <Footer>
