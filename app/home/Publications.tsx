@@ -6,28 +6,24 @@ import { useIdentityData } from "components/IdentityProvider";
 import { theme } from "tailwind.config";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { GoToArrow } from "components/Icons/GoToArrow";
+import { AddSmall } from "components/Icons/AddSmall";
+import { AddTiny } from "components/Icons/AddTiny";
 
 export const MyPublicationList = () => {
   let { identity } = useIdentityData();
   // if (!identity || !identity.atp_did) return <PubListEmpty />;
   return (
     <div className="pubList w-full sm:w-[200px] flex flex-col gap-1 sm:gap-2 ">
-      <PublicationList />
-      <div className="flex justify-between">
+      <div className="flex justify-between items-end font-bold text-tertiary text-sm">
+        Publications
         <Link
           href={"./lish/createPub"}
           className="pubListCreateNew  text-accent-contrast font-bold hover:text-accent-contrast"
         >
-          new
-        </Link>
-        {identity && identity?.publications.length > 2}
-        <Link
-          href={"./lish/createPub"}
-          className="pubListSeeAll flex items-center gap-2 text-accent-contrast font-bold hover:text-accent-contrast"
-        >
-          all <GoToArrow />
+          <AddTiny />
         </Link>
       </div>
+      <PublicationList />
     </div>
   );
 };
