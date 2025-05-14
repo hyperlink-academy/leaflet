@@ -35,6 +35,7 @@ import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { PublicationMetadata } from "./PublicationMetadata";
+import { useCardBorderHidden } from "./useCardBorderHidden";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -89,11 +90,7 @@ function Page(props: { entityID: string; first?: boolean }) {
     return focusedPageID === props.entityID;
   });
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
-  let rootCardBorderHidden = useEntity(rootEntity, "theme/card-border-hidden");
-
-  let cardBorderHidden =
-    useEntity(props.entityID, "theme/card-border-hidden") ||
-    rootCardBorderHidden;
+  let cardBorderHidden = useCardBorderHidden(props.entityID);
   return (
     <>
       {!props.first && (
@@ -116,7 +113,7 @@ function Page(props: { entityID: string; first?: boolean }) {
           id={elementId.page(props.entityID).container}
           style={{
             width: pageType === "doc" ? "var(--page-width-units)" : undefined,
-            backgroundColor: cardBorderHidden?.data.value
+            backgroundColor: cardBorderHidden
               ? ""
               : "rgba(var(--bg-page), var(--bg-page-alpha))",
           }}
@@ -126,7 +123,7 @@ function Page(props: { entityID: string; first?: boolean }) {
               grow flex flex-col
               overscroll-y-none
               overflow-y-auto
-              ${cardBorderHidden?.data.value ? "border-0 !shadow-none sm:-mt-6 sm:-mb-12 -mt-2 -mb-1 pt-3 " : "border rounded-lg"}
+              ${cardBorderHidden ? "border-0 !shadow-none sm:-mt-6 sm:-mb-12 -mt-2 -mb-1 pt-3 " : "border rounded-lg"}
               ${isFocused ? "shadow-md border-border" : "border-border-light"}
             `}
         >
@@ -175,7 +172,7 @@ const DocContent = (props: { entityID: string }) => {
     return focusedPageID === props.entityID;
   });
 
-  let rootCardBorderHidden = useEntity(rootEntity, "theme/card-border-hidden");
+  let cardBorderHidden = useCardBorderHidden(props.entityID);
   let rootBackgroundImage = useEntity(
     rootEntity,
     "theme/card-background-image",
@@ -189,9 +186,6 @@ const DocContent = (props: { entityID: string }) => {
     "theme/card-background-image-opacity",
   );
 
-  let cardBorderHidden =
-    useEntity(props.entityID, "theme/card-border-hidden") ||
-    rootCardBorderHidden;
   let cardBackgroundImage =
     useEntity(props.entityID, "theme/card-background-image") ||
     rootBackgroundImage;
@@ -206,7 +200,7 @@ const DocContent = (props: { entityID: string }) => {
 
   return (
     <>
-      {!cardBorderHidden?.data.value ? (
+      {!cardBorderHidden ? (
         <div
           className={`pageBackground
         absolute top-0 left-0 right-0 bottom-0
@@ -231,7 +225,7 @@ const DocContent = (props: { entityID: string }) => {
           }}
         />
       ) : null}
-      <PublicationMetadata cardBorderHidden={!!cardBorderHidden?.data.value} />
+      <PublicationMetadata cardBorderHidden={!!cardBorderHidden} />
       <Blocks entityID={props.entityID} />
       {/* we handle page bg in this sepate div so that
     we can apply an opacity the background image
@@ -280,19 +274,15 @@ const PageOptions = (props: {
   first: boolean | undefined;
 }) => {
   let { rootEntity } = useReplicache();
-  let rootCardBorderHidden = useEntity(rootEntity, "theme/card-border-hidden");
-
-  let cardBorderHidden =
-    useEntity(props.entityID, "theme/card-border-hidden") ||
-    rootCardBorderHidden;
+  let cardBorderHidden = useCardBorderHidden(props.entityID);
 
   return (
     <div
-      className={`z-10 w-fit absolute  ${cardBorderHidden?.data.value ? "top-1" : "sm:top-3"} sm:-right-[19px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start`}
+      className={`z-10 w-fit absolute  ${cardBorderHidden ? "top-1" : "sm:top-3"} sm:-right-[19px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start`}
     >
       {!props.first && (
         <PageOptionButton
-          cardBorderHidden={cardBorderHidden?.data.value}
+          cardBorderHidden={cardBorderHidden}
           secondary
           onClick={() => {
             useUIState.getState().closePage(props.entityID);
@@ -304,9 +294,9 @@ const PageOptions = (props: {
       <OptionsMenu
         entityID={props.entityID}
         first={!!props.first}
-        cardBorderHidden={cardBorderHidden?.data.value}
+        cardBorderHidden={cardBorderHidden}
       />
-      <UndoButtons cardBorderHidden={cardBorderHidden?.data.value} />
+      <UndoButtons cardBorderHidden={cardBorderHidden} />
     </div>
   );
 };
