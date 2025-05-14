@@ -77,9 +77,12 @@ const PubListEmpty = () => {
               ? "Publish your writing to a blog or newletter on the ATmosphere"
               : ""}
         </div>
-        <ButtonSecondary compact className="text-sm mt-3">
-          <BlueskyTiny /> Link Bluesky
-        </ButtonSecondary>
+
+        <form action="/api/oauth/login?redirect_url=/" method="GET">
+          <ButtonSecondary compact className="text-sm mt-3">
+            <BlueskyTiny /> Link Bluesky
+          </ButtonSecondary>
+        </form>
       </div>
     </div>
   );
