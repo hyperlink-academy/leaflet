@@ -8,8 +8,8 @@ export function Footer(props: { children?: React.ReactNode }) {
         actionFooter touch-none
         w-full z-10
         px-2 pt-1 pwa-padding-bottom
-        flex justify-start
-        h-[calc(45px+var(--safe-padding-bottom))]
+        flex justify-start gap-1
+        h-[calc(38px+var(--safe-padding-bottom))]
         bg-[rgba(var(--bg-page),0.5)] border-top border-bg-page`}
     >
       {props.children}

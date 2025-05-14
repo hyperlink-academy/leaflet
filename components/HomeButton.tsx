@@ -19,7 +19,7 @@ export function HomeButton() {
         <Link
           href="/home"
           prefetch
-          className="hover:no-underline first:mr-2"
+          className="hover:no-underline"
           style={{ textDecorationLine: "none !important" }}
         >
           <ActionButton icon={<HomeSmall />} label="Go Home" />
@@ -42,7 +42,7 @@ const AddToHomeButton = (props: {}) => {
   )
     return null;
   return (
-    <button
+    <ActionButton
       onClick={async (e) => {
         await addLeafletToHome(permission_token.id);
         mutate((identity) => {
@@ -66,8 +66,8 @@ const AddToHomeButton = (props: {}) => {
           text: "Leaflet added to your home!",
         });
       }}
-    >
-      <ActionButton icon={<AddToHomeSmall />} label="Add to Home" />
-    </button>
+      icon={<AddToHomeSmall />}
+      label="Add to Home"
+    />
   );
 };
