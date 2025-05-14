@@ -14,7 +14,7 @@ export const HomeSidebar = () => {
   let { rootEntity } = useReplicache();
 
   return (
-    <Sidebar alwaysOpen>
+    <Sidebar alwaysOpen className="my-6">
       <CreateNewLeafletButton />
       {identity ? <AccountSettings /> : <LoginActionButton />}
       <HelpPopover noShortcuts />
