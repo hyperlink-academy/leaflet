@@ -59,6 +59,7 @@ export function useLeafletPublicationData() {
   let { data, mutate } = useLeafletData();
   return {
     data: data?.data?.leaflets_in_publications,
+    mutate,
   };
 }
 export function useLeafletDomains() {

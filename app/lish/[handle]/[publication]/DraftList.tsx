@@ -8,7 +8,11 @@ import { NewDraftSecondaryButton } from "./NewDraftButton";
 
 export function DraftList(props: {
   publication: string;
-  drafts: { id: string; initialFacts: Fact<any>[]; root_entity: string }[];
+  drafts: {
+    leaflet: string;
+    description: string;
+    title: string;
+  }[];
 }) {
   let rel = usePublicationRelationship();
   let { publication } = usePublicationContext();
@@ -18,29 +22,16 @@ export function DraftList(props: {
     <div className="flex flex-col gap-2">
       <NewDraftSecondaryButton publication={props.publication} />
       {props.drafts.map((d) => {
-        return (
-          <ReplicacheProvider
-            key={d.id}
-            rootEntity={d.root_entity}
-            initialFacts={d.initialFacts}
-            token={{
-              ...d,
-              permission_token_rights: [],
-            }}
-            name={d.id}
-          >
-            <Draft id={d.id} />
-          </ReplicacheProvider>
-        );
+        return <Draft id={d.leaflet} key={d.leaflet} {...d} />;
       })}
     </div>
   );
 }
 
-function Draft(props: { id: string }) {
+function Draft(props: { id: string; title: string }) {
   return (
     <Link key={props.id} href={`/${props.id}`}>
-      {props.id}
+      <h3>{props.title}</h3>
     </Link>
   );
 }

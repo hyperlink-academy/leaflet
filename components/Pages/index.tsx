@@ -34,7 +34,7 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { ShareSmall } from "components/Icons/ShareSmall";
-import Link from "next/link";
+import { PublicationMetadata } from "./PublicationMetadata";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -231,22 +231,7 @@ const DocContent = (props: { entityID: string }) => {
           }}
         />
       ) : null}
-      <div
-        className={`flex flex-col px-3 sm:px-4 pb-4 sm:pb-6 ${cardBorderHidden?.data.value ? "sm:pt-4 pt-0" : "sm:pt-6 pt-2"}`}
-      >
-        <Link
-          href="/"
-          className="text-accent-contrast font-bold hover:no-underline"
-        >
-          Publication Name
-        </Link>
-        <h2 className="">Titles Are Cool</h2>
-        <p className="italic text-secondary">
-          This is a description! What happens if it's just a little but longer,
-          since it's nice to be able to say a few more words...
-        </p>
-        <p className="text-sm text-tertiary">Draft</p>
-      </div>
+      <PublicationMetadata cardBorderHidden={!!cardBorderHidden?.data.value} />
       <Blocks entityID={props.entityID} />
       {/* we handle page bg in this sepate div so that
     we can apply an opacity the background image

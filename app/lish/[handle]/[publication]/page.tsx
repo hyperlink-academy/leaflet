@@ -11,8 +11,6 @@ import { Footer } from "components/ActionBar/Footer";
 import { PublicationDashboard } from "./PublicationDashboard";
 import { DraftList } from "./DraftList";
 import { NewDraftActionButton } from "./NewDraftButton";
-import { use } from "react";
-import { IdentityContext } from "components/IdentityProvider";
 import { getIdentityData } from "actions/getIdentityData";
 
 const idResolver = new IdResolver();
@@ -61,24 +59,6 @@ export default async function Publication(props: {
   if (!publication || identity.atp_did !== publication.identity_did)
     return <PubNotFound />;
 
-  let all_facts = await supabaseServerClient.rpc("get_facts_for_roots", {
-    max_depth: 2,
-    roots: publication.leaflets_in_publications.map(
-      (l) => l.permission_tokens?.root_entity!,
-    ),
-  });
-  let facts =
-    all_facts.data?.reduce(
-      (acc, fact) => {
-        if (!acc[fact.root_id]) acc[fact.root_id] = [];
-        acc[fact.root_id].push(
-          fact as unknown as Fact<keyof typeof Attributes>,
-        );
-        return acc;
-      },
-      {} as { [key: string]: Fact<keyof typeof Attributes>[] },
-    ) || {};
-
   try {
     return (
       <div className="relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6">
@@ -92,10 +72,7 @@ export default async function Publication(props: {
               Drafts: (
                 <DraftList
                   publication={publication.uri}
-                  drafts={publication.leaflets_in_publications.map((d) => ({
-                    ...d.permission_tokens!,
-                    initialFacts: facts[d.permission_tokens?.root_entity!],
-                  }))}
+                  drafts={publication.leaflets_in_publications}
                 />
               ),
               Published: <div>none yet lol</div>,
