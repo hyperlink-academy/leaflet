@@ -12,7 +12,7 @@ import {
   ColorSwatch,
 } from "react-aria-components";
 import { Checkbox } from "components/Checkbox";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
 import { Separator } from "components/Layout";
@@ -40,6 +40,7 @@ export const PageThemePickers = (props: {
   let pageValue = useColorAttribute(props.entityID, "theme/card-background");
   let primaryValue = useColorAttribute(props.entityID, "theme/primary");
   let pageBGImage = useEntity(props.entityID, "theme/card-background-image");
+  let pageBorderHidden = useEntity(props.entityID, "theme/card-border-hidden");
 
   return (
     <div
@@ -103,11 +104,32 @@ export const PageThemePickers = (props: {
         closePicker={() => props.setOpenPicker("null")}
       />
       <hr />
+      <PageBorderHider entityID={props.entityID} />
+    </div>
+  );
+};
 
-      <Checkbox checked={true} onChange={(e) => {}}>
+export const PageBorderHider = (props: { entityID: string }) => {
+  let { rep } = useReplicache();
+  let pageBorderHidden =
+    useEntity(props.entityID, "theme/card-border-hidden")?.data.value || false;
+
+  return (
+    <>
+      <Checkbox
+        checked={pageBorderHidden}
+        onChange={(e) => {
+          rep?.mutate.assertFact({
+            entity: props.entityID,
+            attribute: "theme/card-border-hidden",
+            data: { type: "boolean", value: !pageBorderHidden },
+          });
+          console.log(pageBorderHidden);
+        }}
+      >
         Hide Page Borders
       </Checkbox>
-    </div>
+    </>
   );
 };
 

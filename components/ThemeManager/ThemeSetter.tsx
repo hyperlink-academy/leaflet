@@ -225,30 +225,45 @@ const SamplePage = (props: {
     props.entityID,
     "theme/card-background-image-opacity",
   );
+  let pageBorderHidden = useEntity(props.entityID, "theme/card-border-hidden")
+    ?.data.value;
 
   return (
     <div
       onClick={(e) => {
         e.currentTarget === e.target && props.setOpenPicker("page");
       }}
-      className={`${props.home ? "rounded-md " : "rounded-t-lg "} relative cursor-pointer p-2  border border-border border-b-transparent shadow-md text-primary`}
-      style={{
-        backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-      }}
+      className={
+        pageBorderHidden
+          ? "py-2 px-0 border border-transparent"
+          : `${props.home ? "rounded-md " : "rounded-t-lg "} relative cursor-pointer p-2  border border-border border-b-transparent shadow-md text-primary
+        `
+      }
+      style={
+        pageBorderHidden
+          ? undefined
+          : {
+              backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
+            }
+      }
     >
       <div
         className="background absolute top-0 right-0 bottom-0 left-0 z-0  rounded-t-lg"
-        style={{
-          backgroundImage: pageBGImage
-            ? `url(${pageBGImage.data.src})`
-            : undefined,
+        style={
+          pageBorderHidden
+            ? undefined
+            : {
+                backgroundImage: pageBGImage
+                  ? `url(${pageBGImage.data.src})`
+                  : undefined,
 
-          backgroundRepeat: pageBGRepeat ? "repeat" : "no-repeat",
-          opacity: pageBGOpacity?.data.value || 1,
-          backgroundSize: !pageBGRepeat
-            ? "cover"
-            : `calc(${pageBGRepeat.data.value}px / 2 )`,
-        }}
+                backgroundRepeat: pageBGRepeat ? "repeat" : "no-repeat",
+                opacity: pageBGOpacity?.data.value || 1,
+                backgroundSize: !pageBGRepeat
+                  ? "cover"
+                  : `calc(${pageBGRepeat.data.value}px / 2 )`,
+              }
+        }
       />
       <div>
         <p

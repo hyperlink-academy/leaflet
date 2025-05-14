@@ -24,7 +24,7 @@ export function LeafletSidebar(props: { leaflet_id: string }) {
     >
       <Media
         mobile={false}
-        className="sidebarContainer relative flex flex-col justify-between h-full w-16 bg-bg-page/50  border-bg-page"
+        className="sidebarContainer relative flex flex-col justify-end h-full w-16 bg-bg-page/50  border-bg-page"
       >
         <Sidebar>
           {entity_set.permissions.write ? (
@@ -41,9 +41,8 @@ export function LeafletSidebar(props: { leaflet_id: string }) {
             </div>
           )}
         </Sidebar>
-        <div className="justify-end justify-self-end">
-          <Watermark />
-        </div>
+        <div className="h-full pointer-events-none" />
+        <Watermark />
       </Media>
     </div>
   );

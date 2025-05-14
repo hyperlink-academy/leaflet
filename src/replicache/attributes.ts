@@ -199,6 +199,10 @@ export const ThemeAttributes = {
     type: "number",
     cardinality: "one",
   },
+  "theme/card-border-hidden": {
+    type: "boolean",
+    cardinality: "one",
+  },
   "theme/primary": {
     type: "color",
     cardinality: "one",
