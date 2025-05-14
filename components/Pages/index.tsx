@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { JSX, useState } from "react";
 import { useUIState } from "src/useUIState";
 import { useEntitySetContext } from "../EntitySetProvider";
 import { useSearchParams } from "next/navigation";
@@ -241,14 +241,20 @@ const DocContent = (props: { entityID: string }) => {
   );
 };
 
-const PageOptionButton = (props: {
-  onClick?: () => void;
+const PageOptionButton = ({
+  children,
+  secondary,
+  cardBorderHidden,
+  className,
+  disabled,
+  ...props
+}: {
   children: React.ReactNode;
   secondary?: boolean;
   cardBorderHidden: boolean | undefined;
   className?: string;
   disabled?: boolean;
-}) => {
+} & Omit<JSX.IntrinsicElements["button"], "content">) => {
   return (
     <button
       className={`
@@ -256,18 +262,16 @@ const PageOptionButton = (props: {
         shrink-0
         pt-[2px] h-5 w-5 p-0.5 mx-auto
         border border-border
-        ${props.secondary ? "bg-border text-bg-page" : "bg-bg-page text-border"}
-        ${props.disabled && "opacity-50"}
-        ${props.cardBorderHidden ? "rounded-md" : `rounded-b-md sm:rounded-l-none sm:rounded-r-md`}
+        ${secondary ? "bg-border text-bg-page" : "bg-bg-page text-border"}
+        ${disabled && "opacity-50"}
+        ${cardBorderHidden ? "rounded-md" : `rounded-b-md sm:rounded-l-none sm:rounded-r-md`}
         flex items-center justify-center
-        ${props.className}
+        ${className}
 
         `}
-      onClick={() => {
-        props.onClick && props.onClick();
-      }}
+      {...props}
     >
-      {props.children}
+      {children}
     </button>
   );
 };
