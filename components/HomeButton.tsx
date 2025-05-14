@@ -42,7 +42,7 @@ const AddToHomeButton = (props: {}) => {
   )
     return null;
   return (
-    <button
+    <ActionButton
       onClick={async (e) => {
         await addLeafletToHome(permission_token.id);
         mutate((identity) => {
@@ -66,8 +66,8 @@ const AddToHomeButton = (props: {}) => {
           text: "Leaflet added to your home!",
         });
       }}
-    >
-      <ActionButton icon={<AddToHomeSmall />} label="Add to Home" />
-    </button>
+      icon={<AddToHomeSmall />}
+      label="Add to Home"
+    />
   );
 };

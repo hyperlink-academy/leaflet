@@ -68,7 +68,7 @@ export const ButtonSecondary = forwardRef<
   } = props;
   return (
     <button
-      {...props}
+      {...buttonProps}
       ref={ref}
       className={`m-0 h-max
         ${fullWidth ? "w-full" : fullWidthOnMobile ? "w-full sm:w-max" : "w-max"}
@@ -96,18 +96,19 @@ export const ButtonTertiary = forwardRef<
     compact?: boolean;
   } & ButtonProps
 >((props, ref) => {
+  let { fullWidth, children, compact, ...buttonProps } = props;
   return (
     <button
-      {...props}
+      {...buttonProps}
       ref={ref}
-      className={`m-0 h-max ${props.fullWidth ? "w-full" : "w-max"}  ${props.compact ? "px-0" : "px-1"}
+      className={`m-0 h-max ${fullWidth ? "w-full" : "w-max"}  ${compact ? "px-0" : "px-1"}
   bg-transparent text-base font-bold text-accent-contrast
   flex gap-2 items-center justify-center shrink-0
   hover:underline disabled:text-border
   ${props.className}
 `}
     >
-      {props.children}
+      {children}
     </button>
   );
 });

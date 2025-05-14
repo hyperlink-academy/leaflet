@@ -2,6 +2,8 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { theme } from "tailwind.config";
 import { NestedCardThemeProvider } from "./ThemeManager/ThemeProvider";
 import { PopoverArrow } from "./Icons/PopoverArrow";
+import { PopoverOpenContext } from "./Popover";
+import { useState } from "react";
 
 export const Separator = (props: { classname?: string }) => {
   return (
@@ -20,8 +22,15 @@ export const Menu = (props: {
   onOpenChange?: (o: boolean) => void;
   asChild?: boolean;
 }) => {
+  let [open, setOpen] = useState(props.open || false);
   return (
-    <DropdownMenu.Root onOpenChange={props.onOpenChange} open={props.open}>
+    <DropdownMenu.Root
+      onOpenChange={(o) => {
+        setOpen(o);
+        props.onOpenChange?.(o);
+      }}
+      open={props.open}
+    >
       <DropdownMenu.Trigger asChild={props.asChild}>
         {props.trigger}
       </DropdownMenu.Trigger>
