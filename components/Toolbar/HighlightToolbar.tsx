@@ -10,11 +10,11 @@ import * as Popover from "@radix-ui/react-popover";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { theme } from "../../tailwind.config";
 import {
-  ColorPicker,
   pickers,
   SectionArrow,
   setColorAttribute,
 } from "components/ThemeManager/ThemeSetter";
+import { ColorPicker } from "components/ThemeManager/ColorPicker";
 import { useEntity, useReplicache } from "src/replicache";
 import { useEffect, useMemo, useState } from "react";
 import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
@@ -29,6 +29,7 @@ import { Props } from "components/Icons/Props";
 import { PopoverArrow } from "components/Icons/PopoverArrow";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { PaintSmall } from "components/Icons/PaintSmall";
+import { Color } from "react-aria-components";
 
 export const HighlightButton = (props: {
   lastUsedHighlight: string;
