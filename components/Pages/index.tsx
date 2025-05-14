@@ -30,7 +30,6 @@ import { CardThemeProvider } from "../ThemeManager/ThemeProvider";
 import { PageShareMenu } from "./PageShareMenu";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 import { useUndoState } from "src/undoManager";
-import { usePublicationContext } from "components/Providers/PublicationContext";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { PaintSmall } from "components/Icons/PaintSmall";
@@ -43,8 +42,6 @@ export function Pages(props: { rootPage: string }) {
   let params = useSearchParams();
   let queryRoot = params.get("page");
   let firstPage = queryRoot || rootPage?.data.value || props.rootPage;
-  let entity_set = useEntitySetContext();
-  let publication = usePublicationContext();
 
   return (
     <>

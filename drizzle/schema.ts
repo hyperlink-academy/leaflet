@@ -29,6 +29,7 @@ export const publications = pgTable("publications", {
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	name: text("name").notNull(),
 	identity_did: text("identity_did").notNull(),
+	record: jsonb("record"),
 });
 
 export const facts = pgTable("facts", {
@@ -196,6 +197,8 @@ export const leaflets_in_publications = pgTable("leaflets_in_publications", {
 	publication: text("publication").notNull().references(() => publications.uri),
 	doc: text("doc").default('').references(() => documents.uri),
 	leaflet: uuid("leaflet").notNull().references(() => permission_tokens.id),
+	description: text("description").default('').notNull(),
+	title: text("title").default('').notNull(),
 },
 (table) => {
 	return {

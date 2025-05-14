@@ -4,16 +4,13 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { HelpPopover } from "components/HelpPopover";
 import { HomeButton } from "components/HomeButton";
 import { Media } from "components/Media";
-import { usePublicationContext } from "components/Providers/PublicationContext";
 import { ShareOptions } from "components/ShareOptions";
-import { PublishToPublication } from "components/ShareOptions/PublicationOptions";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { Watermark } from "components/Watermark";
 import { useUIState } from "src/useUIState";
 
 export function LeafletSidebar(props: { leaflet_id: string }) {
   let entity_set = useEntitySetContext();
-  let publication = usePublicationContext();
   return (
     <div
       className="spacer flex justify-end items-start"

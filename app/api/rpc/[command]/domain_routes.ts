@@ -25,18 +25,3 @@ export const get_domain_status = makeRoute({
     }
   },
 });
-
-export const get_leaflet_domains = makeRoute({
-  route: "get_leaflet_domains",
-  input: z.object({ id: z.string() }),
-  handler: async ({ id }, { supabase }: Env) => {
-    let res = await supabase
-      .from("permission_tokens")
-      .select(
-        "*, permission_token_rights(*), custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*) ",
-      )
-      .eq("id", id)
-      .single();
-    return res.data?.custom_domain_routes || null;
-  },
-});

@@ -356,19 +356,25 @@ export type Database = {
       }
       leaflets_in_publications: {
         Row: {
+          description: string
           doc: string | null
           leaflet: string
           publication: string
+          title: string
         }
         Insert: {
+          description?: string
           doc?: string | null
           leaflet: string
           publication: string
+          title?: string
         }
         Update: {
+          description?: string
           doc?: string | null
           leaflet?: string
           publication?: string
+          title?: string
         }
         Relationships: [
           {
@@ -640,18 +646,21 @@ export type Database = {
           identity_did: string
           indexed_at: string
           name: string
+          record: Json | null
           uri: string
         }
         Insert: {
           identity_did: string
           indexed_at?: string
           name: string
+          record?: Json | null
           uri: string
         }
         Update: {
           identity_did?: string
           indexed_at?: string
           name?: string
+          record?: Json | null
           uri?: string
         }
         Relationships: []
