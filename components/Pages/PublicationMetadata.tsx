@@ -42,7 +42,7 @@ export const PublicationMetadata = ({
 
   return (
     <div
-      className={`flex flex-col px-3 sm:px-4 pb-4 sm:pb-6 ${cardBorderHidden ? "sm:pt-4 pt-0" : "sm:pt-6 pt-2"}`}
+      className={`flex flex-col px-3 sm:px-4 pb-4 sm:pb-6  ${cardBorderHidden ? "sm:pt-6 pt-0" : "sm:pt-4 pt-2"}`}
     >
       <Link
         href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${pub.publications.name}`}
@@ -51,7 +51,7 @@ export const PublicationMetadata = ({
         {pub.publications?.name}
       </Link>
       <Input
-        className="text-xl font-bold outline-none"
+        className="text-xl font-bold outline-none bg-transparent"
         value={titleState}
         onChange={(e) => {
           setTitleState(e.currentTarget.value);
@@ -60,17 +60,17 @@ export const PublicationMetadata = ({
       />
       <textarea
         rows={2}
-        placeholder="description (optional)"
-        className="italic text-secondary outline-none"
+        placeholder="add an optional description..."
+        className="italic text-secondary outline-none bg-transparent"
         value={descriptionState}
         onChange={(e) => {
           setDescriptionState(e.currentTarget.value);
         }}
       />
       {pub.doc ? (
-        <p>Published!</p>
+        <p>Published</p>
       ) : (
-        <p className="text-sm text-tertiary">Draft</p>
+        <p className="text-sm text-tertiary p-1">Draft</p>
       )}
     </div>
   );
