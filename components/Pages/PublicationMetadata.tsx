@@ -6,6 +6,7 @@ import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { updateLeafletDraftMetadata } from "actions/publications/updateLeafletDraftMetadata";
 import { useReplicache } from "src/replicache";
 import { useIdentityData } from "components/IdentityProvider";
+import { AutosizeTextarea } from "components/utils/AutosizeTextarea";
 export const PublicationMetadata = ({
   cardBorderHidden,
 }: {
@@ -58,8 +59,7 @@ export const PublicationMetadata = ({
         }}
         placeholder="Untitled"
       />
-      <textarea
-        rows={2}
+      <AutosizeTextarea
         placeholder="add an optional description..."
         className="italic text-secondary outline-none bg-transparent"
         value={descriptionState}
