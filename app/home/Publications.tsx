@@ -78,11 +78,19 @@ const PubListEmpty = () => {
               : ""}
         </div>
 
-        <form action="/api/oauth/login?redirect_url=/" method="GET">
-          <ButtonSecondary compact className="text-sm mt-3">
-            <BlueskyTiny /> Link Bluesky
-          </ButtonSecondary>
-        </form>
+        {identity && !!identity.atp_did ? (
+          <Link href="/lish/createPub">
+            <ButtonSecondary compact className="text-sm mt-3">
+              Start a Publication!
+            </ButtonSecondary>
+          </Link>
+        ) : (
+          <form action="/api/oauth/login?redirect_url=/" method="GET">
+            <ButtonSecondary compact className="text-sm mt-3">
+              <BlueskyTiny /> Link Bluesky
+            </ButtonSecondary>
+          </form>
+        )}
       </div>
     </div>
   );
