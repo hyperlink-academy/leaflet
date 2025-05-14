@@ -4,8 +4,10 @@ import { Fact, ReplicacheProvider } from "src/replicache";
 import { usePublicationRelationship } from "./usePublicationRelationship";
 import { usePublicationContext } from "components/Providers/PublicationContext";
 import Link from "next/link";
+import { NewDraftSecondaryButton } from "./NewDraftButton";
 
 export function DraftList(props: {
+  publication: string;
   drafts: { id: string; initialFacts: Fact<any>[]; root_entity: string }[];
 }) {
   let rel = usePublicationRelationship();
@@ -13,8 +15,8 @@ export function DraftList(props: {
   if (!publication) return null;
   if (!rel?.isAuthor) return null;
   return (
-    <div className="">
-      <h2>drafts</h2>
+    <div className="flex flex-col gap-2">
+      <NewDraftSecondaryButton publication={props.publication} />
       {props.drafts.map((d) => {
         return (
           <ReplicacheProvider

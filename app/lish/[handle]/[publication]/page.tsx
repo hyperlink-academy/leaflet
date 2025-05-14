@@ -9,8 +9,11 @@ import { Sidebar } from "components/ActionBar/Sidebar";
 import { Media } from "components/Media";
 import { Footer } from "components/ActionBar/Footer";
 import { PublicationDashboard } from "./PublicationDashboard";
-import { AddTiny } from "components/Icons/AddTiny";
 import { DraftList } from "./DraftList";
+import { NewDraftActionButton } from "./NewDraftButton";
+import { use } from "react";
+import { IdentityContext } from "components/IdentityProvider";
+import { getIdentityData } from "actions/getIdentityData";
 
 const idResolver = new IdResolver();
 
@@ -32,20 +35,31 @@ export async function generateMetadata(props: {
   return { title: decodeURIComponent((await props.params).publication) };
 }
 
+//This is the admin dashboard of the publication
 export default async function Publication(props: {
   params: Promise<{ publication: string; handle: string }>;
 }) {
+  let identity = await getIdentityData();
+  if (!identity || !identity.atp_did) return <PubNotFound />;
   let did = await idResolver.handle.resolve((await props.params).handle);
   if (!did) return <PubNotFound />;
   let { data: publication } = await supabaseServerClient
     .from("publications")
     .select(
-      "*, documents_in_publications(documents(*)), leaflets_in_publications(*, permission_tokens(*, permission_token_rights(*), custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*) ))",
+      `*,
+      documents_in_publications(documents(*)),
+      leaflets_in_publications(*,
+        permission_tokens(*,
+          permission_token_rights(*),
+          custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*)
+       )
+      )`,
     )
     .eq("identity_did", did)
     .eq("name", decodeURIComponent((await props.params).publication))
     .single();
-  if (!publication) return <PubNotFound />;
+  if (!publication || identity.atp_did !== publication.identity_did)
+    return <PubNotFound />;
 
   let all_facts = await supabaseServerClient.rpc("get_facts_for_roots", {
     max_depth: 2,
@@ -69,12 +83,7 @@ export default async function Publication(props: {
     return (
       <div className="relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6">
         <Sidebar className="mt-6 p-2">
-          <ActionButton
-            id="new-leaflet-button"
-            primary
-            icon=<AddTiny className="m-1 shrink-0" />
-            label="Create Draft"
-          />
+          <Actions publication={publication.uri} />
         </Sidebar>
         <div className={`h-full overflow-y-scroll pl-8 pt-8 w-full`}>
           <PublicationDashboard
@@ -82,6 +91,7 @@ export default async function Publication(props: {
             tabs={{
               Drafts: (
                 <DraftList
+                  publication={publication.uri}
                   drafts={publication.leaflets_in_publications.map((d) => ({
                     ...d.permission_tokens!,
                     initialFacts: facts[d.permission_tokens?.root_entity!],
@@ -95,12 +105,7 @@ export default async function Publication(props: {
         </div>
         <Media mobile>
           <Footer>
-            <ActionButton
-              id="new-leaflet-button"
-              primary
-              icon=<AddTiny className="m-1 shrink-0" />
-              label="New Doc"
-            />
+            <Actions publication={publication.uri} />
           </Footer>
         </Media>
       </div>
@@ -115,15 +120,10 @@ const PubNotFound = () => {
   return <div>ain't no pub here</div>;
 };
 
-const Actions = () => {
+const Actions = (props: { publication: string }) => {
   return (
     <>
-      <ActionButton
-        id="new-leaflet-button"
-        primary
-        icon=<AddTiny className="m-1 shrink-0" />
-        label="Create Draft"
-      />
+      <NewDraftActionButton publication={props.publication} />
     </>
   );
 };
