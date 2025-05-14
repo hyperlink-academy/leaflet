@@ -94,8 +94,8 @@ function Page(props: { entityID: string; first?: boolean }) {
   let rootCardBorderHidden = useEntity(rootEntity, "theme/card-border-hidden");
 
   let cardBorderHidden =
-    useEntity(props.entityID, "theme/card-border-hidden")?.data.value ||
-    rootCardBorderHidden?.data.value;
+    useEntity(props.entityID, "theme/card-border-hidden") ||
+    rootCardBorderHidden;
   return (
     <>
       {!props.first && (
@@ -118,7 +118,7 @@ function Page(props: { entityID: string; first?: boolean }) {
           id={elementId.page(props.entityID).container}
           style={{
             width: pageType === "doc" ? "var(--page-width-units)" : undefined,
-            backgroundColor: cardBorderHidden
+            backgroundColor: cardBorderHidden?.data.value
               ? ""
               : "rgba(var(--bg-page), var(--bg-page-alpha))",
           }}
@@ -128,7 +128,7 @@ function Page(props: { entityID: string; first?: boolean }) {
               grow flex flex-col
               overscroll-y-none
               overflow-y-auto
-              ${cardBorderHidden ? "border-0 !shadow-none sm:-mt-6 sm:-mb-12 -mt-2 -mb-1 pt-3 " : "border rounded-lg"}
+              ${cardBorderHidden?.data.value ? "border-0 !shadow-none sm:-mt-6 sm:-mb-12 -mt-2 -mb-1 pt-3 " : "border rounded-lg"}
               ${isFocused ? "shadow-md border-border" : "border-border-light"}
             `}
         >
@@ -192,8 +192,8 @@ const DocContent = (props: { entityID: string }) => {
   );
 
   let cardBorderHidden =
-    useEntity(props.entityID, "theme/card-border-hidden")?.data.value ||
-    rootCardBorderHidden?.data.value;
+    useEntity(props.entityID, "theme/card-border-hidden") ||
+    rootCardBorderHidden;
   let cardBackgroundImage =
     useEntity(props.entityID, "theme/card-background-image") ||
     rootBackgroundImage;
@@ -208,7 +208,7 @@ const DocContent = (props: { entityID: string }) => {
 
   return (
     <>
-      {!cardBorderHidden && (
+      {!cardBorderHidden?.data.value ? (
         <div
           className={`pageBackground
         absolute top-0 left-0 right-0 bottom-0
@@ -232,7 +232,7 @@ const DocContent = (props: { entityID: string }) => {
               : 1,
           }}
         />
-      )}
+      ) : null}
       <Blocks entityID={props.entityID} />
       {/* we handle page bg in this sepate div so that
     we can apply an opacity the background image
@@ -284,16 +284,16 @@ const PageOptions = (props: {
   let rootCardBorderHidden = useEntity(rootEntity, "theme/card-border-hidden");
 
   let cardBorderHidden =
-    useEntity(props.entityID, "theme/card-border-hidden")?.data.value ||
-    rootCardBorderHidden?.data.value;
+    useEntity(props.entityID, "theme/card-border-hidden") ||
+    rootCardBorderHidden;
 
   return (
     <div
-      className={`z-10 w-fit absolute  ${cardBorderHidden ? "top-1" : "sm:top-3"} sm:-right-[19px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start`}
+      className={`z-10 w-fit absolute  ${cardBorderHidden?.data.value ? "top-1" : "sm:top-3"} sm:-right-[19px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start`}
     >
       {!props.first && (
         <PageOptionButton
-          cardBorderHidden={cardBorderHidden}
+          cardBorderHidden={cardBorderHidden?.data.value}
           secondary
           onClick={() => {
             useUIState.getState().closePage(props.entityID);
@@ -305,9 +305,9 @@ const PageOptions = (props: {
       <OptionsMenu
         entityID={props.entityID}
         first={!!props.first}
-        cardBorderHidden={cardBorderHidden}
+        cardBorderHidden={cardBorderHidden?.data.value}
       />
-      <UndoButtons cardBorderHidden={cardBorderHidden} />
+      <UndoButtons cardBorderHidden={cardBorderHidden?.data.value} />
     </div>
   );
 };

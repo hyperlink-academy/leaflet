@@ -21,7 +21,7 @@ export const PageThemeSetter = (props: { entityID: string }) => {
 
   return (
     <>
-      <div className="pageThemeSetter flex flex-row gap-2 px-3 py-1 ">
+      <div className="pageThemeSetter flex flex-row gap-2 px-3 py-1 z-10">
         <div className="gap-2 flex font-bold ">
           <PaintSmall /> Theme Page
         </div>
@@ -81,6 +81,7 @@ const ResetButton = (props: { entityID: string }) => {
             "theme/card-background-image",
             "theme/card-background-image-repeat",
             "theme/card-background-image-opacity",
+            "theme/card-border-hidden",
             "canvas/background-pattern",
           ],
         });
@@ -92,36 +93,73 @@ const ResetButton = (props: { entityID: string }) => {
 };
 
 const SamplePage = (props: { entityID: string }) => {
-  let pageBGImage = useEntity(props.entityID, "theme/card-background-image");
-  let pageBGRepeat = useEntity(
-    props.entityID,
+  let { rootEntity } = useReplicache();
+
+  let rootBackgroundImage = useEntity(
+    rootEntity,
+    "theme/card-background-image",
+  );
+  let rootBackgroundRepeat = useEntity(
+    rootEntity,
     "theme/card-background-image-repeat",
   );
-  let pageBGOpacity = useEntity(
-    props.entityID,
+  let rootBackgroundOpacity = useEntity(
+    rootEntity,
     "theme/card-background-image-opacity",
   );
 
+  let pageBackgroundImage =
+    useEntity(props.entityID, "theme/card-background-image") ||
+    rootBackgroundImage;
+  let pageBackgroundImageRepeat =
+    useEntity(props.entityID, "theme/card-background-image-repeat") ||
+    rootBackgroundRepeat;
+  let pageBackgroundImageOpacity =
+    useEntity(props.entityID, "theme/card-background-image-opacity") ||
+    rootBackgroundOpacity;
+
+  let rootPageBorderHidden = useEntity(rootEntity, "theme/card-border-hidden");
+  let entityPageBorderHidden = useEntity(
+    props.entityID,
+    "theme/card-border-hidden",
+  );
+  let pageBorderHidden = (entityPageBorderHidden || rootPageBorderHidden)?.data
+    .value;
+
   return (
     <div
-      className="relative rounded-t-lg p-2 shadow-md text-primary border border-border border-b-transparent"
-      style={{
-        backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-      }}
+      className={
+        pageBorderHidden
+          ? "py-2 px-0 border border-transparent"
+          : `relative rounded-t-lg p-2 shadow-md text-primary border border-border border-b-transparent`
+      }
+      style={
+        pageBorderHidden
+          ? undefined
+          : {
+              backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
+            }
+      }
     >
       <div
         className="background absolute top-0 right-0 bottom-0 left-0 z-0  rounded-t-lg"
-        style={{
-          backgroundImage: pageBGImage
-            ? `url(${pageBGImage.data.src})`
-            : undefined,
+        style={
+          pageBorderHidden
+            ? undefined
+            : {
+                backgroundImage: pageBackgroundImage
+                  ? `url(${pageBackgroundImage.data.src})`
+                  : undefined,
 
-          backgroundRepeat: pageBGRepeat ? "repeat" : "no-repeat",
-          opacity: pageBGOpacity?.data.value || 1,
-          backgroundSize: !pageBGRepeat
-            ? "cover"
-            : `calc(${pageBGRepeat.data.value}px / 2 )`,
-        }}
+                backgroundRepeat: pageBackgroundImageRepeat
+                  ? "repeat"
+                  : "no-repeat",
+                opacity: pageBackgroundImageOpacity?.data.value || 1,
+                backgroundSize: !pageBackgroundImageRepeat?.data.value
+                  ? "cover"
+                  : `calc(${pageBackgroundImageRepeat.data.value}px / 2 )`,
+              }
+        }
       />
       <div className="relative">
         <p className="font-bold">Theme Each Page!</p>

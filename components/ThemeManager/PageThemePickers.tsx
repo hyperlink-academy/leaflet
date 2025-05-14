@@ -110,13 +110,20 @@ export const PageThemePickers = (props: {
 };
 
 export const PageBorderHider = (props: { entityID: string }) => {
-  let { rep } = useReplicache();
+  let { rep, rootEntity } = useReplicache();
+  let rootPageBorderHidden = useEntity(rootEntity, "theme/card-border-hidden");
+  let entityPageBorderHidden = useEntity(
+    props.entityID,
+    "theme/card-border-hidden",
+  );
   let pageBorderHidden =
-    useEntity(props.entityID, "theme/card-border-hidden")?.data.value || false;
+    (entityPageBorderHidden || rootPageBorderHidden)?.data.value || false;
 
   return (
     <>
       <Checkbox
+        small
+        className="pl-[6px] !gap-3"
         checked={pageBorderHidden}
         onChange={(e) => {
           rep?.mutate.assertFact({
@@ -127,7 +134,7 @@ export const PageBorderHider = (props: { entityID: string }) => {
           console.log(pageBorderHidden);
         }}
       >
-        Hide Page Borders
+        No Page Borders
       </Checkbox>
     </>
   );
