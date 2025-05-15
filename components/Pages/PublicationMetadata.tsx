@@ -43,7 +43,7 @@ export const PublicationMetadata = ({
 
   return (
     <div
-      className={`flex flex-col px-3 sm:px-4 pb-4 sm:pb-4  ${cardBorderHidden ? "sm:pt-6 pt-0" : "sm:pt-4 pt-2"}`}
+      className={`flex flex-col px-3 sm:px-4 pb-4 sm:pb-4  ${cardBorderHidden ? "sm:pt-6 pt-0" : "sm:pt-3 pt-2"}`}
     >
       <Link
         href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${pub.publications.name}`}

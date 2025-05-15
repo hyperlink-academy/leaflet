@@ -22,12 +22,15 @@ export function NewDraftActionButton(props: { publication: string }) {
   );
 }
 
-export function NewDraftSecondaryButton(props: { publication: string }) {
+export function NewDraftSecondaryButton(props: {
+  publication: string;
+  fullWidth?: boolean;
+}) {
   let router = useRouter();
 
   return (
     <ButtonSecondary
-      fullWidth
+      fullWidth={props.fullWidth}
       id="new-leaflet-button"
       onClick={async () => {
         let newLeaflet = await createPublicationDraft(props.publication);

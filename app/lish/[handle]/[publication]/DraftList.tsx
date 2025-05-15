@@ -24,7 +24,7 @@ export function DraftList(props: {
   if (!rel?.isAuthor) return null;
   return (
     <div className="flex flex-col gap-4">
-      <NewDraftSecondaryButton publication={props.publication} />
+      <NewDraftSecondaryButton fullWidth publication={props.publication} />
       {props.drafts.map((d) => {
         return (
           <>

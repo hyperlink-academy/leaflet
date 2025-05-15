@@ -1,16 +1,17 @@
 import { IdResolver } from "@atproto/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
-import { Fact } from "src/replicache";
-import { Attributes } from "src/replicache/attributes";
-import { ActionButton } from "components/ActionBar/ActionButton";
+
 import { Sidebar } from "components/ActionBar/Sidebar";
 
 import { Media } from "components/Media";
 import { Footer } from "components/ActionBar/Footer";
 import { PublicationDashboard } from "./PublicationDashboard";
 import { DraftList } from "./DraftList";
-import { NewDraftActionButton } from "./NewDraftButton";
+import {
+  NewDraftActionButton,
+  NewDraftSecondaryButton,
+} from "./NewDraftButton";
 import { getIdentityData } from "actions/getIdentityData";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 
@@ -81,7 +82,14 @@ export default async function Publication(props: {
                     drafts={publication.leaflets_in_publications}
                   />
                 ),
-                Published: <div>none yet lol</div>,
+                Published: (
+                  <div className="w-full container text-center place-items-center flex flex-col gap-3 p-3">
+                    <div className="italic text-tertiary">
+                      Nothing's been published yet...
+                    </div>
+                    <NewDraftSecondaryButton publication={publication.uri} />
+                  </div>
+                ),
               }}
               defaultTab={"Drafts"}
             />
@@ -108,6 +116,7 @@ const Actions = (props: { publication: string }) => {
   return (
     <>
       <NewDraftActionButton publication={props.publication} />
+      
     </>
   );
 };
