@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { ActionButton } from "components/ActionBar/ActionButton";
@@ -8,12 +9,13 @@ import { addLeafletToHome } from "actions/addLeafletToHome";
 import { useSmoker } from "./Toast";
 import { AddToHomeSmall } from "./Icons/AddToHomeSmall";
 import { HomeSmall } from "./Icons/HomeSmall";
+import { permission } from "process";
 
-export function HomeButton() {
+export function HomeButton(props: { isPublication?: boolean }) {
   let { permissions } = useEntitySetContext();
   let searchParams = useSearchParams();
 
-  if (permissions.write)
+  if (permissions.write || props.isPublication)
     return (
       <>
         <Link
@@ -24,7 +26,7 @@ export function HomeButton() {
         >
           <ActionButton icon={<HomeSmall />} label="Go Home" />
         </Link>
-        <AddToHomeButton />
+        {!props.isPublication && <AddToHomeButton />}
       </>
     );
   return null;

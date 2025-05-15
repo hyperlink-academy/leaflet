@@ -8,12 +8,10 @@ import { Media } from "components/Media";
 import { Footer } from "components/ActionBar/Footer";
 import { PublicationDashboard } from "./PublicationDashboard";
 import { DraftList } from "./DraftList";
-import {
-  NewDraftActionButton,
-  NewDraftSecondaryButton,
-} from "./NewDraftButton";
+import { NewDraftSecondaryButton } from "./NewDraftButton";
 import { getIdentityData } from "actions/getIdentityData";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { Actions } from "./Actions";
 
 const idResolver = new IdResolver();
 
@@ -110,13 +108,4 @@ export default async function Publication(props: {
 
 const PubNotFound = () => {
   return <div>ain't no pub here</div>;
-};
-
-const Actions = (props: { publication: string }) => {
-  return (
-    <>
-      <NewDraftActionButton publication={props.publication} />
-      
-    </>
-  );
 };

@@ -18,7 +18,7 @@ export const CreatePubForm = () => {
   let { identity } = useIdentityData();
   return (
     <form
-      className="container w-full flex flex-col gap-3  p-3 "
+      className="flex flex-col gap-3"
       onSubmit={async (e) => {
         e.preventDefault();
         // Note: You'll need to update the createPublication function to handle the logo file
