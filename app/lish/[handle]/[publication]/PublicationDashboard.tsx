@@ -11,8 +11,8 @@ export function PublicationDashboard<T extends Tabs>(props: {
   let content = props.tabs[tab];
   return (
     <div className="w-full flex flex-col items-stretch">
-      <div className="flex flex-row w-full justify-between border-b border-border text-secondary">
-        <div>{props.name}</div>
+      <div className="flex flex-row w-full justify-between border-b border-border text-secondary items-center">
+        <div className="font-bold text-tertiary">{props.name}</div>
         <div className="flex flex-row gap-2">
           {Object.keys(props.tabs).map((t) => (
             <Tab
@@ -32,7 +32,7 @@ export function PublicationDashboard<T extends Tabs>(props: {
 function Tab(props: { name: string; selected: boolean; onSelect: () => void }) {
   return (
     <div
-      className={`border bg-bg-page  border-b-0 px-2 pt-1 rounded-t-md border-border ${props.selected ? "text-accent-1 font-bold -mb-[1px]" : ""}`}
+      className={`border bg-bg-page  border-b-0 px-2 pt-1 pb-0.5 rounded-t-md border-border ${props.selected ? "text-accent-1 font-bold -mb-[1px]" : ""}`}
       onClick={() => props.onSelect()}
     >
       {props.name}

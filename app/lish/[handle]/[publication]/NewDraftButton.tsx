@@ -35,7 +35,7 @@ export function NewDraftSecondaryButton(props: { publication: string }) {
       }}
     >
       <AddTiny className="m-1 shrink-0" />
-      <span>New Post</span>
+      <span>New Draft</span>
     </ButtonSecondary>
   );
 }

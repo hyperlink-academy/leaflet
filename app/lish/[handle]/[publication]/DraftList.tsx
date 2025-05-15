@@ -5,6 +5,10 @@ import { usePublicationRelationship } from "./usePublicationRelationship";
 import { usePublicationContext } from "components/Providers/PublicationContext";
 import Link from "next/link";
 import { NewDraftSecondaryButton } from "./NewDraftButton";
+import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
+import { Menu, MenuItem } from "components/Layout";
+import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
+import { DeleteSmall } from "components/Icons/DeleteSmall";
 
 export function DraftList(props: {
   publication: string;
@@ -19,19 +23,46 @@ export function DraftList(props: {
   if (!publication) return null;
   if (!rel?.isAuthor) return null;
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
       <NewDraftSecondaryButton publication={props.publication} />
       {props.drafts.map((d) => {
-        return <Draft id={d.leaflet} key={d.leaflet} {...d} />;
+        return (
+          <>
+            <Draft id={d.leaflet} key={d.leaflet} {...d} />
+            <hr className="last:hidden border-border-light" />
+          </>
+        );
       })}
     </div>
   );
 }
 
-function Draft(props: { id: string; title: string }) {
+function Draft(props: { id: string; title: string; description: string }) {
   return (
-    <Link key={props.id} href={`/${props.id}`}>
-      <h3>{props.title}</h3>
-    </Link>
+    <div className="flex flex-row gap-2 items-start">
+      <Link
+        key={props.id}
+        href={`/${props.id}`}
+        className="flex flex-col gap-0 hover:!no-underline grow"
+      >
+        {props.title ? (
+          <h3 className="text-primary">{props.title}</h3>
+        ) : (
+          <h3 className="text-tertiary italic">Untitled</h3>
+        )}
+        <div className="text-secondary italic">{props.description}</div>
+      </Link>
+      <DraftOptionsMenu />
+    </div>
   );
 }
+
+const DraftOptionsMenu = () => {
+  return (
+    <Menu trigger={<MoreOptionsVerticalTiny />}>
+      <MenuItem onSelect={() => {}}>
+        <DeleteSmall /> Delete Draft
+      </MenuItem>
+    </Menu>
+  );
+};

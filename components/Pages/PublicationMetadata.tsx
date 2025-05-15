@@ -43,7 +43,7 @@ export const PublicationMetadata = ({
 
   return (
     <div
-      className={`flex flex-col px-3 sm:px-4 pb-4 sm:pb-6  ${cardBorderHidden ? "sm:pt-6 pt-0" : "sm:pt-4 pt-2"}`}
+      className={`flex flex-col px-3 sm:px-4 pb-4 sm:pb-4  ${cardBorderHidden ? "sm:pt-6 pt-0" : "sm:pt-4 pt-2"}`}
     >
       <Link
         href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${pub.publications.name}`}
@@ -61,7 +61,7 @@ export const PublicationMetadata = ({
       />
       <AutosizeTextarea
         placeholder="add an optional description..."
-        className="italic text-secondary outline-none bg-transparent"
+        className="italic text-secondary outline-none bg-transparent pt-1"
         value={descriptionState}
         onChange={(e) => {
           setDescriptionState(e.currentTarget.value);
@@ -70,7 +70,7 @@ export const PublicationMetadata = ({
       {pub.doc ? (
         <p>Published</p>
       ) : (
-        <p className="text-sm text-tertiary p-1">Draft</p>
+        <p className="text-sm text-tertiary pt-1">Draft</p>
       )}
     </div>
   );

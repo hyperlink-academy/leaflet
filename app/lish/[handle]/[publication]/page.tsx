@@ -61,11 +61,15 @@ export default async function Publication(props: {
 
   try {
     return (
-      <div className="relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6">
-        <Sidebar className="mt-6 p-2">
-          <Actions publication={publication.uri} />
-        </Sidebar>
-        <div className={`h-full overflow-y-scroll pl-8 pt-8 w-full`}>
+      <div className="relative max-w-prose w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6">
+        <div className="w-12 relative">
+          <Sidebar className="mt-6 p-2">
+            <Actions publication={publication.uri} />
+          </Sidebar>
+        </div>
+        <div
+          className={`h-full overflow-y-scroll pt-4 px-3 sm:pl-8 sm:pr-1 sm:pt-9 w-full`}
+        >
           <PublicationDashboard
             name={publication.name}
             tabs={{
