@@ -12,6 +12,7 @@ import { PublicationDashboard } from "./PublicationDashboard";
 import { DraftList } from "./DraftList";
 import { NewDraftActionButton } from "./NewDraftButton";
 import { getIdentityData } from "actions/getIdentityData";
+import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 
 const idResolver = new IdResolver();
 
@@ -61,35 +62,37 @@ export default async function Publication(props: {
 
   try {
     return (
-      <div className="relative max-w-prose w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6">
-        <div className="w-12 relative">
-          <Sidebar className="mt-6 p-2">
-            <Actions publication={publication.uri} />
-          </Sidebar>
+      <ThemeProvider entityID={null}>
+        <div className="relative max-w-prose w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6">
+          <div className="w-12 relative">
+            <Sidebar className="mt-6 p-2">
+              <Actions publication={publication.uri} />
+            </Sidebar>
+          </div>
+          <div
+            className={`h-full overflow-y-scroll pt-4 px-3 sm:pl-8 sm:pr-1 sm:pt-9 w-full`}
+          >
+            <PublicationDashboard
+              name={publication.name}
+              tabs={{
+                Drafts: (
+                  <DraftList
+                    publication={publication.uri}
+                    drafts={publication.leaflets_in_publications}
+                  />
+                ),
+                Published: <div>none yet lol</div>,
+              }}
+              defaultTab={"Drafts"}
+            />
+          </div>
+          <Media mobile>
+            <Footer>
+              <Actions publication={publication.uri} />
+            </Footer>
+          </Media>
         </div>
-        <div
-          className={`h-full overflow-y-scroll pt-4 px-3 sm:pl-8 sm:pr-1 sm:pt-9 w-full`}
-        >
-          <PublicationDashboard
-            name={publication.name}
-            tabs={{
-              Drafts: (
-                <DraftList
-                  publication={publication.uri}
-                  drafts={publication.leaflets_in_publications}
-                />
-              ),
-              Published: <div>none yet lol</div>,
-            }}
-            defaultTab={"Drafts"}
-          />
-        </div>
-        <Media mobile>
-          <Footer>
-            <Actions publication={publication.uri} />
-          </Footer>
-        </Media>
-      </div>
+      </ThemeProvider>
     );
   } catch (e) {
     console.log(e);

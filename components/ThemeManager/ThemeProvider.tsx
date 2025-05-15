@@ -48,7 +48,7 @@ function setCSSVariableToColor(
   el?.style.setProperty(name, colorToString(value, "rgb"));
 }
 export function ThemeProvider(props: {
-  entityID: string;
+  entityID: string | null;
   local?: boolean;
   children: React.ReactNode;
 }) {
