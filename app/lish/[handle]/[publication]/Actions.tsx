@@ -47,7 +47,7 @@ function PublicationShareButton() {
         <Link href={"/"} className="text-secondary hover:no-underline">
           <div>Viewer Mode</div>
           <div className="font-normal text-tertiary text-sm">
-            View your publication as a reader would
+            View your publication as a reader
           </div>
         </Link>
       </MenuItem>
@@ -55,7 +55,7 @@ function PublicationShareButton() {
         <div>
           <div>Share Your Publication</div>
           <div className="font-normal text-tertiary text-sm">
-            Copy the reader link for this publication{" "}
+            Copy link for the published site
           </div>
         </div>
       </MenuItem>

@@ -10,7 +10,10 @@ import { useTemplateState } from "app/home/CreateNewButton";
 import LoginForm from "app/login/LoginForm";
 import { CustomDomainMenu } from "./DomainOptions";
 import { useIdentityData } from "components/IdentityProvider";
-import { useLeafletDomains } from "components/PageSWRDataProvider";
+import {
+  useLeafletDomains,
+  useLeafletPublicationData,
+} from "components/PageSWRDataProvider";
 import { ShareSmall } from "components/Icons/ShareSmall";
 
 export type ShareMenuStates = "default" | "login" | "domain";
@@ -38,8 +41,9 @@ export let usePublishLink = () => {
 };
 
 export function ShareOptions() {
-  let { permission_token } = useReplicache();
   let [menuState, setMenuState] = useState<ShareMenuStates>("default");
+  let { data: publicationData } = useLeafletPublicationData();
+  let pub = publicationData?.[0];
 
   return (
     <Menu
@@ -48,7 +52,14 @@ export function ShareOptions() {
       onOpenChange={() => {
         setMenuState("default");
       }}
-      trigger={<ActionButton icon=<ShareSmall /> primary label="Share" />}
+      trigger={
+        <ActionButton
+          icon=<ShareSmall />
+          primary={!!!pub}
+          secondary={!!pub}
+          label={`Share ${pub && "Draft"}`}
+        />
+      }
     >
       {menuState === "login" ? (
         <div className="px-3 py-1">
@@ -57,7 +68,11 @@ export function ShareOptions() {
       ) : menuState === "domain" ? (
         <CustomDomainMenu setShareMenuState={setMenuState} />
       ) : (
-        <ShareMenu setMenuState={setMenuState} domainConnected={false} />
+        <ShareMenu
+          setMenuState={setMenuState}
+          domainConnected={false}
+          isPub={!!pub}
+        />
       )}
     </Menu>
   );
@@ -66,8 +81,10 @@ export function ShareOptions() {
 const ShareMenu = (props: {
   setMenuState: (state: ShareMenuStates) => void;
   domainConnected: boolean;
+  isPub?: boolean;
 }) => {
   let { permission_token } = useReplicache();
+
   let publishLink = usePublishLink();
   let [collabLink, setCollabLink] = useState<null | string>(null);
   useEffect(() => {
@@ -79,6 +96,7 @@ const ShareMenu = (props: {
   let isTemplate = useTemplateState(
     (s) => !!s.templates.find((t) => t.id === permission_token.id),
   );
+
   return (
     <>
       {isTemplate && (
@@ -124,8 +142,12 @@ const ShareMenu = (props: {
         }
         link={publishLink || ""}
       />
-      <hr className="border-border mt-1" />
-      <DomainMenuItem setMenuState={props.setMenuState} />
+      {!props.isPub && (
+        <>
+          <hr className="border-border mt-1" />
+          <DomainMenuItem setMenuState={props.setMenuState} />
+        </>
+      )}
     </>
   );
 };

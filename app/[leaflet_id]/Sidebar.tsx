@@ -1,16 +1,22 @@
 "use client";
+import { ActionButton } from "components/ActionBar/ActionButton";
 import { Sidebar } from "components/ActionBar/Sidebar";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { HelpPopover } from "components/HelpPopover";
 import { HomeButton } from "components/HomeButton";
 import { Media } from "components/Media";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { ShareOptions } from "components/ShareOptions";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { Watermark } from "components/Watermark";
 import { useUIState } from "src/useUIState";
+import { BackToPubButton, PublishButton } from "./Actions";
 
 export function LeafletSidebar(props: { leaflet_id: string }) {
   let entity_set = useEntitySetContext();
+  let { data: publicationData } = useLeafletPublicationData();
+  let pub = publicationData?.[0];
+
   return (
     <div
       className="spacer flex justify-end items-start"
@@ -25,13 +31,23 @@ export function LeafletSidebar(props: { leaflet_id: string }) {
       >
         <Sidebar>
           {entity_set.permissions.write ? (
-            <>
-              <ShareOptions />
-              <ThemePopover entityID={props.leaflet_id} />
-              <HelpPopover />
-              <hr className="text-border" />
-              <HomeButton />
-            </>
+            pub?.publications ? (
+              <>
+                <PublishButton />
+                <ShareOptions />
+                <HelpPopover />
+                <hr className="text-border" />
+                <BackToPubButton publication={pub.publications} />
+              </>
+            ) : (
+              <>
+                <ShareOptions />
+                <ThemePopover entityID={props.leaflet_id} />
+                <HelpPopover />
+                <hr className="text-border" />
+                <HomeButton />
+              </>
+            )
           ) : (
             <div>
               <HomeButton />

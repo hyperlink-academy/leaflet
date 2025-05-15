@@ -9,6 +9,7 @@ import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { Menu, MenuItem } from "components/Layout";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 import { DeleteSmall } from "components/Icons/DeleteSmall";
+import React from "react";
 
 export function DraftList(props: {
   publication: string;
@@ -23,14 +24,14 @@ export function DraftList(props: {
   if (!publication) return null;
   if (!rel?.isAuthor) return null;
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 pb-6">
       <NewDraftSecondaryButton fullWidth publication={props.publication} />
       {props.drafts.map((d) => {
         return (
-          <>
-            <Draft id={d.leaflet} key={d.leaflet} {...d} />
+          <React.Fragment key={d.leaflet}>
+            <Draft id={d.leaflet} {...d} />
             <hr className="last:hidden border-border-light" />
-          </>
+          </React.Fragment>
         );
       })}
     </div>

@@ -9,10 +9,14 @@ import { HomeButton } from "components/HomeButton";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { HelpPopover } from "components/HelpPopover";
 import { Watermark } from "components/Watermark";
+import { BackToPubButton, PublishButton } from "./Actions";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 
 export function LeafletFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedEntity);
   let entity_set = useEntitySetContext();
+  let { data: publicationData } = useLeafletPublicationData();
+  let pub = publicationData?.[0];
 
   return (
     <Media mobile className="mobileFooter w-full z-10 touch-none -mt-4 ">
@@ -31,12 +35,21 @@ export function LeafletFooter(props: { entityID: string }) {
           />
         </div>
       ) : entity_set.permissions.write ? (
-        <ActionFooter>
-          <HomeButton />
-          <ShareOptions />
-          <HelpPopover />
-          <ThemePopover entityID={props.entityID} />
-        </ActionFooter>
+        pub?.publications ? (
+          <ActionFooter>
+            <BackToPubButton publication={pub.publications} />
+            <PublishButton />
+            <ShareOptions />
+            <HelpPopover />
+          </ActionFooter>
+        ) : (
+          <ActionFooter>
+            <HomeButton />
+            <ShareOptions />
+            <HelpPopover />
+            <ThemePopover entityID={props.entityID} />
+          </ActionFooter>
+        )
       ) : (
         <div className="pb-2 px-2 z-10 flex justify-end">
           <Watermark mobile />
