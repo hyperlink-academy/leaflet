@@ -42,9 +42,7 @@ const HeadingStyle = {
   3: "text-base font-bold text-secondary ",
 } as { [level: number]: string };
 
-export function TextBlock(
-  props: BlockProps & { className?: string; preview?: boolean },
-) {
+export function TextBlock(props: BlockProps & { preview?: boolean }) {
   let isLocked = useEntity(props.entityID, "block/is-locked");
   let initialized = useInitialPageLoad();
   let first = props.previousBlock === null;
@@ -59,7 +57,6 @@ export function TextBlock(
         <RenderedTextBlock
           type={props.type}
           entityID={props.entityID}
-          className={props.className}
           first={first}
           pageType={props.pageType}
         />
@@ -115,7 +112,6 @@ export function IOSBS(props: BlockProps) {
 
 export function RenderedTextBlock(props: {
   entityID: string;
-  className?: string;
   first?: boolean;
   pageType?: "canvas" | "doc";
   type: BlockProps["type"];
@@ -136,18 +132,13 @@ export function RenderedTextBlock(props: {
     if (permissions.write && (props.first || props.pageType === "canvas"))
       content = (
         <div
-          className={`${props.className} pointer-events-none italic text-tertiary flex flex-col `}
+          className={`pointer-events-none italic text-tertiary flex flex-col `}
         >
-          {headingLevel?.data.value === 1
-            ? "Title"
-            : headingLevel?.data.value === 2
-              ? "Header"
-              : headingLevel?.data.value === 3
-                ? "Subheader"
-                : "write something..."}
-          <div className=" text-xs font-normal">
-            or type &quot;/&quot; for commands
-          </div>
+          <PlaceholderText
+            alignmentClass={alignmentClass}
+            type={props.type}
+            headingLevel={headingLevel?.data.value}
+          />
         </div>
       );
   } else {
@@ -170,14 +161,14 @@ export function RenderedTextBlock(props: {
       className={`
         ${alignmentClass}
         ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
-      w-full whitespace-pre-wrap outline-none ${props.className} `}
+      w-full whitespace-pre-wrap outline-none`}
     >
       {content}
     </pre>
   );
 }
 
-export function BaseTextBlock(props: BlockProps & { className?: string }) {
+export function BaseTextBlock(props: BlockProps) {
   let mountRef = useRef<HTMLPreElement | null>(null);
   let actionTimeout = useRef<number | null>(null);
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
@@ -370,32 +361,21 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           outline-none
 
           ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
-          ${props.className}`}
+          `}
           ref={mountRef}
         />
         {editorState?.doc.textContent.length === 0 &&
         props.previousBlock === null &&
         props.nextBlock === null ? (
           // if this is the only block on the page and is empty or is a canvas, show placeholder
-          <div
-            className={`${props.className} ${alignmentClass} w-full pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col
-              ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
-              `}
-          >
-            {props.type === "text"
-              ? "write something..."
-              : headingLevel?.data.value === 3
-                ? "Subheader"
-                : headingLevel?.data.value === 2
-                  ? "Header"
-                  : "Title"}
-            <div className=" text-xs font-normal">
-              or type &quot;/&quot; to add a block
-            </div>
-          </div>
+          <PlaceholderText
+            alignmentClass={alignmentClass}
+            type={props.type}
+            headingLevel={headingLevel?.data.value}
+          />
         ) : editorState?.doc.textContent.length === 0 && focused ? (
           // if not the only block on page but is the block is empty and selected, but NOT multiselected show add button
-          <CommandOptions {...props} className={props.className} />
+          <CommandOptions {...props} />
         ) : null}
 
         {editorState?.doc.textContent.startsWith("/") && selected && (
@@ -409,6 +389,31 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
     </>
   );
 }
+
+const PlaceholderText = (props: {
+  type: BlockProps["type"];
+  headingLevel?: number;
+  alignmentClass: string;
+}) => {
+  return (
+    <div
+      className={`${props.alignmentClass} w-full pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col
+        ${props.type === "heading" ? HeadingStyle[props.headingLevel || 1] : ""}
+        `}
+    >
+      {props.type === "text"
+        ? "write something..."
+        : props.headingLevel === 3
+          ? "Subheader"
+          : props.headingLevel === 2
+            ? "Header"
+            : "Title"}
+      <div className=" text-xs font-normal">
+        or type &quot;/&quot; to add a block
+      </div>
+    </div>
+  );
+};
 
 const BlockifyLink = (props: {
   entityID: string;
@@ -468,7 +473,7 @@ const BlockifyLink = (props: {
   } else return null;
 };
 
-const CommandOptions = (props: BlockProps & { className?: string }) => {
+const CommandOptions = (props: BlockProps) => {
   let rep = useReplicache();
   let entity_set = useEntitySetContext();
   return (
@@ -476,7 +481,6 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
       className={`absolute top-0 right-0 w-fit flex gap-[6px] items-center font-bold  rounded-md  text-sm text-border ${props.pageType === "canvas" && "mr-[6px]"}`}
     >
       <TooltipButton
-        className={props.className}
         onMouseDown={async () => {
           let command = blockCommands.find((f) => f.name === "Image");
           if (!rep.rep) return;
@@ -495,7 +499,6 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
       </TooltipButton>
 
       <TooltipButton
-        className={props.className}
         onMouseDown={async () => {
           let command = blockCommands.find((f) => f.name === "New Page");
           if (!rep.rep) return;
@@ -514,7 +517,6 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
       </TooltipButton>
 
       <TooltipButton
-        className={props.className}
         onMouseDown={(e) => {
           e.preventDefault();
           let editor = useEditorStates.getState().editorStates[props.entityID];
