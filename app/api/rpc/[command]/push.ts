@@ -6,7 +6,7 @@ import { permission_token_rights, replicache_clients } from "drizzle/schema";
 import { getClientGroup } from "src/replicache/utils";
 import { makeRoute } from "../lib";
 import { z } from "zod";
-import { Env } from "./route";
+import type { Env } from "./route";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 

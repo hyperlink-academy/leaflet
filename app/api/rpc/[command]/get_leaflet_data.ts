@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
-import { Env } from "./route";
+import type { Env } from "./route";
 
 export type GetLeafletDataReturnType = Awaited<
   ReturnType<(typeof get_leaflet_data)["handler"]>

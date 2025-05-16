@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
-import { Env } from "./route";
+import type { Env } from "./route";
 
 export const get_domain_status = makeRoute({
   route: "get_domain_status",

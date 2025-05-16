@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { makeRoute } from "../lib";
-import { Env } from "./route";
+import type { Env } from "./route";
 
 export const getFactsFromHomeLeaflets = makeRoute({
   route: "getFactsFromHomeLeaflets",

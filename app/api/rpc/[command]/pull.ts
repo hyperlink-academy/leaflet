@@ -8,7 +8,7 @@ import type { Fact } from "src/replicache";
 import { FactWithIndexes } from "src/replicache/utils";
 import type { Attribute } from "src/replicache/attributes";
 import { makeRoute } from "../lib";
-import { Env } from "./route";
+import type { Env } from "./route";
 
 // First define the sub-types for V0 and V1 requests
 const pullRequestV0 = z.object({
