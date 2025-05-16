@@ -1,6 +1,6 @@
 "use client";
 
-import { usePublicationRelationship } from "./usePublicationRelationship";
+import { usePublicationRelationship } from "../usePublicationRelationship";
 import { usePublicationContext } from "components/Providers/PublicationContext";
 import Link from "next/link";
 import { NewDraftSecondaryButton } from "./NewDraftButton";

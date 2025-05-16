@@ -16,6 +16,9 @@ import { AtUri } from "@atproto/syntax";
 import { PubLeafletDocument } from "lexicons/api";
 import React from "react";
 import { EditTiny } from "components/Icons/EditTiny";
+import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
+import { Menu, MenuItem } from "components/Layout";
+import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 
 const idResolver = new IdResolver();
 
@@ -25,14 +28,13 @@ export async function generateMetadata(props: {
   let did = await idResolver.handle.resolve((await props.params).handle);
   if (!did) return { title: "Publication 404" };
 
-  let { data: publication } = await supabaseServerClient
-    .from("publications")
-    .select(
-      "*, documents_in_publications(documents(*)), leaflets_in_publications(*, permission_tokens(*, permission_token_rights(*), custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*) ))",
-    )
-    .eq("identity_did", did)
-    .eq("name", decodeURIComponent((await props.params).publication))
-    .single();
+  let { result: publication } = await get_publication_data.handler(
+    {
+      did,
+      publication_name: decodeURIComponent((await props.params).publication),
+    },
+    { supabase: supabaseServerClient },
+  );
   if (!publication) return { title: "404 Publication" };
   return { title: decodeURIComponent((await props.params).publication) };
 }
@@ -46,21 +48,13 @@ export default async function Publication(props: {
   if (!identity || !identity.atp_did) return <PubNotFound />;
   let did = await idResolver.handle.resolve((await props.params).handle);
   if (!did) return <PubNotFound />;
-  let { data: publication } = await supabaseServerClient
-    .from("publications")
-    .select(
-      `*,
-      documents_in_publications(documents(*)),
-      leaflets_in_publications(*,
-        permission_tokens(*,
-          permission_token_rights(*),
-          custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*)
-       )
-      )`,
-    )
-    .eq("identity_did", did)
-    .eq("name", decodeURIComponent((await props.params).publication))
-    .single();
+  let { result: publication } = await get_publication_data.handler(
+    {
+      did,
+      publication_name: decodeURIComponent((await props.params).publication),
+    },
+    { supabase: supabaseServerClient },
+  );
   if (!publication || identity.atp_did !== publication.identity_did)
     return <PubNotFound />;
 
