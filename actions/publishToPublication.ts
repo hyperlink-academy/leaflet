@@ -86,6 +86,8 @@ export async function publishToPublication({
     author: credentialSession.did!,
     title: title || "Untitled",
     publication: publication_uri,
+    publishedAt: draft ? undefined : new Date().toISOString(),
+    description: description || "",
     pages: [
       {
         $type: "pub.leaflet.pages.linearDocument",
