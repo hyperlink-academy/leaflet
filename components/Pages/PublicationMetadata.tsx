@@ -7,6 +7,7 @@ import { updateLeafletDraftMetadata } from "actions/publications/updateLeafletDr
 import { useReplicache } from "src/replicache";
 import { useIdentityData } from "components/IdentityProvider";
 import { AutosizeTextarea } from "components/utils/AutosizeTextarea";
+import { Separator } from "components/Layout";
 export const PublicationMetadata = ({
   cardBorderHidden,
 }: {
@@ -43,14 +44,19 @@ export const PublicationMetadata = ({
 
   return (
     <div
-      className={`flex flex-col px-3 sm:px-4 pb-4 sm:pb-4  ${cardBorderHidden ? "sm:pt-6 pt-0" : "sm:pt-3 pt-2"}`}
+      className={`flex flex-col px-3 sm:px-4 pb-4 sm:pb-5  ${cardBorderHidden ? "sm:pt-6 pt-0" : "sm:pt-3 pt-2"}`}
     >
-      <Link
-        href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${pub.publications.name}`}
-        className="text-accent-contrast font-bold hover:no-underline"
-      >
-        {pub.publications?.name}
-      </Link>
+      <div className="flex gap-2">
+        <Link
+          href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${pub.publications.name}`}
+          className="text-accent-contrast font-bold hover:no-underline"
+        >
+          {pub.publications?.name}
+        </Link>
+        <div className="font-bold text-tertiary px-1 bg-border-light rounded-md ">
+          Editor
+        </div>
+      </div>
       <Input
         className="text-xl font-bold outline-none bg-transparent"
         value={titleState}
@@ -61,16 +67,22 @@ export const PublicationMetadata = ({
       />
       <AutosizeTextarea
         placeholder="add an optional description..."
-        className="italic text-secondary outline-none bg-transparent pt-1"
+        className="italic text-secondary outline-none bg-transparent"
         value={descriptionState}
         onChange={(e) => {
           setDescriptionState(e.currentTarget.value);
         }}
       />
       {pub.doc ? (
-        <p>Published</p>
+        <div className="flex flex-row items-center gap-2 pt-3">
+          <p className="text-sm text-tertiary">Published XX/XX/XXX</p>
+          <Separator classname="h-4" />
+          <Link className="text-sm" href="/">
+            View Post
+          </Link>
+        </div>
       ) : (
-        <p className="text-sm text-tertiary pt-1">Draft</p>
+        <p className="text-sm text-tertiary pt-2">Draft</p>
       )}
     </div>
   );

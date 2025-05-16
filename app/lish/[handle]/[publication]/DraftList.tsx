@@ -52,17 +52,6 @@ function Draft(props: { id: string; title: string; description: string }) {
         )}
         <div className="text-secondary italic">{props.description}</div>
       </Link>
-      <DraftOptionsMenu />
     </div>
   );
 }
-
-const DraftOptionsMenu = () => {
-  return (
-    <Menu trigger={<MoreOptionsVerticalTiny />}>
-      <MenuItem onSelect={() => {}}>
-        <DeleteSmall /> Delete Draft
-      </MenuItem>
-    </Menu>
-  );
-};

@@ -61,14 +61,21 @@ export default async function Post(props: {
   return (
     <div className="postPage w-full h-screen bg-bg-leaflet flex items-stretch">
       <div className="pubWrapper flex flex-col w-full ">
-        <div className="pubContent flex flex-col px-4 py-6 mx-auto max-w-prose h-full w-full overflow-auto">
-          <Link
-            className="font-bold hover:no-underline text-accent-contrast -mb-2 sm:-mb-3"
-            href={`/lish/${(await props.params).handle}/${(await props.params).publication}`}
-          >
-            {decodeURIComponent((await props.params).publication)}
-          </Link>
-          <h1>{record.title}</h1>
+        <div className="pubContent flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto max-w-prose h-full w-full overflow-auto">
+          <div className="flex flex-col pb-8">
+            <Link
+              className="font-bold hover:no-underline text-accent-contrast"
+              href={`/lish/${(await props.params).handle}/${(await props.params).publication}`}
+            >
+              {decodeURIComponent((await props.params).publication)}
+            </Link>
+            <h2 className="">{record.title}</h2>
+            <p className="italic text-secondary">
+              This is a placeholder description and I want it to be longer so it
+              spans two lines.
+            </p>
+            <p className="text-sm text-tertiary pt-3">Published 06/02/2025</p>
+          </div>
           {blocks.map((b, index) => {
             switch (true) {
               case PubLeafletBlocksImage.isMain(b.block): {

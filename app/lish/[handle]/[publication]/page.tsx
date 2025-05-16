@@ -8,7 +8,6 @@ import { Media } from "components/Media";
 import { Footer } from "components/ActionBar/Footer";
 import { PublicationDashboard } from "./PublicationDashboard";
 import { DraftList } from "./DraftList";
-import { NewDraftSecondaryButton } from "./NewDraftButton";
 import { getIdentityData } from "actions/getIdentityData";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { Actions } from "./Actions";
@@ -16,8 +15,7 @@ import Link from "next/link";
 import { AtUri } from "@atproto/syntax";
 import { PubLeafletDocument } from "lexicons/api";
 import React from "react";
-import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
-import { Menu, MenuItem } from "components/Layout";
+import { EditTiny } from "components/Icons/EditTiny";
 
 const idResolver = new IdResolver();
 
@@ -76,7 +74,7 @@ export default async function Publication(props: {
             </Sidebar>
           </div>
           <div
-            className={`h-full overflow-y-scroll pt-4 px-3 sm:pl-5  sm:pt-9 w-full`}
+            className={`h-full overflow-y-scroll pt-4 sm:pl-5 sm:pt-9 w-full`}
           >
             <PublicationDashboard
               name={publication.name}
@@ -105,14 +103,12 @@ export default async function Publication(props: {
                         let record = doc.documents
                           .data as PubLeafletDocument.Record;
 
-                        console.log(record);
-
                         return (
                           <React.Fragment key={doc.documents?.uri}>
                             <div className="flex  w-full ">
                               <Link
                                 href={`/lish/${params.handle}/${params.publication}/${uri.rkey}`}
-                                className="publishedPost grow flex flex-col gap-0 hover:!no-underline"
+                                className="publishedPost grow flex flex-col gap-2 hover:!no-underline"
                               >
                                 <h3 className="text-primary">{record.title}</h3>
                                 <p className="italic text-secondary">
@@ -123,17 +119,13 @@ export default async function Publication(props: {
                                 </p>
                               </Link>
                               {leaflet && (
-                                <Link href={`/${leaflet.leaflet}`}>edit</Link>
+                                <Link
+                                  className="pt-[6px]"
+                                  href={`/${leaflet.leaflet}`}
+                                >
+                                  <EditTiny />
+                                </Link>
                               )}
-                              <MoreOptionsVerticalTiny />
-                              {/* <Menu trigger={<MoreOptionsVerticalTiny />}>
-                                  <MenuItem onSelect={() => {}}>
-                                    Edit Post
-                                  </MenuItem>
-                                  <MenuItem onSelect={() => {}}>
-                                    Delete Post
-                                  </MenuItem>
-                                </Menu> */}
                             </div>
                             <hr className="last:hidden border-border-light" />
                           </React.Fragment>
