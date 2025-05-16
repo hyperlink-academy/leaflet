@@ -10,10 +10,10 @@ export function PublicationDashboard<T extends Tabs>(props: {
   let [tab, setTab] = useState(props.defaultTab);
   let content = props.tabs[tab];
   return (
-    <div className="w-full flex flex-col items-stretch">
-      <div className="flex flex-row w-full justify-between border-b border-border text-secondary items-center">
+    <div className="pubDashWrapper w-full flex flex-col items-stretch px-3">
+      <div className="pubDashTabWrapper flex flex-row w-full justify-between border-b border-border text-secondary items-center">
         <div className="font-bold text-tertiary">{props.name}</div>
-        <div className="flex flex-row gap-2">
+        <div className="pubDashTabs flex flex-row gap-2">
           {Object.keys(props.tabs).map((t) => (
             <Tab
               key={t}
@@ -24,7 +24,7 @@ export function PublicationDashboard<T extends Tabs>(props: {
           ))}
         </div>
       </div>
-      <div className="pt-4">{content}</div>
+      <div className="pubDashContent pt-4">{content}</div>
     </div>
   );
 }

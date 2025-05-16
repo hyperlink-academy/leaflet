@@ -15,6 +15,9 @@ import { Actions } from "./Actions";
 import Link from "next/link";
 import { AtUri } from "@atproto/syntax";
 import { PubLeafletDocument } from "lexicons/api";
+import React from "react";
+import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
+import { Menu, MenuItem } from "components/Layout";
 
 const idResolver = new IdResolver();
 
@@ -73,7 +76,7 @@ export default async function Publication(props: {
             </Sidebar>
           </div>
           <div
-            className={`h-full overflow-y-scroll pt-4 px-3 sm:pl-8 sm:pr-1 sm:pt-9 w-full`}
+            className={`h-full overflow-y-scroll pt-4 px-3 sm:pl-5  sm:pt-9 w-full`}
           >
             <PublicationDashboard
               name={publication.name}
@@ -86,14 +89,14 @@ export default async function Publication(props: {
                     )}
                   />
                 ),
-                Published: (
-                  <div className="w-full container text-center place-items-center flex flex-col gap-3 p-3">
-                    {publication.documents_in_publications.length === 0 ? (
-                      <div className="italic text-tertiary">
-                        Nothing's been published yet...
-                      </div>
-                    ) : (
-                      publication.documents_in_publications.map((doc) => {
+                Published:
+                  publication.documents_in_publications.length === 0 ? (
+                    <div className="italic text-tertiary w-full container text-center place-items-center flex flex-col gap-3 p-3">
+                      Nothing's been published yet...
+                    </div>
+                  ) : (
+                    <div className="publishedList w-full flex flex-col gap-4 pb-6">
+                      {publication.documents_in_publications.map((doc) => {
                         if (!doc.documents) return null;
                         let leaflet = publication.leaflets_in_publications.find(
                           (l) => doc.documents && l.doc === doc.documents.uri,
@@ -101,26 +104,43 @@ export default async function Publication(props: {
                         let uri = new AtUri(doc.documents.uri);
                         let record = doc.documents
                           .data as PubLeafletDocument.Record;
+
+                        console.log(record);
+
                         return (
-                          <div
-                            className="w-full flex flex-row justify-between"
-                            key={doc.documents?.uri}
-                          >
-                            <Link
-                              href={`/lish/${params.handle}/${params.publication}/${uri.rkey}`}
-                            >
-                              {record.title}
-                            </Link>
-                            {leaflet && (
-                              <Link href={`/${leaflet.leaflet}`}>edit</Link>
-                            )}
-                          </div>
+                          <React.Fragment key={doc.documents?.uri}>
+                            <div className="flex  w-full ">
+                              <Link
+                                href={`/lish/${params.handle}/${params.publication}/${uri.rkey}`}
+                                className="publishedPost grow flex flex-col gap-0 hover:!no-underline"
+                              >
+                                <h3 className="text-primary">{record.title}</h3>
+                                <p className="italic text-secondary">
+                                  This is a placeholder for description
+                                </p>
+                                <p className="text-sm text-tertiary pt-2">
+                                  {record.publishedAt} PlaceholderDate
+                                </p>
+                              </Link>
+                              {leaflet && (
+                                <Link href={`/${leaflet.leaflet}`}>edit</Link>
+                              )}
+                              <MoreOptionsVerticalTiny />
+                              {/* <Menu trigger={<MoreOptionsVerticalTiny />}>
+                                  <MenuItem onSelect={() => {}}>
+                                    Edit Post
+                                  </MenuItem>
+                                  <MenuItem onSelect={() => {}}>
+                                    Delete Post
+                                  </MenuItem>
+                                </Menu> */}
+                            </div>
+                            <hr className="last:hidden border-border-light" />
+                          </React.Fragment>
                         );
-                      })
-                    )}
-                    <NewDraftSecondaryButton publication={publication.uri} />
-                  </div>
-                ),
+                      })}
+                    </div>
+                  ),
               }}
               defaultTab={"Drafts"}
             />
