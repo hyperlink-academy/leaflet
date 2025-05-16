@@ -4,8 +4,8 @@ import { createServerClient } from "@supabase/ssr";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { NextRequest } from "next/server";
 import postgres from "postgres";
-import { Fact } from "src/replicache";
-import { Attributes } from "src/replicache/attributes";
+import type { Fact } from "src/replicache";
+import type { Attribute } from "src/replicache/attributes";
 import { Database } from "supabase/database.types";
 import { v7 } from "uuid";
 
@@ -41,7 +41,7 @@ export async function createNewLeafletFromTemplate(
   let { data } = await supabase.rpc("get_facts", {
     root: rootEntity,
   });
-  let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
+  let initialFacts = (data as unknown as Fact<Attribute>[]) || [];
 
   let oldEntityIDToNewID = {} as { [k: string]: string };
   let oldEntities = initialFacts.reduce((acc, f) => {

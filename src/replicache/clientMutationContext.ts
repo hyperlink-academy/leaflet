@@ -39,7 +39,7 @@ export function clientMutationContext(
       },
     },
     async assertFact(f) {
-      let attribute = Attributes[f.attribute as keyof typeof Attributes];
+      let attribute = Attributes[f.attribute as Attribute];
       if (!attribute) return;
       let id = f.id || v7();
       let data = { ...f.data };
@@ -110,13 +110,13 @@ export function clientMutationContext(
     },
     async deleteEntity(entity) {
       let existingFacts = await tx
-        .scan<Fact<keyof typeof Attributes>>({
+        .scan<Fact<Attribute>>({
           indexName: "eav",
           prefix: `${entity}`,
         })
         .toArray();
       let references = await tx
-        .scan<Fact<keyof typeof Attributes>>({
+        .scan<Fact<Attribute>>({
           indexName: "vae",
           prefix: entity,
         })

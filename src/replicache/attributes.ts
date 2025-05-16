@@ -242,7 +242,8 @@ export const Attributes = {
   ...ImageBlockAttributes,
   ...PollBlockAttributes,
 };
-type Attribute = typeof Attributes;
+export type Attributes = typeof Attributes;
+export type Attribute = keyof Attributes;
 export type Data<A extends keyof typeof Attributes> = {
   text: { type: "text"; value: string };
   string: { type: "string"; value: string };
@@ -316,6 +317,9 @@ export type Data<A extends keyof typeof Attributes> = {
   };
   color: { type: "color"; value: string };
 }[(typeof Attributes)[A]["type"]];
-export type FilterAttributes<F extends Partial<Attribute[keyof Attribute]>> = {
-  [A in keyof Attribute as Attribute[A] extends F ? A : never]: Attribute[A];
-};
+export type FilterAttributes<F extends Partial<Attributes[keyof Attributes]>> =
+  {
+    [A in keyof Attributes as Attributes[A] extends F
+      ? A
+      : never]: Attributes[A];
+  };

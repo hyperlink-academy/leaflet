@@ -12,7 +12,7 @@ import {
 } from "prosemirror-state";
 import { RefObject } from "react";
 import { Replicache } from "replicache";
-import { ReplicacheMutators } from "src/replicache";
+import type { ReplicacheMutators } from "src/replicache";
 import { elementId } from "src/utils/elementId";
 import { schema } from "./schema";
 import { useUIState } from "src/useUIState";

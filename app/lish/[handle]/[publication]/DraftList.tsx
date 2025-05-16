@@ -1,6 +1,5 @@
 "use client";
 
-import { Fact, ReplicacheProvider } from "src/replicache";
 import { usePublicationRelationship } from "./usePublicationRelationship";
 import { usePublicationContext } from "components/Providers/PublicationContext";
 import Link from "next/link";

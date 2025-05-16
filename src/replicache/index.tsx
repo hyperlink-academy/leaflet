@@ -17,7 +17,8 @@ import {
   WriteTransaction,
 } from "replicache";
 import { mutations } from "./mutations";
-import { Attributes, Data, FilterAttributes } from "./attributes";
+import { Attributes } from "./attributes";
+import { Attribute, Data, FilterAttributes } from "./attributes";
 import { clientMutationContext } from "./clientMutationContext";
 import { supabaseBrowserClient } from "supabase/browserClient";
 import { callRPC } from "app/api/rpc/client";
@@ -26,7 +27,7 @@ import { addShortcut } from "src/shortcuts";
 import { createUndoManager } from "src/undoManager";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
-export type Fact<A extends keyof typeof Attributes> = {
+export type Fact<A extends Attribute> = {
   id: string;
   entity: string;
   attribute: A;
@@ -37,7 +38,7 @@ let ReplicacheContext = createContext({
   undoManager: createUndoManager(),
   rootEntity: "" as string,
   rep: null as null | Replicache<ReplicacheMutators>,
-  initialFacts: [] as Fact<keyof typeof Attributes>[],
+  initialFacts: [] as Fact<Attribute>[],
   permission_token: {} as PermissionToken,
 });
 export function useReplicache() {
@@ -65,7 +66,7 @@ export type PermissionToken = {
 };
 export function ReplicacheProvider(props: {
   rootEntity: string;
-  initialFacts: Fact<keyof typeof Attributes>[];
+  initialFacts: Fact<Attribute>[];
   token: PermissionToken;
   name: string;
   children: React.ReactNode;
@@ -191,11 +192,11 @@ export function ReplicacheProvider(props: {
   );
 }
 
-type CardinalityResult<A extends keyof typeof Attributes> =
+type CardinalityResult<A extends Attribute> =
   (typeof Attributes)[A]["cardinality"] extends "one"
     ? DeepReadonlyObject<Fact<A>> | null
     : DeepReadonlyObject<Fact<A>>[];
-export function useEntity<A extends keyof typeof Attributes>(
+export function useEntity<A extends Attribute>(
   entity: string | null,
   attribute: A,
 ): CardinalityResult<A> {

@@ -1,6 +1,6 @@
 "use client";
 import { Fact, PermissionToken, ReplicacheProvider } from "src/replicache";
-import { Attributes } from "src/replicache/attributes";
+import type { Attribute } from "src/replicache/attributes";
 import { SelectionManager } from "components/SelectionManager";
 import { Pages } from "components/Pages";
 import {
@@ -16,7 +16,7 @@ import { LeafletSidebar } from "./Sidebar";
 
 export function Leaflet(props: {
   token: PermissionToken;
-  initialFacts: Fact<keyof typeof Attributes>[];
+  initialFacts: Fact<Attribute>[];
   leaflet_id: string;
 }) {
   return (

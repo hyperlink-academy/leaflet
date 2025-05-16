@@ -15,8 +15,8 @@ import { Block } from "components/Blocks/Block";
 import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
 import { scanIndex, scanIndexLocal } from "src/replicache/utils";
-import { Fact } from "src/replicache";
-import { Attributes } from "src/replicache/attributes";
+import type { Fact } from "src/replicache";
+import type { Attribute } from "src/replicache/attributes";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { ids } from "lexicons/api/lexicons";
 import { OmitKey } from "lexicons/api/util";
@@ -59,9 +59,7 @@ export async function publishToPublication({
     root: root_entity,
   });
 
-  let scan = scanIndexLocal(
-    (data as unknown as Fact<keyof typeof Attributes>[]) || [],
-  );
+  let scan = scanIndexLocal((data as unknown as Fact<Attribute>[]) || []);
   let images = blocks
     .filter((b) => b.type === "image")
     .map((b) => scan.eav(b.value, "block/image")[0]);

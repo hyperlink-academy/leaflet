@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { Fact, ReplicacheProvider } from "src/replicache";
-import { Attributes } from "src/replicache/attributes";
+import type { Attribute } from "src/replicache/attributes";
 import {
   ThemeBackgroundProvider,
   ThemeProvider,
@@ -76,7 +76,7 @@ export default async function Home() {
       : undefined,
   ]);
   let initialFacts =
-    (homeLeafletFacts.data as unknown as Fact<keyof typeof Attributes>[]) || [];
+    (homeLeafletFacts.data as unknown as Fact<Attribute>[]) || [];
 
   let root_entity = permission_token.root_entity;
   let home_docs_initialFacts = allLeafletFacts?.result || {};

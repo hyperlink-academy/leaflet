@@ -11,13 +11,13 @@ export type MutationContext = {
     permission_set: string;
   }) => Promise<boolean>;
   scanIndex: {
-    eav: <A extends keyof typeof Attributes>(
+    eav: <A extends Attribute>(
       entity: string,
       attribute: A,
     ) => Promise<DeepReadonly<Fact<A>[]>>;
   };
   deleteEntity: (entity: string) => Promise<void>;
-  assertFact: <A extends keyof typeof Attributes>(
+  assertFact: <A extends Attribute>(
     f: Omit<Fact<A>, "id"> & { id?: string },
   ) => Promise<void>;
   retractFact: (id: string) => Promise<void>;
@@ -332,8 +332,8 @@ const deleteEntity: Mutation<{ entity: string }> = async (args, ctx) => {
 };
 
 export type FactInput = {
-  [k in keyof typeof Attributes]: Omit<Fact<k>, "id"> & { id?: string };
-}[keyof typeof Attributes];
+  [k in Attribute]: Omit<Fact<k>, "id"> & { id?: string };
+}[Attribute];
 const assertFact: Mutation<FactInput | Array<FactInput>> = async (
   args,
   ctx,

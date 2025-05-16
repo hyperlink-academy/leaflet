@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
-import { Fact } from "src/replicache";
-import { Attributes } from "src/replicache/attributes";
+import type { Fact } from "src/replicache";
+import type { Attribute } from "src/replicache/attributes";
 import { Database } from "../../supabase/database.types";
 import { createServerClient } from "@supabase/ssr";
 import { parseHSBToRGB } from "src/utils/parseHSB";
@@ -36,8 +36,7 @@ export default async function Icon(props: { params: { leaflet_id: string } }) {
     let { data } = await supabase.rpc("get_facts", {
       root: rootEntity,
     });
-    let initialFacts =
-      (data as unknown as Fact<keyof typeof Attributes>[]) || [];
+    let initialFacts = (data as unknown as Fact<Attribute>[]) || [];
     let themePageBG = initialFacts.find(
       (f) => f.attribute === "theme/card-background",
     ) as Fact<"theme/card-background"> | undefined;

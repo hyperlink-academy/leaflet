@@ -2,8 +2,8 @@ import { Metadata } from "next";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 
-import { Fact } from "src/replicache";
-import { Attributes } from "src/replicache/attributes";
+import type { Fact } from "src/replicache";
+import type { Attribute } from "src/replicache/attributes";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Leaflet } from "./Leaflet";
 import { scanIndexLocal } from "src/replicache/utils";
@@ -53,7 +53,7 @@ export default async function LeafletPage(props: Props) {
     getRSVPData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
     getPollData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
   ]);
-  let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
+  let initialFacts = (data as unknown as Fact<Attribute>[]) || [];
   return (
     <PageSWRDataProvider
       rsvp_data={rsvp_data}
@@ -81,7 +81,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   let { data } = await supabaseServerClient.rpc("get_facts", {
     root: rootEntity,
   });
-  let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
+  let initialFacts = (data as unknown as Fact<Attribute>[]) || [];
   let scan = scanIndexLocal(initialFacts);
   let firstPage =
     scan.eav(rootEntity, "root/page")[0]?.data.value || rootEntity;

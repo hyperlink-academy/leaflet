@@ -1,4 +1,4 @@
-import { Fact, ReplicacheMutators } from "src/replicache";
+import type { Fact, ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
 
 import { generateKeyBetween } from "fractional-indexing";

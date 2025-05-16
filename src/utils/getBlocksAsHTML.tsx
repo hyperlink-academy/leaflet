@@ -1,5 +1,5 @@
 import { ReadTransaction, Replicache } from "replicache";
-import { Fact, ReplicacheMutators } from "src/replicache";
+import type { Fact, ReplicacheMutators } from "src/replicache";
 import { scanIndex } from "src/replicache/utils";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as Y from "yjs";

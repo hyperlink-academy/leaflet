@@ -7,8 +7,8 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { email_subscriptions_to_entity } from "drizzle/schema";
 import postgres from "postgres";
 import { getBlocksWithTypeLocal } from "src/hooks/queries/useBlocks";
-import { Fact, PermissionToken } from "src/replicache";
-import { Attributes } from "src/replicache/attributes";
+import type { Fact, PermissionToken } from "src/replicache";
+import type { Attribute } from "src/replicache/attributes";
 import { Database } from "supabase/database.types";
 import * as Y from "yjs";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
@@ -90,7 +90,7 @@ async function getPageTitle(root_entity: string) {
   let { data } = await supabase.rpc("get_facts", {
     root: root_entity,
   });
-  let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
+  let initialFacts = (data as unknown as Fact<Attribute>[]) || [];
   let firstPage = initialFacts.find((f) => f.attribute === "root/page") as
     | Fact<"root/page">
     | undefined;

@@ -6,13 +6,13 @@ import useSWR from "swr";
 import { Fact, ReplicacheProvider } from "src/replicache";
 import { LeafletPreview } from "./LeafletPreview";
 import { useIdentityData } from "components/IdentityProvider";
-import { Attributes } from "src/replicache/attributes";
+import type { Attribute } from "src/replicache/attributes";
 import { getIdentityData } from "actions/getIdentityData";
 import { callRPC } from "app/api/rpc/client";
 
 export function LeafletList(props: {
   initialFacts: {
-    [root_entity: string]: Fact<keyof typeof Attributes>[];
+    [root_entity: string]: Fact<Attribute>[];
   };
 }) {
   let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {

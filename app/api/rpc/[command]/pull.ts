@@ -4,9 +4,9 @@ import {
   PullResponseV1,
   VersionNotSupportedResponse,
 } from "replicache";
-import { Fact } from "src/replicache";
+import type { Fact } from "src/replicache";
 import { FactWithIndexes } from "src/replicache/utils";
-import { Attributes } from "src/replicache/attributes";
+import type { Attributes } from "src/replicache/attributes";
 import { makeRoute } from "../lib";
 import { Env } from "./route";
 
@@ -95,9 +95,7 @@ export const pull = makeRoute({
           return {
             op: "put",
             key: f.id,
-            value: FactWithIndexes(
-              f as unknown as Fact<keyof typeof Attributes>,
-            ),
+            value: FactWithIndexes(f as unknown as Fact<Attribute>),
           } as const;
         }),
       ],

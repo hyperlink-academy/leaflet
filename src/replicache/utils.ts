@@ -1,11 +1,11 @@
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as driz from "drizzle-orm";
-import { Fact } from ".";
+import type { Fact } from ".";
 import { replicache_clients } from "drizzle/schema";
-import { Attributes, FilterAttributes } from "./attributes";
+import type { Attribute, FilterAttributes } from "./attributes";
 import { ReadTransaction, WriteTransaction } from "replicache";
 
-export function FactWithIndexes(f: Fact<keyof typeof Attributes>) {
+export function FactWithIndexes(f: Fact<Attribute>) {
   let indexes: {
     eav: string;
     aev: string;
@@ -42,10 +42,7 @@ export async function getClientGroup(
 }
 
 export const scanIndex = (tx: ReadTransaction) => ({
-  async eav<A extends keyof typeof Attributes>(
-    entity: string,
-    attribute: A | "",
-  ) {
+  async eav<A extends Attribute>(entity: string, attribute: A | "") {
     return (
       (
         await tx
@@ -69,7 +66,7 @@ export const scanIndex = (tx: ReadTransaction) => ({
 });
 
 export const scanIndexLocal = (initialFacts: Fact<any>[]) => ({
-  eav<A extends keyof typeof Attributes>(entity: string, attribute: A) {
+  eav<A extends Attribute>(entity: string, attribute: A) {
     return initialFacts.filter(
       (f) => f.entity === entity && f.attribute === attribute,
     ) as Fact<A>[];

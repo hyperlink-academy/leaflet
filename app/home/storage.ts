@@ -1,4 +1,4 @@
-import { PermissionToken } from "src/replicache";
+import type { PermissionToken } from "src/replicache";
 import { mutate } from "swr";
 
 export type HomeDoc = {

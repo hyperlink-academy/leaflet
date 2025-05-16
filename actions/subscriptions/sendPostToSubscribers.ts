@@ -6,7 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { email_subscriptions_to_entity, entities } from "drizzle/schema";
 import postgres from "postgres";
-import { PermissionToken } from "src/replicache";
+import type { PermissionToken } from "src/replicache";
 import { Database } from "supabase/database.types";
 
 let supabase = createServerClient<Database>(
