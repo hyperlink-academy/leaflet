@@ -13,6 +13,7 @@ const id = 'pub.leaflet.publication'
 export interface Record {
   $type: 'pub.leaflet.publication'
   name: string
+  domain?: string
   description?: string
   icon?: BlobRef
   [k: string]: unknown

@@ -16,6 +16,10 @@
             "type": "string",
             "maxLength": 2000
           },
+          "domain": {
+            "type": "string",
+            "format": "uri"
+          },
           "description": {
             "type": "string",
             "maxLength": 2000

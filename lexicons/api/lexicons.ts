@@ -26,7 +26,13 @@ export const schemaDict = {
           properties: {
             title: {
               type: 'string',
-              maxLength: 128,
+              maxLength: 1280,
+              maxGraphemes: 128,
+            },
+            description: {
+              type: 'string',
+              maxLength: 3000,
+              maxGraphemes: 300,
             },
             publishedAt: {
               type: 'string',
@@ -52,35 +58,6 @@ export const schemaDict = {
       },
     },
   },
-  PubLeafletPost: {
-    lexicon: 1,
-    id: 'pub.leaflet.post',
-    defs: {
-      main: {
-        type: 'record',
-        key: 'tid',
-        description: 'Record putting a post in a document',
-        record: {
-          type: 'object',
-          required: ['post', 'publishedAt'],
-          properties: {
-            publication: {
-              type: 'string',
-              format: 'at-uri',
-            },
-            post: {
-              type: 'ref',
-              ref: 'lex:com.atproto.repo.strongRef',
-            },
-            publishedAt: {
-              type: 'string',
-              format: 'datetime',
-            },
-          },
-        },
-      },
-    },
-  },
   PubLeafletPublication: {
     lexicon: 1,
     id: 'pub.leaflet.publication',
@@ -96,6 +73,10 @@ export const schemaDict = {
             name: {
               type: 'string',
               maxLength: 2000,
+            },
+            domain: {
+              type: 'string',
+              format: 'uri',
             },
             description: {
               type: 'string',
@@ -1213,7 +1194,6 @@ export function validate(
 
 export const ids = {
   PubLeafletDocument: 'pub.leaflet.document',
-  PubLeafletPost: 'pub.leaflet.post',
   PubLeafletPublication: 'pub.leaflet.publication',
   PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',

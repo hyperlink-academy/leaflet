@@ -4,11 +4,7 @@ import { IdResolver } from "@atproto/identity";
 const idResolver = new IdResolver();
 import { Firehose, MemoryRunner } from "@atproto/sync";
 import { ids } from "lexicons/api/lexicons";
-import {
-  PubLeafletDocument,
-  PubLeafletPost,
-  PubLeafletPublication,
-} from "lexicons/api";
+import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 
@@ -35,11 +31,7 @@ async function main() {
     excludeIdentity: true,
     runner,
     idResolver,
-    filterCollections: [
-      ids.PubLeafletDocument,
-      ids.PubLeafletPublication,
-      ids.PubLeafletPost,
-    ],
+    filterCollections: [ids.PubLeafletDocument, ids.PubLeafletPublication],
     handleEvent: async (evt) => {
       if (
         evt.event == "account" ||
@@ -84,6 +76,7 @@ async function main() {
             uri: evt.uri.toString(),
             identity_did: evt.did,
             name: record.value.name,
+            record: record.value as Json,
           });
         }
         if (evt.event === "delete") {
@@ -91,12 +84,6 @@ async function main() {
             .from("publications")
             .delete()
             .eq("uri", evt.uri.toString());
-        }
-      }
-      if (evt.collection === ids.PubLeafletPost) {
-        if (evt.event === "create" || evt.event === "update") {
-          let record = PubLeafletPost.validateRecord(evt.record);
-          if (!record.success) return;
         }
       }
     },

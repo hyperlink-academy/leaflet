@@ -19,7 +19,13 @@
         "properties": {
           "title": {
             "type": "string",
-            "maxLength": 128
+            "maxLength": 1280,
+            "maxGraphemes": 128
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 3000,
+            "maxGraphemes": 300
           },
           "publishedAt": {
             "type": "string",

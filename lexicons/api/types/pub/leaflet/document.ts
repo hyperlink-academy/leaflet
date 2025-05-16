@@ -14,6 +14,7 @@ const id = 'pub.leaflet.document'
 export interface Record {
   $type: 'pub.leaflet.document'
   title: string
+  description?: string
   publishedAt?: string
   publication: string
   author: string
