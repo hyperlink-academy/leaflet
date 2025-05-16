@@ -61,81 +61,87 @@ export default async function Publication(props: {
   try {
     return (
       <ThemeProvider entityID={null}>
-        <div className="relative max-w-prose w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6">
-          <div className="w-12 relative">
-            <Sidebar className="mt-6 p-2">
-              <Actions publication={publication.uri} />
-            </Sidebar>
-          </div>
-          <div
-            className={`h-full overflow-y-scroll pt-4 sm:pl-5 sm:pt-9 w-full`}
-          >
-            <PublicationDashboard
-              name={publication.name}
-              tabs={{
-                Drafts: (
-                  <DraftList
-                    publication={publication.uri}
-                    drafts={publication.leaflets_in_publications.filter(
-                      (p) => !p.doc,
-                    )}
-                  />
-                ),
-                Published:
-                  publication.documents_in_publications.length === 0 ? (
-                    <div className="italic text-tertiary w-full container text-center place-items-center flex flex-col gap-3 p-3">
-                      Nothing's been published yet...
-                    </div>
-                  ) : (
-                    <div className="publishedList w-full flex flex-col gap-4 pb-6">
-                      {publication.documents_in_publications.map((doc) => {
-                        if (!doc.documents) return null;
-                        let leaflet = publication.leaflets_in_publications.find(
-                          (l) => doc.documents && l.doc === doc.documents.uri,
-                        );
-                        let uri = new AtUri(doc.documents.uri);
-                        let record = doc.documents
-                          .data as PubLeafletDocument.Record;
-
-                        return (
-                          <React.Fragment key={doc.documents?.uri}>
-                            <div className="flex  w-full ">
-                              <Link
-                                href={`/lish/${params.handle}/${params.publication}/${uri.rkey}`}
-                                className="publishedPost grow flex flex-col gap-2 hover:!no-underline"
-                              >
-                                <h3 className="text-primary">{record.title}</h3>
-                                <p className="italic text-secondary">
-                                  This is a placeholder for description
-                                </p>
-                                <p className="text-sm text-tertiary pt-2">
-                                  {record.publishedAt} PlaceholderDate
-                                </p>
-                              </Link>
-                              {leaflet && (
-                                <Link
-                                  className="pt-[6px]"
-                                  href={`/${leaflet.leaflet}`}
-                                >
-                                  <EditTiny />
-                                </Link>
-                              )}
-                            </div>
-                            <hr className="last:hidden border-border-light" />
-                          </React.Fragment>
-                        );
-                      })}
-                    </div>
+        <div className="w-screen h-screen flex place-items-center bg-[#FDFCFA]">
+          <div className="relative max-w-prose w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6">
+            <div className="w-12 relative">
+              <Sidebar className="mt-6 p-2">
+                <Actions publication={publication.uri} />
+              </Sidebar>
+            </div>
+            <div
+              className={`h-full overflow-y-scroll pt-4 sm:pl-5 sm:pt-9 w-full`}
+            >
+              <PublicationDashboard
+                name={publication.name}
+                tabs={{
+                  Drafts: (
+                    <DraftList
+                      publication={publication.uri}
+                      drafts={publication.leaflets_in_publications.filter(
+                        (p) => !p.doc,
+                      )}
+                    />
                   ),
-              }}
-              defaultTab={"Drafts"}
-            />
+                  Published:
+                    publication.documents_in_publications.length === 0 ? (
+                      <div className="italic text-tertiary w-full container text-center place-items-center flex flex-col gap-3 p-3">
+                        Nothing's been published yet...
+                      </div>
+                    ) : (
+                      <div className="publishedList w-full flex flex-col gap-4 pb-6">
+                        {publication.documents_in_publications.map((doc) => {
+                          if (!doc.documents) return null;
+                          let leaflet =
+                            publication.leaflets_in_publications.find(
+                              (l) =>
+                                doc.documents && l.doc === doc.documents.uri,
+                            );
+                          let uri = new AtUri(doc.documents.uri);
+                          let record = doc.documents
+                            .data as PubLeafletDocument.Record;
+
+                          return (
+                            <React.Fragment key={doc.documents?.uri}>
+                              <div className="flex  w-full ">
+                                <Link
+                                  href={`/lish/${params.handle}/${params.publication}/${uri.rkey}`}
+                                  className="publishedPost grow flex flex-col hover:!no-underline"
+                                >
+                                  <h3 className="text-primary">
+                                    {record.title}
+                                  </h3>
+                                  <p className="italic text-secondary">
+                                    This is a placeholder for description
+                                  </p>
+                                  <p className="text-sm text-tertiary pt-2">
+                                    {record.publishedAt} PlaceholderDate
+                                  </p>
+                                </Link>
+                                {leaflet && (
+                                  <Link
+                                    className="pt-[6px]"
+                                    href={`/${leaflet.leaflet}`}
+                                  >
+                                    <EditTiny />
+                                  </Link>
+                                )}
+                              </div>
+                              <hr className="last:hidden border-border-light" />
+                            </React.Fragment>
+                          );
+                        })}
+                      </div>
+                    ),
+                }}
+                defaultTab={"Drafts"}
+              />
+            </div>
+            <Media mobile>
+              <Footer>
+                <Actions publication={publication.uri} />
+              </Footer>
+            </Media>
           </div>
-          <Media mobile>
-            <Footer>
-              <Actions publication={publication.uri} />
-            </Footer>
-          </Media>
         </div>
       </ThemeProvider>
     );

@@ -5,6 +5,7 @@ import {
   CSSProperties,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import { colorToString, useColorAttribute } from "./useColorAttribute";
@@ -12,6 +13,7 @@ import { Color as AriaColor, parseColor } from "react-aria-components";
 import { parse, contrastLstar, ColorSpace, sRGB } from "colorjs.io/fn";
 
 import { useEntity } from "src/replicache";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 
 type CSSVariables = {
   "--bg-leaflet": string;
@@ -52,6 +54,57 @@ export function ThemeProvider(props: {
   local?: boolean;
   children: React.ReactNode;
 }) {
+  let { data } = useLeafletPublicationData();
+  if (!data[0]) return <LeafletThemeProvider {...props} />;
+  return <PublicationThemeProvider {...props} />;
+}
+export function PublicationThemeProvider(props: {
+  entityID: string | null;
+  local?: boolean;
+  children: React.ReactNode;
+}) {
+  let bgLeaflet = useMemo(() => {
+    return parseColor(`#FDFCFA`);
+  }, []);
+  let bgPage = useColorAttribute(props.entityID, "theme/card-background");
+  let primary = useColorAttribute(props.entityID, "theme/primary");
+
+  let highlight1 = useEntity(props.entityID, "theme/highlight-1");
+  let highlight2 = useColorAttribute(props.entityID, "theme/highlight-2");
+  let highlight3 = useColorAttribute(props.entityID, "theme/highlight-3");
+
+  let accent1 = useColorAttribute(props.entityID, "theme/accent-background");
+  let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
+  // set accent contrast to the accent color that has the highest contrast with the page background
+  let accentContrast = [accent1, accent2].sort((a, b) => {
+    return (
+      getColorContrast(colorToString(b, "rgb"), colorToString(bgPage, "rgb")) -
+      getColorContrast(colorToString(a, "rgb"), colorToString(bgPage, "rgb"))
+    );
+  })[0];
+
+  return (
+    <BaseThemeProvider
+      bgLeaflet={bgLeaflet}
+      bgPage={bgPage}
+      primary={primary}
+      highlight2={highlight2}
+      highlight3={highlight3}
+      highlight1={highlight1?.data.value}
+      accent1={accent1}
+      accent2={accent2}
+      accentContrast={accentContrast}
+    >
+      {props.children}
+    </BaseThemeProvider>
+  );
+}
+
+export function LeafletThemeProvider(props: {
+  entityID: string | null;
+  local?: boolean;
+  children: React.ReactNode;
+}) {
   let bgLeaflet = useColorAttribute(props.entityID, "theme/page-background");
   let bgPage = useColorAttribute(props.entityID, "theme/card-background");
   let primary = useColorAttribute(props.entityID, "theme/primary");
@@ -70,8 +123,50 @@ export function ThemeProvider(props: {
     );
   })[0];
 
+  return (
+    <BaseThemeProvider
+      bgLeaflet={bgLeaflet}
+      bgPage={bgPage}
+      primary={primary}
+      highlight2={highlight2}
+      highlight3={highlight3}
+      highlight1={highlight1?.data.value}
+      accent1={accent1}
+      accent2={accent2}
+      accentContrast={accentContrast}
+    >
+      {props.children}
+    </BaseThemeProvider>
+  );
+}
+
+let BaseThemeProvider = ({
+  local,
+  bgLeaflet,
+  bgPage,
+  primary,
+  accent1,
+  accent2,
+  accentContrast,
+  highlight1,
+  highlight2,
+  highlight3,
+  children,
+}: {
+  local?: boolean;
+  bgLeaflet: AriaColor;
+  bgPage: AriaColor;
+  primary: AriaColor;
+  accent1: AriaColor;
+  accent2: AriaColor;
+  accentContrast: AriaColor;
+  highlight1?: string;
+  highlight2: AriaColor;
+  highlight3: AriaColor;
+  children: React.ReactNode;
+}) => {
   useEffect(() => {
-    if (props.local) return;
+    if (local) return;
     let el = document.querySelector(":root") as HTMLElement;
     if (!el) return;
     setCSSVariableToColor(el, "--bg-leaflet", bgLeaflet);
@@ -90,7 +185,7 @@ export function ThemeProvider(props: {
 
     //highlight 1 is special because its default value is a calculated value
     if (highlight1) {
-      let color = parseColor(`hsba(${highlight1.data.value})`);
+      let color = parseColor(`hsba(${highlight1})`);
       el?.style.setProperty(
         "--highlight-1",
         `rgb(${colorToString(color, "rgb")})`,
@@ -112,7 +207,7 @@ export function ThemeProvider(props: {
       accentContrast === accent1 ? "1" : "0",
     );
   }, [
-    props.local,
+    local,
     bgLeaflet,
     bgPage,
     primary,
@@ -137,17 +232,18 @@ export function ThemeProvider(props: {
           "--accent-contrast": colorToString(accentContrast, "rgb"),
           "--accent-1-is-contrast": accentContrast === accent1 ? 1 : 0,
           "--highlight-1": highlight1
-            ? `rgb(${colorToString(parseColor(`hsba(${highlight1.data.value})`), "rgb")})`
+            ? `rgb(${colorToString(parseColor(`hsba(${highlight1})`), "rgb")})`
             : "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 75%)",
           "--highlight-2": colorToString(highlight2, "rgb"),
           "--highlight-3": colorToString(highlight3, "rgb"),
         } as CSSProperties
       }
     >
-      {props.children}
+      {" "}
+      {children}{" "}
     </div>
   );
-}
+};
 
 let CardThemeProviderContext = createContext<null | string>(null);
 export function NestedCardThemeProvider(props: { children: React.ReactNode }) {
