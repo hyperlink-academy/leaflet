@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getPds, IdResolver } from "@atproto/identity";
+import { IdResolver } from "@atproto/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
 import { ids } from "lexicons/api/lexicons";
@@ -58,7 +58,7 @@ export default async function Post(props: {
     blocks = firstPage.blocks || [];
   }
   return (
-    <div className="postPage w-full h-screen bg-[#FDFCFA] flex items-stretch">
+    <div className="postPage w-full h-screen bg-bg-leaflet flex items-stretch">
       <div className="pubWrapper flex flex-col w-full ">
         <div className="pubContent flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto max-w-prose h-full w-full overflow-auto">
           <div className="flex flex-col pb-8">
@@ -69,11 +69,19 @@ export default async function Post(props: {
               {decodeURIComponent((await props.params).publication)}
             </Link>
             <h2 className="">{record.title}</h2>
-            <p className="italic text-secondary">
-              This is a placeholder description and I want it to be longer so it
-              spans two lines.
-            </p>
-            <p className="text-sm text-tertiary pt-3">Published 06/02/2025</p>
+            {record.description ? (
+              <p className="italic text-secondary">{record.description}</p>
+            ) : null}
+            {record.publishedAt ? (
+              <p className="text-sm text-tertiary pt-3">
+                Published{" "}
+                {new Date(record.publishedAt).toLocaleDateString(undefined, {
+                  year: "2-digit",
+                  month: "long",
+                  day: "2-digit",
+                })}
+              </p>
+            ) : null}
           </div>
           {blocks.map((b, index) => {
             switch (true) {

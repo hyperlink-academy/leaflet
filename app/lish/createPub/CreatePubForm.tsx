@@ -1,17 +1,20 @@
 "use client";
+import { callRPC } from "app/api/rpc/client";
 import { createPublication } from "./createPublication";
 import { ButtonPrimary } from "components/Buttons";
 import { AddSmall } from "components/Icons/AddSmall";
 import { useIdentityData } from "components/IdentityProvider";
-import { InputWithLabel } from "components/Input";
+import { Input, InputWithLabel } from "components/Input";
 import { useRouter } from "next/navigation";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 
 export const CreatePubForm = () => {
   let [nameValue, setNameValue] = useState("");
   let [descriptionValue, setDescriptionValue] = useState("");
   let [logoFile, setLogoFile] = useState<File | null>(null);
   let [logoPreview, setLogoPreview] = useState<string | null>(null);
+  let [domainValue, setDomainValue] = useState("");
   let fileInputRef = useRef<HTMLInputElement>(null);
 
   let router = useRouter();
@@ -79,6 +82,8 @@ export const CreatePubForm = () => {
         }}
       />
 
+      <DomainInput domain={domainValue} setDomain={setDomainValue} />
+
       <InputWithLabel
         label="Description (optional)"
         textarea
@@ -96,3 +101,30 @@ export const CreatePubForm = () => {
     </form>
   );
 };
+
+function DomainInput(props: {
+  domain: string;
+  setDomain: (d: string) => void;
+}) {
+  let [state, setState] = useState<"normal" | "valid" | "invalid">("normal");
+  useEffect(() => {
+    setState("normal");
+  }, [props.domain]);
+  useDebouncedEffect(
+    () => {
+      let status = callRPC("get_domain_status", { domain: props.domain });
+      console.log(status);
+    },
+    500,
+    [props.domain],
+  );
+  return (
+    <div className="flex flex-row gap-1">
+      <Input
+        value={props.domain}
+        onChange={(e) => props.setDomain(e.currentTarget.value)}
+      />
+      .leaflet.pub
+    </div>
+  );
+}

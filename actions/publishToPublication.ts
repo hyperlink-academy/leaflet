@@ -86,7 +86,7 @@ export async function publishToPublication({
     author: credentialSession.did!,
     title: title || "Untitled",
     publication: publication_uri,
-    publishedAt: draft ? undefined : new Date().toISOString(),
+    publishedAt: new Date().toISOString(),
     description: description || "",
     pages: [
       {

@@ -110,12 +110,23 @@ export default async function Publication(props: {
                                   <h3 className="text-primary">
                                     {record.title}
                                   </h3>
-                                  <p className="italic text-secondary">
-                                    This is a placeholder for description
-                                  </p>
-                                  <p className="text-sm text-tertiary pt-2">
-                                    {record.publishedAt} PlaceholderDate
-                                  </p>
+                                  {record.description ? (
+                                    <p className="italic text-secondary">
+                                      {record.description}
+                                    </p>
+                                  ) : null}
+                                  {record.publishedAt ? (
+                                    <p className="text-sm text-tertiary pt-3">
+                                      Published{" "}
+                                      {new Date(
+                                        record.publishedAt,
+                                      ).toLocaleDateString(undefined, {
+                                        year: "2-digit",
+                                        month: "long",
+                                        day: "2-digit",
+                                      })}
+                                    </p>
+                                  ) : null}
                                 </Link>
                                 {leaflet && (
                                   <Link

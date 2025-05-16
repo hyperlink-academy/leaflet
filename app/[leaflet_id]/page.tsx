@@ -10,7 +10,6 @@ import { scanIndexLocal } from "src/replicache/utils";
 import { getRSVPData } from "actions/getRSVPData";
 import { PageSWRDataProvider } from "components/PageSWRDataProvider";
 import { getPollData } from "actions/pollActions";
-import { PublicationContextProvider } from "components/Providers/PublicationContext";
 import { supabaseServerClient } from "supabase/serverClient";
 import { get_leaflet_data } from "app/api/rpc/[command]/get_leaflet_data";
 
