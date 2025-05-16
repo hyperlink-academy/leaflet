@@ -8,6 +8,7 @@ import { useReplicache } from "src/replicache";
 import { useIdentityData } from "components/IdentityProvider";
 import { AutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { Separator } from "components/Layout";
+import { AtUri } from "@atproto/syntax";
 export const PublicationMetadata = ({
   cardBorderHidden,
 }: {
@@ -77,7 +78,10 @@ export const PublicationMetadata = ({
         <div className="flex flex-row items-center gap-2 pt-3">
           <p className="text-sm text-tertiary">Published XX/XX/XXX</p>
           <Separator classname="h-4" />
-          <Link className="text-sm" href="/">
+          <Link
+            className="text-sm"
+            href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${pub.publications.name}/${new AtUri(pub.doc).rkey}`}
+          >
             View Post
           </Link>
         </div>
