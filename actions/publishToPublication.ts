@@ -26,11 +26,21 @@ import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
 
 const idResolver = new IdResolver();
-export async function publishToPublication(
-  root_entity: string,
-  blocks: Block[],
-  publication_uri: string,
-) {
+export async function publishToPublication({
+  root_entity,
+  blocks,
+  publication_uri,
+  leaflet_id,
+  title,
+  description,
+}: {
+  root_entity: string;
+  blocks: Block[];
+  publication_uri: string;
+  leaflet_id: string;
+  title?: string;
+  description?: string;
+}) {
   const oauthClient = await createOauthClient();
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) return null;
@@ -39,24 +49,19 @@ export async function publishToPublication(
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
+  let { data: draft } = await supabaseServerClient
+    .from("leaflets_in_publications")
+    .select("*, publications(*)")
+    .eq("publication", publication_uri)
+    .eq("leaflet", leaflet_id)
+    .single();
   let { data } = await supabaseServerClient.rpc("get_facts", {
     root: root_entity,
   });
-  console.log(data);
 
   let scan = scanIndexLocal(
     (data as unknown as Fact<keyof typeof Attributes>[]) || [],
   );
-  const getBlockContent = (b: string) => {
-    let [content] = scan.eav(b, "block/text");
-    if (!content) return "";
-    let doc = new Y.Doc();
-    const update = base64.toByteArray(content.data.value);
-    Y.applyUpdate(doc, update);
-    let nodes = doc.getXmlElement("prosemirror").toArray();
-    let stringValue = YJSFragmentToString(nodes[0]);
-    return stringValue;
-  };
   let images = blocks
     .filter((b) => b.type === "image")
     .map((b) => scan.eav(b.value, "block/image")[0]);
@@ -68,23 +73,20 @@ export async function publishToPublication(
       let blob = await agent.com.atproto.repo.uploadBlob(binary, {
         headers: { "Content-Type": binary.type },
       });
-      console.log(blob);
       imageMap.set(b.data.src, blob.data.blob);
     }),
   );
 
-  let title = "Untitled";
-  let titleBlock = blocks.find((f) => f.type === "heading");
-  if (titleBlock) title = getBlockContent(titleBlock.value);
   let b: PubLeafletPagesLinearDocument.Block[] = blocksToRecord(
     blocks,
     imageMap,
     scan,
   );
 
-  let record: OmitKey<PubLeafletDocument.Record, "$type"> = {
+  let record: PubLeafletDocument.Record = {
+    $type: "pub.leaflet.document",
     author: credentialSession.did!,
-    title,
+    title: title || "Untitled",
     publication: publication_uri,
     pages: [
       {
@@ -93,24 +95,37 @@ export async function publishToPublication(
       },
     ],
   };
-  let rkey = TID.nextStr();
-  let result = await agent.pub.leaflet.document.create(
-    { repo: credentialSession.did!, rkey, validate: false },
+  let rkey = draft?.doc ? new AtUri(draft.doc).rkey : TID.nextStr();
+  let { data: result } = await agent.com.atproto.repo.putRecord({
+    rkey,
+    repo: credentialSession.did!,
+    collection: record.$type,
     record,
-  );
+    validate: false, //TODO publish the lexicon so we can validate!
+  });
 
-  await Promise.all([
-    //Optimistically put these in!
-    supabaseServerClient.from("documents").upsert({
+  console.log(result);
+  console.log(
+    await supabaseServerClient.from("documents").upsert({
       uri: result.uri,
       data: record as Json,
     }),
-    supabaseServerClient.from("documents_in_publications").insert({
+  );
+  await Promise.all([
+    //Optimistically put these in!
+    supabaseServerClient.from("documents_in_publications").upsert({
       publication: record.publication,
       document: result.uri,
     }),
+    supabaseServerClient
+      .from("leaflets_in_publications")
+      .update({
+        doc: result.uri,
+      })
+      .eq("leaflet", leaflet_id)
+      .eq("publication", publication_uri),
     sendPostToEmailSubscribers(publication_uri, {
-      title,
+      title: title || "Untitiled",
       content: blocksToHtml(blocks, imageMap, scan, publication_uri),
     }),
   ]);

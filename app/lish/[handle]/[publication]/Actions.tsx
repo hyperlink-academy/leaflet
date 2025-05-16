@@ -2,7 +2,6 @@
 
 import { Media } from "components/Media";
 import { NewDraftActionButton } from "./NewDraftButton";
-import { HomeButton } from "components/HomeButton";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { useRouter } from "next/navigation";
 import { Popover } from "components/Popover";
@@ -12,18 +11,33 @@ import { ShareSmall } from "components/Icons/ShareSmall";
 import { Menu } from "components/Layout";
 import { MenuItem } from "components/Layout";
 import Link from "next/link";
+import { HomeSmall } from "components/Icons/HomeSmall";
 
 export const Actions = (props: { publication: string }) => {
   return (
     <>
       <Media mobile>
-        <HomeButton isPublication />
+        <Link
+          href="/home"
+          prefetch
+          className="hover:no-underline"
+          style={{ textDecorationLine: "none !important" }}
+        >
+          <ActionButton icon={<HomeSmall />} label="Go Home" />
+        </Link>
       </Media>
       <NewDraftActionButton publication={props.publication} />
       <PublicationShareButton />
       <PublicationSettingsButton publication={props.publication} />
       <hr className="border-border-light" />
-      <HomeButton isPublication />
+      <Link
+        href="/home"
+        prefetch
+        className="hover:no-underline"
+        style={{ textDecorationLine: "none !important" }}
+      >
+        <ActionButton icon={<HomeSmall />} label="Go Home" />
+      </Link>
     </>
   );
 };

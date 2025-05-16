@@ -12,6 +12,9 @@ import { NewDraftSecondaryButton } from "./NewDraftButton";
 import { getIdentityData } from "actions/getIdentityData";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { Actions } from "./Actions";
+import Link from "next/link";
+import { AtUri } from "@atproto/syntax";
+import { PubLeafletDocument } from "lexicons/api";
 
 const idResolver = new IdResolver();
 
@@ -37,6 +40,7 @@ export async function generateMetadata(props: {
 export default async function Publication(props: {
   params: Promise<{ publication: string; handle: string }>;
 }) {
+  let params = await props.params;
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) return <PubNotFound />;
   let did = await idResolver.handle.resolve((await props.params).handle);
@@ -77,14 +81,43 @@ export default async function Publication(props: {
                 Drafts: (
                   <DraftList
                     publication={publication.uri}
-                    drafts={publication.leaflets_in_publications}
+                    drafts={publication.leaflets_in_publications.filter(
+                      (p) => !p.doc,
+                    )}
                   />
                 ),
                 Published: (
                   <div className="w-full container text-center place-items-center flex flex-col gap-3 p-3">
-                    <div className="italic text-tertiary">
-                      Nothing's been published yet...
-                    </div>
+                    {publication.documents_in_publications.length === 0 ? (
+                      <div className="italic text-tertiary">
+                        Nothing's been published yet...
+                      </div>
+                    ) : (
+                      publication.documents_in_publications.map((doc) => {
+                        if (!doc.documents) return null;
+                        let leaflet = publication.leaflets_in_publications.find(
+                          (l) => doc.documents && l.doc === doc.documents.uri,
+                        );
+                        let uri = new AtUri(doc.documents.uri);
+                        let record = doc.documents
+                          .data as PubLeafletDocument.Record;
+                        return (
+                          <div
+                            className="w-full flex flex-row justify-between"
+                            key={doc.documents?.uri}
+                          >
+                            <Link
+                              href={`/lish/${params.handle}/${params.publication}/${uri.rkey}`}
+                            >
+                              {record.title}
+                            </Link>
+                            {leaflet && (
+                              <Link href={`/${leaflet.leaflet}`}>edit</Link>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
                     <NewDraftSecondaryButton publication={publication.uri} />
                   </div>
                 ),

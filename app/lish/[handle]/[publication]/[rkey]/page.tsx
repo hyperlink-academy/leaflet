@@ -23,13 +23,19 @@ export async function generateMetadata(props: {
   let { data: document } = await supabaseServerClient
     .from("documents")
     .select("*")
-    .eq("uri", AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey))
+    .eq(
+      "uri",
+      AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey),
+    )
     .single();
 
   if (!document) return { title: "404" };
   let record = document.data as PubLeafletDocument.Record;
   return {
-    title: record.title + " - " + decodeURIComponent((await props.params).publication),
+    title:
+      record.title +
+      " - " +
+      decodeURIComponent((await props.params).publication),
   };
 }
 export default async function Post(props: {
@@ -40,7 +46,10 @@ export default async function Post(props: {
   let { data: document } = await supabaseServerClient
     .from("documents")
     .select("*")
-    .eq("uri", AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey))
+    .eq(
+      "uri",
+      AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey),
+    )
     .single();
   if (!document?.data) return <div>notfound</div>;
   let record = document.data as PubLeafletDocument.Record;
@@ -50,7 +59,7 @@ export default async function Post(props: {
     blocks = firstPage.blocks || [];
   }
   return (
-    (<div className="postPage w-full h-screen bg-bg-leaflet flex items-stretch">
+    <div className="postPage w-full h-screen bg-bg-leaflet flex items-stretch">
       <div className="pubWrapper flex flex-col w-full ">
         <div className="pubContent flex flex-col px-4 py-6 mx-auto max-w-prose h-full w-full overflow-auto">
           <Link
@@ -59,12 +68,13 @@ export default async function Post(props: {
           >
             {decodeURIComponent((await props.params).publication)}
           </Link>
-          {/* <h1>{record.title}</h1> */}
-          {blocks.map((b) => {
+          <h1>{record.title}</h1>
+          {blocks.map((b, index) => {
             switch (true) {
               case PubLeafletBlocksImage.isMain(b.block): {
                 return (
                   <img
+                    key={index}
                     height={b.block.aspectRatio?.height}
                     width={b.block.aspectRatio?.width}
                     className="pb-2 sm:pb-3"
@@ -73,32 +83,40 @@ export default async function Post(props: {
                 );
               }
               case PubLeafletBlocksText.isMain(b.block):
-                return <p className="pt-0 pb-2 sm:pb-3">{b.block.plaintext}</p>;
+                return (
+                  <p key={index} className="pt-0 pb-2 sm:pb-3">
+                    {b.block.plaintext}
+                  </p>
+                );
               case PubLeafletBlocksHeader.isMain(b.block): {
                 if (b.block.level === 1)
                   return (
-                    <h1 className="pb-0 pt-2 sm:pt-3">{b.block.plaintext}</h1>
+                    <h1 key={index} className="pb-0 pt-2 sm:pt-3">
+                      {b.block.plaintext}
+                    </h1>
                   );
                 if (b.block.level === 2)
                   return (
-                    <h3 className="pb-0 pt-2 sm:pt-3">{b.block.plaintext}</h3>
+                    <h3 key={index} className="pb-0 pt-2 sm:pt-3">
+                      {b.block.plaintext}
+                    </h3>
                   );
                 if (b.block.level === 3)
                   return (
-                    <h4 className="pb-0 pt-2 sm:pt-3">{b.block.plaintext}</h4>
+                    <h4 key={index} className="pb-0 pt-2 sm:pt-3">
+                      {b.block.plaintext}
+                    </h4>
                   );
                 // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
                 // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
-                return <h6>{b.block.plaintext}</h6>;
+                return <h6 key={index}>{b.block.plaintext}</h6>;
               }
               default:
                 return null;
             }
           })}
         </div>
-
-        <Footer pageType="post" />
       </div>
-    </div>)
+    </div>
   );
 }

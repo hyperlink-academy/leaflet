@@ -11,11 +11,11 @@ import { AddToHomeSmall } from "./Icons/AddToHomeSmall";
 import { HomeSmall } from "./Icons/HomeSmall";
 import { permission } from "process";
 
-export function HomeButton(props: { isPublication?: boolean }) {
+export function HomeButton() {
   let { permissions } = useEntitySetContext();
   let searchParams = useSearchParams();
 
-  if (permissions.write || props.isPublication)
+  if (permissions.write)
     return (
       <>
         <Link
@@ -26,7 +26,7 @@ export function HomeButton(props: { isPublication?: boolean }) {
         >
           <ActionButton icon={<HomeSmall />} label="Go Home" />
         </Link>
-        {!props.isPublication && <AddToHomeButton />}
+        {<AddToHomeButton />}
       </>
     );
   return null;
