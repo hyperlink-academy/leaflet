@@ -5,9 +5,9 @@ import { ValidationResult, BlobRef } from '@atproto/lexicon'
 import { CID } from 'multiformats/cid'
 import { validate as _validate } from '../../../../lexicons'
 import { $Typed, is$typed as _is$typed, OmitKey } from '../../../../util'
-import type * as PubLeafletBlocksText from '../blocks/text.js'
-import type * as PubLeafletBlocksHeader from '../blocks/header.js'
-import type * as PubLeafletBlocksImage from '../blocks/image.js'
+import type * as PubLeafletBlocksText from '../blocks/text'
+import type * as PubLeafletBlocksHeader from '../blocks/header'
+import type * as PubLeafletBlocksImage from '../blocks/image'
 
 const is$typed = _is$typed,
   validate = _validate

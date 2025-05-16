@@ -7,7 +7,7 @@ import {
   ValidationError,
   ValidationResult,
 } from '@atproto/lexicon'
-import { $Typed, is$typed, maybe$typed } from './util.js'
+import { $Typed, is$typed, maybe$typed } from './util'
 
 export const schemaDict = {
   PubLeafletDocument: {

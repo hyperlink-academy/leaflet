@@ -5,7 +5,7 @@ import { ValidationResult, BlobRef } from '@atproto/lexicon'
 import { CID } from 'multiformats/cid'
 import { validate as _validate } from '../../../lexicons'
 import { $Typed, is$typed as _is$typed, OmitKey } from '../../../util'
-import type * as PubLeafletPagesLinearDocument from './pages/linearDocument.js'
+import type * as PubLeafletPagesLinearDocument from './pages/linearDocument'
 
 const is$typed = _is$typed,
   validate = _validate
