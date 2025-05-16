@@ -1,31 +1,18 @@
 "use client";
 
-import { usePublicationRelationship } from "../usePublicationRelationship";
-import { usePublicationContext } from "components/Providers/PublicationContext";
 import Link from "next/link";
 import { NewDraftSecondaryButton } from "./NewDraftButton";
-import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
-import { Menu, MenuItem } from "components/Layout";
-import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
-import { DeleteSmall } from "components/Icons/DeleteSmall";
 import React from "react";
+import { usePublicationData } from "./PublicationSWRProvider";
 
-export function DraftList(props: {
-  publication: string;
-  drafts: {
-    leaflet: string;
-    description: string;
-    title: string;
-  }[];
-}) {
-  let rel = usePublicationRelationship();
-  let { publication } = usePublicationContext();
-  if (!publication) return null;
-  if (!rel?.isAuthor) return null;
+export function DraftList() {
+  let pub_data = usePublicationData();
+  console.log({ pub_data });
+  if (!pub_data) return null;
   return (
     <div className="flex flex-col gap-4 pb-6">
-      <NewDraftSecondaryButton fullWidth publication={props.publication} />
-      {props.drafts.map((d) => {
+      <NewDraftSecondaryButton fullWidth publication={pub_data?.name} />
+      {pub_data.leaflets_in_publications.map((d) => {
         return (
           <React.Fragment key={d.leaflet}>
             <Draft id={d.leaflet} {...d} />
