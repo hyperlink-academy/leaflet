@@ -6,7 +6,7 @@ import {
 } from "replicache";
 import type { Fact } from "src/replicache";
 import { FactWithIndexes } from "src/replicache/utils";
-import type { Attributes } from "src/replicache/attributes";
+import type { Attribute } from "src/replicache/attributes";
 import { makeRoute } from "../lib";
 import { Env } from "./route";
 

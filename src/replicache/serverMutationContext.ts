@@ -4,7 +4,7 @@ import * as base64 from "base64-js";
 import * as Y from "yjs";
 import { MutationContext } from "./mutations";
 import { entities, facts } from "drizzle/schema";
-import { Attributes, FilterAttributes } from "./attributes";
+import { Attribute, Attributes, FilterAttributes } from "./attributes";
 import { Fact, PermissionToken } from ".";
 import { DeepReadonly } from "replicache";
 import { createClient } from "@supabase/supabase-js";

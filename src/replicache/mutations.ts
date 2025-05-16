@@ -1,6 +1,6 @@
 import { DeepReadonly, Replicache } from "replicache";
-import { Fact, ReplicacheMutators } from ".";
-import { Attributes, FilterAttributes } from "./attributes";
+import type { Fact, ReplicacheMutators } from ".";
+import type { Attribute, Attributes, FilterAttributes } from "./attributes";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 import { generateKeyBetween } from "fractional-indexing";
