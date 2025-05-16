@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useLayoutEffect } from "react";
 import { elementId } from "src/utils/elementId";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
@@ -22,7 +22,6 @@ import { useUIState } from "src/useUIState";
 import { addBlueskyPostBlock, addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockCommandBar } from "components/Blocks/BlockCommandBar";
 import { useEditorStates } from "src/state/useEditorState";
-import { isIOS, useLayoutEffect } from "@react-aria/utils";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useHandlePaste } from "./useHandlePaste";
 import { highlightSelectionPlugin } from "./plugins";
@@ -35,6 +34,7 @@ import { useSmoker } from "components/Toast";
 import { AddTiny } from "components/Icons/AddTiny";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
+import { isIOS } from "src/utils/isDevice";
 
 const HeadingStyle = {
   1: "text-xl font-bold",

@@ -22,7 +22,6 @@ import { useParams } from "next/navigation";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 
 import { Separator, ShortcutKey } from "components/Layout";
-import { isMac } from "@react-aria/utils";
 import { ToolbarButton } from ".";
 import { NestedCardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { Props } from "components/Icons/Props";
@@ -30,6 +29,7 @@ import { PopoverArrow } from "components/Icons/PopoverArrow";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { Color } from "react-aria-components";
+import { isMac } from "src/utils/isDevice";
 
 export const HighlightButton = (props: {
   lastUsedHighlight: string;

@@ -1,7 +1,7 @@
-import { isIOS, isMac } from "@react-aria/utils";
 import { useUIState } from "./useUIState";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "./replicache";
+import { isMac } from "./utils/isDevice";
 
 type Shortcut = {
   metaKey?: boolean;

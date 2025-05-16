@@ -1,4 +1,4 @@
-import { isIOS } from "@react-aria/utils";
+import { isIOS } from "./isDevice";
 
 export function onMouseDown(e: React.MouseEvent<HTMLInputElement>) {
   if (!isIOS()) return;
