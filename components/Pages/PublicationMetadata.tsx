@@ -23,7 +23,6 @@ export const PublicationMetadata = ({
   let [descriptionState, setDescriptionState] = useState(
     pub?.description || "",
   );
-  let record = pub.publications?.record as PubLeafletDocument.Record;
 
   useEffect(() => {
     setTitleState(pub?.title || "");
