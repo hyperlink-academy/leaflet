@@ -50,38 +50,55 @@ export default async function Publication(props: {
   try {
     return (
       <ThemeProvider entityID={null}>
-        <div>publication index page </div>
-        {publication.documents_in_publications
-          .filter((d) => !!d?.documents)
-          .sort((a, b) => {
-            let aRecord = a.documents?.data! as PubLeafletDocument.Record;
-            let bRecord = a.documents?.data! as PubLeafletDocument.Record;
-            const aDate = aRecord.publishedAt
-              ? new Date(aRecord.publishedAt)
-              : new Date(0);
-            const bDate = bRecord.publishedAt
-              ? new Date(bRecord.publishedAt)
-              : new Date(0);
-            return bDate.getTime() - aDate.getTime(); // Sort by most recent first
-          })
-          .map((doc) => {
-            if (!doc.documents) return null;
-            let uri = new AtUri(doc.documents.uri);
-            let record = doc.documents.data as PubLeafletDocument.Record;
-            return (
-              <React.Fragment key={doc.documents?.uri}>
-                <div className="flex  w-full ">
-                  <Link
-                    href={`/lish/${params.handle}/${params.publication}/${uri.rkey}`}
-                    className="publishedPost grow flex flex-col gap-2 hover:!no-underline"
-                  >
-                    <h3 className="text-primary">{record.title}</h3>
-                  </Link>
-                </div>
-                <hr className="last:hidden border-border-light" />
-              </React.Fragment>
-            );
-          })}
+        <div className="publicationWrapper w-screen h-screen flex place-items-center bg-bg-leaflet">
+          <div className="publication max-w-prose w-full mx-auto h-full pt-9">
+            <div className="flex flex-col pb-6 w-full text-center justify-center ">
+              <h2 className="text-accent-contrast">{publication.name}</h2>
+              <p className="text-lg text-tertiary">
+                Here is a placeholder description
+              </p>
+            </div>
+            <div className="publicationPostList w-full flex flex-col gap-4 pb-6">
+              {publication.documents_in_publications
+                .filter((d) => !!d?.documents)
+                .sort((a, b) => {
+                  let aRecord = a.documents?.data! as PubLeafletDocument.Record;
+                  let bRecord = a.documents?.data! as PubLeafletDocument.Record;
+                  const aDate = aRecord.publishedAt
+                    ? new Date(aRecord.publishedAt)
+                    : new Date(0);
+                  const bDate = bRecord.publishedAt
+                    ? new Date(bRecord.publishedAt)
+                    : new Date(0);
+                  return bDate.getTime() - aDate.getTime(); // Sort by most recent first
+                })
+                .map((doc) => {
+                  if (!doc.documents) return null;
+                  let uri = new AtUri(doc.documents.uri);
+                  let record = doc.documents.data as PubLeafletDocument.Record;
+                  return (
+                    <React.Fragment key={doc.documents?.uri}>
+                      <div className="flex w-full ">
+                        <Link
+                          href={`/lish/${params.handle}/${params.publication}/${uri.rkey}`}
+                          className="publishedPost grow flex flex-col gap-2 hover:!no-underline"
+                        >
+                          <h3 className="text-primary">{record.title}</h3>
+                          <p className="italic text-secondary">
+                            This is a placeholder for description
+                          </p>
+                          <p className="text-sm text-tertiary pt-2">
+                            {record.publishedAt} PlaceholderDate
+                          </p>
+                        </Link>
+                      </div>
+                      <hr className="last:hidden border-border-light" />
+                    </React.Fragment>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
       </ThemeProvider>
     );
   } catch (e) {

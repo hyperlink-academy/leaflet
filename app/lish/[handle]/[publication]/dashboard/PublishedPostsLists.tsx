@@ -34,6 +34,7 @@ export function PublishedPostsList() {
           <Fragment key={doc.documents?.uri}>
             <div className="flex  w-full ">
               <Link
+                target="_blank"
                 href={`/lish/${params.handle}/${params.publication}/${uri.rkey}`}
                 className="publishedPost grow flex flex-col hover:!no-underline"
               >

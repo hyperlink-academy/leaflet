@@ -79,6 +79,7 @@ export const PublicationMetadata = ({
           <p className="text-sm text-tertiary">Published XX/XX/XXX</p>
           <Separator classname="h-4" />
           <Link
+            target="_blank"
             className="text-sm"
             href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${pub.publications.name}/${new AtUri(pub.doc).rkey}`}
           >
