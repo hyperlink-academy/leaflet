@@ -24,7 +24,10 @@ export const BackToPubButton = (props: {
   let handle = identity?.resolved_did?.alsoKnownAs?.[0].slice(5)!;
   let name = props.publication.name;
   return (
-    <Link href={`/lish/${handle}/${name}/`} className="hover:!no-underline">
+    <Link
+      href={`/lish/${handle}/${name}/dashboard`}
+      className="hover:!no-underline"
+    >
       <ActionButton
         icon={<GoBackSmall className="shrink-0" />}
         label="To Pub"

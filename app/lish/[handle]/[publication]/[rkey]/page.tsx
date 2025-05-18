@@ -58,7 +58,7 @@ export default async function Post(props: {
     blocks = firstPage.blocks || [];
   }
   return (
-    <div className="postPage w-full h-screen bg-bg-leaflet flex items-stretch">
+    <div className="postPage w-full h-screen bg-[#FDFCFA] flex items-stretch">
       <div className="pubWrapper flex flex-col w-full ">
         <div className="pubContent flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto max-w-prose h-full w-full overflow-auto">
           <div className="flex flex-col pb-8">
@@ -76,7 +76,7 @@ export default async function Post(props: {
               <p className="text-sm text-tertiary pt-3">
                 Published{" "}
                 {new Date(record.publishedAt).toLocaleDateString(undefined, {
-                  year: "2-digit",
+                  year: "numeric",
                   month: "long",
                   day: "2-digit",
                 })}

@@ -48,7 +48,7 @@ export function PublishedPostsList() {
                     {new Date(record.publishedAt).toLocaleDateString(
                       undefined,
                       {
-                        year: "2-digit",
+                        year: "numeric",
                         month: "long",
                         day: "2-digit",
                       },

@@ -50,7 +50,7 @@ export default async function Publication(props: {
   try {
     return (
       <ThemeProvider entityID={null}>
-        <div className="publicationWrapper w-screen h-screen flex place-items-center bg-bg-leaflet">
+        <div className="publicationWrapper w-screen h-screen flex place-items-center bg-[#FDFCFA]">
           <div className="publication max-w-prose w-full mx-auto h-full pt-9">
             <div className="flex flex-col pb-6 w-full text-center justify-center ">
               <h2 className="text-accent-contrast">{publication.name}</h2>
@@ -81,14 +81,21 @@ export default async function Publication(props: {
                       <div className="flex w-full ">
                         <Link
                           href={`/lish/${params.handle}/${params.publication}/${uri.rkey}`}
-                          className="publishedPost grow flex flex-col gap-2 hover:!no-underline"
+                          className="publishedPost grow flex flex-col hover:!no-underline"
                         >
                           <h3 className="text-primary">{record.title}</h3>
                           <p className="italic text-secondary">
-                            This is a placeholder for description
+                            {record.description}{" "}
                           </p>
                           <p className="text-sm text-tertiary pt-2">
-                            {record.publishedAt} PlaceholderDate
+                            {new Date(record.publishedAt).toLocaleDateString(
+                              undefined,
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "2-digit",
+                              },
+                            )}{" "}
                           </p>
                         </Link>
                       </div>

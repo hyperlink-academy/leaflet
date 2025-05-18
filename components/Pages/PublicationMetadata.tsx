@@ -9,6 +9,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import { AutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { Separator } from "components/Layout";
 import { AtUri } from "@atproto/syntax";
+import { PubLeafletDocument } from "lexicons/api";
 export const PublicationMetadata = ({
   cardBorderHidden,
 }: {
@@ -19,7 +20,10 @@ export const PublicationMetadata = ({
   let { data: publicationData, mutate } = useLeafletPublicationData();
   let pub = publicationData?.[0];
   let [titleState, setTitleState] = useState(pub?.title || "");
-  let [descriptionState, setDescriptionState] = useState(pub?.title || "");
+  let [descriptionState, setDescriptionState] = useState(
+    pub?.description || "",
+  );
+  let record = pub.publications?.record as PubLeafletDocument.Record;
 
   useEffect(() => {
     setTitleState(pub?.title || "");
@@ -49,7 +53,7 @@ export const PublicationMetadata = ({
     >
       <div className="flex gap-2">
         <Link
-          href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${pub.publications.name}`}
+          href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${pub.publications.name}/dahsboard`}
           className="text-accent-contrast font-bold hover:no-underline"
         >
           {pub.publications?.name}
@@ -76,7 +80,8 @@ export const PublicationMetadata = ({
       />
       {pub.doc ? (
         <div className="flex flex-row items-center gap-2 pt-3">
-          <p className="text-sm text-tertiary">Published XX/XX/XXX</p>
+          <p className="text-sm text-tertiary">Published </p>
+
           <Separator classname="h-4" />
           <Link
             target="_blank"
