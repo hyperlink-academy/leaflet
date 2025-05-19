@@ -31,7 +31,7 @@ export const CreatePubForm = () => {
           iconFile: logoFile,
         });
         router.push(
-          `/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${nameValue}/`,
+          `/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${nameValue}/dashboard`,
         );
       }}
     >
@@ -111,20 +111,35 @@ function DomainInput(props: {
     setState("normal");
   }, [props.domain]);
   useDebouncedEffect(
-    () => {
-      let status = callRPC("get_domain_status", { domain: props.domain });
+    async () => {
+      if (!props.domain) return setState("normal");
+      let status = await callRPC("get_leaflet_subdomain_status", {
+        domain: props.domain,
+      });
       console.log(status);
+      if (status.error === "Not Found") setState("valid");
+      else setState("invalid");
     },
     500,
     [props.domain],
   );
   return (
-    <div className="flex flex-row gap-1">
-      <Input
-        value={props.domain}
-        onChange={(e) => props.setDomain(e.currentTarget.value)}
-      />
-      .leaflet.pub
-    </div>
+    <label className=" input-with-border flex flex-col text-sm text-tertiary font-bold italic leading-tight !py-1 !px-[6px]">
+      <div>Domain</div>
+      <div className="flex flex-row  items-center">
+        <Input
+          placeholder="domain"
+          className="appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 outline-none"
+          value={props.domain}
+          onChange={(e) => props.setDomain(e.currentTarget.value)}
+        />
+        .leaflet.pub
+      </div>
+      {state === "valid"
+        ? "Available!"
+        : state === "invalid"
+          ? "Unavailable"
+          : null}
+    </label>
   );
 }

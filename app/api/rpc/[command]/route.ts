@@ -7,7 +7,10 @@ import { Database } from "supabase/database.types";
 import { pull } from "./pull";
 import { getFactsFromHomeLeaflets } from "./getFactsFromHomeLeaflets";
 import { Vercel } from "@vercel/sdk";
-import { get_domain_status } from "./domain_routes";
+import {
+  get_domain_status,
+  get_leaflet_subdomain_status,
+} from "./domain_routes";
 import { get_leaflet_data } from "./get_leaflet_data";
 import { get_publication_data } from "./get_publication_data";
 
@@ -33,6 +36,7 @@ let Routes = [
   pull,
   getFactsFromHomeLeaflets,
   get_domain_status,
+  get_leaflet_subdomain_status,
   get_leaflet_data,
   get_publication_data,
 ];

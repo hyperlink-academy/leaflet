@@ -74,7 +74,7 @@ export const schemaDict = {
               type: 'string',
               maxLength: 2000,
             },
-            domain: {
+            base_path: {
               type: 'string',
               format: 'uri',
             },
