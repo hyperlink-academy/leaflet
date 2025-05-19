@@ -8,6 +8,8 @@ import { Input, InputWithLabel } from "components/Input";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
+import { set } from "colorjs.io/fn";
+import { theme } from "tailwind.config";
 
 export const CreatePubForm = () => {
   let [nameValue, setNameValue] = useState("");
@@ -38,7 +40,7 @@ export const CreatePubForm = () => {
       <div className="flex flex-col items-center mb-4 gap-2">
         <div className="text-center text-secondary flex flex-col ">
           <h3 className="-mb-1">Logo</h3>
-          <h3>(optional)</h3>
+          <p className="italic text-tertiary">(optional)</p>
         </div>
         <div
           className="w-24 h-24 rounded-full border-2 border-dotted border-accent-1 flex items-center justify-center cursor-pointer hover:border-accent-contrast"
@@ -82,8 +84,6 @@ export const CreatePubForm = () => {
         }}
       />
 
-      <DomainInput domain={domainValue} setDomain={setDomainValue} />
-
       <InputWithLabel
         label="Description (optional)"
         textarea
@@ -94,6 +94,7 @@ export const CreatePubForm = () => {
           setDescriptionValue(e.currentTarget.value);
         }}
       />
+      <DomainInput domain={domainValue} setDomain={setDomainValue} />
 
       <div className="flex w-full justify-center">
         <ButtonPrimary type="submit">Create Publication!</ButtonPrimary>
@@ -106,13 +107,19 @@ function DomainInput(props: {
   domain: string;
   setDomain: (d: string) => void;
 }) {
-  let [state, setState] = useState<"normal" | "valid" | "invalid">("normal");
+  let [state, setState] = useState<"empty" | "valid" | "invalid" | "pending">(
+    "empty",
+  );
   useEffect(() => {
-    setState("normal");
+    if (!props.domain) {
+      setState("empty");
+    } else {
+      setState("pending");
+    }
   }, [props.domain]);
   useDebouncedEffect(
     async () => {
-      if (!props.domain) return setState("normal");
+      if (!props.domain) return setState("empty");
       let status = await callRPC("get_leaflet_subdomain_status", {
         domain: props.domain,
       });
@@ -124,22 +131,37 @@ function DomainInput(props: {
     [props.domain],
   );
   return (
-    <label className=" input-with-border flex flex-col text-sm text-tertiary font-bold italic leading-tight !py-1 !px-[6px]">
-      <div>Domain</div>
-      <div className="flex flex-row  items-center">
-        <Input
-          placeholder="domain"
-          className="appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 outline-none"
-          value={props.domain}
-          onChange={(e) => props.setDomain(e.currentTarget.value)}
-        />
-        .leaflet.pub
+    <div className="flex flex-col gap-1">
+      <label className=" input-with-border flex flex-col text-sm text-tertiary font-bold italic leading-tight !py-1 !px-[6px]">
+        <div>Domain</div>
+        <div className="flex flex-row  items-center">
+          <Input
+            placeholder="domain"
+            className="appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 outline-none"
+            value={props.domain}
+            onChange={(e) => props.setDomain(e.currentTarget.value)}
+          />
+          .leaflet.pub
+        </div>
+      </label>
+      <div
+        className={"text-sm italic "}
+        style={{
+          fontWeight: state === "valid" ? "bold" : "normal",
+          color:
+            state === "valid"
+              ? theme.colors["accent-contrast"]
+              : theme.colors.tertiary,
+        }}
+      >
+        {state === "valid"
+          ? "Available!"
+          : state === "invalid"
+            ? "Already Taken ):"
+            : state === "pending"
+              ? "Checking Availability..."
+              : "Choose a domain!"}
       </div>
-      {state === "valid"
-        ? "Available!"
-        : state === "invalid"
-          ? "Unavailable"
-          : null}
-    </label>
+    </div>
   );
 }
