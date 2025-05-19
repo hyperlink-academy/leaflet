@@ -6,7 +6,7 @@ import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import React from "react";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { AtUri } from "@atproto/syntax";
-import { PubLeafletDocument } from "lexicons/api";
+import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import Link from "next/link";
 
 const idResolver = new IdResolver();
@@ -28,7 +28,6 @@ export async function generateMetadata(props: {
   return { title: decodeURIComponent((await props.params).publication) };
 }
 
-//This is the admin dashboard of the publication
 export default async function Publication(props: {
   params: Promise<{ publication: string; handle: string }>;
 }) {
@@ -45,18 +44,32 @@ export default async function Publication(props: {
     .eq("identity_did", did)
     .eq("name", decodeURIComponent((await props.params).publication))
     .single();
-  if (!publication) return <PubNotFound />;
 
+  let record = publication?.record as PubLeafletPublication.Record;
+
+  if (!publication) return <PubNotFound />;
+  console.log(record.icon);
   try {
     return (
       <ThemeProvider entityID={null}>
         <div className="publicationWrapper w-screen h-screen flex place-items-center bg-[#FDFCFA]">
-          <div className="publication max-w-prose w-full mx-auto h-full pt-9">
+          <div className="publication max-w-prose w-full mx-auto h-full pt-8 px-2 pb-12 sm:pb-8">
             <div className="flex flex-col pb-6 w-full text-center justify-center ">
-              <h2 className="text-accent-contrast">{publication.name}</h2>
-              <p className="text-lg text-tertiary">
-                Here is a placeholder description
-              </p>
+              <div className="flex flex-row gap-3 justify-center">
+                {record.icon && (
+                  <div
+                    className="shrink-0 w-8 h-8 rounded-full mt-1"
+                    style={{
+                      backgroundImage: `url(https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${(record.icon.ref as unknown as { $link: string })["$link"]})`,
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "center",
+                      backgroundSize: "cover",
+                    }}
+                  />
+                )}
+                <h2 className="text-accent-contrast">{publication.name}</h2>
+              </div>
+              <p className="text-lg text-tertiary">{record.description} </p>
             </div>
             <div className="publicationPostList w-full flex flex-col gap-4 pb-6">
               {publication.documents_in_publications
@@ -85,7 +98,7 @@ export default async function Publication(props: {
                         >
                           <h3 className="text-primary">{record.title}</h3>
                           <p className="italic text-secondary">
-                            {record.description}{" "}
+                            {record.description}
                           </p>
                           <p className="text-sm text-tertiary pt-2">
                             {record.publishedAt &&

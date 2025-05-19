@@ -15,6 +15,7 @@ import React from "react";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { PublicationSWRDataProvider } from "./PublicationSWRProvider";
 import { PublishedPostsList } from "./PublishedPostsLists";
+import { PubLeafletPublication } from "lexicons/api";
 
 const idResolver = new IdResolver();
 
@@ -51,6 +52,8 @@ export default async function Publication(props: {
     },
     { supabase: supabaseServerClient },
   );
+
+  let record = publication?.record as PubLeafletPublication.Record;
   if (!publication || identity.atp_did !== publication.identity_did)
     return <PubNotFound />;
 
@@ -70,9 +73,11 @@ export default async function Publication(props: {
                 </Sidebar>
               </div>
               <div
-                className={`h-full overflow-y-scroll pt-4 sm:pl-5 sm:pt-9 w-full`}
+                className={`h-full overflow-y-scroll pt-4 sm:pl-5 sm:pt-8 w-full`}
               >
                 <PublicationDashboard
+                  did={did}
+                  icon={record.icon ? record.icon : null}
                   name={publication.name}
                   tabs={{
                     Drafts: <DraftList />,
