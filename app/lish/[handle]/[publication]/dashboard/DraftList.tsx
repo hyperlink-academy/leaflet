@@ -10,7 +10,7 @@ export function DraftList() {
   console.log({ pub_data });
   if (!pub_data) return null;
   return (
-    <div className="flex flex-col gap-4 pb-6">
+    <div className="flex flex-col gap-4 pb-8 sm:pb-12">
       <NewDraftSecondaryButton fullWidth publication={pub_data?.name} />
       {pub_data.leaflets_in_publications.map((d) => {
         return (

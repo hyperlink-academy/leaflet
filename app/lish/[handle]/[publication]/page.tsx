@@ -88,14 +88,15 @@ export default async function Publication(props: {
                             {record.description}{" "}
                           </p>
                           <p className="text-sm text-tertiary pt-2">
-                            {new Date(record.publishedAt).toLocaleDateString(
-                              undefined,
-                              {
-                                year: "numeric",
-                                month: "long",
-                                day: "2-digit",
-                              },
-                            )}{" "}
+                            {record.publishedAt &&
+                              new Date(record.publishedAt).toLocaleDateString(
+                                undefined,
+                                {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "2-digit",
+                                },
+                              )}{" "}
                           </p>
                         </Link>
                       </div>

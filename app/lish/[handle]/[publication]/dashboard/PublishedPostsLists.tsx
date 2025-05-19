@@ -21,7 +21,7 @@ export function PublishedPostsList() {
       </div>
     );
   return (
-    <div className="publishedList w-full flex flex-col gap-4 pb-6">
+    <div className="publishedList w-full flex flex-col gap-4 pb-8 sm:pb-12">
       {publication.documents_in_publications.map((doc) => {
         if (!doc.documents) return null;
         let leaflet = publication.leaflets_in_publications.find(

@@ -10,6 +10,7 @@ import { AutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { Separator } from "components/Layout";
 import { AtUri } from "@atproto/syntax";
 import { PubLeafletDocument } from "lexicons/api";
+import { publications } from "drizzle/schema";
 export const PublicationMetadata = ({
   cardBorderHidden,
 }: {
@@ -23,6 +24,8 @@ export const PublicationMetadata = ({
   let [descriptionState, setDescriptionState] = useState(
     pub?.description || "",
   );
+  let record = pub.documents?.data as PubLeafletDocument.Record | null;
+  let publishedAt = record?.publishedAt;
 
   useEffect(() => {
     setTitleState(pub?.title || "");
@@ -52,7 +55,7 @@ export const PublicationMetadata = ({
     >
       <div className="flex gap-2">
         <Link
-          href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${pub.publications.name}/dahsboard`}
+          href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${pub.publications.name}/dashboard`}
           className="text-accent-contrast font-bold hover:no-underline"
         >
           {pub.publications?.name}
@@ -79,8 +82,18 @@ export const PublicationMetadata = ({
       />
       {pub.doc ? (
         <div className="flex flex-row items-center gap-2 pt-3">
-          <p className="text-sm text-tertiary">Published </p>
-
+          <p className="text-sm text-tertiary">
+            Published{" "}
+            {publishedAt &&
+              new Date(publishedAt).toLocaleString(undefined, {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })}
+          </p>
           <Separator classname="h-4" />
           <Link
             target="_blank"
