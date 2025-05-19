@@ -5,6 +5,7 @@ import { createOauthClient } from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Un$Typed } from "@atproto/api";
+import { Json } from "supabase/database.types";
 
 export async function createPublication({
   name,
@@ -53,6 +54,7 @@ export async function createPublication({
     uri: result.uri,
     identity_did: credentialSession.did!,
     name: record.name,
+    record: record as Json,
   });
 
   return { success: true, name };
