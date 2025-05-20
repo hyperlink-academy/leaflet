@@ -1,4 +1,5 @@
 import { LexiconDoc, LexRefUnion } from "@atproto/lexicon";
+import { PubLeafletRichTextFacet } from "./facet";
 
 export const PubLeafletBlocksText: LexiconDoc = {
   lexicon: 1,
@@ -6,9 +7,13 @@ export const PubLeafletBlocksText: LexiconDoc = {
   defs: {
     main: {
       type: "object",
-      required: [],
+      required: ["plaintext"],
       properties: {
         plaintext: { type: "string" },
+        facets: {
+          type: "array",
+          items: { type: "ref", ref: PubLeafletRichTextFacet.id },
+        },
       },
     },
   },
@@ -20,10 +25,14 @@ export const PubLeafletBlocksHeader: LexiconDoc = {
   defs: {
     main: {
       type: "object",
-      required: [],
+      required: ["plaintext"],
       properties: {
         level: { type: "integer", minimum: 1, maximum: 6 },
         plaintext: { type: "string" },
+        facets: {
+          type: "array",
+          items: { type: "ref", ref: PubLeafletRichTextFacet.id },
+        },
       },
     },
   },

@@ -79,7 +79,7 @@ const BlockWrapper = (props: {
   }
 };
 
-type Delta = {
+export type Delta = {
   insert: string;
   attributes?: {
     strong?: {};
@@ -133,7 +133,7 @@ export function YJSFragmentToString(
       .map((d) => {
         return d.insert;
       })
-      .join(" ");
+      .join("");
   }
   return "";
 }

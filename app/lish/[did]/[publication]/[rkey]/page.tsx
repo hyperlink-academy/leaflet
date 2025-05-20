@@ -11,6 +11,8 @@ import {
 } from "lexicons/api";
 import { Metadata } from "next";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { TextBlock } from "./TextBlock";
+import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -58,81 +60,90 @@ export default async function Post(props: {
     blocks = firstPage.blocks || [];
   }
   return (
-    <div className="postPage w-full h-screen bg-[#FDFCFA] flex items-stretch">
-      <div className="pubWrapper flex flex-col w-full ">
-        <div className="pubContent flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto max-w-prose h-full w-full overflow-auto">
-          <div className="flex flex-col pb-8">
-            <Link
-              className="font-bold hover:no-underline text-accent-contrast"
-              href={getPublicationURL(
-                document.documents_in_publications[0].publications,
-              )}
-            >
-              {decodeURIComponent((await props.params).publication)}
-            </Link>
-            <h2 className="">{record.title}</h2>
-            {record.description ? (
-              <p className="italic text-secondary">{record.description}</p>
-            ) : null}
-            {record.publishedAt ? (
-              <p className="text-sm text-tertiary pt-3">
-                Published{" "}
-                {new Date(record.publishedAt).toLocaleDateString(undefined, {
-                  year: "numeric",
-                  month: "long",
-                  day: "2-digit",
-                })}
-              </p>
-            ) : null}
+    <ThemeProvider entityID={null}>
+      <div className="postPage w-full h-screen bg-[#FDFCFA] flex items-stretch">
+        <div className="pubWrapper flex flex-col w-full ">
+          <div className="pubContent flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto max-w-prose h-full w-full overflow-auto">
+            <div className="flex flex-col pb-8">
+              <Link
+                className="font-bold hover:no-underline text-accent-contrast"
+                href={getPublicationURL(
+                  document.documents_in_publications[0].publications,
+                )}
+              >
+                {decodeURIComponent((await props.params).publication)}
+              </Link>
+              <h2 className="">{record.title}</h2>
+              {record.description ? (
+                <p className="italic text-secondary">{record.description}</p>
+              ) : null}
+              {record.publishedAt ? (
+                <p className="text-sm text-tertiary pt-3">
+                  Published{" "}
+                  {new Date(record.publishedAt).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "long",
+                    day: "2-digit",
+                  })}
+                </p>
+              ) : null}
+            </div>
+            {blocks.map((b, index) => {
+              switch (true) {
+                case PubLeafletBlocksImage.isMain(b.block): {
+                  return (
+                    <img
+                      key={index}
+                      height={b.block.aspectRatio?.height}
+                      width={b.block.aspectRatio?.width}
+                      className="pb-2 sm:pb-3"
+                      src={`https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${(b.block.image.ref as unknown as { $link: string })["$link"]}`}
+                    />
+                  );
+                }
+                case PubLeafletBlocksText.isMain(b.block):
+                  return (
+                    <div key={index} className="pt-0 pb-2 sm:pb-3">
+                      <TextBlock
+                        facets={b.block.facets}
+                        plaintext={b.block.plaintext}
+                      />
+                    </div>
+                  );
+                case PubLeafletBlocksHeader.isMain(b.block): {
+                  if (b.block.level === 1)
+                    return (
+                      <h1 key={index} className="pb-0 pt-2 sm:pt-3">
+                        <TextBlock {...b.block} />
+                      </h1>
+                    );
+                  if (b.block.level === 2)
+                    return (
+                      <h3 key={index} className="pb-0 pt-2 sm:pt-3">
+                        <TextBlock {...b.block} />
+                      </h3>
+                    );
+                  if (b.block.level === 3)
+                    return (
+                      <h4 key={index} className="pb-0 pt-2 sm:pt-3">
+                        <TextBlock {...b.block} />
+                      </h4>
+                    );
+                  // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
+                  // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
+                  return (
+                    <h6 key={index}>
+                      <TextBlock {...b.block} />
+                    </h6>
+                  );
+                }
+                default:
+                  return null;
+              }
+            })}
           </div>
-          {blocks.map((b, index) => {
-            switch (true) {
-              case PubLeafletBlocksImage.isMain(b.block): {
-                return (
-                  <img
-                    key={index}
-                    height={b.block.aspectRatio?.height}
-                    width={b.block.aspectRatio?.width}
-                    className="pb-2 sm:pb-3"
-                    src={`https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${(b.block.image.ref as unknown as { $link: string })["$link"]}`}
-                  />
-                );
-              }
-              case PubLeafletBlocksText.isMain(b.block):
-                return (
-                  <p key={index} className="pt-0 pb-2 sm:pb-3">
-                    {b.block.plaintext}
-                  </p>
-                );
-              case PubLeafletBlocksHeader.isMain(b.block): {
-                if (b.block.level === 1)
-                  return (
-                    <h1 key={index} className="pb-0 pt-2 sm:pt-3">
-                      {b.block.plaintext}
-                    </h1>
-                  );
-                if (b.block.level === 2)
-                  return (
-                    <h3 key={index} className="pb-0 pt-2 sm:pt-3">
-                      {b.block.plaintext}
-                    </h3>
-                  );
-                if (b.block.level === 3)
-                  return (
-                    <h4 key={index} className="pb-0 pt-2 sm:pt-3">
-                      {b.block.plaintext}
-                    </h4>
-                  );
-                // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
-                // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
-                return <h6 key={index}>{b.block.plaintext}</h6>;
-              }
-              default:
-                return null;
-            }
-          })}
         </div>
       </div>
-    </div>
+    </ThemeProvider>
   );
 }

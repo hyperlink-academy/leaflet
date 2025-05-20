@@ -11,6 +11,7 @@ import * as PubLeafletBlocksHeader from './types/pub/leaflet/blocks/header'
 import * as PubLeafletBlocksImage from './types/pub/leaflet/blocks/image'
 import * as PubLeafletBlocksText from './types/pub/leaflet/blocks/text'
 import * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
+import * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
 import * as ComAtprotoLabelDefs from './types/com/atproto/label/defs'
 import * as ComAtprotoRepoApplyWrites from './types/com/atproto/repo/applyWrites'
 import * as ComAtprotoRepoCreateRecord from './types/com/atproto/repo/createRecord'
@@ -31,6 +32,7 @@ export * as PubLeafletBlocksHeader from './types/pub/leaflet/blocks/header'
 export * as PubLeafletBlocksImage from './types/pub/leaflet/blocks/image'
 export * as PubLeafletBlocksText from './types/pub/leaflet/blocks/text'
 export * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
+export * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
 export * as ComAtprotoLabelDefs from './types/com/atproto/label/defs'
 export * as ComAtprotoRepoApplyWrites from './types/com/atproto/repo/applyWrites'
 export * as ComAtprotoRepoCreateRecord from './types/com/atproto/repo/createRecord'
@@ -85,11 +87,13 @@ export class PubLeafletNS {
   publication: PublicationRecord
   blocks: PubLeafletBlocksNS
   pages: PubLeafletPagesNS
+  richtext: PubLeafletRichtextNS
 
   constructor(client: XrpcClient) {
     this._client = client
     this.blocks = new PubLeafletBlocksNS(client)
     this.pages = new PubLeafletPagesNS(client)
+    this.richtext = new PubLeafletRichtextNS(client)
     this.document = new DocumentRecord(client)
     this.publication = new PublicationRecord(client)
   }
@@ -104,6 +108,14 @@ export class PubLeafletBlocksNS {
 }
 
 export class PubLeafletPagesNS {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+}
+
+export class PubLeafletRichtextNS {
   _client: XrpcClient
 
   constructor(client: XrpcClient) {

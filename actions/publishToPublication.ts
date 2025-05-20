@@ -10,6 +10,7 @@ import {
   PubLeafletBlocksText,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
+  PubLeafletRichtextFacet,
 } from "lexicons/api";
 import { Block } from "components/Blocks/Block";
 import { TID } from "@atproto/common";
@@ -17,13 +18,17 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { scanIndex, scanIndexLocal } from "src/replicache/utils";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
-import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
+import {
+  Delta,
+  YJSFragmentToString,
+} from "components/Blocks/TextBlock/RenderYJSFragment";
 import { ids } from "lexicons/api/lexicons";
 import { OmitKey } from "lexicons/api/util";
 import { BlobRef } from "@atproto/lexicon";
 import { IdResolver } from "@atproto/identity";
 import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
+import { UnicodeString } from "@atproto/api";
 
 const idResolver = new IdResolver();
 export async function publishToPublication({
@@ -104,7 +109,6 @@ export async function publishToPublication({
     validate: false, //TODO publish the lexicon so we can validate!
   });
 
-  console.log(result);
   console.log(
     await supabaseServerClient.from("documents").upsert({
       uri: result.uri,
@@ -124,10 +128,6 @@ export async function publishToPublication({
       })
       .eq("leaflet", leaflet_id)
       .eq("publication", publication_uri),
-    sendPostToEmailSubscribers(publication_uri, {
-      title: title || "Untitiled",
-      content: blocksToHtml(blocks, imageMap, scan, publication_uri),
-    }),
   ]);
 
   let handle = await idResolver.did.resolve(credentialSession.did!);
@@ -147,7 +147,8 @@ function blocksToRecord(
     Y.applyUpdate(doc, update);
     let nodes = doc.getXmlElement("prosemirror").toArray();
     let stringValue = YJSFragmentToString(nodes[0]);
-    return stringValue;
+    let facets = YJSFragmentToFacets(nodes[0]);
+    return [stringValue, facets];
   };
   return blocks.flatMap((b) => {
     if (b.type !== "text" && b.type !== "heading" && b.type !== "image")
@@ -155,7 +156,7 @@ function blocksToRecord(
     if (b.type === "heading") {
       let [headingLevel] = scan.eav(b.value, "block/heading-level");
 
-      let stringValue = getBlockContent(b.value);
+      let [stringValue, facets] = getBlockContent(b.value);
       return [
         {
           $type: "pub.leaflet.pages.linearDocument#block",
@@ -163,19 +164,21 @@ function blocksToRecord(
             $type: "pub.leaflet.blocks.header",
             level: headingLevel?.data.value || 1,
             plaintext: stringValue,
+            facets,
           },
         } as PubLeafletPagesLinearDocument.Block,
       ];
     }
 
     if (b.type == "text") {
-      let stringValue = getBlockContent(b.value);
+      let [stringValue, facets] = getBlockContent(b.value);
       return [
         {
           $type: "pub.leaflet.pages.linearDocument#block",
           block: {
             $type: ids.PubLeafletBlocksText,
             plaintext: stringValue,
+            facets,
           },
         } as PubLeafletPagesLinearDocument.Block,
       ];
@@ -201,55 +204,6 @@ function blocksToRecord(
     }
     return [];
   });
-}
-
-function blocksToHtml(
-  blocks: Block[],
-  imageMap: Map<string, BlobRef>,
-  scan: ReturnType<typeof scanIndexLocal>,
-  publication_uri: string,
-) {
-  const getBlockContent = (b: string) => {
-    let [content] = scan.eav(b, "block/text");
-    if (!content) return "";
-    let doc = new Y.Doc();
-    const update = base64.toByteArray(content.data.value);
-    Y.applyUpdate(doc, update);
-    let nodes = doc.getXmlElement("prosemirror").toArray();
-    let stringValue = YJSFragmentToString(nodes[0]);
-    return stringValue;
-  };
-  return blocks
-    .flatMap((b) => {
-      if (b.type !== "text" && b.type !== "heading" && b.type !== "image")
-        return [];
-      if (b.type === "heading") {
-        let [headingLevel] = scan.eav(b.value, "block/heading-level");
-
-        let stringValue = getBlockContent(b.value);
-        let l = headingLevel?.data.value || 1;
-        return [`<h${l}>${stringValue}</h${l}>`];
-      }
-
-      if (b.type == "text") {
-        let stringValue = getBlockContent(b.value);
-        return `<p>${stringValue}</p>`;
-      }
-      if (b.type == "image") {
-        let [image] = scan.eav(b.value, "block/image");
-        if (!image) return [];
-        let blobref = imageMap.get(image.data.src);
-        if (!blobref) return [];
-        let uri = new AtUri(publication_uri);
-        return `<img
-        height=${image.data.height}
-        width=${image.data.width}>
-        src="https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${uri.hostname}&cid=${(blobref as unknown as { $link: string })["$link"]}"
-        </img>`;
-      }
-      return [""];
-    })
-    .join("\n");
 }
 
 async function sendPostToEmailSubscribers(
@@ -295,4 +249,54 @@ async function sendPostToEmailSubscribers(
       })),
     ),
   });
+}
+
+function YJSFragmentToFacets(
+  node: Y.XmlElement | Y.XmlText | Y.XmlHook,
+): PubLeafletRichtextFacet.Main[] {
+  if (node.constructor === Y.XmlElement) {
+    return node
+      .toArray()
+      .map((f) => YJSFragmentToFacets(f))
+      .flat();
+  }
+  if (node.constructor === Y.XmlText) {
+    let facets: PubLeafletRichtextFacet.Main[] = [];
+    let delta = node.toDelta() as Delta[];
+    let byteStart = 0;
+    console.log(delta);
+    for (let d of delta) {
+      let unicodestring = new UnicodeString(d.insert);
+      let facet: PubLeafletRichtextFacet.Main = {
+        index: {
+          byteStart,
+          byteEnd: byteStart + unicodestring.length,
+        },
+        features: [],
+      };
+
+      if (d.attributes?.strikethrough)
+        facet.features.push({
+          $type: "pub.leaflet.richtext.facet#strikethrough",
+        });
+
+      if (d.attributes?.highlight)
+        facet.features.push({ $type: "pub.leaflet.richtext.facet#highlight" });
+      if (d.attributes?.underline)
+        facet.features.push({ $type: "pub.leaflet.richtext.facet#underline" });
+      if (d.attributes?.strong)
+        facet.features.push({ $type: "pub.leaflet.richtext.facet#bold" });
+      if (d.attributes?.em)
+        facet.features.push({ $type: "pub.leaflet.richtext.facet#italic" });
+      if (d.attributes?.link)
+        facet.features.push({
+          $type: "pub.leaflet.richtext.facet#link",
+          uri: d.attributes.link.href,
+        });
+      facets.push(facet);
+      byteStart += unicodestring.length;
+    }
+    return facets;
+  }
+  return [];
 }
