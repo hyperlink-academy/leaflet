@@ -1,4 +1,3 @@
-import { IdResolver } from "@atproto/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
 
@@ -8,31 +7,31 @@ import { get_publication_data } from "app/api/rpc/[command]/get_publication_data
 import { AtUri } from "@atproto/syntax";
 import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import Link from "next/link";
-
-const idResolver = new IdResolver();
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 
 export async function generateMetadata(props: {
-  params: Promise<{ publication: string; handle: string }>;
+  params: Promise<{ publication: string; did: string }>;
 }): Promise<Metadata> {
-  let did = await idResolver.handle.resolve((await props.params).handle);
+  let params = await props.params;
+  let did = decodeURIComponent(params.did);
   if (!did) return { title: "Publication 404" };
 
   let { result: publication } = await get_publication_data.handler(
     {
       did,
-      publication_name: decodeURIComponent((await props.params).publication),
+      publication_name: decodeURIComponent(params.publication),
     },
     { supabase: supabaseServerClient },
   );
   if (!publication) return { title: "404 Publication" };
-  return { title: decodeURIComponent((await props.params).publication) };
+  return { title: decodeURIComponent(params.publication) };
 }
 
 export default async function Publication(props: {
-  params: Promise<{ publication: string; handle: string }>;
+  params: Promise<{ publication: string; did: string }>;
 }) {
   let params = await props.params;
-  let did = await idResolver.handle.resolve((await props.params).handle);
+  let did = decodeURIComponent(params.did);
   if (!did) return <PubNotFound />;
   let { data: publication } = await supabaseServerClient
     .from("publications")
@@ -42,13 +41,12 @@ export default async function Publication(props: {
       `,
     )
     .eq("identity_did", did)
-    .eq("name", decodeURIComponent((await props.params).publication))
+    .eq("name", decodeURIComponent(params.publication))
     .single();
 
   let record = publication?.record as PubLeafletPublication.Record;
 
   if (!publication) return <PubNotFound />;
-  console.log(record.icon);
   try {
     return (
       <ThemeProvider entityID={null}>
@@ -93,7 +91,7 @@ export default async function Publication(props: {
                     <React.Fragment key={doc.documents?.uri}>
                       <div className="flex w-full ">
                         <Link
-                          href={`/lish/${params.handle}/${params.publication}/${uri.rkey}`}
+                          href={`${getPublicationURL(publication)}/${uri.rkey}`}
                           className="publishedPost grow flex flex-col hover:!no-underline"
                         >
                           <h3 className="text-primary">{record.title}</h3>

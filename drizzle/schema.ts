@@ -160,6 +160,17 @@ export const poll_votes_on_entity = pgTable("poll_votes_on_entity", {
 	voter_token: uuid("voter_token").notNull(),
 });
 
+export const publication_domains = pgTable("publication_domains", {
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	domain: text("domain").notNull().references(() => custom_domains.domain, { onDelete: "cascade" } ),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		publication_domains_pkey: primaryKey({ columns: [table.publication, table.domain], name: "publication_domains_pkey"}),
+	}
+});
+
 export const subscribers_to_publications = pgTable("subscribers_to_publications", {
 	identity: text("identity").notNull().references(() => identities.email, { onUpdate: "cascade" } ),
 	publication: text("publication").notNull().references(() => publications.uri),

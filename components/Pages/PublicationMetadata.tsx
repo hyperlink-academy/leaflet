@@ -11,6 +11,7 @@ import { Separator } from "components/Layout";
 import { AtUri } from "@atproto/syntax";
 import { PubLeafletDocument } from "lexicons/api";
 import { publications } from "drizzle/schema";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 export const PublicationMetadata = ({
   cardBorderHidden,
 }: {
@@ -24,7 +25,7 @@ export const PublicationMetadata = ({
   let [descriptionState, setDescriptionState] = useState(
     pub?.description || "",
   );
-  let record = pub.documents?.data as PubLeafletDocument.Record | null;
+  let record = pub?.documents?.data as PubLeafletDocument.Record | null;
   let publishedAt = record?.publishedAt;
 
   useEffect(() => {
@@ -55,7 +56,7 @@ export const PublicationMetadata = ({
     >
       <div className="flex gap-2">
         <Link
-          href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${pub.publications.name}/dashboard`}
+          href={`${getPublicationURL(pub.publications)}/dashboard`}
           className="text-accent-contrast font-bold hover:no-underline"
         >
           {pub.publications?.name}
@@ -98,7 +99,7 @@ export const PublicationMetadata = ({
           <Link
             target="_blank"
             className="text-sm"
-            href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${pub.publications.name}/${new AtUri(pub.doc).rkey}`}
+            href={`${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`}
           >
             View Post
           </Link>

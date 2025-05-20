@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { IdResolver } from "@atproto/identity";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
 import { ids } from "lexicons/api/lexicons";
@@ -11,12 +10,12 @@ import {
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
 import { Metadata } from "next";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 
-const idResolver = new IdResolver();
 export async function generateMetadata(props: {
-  params: Promise<{ publication: string; handle: string; rkey: string }>;
+  params: Promise<{ publication: string; did: string; rkey: string }>;
 }): Promise<Metadata> {
-  let did = await idResolver.handle.resolve((await props.params).handle);
+  let did = decodeURIComponent((await props.params).did);
   if (!did) return { title: "Publication 404" };
 
   let { data: document } = await supabaseServerClient
@@ -38,19 +37,20 @@ export async function generateMetadata(props: {
   };
 }
 export default async function Post(props: {
-  params: Promise<{ publication: string; handle: string; rkey: string }>;
+  params: Promise<{ publication: string; did: string; rkey: string }>;
 }) {
-  let did = await idResolver.handle.resolve((await props.params).handle);
+  let did = decodeURIComponent((await props.params).did);
   if (!did) return <div> can't resolve handle</div>;
   let { data: document } = await supabaseServerClient
     .from("documents")
-    .select("*")
+    .select("*, documents_in_publications(publications(*))")
     .eq(
       "uri",
       AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey),
     )
     .single();
-  if (!document?.data) return <div>notfound</div>;
+  if (!document?.data || !document.documents_in_publications[0].publications)
+    return <div>notfound</div>;
   let record = document.data as PubLeafletDocument.Record;
   let firstPage = record.pages[0];
   let blocks: PubLeafletPagesLinearDocument.Block[] = [];
@@ -64,7 +64,9 @@ export default async function Post(props: {
           <div className="flex flex-col pb-8">
             <Link
               className="font-bold hover:no-underline text-accent-contrast"
-              href={`/lish/${(await props.params).handle}/${(await props.params).publication}`}
+              href={getPublicationURL(
+                document.documents_in_publications[0].publications,
+              )}
             >
               {decodeURIComponent((await props.params).publication)}
             </Link>

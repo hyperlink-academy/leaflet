@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { NextRequest, NextResponse } from "next/server";
 import postgres from "postgres";
 import { createOauthClient } from "src/atproto-oauth";
+import { setAuthToken } from "src/auth";
 
 import { supabaseServerClient } from "supabase/serverClient";
 
@@ -14,7 +15,7 @@ type OauthRequestClientState = {
 };
 export async function GET(
   req: NextRequest,
-  props: { params: Promise<{ route: string; handle?: string }> }
+  props: { params: Promise<{ route: string; handle?: string }> },
 ) {
   const params = await props.params;
   let client = await createOauthClient();
@@ -89,13 +90,7 @@ export async function GET(
           .select()
           .single();
 
-        if (token)
-          (await cookies()).set("auth_token", token.id, {
-            maxAge: 60 * 60 * 24 * 365,
-            secure: process.env.NODE_ENV === "production",
-            httpOnly: true,
-            sameSite: "lax",
-          });
+        if (token) await setAuthToken(token.id);
 
         // Process successful authentication here
         console.log("authorize() was called with state:", state);

@@ -57,7 +57,7 @@ export function ShareOptions() {
           icon=<ShareSmall />
           primary={!!!pub}
           secondary={!!pub}
-          label={`Share ${pub && "Draft"}`}
+          label={`Share ${pub ? "Draft" : ""}`}
         />
       }
     >

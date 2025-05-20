@@ -7,6 +7,7 @@ import { email_auth_tokens, identities } from "drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { createIdentity } from "./createIdentity";
+import { setAuthToken } from "src/auth";
 
 async function sendAuthCode(email: string, code: string) {
   if (process.env.NODE_ENV === "development") {
@@ -136,12 +137,7 @@ export async function confirmEmailAuthToken(tokenId: string, code: string) {
     )
     .returning();
 
-  (await cookies()).set("auth_token", confirmedToken.id, {
-    maxAge: 60 * 60 * 24 * 365,
-    secure: process.env.NODE_ENV === "production",
-    httpOnly: true,
-    sameSite: "lax",
-  });
+  await setAuthToken(confirmedToken.id);
 
   client.end();
   return confirmedToken;

@@ -641,6 +641,39 @@ export type Database = {
           },
         ]
       }
+      publication_domains: {
+        Row: {
+          created_at: string
+          domain: string
+          publication: string
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          publication: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          publication?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_domains_domain_fkey"
+            columns: ["domain"]
+            isOneToOne: false
+            referencedRelation: "custom_domains"
+            referencedColumns: ["domain"]
+          },
+          {
+            foreignKeyName: "publication_domains_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       publications: {
         Row: {
           identity_did: string

@@ -6,6 +6,8 @@ import { useIdentityData } from "components/IdentityProvider";
 import { theme } from "tailwind.config";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { AddTiny } from "components/Icons/AddTiny";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { Json } from "supabase/database.types";
 
 export const MyPublicationList = () => {
   let { identity } = useIdentityData();
@@ -31,6 +33,7 @@ const PublicationList = (props: {
     identity_did: string;
     indexed_at: string;
     name: string;
+    record: Json;
     uri: string;
   }[];
 }) => {
@@ -43,17 +46,23 @@ const PublicationList = (props: {
           {...d}
           key={d.uri}
           handle={identity?.resolved_did?.alsoKnownAs?.[0].slice(5)!}
+          record={d.record}
         />
       ))}
     </div>
   );
 };
 
-function Publication(props: { uri: string; name: string; handle: string }) {
+function Publication(props: {
+  uri: string;
+  name: string;
+  handle: string;
+  record: Json;
+}) {
   return (
     <Link
       className="pubListItem w-full p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline outline-2 outline-offset-1 hover:outline-border basis-0 grow min-w-0"
-      href={`/lish/${props.handle}/${props.name}/dashboard`}
+      href={`${getPublicationURL(props)}/dashboard`}
     >
       <div className="w-6 h-6 rounded-full bg-test" />
       <h4 className="font-bold w-full truncate">{props.name}</h4>

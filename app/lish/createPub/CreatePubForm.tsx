@@ -8,8 +8,9 @@ import { Input, InputWithLabel } from "components/Input";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
-import { set } from "colorjs.io/fn";
 import { theme } from "tailwind.config";
+import { getPublicationURL } from "./getPublicationURL";
+import { string } from "zod";
 
 export const CreatePubForm = () => {
   let [nameValue, setNameValue] = useState("");
@@ -20,21 +21,20 @@ export const CreatePubForm = () => {
   let fileInputRef = useRef<HTMLInputElement>(null);
 
   let router = useRouter();
-  let { identity } = useIdentityData();
   return (
     <form
       className="flex flex-col gap-3"
       onSubmit={async (e) => {
         e.preventDefault();
-        // Note: You'll need to update the createPublication function to handle the logo file
-        await createPublication({
+        if (!subdomainValidator.safeParse(domainValue).success) return;
+        let data = await createPublication({
           name: nameValue,
           description: descriptionValue,
           iconFile: logoFile,
+          subdomain: domainValue,
         });
-        router.push(
-          `/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${nameValue}/dashboard`,
-        );
+        if (data?.publication)
+          router.push(`${getPublicationURL(data.publication)}/dashboard`);
       }}
     >
       <div className="flex flex-col items-center mb-4 gap-2">
@@ -103,39 +103,72 @@ export const CreatePubForm = () => {
   );
 };
 
+let subdomainValidator = string()
+  .min(3)
+  .max(63)
+  .regex(/^[a-z0-9-]+$/);
 function DomainInput(props: {
   domain: string;
   setDomain: (d: string) => void;
 }) {
-  let [state, setState] = useState<"empty" | "valid" | "invalid" | "pending">(
-    "empty",
-  );
+  type DomainState =
+    | { status: "empty" }
+    | { status: "valid" }
+    | { status: "invalid" }
+    | { status: "pending" }
+    | { status: "error"; message: string };
+
+  let [state, setState] = useState<DomainState>({ status: "empty" });
+
   useEffect(() => {
     if (!props.domain) {
-      setState("empty");
+      setState({ status: "empty" });
     } else {
-      setState("pending");
+      let valid = subdomainValidator.safeParse(props.domain);
+      if (!valid.success) {
+        let reason = valid.error.errors[0].code;
+        setState({
+          status: "error",
+          message:
+            reason === "too_small"
+              ? "Must be at least 3 characters long"
+              : reason === "invalid_string"
+                ? "Must contain only lowercase letters, numbers, and dashes"
+                : "",
+        });
+        return;
+      }
+      setState({ status: "pending" });
     }
   }, [props.domain]);
+
   useDebouncedEffect(
     async () => {
-      if (!props.domain) return setState("empty");
+      if (!props.domain) return setState({ status: "empty" });
+
+      let valid = subdomainValidator.safeParse(props.domain);
+      if (!valid.success) {
+        return;
+      }
       let status = await callRPC("get_leaflet_subdomain_status", {
         domain: props.domain,
       });
       console.log(status);
-      if (status.error === "Not Found") setState("valid");
-      else setState("invalid");
+      if (status.error === "Not Found") setState({ status: "valid" });
+      else setState({ status: "invalid" });
     },
     500,
     [props.domain],
   );
+
   return (
     <div className="flex flex-col gap-1">
       <label className=" input-with-border flex flex-col text-sm text-tertiary font-bold italic leading-tight !py-1 !px-[6px]">
         <div>Domain</div>
         <div className="flex flex-row  items-center">
           <Input
+            minLength={3}
+            maxLength={63}
             placeholder="domain"
             className="appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 outline-none"
             value={props.domain}
@@ -147,20 +180,22 @@ function DomainInput(props: {
       <div
         className={"text-sm italic "}
         style={{
-          fontWeight: state === "valid" ? "bold" : "normal",
+          fontWeight: state.status === "valid" ? "bold" : "normal",
           color:
-            state === "valid"
+            state.status === "valid"
               ? theme.colors["accent-contrast"]
               : theme.colors.tertiary,
         }}
       >
-        {state === "valid"
+        {state.status === "valid"
           ? "Available!"
-          : state === "invalid"
-            ? "Already Taken ):"
-            : state === "pending"
-              ? "Checking Availability..."
-              : "Choose a domain!"}
+          : state.status === "error"
+            ? state.message
+            : state.status === "invalid"
+              ? "Already Taken ):"
+              : state.status === "pending"
+                ? "Checking Availability..."
+                : "Choose a domain! Numbers, characters, and hyphens only!"}
       </div>
     </div>
   );

@@ -25,7 +25,7 @@ export default async function middleware(req: NextRequest) {
   if (req.nextUrl.pathname === "/not-found") return;
   let { data: routes } = await supabase
     .from("custom_domains")
-    .select("*, custom_domain_routes(*)")
+    .select("*, custom_domain_routes(*), publication_domains(*)")
     .eq("domain", hostname)
     .single();
   if (routes) {

@@ -5,9 +5,11 @@ import { PubLeafletDocument } from "lexicons/api";
 import { useIdentityData } from "components/IdentityProvider";
 import { useParams } from "next/navigation";
 import { AtUri } from "@atproto/syntax";
+import { getPublicationURL } from "./createPub/getPublicationURL";
 
 export const PostList = (props: {
   isFeed?: boolean;
+  publication: { uri: string; record: Json; name: string };
   posts: {
     documents: {
       data: Json;
@@ -38,7 +40,13 @@ export const PostList = (props: {
           let uri = new AtUri(post.documents?.uri!);
 
           return (
-            <PostListItem {...p} key={index} isFeed={props.isFeed} uri={uri} />
+            <PostListItem
+              {...p}
+              publication_data={props.publication}
+              key={index}
+              isFeed={props.isFeed}
+              uri={uri}
+            />
           );
         })}
     </div>
@@ -47,6 +55,7 @@ export const PostList = (props: {
 
 const PostListItem = (
   props: {
+    publication_data: { uri: string; record: Json; name: string };
     isFeed?: boolean;
     uri: AtUri;
   } & PubLeafletDocument.Record,
@@ -57,7 +66,7 @@ const PostListItem = (
     <div className="pubPostListItem flex flex-col">
       {props.isFeed && (
         <Link
-          href={`/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${props.publication}/`}
+          href={getPublicationURL(props.publication_data)}
           className="font-bold text-tertiary hover:no-underline text-sm "
         >
           {props.publication}
@@ -65,7 +74,7 @@ const PostListItem = (
       )}
 
       <Link
-        href={`/lish/${params.handle}/${params.publication}/${props.uri.rkey}/`}
+        href={`${getPublicationURL(props.publication_data)}/${props.uri.rkey}/`}
         className="pubPostListContent flex flex-col hover:no-underline hover:text-accent-contrast"
       >
         <h4>{props.title}</h4>

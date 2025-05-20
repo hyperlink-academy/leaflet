@@ -20,9 +20,9 @@ import { PubLeafletPublication } from "lexicons/api";
 const idResolver = new IdResolver();
 
 export async function generateMetadata(props: {
-  params: Promise<{ publication: string; handle: string }>;
+  params: Promise<{ publication: string; did: string }>;
 }): Promise<Metadata> {
-  let did = await idResolver.handle.resolve((await props.params).handle);
+  let did = decodeURIComponent((await props.params).did);
   if (!did) return { title: "Publication 404" };
 
   let { result: publication } = await get_publication_data.handler(
@@ -38,12 +38,12 @@ export async function generateMetadata(props: {
 
 //This is the admin dashboard of the publication
 export default async function Publication(props: {
-  params: Promise<{ publication: string; handle: string }>;
+  params: Promise<{ publication: string; did: string }>;
 }) {
   let params = await props.params;
   let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) return <PubNotFound />;
-  let did = await idResolver.handle.resolve((await props.params).handle);
+  if (!identity || !identity.atp_did) return <div>not logged in</div>;
+  let did = decodeURIComponent(params.did);
   if (!did) return <PubNotFound />;
   let { result: publication } = await get_publication_data.handler(
     {
@@ -53,7 +53,7 @@ export default async function Publication(props: {
     { supabase: supabaseServerClient },
   );
 
-  let record = publication?.record as PubLeafletPublication.Record;
+  let record = publication?.record as PubLeafletPublication.Record | null;
   if (!publication || identity.atp_did !== publication.identity_did)
     return <PubNotFound />;
 
@@ -77,7 +77,7 @@ export default async function Publication(props: {
               >
                 <PublicationDashboard
                   did={did}
-                  icon={record.icon ? record.icon : null}
+                  icon={record?.icon ? record.icon : null}
                   name={publication.name}
                   tabs={{
                     Drafts: <DraftList />,

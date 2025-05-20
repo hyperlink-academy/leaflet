@@ -9,6 +9,7 @@ import { Menu, MenuItem } from "components/Layout";
 import { usePublicationData } from "./PublicationSWRProvider";
 import { Fragment } from "react";
 import { useParams } from "next/navigation";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 
 export function PublishedPostsList() {
   let publication = usePublicationData();
@@ -35,7 +36,7 @@ export function PublishedPostsList() {
             <div className="flex  w-full ">
               <Link
                 target="_blank"
-                href={`/lish/${params.handle}/${params.publication}/${uri.rkey}`}
+                href={`${getPublicationURL(publication)}/${uri.rkey}`}
                 className="publishedPost grow flex flex-col hover:!no-underline"
               >
                 <h3 className="text-primary">{record.title}</h3>

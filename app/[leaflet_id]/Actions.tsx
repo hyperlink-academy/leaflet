@@ -1,4 +1,5 @@
 import { publishToPublication } from "actions/publishToPublication";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { GoBackSmall } from "components/Icons/GoBackSmall";
@@ -11,11 +12,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEntity, useReplicache } from "src/replicache";
+import { Json } from "supabase/database.types";
 export const BackToPubButton = (props: {
   publication: {
     identity_did: string;
     indexed_at: string;
     name: string;
+    record: Json;
     uri: string;
   };
 }) => {
@@ -25,7 +28,7 @@ export const BackToPubButton = (props: {
   let name = props.publication.name;
   return (
     <Link
-      href={`/lish/${handle}/${name}/dashboard`}
+      href={`${getPublicationURL(props.publication)}/dashboard`}
       className="hover:!no-underline"
     >
       <ActionButton
@@ -64,7 +67,7 @@ export const PublishButton = () => {
             <div>
               {pub.doc ? "Updated! " : "Published! "}
               <Link
-                href={`/lish/${pub.publications.identity_did}/${pub.publications.uri}/${doc?.rkey}`}
+                href={`${getPublicationURL(pub.publications)}/${doc?.rkey}`}
               >
                 link
               </Link>
