@@ -12,12 +12,22 @@ import { theme } from "tailwind.config";
 import { getPublicationURL } from "./getPublicationURL";
 import { string } from "zod";
 
+type DomainState =
+  | { status: "empty" }
+  | { status: "valid" }
+  | { status: "invalid" }
+  | { status: "pending" }
+  | { status: "error"; message: string };
+
 export const CreatePubForm = () => {
   let [nameValue, setNameValue] = useState("");
   let [descriptionValue, setDescriptionValue] = useState("");
   let [logoFile, setLogoFile] = useState<File | null>(null);
   let [logoPreview, setLogoPreview] = useState<string | null>(null);
   let [domainValue, setDomainValue] = useState("");
+  let [domainState, setDomainState] = useState<DomainState>({
+    status: "empty",
+  });
   let fileInputRef = useRef<HTMLInputElement>(null);
 
   let router = useRouter();
@@ -94,10 +104,22 @@ export const CreatePubForm = () => {
           setDescriptionValue(e.currentTarget.value);
         }}
       />
-      <DomainInput domain={domainValue} setDomain={setDomainValue} />
+      <DomainInput
+        domain={domainValue}
+        setDomain={setDomainValue}
+        domainState={domainState}
+        setDomainState={setDomainState}
+      />
 
       <div className="flex w-full justify-center">
-        <ButtonPrimary type="submit">Create Publication!</ButtonPrimary>
+        <ButtonPrimary
+          type="submit"
+          disabled={
+            !nameValue || !domainValue || domainState.status !== "valid"
+          }
+        >
+          Create Publication!
+        </ButtonPrimary>
       </div>
     </form>
   );
@@ -110,41 +132,34 @@ let subdomainValidator = string()
 function DomainInput(props: {
   domain: string;
   setDomain: (d: string) => void;
+  domainState: DomainState;
+  setDomainState: (s: DomainState) => void;
 }) {
-  type DomainState =
-    | { status: "empty" }
-    | { status: "valid" }
-    | { status: "invalid" }
-    | { status: "pending" }
-    | { status: "error"; message: string };
-
-  let [state, setState] = useState<DomainState>({ status: "empty" });
-
   useEffect(() => {
     if (!props.domain) {
-      setState({ status: "empty" });
+      props.setDomainState({ status: "empty" });
     } else {
       let valid = subdomainValidator.safeParse(props.domain);
       if (!valid.success) {
         let reason = valid.error.errors[0].code;
-        setState({
+        props.setDomainState({
           status: "error",
           message:
             reason === "too_small"
               ? "Must be at least 3 characters long"
               : reason === "invalid_string"
-                ? "Must contain only lowercase letters, numbers, and dashes"
+                ? "Must contain only lowercase a-z, 0-9, and -"
                 : "",
         });
         return;
       }
-      setState({ status: "pending" });
+      props.setDomainState({ status: "pending" });
     }
   }, [props.domain]);
 
   useDebouncedEffect(
     async () => {
-      if (!props.domain) return setState({ status: "empty" });
+      if (!props.domain) return props.setDomainState({ status: "empty" });
 
       let valid = subdomainValidator.safeParse(props.domain);
       if (!valid.success) {
@@ -154,8 +169,9 @@ function DomainInput(props: {
         domain: props.domain,
       });
       console.log(status);
-      if (status.error === "Not Found") setState({ status: "valid" });
-      else setState({ status: "invalid" });
+      if (status.error === "Not Found")
+        props.setDomainState({ status: "valid" });
+      else props.setDomainState({ status: "invalid" });
     },
     500,
     [props.domain],
@@ -164,7 +180,7 @@ function DomainInput(props: {
   return (
     <div className="flex flex-col gap-1">
       <label className=" input-with-border flex flex-col text-sm text-tertiary font-bold italic leading-tight !py-1 !px-[6px]">
-        <div>Domain</div>
+        <div>Choose your domain</div>
         <div className="flex flex-row  items-center">
           <Input
             minLength={3}
@@ -180,22 +196,22 @@ function DomainInput(props: {
       <div
         className={"text-sm italic "}
         style={{
-          fontWeight: state.status === "valid" ? "bold" : "normal",
+          fontWeight: props.domainState.status === "valid" ? "bold" : "normal",
           color:
-            state.status === "valid"
+            props.domainState.status === "valid"
               ? theme.colors["accent-contrast"]
               : theme.colors.tertiary,
         }}
       >
-        {state.status === "valid"
+        {props.domainState.status === "valid"
           ? "Available!"
-          : state.status === "error"
-            ? state.message
-            : state.status === "invalid"
+          : props.domainState.status === "error"
+            ? props.domainState.message
+            : props.domainState.status === "invalid"
               ? "Already Taken ):"
-              : state.status === "pending"
+              : props.domainState.status === "pending"
                 ? "Checking Availability..."
-                : "Choose a domain! Numbers, characters, and hyphens only!"}
+                : "a-z, 0-9, and - only!"}
       </div>
     </div>
   );

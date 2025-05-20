@@ -51,12 +51,12 @@ export default async function Publication(props: {
     return (
       <ThemeProvider entityID={null}>
         <div className="publicationWrapper w-screen h-screen flex place-items-center bg-[#FDFCFA]">
-          <div className="publication max-w-prose w-full mx-auto h-full pt-8 px-2 pb-12 sm:pb-8">
-            <div className="flex flex-col pb-6 w-full text-center justify-center ">
-              <div className="flex flex-row gap-3 justify-center">
+          <div className="publication max-w-prose w-full mx-auto h-full sm:pt-8 pt-4 px-3 pb-12 sm:pb-8">
+            <div className="flex flex-col pb-8 w-full text-center justify-center ">
+              <div className="flex flex-col gap-3 justify-center place-items-center">
                 {record.icon && (
                   <div
-                    className="shrink-0 w-8 h-8 rounded-full mt-1"
+                    className="shrink-0 w-10 h-10 rounded-full"
                     style={{
                       backgroundImage: `url(https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${(record.icon.ref as unknown as { $link: string })["$link"]})`,
                       backgroundRepeat: "no-repeat",
@@ -65,11 +65,13 @@ export default async function Publication(props: {
                     }}
                   />
                 )}
-                <h2 className="text-accent-contrast">{publication.name}</h2>
+                <h2 className="text-accent-contrast sm:text-xl text-[22px]">
+                  {publication.name}
+                </h2>
               </div>
-              <p className="text-lg text-tertiary">{record.description} </p>
+              <p className="sm:text-lg text-tertiary">{record.description} </p>
             </div>
-            <div className="publicationPostList w-full flex flex-col gap-4 pb-6">
+            <div className="publicationPostList w-full flex flex-col gap-4">
               {publication.documents_in_publications
                 .filter((d) => !!d?.documents)
                 .sort((a, b) => {

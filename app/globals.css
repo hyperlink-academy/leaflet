@@ -179,6 +179,11 @@ input[type="number"] {
   background-color: transparent;
 }
 
+.transparent-outline {
+  @apply outline;
+  @apply outline-transparent;
+}
+
 .selected-outline {
   @apply border;
   @apply focus:outline;
@@ -237,11 +242,6 @@ input[type="number"] {
   @apply outline-offset-1;
   @apply outline-2;
   @apply outline-border;
-}
-
-.transparent-outline {
-  @apply outline;
-  @apply outline-transparent;
 }
 
 .container {

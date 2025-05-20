@@ -61,7 +61,7 @@ export const PublicationMetadata = ({
         >
           {pub.publications?.name}
         </Link>
-        <div className="font-bold text-tertiary px-1 bg-border-light rounded-md ">
+        <div className="font-bold text-tertiary px-1 text-sm flex place-items-center bg-border-light rounded-md ">
           Editor
         </div>
       </div>

@@ -6,7 +6,6 @@ import { ActionButton } from "components/ActionBar/ActionButton";
 import { useRouter } from "next/navigation";
 import { Popover } from "components/Popover";
 import { SettingsSmall } from "components/Icons/SettingsSmall";
-import { CreatePubForm } from "app/lish/createPub/CreatePubForm";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { Menu } from "components/Layout";
 import { MenuItem } from "components/Layout";
@@ -105,6 +104,7 @@ function PublicationSettingsButton(props: { publication: string }) {
   return (
     <Popover
       asChild
+      className="w-80"
       trigger={
         <ActionButton
           id="pub-settings-button"

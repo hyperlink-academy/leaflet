@@ -3,37 +3,38 @@ import { callRPC } from "app/api/rpc/client";
 import { createPublication } from "./createPublication";
 import { ButtonPrimary } from "components/Buttons";
 import { AddSmall } from "components/Icons/AddSmall";
-import { Input, InputWithLabel } from "components/Input";
-import { useRouter } from "next/navigation";
+import { InputWithLabel } from "components/Input";
 import { useState, useRef, useEffect } from "react";
-import { getPublicationURL } from "./getPublicationURL";
 import { updatePublication } from "./updatePublication";
 import { usePublicationData } from "../[did]/[publication]/dashboard/PublicationSWRProvider";
 import { PubLeafletPublication } from "lexicons/api";
 import { mutate } from "swr";
+import { AddTiny } from "components/Icons/AddTiny";
 
 export const EditPubForm = () => {
   let pubData = usePublicationData();
-  let [nameValue, setNameValue] = useState("");
-  let [descriptionValue, setDescriptionValue] = useState("");
-  let [logoFile, setLogoFile] = useState<File | null>(null);
-  let [logoPreview, setLogoPreview] = useState<string | null>(null);
+  let record = pubData?.record as PubLeafletPublication.Record;
+
+  let [nameValue, setNameValue] = useState(record?.name || "");
+  let [descriptionValue, setDescriptionValue] = useState(
+    record?.description || "",
+  );
+  let [iconFile, setIconFile] = useState<File | null>(null);
+  let [iconPreview, setIconPreview] = useState<string | null>(null);
   let fileInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!pubData || !pubData.record) return;
-    let record = pubData.record as PubLeafletPublication.Record;
     setNameValue(record.name);
     setDescriptionValue(record.description || "");
     if (record.icon)
-      setLogoPreview(
+      setIconPreview(
         `url(https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${pubData.identity_did}&cid=${(record.icon.ref as unknown as { $link: string })["$link"]})`,
       );
   }, [pubData]);
 
-  let router = useRouter();
   return (
     <form
-      className="flex flex-col gap-3"
+      className="flex flex-col gap-3 w-full py-1"
       onSubmit={async (e) => {
         if (!pubData) return;
         e.preventDefault();
@@ -41,28 +42,30 @@ export const EditPubForm = () => {
           uri: pubData.uri,
           name: nameValue,
           description: descriptionValue,
-          iconFile: logoFile,
+          iconFile: iconFile,
         });
         mutate("publication-data");
       }}
     >
-      <div className="flex flex-col items-center mb-4 gap-2">
+      <div className="flex items-center justify-between gap-2 ">
         <div className="text-center text-secondary flex flex-col ">
-          <h3 className="-mb-1">Logo</h3>
-          <p className="italic text-tertiary">(optional)</p>
+          <p className=" font-bold text-secondary">
+            Logo{" "}
+            <span className="italic text-tertiary font-normal">(optional)</span>
+          </p>
         </div>
         <div
-          className="w-24 h-24 rounded-full border-2 border-dotted border-accent-1 flex items-center justify-center cursor-pointer hover:border-accent-contrast"
+          className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer  ${iconPreview ? "border border-border-light hover:outline-border" : "border border-dotted border-accent-contrast hover:outline-accent-contrast"} selected-outline`}
           onClick={() => fileInputRef.current?.click()}
         >
-          {logoPreview ? (
+          {iconPreview ? (
             <img
-              src={logoPreview}
+              src={iconPreview}
               alt="Logo preview"
               className="w-full h-full rounded-full object-cover"
             />
           ) : (
-            <AddSmall className="text-accent-1" />
+            <AddTiny className="text-accent-1" />
           )}
         </div>
         <input
@@ -73,10 +76,10 @@ export const EditPubForm = () => {
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) {
-              setLogoFile(file);
+              setIconFile(file);
               const reader = new FileReader();
               reader.onload = (e) => {
-                setLogoPreview(e.target?.result as string);
+                setIconPreview(e.target?.result as string);
               };
               reader.readAsDataURL(file);
             }
@@ -104,9 +107,9 @@ export const EditPubForm = () => {
         }}
       />
 
-      <div className="flex w-full justify-center">
-        <ButtonPrimary type="submit">Update Publication!</ButtonPrimary>
-      </div>
+      <ButtonPrimary className="place-self-end" type="submit">
+        Update Publication
+      </ButtonPrimary>
     </form>
   );
 };
