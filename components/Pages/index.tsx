@@ -36,6 +36,7 @@ import { PaintSmall } from "components/Icons/PaintSmall";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { PublicationMetadata } from "./PublicationMetadata";
 import { useCardBorderHidden } from "./useCardBorderHidden";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -338,6 +339,10 @@ const OptionsMenu = (props: {
   let [state, setState] = useState<"normal" | "theme" | "share">("normal");
   let { permissions } = useEntitySetContext();
   if (!permissions.write) return null;
+
+  let { data: publicationData, mutate } = useLeafletPublicationData();
+  let pub = publicationData?.[0];
+  if (pub && props.first) return;
   return (
     <Menu
       align="end"
@@ -366,14 +371,16 @@ const OptionsMenu = (props: {
               <ShareSmall /> Share Page
             </MenuItem>
           )}
-          <MenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              setState("theme");
-            }}
-          >
-            <PaintSmall /> Theme Page
-          </MenuItem>
+          {!pub && (
+            <MenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                setState("theme");
+              }}
+            >
+              <PaintSmall /> Theme Page
+            </MenuItem>
+          )}
         </>
       ) : state === "theme" ? (
         <PageThemeSetter entityID={props.entityID} />
