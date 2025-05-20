@@ -40,7 +40,7 @@ export const BackToPubButton = (props: {
 };
 
 export const PublishButton = () => {
-  let { data } = useLeafletPublicationData();
+  let { data, mutate } = useLeafletPublicationData();
   let identity = useIdentityData();
   let { permission_token, rootEntity } = useReplicache();
   let rootPage = useEntity(rootEntity, "root/page")[0];
@@ -62,6 +62,7 @@ export const PublishButton = () => {
           title: pub.title,
           description: pub.description,
         });
+        mutate();
         toaster({
           content: (
             <div>
