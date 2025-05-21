@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { ActionButton } from "components/ActionBar/ActionButton";
@@ -8,6 +9,7 @@ import { addLeafletToHome } from "actions/addLeafletToHome";
 import { useSmoker } from "./Toast";
 import { AddToHomeSmall } from "./Icons/AddToHomeSmall";
 import { HomeSmall } from "./Icons/HomeSmall";
+import { permission } from "process";
 
 export function HomeButton() {
   let { permissions } = useEntitySetContext();
@@ -24,7 +26,7 @@ export function HomeButton() {
         >
           <ActionButton icon={<HomeSmall />} label="Go Home" />
         </Link>
-        <AddToHomeButton />
+        {<AddToHomeButton />}
       </>
     );
   return null;
@@ -53,7 +55,10 @@ const AddToHomeButton = (props: {}) => {
               ...identity.permission_token_on_homepage,
               {
                 created_at: new Date().toISOString(),
-                permission_tokens: permission_token,
+                permission_tokens: {
+                  ...permission_token,
+                  leaflets_in_publications: [],
+                },
               },
             ],
           };

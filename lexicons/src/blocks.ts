@@ -1,4 +1,5 @@
 import { LexiconDoc, LexRefUnion } from "@atproto/lexicon";
+import { PubLeafletRichTextFacet } from "./facet";
 
 export const PubLeafletBlocksText: LexiconDoc = {
   lexicon: 1,
@@ -6,9 +7,13 @@ export const PubLeafletBlocksText: LexiconDoc = {
   defs: {
     main: {
       type: "object",
-      required: [],
+      required: ["plaintext"],
       properties: {
         plaintext: { type: "string" },
+        facets: {
+          type: "array",
+          items: { type: "ref", ref: PubLeafletRichTextFacet.id },
+        },
       },
     },
   },
@@ -20,10 +25,14 @@ export const PubLeafletBlocksHeader: LexiconDoc = {
   defs: {
     main: {
       type: "object",
-      required: [],
+      required: ["plaintext"],
       properties: {
         level: { type: "integer", minimum: 1, maximum: 6 },
         plaintext: { type: "string" },
+        facets: {
+          type: "array",
+          items: { type: "ref", ref: PubLeafletRichTextFacet.id },
+        },
       },
     },
   },
@@ -59,12 +68,41 @@ export const PubLeafletBlocksImage: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksUnorderedList: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.unorderedList",
+  defs: {
+    main: {
+      type: "object",
+      required: ["children"],
+      properties: {
+        children: { type: "array", items: { type: "ref", ref: "#listItem" } },
+      },
+    },
+    listItem: {
+      type: "object",
+      required: ["content"],
+      properties: {
+        content: {
+          type: "union",
+          refs: [
+            PubLeafletBlocksText,
+            PubLeafletBlocksHeader,
+            PubLeafletBlocksImage,
+          ].map((l) => l.id),
+        },
+        children: { type: "array", items: { type: "ref", ref: "#listItem" } },
+      },
+    },
+  },
+};
 export const BlockLexicons = [
   PubLeafletBlocksText,
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
+  PubLeafletBlocksUnorderedList,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",
-  refs: BlockLexicons.map((lexicon) => lexicon.id),
+  refs: [...BlockLexicons.map((lexicon) => lexicon.id)],
 };

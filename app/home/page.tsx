@@ -1,37 +1,24 @@
 import { cookies } from "next/headers";
 import { Fact, ReplicacheProvider } from "src/replicache";
-import { createServerClient } from "@supabase/ssr";
-import { Database } from "supabase/database.types";
-import { Attributes } from "src/replicache/attributes";
+import type { Attribute } from "src/replicache/attributes";
 import {
   ThemeBackgroundProvider,
   ThemeProvider,
 } from "components/ThemeManager/ThemeProvider";
 import { EntitySetProvider } from "components/EntitySetProvider";
-import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { createIdentity } from "actions/createIdentity";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { IdentitySetter } from "./IdentitySetter";
-import { HomeHelp } from "./HomeHelp";
 import { LeafletList } from "./LeafletList";
-import { CreateNewLeafletButton } from "./CreateNewButton";
 import { getIdentityData } from "actions/getIdentityData";
-import { LoginButton } from "components/LoginButton";
-import { HelpPopover } from "components/HelpPopover";
-import { AccountSettings } from "./AccountSettings";
-import { LoggedOutWarning } from "./LoggedOutWarning";
 import { getFactsFromHomeLeaflets } from "app/api/rpc/[command]/getFactsFromHomeLeaflets";
-import { Media } from "components/Media";
-import { Sidebar } from "components/ActionBar/Sidebar";
 import { HomeSidebar } from "./HomeSidebar";
 import { HomeFooter } from "./HomeFooter";
+import { Media } from "components/Media";
+import { MyPublicationList } from "./Publications";
+import { supabaseServerClient } from "supabase/serverClient";
 
-let supabase = createServerClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
-  process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-  { cookies: {} },
-);
 export default async function Home() {
   let cookieStore = await cookies();
 
@@ -60,7 +47,7 @@ export default async function Home() {
 
   let permission_token = auth_res?.home_leaflet;
   if (!permission_token) {
-    let res = await supabase
+    let res = await supabaseServerClient
       .from("identities")
       .select(
         `*,
@@ -74,7 +61,7 @@ export default async function Home() {
 
   if (!permission_token) return <div>no home page wierdly</div>;
   let [homeLeafletFacts, allLeafletFacts] = await Promise.all([
-    supabase.rpc("get_facts", {
+    supabaseServerClient.rpc("get_facts", {
       root: permission_token.root_entity,
     }),
     auth_res
@@ -84,12 +71,12 @@ export default async function Home() {
               (r) => r.permission_tokens.root_entity,
             ),
           },
-          { supabase },
+          { supabase: supabaseServerClient },
         )
       : undefined,
   ]);
   let initialFacts =
-    (homeLeafletFacts.data as unknown as Fact<keyof typeof Attributes>[]) || [];
+    (homeLeafletFacts.data as unknown as Fact<Attribute>[]) || [];
 
   let root_entity = permission_token.root_entity;
   let home_docs_initialFacts = allLeafletFacts?.result || {};
@@ -110,6 +97,11 @@ export default async function Home() {
               <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6 ">
                 <HomeSidebar />
                 <div className={`h-full overflow-y-scroll`}>
+                  <Media mobile>
+                    <div className="pubListWrapper p-2 ">
+                      <MyPublicationList />
+                    </div>
+                  </Media>
                   <LeafletList initialFacts={home_docs_initialFacts} />
                 </div>
                 <HomeFooter />

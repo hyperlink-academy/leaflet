@@ -16,9 +16,20 @@
             "type": "string",
             "maxLength": 2000
           },
+          "base_path": {
+            "type": "string",
+            "format": "uri"
+          },
           "description": {
             "type": "string",
             "maxLength": 2000
+          },
+          "icon": {
+            "type": "blob",
+            "accept": [
+              "image/*"
+            ],
+            "maxSize": 1000000
           }
         }
       }

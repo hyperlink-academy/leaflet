@@ -1,6 +1,6 @@
 import { Block } from "components/Blocks/Block";
 import { Replicache } from "replicache";
-import { ReplicacheMutators } from "src/replicache";
+import type { ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { v7 } from "uuid";
 

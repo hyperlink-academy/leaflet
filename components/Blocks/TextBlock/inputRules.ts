@@ -5,7 +5,7 @@ import {
 } from "prosemirror-inputrules";
 import { MutableRefObject } from "react";
 import { Replicache } from "replicache";
-import { ReplicacheMutators } from "src/replicache";
+import type { ReplicacheMutators } from "src/replicache";
 import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
 import { schema } from "./schema";

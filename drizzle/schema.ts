@@ -29,6 +29,7 @@ export const publications = pgTable("publications", {
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	name: text("name").notNull(),
 	identity_did: text("identity_did").notNull(),
+	record: jsonb("record"),
 });
 
 export const facts = pgTable("facts", {
@@ -159,6 +160,17 @@ export const poll_votes_on_entity = pgTable("poll_votes_on_entity", {
 	voter_token: uuid("voter_token").notNull(),
 });
 
+export const publication_domains = pgTable("publication_domains", {
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	domain: text("domain").notNull().references(() => custom_domains.domain, { onDelete: "cascade" } ),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		publication_domains_pkey: primaryKey({ columns: [table.publication, table.domain], name: "publication_domains_pkey"}),
+	}
+});
+
 export const subscribers_to_publications = pgTable("subscribers_to_publications", {
 	identity: text("identity").notNull().references(() => identities.email, { onUpdate: "cascade" } ),
 	publication: text("publication").notNull().references(() => publications.uri),
@@ -196,6 +208,8 @@ export const leaflets_in_publications = pgTable("leaflets_in_publications", {
 	publication: text("publication").notNull().references(() => publications.uri),
 	doc: text("doc").default('').references(() => documents.uri),
 	leaflet: uuid("leaflet").notNull().references(() => permission_tokens.id),
+	description: text("description").default('').notNull(),
+	title: text("title").default('').notNull(),
 },
 (table) => {
 	return {

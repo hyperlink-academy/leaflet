@@ -1,41 +1,101 @@
 "use client";
-import { createPublication } from "actions/createPublication";
+import { callRPC } from "app/api/rpc/client";
+import { createPublication } from "./createPublication";
 import { ButtonPrimary } from "components/Buttons";
+import { AddSmall } from "components/Icons/AddSmall";
 import { useIdentityData } from "components/IdentityProvider";
-import { InputWithLabel } from "components/Input";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { Input, InputWithLabel } from "components/Input";
+import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
+import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
+import { theme } from "tailwind.config";
+import { getPublicationURL } from "./getPublicationURL";
+import { string } from "zod";
+
+type DomainState =
+  | { status: "empty" }
+  | { status: "valid" }
+  | { status: "invalid" }
+  | { status: "pending" }
+  | { status: "error"; message: string };
 
 export const CreatePubForm = () => {
   let [nameValue, setNameValue] = useState("");
   let [descriptionValue, setDescriptionValue] = useState("");
+  let [logoFile, setLogoFile] = useState<File | null>(null);
+  let [logoPreview, setLogoPreview] = useState<string | null>(null);
+  let [domainValue, setDomainValue] = useState("");
+  let [domainState, setDomainState] = useState<DomainState>({
+    status: "empty",
+  });
+  let fileInputRef = useRef<HTMLInputElement>(null);
 
   let router = useRouter();
-  let { identity } = useIdentityData();
   return (
     <form
-      className="createPubForm w-full flex flex-col gap-3 bg-bg-page rounded-lg p-3 border border-border-light"
+      className="flex flex-col gap-3"
       onSubmit={async (e) => {
         e.preventDefault();
-        await createPublication(nameValue);
-        router.push(
-          `/lish/${identity?.resolved_did?.alsoKnownAs?.[0].slice(5)}/${nameValue}/`,
-        );
+        if (!subdomainValidator.safeParse(domainValue).success) return;
+        let data = await createPublication({
+          name: nameValue,
+          description: descriptionValue,
+          iconFile: logoFile,
+          subdomain: domainValue,
+        });
+        if (data?.publication)
+          router.push(`${getPublicationURL(data.publication)}/dashboard`);
       }}
     >
+      <div className="flex flex-col items-center mb-4 gap-2">
+        <div className="text-center text-secondary flex flex-col ">
+          <h3 className="-mb-1">Logo</h3>
+          <p className="italic text-tertiary">(optional)</p>
+        </div>
+        <div
+          className="w-24 h-24 rounded-full border-2 border-dotted border-accent-1 flex items-center justify-center cursor-pointer hover:border-accent-contrast"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {logoPreview ? (
+            <img
+              src={logoPreview}
+              alt="Logo preview"
+              className="w-full h-full rounded-full object-cover"
+            />
+          ) : (
+            <AddSmall className="text-accent-1" />
+          )}
+        </div>
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              setLogoFile(file);
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                setLogoPreview(e.target?.result as string);
+              };
+              reader.readAsDataURL(file);
+            }
+          }}
+        />
+      </div>
       <InputWithLabel
         type="text"
         id="pubName"
-        label="Name"
+        label="Publication Name"
         value={nameValue}
         onChange={(e) => {
           setNameValue(e.currentTarget.value);
         }}
       />
 
-      {/* <InputWithLabel
-        label="Description"
+      <InputWithLabel
+        label="Description (optional)"
         textarea
         rows={3}
         id="pubDescription"
@@ -43,19 +103,116 @@ export const CreatePubForm = () => {
         onChange={(e) => {
           setDescriptionValue(e.currentTarget.value);
         }}
-      /> */}
+      />
+      <DomainInput
+        domain={domainValue}
+        setDomain={setDomainValue}
+        domainState={domainState}
+        setDomainState={setDomainState}
+      />
 
-      <div className="flex justify-between items-center">
-        <Link
-          className="hover:no-underline font-bold text-accent-contrast"
-          href="./"
+      <div className="flex w-full justify-center">
+        <ButtonPrimary
+          type="submit"
+          disabled={
+            !nameValue || !domainValue || domainState.status !== "valid"
+          }
         >
-          Nevermind
-        </Link>
-        <ButtonPrimary className="place-self-end" type="submit">
-          Create!
+          Create Publication!
         </ButtonPrimary>
       </div>
     </form>
   );
 };
+
+let subdomainValidator = string()
+  .min(3)
+  .max(63)
+  .regex(/^[a-z0-9-]+$/);
+function DomainInput(props: {
+  domain: string;
+  setDomain: (d: string) => void;
+  domainState: DomainState;
+  setDomainState: (s: DomainState) => void;
+}) {
+  useEffect(() => {
+    if (!props.domain) {
+      props.setDomainState({ status: "empty" });
+    } else {
+      let valid = subdomainValidator.safeParse(props.domain);
+      if (!valid.success) {
+        let reason = valid.error.errors[0].code;
+        props.setDomainState({
+          status: "error",
+          message:
+            reason === "too_small"
+              ? "Must be at least 3 characters long"
+              : reason === "invalid_string"
+                ? "Must contain only lowercase a-z, 0-9, and -"
+                : "",
+        });
+        return;
+      }
+      props.setDomainState({ status: "pending" });
+    }
+  }, [props.domain]);
+
+  useDebouncedEffect(
+    async () => {
+      if (!props.domain) return props.setDomainState({ status: "empty" });
+
+      let valid = subdomainValidator.safeParse(props.domain);
+      if (!valid.success) {
+        return;
+      }
+      let status = await callRPC("get_leaflet_subdomain_status", {
+        domain: props.domain,
+      });
+      console.log(status);
+      if (status.error === "Not Found")
+        props.setDomainState({ status: "valid" });
+      else props.setDomainState({ status: "invalid" });
+    },
+    500,
+    [props.domain],
+  );
+
+  return (
+    <div className="flex flex-col gap-1">
+      <label className=" input-with-border flex flex-col text-sm text-tertiary font-bold italic leading-tight !py-1 !px-[6px]">
+        <div>Choose your domain</div>
+        <div className="flex flex-row  items-center">
+          <Input
+            minLength={3}
+            maxLength={63}
+            placeholder="domain"
+            className="appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 outline-none"
+            value={props.domain}
+            onChange={(e) => props.setDomain(e.currentTarget.value)}
+          />
+          .leaflet.pub
+        </div>
+      </label>
+      <div
+        className={"text-sm italic "}
+        style={{
+          fontWeight: props.domainState.status === "valid" ? "bold" : "normal",
+          color:
+            props.domainState.status === "valid"
+              ? theme.colors["accent-contrast"]
+              : theme.colors.tertiary,
+        }}
+      >
+        {props.domainState.status === "valid"
+          ? "Available!"
+          : props.domainState.status === "error"
+            ? props.domainState.message
+            : props.domainState.status === "invalid"
+              ? "Already Taken ):"
+              : props.domainState.status === "pending"
+                ? "Checking Availability..."
+                : "a-z, 0-9, and - only!"}
+      </div>
+    </div>
+  );
+}

@@ -17,10 +17,15 @@ import { v7 } from "uuid";
 import { sql, eq, and } from "drizzle-orm";
 import { cookies } from "next/headers";
 
-export async function createNewLeaflet(
-  pageType: "canvas" | "doc",
-  redirectUser: boolean,
-) {
+export async function createNewLeaflet({
+  pageType,
+  redirectUser,
+  firstBlockType,
+}: {
+  pageType: "canvas" | "doc";
+  redirectUser: boolean;
+  firstBlockType?: "h1" | "text";
+}) {
   const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   let auth_token = (await cookies()).get("auth_token")?.value;
   const db = drizzle(client);
@@ -107,18 +112,29 @@ export async function createNewLeaflet(
           attribute: "card/block",
           data: sql`${{ type: "ordered-reference", value: blockEntity.id, position: "a0" }}::jsonb`,
         },
-        {
-          id: v7(),
-          entity: blockEntity.id,
-          attribute: "block/type",
-          data: sql`${{ type: "block-type-union", value: "heading" }}::jsonb`,
-        },
-        {
-          id: v7(),
-          entity: blockEntity.id,
-          attribute: "block/heading-level",
-          data: sql`${{ type: "number", value: 1 }}::jsonb`,
-        },
+        ...(firstBlockType === "text"
+          ? [
+              {
+                id: v7(),
+                entity: blockEntity.id,
+                attribute: "block/type",
+                data: sql`${{ type: "block-type-union", value: "text" }}::jsonb`,
+              },
+            ]
+          : [
+              {
+                id: v7(),
+                entity: blockEntity.id,
+                attribute: "block/type",
+                data: sql`${{ type: "block-type-union", value: "heading" }}::jsonb`,
+              },
+              {
+                id: v7(),
+                entity: blockEntity.id,
+                attribute: "block/heading-level",
+                data: sql`${{ type: "number", value: 1 }}::jsonb`,
+              },
+            ]),
       ]);
     }
     if (auth_token) {

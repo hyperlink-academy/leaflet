@@ -1,7 +1,7 @@
 "use client";
-import { isIOS } from "@react-aria/utils";
 import { useCallback, useEffect, useRef, type JSX } from "react";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
+import { isIOS } from "src/utils/isDevice";
 
 export function Input(
   props: React.DetailedHTMLProps<

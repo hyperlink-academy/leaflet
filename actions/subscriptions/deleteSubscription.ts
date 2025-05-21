@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { email_subscriptions_to_entity, facts } from "drizzle/schema";
 import postgres from "postgres";
 import { eq, and, sql } from "drizzle-orm";
-import { Fact } from "src/replicache";
+import type { Fact } from "src/replicache";
 import { v7 } from "uuid";
 
 export async function deleteSubscription(subscriptionID: string) {

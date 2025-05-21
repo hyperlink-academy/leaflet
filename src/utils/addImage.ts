@@ -1,7 +1,7 @@
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "../replicache";
 import { supabaseBrowserClient } from "supabase/browserClient";
-import { FilterAttributes } from "src/replicache/attributes";
+import type { FilterAttributes } from "src/replicache/attributes";
 import { rgbaToDataURL, rgbaToThumbHash, thumbHashToDataURL } from "thumbhash";
 import { v7 } from "uuid";
 

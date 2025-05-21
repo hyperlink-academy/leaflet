@@ -1,0 +1,144 @@
+/**
+ * GENERATED CODE - DO NOT MODIFY
+ */
+import { ValidationResult, BlobRef } from '@atproto/lexicon'
+import { CID } from 'multiformats/cid'
+import { validate as _validate } from '../../../../lexicons'
+import { $Typed, is$typed as _is$typed, OmitKey } from '../../../../util'
+
+const is$typed = _is$typed,
+  validate = _validate
+const id = 'pub.leaflet.richtext.facet'
+
+/** Annotation of a sub-string within rich text. */
+export interface Main {
+  $type?: 'pub.leaflet.richtext.facet'
+  index: ByteSlice
+  features: (
+    | $Typed<Link>
+    | $Typed<Highlight>
+    | $Typed<Underline>
+    | $Typed<Strikethrough>
+    | $Typed<Bold>
+    | $Typed<Italic>
+    | { $type: string }
+  )[]
+}
+
+const hashMain = 'main'
+
+export function isMain<V>(v: V) {
+  return is$typed(v, id, hashMain)
+}
+
+export function validateMain<V>(v: V) {
+  return validate<Main & V>(v, id, hashMain)
+}
+
+/** Specifies the sub-string range a facet feature applies to. Start index is inclusive, end index is exclusive. Indices are zero-indexed, counting bytes of the UTF-8 encoded text. NOTE: some languages, like Javascript, use UTF-16 or Unicode codepoints for string slice indexing; in these languages, convert to byte arrays before working with facets. */
+export interface ByteSlice {
+  $type?: 'pub.leaflet.richtext.facet#byteSlice'
+  byteStart: number
+  byteEnd: number
+}
+
+const hashByteSlice = 'byteSlice'
+
+export function isByteSlice<V>(v: V) {
+  return is$typed(v, id, hashByteSlice)
+}
+
+export function validateByteSlice<V>(v: V) {
+  return validate<ByteSlice & V>(v, id, hashByteSlice)
+}
+
+/** Facet feature for a URL. The text URL may have been simplified or truncated, but the facet reference should be a complete URL. */
+export interface Link {
+  $type?: 'pub.leaflet.richtext.facet#link'
+  uri: string
+}
+
+const hashLink = 'link'
+
+export function isLink<V>(v: V) {
+  return is$typed(v, id, hashLink)
+}
+
+export function validateLink<V>(v: V) {
+  return validate<Link & V>(v, id, hashLink)
+}
+
+/** Facet feature for highlighted text. */
+export interface Highlight {
+  $type?: 'pub.leaflet.richtext.facet#highlight'
+}
+
+const hashHighlight = 'highlight'
+
+export function isHighlight<V>(v: V) {
+  return is$typed(v, id, hashHighlight)
+}
+
+export function validateHighlight<V>(v: V) {
+  return validate<Highlight & V>(v, id, hashHighlight)
+}
+
+/** Facet feature for underline markup */
+export interface Underline {
+  $type?: 'pub.leaflet.richtext.facet#underline'
+}
+
+const hashUnderline = 'underline'
+
+export function isUnderline<V>(v: V) {
+  return is$typed(v, id, hashUnderline)
+}
+
+export function validateUnderline<V>(v: V) {
+  return validate<Underline & V>(v, id, hashUnderline)
+}
+
+/** Facet feature for strikethrough markup */
+export interface Strikethrough {
+  $type?: 'pub.leaflet.richtext.facet#strikethrough'
+}
+
+const hashStrikethrough = 'strikethrough'
+
+export function isStrikethrough<V>(v: V) {
+  return is$typed(v, id, hashStrikethrough)
+}
+
+export function validateStrikethrough<V>(v: V) {
+  return validate<Strikethrough & V>(v, id, hashStrikethrough)
+}
+
+/** Facet feature for bold text */
+export interface Bold {
+  $type?: 'pub.leaflet.richtext.facet#bold'
+}
+
+const hashBold = 'bold'
+
+export function isBold<V>(v: V) {
+  return is$typed(v, id, hashBold)
+}
+
+export function validateBold<V>(v: V) {
+  return validate<Bold & V>(v, id, hashBold)
+}
+
+/** Facet feature for italic text */
+export interface Italic {
+  $type?: 'pub.leaflet.richtext.facet#italic'
+}
+
+const hashItalic = 'italic'
+
+export function isItalic<V>(v: V) {
+  return is$typed(v, id, hashItalic)
+}
+
+export function validateItalic<V>(v: V) {
+  return validate<Italic & V>(v, id, hashItalic)
+}

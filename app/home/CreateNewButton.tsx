@@ -62,7 +62,10 @@ export const CreateNewLeafletButton = (props: {}) => {
     >
       <MenuItem
         onSelect={async () => {
-          let id = await createNewLeaflet("doc", false);
+          let id = await createNewLeaflet({
+            pageType: "doc",
+            redirectUser: false,
+          });
           openNewLeaflet(id);
         }}
       >
@@ -76,7 +79,10 @@ export const CreateNewLeafletButton = (props: {}) => {
       </MenuItem>
       <MenuItem
         onSelect={async () => {
-          let id = await createNewLeaflet("canvas", false);
+          let id = await createNewLeaflet({
+            pageType: "canvas",
+            redirectUser: false,
+          });
           openNewLeaflet(id);
         }}
       >

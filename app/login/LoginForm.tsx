@@ -158,7 +158,7 @@ export default function LoginForm() {
   );
 }
 
-function BlueskyLogin() {
+export function BlueskyLogin() {
   const [signingWithHandle, setSigningWithHandle] = useState(false);
   const [handle, setHandle] = useState("");
 

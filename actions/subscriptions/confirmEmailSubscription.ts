@@ -1,7 +1,6 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
-import { createIdentity } from "actions/createIdentity";
 import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import {
@@ -10,8 +9,7 @@ import {
   permission_tokens,
 } from "drizzle/schema";
 import postgres from "postgres";
-import { Fact, PermissionToken } from "src/replicache";
-import { serverMutationContext } from "src/replicache/serverMutationContext";
+import type { Fact } from "src/replicache";
 import { Database } from "supabase/database.types";
 import { v7 } from "uuid";
 

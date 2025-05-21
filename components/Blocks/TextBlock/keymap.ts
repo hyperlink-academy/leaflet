@@ -10,9 +10,9 @@ import {
   TextSelection,
   Transaction,
 } from "prosemirror-state";
-import { MutableRefObject } from "react";
+import { RefObject } from "react";
 import { Replicache } from "replicache";
-import { ReplicacheMutators } from "src/replicache";
+import type { ReplicacheMutators } from "src/replicache";
 import { elementId } from "src/utils/elementId";
 import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
@@ -25,10 +25,10 @@ import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { UndoManager } from "src/undoManager";
 
-type PropsRef = MutableRefObject<BlockProps & { entity_set: { set: string } }>;
+type PropsRef = RefObject<BlockProps & { entity_set: { set: string } }>;
 export const TextBlockKeymap = (
   propsRef: PropsRef,
-  repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+  repRef: RefObject<Replicache<ReplicacheMutators> | null>,
   um: UndoManager,
 ) =>
   ({
@@ -148,7 +148,7 @@ export const TextBlockKeymap = (
 const moveCursorDown =
   (
     propsRef: PropsRef,
-    repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+    repRef: RefObject<Replicache<ReplicacheMutators> | null>,
     jumpToNextBlock: boolean = false,
   ) =>
   (
@@ -177,7 +177,7 @@ const moveCursorDown =
 const moveCursorUp =
   (
     propsRef: PropsRef,
-    repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+    repRef: RefObject<Replicache<ReplicacheMutators> | null>,
     jumpToNextBlock: boolean = false,
   ) =>
   (
@@ -206,7 +206,7 @@ const moveCursorUp =
 const backspace =
   (
     propsRef: PropsRef,
-    repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+    repRef: RefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
   (
     state: EditorState,
@@ -352,8 +352,8 @@ const backspace =
 
 const shifttab =
   (
-    propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
-    repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+    propsRef: RefObject<BlockProps & { entity_set: { set: string } }>,
+    repRef: RefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
   () => {
     if (useUIState.getState().selectedBlocks.length > 1) return false;
@@ -365,8 +365,8 @@ const shifttab =
 
 const enter =
   (
-    propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
-    repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+    propsRef: RefObject<BlockProps & { entity_set: { set: string } }>,
+    repRef: RefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
   (
     state: EditorState,
@@ -579,8 +579,8 @@ const enter =
 
 const CtrlEnter =
   (
-    propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
-    repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+    propsRef: RefObject<BlockProps & { entity_set: { set: string } }>,
+    repRef: RefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
   (
     state: EditorState,
@@ -595,8 +595,8 @@ const CtrlEnter =
 
 const metaA =
   (
-    propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
-    repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+    propsRef: RefObject<BlockProps & { entity_set: { set: string } }>,
+    repRef: RefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
   (
     state: EditorState,

@@ -7,7 +7,7 @@ import {
   ValidationError,
   ValidationResult,
 } from '@atproto/lexicon'
-import { $Typed, is$typed, maybe$typed } from './util.js'
+import { $Typed, is$typed, maybe$typed } from './util'
 
 export const schemaDict = {
   PubLeafletDocument: {
@@ -26,7 +26,13 @@ export const schemaDict = {
           properties: {
             title: {
               type: 'string',
-              maxLength: 128,
+              maxLength: 1280,
+              maxGraphemes: 128,
+            },
+            description: {
+              type: 'string',
+              maxLength: 3000,
+              maxGraphemes: 300,
             },
             publishedAt: {
               type: 'string',
@@ -52,35 +58,6 @@ export const schemaDict = {
       },
     },
   },
-  PubLeafletPost: {
-    lexicon: 1,
-    id: 'pub.leaflet.post',
-    defs: {
-      main: {
-        type: 'record',
-        key: 'tid',
-        description: 'Record putting a post in a document',
-        record: {
-          type: 'object',
-          required: ['post', 'publishedAt'],
-          properties: {
-            publication: {
-              type: 'string',
-              format: 'at-uri',
-            },
-            post: {
-              type: 'ref',
-              ref: 'lex:com.atproto.repo.strongRef',
-            },
-            publishedAt: {
-              type: 'string',
-              format: 'datetime',
-            },
-          },
-        },
-      },
-    },
-  },
   PubLeafletPublication: {
     lexicon: 1,
     id: 'pub.leaflet.publication',
@@ -97,9 +74,18 @@ export const schemaDict = {
               type: 'string',
               maxLength: 2000,
             },
+            base_path: {
+              type: 'string',
+              format: 'uri',
+            },
             description: {
               type: 'string',
               maxLength: 2000,
+            },
+            icon: {
+              type: 'blob',
+              accept: ['image/*'],
+              maxSize: 1000000,
             },
           },
         },
@@ -112,7 +98,7 @@ export const schemaDict = {
     defs: {
       main: {
         type: 'object',
-        required: [],
+        required: ['plaintext'],
         properties: {
           level: {
             type: 'integer',
@@ -121,6 +107,13 @@ export const schemaDict = {
           },
           plaintext: {
             type: 'string',
+          },
+          facets: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.richtext.facet',
+            },
           },
         },
       },
@@ -170,10 +163,57 @@ export const schemaDict = {
     defs: {
       main: {
         type: 'object',
-        required: [],
+        required: ['plaintext'],
         properties: {
           plaintext: {
             type: 'string',
+          },
+          facets: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.richtext.facet',
+            },
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksUnorderedList: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.unorderedList',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['children'],
+        properties: {
+          children: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.unorderedList#listItem',
+            },
+          },
+        },
+      },
+      listItem: {
+        type: 'object',
+        required: ['content'],
+        properties: {
+          content: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.blocks.text',
+              'lex:pub.leaflet.blocks.header',
+              'lex:pub.leaflet.blocks.image',
+            ],
+          },
+          children: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.unorderedList#listItem',
+            },
           },
         },
       },
@@ -205,6 +245,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.text',
               'lex:pub.leaflet.blocks.header',
               'lex:pub.leaflet.blocks.image',
+              'lex:pub.leaflet.blocks.unorderedList',
             ],
           },
           alignment: {
@@ -225,6 +266,95 @@ export const schemaDict = {
       },
       textAlignRight: {
         type: 'token',
+      },
+    },
+  },
+  PubLeafletRichtextFacet: {
+    lexicon: 1,
+    id: 'pub.leaflet.richtext.facet',
+    defs: {
+      main: {
+        type: 'object',
+        description: 'Annotation of a sub-string within rich text.',
+        required: ['index', 'features'],
+        properties: {
+          index: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.richtext.facet#byteSlice',
+          },
+          features: {
+            type: 'array',
+            items: {
+              type: 'union',
+              refs: [
+                'lex:pub.leaflet.richtext.facet#link',
+                'lex:pub.leaflet.richtext.facet#highlight',
+                'lex:pub.leaflet.richtext.facet#underline',
+                'lex:pub.leaflet.richtext.facet#strikethrough',
+                'lex:pub.leaflet.richtext.facet#bold',
+                'lex:pub.leaflet.richtext.facet#italic',
+              ],
+            },
+          },
+        },
+      },
+      byteSlice: {
+        type: 'object',
+        description:
+          'Specifies the sub-string range a facet feature applies to. Start index is inclusive, end index is exclusive. Indices are zero-indexed, counting bytes of the UTF-8 encoded text. NOTE: some languages, like Javascript, use UTF-16 or Unicode codepoints for string slice indexing; in these languages, convert to byte arrays before working with facets.',
+        required: ['byteStart', 'byteEnd'],
+        properties: {
+          byteStart: {
+            type: 'integer',
+            minimum: 0,
+          },
+          byteEnd: {
+            type: 'integer',
+            minimum: 0,
+          },
+        },
+      },
+      link: {
+        type: 'object',
+        description:
+          'Facet feature for a URL. The text URL may have been simplified or truncated, but the facet reference should be a complete URL.',
+        required: ['uri'],
+        properties: {
+          uri: {
+            type: 'string',
+            format: 'uri',
+          },
+        },
+      },
+      highlight: {
+        type: 'object',
+        description: 'Facet feature for highlighted text.',
+        required: [],
+        properties: {},
+      },
+      underline: {
+        type: 'object',
+        description: 'Facet feature for underline markup',
+        required: [],
+        properties: {},
+      },
+      strikethrough: {
+        type: 'object',
+        description: 'Facet feature for strikethrough markup',
+        required: [],
+        properties: {},
+      },
+      bold: {
+        type: 'object',
+        description: 'Facet feature for bold text',
+        required: [],
+        properties: {},
+      },
+      italic: {
+        type: 'object',
+        description: 'Facet feature for italic text',
+        required: [],
+        properties: {},
       },
     },
   },
@@ -1208,12 +1338,13 @@ export function validate(
 
 export const ids = {
   PubLeafletDocument: 'pub.leaflet.document',
-  PubLeafletPost: 'pub.leaflet.post',
   PubLeafletPublication: 'pub.leaflet.publication',
   PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
+  PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
   PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
+  PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
   ComAtprotoLabelDefs: 'com.atproto.label.defs',
   ComAtprotoRepoApplyWrites: 'com.atproto.repo.applyWrites',
   ComAtprotoRepoCreateRecord: 'com.atproto.repo.createRecord',

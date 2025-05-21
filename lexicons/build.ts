@@ -5,6 +5,7 @@ import * as PublicationLexicons from "./src/publication";
 
 import * as fs from "fs";
 import * as path from "path";
+import { PubLeafletRichTextFacet } from "./src/facet";
 
 const outdir = path.join("lexicons", "pub", "leaflet");
 
@@ -15,6 +16,7 @@ fs.mkdirSync(outdir, { recursive: true });
 
 const lexicons = [
   PubLeafletDocument,
+  PubLeafletRichTextFacet,
   PageLexicons.PubLeafletPagesLinearDocument,
   ...BlockLexicons,
   ...Object.values(PublicationLexicons),

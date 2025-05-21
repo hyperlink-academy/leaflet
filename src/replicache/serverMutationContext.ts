@@ -4,7 +4,7 @@ import * as base64 from "base64-js";
 import * as Y from "yjs";
 import { MutationContext } from "./mutations";
 import { entities, facts } from "drizzle/schema";
-import { Attributes, FilterAttributes } from "./attributes";
+import { Attribute, Attributes, FilterAttributes } from "./attributes";
 import { Fact, PermissionToken } from ".";
 import { DeepReadonly } from "replicache";
 import { createClient } from "@supabase/supabase-js";
@@ -77,7 +77,7 @@ export function serverMutationContext(
     },
     async assertFact(f) {
       if (!f.entity) return;
-      let attribute = Attributes[f.attribute as keyof typeof Attributes];
+      let attribute = Attributes[f.attribute as Attribute];
       if (!attribute) return;
       let id = f.id || v7();
       let data = { ...f.data };

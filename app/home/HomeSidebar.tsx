@@ -7,17 +7,20 @@ import { Sidebar } from "components/ActionBar/Sidebar";
 import { useIdentityData } from "components/IdentityProvider";
 import { useReplicache } from "src/replicache";
 import { LoginActionButton } from "components/LoginButton";
+import { MyPublicationList } from "./Publications";
 
 export const HomeSidebar = () => {
   let { identity } = useIdentityData();
   let { rootEntity } = useReplicache();
 
   return (
-    <Sidebar alwaysOpen className="mt-6">
+    <Sidebar alwaysOpen className="my-6">
       <CreateNewLeafletButton />
       {identity ? <AccountSettings /> : <LoginActionButton />}
       <HelpPopover noShortcuts />
       <ThemePopover entityID={rootEntity} home />
+      <hr className="border-bg-page" />
+      <MyPublicationList />
     </Sidebar>
   );
 };

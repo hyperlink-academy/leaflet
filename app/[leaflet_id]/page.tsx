@@ -2,44 +2,35 @@ import { Metadata } from "next";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 
-import { Fact } from "src/replicache";
-import { Database } from "../../supabase/database.types";
-import { Attributes } from "src/replicache/attributes";
-import { createServerClient } from "@supabase/ssr";
+import type { Fact } from "src/replicache";
+import type { Attribute } from "src/replicache/attributes";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Leaflet } from "./Leaflet";
 import { scanIndexLocal } from "src/replicache/utils";
 import { getRSVPData } from "actions/getRSVPData";
 import { PageSWRDataProvider } from "components/PageSWRDataProvider";
 import { getPollData } from "actions/pollActions";
-import { PublicationContextProvider } from "components/Providers/PublicationContext";
+import { supabaseServerClient } from "supabase/serverClient";
+import { get_leaflet_data } from "app/api/rpc/[command]/get_leaflet_data";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
-let supabase = createServerClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
-  process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-  { cookies: {} },
-);
 type Props = {
   // this is now a token id not leaflet! Should probs rename
   params: Promise<{ leaflet_id: string }>;
 };
 export default async function LeafletPage(props: Props) {
-  let res = await supabase
-    .from("permission_tokens")
-    .select(
-      "*, permission_token_rights(*), custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*),leaflets_in_publications(publications(*)) ",
-    )
-    .eq("id", (await props.params).leaflet_id)
-    .single();
+  let { result: res } = await get_leaflet_data.handler(
+    { token_id: (await props.params).leaflet_id },
+    { supabase: supabaseServerClient },
+  );
   let rootEntity = res.data?.root_entity;
   if (!rootEntity || !res.data || res.data.blocked_by_admin)
     return (
       <div className="w-screen h-screen flex place-items-center bg-bg-leaflet">
-        <div className="bg-bg-page mx-auto p-4 border border-border rounded-md flex flex-col text-center justify-centergap-1 w-fit">
+        <div className="bg-bg-page mx-auto p-4 border border-border rounded-md flex flex-col text-center justify-center gap-1 w-fit">
           <div className="font-bold">
             Hmmm…we couldn&apos;t find that Leaflet.
           </div>
@@ -55,45 +46,41 @@ export default async function LeafletPage(props: Props) {
     );
 
   let [{ data }, rsvp_data, poll_data] = await Promise.all([
-    supabase.rpc("get_facts", {
+    supabaseServerClient.rpc("get_facts", {
       root: rootEntity,
     }),
     getRSVPData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
     getPollData(res.data.permission_token_rights.map((ptr) => ptr.entity_set)),
   ]);
-  let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
+  let initialFacts = (data as unknown as Fact<Attribute>[]) || [];
   return (
     <PageSWRDataProvider
       rsvp_data={rsvp_data}
       poll_data={poll_data}
       leaflet_id={res.data.id}
-      domains={res.data.custom_domain_routes}
+      leaflet_data={res}
     >
-      <PublicationContextProvider
-        publication={res.data.leaflets_in_publications[0]?.publications}
-      >
-        <Leaflet
-          initialFacts={initialFacts}
-          leaflet_id={rootEntity}
-          token={res.data}
-        />
-      </PublicationContextProvider>
+      <Leaflet
+        initialFacts={initialFacts}
+        leaflet_id={rootEntity}
+        token={res.data}
+      />
     </PageSWRDataProvider>
   );
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
-  let res = await supabase
+  let res = await supabaseServerClient
     .from("permission_tokens")
     .select("*, permission_token_rights(*)")
     .eq("id", (await props.params).leaflet_id)
     .single();
   let rootEntity = res.data?.root_entity;
   if (!rootEntity || !res.data) return { title: "Leaflet not found" };
-  let { data } = await supabase.rpc("get_facts", {
+  let { data } = await supabaseServerClient.rpc("get_facts", {
     root: rootEntity,
   });
-  let initialFacts = (data as unknown as Fact<keyof typeof Attributes>[]) || [];
+  let initialFacts = (data as unknown as Fact<Attribute>[]) || [];
   let scan = scanIndexLocal(initialFacts);
   let firstPage =
     scan.eav(rootEntity, "root/page")[0]?.data.value || rootEntity;

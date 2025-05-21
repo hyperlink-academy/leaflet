@@ -1,6 +1,6 @@
 "use client";
 import { Fact, PermissionToken, ReplicacheProvider } from "src/replicache";
-import { Attributes } from "src/replicache/attributes";
+import type { Attribute } from "src/replicache/attributes";
 import { SelectionManager } from "components/SelectionManager";
 import { Pages } from "components/Pages";
 import {
@@ -16,7 +16,7 @@ import { LeafletSidebar } from "./Sidebar";
 
 export function Leaflet(props: {
   token: PermissionToken;
-  initialFacts: Fact<keyof typeof Attributes>[];
+  initialFacts: Fact<Attribute>[];
   leaflet_id: string;
 }) {
   return (
@@ -34,15 +34,16 @@ export function Leaflet(props: {
             <UpdateLeafletTitle entityID={props.leaflet_id} />
             <AddLeafletToHomepage />
             <SelectionManager />
-            {/* we need the padding bottom here because if we don't have it the mobile footer will cut off
+            {/* we need the padding bottom here because if we don't have it the mobile footer will cut off...
             the dropshadow on the page... the padding is compensated by a negative top margin in mobile footer  */}
             <div
               className="leafletContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full pb-4 pwa-padding"
               id="page-carousel"
             >
+              {/* if you adjust this padding, remember to adjust the negative margins on page in Pages/index when card borders are hidden (also applies for the pb in the parent div)*/}
               <div
                 id="pages"
-                className="pages flex pt-2 pb-1 sm:pb-8 sm:py-6"
+                className="pages flex pt-2 pb-1 sm:pb-8 sm:pt-6"
                 onClick={(e) => {
                   e.currentTarget === e.target && blurPage();
                 }}

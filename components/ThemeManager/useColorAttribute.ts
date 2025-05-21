@@ -5,7 +5,7 @@ import { FilterAttributes } from "src/replicache/attributes";
 import { ThemeDefaults } from "./ThemeProvider";
 
 export function useColorAttribute(
-  entity: string,
+  entity: string | null,
   attribute: keyof FilterAttributes<{ type: "color"; cardinality: "one" }>,
 ) {
   let { rootEntity } = useReplicache();

@@ -15,7 +15,8 @@ export const PubLeafletDocument: LexiconDoc = {
         type: "object",
         required: ["pages", "author", "title", "publication"],
         properties: {
-          title: { type: "string", maxLength: 128 },
+          title: { type: "string", maxLength: 1280, maxGraphemes: 128 },
+          description: { type: "string", maxLength: 3000, maxGraphemes: 300 },
           publishedAt: { type: "string", format: "datetime" },
           publication: { type: "string", format: "at-uri" },
           author: { type: "string", format: "at-identifier" },

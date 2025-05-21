@@ -30,6 +30,7 @@ export function focusBlock(
   // focus the editor using the mouse position if needed
   let nextBlockID = block.value;
   let nextBlock = useEditorStates.getState().editorStates[nextBlockID];
+  console.log(nextBlock);
   if (!nextBlock || !nextBlock.view) return;
   let nextBlockViewClientRect = nextBlock.view.dom.getBoundingClientRect();
   let tr = nextBlock.editor.tr;

@@ -179,6 +179,11 @@ input[type="number"] {
   background-color: transparent;
 }
 
+.transparent-outline {
+  @apply outline;
+  @apply outline-transparent;
+}
+
 .selected-outline {
   @apply border;
   @apply focus:outline;
@@ -239,15 +244,26 @@ input[type="number"] {
   @apply outline-border;
 }
 
-.transparent-outline {
-  @apply outline;
-  @apply outline-transparent;
-}
-
 .container {
   background: rgba(var(--bg-page), 0.5);
   @apply border;
   @apply border-bg-page;
+  @apply rounded-md;
+}
+
+.opaque-container {
+  @apply bg-bg-page;
+  @apply border;
+  @apply border-border-light;
+  @apply rounded-md;
+}
+
+.accent-container {
+  background: color-mix(
+    in oklab,
+    rgb(var(--accent-contrast)),
+    rgb(var(--bg-page)) 85%
+  );
   @apply rounded-md;
 }
 

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useLayoutEffect } from "react";
 import { elementId } from "src/utils/elementId";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
@@ -22,7 +22,6 @@ import { useUIState } from "src/useUIState";
 import { addBlueskyPostBlock, addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockCommandBar } from "components/Blocks/BlockCommandBar";
 import { useEditorStates } from "src/state/useEditorState";
-import { isIOS, useLayoutEffect } from "@react-aria/utils";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useHandlePaste } from "./useHandlePaste";
 import { highlightSelectionPlugin } from "./plugins";
@@ -35,6 +34,8 @@ import { useSmoker } from "components/Toast";
 import { AddTiny } from "components/Icons/AddTiny";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
+import { isIOS } from "src/utils/isDevice";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 
 const HeadingStyle = {
   1: "text-xl font-bold",
@@ -248,7 +249,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
               .nodeAt(_pos - 1)
               ?.marks.find((f) => f.type === schema.marks.link) ||
             node
-              .nodeAt(_pos - 2)
+              .nodeAt(Math.min(_pos - 2, 0))
               ?.marks.find((f) => f.type === schema.marks.link);
           if (mark) {
             window.open(mark.attrs.href, "_blank");
@@ -471,6 +472,9 @@ const BlockifyLink = (props: {
 const CommandOptions = (props: BlockProps & { className?: string }) => {
   let rep = useReplicache();
   let entity_set = useEntitySetContext();
+  let { data: publicationData } = useLeafletPublicationData();
+  let pub = publicationData?.[0];
+
   return (
     <div
       className={`absolute top-0 right-0 w-fit flex gap-[6px] items-center font-bold  rounded-md  text-sm text-border ${props.pageType === "canvas" && "mr-[6px]"}`}
@@ -494,24 +498,26 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
         <BlockImageSmall className="hover:text-accent-contrast text-border" />
       </TooltipButton>
 
-      <TooltipButton
-        className={props.className}
-        onMouseDown={async () => {
-          let command = blockCommands.find((f) => f.name === "New Page");
-          if (!rep.rep) return;
-          await command?.onSelect(
-            rep.rep,
-            { ...props, entity_set: entity_set.set },
-            rep.undoManager,
-          );
-        }}
-        side="bottom"
-        tooltipContent={
-          <div className="flex gap-1 font-bold">Add a Subpage</div>
-        }
-      >
-        <BlockDocPageSmall className="hover:text-accent-contrast text-border" />
-      </TooltipButton>
+      {!pub && (
+        <TooltipButton
+          className={props.className}
+          onMouseDown={async () => {
+            let command = blockCommands.find((f) => f.name === "New Page");
+            if (!rep.rep) return;
+            await command?.onSelect(
+              rep.rep,
+              { ...props, entity_set: entity_set.set },
+              rep.undoManager,
+            );
+          }}
+          side="bottom"
+          tooltipContent={
+            <div className="flex gap-1 font-bold">Add a Subpage</div>
+          }
+        >
+          <BlockDocPageSmall className="hover:text-accent-contrast text-border" />
+        </TooltipButton>
+      )}
 
       <TooltipButton
         className={props.className}

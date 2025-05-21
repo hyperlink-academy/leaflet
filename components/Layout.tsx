@@ -31,36 +31,40 @@ export const Menu = (props: {
       }}
       open={props.open}
     >
-      <DropdownMenu.Trigger asChild={props.asChild}>
-        {props.trigger}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <NestedCardThemeProvider>
-          <DropdownMenu.Content
-            align={props.align ? props.align : "center"}
-            sideOffset={4}
-            collisionPadding={16}
-            className={`dropdownMenu z-20 bg-bg-page flex flex-col py-1 gap-0.5 border border-border rounded-md shadow-md ${props.className}`}
-          >
-            {props.children}
-            <DropdownMenu.Arrow
-              asChild
-              width={16}
-              height={8}
-              viewBox="0 0 16 8"
+      <PopoverOpenContext value={open}>
+        <DropdownMenu.Trigger asChild={props.asChild}>
+          {props.trigger}
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Portal>
+          <NestedCardThemeProvider>
+            <DropdownMenu.Content
+              align={props.align ? props.align : "center"}
+              sideOffset={4}
+              collisionPadding={16}
+              className={`dropdownMenu z-20 bg-bg-page flex flex-col py-1 gap-0.5 border border-border rounded-md shadow-md ${props.className}`}
             >
-              <PopoverArrow
-                arrowFill={
-                  props.background ? props.background : theme.colors["bg-page"]
-                }
-                arrowStroke={
-                  props.border ? props.border : theme.colors["border"]
-                }
-              />
-            </DropdownMenu.Arrow>
-          </DropdownMenu.Content>
-        </NestedCardThemeProvider>
-      </DropdownMenu.Portal>
+              {props.children}
+              <DropdownMenu.Arrow
+                asChild
+                width={16}
+                height={8}
+                viewBox="0 0 16 8"
+              >
+                <PopoverArrow
+                  arrowFill={
+                    props.background
+                      ? props.background
+                      : theme.colors["bg-page"]
+                  }
+                  arrowStroke={
+                    props.border ? props.border : theme.colors["border"]
+                  }
+                />
+              </DropdownMenu.Arrow>
+            </DropdownMenu.Content>
+          </NestedCardThemeProvider>
+        </DropdownMenu.Portal>
+      </PopoverOpenContext>
     </DropdownMenu.Root>
   );
 };

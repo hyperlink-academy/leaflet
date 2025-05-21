@@ -3,16 +3,16 @@
 import { useEffect, useState } from "react";
 import { getHomeDocs, HomeDoc } from "./storage";
 import useSWR from "swr";
-import { Fact, ReplicacheProvider } from "src/replicache";
+import { Fact, PermissionToken, ReplicacheProvider } from "src/replicache";
 import { LeafletPreview } from "./LeafletPreview";
 import { useIdentityData } from "components/IdentityProvider";
-import { Attributes } from "src/replicache/attributes";
+import type { Attribute } from "src/replicache/attributes";
 import { getIdentityData } from "actions/getIdentityData";
 import { callRPC } from "app/api/rpc/client";
 
 export function LeafletList(props: {
   initialFacts: {
-    [root_entity: string]: Fact<keyof typeof Attributes>[];
+    [root_entity: string]: Fact<Attribute>[];
   };
 }) {
   let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
@@ -36,7 +36,9 @@ export function LeafletList(props: {
   useEffect(() => {
     mutate();
   }, [localLeaflets.length, mutate]);
-  let leaflets = identity
+  let leaflets: Array<
+    PermissionToken & { leaflets_in_publications?: Array<{ doc: string }> }
+  > = identity
     ? identity.permission_token_on_homepage
         .sort((a, b) =>
           a.created_at === b.created_at
@@ -54,10 +56,11 @@ export function LeafletList(props: {
         .map((ll) => ll.token);
 
   return (
-    <div className="homeLeafletGrid grow w-full h-full overflow-y-scroll no-scrollbar  ">
+    <div className="homeLeafletGrid grow w-full h-full">
       <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-4 gap-x-4 sm:gap-6 grow pt-3 pb-28 px-2 sm:pt-6 sm:pb-12 sm:pl-6 sm:pr-1">
         {leaflets.map((leaflet, index) => (
           <ReplicacheProvider
+            disablePull
             initialFactsOnly={!!identity}
             key={leaflet.id}
             rootEntity={leaflet.root_entity}
@@ -68,6 +71,8 @@ export function LeafletList(props: {
             <LeafletPreview
               index={index}
               token={leaflet}
+              draft={!!leaflet.leaflets_in_publications?.length}
+              published={!!leaflet.leaflets_in_publications?.find((l) => l.doc)}
               leaflet_id={leaflet.root_entity}
               loggedIn={!!identity}
             />

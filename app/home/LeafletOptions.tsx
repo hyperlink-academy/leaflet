@@ -1,7 +1,7 @@
 "use client";
 
 import { Menu, MenuItem } from "components/Layout";
-import { PermissionToken } from "src/replicache";
+import type { PermissionToken } from "src/replicache";
 import { hideDoc } from "./storage";
 import { useState } from "react";
 import { ButtonPrimary } from "components/Buttons";

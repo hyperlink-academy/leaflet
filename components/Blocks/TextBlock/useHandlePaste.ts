@@ -14,7 +14,7 @@ import { Replicache } from "replicache";
 import { markdownToHtml } from "src/htmlMarkdownParsers";
 import { betterIsUrl, isUrl } from "src/utils/isURL";
 import { TextSelection } from "prosemirror-state";
-import { FilterAttributes } from "src/replicache/attributes";
+import type { FilterAttributes } from "src/replicache/attributes";
 import { addLinkBlock } from "src/utils/addLinkBlock";
 import { UndoManager } from "src/undoManager";
 

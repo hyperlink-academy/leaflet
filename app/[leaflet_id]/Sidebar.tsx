@@ -1,19 +1,22 @@
 "use client";
+import { ActionButton } from "components/ActionBar/ActionButton";
 import { Sidebar } from "components/ActionBar/Sidebar";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { HelpPopover } from "components/HelpPopover";
 import { HomeButton } from "components/HomeButton";
 import { Media } from "components/Media";
-import { usePublicationContext } from "components/Providers/PublicationContext";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { ShareOptions } from "components/ShareOptions";
-import { PublishToPublication } from "components/ShareOptions/PublicationOptions";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { Watermark } from "components/Watermark";
 import { useUIState } from "src/useUIState";
+import { BackToPubButton, PublishButton } from "./Actions";
 
 export function LeafletSidebar(props: { leaflet_id: string }) {
   let entity_set = useEntitySetContext();
-  let publication = usePublicationContext();
+  let { data: publicationData } = useLeafletPublicationData();
+  let pub = publicationData?.[0];
+
   return (
     <div
       className="spacer flex justify-end items-start"
@@ -24,26 +27,35 @@ export function LeafletSidebar(props: { leaflet_id: string }) {
     >
       <Media
         mobile={false}
-        className="sidebarContainer relative flex flex-col justify-between h-full w-16 bg-bg-page/50  border-bg-page"
+        className="sidebarContainer relative flex flex-col justify-end h-full w-16 bg-bg-page/50  border-bg-page"
       >
         <Sidebar>
           {entity_set.permissions.write ? (
-            <>
-              <ShareOptions />
-              <ThemePopover entityID={props.leaflet_id} />
-              <HelpPopover />
-              <hr className="text-border" />
-              <HomeButton />
-            </>
+            pub?.publications ? (
+              <>
+                <PublishButton />
+                <ShareOptions />
+                <HelpPopover />
+                <hr className="text-border" />
+                <BackToPubButton publication={pub.publications} />
+              </>
+            ) : (
+              <>
+                <ShareOptions />
+                <ThemePopover entityID={props.leaflet_id} />
+                <HelpPopover />
+                <hr className="text-border" />
+                <HomeButton />
+              </>
+            )
           ) : (
             <div>
               <HomeButton />
             </div>
           )}
         </Sidebar>
-        <div className="justify-end justify-self-end">
-          <Watermark />
-        </div>
+        <div className="h-full pointer-events-none" />
+        <Watermark />
       </Media>
     </div>
   );

@@ -1,7 +1,7 @@
 import { getBlocksAsHTML } from "src/utils/getBlocksAsHTML";
 import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 import { Replicache } from "replicache";
-import { ReplicacheMutators } from "src/replicache";
+import type { ReplicacheMutators } from "src/replicache";
 import { Block } from "components/Blocks/Block";
 
 export async function copySelection(

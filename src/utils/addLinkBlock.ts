@@ -4,7 +4,7 @@ import {
   LinkPreviewMetadataResult,
 } from "app/api/link_previews/route";
 import { Replicache } from "replicache";
-import { ReplicacheMutators } from "src/replicache";
+import type { ReplicacheMutators } from "src/replicache";
 import { AtpAgent } from "@atproto/api";
 import { v7 } from "uuid";
 

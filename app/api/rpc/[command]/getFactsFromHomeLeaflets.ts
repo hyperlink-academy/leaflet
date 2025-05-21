@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { Fact } from "src/replicache";
-import { Attributes } from "src/replicache/attributes";
+import type { Fact } from "src/replicache";
+import type { Attribute } from "src/replicache/attributes";
 import { makeRoute } from "../lib";
-import { Env } from "./route";
+import type { Env } from "./route";
 
 export const getFactsFromHomeLeaflets = makeRoute({
   route: "getFactsFromHomeLeaflets",
@@ -20,12 +20,10 @@ export const getFactsFromHomeLeaflets = makeRoute({
         result: all_facts.data.reduce(
           (acc, fact) => {
             if (!acc[fact.root_id]) acc[fact.root_id] = [];
-            acc[fact.root_id].push(
-              fact as unknown as Fact<keyof typeof Attributes>,
-            );
+            acc[fact.root_id].push(fact as unknown as Fact<Attribute>);
             return acc;
           },
-          {} as { [key: string]: Fact<keyof typeof Attributes>[] },
+          {} as { [key: string]: Fact<Attribute>[] },
         ),
       };
     }

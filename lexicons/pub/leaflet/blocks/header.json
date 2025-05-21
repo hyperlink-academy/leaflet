@@ -4,7 +4,9 @@
   "defs": {
     "main": {
       "type": "object",
-      "required": [],
+      "required": [
+        "plaintext"
+      ],
       "properties": {
         "level": {
           "type": "integer",
@@ -13,6 +15,13 @@
         },
         "plaintext": {
           "type": "string"
+        },
+        "facets": {
+          "type": "array",
+          "items": {
+            "type": "ref",
+            "ref": "pub.leaflet.richtext.facet"
+          }
         }
       }
     }

@@ -1,4 +1,3 @@
-import { isMac } from "@react-aria/utils";
 import { Separator, ShortcutKey } from "components/Layout";
 import { metaKey } from "src/utils/metaKey";
 import { LinkButton } from "./InlineLinkToolbar";
@@ -11,6 +10,7 @@ import { schema } from "components/Blocks/TextBlock/schema";
 import { TextAlignmentButton } from "./TextAlignmentToolbar";
 import { LockBlockButton } from "./LockBlockButton";
 import { Props } from "components/Icons/Props";
+import { isMac } from "src/utils/isDevice";
 
 export const TextToolbar = (props: {
   lastUsedHighlight: string;

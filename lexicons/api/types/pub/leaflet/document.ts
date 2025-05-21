@@ -5,7 +5,7 @@ import { ValidationResult, BlobRef } from '@atproto/lexicon'
 import { CID } from 'multiformats/cid'
 import { validate as _validate } from '../../../lexicons'
 import { $Typed, is$typed as _is$typed, OmitKey } from '../../../util'
-import type * as PubLeafletPagesLinearDocument from './pages/linearDocument.js'
+import type * as PubLeafletPagesLinearDocument from './pages/linearDocument'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -14,6 +14,7 @@ const id = 'pub.leaflet.document'
 export interface Record {
   $type: 'pub.leaflet.document'
   title: string
+  description?: string
   publishedAt?: string
   publication: string
   author: string

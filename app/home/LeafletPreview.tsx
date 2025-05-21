@@ -24,8 +24,15 @@ import styles from "./LeafletPreview.module.css";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { TemplateSmall } from "components/Icons/TemplateSmall";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
+import {
+  PublicationMetadata,
+  PublicationMetadataPreview,
+} from "components/Pages/PublicationMetadata";
 
 export const LeafletPreview = (props: {
+  draft?: boolean;
+  published?: boolean;
   index: number;
   token: PermissionToken;
   leaflet_id: string;
@@ -40,7 +47,17 @@ export const LeafletPreview = (props: {
     props.leaflet_id;
   let firstPage = useEntity(root, "root/page")[0];
   let page = firstPage?.data.value || root;
-  let router = useRouter();
+
+  let cardBorderHidden = useCardBorderHidden(root);
+  let rootBackgroundImage = useEntity(root, "theme/card-background-image");
+  let rootBackgroundRepeat = useEntity(
+    root,
+    "theme/card-background-image-repeat",
+  );
+  let rootBackgroundOpacity = useEntity(
+    root,
+    "theme/card-background-image-opacity",
+  );
 
   return (
     <div className="relative max-h-40 h-40">
@@ -51,11 +68,30 @@ export const LeafletPreview = (props: {
               <ThemeBackgroundProvider entityID={root}>
                 <div className="leafletPreview grow shrink-0 h-full w-full px-2 pt-2 sm:px-3 sm:pt-3 flex items-end pointer-events-none">
                   <div
-                    className="leafletContentWrapper h-full  sm:w-48 w-40 mx-auto border border-border-light border-b-0 rounded-t-md overflow-clip"
-                    style={{
-                      backgroundColor:
-                        "rgba(var(--bg-page), var(--bg-page-alpha))",
-                    }}
+                    className={`leafletContentWrapper h-full sm:w-48 w-40 mx-auto overflow-clip ${!cardBorderHidden && "border border-border-light border-b-0 rounded-t-md"}`}
+                    style={
+                      cardBorderHidden
+                        ? {}
+                        : {
+                            backgroundImage: rootBackgroundImage
+                              ? `url(${rootBackgroundImage.data.src}), url(${rootBackgroundImage.data.fallback})`
+                              : undefined,
+                            backgroundRepeat: rootBackgroundRepeat
+                              ? "repeat"
+                              : "no-repeat",
+                            backgroundPosition: "center",
+                            backgroundSize: !rootBackgroundRepeat
+                              ? "cover"
+                              : rootBackgroundRepeat?.data.value / 3,
+                            opacity:
+                              rootBackgroundImage?.data.src &&
+                              rootBackgroundOpacity
+                                ? rootBackgroundOpacity.data.value
+                                : 1,
+                            backgroundColor:
+                              "rgba(var(--bg-page), var(--bg-page-alpha))",
+                          }
+                    }
                   >
                     <LeafletContent entityID={page} index={props.index} />
                   </div>
@@ -67,7 +103,16 @@ export const LeafletPreview = (props: {
             <LeafletAreYouSure token={props.token} setState={setState} />
           )}
         </div>
-        <div className="flex justify-end pt-1 shrink-0">
+        <div className="flex justify-between pt-1 shrink-0 w-full gap-2">
+          {props.draft || props.published ? (
+            <div
+              className={`text-xs  container !border-none !w-fit px-0.5  italic ${props.published ? "font-bold text-tertiary" : "text-tertiary"}`}
+            >
+              {props.published ? "Published!" : "Draft"}
+            </div>
+          ) : (
+            <div />
+          )}
           <LeafletOptions
             leaflet={props.token}
             isTemplate={isTemplate}
@@ -131,6 +176,8 @@ const LeafletContent = (props: { entityID: string; index: number }) => {
           width: `var(--page-width-units)`,
         }}
       >
+        <PublicationMetadataPreview />
+
         {isVisible &&
           blocks.slice(0, 10).map((b, index, arr) => {
             return (

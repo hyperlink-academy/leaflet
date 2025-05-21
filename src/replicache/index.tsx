@@ -17,15 +17,17 @@ import {
   WriteTransaction,
 } from "replicache";
 import { mutations } from "./mutations";
-import { Attributes, Data, FilterAttributes } from "./attributes";
+import { Attributes } from "./attributes";
+import { Attribute, Data, FilterAttributes } from "./attributes";
 import { clientMutationContext } from "./clientMutationContext";
 import { supabaseBrowserClient } from "supabase/browserClient";
 import { callRPC } from "app/api/rpc/client";
 import { UndoManager } from "@rocicorp/undo";
 import { addShortcut } from "src/shortcuts";
 import { createUndoManager } from "src/undoManager";
+import { RealtimeChannel } from "@supabase/supabase-js";
 
-export type Fact<A extends keyof typeof Attributes> = {
+export type Fact<A extends Attribute> = {
   id: string;
   entity: string;
   attribute: A;
@@ -36,7 +38,7 @@ let ReplicacheContext = createContext({
   undoManager: createUndoManager(),
   rootEntity: "" as string,
   rep: null as null | Replicache<ReplicacheMutators>,
-  initialFacts: [] as Fact<keyof typeof Attributes>[],
+  initialFacts: [] as Fact<Attribute>[],
   permission_token: {} as PermissionToken,
 });
 export function useReplicache() {
@@ -64,11 +66,12 @@ export type PermissionToken = {
 };
 export function ReplicacheProvider(props: {
   rootEntity: string;
-  initialFacts: Fact<keyof typeof Attributes>[];
+  initialFacts: Fact<Attribute>[];
   token: PermissionToken;
   name: string;
   children: React.ReactNode;
   initialFactsOnly?: boolean;
+  disablePull?: boolean;
 }) {
   let [rep, setRep] = useState<null | Replicache<ReplicacheMutators>>(null);
   let [undoManager] = useState(createUndoManager());
@@ -103,6 +106,7 @@ export function ReplicacheProvider(props: {
     if (props.initialFactsOnly) return;
     let supabase = supabaseBrowserClient();
     let newRep = new Replicache({
+      pullInterval: props.disablePull ? null : undefined,
       pushDelay: 500,
       mutators: Object.fromEntries(
         Object.keys(mutations).map((m) => {
@@ -158,16 +162,19 @@ export function ReplicacheProvider(props: {
       },
     });
     setRep(newRep);
-    let channel = supabase.channel(`rootEntity:${props.name}`);
+    let channel: RealtimeChannel | null = null;
+    if (!props.disablePull) {
+      channel = supabase.channel(`rootEntity:${props.name}`);
 
-    channel.on("broadcast", { event: "poke" }, () => {
-      newRep.pull();
-    });
-    channel.subscribe();
+      channel.on("broadcast", { event: "poke" }, () => {
+        newRep.pull();
+      });
+      channel.subscribe();
+    }
     return () => {
       newRep.close();
       setRep(null);
-      channel.unsubscribe();
+      channel?.unsubscribe();
     };
   }, [props.name, props.initialFactsOnly, props.token]);
   return (
@@ -185,11 +192,11 @@ export function ReplicacheProvider(props: {
   );
 }
 
-type CardinalityResult<A extends keyof typeof Attributes> =
+type CardinalityResult<A extends Attribute> =
   (typeof Attributes)[A]["cardinality"] extends "one"
     ? DeepReadonlyObject<Fact<A>> | null
     : DeepReadonlyObject<Fact<A>>[];
-export function useEntity<A extends keyof typeof Attributes>(
+export function useEntity<A extends Attribute>(
   entity: string | null,
   attribute: A,
 ): CardinalityResult<A> {

@@ -25,7 +25,8 @@
           "refs": [
             "pub.leaflet.blocks.text",
             "pub.leaflet.blocks.header",
-            "pub.leaflet.blocks.image"
+            "pub.leaflet.blocks.image",
+            "pub.leaflet.blocks.unorderedList"
           ]
         },
         "alignment": {

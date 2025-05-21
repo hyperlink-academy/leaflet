@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { JSX, useState } from "react";
 import { useUIState } from "src/useUIState";
 import { useEntitySetContext } from "../EntitySetProvider";
 import { useSearchParams } from "next/navigation";
@@ -30,11 +30,13 @@ import { CardThemeProvider } from "../ThemeManager/ThemeProvider";
 import { PageShareMenu } from "./PageShareMenu";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 import { useUndoState } from "src/undoManager";
-import { usePublicationContext } from "components/Providers/PublicationContext";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { ShareSmall } from "components/Icons/ShareSmall";
+import { PublicationMetadata } from "./PublicationMetadata";
+import { useCardBorderHidden } from "./useCardBorderHidden";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -42,8 +44,6 @@ export function Pages(props: { rootPage: string }) {
   let params = useSearchParams();
   let queryRoot = params.get("page");
   let firstPage = queryRoot || rootPage?.data.value || props.rootPage;
-  let entity_set = useEntitySetContext();
-  let publication = usePublicationContext();
 
   return (
     <>
@@ -79,7 +79,7 @@ export const LeafletOptions = (props: { entityID: string }) => {
 };
 
 function Page(props: { entityID: string; first?: boolean }) {
-  let { rep } = useReplicache();
+  let { rep, rootEntity } = useReplicache();
   let isDraft = useReferenceToEntity("mailbox/draft", props.entityID);
 
   let isFocused = useUIState((s) => {
@@ -91,7 +91,7 @@ function Page(props: { entityID: string; first?: boolean }) {
     return focusedPageID === props.entityID;
   });
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
-
+  let cardBorderHidden = useCardBorderHidden(props.entityID);
   return (
     <>
       {!props.first && (
@@ -114,7 +114,9 @@ function Page(props: { entityID: string; first?: boolean }) {
           id={elementId.page(props.entityID).container}
           style={{
             width: pageType === "doc" ? "var(--page-width-units)" : undefined,
-            backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
+            backgroundColor: cardBorderHidden
+              ? ""
+              : "rgba(var(--bg-page), var(--bg-page-alpha))",
           }}
           className={`
             ${pageType === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
@@ -122,7 +124,7 @@ function Page(props: { entityID: string; first?: boolean }) {
               grow flex flex-col
               overscroll-y-none
               overflow-y-auto
-              rounded-lg border
+              ${cardBorderHidden ? "border-0 !shadow-none sm:-mt-6 sm:-mb-12 -mt-2 -mb-1 pt-3 " : "border rounded-lg"}
               ${isFocused ? "shadow-md border-border" : "border-border-light"}
             `}
         >
@@ -161,6 +163,7 @@ const PageContent = (props: { entityID: string }) => {
 };
 
 const DocContent = (props: { entityID: string }) => {
+  let { rootEntity } = useReplicache();
   let isFocused = useUIState((s) => {
     let focusedElement = s.focusedEntity;
     let focusedPageID =
@@ -169,40 +172,68 @@ const DocContent = (props: { entityID: string }) => {
         : focusedElement?.parent;
     return focusedPageID === props.entityID;
   });
+
+  let cardBorderHidden = useCardBorderHidden(props.entityID);
+  let rootBackgroundImage = useEntity(
+    rootEntity,
+    "theme/card-background-image",
+  );
+  let rootBackgroundRepeat = useEntity(
+    rootEntity,
+    "theme/card-background-image-repeat",
+  );
+  let rootBackgroundOpacity = useEntity(
+    rootEntity,
+    "theme/card-background-image-opacity",
+  );
+
   let cardBackgroundImage = useEntity(
     props.entityID,
     "theme/card-background-image",
   );
+
   let cardBackgroundImageRepeat = useEntity(
     props.entityID,
     "theme/card-background-image-repeat",
   );
-  let cardBackgroundImageOpacity =
-    useEntity(props.entityID, "theme/card-background-image-opacity")?.data
-      .value || 1;
+
+  let cardBackgroundImageOpacity = useEntity(
+    props.entityID,
+    "theme/card-background-image-opacity",
+  );
+
+  let backgroundImage = cardBackgroundImage || rootBackgroundImage;
+  let backgroundImageRepeat = cardBackgroundImage
+    ? cardBackgroundImageRepeat?.data?.value
+    : rootBackgroundRepeat?.data.value;
+  let backgroundImageOpacity = cardBackgroundImage
+    ? cardBackgroundImageOpacity?.data.value
+    : rootBackgroundOpacity?.data.value || 1;
+
   return (
     <>
-      <div
-        className={`pageBackground
+      {!cardBorderHidden ? (
+        <div
+          className={`pageBackground
         absolute top-0 left-0 right-0 bottom-0
         pointer-events-none
         rounded-lg border
         ${isFocused ? " border-border" : "border-border-light"}
         `}
-        style={{
-          backgroundImage: cardBackgroundImage
-            ? `url(${cardBackgroundImage.data.src}), url(${cardBackgroundImage.data.fallback})`
-            : undefined,
-          backgroundRepeat: cardBackgroundImageRepeat ? "repeat" : "no-repeat",
-          backgroundPosition: "center",
-          backgroundSize: !cardBackgroundImageRepeat
-            ? "cover"
-            : cardBackgroundImageRepeat?.data.value,
-          opacity: cardBackgroundImage?.data.src
-            ? cardBackgroundImageOpacity
-            : 1,
-        }}
-      />
+          style={{
+            backgroundImage: backgroundImage
+              ? `url(${backgroundImage.data.src}), url(${backgroundImage.data.fallback})`
+              : undefined,
+            backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
+            backgroundPosition: "center",
+            backgroundSize: !backgroundImageRepeat
+              ? "cover"
+              : backgroundImageRepeat,
+            opacity: backgroundImage?.data.src ? backgroundImageOpacity : 1,
+          }}
+        />
+      ) : null}
+      <PublicationMetadata cardBorderHidden={!!cardBorderHidden} />
       <Blocks entityID={props.entityID} />
       {/* we handle page bg in this sepate div so that
     we can apply an opacity the background image
@@ -211,66 +242,98 @@ const DocContent = (props: { entityID: string }) => {
   );
 };
 
-let greyButtonStyle =
-  "pt-[2px] h-5 w-5 p-0.5 mx-auto bg-border text-bg-page sm:rounded-r-md sm:rounded-l-none rounded-b-md hover:bg-accent-1 hover:text-accent-2";
-let whiteButtonStyle = `
-    pageOptionsTrigger
-    shrink-0
-    bg-bg-page text-border
-    outline-none border sm:border-l-0 border-t-1 border-border sm:rounded-r-md sm:rounded-l-none rounded-b-md
-    hover:shadow-[0_1px_0_theme(colors.border)_inset,_0_-1px_0_theme(colors.border)_inset,_-1px_0_0_theme(colors.border)_inset]
-    flex items-center justify-center`;
+const PageOptionButton = ({
+  children,
+  secondary,
+  cardBorderHidden,
+  className,
+  disabled,
+  ...props
+}: {
+  children: React.ReactNode;
+  secondary?: boolean;
+  cardBorderHidden: boolean | undefined;
+  className?: string;
+  disabled?: boolean;
+} & Omit<JSX.IntrinsicElements["button"], "content">) => {
+  return (
+    <button
+      className={`
+        pageOptionsTrigger
+        shrink-0
+        pt-[2px] h-5 w-5 p-0.5 mx-auto
+        border border-border
+        ${secondary ? "bg-border text-bg-page" : "bg-bg-page text-border"}
+        ${disabled && "opacity-50"}
+        ${cardBorderHidden ? "rounded-md" : `rounded-b-md sm:rounded-l-none sm:rounded-r-md`}
+        flex items-center justify-center
+        ${className}
+
+        `}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
 const PageOptions = (props: {
   entityID: string;
   first: boolean | undefined;
 }) => {
+  let { rootEntity } = useReplicache();
+  let cardBorderHidden = useCardBorderHidden(props.entityID);
+
   return (
-    <div className=" z-10 w-fit absolute sm:top-3 sm:-right-[19px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start">
+    <div
+      className={`z-10 w-fit absolute  ${cardBorderHidden ? "top-1" : "sm:top-3"} sm:-right-[19px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start`}
+    >
       {!props.first && (
-        <button
-          className={greyButtonStyle}
+        <PageOptionButton
+          cardBorderHidden={cardBorderHidden}
+          secondary
           onClick={() => {
             useUIState.getState().closePage(props.entityID);
           }}
         >
           <CloseTiny />
-        </button>
+        </PageOptionButton>
       )}
       <OptionsMenu
         entityID={props.entityID}
         first={!!props.first}
-        buttonStyle={whiteButtonStyle}
+        cardBorderHidden={cardBorderHidden}
       />
-      <UndoButtons />
+      <UndoButtons cardBorderHidden={cardBorderHidden} />
     </div>
   );
 };
 
-const UndoButtons = () => {
+const UndoButtons = (props: { cardBorderHidden: boolean | undefined }) => {
   let undoState = useUndoState();
   let { undoManager } = useReplicache();
   return (
     <Media mobile>
-      <div className="gap-1 flex sm:flex-col">
-        {undoState.canUndo && (
-          <button
-            className={`${whiteButtonStyle}  h-5 w-5 p-0.5`}
+      {undoState.canUndo && (
+        <div className="gap-1 flex sm:flex-col">
+          <PageOptionButton
+            secondary
+            cardBorderHidden={props.cardBorderHidden}
             onClick={() => undoManager.undo()}
           >
             <UndoTiny />
-          </button>
-        )}
-        {undoState.canRedo ? (
-          <button
-            className={`${whiteButtonStyle}  h-5 w-5 p-0.5`}
+          </PageOptionButton>
+
+          <PageOptionButton
+            secondary
+            cardBorderHidden={props.cardBorderHidden}
             onClick={() => undoManager.undo()}
+            disabled={!undoState.canRedo}
           >
             <RedoTiny />
-          </button>
-        ) : (
-          <div className="h-5 w-5 p-0.5" />
-        )}
-      </div>
+          </PageOptionButton>
+        </div>
+      )}
     </Media>
   );
 };
@@ -278,26 +341,29 @@ const UndoButtons = () => {
 const OptionsMenu = (props: {
   entityID: string;
   first: boolean;
-  buttonStyle: string;
+  cardBorderHidden: boolean | undefined;
 }) => {
   let [state, setState] = useState<"normal" | "theme" | "share">("normal");
   let { permissions } = useEntitySetContext();
   if (!permissions.write) return null;
+
+  let { data: publicationData, mutate } = useLeafletPublicationData();
+  let pub = publicationData?.[0];
+  if (pub && props.first) return;
   return (
     <Menu
       align="end"
+      asChild
       onOpenChange={(open) => {
         if (!open) setState("normal");
       }}
       trigger={
-        <div
-          className={`pageOptionsTrigger
-            ${props.buttonStyle}
-            sm:h-8 sm:w-5 h-5 w-8
-         `}
+        <PageOptionButton
+          cardBorderHidden={props.cardBorderHidden}
+          className="!w-8 !h-5 sm:!w-5 sm:!h-8"
         >
           <MoreOptionsTiny className="sm:rotate-90" />
-        </div>
+        </PageOptionButton>
       }
     >
       {state === "normal" ? (
@@ -312,14 +378,16 @@ const OptionsMenu = (props: {
               <ShareSmall /> Share Page
             </MenuItem>
           )}
-          <MenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              setState("theme");
-            }}
-          >
-            <PaintSmall /> Theme Page
-          </MenuItem>
+          {!pub && (
+            <MenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                setState("theme");
+              }}
+            >
+              <PaintSmall /> Theme Page
+            </MenuItem>
+          )}
         </>
       ) : state === "theme" ? (
         <PageThemeSetter entityID={props.entityID} />
@@ -329,40 +397,6 @@ const OptionsMenu = (props: {
     </Menu>
   );
 };
-
-const PageMenuItem = (props: {
-  children: React.ReactNode;
-  onClick: () => void;
-}) => {
-  return (
-    <button
-      className="pageOptionsMenuItem z-10 text-left text-secondary py-1 px-2 flex gap-2 hover:bg-accent-1 hover:text-accent-2"
-      onClick={() => {
-        props.onClick();
-      }}
-    >
-      {props.children}
-    </button>
-  );
-};
-
-const DeletePageToast = {
-  content: (
-    <div className="flex gap-2">
-      You deleted a page.{" "}
-      <button
-        className="underline font-bold sm:font-normal sm:hover:font-bold italic"
-        onClick={() => {
-          // TODO: WIRE UP UNDO DELETE
-        }}
-      >
-        Undo?
-      </button>
-    </div>
-  ),
-  type: "info",
-  duration: 5000,
-} as const;
 
 export async function focusPage(
   pageID: string,

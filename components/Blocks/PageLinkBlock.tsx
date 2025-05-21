@@ -11,6 +11,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { Canvas, CanvasBackground, CanvasContent } from "components/Canvas";
 import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
   let page = useEntity(props.entityID, "block/card");
@@ -138,25 +139,50 @@ export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
 export function PagePreview(props: { entityID: string }) {
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
+  let { rootEntity } = useReplicache();
+
+  let cardBorderHidden = useCardBorderHidden(props.entityID);
+  let rootBackgroundImage = useEntity(
+    rootEntity,
+    "theme/card-background-image",
+  );
+  let rootBackgroundRepeat = useEntity(
+    rootEntity,
+    "theme/card-background-image-repeat",
+  );
+  let rootBackgroundOpacity = useEntity(
+    rootEntity,
+    "theme/card-background-image-opacity",
+  );
 
   let cardBackgroundImage = useEntity(
     props.entityID,
     "theme/card-background-image",
   );
+
   let cardBackgroundImageRepeat = useEntity(
     props.entityID,
     "theme/card-background-image-repeat",
   );
 
-  let cardBackgroundImageOpacity =
-    useEntity(props.entityID, "theme/card-background-image-opacity")?.data
-      .value || 1;
+  let cardBackgroundImageOpacity = useEntity(
+    props.entityID,
+    "theme/card-background-image-opacity",
+  );
+
+  let backgroundImage = cardBackgroundImage || rootBackgroundImage;
+  let backgroundImageRepeat = cardBackgroundImage
+    ? cardBackgroundImageRepeat?.data?.value
+    : rootBackgroundRepeat?.data.value;
+  let backgroundImageOpacity = cardBackgroundImage
+    ? cardBackgroundImageOpacity?.data.value
+    : rootBackgroundOpacity?.data.value || 1;
 
   let pageWidth = `var(--page-width-unitless)`;
   return (
     <div
       ref={previewRef}
-      className={`pageLinkBlockPreview w-[120px] overflow-clip  mx-3 mt-3 -mb-2 bg-bg-page border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center`}
+      className={`pageLinkBlockPreview w-[120px] overflow-clip  mx-3 mt-3 -mb-2  border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center ${cardBorderHidden ? "" : "bg-bg-page"}`}
     >
       <div
         className="absolute top-0 left-0 origin-top-left pointer-events-none "
@@ -167,27 +193,25 @@ export function PagePreview(props: { entityID: string }) {
           backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
         }}
       >
-        <div
-          className={`pageBackground
-      absolute top-0 left-0 right-0 bottom-0
-      pointer-events-none
-      `}
-          style={{
-            backgroundImage: cardBackgroundImage
-              ? `url(${cardBackgroundImage.data.src}), url(${cardBackgroundImage.data.fallback})`
-              : undefined,
-            backgroundRepeat: cardBackgroundImageRepeat
-              ? "repeat"
-              : "no-repeat",
-            backgroundPosition: "center",
-            backgroundSize: !cardBackgroundImageRepeat
-              ? "cover"
-              : cardBackgroundImageRepeat?.data.value,
-            opacity: cardBackgroundImage?.data.src
-              ? cardBackgroundImageOpacity
-              : 1,
-          }}
-        />
+        {!cardBorderHidden && (
+          <div
+            className={`pageLinkBlockBackground
+            absolute top-0 left-0 right-0 bottom-0
+            pointer-events-none
+            `}
+            style={{
+              backgroundImage: backgroundImage
+                ? `url(${backgroundImage.data.src}), url(${backgroundImage.data.fallback})`
+                : undefined,
+              backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
+              backgroundPosition: "center",
+              backgroundSize: !backgroundImageRepeat
+                ? "cover"
+                : backgroundImageRepeat,
+              opacity: backgroundImage?.data.src ? backgroundImageOpacity : 1,
+            }}
+          />
+        )}
         {blocks.slice(0, 20).map((b, index, arr) => {
           return (
             <BlockPreview
