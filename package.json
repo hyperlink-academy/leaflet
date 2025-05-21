@@ -9,7 +9,7 @@
     "lexgen": "tsx ./lexicons/build.ts && lex gen-api ./lexicons/api ./lexicons/pub/leaflet/* ./lexicons/pub/leaflet/*/* ./lexicons/com/atproto/*/* --yes && find './lexicons/api' -type f -exec sed -i 's/\\.js'/'/g' {} \\;",
     "wrangler-dev": "wrangler dev",
     "start-appview-dev": "tsx --env-file='./.env.local' --watch appview/index.ts",
-    "start-appview-prod": "tsx appview/index.ts"
+    "start-appview-prod": "tsx appview/index.ts --verbose"
   },
   "keywords": [],
   "author": "",
