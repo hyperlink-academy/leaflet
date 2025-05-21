@@ -29,6 +29,7 @@ export const ColorPicker = (props: {
   thisPicker: pickers;
   setOpenPicker: (thisPicker: pickers) => void;
   closePicker: () => void;
+  disabled?: boolean;
   children?: React.ReactNode;
 }) => {
   return (
@@ -36,7 +37,8 @@ export const ColorPicker = (props: {
       <div className="flex flex-col w-full gap-2">
         <div className="colorPickerLabel flex gap-2 items-center ">
           <button
-            className="flex gap-2 items-center "
+            disabled={props.disabled}
+            className="flex gap-2 items-center disabled:text-tertiary"
             onClick={() => {
               if (props.openPicker === props.thisPicker) {
                 props.setOpenPicker("null");
@@ -47,7 +49,7 @@ export const ColorPicker = (props: {
           >
             <ColorSwatch
               color={props.value}
-              className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
+              className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C] ${props.disabled ? "opacity-50" : ""}`}
               style={{
                 backgroundSize: "cover",
               }}
@@ -61,6 +63,7 @@ export const ColorPicker = (props: {
             ) : (
               <ColorField className="w-fit gap-1">
                 <Input
+                  disabled={props.disabled}
                   onMouseDown={onMouseDown}
                   onFocus={(e) => {
                     e.currentTarget.setSelectionRange(
@@ -76,7 +79,7 @@ export const ColorPicker = (props: {
                   onBlur={(e) => {
                     props.setValue(parseColor(e.currentTarget.value));
                   }}
-                  className="w-[72px] bg-transparent outline-none"
+                  className="w-[72px] bg-transparent outline-none disabled:text-tertiary"
                 />
               </ColorField>
             )}
@@ -85,6 +88,7 @@ export const ColorPicker = (props: {
                 <Separator classname="my-1" />
                 <ColorField className="w-fit pl-[6px]" channel="alpha">
                   <Input
+                    disabled={props.disabled}
                     onMouseDown={onMouseDown}
                     onFocus={(e) => {
                       e.currentTarget.setSelectionRange(
@@ -97,7 +101,7 @@ export const ColorPicker = (props: {
                         e.currentTarget.blur();
                       } else return;
                     }}
-                    className="w-[72px] bg-transparent outline-none text-primary"
+                    className="w-[72px] bg-transparent outline-none text-primary disabled:text-tertiary"
                   />
                 </ColorField>
               </>

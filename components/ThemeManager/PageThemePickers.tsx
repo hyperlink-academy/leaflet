@@ -54,6 +54,7 @@ export const PageThemePickers = (props: {
         </>
       )}
       <ColorPicker
+        disabled={pageBorderHidden?.data.value}
         label="Page"
         value={pageValue}
         setValue={set("theme/card-background")}
@@ -86,6 +87,7 @@ export const PageThemePickers = (props: {
       </ColorPicker>
       {pageBGImage && pageBGImage !== null && (
         <PageBGPicker
+          disabled={pageBorderHidden?.data.value}
           entityID={props.entityID}
           thisPicker={"page-background-image"}
           openPicker={props.openPicker}
@@ -141,6 +143,7 @@ export const PageBorderHider = (props: { entityID: string }) => {
 };
 
 export const PageBGPicker = (props: {
+  disabled?: boolean;
   entityID: string;
   openPicker: pickers;
   thisPicker: pickers;
@@ -163,6 +166,7 @@ export const PageBGPicker = (props: {
     <>
       <div className="bgPickerColorLabel flex gap-2 items-center">
         <button
+          disabled={props.disabled}
           onClick={() => {
             if (props.openPicker === props.thisPicker) {
               props.setOpenPicker("null");
@@ -170,11 +174,11 @@ export const PageBGPicker = (props: {
               props.setOpenPicker(props.thisPicker);
             }
           }}
-          className="flex gap-2 items-center"
+          className="flex gap-2 items-center disabled:text-tertiary"
         >
           <ColorSwatch
             color={bgColor}
-            className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C]`}
+            className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C] ${props.disabled ? "opacity-50" : ""}`}
             style={{
               backgroundImage: bgImage?.data.src
                 ? `url(${bgImage.data.src})`
@@ -183,7 +187,11 @@ export const PageBGPicker = (props: {
               backgroundSize: "cover",
             }}
           />
-          <strong className={`text-primary`}>BG Image</strong>
+          <strong
+            className={`${props.disabled ? "text-tertiary" : "text-primary "}`}
+          >
+            BG Image
+          </strong>
         </button>
 
         <SpectrumColorPicker
@@ -200,6 +208,7 @@ export const PageBGPicker = (props: {
           <Separator classname="h-5 my-1" />
           <ColorField className="w-fit pl-[6px]" channel="alpha">
             <Input
+              disabled={props.disabled}
               onMouseDown={onMouseDown}
               onFocus={(e) => {
                 e.currentTarget.setSelectionRange(
@@ -212,7 +221,7 @@ export const PageBGPicker = (props: {
                   e.currentTarget.blur();
                 } else return;
               }}
-              className="w-[48px] bg-transparent outline-none text-primary"
+              className={`w-[48px] bg-transparent outline-none disabled:text-tertiary`}
             />
           </ColorField>
         </SpectrumColorPicker>
