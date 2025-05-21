@@ -19,7 +19,7 @@
     "@atproto/common": "^0.4.8",
     "@atproto/identity": "^0.4.6",
     "@atproto/oauth-client-node": "^0.2.17",
-    "@atproto/sync": "^0.1.17",
+    "@atproto/sync": "^0.1.23",
     "@atproto/syntax": "^0.3.3",
     "@atproto/xrpc": "^0.6.9",
     "@mdx-js/loader": "^3.1.0",
