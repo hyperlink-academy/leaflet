@@ -8,8 +8,9 @@
     "generate-db-types": "supabase gen types --local > supabase/database.types.ts && drizzle-kit introspect && rm -rf ./drizzle/*.sql ./drizzle/meta",
     "lexgen": "tsx ./lexicons/build.ts && lex gen-api ./lexicons/api ./lexicons/pub/leaflet/* ./lexicons/pub/leaflet/*/* ./lexicons/com/atproto/*/* --yes && find './lexicons/api' -type f -exec sed -i 's/\\.js'/'/g' {} \\;",
     "wrangler-dev": "wrangler dev",
+    "build-appview": "esbuild appview/index.ts --outfile=appview/dist/index.js --bundle --platform=node",
     "start-appview-dev": "tsx --env-file='./.env.local' --watch appview/index.ts",
-    "start-appview-prod": "tsx appview/index.ts --verbose"
+    "start-appview-prod": "npm run build-appview && node appview/dist/index.js"
   },
   "keywords": [],
   "author": "",
@@ -86,6 +87,7 @@
     "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.19",
     "drizzle-kit": "^0.21.2",
+    "esbuild": "^0.25.4",
     "eslint": "8.57.0",
     "eslint-config-next": "15.3.2",
     "postcss": "^8.4.38",

@@ -3,6 +3,9 @@
 .temp
 .env
 
+# Appview
+appview/dist
+
 .next
 node_modules
 .env.local

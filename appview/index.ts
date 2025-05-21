@@ -105,7 +105,3 @@ async function main() {
 }
 
 main();
-
-//Should I make a helper for writing these hmmm... I need to make create / updates for all of these
-// Creates should basically be the same as updates right? Ya, as long as you make sure to upsert stuff!
-//
