@@ -26,12 +26,21 @@ export default async function middleware(req: NextRequest) {
   if (req.nextUrl.pathname === "/not-found") return;
   let { data: routes } = await supabase
     .from("custom_domains")
-    .select("*, custom_domain_routes(*), publication_domains(*)")
+    .select(
+      "*, custom_domain_routes(*), publication_domains(*, publications(*))",
+    )
     .eq("domain", hostname)
     .single();
-  if (routes?.publication_domains[0]) {
-    let aturi = new AtUri(routes.publication_domains[0].publication);
-    return NextResponse.rewrite(new URL(`/lish/${aturi.host}`, req.url));
+
+  let pub = routes?.publication_domains[0]?.publications;
+  if (pub) {
+    let aturi = new AtUri(pub?.uri);
+    return NextResponse.rewrite(
+      new URL(
+        `/lish/${aturi.host}/${pub.name}${req.nextUrl.pathname}`,
+        req.url,
+      ),
+    );
   }
   if (routes) {
     let route = routes.custom_domain_routes.find(
