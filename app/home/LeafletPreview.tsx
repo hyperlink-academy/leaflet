@@ -104,12 +104,14 @@ export const LeafletPreview = (props: {
           )}
         </div>
         <div className="flex justify-between pt-1 shrink-0 w-full gap-2">
-          {(props.draft || props.published) && (
+          {props.draft || props.published ? (
             <div
-              className={`text-xs  bg-bg-page rounded-md px-0.5  italic ${props.published ? "font-bold text-tertiary" : "text-tertiary"}`}
+              className={`text-xs  container !border-none !w-fit px-0.5  italic ${props.published ? "font-bold text-tertiary" : "text-tertiary"}`}
             >
               {props.published ? "Published!" : "Draft"}
             </div>
+          ) : (
+            <div />
           )}
           <LeafletOptions
             leaflet={props.token}
