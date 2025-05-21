@@ -43,8 +43,11 @@ export const CreatePubForm = () => {
           iconFile: logoFile,
           subdomain: domainValue,
         });
-        if (data?.publication)
-          router.push(`${getPublicationURL(data.publication)}/dashboard`);
+        // Show a spinner while this is happening! Maybe a progress bar?
+        setTimeout(() => {
+          if (data?.publication)
+            router.push(`${getPublicationURL(data.publication)}/dashboard`);
+        }, 500);
       }}
     >
       <div className="flex flex-col items-center mb-4 gap-2">
