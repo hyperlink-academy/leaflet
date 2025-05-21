@@ -11,6 +11,7 @@ import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { theme } from "tailwind.config";
 import { getBasePublicationURL, getPublicationURL } from "./getPublicationURL";
 import { string } from "zod";
+import { DotLoader } from "components/utils/DotLoader";
 
 type DomainState =
   | { status: "empty" }
@@ -20,6 +21,7 @@ type DomainState =
   | { status: "error"; message: string };
 
 export const CreatePubForm = () => {
+  let [formState, setFormState] = useState<"normal" | "loading">("normal");
   let [nameValue, setNameValue] = useState("");
   let [descriptionValue, setDescriptionValue] = useState("");
   let [logoFile, setLogoFile] = useState<File | null>(null);
@@ -37,6 +39,7 @@ export const CreatePubForm = () => {
       onSubmit={async (e) => {
         e.preventDefault();
         if (!subdomainValidator.safeParse(domainValue).success) return;
+        setFormState("loading");
         let data = await createPublication({
           name: nameValue,
           description: descriptionValue,
@@ -45,6 +48,7 @@ export const CreatePubForm = () => {
         });
         // Show a spinner while this is happening! Maybe a progress bar?
         setTimeout(() => {
+          setFormState("normal");
           if (data?.publication)
             router.push(`${getBasePublicationURL(data.publication)}/dashboard`);
         }, 500);
@@ -121,7 +125,7 @@ export const CreatePubForm = () => {
             !nameValue || !domainValue || domainState.status !== "valid"
           }
         >
-          Create Publication!
+          {formState === "loading" ? <DotLoader /> : "Create Publication!"}
         </ButtonPrimary>
       </div>
     </form>

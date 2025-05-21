@@ -10,10 +10,13 @@ import { usePublicationData } from "../[did]/[publication]/dashboard/Publication
 import { PubLeafletPublication } from "lexicons/api";
 import { mutate } from "swr";
 import { AddTiny } from "components/Icons/AddTiny";
+import { DotLoader } from "components/utils/DotLoader";
+import { useToaster } from "components/Toast";
 
 export const EditPubForm = () => {
   let pubData = usePublicationData();
   let record = pubData?.record as PubLeafletPublication.Record;
+  let [formState, setFormState] = useState<"normal" | "loading">("normal");
 
   let [nameValue, setNameValue] = useState(record?.name || "");
   let [descriptionValue, setDescriptionValue] = useState(
@@ -31,6 +34,7 @@ export const EditPubForm = () => {
         `url(https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${pubData.identity_did}&cid=${(record.icon.ref as unknown as { $link: string })["$link"]})`,
       );
   }, [pubData]);
+  let toast = useToaster();
 
   return (
     <form
@@ -38,12 +42,15 @@ export const EditPubForm = () => {
       onSubmit={async (e) => {
         if (!pubData) return;
         e.preventDefault();
+        setFormState("loading");
         let data = await updatePublication({
           uri: pubData.uri,
           name: nameValue,
           description: descriptionValue,
           iconFile: iconFile,
         });
+        toast({ type: "success", content: "Updated!" });
+        setFormState("normal");
         mutate("publication-data");
       }}
     >
@@ -108,7 +115,7 @@ export const EditPubForm = () => {
       />
 
       <ButtonPrimary className="place-self-end" type="submit">
-        Update Publication
+        {formState === "loading" ? <DotLoader /> : "Update Publication"}
       </ButtonPrimary>
     </form>
   );
