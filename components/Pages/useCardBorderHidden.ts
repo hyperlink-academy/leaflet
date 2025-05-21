@@ -8,7 +8,6 @@ export function useCardBorderHidden(entityID: string) {
 
   let cardBorderHidden =
     useEntity(entityID, "theme/card-border-hidden") || rootCardBorderHidden;
-  console.log(cardBorderHidden, rootCardBorderHidden);
   if (!cardBorderHidden && !rootCardBorderHidden) {
     if (data?.[0]) return true;
     return false;

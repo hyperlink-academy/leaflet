@@ -21,7 +21,6 @@ export const ActionButton = forwardRef<
   let inOpenPopover = useContext(PopoverOpenContext);
   useEffect(() => {
     if (inOpenPopover) {
-      console.log("inOpenPopover");
       sidebar.setChildForceOpen(true);
       return () => {
         sidebar.setChildForceOpen(false);

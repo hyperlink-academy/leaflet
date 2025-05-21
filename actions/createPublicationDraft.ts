@@ -11,10 +11,10 @@ export async function createPublicationDraft(publication_uri: string) {
     redirectUser: false,
     firstBlockType: "text",
   });
-  console.log(
-    await supabaseServerClient
-      .from("leaflets_in_publications")
-      .insert({ publication: publication_uri, leaflet: newLeaflet, doc: null }),
-  );
+
+  await supabaseServerClient
+    .from("leaflets_in_publications")
+    .insert({ publication: publication_uri, leaflet: newLeaflet, doc: null });
+
   return newLeaflet;
 }

@@ -87,7 +87,6 @@ export async function createPublication({
 
   // Create the custom domain
   if (isProductionDomain()) {
-    console.log("Creating domain! " + domain);
     await vercel.projects.addProjectDomain({
       idOrName: "prj_9jX4tmYCISnm176frFxk07fF74kG",
       teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",

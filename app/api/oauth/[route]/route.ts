@@ -46,7 +46,6 @@ export async function GET(
     }
     case "callback": {
       const params = new URLSearchParams(req.url.split("?")[1]);
-      console.log(params);
 
       //TODO remember to reset this to a better default!
       let redirectPath = "/lish";

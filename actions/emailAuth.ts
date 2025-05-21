@@ -74,19 +74,16 @@ export async function confirmEmailAuthToken(tokenId: string, code: string) {
     .where(eq(email_auth_tokens.id, tokenId));
 
   if (!token || !token.email) {
-    console.log("no token?");
     client.end();
     return null;
   }
 
   if (token.confirmation_code !== code) {
-    console.log("wrong code???");
     client.end();
     return null;
   }
 
   if (token.confirmed) {
-    console.log("already confirmed?????");
     client.end();
     return null;
   }
@@ -100,7 +97,6 @@ export async function confirmEmailAuthToken(tokenId: string, code: string) {
 
     if (existingToken) {
       if (existingToken.identities?.email) {
-        console.log("wat");
       }
       await db
         .update(identities)

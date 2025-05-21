@@ -109,12 +109,10 @@ export async function publishToPublication({
     validate: false, //TODO publish the lexicon so we can validate!
   });
 
-  console.log(
-    await supabaseServerClient.from("documents").upsert({
-      uri: result.uri,
-      data: record as Json,
-    }),
-  );
+  await supabaseServerClient.from("documents").upsert({
+    uri: result.uri,
+    data: record as Json,
+  });
   await Promise.all([
     //Optimistically put these in!
     supabaseServerClient.from("documents_in_publications").upsert({
@@ -305,7 +303,6 @@ function YJSFragmentToFacets(
     let facets: PubLeafletRichtextFacet.Main[] = [];
     let delta = node.toDelta() as Delta[];
     let byteStart = 0;
-    console.log(delta);
     for (let d of delta) {
       let unicodestring = new UnicodeString(d.insert);
       let facet: PubLeafletRichtextFacet.Main = {

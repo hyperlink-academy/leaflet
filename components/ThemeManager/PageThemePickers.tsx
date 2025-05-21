@@ -133,7 +133,6 @@ export const PageBorderHider = (props: { entityID: string }) => {
             attribute: "theme/card-border-hidden",
             data: { type: "boolean", value: !pageBorderHidden },
           });
-          console.log(pageBorderHidden);
         }}
       >
         No Page Borders

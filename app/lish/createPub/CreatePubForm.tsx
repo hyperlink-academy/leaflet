@@ -171,7 +171,6 @@ function DomainInput(props: {
       let status = await callRPC("get_leaflet_subdomain_status", {
         domain: props.domain,
       });
-      console.log(status);
       if (status.error === "Not Found")
         props.setDomainState({ status: "valid" });
       else props.setDomainState({ status: "invalid" });

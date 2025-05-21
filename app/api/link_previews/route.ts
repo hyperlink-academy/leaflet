@@ -61,14 +61,12 @@ async function get_link_image_preview(url: string) {
 
   let key = await hash(url);
   if (image.status === 200) {
-    console.log(
-      await supabase.storage
-        .from("url-previews")
-        .upload(key, await image.arrayBuffer(), {
-          contentType: image.headers.get("content-type") || undefined,
-          upsert: true,
-        }),
-    );
+    await supabase.storage
+      .from("url-previews")
+      .upload(key, await image.arrayBuffer(), {
+        contentType: image.headers.get("content-type") || undefined,
+        upsert: true,
+      });
   } else {
     console.log("an error occured rendering the website", await image.text());
   }

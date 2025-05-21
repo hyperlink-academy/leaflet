@@ -103,7 +103,6 @@ export const BlueskyPostEmpty = (props: BlockProps) => {
               urlValue !== ""
             ) {
               e.preventDefault();
-              console.log("hello!");
             }
           }}
         />
