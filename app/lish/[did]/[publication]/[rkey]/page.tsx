@@ -14,6 +14,7 @@ import { Metadata } from "next";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { TextBlock } from "./TextBlock";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { BskyAgent } from "@atproto/api";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -21,14 +22,16 @@ export async function generateMetadata(props: {
   let did = decodeURIComponent((await props.params).did);
   if (!did) return { title: "Publication 404" };
 
-  let { data: document } = await supabaseServerClient
-    .from("documents")
-    .select("*")
-    .eq(
-      "uri",
-      AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey),
-    )
-    .single();
+  let [{ data: document }] = await Promise.all([
+    supabaseServerClient
+      .from("documents")
+      .select("*")
+      .eq(
+        "uri",
+        AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey),
+      )
+      .single(),
+  ]);
 
   if (!document) return { title: "404" };
   let record = document.data as PubLeafletDocument.Record;
@@ -44,14 +47,18 @@ export default async function Post(props: {
 }) {
   let did = decodeURIComponent((await props.params).did);
   if (!did) return <div> can't resolve handle</div>;
-  let { data: document } = await supabaseServerClient
-    .from("documents")
-    .select("*, documents_in_publications(publications(*))")
-    .eq(
-      "uri",
-      AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey),
-    )
-    .single();
+  let agent = new BskyAgent({ service: "https://public.api.bsky.app" });
+  let [{ data: document }, { data: profile }] = await Promise.all([
+    supabaseServerClient
+      .from("documents")
+      .select("*, documents_in_publications(publications(*))")
+      .eq(
+        "uri",
+        AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey),
+      )
+      .single(),
+    agent.getProfile({ actor: did }),
+  ]);
   if (!document?.data || !document.documents_in_publications[0].publications)
     return <div>notfound</div>;
   let record = document.data as PubLeafletDocument.Record;
@@ -78,16 +85,36 @@ export default async function Post(props: {
               {record.description ? (
                 <p className="italic text-secondary">{record.description}</p>
               ) : null}
-              {record.publishedAt ? (
-                <p className="text-sm text-tertiary pt-3">
-                  Published{" "}
-                  {new Date(record.publishedAt).toLocaleDateString(undefined, {
-                    year: "numeric",
-                    month: "long",
-                    day: "2-digit",
-                  })}
-                </p>
-              ) : null}
+
+              <div className="text-sm text-tertiary pt-3 flex gap-1">
+                {profile ? (
+                  <>
+                    <a
+                      className="text-tertiary"
+                      href={`https://bsky.app/profile/${profile.handle}`}
+                    >
+                      by {profile.displayName}
+                    </a>
+                  </>
+                ) : null}
+                {record.publishedAt ? (
+                  <>
+                    {" "}
+                    |
+                    <p>
+                      Published{" "}
+                      {new Date(record.publishedAt).toLocaleDateString(
+                        undefined,
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "2-digit",
+                        },
+                      )}
+                    </p>
+                  </>
+                ) : null}
+              </div>
             </div>
             <div className="postContent flex flex-col ">
               {blocks.map((b, index) => {
