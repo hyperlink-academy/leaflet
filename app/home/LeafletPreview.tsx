@@ -31,6 +31,8 @@ import {
 } from "components/Pages/PublicationMetadata";
 
 export const LeafletPreview = (props: {
+  draft?: boolean;
+  published?: boolean;
   index: number;
   token: PermissionToken;
   leaflet_id: string;

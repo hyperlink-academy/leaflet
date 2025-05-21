@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getHomeDocs, HomeDoc } from "./storage";
 import useSWR from "swr";
-import { Fact, ReplicacheProvider } from "src/replicache";
+import { Fact, PermissionToken, ReplicacheProvider } from "src/replicache";
 import { LeafletPreview } from "./LeafletPreview";
 import { useIdentityData } from "components/IdentityProvider";
 import type { Attribute } from "src/replicache/attributes";
@@ -36,7 +36,9 @@ export function LeafletList(props: {
   useEffect(() => {
     mutate();
   }, [localLeaflets.length, mutate]);
-  let leaflets = identity
+  let leaflets: Array<
+    PermissionToken & { leaflets_in_publications?: Array<{ doc: string }> }
+  > = identity
     ? identity.permission_token_on_homepage
         .sort((a, b) =>
           a.created_at === b.created_at
@@ -69,6 +71,8 @@ export function LeafletList(props: {
             <LeafletPreview
               index={index}
               token={leaflet}
+              draft={!!leaflet.leaflets_in_publications?.length}
+              published={!!leaflet.leaflets_in_publications?.find((l) => l.doc)}
               leaflet_id={leaflet.root_entity}
               loggedIn={!!identity}
             />
