@@ -59,18 +59,6 @@ export const LeafletPreview = (props: {
     "theme/card-background-image-opacity",
   );
 
-  // let cardBackgroundImage =
-  //   useEntity(props.entityID, "theme/card-background-image") ||
-  //   rootBackgroundImage;
-  // let cardBackgroundImageRepeat =
-  //   useEntity(props.entityID, "theme/card-background-image-repeat") ||
-  //   rootBackgroundRepeat;
-  // let cardBackgroundImageOpacity =
-  //   useEntity(props.entityID, "theme/card-background-image-opacity")?.data
-  //     .value ||
-  //   rootBackgroundOpacity?.data.value ||
-  //   1;
-
   return (
     <div className="relative max-h-40 h-40">
       <ThemeProvider local entityID={root}>
@@ -115,7 +103,14 @@ export const LeafletPreview = (props: {
             <LeafletAreYouSure token={props.token} setState={setState} />
           )}
         </div>
-        <div className="flex justify-end pt-1 shrink-0">
+        <div className="flex justify-between pt-1 shrink-0 w-full gap-2">
+          {(props.draft || props.published) && (
+            <div
+              className={`text-xs  bg-bg-page rounded-md px-0.5  italic ${props.published ? "font-bold text-tertiary" : "text-tertiary"}`}
+            >
+              {props.published ? "Published!" : "Draft"}
+            </div>
+          )}
           <LeafletOptions
             leaflet={props.token}
             isTemplate={isTemplate}
