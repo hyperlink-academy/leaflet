@@ -63,9 +63,9 @@ export default async function Post(props: {
   return (
     <ThemeProvider entityID={null}>
       <div className="postPage w-full h-screen bg-[#FDFCFA] flex items-stretch">
-        <div className="pubWrapper flex flex-col w-full ">
-          <div className="pubContent flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto max-w-prose h-full w-full overflow-auto">
-            <div className="flex flex-col pb-8">
+        <div className="postWrapper flex flex-col w-full ">
+          <div className="pub flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto max-w-prose h-full w-full overflow-auto">
+            <div className="pubHeader flex flex-col pb-5">
               <Link
                 className="font-bold hover:no-underline text-accent-contrast"
                 href={getPublicationURL(
@@ -89,9 +89,11 @@ export default async function Post(props: {
                 </p>
               ) : null}
             </div>
-            {blocks.map((b, index) => {
-              return <Block block={b} did={did} key={index} />;
-            })}
+            <div className="postContent flex flex-col ">
+              {blocks.map((b, index) => {
+                return <Block block={b} did={did} key={index} />;
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -102,19 +104,33 @@ export default async function Post(props: {
 let Block = ({
   block,
   did,
+  isList,
 }: {
   block: PubLeafletPagesLinearDocument.Block;
   did: string;
+  isList?: boolean;
 }) => {
   let b = block;
-  let className = `${b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignRight" ? "text-right" : b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignCenter" ? "text-center" : ""}`;
-  console.log(b.alignment);
+
+  // non text blocks, they need this padding, pt-3 sm:pt-4, which is applied in each case
+  let className = `
+    postBlockWrapper
+    pt-1
+    ${isList ? "isListItem pb-0" : " pb-2 last:pb-3 last:sm:pb-4 first:pt-2 sm:first:pt-3"}
+    ${b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignRight" ? "text-right" : b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignCenter" ? "text-center" : ""}
+    `;
+
   switch (true) {
     case PubLeafletBlocksUnorderedList.isMain(b.block): {
       return (
-        <ul>
+        <ul className="-ml-[1px] sm:ml-[9px]">
           {b.block.children.map((child, index) => (
-            <ListItem item={child} did={did} key={index} />
+            <ListItem
+              item={child}
+              did={did}
+              key={index}
+              className={className}
+            />
           ))}
         </ul>
       );
@@ -124,33 +140,33 @@ let Block = ({
         <img
           height={b.block.aspectRatio?.height}
           width={b.block.aspectRatio?.width}
-          className={`pb-2 sm:pb-3 ${className}`}
+          className={`!pt-3 sm:!pt-4 ${className}`}
           src={`https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${(b.block.image.ref as unknown as { $link: string })["$link"]}`}
         />
       );
     }
     case PubLeafletBlocksText.isMain(b.block):
       return (
-        <div className={`pt-0 pb-2 sm:pb-3 ${className}`}>
+        <div className={` ${className}`}>
           <TextBlock facets={b.block.facets} plaintext={b.block.plaintext} />
         </div>
       );
     case PubLeafletBlocksHeader.isMain(b.block): {
       if (b.block.level === 1)
         return (
-          <h1 className={`pb-0 pt-2 sm:pt-3 ${className}`}>
+          <h2 className={`${className}`}>
             <TextBlock {...b.block} />
-          </h1>
+          </h2>
         );
       if (b.block.level === 2)
         return (
-          <h3 className={`pb-0 pt-2 sm:pt-3 ${className}`}>
+          <h3 className={`${className}`}>
             <TextBlock {...b.block} />
           </h3>
         );
       if (b.block.level === 3)
         return (
-          <h4 className={`pb-0 pt-2 sm:pt-3 ${className}`}>
+          <h4 className={`${className}`}>
             <TextBlock {...b.block} />
           </h4>
         );
@@ -170,17 +186,37 @@ let Block = ({
 function ListItem(props: {
   item: PubLeafletBlocksUnorderedList.ListItem;
   did: string;
+  className?: string;
 }) {
+  // ${
+  //   props.type === "heading"
+  //     ? headingLevel === 3
+  //       ? "pt-[12px]"
+  //       : headingLevel === 2
+  //         ? "pt-[15px]"
+  //         : "pt-[20px]"
+  //     : "pt-[12px]"
+  // }
   return (
-    <li>
-      <Block block={{ block: props.item.content }} did={props.did} />
-      {props.item.children?.length ? (
-        <ul>
-          {props.item.children.map((child, index) => (
-            <ListItem item={child} did={props.did} key={index} />
-          ))}
-        </ul>
-      ) : null}
+    <li className={`!pb-0 flex flex-row gap-2`}>
+      <div
+        className={`listMarker shrink-0 mx-2 z-[1] mt-[14px] h-[5px] w-[5px] rounded-full bg-secondary`}
+      />
+      <div className="flex flex-col">
+        <Block block={{ block: props.item.content }} did={props.did} isList />
+        {props.item.children?.length ? (
+          <ul className="-ml-[7px] sm:ml-[7px]">
+            {props.item.children.map((child, index) => (
+              <ListItem
+                item={child}
+                did={props.did}
+                key={index}
+                className={props.className}
+              />
+            ))}
+          </ul>
+        ) : null}
+      </div>
     </li>
   );
 }
