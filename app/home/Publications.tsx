@@ -9,8 +9,15 @@ import { AddTiny } from "components/Icons/AddTiny";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { Json } from "supabase/database.types";
 
+let allowlist = [
+  "jared@hyperlink.academy",
+  "brendan@hyperlink.academy",
+  "celine@hyperlink.academy",
+];
 export const MyPublicationList = () => {
   let { identity } = useIdentityData();
+  if (!identity || !identity.email || !allowlist.includes(identity.email))
+    return null;
   if (!identity || !identity.atp_did) return <PubListEmpty />;
   return (
     <div className="pubListWrapper w-full sm:w-[200px] flex flex-col gap-1 sm:gap-2 container p-2 sm:p-1 sm:-m-1 sm:bg-transparent sm:border-0">
