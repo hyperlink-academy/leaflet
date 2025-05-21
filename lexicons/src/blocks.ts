@@ -68,12 +68,41 @@ export const PubLeafletBlocksImage: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksUnorderedList: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.unorderedList",
+  defs: {
+    main: {
+      type: "object",
+      required: ["children"],
+      properties: {
+        children: { type: "array", items: { type: "ref", ref: "#listItem" } },
+      },
+    },
+    listItem: {
+      type: "object",
+      required: ["content"],
+      properties: {
+        content: {
+          type: "union",
+          refs: [
+            PubLeafletBlocksText,
+            PubLeafletBlocksHeader,
+            PubLeafletBlocksImage,
+          ].map((l) => l.id),
+        },
+        children: { type: "array", items: { type: "ref", ref: "#listItem" } },
+      },
+    },
+  },
+};
 export const BlockLexicons = [
   PubLeafletBlocksText,
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
+  PubLeafletBlocksUnorderedList,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",
-  refs: BlockLexicons.map((lexicon) => lexicon.id),
+  refs: [...BlockLexicons.map((lexicon) => lexicon.id)],
 };

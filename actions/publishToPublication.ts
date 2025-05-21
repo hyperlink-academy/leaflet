@@ -7,7 +7,9 @@ import { getIdentityData } from "actions/getIdentityData";
 import {
   AtpBaseClient,
   PubLeafletBlocksHeader,
+  PubLeafletBlocksImage,
   PubLeafletBlocksText,
+  PubLeafletBlocksUnorderedList,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
   PubLeafletRichtextFacet,
@@ -23,12 +25,12 @@ import {
   YJSFragmentToString,
 } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { ids } from "lexicons/api/lexicons";
-import { OmitKey } from "lexicons/api/util";
 import { BlobRef } from "@atproto/lexicon";
 import { IdResolver } from "@atproto/identity";
 import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
-import { UnicodeString } from "@atproto/api";
+import { $Typed, UnicodeString } from "@atproto/api";
+import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
 
 const idResolver = new IdResolver();
 export async function publishToPublication({
@@ -138,85 +140,114 @@ function blocksToRecord(
   blocks: Block[],
   imageMap: Map<string, BlobRef>,
   scan: ReturnType<typeof scanIndexLocal>,
+): PubLeafletPagesLinearDocument.Block[] {
+  let parsedBlocks = parseBlocksToList(blocks);
+  return parsedBlocks.flatMap((blockOrList) => {
+    if (blockOrList.type === "block") {
+      let alignmentValue =
+        scan.eav(blockOrList.block.value, "block/text-alignment")[0]?.data
+          .value || "left";
+      let alignment =
+        alignmentValue === "center"
+          ? "lex:pub.leaflet.pages.linearDocument#textAlignCenter"
+          : alignmentValue === "right"
+            ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
+            : undefined;
+      let b = blockToRecord(blockOrList.block, imageMap, scan);
+      if (!b) return [];
+      let block: PubLeafletPagesLinearDocument.Block = {
+        $type: "pub.leaflet.pages.linearDocument#block",
+        alignment,
+        block: b,
+      };
+      return [block];
+    } else {
+      let block: PubLeafletPagesLinearDocument.Block = {
+        $type: "pub.leaflet.pages.linearDocument#block",
+        block: {
+          $type: "pub.leaflet.blocks.unorderedList",
+          children: childrenToRecord(blockOrList.children, imageMap, scan),
+        },
+      };
+      return [block];
+    }
+  });
+}
+
+function childrenToRecord(
+  children: List[],
+  imageMap: Map<string, BlobRef>,
+  scan: ReturnType<typeof scanIndexLocal>,
+) {
+  return children.flatMap((child) => {
+    let content = blockToRecord(child.block, imageMap, scan);
+    if (!content) return [];
+    let record: PubLeafletBlocksUnorderedList.ListItem = {
+      $type: "pub.leaflet.blocks.unorderedList#listItem",
+      content,
+      children: childrenToRecord(child.children, imageMap, scan),
+    };
+    return record;
+  });
+}
+function blockToRecord(
+  b: Block,
+  imageMap: Map<string, BlobRef>,
+  scan: ReturnType<typeof scanIndexLocal>,
 ) {
   const getBlockContent = (b: string) => {
     let [content] = scan.eav(b, "block/text");
-    if (!content) return "";
+    if (!content) return ["", [] as PubLeafletRichtextFacet.Main[]] as const;
     let doc = new Y.Doc();
     const update = base64.toByteArray(content.data.value);
     Y.applyUpdate(doc, update);
     let nodes = doc.getXmlElement("prosemirror").toArray();
     let stringValue = YJSFragmentToString(nodes[0]);
     let facets = YJSFragmentToFacets(nodes[0]);
-    return [stringValue, facets];
+    return [stringValue, facets] as const;
   };
-  return blocks.flatMap((b) => {
-    if (b.type !== "text" && b.type !== "heading" && b.type !== "image")
-      return [];
-    let alignmentValue =
-      scan.eav(b.value, "block/text-alignment")[0]?.data.value || "left";
+  if (b.type !== "text" && b.type !== "heading" && b.type !== "image") return;
+  let alignmentValue =
+    scan.eav(b.value, "block/text-alignment")[0]?.data.value || "left";
 
-    let alignment =
-      alignmentValue === "center"
-        ? "lex:pub.leaflet.pages.linearDocument#textAlignCenter"
-        : alignmentValue === "right"
-          ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
-          : undefined;
+  if (b.type === "heading") {
+    let [headingLevel] = scan.eav(b.value, "block/heading-level");
 
-    if (b.type === "heading") {
-      let [headingLevel] = scan.eav(b.value, "block/heading-level");
+    let [stringValue, facets] = getBlockContent(b.value);
+    let block: $Typed<PubLeafletBlocksHeader.Main> = {
+      $type: "pub.leaflet.blocks.header",
+      level: headingLevel?.data.value || 1,
+      plaintext: stringValue,
+      facets,
+    };
+    return block;
+  }
 
-      let [stringValue, facets] = getBlockContent(b.value);
-      return [
-        {
-          $type: "pub.leaflet.pages.linearDocument#block",
-          alignment,
-          block: {
-            $type: "pub.leaflet.blocks.header",
-            level: headingLevel?.data.value || 1,
-            plaintext: stringValue,
-            facets,
-          },
-        } as PubLeafletPagesLinearDocument.Block,
-      ];
-    }
-
-    if (b.type == "text") {
-      let [stringValue, facets] = getBlockContent(b.value);
-      return [
-        {
-          $type: "pub.leaflet.pages.linearDocument#block",
-          alignment,
-          block: {
-            $type: ids.PubLeafletBlocksText,
-            plaintext: stringValue,
-            facets,
-          },
-        } as PubLeafletPagesLinearDocument.Block,
-      ];
-    }
-    if (b.type == "image") {
-      let [image] = scan.eav(b.value, "block/image");
-      if (!image) return [];
-      let blobref = imageMap.get(image.data.src);
-      if (!blobref) return [];
-      return [
-        {
-          $type: "pub.leaflet.pages.linearDocument#block",
-          alignment,
-          block: {
-            $type: "pub.leaflet.blocks.image",
-            image: blobref,
-            aspectRatio: {
-              height: image.data.height,
-              width: image.data.width,
-            },
-          },
-        } as PubLeafletPagesLinearDocument.Block,
-      ];
-    }
-    return [];
-  });
+  if (b.type == "text") {
+    let [stringValue, facets] = getBlockContent(b.value);
+    let block: $Typed<PubLeafletBlocksText.Main> = {
+      $type: ids.PubLeafletBlocksText,
+      plaintext: stringValue,
+      facets,
+    };
+    return block;
+  }
+  if (b.type == "image") {
+    let [image] = scan.eav(b.value, "block/image");
+    if (!image) return;
+    let blobref = imageMap.get(image.data.src);
+    if (!blobref) return;
+    let block: $Typed<PubLeafletBlocksImage.Main> = {
+      $type: "pub.leaflet.blocks.image",
+      image: blobref,
+      aspectRatio: {
+        height: image.data.height,
+        width: image.data.width,
+      },
+    };
+    return block;
+  }
+  return;
 }
 
 async function sendPostToEmailSubscribers(

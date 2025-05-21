@@ -6,6 +6,7 @@ import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
   PubLeafletBlocksText,
+  PubLeafletBlocksUnorderedList,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
@@ -109,6 +110,15 @@ let Block = ({
   let className = `${b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignRight" ? "text-right" : b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignCenter" ? "text-center" : ""}`;
   console.log(b.alignment);
   switch (true) {
+    case PubLeafletBlocksUnorderedList.isMain(b.block): {
+      return (
+        <ul>
+          {b.block.children.map((child, index) => (
+            <ListItem item={child} did={did} key={index} />
+          ))}
+        </ul>
+      );
+    }
     case PubLeafletBlocksImage.isMain(b.block): {
       return (
         <img
@@ -156,3 +166,21 @@ let Block = ({
       return null;
   }
 };
+
+function ListItem(props: {
+  item: PubLeafletBlocksUnorderedList.ListItem;
+  did: string;
+}) {
+  return (
+    <li>
+      <Block block={{ block: props.item.content }} did={props.did} />
+      {props.item.children?.length ? (
+        <ul>
+          {props.item.children.map((child, index) => (
+            <ListItem item={child} did={props.did} key={index} />
+          ))}
+        </ul>
+      ) : null}
+    </li>
+  );
+}

@@ -1,0 +1,44 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.blocks.unorderedList",
+  "defs": {
+    "main": {
+      "type": "object",
+      "required": [
+        "children"
+      ],
+      "properties": {
+        "children": {
+          "type": "array",
+          "items": {
+            "type": "ref",
+            "ref": "#listItem"
+          }
+        }
+      }
+    },
+    "listItem": {
+      "type": "object",
+      "required": [
+        "content"
+      ],
+      "properties": {
+        "content": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.blocks.text",
+            "pub.leaflet.blocks.header",
+            "pub.leaflet.blocks.image"
+          ]
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "type": "ref",
+            "ref": "#listItem"
+          }
+        }
+      }
+    }
+  }
+}

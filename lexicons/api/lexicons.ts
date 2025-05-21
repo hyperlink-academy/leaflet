@@ -179,6 +179,46 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksUnorderedList: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.unorderedList',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['children'],
+        properties: {
+          children: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.unorderedList#listItem',
+            },
+          },
+        },
+      },
+      listItem: {
+        type: 'object',
+        required: ['content'],
+        properties: {
+          content: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.blocks.text',
+              'lex:pub.leaflet.blocks.header',
+              'lex:pub.leaflet.blocks.image',
+            ],
+          },
+          children: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.unorderedList#listItem',
+            },
+          },
+        },
+      },
+    },
+  },
   PubLeafletPagesLinearDocument: {
     lexicon: 1,
     id: 'pub.leaflet.pages.linearDocument',
@@ -205,6 +245,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.text',
               'lex:pub.leaflet.blocks.header',
               'lex:pub.leaflet.blocks.image',
+              'lex:pub.leaflet.blocks.unorderedList',
             ],
           },
           alignment: {
@@ -1301,6 +1342,7 @@ export const ids = {
   PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
+  PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
   PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
   PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
   ComAtprotoLabelDefs: 'com.atproto.label.defs',
