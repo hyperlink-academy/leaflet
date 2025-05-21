@@ -187,17 +187,28 @@ const DocContent = (props: { entityID: string }) => {
     "theme/card-background-image-opacity",
   );
 
-  let cardBackgroundImage =
-    useEntity(props.entityID, "theme/card-background-image") ||
-    rootBackgroundImage;
-  let cardBackgroundImageRepeat =
-    useEntity(props.entityID, "theme/card-background-image-repeat") ||
-    rootBackgroundRepeat;
-  let cardBackgroundImageOpacity =
-    useEntity(props.entityID, "theme/card-background-image-opacity")?.data
-      .value ||
-    rootBackgroundOpacity?.data.value ||
-    1;
+  let cardBackgroundImage = useEntity(
+    props.entityID,
+    "theme/card-background-image",
+  );
+
+  let cardBackgroundImageRepeat = useEntity(
+    props.entityID,
+    "theme/card-background-image-repeat",
+  );
+
+  let cardBackgroundImageOpacity = useEntity(
+    props.entityID,
+    "theme/card-background-image-opacity",
+  );
+
+  let backgroundImage = cardBackgroundImage || rootBackgroundImage;
+  let backgroundImageRepeat = cardBackgroundImage
+    ? cardBackgroundImageRepeat?.data?.value
+    : rootBackgroundRepeat?.data.value;
+  let backgroundImageOpacity = cardBackgroundImage
+    ? cardBackgroundImageOpacity?.data.value
+    : rootBackgroundOpacity?.data.value || 1;
 
   return (
     <>
@@ -210,19 +221,15 @@ const DocContent = (props: { entityID: string }) => {
         ${isFocused ? " border-border" : "border-border-light"}
         `}
           style={{
-            backgroundImage: cardBackgroundImage
-              ? `url(${cardBackgroundImage.data.src}), url(${cardBackgroundImage.data.fallback})`
+            backgroundImage: backgroundImage
+              ? `url(${backgroundImage.data.src}), url(${backgroundImage.data.fallback})`
               : undefined,
-            backgroundRepeat: cardBackgroundImageRepeat
-              ? "repeat"
-              : "no-repeat",
+            backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
             backgroundPosition: "center",
-            backgroundSize: !cardBackgroundImageRepeat
+            backgroundSize: !backgroundImageRepeat
               ? "cover"
-              : cardBackgroundImageRepeat?.data.value,
-            opacity: cardBackgroundImage?.data.src
-              ? cardBackgroundImageOpacity
-              : 1,
+              : backgroundImageRepeat,
+            opacity: backgroundImage?.data.src ? backgroundImageOpacity : 1,
           }}
         />
       ) : null}

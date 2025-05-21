@@ -18,7 +18,6 @@ export const PublicationMetadata = ({
   cardBorderHidden: boolean;
 }) => {
   let { permission_token } = useReplicache();
-  let { identity } = useIdentityData();
   let { data: publicationData, mutate } = useLeafletPublicationData();
   let pub = publicationData?.[0];
   let [titleState, setTitleState] = useState(pub?.title || "");
@@ -111,4 +110,47 @@ export const PublicationMetadata = ({
   );
 };
 
-const Title = () => {};
+export const PublicationMetadataPreview = () => {
+  let { data: publicationData } = useLeafletPublicationData();
+  let pub = publicationData?.[0];
+  let record = pub?.documents?.data as PubLeafletDocument.Record | null;
+  let publishedAt = record?.publishedAt;
+
+  if (!pub || !pub.publications) return null;
+
+  return (
+    <div className={`flex flex-col px-3 sm:px-4 pb-4 sm:pb-5 sm:pt-3 pt-2`}>
+      <div className="text-accent-contrast font-bold hover:no-underline">
+        {pub.publications?.name}
+      </div>
+
+      <div
+        className={`text-xl font-bold outline-none bg-transparent ${!pub.title && "text-tertiary italic"}`}
+      >
+        {pub.title ? pub.title : "Untitled"}
+      </div>
+      <div className="italic text-secondary outline-none bg-transparent">
+        {pub.description}
+      </div>
+
+      {pub.doc ? (
+        <div className="flex flex-row items-center gap-2 pt-3">
+          <p className="text-sm text-tertiary">
+            Published{" "}
+            {publishedAt &&
+              new Date(publishedAt).toLocaleString(undefined, {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })}
+          </p>
+        </div>
+      ) : (
+        <p className="text-sm text-tertiary pt-2">Draft</p>
+      )}
+    </div>
+  );
+};
