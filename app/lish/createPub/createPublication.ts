@@ -77,7 +77,10 @@ export async function createPublication({
       uri: result.uri,
       identity_did: credentialSession.did!,
       name: record.name,
-      record: { ...record, $type: "pub.leaflet.publication" },
+      record: {
+        ...record,
+        $type: "pub.leaflet.publication",
+      } as unknown as Json,
     })
     .select()
     .single();
