@@ -5,6 +5,7 @@ import { createOauthClient } from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
+import { AtUri } from "@atproto/syntax";
 
 export async function updatePublication({
   uri,
@@ -31,6 +32,7 @@ export async function updatePublication({
     .eq("uri", uri)
     .single();
   if (!existingPub || existingPub.identity_did! === identity.atp_did) return;
+  let aturi = new AtUri(existingPub.uri);
 
   let record: PubLeafletPublication.Record = {
     $type: "pub.leaflet.publication",
@@ -57,7 +59,7 @@ export async function updatePublication({
 
   let result = await agent.com.atproto.repo.putRecord({
     repo: credentialSession.did!,
-    rkey: TID.nextStr(),
+    rkey: aturi.rkey,
     record,
     collection: record.$type,
     validate: false,
@@ -67,7 +69,6 @@ export async function updatePublication({
   let { data: publication } = await supabaseServerClient
     .from("publications")
     .update({
-      identity_did: credentialSession.did!,
       name: record.name,
       record: record as Json,
     })
