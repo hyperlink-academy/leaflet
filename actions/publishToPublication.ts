@@ -153,6 +153,16 @@ function blocksToRecord(
   return blocks.flatMap((b) => {
     if (b.type !== "text" && b.type !== "heading" && b.type !== "image")
       return [];
+    let alignmentValue =
+      scan.eav(b.value, "block/text-alignment")[0]?.data.value || "left";
+
+    let alignment =
+      alignmentValue === "center"
+        ? "lex:pub.leaflet.pages.linearDocument#textAlignCenter"
+        : alignmentValue === "right"
+          ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
+          : undefined;
+
     if (b.type === "heading") {
       let [headingLevel] = scan.eav(b.value, "block/heading-level");
 
@@ -160,6 +170,7 @@ function blocksToRecord(
       return [
         {
           $type: "pub.leaflet.pages.linearDocument#block",
+          alignment,
           block: {
             $type: "pub.leaflet.blocks.header",
             level: headingLevel?.data.value || 1,
@@ -175,6 +186,7 @@ function blocksToRecord(
       return [
         {
           $type: "pub.leaflet.pages.linearDocument#block",
+          alignment,
           block: {
             $type: ids.PubLeafletBlocksText,
             plaintext: stringValue,
@@ -191,6 +203,7 @@ function blocksToRecord(
       return [
         {
           $type: "pub.leaflet.pages.linearDocument#block",
+          alignment,
           block: {
             $type: "pub.leaflet.blocks.image",
             image: blobref,

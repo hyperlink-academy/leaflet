@@ -89,57 +89,7 @@ export default async function Post(props: {
               ) : null}
             </div>
             {blocks.map((b, index) => {
-              switch (true) {
-                case PubLeafletBlocksImage.isMain(b.block): {
-                  return (
-                    <img
-                      key={index}
-                      height={b.block.aspectRatio?.height}
-                      width={b.block.aspectRatio?.width}
-                      className="pb-2 sm:pb-3"
-                      src={`https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${(b.block.image.ref as unknown as { $link: string })["$link"]}`}
-                    />
-                  );
-                }
-                case PubLeafletBlocksText.isMain(b.block):
-                  return (
-                    <div key={index} className="pt-0 pb-2 sm:pb-3">
-                      <TextBlock
-                        facets={b.block.facets}
-                        plaintext={b.block.plaintext}
-                      />
-                    </div>
-                  );
-                case PubLeafletBlocksHeader.isMain(b.block): {
-                  if (b.block.level === 1)
-                    return (
-                      <h1 key={index} className="pb-0 pt-2 sm:pt-3">
-                        <TextBlock {...b.block} />
-                      </h1>
-                    );
-                  if (b.block.level === 2)
-                    return (
-                      <h3 key={index} className="pb-0 pt-2 sm:pt-3">
-                        <TextBlock {...b.block} />
-                      </h3>
-                    );
-                  if (b.block.level === 3)
-                    return (
-                      <h4 key={index} className="pb-0 pt-2 sm:pt-3">
-                        <TextBlock {...b.block} />
-                      </h4>
-                    );
-                  // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
-                  // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
-                  return (
-                    <h6 key={index}>
-                      <TextBlock {...b.block} />
-                    </h6>
-                  );
-                }
-                default:
-                  return null;
-              }
+              return <Block block={b} did={did} key={index} />;
             })}
           </div>
         </div>
@@ -147,3 +97,62 @@ export default async function Post(props: {
     </ThemeProvider>
   );
 }
+
+let Block = ({
+  block,
+  did,
+}: {
+  block: PubLeafletPagesLinearDocument.Block;
+  did: string;
+}) => {
+  let b = block;
+  let className = `${b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignRight" ? "text-right" : b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignCenter" ? "text-center" : ""}`;
+  console.log(b.alignment);
+  switch (true) {
+    case PubLeafletBlocksImage.isMain(b.block): {
+      return (
+        <img
+          height={b.block.aspectRatio?.height}
+          width={b.block.aspectRatio?.width}
+          className={`pb-2 sm:pb-3 ${className}`}
+          src={`https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${(b.block.image.ref as unknown as { $link: string })["$link"]}`}
+        />
+      );
+    }
+    case PubLeafletBlocksText.isMain(b.block):
+      return (
+        <div className={`pt-0 pb-2 sm:pb-3 ${className}`}>
+          <TextBlock facets={b.block.facets} plaintext={b.block.plaintext} />
+        </div>
+      );
+    case PubLeafletBlocksHeader.isMain(b.block): {
+      if (b.block.level === 1)
+        return (
+          <h1 className={`pb-0 pt-2 sm:pt-3 ${className}`}>
+            <TextBlock {...b.block} />
+          </h1>
+        );
+      if (b.block.level === 2)
+        return (
+          <h3 className={`pb-0 pt-2 sm:pt-3 ${className}`}>
+            <TextBlock {...b.block} />
+          </h3>
+        );
+      if (b.block.level === 3)
+        return (
+          <h4 className={`pb-0 pt-2 sm:pt-3 ${className}`}>
+            <TextBlock {...b.block} />
+          </h4>
+        );
+      // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
+      // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
+      return (
+        <h6 className={`${className}`}>
+          <TextBlock {...b.block} />
+        </h6>
+      );
+    }
+    default:
+      return null;
+  }
+};
