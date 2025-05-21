@@ -92,7 +92,7 @@ export async function createPublication({
       idOrName: "prj_9jX4tmYCISnm176frFxk07fF74kG",
       teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
       requestBody: {
-        name: domain + ".leaflet.pub",
+        name: domain,
       },
     });
   }
