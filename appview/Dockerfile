@@ -1,4 +1,4 @@
-FROM node:latest
+FROM node:22
 WORKDIR /code
 
 # start with dependencies to enjoy caching
