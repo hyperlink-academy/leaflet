@@ -48,11 +48,11 @@ export function usePollData() {
 
 let useLeafletData = () => {
   let { permission_token } = useReplicache();
-  return useSWR(
-    `${permission_token.id}-leaflet_data`,
-    async () =>
-      (await callRPC("get_leaflet_data", { token_id: permission_token.id }))
-        ?.result,
+  return useSWR(`${permission_token.id}-leaflet_data`, async () =>
+    permission_token.id
+      ? (await callRPC("get_leaflet_data", { token_id: permission_token.id }))
+          ?.result
+      : undefined,
   );
 };
 export function useLeafletPublicationData() {
