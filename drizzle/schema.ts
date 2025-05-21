@@ -147,7 +147,7 @@ export const custom_domain_routes = pgTable("custom_domain_routes", {
 
 export const custom_domains = pgTable("custom_domains", {
 	domain: text("domain").primaryKey().notNull(),
-	identity: text("identity").default('').notNull().references(() => identities.email, { onDelete: "cascade", onUpdate: "cascade" } ),
+	identity: text("identity").default('').references(() => identities.email, { onDelete: "cascade", onUpdate: "cascade" } ),
 	confirmed: boolean("confirmed").notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 });
@@ -158,17 +158,6 @@ export const poll_votes_on_entity = pgTable("poll_votes_on_entity", {
 	poll_entity: uuid("poll_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 	option_entity: uuid("option_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 	voter_token: uuid("voter_token").notNull(),
-});
-
-export const publication_domains = pgTable("publication_domains", {
-	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
-	domain: text("domain").notNull().references(() => custom_domains.domain, { onDelete: "cascade" } ),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-},
-(table) => {
-	return {
-		publication_domains_pkey: primaryKey({ columns: [table.publication, table.domain], name: "publication_domains_pkey"}),
-	}
 });
 
 export const subscribers_to_publications = pgTable("subscribers_to_publications", {
@@ -201,6 +190,18 @@ export const documents_in_publications = pgTable("documents_in_publications", {
 (table) => {
 	return {
 		documents_in_publications_pkey: primaryKey({ columns: [table.publication, table.document], name: "documents_in_publications_pkey"}),
+	}
+});
+
+export const publication_domains = pgTable("publication_domains", {
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	domain: text("domain").notNull().references(() => custom_domains.domain, { onDelete: "cascade" } ),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	identity: text("identity").notNull().references(() => identities.atp_did, { onDelete: "cascade", onUpdate: "cascade" } ),
+},
+(table) => {
+	return {
+		publication_domains_pkey: primaryKey({ columns: [table.publication, table.domain], name: "publication_domains_pkey"}),
 	}
 });
 

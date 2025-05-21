@@ -98,10 +98,10 @@ export async function createPublication({
   }
   await supabaseServerClient
     .from("custom_domains")
-    .insert({ domain, identity: identity.id, confirmed: true });
+    .insert({ domain, confirmed: true });
   await supabaseServerClient
     .from("publication_domains")
-    .insert({ domain, publication: result.uri });
+    .insert({ domain, publication: result.uri, identity: identity.atp_did });
 
   return { success: true, publication };
 }

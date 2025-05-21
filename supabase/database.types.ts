@@ -88,19 +88,19 @@ export type Database = {
           confirmed: boolean
           created_at: string
           domain: string
-          identity: string
+          identity: string | null
         }
         Insert: {
           confirmed: boolean
           created_at?: string
           domain: string
-          identity?: string
+          identity?: string | null
         }
         Update: {
           confirmed?: boolean
           created_at?: string
           domain?: string
-          identity?: string
+          identity?: string | null
         }
         Relationships: [
           {
@@ -645,16 +645,19 @@ export type Database = {
         Row: {
           created_at: string
           domain: string
+          identity: string
           publication: string
         }
         Insert: {
           created_at?: string
           domain: string
+          identity: string
           publication: string
         }
         Update: {
           created_at?: string
           domain?: string
+          identity?: string
           publication?: string
         }
         Relationships: [
@@ -664,6 +667,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "custom_domains"
             referencedColumns: ["domain"]
+          },
+          {
+            foreignKeyName: "publication_domains_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
           },
           {
             foreignKeyName: "publication_domains_publication_fkey"
