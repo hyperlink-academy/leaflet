@@ -10,7 +10,7 @@ export function getPublicationURL(pub: {
 }) {
   let record = pub.record as PubLeafletPublication.Record;
   if (isProductionDomain() && record?.base_path) {
-    return record.base_path;
+    return `https://${record.base_path}`;
   }
   let aturi = new AtUri(pub.uri);
   return `/lish/${aturi.host}/${record?.name || pub.name}`;
