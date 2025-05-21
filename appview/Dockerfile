@@ -8,4 +8,5 @@ RUN npm ci
 
 # copy rest and build
 COPY . /code/.
-CMD ["npm", "run", "start-appview-prod"]
+RUN npm run build-appview
+CMD ["node", "/code/appview/dist/index.js"]
