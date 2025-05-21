@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { theme } from "tailwind.config";
-import { getPublicationURL } from "./getPublicationURL";
+import { getBasePublicationURL, getPublicationURL } from "./getPublicationURL";
 import { string } from "zod";
 
 type DomainState =
@@ -46,7 +46,7 @@ export const CreatePubForm = () => {
         // Show a spinner while this is happening! Maybe a progress bar?
         setTimeout(() => {
           if (data?.publication)
-            router.push(`${getPublicationURL(data.publication)}/dashboard`);
+            router.push(`${getBasePublicationURL(data.publication)}/dashboard`);
         }, 500);
       }}
     >

@@ -11,7 +11,10 @@ import { Separator } from "components/Layout";
 import { AtUri } from "@atproto/syntax";
 import { PubLeafletDocument } from "lexicons/api";
 import { publications } from "drizzle/schema";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import {
+  getBasePublicationURL,
+  getPublicationURL,
+} from "app/lish/createPub/getPublicationURL";
 export const PublicationMetadata = ({
   cardBorderHidden,
 }: {
@@ -55,7 +58,7 @@ export const PublicationMetadata = ({
     >
       <div className="flex gap-2">
         <Link
-          href={`${getPublicationURL(pub.publications)}/dashboard`}
+          href={`${getBasePublicationURL(pub.publications)}/dashboard`}
           className="text-accent-contrast font-bold hover:no-underline"
         >
           {pub.publications?.name}

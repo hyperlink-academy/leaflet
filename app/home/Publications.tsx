@@ -6,7 +6,10 @@ import { useIdentityData } from "components/IdentityProvider";
 import { theme } from "tailwind.config";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { AddTiny } from "components/Icons/AddTiny";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import {
+  getBasePublicationURL,
+  getPublicationURL,
+} from "app/lish/createPub/getPublicationURL";
 import { Json } from "supabase/database.types";
 
 let allowlist = [
@@ -59,7 +62,7 @@ function Publication(props: { uri: string; name: string; record: Json }) {
   return (
     <Link
       className="pubListItem w-full p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline outline-2 outline-offset-1 hover:outline-border basis-0 grow min-w-0"
-      href={`${getPublicationURL(props)}/dashboard`}
+      href={`${getBasePublicationURL(props)}/dashboard`}
     >
       <div className="w-6 h-6 rounded-full bg-test" />
       <h4 className="font-bold w-full truncate">{props.name}</h4>

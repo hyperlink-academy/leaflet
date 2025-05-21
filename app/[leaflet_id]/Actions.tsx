@@ -1,5 +1,8 @@
 import { publishToPublication } from "actions/publishToPublication";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import {
+  getBasePublicationURL,
+  getPublicationURL,
+} from "app/lish/createPub/getPublicationURL";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { GoBackSmall } from "components/Icons/GoBackSmall";
@@ -25,7 +28,7 @@ export const BackToPubButton = (props: {
   let { identity } = useIdentityData();
   return (
     <Link
-      href={`${getPublicationURL(props.publication)}/dashboard`}
+      href={`${getBasePublicationURL(props.publication)}/dashboard`}
       className="hover:!no-underline"
     >
       <ActionButton
