@@ -98,6 +98,7 @@ type Command = {
   name: string;
   icon: React.ReactNode;
   type: string;
+  hiddenInPublication?: boolean;
   onSelect: (
     rep: Replicache<ReplicacheMutators>,
     props: Props & { entity_set: string },
@@ -175,6 +176,7 @@ export const blockCommands: Command[] = [
     name: "Button",
     icon: <BlockButtonSmall />,
     type: "block",
+    hiddenInPublication: true,
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       await createBlockWithType(rep, props, "button");
@@ -190,6 +192,7 @@ export const blockCommands: Command[] = [
     name: "Mailbox",
     icon: <BlockMailboxSmall />,
     type: "block",
+    hiddenInPublication: true,
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       await createBlockWithType(rep, props, "mailbox");
@@ -205,6 +208,7 @@ export const blockCommands: Command[] = [
     name: "Poll",
     icon: <BlockPollSmall />,
     type: "block",
+    hiddenInPublication: true,
     onSelect: async (rep, props, um) => {
       let entity = await createBlockWithType(rep, props, "poll");
       let pollOptionEntity = v7();
@@ -250,6 +254,7 @@ export const blockCommands: Command[] = [
     name: "Embed Website",
     icon: <BlockEmbedSmall />,
     type: "block",
+    hiddenInPublication: true,
     onSelect: async (rep, props) => {
       createBlockWithType(rep, props, "embed");
     },
@@ -258,6 +263,7 @@ export const blockCommands: Command[] = [
     name: "Bluesky Post",
     icon: <BlockBlueskySmall />,
     type: "block",
+    hiddenInPublication: true,
     onSelect: async (rep, props) => {
       createBlockWithType(rep, props, "bluesky-post");
     },
@@ -269,6 +275,7 @@ export const blockCommands: Command[] = [
     name: "RSVP",
     icon: <BlockRSVPSmall />,
     type: "event",
+    hiddenInPublication: true,
     onSelect: (rep, props) => {
       props.entityID && clearCommandSearchText(props.entityID);
       return createBlockWithType(rep, props, "rsvp");
@@ -278,6 +285,7 @@ export const blockCommands: Command[] = [
     name: "Date and Time",
     icon: <BlockCalendarSmall />,
     type: "event",
+    hiddenInPublication: true,
     onSelect: (rep, props) => {
       props.entityID && clearCommandSearchText(props.entityID);
       return createBlockWithType(rep, props, "datetime");
@@ -290,6 +298,7 @@ export const blockCommands: Command[] = [
     name: "New Page",
     icon: <BlockDocPageSmall />,
     type: "page",
+    hiddenInPublication: true,
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "card");
@@ -329,6 +338,7 @@ export const blockCommands: Command[] = [
     name: "New Canvas",
     icon: <BlockCanvasPageSmall />,
     type: "page",
+    hiddenInPublication: true,
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "card");

@@ -5,6 +5,7 @@ import { useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { NestedCardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { UndoManager } from "src/undoManager";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 
 type Props = {
   parent: string;
@@ -29,10 +30,17 @@ export const BlockCommandBar = ({
 
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
+  let { data: publicationData } = useLeafletPublicationData();
+  let pub = publicationData?.[0];
 
-  let commandResults = blockCommands.filter((command) =>
-    command.name.toLocaleLowerCase().includes(searchValue.toLocaleLowerCase()),
-  );
+  let commandResults = blockCommands.filter((command) => {
+    const matchesSearch = command.name
+      .toLocaleLowerCase()
+      .includes(searchValue.toLocaleLowerCase());
+    const isVisible = !pub || !command.hiddenInPublication;
+    return matchesSearch && isVisible;
+  });
+
   useEffect(() => {
     if (
       !highlighted ||
@@ -186,3 +194,6 @@ const CommandResult = (props: {
     </button>
   );
 };
+function usePublicationContext() {
+  throw new Error("Function not implemented.");
+}

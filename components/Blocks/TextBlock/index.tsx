@@ -35,6 +35,7 @@ import { AddTiny } from "components/Icons/AddTiny";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { isIOS } from "src/utils/isDevice";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 
 const HeadingStyle = {
   1: "text-xl font-bold",
@@ -471,6 +472,9 @@ const BlockifyLink = (props: {
 const CommandOptions = (props: BlockProps & { className?: string }) => {
   let rep = useReplicache();
   let entity_set = useEntitySetContext();
+  let { data: publicationData } = useLeafletPublicationData();
+  let pub = publicationData?.[0];
+
   return (
     <div
       className={`absolute top-0 right-0 w-fit flex gap-[6px] items-center font-bold  rounded-md  text-sm text-border ${props.pageType === "canvas" && "mr-[6px]"}`}
@@ -494,24 +498,26 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
         <BlockImageSmall className="hover:text-accent-contrast text-border" />
       </TooltipButton>
 
-      <TooltipButton
-        className={props.className}
-        onMouseDown={async () => {
-          let command = blockCommands.find((f) => f.name === "New Page");
-          if (!rep.rep) return;
-          await command?.onSelect(
-            rep.rep,
-            { ...props, entity_set: entity_set.set },
-            rep.undoManager,
-          );
-        }}
-        side="bottom"
-        tooltipContent={
-          <div className="flex gap-1 font-bold">Add a Subpage</div>
-        }
-      >
-        <BlockDocPageSmall className="hover:text-accent-contrast text-border" />
-      </TooltipButton>
+      {!pub && (
+        <TooltipButton
+          className={props.className}
+          onMouseDown={async () => {
+            let command = blockCommands.find((f) => f.name === "New Page");
+            if (!rep.rep) return;
+            await command?.onSelect(
+              rep.rep,
+              { ...props, entity_set: entity_set.set },
+              rep.undoManager,
+            );
+          }}
+          side="bottom"
+          tooltipContent={
+            <div className="flex gap-1 font-bold">Add a Subpage</div>
+          }
+        >
+          <BlockDocPageSmall className="hover:text-accent-contrast text-border" />
+        </TooltipButton>
+      )}
 
       <TooltipButton
         className={props.className}
