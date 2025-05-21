@@ -5,9 +5,14 @@ import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import React from "react";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { AtUri } from "@atproto/syntax";
-import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
+import {
+  AtpBaseClient,
+  PubLeafletDocument,
+  PubLeafletPublication,
+} from "lexicons/api";
 import Link from "next/link";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { BskyAgent } from "@atproto/api";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -33,18 +38,22 @@ export default async function Publication(props: {
   let params = await props.params;
   let did = decodeURIComponent(params.did);
   if (!did) return <PubNotFound />;
-  let { data: publication } = await supabaseServerClient
-    .from("publications")
-    .select(
-      `*,
+  let agent = new BskyAgent({ service: "https://public.api.bsky.app" });
+  let [{ data: publication }, { data: profile }] = await Promise.all([
+    supabaseServerClient
+      .from("publications")
+      .select(
+        `*,
       documents_in_publications(documents(*))
       `,
-    )
-    .eq("identity_did", did)
-    .eq("name", decodeURIComponent(params.publication))
-    .single();
+      )
+      .eq("identity_did", did)
+      .eq("name", decodeURIComponent(params.publication))
+      .single(),
+    agent.getProfile({ actor: did }),
+  ]);
 
-  let record = publication?.record as PubLeafletPublication.Record;
+  let record = publication?.record as PubLeafletPublication.Record | null;
 
   if (!publication) return <PubNotFound />;
   try {
@@ -54,7 +63,7 @@ export default async function Publication(props: {
           <div className="publication max-w-prose w-full mx-auto h-full sm:pt-8 pt-4 px-3 pb-12 sm:pb-8">
             <div className="flex flex-col pb-8 w-full text-center justify-center ">
               <div className="flex flex-col gap-3 justify-center place-items-center">
-                {record.icon && (
+                {record?.icon && (
                   <div
                     className="shrink-0 w-10 h-10 rounded-full"
                     style={{
@@ -69,7 +78,20 @@ export default async function Publication(props: {
                   {publication.name}
                 </h2>
               </div>
-              <p className="sm:text-lg text-tertiary">{record.description} </p>
+              <p className="sm:text-lg text-tertiary">{record?.description} </p>
+              {profile && (
+                <p className="italic">
+                  <strong className="text-secondary">
+                    by {profile.displayName}
+                  </strong>{" "}
+                  <a
+                    className="text-tertiary"
+                    href={`https://bsky.app/profile/${profile.handle}`}
+                  >
+                    @{profile.handle}
+                  </a>
+                </p>
+              )}
             </div>
             <div className="publicationPostList w-full flex flex-col gap-4">
               {publication.documents_in_publications
