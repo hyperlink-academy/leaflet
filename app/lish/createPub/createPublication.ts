@@ -77,7 +77,7 @@ export async function createPublication({
       uri: result.uri,
       identity_did: credentialSession.did!,
       name: record.name,
-      record: record as Json,
+      record: { ...record, $type: "pub.leaflet.publication" },
     })
     .select()
     .single();
