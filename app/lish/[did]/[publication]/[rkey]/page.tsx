@@ -116,14 +116,14 @@ let Block = ({
   let className = `
     postBlockWrapper
     pt-1
-    ${isList ? "isListItem pb-0" : " pb-2 last:pb-3 last:sm:pb-4 first:pt-2 sm:first:pt-3"}
+    ${isList ? "isListItem pb-0 " : "pb-2 last:pb-3 last:sm:pb-4 first:pt-2 sm:first:pt-3"}
     ${b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignRight" ? "text-right" : b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignCenter" ? "text-center" : ""}
     `;
 
   switch (true) {
     case PubLeafletBlocksUnorderedList.isMain(b.block): {
       return (
-        <ul className="-ml-[1px] sm:ml-[9px]">
+        <ul className="-ml-[1px] sm:ml-[9px] pb-2">
           {b.block.children.map((child, index) => (
             <ListItem
               item={child}
@@ -188,15 +188,6 @@ function ListItem(props: {
   did: string;
   className?: string;
 }) {
-  // ${
-  //   props.type === "heading"
-  //     ? headingLevel === 3
-  //       ? "pt-[12px]"
-  //       : headingLevel === 2
-  //         ? "pt-[15px]"
-  //         : "pt-[20px]"
-  //     : "pt-[12px]"
-  // }
   return (
     <li className={`!pb-0 flex flex-row gap-2`}>
       <div
