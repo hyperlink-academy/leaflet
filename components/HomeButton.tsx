@@ -15,21 +15,19 @@ export function HomeButton() {
   let { permissions } = useEntitySetContext();
   let searchParams = useSearchParams();
 
-  if (permissions.write)
-    return (
-      <>
-        <Link
-          href="/home"
-          prefetch
-          className="hover:no-underline"
-          style={{ textDecorationLine: "none !important" }}
-        >
-          <ActionButton icon={<HomeSmall />} label="Go Home" />
-        </Link>
-        {<AddToHomeButton />}
-      </>
-    );
-  return null;
+  return (
+    <>
+      <Link
+        href="/home"
+        prefetch
+        className="hover:no-underline"
+        style={{ textDecorationLine: "none !important" }}
+      >
+        <ActionButton icon={<HomeSmall />} label="Go Home" />
+      </Link>
+      {<AddToHomeButton />}
+    </>
+  );
 }
 
 const AddToHomeButton = (props: {}) => {

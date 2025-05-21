@@ -27,11 +27,11 @@ export function LeafletSidebar(props: { leaflet_id: string }) {
     >
       <Media
         mobile={false}
-        className="sidebarContainer relative flex flex-col justify-end h-full w-16 bg-bg-page/50  border-bg-page"
+        className="sidebarContainer relative flex flex-col justify-end h-full w-16"
       >
-        <Sidebar>
-          {entity_set.permissions.write ? (
-            pub?.publications ? (
+        {entity_set.permissions.write && (
+          <Sidebar>
+            {pub?.publications ? (
               <>
                 <PublishButton />
                 <ShareOptions />
@@ -47,15 +47,12 @@ export function LeafletSidebar(props: { leaflet_id: string }) {
                 <hr className="text-border" />
                 <HomeButton />
               </>
-            )
-          ) : (
-            <div>
-              <HomeButton />
-            </div>
-          )}
-        </Sidebar>
-        <div className="h-full pointer-events-none" />
-        <Watermark />
+            )}
+          </Sidebar>
+        )}
+        <div className="h-full flex items-end">
+          <Watermark />
+        </div>
       </Media>
     </div>
   );
