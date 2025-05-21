@@ -49,23 +49,13 @@ const PublicationList = (props: {
   return (
     <div className="pubList w-full flex flex-row sm:flex-col gap-3 sm:gap-2">
       {props.publications?.map((d) => (
-        <Publication
-          {...d}
-          key={d.uri}
-          handle={identity?.resolved_did?.alsoKnownAs?.[0].slice(5)!}
-          record={d.record}
-        />
+        <Publication {...d} key={d.uri} record={d.record} />
       ))}
     </div>
   );
 };
 
-function Publication(props: {
-  uri: string;
-  name: string;
-  handle: string;
-  record: Json;
-}) {
+function Publication(props: { uri: string; name: string; record: Json }) {
   return (
     <Link
       className="pubListItem w-full p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline outline-2 outline-offset-1 hover:outline-border basis-0 grow min-w-0"

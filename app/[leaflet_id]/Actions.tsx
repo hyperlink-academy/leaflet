@@ -23,9 +23,6 @@ export const BackToPubButton = (props: {
   };
 }) => {
   let { identity } = useIdentityData();
-
-  let handle = identity?.resolved_did?.alsoKnownAs?.[0].slice(5)!;
-  let name = props.publication.name;
   return (
     <Link
       href={`${getPublicationURL(props.publication)}/dashboard`}

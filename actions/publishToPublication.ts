@@ -26,13 +26,11 @@ import {
 } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { ids } from "lexicons/api/lexicons";
 import { BlobRef } from "@atproto/lexicon";
-import { IdResolver } from "@atproto/identity";
 import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
 import { $Typed, UnicodeString } from "@atproto/api";
 import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
 
-const idResolver = new IdResolver();
 export async function publishToPublication({
   root_entity,
   blocks,
@@ -132,8 +130,7 @@ export async function publishToPublication({
       .eq("publication", publication_uri),
   ]);
 
-  let handle = await idResolver.did.resolve(credentialSession.did!);
-  return { handle, rkey };
+  return { rkey };
 }
 
 function blocksToRecord(
