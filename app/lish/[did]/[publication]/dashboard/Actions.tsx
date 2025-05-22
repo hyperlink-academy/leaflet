@@ -33,14 +33,16 @@ export const Actions = (props: { publication: string }) => {
       <PublicationShareButton />
       <PublicationSettingsButton publication={props.publication} />
       <hr className="border-border-light" />
-      <Link
-        href="/home"
-        prefetch
-        className="hover:no-underline"
-        style={{ textDecorationLine: "none !important" }}
-      >
-        <ActionButton icon={<HomeSmall />} label="Go Home" />
-      </Link>
+      <Media mobile={false}>
+        <Link
+          href="/home"
+          prefetch
+          className="hover:no-underline"
+          style={{ textDecorationLine: "none !important" }}
+        >
+          <ActionButton icon={<HomeSmall />} label="Go Home" />
+        </Link>
+      </Media>
     </>
   );
 };
