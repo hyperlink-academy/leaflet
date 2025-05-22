@@ -67,7 +67,7 @@ export default async function Publication(props: {
                   <div
                     className="shrink-0 w-10 h-10 rounded-full"
                     style={{
-                      backgroundImage: `url(https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${(record.icon.ref as unknown as { $link: string })["$link"]})`,
+                      backgroundImage: `url(/api/atproto_images?did=${did}&cid=${(record.icon.ref as unknown as { $link: string })["$link"]})`,
                       backgroundRepeat: "no-repeat",
                       backgroundPosition: "center",
                       backgroundSize: "cover",

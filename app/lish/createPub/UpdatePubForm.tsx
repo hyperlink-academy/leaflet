@@ -31,7 +31,7 @@ export const EditPubForm = () => {
     setDescriptionValue(record.description || "");
     if (record.icon)
       setIconPreview(
-        `url(https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${pubData.identity_did}&cid=${(record.icon.ref as unknown as { $link: string })["$link"]})`,
+        `url(/api/atproto_images?did=${pubData.identity_did}&cid=${(record.icon.ref as unknown as { $link: string })["$link"]})`,
       );
   }, [pubData]);
   let toast = useToaster();

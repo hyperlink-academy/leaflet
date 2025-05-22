@@ -20,7 +20,7 @@ export function PublicationDashboard<T extends Tabs>(props: {
           <div
             className="shrink-0 w-5 h-5 rounded-full"
             style={{
-              backgroundImage: `url(https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${props.did}&cid=${(props.icon.ref as unknown as { $link: string })["$link"]})`,
+              backgroundImage: `url(/api/atproto_images?did=${props.did}&cid=${(props.icon.ref as unknown as { $link: string })["$link"]})`,
               backgroundRepeat: "no-repeat",
               backgroundPosition: "center",
               backgroundSize: "cover",
