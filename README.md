@@ -1,25 +1,41 @@
-Leaflet is an app that makes it easy to create and share delightful documents on the web.
+![leaflet gh 4-up banner img](https://github.com/user-attachments/assets/991d7138-cc8b-4fbb-9919-6d2a54ae3820)
 
-You can use Leaflet for things like:
+Leaflet is a tool for shared writing and social publishing.
 
-- simple shared notes
-- lists and collections
-- notebooks or wikis
-- homepages
-- recipes, manifestos, travel guides and more…
+- **Shared writing**: make Leaflets, instant collaborative docs with rich media, multiple pages and more
+- **Social publishing**: create Publications, like blogs or newsletters, that your friends can follow — built on Bluesky
 
-It's a fast web app, fully collaborative, with no accounts and simple sharing / publishing. At its core is a rich block-based editor and a way to add as many pages as you need.
+## How to get started
 
-Try it — instantly make a new doc at [leaflet.pub](https://leaflet.pub)
+Leaflet is a fast, responsive web app — no installation needed, though you *can* add it as a PWA!
+
+TL;DR below — for more detail and examples, visit the [Leaflet Manual](https://about.leaflet.pub).
+
+### Leaflets
+
+Make a new Leaflet — a simple shareable *post* or *document* — with no account needed at [leaflet.pub/new](https://leaflet.pub/new).
+
+Use Leaflets for shared notes and docs, collections, wikis, homepages and [lots more](https://make.leaflet.pub).
+
+### Publications
+
+To make a Publication, connect with Bluesky from [leaflet.pub/home](https://leaflet.pub/home), then add posts.
+
+Use Publications on Leaflet for blogs, newsletters, project logs — anything you want people to read and follow.
+
+Read ours here: [Leaflet Lab Notes](https://lab.leaflet.pub/).
+
+## Technical details
 
 The stack:
 
-- [Typescript](https://www.typescriptlang.org/) for types!
+- [Typescript](https://www.typescriptlang.org/) for types
 - [React](https://react.dev/) & [Next.js](https://nextjs.org/) for UI and app framework
 - [Supabase](https://supabase.com/) for db / storage layer
 - [Replicache](https://replicache.dev/) for realtime data sync layer
 - [TailwindCSS](https://tailwindcss.com/) for styling magic
 
-Leaflet is a new project from the creators of Hyperlink Academy. [Learn more here](https://leaflet.pub/0325b34c-1948-412c-a6fb-d155fd2fe6ed).
+See the `lexicons` and `appview` directories if you're curious about our Bluesky implementation. More documentation to come; let us know if there's something you want to read about (like how to bring your own frontend using our appview!)
 
-It's currently source available; we're in alpha and have not yet added a license or a contributor process. Glad to share more technical details, please [reach out](mailto:contact@hyperlink.academy) with any questions or feedback!
+Leaflet is open source. Please reach out by [email](mailto:contact@leaflet.pub) or [Bluesky](https://bsky.app/profile/leaflet.pub) with any questions or feedback!
+
