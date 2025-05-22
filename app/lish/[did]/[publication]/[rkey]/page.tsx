@@ -40,6 +40,7 @@ export async function generateMetadata(props: {
       record.title +
       " - " +
       decodeURIComponent((await props.params).publication),
+    description: record?.description || "",
   };
 }
 export default async function Post(props: {

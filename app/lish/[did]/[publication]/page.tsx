@@ -29,7 +29,12 @@ export async function generateMetadata(props: {
     { supabase: supabaseServerClient },
   );
   if (!publication) return { title: "404 Publication" };
-  return { title: decodeURIComponent(params.publication) };
+
+  let record = publication.record as PubLeafletPublication.Record | null;
+  return {
+    title: decodeURIComponent(params.publication),
+    description: record?.description || "",
+  };
 }
 
 export default async function Publication(props: {
