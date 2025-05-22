@@ -12,8 +12,10 @@ import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragme
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { focusBlock } from "src/utils/focusBlock";
 import { useIsMobile } from "src/hooks/isMobile";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 
 export function UpdateLeafletTitle(props: { entityID: string }) {
+  let { data: pubData } = useLeafletPublicationData();
   let firstPage = useEntity(props.entityID, "root/page")[0];
   let entityID = firstPage?.data.value || props.entityID;
 
@@ -23,10 +25,13 @@ export function UpdateLeafletTitle(props: { entityID: string }) {
   let firstBlock = blocks[0];
   let title = usePageTitle(entityID);
   useEffect(() => {
+    if (pubData[0].title) {
+      document.title = pubData[0].title;
+    }
     if (title) {
       document.title = title;
     }
-  }, [title]);
+  }, [title, pubData]);
   let params = useSearchParams();
   let focusFirstBlock = params.get("focusFirstBlock");
   let router = useRouter();
