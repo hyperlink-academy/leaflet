@@ -6,6 +6,7 @@ import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
+import { redirect } from "next/navigation";
 
 export async function updatePublication({
   uri,
@@ -31,13 +32,13 @@ export async function updatePublication({
     .select("*")
     .eq("uri", uri)
     .single();
-  if (!existingPub || existingPub.identity_did! === identity.atp_did) return;
+  if (!existingPub || existingPub.identity_did !== identity.atp_did) return;
   let aturi = new AtUri(existingPub.uri);
 
   let record: PubLeafletPublication.Record = {
     $type: "pub.leaflet.publication",
-    name,
     ...(existingPub.record as object),
+    name,
   };
 
   if (description) {
@@ -66,7 +67,7 @@ export async function updatePublication({
   });
 
   //optimistically write to our db!
-  let { data: publication } = await supabaseServerClient
+  let { data: publication, error } = await supabaseServerClient
     .from("publications")
     .update({
       name: record.name,
@@ -75,6 +76,8 @@ export async function updatePublication({
     .eq("uri", uri)
     .select()
     .single();
+  if (name !== existingPub.name)
+    return redirect(`/lish/${aturi.host}/${name}/dashboard`);
 
   return { success: true, publication };
 }
