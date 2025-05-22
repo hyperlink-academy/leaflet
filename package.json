@@ -43,6 +43,7 @@
     "base64-js": "^1.5.1",
     "colorjs.io": "^0.5.2",
     "drizzle-orm": "^0.30.10",
+    "feed": "^5.0.1",
     "fractional-indexing": "^3.2.0",
     "linkifyjs": "^4.2.0",
     "multiformats": "^13.3.2",
