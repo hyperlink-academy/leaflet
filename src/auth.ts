@@ -11,3 +11,14 @@ export async function setAuthToken(tokenID: string) {
     sameSite: "lax",
   });
 }
+
+export async function removeAuthToken() {
+  let c = await cookies();
+  c.delete({
+    name: "auth_token",
+    secure: process.env.NODE_ENV === "production",
+    domain: isProductionDomain() ? "leaflet.pub" : undefined,
+    httpOnly: true,
+    sameSite: "lax",
+  });
+}
