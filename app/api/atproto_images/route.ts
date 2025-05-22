@@ -16,7 +16,18 @@ export async function GET(req: NextRequest) {
   let service = identity?.service?.find((f) => f.id === "#atproto_pds");
   console.log(identity);
   if (!service) return new NextResponse(null, { status: 404 });
-  return fetch(
+  const response = await fetch(
     `${service.serviceEndpoint}/xrpc/com.atproto.sync.getBlob?did=${params.did}&cid=${params.cid}`,
   );
+
+  // Clone the response to modify headers
+  const cachedResponse = new Response(response.body, response);
+
+  // Set cache-control header to cache indefinitely
+  cachedResponse.headers.set(
+    "Cache-Control",
+    "public, max-age=31536000, immutable",
+  );
+
+  return cachedResponse;
 }
