@@ -11,10 +11,12 @@ import { HelpPopover } from "components/HelpPopover";
 import { Watermark } from "components/Watermark";
 import { BackToPubButton, PublishButton } from "./Actions";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { useIdentityData } from "components/IdentityProvider";
 
 export function LeafletFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedEntity);
   let entity_set = useEntitySetContext();
+  let { identity } = useIdentityData();
   let { data: publicationData } = useLeafletPublicationData();
   let pub = publicationData?.[0];
 
@@ -35,7 +37,9 @@ export function LeafletFooter(props: { entityID: string }) {
           />
         </div>
       ) : entity_set.permissions.write ? (
-        pub?.publications ? (
+        pub?.publications &&
+        identity?.atp_did &&
+        pub.publications.identity_did === identity.atp_did ? (
           <ActionFooter>
             <BackToPubButton publication={pub.publications} />
             <PublishButton />

@@ -11,10 +11,12 @@ import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { Watermark } from "components/Watermark";
 import { useUIState } from "src/useUIState";
 import { BackToPubButton, PublishButton } from "./Actions";
+import { useIdentityData } from "components/IdentityProvider";
 
 export function LeafletSidebar(props: { leaflet_id: string }) {
   let entity_set = useEntitySetContext();
   let { data: publicationData } = useLeafletPublicationData();
+  let { identity } = useIdentityData();
   let pub = publicationData?.[0];
 
   return (
@@ -31,7 +33,9 @@ export function LeafletSidebar(props: { leaflet_id: string }) {
       >
         {entity_set.permissions.write && (
           <Sidebar>
-            {pub?.publications ? (
+            {pub?.publications &&
+            identity?.atp_did &&
+            pub.publications.identity_did === identity.atp_did ? (
               <>
                 <PublishButton />
                 <ShareOptions />

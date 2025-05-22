@@ -60,6 +60,7 @@ export async function publishToPublication({
     .eq("publication", publication_uri)
     .eq("leaflet", leaflet_id)
     .single();
+  if (!draft || identity.atp_did !== draft?.publications?.identity_did) return;
   let { data } = await supabaseServerClient.rpc("get_facts", {
     root: root_entity,
   });
