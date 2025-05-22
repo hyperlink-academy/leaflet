@@ -115,7 +115,5 @@ export async function loginWithEmailToken(
       });
     }
   }
-
   client.end();
-  redirect("/home");
 }
