@@ -17,8 +17,7 @@ export function LeafletFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedEntity);
   let entity_set = useEntitySetContext();
   let { identity } = useIdentityData();
-  let { data: publicationData } = useLeafletPublicationData();
-  let pub = publicationData?.[0];
+  let { data: pub } = useLeafletPublicationData();
 
   return (
     <Media mobile className="mobileFooter w-full z-10 touch-none -mt-4 ">

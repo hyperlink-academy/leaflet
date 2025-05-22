@@ -15,7 +15,7 @@ import { useIsMobile } from "src/hooks/isMobile";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 
 export function UpdateLeafletTitle(props: { entityID: string }) {
-  let { data: pubData } = useLeafletPublicationData();
+  let { data: pub } = useLeafletPublicationData();
   let firstPage = useEntity(props.entityID, "root/page")[0];
   let entityID = firstPage?.data.value || props.entityID;
 
@@ -25,13 +25,13 @@ export function UpdateLeafletTitle(props: { entityID: string }) {
   let firstBlock = blocks[0];
   let title = usePageTitle(entityID);
   useEffect(() => {
-    if (pubData?.[0]?.title) {
-      document.title = pubData[0].title;
+    if (pub?.title) {
+      document.title = pub.title;
     }
     if (title) {
       document.title = title;
     }
-  }, [title, pubData]);
+  }, [title, pub]);
   let params = useSearchParams();
   let focusFirstBlock = params.get("focusFirstBlock");
   let router = useRouter();

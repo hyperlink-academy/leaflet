@@ -30,8 +30,7 @@ export const BlockCommandBar = ({
 
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
-  let { data: publicationData } = useLeafletPublicationData();
-  let pub = publicationData?.[0];
+  let { data: pub } = useLeafletPublicationData();
 
   let commandResults = blockCommands.filter((command) => {
     const matchesSearch = command.name

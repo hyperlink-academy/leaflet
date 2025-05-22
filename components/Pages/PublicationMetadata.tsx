@@ -21,8 +21,7 @@ export const PublicationMetadata = ({
   cardBorderHidden: boolean;
 }) => {
   let { permission_token } = useReplicache();
-  let { data: publicationData, mutate } = useLeafletPublicationData();
-  let pub = publicationData?.[0];
+  let { data: pub, mutate } = useLeafletPublicationData();
   let [titleState, setTitleState] = useState(pub?.title || "");
   let [descriptionState, setDescriptionState] = useState(
     pub?.description || "",
@@ -114,8 +113,7 @@ export const PublicationMetadata = ({
 };
 
 export const PublicationMetadataPreview = () => {
-  let { data: publicationData } = useLeafletPublicationData();
-  let pub = publicationData?.[0];
+  let { data: pub } = useLeafletPublicationData();
   let record = pub?.documents?.data as PubLeafletDocument.Record | null;
   let publishedAt = record?.publishedAt;
 

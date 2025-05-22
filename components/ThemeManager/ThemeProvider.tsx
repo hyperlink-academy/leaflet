@@ -54,8 +54,8 @@ export function ThemeProvider(props: {
   local?: boolean;
   children: React.ReactNode;
 }) {
-  let { data } = useLeafletPublicationData();
-  if (!data[0]) return <LeafletThemeProvider {...props} />;
+  let { data: pub } = useLeafletPublicationData();
+  if (!pub) return <LeafletThemeProvider {...props} />;
   return <PublicationThemeProvider {...props} />;
 }
 export function PublicationThemeProvider(props: {

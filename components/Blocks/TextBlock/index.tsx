@@ -472,8 +472,7 @@ const BlockifyLink = (props: {
 const CommandOptions = (props: BlockProps & { className?: string }) => {
   let rep = useReplicache();
   let entity_set = useEntitySetContext();
-  let { data: publicationData } = useLeafletPublicationData();
-  let pub = publicationData?.[0];
+  let { data: pub } = useLeafletPublicationData();
 
   return (
     <div

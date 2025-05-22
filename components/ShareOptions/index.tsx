@@ -42,8 +42,7 @@ export let usePublishLink = () => {
 
 export function ShareOptions() {
   let [menuState, setMenuState] = useState<ShareMenuStates>("default");
-  let { data: publicationData } = useLeafletPublicationData();
-  let pub = publicationData?.[0];
+  let { data: pub } = useLeafletPublicationData();
 
   return (
     <Menu

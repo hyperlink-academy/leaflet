@@ -58,7 +58,7 @@ let useLeafletData = () => {
 export function useLeafletPublicationData() {
   let { data, mutate } = useLeafletData();
   return {
-    data: data?.data?.leaflets_in_publications || [],
+    data: data?.data?.leaflets_in_publications?.[0] || null,
     mutate,
   };
 }

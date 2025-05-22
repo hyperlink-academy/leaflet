@@ -15,9 +15,8 @@ import { useIdentityData } from "components/IdentityProvider";
 
 export function LeafletSidebar(props: { leaflet_id: string }) {
   let entity_set = useEntitySetContext();
-  let { data: publicationData } = useLeafletPublicationData();
+  let { data: pub } = useLeafletPublicationData();
   let { identity } = useIdentityData();
-  let pub = publicationData?.[0];
 
   return (
     <div

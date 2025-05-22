@@ -43,18 +43,17 @@ export const BackToPubButton = (props: {
 
 export const PublishButton = () => {
   let [isLoading, setIsLoading] = useState(false);
-  let { data, mutate } = useLeafletPublicationData();
+  let { data: pub, mutate } = useLeafletPublicationData();
   let identity = useIdentityData();
   let { permission_token, rootEntity } = useReplicache();
   let rootPage = useEntity(rootEntity, "root/page")[0];
   let blocks = useBlocks(rootPage?.data.value);
   let toaster = useToaster();
-  let pub = data[0];
   return (
     <ActionButton
       primary
       icon={<PublishSmall className="shrink-0" />}
-      label={isLoading ? <DotLoader /> : pub.doc ? "Update!" : "Publish!"}
+      label={isLoading ? <DotLoader /> : pub?.doc ? "Update!" : "Publish!"}
       onClick={async () => {
         if (!pub || !pub.publications) return;
         setIsLoading(true);

@@ -347,8 +347,7 @@ const OptionsMenu = (props: {
   let { permissions } = useEntitySetContext();
   if (!permissions.write) return null;
 
-  let { data: publicationData, mutate } = useLeafletPublicationData();
-  let pub = publicationData?.[0];
+  let { data: pub, mutate } = useLeafletPublicationData();
   if (pub && props.first) return;
   return (
     <Menu
