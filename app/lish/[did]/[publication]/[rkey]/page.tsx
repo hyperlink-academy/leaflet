@@ -168,7 +168,7 @@ let Block = ({
           height={b.block.aspectRatio?.height}
           width={b.block.aspectRatio?.width}
           className={`!pt-3 sm:!pt-4 ${className}`}
-          src={`https://bsky.social/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${(b.block.image.ref as unknown as { $link: string })["$link"]}`}
+          src={`/api/atproto_images?did=${did}&cid=${(b.block.image.ref as unknown as { $link: string })["$link"]}`}
         />
       );
     }
