@@ -9,6 +9,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import type { Attribute } from "src/replicache/attributes";
 import { getIdentityData } from "actions/getIdentityData";
 import { callRPC } from "app/api/rpc/client";
+import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 
 export function LeafletList(props: {
   initialFacts: {
@@ -37,7 +38,17 @@ export function LeafletList(props: {
     mutate();
   }, [localLeaflets.length, mutate]);
   let leaflets: Array<
-    PermissionToken & { leaflets_in_publications?: Array<{ doc: string }> }
+    PermissionToken & {
+      leaflets_in_publications?: Array<{
+        doc: string;
+        description: string;
+        publication: string;
+        leaflet: string;
+        title: string;
+        publications: null;
+        documents: null;
+      }>;
+    }
   > = identity
     ? identity.permission_token_on_homepage
         .sort((a, b) =>
@@ -68,14 +79,26 @@ export function LeafletList(props: {
             name={leaflet.root_entity}
             initialFacts={initialFacts?.[leaflet.root_entity] || []}
           >
-            <LeafletPreview
-              index={index}
-              token={leaflet}
-              draft={!!leaflet.leaflets_in_publications?.length}
-              published={!!leaflet.leaflets_in_publications?.find((l) => l.doc)}
-              leaflet_id={leaflet.root_entity}
-              loggedIn={!!identity}
-            />
+            <StaticLeafletDataContext
+              value={{
+                ...leaflet,
+                leaflets_in_publications:
+                  leaflet.leaflets_in_publications || [],
+                blocked_by_admin: null,
+                custom_domain_routes: [],
+              }}
+            >
+              <LeafletPreview
+                index={index}
+                token={leaflet}
+                draft={!!leaflet.leaflets_in_publications?.length}
+                published={
+                  !!leaflet.leaflets_in_publications?.find((l) => l.doc)
+                }
+                leaflet_id={leaflet.root_entity}
+                loggedIn={!!identity}
+              />
+            </StaticLeafletDataContext>
           </ReplicacheProvider>
         ))}
       </div>
