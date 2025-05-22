@@ -38,8 +38,6 @@ export async function GET(
         scope: "atproto transition:generic",
         signal: ac.signal,
         state: JSON.stringify(state),
-        // Only supported if OAuth server is openid-compliant
-        ui_locales: "fr-CA fr en",
       });
 
       return NextResponse.redirect(url);
