@@ -11,7 +11,7 @@ export const ActionButton = forwardRef<
   ButtonProps & {
     id?: string;
     icon: React.ReactNode;
-    label: string;
+    label: React.ReactNode;
     primary?: boolean;
     secondary?: boolean;
   }

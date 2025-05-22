@@ -10,9 +10,11 @@ import { PublishSmall } from "components/Icons/PublishSmall";
 import { useIdentityData } from "components/IdentityProvider";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useToaster } from "components/Toast";
+import { DotLoader } from "components/utils/DotLoader";
 import { publications } from "drizzle/schema";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEntity, useReplicache } from "src/replicache";
 import { Json } from "supabase/database.types";
@@ -40,6 +42,7 @@ export const BackToPubButton = (props: {
 };
 
 export const PublishButton = () => {
+  let [isLoading, setIsLoading] = useState(false);
   let { data, mutate } = useLeafletPublicationData();
   let identity = useIdentityData();
   let { permission_token, rootEntity } = useReplicache();
@@ -51,9 +54,10 @@ export const PublishButton = () => {
     <ActionButton
       primary
       icon={<PublishSmall className="shrink-0" />}
-      label={pub.doc ? "Update!" : "Publish!"}
+      label={isLoading ? <DotLoader /> : pub.doc ? "Update!" : "Publish!"}
       onClick={async () => {
         if (!pub || !pub.publications) return;
+        setIsLoading(true);
         let doc = await publishToPublication({
           root_entity: rootEntity,
           blocks,
@@ -62,6 +66,7 @@ export const PublishButton = () => {
           title: pub.title,
           description: pub.description,
         });
+        setIsLoading(false);
         mutate();
         toaster({
           content: (
