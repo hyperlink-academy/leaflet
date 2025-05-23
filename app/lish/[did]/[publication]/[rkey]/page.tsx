@@ -94,7 +94,7 @@ export default async function Post(props: {
                       className="text-tertiary"
                       href={`https://bsky.app/profile/${profile.handle}`}
                     >
-                      by {profile.displayName}
+                      by {profile.displayName || profile.handle}
                     </a>
                   </>
                 ) : null}
