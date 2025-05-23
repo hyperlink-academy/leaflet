@@ -11,6 +11,9 @@ import {
 import { subscribeToPublicationWithEmail } from "actions/subscribeToPublicationWithEmail";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { ShareSmall } from "components/Icons/ShareSmall";
+import { Popover } from "components/Popover";
+import { BlueskyTiny } from "components/Icons/BlueskyTiny";
+import { isPostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 
 type State =
   | { state: "email" }
@@ -162,6 +165,54 @@ const ConfirmCodeInput = (props: {
         }}
       >
         Confirm
+      </ButtonPrimary>
+    </div>
+  );
+};
+
+export const SubscribeWithBluesky = (props: {
+  isPost?: boolean;
+  pubName: string;
+}) => {
+  let [alreadySubbed, setAlreadySubbed] = useState(true);
+
+  if (alreadySubbed) {
+    return (
+      <div
+        className={`flex ${props.isPost ? "flex-col " : "gap-2"}  justify-center text-center`}
+      >
+        <div className="font-bold text-tertiary text-sm">
+          You&apos;re Subscribed{props.isPost ? ` to ${props.pubName}` : "!"}
+        </div>
+        <Popover
+          className="max-w-sm flex flex-col gap-3 "
+          trigger={<div className="text-accent-contrast text-sm">Manage</div>}
+        >
+          <div className="font-bold text-secondary">
+            Get updates via a Bluseky custom feed!
+            <div className="text-tertiary italic font-normal text-sm">
+              Click the button below and hit the pin icon in the top right
+              corner to add the feed.
+            </div>
+            <ButtonPrimary className="mt-3">Get Feed</ButtonPrimary>
+          </div>
+          <hr className="border-border-light" />
+          <button className="font-bold text-accent-contrast w-max">
+            Unsubscribe
+          </button>
+        </Popover>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-2 text-center">
+      {props.isPost && (
+        <div className="text-sm text-tertiary font-bold">
+          Get updates from {props.pubName}!
+        </div>
+      )}
+      <ButtonPrimary className="place-self-center">
+        <BlueskyTiny /> Subscribe
       </ButtonPrimary>
     </div>
   );

@@ -15,6 +15,7 @@ import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { TextBlock } from "./TextBlock";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { BskyAgent } from "@atproto/api";
+import { SubscribeWithBluesky } from "app/lish/Subscribe";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -122,6 +123,11 @@ export default async function Post(props: {
                 return <Block block={b} did={did} key={index} />;
               })}
             </div>
+            <hr className="border-border-light mb-4 mt-2" />
+            <SubscribeWithBluesky
+              isPost
+              pubName={decodeURIComponent((await props.params).publication)}
+            />
           </div>
         </div>
       </div>

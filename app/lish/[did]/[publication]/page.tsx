@@ -2,17 +2,14 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
 
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
-import React from "react";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { AtUri } from "@atproto/syntax";
-import {
-  AtpBaseClient,
-  PubLeafletDocument,
-  PubLeafletPublication,
-} from "lexicons/api";
+import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import Link from "next/link";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
+import { SubscribeWithBluesky } from "app/lish/Subscribe";
+import React from "react";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -97,6 +94,9 @@ export default async function Publication(props: {
                   </a>
                 </p>
               )}
+              <div className="pt-4">
+                <SubscribeWithBluesky pubName={publication.name} />
+              </div>
             </div>
             <div className="publicationPostList w-full flex flex-col gap-4">
               {publication.documents_in_publications
