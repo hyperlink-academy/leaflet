@@ -73,6 +73,7 @@ export async function publishToPublication({
   await Promise.all(
     images.map(async (b) => {
       let data = await fetch(b.data.src);
+      if (data.status !== 200) return;
       let binary = await data.blob();
       let blob = await agent.com.atproto.repo.uploadBlob(binary, {
         headers: { "Content-Type": binary.type },
