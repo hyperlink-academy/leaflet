@@ -17,6 +17,18 @@ jobs:
           cache: "npm"
       - run: "npm i"
       - run: "npx tsc"
+
+  lexicons:
+    runs-on: ubuntu-latest
+    name: lexicon
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+      - run: "npm i"
+      - run: "npm run publish-lexicons"
   deploy-supabase:
     needs: [typecheck]
     runs-on: ubuntu-latest
