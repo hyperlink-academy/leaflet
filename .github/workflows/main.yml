@@ -21,6 +21,9 @@ jobs:
   lexicons:
     runs-on: ubuntu-latest
     name: lexicon
+    env:
+      LEAFLET_APP_PASSWORD: ${{ secrets.LEAFLET_APP_PASSWORD }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
