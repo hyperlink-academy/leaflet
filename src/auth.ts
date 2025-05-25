@@ -14,11 +14,6 @@ export async function setAuthToken(tokenID: string) {
 
 export async function removeAuthToken() {
   let c = await cookies();
-  c.delete({
-    name: "auth_token",
-    secure: process.env.NODE_ENV === "production",
-    domain: isProductionDomain() ? "leaflet.pub" : undefined,
-    httpOnly: true,
-    sameSite: "lax",
-  });
+  let auth_cookies = c.getAll("auth_token");
+  auth_cookies.forEach(({ value, ...cookie }) => c.delete(cookie));
 }
