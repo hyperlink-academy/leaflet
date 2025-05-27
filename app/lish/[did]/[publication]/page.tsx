@@ -110,7 +110,7 @@ export default async function Publication(props: {
                   const bDate = bRecord.publishedAt
                     ? new Date(bRecord.publishedAt)
                     : new Date(0);
-                  return bDate.getTime() - aDate.getTime(); // Sort by most recent first
+                  return aDate.getTime() - bDate.getTime(); // Sort by most recent first
                 })
                 .map((doc) => {
                   if (!doc.documents) return null;
