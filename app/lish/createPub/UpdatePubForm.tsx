@@ -188,6 +188,8 @@ function AddDomain(props: { publication_uri: string }) {
                 },
               });
             }
+
+            mutate("publication-data");
           }}
           type="button"
         >
@@ -226,6 +228,7 @@ function Domain(props: {
                 uri: props.publication_uri,
                 base_path: props.domain,
               });
+              mutate("publication-data");
             }}
           >
             make main
