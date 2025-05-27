@@ -81,3 +81,52 @@ export async function updatePublication({
 
   return { success: true, publication };
 }
+
+export async function updatePublicationBasePath({
+  uri,
+  base_path,
+}: {
+  uri: string;
+  base_path: string;
+}) {
+  const oauthClient = await createOauthClient();
+  let identity = await getIdentityData();
+  if (!identity || !identity.atp_did) return;
+
+  let credentialSession = await oauthClient.restore(identity.atp_did);
+  let agent = new AtpBaseClient(
+    credentialSession.fetchHandler.bind(credentialSession),
+  );
+  let { data: existingPub } = await supabaseServerClient
+    .from("publications")
+    .select("*")
+    .eq("uri", uri)
+    .single();
+  if (!existingPub || existingPub.identity_did !== identity.atp_did) return;
+  let aturi = new AtUri(existingPub.uri);
+
+  let record: PubLeafletPublication.Record = {
+    ...(existingPub.record as PubLeafletPublication.Record),
+    base_path,
+  };
+
+  let result = await agent.com.atproto.repo.putRecord({
+    repo: credentialSession.did!,
+    rkey: aturi.rkey,
+    record,
+    collection: record.$type,
+    validate: false,
+  });
+
+  //optimistically write to our db!
+  let { data: publication, error } = await supabaseServerClient
+    .from("publications")
+    .update({
+      name: record.name,
+      record: record as Json,
+    })
+    .eq("uri", uri)
+    .select()
+    .single();
+  return { success: true, publication };
+}
