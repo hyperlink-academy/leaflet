@@ -94,7 +94,7 @@ export default async function Publication(props: {
                   </a>
                 </p>
               )}
-              <div className="pt-4">
+              <div className="sm:pt-4 pt-2">
                 <SubscribeWithBluesky pubName={publication.name} />
               </div>
             </div>

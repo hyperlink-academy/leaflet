@@ -1,5 +1,5 @@
 "use client";
-import { ButtonPrimary } from "components/Buttons";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useEffect, useState } from "react";
 import { Input } from "components/Input";
 import { useIdentityData } from "components/IdentityProvider";
@@ -185,21 +185,22 @@ export const SubscribeWithBluesky = (props: {
           You&apos;re Subscribed{props.isPost ? ` to ${props.pubName}` : "!"}
         </div>
         <Popover
-          className="max-w-sm flex flex-col gap-3 "
           trigger={<div className="text-accent-contrast text-sm">Manage</div>}
         >
-          <div className="font-bold text-secondary">
-            Get updates via a Bluseky custom feed!
-            <div className="text-tertiary italic font-normal text-sm">
-              Click the button below and hit the pin icon in the top right
-              corner to add the feed.
+          <div className="max-w-sm flex flex-col gap-3 ">
+            <div className="font-bold text-secondary">
+              Updates via Bluseky custom feed!
+              <div className="text-tertiary italic font-normal text-sm">
+                Click the button below and hit the pin icon in the top right
+                corner to add the feed.
+              </div>
+              <ButtonPrimary className="mt-3">Get Feed</ButtonPrimary>
             </div>
-            <ButtonPrimary className="mt-3">Get Feed</ButtonPrimary>
+            <hr className="border-border-light" />
+            <button className="font-bold text-accent-contrast w-max">
+              Unsubscribe
+            </button>
           </div>
-          <hr className="border-border-light" />
-          <button className="font-bold text-accent-contrast w-max">
-            Unsubscribe
-          </button>
         </Popover>
       </div>
     );
