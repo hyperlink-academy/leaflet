@@ -1,10 +1,8 @@
 "use client";
 import { callRPC } from "app/api/rpc/client";
-import { createPublication } from "./createPublication";
 import { ButtonPrimary } from "components/Buttons";
-import { AddSmall } from "components/Icons/AddSmall";
 import { Input, InputWithLabel } from "components/Input";
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   updatePublication,
   updatePublicationBasePath,
@@ -15,7 +13,9 @@ import useSWR, { mutate } from "swr";
 import { AddTiny } from "components/Icons/AddTiny";
 import { DotLoader } from "components/utils/DotLoader";
 import { useSmoker, useToaster } from "components/Toast";
-import { addDomain, addPublicationDomain } from "actions/domains/addDomain";
+import { addPublicationDomain } from "actions/domains/addDomain";
+import { LoadingTiny } from "components/Icons/LoadingTiny";
+import { PinTiny } from "components/Icons/PinTiny";
 
 export const EditPubForm = () => {
   let pubData = usePublicationData();
@@ -59,12 +59,9 @@ export const EditPubForm = () => {
       }}
     >
       <div className="flex items-center justify-between gap-2 ">
-        <div className="text-center text-secondary flex flex-col ">
-          <p className=" font-bold text-secondary">
-            Logo{" "}
-            <span className="italic text-tertiary font-normal">(optional)</span>
-          </p>
-        </div>
+        <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
+          Logo <span className="font-normal">(optional)</span>
+        </p>
         <div
           className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer  ${iconPreview ? "border border-border-light hover:outline-border" : "border border-dotted border-accent-contrast hover:outline-accent-contrast"} selected-outline`}
           onClick={() => fileInputRef.current?.click()}
@@ -97,33 +94,39 @@ export const EditPubForm = () => {
           }}
         />
       </div>
-      <InputWithLabel
-        type="text"
-        id="pubName"
-        label="Publication Name"
-        value={nameValue}
-        onChange={(e) => {
-          setNameValue(e.currentTarget.value);
-        }}
-      />
-
-      <InputWithLabel
-        label="Description (optional)"
-        textarea
-        rows={3}
-        id="pubDescription"
-        value={descriptionValue}
-        onChange={(e) => {
-          setDescriptionValue(e.currentTarget.value);
-        }}
-      />
-
-      <hr className="text-border" />
+      <label>
+        <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
+          Publication Name
+        </p>
+        <Input
+          className="input-with-border w-full "
+          type="text"
+          id="pubName"
+          value={nameValue}
+          onChange={(e) => {
+            setNameValue(e.currentTarget.value);
+          }}
+        />
+      </label>
+      <label>
+        <p className="text-tertiary italic text-sm font-bold pl-0.5 pb-0.5">
+          Description <span className="font-normal">(optional)</span>
+        </p>
+        <Input
+          textarea
+          className="input-with-border w-full "
+          rows={3}
+          id="pubDescription"
+          value={descriptionValue}
+          onChange={(e) => {
+            setDescriptionValue(e.currentTarget.value);
+          }}
+        />
+      </label>
 
       <CustomDomainForm />
-
       <ButtonPrimary className="place-self-end" type="submit">
-        {formState === "loading" ? <DotLoader /> : "Update Publication"}
+        {formState === "loading" ? <DotLoader /> : "Update!"}
       </ButtonPrimary>
     </form>
   );
@@ -131,43 +134,84 @@ export const EditPubForm = () => {
 
 export function CustomDomainForm() {
   let pubData = usePublicationData();
-  let domains = pubData?.publication_domains || [];
   if (!pubData) return null;
   let record = pubData?.record as PubLeafletPublication.Record;
+  let [state, setState] = useState<
+    | { type: "default" }
+    | { type: "addDomain" }
+    | { type: "domainSettings"; domain: string }
+  >({ type: "default" });
+  let domains = pubData?.publication_domains || [];
+
   return (
-    <>
-      {domains.map((d) => (
-        <Domain
-          domain={d.domain}
-          key={d.domain}
-          publication_uri={pubData.uri}
-          base_path={record.base_path || ""}
-        />
-      ))}
-      <AddDomain publication_uri={pubData.uri} />
-    </>
+    <div className="flex flex-col gap-0.5">
+      <p className="text-tertiary italic text-sm font-bold">
+        Publication Domain{domains.length > 1 && "s"}
+      </p>
+
+      <div className="opaque-container px-[6px] py-1">
+        {state.type === "addDomain" ? (
+          <AddDomain
+            publication_uri={pubData.uri}
+            goBack={() => setState({ type: "default" })}
+          />
+        ) : state.type === "domainSettings" ? (
+          <DomainSettings
+            domain={state.domain}
+            goBack={() => setState({ type: "default" })}
+          />
+        ) : (
+          <div className="flex flex-col gap-1 py-1">
+            {domains.map((d) => (
+              <React.Fragment key={d.domain}>
+                <Domain
+                  domain={d.domain}
+                  publication_uri={pubData.uri}
+                  base_path={record.base_path || ""}
+                  setDomain={() => {
+                    setState({ type: "domainSettings", domain: d.domain });
+                  }}
+                />
+                <hr className="border-border-light last:hidden" />
+              </React.Fragment>
+            ))}
+            <button
+              className="text-accent-contrast text-sm w-fit "
+              onClick={() => setState({ type: "addDomain" })}
+              type="button"
+            >
+              Add custom domain
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
-function AddDomain(props: { publication_uri: string }) {
+function AddDomain(props: { publication_uri: string; goBack: () => void }) {
   let [domain, setDomain] = useState("");
   let smoker = useSmoker();
-  let [state, setState] = useState<"closed" | "open">("closed");
-  if (state === "closed")
-    return (
-      <button onClick={() => setState("open")} type="button">
-        add a custom domain
-      </button>
-    );
-  if (state === "open") {
-    return (
-      <div>
+
+  return (
+    <div className="w-full flex flex-col gap-0.5 py-1">
+      <label>
+        <p className="pl-0.5 text-tertiary italic text-sm">
+          Add a Custom Domain
+        </p>
         <Input
+          className="w-full input-with-border"
           placeholder="domain"
           value={domain}
           onChange={(e) => setDomain(e.currentTarget.value)}
         />
+      </label>
+      <div className="flex flex-row justify-between text-sm pt-2">
+        <button className="text-accent-contrast" onClick={() => props.goBack()}>
+          Back
+        </button>
         <button
+          className="place-self-end font-bold text-accent-contrast text-sm"
           onClick={async (e) => {
             let { error } = await addPublicationDomain(
               domain,
@@ -190,15 +234,17 @@ function AddDomain(props: { publication_uri: string }) {
             }
 
             mutate("publication-data");
+            props.goBack();
           }}
           type="button"
         >
-          add!
+          Add Domain
         </button>
       </div>
-    );
-  }
+    </div>
+  );
 }
+
 // OKay so... You hit this button, it gives you a form. You type in the form, and then hit add. We create a record, and a the record link it to your publiction. Then we show you the stuff to set. )
 // We don't want to switch it, until it works.
 // There's a checkbox to say that this is hosted somewhere else
@@ -207,19 +253,35 @@ function Domain(props: {
   domain: string;
   base_path: string;
   publication_uri: string;
+  setDomain: () => void;
 }) {
   let { data } = useSWR(props.domain, async (domain) => {
     return await callRPC("get_domain_status", { domain });
   });
+
   let pending = data?.config?.misconfigured || data?.error;
-  let isSubdomain = props.domain.split(".").length > 2;
-  console.log(data);
-  if (!pending)
-    return (
-      <div>
-        {props.domain} active!{" "}
-        {props.base_path === props.domain ? (
-          "main"
+
+  return (
+    <div className="text-sm text-secondary relative">
+      {props.domain}
+      <div className="absolute right-0 top-0 bottom-0 flex justify-end items-center w-4 ">
+        {pending ? (
+          <button
+            className="group/pending flex gap-1 items-center rounded-full p-1 hover:bg-accent-1 hover:  hover:text-accent-2"
+            onClick={props.setDomain}
+          >
+            <p className="group-hover/pending:block hidden w-max pl-1 font-bold">
+              pending
+            </p>
+            <LoadingTiny className="animate-spin text-accent-contrast group-hover/pending:text-accent-2 " />
+          </button>
+        ) : props.base_path === props.domain ? (
+          <div className="group/default-domain flex gap-1 items-center rounded-full bg-none w-max  p-1 hover:bg-bg-page border border-transparent hover:border-border-light hover:text-tertiary">
+            <p className="group-hover/default-domain:block hidden w-max pl-1">
+              current default domain
+            </p>
+            <PinTiny className="text-accent-contrast group-hover/default-domain:text-border shrink-0" />
+          </div>
         ) : (
           <button
             type="button"
@@ -230,55 +292,68 @@ function Domain(props: {
               });
               mutate("publication-data");
             }}
+            className="group/domain flex gap-1 items-center rounded-full bg-none w-max font-bold p-1 hover:bg-accent-1 hover:text-accent-2"
           >
-            make main
+            <p className="group-hover/domain:block hidden w-max pl-1">
+              set as default
+            </p>
+            <PinTiny className="text-accent-contrast group-hover/domain:text-accent-2 shrink-0" />
           </button>
         )}
       </div>
-    );
-  if (pending)
-    return (
-      <div className="flex flex-col gap-[6px]">
-        <div>
-          To verify this domain, add the following record to your DNS provider
-          for <strong>{props.domain}</strong>.
-        </div>
-
-        {isSubdomain ? (
-          <div className="flex gap-3 p-1 border border-border-light rounded-md py-1">
-            <div className="flex flex-col ">
-              <div className="text-tertiary">Type</div>
-              <div>CNAME</div>
-            </div>
-            <div className="flex flex-col">
-              <div className="text-tertiary">Name</div>
-              <div style={{ wordBreak: "break-word" }}>
-                {props.domain.split(".").slice(0, -2).join(".")}
-              </div>
-            </div>
-            <div className="flex flex-col">
-              <div className="text-tertiary">Value</div>
-              <div style={{ wordBreak: "break-word" }}>
-                cname.vercel-dns.com
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="flex gap-3 p-1 border border-border-light rounded-md py-1">
-            <div className="flex flex-col ">
-              <div className="text-tertiary">Type</div>
-              <div>A</div>
-            </div>
-            <div className="flex flex-col">
-              <div className="text-tertiary">Name</div>
-              <div>@</div>
-            </div>
-            <div className="flex flex-col">
-              <div className="text-tertiary">Value</div>
-              <div>76.76.21.21</div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
+    </div>
+  );
 }
+
+const DomainSettings = (props: { domain: string; goBack: () => void }) => {
+  let isSubdomain = props.domain.split(".").length > 2;
+
+  return (
+    <div className="flex flex-col gap-[6px] text-sm">
+      <div>
+        To verify this domain, add the following record to your DNS provider for{" "}
+        <strong>{props.domain}</strong>.
+      </div>
+
+      {isSubdomain ? (
+        <div className="flex gap-3 p-1 border border-border-light rounded-md py-1">
+          <div className="flex flex-col ">
+            <div className="text-tertiary">Type</div>
+            <div>CNAME</div>
+          </div>
+          <div className="flex flex-col">
+            <div className="text-tertiary">Name</div>
+            <div style={{ wordBreak: "break-word" }}>
+              {props.domain.split(".").slice(0, -2).join(".")}
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <div className="text-tertiary">Value</div>
+            <div style={{ wordBreak: "break-word" }}>cname.vercel-dns.com</div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex gap-3 px-2 py-1 border border-border-light rounded-md ">
+          <div className="flex flex-col ">
+            <div className="text-tertiary">Type</div>
+            <div>A</div>
+          </div>
+          <div className="flex flex-col">
+            <div className="text-tertiary">Name</div>
+            <div>@</div>
+          </div>
+          <div className="flex flex-col">
+            <div className="text-tertiary">Value</div>
+            <div>76.76.21.21</div>
+          </div>
+        </div>
+      )}
+      <button
+        className="text-accent-contrast w-fit"
+        onClick={() => props.goBack()}
+      >
+        Back
+      </button>
+    </div>
+  );
+};

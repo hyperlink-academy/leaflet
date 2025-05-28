@@ -60,7 +60,7 @@ function Publication(props: { uri: string; name: string; record: Json }) {
       className="pubListItem w-full p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline outline-2 outline-offset-1 hover:outline-border basis-0 grow min-w-0"
       href={`${getBasePublicationURL(props)}/dashboard`}
     >
-      {record.icon && (
+      {record?.icon && (
         <div
           style={{
             backgroundRepeat: "no-repeat",

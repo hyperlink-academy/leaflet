@@ -3,12 +3,13 @@ import { useCallback, useEffect, useRef, type JSX } from "react";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
 import { isIOS } from "src/utils/isDevice";
 
-export function Input(
-  props: React.DetailedHTMLProps<
-    React.InputHTMLAttributes<HTMLInputElement>,
-    HTMLInputElement
-  >,
-) {
+export const Input = (
+  props: {
+    textarea?: boolean;
+  } & JSX.IntrinsicElements["input"] &
+    JSX.IntrinsicElements["textarea"],
+) => {
+  let { textarea, ...inputProps } = props;
   let ref = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!isIOS()) return;
@@ -17,15 +18,16 @@ export function Input(
     }
   }, [props.autoFocus]);
 
+  if (textarea) return <textarea {...inputProps} />;
   return (
     <input
-      {...props}
+      {...inputProps}
       autoFocus={isIOS() ? false : props.autoFocus}
       ref={ref}
       onMouseDown={onMouseDown}
     />
   );
-}
+};
 
 export const focusElement = (el?: HTMLInputElement | null) => {
   if (!isIOS()) {
@@ -71,7 +73,7 @@ export const InputWithLabel = (
   let { label, textarea, ...inputProps } = props;
   let style = `appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 ${props.className} outline-none resize-none`;
   return (
-    <label className=" input-with-border flex flex-col text-sm text-tertiary font-bold italic leading-tight !py-1 !px-[6px]">
+    <label className=" input-with-border flex flex-col gap-[1px] text-sm text-tertiary font-bold italic leading-tight !py-1 !px-[6px]">
       {props.label}
       {textarea ? (
         <textarea {...inputProps} className={style} />
