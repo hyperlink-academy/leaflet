@@ -11,7 +11,7 @@ import { BlueskySmall } from "components/Icons/BlueskySmall";
 import { Input } from "components/Input";
 import { useSmoker, useToaster } from "components/Toast";
 import React, { useState } from "react";
-import useSWR, { mutate } from "swr";
+import { mutate } from "swr";
 
 export default function LoginForm() {
   type FormState =
@@ -29,10 +29,6 @@ export default function LoginForm() {
   const [formState, setFormState] = useState<FormState>({
     stage: "email",
     email: "",
-  });
-
-  let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
-    fallbackData: [],
   });
 
   const handleSubmitEmail = async (e: React.FormEvent) => {
@@ -69,6 +65,8 @@ export default function LoginForm() {
         },
       });
     } else {
+      let localLeaflets = getHomeDocs();
+
       await loginWithEmailToken(localLeaflets.filter((l) => !l.hidden));
       mutate("identity");
       toaster({
