@@ -7,7 +7,6 @@ import { Fact, PermissionToken, ReplicacheProvider } from "src/replicache";
 import { LeafletPreview } from "./LeafletPreview";
 import { useIdentityData } from "components/IdentityProvider";
 import type { Attribute } from "src/replicache/attributes";
-import { getIdentityData } from "actions/getIdentityData";
 import { callRPC } from "app/api/rpc/client";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 
@@ -20,7 +19,7 @@ export function LeafletList(props: {
     fallbackData: [],
   });
   let { identity } = useIdentityData();
-  let { data: initialFacts, mutate } = useSWR(
+  let { data: initialFacts } = useSWR(
     "home-leaflet-data",
     async () => {
       if (identity) {
@@ -34,9 +33,6 @@ export function LeafletList(props: {
     },
     { fallbackData: props.initialFacts },
   );
-  useEffect(() => {
-    mutate();
-  }, [localLeaflets.length, mutate]);
   let leaflets: Array<
     PermissionToken & {
       leaflets_in_publications?: Array<{
