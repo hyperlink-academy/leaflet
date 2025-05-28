@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { isProductionDomain } from "./utils/isProductionDeployment";
 
 export async function setAuthToken(tokenID: string) {
@@ -16,17 +16,6 @@ export async function removeAuthToken() {
   let c = await cookies();
   c.delete({
     name: "auth_token",
-    maxAge: 60 * 60 * 24 * 365,
-    secure: process.env.NODE_ENV === "production",
-    domain: isProductionDomain() ? "leaflet.pub" : undefined,
-    httpOnly: true,
-    sameSite: "lax",
-  });
-  c.delete({
-    name: "auth_token",
-    maxAge: 60 * 60 * 24 * 365,
-    secure: process.env.NODE_ENV === "production",
-    httpOnly: true,
-    sameSite: "lax",
+    domain: isProductionDomain() ? ".leaflet.pub" : undefined,
   });
 }
