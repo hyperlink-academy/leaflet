@@ -3,10 +3,11 @@ import { isProductionDomain } from "./utils/isProductionDeployment";
 
 export async function setAuthToken(tokenID: string) {
   let c = await cookies();
+  let host = (await headers()).get("host");
   c.set("auth_token", tokenID, {
     maxAge: 60 * 60 * 24 * 365,
     secure: process.env.NODE_ENV === "production",
-    domain: isProductionDomain() ? "leaflet.pub" : undefined,
+    domain: isProductionDomain() ? host! : undefined,
     httpOnly: true,
     sameSite: "lax",
   });

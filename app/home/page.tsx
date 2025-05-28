@@ -21,9 +21,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 
 export default async function Home() {
   let cookieStore = await cookies();
-
-  let auth_token = cookieStore.get("auth_token")?.value;
-  let auth_res = auth_token ? await getIdentityData() : null;
+  let auth_res = await getIdentityData();
   let identity: string | undefined;
   if (auth_res) identity = auth_res.id;
   else identity = cookieStore.get("identity")?.value;
