@@ -176,7 +176,7 @@ export function ReplicacheProvider(props: {
       setRep(null);
       channel?.unsubscribe();
     };
-  }, [props.name, props.initialFactsOnly, props.token]);
+  }, [props.name, props.initialFactsOnly, props.token, props.disablePull]);
   return (
     <ReplicacheContext.Provider
       value={{
