@@ -72,7 +72,7 @@ type CROSS_SITE_AUTH_RESPONSE = { redirect: string; auth_token: string | null };
 async function initiateAuthCallback(req: NextRequest) {
   let token: CROSS_SITE_AUTH_REQUEST = { redirect: req.url };
   let payload = btoa(JSON.stringify(token));
-  let signature = signCrossSiteToken(payload);
+  let signature = await signCrossSiteToken(payload);
   return NextResponse.redirect(
     `https://leaflet.pub${auth_callback_route}?payload=${payload}&signature=${signature}`,
   );
@@ -97,7 +97,7 @@ async function authCallback(req: NextRequest) {
   };
 
   let response_payload = btoa(JSON.stringify(response_token));
-  let sig = signCrossSiteToken(response_payload);
+  let sig = await signCrossSiteToken(response_payload);
   return NextResponse.redirect(
     `https://${redirect_url.host}${receive_auth_callback_route}?payload=${response_payload}&signature=${sig}`,
   );
