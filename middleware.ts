@@ -22,6 +22,10 @@ let supabase = createClient<Database>(
 );
 export default async function middleware(req: NextRequest) {
   let hostname = req.headers.get("host")!;
+  if (req.nextUrl.pathname === "/auth-callback") return authCallback(req);
+  if (req.nextUrl.pathname === "/receive-auth-callback")
+    return receiveAuthCallback(req);
+
   if (hostname === "leaflet.pub") return;
   if (req.nextUrl.pathname === "/not-found") return;
   let { data: routes } = await supabase
@@ -34,6 +38,10 @@ export default async function middleware(req: NextRequest) {
 
   let pub = routes?.publication_domains[0]?.publications;
   if (pub) {
+    let cookie = req.cookies.get("external_auth_token");
+    if (!cookie) {
+      return initiateAuthCallback(req);
+    }
     let aturi = new AtUri(pub?.uri);
     return NextResponse.rewrite(
       new URL(
@@ -55,3 +63,77 @@ export default async function middleware(req: NextRequest) {
     }
   }
 }
+
+type CROSS_SITE_AUTH_REQUEST = { redirect: string };
+type CROSS_SITE_AUTH_RESPONSE = { redirect: string; auth_token: string | null };
+async function initiateAuthCallback(req: NextRequest) {
+  let token: CROSS_SITE_AUTH_REQUEST = { redirect: req.url };
+  let payload = btoa(JSON.stringify(token));
+  let sig = signCrossSiteToken(payload);
+  return NextResponse.redirect(
+    `https://leaflet.pub/auth_callback?payload=${payload}&signature=${sig}`,
+  );
+}
+
+async function authCallback(req: NextRequest) {
+  let payload = req.nextUrl.searchParams.get("payload");
+  let signature = req.nextUrl.searchParams.get("signature");
+
+  if (typeof payload !== "string")
+    return new NextResponse(null, { status: 401 });
+
+  let verifySig = await signCrossSiteToken(payload);
+  if (verifySig !== signature) return new NextResponse(null, { status: 401 });
+
+  let token: CROSS_SITE_AUTH_REQUEST = JSON.parse(atob(payload));
+  let auth_token = req.cookies.get("auth_token")?.value || null;
+  let redirect_url = new URL(token.redirect);
+  let response_token: CROSS_SITE_AUTH_RESPONSE = {
+    redirect: token.redirect,
+    auth_token,
+  };
+
+  let response_payload = btoa(JSON.stringify(response_token));
+  let sig = signCrossSiteToken(response_payload);
+  return NextResponse.redirect(
+    `https://${redirect_url.host}/receive_auth_callback?payload=${response_payload}&signature=${sig}`,
+  );
+}
+
+async function receiveAuthCallback(req: NextRequest) {
+  let payload = req.nextUrl.searchParams.get("payload");
+  let signature = req.nextUrl.searchParams.get("signature");
+
+  if (typeof payload !== "string")
+    return new NextResponse(null, { status: 401 });
+
+  let verifySig = await signCrossSiteToken(payload);
+  if (verifySig !== signature) return new NextResponse(null, { status: 401 });
+
+  let token: CROSS_SITE_AUTH_RESPONSE = JSON.parse(atob(payload));
+
+  let response = NextResponse.redirect(token.redirect);
+  response.cookies.set("external_auth_token", token.auth_token || "null");
+  return response;
+}
+
+const signCrossSiteToken = async (input: string) => {
+  if (!process.env.CROSS_SITE_AUTH_SECRET)
+    throw new Error("Environment variable CROSS_SITE_AUTH_SECRET not set ");
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
+  const secretKey = process.env.CROSS_SITE_AUTH_SECRET;
+  const keyData = encoder.encode(secretKey);
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+
+  const signature = await crypto.subtle.sign("HMAC", key, data);
+
+  return btoa(String.fromCharCode(...new Uint8Array(signature)));
+};
