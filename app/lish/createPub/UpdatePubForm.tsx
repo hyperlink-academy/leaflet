@@ -1,12 +1,9 @@
 "use client";
 import { callRPC } from "app/api/rpc/client";
 import { ButtonPrimary } from "components/Buttons";
-import { Input, InputWithLabel } from "components/Input";
+import { Input } from "components/Input";
 import React, { useState, useRef, useEffect } from "react";
-import {
-  updatePublication,
-  updatePublicationBasePath,
-} from "./updatePublication";
+import { updatePublicationBasePath } from "./updatePublication";
 import { usePublicationData } from "../[did]/[publication]/dashboard/PublicationSWRProvider";
 import { PubLeafletPublication } from "lexicons/api";
 import useSWR, { mutate } from "swr";
@@ -47,12 +44,6 @@ export const EditPubForm = () => {
         if (!pubData) return;
         e.preventDefault();
         setFormState("loading");
-        let data = await updatePublication({
-          uri: pubData.uri,
-          name: nameValue,
-          description: descriptionValue,
-          iconFile: iconFile,
-        });
         toast({ type: "success", content: "Updated!" });
         setFormState("normal");
         mutate("publication-data");
@@ -267,7 +258,7 @@ function Domain(props: {
       <div className="absolute right-0 top-0 bottom-0 flex justify-end items-center w-4 ">
         {pending ? (
           <button
-            className="group/pending flex gap-1 items-center rounded-full p-1 hover:bg-accent-1 hover:  hover:text-accent-2"
+            className="group/pending px-1 py-0.5 flex gap-1 items-center rounded-full  hover:bg-accent-1  hover:text-accent-2 hover:outline-accent-1 border-transparent outline outline-transparent selected-outline"
             onClick={props.setDomain}
           >
             <p className="group-hover/pending:block hidden w-max pl-1 font-bold">
@@ -276,7 +267,7 @@ function Domain(props: {
             <LoadingTiny className="animate-spin text-accent-contrast group-hover/pending:text-accent-2 " />
           </button>
         ) : props.base_path === props.domain ? (
-          <div className="group/default-domain flex gap-1 items-center rounded-full bg-none w-max  p-1 hover:bg-bg-page border border-transparent hover:border-border-light hover:text-tertiary">
+          <div className="group/default-domain flex gap-1 items-center rounded-full bg-none w-max  px-1 py-0.5 hover:bg-bg-page border border-transparent hover:border-border-light hover:text-secondary">
             <p className="group-hover/default-domain:block hidden w-max pl-1">
               current default domain
             </p>
@@ -292,7 +283,7 @@ function Domain(props: {
               });
               mutate("publication-data");
             }}
-            className="group/domain flex gap-1 items-center rounded-full bg-none w-max font-bold p-1 hover:bg-accent-1 hover:text-accent-2"
+            className="group/domain flex gap-1 items-center rounded-full bg-none w-max font-bold px-1 py-0.5 hover:bg-accent-1 hover:text-accent-2 border-transparent outline outline-transparent hover:outline-accent-1  selected-outline"
           >
             <p className="group-hover/domain:block hidden w-max pl-1">
               set as default
