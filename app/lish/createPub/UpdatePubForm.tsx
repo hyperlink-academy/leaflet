@@ -294,11 +294,11 @@ function Domain(props: {
             <LoadingTiny className="animate-spin text-accent-contrast group-hover/pending:text-accent-2 " />
           </button>
         ) : props.base_path === props.domain ? (
-          <div className="group/default-domain flex gap-1 items-center rounded-full bg-none w-max  px-1 py-0.5 hover:bg-bg-page border border-transparent hover:border-border-light hover:text-secondary">
+          <div className="group/default-domain flex gap-1 items-center rounded-full bg-none w-max  px-1 py-0.5 hover:bg-bg-page border border-transparent hover:border-border-light ">
             <p className="group-hover/default-domain:block hidden w-max pl-1">
               current default domain
             </p>
-            <PinTiny className="text-accent-contrast group-hover/default-domain:text-border shrink-0" />
+            <PinTiny className="text-accent-contrast shrink-0" />
           </div>
         ) : (
           <button
@@ -315,7 +315,7 @@ function Domain(props: {
             <p className="group-hover/domain:block hidden w-max pl-1">
               set as default
             </p>
-            <PinTiny className="text-accent-contrast group-hover/domain:text-accent-2 shrink-0" />
+            <PinTiny className="text-secondary group-hover/domain:text-accent-2 shrink-0" />
           </button>
         )}
       </div>
