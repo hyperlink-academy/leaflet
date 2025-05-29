@@ -294,8 +294,8 @@ function Domain(props: {
         ) : (
           <button
             type="button"
-            onClick={() => {
-              updatePublicationBasePath({
+            onClick={async () => {
+              await updatePublicationBasePath({
                 uri: props.publication_uri,
                 base_path: props.domain,
               });
