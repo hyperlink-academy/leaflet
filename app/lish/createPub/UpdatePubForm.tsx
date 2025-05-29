@@ -13,6 +13,7 @@ import { useSmoker, useToaster } from "components/Toast";
 import { addPublicationDomain } from "actions/domains/addDomain";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
 import { PinTiny } from "components/Icons/PinTiny";
+import { Verification } from "@vercel/sdk/esm/models/getprojectdomainop";
 
 export const EditPubForm = () => {
   let pubData = usePublicationData();
@@ -130,7 +131,7 @@ export function CustomDomainForm() {
   let [state, setState] = useState<
     | { type: "default" }
     | { type: "addDomain" }
-    | { type: "domainSettings"; domain: string }
+    | { type: "domainSettings"; domain: string; verification?: Verification[] }
   >({ type: "default" });
   let domains = pubData?.publication_domains || [];
 
@@ -148,6 +149,7 @@ export function CustomDomainForm() {
           />
         ) : state.type === "domainSettings" ? (
           <DomainSettings
+            verification={state.verification}
             domain={state.domain}
             goBack={() => setState({ type: "default" })}
           />
@@ -159,8 +161,12 @@ export function CustomDomainForm() {
                   domain={d.domain}
                   publication_uri={pubData.uri}
                   base_path={record.base_path || ""}
-                  setDomain={() => {
-                    setState({ type: "domainSettings", domain: d.domain });
+                  setDomain={(v) => {
+                    setState({
+                      type: "domainSettings",
+                      domain: d.domain,
+                      verification: v,
+                    });
                   }}
                 />
                 <hr className="border-border-light last:hidden" />
@@ -244,13 +250,14 @@ function Domain(props: {
   domain: string;
   base_path: string;
   publication_uri: string;
-  setDomain: () => void;
+  setDomain: (v?: Verification[]) => void;
 }) {
   let { data } = useSWR(props.domain, async (domain) => {
     return await callRPC("get_domain_status", { domain });
   });
 
   let pending = data?.config?.misconfigured || data?.error;
+  console.log(props.domain, data);
 
   return (
     <div className="text-sm text-secondary relative">
@@ -259,7 +266,13 @@ function Domain(props: {
         {pending ? (
           <button
             className="group/pending px-1 py-0.5 flex gap-1 items-center rounded-full  hover:bg-accent-1  hover:text-accent-2 hover:outline-accent-1 border-transparent outline outline-transparent selected-outline"
-            onClick={props.setDomain}
+            onClick={() => {
+              if (data?.error === "Verification_needed") {
+                props.setDomain(data.verification);
+              } else {
+                props.setDomain();
+              }
+            }}
           >
             <p className="group-hover/pending:block hidden w-max pl-1 font-bold">
               pending
@@ -296,8 +309,45 @@ function Domain(props: {
   );
 }
 
-const DomainSettings = (props: { domain: string; goBack: () => void }) => {
+const DomainSettings = (props: {
+  domain: string;
+  goBack: () => void;
+  verification?: Verification[];
+}) => {
   let isSubdomain = props.domain.split(".").length > 2;
+  if (props.verification)
+    return (
+      <div className="flex flex-col gap-[6px] text-sm">
+        <div>{props.domain} is in use on a Vercel account.</div>
+        <div className="flex gap-3 p-1 border border-border-light rounded-md py-1">
+          <div className="flex flex-col ">
+            <div className="text-tertiary">Type</div>
+            <div>{props.verification[0].type}</div>
+          </div>
+          <div className="flex flex-col">
+            <div className="text-tertiary">Name</div>
+            <div style={{ wordBreak: "break-word" }}>
+              {props.verification[0].domain}
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <div className="text-tertiary">Value</div>
+            <div style={{ wordBreak: "break-word" }}>
+              {props.verification?.[0].value}
+            </div>
+          </div>
+        </div>
+        <div>
+          <button
+            className="text-accent-contrast w-fit"
+            onClick={() => props.goBack()}
+          >
+            Back
+          </button>
+        </div>
+        <button className="text-accent-contrast w-fit">verify</button>
+      </div>
+    );
 
   return (
     <div className="flex flex-col gap-[6px] text-sm">
