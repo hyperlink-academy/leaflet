@@ -3,7 +3,10 @@ import { callRPC } from "app/api/rpc/client";
 import { ButtonPrimary } from "components/Buttons";
 import { Input } from "components/Input";
 import React, { useState, useRef, useEffect } from "react";
-import { updatePublicationBasePath } from "./updatePublication";
+import {
+  updatePublication,
+  updatePublicationBasePath,
+} from "./updatePublication";
 import { usePublicationData } from "../[did]/[publication]/dashboard/PublicationSWRProvider";
 import { PubLeafletPublication } from "lexicons/api";
 import useSWR, { mutate } from "swr";
@@ -45,6 +48,12 @@ export const EditPubForm = () => {
         if (!pubData) return;
         e.preventDefault();
         setFormState("loading");
+        let data = await updatePublication({
+          uri: pubData.uri,
+          name: nameValue,
+          description: descriptionValue,
+          iconFile: iconFile,
+        });
         toast({ type: "success", content: "Updated!" });
         setFormState("normal");
         mutate("publication-data");
