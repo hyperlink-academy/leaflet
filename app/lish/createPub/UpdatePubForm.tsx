@@ -146,6 +146,7 @@ export function CustomDomainForm() {
           <AddDomain
             publication_uri={pubData.uri}
             goBack={() => setState({ type: "default" })}
+            setDomain={(d) => setState({ type: "domainSettings", domain: d })}
           />
         ) : state.type === "domainSettings" ? (
           <DomainSettings
@@ -186,7 +187,11 @@ export function CustomDomainForm() {
   );
 }
 
-function AddDomain(props: { publication_uri: string; goBack: () => void }) {
+function AddDomain(props: {
+  publication_uri: string;
+  goBack: () => void;
+  setDomain: (d: string) => void;
+}) {
   let [domain, setDomain] = useState("");
   let smoker = useSmoker();
 
@@ -231,7 +236,7 @@ function AddDomain(props: { publication_uri: string; goBack: () => void }) {
             }
 
             mutate("publication-data");
-            props.goBack();
+            props.setDomain(domain);
           }}
           type="button"
         >
