@@ -101,8 +101,6 @@ function PublicationShareButton() {
 }
 
 function PublicationSettingsButton(props: { publication: string }) {
-  let router = useRouter();
-
   return (
     <Popover
       asChild

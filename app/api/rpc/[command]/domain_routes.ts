@@ -20,10 +20,25 @@ export const get_domain_status = makeRoute({
           teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
         }),
       ]);
-      return { status, config };
+      return { config };
     } catch (e) {
-      console.log(e);
       let errorResponse = e as NextApiResponse;
+      if (errorResponse.statusCode === 403) {
+        try {
+          let verification = await vercel.projects.getProjectDomain({
+            idOrName: "prj_9jX4tmYCISnm176frFxk07fF74kG",
+            teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
+            domain,
+          });
+          if (!verification.verification) return {};
+          return {
+            error: "Verification_needed",
+            verification: verification.verification,
+          } as const;
+        } catch (e) {
+          return { error: true };
+        }
+      }
       if (errorResponse.statusCode === 404)
         return { error: "Not Found" } as const;
       return { error: true };

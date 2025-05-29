@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 
 import { Database } from "supabase/database.types";
 import { createServerClient } from "@supabase/ssr";
+import { getIdentityData } from "actions/getIdentityData";
 
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 const vercel = new Vercel({
@@ -17,21 +18,8 @@ let supabase = createServerClient<Database>(
 );
 
 export async function addDomain(domain: string) {
-  let auth_token = (await cookies()).get("auth_token")?.value;
-  if (!auth_token) return {};
-  let { data: auth_data } = await supabase
-    .from("email_auth_tokens")
-    .select(
-      `*,
-          identities(
-            *,
-            custom_domains(*)
-          )`,
-    )
-    .eq("id", auth_token)
-    .eq("confirmed", true)
-    .single();
-  if (!auth_data || !auth_data.email) return {};
+  let identity = await getIdentityData();
+  if (!identity || !identity.email) return {};
   if (
     domain.includes("leaflet.pub") &&
     ![
@@ -39,10 +27,36 @@ export async function addDomain(domain: string) {
       "brendan@hyperlink.academy",
       "jared@hyperlink.academy",
       "brendan.schlagel@gmail.com",
-    ].includes(auth_data.email)
+    ].includes(identity.email)
   )
     return {};
+  return await createDomain(domain, identity.email);
+}
 
+export async function addPublicationDomain(
+  domain: string,
+  publication_uri: string,
+) {
+  let identity = await getIdentityData();
+  if (!identity || !identity.atp_did) return {};
+  let { data: publication } = await supabase
+    .from("publications")
+    .select("*")
+    .eq("uri", publication_uri)
+    .single();
+
+  if (publication?.identity_did !== identity.atp_did) return {};
+  let { error } = await createDomain(domain, null);
+  if (error) return { error };
+  await supabase.from("publication_domains").insert({
+    publication: publication_uri,
+    identity: identity.atp_did,
+    domain,
+  });
+  return {};
+}
+
+async function createDomain(domain: string, email: string | null) {
   try {
     await vercel.projects.addProjectDomain({
       idOrName: "prj_9jX4tmYCISnm176frFxk07fF74kG",
@@ -71,7 +85,7 @@ export async function addDomain(domain: string) {
 
   await supabase.from("custom_domains").insert({
     domain,
-    identity: auth_data.email,
+    identity: email,
     confirmed: false,
   });
   return {};

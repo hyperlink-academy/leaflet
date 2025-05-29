@@ -20,6 +20,7 @@ export const get_publication_data = makeRoute({
       .select(
         `*,
         documents_in_publications(documents(*)),
+        publication_domains(*),
         leaflets_in_publications(*,
           permission_tokens(*,
             permission_token_rights(*),
