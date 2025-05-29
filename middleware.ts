@@ -42,7 +42,7 @@ export default async function middleware(req: NextRequest) {
   let pub = routes?.publication_domains[0]?.publications;
   if (pub) {
     let cookie = req.cookies.get("external_auth_token");
-    if (!cookie) {
+    if (!cookie && !hostname.includes("leaflet.pub")) {
       return initiateAuthCallback(req);
     }
     let aturi = new AtUri(pub?.uri);
@@ -67,10 +67,17 @@ export default async function middleware(req: NextRequest) {
   }
 }
 
-type CROSS_SITE_AUTH_REQUEST = { redirect: string };
-type CROSS_SITE_AUTH_RESPONSE = { redirect: string; auth_token: string | null };
+type CROSS_SITE_AUTH_REQUEST = { redirect: string; ts: string };
+type CROSS_SITE_AUTH_RESPONSE = {
+  redirect: string;
+  auth_token: string | null;
+  ts: string;
+};
 async function initiateAuthCallback(req: NextRequest) {
-  let token: CROSS_SITE_AUTH_REQUEST = { redirect: req.url };
+  let token: CROSS_SITE_AUTH_REQUEST = {
+    redirect: req.url,
+    ts: new Date().toISOString(),
+  };
   let payload = btoa(JSON.stringify(token));
   let signature = await signCrossSiteToken(payload);
   return NextResponse.redirect(
@@ -82,11 +89,12 @@ async function authCallback(req: NextRequest) {
   let payload = req.nextUrl.searchParams.get("payload");
   let signature = req.nextUrl.searchParams.get("signature");
 
-  if (typeof payload !== "string")
+  if (typeof payload !== "string" || typeof signature !== "string")
     return new NextResponse(null, { status: 401 });
 
-  let verifySig = await signCrossSiteToken(payload);
-  if (verifySig !== signature) return new NextResponse(null, { status: 401 });
+  let verifySig = await signCrossSiteToken(decodeURIComponent(payload));
+  if (verifySig !== decodeURIComponent(signature))
+    return new NextResponse(null, { status: 401 });
 
   let token: CROSS_SITE_AUTH_REQUEST = JSON.parse(atob(payload));
   let auth_token = req.cookies.get("auth_token")?.value || null;
@@ -94,6 +102,7 @@ async function authCallback(req: NextRequest) {
   let response_token: CROSS_SITE_AUTH_RESPONSE = {
     redirect: token.redirect,
     auth_token,
+    ts: new Date().toISOString(),
   };
 
   let response_payload = btoa(JSON.stringify(response_token));
@@ -107,11 +116,12 @@ async function receiveAuthCallback(req: NextRequest) {
   let payload = req.nextUrl.searchParams.get("payload");
   let signature = req.nextUrl.searchParams.get("signature");
 
-  if (typeof payload !== "string")
+  if (typeof payload !== "string" || typeof signature !== "string")
     return new NextResponse(null, { status: 401 });
 
-  let verifySig = await signCrossSiteToken(payload);
-  if (verifySig !== signature) return new NextResponse(null, { status: 401 });
+  let verifySig = await signCrossSiteToken(decodeURIComponent(payload));
+  if (verifySig !== decodeURIComponent(signature))
+    return new NextResponse(null, { status: 401 });
 
   let token: CROSS_SITE_AUTH_RESPONSE = JSON.parse(atob(payload));
 
