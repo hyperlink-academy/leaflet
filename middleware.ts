@@ -20,10 +20,13 @@ let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
 );
+
+const auth_callback_route = "/auth_callback";
+const receive_auth_callback_route = "/receive_auth_callback";
 export default async function middleware(req: NextRequest) {
   let hostname = req.headers.get("host")!;
-  if (req.nextUrl.pathname === "/auth-callback") return authCallback(req);
-  if (req.nextUrl.pathname === "/receive-auth-callback")
+  if (req.nextUrl.pathname === auth_callback_route) return authCallback(req);
+  if (req.nextUrl.pathname === receive_auth_callback_route)
     return receiveAuthCallback(req);
 
   if (hostname === "leaflet.pub") return;
@@ -69,9 +72,9 @@ type CROSS_SITE_AUTH_RESPONSE = { redirect: string; auth_token: string | null };
 async function initiateAuthCallback(req: NextRequest) {
   let token: CROSS_SITE_AUTH_REQUEST = { redirect: req.url };
   let payload = btoa(JSON.stringify(token));
-  let sig = signCrossSiteToken(payload);
+  let signature = signCrossSiteToken(payload);
   return NextResponse.redirect(
-    `https://leaflet.pub/auth_callback?payload=${payload}&signature=${sig}`,
+    `https://leaflet.pub${auth_callback_route}?payload=${payload}&signature=${signature}`,
   );
 }
 
@@ -96,7 +99,7 @@ async function authCallback(req: NextRequest) {
   let response_payload = btoa(JSON.stringify(response_token));
   let sig = signCrossSiteToken(response_payload);
   return NextResponse.redirect(
-    `https://${redirect_url.host}/receive_auth_callback?payload=${response_payload}&signature=${sig}`,
+    `https://${redirect_url.host}${receive_auth_callback_route}?payload=${response_payload}&signature=${sig}`,
   );
 }
 
