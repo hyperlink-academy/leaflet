@@ -263,16 +263,16 @@ const SuccessModal = (props: { setSubscribed: (s: boolean) => void }) => {
             setOpen(true);
           }}
         >
-          <BlueskyTiny /> Subscribe Modal
+          <BlueskyTiny /> Subscribe with Bluesky
         </ButtonPrimary>
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-primary data-[state=open]:animate-overlayShow opacity-10" />
+        <Dialog.Overlay className="fixed inset-0 bg-primary data-[state=open]:animate-overlayShow opacity-10 blur-sm" />
         <Dialog.Content
           className={`
           z-20 opaque-container
           fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-          w-96 px-3 py-2
+          w-96 px-3 py-4
           max-w-[var(--radix-popover-content-available-width)]
           max-h-[var(--radix-popover-content-available-height)]
           overflow-y-scroll no-scrollbar
