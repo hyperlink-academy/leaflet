@@ -54,7 +54,7 @@ const PublishPostForm = (props: {
     <div className="flex flex-col gap-4 w-[640px] max-w-full">
       <h3>Publish Options</h3>
       <form onSubmit={() => submit()}>
-        <div className="container flex flex-col gap-2  sm:p-3 p-4">
+        <div className="container flex flex-col gap-2 sm:p-3 p-4">
           <Radio
             checked={shareOption === "quiet"}
             onChange={(e) => {
@@ -95,7 +95,7 @@ const PublishPostForm = (props: {
           <div
             className={`w-full pl-5 pb-4 ${shareOption !== "bluesky" ? "opacity-50" : ""}`}
           >
-            <div className="opaque-container p-3">
+            <div className="opaque-container p-3  !rounded-lg">
               <div className="flex gap-2">
                 <div className="bg-test rounded-full w-[42px] h-[42px] shrink-0" />
                 <div className="flex flex-col ">
