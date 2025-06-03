@@ -7,6 +7,9 @@ import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEntity, useReplicache } from "src/replicache";
 import { ButtonPrimary } from "components/Buttons";
 import { Radio } from "components/Checkbox";
+import { useRouter } from "next/router";
+import { useParams } from "next/navigation";
+import Link from "next/link";
 
 export default function PublishPost() {
   let [publishState, setPublishState] = useState<"default" | "success">(
@@ -28,6 +31,7 @@ const PublishPostForm = (props: {
 }) => {
   let [shareOption, setShareOption] = useState<"bluesky" | "quiet">("bluesky");
   let [isLoading, setIsLoading] = useState(false);
+  let params = useParams();
 
   async function submit() {
     let { data: pub, mutate } = useLeafletPublicationData();
@@ -122,10 +126,17 @@ const PublishPostForm = (props: {
               </div>
             </div>
           </div>
-
-          <ButtonPrimary type="submit" className="place-self-end h-[30px]">
-            {isLoading ? <DotLoader /> : "Publish this Post!"}
-          </ButtonPrimary>
+          <div className="flex justify-between">
+            <Link
+              className="hover:!no-underline font-bold"
+              href={`/${params.leaflet_id}`}
+            >
+              Back
+            </Link>
+            <ButtonPrimary type="submit" className="place-self-end h-[30px]">
+              {isLoading ? <DotLoader /> : "Publish this Post!"}
+            </ButtonPrimary>
+          </div>
         </div>
       </form>
     </div>
