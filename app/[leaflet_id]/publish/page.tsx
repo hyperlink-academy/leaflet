@@ -51,10 +51,10 @@ const PublishPostForm = (props: {
   }
 
   return (
-    <div className="flex flex-col gap-4 w-96 max-w-full">
+    <div className="flex flex-col gap-4 w-[640px] max-w-full">
+      <h3>Publish Options</h3>
       <form onSubmit={() => submit()}>
         <div className="container flex flex-col gap-2  sm:p-3 p-4">
-          <h4>Publish</h4>
           <Radio
             checked={shareOption === "quiet"}
             onChange={(e) => {
@@ -91,52 +91,43 @@ const PublishPostForm = (props: {
               </div>
             </div>
           </Radio>
-          {shareOption === "bluesky" && (
-            <div className="w-full pl-5 pb-6">
-              <div className="bg-test rounded-md h-48 w-full flex place-items-center justify-center">
-                bsky editor here!
+
+          <div
+            className={`w-full pl-5 pb-4 ${shareOption !== "bluesky" ? "opacity-50" : ""}`}
+          >
+            <div className="opaque-container p-3">
+              <div className="flex gap-2">
+                <div className="bg-test rounded-full w-[42px] h-[42px] shrink-0" />
+                <div className="flex flex-col ">
+                  <div className="flex gap-2 pb-1">
+                    <p className="font-bold">jared</p>
+                    <p className="text-tertiary">@jrdprr</p>
+                  </div>
+                  <div>
+                    This is some content that i wrote and will be posting
+                  </div>
+                  <div className="opaque-container overflow-hidden flex flex-col mt-4">
+                    <div className="h-[260px] w-full bg-test" />
+                    <div className="flex flex-col p-2">
+                      <div className="font-bold">Title Here</div>
+                      <div className="text-tertiary">
+                        This is the description that you specified! Hopefully
+                        it's the same.
+                      </div>
+                      <hr className="border-border-light mt-2 mb-1" />
+                      <p className="text-xs text-tertiary">leaflet.pub</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
+          </div>
+
           <ButtonPrimary type="submit" className="place-self-end h-[30px]">
             {isLoading ? <DotLoader /> : "Publish this Post!"}
           </ButtonPrimary>
         </div>
       </form>
-      <div className="container !bg-border-light flex flex-col gap-1  sm:p-3 p-4">
-        <div className="flex flex-col gap-0">
-          <p className="text-tertiary text-sm">
-            Pretty links to your post will look like this
-          </p>
-        </div>
-        <div className="opaque-container  flex w-full h-[92px] ">
-          <div className="flex flex-col gap-1 p-2 text-sm w-full ">
-            <div className="font-bold truncate">title titletitletitl</div>
-            <div className="text-tertiary text-xs h-full overflow-hidden">
-              Here is a description, hopefully Here is a description, hopefully
-              Here is a description, hopefully Here is a description, hopefully
-              Here is a description, hopefully Here is a description, hopefully
-              Here is a description, hopefully Here is a description, hopefully
-              Here is a description, hopefully Here is a description, hopefully
-            </div>
-          </div>
-          <div className="bg-test h-full w-24 shrink-0" />
-        </div>
-        <div className="opaque-container  rounded-md flex flex-col w-full overflow-hidden">
-          <div className="bg-test h-48 w-full shrink-0" />
-
-          <div className="flex flex-col gap-1 p-2 text-sm w-full ">
-            <div className="font-bold truncate">title titletitletitl</div>
-            <div className="text-tertiary text-xs h-[54px] overflow-hidden">
-              Here is a description, hopefully Here is a description, hopefully
-              Here is a description, hopefully Here is a description, hopefully
-              Here is a description, hopefully Here is a description, hopefully
-              Here is a description, hopefully Here is a description, hopefully
-              Here is a description, hopefully Here is a description, hopefully
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
