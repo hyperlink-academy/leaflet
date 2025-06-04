@@ -279,9 +279,7 @@ const SuccessModal = (props: { setSubscribed: (s: boolean) => void }) => {
           flex flex-col gap-1 text-center justify-center
           `}
         >
-          <Dialog.Title>
-            <h3>Subscribed!</h3>
-          </Dialog.Title>
+          <Dialog.Title as="h3">Subscribed!</Dialog.Title>
           <Dialog.Description>
             You'll get updates about this publication via a Feed just for you.
             <ButtonPrimary className="place-self-center mt-4">
