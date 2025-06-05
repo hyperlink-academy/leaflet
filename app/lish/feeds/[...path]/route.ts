@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ path: string[] }> },
 ) {
   let { path } = await params;
-  if (path[0] === ".well-known")
+  if (path[0] === "did.json")
     return NextResponse.json({
       "@context": ["https://www.w3.org/ns/did/v1"],
       id: serviceDid,
