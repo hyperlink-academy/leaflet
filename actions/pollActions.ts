@@ -14,7 +14,7 @@ export async function getPollData(entity_sets: string[]) {
       poll_entity,
       voter_token,
       option_entity,
-      entities!inner(set)
+      entities!poll_votes_on_entity_poll_entity_fkey!inner(set)
     `,
     )
     .in("entities.set", entity_sets);
