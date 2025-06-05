@@ -223,6 +223,27 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletGraphSubscription: {
+    lexicon: 1,
+    id: 'pub.leaflet.graph.subscription',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description: 'Record declaring a subscription to a publication',
+        record: {
+          type: 'object',
+          required: ['publication'],
+          properties: {
+            publication: {
+              type: 'string',
+              format: 'at-uri',
+            },
+          },
+        },
+      },
+    },
+  },
   PubLeafletPagesLinearDocument: {
     lexicon: 1,
     id: 'pub.leaflet.pages.linearDocument',
@@ -270,27 +291,6 @@ export const schemaDict = {
       },
       textAlignRight: {
         type: 'token',
-      },
-    },
-  },
-  PubLeafletPublicationSubscription: {
-    lexicon: 1,
-    id: 'pub.leaflet.publication.subscription',
-    defs: {
-      main: {
-        type: 'record',
-        key: 'tid',
-        description: 'Record declaring a subscription to a publication',
-        record: {
-          type: 'object',
-          required: ['publication'],
-          properties: {
-            publication: {
-              type: 'string',
-              format: 'at-uri',
-            },
-          },
-        },
       },
     },
   },
@@ -1368,8 +1368,8 @@ export const ids = {
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
+  PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
   PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
-  PubLeafletPublicationSubscription: 'pub.leaflet.publication.subscription',
   PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
   ComAtprotoLabelDefs: 'com.atproto.label.defs',
   ComAtprotoRepoApplyWrites: 'com.atproto.repo.applyWrites',

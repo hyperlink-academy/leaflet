@@ -8,10 +8,10 @@ import { $Typed, is$typed as _is$typed, OmitKey } from '../../../../util'
 
 const is$typed = _is$typed,
   validate = _validate
-const id = 'pub.leaflet.publication.subscription'
+const id = 'pub.leaflet.graph.subscription'
 
 export interface Record {
-  $type: 'pub.leaflet.publication.subscription'
+  $type: 'pub.leaflet.graph.subscription'
   publication: string
   [k: string]: unknown
 }
