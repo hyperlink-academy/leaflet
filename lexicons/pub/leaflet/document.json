@@ -22,6 +22,10 @@
             "maxLength": 1280,
             "maxGraphemes": 128
           },
+          "postRef": {
+            "type": "ref",
+            "ref": "com.atproto.repo.strongRef"
+          },
           "description": {
             "type": "string",
             "maxLength": 3000,

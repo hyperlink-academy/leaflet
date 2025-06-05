@@ -4,7 +4,11 @@ import { IdResolver } from "@atproto/identity";
 const idResolver = new IdResolver();
 import { Firehose, MemoryRunner } from "@atproto/sync";
 import { ids } from "lexicons/api/lexicons";
-import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
+import {
+  PubLeafletDocument,
+  PubLeafletPublication,
+  PubLeafletPublicationSubscription,
+} from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 
@@ -31,7 +35,11 @@ async function main() {
     excludeIdentity: true,
     runner,
     idResolver,
-    filterCollections: [ids.PubLeafletDocument, ids.PubLeafletPublication],
+    filterCollections: [
+      ids.PubLeafletDocument,
+      ids.PubLeafletPublication,
+      ids.PubLeafletPublicationSubscription,
+    ],
     handleEvent: async (evt) => {
       if (
         evt.event == "account" ||
@@ -82,6 +90,26 @@ async function main() {
         if (evt.event === "delete") {
           await supabase
             .from("publications")
+            .delete()
+            .eq("uri", evt.uri.toString());
+        }
+      }
+      if (evt.collection === ids.PubLeafletPublication) {
+        if (evt.event === "create" || evt.event === "update") {
+          let record = PubLeafletPublicationSubscription.validateRecord(
+            evt.record,
+          );
+          if (!record.success) return;
+          await supabase.from("publication_subscriptions").upsert({
+            uri: evt.uri.toString(),
+            identity: evt.did,
+            publication: record.value.publication,
+            record: record.value as Json,
+          });
+        }
+        if (evt.event === "delete") {
+          await supabase
+            .from("publication_subscriptions")
             .delete()
             .eq("uri", evt.uri.toString());
         }

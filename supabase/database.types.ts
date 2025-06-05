@@ -684,6 +684,38 @@ export type Database = {
           },
         ]
       }
+      publication_subscriptions: {
+        Row: {
+          created_at: string
+          identity: string
+          publication: string
+          record: Json
+          uri: string | null
+        }
+        Insert: {
+          created_at?: string
+          identity: string
+          publication: string
+          record: Json
+          uri?: string | null
+        }
+        Update: {
+          created_at?: string
+          identity?: string
+          publication?: string
+          record?: Json
+          uri?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_subscriptions_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       publications: {
         Row: {
           identity_did: string
