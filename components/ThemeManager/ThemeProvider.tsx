@@ -85,6 +85,7 @@ export function PublicationThemeProvider(props: {
 
   return (
     <BaseThemeProvider
+      local={props.local}
       bgLeaflet={bgLeaflet}
       bgPage={bgPage}
       primary={primary}
@@ -125,6 +126,7 @@ export function LeafletThemeProvider(props: {
 
   return (
     <BaseThemeProvider
+      local={props.local}
       bgLeaflet={bgLeaflet}
       bgPage={bgPage}
       primary={primary}

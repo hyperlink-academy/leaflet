@@ -85,7 +85,7 @@ function PublicationShareButton() {
               x: rect ? rect.left + (rect.right - rect.left) / 2 : 0,
               y: rect ? rect.top + 26 : 0,
             },
-            text: "Copied Publicaiton URL!",
+            text: "Copied Publication URL!",
           });
         }}
       >
@@ -101,8 +101,6 @@ function PublicationShareButton() {
 }
 
 function PublicationSettingsButton(props: { publication: string }) {
-  let router = useRouter();
-
   return (
     <Popover
       asChild

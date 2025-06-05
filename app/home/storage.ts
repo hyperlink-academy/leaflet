@@ -15,11 +15,19 @@ let defaultValue: HomeDocsStorage = {
   docs: [],
 };
 const key = "homepageDocs-v1";
+let tokenCache = new Map<string, PermissionToken>();
 export function getHomeDocs() {
   let homepageDocs: HomeDocsStorage = JSON.parse(
     window.localStorage.getItem(key) || JSON.stringify(defaultValue),
   );
-  return homepageDocs.docs;
+  return homepageDocs.docs.map((d) => {
+    let cachedToken = tokenCache.get(d.token.id);
+    if (!cachedToken) {
+      cachedToken = d.token;
+      tokenCache.set(d.token.id, d.token);
+    }
+    return { ...d, token: cachedToken };
+  });
 }
 
 export function addDocToHome(doc: PermissionToken) {

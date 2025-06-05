@@ -103,7 +103,7 @@ export default async function Publication(props: {
                 .filter((d) => !!d?.documents)
                 .sort((a, b) => {
                   let aRecord = a.documents?.data! as PubLeafletDocument.Record;
-                  let bRecord = a.documents?.data! as PubLeafletDocument.Record;
+                  let bRecord = b.documents?.data! as PubLeafletDocument.Record;
                   const aDate = aRecord.publishedAt
                     ? new Date(aRecord.publishedAt)
                     : new Date(0);

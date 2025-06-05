@@ -115,6 +115,13 @@ export const phone_number_auth_tokens = pgTable("phone_number_auth_tokens", {
 	country_code: text("country_code").notNull(),
 });
 
+export const custom_domains = pgTable("custom_domains", {
+	domain: text("domain").primaryKey().notNull(),
+	identity: text("identity").default('').references(() => identities.email, { onDelete: "cascade", onUpdate: "cascade" } ),
+	confirmed: boolean("confirmed").notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+});
+
 export const phone_rsvps_to_entity = pgTable("phone_rsvps_to_entity", {
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	phone_number: text("phone_number").notNull(),
@@ -143,13 +150,6 @@ export const custom_domain_routes = pgTable("custom_domain_routes", {
 	return {
 		custom_domain_routes_domain_route_key: unique("custom_domain_routes_domain_route_key").on(table.domain, table.route),
 	}
-});
-
-export const custom_domains = pgTable("custom_domains", {
-	domain: text("domain").primaryKey().notNull(),
-	identity: text("identity").default('').references(() => identities.email, { onDelete: "cascade", onUpdate: "cascade" } ),
-	confirmed: boolean("confirmed").notNull(),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 });
 
 export const poll_votes_on_entity = pgTable("poll_votes_on_entity", {
@@ -205,9 +205,23 @@ export const publication_domains = pgTable("publication_domains", {
 	}
 });
 
+export const publication_subscriptions = pgTable("publication_subscriptions", {
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	identity: text("identity").notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	record: jsonb("record").notNull(),
+	uri: text("uri"),
+},
+(table) => {
+	return {
+		publication_subscriptions_pkey: primaryKey({ columns: [table.publication, table.identity], name: "publication_subscriptions_pkey"}),
+		publication_subscriptions_uri_key: unique("publication_subscriptions_uri_key").on(table.uri),
+	}
+});
+
 export const leaflets_in_publications = pgTable("leaflets_in_publications", {
 	publication: text("publication").notNull().references(() => publications.uri),
-	doc: text("doc").default('').references(() => documents.uri),
+	doc: text("doc").default('').references(() => documents.uri, { onDelete: "set null" } ),
 	leaflet: uuid("leaflet").notNull().references(() => permission_tokens.id),
 	description: text("description").default('').notNull(),
 	title: text("title").default('').notNull(),

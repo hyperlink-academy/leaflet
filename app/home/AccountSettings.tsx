@@ -2,7 +2,6 @@
 
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { Menu, MenuItem } from "components/Layout";
-import { logout } from "actions/logout";
 import { mutate } from "swr";
 import { AccountSmall } from "components/Icons/AccountSmall";
 import { LogoutSmall } from "components/Icons/LogoutSmall";
@@ -16,8 +15,8 @@ export const AccountSettings = () => {
     >
       <MenuItem
         onSelect={async () => {
-          await logout();
-          mutate("identity");
+          await fetch("/api/auth/logout");
+          mutate("identity", null);
         }}
       >
         <LogoutSmall />

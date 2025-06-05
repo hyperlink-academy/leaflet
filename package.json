@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev --turbo",
+    "publish-lexicons": "tsx lexicons/publish.ts",
     "generate-db-types": "supabase gen types --local > supabase/database.types.ts && drizzle-kit introspect && rm -rf ./drizzle/*.sql ./drizzle/meta",
     "lexgen": "tsx ./lexicons/build.ts && lex gen-api ./lexicons/api ./lexicons/pub/leaflet/* ./lexicons/pub/leaflet/*/* ./lexicons/com/atproto/*/* --yes && find './lexicons/api' -type f -exec sed -i 's/\\.js'/'/g' {} \\;",
     "wrangler-dev": "wrangler dev",

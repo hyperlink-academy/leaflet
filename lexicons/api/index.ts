@@ -12,6 +12,7 @@ import * as PubLeafletBlocksImage from './types/pub/leaflet/blocks/image'
 import * as PubLeafletBlocksText from './types/pub/leaflet/blocks/text'
 import * as PubLeafletBlocksUnorderedList from './types/pub/leaflet/blocks/unorderedList'
 import * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
+import * as PubLeafletPublicationSubscription from './types/pub/leaflet/publication/subscription'
 import * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
 import * as ComAtprotoLabelDefs from './types/com/atproto/label/defs'
 import * as ComAtprotoRepoApplyWrites from './types/com/atproto/repo/applyWrites'
@@ -34,6 +35,7 @@ export * as PubLeafletBlocksImage from './types/pub/leaflet/blocks/image'
 export * as PubLeafletBlocksText from './types/pub/leaflet/blocks/text'
 export * as PubLeafletBlocksUnorderedList from './types/pub/leaflet/blocks/unorderedList'
 export * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
+export * as PubLeafletPublicationSubscription from './types/pub/leaflet/publication/subscription'
 export * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
 export * as ComAtprotoLabelDefs from './types/com/atproto/label/defs'
 export * as ComAtprotoRepoApplyWrites from './types/com/atproto/repo/applyWrites'
@@ -89,12 +91,14 @@ export class PubLeafletNS {
   publication: PublicationRecord
   blocks: PubLeafletBlocksNS
   pages: PubLeafletPagesNS
+  publication: PubLeafletPublicationNS
   richtext: PubLeafletRichtextNS
 
   constructor(client: XrpcClient) {
     this._client = client
     this.blocks = new PubLeafletBlocksNS(client)
     this.pages = new PubLeafletPagesNS(client)
+    this.publication = new PubLeafletPublicationNS(client)
     this.richtext = new PubLeafletRichtextNS(client)
     this.document = new DocumentRecord(client)
     this.publication = new PublicationRecord(client)
@@ -114,6 +118,81 @@ export class PubLeafletPagesNS {
 
   constructor(client: XrpcClient) {
     this._client = client
+  }
+}
+
+export class PubLeafletPublicationNS {
+  _client: XrpcClient
+  subscription: SubscriptionRecord
+
+  constructor(client: XrpcClient) {
+    this._client = client
+    this.subscription = new SubscriptionRecord(client)
+  }
+}
+
+export class SubscriptionRecord {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+
+  async list(
+    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
+  ): Promise<{
+    cursor?: string
+    records: { uri: string; value: PubLeafletPublicationSubscription.Record }[]
+  }> {
+    const res = await this._client.call('com.atproto.repo.listRecords', {
+      collection: 'pub.leaflet.publication.subscription',
+      ...params,
+    })
+    return res.data
+  }
+
+  async get(
+    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
+  ): Promise<{
+    uri: string
+    cid: string
+    value: PubLeafletPublicationSubscription.Record
+  }> {
+    const res = await this._client.call('com.atproto.repo.getRecord', {
+      collection: 'pub.leaflet.publication.subscription',
+      ...params,
+    })
+    return res.data
+  }
+
+  async create(
+    params: OmitKey<
+      ComAtprotoRepoCreateRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletPublicationSubscription.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.publication.subscription'
+    const res = await this._client.call(
+      'com.atproto.repo.createRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async delete(
+    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
+    headers?: Record<string, string>,
+  ): Promise<void> {
+    await this._client.call(
+      'com.atproto.repo.deleteRecord',
+      undefined,
+      { collection: 'pub.leaflet.publication.subscription', ...params },
+      { headers },
+    )
   }
 }
 
