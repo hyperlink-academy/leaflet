@@ -6,8 +6,8 @@ import { Firehose, MemoryRunner } from "@atproto/sync";
 import { ids } from "lexicons/api/lexicons";
 import {
   PubLeafletDocument,
+  PubLeafletGraphSubscription,
   PubLeafletPublication,
-  PubLeafletPublicationSubscription,
 } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
@@ -38,7 +38,7 @@ async function main() {
     filterCollections: [
       ids.PubLeafletDocument,
       ids.PubLeafletPublication,
-      ids.PubLeafletPublicationSubscription,
+      ids.PubLeafletGraphSubscription,
     ],
     handleEvent: async (evt) => {
       if (
@@ -96,9 +96,7 @@ async function main() {
       }
       if (evt.collection === ids.PubLeafletPublication) {
         if (evt.event === "create" || evt.event === "update") {
-          let record = PubLeafletPublicationSubscription.validateRecord(
-            evt.record,
-          );
+          let record = PubLeafletGraphSubscription.validateRecord(evt.record);
           if (!record.success) return;
           await supabase.from("publication_subscriptions").upsert({
             uri: evt.uri.toString(),

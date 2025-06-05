@@ -24,7 +24,7 @@ export const PubLeafletPublication: LexiconDoc = {
 
 export const PubLeafletPublicationSubscription: LexiconDoc = {
   lexicon: 1,
-  id: "pub.leaflet.publication.subscription",
+  id: "pub.leaflet.graph.subscription",
   defs: {
     main: {
       type: "record",
