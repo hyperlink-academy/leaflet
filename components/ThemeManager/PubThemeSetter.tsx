@@ -1,18 +1,21 @@
 import { usePublicationData } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
-import { LeafletBGPicker } from "./Pickers/LeafletBGPicker";
 import { useMemo, useState } from "react";
-import { pickers, SectionArrow, setColorAttribute } from "./ThemeSetter";
+import { pickers, SectionArrow } from "./ThemeSetter";
 import { theme } from "tailwind.config";
 import { AccentPickers } from "./Pickers/AccentPickers";
-import { PageThemePickers } from "./Pickers/PageThemePickers";
+import {
+  PageBackgroundPicker,
+  PageTextPicker,
+} from "./Pickers/PageThemePickers";
 import { Color } from "react-aria-components";
+import { PubLeafletPublication } from "lexicons/api";
+import { AtUri } from "@atproto/syntax";
 
 export const PubThemeSetter = () => {
-  let pub = usePublicationData();
   let [openPicker, setOpenPicker] = useState<pickers>("null");
 
   // TODO: Make this work with the pub record
-  let pubBGImage = "/RSVPBackground/wavy.svg";
+  let pubBGImage = "";
   let leafletBGRepeat = null;
 
   // TODO set the record value to the value of the picker
@@ -31,20 +34,17 @@ export const PubThemeSetter = () => {
             className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
           >
             <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md">
-              <LeafletBGPicker
-                entityID={""}
-                thisPicker={"leaflet"}
+              <PageBackgroundPicker
+                entityID=""
+                setValue={set}
                 openPicker={openPicker}
                 setOpenPicker={setOpenPicker}
-                closePicker={() => setOpenPicker("null")}
-                setValue={set}
               />
-
-              <PageThemePickers
-                home
-                entityID={""}
+              <PageTextPicker
+                entityID=""
+                setValue={set}
                 openPicker={openPicker}
-                setOpenPicker={(pickers) => setOpenPicker(pickers)}
+                setOpenPicker={setOpenPicker}
               />
             </div>
 
@@ -65,9 +65,9 @@ export const PubThemeSetter = () => {
               ? "cover"
               : `calc(${leafletBGRepeat}px / 2 )`,
           }}
-          className={`bg-bg-leaflet p-3  mb-2 flex flex-col rounded-md  border border-border pb-0`}
+          className={`bg-bg-leaflet p-3 flex flex-col rounded-md  border border-border `}
         >
-          <div className={`flex flex-col z-10 mt-4 -mb-[6px] `}>
+          <div className={`flex flex-col z-10 mt-2 -mb-[6px] `}>
             <AccentPickers
               entityID={""}
               openPicker={openPicker}
@@ -82,7 +82,10 @@ export const PubThemeSetter = () => {
 
           <SampleButton />
         </div>
-        <SamplePage pubBGImage={pubBGImage} pubBGRepeat={leafletBGRepeat} />
+        <div className="flex flex-col mt-4 ">
+          <div className="text-sm text-[#8C8C8C]">Page Preview</div>
+          <SamplePage pubBGImage={pubBGImage} pubBGRepeat={leafletBGRepeat} />
+        </div>
       </div>
     </div>
   );
@@ -92,6 +95,8 @@ const SamplePage = (props: {
   pubBGImage: string;
   pubBGRepeat: number | null;
 }) => {
+  let publication = usePublicationData();
+  let record = publication?.record as PubLeafletPublication.Record | null;
   return (
     <div
       style={{
@@ -104,16 +109,40 @@ const SamplePage = (props: {
           ? "cover"
           : `calc(${props.pubBGRepeat}px / 2 )`,
       }}
-      className={`bg-bg-leaflet p-3 mb-2 flex flex-col rounded-md  border border-border pb-0`}
+      className={`bg-bg-leaflet p-3  flex flex-col gap-3 rounded-t-md  border border-border border-b-0 pb-4`}
     >
-      hello
+      <div className="flex flex-col justify-center text-center pt-1">
+        {record?.icon && publication?.uri && (
+          <div
+            style={{
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "center",
+              backgroundSize: "cover",
+              backgroundImage: `url(/api/atproto_images?did=${new AtUri(publication.uri).host}&cid=${(record.icon?.ref as unknown as { $link: string })["$link"]})`,
+            }}
+            className="w-5 h-5 rounded-full place-self-center"
+          />
+        )}
+        <div className="text-xs font-bold text-accent-contrast pt-1">
+          {record?.name}
+        </div>
+        <div className="text-[8px] font-normal text-tertiary">
+          {record?.description}
+        </div>
+      </div>
+      <div className="flex flex-col text-[8px] py-1 px-[6px] rounded-md bg-test ">
+        <div className="font-bold">A Sample Post</div>
+        <div className="text-secondary italic">
+          This is a sample description about the sample post
+        </div>
+      </div>
     </div>
   );
 };
 
 function SampleButton() {
   return (
-    <div className="w-full py-2 bg-accent-1 text-accent-2 font-bold text-lg">
+    <div className="w-full py-2 bg-accent-1 text-accent-2 font-bold text-lg text-center rounded-lg">
       Sample Button
     </div>
   );

@@ -27,7 +27,6 @@ import { CanvasBackgroundPattern } from "components/Canvas";
 
 export const PageThemePickers = (props: {
   entityID: string;
-  home?: boolean;
   openPicker: pickers;
   setOpenPicker: (thisPicker: pickers) => void;
 }) => {
@@ -105,7 +104,7 @@ export const PageBackgroundPicker = (props: {
         {(pageBGImage === null || !pageBGImage) && (
           <label
             className={`
-              text-accent-1 hover:cursor-pointer  shrink-0
+              text-primary hover:cursor-pointer  shrink-0
               absolute top-0 right-0
             `}
           >

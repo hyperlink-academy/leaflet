@@ -130,7 +130,6 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
 
             <div className="flex flex-col mt-8 -mb-[6px] z-10">
               <PageThemePickers
-                home
                 entityID={props.entityID}
                 openPicker={openPicker}
                 setOpenPicker={(pickers) => setOpenPicker(pickers)}
