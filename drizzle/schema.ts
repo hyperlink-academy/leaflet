@@ -210,7 +210,7 @@ export const publication_subscriptions = pgTable("publication_subscriptions", {
 	identity: text("identity").notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	record: jsonb("record").notNull(),
-	uri: text("uri"),
+	uri: text("uri").notNull(),
 },
 (table) => {
 	return {

@@ -46,6 +46,7 @@ export default async function Publication(props: {
       .from("publications")
       .select(
         `*,
+        publication_subscriptions(*),
       documents_in_publications(documents(*))
       `,
       )
@@ -95,7 +96,11 @@ export default async function Publication(props: {
                 </p>
               )}
               <div className="sm:pt-4 pt-2">
-                <SubscribeWithBluesky pubName={publication.name} />
+                <SubscribeWithBluesky
+                  pubName={publication.name}
+                  pub_uri={publication.uri}
+                  subscribers={publication.publication_subscriptions}
+                />
               </div>
             </div>
             <div className="publicationPostList w-full flex flex-col gap-4">

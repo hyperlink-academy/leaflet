@@ -53,7 +53,9 @@ export default async function Post(props: {
   let [{ data: document }, { data: profile }] = await Promise.all([
     supabaseServerClient
       .from("documents")
-      .select("*, documents_in_publications(publications(*))")
+      .select(
+        "*, documents_in_publications(publications(*, publication_subscriptions(*)))",
+      )
       .eq(
         "uri",
         AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey),
@@ -126,6 +128,11 @@ export default async function Post(props: {
             <hr className="border-border-light mb-4 mt-2" />
             <SubscribeWithBluesky
               isPost
+              pub_uri={document.documents_in_publications[0].publications.uri}
+              subscribers={
+                document.documents_in_publications[0].publications
+                  .publication_subscriptions
+              }
               pubName={decodeURIComponent((await props.params).publication)}
             />
           </div>
