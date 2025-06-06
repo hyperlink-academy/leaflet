@@ -267,7 +267,7 @@ const SamplePage = (props: {
               }
         }
       />
-      <div>
+      <div className="z-10 relative">
         <p
           onClick={() => {
             props.setOpenPicker("text");

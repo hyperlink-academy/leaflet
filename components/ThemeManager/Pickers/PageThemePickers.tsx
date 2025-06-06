@@ -79,38 +79,6 @@ export const PageBackgroundPicker = (props: {
 
   return (
     <>
-      <ColorPicker
-        disabled={pageBorderHidden?.data.value}
-        label="Page"
-        value={pageValue}
-        setValue={props.setValue}
-        thisPicker={"page"}
-        openPicker={props.openPicker}
-        setOpenPicker={props.setOpenPicker}
-        closePicker={() => props.setOpenPicker("null")}
-        alpha
-      >
-        {(pageBGImage === null || !pageBGImage) && (
-          <label
-            className={`m-0 h-max w-full  py-0.5 px-1
-              bg-accent-1  outline-transparent
-              rounded-md text-base font-bold text-accent-2
-              hover:cursor-pointer
-              flex gap-2 items-center justify-center shrink-0
-              transparent-outline hover:outline-accent-1 outline-offset-1
-            `}
-          >
-            <BlockImageSmall /> Add Background Image
-            <div className="hidden">
-              <ImageInput
-                entityID={props.entityID}
-                onChange={() => props.setOpenPicker("page-background-image")}
-                card
-              />
-            </div>
-          </label>
-        )}
-      </ColorPicker>
       {pageBGImage && pageBGImage !== null && (
         <PageBackgroundImagePicker
           disabled={pageBorderHidden?.data.value}
@@ -122,6 +90,36 @@ export const PageBackgroundPicker = (props: {
           setValue={props.setValue}
         />
       )}
+      <div className="relative">
+        <ColorPicker
+          disabled={pageBorderHidden?.data.value}
+          label={pageBGImage && pageBGImage !== null ? "Menus" : "Page"}
+          value={pageValue}
+          setValue={props.setValue}
+          thisPicker={"page"}
+          openPicker={props.openPicker}
+          setOpenPicker={props.setOpenPicker}
+          closePicker={() => props.setOpenPicker("null")}
+          alpha
+        />
+        {(pageBGImage === null || !pageBGImage) && (
+          <label
+            className={`
+              text-accent-1 hover:cursor-pointer  shrink-0
+              absolute top-0 right-0
+            `}
+          >
+            <BlockImageSmall />
+            <div className="hidden">
+              <ImageInput
+                entityID={props.entityID}
+                onChange={() => props.setOpenPicker("page-background-image")}
+                card
+              />
+            </div>
+          </label>
+        )}
+      </div>
     </>
   );
 };

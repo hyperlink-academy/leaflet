@@ -28,16 +28,9 @@ export const LeafletBGPicker = (props: {
   setOpenPicker: (thisPicker: pickers) => void;
   closePicker: () => void;
   setValue: (c: Color) => void;
-  card?: boolean;
 }) => {
-  let bgImage = useEntity(
-    props.entityID,
-    props.card ? "theme/card-background-image" : "theme/background-image",
-  );
-  let bgColor = useColorAttribute(
-    props.entityID,
-    props.card ? "theme/card-background" : "theme/page-background",
-  );
+  let bgImage = useEntity(props.entityID, "theme/background-image");
+  let bgColor = useColorAttribute(props.entityID, "theme/page-background");
   let open = props.openPicker == props.thisPicker;
   let { rep } = useReplicache();
 
@@ -65,20 +58,12 @@ export const LeafletBGPicker = (props: {
                 backgroundSize: "cover",
               }}
             />
-            <strong
-              className={`${props.card ? "text-primary" : "text-[#595959]"}`}
-            >
-              {props.card ? "Page" : "Background"}
-            </strong>
+            <strong className={` "text-[#595959]`}>{"Background"}</strong>
           </button>
 
           <div className="flex">
             {bgImage ? (
-              <div
-                className={`${props.card ? "text-secondary" : "text-[#969696]"}`}
-              >
-                Image
-              </div>
+              <div className={`"text-[#969696]`}>Image</div>
             ) : (
               <>
                 <ColorField className="w-fit gap-1" value={bgColor}>
@@ -101,56 +86,15 @@ export const LeafletBGPicker = (props: {
                     onBlur={(e) => {
                       props.setValue(parseColor(e.currentTarget.value));
                     }}
-                    className={`w-[72px] bg-transparent outline-none ${props.card ? "text-primary" : "text-[#595959]"}`}
+                    className={`w-[72px] bg-transparent outline-nonetext-[#595959]`}
                   />
                 </ColorField>
-                {props.card && (
-                  <>
-                    <Separator classname="my-1" />
-
-                    <SpectrumColorPicker
-                      value={bgColor}
-                      onChange={setColorAttribute(
-                        rep,
-                        props.entityID,
-                      )(
-                        props.card
-                          ? "theme/card-background"
-                          : "theme/page-background",
-                      )}
-                    >
-                      <ColorField className="w-fit pl-[6px]" channel="alpha">
-                        <Input
-                          onMouseDown={onMouseDown}
-                          onFocus={(e) => {
-                            e.currentTarget.setSelectionRange(
-                              0,
-                              e.currentTarget.value.length - 1,
-                            );
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.currentTarget.blur();
-                            } else return;
-                          }}
-                          className="w-[48px] bg-transparent outline-none text-primary"
-                        />
-                      </ColorField>
-                    </SpectrumColorPicker>
-                  </>
-                )}
               </>
             )}
           </div>
         </div>
         <label className="hover:cursor-pointer h-fit">
-          <div
-            className={
-              props.card
-                ? "text-tertiary hover:text-accent-contrast"
-                : "text-[#8C8C8C] hover:text-[#0000FF]"
-            }
-          >
+          <div className={"text-[#8C8C8C] hover:text-[#0000FF]"}>
             <BlockImageSmall />
           </div>
           <div className="hidden">
@@ -170,12 +114,11 @@ export const LeafletBGPicker = (props: {
             onChange={setColorAttribute(
               rep,
               props.entityID,
-            )(props.card ? "theme/card-background" : "theme/page-background")}
+            )("theme/page-background")}
           >
             {bgImage ? (
               <ImageSettings
                 entityID={props.entityID}
-                card={props.card}
                 setValue={props.setValue}
               />
             ) : (
@@ -198,22 +141,6 @@ export const LeafletBGPicker = (props: {
                   </SliderTrack>
                 </ColorSlider>
               </>
-            )}
-            {props.card && (
-              <ColorSlider
-                colorSpace="hsb"
-                className="w-full mt-1 rounded-full"
-                style={{
-                  backgroundImage: `url(./transparent-bg.png)`,
-                  backgroundRepeat: "repeat",
-                  backgroundSize: "8px",
-                }}
-                channel="alpha"
-              >
-                <SliderTrack className="h-2 w-full rounded-md">
-                  <ColorThumb className={`${thumbStyle} mt-[4px]`} />
-                </SliderTrack>
-              </ColorSlider>
             )}
           </SpectrumColorPicker>
         </div>
