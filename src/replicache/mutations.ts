@@ -1,4 +1,4 @@
-import { DeepReadonly, Replicache } from "replicache";
+import { DeepReadonly, Replicache, WriteTransaction } from "replicache";
 import type { Fact, ReplicacheMutators } from ".";
 import type { Attribute, Attributes, FilterAttributes } from "./attributes";
 import { SupabaseClient } from "@supabase/supabase-js";
@@ -6,6 +6,7 @@ import { Database } from "supabase/database.types";
 import { generateKeyBetween } from "fractional-indexing";
 
 export type MutationContext = {
+  permission_token_id: string;
   createEntity: (args: {
     entityID: string;
     permission_set: string;
@@ -25,7 +26,10 @@ export type MutationContext = {
     cb: (ctx: { supabase: SupabaseClient<Database> }) => Promise<void>,
   ): Promise<void>;
   runOnClient(
-    cb: (ctx: { supabase: SupabaseClient<Database> }) => Promise<void>,
+    cb: (ctx: {
+      supabase: SupabaseClient<Database>;
+      tx: WriteTransaction;
+    }) => Promise<void>,
   ): Promise<void>;
 };
 
@@ -604,6 +608,23 @@ const removePollOption: Mutation<{
   await ctx.deleteEntity(args.optionEntity);
 };
 
+const updatePublicationDraft: Mutation<{
+  title: string;
+  description: string;
+}> = async (args, ctx) => {
+  await ctx.runOnServer(async (serverCtx) => {
+    console.log("updating");
+    await serverCtx.supabase
+      .from("leaflets_in_publications")
+      .update({ description: args.description, title: args.title })
+      .eq("leaflet", ctx.permission_token_id);
+  });
+  await ctx.runOnClient(async ({ tx }) => {
+    await tx.set("publication_title", args.title);
+    await tx.set("publication_description", args.description);
+  });
+};
+
 export const mutations = {
   retractAttribute,
   addBlock,
@@ -626,4 +647,5 @@ export const mutations = {
   createEntity,
   addPollOption,
   removePollOption,
+  updatePublicationDraft,
 };

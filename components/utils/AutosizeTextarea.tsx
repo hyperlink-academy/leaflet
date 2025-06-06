@@ -1,4 +1,10 @@
-import { forwardRef, useImperativeHandle, useRef } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import styles from "./textarea-styles.module.css";
 
 type Props = React.DetailedHTMLProps<
@@ -21,4 +27,31 @@ export const AutosizeTextarea = forwardRef<HTMLTextAreaElement, Props>(
     );
   },
 );
+
+export const AsyncValueAutosizeTextarea = forwardRef<
+  HTMLTextAreaElement,
+  Props
+>((props: Props, ref) => {
+  let [intermediateState, setIntermediateState] = useState(
+    props.value as string,
+  );
+
+  useEffect(() => {
+    setIntermediateState(props.value as string);
+  }, [props.value]);
+
+  return (
+    <AutosizeTextarea
+      {...props}
+      ref={ref}
+      value={intermediateState}
+      onChange={async (e) => {
+        if (!props.onChange) return;
+        setIntermediateState(e.currentTarget.value);
+        await Promise.all([props.onChange(e)]);
+      }}
+    />
+  );
+});
+
 AutosizeTextarea.displayName = "Textarea";

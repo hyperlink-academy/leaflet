@@ -1,4 +1,3 @@
-import { PushResponse } from "replicache";
 import { serverMutationContext } from "src/replicache/serverMutationContext";
 import { mutations } from "src/replicache/mutations";
 import { eq } from "drizzle-orm";
@@ -79,7 +78,7 @@ export const push = makeRoute({
         try {
           await mutations[name](
             mutation.args as any,
-            serverMutationContext(tx, token_rights),
+            serverMutationContext(tx, token.id, token_rights),
           );
         } catch (e) {
           console.log(
