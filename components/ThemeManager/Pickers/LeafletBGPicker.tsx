@@ -12,9 +12,9 @@ import {
   SliderTrack,
   ColorSwatch,
 } from "react-aria-components";
-import { pickers, setColorAttribute } from "./ThemeSetter";
+import { pickers, setColorAttribute } from "../ThemeSetter";
 import { thumbStyle } from "./ColorPicker";
-import { ImageInput, ImageSettings } from "./ImageSetters";
+import { ImageInput, ImageSettings } from "./ImagePicker";
 import { useEntity, useReplicache } from "src/replicache";
 import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
 import { Separator } from "components/Layout";

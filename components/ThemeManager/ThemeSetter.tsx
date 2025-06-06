@@ -4,8 +4,8 @@ import { theme } from "../../tailwind.config";
 
 import { Color } from "react-aria-components";
 
-import { LeafletBGPicker } from "./LeafletBGPicker";
-import { PageThemePickers } from "./PageThemePickers";
+import { LeafletBGPicker } from "./Pickers/LeafletBGPicker";
+import { PageThemePickers } from "./Pickers/PageThemePickers";
 import { useMemo, useState } from "react";
 import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { Replicache } from "replicache";
@@ -16,7 +16,7 @@ import { ActionButton } from "components/ActionBar/ActionButton";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { PaintSmall } from "components/Icons/PaintSmall";
-import { AccentThemePickers } from "./AccentThemePickers";
+import { AccentPickers } from "./Pickers/AccentPickers";
 
 export type pickers =
   | "null"
@@ -111,7 +111,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
             className={`bg-bg-leaflet p-3  mb-2 flex flex-col rounded-md  border border-border pb-0`}
           >
             <div className={`flex flex-col z-10 mt-4 -mb-[6px] `}>
-              <AccentThemePickers
+              <AccentPickers
                 entityID={props.entityID}
                 openPicker={openPicker}
                 setOpenPicker={(pickers) => setOpenPicker(pickers)}
@@ -233,12 +233,14 @@ const SamplePage = (props: {
       onClick={(e) => {
         e.currentTarget === e.target && props.setOpenPicker("page");
       }}
-      className={
-        pageBorderHidden
-          ? "py-2 px-0 border border-transparent"
-          : `${props.home ? "rounded-md " : "rounded-t-lg "} relative cursor-pointer p-2  border border-border border-b-transparent shadow-md text-primary
-        `
-      }
+      className={`
+        text-primary relative
+        ${
+          pageBorderHidden
+            ? "py-2 px-0 border border-transparent"
+            : `cursor-pointer p-2 border border-border border-b-transparent shadow-md
+          ${props.home ? "rounded-md " : "rounded-t-lg "}`
+        }`}
       style={
         pageBorderHidden
           ? undefined

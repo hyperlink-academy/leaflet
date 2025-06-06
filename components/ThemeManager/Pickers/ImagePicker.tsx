@@ -1,5 +1,5 @@
 import * as Slider from "@radix-ui/react-slider";
-import { theme } from "../../tailwind.config";
+import { theme } from "../../../tailwind.config";
 
 import { Color } from "react-aria-components";
 

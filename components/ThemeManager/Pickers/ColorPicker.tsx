@@ -12,7 +12,7 @@ import {
   SliderTrack,
   ColorSwatch,
 } from "react-aria-components";
-import { pickers } from "./ThemeSetter";
+import { pickers } from "../ThemeSetter";
 import { Separator } from "components/Layout";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
 

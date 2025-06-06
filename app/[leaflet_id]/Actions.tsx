@@ -4,16 +4,14 @@ import {
   getPublicationURL,
 } from "app/lish/createPub/getPublicationURL";
 import { ActionButton } from "components/ActionBar/ActionButton";
-import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { GoBackSmall } from "components/Icons/GoBackSmall";
+import { PaintSmall } from "components/Icons/PaintSmall";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { useIdentityData } from "components/IdentityProvider";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
-import { publications } from "drizzle/schema";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { useState } from "react";
 import { useBlocks } from "src/hooks/queries/useBlocks";
 import { useEntity, useReplicache } from "src/replicache";
@@ -82,5 +80,11 @@ export const PublishButton = () => {
         });
       }}
     />
+  );
+};
+
+export const Theme = () => {
+  return (
+    <ActionButton icon={<PaintSmall className="shrink-0" />} label="Theme" />
   );
 };

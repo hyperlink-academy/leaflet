@@ -27,6 +27,7 @@ type CSSVariables = {
   "--highlight-3": string;
 };
 
+// define the color defaults for everything
 export const ThemeDefaults = {
   "theme/page-background": "#F0F7FA",
   "theme/card-background": "#FFFFFF",
@@ -42,6 +43,7 @@ export const ThemeDefaults = {
   "theme/accent-contrast": "#0000FF",
 };
 
+// define a function to set an Aria Color to a CSS Variable in RGB
 function setCSSVariableToColor(
   el: HTMLElement,
   name: string,
@@ -49,6 +51,8 @@ function setCSSVariableToColor(
 ) {
   el?.style.setProperty(name, colorToString(value, "rgb"));
 }
+
+//Create a wrapper that applies a theme to each page
 export function ThemeProvider(props: {
   entityID: string | null;
   local?: boolean;
@@ -58,6 +62,7 @@ export function ThemeProvider(props: {
   if (!pub) return <LeafletThemeProvider {...props} />;
   return <PublicationThemeProvider {...props} />;
 }
+// for PUBLICATIONS: define Aria Colors for each value and use BaseThemeProvider to wrap the content of the page in the theme
 export function PublicationThemeProvider(props: {
   entityID: string | null;
   local?: boolean;
@@ -101,6 +106,7 @@ export function PublicationThemeProvider(props: {
   );
 }
 
+// for LEAFLETS : define Aria Colors for each value and use BaseThemeProvider to wrap the content of the page in the theme
 export function LeafletThemeProvider(props: {
   entityID: string | null;
   local?: boolean;
@@ -142,6 +148,7 @@ export function LeafletThemeProvider(props: {
   );
 }
 
+// handles setting all the Aria Color values to CSS Variables and wrapping the page the theme providers
 let BaseThemeProvider = ({
   local,
   bgLeaflet,
@@ -292,6 +299,7 @@ export function CardThemeProvider(props: {
   );
 }
 
+// Wrapper within the Theme Wrapper that provides background image data
 export const ThemeBackgroundProvider = (props: {
   entityID: string;
   children: React.ReactNode;
@@ -322,6 +330,7 @@ export const ThemeBackgroundProvider = (props: {
   );
 };
 
+// used to calculate the contrast between page and accent1, accent2, and determin which is higher contrast
 export function getColorContrast(color1: string, color2: string) {
   ColorSpace.register(sRGB);
 
