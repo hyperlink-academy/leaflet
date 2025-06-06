@@ -57,7 +57,7 @@ const validateAuth = async (
     return null;
   }
   const jwt = authorization.replace("Bearer ", "").trim();
-  const nsid = parseReqNsid(req);
+  const nsid = parseReqNsid({ url: req.path });
   const parsed = await verifyJwt(jwt, serviceDid, nsid, async (did: string) => {
     return didResolver.resolveAtprotoKey(did);
   });
