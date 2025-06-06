@@ -5,6 +5,7 @@
 
 # Appview
 appview/dist
+feeds/dist
 
 .next
 node_modules

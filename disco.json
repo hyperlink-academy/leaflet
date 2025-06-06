@@ -1,6 +1,10 @@
 {
   "version": "1.0",
   "services": {
+    "web": {
+      "image": "feed-service",
+      "port": 3000
+    },
     "worker": {
       "image": "appview",
       "volumes": [
@@ -12,6 +16,9 @@
     }
   },
   "images": {
+    "feed-service": {
+      "dockerfile": "feeds/Dockerfile"
+    },
     "appview": {
       "dockerfile": "appview/Dockerfile"
     }
