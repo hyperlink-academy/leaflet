@@ -12,6 +12,7 @@
     "build-appview": "esbuild appview/index.ts --outfile=appview/dist/index.js --bundle --platform=node",
     "build-feed-service": "esbuild feeds/index.ts --outfile=feeds/dist/index.js --bundle --platform=node",
     "start-appview-dev": "tsx --env-file='./.env.local' --watch appview/index.ts",
+    "start-feed-service-dev": "npx tsx --env-file='./.env.local' --watch feeds/index.ts",
     "start-appview-prod": "npm run build-appview && node appview/dist/index.js"
   },
   "keywords": [],

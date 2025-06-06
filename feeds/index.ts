@@ -7,7 +7,7 @@ import { PubLeafletDocument } from "lexicons/api";
 
 const app = new Hono();
 
-const domain = "feeds.leaflet.pub";
+const domain = process.env.FEED_SERVICE_URL || "feeds.leaflet.pub";
 const serviceDid = `did:web:${domain}`;
 
 app.get("/.well-known/did.json", (c) => {
@@ -64,4 +64,4 @@ const validateAuth = async (
   return parsed.iss;
 };
 
-serve(app);
+serve({ fetch: app.fetch, port: 3030 });
