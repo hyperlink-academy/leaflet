@@ -57,11 +57,12 @@ async function main() {
     password: LEAFLET_APP_PASSWORD,
   });
   const uniqueIds = Array.from(new Set(lexiconsData.map((lex) => lex.id)));
+  let txtRecordValue = `did=${agent.assertDid}`;
   for (let id of uniqueIds) {
     let host = id.split(".").slice(0, -1).reverse().join(".");
     host = `_lexicon.${host}`;
     let txtRecords = await getTXTRecords(host);
-    if (!txtRecords.find((r) => r.join("") === agent.assertDid)) {
+    if (!txtRecords.find((r) => r.join("") === txtRecordValue)) {
       let name = host.split(".").slice(0, -2).join(".") || "";
       console.log("creating txt record", name);
       let res = await fetch(
@@ -75,7 +76,7 @@ async function main() {
           body: JSON.stringify({
             name: name,
             type: "TXT",
-            value: agent.assertDid,
+            value: txtRecordValue,
             ttl: 60,
           }),
         },
