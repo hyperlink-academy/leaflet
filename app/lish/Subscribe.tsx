@@ -187,7 +187,7 @@ export const SubscribeWithBluesky = (props: {
     return <ManageSubscription {...props} />;
   }
   return (
-    <div className="flex flex-col gap-2 text-center">
+    <div className="flex flex-col gap-2 text-center justify-center">
       {props.isPost && (
         <div className="text-sm text-tertiary font-bold">
           Get updates from {props.pubName}!
@@ -261,8 +261,8 @@ let BlueskySubscribeButton = (props: { pub_uri: string }) => {
 
   return (
     <>
-      <form action={subscribe}>
-        <ButtonPrimary className="place-self-center">
+      <form action={subscribe} className="place-self-center">
+        <ButtonPrimary>
           {subscribePending ? (
             <DotLoader />
           ) : (

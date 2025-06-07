@@ -10,7 +10,7 @@ import { revalidatePath } from "next/cache";
 import { AtUri } from "@atproto/syntax";
 
 let leafletFeedURI =
-  "at://did:plc:jjsc5rflv3cpv6hgtqhn2dcm/app.bsky.feed.generator/subscriptions";
+  "at://did:plc:jjsc5rflv3cpv6hgtqhn2dcm/app.bsky.feed.generator/subscribedPublications";
 export async function subscribeToPublication(publication: string) {
   const oauthClient = await createOauthClient();
   let identity = await getIdentityData();
