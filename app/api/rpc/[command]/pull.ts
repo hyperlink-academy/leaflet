@@ -74,7 +74,7 @@ export const pull = makeRoute({
       description: string;
       title: string;
     }[];
-    let pub_patch = publication_data[0]
+    let pub_patch = publication_data?.[0]
       ? [
           {
             op: "put",
