@@ -90,11 +90,11 @@ async function authCallback(req: NextRequest) {
   let signature = req.nextUrl.searchParams.get("signature");
 
   if (typeof payload !== "string" || typeof signature !== "string")
-    return new NextResponse(null, { status: 401 });
+    return new NextResponse("Payload or Signature not string", { status: 401 });
 
   let verifySig = await signCrossSiteToken(decodeURIComponent(payload));
   if (verifySig !== decodeURIComponent(signature))
-    return new NextResponse(null, { status: 401 });
+    return new NextResponse("Incorrect Signature", { status: 401 });
 
   let token: CROSS_SITE_AUTH_REQUEST = JSON.parse(atob(payload));
   let auth_token = req.cookies.get("auth_token")?.value || null;
