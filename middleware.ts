@@ -81,7 +81,7 @@ async function initiateAuthCallback(req: NextRequest) {
   let payload = btoa(JSON.stringify(token));
   let signature = await signCrossSiteToken(payload);
   return NextResponse.redirect(
-    `https://leaflet.pub${auth_callback_route}?payload=${payload}&signature=${signature}`,
+    `https://leaflet.pub${auth_callback_route}?payload=${encodeURIComponent(payload)}&signature=${encodeURIComponent(signature)}`,
   );
 }
 
@@ -92,8 +92,11 @@ async function authCallback(req: NextRequest) {
   if (typeof payload !== "string" || typeof signature !== "string")
     return new NextResponse("Payload or Signature not string", { status: 401 });
 
-  let verifySig = await signCrossSiteToken(decodeURIComponent(payload));
-  if (verifySig !== decodeURIComponent(signature))
+  payload = decodeURIComponent(payload);
+  signature = decodeURIComponent(signature);
+
+  let verifySig = await signCrossSiteToken(payload);
+  if (verifySig !== signature)
     return new NextResponse("Incorrect Signature", { status: 401 });
 
   let token: CROSS_SITE_AUTH_REQUEST = JSON.parse(atob(payload));
@@ -108,7 +111,7 @@ async function authCallback(req: NextRequest) {
   let response_payload = btoa(JSON.stringify(response_token));
   let sig = await signCrossSiteToken(response_payload);
   return NextResponse.redirect(
-    `https://${redirect_url.host}${receive_auth_callback_route}?payload=${response_payload}&signature=${sig}`,
+    `https://${redirect_url.host}${receive_auth_callback_route}?payload=${encodeURIComponent(response_payload)}&signature=${encodeURIComponent(sig)}`,
   );
 }
 
@@ -118,10 +121,11 @@ async function receiveAuthCallback(req: NextRequest) {
 
   if (typeof payload !== "string" || typeof signature !== "string")
     return new NextResponse(null, { status: 401 });
+  payload = decodeURIComponent(payload);
+  signature = decodeURIComponent(signature);
 
-  let verifySig = await signCrossSiteToken(decodeURIComponent(payload));
-  if (verifySig !== decodeURIComponent(signature))
-    return new NextResponse(null, { status: 401 });
+  let verifySig = await signCrossSiteToken(payload);
+  if (verifySig !== signature) return new NextResponse(null, { status: 401 });
 
   let token: CROSS_SITE_AUTH_RESPONSE = JSON.parse(atob(payload));
 
