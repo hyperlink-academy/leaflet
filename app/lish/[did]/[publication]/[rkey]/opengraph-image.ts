@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 export const revalidate = 60;
@@ -20,7 +19,6 @@ export default async function OpenGraphImage(props: {
       },
     },
   );
-  let endTime = Date.now();
 
   return response;
 }

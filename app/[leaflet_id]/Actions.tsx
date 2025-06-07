@@ -63,8 +63,6 @@ const UpdateButton = () => {
   let [isLoading, setIsLoading] = useState(false);
   let { data: pub, mutate } = useLeafletPublicationData();
   let { permission_token, rootEntity } = useReplicache();
-  let rootPage = useEntity(rootEntity, "root/page")[0];
-  let blocks = useBlocks(rootPage?.data.value);
   let toaster = useToaster();
 
   return (
@@ -77,7 +75,6 @@ const UpdateButton = () => {
         setIsLoading(true);
         let doc = await publishToPublication({
           root_entity: rootEntity,
-          blocks,
           publication_uri: pub.publications.uri,
           leaflet_id: permission_token.id,
           title: pub.title,

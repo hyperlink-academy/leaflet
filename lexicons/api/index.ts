@@ -27,8 +27,6 @@ import * as ComAtprotoRepoListRecords from './types/com/atproto/repo/listRecords
 import * as ComAtprotoRepoPutRecord from './types/com/atproto/repo/putRecord'
 import * as ComAtprotoRepoStrongRef from './types/com/atproto/repo/strongRef'
 import * as ComAtprotoRepoUploadBlob from './types/com/atproto/repo/uploadBlob'
-import * as AppBskyActorDefs from './types/app/bsky/actor/defs'
-import * as AppBskyActorGetPreferences from './types/app/bsky/actor/getPreferences'
 
 export * as PubLeafletDocument from './types/pub/leaflet/document'
 export * as PubLeafletPublication from './types/pub/leaflet/publication'
@@ -52,8 +50,6 @@ export * as ComAtprotoRepoListRecords from './types/com/atproto/repo/listRecords
 export * as ComAtprotoRepoPutRecord from './types/com/atproto/repo/putRecord'
 export * as ComAtprotoRepoStrongRef from './types/com/atproto/repo/strongRef'
 export * as ComAtprotoRepoUploadBlob from './types/com/atproto/repo/uploadBlob'
-export * as AppBskyActorDefs from './types/app/bsky/actor/defs'
-export * as AppBskyActorGetPreferences from './types/app/bsky/actor/getPreferences'
 
 export const PUB_LEAFLET_PAGES = {
   LinearDocumentTextAlignLeft: 'pub.leaflet.pages.linearDocument#textAlignLeft',
@@ -66,13 +62,11 @@ export const PUB_LEAFLET_PAGES = {
 export class AtpBaseClient extends XrpcClient {
   pub: PubNS
   com: ComNS
-  app: AppNS
 
   constructor(options: FetchHandler | FetchHandlerOptions) {
     super(options, schemas)
     this.pub = new PubNS(this)
     this.com = new ComNS(this)
-    this.app = new AppNS(this)
   }
 
   /** @deprecated use `this` instead */
@@ -474,46 +468,6 @@ export class ComAtprotoRepoNS {
       'com.atproto.repo.uploadBlob',
       opts?.qp,
       data,
-      opts,
-    )
-  }
-}
-
-export class AppNS {
-  _client: XrpcClient
-  bsky: AppBskyNS
-
-  constructor(client: XrpcClient) {
-    this._client = client
-    this.bsky = new AppBskyNS(client)
-  }
-}
-
-export class AppBskyNS {
-  _client: XrpcClient
-  actor: AppBskyActorNS
-
-  constructor(client: XrpcClient) {
-    this._client = client
-    this.actor = new AppBskyActorNS(client)
-  }
-}
-
-export class AppBskyActorNS {
-  _client: XrpcClient
-
-  constructor(client: XrpcClient) {
-    this._client = client
-  }
-
-  getPreferences(
-    params?: AppBskyActorGetPreferences.QueryParams,
-    opts?: AppBskyActorGetPreferences.CallOptions,
-  ): Promise<AppBskyActorGetPreferences.Response> {
-    return this._client.call(
-      'app.bsky.actor.getPreferences',
-      params,
-      undefined,
       opts,
     )
   }

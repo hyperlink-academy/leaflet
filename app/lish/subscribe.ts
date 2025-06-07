@@ -1,6 +1,7 @@
 "use server";
 
-import { AppBskyActorDefs, AtpBaseClient } from "lexicons/api";
+import { AtpBaseClient } from "lexicons/api";
+import { AppBskyActorDefs, Agent as BskyAgent } from "@atproto/api";
 import { getIdentityData } from "actions/getIdentityData";
 import { createOauthClient } from "src/atproto-oauth";
 import { TID } from "@atproto/common";
@@ -33,7 +34,8 @@ export async function subscribeToPublication(publication: string) {
       publication,
       identity: credentialSession.did!,
     });
-  let prefs = await agent.app.bsky.actor.getPreferences();
+  let bsky = new BskyAgent(credentialSession);
+  let prefs = await bsky.app.bsky.actor.getPreferences();
   let savedFeeds = prefs.data.preferences.find(
     (pref) => pref.$type === "app.bsky.actor.defs#savedFeedsPrefV2",
   ) as AppBskyActorDefs.SavedFeedsPrefV2;

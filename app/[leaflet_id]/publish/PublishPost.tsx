@@ -1,67 +1,89 @@
 "use client";
 import { publishToPublication } from "actions/publishToPublication";
-import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useState } from "react";
-import { useBlocks } from "src/hooks/queries/useBlocks";
-import { useEntity, useReplicache } from "src/replicache";
 import { ButtonPrimary } from "components/Buttons";
 import { Radio } from "components/Checkbox";
-import { useRouter } from "next/router";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { AutosizeTextarea } from "components/utils/AutosizeTextarea";
+import { PubLeafletPublication } from "lexicons/api";
+import { publishPostToBsky } from "./publishBskyPost";
+import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { AtUri } from "@atproto/syntax";
 
-export function PublishPost(props: {
+type Props = {
   title: string;
+  leaflet_id: string;
+  root_entity: string;
+  profile: ProfileViewDetailed;
   description: string;
   publication_uri: string;
-}) {
-  let [publishState, setPublishState] = useState<"default" | "success">(
-    "default",
-  );
+  record?: PubLeafletPublication.Record;
+};
+
+export function PublishPost(props: Props) {
+  let [publishState, setPublishState] = useState<
+    { state: "default" } | { state: "success"; post_url: string }
+  >({ state: "default" });
   return (
     <div className="publishPage w-screen h-screen bg-[#FDFCFA] flex place-items-center justify-center">
-      {publishState === "default" ? (
-        <PublishPostForm setPublishState={setPublishState} />
+      {publishState.state === "default" ? (
+        <PublishPostForm setPublishState={setPublishState} {...props} />
       ) : (
-        <PublishPostSuccess />
+        <PublishPostSuccess
+          record={props.record}
+          publication_uri={props.publication_uri}
+          post_url={publishState.post_url}
+        />
       )}
     </div>
   );
 }
 
-const PublishPostForm = (props: {
-  setPublishState: (s: "default" | "success") => void;
-}) => {
+const PublishPostForm = (
+  props: {
+    setPublishState: (s: { state: "success"; post_url: string }) => void;
+  } & Props,
+) => {
   let [shareOption, setShareOption] = useState<"bluesky" | "quiet">("bluesky");
+  let [postContent, setPostContent] = useState("");
   let [isLoading, setIsLoading] = useState(false);
   let params = useParams();
 
   async function submit() {
-    let { data: pub, mutate } = useLeafletPublicationData();
-    let { permission_token, rootEntity } = useReplicache();
-    let rootPage = useEntity(rootEntity, "root/page")[0];
-    let blocks = useBlocks(rootPage?.data.value);
-
-    if (!pub || !pub.publications) return;
     setIsLoading(true);
     let doc = await publishToPublication({
-      root_entity: rootEntity,
-      blocks,
-      publication_uri: pub.publications.uri,
-      leaflet_id: permission_token.id,
-      title: pub.title,
-      description: pub.description,
+      root_entity: props.root_entity,
+      publication_uri: props.publication_uri,
+      leaflet_id: props.leaflet_id,
+      title: props.title,
+      description: props.description,
+    });
+    if (!doc) return;
+
+    let post_url = `https://${props.record?.base_path}/${doc.rkey}`;
+    let publishedPost = await publishPostToBsky({
+      text: postContent,
+      title: props.title,
+      url: post_url,
+      description: props.description,
+      record: doc.record,
+      rkey: doc.rkey,
     });
     setIsLoading(false);
-    props.setPublishState("success");
-    mutate();
+    props.setPublishState({ state: "success", post_url });
   }
 
   return (
     <div className="flex flex-col gap-4 w-[640px] max-w-full">
       <h3>Publish Options</h3>
-      <form onSubmit={() => submit()}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
         <div className="container flex flex-col gap-2 sm:p-3 p-4">
           <Radio
             checked={shareOption === "quiet"}
@@ -105,25 +127,29 @@ const PublishPostForm = (props: {
           >
             <div className="opaque-container p-3  !rounded-lg">
               <div className="flex gap-2">
-                <div className="bg-test rounded-full w-[42px] h-[42px] shrink-0" />
-                <div className="flex flex-col ">
+                <img
+                  className="bg-test rounded-full w-[42px] h-[42px] shrink-0"
+                  src={props.profile.avatar}
+                />
+                <div className="flex flex-col w-full">
                   <div className="flex gap-2 pb-1">
-                    <p className="font-bold">jared</p>
-                    <p className="text-tertiary">@jrdprr</p>
+                    <p className="font-bold">{props.profile.displayName}</p>
+                    <p className="text-tertiary">@{props.profile.handle}</p>
                   </div>
-                  <div>
-                    This is some content that i wrote and will be posting
-                  </div>
-                  <div className="opaque-container overflow-hidden flex flex-col mt-4">
-                    <div className="h-[260px] w-full bg-test" />
+                  <AutosizeTextarea
+                    value={postContent}
+                    onChange={(e) => setPostContent(e.currentTarget.value)}
+                    placeholder="Write a post to share your writing!"
+                  />
+                  <div className="opaque-container overflow-hidden flex flex-col mt-4 w-full">
+                    {/* <div className="h-[260px] w-full bg-test" /> */}
                     <div className="flex flex-col p-2">
-                      <div className="font-bold">Title Here</div>
-                      <div className="text-tertiary">
-                        This is the description that you specified! Hopefully
-                        it's the same.
-                      </div>
+                      <div className="font-bold">{props.title}</div>
+                      <div className="text-tertiary">{props.description}</div>
                       <hr className="border-border-light mt-2 mb-1" />
-                      <p className="text-xs text-tertiary">leaflet.pub</p>
+                      <p className="text-xs text-tertiary">
+                        {props.record?.base_path}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -147,6 +173,24 @@ const PublishPostForm = (props: {
   );
 };
 
-const PublishPostSuccess = () => {
-  return <div>SUCESS!</div>;
+const PublishPostSuccess = (props: {
+  post_url: string;
+  publication_uri: string;
+  record: Props["record"];
+}) => {
+  let uri = new AtUri(props.publication_uri);
+  return (
+    <div>
+      <h1>Woo! You published your post!</h1>
+      <div className="flex gap-2 justify-center">
+        <Link
+          className="hover:!no-underline font-bold"
+          href={`/lish/${uri.host}/${props.record?.name}/dashboard`}
+        >
+          Back To Dashboard
+        </Link>
+        <a href={props.post_url}>See post</a>
+      </div>
+    </div>
+  );
 };
