@@ -7,6 +7,6 @@ export default async function OpenGraphImage(props: {
   params: { publication: string; did: string };
 }) {
   return getMicroLinkOgImage(
-    `/lish/${props.params.did}/${props.params.publication}`,
+    `/lish/${decodeURIComponent(props.params.did)}/${decodeURIComponent(props.params.publication)}`,
   );
 }
