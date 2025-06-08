@@ -5,7 +5,7 @@ export async function getMicroLinkOgImage(path: string) {
   const headersList = await headers();
   const hostname = headersList.get("x-forwarded-host");
   let protocol = headersList.get("x-forwarded-proto");
-  let full_path = encodeURIComponent(`${protocol}://${hostname}${path}`);
+  let full_path = `${protocol}://${hostname}${path}`;
   let response = await fetch(
     `https://pro.microlink.io/?url=${full_path}&screenshot=true&viewport.width=1400&viewport.height=733&meta=false&embed=screenshot.url&force=true`,
     {
