@@ -77,8 +77,10 @@ type CROSS_SITE_AUTH_RESPONSE = {
   ts: string;
 };
 async function initiateAuthCallback(req: NextRequest) {
+  let redirectUrl = new URL(req.url);
+  redirectUrl.searchParams.delete("refreshAuth");
   let token: CROSS_SITE_AUTH_REQUEST = {
-    redirect: req.url,
+    redirect: redirectUrl.toString(),
     ts: new Date().toISOString(),
   };
   let payload = btoa(JSON.stringify(token));
