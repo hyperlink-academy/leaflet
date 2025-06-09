@@ -12,10 +12,10 @@ import { redirect } from "next/navigation";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/route";
 
 let leafletFeedURI =
-  "at://did:plc:jjsc5rflv3cpv6hgtqhn2dcm/app.bsky.feed.generator/subscribedPublications";
+  "at://did:plc:btxrwcaeyodrap5mnjw2fvmz/app.bsky.feed.generator/subscribedPublications";
 export async function subscribeToPublication(
   publication: string,
-  redirectRoute: string,
+  redirectRoute?: string,
 ) {
   const oauthClient = await createOauthClient();
   let identity = await getIdentityData();
@@ -49,7 +49,9 @@ export async function subscribeToPublication(
     (pref) => pref.$type === "app.bsky.actor.defs#savedFeedsPrefV2",
   ) as AppBskyActorDefs.SavedFeedsPrefV2;
   revalidatePath("/lish/[did]/[publication]", "layout");
-  return savedFeeds.items.find((feed) => feed.value === leafletFeedURI);
+  return {
+    hasFeed: !!savedFeeds.items.find((feed) => feed.value === leafletFeedURI),
+  };
 }
 
 export async function unsubscribeToPublication(publication: string) {

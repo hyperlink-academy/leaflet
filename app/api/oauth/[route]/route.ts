@@ -10,6 +10,7 @@ import { createOauthClient } from "src/atproto-oauth";
 import { setAuthToken } from "src/auth";
 
 import { supabaseServerClient } from "supabase/serverClient";
+import { URLSearchParams } from "url";
 
 type OauthRequestClientState = {
   redirect: string | null;
@@ -92,8 +93,8 @@ export async function GET(
                 .from("identities")
                 .update({ atp_did: session.did })
                 .eq("id", data.data.identity);
-            await handleAction(s.action);
-            return redirect(redirectPath);
+
+            return handleAction(s.action, redirectPath);
           }
           const client = postgres(process.env.DB_URL as string, {
             idle_timeout: 5,
@@ -117,19 +118,28 @@ export async function GET(
         console.log("authorize() was called with state:", state);
 
         console.log("User authenticated as:", session.did);
-        await handleAction(s.action);
+        return handleAction(s.action, redirectPath);
       } catch (e) {
         redirect(redirectPath);
       }
-      return redirect(redirectPath);
     }
     default:
       return NextResponse.json({ error: "Invalid route" }, { status: 404 });
   }
 }
 
-const handleAction = async (action: ActionAfterSignIn | null) => {
-  if (!action) return;
-  if (action.action === "subscribe")
-    return subscribeToPublication(action.publication);
+const handleAction = async (
+  action: ActionAfterSignIn | null,
+  redirectPath: string,
+) => {
+  let [base, pathparams] = redirectPath.split("?");
+  let searchParams = new URLSearchParams(pathparams);
+  if (action?.action === "subscribe") {
+    let result = await subscribeToPublication(action.publication);
+    console.log(result);
+    if (result.hasFeed === false)
+      searchParams.set("showSubscribeSuccess", "true");
+  }
+
+  return redirect(base + "?" + searchParams.toString());
 };
