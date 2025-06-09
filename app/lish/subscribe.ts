@@ -9,7 +9,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { revalidatePath } from "next/cache";
 import { AtUri } from "@atproto/syntax";
 import { redirect } from "next/navigation";
-import { encodeActionToSearchParam } from "app/api/oauth/[route]/route";
+import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 
 let leafletFeedURI =
   "at://did:plc:btxrwcaeyodrap5mnjw2fvmz/app.bsky.feed.generator/subscribedPublications";
