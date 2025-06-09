@@ -8,13 +8,22 @@ import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
 import { revalidatePath } from "next/cache";
 import { AtUri } from "@atproto/syntax";
+import { redirect } from "next/navigation";
+import { encodeActionToSearchParam } from "app/api/oauth/[route]/route";
 
 let leafletFeedURI =
   "at://did:plc:jjsc5rflv3cpv6hgtqhn2dcm/app.bsky.feed.generator/subscribedPublications";
-export async function subscribeToPublication(publication: string) {
+export async function subscribeToPublication(
+  publication: string,
+  redirectRoute: string,
+) {
   const oauthClient = await createOauthClient();
   let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) return;
+  if (!identity || !identity.atp_did) {
+    return redirect(
+      `/api/oauth/login?redirect_url=${redirectRoute}&action=${encodeActionToSearchParam({ action: "subscribe", publication })}`,
+    );
+  }
 
   let credentialSession = await oauthClient.restore(identity.atp_did);
   let agent = new AtpBaseClient(

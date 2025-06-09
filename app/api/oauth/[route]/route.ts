@@ -1,5 +1,6 @@
 import { OAuthClientMetadata } from "@atproto/oauth-client-node";
 import { createIdentity } from "actions/createIdentity";
+import { subscribeToPublication } from "app/lish/subscribe";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -12,7 +13,28 @@ import { supabaseServerClient } from "supabase/serverClient";
 
 type OauthRequestClientState = {
   redirect: string | null;
+  action: ActionAfterSignIn | null;
 };
+export type ActionAfterSignIn = {
+  action: "subscribe";
+  publication: string;
+};
+
+export function encodeActionToSearchParam(actions: ActionAfterSignIn): string {
+  return encodeURIComponent(JSON.stringify(actions));
+}
+
+function parseActionFromSearchParam(
+  param: string | null,
+): ActionAfterSignIn | null {
+  if (!param) return null;
+  try {
+    return JSON.parse(decodeURIComponent(param)) as ActionAfterSignIn;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(
   req: NextRequest,
   props: { params: Promise<{ route: string; handle?: string }> },
@@ -29,7 +51,8 @@ export async function GET(
       const handle = searchParams.get("handle") as string;
       // Put originating page here!
       let redirect = searchParams.get("redirect_url");
-      let state: OauthRequestClientState = { redirect };
+      let action = parseActionFromSearchParam(searchParams.get("action"));
+      let state: OauthRequestClientState = { redirect, action };
 
       // Revoke any pending authentication requests if the connection is closed (optional)
       const ac = new AbortController();
@@ -69,6 +92,7 @@ export async function GET(
                 .from("identities")
                 .update({ atp_did: session.did })
                 .eq("id", data.data.identity);
+            await handleAction(s.action);
             return redirect(redirectPath);
           }
           const client = postgres(process.env.DB_URL as string, {
@@ -93,6 +117,7 @@ export async function GET(
         console.log("authorize() was called with state:", state);
 
         console.log("User authenticated as:", session.did);
+        await handleAction(s.action);
       } catch (e) {
         redirect(redirectPath);
       }
@@ -102,3 +127,9 @@ export async function GET(
       return NextResponse.json({ error: "Invalid route" }, { status: 404 });
   }
 }
+
+const handleAction = async (action: ActionAfterSignIn | null) => {
+  if (!action) return;
+  if (action.action === "subscribe")
+    return subscribeToPublication(action.publication);
+};

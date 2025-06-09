@@ -255,8 +255,10 @@ const ManageSubscription = (props: {
 let BlueskySubscribeButton = (props: { pub_uri: string }) => {
   let [open, setOpen] = useState(false);
   let [, subscribe, subscribePending] = useActionState(async () => {
-    let result = await subscribeToPublication(props.pub_uri);
-    console.log(result);
+    let result = await subscribeToPublication(
+      props.pub_uri,
+      window.location.href + "?refreshAuth",
+    );
   }, null);
 
   return (

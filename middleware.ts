@@ -42,7 +42,10 @@ export default async function middleware(req: NextRequest) {
   let pub = routes?.publication_domains[0]?.publications;
   if (pub) {
     let cookie = req.cookies.get("external_auth_token");
-    if (!cookie && !hostname.includes("leaflet.pub")) {
+    if (
+      (!cookie || req.nextUrl.searchParams.has("refreshAuth")) &&
+      !hostname.includes("leaflet.pub")
+    ) {
       return initiateAuthCallback(req);
     }
     let aturi = new AtUri(pub?.uri);
