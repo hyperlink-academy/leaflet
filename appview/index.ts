@@ -31,6 +31,7 @@ async function main() {
     },
   });
   let firehose = new Firehose({
+    subscriptionReconnectDelay: 3000,
     excludeAccount: true,
     excludeIdentity: true,
     runner,

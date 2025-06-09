@@ -42,7 +42,10 @@ export default async function middleware(req: NextRequest) {
   let pub = routes?.publication_domains[0]?.publications;
   if (pub) {
     let cookie = req.cookies.get("external_auth_token");
-    if (!cookie && !hostname.includes("leaflet.pub")) {
+    if (
+      (!cookie || req.nextUrl.searchParams.has("refreshAuth")) &&
+      !hostname.includes("leaflet.pub")
+    ) {
       return initiateAuthCallback(req);
     }
     let aturi = new AtUri(pub?.uri);
@@ -74,8 +77,10 @@ type CROSS_SITE_AUTH_RESPONSE = {
   ts: string;
 };
 async function initiateAuthCallback(req: NextRequest) {
+  let redirectUrl = new URL(req.url);
+  redirectUrl.searchParams.delete("refreshAuth");
   let token: CROSS_SITE_AUTH_REQUEST = {
-    redirect: req.url,
+    redirect: redirectUrl.toString(),
     ts: new Date().toISOString(),
   };
   let payload = btoa(JSON.stringify(token));

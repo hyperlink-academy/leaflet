@@ -17,7 +17,7 @@ import {
 import { Block } from "components/Blocks/Block";
 import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
-import { scanIndex, scanIndexLocal } from "src/replicache/utils";
+import { scanIndexLocal } from "src/replicache/utils";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import {
@@ -30,17 +30,16 @@ import { AtUri } from "@atproto/syntax";
 import { Json } from "supabase/database.types";
 import { $Typed, UnicodeString } from "@atproto/api";
 import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
+import { getBlocksWithTypeLocal } from "src/hooks/queries/useBlocks";
 
 export async function publishToPublication({
   root_entity,
-  blocks,
   publication_uri,
   leaflet_id,
   title,
   description,
 }: {
   root_entity: string;
-  blocks: Block[];
   publication_uri: string;
   leaflet_id: string;
   title?: string;
@@ -48,7 +47,7 @@ export async function publishToPublication({
 }) {
   const oauthClient = await createOauthClient();
   let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) return null;
+  if (!identity || !identity.atp_did) throw new Error("No Identity");
 
   let credentialSession = await oauthClient.restore(identity.atp_did);
   let agent = new AtpBaseClient(
@@ -60,12 +59,15 @@ export async function publishToPublication({
     .eq("publication", publication_uri)
     .eq("leaflet", leaflet_id)
     .single();
-  if (!draft || identity.atp_did !== draft?.publications?.identity_did) return;
+  if (!draft || identity.atp_did !== draft?.publications?.identity_did)
+    throw new Error("No draft or not publisher");
   let { data } = await supabaseServerClient.rpc("get_facts", {
     root: root_entity,
   });
+  let facts = (data as unknown as Fact<Attribute>[]) || [];
+  let blocks = getBlocksWithTypeLocal(facts, root_entity);
 
-  let scan = scanIndexLocal((data as unknown as Fact<Attribute>[]) || []);
+  let scan = scanIndexLocal(facts);
   let images = blocks
     .filter((b) => b.type === "image")
     .map((b) => scan.eav(b.value, "block/image")[0]);
@@ -130,7 +132,7 @@ export async function publishToPublication({
       .eq("publication", publication_uri),
   ]);
 
-  return { rkey };
+  return { rkey, record };
 }
 
 function blocksToRecord(
