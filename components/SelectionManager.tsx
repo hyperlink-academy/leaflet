@@ -36,7 +36,7 @@ export function SelectionManager() {
     const getSortedSelection = async () => {
       let selectedBlocks = useUIState.getState().selectedBlocks;
       let foldedBlocks = useUIState.getState().foldedBlocks;
-      if (!selectedBlocks[0]) return [];
+      if (!selectedBlocks[0]) return [[], []];
       let siblings =
         (await rep?.query((tx) =>
           getBlocksWithType(tx, selectedBlocks[0].parent),

@@ -850,6 +850,7 @@ export type Database = {
       pull_result: {
         client_groups: Json | null
         facts: Json | null
+        publications: Json | null
       }
     }
   }

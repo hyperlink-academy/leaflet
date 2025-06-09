@@ -173,6 +173,7 @@ const PollVote = (props: {
                   ...selectedPollOptions.map((option_entity) => ({
                     poll_votes_on_entity: {
                       option_entity,
+                      entities: { set: "" },
                       poll_entity: props.entityID,
                       voter_token: oldState.voter_token!,
                     },

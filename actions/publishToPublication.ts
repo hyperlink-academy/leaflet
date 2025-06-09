@@ -335,7 +335,7 @@ function YJSFragmentToFacets(
           $type: "pub.leaflet.richtext.facet#link",
           uri: d.attributes.link.href,
         });
-      facets.push(facet);
+      if (facet.features.length > 0) facets.push(facet);
       byteStart += unicodestring.length;
     }
     return facets;
