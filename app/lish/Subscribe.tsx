@@ -243,7 +243,7 @@ const ManageSubscription = (props: {
           {!hasFeed && (
             <>
               <div className="flex flex-col gap-2 font-bold text-secondary w-full">
-                Updates via Bluseky custom feed!
+                Updates via Bluesky custom feed!
                 <a
                   href="https://bsky.app/profile/leaflet.pub/feed/subscribedPublications"
                   target="_blank"
