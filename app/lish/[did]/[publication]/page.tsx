@@ -62,7 +62,7 @@ export default async function Publication(props: {
   try {
     return (
       <ThemeProvider entityID={null}>
-        <div className="publicationWrapper w-screen h-screen flex place-items-center bg-[#FDFCFA]">
+        <div className="publicationWrapper w-screen  h-full min-h-fit flex place-items-center bg-[#FDFCFA]">
           <div className="publication max-w-prose w-full mx-auto h-full sm:pt-8 pt-4 px-3 pb-12 sm:pb-8">
             <div className="flex flex-col pb-8 w-full text-center justify-center ">
               <div className="flex flex-col gap-3 justify-center place-items-center">

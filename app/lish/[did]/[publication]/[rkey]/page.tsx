@@ -73,7 +73,7 @@ export default async function Post(props: {
   }
   return (
     <ThemeProvider entityID={null}>
-      <div className="postPage w-full h-screen bg-[#FDFCFA] flex items-stretch">
+      <div className="postPage w-full h-full min-h-fit bg-[#FDFCFA] flex items-stretch">
         <div className="postWrapper flex flex-col w-full ">
           <div className="pub flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto max-w-prose h-full w-full overflow-auto">
             <div className="pubHeader flex flex-col pb-5">
