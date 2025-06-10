@@ -65,9 +65,11 @@ export async function publishToPublication({
     root: root_entity,
   });
   let facts = (data as unknown as Fact<Attribute>[]) || [];
-  let blocks = getBlocksWithTypeLocal(facts, root_entity);
-
   let scan = scanIndexLocal(facts);
+  let firstEntity = scan.eav(root_entity, "root/page")?.[0];
+  if (!firstEntity) throw new Error("No root page");
+  let blocks = getBlocksWithTypeLocal(facts, firstEntity?.data.value);
+
   let images = blocks
     .filter((b) => b.type === "image")
     .map((b) => scan.eav(b.value, "block/image")[0]);
@@ -132,7 +134,7 @@ export async function publishToPublication({
       .eq("publication", publication_uri),
   ]);
 
-  return { rkey, record };
+  return { rkey, record: JSON.parse(JSON.stringify(record)) };
 }
 
 function blocksToRecord(
