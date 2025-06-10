@@ -1,21 +1,20 @@
 "use client";
 import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { CopyTiny } from "components/Icons/CopyTiny";
-import { Menu, MenuItem, Separator } from "components/Layout";
-import { Popover } from "components/Popover";
+import { Separator } from "components/Layout";
 import { useSmoker } from "components/Toast";
 import { useEffect, useState } from "react";
 
 export function QuoteHandler() {
-  let [isBskyUser, setIsBskyUser] = useState(true);
   let [selectionText, setSelectionText] = useState<string | undefined>(
     undefined,
   );
   let [focusRect, setFocusRect] = useState<DOMRect | null>(null);
-
   let [selectionDir, setSelectionDir] = useState<
     "forward" | "backward" | "none" | null
   >(null);
+
+  let smoker = useSmoker();
 
   useEffect(() => {
     const selection = window.getSelection();
@@ -54,7 +53,8 @@ export function QuoteHandler() {
     };
 
     const handleMouseDown = (e: MouseEvent) => {
-      if (e.target === document.getElementById("quote-trigger")) {
+      let quoteTrigger = document.getElementById("quote-trigger");
+      if (quoteTrigger && quoteTrigger.contains(e.target as Node)) {
         return;
       }
 
@@ -82,7 +82,7 @@ export function QuoteHandler() {
 
   let relativeBottom = focusRect && focusRect.bottom + parentScroll;
 
-  // check to see if there is enough space to the left of the button so it doesn't spill over the boundry
+  // check to see if there is enough space to the left and right of the button so it doesn't spill over the boundry
   let leftBumper = focusRect && focusRect.left - parentLeft < 226;
   let rightBumper = focusRect && parentRight - focusRect.right < 226;
 
@@ -116,48 +116,44 @@ export function QuoteHandler() {
         }}
       >
         <div className="text-tertiary">Quote via</div>
-        <button className="flex gap-1 items-center text-secondary hover:text-accent-contrast">
+        <button
+          className="flex gap-1 items-center text-secondary hover:text-accent-contrast"
+          onClick={() => highlightContent()}
+        >
           <BlueskyLinkTiny className="shrink-0" />
           Bluesky
         </button>
         <Separator classname="h-3" />
 
-        <button className="flex gap-1 items-center text-secondary hover:text-accent-contrast">
+        <button
+          id="copy-quote-link"
+          className="flex gap-1 items-center text-secondary hover:text-accent-contrast"
+          onClick={() => {
+            let rect = document
+              .getElementById("copy-quote-link")
+              ?.getBoundingClientRect();
+            smoker({
+              text: <strong>Copied Link</strong>,
+              position: {
+                y: rect ? rect.top : 0,
+                x: rect ? rect.right + 5 : 0,
+              },
+            });
+          }}
+        >
           <CopyTiny className="shrink-0" />
           Link
         </button>
       </div>
-      // <Menu
-      //   asChild
-      //   trigger={
-      //     <button
-      //       id="quote-trigger"
-      //       style={{
-      //         position: "absolute",
-      //         top:
-      //           selectionDir === "forward"
-      //             ? `calc(${relativeBottom}px + 8px )`
-      //             : `calc(${relativeTop}px - 32px )`,
-      //         left:
-      //           selectionDir === "forward" && leftBumper
-      //             ? `calc(${relativeLeft}px - 24px) `
-      //             : selectionDir === "forward"
-      //               ? `16px `
-      //               : `calc(${relativeLeft}px)`,
-      //       }}
-      //       className={`
-      //   quoteTrigger
-      //   w-8 h-8 rounded-full bg-test`}
-      //     />
-      //   }
-      // >
-      //   <MenuItem onSelect={() => {}}>
-      //     <div>Copy Link to Quote</div>
-      //   </MenuItem>
-      //   <MenuItem onSelect={() => {}}>
-      //     <div>Share Quote on Bluesky</div>
-      //   </MenuItem>
-      // </Menu>
     );
   }
+}
+
+function highlightContent() {
+  const selection = window.getSelection();
+  let span = document.createElement("span");
+  span.classList.add("highlight", "rounded-md");
+  span.style.backgroundColor = "rgba(var(--accent-contrast), .15)";
+
+  selection?.getRangeAt(0).surroundContents(span);
 }
