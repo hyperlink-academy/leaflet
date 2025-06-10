@@ -15,6 +15,7 @@ import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { TextBlock } from "./TextBlock";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { BskyAgent } from "@atproto/api";
+import { QuoteHandler } from "./QuoteHandler";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -72,7 +73,12 @@ export default async function Post(props: {
     <ThemeProvider entityID={null}>
       <div className="postPage w-full h-screen bg-[#FDFCFA] flex items-stretch">
         <div className="postWrapper flex flex-col w-full ">
-          <div className="pub flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto max-w-prose h-full w-full overflow-auto">
+          <div
+            id="post-content"
+            className="relative flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto max-w-prose h-full w-full overflow-auto"
+          >
+            <QuoteHandler />
+
             <div className="pubHeader flex flex-col pb-5">
               <Link
                 className="font-bold hover:no-underline text-accent-contrast"
@@ -144,7 +150,7 @@ let Block = ({
   let className = `
     postBlockWrapper
     pt-1
-    ${isList ? "isListItem pb-0 " : "pb-2 last:pb-3 last:sm:pb-4 first:pt-2 sm:first:pt-3"}
+    ${isList ? "isListItem pb-0 " : "mb-2 last:mb-3 last:sm:mb-4 first:mt-2 sm:first:mt-3"}
     ${b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignRight" ? "text-right" : b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignCenter" ? "text-center" : ""}
     `;
 
@@ -168,7 +174,7 @@ let Block = ({
         <img
           height={b.block.aspectRatio?.height}
           width={b.block.aspectRatio?.width}
-          className={`!pt-3 sm:!pt-4 ${className}`}
+          className={`!mt-3 sm:!mt-4 ${className}`}
           src={`/api/atproto_images?did=${did}&cid=${(b.block.image.ref as unknown as { $link: string })["$link"]}`}
         />
       );
