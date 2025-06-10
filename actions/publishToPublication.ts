@@ -55,7 +55,7 @@ export async function publishToPublication({
   );
   let { data: draft } = await supabaseServerClient
     .from("leaflets_in_publications")
-    .select("*, publications(*)")
+    .select("*, publications(*), documents(*)")
     .eq("publication", publication_uri)
     .eq("leaflet", leaflet_id)
     .single();
@@ -92,7 +92,10 @@ export async function publishToPublication({
     scan,
   );
 
+  let existingRecord =
+    (draft?.documents?.data as PubLeafletDocument.Record) || {};
   let record: PubLeafletDocument.Record = {
+    ...existingRecord,
     $type: "pub.leaflet.document",
     author: credentialSession.did!,
     title: title || "Untitled",
