@@ -14,7 +14,10 @@ import { Popover } from "components/Popover";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { useToaster } from "components/Toast";
 import * as Dialog from "@radix-ui/react-dialog";
-import { subscribeToPublication, unsubscribeToPublication } from "./subscribe";
+import {
+  subscribeToPublication,
+  unsubscribeToPublication,
+} from "./subscribeToPublication";
 import { DotLoader } from "components/utils/DotLoader";
 import { addFeed } from "./addFeed";
 import { useSearchParams } from "next/navigation";

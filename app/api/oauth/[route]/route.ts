@@ -1,5 +1,5 @@
 import { createIdentity } from "actions/createIdentity";
-import { subscribeToPublication } from "app/lish/subscribe";
+import { subscribeToPublication } from "app/lish/subscribeToPublication";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
