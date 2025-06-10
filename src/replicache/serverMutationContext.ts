@@ -12,11 +12,13 @@ import { Database } from "supabase/database.types";
 import { v7 } from "uuid";
 export function serverMutationContext(
   tx: PgTransaction<any, any, any>,
+  permission_token_id: string,
   token_rights: PermissionToken["permission_token_rights"],
 ) {
   let ctx: MutationContext & {
     checkPermission: (entity: string) => Promise<boolean>;
   } = {
+    permission_token_id,
     async runOnServer(cb) {
       let supabase = createClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,

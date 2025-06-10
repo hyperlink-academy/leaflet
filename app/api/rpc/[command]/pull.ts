@@ -70,6 +70,24 @@ export const pull = makeRoute({
       updated_at: string | null;
       version: number;
     }[];
+    let publication_data = data.publications as {
+      description: string;
+      title: string;
+    }[];
+    let pub_patch = publication_data?.[0]
+      ? [
+          {
+            op: "put",
+            key: "publication_description",
+            value: publication_data[0].description,
+          },
+          {
+            op: "put",
+            key: "publication_title",
+            value: publication_data[0].title,
+          },
+        ]
+      : [];
 
     let clientGroup = (
       (data.client_groups as {
@@ -98,6 +116,7 @@ export const pull = makeRoute({
             value: FactWithIndexes(f as unknown as Fact<Attribute>),
           } as const;
         }),
+        ...pub_patch,
       ],
     } as PullResponseV1;
   },

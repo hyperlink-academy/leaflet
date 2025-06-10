@@ -1,28 +1,25 @@
 "use server";
-import { drizzle } from "drizzle-orm/postgres-js";
-import { and, eq, inArray } from "drizzle-orm";
-import postgres from "postgres";
-import { entities, poll_votes_on_entity } from "drizzle/schema";
 import { cookies } from "next/headers";
 import { v7 } from "uuid";
 import { getIdentityData } from "./getIdentityData";
+import { supabaseServerClient } from "supabase/serverClient";
 
 export async function getPollData(entity_sets: string[]) {
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   let voter_token = (await cookies()).get("poll_voter_token")?.value;
 
-  const db = drizzle(client);
-  const polls = await db
-    .select({
-      poll_votes_on_entity: {
-        poll_entity: poll_votes_on_entity.poll_entity,
-        voter_token: poll_votes_on_entity.voter_token,
-        option_entity: poll_votes_on_entity.option_entity,
-      },
-    })
-    .from(poll_votes_on_entity)
-    .innerJoin(entities, eq(entities.id, poll_votes_on_entity.poll_entity))
-    .where(and(inArray(entities.set, entity_sets)));
+  const { data: polls, error } = await supabaseServerClient
+    .from("poll_votes_on_entity")
+    .select(
+      `
+      poll_entity,
+      voter_token,
+      option_entity,
+      entities!poll_votes_on_entity_poll_entity_fkey!inner(set)
+    `,
+    )
+    .in("entities.set", entity_sets);
+
+  if (error) throw error;
 
   let pollVotes = polls
     .reduce<
@@ -31,15 +28,13 @@ export async function getPollData(entity_sets: string[]) {
         votes: { option_entity: string; voter_token: string }[];
       }>
     >((acc, p) => {
-      let x = acc.find(
-        (a) => a.poll_entity === p.poll_votes_on_entity.poll_entity,
-      );
+      let x = acc.find((a) => a.poll_entity === p.poll_entity);
       if (!x)
         acc.push({
-          poll_entity: p.poll_votes_on_entity.poll_entity,
-          votes: [p.poll_votes_on_entity],
+          poll_entity: p.poll_entity,
+          votes: [p],
         });
-      else x.votes.push(p.poll_votes_on_entity);
+      else x.votes.push(p);
       return acc;
     }, [])
     .map((poll) => {
@@ -63,11 +58,8 @@ export async function getPollData(entity_sets: string[]) {
     pollVotes,
     polls: polls.map((p) => ({
       poll_votes_on_entity: {
-        ...p.poll_votes_on_entity,
-        voter_token:
-          voter_token === p.poll_votes_on_entity.voter_token
-            ? voter_token
-            : undefined,
+        ...p,
+        voter_token: voter_token === p.voter_token ? voter_token : undefined,
       },
     })),
     voter_token,
@@ -90,34 +82,38 @@ export async function voteOnPoll(
       sameSite: "lax",
     });
   }
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
-  const db = drizzle(client);
+  const { data: existingVotes, error: selectError } = await supabaseServerClient
+    .from("poll_votes_on_entity")
+    .select("*")
+    .eq("poll_entity", poll_entity);
 
-  const pollVote = await db
-    .select()
-    .from(poll_votes_on_entity)
-    .where(eq(poll_votes_on_entity.poll_entity, poll_entity));
+  if (selectError) throw selectError;
 
-  if (
-    pollVote.find((v) => {
-      return v.voter_token === voter_token;
-    })
-  ) {
-    await db
-      .delete(poll_votes_on_entity)
-      .where(
-        and(
-          eq(poll_votes_on_entity.voter_token, voter_token),
-          eq(poll_votes_on_entity.poll_entity, poll_entity),
-        ),
-      );
+  const existingVote = existingVotes?.find(
+    (v) => v.voter_token === voter_token,
+  );
+
+  if (existingVote) {
+    const { error: deleteError } = await supabaseServerClient
+      .from("poll_votes_on_entity")
+      .delete()
+      .eq("voter_token", voter_token)
+      .eq("poll_entity", poll_entity);
+
+    if (deleteError) throw deleteError;
   }
 
-  await db.insert(poll_votes_on_entity).values(
-    option_entities.map((option_entity) => ({
-      option_entity,
-      poll_entity,
-      voter_token,
-    })),
-  );
+  const { error: insertError } = await supabaseServerClient
+    .from("poll_votes_on_entity")
+    .insert(
+      option_entities.map((option_entity) => ({
+        option_entity,
+        poll_entity,
+        voter_token,
+      })),
+    );
+
+  if (insertError) throw insertError;
+
+  return;
 }

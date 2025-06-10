@@ -29,6 +29,10 @@ export const schemaDict = {
               maxLength: 1280,
               maxGraphemes: 128,
             },
+            postRef: {
+              type: 'ref',
+              ref: 'lex:com.atproto.repo.strongRef',
+            },
             description: {
               type: 'string',
               maxLength: 3000,
@@ -213,6 +217,27 @@ export const schemaDict = {
             items: {
               type: 'ref',
               ref: 'lex:pub.leaflet.blocks.unorderedList#listItem',
+            },
+          },
+        },
+      },
+    },
+  },
+  PubLeafletGraphSubscription: {
+    lexicon: 1,
+    id: 'pub.leaflet.graph.subscription',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description: 'Record declaring a subscription to a publication',
+        record: {
+          type: 'object',
+          required: ['publication'],
+          properties: {
+            publication: {
+              type: 'string',
+              format: 'at-uri',
             },
           },
         },
@@ -1343,6 +1368,7 @@ export const ids = {
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
+  PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
   PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
   PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
   ComAtprotoLabelDefs: 'com.atproto.label.defs',

@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, type JSX } from "react";
+import { useEffect, useRef, useState, type JSX } from "react";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
 import { isIOS } from "src/utils/isDevice";
 
@@ -25,6 +25,35 @@ export const Input = (
       autoFocus={isIOS() ? false : props.autoFocus}
       ref={ref}
       onMouseDown={onMouseDown}
+    />
+  );
+};
+
+export const AsyncValueInput = (
+  props: {
+    textarea?: boolean;
+  } & JSX.IntrinsicElements["input"] &
+    JSX.IntrinsicElements["textarea"],
+) => {
+  let [intermediateState, setIntermediateState] = useState(
+    props.value as string,
+  );
+
+  useEffect(() => {
+    setIntermediateState(props.value as string);
+  }, [props.value]);
+
+  return (
+    <Input
+      {...props}
+      value={intermediateState}
+      onChange={async (e) => {
+        if (!props.onChange) return;
+        setIntermediateState(e.currentTarget.value);
+        await Promise.all([
+          props.onChange(e as React.ChangeEvent<HTMLInputElement>),
+        ]);
+      }}
     />
   );
 };

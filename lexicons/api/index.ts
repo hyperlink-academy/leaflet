@@ -11,6 +11,7 @@ import * as PubLeafletBlocksHeader from './types/pub/leaflet/blocks/header'
 import * as PubLeafletBlocksImage from './types/pub/leaflet/blocks/image'
 import * as PubLeafletBlocksText from './types/pub/leaflet/blocks/text'
 import * as PubLeafletBlocksUnorderedList from './types/pub/leaflet/blocks/unorderedList'
+import * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
 import * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
 import * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
 import * as ComAtprotoLabelDefs from './types/com/atproto/label/defs'
@@ -33,6 +34,7 @@ export * as PubLeafletBlocksHeader from './types/pub/leaflet/blocks/header'
 export * as PubLeafletBlocksImage from './types/pub/leaflet/blocks/image'
 export * as PubLeafletBlocksText from './types/pub/leaflet/blocks/text'
 export * as PubLeafletBlocksUnorderedList from './types/pub/leaflet/blocks/unorderedList'
+export * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
 export * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
 export * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
 export * as ComAtprotoLabelDefs from './types/com/atproto/label/defs'
@@ -88,12 +90,14 @@ export class PubLeafletNS {
   document: DocumentRecord
   publication: PublicationRecord
   blocks: PubLeafletBlocksNS
+  graph: PubLeafletGraphNS
   pages: PubLeafletPagesNS
   richtext: PubLeafletRichtextNS
 
   constructor(client: XrpcClient) {
     this._client = client
     this.blocks = new PubLeafletBlocksNS(client)
+    this.graph = new PubLeafletGraphNS(client)
     this.pages = new PubLeafletPagesNS(client)
     this.richtext = new PubLeafletRichtextNS(client)
     this.document = new DocumentRecord(client)
@@ -106,6 +110,81 @@ export class PubLeafletBlocksNS {
 
   constructor(client: XrpcClient) {
     this._client = client
+  }
+}
+
+export class PubLeafletGraphNS {
+  _client: XrpcClient
+  subscription: SubscriptionRecord
+
+  constructor(client: XrpcClient) {
+    this._client = client
+    this.subscription = new SubscriptionRecord(client)
+  }
+}
+
+export class SubscriptionRecord {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+
+  async list(
+    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
+  ): Promise<{
+    cursor?: string
+    records: { uri: string; value: PubLeafletGraphSubscription.Record }[]
+  }> {
+    const res = await this._client.call('com.atproto.repo.listRecords', {
+      collection: 'pub.leaflet.graph.subscription',
+      ...params,
+    })
+    return res.data
+  }
+
+  async get(
+    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
+  ): Promise<{
+    uri: string
+    cid: string
+    value: PubLeafletGraphSubscription.Record
+  }> {
+    const res = await this._client.call('com.atproto.repo.getRecord', {
+      collection: 'pub.leaflet.graph.subscription',
+      ...params,
+    })
+    return res.data
+  }
+
+  async create(
+    params: OmitKey<
+      ComAtprotoRepoCreateRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletGraphSubscription.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.graph.subscription'
+    const res = await this._client.call(
+      'com.atproto.repo.createRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async delete(
+    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
+    headers?: Record<string, string>,
+  ): Promise<void> {
+    await this._client.call(
+      'com.atproto.repo.deleteRecord',
+      undefined,
+      { collection: 'pub.leaflet.graph.subscription', ...params },
+      { headers },
+    )
   }
 }
 

@@ -1,5 +1,5 @@
-import { OAuthClientMetadata } from "@atproto/oauth-client-node";
 import { createIdentity } from "actions/createIdentity";
+import { subscribeToPublication } from "app/lish/subscribe";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -9,10 +9,17 @@ import { createOauthClient } from "src/atproto-oauth";
 import { setAuthToken } from "src/auth";
 
 import { supabaseServerClient } from "supabase/serverClient";
+import { URLSearchParams } from "url";
+import {
+  ActionAfterSignIn,
+  parseActionFromSearchParam,
+} from "./afterSignInActions";
 
 type OauthRequestClientState = {
   redirect: string | null;
+  action: ActionAfterSignIn | null;
 };
+
 export async function GET(
   req: NextRequest,
   props: { params: Promise<{ route: string; handle?: string }> },
@@ -29,7 +36,8 @@ export async function GET(
       const handle = searchParams.get("handle") as string;
       // Put originating page here!
       let redirect = searchParams.get("redirect_url");
-      let state: OauthRequestClientState = { redirect };
+      let action = parseActionFromSearchParam(searchParams.get("action"));
+      let state: OauthRequestClientState = { redirect, action };
 
       // Revoke any pending authentication requests if the connection is closed (optional)
       const ac = new AbortController();
@@ -69,7 +77,8 @@ export async function GET(
                 .from("identities")
                 .update({ atp_did: session.did })
                 .eq("id", data.data.identity);
-            return redirect(redirectPath);
+
+            return handleAction(s.action, redirectPath);
           }
           const client = postgres(process.env.DB_URL as string, {
             idle_timeout: 5,
@@ -93,12 +102,28 @@ export async function GET(
         console.log("authorize() was called with state:", state);
 
         console.log("User authenticated as:", session.did);
+        return handleAction(s.action, redirectPath);
       } catch (e) {
         redirect(redirectPath);
       }
-      return redirect(redirectPath);
     }
     default:
       return NextResponse.json({ error: "Invalid route" }, { status: 404 });
   }
 }
+
+const handleAction = async (
+  action: ActionAfterSignIn | null,
+  redirectPath: string,
+) => {
+  let [base, pathparams] = redirectPath.split("?");
+  let searchParams = new URLSearchParams(pathparams);
+  if (action?.action === "subscribe") {
+    let result = await subscribeToPublication(action.publication);
+    console.log(result);
+    if (result.hasFeed === false)
+      searchParams.set("showSubscribeSuccess", "true");
+  }
+
+  return redirect(base + "?" + searchParams.toString());
+};
