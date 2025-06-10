@@ -1,6 +1,6 @@
 "use client";
 import { ButtonPrimary } from "components/Buttons";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Input } from "components/Input";
 import { useIdentityData } from "components/IdentityProvider";
 import {
@@ -21,6 +21,7 @@ import {
 import { DotLoader } from "components/utils/DotLoader";
 import { addFeed } from "./addFeed";
 import { useSearchParams } from "next/navigation";
+import LoginForm from "app/login/LoginForm";
 
 type State =
   | { state: "email" }
@@ -273,6 +274,7 @@ let BlueskySubscribeButton = (props: {
   pub_uri: string;
   setSuccessModalOpen: (open: boolean) => void;
 }) => {
+  let { identity } = useIdentityData();
   let [, subscribe, subscribePending] = useActionState(async () => {
     let result = await subscribeToPublication(
       props.pub_uri,
@@ -282,6 +284,31 @@ let BlueskySubscribeButton = (props: {
       props.setSuccessModalOpen(true);
     }
   }, null);
+  let [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!identity?.atp_did) {
+    return (
+      <Popover
+        asChild
+        trigger={
+          <ButtonPrimary className="place-self-center">
+            <BlueskyTiny /> Subscribe with Bluesky{" "}
+          </ButtonPrimary>
+        }
+      >
+        {isClient && (
+          <LoginForm
+            noEmail
+            redirectRoute={window?.location.href + "?refreshAuth"}
+            action={{ action: "subscribe", publication: props.pub_uri }}
+          />
+        )}
+      </Popover>
+    );
+  }
 
   return (
     <>
