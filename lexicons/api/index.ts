@@ -27,6 +27,7 @@ import * as ComAtprotoRepoListRecords from './types/com/atproto/repo/listRecords
 import * as ComAtprotoRepoPutRecord from './types/com/atproto/repo/putRecord'
 import * as ComAtprotoRepoStrongRef from './types/com/atproto/repo/strongRef'
 import * as ComAtprotoRepoUploadBlob from './types/com/atproto/repo/uploadBlob'
+import * as AppBskyActorProfile from './types/app/bsky/actor/profile'
 
 export * as PubLeafletDocument from './types/pub/leaflet/document'
 export * as PubLeafletPublication from './types/pub/leaflet/publication'
@@ -50,6 +51,7 @@ export * as ComAtprotoRepoListRecords from './types/com/atproto/repo/listRecords
 export * as ComAtprotoRepoPutRecord from './types/com/atproto/repo/putRecord'
 export * as ComAtprotoRepoStrongRef from './types/com/atproto/repo/strongRef'
 export * as ComAtprotoRepoUploadBlob from './types/com/atproto/repo/uploadBlob'
+export * as AppBskyActorProfile from './types/app/bsky/actor/profile'
 
 export const PUB_LEAFLET_PAGES = {
   LinearDocumentTextAlignLeft: 'pub.leaflet.pages.linearDocument#textAlignLeft',
@@ -62,11 +64,13 @@ export const PUB_LEAFLET_PAGES = {
 export class AtpBaseClient extends XrpcClient {
   pub: PubNS
   com: ComNS
+  app: AppNS
 
   constructor(options: FetchHandler | FetchHandlerOptions) {
     super(options, schemas)
     this.pub = new PubNS(this)
     this.com = new ComNS(this)
+    this.app = new AppNS(this)
   }
 
   /** @deprecated use `this` instead */
@@ -469,6 +473,102 @@ export class ComAtprotoRepoNS {
       opts?.qp,
       data,
       opts,
+    )
+  }
+}
+
+export class AppNS {
+  _client: XrpcClient
+  bsky: AppBskyNS
+
+  constructor(client: XrpcClient) {
+    this._client = client
+    this.bsky = new AppBskyNS(client)
+  }
+}
+
+export class AppBskyNS {
+  _client: XrpcClient
+  actor: AppBskyActorNS
+
+  constructor(client: XrpcClient) {
+    this._client = client
+    this.actor = new AppBskyActorNS(client)
+  }
+}
+
+export class AppBskyActorNS {
+  _client: XrpcClient
+  profile: ProfileRecord
+
+  constructor(client: XrpcClient) {
+    this._client = client
+    this.profile = new ProfileRecord(client)
+  }
+}
+
+export class ProfileRecord {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+
+  async list(
+    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
+  ): Promise<{
+    cursor?: string
+    records: { uri: string; value: AppBskyActorProfile.Record }[]
+  }> {
+    const res = await this._client.call('com.atproto.repo.listRecords', {
+      collection: 'app.bsky.actor.profile',
+      ...params,
+    })
+    return res.data
+  }
+
+  async get(
+    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
+  ): Promise<{ uri: string; cid: string; value: AppBskyActorProfile.Record }> {
+    const res = await this._client.call('com.atproto.repo.getRecord', {
+      collection: 'app.bsky.actor.profile',
+      ...params,
+    })
+    return res.data
+  }
+
+  async create(
+    params: OmitKey<
+      ComAtprotoRepoCreateRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<AppBskyActorProfile.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'app.bsky.actor.profile'
+    const res = await this._client.call(
+      'com.atproto.repo.createRecord',
+      undefined,
+      {
+        collection,
+        rkey: 'self',
+        ...params,
+        record: { ...record, $type: collection },
+      },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async delete(
+    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
+    headers?: Record<string, string>,
+  ): Promise<void> {
+    await this._client.call(
+      'com.atproto.repo.deleteRecord',
+      undefined,
+      { collection: 'app.bsky.actor.profile', ...params },
+      { headers },
     )
   }
 }

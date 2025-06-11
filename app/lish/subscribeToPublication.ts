@@ -10,6 +10,7 @@ import { revalidatePath } from "next/cache";
 import { AtUri } from "@atproto/syntax";
 import { redirect } from "next/navigation";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
+import { Json } from "supabase/database.types";
 
 let leafletFeedURI =
   "at://did:plc:btxrwcaeyodrap5mnjw2fvmz/app.bsky.feed.generator/subscribedPublications";
@@ -44,7 +45,19 @@ export async function subscribeToPublication(
       identity: credentialSession.did!,
     });
   let bsky = new BskyAgent(credentialSession);
-  let prefs = await bsky.app.bsky.actor.getPreferences();
+  let [prefs, profile] = await Promise.all([
+    bsky.app.bsky.actor.getPreferences(),
+    bsky.app.bsky.actor.profile.get({
+      repo: credentialSession.did!,
+      rkey: "self",
+    }),
+  ]);
+  if (!identity.bsky_profiles && profile.value) {
+    await supabaseServerClient.from("bsky_profiles").insert({
+      did: identity.atp_did,
+      record: profile.value as Json,
+    });
+  }
   let savedFeeds = prefs.data.preferences.find(
     (pref) => pref.$type === "app.bsky.actor.defs#savedFeedsPrefV2",
   ) as AppBskyActorDefs.SavedFeedsPrefV2;

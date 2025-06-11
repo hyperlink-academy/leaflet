@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, text, jsonb, timestamp, foreignKey, uuid, bigint, boolean, unique, uniqueIndex, smallint, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, pgEnum, text, jsonb, foreignKey, timestamp, uuid, bigint, boolean, unique, uniqueIndex, smallint, primaryKey } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const aal_level = pgEnum("aal_level", ['aal1', 'aal2', 'aal3'])
@@ -22,6 +22,12 @@ export const oauth_state_store = pgTable("oauth_state_store", {
 export const oauth_session_store = pgTable("oauth_session_store", {
 	key: text("key").primaryKey().notNull(),
 	session: jsonb("session").notNull(),
+});
+
+export const bsky_profiles = pgTable("bsky_profiles", {
+	did: text("did").primaryKey().notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
+	record: jsonb("record").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 });
 
 export const publications = pgTable("publications", {
@@ -207,7 +213,7 @@ export const publication_domains = pgTable("publication_domains", {
 
 export const publication_subscriptions = pgTable("publication_subscriptions", {
 	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
-	identity: text("identity").notNull(),
+	identity: text("identity").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	record: jsonb("record").notNull(),
 	uri: text("uri").notNull(),
@@ -220,9 +226,9 @@ export const publication_subscriptions = pgTable("publication_subscriptions", {
 });
 
 export const leaflets_in_publications = pgTable("leaflets_in_publications", {
-	publication: text("publication").notNull().references(() => publications.uri),
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
 	doc: text("doc").default('').references(() => documents.uri, { onDelete: "set null" } ),
-	leaflet: uuid("leaflet").notNull().references(() => permission_tokens.id),
+	leaflet: uuid("leaflet").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
 	description: text("description").default('').notNull(),
 	title: text("title").default('').notNull(),
 },

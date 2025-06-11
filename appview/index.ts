@@ -11,6 +11,10 @@ import {
 } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
+import { createIdentity } from "actions/createIdentity";
+import { supabaseServerClient } from "supabase/serverClient";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
 
@@ -23,6 +27,9 @@ async function main() {
   try {
     startCursor = parseInt((await readFile(cursorFile)).toString());
   } catch (e) {}
+
+  const client = postgres(process.env.DB_URL!);
+  const db = drizzle(client);
   const runner = new MemoryRunner({
     startCursor,
     setCursor: async (cursor) => {
@@ -40,6 +47,7 @@ async function main() {
       ids.PubLeafletDocument,
       ids.PubLeafletPublication,
       ids.PubLeafletGraphSubscription,
+      ids.AppBskyActorProfile,
     ],
     handleEvent: async (evt) => {
       if (
@@ -81,12 +89,22 @@ async function main() {
         if (evt.event === "create" || evt.event === "update") {
           let record = PubLeafletPublication.validateRecord(evt.record);
           if (!record.success) return;
-          await supabase.from("publications").upsert({
+          let { error } = await supabase.from("publications").upsert({
             uri: evt.uri.toString(),
             identity_did: evt.did,
             name: record.value.name,
             record: record.value as Json,
           });
+
+          if (error && error.code === "23503") {
+            await createIdentity(db, { atp_did: evt.did });
+            await supabase.from("publications").upsert({
+              uri: evt.uri.toString(),
+              identity_did: evt.did,
+              name: record.value.name,
+              record: record.value as Json,
+            });
+          }
         }
         if (evt.event === "delete") {
           await supabase
@@ -95,22 +113,42 @@ async function main() {
             .eq("uri", evt.uri.toString());
         }
       }
-      if (evt.collection === ids.PubLeafletPublication) {
+      if (evt.collection === ids.PubLeafletGraphSubscription) {
         if (evt.event === "create" || evt.event === "update") {
           let record = PubLeafletGraphSubscription.validateRecord(evt.record);
           if (!record.success) return;
-          await supabase.from("publication_subscriptions").upsert({
-            uri: evt.uri.toString(),
-            identity: evt.did,
-            publication: record.value.publication,
-            record: record.value as Json,
-          });
+          let { error } = await supabase
+            .from("publication_subscriptions")
+            .upsert({
+              uri: evt.uri.toString(),
+              identity: evt.did,
+              publication: record.value.publication,
+              record: record.value as Json,
+            });
+          if (error && error.code === "23503") {
+            await createIdentity(db, { atp_did: evt.did });
+            await supabase.from("publication_subscriptions").upsert({
+              uri: evt.uri.toString(),
+              identity: evt.did,
+              publication: record.value.publication,
+              record: record.value as Json,
+            });
+          }
         }
         if (evt.event === "delete") {
           await supabase
             .from("publication_subscriptions")
             .delete()
             .eq("uri", evt.uri.toString());
+        }
+      }
+      if (evt.collection === ids.AppBskyActorProfile) {
+        //only listen to updates because we should fetch it for the first time when they subscribe!
+        if (evt.event === "update") {
+          await supabaseServerClient
+            .from("bsky_profiles")
+            .update({ record: evt.record as Json })
+            .eq("did", evt.did);
         }
       }
     },
@@ -120,10 +158,11 @@ async function main() {
   });
   console.log("starting firehose consumer");
   firehose.start();
-  const cleanup = () => {
+  const cleanup = async () => {
     console.log("shutting down firehose...");
-    firehose.destroy();
-    runner.destroy();
+    await client.end();
+    await firehose.destroy();
+    await runner.destroy();
     process.exit();
   };
 
