@@ -13,6 +13,7 @@ import {
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
   PubLeafletRichtextFacet,
+  PubLeafletBlocksWebsite,
 } from "lexicons/api";
 import { Block } from "components/Blocks/Block";
 import { TID } from "@atproto/common";
@@ -73,9 +74,12 @@ export async function publishToPublication({
   let images = blocks
     .filter((b) => b.type === "image")
     .map((b) => scan.eav(b.value, "block/image")[0]);
+  let links = blocks
+    .filter((b) => b.type == "link")
+    .map((b) => scan.eav(b.value, "link/preview")[0]);
   let imageMap = new Map<string, BlobRef>();
   await Promise.all(
-    images.map(async (b) => {
+    [...links, ...images].map(async (b) => {
       let data = await fetch(b.data.src);
       if (data.status !== 200) return;
       let binary = await data.blob();
@@ -210,7 +214,13 @@ function blockToRecord(
     let facets = YJSFragmentToFacets(nodes[0]);
     return [stringValue, facets] as const;
   };
-  if (b.type !== "text" && b.type !== "heading" && b.type !== "image") return;
+  if (
+    b.type !== "text" &&
+    b.type !== "heading" &&
+    b.type !== "image" &&
+    b.type !== "link"
+  )
+    return;
   let alignmentValue =
     scan.eav(b.value, "block/text-alignment")[0]?.data.value || "left";
 
@@ -248,6 +258,22 @@ function blockToRecord(
         height: image.data.height,
         width: image.data.width,
       },
+    };
+    return block;
+  }
+  if (b.type === "link") {
+    let [previewImage] = scan.eav(b.value, "link/preview");
+    let [description] = scan.eav(b.value, "link/description");
+    let [src] = scan.eav(b.value, "link/url");
+    if (!src) return;
+    let blobref = imageMap.get(previewImage.data.src);
+    let [title] = scan.eav(b.value, "link/title");
+    let block: $Typed<PubLeafletBlocksWebsite.Main> = {
+      $type: "pub.leaflet.blocks.website",
+      previewImage: blobref,
+      src: src.data.value,
+      description: description.data.value,
+      title: title.data.value,
     };
     return block;
   }

@@ -6,6 +6,7 @@ import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
   PubLeafletBlocksText,
+  PubLeafletBlocksWebsite,
   PubLeafletBlocksUnorderedList,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
@@ -14,7 +15,7 @@ import { Metadata } from "next";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { TextBlock } from "./TextBlock";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
-import { BskyAgent } from "@atproto/api";
+import { BlobRef, BskyAgent } from "@atproto/api";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
 
 export async function generateMetadata(props: {
@@ -176,13 +177,63 @@ let Block = ({
         </ul>
       );
     }
+    case PubLeafletBlocksWebsite.isMain(b.block): {
+      return (
+        <a
+          href={b.block.src}
+          target="_blank"
+          className={`
+          externalLinkBlock flex relative group/linkBlock
+          h-[104px] w-full bg-bg-page overflow-hidden text-primary hover:no-underline no-underline
+          hover:border-accent-contrast  shadow-sm
+          block-border
+          `}
+        >
+          <div className="pt-2 pb-2 px-3 grow min-w-0">
+            <div className="flex flex-col w-full min-w-0 h-full grow ">
+              <div
+                className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-none resize-none align-top border h-[24px] line-clamp-1`}
+                style={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  wordBreak: "break-all",
+                }}
+              >
+                {b.block.title}
+              </div>
+
+              <div
+                className={`linkBlockDescription text-sm bg-transparent border-none outline-none resize-none align-top  grow line-clamp-2`}
+              >
+                {b.block.description}
+              </div>
+              <div
+                style={{ wordBreak: "break-word" }} // better than tailwind break-all!
+                className={`min-w-0 w-full line-clamp-1 text-xs italic group-hover/linkBlock:text-accent-contrast text-tertiary`}
+              >
+                {b.block.src}
+              </div>
+            </div>
+          </div>
+          {b.block.previewImage && (
+            <div
+              className={`linkBlockPreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center`}
+              style={{
+                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did)})`,
+                backgroundPosition: "center",
+              }}
+            />
+          )}
+        </a>
+      );
+    }
     case PubLeafletBlocksImage.isMain(b.block): {
       return (
         <img
           height={b.block.aspectRatio?.height}
           width={b.block.aspectRatio?.width}
           className={`!pt-3 sm:!pt-4 ${className}`}
-          src={`/api/atproto_images?did=${did}&cid=${(b.block.image.ref as unknown as { $link: string })["$link"]}`}
+          src={blobRefToSrc(b.block.image.ref, did)}
         />
       );
     }
@@ -223,6 +274,9 @@ let Block = ({
       return null;
   }
 };
+
+const blobRefToSrc = (b: BlobRef["ref"], did: string) =>
+  `/api/atproto_images?did=${did}&cid=${(b as unknown as { $link: string })["$link"]}`;
 
 function ListItem(props: {
   item: PubLeafletBlocksUnorderedList.ListItem;

@@ -223,6 +223,33 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksWebsite: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.website',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['src'],
+        properties: {
+          previewImage: {
+            type: 'blob',
+            accept: ['image/*'],
+            maxSize: 1000000,
+          },
+          title: {
+            type: 'string',
+          },
+          description: {
+            type: 'string',
+          },
+          src: {
+            type: 'string',
+            format: 'uri',
+          },
+        },
+      },
+    },
+  },
   PubLeafletGraphSubscription: {
     lexicon: 1,
     id: 'pub.leaflet.graph.subscription',
@@ -271,6 +298,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.header',
               'lex:pub.leaflet.blocks.image',
               'lex:pub.leaflet.blocks.unorderedList',
+              'lex:pub.leaflet.blocks.website',
             ],
           },
           alignment: {
@@ -1427,6 +1455,7 @@ export const ids = {
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
+  PubLeafletBlocksWebsite: 'pub.leaflet.blocks.website',
   PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
   PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
   PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
