@@ -116,6 +116,7 @@ export function ReplicacheProvider(props: {
               await mutations[m as keyof typeof mutations](
                 args,
                 clientMutationContext(tx, {
+                  permission_token_id: props.token.id,
                   undoManager,
                   rep: newRep,
                   ignoreUndo: args.ignoreUndo || tx.reason !== "initial",

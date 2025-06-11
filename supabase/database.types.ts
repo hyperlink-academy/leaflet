@@ -690,21 +690,21 @@ export type Database = {
           identity: string
           publication: string
           record: Json
-          uri: string | null
+          uri: string
         }
         Insert: {
           created_at?: string
           identity: string
           publication: string
           record: Json
-          uri?: string | null
+          uri: string
         }
         Update: {
           created_at?: string
           identity?: string
           publication?: string
           record?: Json
-          uri?: string | null
+          uri?: string
         }
         Relationships: [
           {
@@ -850,6 +850,7 @@ export type Database = {
       pull_result: {
         client_groups: Json | null
         facts: Json | null
+        publications: Json | null
       }
     }
   }

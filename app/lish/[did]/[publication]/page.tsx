@@ -2,17 +2,14 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
 
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
-import React from "react";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { AtUri } from "@atproto/syntax";
-import {
-  AtpBaseClient,
-  PubLeafletDocument,
-  PubLeafletPublication,
-} from "lexicons/api";
+import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import Link from "next/link";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
+import { SubscribeWithBluesky } from "app/lish/Subscribe";
+import React from "react";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -49,6 +46,7 @@ export default async function Publication(props: {
       .from("publications")
       .select(
         `*,
+        publication_subscriptions(*),
       documents_in_publications(documents(*))
       `,
       )
@@ -64,7 +62,7 @@ export default async function Publication(props: {
   try {
     return (
       <ThemeProvider entityID={null}>
-        <div className="publicationWrapper w-screen h-screen flex place-items-center bg-[#FDFCFA]">
+        <div className="publicationWrapper w-screen  h-full min-h-fit flex place-items-center bg-[#FDFCFA]">
           <div className="publication max-w-prose w-full mx-auto h-full sm:pt-8 pt-4 px-3 pb-12 sm:pb-8">
             <div className="flex flex-col pb-8 w-full text-center justify-center ">
               <div className="flex flex-col gap-3 justify-center place-items-center">
@@ -97,6 +95,13 @@ export default async function Publication(props: {
                   </a>
                 </p>
               )}
+              <div className="sm:pt-4 pt-2">
+                <SubscribeWithBluesky
+                  pubName={publication.name}
+                  pub_uri={publication.uri}
+                  subscribers={publication.publication_subscriptions}
+                />
+              </div>
             </div>
             <div className="publicationPostList w-full flex flex-col gap-4">
               {publication.documents_in_publications
