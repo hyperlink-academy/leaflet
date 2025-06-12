@@ -59,10 +59,10 @@ export default async function Home() {
 
   if (!permission_token)
     return (
-      <div className="p-4 text-lg text-center">
+      <div className="p-4 text-lg text-center flex flex-col gap-4">
         <p>Sorry, home page not found!</p>
         <p>
-          This may be a glitch on our end. If you see this repeatedly please{" "}
+          This may be a glitch on our end. If the issue persists please{" "}
           <a href="mailto:contact@leaflet.pub">send us a note</a>.
         </p>
       </div>

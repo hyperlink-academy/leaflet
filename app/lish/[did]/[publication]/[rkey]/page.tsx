@@ -51,10 +51,10 @@ export default async function Post(props: {
   let did = decodeURIComponent((await props.params).did);
   if (!did)
     return (
-      <div className="p-4 text-lg text-center">
+      <div className="p-4 text-lg text-center flex flex-col gap-4">
         <p>Sorry, can&apos;t resolve handle.</p>
         <p>
-          This may be a glitch on our end. If you see this repeatedly please{" "}
+          This may be a glitch on our end. If the issue persists please{" "}
           <a href="mailto:contact@leaflet.pub">send us a note</a>.
         </p>
       </div>
@@ -75,10 +75,10 @@ export default async function Post(props: {
   ]);
   if (!document?.data || !document.documents_in_publications[0].publications)
     return (
-      <div className="p-4 text-lg text-center">
+      <div className="p-4 text-lg text-center flex flex-col gap-4">
         <p>Sorry, post not found!</p>
         <p>
-          This may be a glitch on our end. If you see this repeatedly please{" "}
+          This may be a glitch on our end. If the issue persists please{" "}
           <a href="mailto:contact@leaflet.pub">send us a note</a>.
         </p>
       </div>
