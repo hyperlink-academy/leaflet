@@ -49,7 +49,16 @@ export default async function Post(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
 }) {
   let did = decodeURIComponent((await props.params).did);
-  if (!did) return <div> can't resolve handle</div>;
+  if (!did)
+    return (
+      <div className="p-4 text-lg text-center">
+        <p>Sorry, can&apos;t resolve handle.</p>
+        <p>
+          This may be a glitch on our end. If you see this repeatedly please{" "}
+          <a href="mailto:contact@leaflet.pub">send us a note</a>.
+        </p>
+      </div>
+    );
   let agent = new BskyAgent({ service: "https://public.api.bsky.app" });
   let [{ data: document }, { data: profile }] = await Promise.all([
     supabaseServerClient
@@ -65,7 +74,15 @@ export default async function Post(props: {
     agent.getProfile({ actor: did }),
   ]);
   if (!document?.data || !document.documents_in_publications[0].publications)
-    return <div>notfound</div>;
+    return (
+      <div className="p-4 text-lg text-center">
+        <p>Sorry, post not found!</p>
+        <p>
+          This may be a glitch on our end. If you see this repeatedly please{" "}
+          <a href="mailto:contact@leaflet.pub">send us a note</a>.
+        </p>
+      </div>
+    );
   let record = document.data as PubLeafletDocument.Record;
   let firstPage = record.pages[0];
   let blocks: PubLeafletPagesLinearDocument.Block[] = [];

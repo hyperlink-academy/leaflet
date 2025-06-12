@@ -39,7 +39,16 @@ export default async function Publication(props: {
 }) {
   let params = await props.params;
   let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) return <div>not logged in</div>;
+  if (!identity || !identity.atp_did)
+    return (
+      <div className="p-4 text-lg text-center">
+        <p>Sorry, looks like you&apos;re not logged in.</p>
+        <p>
+          This may be a glitch on our end. If you see this repeatedly please{" "}
+          <a href="mailto:contact@leaflet.pub">send us a note</a>.
+        </p>
+      </div>
+    );
   let did = decodeURIComponent(params.did);
   if (!did) return <PubNotFound />;
   let { result: publication } = await get_publication_data.handler(
@@ -100,5 +109,13 @@ export default async function Publication(props: {
 }
 
 const PubNotFound = () => {
-  return <div>ain't no pub here</div>;
+  return (
+    <div className="p-4 text-lg text-center">
+      <p>Sorry, publication not found!</p>
+      <p>
+        This may be a glitch on our end. If you see this repeatedly please{" "}
+        <a href="mailto:contact@leaflet.pub">send us a note</a>.
+      </p>
+    </div>
+  );
 };
