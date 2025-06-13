@@ -31,11 +31,11 @@ export function PublicationSWRDataProvider(props: {
 
 export function usePublicationData() {
   let { name, did } = useContext(PublicationContext);
-  let { data } = useSWR(
+  let { data, mutate } = useSWR(
     "publication-data",
     async () =>
       (await callRPC("get_publication_data", { publication_name: name, did }))
         ?.result,
   );
-  return data;
+  return { data, mutate };
 }

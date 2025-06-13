@@ -134,7 +134,7 @@ export const EditPubForm = () => {
 };
 
 export function CustomDomainForm() {
-  let pubData = usePublicationData();
+  let { data: pubData } = usePublicationData();
   if (!pubData) return null;
   let record = pubData?.record as PubLeafletPublication.Record;
   let [state, setState] = useState<
