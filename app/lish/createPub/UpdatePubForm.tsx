@@ -19,7 +19,7 @@ import { PinTiny } from "components/Icons/PinTiny";
 import { Verification } from "@vercel/sdk/esm/models/getprojectdomainop";
 
 export const EditPubForm = () => {
-  let pubData = usePublicationData();
+  let { data: pubData } = usePublicationData();
   let record = pubData?.record as PubLeafletPublication.Record;
   let [formState, setFormState] = useState<"normal" | "loading">("normal");
 
