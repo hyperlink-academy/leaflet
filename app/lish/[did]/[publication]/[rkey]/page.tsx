@@ -17,6 +17,7 @@ import { TextBlock } from "./TextBlock";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { BlobRef, BskyAgent } from "@atproto/api";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -263,21 +264,21 @@ let Block = ({
     case PubLeafletBlocksHeader.isMain(b.block): {
       if (b.block.level === 1)
         return (
+          <h1 className={`${className}`}>
+            <TextBlock {...b.block} />
+          </h1>
+        );
+      if (b.block.level === 2)
+        return (
           <h2 className={`${className}`}>
             <TextBlock {...b.block} />
           </h2>
         );
-      if (b.block.level === 2)
+      if (b.block.level === 3)
         return (
           <h3 className={`${className}`}>
             <TextBlock {...b.block} />
           </h3>
-        );
-      if (b.block.level === 3)
-        return (
-          <h4 className={`${className}`}>
-            <TextBlock {...b.block} />
-          </h4>
         );
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
@@ -291,9 +292,6 @@ let Block = ({
       return null;
   }
 };
-
-const blobRefToSrc = (b: BlobRef["ref"], did: string) =>
-  `/api/atproto_images?did=${did}&cid=${(b as unknown as { $link: string })["$link"]}`;
 
 function ListItem(props: {
   item: PubLeafletBlocksUnorderedList.ListItem;
