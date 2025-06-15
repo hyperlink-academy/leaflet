@@ -47,15 +47,15 @@ export async function subscribeToPublication(
   let bsky = new BskyAgent(credentialSession);
   let [prefs, profile] = await Promise.all([
     bsky.app.bsky.actor.getPreferences(),
-    bsky.app.bsky.actor.profile.get({
-      repo: credentialSession.did!,
-      rkey: "self",
+    bsky.app.bsky.actor.getProfile({
+      actor: credentialSession.did!,
     }),
   ]);
-  if (!identity.bsky_profiles && profile.value) {
+  if (!identity.bsky_profiles && profile.data) {
     await supabaseServerClient.from("bsky_profiles").insert({
       did: identity.atp_did,
-      record: profile.value as Json,
+      record: profile.data as unknown as Json,
+      handle: profile.data.handle,
     });
   }
   let savedFeeds = prefs.data.preferences.find(
