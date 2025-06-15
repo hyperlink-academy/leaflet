@@ -37,16 +37,19 @@ export type Database = {
       bsky_profiles: {
         Row: {
           did: string
+          handle: string | null
           indexed_at: string
           record: Json
         }
         Insert: {
           did: string
+          handle?: string | null
           indexed_at?: string
           record: Json
         }
         Update: {
           did?: string
+          handle?: string | null
           indexed_at?: string
           record?: Json
         }

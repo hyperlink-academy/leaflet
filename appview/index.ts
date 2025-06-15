@@ -50,6 +50,13 @@ async function main() {
       ids.AppBskyActorProfile,
     ],
     handleEvent: async (evt) => {
+      if (evt.event === "identity") {
+        if (evt.handle)
+          await supabase
+            .from("bsky_profiles")
+            .update({ handle: evt.handle })
+            .eq("did", evt.did);
+      }
       if (
         evt.event == "account" ||
         evt.event === "identity" ||

@@ -28,6 +28,7 @@ export const bsky_profiles = pgTable("bsky_profiles", {
 	did: text("did").primaryKey().notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
 	record: jsonb("record").notNull(),
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	handle: text("handle"),
 });
 
 export const publications = pgTable("publications", {
