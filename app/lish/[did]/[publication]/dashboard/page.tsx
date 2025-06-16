@@ -15,6 +15,7 @@ import { get_publication_data } from "app/api/rpc/[command]/get_publication_data
 import { PublicationSWRDataProvider } from "./PublicationSWRProvider";
 import { PublishedPostsList } from "./PublishedPostsLists";
 import { PubLeafletPublication } from "lexicons/api";
+import { PublicationSubscribers } from "./PublicationSubscribers";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -88,6 +89,7 @@ export default async function Publication(props: {
                   tabs={{
                     Drafts: <DraftList />,
                     Published: <PublishedPostsList />,
+                    Subscribers: <PublicationSubscribers />,
                   }}
                   defaultTab={"Drafts"}
                 />
