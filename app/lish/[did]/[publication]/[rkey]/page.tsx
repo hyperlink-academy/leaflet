@@ -92,70 +92,63 @@ export default async function Post(props: {
   }
   return (
     <ThemeProvider entityID={null}>
-      <div className="postPage w-full h-full min-h-fit bg-[#FDFCFA] flex items-stretch">
-        <div className="postWrapper flex flex-col w-full ">
-          <div className="pub flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto max-w-prose h-full w-full overflow-auto">
-            <div className="pubHeader flex flex-col pb-5">
-              <Link
-                className="font-bold hover:no-underline text-accent-contrast"
-                href={getPublicationURL(
-                  document.documents_in_publications[0].publications,
-                )}
-              >
-                {decodeURIComponent((await props.params).publication)}
-              </Link>
-              <h2 className="">{record.title}</h2>
-              {record.description ? (
-                <p className="italic text-secondary">{record.description}</p>
-              ) : null}
+      <div className="flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto max-w-prose w-full">
+        <div className="pubHeader flex flex-col pb-5">
+          <Link
+            className="font-bold hover:no-underline text-accent-contrast"
+            href={getPublicationURL(
+              document.documents_in_publications[0].publications,
+            )}
+          >
+            {decodeURIComponent((await props.params).publication)}
+          </Link>
+          <h2 className="">{record.title}</h2>
+          {record.description ? (
+            <p className="italic text-secondary">{record.description}</p>
+          ) : null}
 
-              <div className="text-sm text-tertiary pt-3 flex gap-1">
-                {profile ? (
-                  <>
-                    <a
-                      className="text-tertiary"
-                      href={`https://bsky.app/profile/${profile.handle}`}
-                    >
-                      by {profile.displayName || profile.handle}
-                    </a>
-                  </>
-                ) : null}
-                {record.publishedAt ? (
-                  <>
-                    {" "}
-                    |
-                    <p>
-                      Published{" "}
-                      {new Date(record.publishedAt).toLocaleDateString(
-                        undefined,
-                        {
-                          year: "numeric",
-                          month: "long",
-                          day: "2-digit",
-                        },
-                      )}
-                    </p>
-                  </>
-                ) : null}
-              </div>
-            </div>
-            <div className="postContent flex flex-col ">
-              {blocks.map((b, index) => {
-                return <Block block={b} did={did} key={index} />;
-              })}
-            </div>
-            <hr className="border-border-light mb-4 mt-2" />
-            <SubscribeWithBluesky
-              isPost
-              pub_uri={document.documents_in_publications[0].publications.uri}
-              subscribers={
-                document.documents_in_publications[0].publications
-                  .publication_subscriptions
-              }
-              pubName={decodeURIComponent((await props.params).publication)}
-            />
+          <div className="text-sm text-tertiary pt-3 flex gap-1">
+            {profile ? (
+              <>
+                <a
+                  className="text-tertiary"
+                  href={`https://bsky.app/profile/${profile.handle}`}
+                >
+                  by {profile.displayName || profile.handle}
+                </a>
+              </>
+            ) : null}
+            {record.publishedAt ? (
+              <>
+                {" "}
+                |
+                <p>
+                  Published{" "}
+                  {new Date(record.publishedAt).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "long",
+                    day: "2-digit",
+                  })}
+                </p>
+              </>
+            ) : null}
           </div>
         </div>
+        <div className="postContent flex flex-col ">
+          {blocks.map((b, index) => {
+            return <Block block={b} did={did} key={index} />;
+          })}
+        </div>
+        <hr className="border-border-light mb-4 mt-2" />
+        <SubscribeWithBluesky
+          isPost
+          pub_uri={document.documents_in_publications[0].publications.uri}
+          subscribers={
+            document.documents_in_publications[0].publications
+              .publication_subscriptions
+          }
+          pubName={decodeURIComponent((await props.params).publication)}
+        />
       </div>
     </ThemeProvider>
   );
