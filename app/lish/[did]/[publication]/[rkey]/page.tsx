@@ -92,7 +92,7 @@ export default async function Post(props: {
   }
   return (
     <ThemeProvider entityID={null}>
-      <div className="flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto w-full bg-[#FDFCFA] h-full">
+      <div className="flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto w-full bg-[#FDFCFA] h-full min-h-fit">
         <div className="pubHeader flex flex-col pb-5 mx-auto max-w-prose">
           <Link
             className="font-bold hover:no-underline text-accent-contrast"
