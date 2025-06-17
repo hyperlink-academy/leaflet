@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
 import { ids } from "lexicons/api/lexicons";
@@ -11,12 +10,18 @@ import {
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
 import { Metadata } from "next";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { TextBlock } from "./TextBlock";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { BskyAgent } from "@atproto/api";
 import { QuoteHandler } from "./QuoteHandler";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
+import { PostHeader } from "./PostHeader";
+import {
+  InteractionDrawerDesktop,
+  InteractionDrawerMobile,
+  Interactions,
+} from "./Interactions";
+import { Media } from "components/Media";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -49,9 +54,10 @@ export default async function Post(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
 }) {
   let did = decodeURIComponent((await props.params).did);
+
   if (!did) return <div> can't resolve handle</div>;
   let agent = new BskyAgent({ service: "https://public.api.bsky.app" });
-  let [{ data: document }, { data: profile }] = await Promise.all([
+  let [{ data: document }] = await Promise.all([
     supabaseServerClient
       .from("documents")
       .select(
@@ -72,65 +78,24 @@ export default async function Post(props: {
   if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
     blocks = firstPage.blocks || [];
   }
+
   return (
     <ThemeProvider entityID={null}>
-      <div className="postPage w-full h-full min-h-fit bg-[#FDFCFA] flex items-stretch">
-        <div className="postWrapper flex flex-col w-full ">
+      <div className="postPage relative w-full overflow-x-auto h-screen bg-[#FDFCFA] flex items-stretch justify-start sm:justify-center gap-0 sm:gap-2">
+        <div className="postWrapper shrink-0 flex flex-col max-w-prose h-screen">
           <div
             id="post-content"
-            className="relative flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto max-w-prose h-full w-full overflow-auto"
+            className={`relative flex flex-col px-3 sm:px-4 pt-3 pb-6 sm:pt-9 sm:pb-12  h-full sm:w-full w-screen overflow-auto`}
           >
             <QuoteHandler />
-
-            <div className="pubHeader flex flex-col pb-5">
-              <Link
-                className="font-bold hover:no-underline text-accent-contrast"
-                href={getPublicationURL(
-                  document.documents_in_publications[0].publications,
-                )}
-              >
-                {decodeURIComponent((await props.params).publication)}
-              </Link>
-              <h2 className="">{record.title}</h2>
-              {record.description ? (
-                <p className="italic text-secondary">{record.description}</p>
-              ) : null}
-
-              <div className="text-sm text-tertiary pt-3 flex gap-1">
-                {profile ? (
-                  <>
-                    <a
-                      className="text-tertiary"
-                      href={`https://bsky.app/profile/${profile.handle}`}
-                    >
-                      by {profile.displayName || profile.handle}
-                    </a>
-                  </>
-                ) : null}
-                {record.publishedAt ? (
-                  <>
-                    {" "}
-                    |
-                    <p>
-                      Published{" "}
-                      {new Date(record.publishedAt).toLocaleDateString(
-                        undefined,
-                        {
-                          year: "numeric",
-                          month: "long",
-                          day: "2-digit",
-                        },
-                      )}
-                    </p>
-                  </>
-                ) : null}
-              </div>
-            </div>
-            <div className="postContent flex flex-col ">
+            {/* <Quotes /> */}
+            <PostHeader params={props.params} />
+            <div className="postContent flex flex-col  shrink-0">
               {blocks.map((b, index) => {
                 return <Block block={b} did={did} key={index} />;
               })}
             </div>
+            <Interactions />
             <hr className="border-border-light mb-4 mt-2" />
             <SubscribeWithBluesky
               isPost
@@ -143,6 +108,18 @@ export default async function Post(props: {
             />
           </div>
         </div>
+        <Media
+          mobile={false}
+          className="shrink w-96 py-6 h-full max-w-full flex"
+        >
+          {/* <div className="h-full py-6">
+            <div className="border-l border-border-light h-full" />
+          </div> */}
+          <InteractionDrawerDesktop />
+        </Media>
+        <Media mobile>
+          <InteractionDrawerMobile />
+        </Media>
       </div>
     </ThemeProvider>
   );
