@@ -34,6 +34,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      bsky_profiles: {
+        Row: {
+          did: string
+          handle: string | null
+          indexed_at: string
+          record: Json
+        }
+        Insert: {
+          did: string
+          handle?: string | null
+          indexed_at?: string
+          record: Json
+        }
+        Update: {
+          did?: string
+          handle?: string | null
+          indexed_at?: string
+          record?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsky_profiles_did_fkey"
+            columns: ["did"]
+            isOneToOne: true
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+        ]
+      }
       custom_domain_routes: {
         Row: {
           created_at: string
@@ -707,6 +736,13 @@ export type Database = {
           uri?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "publication_subscriptions_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
           {
             foreignKeyName: "publication_subscriptions_publication_fkey"
             columns: ["publication"]

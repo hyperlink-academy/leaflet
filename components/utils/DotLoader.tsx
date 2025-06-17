@@ -11,7 +11,7 @@ export function DotLoader() {
     };
   }, []);
   return (
-    <div className="w-[26px]  text-center text-sm">
+    <div className="w-[26px] h-[24px] text-center text-sm">
       {".".repeat(dots) + "\u00a0".repeat(3 - dots)}
     </div>
   );

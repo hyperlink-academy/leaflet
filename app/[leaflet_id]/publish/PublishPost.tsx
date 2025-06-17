@@ -63,14 +63,15 @@ const PublishPostForm = (
     if (!doc) return;
 
     let post_url = `https://${props.record?.base_path}/${doc.rkey}`;
-    let publishedPost = await publishPostToBsky({
-      text: postContent,
-      title: props.title,
-      url: post_url,
-      description: props.description,
-      record: doc.record,
-      rkey: doc.rkey,
-    });
+    if (shareOption === "bluesky")
+      await publishPostToBsky({
+        text: postContent,
+        title: props.title,
+        url: post_url,
+        description: props.description,
+        record: doc.record,
+        rkey: doc.rkey,
+      });
     setIsLoading(false);
     props.setPublishState({ state: "success", post_url });
   }

@@ -161,5 +161,13 @@ export default async function Publication(props: {
 }
 
 const PubNotFound = () => {
-  return <div>ain't no pub here</div>;
+  return (
+    <div className="p-4 text-lg text-center flex flex-col gap-4">
+      <p>Sorry, publication not found!</p>
+      <p>
+        This may be a glitch on our end. If the issue persists please{" "}
+        <a href="mailto:contact@leaflet.pub">send us a note</a>.
+      </p>
+    </div>
+  );
 };
