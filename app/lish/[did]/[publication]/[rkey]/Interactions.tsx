@@ -31,7 +31,7 @@ export const InteractionDrawerDesktop = (props: {
   // if (!props.drawerOpen) return;
 
   return (
-    <div className=" opaque-container h-full w-full px-4 pt-3 pb-6 flex flex-col gap-4 relative overflow-scroll ">
+    <div className="opaque-container h-full w-full px-4 pt-3 pb-6 overflow-scroll ">
       <QuoteDrawer />
     </div>
   );
@@ -40,7 +40,7 @@ export const InteractionDrawerDesktop = (props: {
 export const InteractionDrawerMobile = () => {
   return (
     <div className="drawerMobileWrapper absolute top-0 left-0 right-0 h-[80vh]">
-      <div className="drawerMobileContent border-b border-border h-full px-3 pt-2 pb-6 flex flex-col gap-4 relative bg-[#FDFCFA] overflow-scroll">
+      <div className="drawerMobileContent border-b border-border h-full px-3 pt-2 pb-6  relative bg-[#FDFCFA] overflow-scroll">
         <QuoteDrawer />
       </div>
     </div>

@@ -101,13 +101,12 @@ export default async function Post(props: {
     <ThemeProvider entityID={null}>
       <div
         id="post-page"
-        className="postPage relative w-full overflow-auto h-screen bg-[#FDFCFA] flex items-stretch justify-start sm:justify-center gap-0 sm:gap-2"
+        className="postPage relative w-full overflow-auto h-screen bg-[#FDFCFA] flex items-stretch justify-start sm:justify-center gap-0 sm:gap-4 mx-auto"
       >
         <QuoteHandler />
-
         <div
           id="post-content"
-          className={`postContent shrink-0 flex flex-col mx-auto px-3 sm:px-4 pt-3 pb-6 sm:pt-9 sm:pb-12 sm:w-full w-screen max-w-prose `}
+          className={`postContent h-fit shrink-0 flex flex-col px-3 sm:px-4 pt-3 pb-6 sm:pt-9 sm:pb-12 sm:w-full w-screen max-w-prose `}
         >
           <PostHeader params={props.params} />
           <div className="postContent flex flex-col  shrink-0">
@@ -127,15 +126,15 @@ export default async function Post(props: {
             pubName={decodeURIComponent((await props.params).publication)}
           />
         </div>
-        {/* <Media
+        <Media
           mobile={false}
-          className="shrink w-96 py-6 h-full max-w-full flex"
+          className="sticky top-0 shrink w-96 py-6 h-full max-w-full flex"
         >
           <InteractionDrawerDesktop />
         </Media>
         <Media mobile>
           <InteractionDrawerMobile />
-        </Media> */}
+        </Media>
       </div>
     </ThemeProvider>
   );
