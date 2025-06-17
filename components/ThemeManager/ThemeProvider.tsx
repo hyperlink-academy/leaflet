@@ -222,7 +222,7 @@ let BaseThemeProvider = ({
   ]);
   return (
     <div
-      className="leafletWrapper w-full text-primary h-full flex flex-col bg-center items-stretch "
+      className="leafletWrapper w-full text-primary h-full min-h-fit flex flex-col bg-center items-stretch "
       style={
         {
           "--bg-leaflet": colorToString(bgLeaflet, "rgb"),
