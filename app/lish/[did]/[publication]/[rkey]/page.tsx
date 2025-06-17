@@ -92,8 +92,8 @@ export default async function Post(props: {
   }
   return (
     <ThemeProvider entityID={null}>
-      <div className="flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto max-w-prose w-full bg-[#FDFCFA] h-fit">
-        <div className="pubHeader flex flex-col pb-5">
+      <div className="flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto w-full bg-[#FDFCFA] h-fit">
+        <div className="pubHeader flex flex-col pb-5 mx-auto max-w-prose">
           <Link
             className="font-bold hover:no-underline text-accent-contrast"
             href={getPublicationURL(
@@ -134,7 +134,7 @@ export default async function Post(props: {
             ) : null}
           </div>
         </div>
-        <div className="postContent flex flex-col ">
+        <div className="postContent flex flex-col max-w-prose mx-auto">
           {blocks.map((b, index) => {
             return <Block block={b} did={did} key={index} />;
           })}
