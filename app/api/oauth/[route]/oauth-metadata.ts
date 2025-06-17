@@ -4,15 +4,16 @@ const hostname =
     ? "http://localhost:3000"
     : "https://leaflet.pub";
 
+const scope = "atproto transition:generic transition:email";
 const localconfig: OAuthClientMetadata = {
-  client_id: `http://localhost/?redirect_uri=${encodeURI(`http://127.0.0.1:3000/api/oauth/callback`)}&scope=${encodeURIComponent("atproto transition:generic")}`,
+  client_id: `http://localhost/?redirect_uri=${encodeURI(`http://127.0.0.1:3000/api/oauth/callback`)}&scope=${encodeURIComponent(scope)}`,
   client_name: `Leaflet`,
   client_uri: hostname,
   redirect_uris: [`http://127.0.0.1:3000/api/oauth/callback`],
   grant_types: [`authorization_code`, `refresh_token`],
   response_types: [`code`],
   application_type: `web`,
-  scope: "atproto transition:generic",
+  scope,
   token_endpoint_auth_method: `none`,
   dpop_bound_access_tokens: true,
 };
@@ -31,7 +32,7 @@ const prodconfig: OAuthClientMetadata = {
   grant_types: [`authorization_code`, `refresh_token`],
   response_types: [`code`],
   application_type: `web`,
-  scope: "atproto transition:generic",
+  scope,
   token_endpoint_auth_method: `private_key_jwt`,
   token_endpoint_auth_signing_alg: "ES256",
   dpop_bound_access_tokens: true,
