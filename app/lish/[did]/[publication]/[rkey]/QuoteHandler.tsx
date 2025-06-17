@@ -71,7 +71,8 @@ export function QuoteHandler() {
     };
   }, []);
 
-  let parentScroll = document.getElementById("post-content")?.scrollTop || 0;
+  let parentScroll =
+    window.document.getElementById("post-content")?.scrollTop || 0;
   let parentLeft =
     document.getElementById("post-content")?.getBoundingClientRect().left || 0;
   let parentRight =

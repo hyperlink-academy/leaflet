@@ -8,6 +8,7 @@ import { Separator } from "components/Layout";
 import { useSmoker } from "components/Toast";
 import { useState, useEffect } from "react";
 import { QuoteOptionButtons } from "./QuoteHandler";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export const Interactions = () => {
   return (
@@ -30,7 +31,7 @@ export const InteractionDrawerDesktop = (props: {
   // if (!props.drawerOpen) return;
 
   return (
-    <div className=" opaque-container h-full w-full px-4 py-3 flex flex-col gap-4 relative overflow-scroll ">
+    <div className=" opaque-container h-full w-full px-4 pt-3 pb-6 flex flex-col gap-4 relative overflow-scroll ">
       <QuoteDrawer />
     </div>
   );
@@ -39,7 +40,7 @@ export const InteractionDrawerDesktop = (props: {
 export const InteractionDrawerMobile = () => {
   return (
     <div className="drawerMobileWrapper absolute top-0 left-0 right-0 h-[80vh]">
-      <div className="drawerMobileContent border-b border-border h-full px-3 py-2 flex flex-col gap-4 relative bg-[#FDFCFA] overflow-scroll">
+      <div className="drawerMobileContent border-b border-border h-full px-3 pt-2 pb-6 flex flex-col gap-4 relative bg-[#FDFCFA] overflow-scroll">
         <QuoteDrawer />
       </div>
     </div>
@@ -48,6 +49,8 @@ export const InteractionDrawerMobile = () => {
 
 const QuoteDrawer = () => {
   let smoker = useSmoker();
+  let isMobile = useIsMobile();
+
   let [quotes, setQuotes] = useState<Element[]>([]);
   useEffect(() => {
     function updateQuotes() {
@@ -83,14 +86,30 @@ const QuoteDrawer = () => {
           <div>highlight any part of this post to quote it</div>
         </div>
       ) : (
-        <div className="quotes flex flex-col gap-6">
+        <div className="quotes flex flex-col gap-12">
           {quotes.map((q) => {
             return (
               <div className="quoteSection flex flex-col">
                 <button
                   className="quoteSectionQuote text-secondary text-sm italic text-left pb-1 x "
-                  onClick={() => {
-                    q.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                  onClick={(e) => {
+                    let scrollMargin = isMobile
+                      ? 16
+                      : e.currentTarget.getBoundingClientRect().top;
+                    let scrollContainer =
+                      window.document.getElementById("post-content");
+                    let quoteScrollTop =
+                      (scrollContainer &&
+                        q.getBoundingClientRect().top +
+                          scrollContainer.scrollTop) ||
+                      0;
+                    console.log("quote : " + q.getBoundingClientRect().top);
+                    console.log("parent : " + scrollContainer?.scrollTop);
+
+                    scrollContainer?.scrollTo({
+                      top: quoteScrollTop - scrollMargin,
+                      behavior: "smooth",
+                    });
                   }}
                 >
                   <span
@@ -106,20 +125,17 @@ const QuoteDrawer = () => {
                 <div className="text-xs text-tertiary italic font-bold pt-2 pb-1">
                   On Bluesky
                 </div>
-                <QuoteSectionBskyItem content="Oh, heck yeah I love this" />
-                <div className=" border-l border-border-light h-2 ml-3" />
-                <QuoteSectionBskyItem content="What if I wrote something that's pretty long. Like if I had a really deep thought that I want people to really engage with me seriously about. There's something really special about having a thought. May the thoughts just keep on rolling." />
-                <div className=" border-l border-border-light h-2 ml-3" />
+                <div className="flex flex-col gap-2">
+                  <QuoteSectionBskyItem content="Oh, heck yeah I love this" />
+                  <QuoteSectionBskyItem content="What if I wrote something that's pretty long. Like if I had a really deep thought that I want people to really engage with me seriously about. There's something really special about having a thought. May the thoughts just keep on rolling." />
 
-                <QuoteSectionBskyItem content="hello :)" />
-
+                  <QuoteSectionBskyItem content="hello :)" />
+                </div>
                 <div className="text-xs text-tertiary italic font-bold pt-2 pb-1">
                   Mentioned in
                 </div>
-                <QuoteSectionLeafletItem content="I found this pretty interesting and so I'll go ahead and just type some stuff about it... I think that'll be good enough don't you think? A little above and a little below" />
-
-                <div className="text-sm text-secondary flex justify-end gap-2 pt-2">
-                  <QuoteOptionButtons />
+                <div className="flex flex-col gap-2">
+                  <QuoteSectionLeafletItem content="I found this pretty interesting and so I'll go ahead and just type some stuff about it... I think that'll be good enough don't you think? A little above and a little below" />
                 </div>
               </div>
             );
@@ -149,10 +165,12 @@ const QuoteSectionLeafletItem = (props: { content: string }) => {
   return (
     <div className="quoteSectionLeafletItem text-sm text-secondary opaque-container py-1 px-2">
       <div className="font-bold">This is a Post Title</div>
-
       {props.content}
       <hr className="border-border-light mt-2 mb-0.5" />
-      <div className="text-accent-contrast text-xs">celine's pub</div>
+      <div className="items-center flex gap-1">
+        <div className="w-3 h-3 bg-test rounded-full" />
+        <div className="text-accent-contrast text-xs">celine's pub</div>
+      </div>
     </div>
   );
 };

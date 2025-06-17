@@ -130,9 +130,6 @@ export default async function Post(props: {
           mobile={false}
           className="shrink w-96 py-6 h-full max-w-full flex"
         >
-          {/* <div className="h-full py-6">
-            <div className="border-l border-border-light h-full" />
-          </div> */}
           <InteractionDrawerDesktop />
         </Media>
         <Media mobile>
