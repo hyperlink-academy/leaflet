@@ -3,16 +3,18 @@ import Link from "next/link";
 import { AtUri } from "@atproto/syntax";
 import { PubLeafletDocument } from "lexicons/api";
 import { EditTiny } from "components/Icons/EditTiny";
-import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
-import { Menu, MenuItem } from "components/Layout";
 
 import { usePublicationData } from "./PublicationSWRProvider";
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { useParams } from "next/navigation";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { Menu, MenuItem } from "components/Layout";
+import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
+import { deletePost } from "./deletePost";
+import { mutate } from "swr";
 
 export function PublishedPostsList() {
-  let publication = usePublicationData();
+  let { data: publication } = usePublicationData();
   let params = useParams();
   if (!publication) return null;
   if (publication.documents_in_publications.length === 0)
@@ -23,50 +25,116 @@ export function PublishedPostsList() {
     );
   return (
     <div className="publishedList w-full flex flex-col gap-4 pb-8 sm:pb-12">
-      {publication.documents_in_publications.map((doc) => {
-        if (!doc.documents) return null;
-        let leaflet = publication.leaflets_in_publications.find(
-          (l) => doc.documents && l.doc === doc.documents.uri,
-        );
-        let uri = new AtUri(doc.documents.uri);
-        let record = doc.documents.data as PubLeafletDocument.Record;
+      {publication.documents_in_publications
+        .sort((a, b) => {
+          let aRecord = a.documents?.data! as PubLeafletDocument.Record;
+          let bRecord = b.documents?.data! as PubLeafletDocument.Record;
+          const aDate = aRecord.publishedAt
+            ? new Date(aRecord.publishedAt)
+            : new Date(0);
+          const bDate = bRecord.publishedAt
+            ? new Date(bRecord.publishedAt)
+            : new Date(0);
+          return bDate.getTime() - aDate.getTime(); // Sort by most recent first
+        })
+        .map((doc) => {
+          if (!doc.documents) return null;
+          let leaflet = publication.leaflets_in_publications.find(
+            (l) => doc.documents && l.doc === doc.documents.uri,
+          );
+          let uri = new AtUri(doc.documents.uri);
+          let record = doc.documents.data as PubLeafletDocument.Record;
 
-        return (
-          <Fragment key={doc.documents?.uri}>
-            <div className="flex  w-full ">
-              <Link
-                target="_blank"
-                href={`${getPublicationURL(publication)}/${uri.rkey}`}
-                className="publishedPost grow flex flex-col hover:!no-underline"
-              >
-                <h3 className="text-primary">{record.title}</h3>
-                {record.description ? (
-                  <p className="italic text-secondary">{record.description}</p>
-                ) : null}
-                {record.publishedAt ? (
-                  <p className="text-sm text-tertiary pt-3">
-                    Published{" "}
-                    {new Date(record.publishedAt).toLocaleDateString(
-                      undefined,
-                      {
-                        year: "numeric",
-                        month: "long",
-                        day: "2-digit",
-                      },
-                    )}
-                  </p>
-                ) : null}
-              </Link>
-              {leaflet && (
-                <Link className="pt-[6px]" href={`/${leaflet.leaflet}`}>
-                  <EditTiny />
+          return (
+            <Fragment key={doc.documents?.uri}>
+              <div className="flex  w-full ">
+                <Link
+                  target="_blank"
+                  href={`${getPublicationURL(publication)}/${uri.rkey}`}
+                  className="publishedPost grow flex flex-col hover:!no-underline"
+                >
+                  <h3 className="text-primary">{record.title}</h3>
+                  {record.description ? (
+                    <p className="italic text-secondary">
+                      {record.description}
+                    </p>
+                  ) : null}
+                  {record.publishedAt ? (
+                    <p className="text-sm text-tertiary pt-3">
+                      Published{" "}
+                      {new Date(record.publishedAt).toLocaleDateString(
+                        undefined,
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "2-digit",
+                        },
+                      )}
+                    </p>
+                  ) : null}
                 </Link>
-              )}
-            </div>
-            <hr className="last:hidden border-border-light" />
-          </Fragment>
-        );
-      })}
+                <div className="flex justify-start align-top flex-row">
+                  {leaflet && (
+                    <Link className="pt-[6px]" href={`/${leaflet.leaflet}`}>
+                      <EditTiny />
+                    </Link>
+                  )}
+                  <Options document_uri={doc.documents.uri} />
+                </div>
+              </div>
+              <hr className="last:hidden border-border-light" />
+            </Fragment>
+          );
+        })}
     </div>
+  );
+}
+
+let Options = (props: { document_uri: string }) => {
+  return (
+    <Menu
+      align="end"
+      asChild
+      trigger={
+        <button className="text-secondary hover:accent-primary border border-accent-2 rounded-md h-min w-min pt-2.5">
+          <MoreOptionsTiny className="rotate-90 h-min w-min " />
+        </button>
+      }
+    >
+      <>
+        <DeletePost document_uri={props.document_uri} />
+      </>
+    </Menu>
+  );
+};
+
+function DeletePost(props: { document_uri: string }) {
+  let { mutate } = usePublicationData();
+  let [confirm, setConfirm] = useState(false);
+  return (
+    <MenuItem
+      onSelect={async (e) => {
+        if (!confirm) {
+          e.preventDefault();
+          setConfirm(true);
+          return;
+        }
+        await mutate((data) => {
+          if (!data) return data;
+          return {
+            ...data,
+            leaflets_in_publications: data.leaflets_in_publications.filter(
+              (l) => l.doc !== props.document_uri,
+            ),
+            documents_in_publications: data.documents_in_publications.filter(
+              (d) => d.documents?.uri !== props.document_uri,
+            ),
+          };
+        }, false);
+        await deletePost(props.document_uri);
+      }}
+    >
+      {confirm ? "Delete Post" : "Are you sure?"}
+    </MenuItem>
   );
 }

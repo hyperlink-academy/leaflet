@@ -1,5 +1,26 @@
 import { relations } from "drizzle-orm/relations";
-import { entities, facts, entity_sets, permission_tokens, identities, email_subscriptions_to_entity, email_auth_tokens, custom_domains, phone_rsvps_to_entity, custom_domain_routes, poll_votes_on_entity, subscribers_to_publications, publications, permission_token_on_homepage, documents, documents_in_publications, publication_domains, publication_subscriptions, leaflets_in_publications, permission_token_rights } from "./schema";
+import { identities, bsky_profiles, entities, facts, entity_sets, permission_tokens, email_subscriptions_to_entity, email_auth_tokens, custom_domains, phone_rsvps_to_entity, custom_domain_routes, poll_votes_on_entity, subscribers_to_publications, publications, permission_token_on_homepage, documents, documents_in_publications, publication_domains, publication_subscriptions, leaflets_in_publications, permission_token_rights } from "./schema";
+
+export const bsky_profilesRelations = relations(bsky_profiles, ({one}) => ({
+	identity: one(identities, {
+		fields: [bsky_profiles.did],
+		references: [identities.atp_did]
+	}),
+}));
+
+export const identitiesRelations = relations(identities, ({one, many}) => ({
+	bsky_profiles: many(bsky_profiles),
+	permission_token: one(permission_tokens, {
+		fields: [identities.home_page],
+		references: [permission_tokens.id]
+	}),
+	email_auth_tokens: many(email_auth_tokens),
+	custom_domains: many(custom_domains),
+	subscribers_to_publications: many(subscribers_to_publications),
+	permission_token_on_homepages: many(permission_token_on_homepage),
+	publication_domains: many(publication_domains),
+	publication_subscriptions: many(publication_subscriptions),
+}));
 
 export const factsRelations = relations(facts, ({one}) => ({
 	entity: one(entities, {
@@ -46,18 +67,6 @@ export const permission_tokensRelations = relations(permission_tokens, ({one, ma
 	permission_token_on_homepages: many(permission_token_on_homepage),
 	leaflets_in_publications: many(leaflets_in_publications),
 	permission_token_rights: many(permission_token_rights),
-}));
-
-export const identitiesRelations = relations(identities, ({one, many}) => ({
-	permission_token: one(permission_tokens, {
-		fields: [identities.home_page],
-		references: [permission_tokens.id]
-	}),
-	email_auth_tokens: many(email_auth_tokens),
-	custom_domains: many(custom_domains),
-	subscribers_to_publications: many(subscribers_to_publications),
-	permission_token_on_homepages: many(permission_token_on_homepage),
-	publication_domains: many(publication_domains),
 }));
 
 export const email_subscriptions_to_entityRelations = relations(email_subscriptions_to_entity, ({one}) => ({
@@ -186,6 +195,10 @@ export const publication_domainsRelations = relations(publication_domains, ({one
 }));
 
 export const publication_subscriptionsRelations = relations(publication_subscriptions, ({one}) => ({
+	identity: one(identities, {
+		fields: [publication_subscriptions.identity],
+		references: [identities.atp_did]
+	}),
 	publication: one(publications, {
 		fields: [publication_subscriptions.publication],
 		references: [publications.uri]

@@ -4,6 +4,7 @@ import {
   requestAuthEmailToken,
 } from "actions/emailAuth";
 import { loginWithEmailToken } from "actions/login";
+import { ActionAfterSignIn } from "app/api/oauth/[route]/afterSignInActions";
 import { getHomeDocs } from "app/home/storage";
 import { ButtonPrimary } from "components/Buttons";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
@@ -13,7 +14,12 @@ import { useSmoker, useToaster } from "components/Toast";
 import React, { useState } from "react";
 import { mutate } from "swr";
 
-export default function LoginForm() {
+export default function LoginForm(props: {
+  noEmail?: boolean;
+  publication?: boolean;
+  redirectRoute?: string;
+  action?: ActionAfterSignIn;
+}) {
   type FormState =
     | {
         stage: "email";
@@ -116,52 +122,73 @@ export default function LoginForm() {
       <div className="flex flex-col">
         <h4 className="text-primary">Log In or Sign Up</h4>
         <div className=" text-tertiary text-sm">
-          Save your Leaflets and access them on multiple devices!
+          {props.publication
+            ? "Log in to Bluesky to subscribe this publication!"
+            : "Save your Leaflets and access them on multiple devices!"}
         </div>
       </div>
 
-      <BlueskyLogin />
+      <BlueskyLogin {...props} />
 
-      <div className="flex gap-2 text-border italic w-full items-center">
-        <hr className="border-border-light w-full" />
-        <div>or</div>
-        <hr className="border-border-light w-full" />
-      </div>
-      <form
-        onSubmit={handleSubmitEmail}
-        className="flex flex-col gap-2 relative"
-      >
-        <Input
-          type="email"
-          placeholder="email@example.com"
-          value={formState.email}
-          className="input-with-border p-7"
-          onChange={(e) =>
-            setFormState({
-              ...formState,
-              email: e.target.value,
-            })
-          }
-          required
-        />
+      {props.noEmail ? null : (
+        <>
+          <div className="flex gap-2 text-border italic w-full items-center">
+            <hr className="border-border-light w-full" />
+            <div>or</div>
+            <hr className="border-border-light w-full" />
+          </div>
+          <form
+            onSubmit={handleSubmitEmail}
+            className="flex flex-col gap-2 relative"
+          >
+            <Input
+              type="email"
+              placeholder="email@example.com"
+              value={formState.email}
+              className="input-with-border p-7"
+              onChange={(e) =>
+                setFormState({
+                  ...formState,
+                  email: e.target.value,
+                })
+              }
+              required
+            />
 
-        <ButtonPrimary
-          type="submit"
-          className="place-self-end !px-[2px] absolute right-1 bottom-1"
-        >
-          <ArrowRightTiny />{" "}
-        </ButtonPrimary>
-      </form>
+            <ButtonPrimary
+              type="submit"
+              className="place-self-end !px-[2px] absolute right-1 bottom-1"
+            >
+              <ArrowRightTiny />{" "}
+            </ButtonPrimary>
+          </form>
+        </>
+      )}
     </div>
   );
 }
 
-export function BlueskyLogin() {
+export function BlueskyLogin(props: {
+  redirectRoute?: string;
+  action?: ActionAfterSignIn;
+}) {
   const [signingWithHandle, setSigningWithHandle] = useState(false);
   const [handle, setHandle] = useState("");
 
   return (
-    <form action="/api/oauth/login?redirect_url=/" method="GET">
+    <form action={`/api/oauth/login`} method="GET">
+      <input
+        type="hidden"
+        name="redirect_url"
+        value={props.redirectRoute || "/"}
+      />
+      {props.action && (
+        <input
+          type="hidden"
+          name="action"
+          value={JSON.stringify(props.action)}
+        />
+      )}
       {signingWithHandle ? (
         <div className="w-full flex flex-col gap-2">
           <Input

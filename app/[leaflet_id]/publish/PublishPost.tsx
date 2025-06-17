@@ -63,14 +63,15 @@ const PublishPostForm = (
     if (!doc) return;
 
     let post_url = `https://${props.record?.base_path}/${doc.rkey}`;
-    let publishedPost = await publishPostToBsky({
-      text: postContent,
-      title: props.title,
-      url: post_url,
-      description: props.description,
-      record: doc.record,
-      rkey: doc.rkey,
-    });
+    if (shareOption === "bluesky")
+      await publishPostToBsky({
+        text: postContent,
+        title: props.title,
+        url: post_url,
+        description: props.description,
+        record: doc.record,
+        rkey: doc.rkey,
+      });
     setIsLoading(false);
     props.setPublishState({ state: "success", post_url });
   }
@@ -136,11 +137,18 @@ const PublishPostForm = (
                     <p className="font-bold">{props.profile.displayName}</p>
                     <p className="text-tertiary">@{props.profile.handle}</p>
                   </div>
-                  <AutosizeTextarea
-                    value={postContent}
-                    onChange={(e) => setPostContent(e.currentTarget.value)}
-                    placeholder="Write a post to share your writing!"
-                  />
+                  <div className="flex flex-col">
+                    <AutosizeTextarea
+                      value={postContent}
+                      onChange={(e) =>
+                        setPostContent(e.currentTarget.value.slice(0, 300))
+                      }
+                      placeholder="Write a post to share your writing!"
+                    />
+                    <div className="text-xs text-secondary italic place-self-end">
+                      {postContent.length}/300
+                    </div>
+                  </div>
                   <div className="opaque-container overflow-hidden flex flex-col mt-4 w-full">
                     {/* <div className="h-[260px] w-full bg-test" /> */}
                     <div className="flex flex-col p-2">

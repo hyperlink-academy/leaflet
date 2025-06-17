@@ -6,6 +6,7 @@ import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
   PubLeafletBlocksText,
+  PubLeafletBlocksWebsite,
   PubLeafletBlocksUnorderedList,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
@@ -14,8 +15,9 @@ import { Metadata } from "next";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { TextBlock } from "./TextBlock";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
-import { BskyAgent } from "@atproto/api";
+import { BlobRef, BskyAgent } from "@atproto/api";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -48,7 +50,16 @@ export default async function Post(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
 }) {
   let did = decodeURIComponent((await props.params).did);
-  if (!did) return <div> can't resolve handle</div>;
+  if (!did)
+    return (
+      <div className="p-4 text-lg text-center flex flex-col gap-4">
+        <p>Sorry, can&apos;t resolve handle.</p>
+        <p>
+          This may be a glitch on our end. If the issue persists please{" "}
+          <a href="mailto:contact@leaflet.pub">send us a note</a>.
+        </p>
+      </div>
+    );
   let agent = new BskyAgent({ service: "https://public.api.bsky.app" });
   let [{ data: document }, { data: profile }] = await Promise.all([
     supabaseServerClient
@@ -64,7 +75,15 @@ export default async function Post(props: {
     agent.getProfile({ actor: did }),
   ]);
   if (!document?.data || !document.documents_in_publications[0].publications)
-    return <div>notfound</div>;
+    return (
+      <div className="p-4 text-lg text-center flex flex-col gap-4">
+        <p>Sorry, post not found!</p>
+        <p>
+          This may be a glitch on our end. If the issue persists please{" "}
+          <a href="mailto:contact@leaflet.pub">send us a note</a>.
+        </p>
+      </div>
+    );
   let record = document.data as PubLeafletDocument.Record;
   let firstPage = record.pages[0];
   let blocks: PubLeafletPagesLinearDocument.Block[] = [];
@@ -73,69 +92,67 @@ export default async function Post(props: {
   }
   return (
     <ThemeProvider entityID={null}>
-      <div className="postPage w-full h-screen bg-[#FDFCFA] flex items-stretch">
-        <div className="postWrapper flex flex-col w-full ">
-          <div className="pub flex flex-col px-3 sm:px-4 py-3 sm:py-9 mx-auto max-w-prose h-full w-full overflow-auto">
-            <div className="pubHeader flex flex-col pb-5">
-              <Link
-                className="font-bold hover:no-underline text-accent-contrast"
-                href={getPublicationURL(
-                  document.documents_in_publications[0].publications,
-                )}
-              >
-                {decodeURIComponent((await props.params).publication)}
-              </Link>
-              <h2 className="">{record.title}</h2>
-              {record.description ? (
-                <p className="italic text-secondary">{record.description}</p>
-              ) : null}
+      <div className="flex flex-col px-3 sm:px-4 py-3 sm:py-9 w-full bg-[#FDFCFA] h-full min-h-fit overflow-auto">
+        <div className="max-w-prose m-auto">
+          <div className="pubHeader flex flex-col pb-5">
+            <Link
+              className="font-bold hover:no-underline text-accent-contrast"
+              href={getPublicationURL(
+                document.documents_in_publications[0].publications,
+              )}
+            >
+              {decodeURIComponent((await props.params).publication)}
+            </Link>
+            <h2 className="">{record.title}</h2>
+            {record.description ? (
+              <p className="italic text-secondary">{record.description}</p>
+            ) : null}
 
-              <div className="text-sm text-tertiary pt-3 flex gap-1">
-                {profile ? (
-                  <>
-                    <a
-                      className="text-tertiary"
-                      href={`https://bsky.app/profile/${profile.handle}`}
-                    >
-                      by {profile.displayName || profile.handle}
-                    </a>
-                  </>
-                ) : null}
-                {record.publishedAt ? (
-                  <>
-                    {" "}
-                    |
-                    <p>
-                      Published{" "}
-                      {new Date(record.publishedAt).toLocaleDateString(
-                        undefined,
-                        {
-                          year: "numeric",
-                          month: "long",
-                          day: "2-digit",
-                        },
-                      )}
-                    </p>
-                  </>
-                ) : null}
-              </div>
+            <div className="text-sm text-tertiary pt-3 flex gap-1">
+              {profile ? (
+                <>
+                  <a
+                    className="text-tertiary"
+                    href={`https://bsky.app/profile/${profile.handle}`}
+                  >
+                    by {profile.displayName || profile.handle}
+                  </a>
+                </>
+              ) : null}
+              {record.publishedAt ? (
+                <>
+                  {" "}
+                  |
+                  <p>
+                    Published{" "}
+                    {new Date(record.publishedAt).toLocaleDateString(
+                      undefined,
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "2-digit",
+                      },
+                    )}
+                  </p>
+                </>
+              ) : null}
             </div>
-            <div className="postContent flex flex-col ">
-              {blocks.map((b, index) => {
-                return <Block block={b} did={did} key={index} />;
-              })}
-            </div>
-            <hr className="border-border-light mb-4 mt-2" />
-            <SubscribeWithBluesky
-              isPost
-              pub_uri={document.documents_in_publications[0].publications.uri}
-              subscribers={
-                document.documents_in_publications[0].publications
-                  .publication_subscriptions
-              }
-              pubName={decodeURIComponent((await props.params).publication)}
-            />
           </div>
+          <div className="postContent flex flex-col">
+            {blocks.map((b, index) => {
+              return <Block block={b} did={did} key={index} />;
+            })}
+          </div>
+          <hr className="border-border-light mb-4 mt-2" />
+          <SubscribeWithBluesky
+            isPost
+            pub_uri={document.documents_in_publications[0].publications.uri}
+            subscribers={
+              document.documents_in_publications[0].publications
+                .publication_subscriptions
+            }
+            pubName={decodeURIComponent((await props.params).publication)}
+          />
         </div>
       </div>
     </ThemeProvider>
@@ -176,13 +193,63 @@ let Block = ({
         </ul>
       );
     }
+    case PubLeafletBlocksWebsite.isMain(b.block): {
+      return (
+        <a
+          href={b.block.src}
+          target="_blank"
+          className={`
+          externalLinkBlock flex relative group/linkBlock
+          h-[104px] w-full bg-bg-page overflow-hidden text-primary hover:no-underline no-underline
+          hover:border-accent-contrast  shadow-sm
+          block-border
+          `}
+        >
+          <div className="pt-2 pb-2 px-3 grow min-w-0">
+            <div className="flex flex-col w-full min-w-0 h-full grow ">
+              <div
+                className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-none resize-none align-top border h-[24px] line-clamp-1`}
+                style={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  wordBreak: "break-all",
+                }}
+              >
+                {b.block.title}
+              </div>
+
+              <div
+                className={`linkBlockDescription text-sm bg-transparent border-none outline-none resize-none align-top  grow line-clamp-2`}
+              >
+                {b.block.description}
+              </div>
+              <div
+                style={{ wordBreak: "break-word" }} // better than tailwind break-all!
+                className={`min-w-0 w-full line-clamp-1 text-xs italic group-hover/linkBlock:text-accent-contrast text-tertiary`}
+              >
+                {b.block.src}
+              </div>
+            </div>
+          </div>
+          {b.block.previewImage && (
+            <div
+              className={`linkBlockPreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center`}
+              style={{
+                backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did)})`,
+                backgroundPosition: "center",
+              }}
+            />
+          )}
+        </a>
+      );
+    }
     case PubLeafletBlocksImage.isMain(b.block): {
       return (
         <img
           height={b.block.aspectRatio?.height}
           width={b.block.aspectRatio?.width}
           className={`!pt-3 sm:!pt-4 ${className}`}
-          src={`/api/atproto_images?did=${did}&cid=${(b.block.image.ref as unknown as { $link: string })["$link"]}`}
+          src={blobRefToSrc(b.block.image.ref, did)}
         />
       );
     }
@@ -195,21 +262,21 @@ let Block = ({
     case PubLeafletBlocksHeader.isMain(b.block): {
       if (b.block.level === 1)
         return (
+          <h1 className={`${className}`}>
+            <TextBlock {...b.block} />
+          </h1>
+        );
+      if (b.block.level === 2)
+        return (
           <h2 className={`${className}`}>
             <TextBlock {...b.block} />
           </h2>
         );
-      if (b.block.level === 2)
+      if (b.block.level === 3)
         return (
           <h3 className={`${className}`}>
             <TextBlock {...b.block} />
           </h3>
-        );
-      if (b.block.level === 3)
-        return (
-          <h4 className={`${className}`}>
-            <TextBlock {...b.block} />
-          </h4>
         );
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;

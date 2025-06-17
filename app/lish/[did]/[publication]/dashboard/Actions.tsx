@@ -51,7 +51,7 @@ export const Actions = (props: { publication: string }) => {
 };
 
 function PublicationShareButton() {
-  let pub = usePublicationData();
+  let { data: pub } = usePublicationData();
   let smoker = useSmoker();
   return (
     <Menu

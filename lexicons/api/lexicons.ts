@@ -223,6 +223,33 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksWebsite: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.website',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['src'],
+        properties: {
+          previewImage: {
+            type: 'blob',
+            accept: ['image/*'],
+            maxSize: 1000000,
+          },
+          title: {
+            type: 'string',
+          },
+          description: {
+            type: 'string',
+          },
+          src: {
+            type: 'string',
+            format: 'uri',
+          },
+        },
+      },
+    },
+  },
   PubLeafletGraphSubscription: {
     lexicon: 1,
     id: 'pub.leaflet.graph.subscription',
@@ -271,6 +298,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.header',
               'lex:pub.leaflet.blocks.image',
               'lex:pub.leaflet.blocks.unorderedList',
+              'lex:pub.leaflet.blocks.website',
             ],
           },
           alignment: {
@@ -1328,6 +1356,65 @@ export const schemaDict = {
       },
     },
   },
+  AppBskyActorProfile: {
+    lexicon: 1,
+    id: 'app.bsky.actor.profile',
+    defs: {
+      main: {
+        type: 'record',
+        description: 'A declaration of a Bluesky account profile.',
+        key: 'literal:self',
+        record: {
+          type: 'object',
+          properties: {
+            displayName: {
+              type: 'string',
+              maxGraphemes: 64,
+              maxLength: 640,
+            },
+            description: {
+              type: 'string',
+              description: 'Free-form profile description text.',
+              maxGraphemes: 256,
+              maxLength: 2560,
+            },
+            avatar: {
+              type: 'blob',
+              description:
+                "Small image to be displayed next to posts from account. AKA, 'profile picture'",
+              accept: ['image/png', 'image/jpeg'],
+              maxSize: 1000000,
+            },
+            banner: {
+              type: 'blob',
+              description:
+                'Larger horizontal image to display behind profile view.',
+              accept: ['image/png', 'image/jpeg'],
+              maxSize: 1000000,
+            },
+            labels: {
+              type: 'union',
+              description:
+                'Self-label values, specific to the Bluesky application, on the overall account.',
+              refs: ['lex:com.atproto.label.defs#selfLabels'],
+            },
+            joinedViaStarterPack: {
+              type: 'ref',
+              ref: 'lex:com.atproto.repo.strongRef',
+            },
+            pinnedPost: {
+              type: 'ref',
+              ref: 'lex:com.atproto.repo.strongRef',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
 } as const satisfies Record<string, LexiconDoc>
 
 export const schemas = Object.values(schemaDict) satisfies LexiconDoc[]
@@ -1368,6 +1455,7 @@ export const ids = {
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
+  PubLeafletBlocksWebsite: 'pub.leaflet.blocks.website',
   PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
   PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
   PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
@@ -1384,4 +1472,5 @@ export const ids = {
   ComAtprotoRepoPutRecord: 'com.atproto.repo.putRecord',
   ComAtprotoRepoStrongRef: 'com.atproto.repo.strongRef',
   ComAtprotoRepoUploadBlob: 'com.atproto.repo.uploadBlob',
+  AppBskyActorProfile: 'app.bsky.actor.profile',
 } as const

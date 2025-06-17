@@ -32,16 +32,28 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
     .from("publication_subscriptions")
     .select(`publications(documents_in_publications(documents(*)))`)
     .eq("identity", auth);
-  const feed = (publications || []).flatMap((pub) => {
-    let posts = pub.publications?.documents_in_publications || [];
-    return posts.flatMap((p) => {
+  const feed = (publications || [])
+    .flatMap((pub) => {
+      let posts = pub.publications?.documents_in_publications || [];
+      return posts;
+    })
+    .sort((a, b) => {
+      let aRecord = a.documents?.data! as PubLeafletDocument.Record;
+      let bRecord = b.documents?.data! as PubLeafletDocument.Record;
+      const aDate = aRecord.publishedAt
+        ? new Date(aRecord.publishedAt)
+        : new Date(0);
+      const bDate = bRecord.publishedAt
+        ? new Date(bRecord.publishedAt)
+        : new Date(0);
+      return bDate.getTime() - aDate.getTime(); // Sort by most recent first
+    })
+    .flatMap((p) => {
       if (!p.documents?.data) return [];
       let record = p.documents.data as PubLeafletDocument.Record;
       if (!record.postRef) return [];
       return { post: record.postRef.uri };
     });
-  });
-
   return c.json({
     feed,
   });

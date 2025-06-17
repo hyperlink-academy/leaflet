@@ -7,7 +7,7 @@ export async function getIdentityData() {
   let cookieStore = await cookies();
   let auth_token =
     cookieStore.get("auth_token")?.value ||
-    cookieStore.get("external_auth_token");
+    cookieStore.get("external_auth_token")?.value;
   let auth_res = auth_token
     ? await supabaseServerClient
         .from("email_auth_tokens")
@@ -15,6 +15,7 @@ export async function getIdentityData() {
           `*,
           identities(
             *,
+            bsky_profiles(*),
             subscribers_to_publications(*),
             custom_domains(*),
             home_leaflet:permission_tokens!identities_home_page_fkey(*, permission_token_rights(*)),

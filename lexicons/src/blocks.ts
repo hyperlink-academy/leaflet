@@ -19,6 +19,23 @@ export const PubLeafletBlocksText: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksWebsite: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.website",
+  defs: {
+    main: {
+      type: "object",
+      required: ["src"],
+      properties: {
+        previewImage: { type: "blob", accept: ["image/*"], maxSize: 1000000 },
+        title: { type: "string" },
+        description: { type: "string" },
+        src: { type: "string", format: "uri" },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksHeader: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.header",
@@ -101,6 +118,7 @@ export const BlockLexicons = [
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
   PubLeafletBlocksUnorderedList,
+  PubLeafletBlocksWebsite,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",

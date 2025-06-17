@@ -15,6 +15,7 @@ import { get_publication_data } from "app/api/rpc/[command]/get_publication_data
 import { PublicationSWRDataProvider } from "./PublicationSWRProvider";
 import { PublishedPostsList } from "./PublishedPostsLists";
 import { PubLeafletPublication } from "lexicons/api";
+import { PublicationSubscribers } from "./PublicationSubscribers";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -39,7 +40,16 @@ export default async function Publication(props: {
 }) {
   let params = await props.params;
   let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) return <div>not logged in</div>;
+  if (!identity || !identity.atp_did)
+    return (
+      <div className="p-4 text-lg text-center flex flex-col gap-4">
+        <p>Sorry, looks like you&apos;re not logged in.</p>
+        <p>
+          This may be a glitch on our end. If the issue persists please{" "}
+          <a href="mailto:contact@leaflet.pub">send us a note</a>.
+        </p>
+      </div>
+    );
   let did = decodeURIComponent(params.did);
   if (!did) return <PubNotFound />;
   let { result: publication } = await get_publication_data.handler(
@@ -79,6 +89,7 @@ export default async function Publication(props: {
                   tabs={{
                     Drafts: <DraftList />,
                     Published: <PublishedPostsList />,
+                    Subscribers: <PublicationSubscribers />,
                   }}
                   defaultTab={"Drafts"}
                 />
@@ -100,5 +111,13 @@ export default async function Publication(props: {
 }
 
 const PubNotFound = () => {
-  return <div>ain't no pub here</div>;
+  return (
+    <div className="p-4 text-lg text-center flex flex-col gap-4">
+      <p>Sorry, publication not found!</p>
+      <p>
+        This may be a glitch on our end. If the issue persists please{" "}
+        <a href="mailto:contact@leaflet.pub">send us a note</a>.
+      </p>
+    </div>
+  );
 };

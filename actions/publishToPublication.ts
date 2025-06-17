@@ -13,6 +13,7 @@ import {
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
   PubLeafletRichtextFacet,
+  PubLeafletBlocksWebsite,
 } from "lexicons/api";
 import { Block } from "components/Blocks/Block";
 import { TID } from "@atproto/common";
@@ -55,7 +56,7 @@ export async function publishToPublication({
   );
   let { data: draft } = await supabaseServerClient
     .from("leaflets_in_publications")
-    .select("*, publications(*)")
+    .select("*, publications(*), documents(*)")
     .eq("publication", publication_uri)
     .eq("leaflet", leaflet_id)
     .single();
@@ -65,15 +66,20 @@ export async function publishToPublication({
     root: root_entity,
   });
   let facts = (data as unknown as Fact<Attribute>[]) || [];
-  let blocks = getBlocksWithTypeLocal(facts, root_entity);
-
   let scan = scanIndexLocal(facts);
+  let firstEntity = scan.eav(root_entity, "root/page")?.[0];
+  if (!firstEntity) throw new Error("No root page");
+  let blocks = getBlocksWithTypeLocal(facts, firstEntity?.data.value);
+
   let images = blocks
     .filter((b) => b.type === "image")
     .map((b) => scan.eav(b.value, "block/image")[0]);
+  let links = blocks
+    .filter((b) => b.type == "link")
+    .map((b) => scan.eav(b.value, "link/preview")[0]);
   let imageMap = new Map<string, BlobRef>();
   await Promise.all(
-    images.map(async (b) => {
+    [...links, ...images].map(async (b) => {
       let data = await fetch(b.data.src);
       if (data.status !== 200) return;
       let binary = await data.blob();
@@ -90,7 +96,10 @@ export async function publishToPublication({
     scan,
   );
 
+  let existingRecord =
+    (draft?.documents?.data as PubLeafletDocument.Record) || {};
   let record: PubLeafletDocument.Record = {
+    ...existingRecord,
     $type: "pub.leaflet.document",
     author: credentialSession.did!,
     title: title || "Untitled",
@@ -132,7 +141,7 @@ export async function publishToPublication({
       .eq("publication", publication_uri),
   ]);
 
-  return { rkey, record };
+  return { rkey, record: JSON.parse(JSON.stringify(record)) };
 }
 
 function blocksToRecord(
@@ -205,7 +214,13 @@ function blockToRecord(
     let facets = YJSFragmentToFacets(nodes[0]);
     return [stringValue, facets] as const;
   };
-  if (b.type !== "text" && b.type !== "heading" && b.type !== "image") return;
+  if (
+    b.type !== "text" &&
+    b.type !== "heading" &&
+    b.type !== "image" &&
+    b.type !== "link"
+  )
+    return;
   let alignmentValue =
     scan.eav(b.value, "block/text-alignment")[0]?.data.value || "left";
 
@@ -243,6 +258,22 @@ function blockToRecord(
         height: image.data.height,
         width: image.data.width,
       },
+    };
+    return block;
+  }
+  if (b.type === "link") {
+    let [previewImage] = scan.eav(b.value, "link/preview");
+    let [description] = scan.eav(b.value, "link/description");
+    let [src] = scan.eav(b.value, "link/url");
+    if (!src) return;
+    let blobref = imageMap.get(previewImage.data.src);
+    let [title] = scan.eav(b.value, "link/title");
+    let block: $Typed<PubLeafletBlocksWebsite.Main> = {
+      $type: "pub.leaflet.blocks.website",
+      previewImage: blobref,
+      src: src.data.value,
+      description: description.data.value,
+      title: title.data.value,
     };
     return block;
   }

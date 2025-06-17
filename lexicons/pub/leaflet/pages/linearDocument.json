@@ -26,7 +26,8 @@
             "pub.leaflet.blocks.text",
             "pub.leaflet.blocks.header",
             "pub.leaflet.blocks.image",
-            "pub.leaflet.blocks.unorderedList"
+            "pub.leaflet.blocks.unorderedList",
+            "pub.leaflet.blocks.website"
           ]
         },
         "alignment": {

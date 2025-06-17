@@ -1,6 +1,6 @@
 "use client";
 import { ButtonPrimary } from "components/Buttons";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Input } from "components/Input";
 import { useIdentityData } from "components/IdentityProvider";
 import {
@@ -14,10 +14,14 @@ import { Popover } from "components/Popover";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { useToaster } from "components/Toast";
 import * as Dialog from "@radix-ui/react-dialog";
-import { subscribeToPublication, unsubscribeToPublication } from "./subscribe";
+import {
+  subscribeToPublication,
+  unsubscribeToPublication,
+} from "./subscribeToPublication";
 import { DotLoader } from "components/utils/DotLoader";
 import { addFeed } from "./addFeed";
 import { useSearchParams } from "next/navigation";
+import LoginForm from "app/login/LoginForm";
 
 type State =
   | { state: "email" }
@@ -270,6 +274,8 @@ let BlueskySubscribeButton = (props: {
   pub_uri: string;
   setSuccessModalOpen: (open: boolean) => void;
 }) => {
+  let { identity } = useIdentityData();
+  let toaster = useToaster();
   let [, subscribe, subscribePending] = useActionState(async () => {
     let result = await subscribeToPublication(
       props.pub_uri,
@@ -278,7 +284,35 @@ let BlueskySubscribeButton = (props: {
     if (result.hasFeed === false) {
       props.setSuccessModalOpen(true);
     }
+    toaster({ content: <div>You're Subscribed!</div>, type: "success" });
   }, null);
+
+  let [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!identity?.atp_did) {
+    return (
+      <Popover
+        asChild
+        trigger={
+          <ButtonPrimary className="place-self-center">
+            <BlueskyTiny /> Subscribe with Bluesky
+          </ButtonPrimary>
+        }
+      >
+        {isClient && (
+          <LoginForm
+            publication
+            noEmail
+            redirectRoute={window?.location.href + "?refreshAuth"}
+            action={{ action: "subscribe", publication: props.pub_uri }}
+          />
+        )}
+      </Popover>
+    );
+  }
 
   return (
     <>
@@ -288,7 +322,7 @@ let BlueskySubscribeButton = (props: {
             <DotLoader />
           ) : (
             <>
-              <BlueskyTiny /> Subscribe with Bluesky{" "}
+              <BlueskyTiny /> Subscribe with Bluesky
             </>
           )}
         </ButtonPrimary>
