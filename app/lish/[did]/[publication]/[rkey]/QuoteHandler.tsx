@@ -1,11 +1,9 @@
 "use client";
 import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { CopyTiny } from "components/Icons/CopyTiny";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { Separator } from "components/Layout";
 import { useSmoker } from "components/Toast";
-import { index } from "drizzle-orm/sqlite-core";
-import { ElementType, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 export function QuoteHandler() {
   let [selectionText, setSelectionText] = useState<string | undefined>(
@@ -71,20 +69,27 @@ export function QuoteHandler() {
     };
   }, []);
 
-  let parentScroll =
-    window.document.getElementById("post-content")?.scrollTop || 0;
-  let parentLeft =
-    document.getElementById("post-content")?.getBoundingClientRect().left || 0;
-  let parentRight =
-    document.getElementById("post-content")?.getBoundingClientRect().right || 0;
-  let relativeTop = focusRect && focusRect.top + parentScroll;
-  let relativeBottom = focusRect && focusRect.bottom + parentScroll;
-  let relativeLeft = focusRect && focusRect.left - parentLeft;
-  let relativeRight = focusRect && parentRight - focusRect.right;
+  // getting distance of element from top of scrollheight
+  let screenScroll =
+    window.document.getElementById("post-page")?.scrollTop || 0;
+  let selectionTop = focusRect && focusRect.top + screenScroll;
+  let selectionBottom = focusRect && focusRect.bottom + screenScroll;
+
+  let parent = document.getElementById("post-content")?.getBoundingClientRect();
+  let parentLeft = parent?.left || 0;
+
+  // getting distance of right side of element from the right edge of screen
+  let screenRight =
+    window.document.getElementById("post-page")?.getBoundingClientRect()
+      .right || 0;
+  let parentRight = (parent && screenRight - parent.right) || 0;
+  let selectionRight = focusRect && screenRight - focusRect?.right;
+
+  let width = 226;
 
   // check to see if there is enough space to the left and right of the button so it doesn't spill over the boundry
-  let leftBumper = focusRect && focusRect.left - parentLeft < 226;
-  let rightBumper = focusRect && parentRight - focusRect.right < 226;
+  let leftBumper = focusRect && focusRect.left - parentLeft < width;
+  let rightBumper = selectionRight && selectionRight - parentRight < width;
 
   if (selectionText && selectionText !== "") {
     return (
@@ -95,24 +100,24 @@ export function QuoteHandler() {
           position: "absolute",
           top:
             selectionDir === "forward"
-              ? `calc(${relativeBottom}px + 4px )`
-              : `calc(${relativeTop}px - 28px )`,
+              ? `calc(${selectionBottom}px + 4px )`
+              : `calc(${selectionTop}px - 28px )`,
           right:
             selectionDir === "forward" && leftBumper
               ? undefined
               : selectionDir === "forward"
-                ? `calc(${relativeRight}px) `
+                ? `${selectionRight}px`
                 : rightBumper
-                  ? "16px"
+                  ? `${parentRight}px`
                   : undefined,
           left:
             selectionDir === "forward" && leftBumper
-              ? "16px"
+              ? `${parentLeft + 16}px`
               : selectionDir === "forward"
                 ? undefined
                 : rightBumper
                   ? undefined
-                  : `calc(${relativeLeft}px)`,
+                  : `calc(${focusRect?.left}px)`,
         }}
       >
         <QuoteOptionButtons />

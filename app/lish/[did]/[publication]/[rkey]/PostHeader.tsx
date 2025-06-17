@@ -30,46 +30,50 @@ export async function PostHeader(props: {
   if (!document?.data || !document.documents_in_publications[0].publications)
     return;
   return (
-    <div className="pubHeader flex flex-col pb-5">
-      <Link
-        className="font-bold hover:no-underline text-accent-contrast"
-        href={
-          document &&
-          getPublicationURL(document.documents_in_publications[0].publications)
-        }
-      >
-        {decodeURIComponent((await props.params).publication)}
-      </Link>
-      <h2 className="">{record.title}</h2>
-      {record.description ? (
-        <p className="italic text-secondary">{record.description}</p>
-      ) : null}
+    <div className="max-w-prose w-full mx-auto">
+      <div className="pubHeader flex flex-col pb-5">
+        <Link
+          className="font-bold hover:no-underline text-accent-contrast"
+          href={
+            document &&
+            getPublicationURL(
+              document.documents_in_publications[0].publications,
+            )
+          }
+        >
+          {decodeURIComponent((await props.params).publication)}
+        </Link>
+        <h2 className="">{record.title}</h2>
+        {record.description ? (
+          <p className="italic text-secondary">{record.description}</p>
+        ) : null}
 
-      <div className="text-sm text-tertiary pt-3 flex gap-1">
-        {profile ? (
-          <>
-            <a
-              className="text-tertiary"
-              href={`https://bsky.app/profile/${profile.handle}`}
-            >
-              by {profile.displayName || profile.handle}
-            </a>
-          </>
-        ) : null}
-        {record.publishedAt ? (
-          <>
-            {" "}
-            |
-            <p>
-              Published{" "}
-              {new Date(record.publishedAt).toLocaleDateString(undefined, {
-                year: "numeric",
-                month: "long",
-                day: "2-digit",
-              })}
-            </p>
-          </>
-        ) : null}
+        <div className="text-sm text-tertiary pt-3 flex gap-1">
+          {profile ? (
+            <>
+              <a
+                className="text-tertiary"
+                href={`https://bsky.app/profile/${profile.handle}`}
+              >
+                by {profile.displayName || profile.handle}
+              </a>
+            </>
+          ) : null}
+          {record.publishedAt ? (
+            <>
+              {" "}
+              |
+              <p>
+                Published{" "}
+                {new Date(record.publishedAt).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "long",
+                  day: "2-digit",
+                })}
+              </p>
+            </>
+          ) : null}
+        </div>
       </div>
     </div>
   );

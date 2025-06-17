@@ -99,34 +99,35 @@ export default async function Post(props: {
 
   return (
     <ThemeProvider entityID={null}>
-      <div className="postPage relative w-full overflow-x-auto h-screen bg-[#FDFCFA] flex items-stretch justify-start sm:justify-center gap-0 sm:gap-2">
-        <div className="postWrapper shrink-0 flex flex-col max-w-prose h-screen">
-          <div
-            id="post-content"
-            className={`relative flex flex-col px-3 sm:px-4 pt-3 pb-6 sm:pt-9 sm:pb-12  h-full sm:w-full w-screen overflow-auto`}
-          >
-            <QuoteHandler />
-            {/* <Quotes /> */}
-            <PostHeader params={props.params} />
-            <div className="postContent flex flex-col  shrink-0">
-              {blocks.map((b, index) => {
-                return <Block block={b} did={did} key={index} />;
-              })}
-            </div>
-            <Interactions />
-            <hr className="border-border-light mb-4 mt-2" />
-            <SubscribeWithBluesky
-              isPost
-              pub_uri={document.documents_in_publications[0].publications.uri}
-              subscribers={
-                document.documents_in_publications[0].publications
-                  .publication_subscriptions
-              }
-              pubName={decodeURIComponent((await props.params).publication)}
-            />
+      <div
+        id="post-page"
+        className="postPage relative w-full overflow-auto h-screen bg-[#FDFCFA] flex items-stretch justify-start sm:justify-center gap-0 sm:gap-2"
+      >
+        <QuoteHandler />
+
+        <div
+          id="post-content"
+          className={`postContent shrink-0 flex flex-col mx-auto px-3 sm:px-4 pt-3 pb-6 sm:pt-9 sm:pb-12 sm:w-full w-screen max-w-prose `}
+        >
+          <PostHeader params={props.params} />
+          <div className="postContent flex flex-col  shrink-0">
+            {blocks.map((b, index) => {
+              return <Block block={b} did={did} key={index} />;
+            })}
           </div>
+          <Interactions />
+          <hr className="border-border-light mb-4 mt-2" />
+          <SubscribeWithBluesky
+            isPost
+            pub_uri={document.documents_in_publications[0].publications.uri}
+            subscribers={
+              document.documents_in_publications[0].publications
+                .publication_subscriptions
+            }
+            pubName={decodeURIComponent((await props.params).publication)}
+          />
         </div>
-        <Media
+        {/* <Media
           mobile={false}
           className="shrink w-96 py-6 h-full max-w-full flex"
         >
@@ -134,7 +135,7 @@ export default async function Post(props: {
         </Media>
         <Media mobile>
           <InteractionDrawerMobile />
-        </Media>
+        </Media> */}
       </div>
     </ThemeProvider>
   );

@@ -11,9 +11,11 @@ import { AtUri } from "@atproto/syntax";
 import { redirect } from "next/navigation";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { Json } from "supabase/database.types";
+import { IdResolver } from "@atproto/identity";
 
 let leafletFeedURI =
   "at://did:plc:btxrwcaeyodrap5mnjw2fvmz/app.bsky.feed.generator/subscribedPublications";
+let idResolver = new IdResolver();
 export async function subscribeToPublication(
   publication: string,
   redirectRoute?: string,
@@ -51,15 +53,13 @@ export async function subscribeToPublication(
       repo: credentialSession.did!,
       rkey: "self",
     }),
-    bsky.com.atproto.identity.resolveIdentity({
-      identifier: credentialSession.did!,
-    }),
+    idResolver.did.resolve(credentialSession.did!),
   ]);
   if (!identity.bsky_profiles && profile.value) {
     await supabaseServerClient.from("bsky_profiles").insert({
       did: identity.atp_did,
       record: profile.value as Json,
-      handle: resolveDid.data.handle,
+      handle: resolveDid?.alsoKnownAs?.[0],
     });
   }
   let savedFeeds = prefs.data.preferences.find(

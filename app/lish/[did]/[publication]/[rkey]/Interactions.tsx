@@ -97,7 +97,7 @@ const QuoteDrawer = () => {
                       ? 16
                       : e.currentTarget.getBoundingClientRect().top;
                     let scrollContainer =
-                      window.document.getElementById("post-content");
+                      window.document.getElementById("post-page");
                     let quoteScrollTop =
                       (scrollContainer &&
                         q.getBoundingClientRect().top +
