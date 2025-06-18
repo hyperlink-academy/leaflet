@@ -75,7 +75,7 @@ export async function PostHeader(props: {
                 </p>
               </>
             ) : null}
-            | <Interactions />
+            | <Interactions compact />
           </div>
         </div>
       </div>

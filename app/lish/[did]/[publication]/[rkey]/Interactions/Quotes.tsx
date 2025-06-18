@@ -3,6 +3,7 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 import { useState, useEffect } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useInteractionState } from "./Interactions";
+import Link from "next/link";
 
 export const Quotes = () => {
   let isMobile = useIsMobile();
@@ -48,7 +49,7 @@ export const Quotes = () => {
         <div className="quotes flex flex-col gap-12">
           {quotes.map((q) => {
             return (
-              <div className="quoteSection flex flex-col">
+              <div className="quoteSection flex flex-col gap-2">
                 <button
                   className="quoteSectionQuote text-secondary text-sm italic text-left pb-1 x "
                   onClick={(e) => {
@@ -83,20 +84,31 @@ export const Quotes = () => {
                   </span>
                 </button>
 
-                <div className="text-xs text-tertiary italic font-bold pt-2 pb-1">
-                  On Bluesky
-                </div>
                 <div className="flex flex-col gap-2">
-                  <QuoteSectionBskyItem content="Oh, heck yeah I love this" />
-                  <QuoteSectionBskyItem content="What if I wrote something that's pretty long. Like if I had a really deep thought that I want people to really engage with me seriously about. There's something really special about having a thought. May the thoughts just keep on rolling." />
-
-                  <QuoteSectionBskyItem content="hello :)" />
+                  {QuoteSectionBskyItems.map((i) => {
+                    return (
+                      <QuoteSectionBskyItem
+                        content={i.content}
+                        user={i.user}
+                        handle={i.handle}
+                      />
+                    );
+                  })}
                 </div>
-                <div className="text-xs text-tertiary italic font-bold pt-2 pb-1">
-                  Mentioned in
-                </div>
+                {QuoteSectionBskyItems.length > 0 &&
+                  QuoteSectionLeafletItems.length > 0 && (
+                    <hr className="border-border-light my-1" />
+                  )}
                 <div className="flex flex-col gap-2">
-                  <QuoteSectionLeafletItem content="I found this pretty interesting and so I'll go ahead and just type some stuff about it... I think that'll be good enough don't you think? A little above and a little below" />
+                  {QuoteSectionLeafletItems.map((i) => {
+                    return (
+                      <QuoteSectionLeafletItem
+                        pub={i.pub}
+                        title={i.title}
+                        description={i.description}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -107,31 +119,68 @@ export const Quotes = () => {
   );
 };
 
-const QuoteSectionBskyItem = (props: { content: string }) => {
+const QuoteSectionBskyItem = (props: {
+  content: string;
+  user: string;
+  handle: string;
+}) => {
   return (
-    <div className="quoteSectionBskyItem opaque-container py-1 px-2 text-sm flex gap-[6px]">
+    <Link
+      href="/"
+      className="quoteSectionBskyItem opaque-container py-1 px-2 text-sm flex gap-[6px]"
+    >
       <div className="w-4 h-4 bg-test rounded-full shrink-0 mt-1" />
       <div className="flex flex-col">
         <div className="flex items-center gap-1">
-          <div className="font-bold">celine</div>
-          <div className="text-tertiary">@cozylitte.house</div>
+          <div className="font-bold">{props.user}</div>
+          <div className="text-tertiary">{props.handle}</div>
         </div>
         <div className="text-secondary">{props.content}</div>
       </div>
-    </div>
+    </Link>
   );
 };
 
-const QuoteSectionLeafletItem = (props: { content: string }) => {
+const QuoteSectionLeafletItem = (props: {
+  title: string;
+  description: string;
+  pub: string;
+}) => {
   return (
-    <div className="quoteSectionLeafletItem text-sm text-secondary opaque-container py-1 px-2">
-      <div className="font-bold">This is a Post Title</div>
-      {props.content}
+    <Link
+      href="/"
+      className="quoteSectionLeafletItem text-sm text-secondary opaque-container py-1 px-2"
+    >
+      <div className="font-bold">{props.title}</div>
+      {props.description}
       <hr className="border-border-light mt-2 mb-0.5" />
       <div className="items-center flex gap-1">
         <div className="w-3 h-3 bg-test rounded-full" />
-        <div className="text-accent-contrast text-xs">celine's pub</div>
+        <div className="text-accent-contrast text-xs">{props.pub}</div>
       </div>
-    </div>
+    </Link>
   );
 };
+
+let QuoteSectionBskyItems = [
+  { content: "hello :3", user: "celine", handle: "@cozylitte.house" },
+  {
+    content:
+      "What if I wrote something that's pretty long. Like if I had a really deep thought that I want people to really engage with me seriously about. There's something really special about having a thought. May the thoughts just keep on rolling.",
+    user: "jared",
+    handle: "@awarm.space",
+  },
+  {
+    content: "Oh, heck yeah I love this",
+    user: "Brendan",
+    handle: "@schlage.town",
+  },
+];
+let QuoteSectionLeafletItems = [
+  {
+    title: "This is a Blog Post",
+    description:
+      "This is a pub where I pretend that there are things I want to write!",
+    pub: "celine's pub",
+  },
+];

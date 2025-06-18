@@ -13,15 +13,23 @@ export const InteractionDrawer = () => {
         mobile={false}
         className="sticky top-0 shrink w-96 py-6 h-full max-w-full flex"
       >
-        <div className="opaque-container h-full w-full px-4 pt-3 pb-6 overflow-scroll ">
+        <div
+          id="interaction-drawer"
+          className="opaque-container h-full w-full px-4 pt-3 pb-6 overflow-scroll "
+        >
           <Quotes />
         </div>
       </Media>
       <Media
         mobile
-        className="drawerMobileWrapper fixed bottom-0 left-0 right-0 h-[80vh] border-t border-border px-3 pt-2 pb-6  bg-bg-page overflow-auto"
+        className="drawerMobileWrapper fixed bottom-0 left-0 right-0 h-[80vh] border-t border-border  bg-bg-page "
       >
-        <Quotes />
+        <div
+          className="max-h-full px-3 pt-2 pb-6 overflow-auto"
+          id="interaction-drawer-mobile"
+        >
+          <Quotes />
+        </div>
       </Media>
     </>
   );

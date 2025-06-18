@@ -40,7 +40,7 @@ export const CollapsedPostHeader = (props: { title: string }) => {
         <div className="text-tertiary font-bold text-sm truncate pr-1">
           {props.title}
         </div>
-        <Interactions />
+        <Interactions compact />
         <div className="w-4 h-4 rounded-full bg-test shrink-0" />
       </div>
     </Media>

@@ -88,7 +88,7 @@ export function QuoteHandler() {
   let parentRight = (parent && screenRight - parent.right) || 0;
   let selectionRight = focusRect && screenRight - focusRect?.right;
 
-  let width = 226;
+  let width = 273;
 
   // check to see if there is enough space to the left and right of the button so it doesn't spill over the boundry
   let leftBumper = focusRect && focusRect.left - parentLeft < width;
@@ -98,7 +98,7 @@ export function QuoteHandler() {
     return (
       <div
         id="quote-trigger"
-        className="opaque-container px-1 flex gap-2 text-sm justify-center text-center items-center"
+        className="accent-container border border-border-light  text-accent-contrast px-1 flex gap-2 text-sm justify-center text-center items-center"
         style={{
           position: "absolute",
           top:
@@ -134,10 +134,10 @@ export const QuoteOptionButtons = () => {
 
   return (
     <>
-      <div className="text-tertiary">Quote via</div>
+      <div className="">Share Quote via</div>
 
       <button
-        className="flex gap-1 items-center text-secondary hover:text-accent-contrast"
+        className="flex gap-1 items-center hover:font-bold"
         onClick={() => highlightContent()}
       >
         <BlueskyLinkTiny className="shrink-0" />
@@ -146,7 +146,7 @@ export const QuoteOptionButtons = () => {
       <Separator classname="h-3" />
       <button
         id="copy-quote-link"
-        className="flex gap-1 items-center text-secondary hover:text-accent-contrast"
+        className="flex gap-1 items-center  hover:font-bold"
         onClick={() => {
           let rect = document
             .getElementById("copy-quote-link")
@@ -173,6 +173,7 @@ function highlightContent() {
   let span = document.createElement("span");
   span.classList.add("highlight", "rounded-md", "scroll-my-6");
   span.style.backgroundColor = "rgba(var(--accent-contrast), .15)";
+  span.onclick = () => {};
   selection?.getRangeAt(0).surroundContents(span);
   useInteractionState.setState({ drawerOpen: true });
 }
