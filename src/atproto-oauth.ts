@@ -3,13 +3,12 @@ import {
   NodeSavedSession,
   NodeSavedState,
   RuntimeLock,
-  Session,
 } from "@atproto/oauth-client-node";
 import { JoseKey } from "@atproto/jwk-jose";
 import { oauth_metadata } from "app/api/oauth/[route]/oauth-metadata";
 import { supabaseServerClient } from "supabase/serverClient";
 
-import { Redis } from "@upstash/redis";
+import Client from "ioredis";
 import Redlock from "redlock";
 export async function createOauthClient() {
   let keyset =
@@ -19,16 +18,9 @@ export async function createOauthClient() {
         ])
       : undefined;
   let requestLock: RuntimeLock | undefined;
-  if (
-    process.env.NODE_ENV === "production" &&
-    process.env.KV_REST_API_URL &&
-    process.env.KV_REST_API_TOKEN
-  ) {
-    const redis = new Redis({
-      url: process.env.KV_REST_API_URL,
-      token: process.env.KV_REST_API_TOKEN,
-    });
-    const redlock = new Redlock([redis]);
+  if (process.env.NODE_ENV === "production" && process.env.REDIS_URL) {
+    const client = new Client(process.env.REDIS_URL);
+    const redlock = new Redlock([client]);
     requestLock = async (key, fn) => {
       // 30 seconds should be enough. Since we will be using one lock per user id
       // we can be quite liberal with the lock duration here.
