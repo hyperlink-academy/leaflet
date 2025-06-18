@@ -13,17 +13,12 @@ import {
 import { Metadata } from "next";
 import { TextBlock } from "./TextBlock";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
-import { BlobRef, BskyAgent } from "@atproto/api";
+import { BskyAgent } from "@atproto/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { QuoteHandler } from "./QuoteHandler";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
-import { PostHeader } from "./PostHeader";
-import {
-  InteractionDrawerDesktop,
-  InteractionDrawerMobile,
-  Interactions,
-} from "./Interactions";
-import { Media } from "components/Media";
+import { PostHeader } from "./PostHeader/PostHeader";
+import { InteractionDrawer, Interactions } from "./Interactions";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -104,6 +99,7 @@ export default async function Post(props: {
         className="postPage relative w-full overflow-auto h-screen bg-[#FDFCFA] flex items-stretch justify-start sm:justify-center gap-0 sm:gap-4 mx-auto"
       >
         <QuoteHandler />
+
         <div
           id="post-content"
           className={`postContent h-fit shrink-0 flex flex-col px-3 sm:px-4 pt-3 pb-6 sm:pt-9 sm:pb-12 sm:w-full w-screen max-w-prose `}
@@ -115,7 +111,7 @@ export default async function Post(props: {
             })}
           </div>
           <Interactions />
-          <hr className="border-border-light mb-4 mt-2" />
+          <hr className="border-border-light my-4" />
           <SubscribeWithBluesky
             isPost
             pub_uri={document.documents_in_publications[0].publications.uri}
@@ -126,15 +122,7 @@ export default async function Post(props: {
             pubName={decodeURIComponent((await props.params).publication)}
           />
         </div>
-        <Media
-          mobile={false}
-          className="sticky top-0 shrink w-96 py-6 h-full max-w-full flex"
-        >
-          <InteractionDrawerDesktop />
-        </Media>
-        <Media mobile>
-          <InteractionDrawerMobile />
-        </Media>
+        <InteractionDrawer />
       </div>
     </ThemeProvider>
   );

@@ -1,54 +1,56 @@
 "use client";
-import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
-import { CopyTiny } from "components/Icons/CopyTiny";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { Separator } from "components/Layout";
-import { useSmoker } from "components/Toast";
 import { useState, useEffect } from "react";
-import { QuoteOptionButtons } from "./QuoteHandler";
 import { useIsMobile } from "src/hooks/isMobile";
+import { Media } from "components/Media";
+import { create } from "zustand";
+
+export let useInteractionState = create(() => ({ drawerOpen: false }));
 
 export const Interactions = () => {
   return (
-    <div className="flex gap-2 text-sm text-tertiary pb-2">
+    <div className="flex gap-2 text-sm text-tertiary ">
       <div className="flex gap-1 items-center">
         <CommentTiny /> 5
       </div>
-      <Separator classname="h-4" />
-      <div className="flex gap-1 items-center">
+      <button
+        className="flex gap-1 items-center"
+        onClick={() => useInteractionState.setState({ drawerOpen: true })}
+      >
         <QuoteTiny /> 5
-      </div>
+      </button>
     </div>
   );
 };
 
-export const InteractionDrawerDesktop = (props: {
-  // drawerOpen: boolean;
-  // setDrawerOpen: (d: boolean) => void;
-}) => {
-  // if (!props.drawerOpen) return;
+export const InteractionDrawer = () => {
+  let { drawerOpen: open } = useInteractionState();
 
+  if (!open) return null;
   return (
-    <div className="opaque-container h-full w-full px-4 pt-3 pb-6 overflow-scroll ">
-      <QuoteDrawer />
-    </div>
-  );
-};
-
-export const InteractionDrawerMobile = () => {
-  return (
-    <div className="drawerMobileWrapper absolute top-0 left-0 right-0 h-[80vh]">
-      <div className="drawerMobileContent border-b border-border h-full px-3 pt-2 pb-6  relative bg-[#FDFCFA] overflow-scroll">
+    <>
+      <Media
+        mobile={false}
+        className="sticky top-0 shrink w-96 py-6 h-full max-w-full flex"
+      >
+        <div className="opaque-container h-full w-full px-4 pt-3 pb-6 overflow-scroll ">
+          <QuoteDrawer />
+        </div>
+      </Media>
+      <Media
+        mobile
+        className="drawerMobileWrapper fixed bottom-0 left-0 right-0 h-[80vh] border-t border-border px-3 pt-2 pb-6  bg-bg-page overflow-auto"
+      >
         <QuoteDrawer />
-      </div>
-    </div>
+      </Media>
+    </>
   );
 };
 
 const QuoteDrawer = () => {
-  let smoker = useSmoker();
   let isMobile = useIsMobile();
 
   let [quotes, setQuotes] = useState<Element[]>([]);
@@ -76,7 +78,10 @@ const QuoteDrawer = () => {
     <>
       <div className="w-full flex justify-between text-secondary font-bold">
         Quotes
-        <button className="text-tertiary">
+        <button
+          className="text-tertiary"
+          onClick={() => useInteractionState.setState({ drawerOpen: false })}
+        >
           <CloseTiny />
         </button>
       </div>
