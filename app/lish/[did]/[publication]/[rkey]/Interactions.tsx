@@ -11,14 +11,18 @@ import { create } from "zustand";
 export let useInteractionState = create(() => ({ drawerOpen: false }));
 
 export const Interactions = () => {
+  let { drawerOpen } = useInteractionState();
+
   return (
     <div className="flex gap-2 text-sm text-tertiary ">
-      <div className="flex gap-1 items-center">
+      {/* <div className="flex gap-1 items-center">
         <CommentTiny /> 5
-      </div>
+      </div> */}
       <button
         className="flex gap-1 items-center"
-        onClick={() => useInteractionState.setState({ drawerOpen: true })}
+        onClick={() =>
+          useInteractionState.setState({ drawerOpen: !drawerOpen })
+        }
       >
         <QuoteTiny /> 5
       </button>
@@ -75,7 +79,7 @@ const QuoteDrawer = () => {
     };
   }, []);
   return (
-    <>
+    <div className="flex flex-col gap-2">
       <div className="w-full flex justify-between text-secondary font-bold">
         Quotes
         <button
@@ -147,7 +151,7 @@ const QuoteDrawer = () => {
           })}
         </div>
       )}
-    </>
+    </div>
   );
 };
 

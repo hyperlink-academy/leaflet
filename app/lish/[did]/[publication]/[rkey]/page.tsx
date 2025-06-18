@@ -18,7 +18,11 @@ import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { QuoteHandler } from "./QuoteHandler";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
 import { PostHeader } from "./PostHeader/PostHeader";
-import { InteractionDrawer, Interactions } from "./Interactions";
+import {
+  InteractionDrawer,
+  Interactions,
+  useInteractionState,
+} from "./Interactions";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -91,7 +95,6 @@ export default async function Post(props: {
   if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
     blocks = firstPage.blocks || [];
   }
-
   return (
     <ThemeProvider entityID={null}>
       <div

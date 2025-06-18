@@ -4,8 +4,11 @@ import { CopyTiny } from "components/Icons/CopyTiny";
 import { Separator } from "components/Layout";
 import { useSmoker } from "components/Toast";
 import { useEffect, useState } from "react";
+import { useInteractionState } from "./Interactions";
 
 export function QuoteHandler() {
+  let { drawerOpen: open } = useInteractionState();
+
   let [selectionText, setSelectionText] = useState<string | undefined>(
     undefined,
   );
@@ -164,61 +167,12 @@ export const QuoteOptionButtons = () => {
   );
 };
 
-// messing around with different styling quotes here, to put an icon next to the quote
-// export const Quotes = () => {
-//   let parentScroll = document.getElementById("post-content")?.scrollTop || 0;
-
-//   let [quotes, setQuotes] = useState<Element[]>([]);
-
-//   useEffect(() => {
-//     function updateQuotes() {
-//       setQuotes(
-//         Array.from(window.document.getElementsByClassName("highlight")),
-//       );
-//     }
-//     updateQuotes();
-//     const observer = new MutationObserver(() => {
-//       updateQuotes();
-//     });
-
-//     observer.observe(document.body, {
-//       childList: true, // Watch for added/removed child nodes
-//       subtree: true, // Watch the entire subtree
-//     });
-
-//     return () => {
-//       observer.disconnect();
-//     };
-//   }, []);
-
-//   useEffect(() => {
-//     setQuotes(quotes);
-//   }, [quotes]);
-
-//   return quotes.map((q, index) => {
-//     let quoteTop = q.getBoundingClientRect().top;
-//     let relativeTop = quoteTop + parentScroll;
-//     return (
-//       <div
-//         className="bg-test w-[4px] "
-//         style={{
-//           position: "absolute",
-//           top: relativeTop,
-//           left: "4px",
-//           height: `${q.getBoundingClientRect().height}px`,
-//         }}
-//         key={index}
-//       ></div>
-//     );
-//   });
-// };
-
 function highlightContent() {
   const selection = window.getSelection();
+
   let span = document.createElement("span");
   span.classList.add("highlight", "rounded-md", "scroll-my-6");
   span.style.backgroundColor = "rgba(var(--accent-contrast), .15)";
-  span.onclick = () => {};
-
   selection?.getRangeAt(0).surroundContents(span);
+  useInteractionState.setState({ drawerOpen: true });
 }
