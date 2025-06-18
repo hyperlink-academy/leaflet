@@ -2,12 +2,14 @@ import {
   NodeOAuthClient,
   NodeSavedSession,
   NodeSavedState,
-  Session,
+  RuntimeLock,
 } from "@atproto/oauth-client-node";
 import { JoseKey } from "@atproto/jwk-jose";
 import { oauth_metadata } from "app/api/oauth/[route]/oauth-metadata";
 import { supabaseServerClient } from "supabase/serverClient";
 
+import Client from "ioredis";
+import Redlock from "redlock";
 export async function createOauthClient() {
   let keyset =
     process.env.NODE_ENV === "production"
@@ -15,6 +17,21 @@ export async function createOauthClient() {
           JoseKey.fromImportable(process.env.JOSE_PRIVATE_KEY_1!),
         ])
       : undefined;
+  let requestLock: RuntimeLock | undefined;
+  if (process.env.NODE_ENV === "production" && process.env.REDIS_URL) {
+    const client = new Client(process.env.REDIS_URL);
+    const redlock = new Redlock([client]);
+    requestLock = async (key, fn) => {
+      // 30 seconds should be enough. Since we will be using one lock per user id
+      // we can be quite liberal with the lock duration here.
+      const lock = await redlock.acquire([key], 45e3);
+      try {
+        return await fn();
+      } finally {
+        await lock.release();
+      }
+    };
+  }
   return new NodeOAuthClient({
     // This object will be used to build the payload of the /client-metadata.json
     // endpoint metadata, exposing the client metadata to the OAuth server.
@@ -28,6 +45,7 @@ export async function createOauthClient() {
     stateStore,
     // Interface to store authenticated session data
     sessionStore,
+    requestLock,
   });
 }
 

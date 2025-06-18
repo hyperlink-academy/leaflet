@@ -134,7 +134,7 @@ function DeletePost(props: { document_uri: string }) {
         await deletePost(props.document_uri);
       }}
     >
-      {confirm ? "Delete Post" : "Are you sure?"}
+      {!confirm ? "Delete Post" : "Are you sure?"}
     </MenuItem>
   );
 }
