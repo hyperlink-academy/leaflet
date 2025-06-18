@@ -19,8 +19,15 @@ export async function createOauthClient() {
         ])
       : undefined;
   let requestLock: RuntimeLock | undefined;
-  if (process.env.NODE_ENV === "production") {
-    const redis = Redis.fromEnv();
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.KV_REST_API_URL &&
+    process.env.KV_REST_API_TOKEN
+  ) {
+    const redis = new Redis({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
+    });
     const redlock = new Redlock([redis]);
     requestLock = async (key, fn) => {
       // 30 seconds should be enough. Since we will be using one lock per user id
