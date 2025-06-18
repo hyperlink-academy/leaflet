@@ -18,11 +18,8 @@ import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { QuoteHandler } from "./QuoteHandler";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
 import { PostHeader } from "./PostHeader/PostHeader";
-import {
-  InteractionDrawer,
-  Interactions,
-  useInteractionState,
-} from "./Interactions";
+import { Interactions } from "./Interactions/Interactions";
+import { InteractionDrawer } from "./Interactions/InteractionDrawer";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;

@@ -4,7 +4,7 @@ import { CopyTiny } from "components/Icons/CopyTiny";
 import { Separator } from "components/Layout";
 import { useSmoker } from "components/Toast";
 import { useEffect, useState } from "react";
-import { useInteractionState } from "./Interactions";
+import { useInteractionState } from "./Interactions/Interactions";
 
 export function QuoteHandler() {
   let { drawerOpen: open } = useInteractionState();

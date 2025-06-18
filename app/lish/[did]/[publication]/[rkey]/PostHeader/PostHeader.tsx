@@ -6,7 +6,7 @@ import { PubLeafletDocument } from "lexicons/api";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
 import { CollapsedPostHeader } from "./CollapsedPostHeader";
-import { Interactions } from "../Interactions";
+import { Interactions } from "../Interactions/Interactions";
 
 export async function PostHeader(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;

@@ -1,60 +1,10 @@
 "use client";
 import { CloseTiny } from "components/Icons/CloseTiny";
-import { CommentTiny } from "components/Icons/CommentTiny";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
-import { Separator } from "components/Layout";
 import { useState, useEffect } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
-import { Media } from "components/Media";
-import { create } from "zustand";
+import { useInteractionState } from "./Interactions";
 
-export let useInteractionState = create(() => ({ drawerOpen: false }));
-
-export const Interactions = () => {
-  let { drawerOpen } = useInteractionState();
-
-  return (
-    <div className="flex gap-2 text-sm text-tertiary ">
-      {/* <div className="flex gap-1 items-center">
-        <CommentTiny /> 5
-      </div> */}
-      <button
-        className="flex gap-1 items-center"
-        onClick={() =>
-          useInteractionState.setState({ drawerOpen: !drawerOpen })
-        }
-      >
-        <QuoteTiny /> 5
-      </button>
-    </div>
-  );
-};
-
-export const InteractionDrawer = () => {
-  let { drawerOpen: open } = useInteractionState();
-
-  if (!open) return null;
-  return (
-    <>
-      <Media
-        mobile={false}
-        className="sticky top-0 shrink w-96 py-6 h-full max-w-full flex"
-      >
-        <div className="opaque-container h-full w-full px-4 pt-3 pb-6 overflow-scroll ">
-          <QuoteDrawer />
-        </div>
-      </Media>
-      <Media
-        mobile
-        className="drawerMobileWrapper fixed bottom-0 left-0 right-0 h-[80vh] border-t border-border px-3 pt-2 pb-6  bg-bg-page overflow-auto"
-      >
-        <QuoteDrawer />
-      </Media>
-    </>
-  );
-};
-
-const QuoteDrawer = () => {
+export const Quotes = () => {
   let isMobile = useIsMobile();
 
   let [quotes, setQuotes] = useState<Element[]>([]);
@@ -121,13 +71,15 @@ const QuoteDrawer = () => {
                     });
                   }}
                 >
-                  <span
-                    className="rounded-md"
-                    style={{
-                      backgroundColor: "rgba(var(--accent-contrast), .15)",
-                    }}
-                  >
-                    "{q.textContent}"
+                  <span className="line-clamp-3">
+                    <span
+                      className="rounded-md px-0.5"
+                      style={{
+                        backgroundColor: "rgba(var(--accent-contrast), .15)",
+                      }}
+                    >
+                      {q.textContent}
+                    </span>
                   </span>
                 </button>
 
