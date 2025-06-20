@@ -12,6 +12,8 @@ import { Menu, MenuItem } from "components/Layout";
 import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { deletePost } from "./deletePost";
 import { mutate } from "swr";
+import { Button } from "react-aria-components";
+import { ButtonPrimary } from "components/Buttons";
 
 export function PublishedPostsList() {
   let { data: publication } = usePublicationData();
@@ -110,31 +112,50 @@ let Options = (props: { document_uri: string }) => {
 
 function DeletePost(props: { document_uri: string }) {
   let { mutate } = usePublicationData();
-  let [confirm, setConfirm] = useState(false);
-  return (
-    <MenuItem
-      onSelect={async (e) => {
-        if (!confirm) {
+  let [state, setState] = useState<"normal" | "confirm">("normal");
+
+  if (state === "normal") {
+    return (
+      <MenuItem
+        onSelect={async (e) => {
           e.preventDefault();
-          setConfirm(true);
+          setState("confirm");
           return;
-        }
-        await mutate((data) => {
-          if (!data) return data;
-          return {
-            ...data,
-            leaflets_in_publications: data.leaflets_in_publications.filter(
-              (l) => l.doc !== props.document_uri,
-            ),
-            documents_in_publications: data.documents_in_publications.filter(
-              (d) => d.documents?.uri !== props.document_uri,
-            ),
-          };
-        }, false);
-        await deletePost(props.document_uri);
-      }}
-    >
-      {!confirm ? "Delete Post" : "Are you sure?"}
-    </MenuItem>
-  );
+        }}
+      >
+        Delete Post
+      </MenuItem>
+    );
+  }
+  if (state === "confirm") {
+    return (
+      <div className="flex flex-col items-center font-bold text-secondary px-2 py-1">
+        Are you sure?
+        <div className="text-sm text-tertiary font-normal">
+          This action cannot be undone!
+        </div>
+        <ButtonPrimary
+          className="mt-2"
+          onClick={async () => {
+            await mutate((data) => {
+              if (!data) return data;
+              return {
+                ...data,
+                leaflets_in_publications: data.leaflets_in_publications.filter(
+                  (l) => l.doc !== props.document_uri,
+                ),
+                documents_in_publications:
+                  data.documents_in_publications.filter(
+                    (d) => d.documents?.uri !== props.document_uri,
+                  ),
+              };
+            }, false);
+            await deletePost(props.document_uri);
+          }}
+        >
+          Delete
+        </ButtonPrimary>
+      </div>
+    );
+  }
 }
