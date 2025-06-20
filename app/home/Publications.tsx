@@ -45,7 +45,7 @@ const PublicationList = (props: {
   let { identity } = useIdentityData();
 
   return (
-    <div className="pubList w-full flex flex-row sm:flex-col gap-3 sm:gap-2">
+    <div className="pubList w-full flex flex-row sm:flex-col gap-3 sm:gap-2 overflow-auto ">
       {props.publications?.map((d) => (
         <Publication {...d} key={d.uri} record={d.record} />
       ))}
@@ -57,7 +57,7 @@ function Publication(props: { uri: string; name: string; record: Json }) {
   let record = props.record as PubLeafletPublication.Record | null;
   return (
     <Link
-      className="pubListItem w-full p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline outline-2 outline-offset-1 hover:outline-border basis-0 grow min-w-0"
+      className="pubListItem sm:w-full min-w-36 w-36 p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline outline-2 outline-offset-1 hover:outline-border basis-0 grow sm:min-w-0 "
       href={`${getBasePublicationURL(props)}/dashboard`}
     >
       {record?.icon && (
@@ -71,7 +71,7 @@ function Publication(props: { uri: string; name: string; record: Json }) {
           className="w-6 h-6 rounded-full"
         />
       )}
-      <h4 className="font-bold w-full truncate">{props.name}</h4>
+      <h4 className="font-bold w-full truncate my-auto">{props.name}</h4>
     </Link>
   );
 }
