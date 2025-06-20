@@ -18,8 +18,8 @@ export const MyPublicationList = () => {
   let { identity } = useIdentityData();
   if (!identity || !identity.atp_did) return <PubListEmpty />;
   return (
-    <div className="pubListWrapper w-full sm:w-[200px] flex flex-col gap-1 sm:gap-2 container p-2 sm:p-1 sm:-m-1 sm:bg-transparent sm:border-0">
-      <div className="flex justify-between items-center font-bold text-tertiary text-sm">
+    <div className="pubListWrapper w-full sm:w-[200px] flex flex-col sm:gap-1  container py-2 sm:p-0 sm:bg-transparent sm:border-0">
+      <div className="flex justify-between items-center font-bold text-tertiary text-sm px-2 ">
         Publications
         <Link
           href={"./lish/createPub"}
@@ -42,10 +42,8 @@ const PublicationList = (props: {
     uri: string;
   }[];
 }) => {
-  let { identity } = useIdentityData();
-
   return (
-    <div className="pubList w-full flex flex-row sm:flex-col gap-3 sm:gap-2 overflow-auto ">
+    <div className="pubList w-full flex flex-row sm:flex-col gap-0 overflow-auto items-stretch">
       {props.publications?.map((d) => (
         <Publication {...d} key={d.uri} record={d.record} />
       ))}
@@ -57,21 +55,23 @@ function Publication(props: { uri: string; name: string; record: Json }) {
   let record = props.record as PubLeafletPublication.Record | null;
   return (
     <Link
-      className="pubListItem sm:w-full min-w-36 w-36 p-3 opaque-container rounded-lg! text-secondary text-center hover:no-underline flex flex-col gap-1 place-items-center transparent-outline outline-2 outline-offset-1 hover:outline-border basis-0 grow sm:min-w-0 "
+      className="pubListItem sm:w-full sm:min-w-0 min-w-40 w-36  px-1 sm:px-2 py-1 sm:h-max  hover:no-underline "
       href={`${getBasePublicationURL(props)}/dashboard`}
     >
-      {record?.icon && (
-        <div
-          style={{
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-            backgroundSize: "cover",
-            backgroundImage: `url(/api/atproto_images?did=${new AtUri(props.uri).host}&cid=${(record.icon?.ref as unknown as { $link: string })["$link"]})`,
-          }}
-          className="w-6 h-6 rounded-full"
-        />
-      )}
-      <h4 className="font-bold w-full truncate my-auto">{props.name}</h4>
+      <div className="p-3 h-full w-full flex flex-col gap-1 place-items-center opaque-container rounded-lg! text-secondary text-center  transparent-outline outline-2 outline-offset-1 hover:outline-border  grow ">
+        {record?.icon && (
+          <div
+            style={{
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "center",
+              backgroundSize: "cover",
+              backgroundImage: `url(/api/atproto_images?did=${new AtUri(props.uri).host}&cid=${(record.icon?.ref as unknown as { $link: string })["$link"]})`,
+            }}
+            className="w-6 h-6 rounded-full"
+          />
+        )}
+        <h4 className="font-bold w-full truncate my-auto">{props.name}</h4>
+      </div>
     </Link>
   );
 }
