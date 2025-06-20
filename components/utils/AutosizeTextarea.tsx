@@ -18,11 +18,16 @@ export const AutosizeTextarea = forwardRef<HTMLTextAreaElement, Props>(
 
     return (
       <div
-        className={`${styles["grow-wrap"]} ${props.className}`}
+        className={`${styles["grow-wrap"]} ${props.className} `}
         data-replicated-value={props.value}
         style={props.style}
       >
-        <textarea rows={1} {...props} ref={textarea} />
+        <textarea
+          rows={1}
+          {...props}
+          ref={textarea}
+          className="placeholder:text-tertiary bg-transparent"
+        />
       </div>
     );
   },
