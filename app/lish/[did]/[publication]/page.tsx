@@ -77,16 +77,16 @@ export default async function Publication(props: {
                     }}
                   />
                 )}
-                <h2 className="text-accent-contrast sm:text-xl text-[22px]">
+                <h2 className="text-accent-contrast sm:text-xl text-[22px] pb-2 sm:pb-1">
                   {publication.name}
                 </h2>
               </div>
-              <p className="sm:text-lg text-tertiary">{record?.description} </p>
+              <p className="sm:text-lg text-secondary pb-1">
+                {record?.description}{" "}
+              </p>
               {profile && (
-                <p className="italic">
-                  <strong className="text-secondary">
-                    by {profile.displayName}
-                  </strong>{" "}
+                <p className="italic text-tertiary sm:text-base text-sm">
+                  <strong className="">by {profile.displayName}</strong>{" "}
                   <a
                     className="text-tertiary"
                     href={`https://bsky.app/profile/${profile.handle}`}
@@ -95,7 +95,7 @@ export default async function Publication(props: {
                   </a>
                 </p>
               )}
-              <div className="sm:pt-4 pt-2">
+              <div className="sm:pt-4 pt-4">
                 <SubscribeWithBluesky
                   pubName={publication.name}
                   pub_uri={publication.uri}
