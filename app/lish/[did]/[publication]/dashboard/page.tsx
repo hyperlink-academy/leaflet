@@ -94,11 +94,9 @@ export default async function Publication(props: {
                   defaultTab={"Drafts"}
                 />
               </div>
-              <Media mobile>
-                <Footer>
-                  <Actions publication={publication.uri} />
-                </Footer>
-              </Media>
+              <Footer>
+                <Actions publication={publication.uri} />
+              </Footer>
             </div>
           </div>
         </ThemeProvider>
