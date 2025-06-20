@@ -72,8 +72,9 @@ export default async function Publication(props: {
         publication_data={publication}
       >
         <ThemeProvider entityID={null}>
+
           <div className="w-screen h-screen flex place-items-center bg-[#FDFCFA]">
-            <div className="relative w-max h-full  flex sm:flex-row flex-col sm:items-stretch ">
+            <div className="relative w-max h-full  flex sm:flex-row flex-col sm:items-stretch pwa-padding">
               <div
                 className="spacer flex justify-end items-start"
                 style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
@@ -99,11 +100,9 @@ export default async function Publication(props: {
                   defaultTab={"Drafts"}
                 />
               </div>
-              <Media mobile>
-                <Footer>
-                  <Actions publication={publication.uri} />
-                </Footer>
-              </Media>
+              <Footer>
+                <Actions publication={publication.uri} />
+              </Footer>
             </div>
           </div>
         </ThemeProvider>
