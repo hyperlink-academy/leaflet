@@ -59,7 +59,7 @@ export async function subscribeToPublication(
     await supabaseServerClient.from("bsky_profiles").insert({
       did: identity.atp_did,
       record: profile.value as Json,
-      handle: resolveDid?.alsoKnownAs?.[0],
+      handle: resolveDid?.alsoKnownAs?.[0]?.slice(5),
     });
   }
   let savedFeeds = prefs.data.preferences.find(
