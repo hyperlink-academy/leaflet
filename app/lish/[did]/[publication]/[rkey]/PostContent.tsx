@@ -122,9 +122,9 @@ let Block = ({
     }
     case PubLeafletBlocksText.isMain(b.block):
       return (
-        <div className={` ${className}`}>
+        <p className={` ${className}`}>
           <TextBlock facets={b.block.facets} plaintext={b.block.plaintext} />
-        </div>
+        </p>
       );
     case PubLeafletBlocksHeader.isMain(b.block): {
       if (b.block.level === 1)
