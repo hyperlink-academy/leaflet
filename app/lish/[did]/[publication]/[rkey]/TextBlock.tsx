@@ -1,15 +1,13 @@
-"use client";
 import { UnicodeString } from "@atproto/api";
 import { PubLeafletRichtextFacet } from "lexicons/api";
-import { useMemo } from "react";
 
 type Facet = PubLeafletRichtextFacet.Main;
 export function TextBlock(props: { plaintext: string; facets?: Facet[] }) {
   const children = [];
-  let richText = useMemo(
-    () => new RichText({ text: props.plaintext, facets: props.facets || [] }),
-    [props.plaintext, props.facets],
-  );
+  let richText = new RichText({
+    text: props.plaintext,
+    facets: props.facets || [],
+  });
   let counter = 0;
   for (const segment of richText.segments()) {
     let link = segment.facet?.find(PubLeafletRichtextFacet.isLink);
