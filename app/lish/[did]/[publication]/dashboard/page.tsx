@@ -73,7 +73,7 @@ export default async function Publication(props: {
       >
         <ThemeProvider entityID={null}>
           <div className="w-screen h-screen flex place-items-center bg-[#FDFCFA]">
-            <div className="relative max-w-prose w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6">
+            <div className="relative max-w-prose w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6 pwa-padding">
               <div className="w-12 relative">
                 <Sidebar className="mt-6 p-2">
                   <Actions publication={publication.uri} />
