@@ -8,7 +8,6 @@ import { Footer } from "components/ActionBar/Footer";
 import { PublicationDashboard } from "./PublicationDashboard";
 import { DraftList } from "./DraftList";
 import { getIdentityData } from "actions/getIdentityData";
-import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { Actions } from "./Actions";
 import React from "react";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
@@ -16,6 +15,10 @@ import { PublicationSWRDataProvider } from "./PublicationSWRProvider";
 import { PublishedPostsList } from "./PublishedPostsLists";
 import { PubLeafletPublication } from "lexicons/api";
 import { PublicationSubscribers } from "./PublicationSubscribers";
+import {
+  PublicationThemeProvider,
+  PublicationThemeProviderDashboard,
+} from "components/ThemeManager/PublicationThemeProvider";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -71,8 +74,10 @@ export default async function Publication(props: {
         publication_name={publication.name}
         publication_data={publication}
       >
-        <ThemeProvider entityID={null}>
-          <div className="w-screen h-screen flex place-items-center bg-[#FDFCFA]">
+        <PublicationThemeProviderDashboard
+          record={publication.record as PubLeafletPublication.Record}
+        >
+          <div className="w-screen h-screen flex place-items-center bg-bg-leaflet">
             <div className="relative max-w-prose w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6">
               <div className="w-12 relative">
                 <Sidebar className="mt-6 p-2">
@@ -101,7 +106,7 @@ export default async function Publication(props: {
               </Media>
             </div>
           </div>
-        </ThemeProvider>
+        </PublicationThemeProviderDashboard>
       </PublicationSWRDataProvider>
     );
   } catch (e) {

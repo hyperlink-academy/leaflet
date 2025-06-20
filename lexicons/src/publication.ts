@@ -1,4 +1,5 @@
 import { LexiconDoc } from "@atproto/lexicon";
+import { ColorUnion, PubLeafletThemeBackgroundImage } from "./theme";
 
 export const PubLeafletPublication: LexiconDoc = {
   lexicon: 1,
@@ -16,7 +17,21 @@ export const PubLeafletPublication: LexiconDoc = {
           base_path: { type: "string", format: "uri" },
           description: { type: "string", maxLength: 2000 },
           icon: { type: "blob", accept: ["image/*"], maxSize: 1000000 },
+          theme: { type: "ref", ref: "#theme" },
         },
+      },
+    },
+    theme: {
+      type: "object",
+      properties: {
+        background: {
+          type: "union",
+          refs: [...ColorUnion.refs, PubLeafletThemeBackgroundImage.id],
+        },
+        primary: ColorUnion,
+        page: ColorUnion,
+        accentBackground: ColorUnion,
+        accentText: ColorUnion,
       },
     },
   },

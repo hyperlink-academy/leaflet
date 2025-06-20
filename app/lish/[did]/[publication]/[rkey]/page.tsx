@@ -10,14 +10,15 @@ import {
   PubLeafletBlocksUnorderedList,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
+  PubLeafletPublication,
 } from "lexicons/api";
 import { Metadata } from "next";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { TextBlock } from "./TextBlock";
-import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { BlobRef, BskyAgent } from "@atproto/api";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -91,8 +92,13 @@ export default async function Post(props: {
     blocks = firstPage.blocks || [];
   }
   return (
-    <ThemeProvider entityID={null}>
-      <div className="flex flex-col px-3 sm:px-4 py-3 sm:py-9 w-full bg-[#FDFCFA] h-full min-h-fit overflow-auto">
+    <PublicationThemeProvider
+      record={
+        document.documents_in_publications[0]?.publications
+          .record as PubLeafletPublication.Record
+      }
+    >
+      <div className="flex flex-col px-3 sm:px-4 py-3 sm:py-9 w-full bg-bg-leaflet h-full min-h-fit overflow-auto">
         <div className="max-w-prose mx-auto">
           <div className="pubHeader flex flex-col pb-5">
             <Link
@@ -155,7 +161,7 @@ export default async function Post(props: {
           />
         </div>
       </div>
-    </ThemeProvider>
+    </PublicationThemeProvider>
   );
 }
 

@@ -36,6 +36,7 @@ export const PageThemePickers = (props: {
   }, [rep, props.entityID]);
 
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
+  let primaryValue = useColorAttribute(props.entityID, "theme/primary");
 
   return (
     <div
@@ -55,7 +56,7 @@ export const PageThemePickers = (props: {
         setOpenPicker={props.setOpenPicker}
       />
       <PageTextPicker
-        entityID={props.entityID}
+        value={primaryValue}
         setValue={set("theme/primary")}
         openPicker={props.openPicker}
         setOpenPicker={props.setOpenPicker}
@@ -299,17 +300,15 @@ const CanvasBGPatternPicker = (props: {
 };
 
 export const PageTextPicker = (props: {
-  entityID: string;
   openPicker: pickers;
   setOpenPicker: (thisPicker: pickers) => void;
+  value: Color;
   setValue: (c: Color) => void;
 }) => {
-  let primaryValue = useColorAttribute(props.entityID, "theme/primary");
-
   return (
     <ColorPicker
       label="Text"
-      value={primaryValue}
+      value={props.value}
       setValue={props.setValue}
       thisPicker={"text"}
       openPicker={props.openPicker}

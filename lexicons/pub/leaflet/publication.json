@@ -30,7 +30,52 @@
               "image/*"
             ],
             "maxSize": 1000000
+          },
+          "theme": {
+            "type": "ref",
+            "ref": "#theme"
           }
+        }
+      }
+    },
+    "theme": {
+      "type": "object",
+      "properties": {
+        "background": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.theme.color#rgba",
+            "pub.leaflet.theme.color#rgb",
+            "pub.leaflet.theme.backgroundImage"
+          ]
+        },
+        "primary": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.theme.color#rgba",
+            "pub.leaflet.theme.color#rgb"
+          ]
+        },
+        "page": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.theme.color#rgba",
+            "pub.leaflet.theme.color#rgb"
+          ]
+        },
+        "accentBackground": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.theme.color#rgba",
+            "pub.leaflet.theme.color#rgb"
+          ]
+        },
+        "accentText": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.theme.color#rgba",
+            "pub.leaflet.theme.color#rgb"
+          ]
         }
       }
     }

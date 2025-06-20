@@ -14,6 +14,8 @@ import { parse, contrastLstar, ColorSpace, sRGB } from "colorjs.io/fn";
 
 import { useEntity } from "src/replicache";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { PublicationThemeProvider } from "./PublicationThemeProvider";
+import { PubLeafletPublication } from "lexicons/api";
 
 type CSSVariables = {
   "--bg-leaflet": string;
@@ -60,51 +62,14 @@ export function ThemeProvider(props: {
 }) {
   let { data: pub } = useLeafletPublicationData();
   if (!pub) return <LeafletThemeProvider {...props} />;
-  return <PublicationThemeProvider {...props} />;
-}
-// for PUBLICATIONS: define Aria Colors for each value and use BaseThemeProvider to wrap the content of the page in the theme
-export function PublicationThemeProvider(props: {
-  entityID: string | null;
-  local?: boolean;
-  children: React.ReactNode;
-}) {
-  let bgLeaflet = useMemo(() => {
-    return parseColor(`#FDFCFA`);
-  }, []);
-  let bgPage = useColorAttribute(props.entityID, "theme/card-background");
-  let primary = useColorAttribute(props.entityID, "theme/primary");
-
-  let highlight1 = useEntity(props.entityID, "theme/highlight-1");
-  let highlight2 = useColorAttribute(props.entityID, "theme/highlight-2");
-  let highlight3 = useColorAttribute(props.entityID, "theme/highlight-3");
-
-  let accent1 = useColorAttribute(props.entityID, "theme/accent-background");
-  let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
-  // set accent contrast to the accent color that has the highest contrast with the page background
-  let accentContrast = [accent1, accent2].sort((a, b) => {
-    return (
-      getColorContrast(colorToString(b, "rgb"), colorToString(bgPage, "rgb")) -
-      getColorContrast(colorToString(a, "rgb"), colorToString(bgPage, "rgb"))
-    );
-  })[0];
-
   return (
-    <BaseThemeProvider
-      local={props.local}
-      bgLeaflet={bgLeaflet}
-      bgPage={bgPage}
-      primary={primary}
-      highlight2={highlight2}
-      highlight3={highlight3}
-      highlight1={highlight1?.data.value}
-      accent1={accent1}
-      accent2={accent2}
-      accentContrast={accentContrast}
-    >
-      {props.children}
-    </BaseThemeProvider>
+    <PublicationThemeProvider
+      {...props}
+      record={pub.publications?.record as PubLeafletPublication.Record}
+    />
   );
 }
+// for PUBLICATIONS: define Aria Colors for each value and use BaseThemeProvider to wrap the content of the page in the theme
 
 // for LEAFLETS : define Aria Colors for each value and use BaseThemeProvider to wrap the content of the page in the theme
 export function LeafletThemeProvider(props: {
@@ -149,7 +114,7 @@ export function LeafletThemeProvider(props: {
 }
 
 // handles setting all the Aria Color values to CSS Variables and wrapping the page the theme providers
-let BaseThemeProvider = ({
+export const BaseThemeProvider = ({
   local,
   bgLeaflet,
   bgPage,

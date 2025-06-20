@@ -5,6 +5,8 @@ import { ValidationResult, BlobRef } from '@atproto/lexicon'
 import { CID } from 'multiformats/cid'
 import { validate as _validate } from '../../../lexicons'
 import { $Typed, is$typed as _is$typed, OmitKey } from '../../../util'
+import type * as PubLeafletThemeColor from './theme/color'
+import type * as PubLeafletThemeBackgroundImage from './theme/backgroundImage'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -16,6 +18,7 @@ export interface Record {
   base_path?: string
   description?: string
   icon?: BlobRef
+  theme?: Theme
   [k: string]: unknown
 }
 
@@ -27,4 +30,39 @@ export function isRecord<V>(v: V) {
 
 export function validateRecord<V>(v: V) {
   return validate<Record & V>(v, id, hashRecord, true)
+}
+
+export interface Theme {
+  $type?: 'pub.leaflet.publication#theme'
+  background?:
+    | $Typed<PubLeafletThemeColor.Rgba>
+    | $Typed<PubLeafletThemeColor.Rgb>
+    | $Typed<PubLeafletThemeBackgroundImage.Main>
+    | { $type: string }
+  primary?:
+    | $Typed<PubLeafletThemeColor.Rgba>
+    | $Typed<PubLeafletThemeColor.Rgb>
+    | { $type: string }
+  page?:
+    | $Typed<PubLeafletThemeColor.Rgba>
+    | $Typed<PubLeafletThemeColor.Rgb>
+    | { $type: string }
+  accentBackground?:
+    | $Typed<PubLeafletThemeColor.Rgba>
+    | $Typed<PubLeafletThemeColor.Rgb>
+    | { $type: string }
+  accentText?:
+    | $Typed<PubLeafletThemeColor.Rgba>
+    | $Typed<PubLeafletThemeColor.Rgb>
+    | { $type: string }
+}
+
+const hashTheme = 'theme'
+
+export function isTheme<V>(v: V) {
+  return is$typed(v, id, hashTheme)
+}
+
+export function validateTheme<V>(v: V) {
+  return validate<Theme & V>(v, id, hashTheme)
 }

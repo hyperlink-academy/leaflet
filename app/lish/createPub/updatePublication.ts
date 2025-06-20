@@ -1,6 +1,10 @@
 "use server";
 import { TID } from "@atproto/common";
-import { AtpBaseClient, PubLeafletPublication } from "lexicons/api";
+import {
+  AtpBaseClient,
+  PubLeafletPublication,
+  PubLeafletThemeColor,
+} from "lexicons/api";
 import { createOauthClient } from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -108,6 +112,99 @@ export async function updatePublicationBasePath({
   let record: PubLeafletPublication.Record = {
     ...(existingPub.record as PubLeafletPublication.Record),
     base_path,
+  };
+
+  let result = await agent.com.atproto.repo.putRecord({
+    repo: credentialSession.did!,
+    rkey: aturi.rkey,
+    record,
+    collection: record.$type,
+    validate: false,
+  });
+
+  //optimistically write to our db!
+  let { data: publication, error } = await supabaseServerClient
+    .from("publications")
+    .update({
+      name: record.name,
+      record: record as Json,
+    })
+    .eq("uri", uri)
+    .select()
+    .single();
+  return { success: true, publication };
+}
+
+type Color = PubLeafletThemeColor.Rgb;
+export async function updatePublicationTheme({
+  uri,
+  theme,
+}: {
+  uri: string;
+  theme: {
+    backgroundImage?: File;
+    backgroundRepeat?: number | null;
+    backgroundColor: Color;
+    primary: Color;
+    page: Color;
+    accentBackground: Color;
+    accentText: Color;
+  };
+}) {
+  const oauthClient = await createOauthClient();
+  let identity = await getIdentityData();
+  if (!identity || !identity.atp_did) return;
+
+  let credentialSession = await oauthClient.restore(identity.atp_did);
+  let agent = new AtpBaseClient(
+    credentialSession.fetchHandler.bind(credentialSession),
+  );
+  let { data: existingPub } = await supabaseServerClient
+    .from("publications")
+    .select("*")
+    .eq("uri", uri)
+    .single();
+  if (!existingPub || existingPub.identity_did !== identity.atp_did) return;
+  let aturi = new AtUri(existingPub.uri);
+
+  //I need to make these colors
+  let record: PubLeafletPublication.Record = {
+    ...(existingPub.record as PubLeafletPublication.Record),
+    $type: "pub.leaflet.publication",
+    theme: {
+      background: theme.backgroundImage
+        ? {
+            $type: "pub.leaflet.theme.backgroundImage",
+            image: (
+              await agent.com.atproto.repo.uploadBlob(
+                new Uint8Array(await theme.backgroundImage.arrayBuffer()),
+                { encoding: theme.backgroundImage.type },
+              )
+            )?.data.blob,
+            width: theme.backgroundRepeat || undefined,
+            repeat: !!theme.backgroundRepeat,
+          }
+        : {
+            $type: "pub.leaflet.theme.color#rgb",
+            ...theme.backgroundColor,
+          },
+      primary: {
+        $type: "pub.leaflet.theme.color#rgb",
+        ...theme.primary,
+      },
+      page: {
+        $type: "pub.leaflet.theme.color#rgb",
+        ...theme.page,
+      },
+      accentBackground: {
+        $type: "pub.leaflet.theme.color#rgb",
+        ...theme.accentBackground,
+      },
+      accentText: {
+        $type: "pub.leaflet.theme.color#rgb",
+        ...theme.accentText,
+      },
+    },
   };
 
   let result = await agent.com.atproto.repo.putRecord({

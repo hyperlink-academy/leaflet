@@ -10,6 +10,7 @@ import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
 import React from "react";
+import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -61,7 +62,7 @@ export default async function Publication(props: {
   if (!publication) return <PubNotFound />;
   try {
     return (
-      <ThemeProvider entityID={null}>
+      <PublicationThemeProvider record={record}>
         <div className="publicationWrapper w-screen  h-full min-h-fit flex place-items-center bg-[#FDFCFA]">
           <div className="publication max-w-prose w-full mx-auto h-full sm:pt-8 pt-4 px-3 pb-12 sm:pb-8">
             <div className="flex flex-col pb-8 w-full text-center justify-center ">
@@ -152,7 +153,7 @@ export default async function Publication(props: {
             </div>
           </div>
         </div>
-      </ThemeProvider>
+      </PublicationThemeProvider>
     );
   } catch (e) {
     console.log(e);
