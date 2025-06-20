@@ -73,14 +73,19 @@ export default async function Publication(props: {
       >
         <ThemeProvider entityID={null}>
           <div className="w-screen h-screen flex place-items-center bg-[#FDFCFA]">
-            <div className="relative max-w-prose w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6">
-              <div className="w-12 relative">
-                <Sidebar className="mt-6 p-2">
-                  <Actions publication={publication.uri} />
-                </Sidebar>
+            <div className="relative w-max h-full  flex sm:flex-row flex-col sm:items-stretch ">
+              <div
+                className="spacer flex justify-end items-start"
+                style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
+              >
+                <div className="relative w-16 justify-items-end">
+                  <Sidebar className="mt-6 p-2 ">
+                    <Actions publication={publication.uri} />
+                  </Sidebar>
+                </div>
               </div>
               <div
-                className={`h-full overflow-y-scroll pt-4 sm:pl-5 sm:pt-8 w-full`}
+                className={`h-full overflow-y-scroll pt-4 sm:pt-8 max-w-[var(--page-width-units)]`}
               >
                 <PublicationDashboard
                   did={did}
