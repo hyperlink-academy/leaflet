@@ -72,8 +72,7 @@ export default async function Publication(props: {
         publication_data={publication}
       >
         <ThemeProvider entityID={null}>
-
-          <div className="w-screen h-screen flex place-items-center bg-[#FDFCFA]">
+          <div className="w-screen h-full flex place-items-center bg-[#FDFCFA]">
             <div className="relative w-max h-full  flex sm:flex-row flex-col sm:items-stretch pwa-padding">
               <div
                 className="spacer flex justify-end items-start"
