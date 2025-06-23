@@ -14,12 +14,10 @@ import {
 import { get_leaflet_data } from "./get_leaflet_data";
 import { get_publication_data } from "./get_publication_data";
 
-const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
 let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
 );
-const db = drizzle(client);
 
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 const vercel = new Vercel({
