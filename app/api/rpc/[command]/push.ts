@@ -67,7 +67,7 @@ export const push = makeRoute({
         .select()
         .from(permission_token_rights)
         .where(eq(permission_token_rights.token, token.id));
-      for (let mutation of pushRequest.mutations.slice(0, 25)) {
+      for (let mutation of pushRequest.mutations) {
         let lastMutationID = clientGroup[mutation.clientID] || 0;
         if (mutation.id <= lastMutationID) continue;
         clientGroup[mutation.clientID] = mutation.id;
