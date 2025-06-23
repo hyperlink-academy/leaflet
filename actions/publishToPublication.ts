@@ -97,14 +97,14 @@ export async function publishToPublication({
   );
 
   let existingRecord =
-    (draft?.documents?.data as PubLeafletDocument.Record) || {};
+    (draft?.documents?.data as PubLeafletDocument.Record | undefined) || {};
   let record: PubLeafletDocument.Record = {
-    ...existingRecord,
     $type: "pub.leaflet.document",
     author: credentialSession.did!,
-    title: title || "Untitled",
     publication: publication_uri,
     publishedAt: new Date().toISOString(),
+    ...existingRecord,
+    title: title || "Untitled",
     description: description || "",
     pages: [
       {
