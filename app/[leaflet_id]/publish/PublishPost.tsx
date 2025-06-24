@@ -27,7 +27,7 @@ export function PublishPost(props: Props) {
     { state: "default" } | { state: "success"; post_url: string }
   >({ state: "default" });
   return (
-    <div className="publishPage w-screen h-full bg-[#FDFCFA] flex place-items-center justify-center">
+    <div className="publishPage w-screen h-full bg-[#FDFCFA] flex sm:pt-0 pt-4 sm:place-items-center justify-center">
       {publishState.state === "default" ? (
         <PublishPostForm setPublishState={setPublishState} {...props} />
       ) : (
@@ -77,7 +77,7 @@ const PublishPostForm = (
   }
 
   return (
-    <div className="flex flex-col gap-4 w-[640px] max-w-full">
+    <div className="flex flex-col gap-4 w-[640px] max-w-full sm:px-4 px-3">
       <h3>Publish Options</h3>
       <form
         onSubmit={(e) => {
@@ -100,7 +100,7 @@ const PublishPostForm = (
             <div className="flex flex-col">
               <div className="font-bold">Share Quietly</div>
               <div className="text-sm text-tertiary font-normal">
-                Subscribers will not be notified about this post
+                No one will be notified about this post
               </div>
             </div>
           </Radio>
@@ -118,7 +118,7 @@ const PublishPostForm = (
             <div className="flex flex-col">
               <div className="font-bold">Share on Bluesky</div>
               <div className="text-sm text-tertiary font-normal">
-                Subscribers will get updated via a custom Bluesky feed
+                Pub subscribers will be updated via a custom Bluesky feed
               </div>
             </div>
           </Radio>
@@ -145,9 +145,6 @@ const PublishPostForm = (
                       }
                       placeholder="Write a post to share your writing!"
                     />
-                    <div className="text-xs text-secondary italic place-self-end">
-                      {postContent.length}/300
-                    </div>
                   </div>
                   <div className="opaque-container overflow-hidden flex flex-col mt-4 w-full">
                     {/* <div className="h-[260px] w-full bg-test" /> */}
@@ -159,6 +156,9 @@ const PublishPostForm = (
                         {props.record?.base_path}
                       </p>
                     </div>
+                  </div>
+                  <div className="text-xs text-secondary italic place-self-end pt-2">
+                    {postContent.length}/300
                   </div>
                 </div>
               </div>
