@@ -11,6 +11,7 @@ import { PubLeafletPublication } from "lexicons/api";
 import { publishPostToBsky } from "./publishBskyPost";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AtUri } from "@atproto/syntax";
+import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 
 type Props = {
   title: string;
@@ -188,17 +189,16 @@ const PublishPostSuccess = (props: {
 }) => {
   let uri = new AtUri(props.publication_uri);
   return (
-    <div>
-      <h1>Woo! You published your post!</h1>
-      <div className="flex gap-2 justify-center">
-        <Link
-          className="hover:!no-underline font-bold"
-          href={`/lish/${uri.host}/${props.record?.name}/dashboard`}
-        >
-          Back To Dashboard
-        </Link>
-        <a href={props.post_url}>See post</a>
-      </div>
+    <div className="container p-4 m-3 sm:m-4 flex flex-col gap-1 justify-center text-center w-fit h-fit mx-auto">
+      <PublishIllustration />
+      <h2 className="pt-2">Published!</h2>
+      <Link
+        className="hover:!no-underline font-bold place-self-center pt-2"
+        href={`/lish/${uri.host}/${props.record?.name}/dashboard`}
+      >
+        <ButtonPrimary>Back to Dashboard</ButtonPrimary>
+      </Link>
+      <a href={props.post_url}>See published post</a>
     </div>
   );
 };
