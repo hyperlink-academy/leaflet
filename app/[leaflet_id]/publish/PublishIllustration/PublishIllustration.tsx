@@ -9,6 +9,7 @@ import {
   Planet2,
   Planet3,
   Planet4,
+  Sky,
   Star1,
   Star2,
   Star3,
@@ -49,29 +50,32 @@ export const PublishIllustration = () => {
   let moonPosX = Math.random() * (width - 48 - 82) + 24;
   let moonPosY = Math.random() * (height - 48 - 82) + 24;
 
-  function starPosGenerator() {
-    const x = Math.random() * (width - 48 - 24) + 24;
-    const y = Math.random() * (height - 48 - 24) + 24;
-    return { x, y };
-  }
-
   let stars: starType[] = [];
   let planetCounter = { P1: 0, P2: 0, P3: 0, P4: 0 };
 
   for (let i = 0; i < numberOfStars + numberOfPlanets; i++) {
+    let isPlanet = i <= numberOfPlanets;
+
+    function starPosGenerator() {
+      const x = Math.random() * (width - 72 - (isPlanet ? 28 : 0)) + 36;
+      const y = Math.random() * (height - 72 - (isPlanet ? 28 : 0)) + 36;
+      return { x, y };
+    }
+
     let x = starPosGenerator().x;
     let y = starPosGenerator().y;
 
     // check star distance from each other and from moon
     function hasCollision(x: number, y: number) {
       // Check collision with moon
-      let isPlanet = i <= numberOfPlanets;
 
       let moonDistance = Math.sqrt(
         Math.pow((isPlanet ? x + 14 : x) - (moonPosX + 41), 2) +
           Math.pow((isPlanet ? y + 14 : y) - (moonPosY + 41), 2),
       );
       if (moonDistance < 60) {
+        console.log("moon collision!");
+
         return true;
       }
 
@@ -82,6 +86,8 @@ export const PublishIllustration = () => {
             Math.pow(y - (isPlanet ? star.y + 14 : star.y), 2),
         );
         if (starDistance < 40) {
+          console.log("star collision!");
+
           return true;
         }
       }
@@ -174,109 +180,59 @@ export const PublishIllustration = () => {
       console.log("planetcount : " + JSON.stringify(planetCounter));
     }
   }
-
+  // animate the last child
+  // show svg animation for 1 second, hide the animation, scale the star in bezier curve to right size
   return (
     <div
-      className={`relative bg-accent-1 flex place-items-center `}
+      className={`relative flex place-items-center `}
       style={{ width: width, height: height }}
     >
-      <Moon
-        x={moonPosX}
-        y={moonPosY}
-        accent1={theme.colors["accent-1"]}
-        accent2={theme.colors["accent-2"]}
-      />
-      {stars.map((star, index) =>
-        star.type === "S1" ? (
-          <Star1
+      <div className="absolute">
+        <Sky accent1={theme.colors["accent-1"]} />
+      </div>
+      <div
+        className="absolute"
+        style={{ top: `${moonPosY}px`, left: `${moonPosX}px` }}
+      >
+        <Moon
+          accent1={theme.colors["accent-1"]}
+          accent2={theme.colors["accent-2"]}
+        />
+      </div>
+      {stars.map((star, index) => {
+        let lastChild = index + 1 === stars.length;
+        return (
+          <div
             key={index}
-            x={star.x}
-            y={star.y}
-            rot={star.rot}
-            accent2={theme.colors["accent-2"]}
-          />
-        ) : star.type === "S2" ? (
-          <Star2
-            key={index}
-            x={star.x}
-            y={star.y}
-            rot={star.rot}
-            accent2={theme.colors["accent-2"]}
-          />
-        ) : star.type === "S3" ? (
-          <Star3
-            key={index}
-            x={star.x}
-            y={star.y}
-            rot={star.rot}
-            accent2={theme.colors["accent-2"]}
-          />
-        ) : star.type === "BS1" ? (
-          <BigStar1
-            key={index}
-            x={star.x}
-            y={star.y}
-            rot={star.rot}
-            accent2={theme.colors["accent-2"]}
-          />
-        ) : star.type === "BS2" ? (
-          <BigStar2
-            key={index}
-            x={star.x}
-            y={star.y}
-            rot={star.rot}
-            accent2={theme.colors["accent-2"]}
-          />
-        ) : star.type === "BS3" ? (
-          <BigStar3
-            key={index}
-            x={star.x}
-            y={star.y}
-            rot={star.rot}
-            accent2={theme.colors["accent-2"]}
-          />
-        ) : star.type === "BS4" ? (
-          <BigStar4
-            key={index}
-            x={star.x}
-            y={star.y}
-            rot={star.rot}
-            accent2={theme.colors["accent-2"]}
-          />
-        ) : star.type === "P1" ? (
-          <Planet1
-            key={index}
-            x={star.x}
-            y={star.y}
-            rot={star.rot}
-            accent2={theme.colors["accent-2"]}
-          />
-        ) : star.type === "P2" ? (
-          <Planet2
-            key={index}
-            x={star.x}
-            y={star.y}
-            rot={star.rot}
-            accent2={theme.colors["accent-2"]}
-          />
-        ) : star.type === "P3" ? (
-          <Planet3
-            key={index}
-            x={star.x}
-            y={star.y}
-            rot={star.rot}
-            accent2={theme.colors["accent-2"]}
-          />
-        ) : star.type === "P4" ? (
-          <Planet4
-            key={index}
-            x={star.x}
-            y={star.y}
-            rot={star.rot}
-            accent2={theme.colors["accent-2"]}
-          />
-        ) : null,
-      )}
+            className={`absolute ${lastChild ? "new-star" : ""}`}
+            style={{ top: `${star.y}px`, left: `${star.x}px` }}
+          >
+            {star.type === "S1" ? (
+              <Star1 rot={star.rot} accent2={theme.colors["accent-2"]} />
+            ) : star.type === "S2" ? (
+              <Star2 rot={star.rot} accent2={theme.colors["accent-2"]} />
+            ) : star.type === "S3" ? (
+              <Star3 rot={star.rot} accent2={theme.colors["accent-2"]} />
+            ) : star.type === "BS1" ? (
+              <BigStar1 rot={star.rot} accent2={theme.colors["accent-2"]} />
+            ) : star.type === "BS2" ? (
+              <BigStar2 rot={star.rot} accent2={theme.colors["accent-2"]} />
+            ) : star.type === "BS3" ? (
+              <BigStar3 rot={star.rot} accent2={theme.colors["accent-2"]} />
+            ) : star.type === "BS4" ? (
+              <BigStar4 rot={star.rot} accent2={theme.colors["accent-2"]} />
+            ) : star.type === "P1" ? (
+              <Planet1 rot={star.rot} accent2={theme.colors["accent-2"]} />
+            ) : star.type === "P2" ? (
+              <Planet2 rot={star.rot} accent2={theme.colors["accent-2"]} />
+            ) : star.type === "P3" ? (
+              <Planet3 rot={star.rot} accent2={theme.colors["accent-2"]} />
+            ) : star.type === "P4" ? (
+              <Planet4 rot={star.rot} accent2={theme.colors["accent-2"]} />
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 };
