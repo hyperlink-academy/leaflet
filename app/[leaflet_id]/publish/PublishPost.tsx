@@ -21,6 +21,7 @@ type Props = {
   description: string;
   publication_uri: string;
   record?: PubLeafletPublication.Record;
+  posts_in_pub?: number;
 };
 
 export function PublishPost(props: Props) {
@@ -36,6 +37,7 @@ export function PublishPost(props: Props) {
           record={props.record}
           publication_uri={props.publication_uri}
           post_url={publishState.post_url}
+          posts_in_pub={props.posts_in_pub || 0}
         />
       )}
     </div>
@@ -186,11 +188,12 @@ const PublishPostSuccess = (props: {
   post_url: string;
   publication_uri: string;
   record: Props["record"];
+  posts_in_pub: number;
 }) => {
   let uri = new AtUri(props.publication_uri);
   return (
     <div className="container p-4 m-3 sm:m-4 flex flex-col gap-1 justify-center text-center w-fit h-fit mx-auto">
-      <PublishIllustration />
+      <PublishIllustration posts_in_pub={props.posts_in_pub} />
       <h2 className="pt-2">Published!</h2>
       <Link
         className="hover:!no-underline font-bold place-self-center pt-2"

@@ -14,6 +14,8 @@ import {
   Star2,
   Star3,
 } from "./Stars";
+import { usePublicationData } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 
 // TODO
 // animate last start coming in (little star gets a tiny sunburst around it maybe?)
@@ -39,11 +41,13 @@ type starType = {
   rot: number;
 };
 
-export const PublishIllustration = () => {
+export const PublishIllustration = (props: { posts_in_pub: number }) => {
+  let { data: publication } = useLeafletPublicationData();
+
   let width = 320;
   let height = 256;
 
-  let totalPosts = 27;
+  let totalPosts = props.posts_in_pub;
   let numberOfStars = totalPosts % 10;
   let numberOfPlanets = Math.floor(totalPosts / 10);
 
