@@ -3,12 +3,11 @@ import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { CopyTiny } from "components/Icons/CopyTiny";
 import { Separator } from "components/Layout";
 import { useSmoker } from "components/Toast";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useInteractionState } from "./Interactions/Interactions";
+import { encodeQuotePosition, QUOTE_PARAM } from "./useHighlight";
 
 export function QuoteHandler() {
-  let { drawerOpen: open } = useInteractionState();
-
   let [selectionText, setSelectionText] = useState<string | undefined>(
     undefined,
   );
@@ -18,9 +17,22 @@ export function QuoteHandler() {
   >(null);
 
   useEffect(() => {
-    const selection = window.getSelection();
+    const handleSelectionChange = (e: Event) => {
+      const selection = document.getSelection();
+      const postContent = document.getElementById("post-content");
+      const isWithinPostContent =
+        postContent && selection?.rangeCount && selection.rangeCount > 0
+          ? postContent.contains(
+              selection.getRangeAt(0).commonAncestorContainer,
+            )
+          : false;
 
-    const handleMouseUp = (e: MouseEvent) => {
+      if (!selection || !isWithinPostContent) {
+        setFocusRect(null);
+        setSelectionDir(null);
+        setSelectionText(undefined);
+        return;
+      }
       const focusNode = selection?.focusNode;
       const focusOffset = selection?.focusOffset;
       const selectionText = selection?.toString();
@@ -37,7 +49,7 @@ export function QuoteHandler() {
         focusRect = range.getBoundingClientRect();
         setFocusRect(focusRect);
       } else if (focusNode?.nodeType === Node.ELEMENT_NODE) {
-        focusRect = (e?.target as HTMLElement).getBoundingClientRect();
+        focusRect = (e?.target as HTMLElement)?.getBoundingClientRect();
         setFocusRect(focusRect);
       }
 
@@ -53,46 +65,69 @@ export function QuoteHandler() {
         );
     };
 
-    const handleMouseDown = (e: MouseEvent) => {
-      let quoteTrigger = document.getElementById("quote-trigger");
-      if (quoteTrigger && quoteTrigger.contains(e.target as Node)) {
-        return;
-      }
-
-      setFocusRect(null);
-      setSelectionDir(null);
-      setSelectionText(undefined);
-    };
-
-    document.addEventListener("mouseup", handleMouseUp);
-    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("selectionchange", handleSelectionChange);
     return () => {
-      document.removeEventListener("mouseup", handleMouseUp);
-      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("selectionchange", handleSelectionChange);
     };
   }, []);
+  let smoker = useSmoker();
 
-  // getting distance of element from top of scrollheight
-  let screenScroll =
-    window.document.getElementById("post-page")?.scrollTop || 0;
-  let selectionTop = focusRect && focusRect.top + screenScroll;
-  let selectionBottom = focusRect && focusRect.bottom + screenScroll;
+  // Memoize calculations to avoid server-side rendering issues
+  const {
+    selectionTop,
+    selectionBottom,
+    parentLeft,
+    parentRight,
+    selectionRight,
+    leftBumper,
+    rightBumper,
+  } = useMemo(() => {
+    if (typeof window === "undefined" || !focusRect) {
+      return {
+        screenScroll: 0,
+        selectionTop: null,
+        selectionBottom: null,
+        parentLeft: 0,
+        screenRight: 0,
+        parentRight: 0,
+        selectionRight: null,
+        width: 273,
+        leftBumper: false,
+        rightBumper: false,
+      };
+    }
 
-  let parent = document.getElementById("post-content")?.getBoundingClientRect();
-  let parentLeft = parent?.left || 0;
+    const screenScroll =
+      window.document.getElementById("post-page")?.scrollTop || 0;
+    const selectionTop = focusRect.top + screenScroll;
+    const selectionBottom = focusRect.bottom + screenScroll;
 
-  // getting distance of right side of element from the right edge of screen
-  let screenRight =
-    window.document.getElementById("post-page")?.getBoundingClientRect()
-      .right || 0;
-  let parentRight = (parent && screenRight - parent.right) || 0;
-  let selectionRight = focusRect && screenRight - focusRect?.right;
+    const parent = document
+      .getElementById("post-content")
+      ?.getBoundingClientRect();
+    const parentLeft = parent?.left || 0;
 
-  let width = 273;
+    const screenRight =
+      window.document.getElementById("post-page")?.getBoundingClientRect()
+        .right || 0;
+    const parentRight = (parent && screenRight - parent.right) || 0;
+    const selectionRight = screenRight - focusRect.right;
 
-  // check to see if there is enough space to the left and right of the button so it doesn't spill over the boundry
-  let leftBumper = focusRect && focusRect.left - parentLeft < width;
-  let rightBumper = selectionRight && selectionRight - parentRight < width;
+    const width = 273;
+
+    const leftBumper = focusRect.left - parentLeft < width;
+    const rightBumper = selectionRight - parentRight < width;
+
+    return {
+      selectionTop,
+      selectionBottom,
+      parentLeft,
+      parentRight,
+      selectionRight,
+      leftBumper,
+      rightBumper,
+    };
+  }, [focusRect]);
 
   if (selectionText && selectionText !== "") {
     return (
@@ -131,6 +166,27 @@ export function QuoteHandler() {
 
 export const QuoteOptionButtons = () => {
   let smoker = useSmoker();
+  const getURL = () => {
+    let selection = document.getSelection()?.getRangeAt(0);
+    if (!selection) return;
+    let startIndex = findDataIndex(selection.startContainer);
+    let startOffset = selection.startOffset;
+    let endIndex = findDataIndex(selection.endContainer);
+    let endOffset = selection.endOffset;
+    if (!startIndex || !endIndex) return;
+    console.log(startIndex, endIndex);
+    let quotePosition = encodeQuotePosition({
+      start: {
+        block: startIndex.split(".").map(parseInt),
+        offset: startOffset,
+      },
+      end: { block: endIndex.split(".").map(parseInt), offset: endOffset },
+    });
+    let currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set(QUOTE_PARAM, quotePosition);
+    currentUrl.hash = `#${startIndex}`;
+    return currentUrl.toString();
+  };
 
   return (
     <>
@@ -138,7 +194,15 @@ export const QuoteOptionButtons = () => {
 
       <button
         className="flex gap-1 items-center hover:font-bold"
-        onClick={() => highlightContent()}
+        role="link"
+        onClick={() => {
+          let url = getURL();
+          if (!url) return;
+          window.open(
+            `https://bsky.app/intent/compose?text=${encodeURIComponent(url.toString())}`,
+            "_blank",
+          );
+        }}
       >
         <BlueskyLinkTiny className="shrink-0" />
         Bluesky
@@ -151,6 +215,10 @@ export const QuoteOptionButtons = () => {
           let rect = document
             .getElementById("copy-quote-link")
             ?.getBoundingClientRect();
+          let url = getURL();
+          if (!url) return;
+          navigator.clipboard.writeText(url.toString());
+
           smoker({
             text: <strong>Copied Link</strong>,
             position: {
@@ -167,13 +235,27 @@ export const QuoteOptionButtons = () => {
   );
 };
 
-function highlightContent() {
-  const selection = window.getSelection();
+function findDataIndex(node: Node): string | null {
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    const element = node as Element;
+    if (element.hasAttribute("data-index")) {
+      return element.getAttribute("data-index");
+    }
+  }
 
+  if (node.parentNode) {
+    return findDataIndex(node.parentNode);
+  }
+
+  return null;
+}
+
+function highlightContent() {
   let span = document.createElement("span");
   span.classList.add("highlight", "rounded-md", "scroll-my-6");
   span.style.backgroundColor = "rgba(var(--accent-contrast), .15)";
   span.onclick = () => {};
+  const selection = document.getSelection();
   selection?.getRangeAt(0).surroundContents(span);
   useInteractionState.setState({ drawerOpen: true });
 }

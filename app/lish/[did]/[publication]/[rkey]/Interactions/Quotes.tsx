@@ -47,9 +47,9 @@ export const Quotes = () => {
         </div>
       ) : (
         <div className="quotes flex flex-col gap-12">
-          {quotes.map((q) => {
+          {quotes.map((q, index) => {
             return (
-              <div className="quoteSection flex flex-col gap-2">
+              <div className="quoteSection flex flex-col gap-2" key={index}>
                 <button
                   className="quoteSectionQuote text-secondary text-sm italic text-left pb-1 x "
                   onClick={(e) => {

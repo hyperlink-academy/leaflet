@@ -2,14 +2,37 @@
 import { UnicodeString } from "@atproto/api";
 import { PubLeafletRichtextFacet } from "lexicons/api";
 import { useMemo } from "react";
+import { useHighlight } from "./useHighlight";
 
 type Facet = PubLeafletRichtextFacet.Main;
-export function TextBlock(props: { plaintext: string; facets?: Facet[] }) {
-  const children = [];
-  let richText = useMemo(
-    () => new RichText({ text: props.plaintext, facets: props.facets || [] }),
-    [props.plaintext, props.facets],
-  );
+export function TextBlock(props: {
+  plaintext: string;
+  facets?: Facet[];
+  index: number[];
+}) {
+  let children = [];
+  let highlight = useHighlight(props.index);
+  let richText = useMemo(() => {
+    let facets = props.facets || [];
+    if (props.index[0] === 0) console.log("highlight", highlight);
+    if (highlight) {
+      facets.push({
+        $type: "pub.leaflet.richtext.facet",
+        index: {
+          byteStart: highlight.startOffset
+            ? new UnicodeString(props.plaintext.slice(0, highlight.startOffset))
+                .length
+            : 0,
+          byteEnd: new UnicodeString(
+            props.plaintext.slice(0, highlight.endOffset || undefined),
+          ).length,
+        },
+        features: [{ $type: "pub.leaflet.richtext.facet#highlight" }],
+      });
+    }
+    console.log(props.facets);
+    return new RichText({ text: props.plaintext, facets: props.facets || [] });
+  }, [props.plaintext, props.facets, highlight]);
   let counter = 0;
   for (const segment of richText.segments()) {
     let link = segment.facet?.find(PubLeafletRichtextFacet.isLink);

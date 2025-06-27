@@ -9,6 +9,7 @@ import {
   PubLeafletGraphSubscription,
   PubLeafletPublication,
 } from "lexicons/api";
+import { AppBskyFeedPost } from "@atproto/api";
 import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 import { createIdentity } from "actions/createIdentity";
@@ -48,6 +49,7 @@ async function main() {
       ids.PubLeafletPublication,
       ids.PubLeafletGraphSubscription,
       ids.AppBskyActorProfile,
+      "app.bsky.feed.post",
     ],
     handleEvent: async (evt) => {
       if (evt.event === "identity") {
@@ -157,6 +159,11 @@ async function main() {
             .update({ record: evt.record as Json })
             .eq("did", evt.did);
         }
+      }
+      if (evt.collection === "app.bsky.feed.post") {
+        if (evt.event !== "create") return;
+        let record = AppBskyFeedPost.validateRecord(evt.record);
+        if (!record.success) return;
       }
     },
     onError: (err) => {
