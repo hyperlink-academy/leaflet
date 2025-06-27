@@ -132,6 +132,20 @@ export default async function Post(props: {
                   </p>
                 </>
               ) : null}
+              {identity &&
+                identity.atp_did ===
+                  document.documents_in_publications[0]?.publications
+                    .identity_did && (
+                  <>
+                    {" "}
+                    |
+                    <a
+                      href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
+                    >
+                      Edit Post
+                    </a>
+                  </>
+                )}
             </div>
           </div>
           <PostContent blocks={blocks} did={did} />
@@ -142,7 +156,7 @@ export default async function Post(props: {
             <a
               href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
             >
-              edit post
+              Edit Post
             </a>
           ) : (
             <SubscribeWithBluesky
