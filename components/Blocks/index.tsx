@@ -27,6 +27,7 @@ export function Blocks(props: { entityID: string }) {
         : focusedElement?.parent;
     return focusedPageID === props.entityID;
   });
+  let { permissions } = useEntitySetContext();
   let entity_set = useEntitySetContext();
   let blocks = useBlocks(props.entityID);
   let foldedBlocks = useUIState((s) => s.foldedBlocks);
@@ -95,6 +96,7 @@ export function Blocks(props: { entityID: string }) {
     <div
       className={`blocks w-full flex flex-col outline-none h-fit min-h-full`}
       onClick={async (e) => {
+        if (!permissions.write) return;
         if (useUIState.getState().selectedBlocks.length > 1) return;
         if (e.target === e.currentTarget) {
           if (
