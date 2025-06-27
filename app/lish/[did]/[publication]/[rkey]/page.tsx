@@ -12,6 +12,7 @@ import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { BskyAgent } from "@atproto/api";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
 import { PostContent } from "./PostContent";
+import { getIdentityData } from "actions/getIdentityData";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -55,11 +56,12 @@ export default async function Post(props: {
       </div>
     );
   let agent = new BskyAgent({ service: "https://public.api.bsky.app" });
+  let identity = await getIdentityData();
   let [{ data: document }, { data: profile }] = await Promise.all([
     supabaseServerClient
       .from("documents")
       .select(
-        "*, documents_in_publications(publications(*, publication_subscriptions(*)))",
+        "*, leaflets_in_publications(*), documents_in_publications(publications(*, publication_subscriptions(*)))",
       )
       .eq(
         "uri",
@@ -134,15 +136,25 @@ export default async function Post(props: {
           </div>
           <PostContent blocks={blocks} did={did} />
           <hr className="border-border-light mb-4 mt-2" />
-          <SubscribeWithBluesky
-            isPost
-            pub_uri={document.documents_in_publications[0].publications.uri}
-            subscribers={
-              document.documents_in_publications[0].publications
-                .publication_subscriptions
-            }
-            pubName={decodeURIComponent((await props.params).publication)}
-          />
+          {identity &&
+          identity.atp_did ===
+            document.documents_in_publications[0]?.publications.identity_did ? (
+            <a
+              href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
+            >
+              edit post
+            </a>
+          ) : (
+            <SubscribeWithBluesky
+              isPost
+              pub_uri={document.documents_in_publications[0].publications.uri}
+              subscribers={
+                document.documents_in_publications[0].publications
+                  .publication_subscriptions
+              }
+              pubName={decodeURIComponent((await props.params).publication)}
+            />
+          )}
         </div>
       </div>
     </ThemeProvider>
