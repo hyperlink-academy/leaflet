@@ -475,8 +475,7 @@ const createBlockFromHTML = (
         },
       });
     }
-    if (last && !hasChildren) {
-      if (block?.editor.selection.from !== undefined) return;
+    if (last && !hasChildren && !first) {
       focusBlock(
         {
           value: entityID,
