@@ -7,9 +7,12 @@ import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { Replicache } from "replicache";
 import { LockBlockButton } from "./LockBlockButton";
 import { Props } from "components/Icons/Props";
+import { TextAlignmentButton } from "./TextAlignmentToolbar";
 
 export const MultiselectToolbar = (props: {
-  setToolbarState: (state: "areYouSure" | "multiselect") => void;
+  setToolbarState: (
+    state: "areYouSure" | "multiselect" | "text-alignment",
+  ) => void;
 }) => {
   const { rep } = useReplicache();
   const smoker = useSmoker();
@@ -42,8 +45,8 @@ export const MultiselectToolbar = (props: {
         >
           <CopySmall />
         </ToolbarButton>
+        <TextAlignmentButton setToolbarState={props.setToolbarState} />
         <LockBlockButton />
-        {/* Add more multi-select toolbar buttons here */}
       </div>
     </div>
   );

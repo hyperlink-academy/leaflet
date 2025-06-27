@@ -9,12 +9,15 @@ export function TextAlignmentToolbar() {
   let { rep } = useReplicache();
   let setAlignment = useCallback(
     (alignment: "right" | "center" | "left") => {
+      let blocks = useUIState.getState().selectedBlocks;
       if (focusedBlock?.entityType === "page" || !focusedBlock) return null;
-      rep?.mutate.assertFact({
-        entity: focusedBlock?.entityID,
-        attribute: "block/text-alignment",
-        data: { type: "text-alignment-type-union", value: alignment },
-      });
+      rep?.mutate.assertFact(
+        blocks.map((b) => ({
+          entity: b.value,
+          attribute: "block/text-alignment",
+          data: { type: "text-alignment-type-union", value: alignment },
+        })),
+      );
     },
     [focusedBlock, rep],
   );

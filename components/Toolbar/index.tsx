@@ -73,7 +73,10 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
   }, [blockType]);
 
   useEffect(() => {
-    if (selectedBlocks.length > 1 && toolbarState !== "areYouSure") {
+    if (
+      selectedBlocks.length > 1 &&
+      !["areYousure", "text-alignment"].includes(toolbarState)
+    ) {
       setToolbarState("multiselect");
     } else if (toolbarState === "multiselect") {
       setToolbarState("default");
