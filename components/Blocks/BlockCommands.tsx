@@ -28,6 +28,7 @@ import {
 } from "components/Icons/BlockTextSmall";
 import { LinkSmall } from "components/Icons/LinkSmall";
 import { BlockRSVPSmall } from "components/Icons/BlockRSVPSmall";
+import { ListUnorderedSmall } from "components/Toolbar/ListToolbar";
 
 type Props = {
   parent: string;
@@ -139,6 +140,20 @@ export const blockCommands: Command[] = [
     type: "text",
     onSelect: async (rep, props, um) => {
       await setHeaderCommand(3, rep, props);
+    },
+  },
+  {
+    name: "List",
+    icon: <ListUnorderedSmall />,
+    type: "text",
+    onSelect: async (rep, props, um) => {
+      let entity = await createBlockWithType(rep, props, "text");
+      await rep?.mutate.assertFact({
+        entity,
+        attribute: "block/is-list",
+        data: { value: true, type: "boolean" },
+      });
+      clearCommandSearchText(entity);
     },
   },
 
