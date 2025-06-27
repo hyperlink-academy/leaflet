@@ -49,6 +49,7 @@ export default async function LeafletPage(props: Props) {
       publication_uri={pub.publication}
       description={pub.description}
       record={pub.publications?.record as PubLeafletPublication.Record}
+      posts_in_pub={pub.publications?.documents_in_publications[0].count}
     />
   );
 }

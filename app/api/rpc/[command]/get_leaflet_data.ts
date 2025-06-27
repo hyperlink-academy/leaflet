@@ -17,7 +17,7 @@ export const get_leaflet_data = makeRoute({
         `*,
         permission_token_rights(*),
         custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*),
-        leaflets_in_publications(*, publications(*), documents(*)) `,
+        leaflets_in_publications(*, publications(*, documents_in_publications(count)), documents(*)) `,
       )
       .eq("id", token_id)
       .single();
