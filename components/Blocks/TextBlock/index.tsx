@@ -249,7 +249,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
               .nodeAt(_pos - 1)
               ?.marks.find((f) => f.type === schema.marks.link) ||
             node
-              .nodeAt(Math.min(_pos - 2, 0))
+              .nodeAt(Math.max(_pos - 2, 0))
               ?.marks.find((f) => f.type === schema.marks.link);
           if (mark) {
             window.open(mark.attrs.href, "_blank");
