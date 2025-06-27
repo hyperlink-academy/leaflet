@@ -17,6 +17,7 @@ import {
   getPublicationURL,
 } from "app/lish/createPub/getPublicationURL";
 import { useSubscribe } from "src/replicache/useSubscribe";
+import { useEntitySetContext } from "components/EntitySetProvider";
 export const PublicationMetadata = ({
   cardBorderHidden,
 }: {
@@ -28,6 +29,7 @@ export const PublicationMetadata = ({
   let description = useSubscribe(rep, (tx) =>
     tx.get<string>("publication_description"),
   );
+  let { permissions } = useEntitySetContext();
 
   let record = pub?.documents?.data as PubLeafletDocument.Record | null;
   let publishedAt = record?.publishedAt;
@@ -56,6 +58,7 @@ export const PublicationMetadata = ({
         </div>
       </div>
       <AsyncValueAutosizeTextarea
+        disabled={!permissions.write}
         className="text-xl font-bold outline-none bg-transparent"
         value={title}
         onChange={async (e) => {
@@ -67,6 +70,7 @@ export const PublicationMetadata = ({
         placeholder="Untitled"
       />
       <AsyncValueAutosizeTextarea
+        disabled={!permissions.write}
         placeholder="add an optional description..."
         className="italic text-secondary outline-none bg-transparent"
         value={description}
