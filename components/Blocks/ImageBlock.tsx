@@ -9,13 +9,14 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
 import { addImage, localImages } from "src/utils/addImage";
 import { elementId } from "src/utils/elementId";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { Popover } from "components/Popover";
 import { ImageAltSmall } from "components/Toolbar/ImageToolbar";
 import { theme } from "tailwind.config";
 import { EditTiny } from "components/Icons/EditTiny";
 import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
+import { set } from "colorjs.io/fn";
 
 export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let { rep } = useReplicache();
@@ -158,42 +159,55 @@ export const FullBleedSelectionIndicator = () => {
   );
 };
 
+export const ImageBlockContext = createContext({
+  altEditorOpen: false,
+  setAltEditorOpen: (s: boolean) => {},
+});
+
 const ImageAlt = (props: { entityID: string }) => {
   let { rep } = useReplicache();
   let altText = useEntity(props.entityID, "image/alt")?.data.value;
   let entity_set = useEntitySetContext();
 
+  let [editorOpen, setEditorOpen] = useState(false);
+
   if (!entity_set.permissions.write && altText === "") return null;
   return (
-    <div className="absolute bottom-0 right-2 h-max">
-      <Popover
-        className="text-sm max-w-xs  min-w-0"
-        side="left"
-        trigger={<ImageAltSmall fillColor={theme.colors["bg-page"]} />}
-      >
-        {entity_set.permissions.write ? (
-          <AsyncValueAutosizeTextarea
-            className="text-sm text-secondary outline-none bg-transparent min-w-0"
-            value={altText}
-            onFocus={(e) => {
-              e.currentTarget.setSelectionRange(
-                e.currentTarget.value.length,
-                e.currentTarget.value.length,
-              );
-            }}
-            onChange={async (e) => {
-              await rep?.mutate.assertFact({
-                entity: props.entityID,
-                attribute: "image/alt",
-                data: { type: "string", value: e.currentTarget.value },
-              });
-            }}
-            placeholder="add alt text..."
-          />
-        ) : (
-          <div className="text-sm text-secondary w-max"> {altText}</div>
-        )}
-      </Popover>
-    </div>
+    <ImageBlockContext.Provider
+      value={{ altEditorOpen: editorOpen, setAltEditorOpen: setEditorOpen }}
+    >
+      <div className="absolute bottom-0 right-2 h-max">
+        <Popover
+          open={editorOpen}
+          onOpenChange={() => setEditorOpen(!editorOpen)}
+          className="text-sm max-w-xs  min-w-0"
+          side="left"
+          trigger={<ImageAltSmall fillColor={theme.colors["bg-page"]} />}
+        >
+          {entity_set.permissions.write ? (
+            <AsyncValueAutosizeTextarea
+              className="text-sm text-secondary outline-none bg-transparent min-w-0"
+              value={altText}
+              onFocus={(e) => {
+                e.currentTarget.setSelectionRange(
+                  e.currentTarget.value.length,
+                  e.currentTarget.value.length,
+                );
+              }}
+              onChange={async (e) => {
+                await rep?.mutate.assertFact({
+                  entity: props.entityID,
+                  attribute: "image/alt",
+                  data: { type: "string", value: e.currentTarget.value },
+                });
+              }}
+              placeholder="add alt text..."
+            />
+          ) : (
+            <div className="text-sm text-secondary w-max"> {altText}</div>
+          )}
+        </Popover>
+      </div>
+    </ImageBlockContext.Provider>
   );
 };

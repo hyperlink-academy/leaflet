@@ -2,6 +2,9 @@ import { ToolbarButton } from ".";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { Props } from "components/Icons/Props";
+import { useContext, useEffect } from "react";
+import { ImageBlockContext } from "components/Blocks/ImageBlock";
+import { set } from "colorjs.io/fn";
 
 export const ImageFullBleedButton = (props: {}) => {
   let { rep } = useReplicache();
@@ -36,6 +39,16 @@ export const ImageAltTextButton = (props: {
   let focusedBlock = useUIState((s) => s.focusedEntity)?.entityID || null;
 
   let altText = useEntity(focusedBlock, "image/alt")?.data.value;
+  let { setAltEditorOpen } = useContext(ImageBlockContext);
+  useEffect(() => {
+    if (altText !== undefined) {
+      setAltEditorOpen(true);
+    } else {
+      setAltEditorOpen(false);
+    }
+    console.log("done!");
+  }, [altText]);
+
   return (
     <ToolbarButton
       active={altText !== undefined}
@@ -48,7 +61,6 @@ export const ImageAltTextButton = (props: {
             attribute: "image/alt",
             data: { type: "string", value: "" },
           }));
-          // open the alt editor
         focusedBlock &&
           altText !== undefined &&
           (await rep?.mutate.retractAttribute({
