@@ -161,7 +161,9 @@ export const FullBleedSelectionIndicator = () => {
 const ImageAlt = (props: { entityID: string }) => {
   let { rep } = useReplicache();
   let altText = useEntity(props.entityID, "image/alt")?.data.value;
+  let entity_set = useEntitySetContext();
 
+  if (!entity_set.permissions.write && altText === "") return null;
   return (
     <div className="absolute bottom-0 right-2 h-max">
       <Popover
@@ -169,24 +171,28 @@ const ImageAlt = (props: { entityID: string }) => {
         side="left"
         trigger={<ImageAltSmall fillColor={theme.colors["bg-page"]} />}
       >
-        <AsyncValueAutosizeTextarea
-          className="text-sm outline-none bg-transparent min-w-0"
-          value={altText}
-          onFocus={(e) => {
-            e.currentTarget.setSelectionRange(
-              e.currentTarget.value.length,
-              e.currentTarget.value.length,
-            );
-          }}
-          onChange={async (e) => {
-            await rep?.mutate.assertFact({
-              entity: props.entityID,
-              attribute: "image/alt",
-              data: { type: "string", value: e.currentTarget.value },
-            });
-          }}
-          placeholder="add alt text..."
-        />
+        {entity_set.permissions.write ? (
+          <AsyncValueAutosizeTextarea
+            className="text-sm text-secondary outline-none bg-transparent min-w-0"
+            value={altText}
+            onFocus={(e) => {
+              e.currentTarget.setSelectionRange(
+                e.currentTarget.value.length,
+                e.currentTarget.value.length,
+              );
+            }}
+            onChange={async (e) => {
+              await rep?.mutate.assertFact({
+                entity: props.entityID,
+                attribute: "image/alt",
+                data: { type: "string", value: e.currentTarget.value },
+              });
+            }}
+            placeholder="add alt text..."
+          />
+        ) : (
+          <div className="text-sm text-secondary w-max"> {altText}</div>
+        )}
       </Popover>
     </div>
   );

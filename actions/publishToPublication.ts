@@ -259,7 +259,7 @@ function blockToRecord(
         height: image.data.height,
         width: image.data.width,
       },
-      alt: altText.data.value,
+      alt: altText ? altText.data.value : undefined,
     };
     return block;
   }
