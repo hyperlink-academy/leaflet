@@ -153,6 +153,10 @@ const ImageBlockAttributes = {
     type: "boolean",
     cardinality: "one",
   },
+  "image/alt": {
+    type: "string",
+    cardinality: "one",
+  },
 } as const;
 
 const PollBlockAttributes = {

@@ -6,11 +6,13 @@ import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { useUIState } from "src/useUIState";
 import { LockBlockButton } from "./LockBlockButton";
 import { TextAlignmentButton } from "./TextAlignmentToolbar";
-import { ImageFullBleedButton } from "./ImageToolbar";
+import { ImageFullBleedButton, ImageAltTextButton } from "./ImageToolbar";
 import { DeleteSmall } from "components/Icons/DeleteSmall";
 
 export const BlockToolbar = (props: {
-  setToolbarState: (state: "areYouSure" | "block" | "text-alignment") => void;
+  setToolbarState: (
+    state: "areYouSure" | "block" | "text-alignment" | "img-alt-text",
+  ) => void;
 }) => {
   let focusedEntity = useUIState((s) => s.focusedEntity);
   let focusedEntityType = useEntity(
@@ -41,6 +43,7 @@ export const BlockToolbar = (props: {
           <>
             <TextAlignmentButton setToolbarState={props.setToolbarState} />
             <ImageFullBleedButton />
+            <ImageAltTextButton setToolbarState={props.setToolbarState} />
             {focusedEntityType?.data.value !== "canvas" && (
               <Separator classname="h-6" />
             )}
