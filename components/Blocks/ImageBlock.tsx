@@ -169,17 +169,20 @@ const ImageAlt = (props: { entityID: string }) => {
   let altText = useEntity(props.entityID, "image/alt")?.data.value;
   let entity_set = useEntitySetContext();
 
-  let [editorOpen, setEditorOpen] = useState(false);
+  let [altEditorOpen, setAltEditorOpen] = useState(false);
 
   if (!entity_set.permissions.write && altText === "") return null;
   return (
     <ImageBlockContext.Provider
-      value={{ altEditorOpen: editorOpen, setAltEditorOpen: setEditorOpen }}
+      value={{
+        altEditorOpen: altEditorOpen,
+        setAltEditorOpen: setAltEditorOpen,
+      }}
     >
       <div className="absolute bottom-0 right-2 h-max">
         <Popover
-          open={editorOpen}
-          onOpenChange={() => setEditorOpen(!editorOpen)}
+          open={altEditorOpen}
+          onOpenChange={() => setAltEditorOpen(!altEditorOpen)}
           className="text-sm max-w-xs  min-w-0"
           side="left"
           trigger={<ImageAltSmall fillColor={theme.colors["bg-page"]} />}

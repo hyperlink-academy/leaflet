@@ -39,14 +39,18 @@ export const ImageAltTextButton = (props: {
   let focusedBlock = useUIState((s) => s.focusedEntity)?.entityID || null;
 
   let altText = useEntity(focusedBlock, "image/alt")?.data.value;
-  let { setAltEditorOpen } = useContext(ImageBlockContext);
+  let { altEditorOpen, setAltEditorOpen } = useContext(ImageBlockContext);
   useEffect(() => {
     if (altText !== undefined) {
       setAltEditorOpen(true);
+      // return () => {
+      //   setAltEditorOpen(false);
+      // };
+      console.log(altEditorOpen);
     } else {
       setAltEditorOpen(false);
+      console.log("close!");
     }
-    console.log("done!");
   }, [altText]);
 
   return (
