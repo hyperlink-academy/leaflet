@@ -5,11 +5,11 @@ import { NewDraftSecondaryButton } from "./NewDraftButton";
 import React, { useState } from "react";
 import { usePublicationData } from "./PublicationSWRProvider";
 import { Menu, MenuItem } from "components/Layout";
-import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { deleteDraft } from "./deleteDraft";
 import { DeleteSmall } from "components/Icons/DeleteSmall";
 import { PrimaryKey } from "drizzle-orm/sqlite-core";
 import { ButtonPrimary } from "components/Buttons";
+import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 
 export function DraftList() {
   let { data: pub_data } = usePublicationData();
@@ -53,8 +53,8 @@ function Draft(props: { id: string; title: string; description: string }) {
         align="end"
         asChild
         trigger={
-          <button className="text-secondary hover:accent-primary border border-accent-2 rounded-md h-min w-min pt-2.5">
-            <MoreOptionsTiny className="rotate-90 h-min w-min " />
+          <button className="text-secondary hover:accent-primary border border-accent-2 rounded-md h-min w-min ">
+            <MoreOptionsVerticalTiny className=" h-min w-min " />
           </button>
         }
       >

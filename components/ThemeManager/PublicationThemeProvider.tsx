@@ -10,7 +10,6 @@ import { usePublicationData } from "app/lish/[did]/[publication]/dashboard/Publi
 
 const PubThemeDefaults = {
   background: "#FDFCFA",
-  page: "#FFFFFF",
   primary: "#272727",
   accentText: "#FFFFFF",
   accentBackground: "#0000FF",
@@ -71,7 +70,6 @@ export function PublicationThemeProvider(props: {
 
 export const usePubTheme = (record?: PubLeafletPublication.Record | null) => {
   let bgLeaflet = useColor(record, "background");
-  let bgPage = useColor(record, "page");
   let primary = useColor(record, "primary");
 
   let accent1 = useColor(record, "accentBackground");
@@ -84,13 +82,17 @@ export const usePubTheme = (record?: PubLeafletPublication.Record | null) => {
   // set accent contrast to the accent color that has the highest contrast with the page background
   let accentContrast = [accent1, accent2].sort((a, b) => {
     return (
-      getColorContrast(colorToString(b, "rgb"), colorToString(bgPage, "rgb")) -
-      getColorContrast(colorToString(a, "rgb"), colorToString(bgPage, "rgb"))
+      getColorContrast(
+        colorToString(b, "rgb"),
+        colorToString(bgLeaflet, "rgb"),
+      ) -
+      getColorContrast(colorToString(a, "rgb"), colorToString(bgLeaflet, "rgb"))
     );
   })[0];
   return {
     bgLeaflet,
-    bgPage,
+    //For now we have a single color we use for both background, or if there's a background image, containers
+    bgPage: bgLeaflet,
     primary,
     accent1,
     accent2,

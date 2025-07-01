@@ -9,11 +9,11 @@ import { Fragment, useState } from "react";
 import { useParams } from "next/navigation";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { Menu, MenuItem } from "components/Layout";
-import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { deletePost } from "./deletePost";
 import { mutate } from "swr";
 import { Button } from "react-aria-components";
 import { ButtonPrimary } from "components/Buttons";
+import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 
 export function PublishedPostsList() {
   let { data: publication } = usePublicationData();
@@ -49,7 +49,7 @@ export function PublishedPostsList() {
 
           return (
             <Fragment key={doc.documents?.uri}>
-              <div className="flex  w-full ">
+              <div className="flex gap-2 w-full ">
                 <Link
                   target="_blank"
                   href={`${getPublicationURL(publication)}/${uri.rkey}`}
@@ -75,7 +75,7 @@ export function PublishedPostsList() {
                     </p>
                   ) : null}
                 </Link>
-                <div className="flex justify-start align-top flex-row">
+                <div className="flex justify-start align-top flex-row gap-1">
                   {leaflet && (
                     <Link className="pt-[6px]" href={`/${leaflet.leaflet}`}>
                       <EditTiny />
@@ -98,8 +98,8 @@ let Options = (props: { document_uri: string }) => {
       align="end"
       asChild
       trigger={
-        <button className="text-secondary hover:accent-primary border border-accent-2 rounded-md h-min w-min pt-2.5">
-          <MoreOptionsTiny className="rotate-90 h-min w-min " />
+        <button className="text-secondary hover:accent-primary border border-accent-2 rounded-md h-min w-min ">
+          <MoreOptionsVerticalTiny className=" h-min w-min " />
         </button>
       }
     >
