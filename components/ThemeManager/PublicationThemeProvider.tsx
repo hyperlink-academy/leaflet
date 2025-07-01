@@ -9,7 +9,7 @@ import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
 import { usePublicationData } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 
 const PubThemeDefaults = {
-  background: "#FDFCFA",
+  backgroundColor: "#FDFCFA",
   primary: "#272727",
   accentText: "#FFFFFF",
   accentBackground: "#0000FF",
@@ -69,7 +69,7 @@ export function PublicationThemeProvider(props: {
 }
 
 export const usePubTheme = (record?: PubLeafletPublication.Record | null) => {
-  let bgLeaflet = useColor(record, "background");
+  let bgLeaflet = useColor(record, "backgroundColor");
   let primary = useColor(record, "primary");
 
   let accent1 = useColor(record, "accentBackground");

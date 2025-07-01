@@ -24,9 +24,10 @@ export const PubLeafletPublication: LexiconDoc = {
     theme: {
       type: "object",
       properties: {
-        background: {
-          type: "union",
-          refs: [...ColorUnion.refs, PubLeafletThemeBackgroundImage.id],
+        backgroundColor: ColorUnion,
+        backgroundImage: {
+          type: "ref",
+          ref: PubLeafletThemeBackgroundImage.id,
         },
         primary: ColorUnion,
         page: ColorUnion,

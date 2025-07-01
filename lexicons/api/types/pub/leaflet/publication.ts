@@ -34,11 +34,11 @@ export function validateRecord<V>(v: V) {
 
 export interface Theme {
   $type?: 'pub.leaflet.publication#theme'
-  background?:
+  backgroundColor?:
     | $Typed<PubLeafletThemeColor.Rgba>
     | $Typed<PubLeafletThemeColor.Rgb>
-    | $Typed<PubLeafletThemeBackgroundImage.Main>
     | { $type: string }
+  backgroundImage?: PubLeafletThemeBackgroundImage.Main
   primary?:
     | $Typed<PubLeafletThemeColor.Rgba>
     | $Typed<PubLeafletThemeColor.Rgb>

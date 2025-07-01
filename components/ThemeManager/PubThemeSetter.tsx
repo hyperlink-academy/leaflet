@@ -30,14 +30,14 @@ export const PubThemeSetter = () => {
   let record = pub?.record as PubLeafletPublication.Record | undefined;
   let { theme: localPubTheme, setTheme } = useLocalPubTheme(record);
   let [image, setImage] = useState<ImageState | null>(
-    PubLeafletThemeBackgroundImage.isMain(record?.theme?.background)
+    PubLeafletThemeBackgroundImage.isMain(record?.theme?.backgroundImage)
       ? {
           src: blobRefToSrc(
-            record.theme.background.image.ref,
+            record.theme.backgroundImage.image.ref,
             pub?.identity_did!,
           ),
-          repeat: record.theme.background.repeat
-            ? record.theme.background.width || 500
+          repeat: record.theme.backgroundImage.repeat
+            ? record.theme.backgroundImage.width || 500
             : null,
         }
       : null,

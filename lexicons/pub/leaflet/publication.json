@@ -41,13 +41,16 @@
     "theme": {
       "type": "object",
       "properties": {
-        "background": {
+        "backgroundColor": {
           "type": "union",
           "refs": [
             "pub.leaflet.theme.color#rgba",
-            "pub.leaflet.theme.color#rgb",
-            "pub.leaflet.theme.backgroundImage"
+            "pub.leaflet.theme.color#rgb"
           ]
+        },
+        "backgroundImage": {
+          "type": "ref",
+          "ref": "pub.leaflet.theme.backgroundImage"
         },
         "primary": {
           "type": "union",

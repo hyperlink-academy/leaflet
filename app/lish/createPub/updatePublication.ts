@@ -142,7 +142,7 @@ export async function updatePublicationTheme({
 }: {
   uri: string;
   theme: {
-    backgroundImage?: File;
+    backgroundImage?: File | null;
     backgroundRepeat?: number | null;
     backgroundColor: Color;
     primary: Color;
@@ -172,7 +172,7 @@ export async function updatePublicationTheme({
     ...(existingPub.record as PubLeafletPublication.Record),
     $type: "pub.leaflet.publication",
     theme: {
-      background: theme.backgroundImage
+      backgroundImage: theme.backgroundImage
         ? {
             $type: "pub.leaflet.theme.backgroundImage",
             image: (
@@ -184,10 +184,13 @@ export async function updatePublicationTheme({
             width: theme.backgroundRepeat || undefined,
             repeat: !!theme.backgroundRepeat,
           }
-        : {
+        : undefined,
+      backgroundColor: theme.backgroundColor
+        ? {
             $type: "pub.leaflet.theme.color#rgb",
             ...theme.backgroundColor,
-          },
+          }
+        : undefined,
       primary: {
         $type: "pub.leaflet.theme.color#rgb",
         ...theme.primary,

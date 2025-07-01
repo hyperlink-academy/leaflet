@@ -101,13 +101,16 @@ export const schemaDict = {
       theme: {
         type: 'object',
         properties: {
-          background: {
+          backgroundColor: {
             type: 'union',
             refs: [
               'lex:pub.leaflet.theme.color#rgba',
               'lex:pub.leaflet.theme.color#rgb',
-              'lex:pub.leaflet.theme.backgroundImage',
             ],
+          },
+          backgroundImage: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.theme.backgroundImage',
           },
           primary: {
             type: 'union',
