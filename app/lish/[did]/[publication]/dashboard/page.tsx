@@ -74,10 +74,8 @@ export default async function Publication(props: {
         publication_name={publication.name}
         publication_data={publication}
       >
-        <PublicationThemeProviderDashboard
-          record={publication.record as PubLeafletPublication.Record}
-        >
-          <div className="w-screen h-screen flex place-items-center bg-bg-leaflet">
+        <PublicationThemeProviderDashboard record={record}>
+          <div className="w-screen h-full flex place-items-center bg-bg-page">
             <div className="relative max-w-prose w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6">
               <div className="w-12 relative">
                 <Sidebar className="mt-6 p-2">

@@ -30,6 +30,7 @@ export const PubThemeSetter = () => {
   let { data: pub, mutate } = usePublicationData();
   let record = pub?.record as PubLeafletPublication.Record | undefined;
   let { theme: localPubTheme, setTheme } = useLocalPubTheme(record);
+  console.log(localPubTheme);
   let [image, setImage] = useState<ImageState | null>(
     PubLeafletThemeBackgroundImage.isMain(record?.theme?.background)
       ? {

@@ -36,19 +36,20 @@ let isColor = (
   c: any,
 ): c is PubLeafletThemeColor.Rgb | PubLeafletThemeColor.Rgba => {
   return (
-    c.$type === "pub.leaflet.theme.color#rgb" ||
-    c.$type === "pub.leaflet.theme.color#rgba"
+    c?.$type === "pub.leaflet.theme.color#rgb" ||
+    c?.$type === "pub.leaflet.theme.color#rgba"
   );
 };
 
 export function PublicationThemeProviderDashboard(props: {
   children: React.ReactNode;
+  record?: PubLeafletPublication.Record | null;
 }) {
   let { data: pub } = usePublicationData();
   return (
     <PublicationThemeProvider
       local={true}
-      record={pub.record as PubLeafletPublication.Record}
+      record={pub?.record as PubLeafletPublication.Record}
     >
       {props.children}
     </PublicationThemeProvider>
