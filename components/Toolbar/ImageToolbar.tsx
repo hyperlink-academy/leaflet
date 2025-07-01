@@ -10,6 +10,8 @@ export const ImageFullBleedButton = (props: {}) => {
   let { rep } = useReplicache();
   let focusedBlock = useUIState((s) => s.focusedEntity)?.entityID || null;
   let isFullBleed = useEntity(focusedBlock, "image/full-bleed")?.data.value;
+  let hasSrc = useEntity(focusedBlock, "block/image")?.data;
+  if (!hasSrc) return null;
 
   return (
     <ToolbarButton
@@ -42,6 +44,8 @@ export const ImageAltTextButton = (props: {
 
   let setAltEditorOpen = useUIState((s) => s.setOpenPopover);
   let altEditorOpen = useUIState((s) => s.openPopover === focusedBlock);
+  let hasSrc = useEntity(focusedBlock, "block/image")?.data;
+  if (!hasSrc) return null;
 
   return (
     <ToolbarButton
