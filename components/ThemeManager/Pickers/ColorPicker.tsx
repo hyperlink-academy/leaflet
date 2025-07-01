@@ -101,7 +101,7 @@ export const ColorPicker = (props: {
                         e.currentTarget.blur();
                       } else return;
                     }}
-                    className="w-[72px] bg-transparent outline-none text-primary disabled:text-tertiary"
+                    className="w-[72px] bg-transparent outline-none "
                   />
                 </ColorField>
               </>

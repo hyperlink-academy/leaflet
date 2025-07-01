@@ -81,7 +81,7 @@ export const PubThemeSetter = () => {
             <div
               className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
             >
-              <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md text-[#595959]">
+              <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md text-[#595959] bg-white">
                 <BackgroundPicker
                   bgImage={image}
                   setBgImage={setImage}
@@ -243,7 +243,9 @@ const BackgroundPicker = (props: {
       <div className="relative">
         <ColorPicker
           label={
-            props.bgImage && props.bgImage !== null ? "Container" : "Background"
+            props.bgImage && props.bgImage !== null
+              ? "Containers"
+              : "Background"
           }
           value={props.backgroundColor}
           setValue={props.setBackgroundColor}
@@ -256,7 +258,7 @@ const BackgroundPicker = (props: {
         {!props.bgImage && (
           <label
             className={`
-              text-primary hover:cursor-pointer  shrink-0
+              text-[#969696] hover:cursor-pointer  shrink-0
               absolute top-0 right-0
             `}
           >
@@ -329,11 +331,7 @@ const BackgroundImagePicker = (props: {
               backgroundSize: "cover",
             }}
           />
-          <strong
-            className={`${props.disabled ? "text-tertiary" : "text-primary "}`}
-          >
-            BG Image
-          </strong>
+          <strong className={` text-[#595959]`}>BG Image</strong>
         </button>
       </div>
       {open && (
