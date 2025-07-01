@@ -39,38 +39,30 @@ export const ImageAltTextButton = (props: {
   let focusedBlock = useUIState((s) => s.focusedEntity)?.entityID || null;
 
   let altText = useEntity(focusedBlock, "image/alt")?.data.value;
-  let { altEditorOpen, setAltEditorOpen } = useContext(ImageBlockContext);
-  useEffect(() => {
-    if (altText !== undefined) {
-      setAltEditorOpen(true);
-      // return () => {
-      //   setAltEditorOpen(false);
-      // };
-      console.log(altEditorOpen);
-    } else {
-      setAltEditorOpen(false);
-      console.log("close!");
-    }
-  }, [altText]);
+
+  let setAltEditorOpen = useUIState((s) => s.setOpenPopover);
+  let altEditorOpen = useUIState((s) => s.openPopover === focusedBlock);
 
   return (
     <ToolbarButton
       active={altText !== undefined}
       onClick={async (e) => {
         e.preventDefault();
-        focusedBlock &&
-          altText === undefined &&
-          (await rep?.mutate.assertFact({
+        if (!focusedBlock) return;
+        if (!altText) {
+          await rep?.mutate.assertFact({
             entity: focusedBlock,
             attribute: "image/alt",
             data: { type: "string", value: "" },
-          }));
-        focusedBlock &&
-          altText !== undefined &&
-          (await rep?.mutate.retractAttribute({
+          });
+          setAltEditorOpen(focusedBlock);
+        } else {
+          await rep?.mutate.retractAttribute({
             entity: focusedBlock,
             attribute: "image/alt",
-          }));
+          });
+          setAltEditorOpen(null);
+        }
       }}
       tooltipContent={
         <div>{altText === undefined ? "Add " : "Remove "}Alt Text</div>

@@ -14,8 +14,12 @@ export const useUIState = create(
       foldedBlocks: [] as string[],
       openPages: [] as string[],
       selectedBlocks: [] as SelectedBlock[],
+      openPopover: null as string | null,
     },
     (set) => ({
+      setOpenPopover: (id: string | null) => {
+        set({ openPopover: id });
+      },
       toggleFold: (entityID: string) => {
         set((state) => {
           return {

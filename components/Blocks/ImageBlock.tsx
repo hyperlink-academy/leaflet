@@ -169,48 +169,42 @@ const ImageAlt = (props: { entityID: string }) => {
   let altText = useEntity(props.entityID, "image/alt")?.data.value;
   let entity_set = useEntitySetContext();
 
-  let [altEditorOpen, setAltEditorOpen] = useState(false);
+  let setAltEditorOpen = useUIState((s) => s.setOpenPopover);
+  let altEditorOpen = useUIState((s) => s.openPopover === props.entityID);
 
   if (!entity_set.permissions.write && altText === "") return null;
   return (
-    <ImageBlockContext.Provider
-      value={{
-        altEditorOpen: altEditorOpen,
-        setAltEditorOpen: setAltEditorOpen,
-      }}
-    >
-      <div className="absolute bottom-0 right-2 h-max">
-        <Popover
-          open={altEditorOpen}
-          onOpenChange={() => setAltEditorOpen(!altEditorOpen)}
-          className="text-sm max-w-xs  min-w-0"
-          side="left"
-          trigger={<ImageAltSmall fillColor={theme.colors["bg-page"]} />}
-        >
-          {entity_set.permissions.write ? (
-            <AsyncValueAutosizeTextarea
-              className="text-sm text-secondary outline-none bg-transparent min-w-0"
-              value={altText}
-              onFocus={(e) => {
-                e.currentTarget.setSelectionRange(
-                  e.currentTarget.value.length,
-                  e.currentTarget.value.length,
-                );
-              }}
-              onChange={async (e) => {
-                await rep?.mutate.assertFact({
-                  entity: props.entityID,
-                  attribute: "image/alt",
-                  data: { type: "string", value: e.currentTarget.value },
-                });
-              }}
-              placeholder="add alt text..."
-            />
-          ) : (
-            <div className="text-sm text-secondary w-max"> {altText}</div>
-          )}
-        </Popover>
-      </div>
-    </ImageBlockContext.Provider>
+    <div className="absolute bottom-0 right-2 h-max">
+      <Popover
+        open={altEditorOpen}
+        onOpenChange={(o) => setAltEditorOpen(o ? props.entityID : null)}
+        className="text-sm max-w-xs  min-w-0"
+        side="left"
+        trigger={<ImageAltSmall fillColor={theme.colors["bg-page"]} />}
+      >
+        {entity_set.permissions.write ? (
+          <AsyncValueAutosizeTextarea
+            className="text-sm text-secondary outline-none bg-transparent min-w-0"
+            value={altText}
+            onFocus={(e) => {
+              e.currentTarget.setSelectionRange(
+                e.currentTarget.value.length,
+                e.currentTarget.value.length,
+              );
+            }}
+            onChange={async (e) => {
+              await rep?.mutate.assertFact({
+                entity: props.entityID,
+                attribute: "image/alt",
+                data: { type: "string", value: e.currentTarget.value },
+              });
+            }}
+            placeholder="add alt text..."
+          />
+        ) : (
+          <div className="text-sm text-secondary w-max"> {altText}</div>
+        )}
+      </Popover>
+    </div>
   );
 };
