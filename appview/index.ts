@@ -9,13 +9,18 @@ import {
   PubLeafletGraphSubscription,
   PubLeafletPublication,
 } from "lexicons/api";
-import { AppBskyFeedPost } from "@atproto/api";
+import {
+  AppBskyEmbedExternal,
+  AppBskyFeedPost,
+  AppBskyRichtextFacet,
+} from "@atproto/api";
 import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 import { createIdentity } from "actions/createIdentity";
 import { supabaseServerClient } from "supabase/serverClient";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { QUOTE_PARAM } from "app/lish/[did]/[publication]/[rkey]/useHighlight";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
 
@@ -164,6 +169,52 @@ async function main() {
         if (evt.event !== "create") return;
         let record = AppBskyFeedPost.validateRecord(evt.record);
         if (!record.success) return;
+        let linkFacet = record.value.facets?.find((f) =>
+          f.features.find(
+            (f) =>
+              AppBskyRichtextFacet.isLink(f) && f.uri.includes(QUOTE_PARAM),
+          ),
+        );
+        let link = (
+          linkFacet?.features.find(
+            (f) =>
+              AppBskyRichtextFacet.isLink(f) && f.uri.includes(QUOTE_PARAM),
+          ) as AppBskyRichtextFacet.Link | undefined
+        )?.uri;
+
+        let embed =
+          AppBskyEmbedExternal.isMain(record.value.embed) &&
+          record.value.embed.external.uri.includes(QUOTE_PARAM)
+            ? record.value.embed.external.uri
+            : null;
+        let pubUrl = embed || link;
+        if (pubUrl) {
+          let url = new URL(pubUrl);
+          let path = url.pathname.split("/").filter(Boolean);
+          let { data: pub } = await supabaseServerClient
+            .from("publications")
+            .select("*, documents_in_publications!inner(*)")
+            .eq("record->>base_path", url.host)
+            .eq("documents_in_publications.rkey", path[0])
+            .single();
+          if (pub) {
+            let path = url.pathname.split("/").filter(Boolean);
+            await supabaseServerClient
+              .from("document_mentions_in_bsky")
+              .insert({
+                uri: evt.uri.toString(),
+                cid: evt.cid.toString(),
+                document: AtUri.make(
+                  pub.identity_did,
+                  ids.PubLeafletDocument,
+                  path[0],
+                ).toString(),
+                record: evt.record as Json,
+                publication: pub.uri,
+                link: pubUrl,
+              });
+          }
+        }
       }
     },
     onError: (err) => {

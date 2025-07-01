@@ -67,7 +67,10 @@ export default async function Post(props: {
     supabaseServerClient
       .from("documents")
       .select(
-        "*, documents_in_publications(publications(*, publication_subscriptions(*)))",
+        `*,
+        documents_in_publications(publications(*, publication_subscriptions(*))),
+        document_mentions_in_bsky(*)
+        `,
       )
       .eq(
         "uri",

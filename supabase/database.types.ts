@@ -141,6 +141,41 @@ export type Database = {
           },
         ]
       }
+      document_mentions_in_bsky: {
+        Row: {
+          cid: string
+          document: string
+          indexed_at: string
+          link: string
+          record: Json
+          uri: string
+        }
+        Insert: {
+          cid: string
+          document: string
+          indexed_at?: string
+          link: string
+          record: Json
+          uri: string
+        }
+        Update: {
+          cid?: string
+          document?: string
+          indexed_at?: string
+          link?: string
+          record?: Json
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_mentions_in_bsky_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       documents: {
         Row: {
           data: Json

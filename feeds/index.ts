@@ -23,16 +23,18 @@ app.get("/.well-known/did.json", (c) => {
     ],
   });
 });
-
 app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
   let auth = await validateAuth(c.req, serviceDid);
   if (!auth) return c.json({ feed: [] });
+  let cursor = c.req.query("cursor");
+  let limit = parseInt(c.req.query("limit") || "10");
 
   let { data: publications } = await supabaseServerClient
     .from("publication_subscriptions")
     .select(`publications(documents_in_publications(documents(*)))`)
     .eq("identity", auth);
-  const feed = (publications || [])
+
+  const allPosts = (publications || [])
     .flatMap((pub) => {
       let posts = pub.publications?.documents_in_publications || [];
       return posts;
@@ -52,10 +54,31 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
       if (!p.documents?.data) return [];
       let record = p.documents.data as PubLeafletDocument.Record;
       if (!record.postRef) return [];
-      return { post: record.postRef.uri };
+      return { post: record.postRef.uri, id: p.documents.uri };
     });
+
+  // Find starting index based on cursor
+  let startIndex = 0;
+  if (cursor) {
+    const cursorIndex = allPosts.findIndex((p) => p.id === cursor);
+    if (cursorIndex !== -1) {
+      startIndex = cursorIndex + 1;
+    }
+  }
+
+  // Get the limited posts
+  const limitedPosts = allPosts.slice(startIndex, startIndex + limit);
+  const feed = limitedPosts.map((p) => ({ post: p.post }));
+
+  // Set cursor to the id of the last post if there are more posts
+  let nextCursor;
+  if (startIndex + limit < allPosts.length && limitedPosts.length > 0) {
+    nextCursor = limitedPosts[limitedPosts.length - 1].id;
+  }
+
   return c.json({
     feed,
+    ...(nextCursor && { cursor: nextCursor }),
   });
 });
 
