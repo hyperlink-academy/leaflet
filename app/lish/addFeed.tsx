@@ -15,6 +15,16 @@ export async function addFeed() {
 
   let credentialSession = await oauthClient.restore(identity.atp_did);
   let bsky = new BskyAgent(credentialSession);
+  let prefs = await bsky.app.bsky.actor.getPreferences();
+  let savedFeeds = prefs.data.preferences.find(
+    (pref) => pref.$type === "app.bsky.actor.defs#savedFeedsPrefV2",
+  ) as AppBskyActorDefs.SavedFeedsPrefV2;
+
+  let hasFeed = !!savedFeeds.items.find(
+    (feed) => feed.value === leafletFeedURI,
+  );
+  if (hasFeed) return;
+
   await bsky.addSavedFeeds([
     {
       value: leafletFeedURI,
