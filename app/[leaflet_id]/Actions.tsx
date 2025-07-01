@@ -97,9 +97,3 @@ const UpdateButton = () => {
     />
   );
 };
-
-export const Theme = () => {
-  return (
-    <ActionButton icon={<PaintSmall className="shrink-0" />} label="Theme" />
-  );
-};

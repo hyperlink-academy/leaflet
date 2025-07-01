@@ -8,7 +8,11 @@ import {
   useMemo,
   useState,
 } from "react";
-import { colorToString, useColorAttribute } from "./useColorAttribute";
+import {
+  colorToString,
+  useColorAttribute,
+  useColorAttributeNullable,
+} from "./useColorAttribute";
 import { Color as AriaColor, parseColor } from "react-aria-components";
 import { parse, contrastLstar, ColorSpace, sRGB } from "colorjs.io/fn";
 
@@ -232,16 +236,31 @@ export function CardThemeProvider(props: {
   entityID: string;
   children: React.ReactNode;
 }) {
-  let bgPage = useColorAttribute(props.entityID, "theme/card-background");
-  let primary = useColorAttribute(props.entityID, "theme/primary");
-  let accent1 = useColorAttribute(props.entityID, "theme/accent-background");
-  let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
-  let accentContrast = [accent1, accent2].sort((a, b) => {
-    return (
-      getColorContrast(colorToString(b, "rgb"), colorToString(bgPage, "rgb")) -
-      getColorContrast(colorToString(a, "rgb"), colorToString(bgPage, "rgb"))
-    );
-  })[0];
+  let bgPage = useColorAttributeNullable(
+    props.entityID,
+    "theme/card-background",
+  );
+  let primary = useColorAttributeNullable(props.entityID, "theme/primary");
+  let accent1 = useColorAttributeNullable(
+    props.entityID,
+    "theme/accent-background",
+  );
+  let accent2 = useColorAttributeNullable(props.entityID, "theme/accent-text");
+  let accentContrast =
+    bgPage && accent1 && accent2
+      ? [accent1, accent2].sort((a, b) => {
+          return (
+            getColorContrast(
+              colorToString(b, "rgb"),
+              colorToString(bgPage, "rgb"),
+            ) -
+            getColorContrast(
+              colorToString(a, "rgb"),
+              colorToString(bgPage, "rgb"),
+            )
+          );
+        })[0]
+      : null;
 
   return (
     <CardThemeProviderContext.Provider value={props.entityID}>
@@ -249,12 +268,16 @@ export function CardThemeProvider(props: {
         className="contents text-primary"
         style={
           {
-            "--accent-1": colorToString(accent1, "rgb"),
-            "--accent-2": colorToString(accent2, "rgb"),
-            "--accent-contrast": colorToString(accentContrast, "rgb"),
-            "--bg-page": colorToString(bgPage, "rgb"),
-            "--bg-page-alpha": bgPage.getChannelValue("alpha"),
-            "--primary": colorToString(primary, "rgb"),
+            "--accent-1": accent1 ? colorToString(accent1, "rgb") : undefined,
+            "--accent-2": accent2 ? colorToString(accent2, "rgb") : undefined,
+            "--accent-contrast": accentContrast
+              ? colorToString(accentContrast, "rgb")
+              : undefined,
+            "--bg-page": bgPage ? colorToString(bgPage, "rgb") : undefined,
+            "--bg-page-alpha": bgPage
+              ? bgPage.getChannelValue("alpha")
+              : undefined,
+            "--primary": primary ? colorToString(primary, "rgb") : undefined,
           } as CSSProperties
         }
       >

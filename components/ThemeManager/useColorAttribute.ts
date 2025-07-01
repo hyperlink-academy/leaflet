@@ -18,6 +18,18 @@ export function useColorAttribute(
     return parseColor(c ? `hsba(${c.data.value})` : ThemeDefaults[attribute]);
   }, [color, fallbackColor, attribute]);
 }
+export function useColorAttributeNullable(
+  entity: string | null,
+  attribute: keyof FilterAttributes<{ type: "color"; cardinality: "one" }>,
+) {
+  // takes a color string and turns it into a react-aria Color type
+  // we need it to interact with Color Pickers for themeing
+  let color = useEntity(entity, attribute);
+  return useMemo(() => {
+    let c = color;
+    return c ? parseColor(`hsba(${c.data.value})`) : null;
+  }, [color, attribute]);
+}
 
 export function colorToString(value: Color, space: "rgb" | "hsba") {
   // takes a react-aria Color type and turns it into an rgb or hsba color string.

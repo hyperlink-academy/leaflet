@@ -17,6 +17,7 @@ import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { AccentPickers } from "./Pickers/AccentPickers";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 
 export type pickers =
   | "null"
@@ -44,6 +45,7 @@ export function setColorAttribute(
 }
 export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   let { rep } = useReplicache();
+  let { data: pub } = useLeafletPublicationData();
 
   // I need to get these variables from replicache and then write them to the DB. I also need to parse them into a state that can be used here.
   let permission = useEntitySetContext().permissions.write;
@@ -61,6 +63,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   }, [rep, props.entityID]);
 
   if (!permission) return null;
+  if (pub) return null;
 
   return (
     <>
