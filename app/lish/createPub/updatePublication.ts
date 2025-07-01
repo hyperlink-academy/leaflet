@@ -167,9 +167,9 @@ export async function updatePublicationTheme({
   if (!existingPub || existingPub.identity_did !== identity.atp_did) return;
   let aturi = new AtUri(existingPub.uri);
 
-  //I need to make these colors
+  let oldRecord = existingPub.record as PubLeafletPublication.Record;
   let record: PubLeafletPublication.Record = {
-    ...(existingPub.record as PubLeafletPublication.Record),
+    ...oldRecord,
     $type: "pub.leaflet.publication",
     theme: {
       backgroundImage: theme.backgroundImage
@@ -184,7 +184,9 @@ export async function updatePublicationTheme({
             width: theme.backgroundRepeat || undefined,
             repeat: !!theme.backgroundRepeat,
           }
-        : undefined,
+        : theme.backgroundImage === null
+          ? undefined
+          : oldRecord.theme?.backgroundImage,
       backgroundColor: theme.backgroundColor
         ? {
             $type: "pub.leaflet.theme.color#rgb",
