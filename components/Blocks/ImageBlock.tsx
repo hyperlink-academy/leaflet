@@ -132,14 +132,14 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
         <img
           loading="lazy"
           decoding="async"
-          alt={""}
+          alt={altText}
           src={isLocalUpload ? image.data.src + "?local" : image.data.fallback}
           height={image?.data.height}
           width={image?.data.width}
         />
       ) : (
         <Image
-          alt={altText && altText !== "" ? altText : ""}
+          alt={altText || ""}
           src={new URL(image.data.src).pathname.split("/").slice(5).join("/")}
           height={image?.data.height}
           width={image?.data.width}

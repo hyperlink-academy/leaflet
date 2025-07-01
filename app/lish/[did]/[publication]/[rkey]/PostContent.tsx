@@ -118,6 +118,7 @@ let Block = ({
       return (
         <div className="relative">
           <img
+            alt={b.block.alt}
             height={b.block.aspectRatio?.height}
             width={b.block.aspectRatio?.width}
             className={`!pt-3 sm:!pt-4 ${className} rounded-md`}
