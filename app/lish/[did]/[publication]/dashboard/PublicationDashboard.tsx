@@ -14,7 +14,7 @@ export function PublicationDashboard<T extends Tabs>(props: {
   let content = props.tabs[tab];
 
   return (
-    <div className="pubDashWrapper w-full flex flex-col items-stretch px-3">
+    <div className="pubDashWrapper w-full max-w-[var(--page-width-units)] flex flex-col items-stretch px-4 sm:px-3">
       <div className="pubDashTabWrapper flex flex-row gap-2 w-full justify-between border-b border-border text-secondary items-center">
         {props.icon && (
           <div
@@ -27,7 +27,7 @@ export function PublicationDashboard<T extends Tabs>(props: {
             }}
           />
         )}{" "}
-        <div className="font-bold grow text-tertiary max-w-full truncate pr-2">
+        <div className="font-bold grow text-tertiary max-w-full truncate pr-2 w-[1000px]">
           {props.name}
         </div>
         <div className="pubDashTabs flex flex-row gap-2">

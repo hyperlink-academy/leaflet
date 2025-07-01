@@ -7,6 +7,9 @@ import { usePublicationData } from "./PublicationSWRProvider";
 import { Menu, MenuItem } from "components/Layout";
 import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { deleteDraft } from "./deleteDraft";
+import { DeleteSmall } from "components/Icons/DeleteSmall";
+import { PrimaryKey } from "drizzle-orm/sqlite-core";
+import { ButtonPrimary } from "components/Buttons";
 
 export function DraftList() {
   let { data: pub_data } = usePublicationData();
@@ -67,26 +70,46 @@ export function DeleteDraft(props: { id: string }) {
   let { mutate } = usePublicationData();
   let [state, setState] = useState<"normal" | "confirm">("normal");
 
-  return (
-    <MenuItem
-      onSelect={async (e) => {
-        if (state === "normal") {
-          e.preventDefault();
-          return setState("confirm");
-        }
-        await mutate((data) => {
-          if (!data) return data;
-          return {
-            ...data,
-            leaflets_in_publications: data.leaflets_in_publications.filter(
-              (d) => d.leaflet !== props.id,
-            ),
-          };
-        }, false);
-        await deleteDraft(props.id);
-      }}
-    >
-      {state === "normal" ? "Delete Draft" : "Are you sure?"}
-    </MenuItem>
-  );
+  if (state === "normal") {
+    return (
+      <MenuItem
+        onSelect={(e) => {
+          if (state === "normal") {
+            e.preventDefault();
+            return setState("confirm");
+          }
+        }}
+      >
+        <DeleteSmall />
+        Delete Draft
+      </MenuItem>
+    );
+  }
+  if (state === "confirm") {
+    return (
+      <div className="flex flex-col items-center font-bold text-secondary px-2 py-1">
+        Are you sure?
+        <div className="text-sm text-tertiary font-normal">
+          This action cannot be undone!
+        </div>
+        <ButtonPrimary
+          className="mt-2"
+          onClick={async () => {
+            await mutate((data) => {
+              if (!data) return data;
+              return {
+                ...data,
+                leaflets_in_publications: data.leaflets_in_publications.filter(
+                  (d) => d.leaflet !== props.id,
+                ),
+              };
+            }, false);
+            await deleteDraft(props.id);
+          }}
+        >
+          Delete
+        </ButtonPrimary>
+      </div>
+    );
+  }
 }

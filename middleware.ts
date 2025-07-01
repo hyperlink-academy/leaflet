@@ -51,7 +51,7 @@ export default async function middleware(req: NextRequest) {
     let aturi = new AtUri(pub?.uri);
     return NextResponse.rewrite(
       new URL(
-        `/lish/${aturi.host}/${pub.name}${req.nextUrl.pathname}`,
+        `/lish/${aturi.host}/${encodeURIComponent(pub.name)}${req.nextUrl.pathname}`,
         req.url,
       ),
     );

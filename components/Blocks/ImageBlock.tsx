@@ -1,7 +1,7 @@
 "use client";
 
 import { useEntity, useReplicache } from "src/replicache";
-import { Block, BlockProps } from "./Block";
+import { BlockProps } from "./Block";
 import { useUIState } from "src/useUIState";
 import Image from "next/image";
 import { v7 } from "uuid";
@@ -9,9 +9,14 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { generateKeyBetween } from "fractional-indexing";
 import { addImage, localImages } from "src/utils/addImage";
 import { elementId } from "src/utils/elementId";
-import { useEffect } from "react";
-import { deleteBlock } from "./DeleteBlock";
+import { createContext, useContext, useEffect, useState } from "react";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
+import { Popover } from "components/Popover";
+import { ImageAltSmall } from "components/Toolbar/ImageToolbar";
+import { theme } from "tailwind.config";
+import { EditTiny } from "components/Icons/EditTiny";
+import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
+import { set } from "colorjs.io/fn";
 
 export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let { rep } = useReplicache();
@@ -24,6 +29,8 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let isFullBleed = useEntity(props.value, "image/full-bleed")?.data.value;
   let isFirst = props.previousBlock === null;
   let isLast = props.nextBlock === null;
+
+  let altText = useEntity(props.value, "image/alt")?.data.value;
 
   let nextIsFullBleed = useEntity(
     props.nextBlock && props.nextBlock.value,
@@ -125,20 +132,21 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
         <img
           loading="lazy"
           decoding="async"
-          alt={""}
+          alt={altText}
           src={isLocalUpload ? image.data.src + "?local" : image.data.fallback}
           height={image?.data.height}
           width={image?.data.width}
         />
       ) : (
         <Image
-          alt=""
+          alt={altText || ""}
           src={new URL(image.data.src).pathname.split("/").slice(5).join("/")}
           height={image?.data.height}
           width={image?.data.width}
           className={className}
         />
       )}
+      {altText !== undefined ? <ImageAlt entityID={props.value} /> : null}
     </div>
   );
 }
@@ -148,5 +156,55 @@ export const FullBleedSelectionIndicator = () => {
     <div
       className={`absolute top-3 sm:top-4 bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 border-2 border-bg-page rounded-lg outline-offset-1 outline outline-2 outline-tertiary`}
     />
+  );
+};
+
+export const ImageBlockContext = createContext({
+  altEditorOpen: false,
+  setAltEditorOpen: (s: boolean) => {},
+});
+
+const ImageAlt = (props: { entityID: string }) => {
+  let { rep } = useReplicache();
+  let altText = useEntity(props.entityID, "image/alt")?.data.value;
+  let entity_set = useEntitySetContext();
+
+  let setAltEditorOpen = useUIState((s) => s.setOpenPopover);
+  let altEditorOpen = useUIState((s) => s.openPopover === props.entityID);
+
+  if (!entity_set.permissions.write && altText === "") return null;
+  return (
+    <div className="absolute bottom-0 right-2 h-max">
+      <Popover
+        open={altEditorOpen}
+        onOpenChange={(o) => setAltEditorOpen(o ? props.entityID : null)}
+        className="text-sm max-w-xs  min-w-0"
+        side="left"
+        trigger={<ImageAltSmall fillColor={theme.colors["bg-page"]} />}
+      >
+        {entity_set.permissions.write ? (
+          <AsyncValueAutosizeTextarea
+            className="text-sm text-secondary outline-none bg-transparent min-w-0"
+            value={altText}
+            onFocus={(e) => {
+              e.currentTarget.setSelectionRange(
+                e.currentTarget.value.length,
+                e.currentTarget.value.length,
+              );
+            }}
+            onChange={async (e) => {
+              await rep?.mutate.assertFact({
+                entity: props.entityID,
+                attribute: "image/alt",
+                data: { type: "string", value: e.currentTarget.value },
+              });
+            }}
+            placeholder="add alt text..."
+          />
+        ) : (
+          <div className="text-sm text-secondary w-max"> {altText}</div>
+        )}
+      </Popover>
+    </div>
   );
 };

@@ -69,7 +69,10 @@ export const useHandlePaste = (
         return true;
       }
       // if there is no html, but there is text, convert the text to markdown
-      if (!textHTML && text) {
+      //
+      let xml = new DOMParser().parseFromString(textHTML, "text/html");
+      console.log(xml.textContent, text);
+      if ((!textHTML || !xml.textContent) && text) {
         textHTML = markdownToHtml(text);
       }
       // if thre is html
@@ -472,8 +475,7 @@ const createBlockFromHTML = (
         },
       });
     }
-    if (last && !hasChildren) {
-      if (block?.editor.selection.from !== undefined) return;
+    if (last && !hasChildren && !first) {
       focusBlock(
         {
           value: entityID,

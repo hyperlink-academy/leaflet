@@ -21,5 +21,5 @@ export function getBasePublicationURL(pub: {
 }) {
   let record = pub.record as PubLeafletPublication.Record;
   let aturi = new AtUri(pub.uri);
-  return `/lish/${aturi.host}/${record?.name || pub.name}`;
+  return `/lish/${aturi.host}/${encodeURIComponent(record?.name || pub.name)}`;
 }

@@ -22,6 +22,7 @@ import { DotLoader } from "components/utils/DotLoader";
 import { addFeed } from "./addFeed";
 import { useSearchParams } from "next/navigation";
 import LoginForm from "app/login/LoginForm";
+import { RSSSmall } from "components/Icons/RSSSmall";
 
 type State =
   | { state: "email" }
@@ -210,10 +211,15 @@ export const SubscribeWithBluesky = (props: {
           Get updates from {props.pubName}!
         </div>
       )}
-      <BlueskySubscribeButton
-        pub_uri={props.pub_uri}
-        setSuccessModalOpen={setSuccessModalOpen}
-      />
+      <div className="flex flex-row gap-2 place-self-center">
+        <BlueskySubscribeButton
+          pub_uri={props.pub_uri}
+          setSuccessModalOpen={setSuccessModalOpen}
+        />
+        <a href={`/rss`} className="flex" target="_blank">
+          <RSSSmall className="self-center" />
+        </a>
+      </div>
     </div>
   );
 };
@@ -316,7 +322,10 @@ let BlueskySubscribeButton = (props: {
 
   return (
     <>
-      <form action={subscribe} className="place-self-center">
+      <form
+        action={subscribe}
+        className="place-self-center flex flex-row gap-1"
+      >
         <ButtonPrimary>
           {subscribePending ? (
             <DotLoader />

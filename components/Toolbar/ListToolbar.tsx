@@ -163,7 +163,7 @@ export const ListToolbar = (props: { onClose: () => void }) => {
   );
 };
 
-const ListUnorderedSmall = (props: Props) => {
+export const ListUnorderedSmall = (props: Props) => {
   return (
     <svg
       width="24"

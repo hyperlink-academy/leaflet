@@ -17,6 +17,7 @@ import {
   getPublicationURL,
 } from "app/lish/createPub/getPublicationURL";
 import { useSubscribe } from "src/replicache/useSubscribe";
+import { useEntitySetContext } from "components/EntitySetProvider";
 export const PublicationMetadata = ({
   cardBorderHidden,
 }: {
@@ -24,19 +25,23 @@ export const PublicationMetadata = ({
 }) => {
   let { rep } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
-  let title =
-    useSubscribe(rep, (tx) => tx.get<string>("publication_title")) ||
-    pub?.title ||
-    "";
-  let description =
-    useSubscribe(rep, (tx) => tx.get<string>("publication_description")) ||
-    pub?.description ||
-    "";
+  let title = useSubscribe(rep, (tx) => tx.get<string>("publication_title"));
+  let description = useSubscribe(rep, (tx) =>
+    tx.get<string>("publication_description"),
+  );
+  let { permissions } = useEntitySetContext();
+
   let record = pub?.documents?.data as PubLeafletDocument.Record | null;
   let publishedAt = record?.publishedAt;
 
   if (!pub || !pub.publications) return null;
 
+  if (typeof title !== "string") {
+    title = pub?.title || "";
+  }
+  if (typeof description !== "string") {
+    description = pub?.description || "";
+  }
   return (
     <div
       className={`flex flex-col px-3 sm:px-4 pb-5 ${cardBorderHidden ? "sm:pt-6 pt-0" : "sm:pt-3 pt-2"}`}
@@ -52,7 +57,8 @@ export const PublicationMetadata = ({
           Editor
         </div>
       </div>
-      <AsyncValueInput
+      <AsyncValueAutosizeTextarea
+        disabled={!permissions.write}
         className="text-xl font-bold outline-none bg-transparent"
         value={title}
         onChange={async (e) => {
@@ -64,6 +70,7 @@ export const PublicationMetadata = ({
         placeholder="Untitled"
       />
       <AsyncValueAutosizeTextarea
+        disabled={!permissions.write}
         placeholder="add an optional description..."
         className="italic text-secondary outline-none bg-transparent"
         value={description}

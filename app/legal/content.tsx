@@ -8,7 +8,7 @@ import Privacy from "./privacy.mdx";
 export const LegalContent = () => {
   let [state, setState] = useState<"terms" | "privacy">("terms");
   return (
-    <div className="flex flex-col h-screen mx-auto sm:px-4 px-3 sm:py-6 py-4 max-w-prose">
+    <div className="flex flex-col h-full mx-auto sm:px-4 px-3 sm:py-6 py-4 max-w-prose">
       <h1 className="pb-4 ">The Legal Stuff</h1>
       <div className="flex flex-row gap-2 z-10">
         <button

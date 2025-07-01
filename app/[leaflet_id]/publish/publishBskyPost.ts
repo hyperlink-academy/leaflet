@@ -66,5 +66,7 @@ export async function publishPostToBsky(bskyPost: {
     record,
     validate: false, //TODO publish the lexicon so we can validate!
   });
+  console.log("UPDATING_TO_LINK_BSKY_POST");
+  console.log(result);
   return true;
 }
