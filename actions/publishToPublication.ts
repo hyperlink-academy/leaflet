@@ -249,6 +249,7 @@ function blockToRecord(
   if (b.type == "image") {
     let [image] = scan.eav(b.value, "block/image");
     if (!image) return;
+    let [altText] = scan.eav(b.value, "image/alt");
     let blobref = imageMap.get(image.data.src);
     if (!blobref) return;
     let block: $Typed<PubLeafletBlocksImage.Main> = {
@@ -258,6 +259,7 @@ function blockToRecord(
         height: image.data.height,
         width: image.data.width,
       },
+      alt: altText ? altText.data.value : undefined,
     };
     return block;
   }

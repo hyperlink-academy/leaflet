@@ -10,6 +10,7 @@ export const Popover = (props: {
   disabled?: boolean;
   children: React.ReactNode;
   align?: "start" | "end" | "center";
+  side?: "top" | "bottom" | "left" | "right";
   background?: string;
   border?: string;
   className?: string;
@@ -43,6 +44,7 @@ export const Popover = (props: {
               overflow-y-scroll no-scrollbar
               ${props.className}
             `}
+              side={props.side}
               align={props.align ? props.align : "center"}
               sideOffset={4}
               collisionPadding={16}

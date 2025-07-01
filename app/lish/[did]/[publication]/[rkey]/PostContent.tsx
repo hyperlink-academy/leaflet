@@ -1,3 +1,4 @@
+"use client";
 import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
@@ -9,6 +10,9 @@ import {
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { TextBlock } from "./TextBlock";
+import { Popover } from "components/Popover";
+import { ImageAltSmall } from "components/Toolbar/ImageToolbar";
+import { theme } from "tailwind.config";
 
 export function PostContent({
   blocks,
@@ -100,7 +104,7 @@ let Block = ({
           </div>
           {b.block.previewImage && (
             <div
-              className={`linkBlockPreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center`}
+              className={`imagePreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center relative`}
               style={{
                 backgroundImage: `url(${blobRefToSrc(b.block.previewImage?.ref, did)})`,
                 backgroundPosition: "center",
@@ -112,12 +116,28 @@ let Block = ({
     }
     case PubLeafletBlocksImage.isMain(b.block): {
       return (
-        <img
-          height={b.block.aspectRatio?.height}
-          width={b.block.aspectRatio?.width}
-          className={`!pt-3 sm:!pt-4 ${className}`}
-          src={blobRefToSrc(b.block.image.ref, did)}
-        />
+        <div className="relative">
+          <img
+            alt={b.block.alt}
+            height={b.block.aspectRatio?.height}
+            width={b.block.aspectRatio?.width}
+            className={`!pt-3 sm:!pt-4 ${className} rounded-md`}
+            src={blobRefToSrc(b.block.image.ref, did)}
+          />
+          {b.block.alt && (
+            <div className="absolute bottom-1.5 right-2 h-max">
+              <Popover
+                className="text-sm max-w-xs  min-w-0"
+                side="left"
+                trigger={<ImageAltSmall fillColor={theme.colors["bg-page"]} />}
+              >
+                <div className="text-sm text-secondary w-full">
+                  {b.block.alt}
+                </div>
+              </Popover>
+            </div>
+          )}
+        </div>
       );
     }
     case PubLeafletBlocksText.isMain(b.block):
