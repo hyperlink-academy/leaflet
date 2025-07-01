@@ -348,6 +348,8 @@ const SubscribeSuccessModal = ({
   setOpen: (open: boolean) => void;
 }) => {
   let searchParams = useSearchParams();
+  let [loading, setLoading] = useState(false);
+  let toaster = useToaster();
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild></Dialog.Trigger>
@@ -372,13 +374,18 @@ const SubscribeSuccessModal = ({
             <ButtonPrimary
               className="place-self-center mt-4"
               onClick={async () => {
+                if (loading) return;
+
+                setLoading(true);
                 let feedurl =
                   "https://bsky.app/profile/leaflet.pub/feed/subscribedPublications";
                 await addFeed();
+                toaster({ content: "Feed added!", type: "success" });
+                setLoading(false);
                 window.open(feedurl, "_blank");
               }}
             >
-              Add Bluesky Feed
+              {loading ? <DotLoader /> : "Add Bluesky Feed"}
             </ButtonPrimary>
             <button
               className="text-accent-contrast mt-1"
