@@ -4,7 +4,11 @@ import { Metadata } from "next";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { AtUri } from "@atproto/syntax";
-import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
+import {
+  PubLeafletDocument,
+  PubLeafletPublication,
+  PubLeafletThemeColor,
+} from "lexicons/api";
 import Link from "next/link";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
@@ -58,7 +62,11 @@ export default async function Publication(props: {
   ]);
 
   let record = publication?.record as PubLeafletPublication.Record | null;
-  let hasBackground = !!record?.theme?.backgroundImage;
+
+  let backgroundAlpha =
+    PubLeafletThemeColor.isRgba(record?.theme?.backgroundColor) &&
+    record?.theme?.backgroundColor?.a;
+  let hasBackground = !!record?.theme?.backgroundImage && backgroundAlpha !== 0;
 
   if (!publication) return <PubNotFound />;
   try {
@@ -71,7 +79,7 @@ export default async function Publication(props: {
           className={`pubWrapper flex flex-col sm:py-6 h-full   ${hasBackground ? "max-w-prose mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
         >
           <div
-            className={`pub max-w-prose mx-auto px-3 sm:px-4 py-5  ${hasBackground ? "overflow-auto h-full bg-bg-leaflet rounded-lg" : "h-fit"}`}
+            className={`pub max-w-prose mx-auto px-3 sm:px-4 py-5  ${hasBackground ? "overflow-auto h-full bg-[rgba(var(--bg-leaflet),var(--bg-page-alpha))] rounded-lg" : "h-fit"}`}
           >
             <div className="pubHeader flex flex-col pb-8 w-full text-center justify-center ">
               {record?.icon && (

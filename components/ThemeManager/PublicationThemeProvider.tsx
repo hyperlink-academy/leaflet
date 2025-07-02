@@ -52,7 +52,6 @@ export function PublicationThemeProviderDashboard(props: {
   return (
     <PublicationThemeProvider
       pub_creator={pub?.identity_did || ""}
-      local={true}
       record={pub?.record as PubLeafletPublication.Record}
     >
       {props.children}
