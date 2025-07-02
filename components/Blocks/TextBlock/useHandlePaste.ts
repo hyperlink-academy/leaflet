@@ -491,9 +491,11 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
   // Function to recursively collect HTML from nodes
   function collectHTML(node: Node, htmlBlocks: HTMLElement[]): void {
     if (node.nodeType === Node.TEXT_NODE) {
-      let newElement = document.createElement("p");
-      newElement.textContent = node.textContent;
-      htmlBlocks.push(newElement);
+      if (node.textContent && node.textContent.trim() !== "") {
+        let newElement = document.createElement("p");
+        newElement.textContent = node.textContent;
+        htmlBlocks.push(newElement);
+      }
     }
     if (node.nodeType === Node.ELEMENT_NODE) {
       const elementNode = node as HTMLElement;
