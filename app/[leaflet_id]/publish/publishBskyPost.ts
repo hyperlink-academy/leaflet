@@ -36,7 +36,7 @@ export async function publishPostToBsky(bskyPost: {
   let binary = await preview_image.blob();
   let resized_preview_image = await sharp(await binary.arrayBuffer())
     .resize({
-      width: 514,
+      width: 1024,
       fit: "cover",
     })
     .toBuffer();
