@@ -1,6 +1,7 @@
 "use server";
 
 import { Agent as BskyAgent } from "@atproto/api";
+import sharp from "sharp";
 import { TID } from "@atproto/common";
 import { getIdentityData } from "actions/getIdentityData";
 import { AtpBaseClient, PubLeafletDocument } from "lexicons/api";
@@ -33,7 +34,14 @@ export async function publishPostToBsky(bskyPost: {
   );
 
   let binary = await preview_image.blob();
-  let blob = await agent.com.atproto.repo.uploadBlob(binary, {
+  let resized_preview_image = await sharp(await binary.arrayBuffer())
+    .resize({
+      width: 514,
+      fit: "cover",
+    })
+    .toBuffer();
+
+  let blob = await agent.com.atproto.repo.uploadBlob(resized_preview_image, {
     headers: { "Content-Type": binary.type },
   });
   let bsky = new BskyAgent(credentialSession);
@@ -66,7 +74,5 @@ export async function publishPostToBsky(bskyPost: {
     record,
     validate: false, //TODO publish the lexicon so we can validate!
   });
-  console.log("UPDATING_TO_LINK_BSKY_POST");
-  console.log(result);
   return true;
 }
