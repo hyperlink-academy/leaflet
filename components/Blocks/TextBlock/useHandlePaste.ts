@@ -71,8 +71,7 @@ export const useHandlePaste = (
       // if there is no html, but there is text, convert the text to markdown
       //
       let xml = new DOMParser().parseFromString(textHTML, "text/html");
-      console.log(xml.textContent, text);
-      if ((!textHTML || !xml.textContent) && text) {
+      if ((!textHTML || !xml.children.length) && text) {
         textHTML = markdownToHtml(text);
       }
       // if thre is html
