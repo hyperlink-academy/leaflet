@@ -90,14 +90,21 @@ export default async function Post(props: {
   if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
     blocks = firstPage.blocks || [];
   }
+
+  let pubRecord = document.documents_in_publications[0]?.publications
+    .record as PubLeafletPublication.Record;
+  let backgroundImage = pubRecord.theme?.backgroundImage?.image;
+  let backgroundImageRepeat = pubRecord.theme?.backgroundImage?.repeat;
+  let backgroundImageSize = pubRecord.theme?.backgroundImage?.width;
+
   return (
     <PublicationThemeProvider
-      record={
-        document.documents_in_publications[0]?.publications
-          .record as PubLeafletPublication.Record
+      record={pubRecord}
+      pub_creator={
+        document.documents_in_publications[0].publications.identity_did
       }
     >
-      <div className="flex flex-col px-3 sm:px-4 py-3 sm:py-9 w-full bg-bg-leaflet h-full min-h-fit overflow-auto">
+      <div className="flex flex-col px-3 sm:px-4 py-3 sm:py-9 w-full h-full min-h-fit overflow-auto">
         <div className="max-w-prose mx-auto">
           <div className="pubHeader flex flex-col pb-5">
             <Link

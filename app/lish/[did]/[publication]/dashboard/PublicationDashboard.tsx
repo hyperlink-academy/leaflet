@@ -1,6 +1,8 @@
 "use client";
 import { BlobRef } from "@atproto/lexicon";
 import { useState } from "react";
+import { useIsMobile } from "src/hooks/isMobile";
+import { theme } from "tailwind.config";
 
 type Tabs = { [tabName: string]: React.ReactNode };
 export function PublicationDashboard<T extends Tabs>(props: {
@@ -12,25 +14,37 @@ export function PublicationDashboard<T extends Tabs>(props: {
 }) {
   let [tab, setTab] = useState(props.defaultTab);
   let content = props.tabs[tab];
+  let isMobile = useIsMobile();
 
   return (
-    <div className="pubDashWrapper w-full max-w-[var(--page-width-units)] flex flex-col items-stretch px-4 sm:px-3">
-      <div className="pubDashTabWrapper flex flex-row gap-2 w-full justify-between border-b border-border text-secondary items-center">
-        {props.icon && (
+    <>
+      <div className="pubDashHeader flex flex-row gap-2 w-full justify-between border-b border-border text-secondary items-center ">
+        <div className="max-w-full w-[1000px] h-full ">
           <div
-            className="shrink-0 w-5 h-5 rounded-full"
+            className="flex gap-2 h-fit  py-0.5 px-1 w-fit  rounded-md "
             style={{
-              backgroundImage: `url(/api/atproto_images?did=${props.did}&cid=${(props.icon.ref as unknown as { $link: string })["$link"]})`,
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "center",
-              backgroundSize: "cover",
+              backgroundColor: isMobile
+                ? "transparent"
+                : `rgba(var(--bg-leaflet), 0.8)`,
             }}
-          />
-        )}{" "}
-        <div className="font-bold grow text-tertiary max-w-full truncate pr-2 w-[1000px]">
-          {props.name}
+          >
+            {props.icon && (
+              <div
+                className="pubDashLogo shrink-0 w-6 h-6 rounded-full  border-2 border-bg-leaflet"
+                style={{
+                  backgroundImage: `url(/api/atproto_images?did=${props.did}&cid=${(props.icon.ref as unknown as { $link: string })["$link"]})`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "center",
+                  backgroundSize: "cover",
+                }}
+              />
+            )}
+            <div className="pubDashName font-bold grow text-tertiary max-w-full truncate pr-2 sm:block hidden">
+              {props.name}
+            </div>
+          </div>
         </div>
-        <div className="pubDashTabs flex flex-row gap-2">
+        <div className="pubDashTabs flex flex-row gap-1">
           {Object.keys(props.tabs).map((t) => (
             <Tab
               key={t}
@@ -41,8 +55,10 @@ export function PublicationDashboard<T extends Tabs>(props: {
           ))}
         </div>
       </div>
-      <div className="pubDashContent pt-4">{content}</div>
-    </div>
+      <div className="pubDashContent py-4 px-3 sm:px-4 h-full bg-bg-leaflet rounded-b-md border border-border-light border-t-0 overflow-auto">
+        {content}
+      </div>
+    </>
   );
 }
 

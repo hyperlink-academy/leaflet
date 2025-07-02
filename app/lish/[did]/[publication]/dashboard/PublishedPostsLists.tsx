@@ -26,7 +26,7 @@ export function PublishedPostsList() {
       </div>
     );
   return (
-    <div className="publishedList w-full flex flex-col gap-4 pb-8 sm:pb-12">
+    <div className="publishedList w-full flex flex-col gap-4 pb-8 sm:pb-8">
       {publication.documents_in_publications
         .sort((a, b) => {
           let aRecord = a.documents?.data! as PubLeafletDocument.Record;
@@ -98,8 +98,8 @@ let Options = (props: { document_uri: string }) => {
       align="end"
       asChild
       trigger={
-        <button className="text-secondary hover:accent-primary border border-accent-2 rounded-md h-min w-min ">
-          <MoreOptionsVerticalTiny className=" h-min w-min " />
+        <button className="text-secondary rounded-md selected-outline !border-transparent hover:!border-border h-min">
+          <MoreOptionsVerticalTiny />
         </button>
       }
     >

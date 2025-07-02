@@ -52,15 +52,14 @@ export const PubThemeSetter = () => {
         onSubmit={async (e) => {
           e.preventDefault();
           if (!pub) return;
-
-          console.log(ColorToRGB(localPubTheme.accent1));
+          console.log(image);
           let result = await updatePublicationTheme({
             uri: pub.uri,
             theme: {
               page: ColorToRGB(localPubTheme.bgPage),
               backgroundColor: ColorToRGB(localPubTheme.bgLeaflet),
               backgroundRepeat: image?.repeat,
-              backgroundImage: image?.file,
+              backgroundImage: image ? image.file : null,
               primary: ColorToRGB(localPubTheme.primary),
               accentBackground: ColorToRGB(localPubTheme.accent1),
               accentText: ColorToRGB(localPubTheme.accent2),

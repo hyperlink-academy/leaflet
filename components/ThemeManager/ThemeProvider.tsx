@@ -63,13 +63,16 @@ export function ThemeProvider(props: {
   entityID: string | null;
   local?: boolean;
   children: React.ReactNode;
+  className?: string;
 }) {
   let { data: pub } = useLeafletPublicationData();
-  if (!pub) return <LeafletThemeProvider {...props} />;
+  if (!pub || !pub.publications) return <LeafletThemeProvider {...props} />;
   return (
     <PublicationThemeProvider
       {...props}
       record={pub.publications?.record as PubLeafletPublication.Record}
+      pub_creator={pub.publications?.identity_did}
+      className={props.className}
     />
   );
 }

@@ -7,6 +7,7 @@ import { useColorAttribute, colorToString } from "./useColorAttribute";
 import { BaseThemeProvider } from "./ThemeProvider";
 import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
 import { usePublicationData } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
 const PubThemeDefaults = {
   backgroundColor: "#FDFCFA",
@@ -47,6 +48,7 @@ export function PublicationThemeProviderDashboard(props: {
   let { data: pub } = usePublicationData();
   return (
     <PublicationThemeProvider
+      pub_creator={pub?.identity_did || ""}
       local={true}
       record={pub?.record as PubLeafletPublication.Record}
     >
@@ -58,12 +60,32 @@ export function PublicationThemeProvider(props: {
   local?: boolean;
   children: React.ReactNode;
   record?: PubLeafletPublication.Record | null;
+  pub_creator: string;
+  className?: string;
 }) {
   let colors = usePubTheme(props.record);
 
+  let backgroundImage = props.record?.theme?.backgroundImage?.image?.ref
+    ? blobRefToSrc(
+        props.record?.theme?.backgroundImage?.image?.ref,
+        props.pub_creator,
+      )
+    : null;
+
+  let backgroundImageRepeat = props.record?.theme?.backgroundImage?.repeat;
+  let backgroundImageSize = props.record?.theme?.backgroundImage?.width || 500;
   return (
     <BaseThemeProvider local={props.local} {...colors}>
-      {props.children}
+      <div
+        className={`backgroundWrapper w-screen h-full flex place-items-center bg-bg-page pwa-padding ${props.className}`}
+        style={{
+          backgroundImage: `url(${backgroundImage})`,
+          backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
+          backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
+        }}
+      >
+        {props.children}
+      </div>
     </BaseThemeProvider>
   );
 }
