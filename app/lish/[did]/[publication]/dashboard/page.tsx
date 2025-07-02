@@ -13,7 +13,7 @@ import React from "react";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { PublicationSWRDataProvider } from "./PublicationSWRProvider";
 import { PublishedPostsList } from "./PublishedPostsLists";
-import { PubLeafletPublication } from "lexicons/api";
+import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
 import { PublicationSubscribers } from "./PublicationSubscribers";
 import {
   PublicationThemeProvider,
@@ -65,6 +65,12 @@ export default async function Publication(props: {
   );
 
   let record = publication?.record as PubLeafletPublication.Record | null;
+  let backgroundAlpha =
+    PubLeafletThemeColor.isRgba(record?.theme?.backgroundColor) &&
+    record?.theme?.backgroundColor?.a;
+
+  let hasBackground = !!record?.theme?.backgroundImage && backgroundAlpha !== 0;
+
   if (!publication || identity.atp_did !== publication.identity_did)
     return <PubNotFound />;
 
@@ -89,7 +95,7 @@ export default async function Publication(props: {
                 </div>
               </div>
               <div
-                className={`pubDash grow sm:h-full h-32 w-full flex flex-col items-stretch pt-2 pb-1 sm:pt-6 sm:pb-8  ml-[6px] sm:ml-0 max-w-[var(--page-width-units)]`}
+                className={`pubDash grow sm:h-full h-32 w-full flex flex-col items-stretch pt-2 sm:pt-6   ml-[6px] sm:ml-0 max-w-[var(--page-width-units)] ${hasBackground ? "sm:pb-8 pb-1" : "pb-0"}`}
               >
                 <PublicationDashboard
                   did={did}
@@ -101,6 +107,7 @@ export default async function Publication(props: {
                     Subscribers: <PublicationSubscribers />,
                   }}
                   defaultTab={"Drafts"}
+                  hasBackground={hasBackground}
                 />
               </div>
               <Footer>

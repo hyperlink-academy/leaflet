@@ -11,6 +11,7 @@ export function PublicationDashboard<T extends Tabs>(props: {
   defaultTab: keyof T;
   icon: BlobRef | null;
   did: string;
+  hasBackground: boolean;
 }) {
   let [tab, setTab] = useState(props.defaultTab);
   let content = props.tabs[tab];
@@ -47,7 +48,9 @@ export function PublicationDashboard<T extends Tabs>(props: {
           ))}
         </div>
       </div>
-      <div className="pubDashContent py-4 px-3 sm:px-4 h-full bg-[rgba(var(--bg-leaflet),var(--bg-page-alpha))] rounded-b-md border border-border-light border-t-0 overflow-auto">
+      <div
+        className={`pubDashContent py-4 px-3 sm:px-4 h-full bg-[rgba(var(--bg-leaflet),var(--bg-page-alpha))] overflow-auto ${props.hasBackground ? "rounded-b-md border border-border border-t-0" : ""}`}
+      >
         {content}
       </div>
     </>

@@ -114,7 +114,7 @@ export default async function Post(props: {
         className={`flex flex-col sm:py-6 h-full   ${hasBackground ? "max-w-prose mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
       >
         <div
-          className={`max-w-prose mx-auto px-3 sm:px-4 py-3 ${hasBackground ? "overflow-auto h-full bg-[rgba(var(--bg-leaflet),var(--bg-page-alpha))] rounded-lg" : "h-fit"}`}
+          className={`sm:max-w-prose max-w-[var(--page-width-units)] w-[1000px] mx-auto px-3 sm:px-4 py-3  ${hasBackground ? "overflow-auto h-full bg-[rgba(var(--bg-leaflet),var(--bg-page-alpha))] rounded-lg border border-border" : "h-fit"}`}
         >
           <div className="pubHeader flex flex-col pb-5">
             <Link
