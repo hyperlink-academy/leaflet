@@ -26,7 +26,7 @@ export function PublishedPostsList() {
       </div>
     );
   return (
-    <div className="publishedList w-full flex flex-col gap-4 pb-8 sm:pb-8">
+    <div className="publishedList w-full flex flex-col gap-4 pb-4">
       {publication.documents_in_publications
         .sort((a, b) => {
           let aRecord = a.documents?.data! as PubLeafletDocument.Record;
@@ -55,7 +55,18 @@ export function PublishedPostsList() {
                   href={`${getPublicationURL(publication)}/${uri.rkey}`}
                   className="publishedPost grow flex flex-col hover:!no-underline"
                 >
-                  <h3 className="text-primary">{record.title}</h3>
+                  <div className="flex justify-between gap-2">
+                    <h3 className="text-primary grow">{record.title}</h3>
+                    <div className="flex justify-start align-top flex-row gap-1">
+                      {leaflet && (
+                        <Link className="pt-[6px]" href={`/${leaflet.leaflet}`}>
+                          <EditTiny />
+                        </Link>
+                      )}
+                      <Options document_uri={doc.documents.uri} />
+                    </div>
+                  </div>
+
                   {record.description ? (
                     <p className="italic text-secondary">
                       {record.description}
@@ -75,14 +86,6 @@ export function PublishedPostsList() {
                     </p>
                   ) : null}
                 </Link>
-                <div className="flex justify-start align-top flex-row gap-1">
-                  {leaflet && (
-                    <Link className="pt-[6px]" href={`/${leaflet.leaflet}`}>
-                      <EditTiny />
-                    </Link>
-                  )}
-                  <Options document_uri={doc.documents.uri} />
-                </div>
               </div>
               <hr className="last:hidden border-border-light" />
             </Fragment>
