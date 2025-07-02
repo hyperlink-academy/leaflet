@@ -488,6 +488,7 @@ export const schemaDict = {
     defs: {
       rgba: {
         type: 'object',
+        required: ['r', 'g', 'b', 'a'],
         properties: {
           r: {
             type: 'integer',
@@ -513,6 +514,7 @@ export const schemaDict = {
       },
       rgb: {
         type: 'object',
+        required: ['r', 'g', 'b'],
         properties: {
           r: {
             type: 'integer',

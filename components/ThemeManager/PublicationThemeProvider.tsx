@@ -18,6 +18,9 @@ const PubThemeDefaults = {
 function parseThemeColor(
   c: PubLeafletThemeColor.Rgb | PubLeafletThemeColor.Rgba,
 ) {
+  if (c.$type === "pub.leaflet.theme.color#rgba") {
+    return parseColor(`rgba(${c.r}, ${c.g}, ${c.b}, ${c.a / 100})`);
+  }
   return parseColor(`rgb(${c.r}, ${c.g}, ${c.b})`);
 }
 

@@ -12,10 +12,10 @@ const id = 'pub.leaflet.theme.color'
 
 export interface Rgba {
   $type?: 'pub.leaflet.theme.color#rgba'
-  r?: number
-  g?: number
-  b?: number
-  a?: number
+  r: number
+  g: number
+  b: number
+  a: number
 }
 
 const hashRgba = 'rgba'
@@ -30,9 +30,9 @@ export function validateRgba<V>(v: V) {
 
 export interface Rgb {
   $type?: 'pub.leaflet.theme.color#rgb'
-  r?: number
-  g?: number
-  b?: number
+  r: number
+  g: number
+  b: number
 }
 
 const hashRgb = 'rgb'

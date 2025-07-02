@@ -11,6 +11,8 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
 import { redirect } from "next/navigation";
+import { $Typed } from "@atproto/api";
+import { ids } from "lexicons/api/lexicons";
 
 export async function updatePublication({
   uri,
@@ -135,7 +137,9 @@ export async function updatePublicationBasePath({
   return { success: true, publication };
 }
 
-type Color = PubLeafletThemeColor.Rgb;
+type Color =
+  | $Typed<PubLeafletThemeColor.Rgb, "pub.leaflet.theme.color#rgb">
+  | $Typed<PubLeafletThemeColor.Rgba, "pub.leaflet.theme.color#rgba">;
 export async function updatePublicationTheme({
   uri,
   theme,
@@ -189,24 +193,19 @@ export async function updatePublicationTheme({
           : oldRecord.theme?.backgroundImage,
       backgroundColor: theme.backgroundColor
         ? {
-            $type: "pub.leaflet.theme.color#rgb",
             ...theme.backgroundColor,
           }
         : undefined,
       primary: {
-        $type: "pub.leaflet.theme.color#rgb",
         ...theme.primary,
       },
       page: {
-        $type: "pub.leaflet.theme.color#rgb",
         ...theme.page,
       },
       accentBackground: {
-        $type: "pub.leaflet.theme.color#rgb",
         ...theme.accentBackground,
       },
       accentText: {
-        $type: "pub.leaflet.theme.color#rgb",
         ...theme.accentText,
       },
     },

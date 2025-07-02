@@ -4,6 +4,12 @@
   "defs": {
     "rgba": {
       "type": "object",
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
       "properties": {
         "r": {
           "type": "integer",
@@ -29,6 +35,11 @@
     },
     "rgb": {
       "type": "object",
+      "required": [
+        "r",
+        "g",
+        "b"
+      ],
       "properties": {
         "r": {
           "type": "integer",

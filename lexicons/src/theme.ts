@@ -25,6 +25,7 @@ export const PubLeafletThemeColor: LexiconDoc = {
   defs: {
     rgba: {
       type: "object",
+      required: ["r", "g", "b", "a"],
       properties: {
         r: { type: "integer", maximum: 255, minimum: 0 },
         g: { type: "integer", maximum: 255, minimum: 0 },
@@ -34,6 +35,7 @@ export const PubLeafletThemeColor: LexiconDoc = {
     },
     rgb: {
       type: "object",
+      required: ["r", "g", "b"],
       properties: {
         r: { type: "integer", maximum: 255, minimum: 0 },
         g: { type: "integer", maximum: 255, minimum: 0 },

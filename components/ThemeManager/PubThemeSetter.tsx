@@ -57,7 +57,9 @@ export const PubThemeSetter = () => {
             uri: pub.uri,
             theme: {
               page: ColorToRGB(localPubTheme.bgPage),
-              backgroundColor: ColorToRGB(localPubTheme.bgLeaflet),
+              backgroundColor: image
+                ? ColorToRGBA(localPubTheme.bgLeaflet)
+                : ColorToRGB(localPubTheme.bgLeaflet),
               backgroundRepeat: image?.repeat,
               backgroundImage: image ? image.file : null,
               primary: ColorToRGB(localPubTheme.primary),
@@ -467,13 +469,46 @@ export const ImageSettings = (props: {
   );
 };
 
+function ColorToRGBA(color: Color) {
+  if (!color)
+    return {
+      $type: "pub.leaflet.theme.color#rgba" as const,
+      r: 0,
+      g: 0,
+      b: 0,
+      a: 1,
+    };
+  let c = color.toFormat("rgba");
+  const r = c.getChannelValue("red");
+  const g = c.getChannelValue("green");
+  const b = c.getChannelValue("blue");
+  const a = c.getChannelValue("alpha");
+  return {
+    $type: "pub.leaflet.theme.color#rgba" as const,
+    r: Math.round(r),
+    g: Math.round(g),
+    b: Math.round(b),
+    a: Math.round(a * 100),
+  };
+}
 function ColorToRGB(color: Color) {
-  if (!color) return { r: 0, g: 0, b: 0 };
+  if (!color)
+    return {
+      $type: "pub.leaflet.theme.color#rgb" as const,
+      r: 0,
+      g: 0,
+      b: 0,
+    };
   let c = color.toFormat("rgb");
   const r = c.getChannelValue("red");
   const g = c.getChannelValue("green");
   const b = c.getChannelValue("blue");
-  return { r: Math.round(r), g: Math.round(g), b: Math.round(b) };
+  return {
+    $type: "pub.leaflet.theme.color#rgb" as const,
+    r: Math.round(r),
+    g: Math.round(g),
+    b: Math.round(b),
+  };
 }
 
 export const AccentPickers = (props: {
