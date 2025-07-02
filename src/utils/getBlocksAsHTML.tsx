@@ -119,7 +119,7 @@ async function renderBlock(
       <div
         data-type="card"
         data-facts={btoa(JSON.stringify(facts))}
-        data-entityID={card.data.value}
+        data-entityid={card.data.value}
       />,
     );
   }
