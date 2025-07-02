@@ -328,8 +328,8 @@ const createBlockFromHTML = (
     }
   }
 
-  if (child.tagName === "DIV" && child.getAttribute("data-entityID")) {
-    let oldEntityID = child.getAttribute("data-entityID") as string;
+  if (child.tagName === "DIV" && child.getAttribute("data-entityid")) {
+    let oldEntityID = child.getAttribute("data-entityid") as string;
     let factsData = child.getAttribute("data-facts");
     if (factsData) {
       let facts = JSON.parse(atob(factsData)) as Fact<any>[];
@@ -514,7 +514,7 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
           "A",
           "SPAN",
         ].includes(elementNode.tagName) ||
-        elementNode.getAttribute("data-entityID")
+        elementNode.getAttribute("data-entityid")
       ) {
         htmlBlocks.push(elementNode);
       } else {
