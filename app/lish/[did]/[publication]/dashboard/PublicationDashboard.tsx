@@ -21,12 +21,14 @@ export function PublicationDashboard<T extends Tabs>(props: {
       <div className="pubDashHeader flex flex-row gap-2 w-full justify-between border-b border-border text-secondary items-center ">
         <div className="max-w-full w-[1000px] h-full ">
           <div
-            className="flex gap-2 h-fit  py-0.5 px-1 w-fit  rounded-md "
-            style={{
-              backgroundColor: isMobile
-                ? "transparent"
-                : `rgba(var(--bg-leaflet), 0.8)`,
-            }}
+            className="flex gap-2 h-fit  py-0.5 pl-1 pr-2 w-fit  rounded-md "
+            style={
+              !isMobile
+                ? {
+                    backgroundColor: `rgba(var(--bg-leaflet), 0.8)`,
+                  }
+                : {}
+            }
           >
             {props.icon && (
               <div
@@ -39,7 +41,7 @@ export function PublicationDashboard<T extends Tabs>(props: {
                 }}
               />
             )}
-            <div className="pubDashName font-bold grow text-tertiary max-w-full truncate pr-2 sm:block hidden">
+            <div className="pubDashName font-bold grow text-tertiary max-w-full truncate  sm:block hidden">
               {props.name}
             </div>
           </div>
