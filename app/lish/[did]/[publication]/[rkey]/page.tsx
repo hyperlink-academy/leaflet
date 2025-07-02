@@ -17,6 +17,7 @@ import { PublicationThemeProvider } from "components/ThemeManager/PublicationThe
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { PostContent } from "./PostContent";
 import { getIdentityData } from "actions/getIdentityData";
+import { EditTiny } from "components/Icons/EditTiny";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -93,9 +94,7 @@ export default async function Post(props: {
 
   let pubRecord = document.documents_in_publications[0]?.publications
     .record as PubLeafletPublication.Record;
-  let backgroundImage = pubRecord.theme?.backgroundImage?.image;
-  let backgroundImageRepeat = pubRecord.theme?.backgroundImage?.repeat;
-  let backgroundImageSize = pubRecord.theme?.backgroundImage?.width;
+  let hasBackground = !!pubRecord.theme?.backgroundImage;
 
   return (
     <PublicationThemeProvider
@@ -104,8 +103,12 @@ export default async function Post(props: {
         document.documents_in_publications[0].publications.identity_did
       }
     >
-      <div className="flex flex-col px-3 sm:px-4 py-3 sm:py-9 w-full h-full min-h-fit overflow-auto">
-        <div className="max-w-prose mx-auto">
+      <div
+        className={`flex flex-col sm:py-6 h-full   ${hasBackground ? "max-w-prose mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
+      >
+        <div
+          className={`max-w-prose mx-auto px-3 sm:px-4 py-3 ${hasBackground ? "overflow-auto h-full bg-bg-leaflet rounded-lg" : "h-fit"}`}
+        >
           <div className="pubHeader flex flex-col pb-5">
             <Link
               className="font-bold hover:no-underline text-accent-contrast"
@@ -133,10 +136,8 @@ export default async function Post(props: {
               ) : null}
               {record.publishedAt ? (
                 <>
-                  {" "}
                   |
                   <p>
-                    Published{" "}
                     {new Date(record.publishedAt).toLocaleDateString(
                       undefined,
                       {
@@ -171,8 +172,9 @@ export default async function Post(props: {
             document.documents_in_publications[0]?.publications.identity_did ? (
             <a
               href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
+              className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1 mx-auto"
             >
-              Edit Post
+              <EditTiny /> Edit Post
             </a>
           ) : (
             <SubscribeWithBluesky
