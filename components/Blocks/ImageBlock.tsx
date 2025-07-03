@@ -202,7 +202,7 @@ const ImageAlt = (props: { entityID: string }) => {
             placeholder="add alt text..."
           />
         ) : (
-          <div className="text-sm text-secondary w-max"> {altText}</div>
+          <div className="text-sm text-secondary w-full"> {altText}</div>
         )}
       </Popover>
     </div>
