@@ -15,6 +15,8 @@ import { EditPubForm } from "app/lish/createPub/UpdatePubForm";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { usePublicationData } from "./PublicationSWRProvider";
 import { useSmoker } from "components/Toast";
+import { PaintSmall } from "components/Icons/PaintSmall";
+import { PubThemeSetter } from "components/ThemeManager/PubThemeSetter";
 
 export const Actions = (props: { publication: string }) => {
   return (
@@ -31,6 +33,7 @@ export const Actions = (props: { publication: string }) => {
       </Media>
       <NewDraftActionButton publication={props.publication} />
       <PublicationShareButton />
+      <PublicationThemeButton />
       <PublicationSettingsButton publication={props.publication} />
       <hr className="border-border-light" />
       <Media mobile={false}>
@@ -104,7 +107,7 @@ function PublicationSettingsButton(props: { publication: string }) {
   return (
     <Popover
       asChild
-      className="w-80"
+      className="max-w-xs"
       trigger={
         <ActionButton
           id="pub-settings-button"
@@ -114,6 +117,20 @@ function PublicationSettingsButton(props: { publication: string }) {
       }
     >
       <EditPubForm />
+    </Popover>
+  );
+}
+
+function PublicationThemeButton() {
+  return (
+    <Popover
+      asChild
+      className="max-w-xs pb-0 !bg-white"
+      trigger={
+        <ActionButton id="pub-theme-button" icon=<PaintSmall /> label="Theme" />
+      }
+    >
+      <PubThemeSetter />
     </Popover>
   );
 }

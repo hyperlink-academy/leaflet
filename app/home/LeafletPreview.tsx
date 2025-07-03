@@ -61,7 +61,7 @@ export const LeafletPreview = (props: {
 
   return (
     <div className="relative max-h-40 h-40">
-      <ThemeProvider local entityID={root}>
+      <ThemeProvider local entityID={root} className="!w-full">
         <div className="rounded-lg sm:hover:shadow-sm overflow-clip border border-border outline outline-2 outline-transparent outline-offset-1 sm:hover:outline-border bg-bg-leaflet grow w-full h-full">
           {state === "normal" ? (
             <div className="relative w-full h-full">

@@ -38,6 +38,7 @@ export function LeafletSidebar(props: { leaflet_id: string }) {
               <>
                 <PublishButton />
                 <ShareOptions />
+                <ThemePopover entityID={props.leaflet_id} />
                 <HelpPopover />
                 <hr className="text-border" />
                 <BackToPubButton publication={pub.publications} />

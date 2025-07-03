@@ -15,6 +15,8 @@ import * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
 import * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
 import * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
 import * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
+import * as PubLeafletThemeBackgroundImage from './types/pub/leaflet/theme/backgroundImage'
+import * as PubLeafletThemeColor from './types/pub/leaflet/theme/color'
 import * as ComAtprotoLabelDefs from './types/com/atproto/label/defs'
 import * as ComAtprotoRepoApplyWrites from './types/com/atproto/repo/applyWrites'
 import * as ComAtprotoRepoCreateRecord from './types/com/atproto/repo/createRecord'
@@ -40,6 +42,8 @@ export * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
 export * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
 export * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
 export * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
+export * as PubLeafletThemeBackgroundImage from './types/pub/leaflet/theme/backgroundImage'
+export * as PubLeafletThemeColor from './types/pub/leaflet/theme/color'
 export * as ComAtprotoLabelDefs from './types/com/atproto/label/defs'
 export * as ComAtprotoRepoApplyWrites from './types/com/atproto/repo/applyWrites'
 export * as ComAtprotoRepoCreateRecord from './types/com/atproto/repo/createRecord'
@@ -99,6 +103,7 @@ export class PubLeafletNS {
   graph: PubLeafletGraphNS
   pages: PubLeafletPagesNS
   richtext: PubLeafletRichtextNS
+  theme: PubLeafletThemeNS
 
   constructor(client: XrpcClient) {
     this._client = client
@@ -106,6 +111,7 @@ export class PubLeafletNS {
     this.graph = new PubLeafletGraphNS(client)
     this.pages = new PubLeafletPagesNS(client)
     this.richtext = new PubLeafletRichtextNS(client)
+    this.theme = new PubLeafletThemeNS(client)
     this.document = new DocumentRecord(client)
     this.publication = new PublicationRecord(client)
   }
@@ -203,6 +209,14 @@ export class PubLeafletPagesNS {
 }
 
 export class PubLeafletRichtextNS {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+}
+
+export class PubLeafletThemeNS {
   _client: XrpcClient
 
   constructor(client: XrpcClient) {

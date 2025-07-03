@@ -8,12 +8,21 @@ import {
   useMemo,
   useState,
 } from "react";
-import { colorToString, useColorAttribute } from "./useColorAttribute";
+import {
+  colorToString,
+  useColorAttribute,
+  useColorAttributeNullable,
+} from "./useColorAttribute";
 import { Color as AriaColor, parseColor } from "react-aria-components";
 import { parse, contrastLstar, ColorSpace, sRGB } from "colorjs.io/fn";
 
 import { useEntity } from "src/replicache";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import {
+  PublicationBackgroundProvider,
+  PublicationThemeProvider,
+} from "./PublicationThemeProvider";
+import { PubLeafletPublication } from "lexicons/api";
 
 type CSSVariables = {
   "--bg-leaflet": string;
@@ -27,6 +36,7 @@ type CSSVariables = {
   "--highlight-3": string;
 };
 
+// define the color defaults for everything
 export const ThemeDefaults = {
   "theme/page-background": "#F0F7FA",
   "theme/card-background": "#FFFFFF",
@@ -42,6 +52,7 @@ export const ThemeDefaults = {
   "theme/accent-contrast": "#0000FF",
 };
 
+// define a function to set an Aria Color to a CSS Variable in RGB
 function setCSSVariableToColor(
   el: HTMLElement,
   name: string,
@@ -49,58 +60,27 @@ function setCSSVariableToColor(
 ) {
   el?.style.setProperty(name, colorToString(value, "rgb"));
 }
+
+//Create a wrapper that applies a theme to each page
 export function ThemeProvider(props: {
   entityID: string | null;
   local?: boolean;
   children: React.ReactNode;
+  className?: string;
 }) {
   let { data: pub } = useLeafletPublicationData();
-  if (!pub) return <LeafletThemeProvider {...props} />;
-  return <PublicationThemeProvider {...props} />;
-}
-export function PublicationThemeProvider(props: {
-  entityID: string | null;
-  local?: boolean;
-  children: React.ReactNode;
-}) {
-  let bgLeaflet = useMemo(() => {
-    return parseColor(`#FDFCFA`);
-  }, []);
-  let bgPage = useColorAttribute(props.entityID, "theme/card-background");
-  let primary = useColorAttribute(props.entityID, "theme/primary");
-
-  let highlight1 = useEntity(props.entityID, "theme/highlight-1");
-  let highlight2 = useColorAttribute(props.entityID, "theme/highlight-2");
-  let highlight3 = useColorAttribute(props.entityID, "theme/highlight-3");
-
-  let accent1 = useColorAttribute(props.entityID, "theme/accent-background");
-  let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
-  // set accent contrast to the accent color that has the highest contrast with the page background
-  let accentContrast = [accent1, accent2].sort((a, b) => {
-    return (
-      getColorContrast(colorToString(b, "rgb"), colorToString(bgPage, "rgb")) -
-      getColorContrast(colorToString(a, "rgb"), colorToString(bgPage, "rgb"))
-    );
-  })[0];
-
+  if (!pub || !pub.publications) return <LeafletThemeProvider {...props} />;
   return (
-    <BaseThemeProvider
-      local={props.local}
-      bgLeaflet={bgLeaflet}
-      bgPage={bgPage}
-      primary={primary}
-      highlight2={highlight2}
-      highlight3={highlight3}
-      highlight1={highlight1?.data.value}
-      accent1={accent1}
-      accent2={accent2}
-      accentContrast={accentContrast}
-    >
-      {props.children}
-    </BaseThemeProvider>
+    <PublicationThemeProvider
+      {...props}
+      record={pub.publications?.record as PubLeafletPublication.Record}
+      pub_creator={pub.publications?.identity_did}
+    />
   );
 }
+// for PUBLICATIONS: define Aria Colors for each value and use BaseThemeProvider to wrap the content of the page in the theme
 
+// for LEAFLETS : define Aria Colors for each value and use BaseThemeProvider to wrap the content of the page in the theme
 export function LeafletThemeProvider(props: {
   entityID: string | null;
   local?: boolean;
@@ -142,7 +122,8 @@ export function LeafletThemeProvider(props: {
   );
 }
 
-let BaseThemeProvider = ({
+// handles setting all the Aria Color values to CSS Variables and wrapping the page the theme providers
+export const BaseThemeProvider = ({
   local,
   bgLeaflet,
   bgPage,
@@ -260,16 +241,31 @@ export function CardThemeProvider(props: {
   entityID: string;
   children: React.ReactNode;
 }) {
-  let bgPage = useColorAttribute(props.entityID, "theme/card-background");
-  let primary = useColorAttribute(props.entityID, "theme/primary");
-  let accent1 = useColorAttribute(props.entityID, "theme/accent-background");
-  let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
-  let accentContrast = [accent1, accent2].sort((a, b) => {
-    return (
-      getColorContrast(colorToString(b, "rgb"), colorToString(bgPage, "rgb")) -
-      getColorContrast(colorToString(a, "rgb"), colorToString(bgPage, "rgb"))
-    );
-  })[0];
+  let bgPage = useColorAttributeNullable(
+    props.entityID,
+    "theme/card-background",
+  );
+  let primary = useColorAttributeNullable(props.entityID, "theme/primary");
+  let accent1 = useColorAttributeNullable(
+    props.entityID,
+    "theme/accent-background",
+  );
+  let accent2 = useColorAttributeNullable(props.entityID, "theme/accent-text");
+  let accentContrast =
+    bgPage && accent1 && accent2
+      ? [accent1, accent2].sort((a, b) => {
+          return (
+            getColorContrast(
+              colorToString(b, "rgb"),
+              colorToString(bgPage, "rgb"),
+            ) -
+            getColorContrast(
+              colorToString(a, "rgb"),
+              colorToString(bgPage, "rgb"),
+            )
+          );
+        })[0]
+      : null;
 
   return (
     <CardThemeProviderContext.Provider value={props.entityID}>
@@ -277,12 +273,16 @@ export function CardThemeProvider(props: {
         className="contents text-primary"
         style={
           {
-            "--accent-1": colorToString(accent1, "rgb"),
-            "--accent-2": colorToString(accent2, "rgb"),
-            "--accent-contrast": colorToString(accentContrast, "rgb"),
-            "--bg-page": colorToString(bgPage, "rgb"),
-            "--bg-page-alpha": bgPage.getChannelValue("alpha"),
-            "--primary": colorToString(primary, "rgb"),
+            "--accent-1": accent1 ? colorToString(accent1, "rgb") : undefined,
+            "--accent-2": accent2 ? colorToString(accent2, "rgb") : undefined,
+            "--accent-contrast": accentContrast
+              ? colorToString(accentContrast, "rgb")
+              : undefined,
+            "--bg-page": bgPage ? colorToString(bgPage, "rgb") : undefined,
+            "--bg-page-alpha": bgPage
+              ? bgPage.getChannelValue("alpha")
+              : undefined,
+            "--primary": primary ? colorToString(primary, "rgb") : undefined,
           } as CSSProperties
         }
       >
@@ -292,15 +292,27 @@ export function CardThemeProvider(props: {
   );
 }
 
+// Wrapper within the Theme Wrapper that provides background image data
 export const ThemeBackgroundProvider = (props: {
   entityID: string;
   children: React.ReactNode;
 }) => {
+  let { data: pub } = useLeafletPublicationData();
   let backgroundImage = useEntity(props.entityID, "theme/background-image");
   let backgroundImageRepeat = useEntity(
     props.entityID,
     "theme/background-image-repeat",
   );
+  if (pub?.publications) {
+    return (
+      <PublicationBackgroundProvider
+        pub_creator={pub?.publications.identity_did || ""}
+        record={pub?.publications.record as PubLeafletPublication.Record}
+      >
+        {props.children}
+      </PublicationBackgroundProvider>
+    );
+  }
   return (
     <div
       className="LeafletBackgroundWrapper w-full bg-bg-leaflet text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
@@ -322,6 +334,7 @@ export const ThemeBackgroundProvider = (props: {
   );
 };
 
+// used to calculate the contrast between page and accent1, accent2, and determin which is higher contrast
 export function getColorContrast(color1: string, color2: string) {
   ColorSpace.register(sRGB);
 

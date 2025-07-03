@@ -12,7 +12,7 @@ import {
   SliderTrack,
   ColorSwatch,
 } from "react-aria-components";
-import { pickers } from "./ThemeSetter";
+import { pickers } from "../ThemeSetter";
 import { Separator } from "components/Layout";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
 
@@ -101,7 +101,7 @@ export const ColorPicker = (props: {
                         e.currentTarget.blur();
                       } else return;
                     }}
-                    className="w-[72px] bg-transparent outline-none text-primary disabled:text-tertiary"
+                    className="w-[72px] bg-transparent outline-none "
                   />
                 </ColorField>
               </>

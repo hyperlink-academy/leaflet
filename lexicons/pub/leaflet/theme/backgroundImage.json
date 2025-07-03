@@ -1,0 +1,27 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.theme.backgroundImage",
+  "defs": {
+    "main": {
+      "type": "object",
+      "required": [
+        "image"
+      ],
+      "properties": {
+        "image": {
+          "type": "blob",
+          "accept": [
+            "image/*"
+          ],
+          "maxSize": 1000000
+        },
+        "width": {
+          "type": "integer"
+        },
+        "repeat": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

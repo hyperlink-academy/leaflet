@@ -2,12 +2,40 @@
 import { AppBskyActorProfile } from "lexicons/api";
 import { usePublicationData } from "./PublicationSWRProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { ButtonPrimary } from "components/Buttons";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { useSmoker } from "components/Toast";
 
 export function PublicationSubscribers() {
   let { data: publication } = usePublicationData();
+  let smoker = useSmoker();
+
   if (!publication) return <div>null</div>;
   if (publication.publication_subscriptions.length === 0)
-    return <div>No subscribers yet!</div>;
+    return (
+      <div className="italic text-tertiary  flex flex-col gap-0 text-center justify-center pt-4">
+        <p className="font-bold"> No subscribers yet </p>
+        <p>Start sharing your publication!</p>
+        <ButtonPrimary
+          className="mx-auto mt-2"
+          onClick={(e) => {
+            e.preventDefault();
+            let rect = (e.currentTarget as Element)?.getBoundingClientRect();
+            navigator.clipboard.writeText(getPublicationURL(publication!));
+            smoker({
+              position: {
+                x: rect ? rect.left + (rect.right - rect.left) / 2 : 0,
+                y: rect ? rect.top + 26 : 0,
+              },
+              text: "Copied Publication URL!",
+            });
+          }}
+        >
+          Copy Share Link
+        </ButtonPrimary>
+      </div>
+    );
+
   return (
     <div>
       <h2>{publication.publication_subscriptions.length} Subscribers </h2>
