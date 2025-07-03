@@ -148,7 +148,11 @@ export const useLocalPubTheme = (
   const [localOverrides, setTheme] = useState<Partial<typeof pubTheme>>({});
 
   const mergedTheme = useMemo(() => {
-    let newTheme = { ...pubTheme, ...localOverrides };
+    let newTheme = {
+      ...pubTheme,
+      ...localOverrides,
+      bgPage: localOverrides.bgLeaflet || pubTheme.bgLeaflet,
+    };
     let accentContrast = [newTheme.accent1, newTheme.accent2].sort((a, b) => {
       return (
         getColorContrast(
