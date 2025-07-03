@@ -18,7 +18,10 @@ import { parse, contrastLstar, ColorSpace, sRGB } from "colorjs.io/fn";
 
 import { useEntity } from "src/replicache";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
-import { PublicationThemeProvider } from "./PublicationThemeProvider";
+import {
+  PublicationBackgroundProvider,
+  PublicationThemeProvider,
+} from "./PublicationThemeProvider";
 import { PubLeafletPublication } from "lexicons/api";
 
 type CSSVariables = {
@@ -72,7 +75,6 @@ export function ThemeProvider(props: {
       {...props}
       record={pub.publications?.record as PubLeafletPublication.Record}
       pub_creator={pub.publications?.identity_did}
-      className={props.className}
     />
   );
 }
@@ -295,11 +297,22 @@ export const ThemeBackgroundProvider = (props: {
   entityID: string;
   children: React.ReactNode;
 }) => {
+  let { data: pub } = useLeafletPublicationData();
   let backgroundImage = useEntity(props.entityID, "theme/background-image");
   let backgroundImageRepeat = useEntity(
     props.entityID,
     "theme/background-image-repeat",
   );
+  if (pub?.publications) {
+    return (
+      <PublicationBackgroundProvider
+        pub_creator={pub?.publications.identity_did || ""}
+        record={pub?.publications.record as PubLeafletPublication.Record}
+      >
+        {props.children}
+      </PublicationBackgroundProvider>
+    );
+  }
   return (
     <div
       className="LeafletBackgroundWrapper w-full bg-bg-leaflet text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch"

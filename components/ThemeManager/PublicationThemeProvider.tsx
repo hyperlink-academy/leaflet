@@ -54,19 +54,22 @@ export function PublicationThemeProviderDashboard(props: {
       pub_creator={pub?.identity_did || ""}
       record={pub?.record as PubLeafletPublication.Record}
     >
-      {props.children}
+      <PublicationBackgroundProvider
+        record={pub?.record as PubLeafletPublication.Record}
+        pub_creator={pub?.identity_did || ""}
+      >
+        {props.children}
+      </PublicationBackgroundProvider>
     </PublicationThemeProvider>
   );
 }
-export function PublicationThemeProvider(props: {
-  local?: boolean;
-  children: React.ReactNode;
+
+export function PublicationBackgroundProvider(props: {
   record?: PubLeafletPublication.Record | null;
   pub_creator: string;
   className?: string;
+  children: React.ReactNode;
 }) {
-  let colors = usePubTheme(props.record);
-
   let backgroundImage = props.record?.theme?.backgroundImage?.image?.ref
     ? blobRefToSrc(
         props.record?.theme?.backgroundImage?.image?.ref,
@@ -77,17 +80,28 @@ export function PublicationThemeProvider(props: {
   let backgroundImageRepeat = props.record?.theme?.backgroundImage?.repeat;
   let backgroundImageSize = props.record?.theme?.backgroundImage?.width || 500;
   return (
+    <div
+      className={`backgroundWrapper w-screen h-full flex place-items-center bg-bg-page pwa-padding ${props.className}`}
+      style={{
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
+        backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
+      }}
+    >
+      {props.children}
+    </div>
+  );
+}
+export function PublicationThemeProvider(props: {
+  local?: boolean;
+  children: React.ReactNode;
+  record?: PubLeafletPublication.Record | null;
+  pub_creator: string;
+}) {
+  let colors = usePubTheme(props.record);
+  return (
     <BaseThemeProvider local={props.local} {...colors}>
-      <div
-        className={`backgroundWrapper w-screen h-full flex place-items-center bg-bg-page pwa-padding ${props.className}`}
-        style={{
-          backgroundImage: `url(${backgroundImage})`,
-          backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
-          backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
-        }}
-      >
-        {props.children}
-      </div>
+      {props.children}
     </BaseThemeProvider>
   );
 }

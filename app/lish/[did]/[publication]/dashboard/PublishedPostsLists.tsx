@@ -50,13 +50,14 @@ export function PublishedPostsList() {
           return (
             <Fragment key={doc.documents?.uri}>
               <div className="flex gap-2 w-full ">
-                <Link
-                  target="_blank"
-                  href={`${getPublicationURL(publication)}/${uri.rkey}`}
-                  className="publishedPost grow flex flex-col hover:!no-underline"
-                >
+                <div className="publishedPost grow flex flex-col hover:!no-underline">
                   <div className="flex justify-between gap-2">
-                    <h3 className="text-primary grow">{record.title}</h3>
+                    <a
+                      target="_blank"
+                      href={`${getPublicationURL(publication)}/${uri.rkey}`}
+                    >
+                      <h3 className="text-primary grow">{record.title}</h3>
+                    </a>
                     <div className="flex justify-start align-top flex-row gap-1">
                       {leaflet && (
                         <Link className="pt-[6px]" href={`/${leaflet.leaflet}`}>
@@ -85,7 +86,7 @@ export function PublishedPostsList() {
                       )}
                     </p>
                   ) : null}
-                </Link>
+                </div>
               </div>
               <hr className="last:hidden border-border-light" />
             </Fragment>
