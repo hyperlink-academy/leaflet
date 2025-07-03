@@ -18,6 +18,7 @@ import * as Slider from "@radix-ui/react-slider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { ButtonSecondary } from "components/Buttons";
 import { updatePublicationTheme } from "app/lish/createPub/updatePublication";
+import { DotLoader } from "components/utils/DotLoader";
 
 type ImageState = {
   src: string;
@@ -25,6 +26,7 @@ type ImageState = {
   repeat: number | null;
 };
 export const PubThemeSetter = () => {
+  let [loading, setLoading] = useState(false);
   let [openPicker, setOpenPicker] = useState<pickers>("null");
   let { data: pub, mutate } = usePublicationData();
   let record = pub?.record as PubLeafletPublication.Record | undefined;
@@ -53,6 +55,7 @@ export const PubThemeSetter = () => {
           e.preventDefault();
           if (!pub) return;
           console.log(image);
+          setLoading(true);
           let result = await updatePublicationTheme({
             uri: pub.uri,
             theme: {
@@ -72,9 +75,10 @@ export const PubThemeSetter = () => {
               return { ...pub, record: result.publication.record };
             return pub;
           }, false);
+          setLoading(false);
         }}
       >
-        <ButtonSecondary>Update</ButtonSecondary>
+        <ButtonSecondary>{loading ? <DotLoader /> : "Update"}</ButtonSecondary>
       </form>
       <div>
         <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
