@@ -54,19 +54,22 @@ export function PublicationThemeProviderDashboard(props: {
       pub_creator={pub?.identity_did || ""}
       record={pub?.record as PubLeafletPublication.Record}
     >
-      {props.children}
+      <PublicationBackgroundProvider
+        record={pub?.record as PubLeafletPublication.Record}
+        pub_creator={pub?.identity_did || ""}
+      >
+        {props.children}
+      </PublicationBackgroundProvider>
     </PublicationThemeProvider>
   );
 }
-export function PublicationThemeProvider(props: {
-  local?: boolean;
-  children: React.ReactNode;
+
+export function PublicationBackgroundProvider(props: {
   record?: PubLeafletPublication.Record | null;
   pub_creator: string;
   className?: string;
+  children: React.ReactNode;
 }) {
-  let colors = usePubTheme(props.record);
-
   let backgroundImage = props.record?.theme?.backgroundImage?.image?.ref
     ? blobRefToSrc(
         props.record?.theme?.backgroundImage?.image?.ref,
@@ -77,17 +80,28 @@ export function PublicationThemeProvider(props: {
   let backgroundImageRepeat = props.record?.theme?.backgroundImage?.repeat;
   let backgroundImageSize = props.record?.theme?.backgroundImage?.width || 500;
   return (
+    <div
+      className={`backgroundWrapper w-screen h-full flex place-items-center bg-bg-page pwa-padding ${props.className}`}
+      style={{
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
+        backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
+      }}
+    >
+      {props.children}
+    </div>
+  );
+}
+export function PublicationThemeProvider(props: {
+  local?: boolean;
+  children: React.ReactNode;
+  record?: PubLeafletPublication.Record | null;
+  pub_creator: string;
+}) {
+  let colors = usePubTheme(props.record);
+  return (
     <BaseThemeProvider local={props.local} {...colors}>
-      <div
-        className={`backgroundWrapper w-screen h-full flex place-items-center bg-bg-page pwa-padding ${props.className}`}
-        style={{
-          backgroundImage: `url(${backgroundImage})`,
-          backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
-          backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
-        }}
-      >
-        {props.children}
-      </div>
+      {props.children}
     </BaseThemeProvider>
   );
 }
@@ -134,7 +148,23 @@ export const useLocalPubTheme = (
   const [localOverrides, setTheme] = useState<Partial<typeof pubTheme>>({});
 
   const mergedTheme = useMemo(() => {
-    return { ...pubTheme, ...localOverrides };
+    let newTheme = { ...pubTheme, ...localOverrides };
+    let accentContrast = [newTheme.accent1, newTheme.accent2].sort((a, b) => {
+      return (
+        getColorContrast(
+          colorToString(b, "rgb"),
+          colorToString(newTheme.bgLeaflet, "rgb"),
+        ) -
+        getColorContrast(
+          colorToString(a, "rgb"),
+          colorToString(newTheme.bgLeaflet, "rgb"),
+        )
+      );
+    })[0];
+    return {
+      ...newTheme,
+      accentContrast,
+    };
   }, [pubTheme, localOverrides]);
 
   return {
