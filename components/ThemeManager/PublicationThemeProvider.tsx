@@ -81,7 +81,7 @@ export function PublicationBackgroundProvider(props: {
   let backgroundImageSize = props.record?.theme?.backgroundImage?.width || 500;
   return (
     <div
-      className={`backgroundWrapper w-screen h-full flex place-items-center bg-bg-page pwa-padding ${props.className}`}
+      className={`backgroundWrapper w-full h-full flex place-items-center bg-bg-page pwa-padding ${props.className}`}
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
