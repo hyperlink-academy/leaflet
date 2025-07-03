@@ -125,7 +125,7 @@ function PublicationThemeButton() {
   return (
     <Popover
       asChild
-      className="max-w-xs pb-0"
+      className="max-w-xs pb-0 !bg-white"
       trigger={
         <ActionButton id="pub-theme-button" icon=<PaintSmall /> label="Theme" />
       }

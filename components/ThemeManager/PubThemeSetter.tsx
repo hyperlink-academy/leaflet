@@ -10,7 +10,7 @@ import {
 } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { useLocalPubTheme } from "./PublicationThemeProvider";
-import { BaseThemeProvider } from "./ThemeProvider";
+import { BaseThemeProvider, getColorContrast } from "./ThemeProvider";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { ColorPicker } from "./Pickers/ColorPicker";
 import { CloseContrastSmall } from "components/Icons/CloseContrastSmall";
@@ -18,6 +18,7 @@ import * as Slider from "@radix-ui/react-slider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { ButtonSecondary } from "components/Buttons";
 import { updatePublicationTheme } from "app/lish/createPub/updatePublication";
+import { colorToString } from "./useColorAttribute";
 
 type ImageState = {
   src: string;
@@ -150,7 +151,7 @@ export const PubThemeSetter = () => {
           </div>
           <div className="flex flex-col mt-4 ">
             <div className="text-sm text-[#8C8C8C]">Page Preview</div>
-            <SamplePage pubBGImage={pubBGImage} pubBGRepeat={leafletBGRepeat} />
+            <SamplePub pubBGImage={pubBGImage} pubBGRepeat={leafletBGRepeat} />
           </div>
         </div>
       </div>
@@ -158,7 +159,72 @@ export const PubThemeSetter = () => {
   );
 };
 
-const SamplePage = (props: {
+const SamplePub = (props: {
+  pubBGImage: string | null;
+  pubBGRepeat: number | null;
+}) => {
+  let { data: publication } = usePublicationData();
+  let record = publication?.record as PubLeafletPublication.Record | null;
+
+  let backgroundAlpha = window
+    .getComputedStyle(document.body)
+    .getPropertyValue("--bg-page-alpha");
+
+  let hasBackground = props.pubBGImage !== null && backgroundAlpha !== "0";
+
+  return (
+    <div
+      style={{
+        backgroundImage: props.pubBGImage
+          ? `url(${props.pubBGImage})`
+          : undefined,
+        backgroundRepeat: props.pubBGRepeat ? "repeat" : "no-repeat",
+        backgroundPosition: "center",
+        backgroundSize: !props.pubBGRepeat
+          ? "cover"
+          : `calc(${props.pubBGRepeat}px / 2 )`,
+      }}
+      className={`bg-bg-leaflet p-3  flex flex-col gap-3 rounded-t-md  border border-border border-b-0 pb-4`}
+    >
+      <div className="flex flex-col justify-center text-center pt-1">
+        {record?.icon && publication?.uri && (
+          <div
+            style={{
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "center",
+              backgroundSize: "cover",
+              backgroundImage: `url(/api/atproto_images?did=${new AtUri(publication.uri).host}&cid=${(record.icon?.ref as unknown as { $link: string })["$link"]})`,
+            }}
+            className="w-5 h-5 rounded-full place-self-center"
+          />
+        )}
+        <div className="sampleContent">
+          <div className="text-xs font-bold pt-1 text-accent-contrast">
+            {record?.name}
+          </div>
+          <div className="text-[8px] font-normal text-tertiary">
+            {record?.description}
+          </div>
+        </div>
+        <div
+          className="flex flex-col text-[8px] py-1 px-[6px] rounded-md "
+          style={{
+            background: hasBackground
+              ? "rgba(var(--bg-leaflet), var(--bg-page-alpha))"
+              : undefined,
+          }}
+        >
+          <div className="font-bold">A Sample Post</div>
+          <div className="text-secondary italic">
+            This is a sample description about the sample post
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SamplePost = (props: {
   pubBGImage: string | null;
   pubBGRepeat: number | null;
 }) => {
