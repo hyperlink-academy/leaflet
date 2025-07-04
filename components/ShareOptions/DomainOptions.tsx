@@ -81,7 +81,7 @@ export const DomainOptions = (props: {
       <h3 className="text-secondary">Choose a Domain</h3>
       <div className="flex flex-col gap-1 text-secondary">
         {identity?.custom_domains
-          .filter((d) => !d.publication_domains)
+          .filter((d) => !d.publication_domains.length)
           .map((domain) => {
             return (
               <DomainOption
