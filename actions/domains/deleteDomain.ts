@@ -23,7 +23,7 @@ export async function deleteDomain({ domain }: { domain: string }) {
       `*,
           identities(
             *,
-            custom_domains(*)
+            custom_domains!custom_domains_identity_fkey(*)
           )`,
     )
     .eq("id", auth_token)

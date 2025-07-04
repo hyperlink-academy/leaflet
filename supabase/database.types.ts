@@ -118,18 +118,21 @@ export type Database = {
           created_at: string
           domain: string
           identity: string | null
+          identity_id: string | null
         }
         Insert: {
           confirmed: boolean
           created_at?: string
           domain: string
           identity?: string | null
+          identity_id?: string | null
         }
         Update: {
           confirmed?: boolean
           created_at?: string
           domain?: string
           identity?: string | null
+          identity_id?: string | null
         }
         Relationships: [
           {
@@ -138,6 +141,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "identities"
             referencedColumns: ["email"]
+          },
+          {
+            foreignKeyName: "custom_domains_identity_id_fkey"
+            columns: ["identity_id"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
           },
         ]
       }
