@@ -19,18 +19,19 @@ let supabase = createServerClient<Database>(
 
 export async function addDomain(domain: string) {
   let identity = await getIdentityData();
-  if (!identity || !identity.email) return {};
+  if (!identity || (!identity.email && !identity.atp_did)) return {};
   if (
     domain.includes("leaflet.pub") &&
-    ![
-      "celine@hyperlink.academy",
-      "brendan@hyperlink.academy",
-      "jared@hyperlink.academy",
-      "brendan.schlagel@gmail.com",
-    ].includes(identity.email)
+    (!identity.email ||
+      ![
+        "celine@hyperlink.academy",
+        "brendan@hyperlink.academy",
+        "jared@hyperlink.academy",
+        "brendan.schlagel@gmail.com",
+      ].includes(identity.email))
   )
     return {};
-  return await createDomain(domain, identity.email);
+  return await createDomain(domain, identity.email, identity.id);
 }
 
 export async function addPublicationDomain(
@@ -46,7 +47,7 @@ export async function addPublicationDomain(
     .single();
 
   if (publication?.identity_did !== identity.atp_did) return {};
-  let { error } = await createDomain(domain, null);
+  let { error } = await createDomain(domain, null, identity.id);
   if (error) return { error };
   await supabase.from("publication_domains").insert({
     publication: publication_uri,
@@ -56,7 +57,11 @@ export async function addPublicationDomain(
   return {};
 }
 
-async function createDomain(domain: string, email: string | null) {
+async function createDomain(
+  domain: string,
+  email: string | null,
+  identity_id: string,
+) {
   try {
     await vercel.projects.addProjectDomain({
       idOrName: "prj_9jX4tmYCISnm176frFxk07fF74kG",
@@ -87,6 +92,7 @@ async function createDomain(domain: string, email: string | null) {
     domain,
     identity: email,
     confirmed: false,
+    identity_id,
   });
   return {};
 }
