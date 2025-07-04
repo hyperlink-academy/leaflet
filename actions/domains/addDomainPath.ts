@@ -21,11 +21,7 @@ export async function addDomainPath({
   route: string;
 }) {
   let auth_data = await getIdentityData();
-  if (
-    !auth_data ||
-    !auth_data.email ||
-    !auth_data.custom_domains.find((d) => d.domain === domain)
-  )
+  if (!auth_data || !auth_data.custom_domains.find((d) => d.domain === domain))
     return null;
 
   await supabase
