@@ -53,6 +53,7 @@
     "fractional-indexing": "^3.2.0",
     "hono": "^4.7.11",
     "ioredis": "^5.6.1",
+    "katex": "^0.16.22",
     "linkifyjs": "^4.2.0",
     "multiformats": "^13.3.2",
     "next": "15.3.2",
@@ -106,7 +107,7 @@
     "supabase": "^1.187.3",
     "tailwindcss": "^3.4.3",
     "tsx": "^4.19.3",
-    "typescript": "^5.5.3",
+    "typescript": "^5.8.3",
     "wrangler": "^3.56.0"
   },
   "overrides": {

@@ -5,6 +5,8 @@ import { elementId } from "src/utils/elementId";
 
 import { useEditorStates } from "src/state/useEditorState";
 import { scrollIntoViewIfNeeded } from "./scrollIntoViewIfNeeded";
+import { getPosAtCoordinates } from "./getCoordinatesInTextarea";
+import { useCoordState } from "components/utils/CoordDebugger";
 
 export function focusBlock(
   block: Pick<Block, "type" | "value" | "parent">,
@@ -21,6 +23,36 @@ export function focusBlock(
     document.getElementById(elementId.block(block.value).container),
     false,
   );
+  if (block.type === "math") {
+    setTimeout(() => {
+      //Change the constants here based on padding!
+      if (position.type === "top") {
+        let top =
+          document
+            .getElementById(elementId.block(block.value).container)
+            ?.getBoundingClientRect().top || 0;
+        let pos = getPosAtCoordinates(position.left, top + 32);
+        if (pos.offset) {
+          let el = pos.textNode as HTMLTextAreaElement;
+          el.focus();
+          el?.setSelectionRange(pos.offset, pos.offset);
+        }
+      }
+      if (position.type === "bottom") {
+        let bottom =
+          document
+            .getElementById(elementId.block(block.value).container)
+            ?.getBoundingClientRect().bottom || 0;
+
+        let pos = getPosAtCoordinates(position.left, bottom - 32);
+        if (pos.offset) {
+          let el = pos.textNode as HTMLTextAreaElement;
+          el.focus();
+          el?.setSelectionRange(pos.offset, pos.offset);
+        }
+      }
+    }, 10);
+  }
 
   // if its not a text block, that's all we need to do
   if (block.type !== "text" && block.type !== "heading") {
@@ -44,10 +76,12 @@ export function focusBlock(
       break;
     }
     case "top": {
+      console.log(position.left);
       pos = nextBlock.view.posAtCoords({
         top: nextBlockViewClientRect.top + 12,
         left: position.left,
       });
+      console.log(pos);
       break;
     }
     case "bottom": {

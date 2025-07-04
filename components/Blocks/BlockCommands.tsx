@@ -283,6 +283,15 @@ export const blockCommands: Command[] = [
       createBlockWithType(rep, props, "bluesky-post");
     },
   },
+  {
+    name: "Math",
+    icon: "ICON",
+    type: "block",
+    hiddenInPublication: false,
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "math");
+    },
+  },
 
   // EVENT STUFF
 

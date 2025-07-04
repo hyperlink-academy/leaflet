@@ -26,7 +26,7 @@ export const AutosizeTextarea = forwardRef<HTMLTextAreaElement, Props>(
           rows={1}
           {...props}
           ref={textarea}
-          className="placeholder:text-tertiary bg-transparent"
+          className={`placeholder:text-tertiary bg-transparent ${props.className}`}
         />
       </div>
     );

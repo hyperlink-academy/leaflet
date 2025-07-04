@@ -83,6 +83,10 @@ const BlockAttributes = {
     type: "bluesky-post",
     cardinality: "one",
   },
+  "block/math": {
+    type: "string",
+    cardinality: "one",
+  },
 } as const;
 
 const MailboxAttributes = {
@@ -313,7 +317,8 @@ export type Data<A extends keyof typeof Attributes> = {
       | "embed"
       | "button"
       | "poll"
-      | "bluesky-post";
+      | "bluesky-post"
+      | "math";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";

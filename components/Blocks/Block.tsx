@@ -26,6 +26,7 @@ import { BlueskyPostBlock } from "./BlueskyPostBlock";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { LockTiny } from "components/Icons/LockTiny";
+import { MathBlock } from "./MathBlock";
 
 export type Block = {
   factID: string;
@@ -168,6 +169,7 @@ const BlockTypeComponents: {
     BlockProps & { preview?: boolean }
   >;
 } = {
+  math: MathBlock,
   card: PageLinkBlock,
   text: TextBlock,
   heading: TextBlock,
