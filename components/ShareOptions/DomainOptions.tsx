@@ -263,6 +263,7 @@ export const AddDomain = (props: {
   setDomainMenuState: (state: DomainMenuState) => void;
 }) => {
   let [value, setValue] = useState("");
+  let { mutate } = useIdentityData();
   let smoker = useSmoker();
   return (
     <div className="flex flex-col gap-1 px-3 py-1 max-w-full w-[600px]">
@@ -302,6 +303,7 @@ export const AddDomain = (props: {
             });
             return;
           }
+          mutate();
           props.setDomainMenuState({ state: "domain-settings", domain: value });
         }}
       >
