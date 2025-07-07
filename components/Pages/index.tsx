@@ -37,6 +37,8 @@ import { ShareSmall } from "components/Icons/ShareSmall";
 import { PublicationMetadata } from "./PublicationMetadata";
 import { useCardBorderHidden } from "./useCardBorderHidden";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { Quote$inboundSchema } from "@vercel/sdk/esm/models/getconfigurationsop";
+import { QuoteEmbedBlock } from "components/Blocks/QuoteEmbedBlock";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -234,6 +236,7 @@ const DocContent = (props: { entityID: string }) => {
         />
       ) : null}
       <PublicationMetadata cardBorderHidden={!!cardBorderHidden} />
+      <QuoteEmbedBlock />
       <Blocks entityID={props.entityID} />
       {/* we handle page bg in this sepate div so that
     we can apply an opacity the background image

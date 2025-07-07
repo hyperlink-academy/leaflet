@@ -16,6 +16,7 @@ import { v7 } from "uuid";
 import { Block } from "./Block";
 import { useEffect } from "react";
 import { addShortcut } from "src/shortcuts";
+import { QuoteEmbedBlock } from "./QuoteEmbedBlock";
 
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();

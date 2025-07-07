@@ -244,6 +244,12 @@ input[type="number"] {
   @apply outline-border;
 }
 
+.transparent-container {
+  @apply border;
+  @apply border-border-light;
+  @apply rounded-md;
+}
+
 .container {
   background: rgba(var(--bg-page), 0.5);
   @apply border;
