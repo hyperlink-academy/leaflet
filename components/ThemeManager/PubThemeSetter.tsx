@@ -128,9 +128,18 @@ export const PubThemeSetter = () => {
                 ? "cover"
                 : `calc(${leafletBGRepeat}px / 2 )`,
             }}
-            className={`bg-bg-leaflet p-3 flex flex-col rounded-md  border border-border `}
+            className={` relative bg-bg-leaflet p-3 flex flex-col rounded-md  border border-border `}
           >
-            <div className={`flex flex-col z-10 mt-2 -mb-[6px] `}>
+            {pubBGImage && (
+              <div
+                className="absolute top-0 bottom-0 right-0 left-0"
+                style={{
+                  backgroundColor:
+                    "rgba(var(--bg-leaflet), var(--bg-page-alpha))",
+                }}
+              />
+            )}
+            <div className={`flex flex-col z-20 mt-2 -mb-[6px] `}>
               <AccentPickers
                 accent1={localPubTheme.accent1}
                 setAccent1={(color) => {
@@ -187,40 +196,47 @@ const SamplePub = (props: {
           ? "cover"
           : `calc(${props.pubBGRepeat}px / 2 )`,
       }}
-      className={`bg-bg-leaflet p-3  flex flex-col gap-3 rounded-t-md  border border-border border-b-0 pb-4`}
+      className={`bg-bg-leaflet p-3  flex flex-col gap-3 rounded-t-md  border border-border border-b-0 pb-0`}
     >
-      <div className="flex flex-col justify-center text-center pt-1">
-        {record?.icon && publication?.uri && (
-          <div
-            style={{
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "center",
-              backgroundSize: "cover",
-              backgroundImage: `url(/api/atproto_images?did=${new AtUri(publication.uri).host}&cid=${(record.icon?.ref as unknown as { $link: string })["$link"]})`,
-            }}
-            className="w-5 h-5 rounded-full place-self-center"
-          />
-        )}
-        <div className="sampleContent">
+      <div
+        className="sampleContent rounded-md border-border pb-4 px-1"
+        style={{
+          background: hasBackground
+            ? "rgba(var(--bg-leaflet), var(--bg-page-alpha))"
+            : undefined,
+        }}
+      >
+        <div className="flex flex-col justify-center text-center pt-2">
+          {record?.icon && publication?.uri && (
+            <div
+              style={{
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center",
+                backgroundSize: "cover",
+                backgroundImage: `url(/api/atproto_images?did=${new AtUri(publication.uri).host}&cid=${(record.icon?.ref as unknown as { $link: string })["$link"]})`,
+              }}
+              className="w-5 h-5 rounded-full place-self-center"
+            />
+          )}
+
           <div className="text-xs font-bold pt-1 text-accent-contrast">
             {record?.name}
           </div>
           <div className="text-[8px] font-normal text-tertiary">
             {record?.description}
           </div>
+          <div className=" flex gap-1 items-center mt-[6px] bg-accent-1 text-accent-2 py-[1px] px-[4px] text-[8px] w-fit font-bold rounded-[3px] mx-auto">
+            <div className="h-2 w-2 rounded-full bg-accent-2" />
+            Subscribe with Bluesky
+          </div>
         </div>
-        <div
-          className="flex flex-col text-[8px] py-1 px-[6px] rounded-md "
-          style={{
-            background: hasBackground
-              ? "rgba(var(--bg-leaflet), var(--bg-page-alpha))"
-              : undefined,
-          }}
-        >
+
+        <div className="flex flex-col text-[8px] py-1  pt-1 px-[6px] rounded-md ">
           <div className="font-bold">A Sample Post</div>
-          <div className="text-secondary italic">
+          <div className="text-secondary italic text-[6px]">
             This is a sample description about the sample post
           </div>
+          <div className="text-tertiary  text-[5px] pt-[2px]">Jan 1, 20XX </div>
         </div>
       </div>
     </div>
@@ -278,7 +294,7 @@ const SamplePost = (props: {
 
 function SampleButton() {
   return (
-    <div className="w-full py-2 bg-accent-1 text-accent-2 font-bold text-lg text-center rounded-lg">
+    <div className="w-full z-10 py-2 bg-accent-1 text-accent-2 font-bold text-lg text-center rounded-lg">
       Sample Button
     </div>
   );
