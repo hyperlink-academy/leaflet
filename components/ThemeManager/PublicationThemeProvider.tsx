@@ -11,6 +11,7 @@ import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
 const PubThemeDefaults = {
   backgroundColor: "#FDFCFA",
+  pageBackground: "#FDFCFA",
   primary: "#272727",
   accentText: "#FFFFFF",
   accentBackground: "#0000FF",
@@ -108,6 +109,7 @@ export function PublicationThemeProvider(props: {
 
 export const usePubTheme = (record?: PubLeafletPublication.Record | null) => {
   let bgLeaflet = useColor(record, "backgroundColor");
+  let bgPage = useColor(record, "pageBackground");
   let primary = useColor(record, "primary");
 
   let accent1 = useColor(record, "accentBackground");
@@ -130,7 +132,7 @@ export const usePubTheme = (record?: PubLeafletPublication.Record | null) => {
   return {
     bgLeaflet,
     //For now we have a single color we use for both background, or if there's a background image, containers
-    bgPage: bgLeaflet,
+    bgPage,
     primary,
     accent1,
     accent2,

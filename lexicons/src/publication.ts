@@ -30,7 +30,7 @@ export const PubLeafletPublication: LexiconDoc = {
           ref: PubLeafletThemeBackgroundImage.id,
         },
         primary: ColorUnion,
-        page: ColorUnion,
+        pageBackground: ColorUnion,
         accentBackground: ColorUnion,
         accentText: ColorUnion,
       },
