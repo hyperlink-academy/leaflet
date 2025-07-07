@@ -10,8 +10,9 @@ import {
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { TextBlock } from "./TextBlock";
 import { Popover } from "components/Popover";
-import { ImageAltSmall } from "components/Toolbar/ImageToolbar";
 import { theme } from "tailwind.config";
+import { ServerSafePopover } from "./ServerSafePopover";
+import { ImageAltSmall } from "components/Icons/ImageAlt";
 
 export function PostContent({
   blocks,
@@ -125,7 +126,7 @@ let Block = ({
           />
           {b.block.alt && (
             <div className="absolute bottom-1.5 right-2 h-max">
-              <Popover
+              <ServerSafePopover
                 className="text-sm max-w-xs  min-w-0"
                 side="left"
                 trigger={<ImageAltSmall fillColor={theme.colors["bg-page"]} />}
@@ -133,7 +134,7 @@ let Block = ({
                 <div className="text-sm text-secondary w-full">
                   {b.block.alt}
                 </div>
-              </Popover>
+              </ServerSafePopover>
             </div>
           )}
         </div>
