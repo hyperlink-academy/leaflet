@@ -12,11 +12,11 @@ import { elementId } from "src/utils/elementId";
 import { createContext, useContext, useEffect, useState } from "react";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { Popover } from "components/Popover";
-import { ImageAltSmall } from "components/Toolbar/ImageToolbar";
 import { theme } from "tailwind.config";
 import { EditTiny } from "components/Icons/EditTiny";
 import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { set } from "colorjs.io/fn";
+import { ImageAltSmall } from "components/Icons/ImageAlt";
 
 export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let { rep } = useReplicache();
