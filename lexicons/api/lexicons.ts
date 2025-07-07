@@ -119,7 +119,7 @@ export const schemaDict = {
               'lex:pub.leaflet.theme.color#rgb',
             ],
           },
-          page: {
+          pageBackground: {
             type: 'union',
             refs: [
               'lex:pub.leaflet.theme.color#rgba',

@@ -43,7 +43,7 @@ export interface Theme {
     | $Typed<PubLeafletThemeColor.Rgba>
     | $Typed<PubLeafletThemeColor.Rgb>
     | { $type: string }
-  page?:
+  pageBackground?:
     | $Typed<PubLeafletThemeColor.Rgba>
     | $Typed<PubLeafletThemeColor.Rgb>
     | { $type: string }

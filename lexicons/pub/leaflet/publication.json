@@ -59,7 +59,7 @@
             "pub.leaflet.theme.color#rgb"
           ]
         },
-        "page": {
+        "pageBackground": {
           "type": "union",
           "refs": [
             "pub.leaflet.theme.color#rgba",
