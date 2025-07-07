@@ -1,3 +1,4 @@
+"use client";
 import { ToolbarButton } from ".";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
