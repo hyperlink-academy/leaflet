@@ -177,10 +177,20 @@ const ImageAlt = (props: { entityID: string }) => {
     <div className="absolute bottom-0 right-2 h-max">
       <Popover
         open={altEditorOpen}
-        onOpenChange={(o) => setAltEditorOpen(o ? props.entityID : null)}
         className="text-sm max-w-xs  min-w-0"
         side="left"
-        trigger={<ImageAltSmall fillColor={theme.colors["bg-page"]} />}
+        asChild
+        trigger={
+          <button
+            onClick={() =>
+              setAltEditorOpen(altEditorOpen ? null : props.entityID)
+            }
+          >
+            <ImageAltSmall
+              fillColor={theme.colors["bg-page"]}
+            />
+          </button>
+        }
       >
         {entity_set.permissions.write ? (
           <AsyncValueAutosizeTextarea
