@@ -91,7 +91,7 @@ export const BackgroundPicker = (props: {
         setOpenPicker={props.setOpenPicker}
         alpha={props.hasPageBackground ? true : false}
       />
-      <hr />
+      <hr className="border-border-light" />
       <div className="flex gap-2 items-center">
         <Toggle
           toggleOn={props.hasPageBackground}
