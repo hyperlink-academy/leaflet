@@ -66,10 +66,7 @@ export default async function Publication(props: {
 
   let record = publication?.record as PubLeafletPublication.Record | null;
 
-  let backgroundAlpha =
-    PubLeafletThemeColor.isRgba(record?.theme?.pageBackground) &&
-    record?.theme?.pageBackground?.a;
-  let hasBackground = !!record?.theme?.pageBackground && backgroundAlpha !== 0;
+  let showPageBackground = record?.theme?.showPageBackground;
 
   if (!publication) return <PubNotFound />;
   try {
@@ -83,10 +80,10 @@ export default async function Publication(props: {
           pub_creator={publication.identity_did}
         >
           <div
-            className={`pubWrapper flex flex-col sm:py-6 h-full   ${hasBackground ? "max-w-prose mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
+            className={`pubWrapper flex flex-col sm:py-6 h-full   ${showPageBackground ? "max-w-prose mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
           >
             <div
-              className={`pub sm:max-w-prose max-w-[var(--page-width-units)] w-[1000px] mx-auto px-3 sm:px-4 py-5  ${hasBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg" : "h-fit"}`}
+              className={`pub sm:max-w-prose max-w-[var(--page-width-units)] w-[1000px] mx-auto px-3 sm:px-4 py-5  ${showPageBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg" : "h-fit"}`}
             >
               <div className="pubHeader flex flex-col pb-8 w-full text-center justify-center ">
                 {record?.icon && (

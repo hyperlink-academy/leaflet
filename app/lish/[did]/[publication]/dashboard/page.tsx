@@ -65,11 +65,8 @@ export default async function Publication(props: {
   );
 
   let record = publication?.record as PubLeafletPublication.Record | null;
-  let backgroundAlpha =
-    PubLeafletThemeColor.isRgba(record?.theme?.pageBackground) &&
-    record?.theme?.pageBackground?.a;
 
-  let hasBackground = !!record?.theme?.pageBackground && backgroundAlpha !== 0;
+  let showPageBackground = !!record?.theme?.showPageBackground;
 
   if (!publication || identity.atp_did !== publication.identity_did)
     return <PubNotFound />;
@@ -95,7 +92,7 @@ export default async function Publication(props: {
                 </div>
               </div>
               <div
-                className={`pubDash grow sm:h-full h-32 w-full flex flex-col items-stretch pt-2 sm:pt-6   ml-[6px] sm:ml-0 max-w-[var(--page-width-units)] ${hasBackground ? "sm:pb-8 pb-1" : "pb-0"}`}
+                className={`pubDash grow sm:h-full h-32 w-full flex flex-col items-stretch pt-2 sm:pt-6   ml-[6px] sm:ml-0 max-w-[var(--page-width-units)] ${showPageBackground ? "sm:pb-8 pb-1" : "pb-0"}`}
               >
                 <PublicationDashboard
                   did={did}
@@ -107,7 +104,7 @@ export default async function Publication(props: {
                     Subscribers: <PublicationSubscribers />,
                   }}
                   defaultTab={"Drafts"}
-                  hasBackground={hasBackground}
+                  showPageBackground={showPageBackground}
                 />
               </div>
               <Footer>

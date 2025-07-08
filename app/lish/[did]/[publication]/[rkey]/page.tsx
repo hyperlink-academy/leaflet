@@ -97,12 +97,7 @@ export default async function Post(props: {
   let pubRecord = document.documents_in_publications[0]?.publications
     .record as PubLeafletPublication.Record;
 
-  let pageBackgroundAlpha =
-    PubLeafletThemeColor.isRgba(pubRecord?.theme?.pageBackground) &&
-    pubRecord?.theme?.pageBackground?.a;
-
-  let hasPageBackground =
-    pubRecord.theme?.pageBackground !== undefined && pageBackgroundAlpha !== 0;
+  let hasPageBackground = !!pubRecord.theme?.showPageBackground;
 
   return (
     <PublicationThemeProvider

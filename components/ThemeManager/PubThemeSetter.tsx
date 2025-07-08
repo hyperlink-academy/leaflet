@@ -170,12 +170,7 @@ const SamplePub = (props: {
   let { data: publication } = usePublicationData();
   let record = publication?.record as PubLeafletPublication.Record | null;
 
-  let backgroundAlpha = window
-    .getComputedStyle(document.body)
-    .getPropertyValue("--bg-page-alpha");
-
-  let hasBackground =
-    !!record?.theme?.pageBackground && backgroundAlpha !== "0";
+  let showPageBackground = record?.theme?.showPageBackground;
 
   return (
     <div
@@ -194,7 +189,7 @@ const SamplePub = (props: {
       <div
         className="sampleContent rounded-md border-border pb-4 px-[6px]"
         style={{
-          background: hasBackground
+          background: showPageBackground
             ? "rgba(var(--bg-page), var(--bg-page-alpha))"
             : undefined,
         }}

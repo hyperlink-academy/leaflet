@@ -92,24 +92,29 @@ export const BackgroundPicker = (props: {
         alpha={props.hasPageBackground ? true : false}
       />
       <hr />
-      <button
-        className="flex gap-2 items-center"
-        onClick={() => {
-          props.setHasPageBackground(!props.hasPageBackground);
-          props.hasPageBackground && props.setOpenPicker("null");
-        }}
-      >
+      <div className="flex gap-2 items-center">
         <Toggle
           toggleOn={props.hasPageBackground}
-          setToggleOn={() => {}}
+          setToggleOn={() => {
+            props.setHasPageBackground(!props.hasPageBackground);
+            props.hasPageBackground && props.setOpenPicker("null");
+          }}
           disabledColor1="#8C8C8C"
           disabledColor2="#DBDBDB"
         />
-        <div className="font-bold">Page Background</div>{" "}
-        <div className="italic text-[#8C8C8C]">
-          {props.hasPageBackground ? "" : "hidden"}
-        </div>
-      </button>
+        <button
+          className="flex gap-2 items-center"
+          onClick={() => {
+            props.setHasPageBackground(!props.hasPageBackground);
+            props.hasPageBackground && props.setOpenPicker("null");
+          }}
+        >
+          <div className="font-bold">Page Background</div>
+          <div className="italic text-[#8C8C8C]">
+            {props.hasPageBackground ? "" : "hidden"}
+          </div>
+        </button>
+      </div>
     </>
   );
 };
