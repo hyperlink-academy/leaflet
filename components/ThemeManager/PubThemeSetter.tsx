@@ -69,7 +69,7 @@ export const PubThemeSetter = () => {
             uri: pub.uri,
             theme: {
               pageBackground: hasPageBackground
-                ? ColorToRGB(localPubTheme.bgPage)
+                ? ColorToRGBA(localPubTheme.bgPage)
                 : undefined,
               backgroundColor: image
                 ? ColorToRGBA(localPubTheme.bgLeaflet)
