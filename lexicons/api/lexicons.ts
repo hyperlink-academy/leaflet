@@ -126,6 +126,10 @@ export const schemaDict = {
               'lex:pub.leaflet.theme.color#rgb',
             ],
           },
+          showPageBackground: {
+            type: 'boolean',
+            default: false,
+          },
           accentBackground: {
             type: 'union',
             refs: [

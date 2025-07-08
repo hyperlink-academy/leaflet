@@ -28,7 +28,7 @@ export const PubThemeSetter = () => {
   let { data: pub, mutate } = usePublicationData();
   let record = pub?.record as PubLeafletPublication.Record | undefined;
   let [hasPageBackground, setHasPageBackground] = useState(
-    !!record?.theme?.pageBackground,
+    !!record?.theme?.showPageBackground,
   );
   let { theme: localPubTheme, setTheme } = useLocalPubTheme(record);
   let [image, setImage] = useState<ImageState | null>(
@@ -59,9 +59,8 @@ export const PubThemeSetter = () => {
           let result = await updatePublicationTheme({
             uri: pub.uri,
             theme: {
-              pageBackground: hasPageBackground
-                ? ColorToRGBA(localPubTheme.bgPage)
-                : undefined,
+              pageBackground: ColorToRGBA(localPubTheme.bgPage),
+              showPageBackground: hasPageBackground,
               backgroundColor: image
                 ? ColorToRGBA(localPubTheme.bgLeaflet)
                 : ColorToRGB(localPubTheme.bgLeaflet),

@@ -31,6 +31,7 @@ export const PubLeafletPublication: LexiconDoc = {
         },
         primary: ColorUnion,
         pageBackground: ColorUnion,
+        showPageBackground: { type: "boolean", default: false },
         accentBackground: ColorUnion,
         accentText: ColorUnion,
       },

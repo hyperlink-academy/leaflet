@@ -150,7 +150,8 @@ export async function updatePublicationTheme({
     backgroundRepeat?: number | null;
     backgroundColor: Color;
     primary: Color;
-    pageBackground?: Color;
+    pageBackground: Color;
+    showPageBackground: boolean;
     accentBackground: Color;
     accentText: Color;
   };
@@ -202,6 +203,7 @@ export async function updatePublicationTheme({
       pageBackground: {
         ...theme.pageBackground,
       },
+      showPageBackground: theme.showPageBackground,
       accentBackground: {
         ...theme.accentBackground,
       },
