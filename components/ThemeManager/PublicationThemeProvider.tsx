@@ -153,7 +153,6 @@ export const useLocalPubTheme = (
     let newTheme = {
       ...pubTheme,
       ...localOverrides,
-      bgPage: localOverrides.bgLeaflet || pubTheme.bgLeaflet,
     };
     let accentContrast = [newTheme.accent1, newTheme.accent2].sort((a, b) => {
       return (

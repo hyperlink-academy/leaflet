@@ -2,7 +2,11 @@ import { usePublicationData } from "app/lish/[did]/[publication]/dashboard/Publi
 import { useState } from "react";
 import { pickers, SectionArrow } from "./ThemeSetter";
 import { theme } from "tailwind.config";
-import { PageTextPicker } from "./Pickers/PageThemePickers";
+import {
+  PageBackgroundColorPicker,
+  PageBackgroundPicker,
+  PageTextPicker,
+} from "./Pickers/PageThemePickers";
 import { Color, ColorSwatch } from "react-aria-components";
 import {
   PubLeafletPublication,
@@ -19,6 +23,8 @@ import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { ButtonSecondary } from "components/Buttons";
 import { updatePublicationTheme } from "app/lish/createPub/updatePublication";
 import { DotLoader } from "components/utils/DotLoader";
+import { set } from "colorjs.io/fn";
+import { Toggle } from "components/Toggle";
 
 type ImageState = {
   src: string;
@@ -30,7 +36,9 @@ export const PubThemeSetter = () => {
   let [openPicker, setOpenPicker] = useState<pickers>("null");
   let { data: pub, mutate } = usePublicationData();
   let record = pub?.record as PubLeafletPublication.Record | undefined;
-  let [hasPageBackground, setHasPageBackground] = useState(record?.theme?.page);
+  let [hasPageBackground, setHasPageBackground] = useState(
+    !!record?.theme?.pageBackground,
+  );
   let { theme: localPubTheme, setTheme } = useLocalPubTheme(record);
   let [image, setImage] = useState<ImageState | null>(
     PubLeafletThemeBackgroundImage.isMain(record?.theme?.backgroundImage)
@@ -104,14 +112,6 @@ export const PubThemeSetter = () => {
                   openPicker={openPicker}
                   setOpenPicker={setOpenPicker}
                 />
-                <PageTextPicker
-                  value={localPubTheme.primary}
-                  setValue={(color) => {
-                    setTheme((t) => ({ ...t, primary: color }));
-                  }}
-                  openPicker={openPicker}
-                  setOpenPicker={setOpenPicker}
-                />
               </div>
 
               <SectionArrow
@@ -131,7 +131,7 @@ export const PubThemeSetter = () => {
                 ? "cover"
                 : `calc(${leafletBGRepeat}px / 2 )`,
             }}
-            className={` relative bg-bg-leaflet p-3 flex flex-col rounded-md  border border-border `}
+            className={` relative bg-bg-leaflet px-3 py-4 flex flex-col rounded-md  border border-border `}
           >
             {pubBGImage && (
               <div
@@ -142,7 +142,21 @@ export const PubThemeSetter = () => {
                 }}
               />
             )}
-            <div className={`flex flex-col z-20 mt-2 -mb-[6px] `}>
+            <div className={`flex flex-col  gap-3 z-10`}>
+              <PagePickers
+                pageBackground={localPubTheme.bgPage}
+                primary={localPubTheme.primary}
+                setPageBackground={(color) => {
+                  setTheme((t) => ({ ...t, bgPage: color }));
+                }}
+                setPrimary={(color) => {
+                  setTheme((t) => ({ ...t, primary: color }));
+                }}
+                openPicker={openPicker}
+                setOpenPicker={(pickers) => setOpenPicker(pickers)}
+                hasPageBackground={!!hasPageBackground}
+                setHasPageBackground={setHasPageBackground}
+              />
               <AccentPickers
                 accent1={localPubTheme.accent1}
                 setAccent1={(color) => {
@@ -155,14 +169,7 @@ export const PubThemeSetter = () => {
                 openPicker={openPicker}
                 setOpenPicker={(pickers) => setOpenPicker(pickers)}
               />
-              <SectionArrow
-                fill={theme.colors["accent-2"]}
-                stroke={theme.colors["accent-1"]}
-                className="ml-2"
-              />
             </div>
-
-            <SampleButton />
           </div>
           <div className="flex flex-col mt-4 ">
             <div className="text-sm text-[#8C8C8C]">Page Preview</div>
@@ -295,14 +302,6 @@ const SamplePost = (props: {
   );
 };
 
-function SampleButton() {
-  return (
-    <div className="w-full z-10 py-2 bg-accent-1 text-accent-2 font-bold text-lg text-center rounded-lg">
-      Sample Button
-    </div>
-  );
-}
-
 const BackgroundPicker = (props: {
   backgroundColor: Color;
   setBackgroundColor: (c: Color) => void;
@@ -313,29 +312,24 @@ const BackgroundPicker = (props: {
   bgImage: ImageState | null;
   setBgImage: (i: ImageState | null) => void;
 }) => {
-  return (
-    <>
-      {/* if there is a BG image set, show the BG picker stuff */}
-      {props.bgImage && props.bgImage !== null && (
-        <BackgroundImagePicker
-          bgColor={props.backgroundColor}
-          bgImage={props.bgImage}
-          setBgImage={props.setBgImage}
-          thisPicker={"page-background-image"}
-          openPicker={props.openPicker}
-          setOpenPicker={props.setOpenPicker}
-          closePicker={() => props.setOpenPicker("null")}
-          setValue={props.setBackgroundColor}
-        />
-      )}
-      {/* background color picker (we also have page background set to whatever this color is)*/}
+  if (props.bgImage && props.bgImage !== null)
+    return (
+      <BackgroundImagePicker
+        bgColor={props.backgroundColor}
+        bgImage={props.bgImage}
+        setBgImage={props.setBgImage}
+        thisPicker={"page-background-image"}
+        openPicker={props.openPicker}
+        setOpenPicker={props.setOpenPicker}
+        closePicker={() => props.setOpenPicker("null")}
+        setValue={props.setBackgroundColor}
+      />
+    );
+  else
+    return (
       <div className="relative">
         <ColorPicker
-          label={
-            props.bgImage && props.bgImage !== null
-              ? "Containers"
-              : "Background"
-          }
+          label={"Background"}
           value={props.backgroundColor}
           setValue={props.setBackgroundColor}
           thisPicker={"page"}
@@ -378,8 +372,7 @@ const BackgroundPicker = (props: {
           </label>
         )}
       </div>
-    </>
-  );
+    );
 };
 
 const BackgroundImagePicker = (props: {
@@ -635,5 +628,54 @@ export const AccentPickers = (props: {
         />
       </div>
     </>
+  );
+};
+
+const PagePickers = (props: {
+  primary: Color;
+  pageBackground: Color;
+  setPrimary: (color: Color) => void;
+  setPageBackground: (color: Color) => void;
+  openPicker: pickers;
+  setOpenPicker: (thisPicker: pickers) => void;
+  hasPageBackground: boolean;
+  setHasPageBackground: (s: boolean) => void;
+}) => {
+  return (
+    <div
+      className="themeLeafletControls text-primary flex flex-col gap-2 h-full  bg-bg-page p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))]"
+      style={{
+        backgroundColor: props.hasPageBackground
+          ? "rgba(var(--bg-page), var(--bg-page-alpha))"
+          : "transparent",
+      }}
+    >
+      <div className="relative pubThemePageBGWrapper">
+        <PageBackgroundColorPicker
+          disabled={!props.hasPageBackground}
+          label={"Page"}
+          value={props.pageBackground}
+          setValue={props.setPageBackground}
+          thisPicker={"page"}
+          openPicker={props.openPicker}
+          setOpenPicker={props.setOpenPicker}
+        />
+        <div className="absolute pubThemePageBGToggle right-1 top-[2px]">
+          <Toggle
+            toggleOn={props.hasPageBackground}
+            setToggleOn={() => {
+              props.setHasPageBackground(!props.hasPageBackground);
+              props.hasPageBackground && props.setOpenPicker("null");
+            }}
+          />
+        </div>
+      </div>
+      <PageTextPicker
+        value={props.primary}
+        setValue={props.setPrimary}
+        openPicker={props.openPicker}
+        setOpenPicker={props.setOpenPicker}
+      />
+    </div>
   );
 };

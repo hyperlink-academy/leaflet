@@ -37,6 +37,12 @@ export const PageThemePickers = (props: {
 
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
   let primaryValue = useColorAttribute(props.entityID, "theme/primary");
+  let pageBackgroundValue = useColorAttribute(
+    props.entityID,
+    "theme/card-background",
+  );
+  let pageBGImage = useEntity(props.entityID, "theme/card-background-image");
+  let pageBorderHidden = useEntity(props.entityID, "theme/card-border-hidden");
 
   return (
     <div
@@ -49,12 +55,14 @@ export const PageThemePickers = (props: {
           <hr className="border-border-light w-full" />
         </>
       )}
-      <PageBackgroundPicker
-        entityID={props.entityID}
-        setValue={set("theme/card-background")}
-        openPicker={props.openPicker}
-        setOpenPicker={props.setOpenPicker}
-      />
+      {pageBGImage && pageBGImage !== null && (
+        <PageBackgroundPicker
+          entityID={props.entityID}
+          setValue={set("theme/card-background")}
+          openPicker={props.openPicker}
+          setOpenPicker={props.setOpenPicker}
+        />
+      )}
       <PageTextPicker
         value={primaryValue}
         setValue={set("theme/primary")}
@@ -91,7 +99,7 @@ export const PageBackgroundPicker = (props: {
         />
       )}
       <div className="relative">
-        <ColorPicker
+        <PageBackgroundColorPicker
           disabled={pageBorderHidden?.data.value}
           label={pageBGImage && pageBGImage !== null ? "Menus" : "Page"}
           value={pageValue}
@@ -99,8 +107,6 @@ export const PageBackgroundPicker = (props: {
           thisPicker={"page"}
           openPicker={props.openPicker}
           setOpenPicker={props.setOpenPicker}
-          closePicker={() => props.setOpenPicker("null")}
-          alpha
         />
         {(pageBGImage === null || !pageBGImage) && (
           <label
@@ -121,6 +127,30 @@ export const PageBackgroundPicker = (props: {
         )}
       </div>
     </>
+  );
+};
+
+export const PageBackgroundColorPicker = (props: {
+  disabled?: boolean;
+  label: string;
+  openPicker: pickers;
+  thisPicker: pickers;
+  setOpenPicker: (thisPicker: pickers) => void;
+  setValue: (c: Color) => void;
+  value: Color;
+}) => {
+  return (
+    <ColorPicker
+      disabled={props.disabled}
+      label={props.label}
+      value={props.value}
+      setValue={props.setValue}
+      thisPicker={"page"}
+      openPicker={props.openPicker}
+      setOpenPicker={props.setOpenPicker}
+      closePicker={() => props.setOpenPicker("null")}
+      alpha
+    />
   );
 };
 

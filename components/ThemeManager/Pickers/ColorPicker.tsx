@@ -54,16 +54,17 @@ export const ColorPicker = (props: {
                 backgroundSize: "cover",
               }}
             />
-            <strong className="">{props.label}</strong>
+            <strong className="w-max">{props.label}</strong>
           </button>
 
           <div className="flex gap-1">
             {props.value === undefined ? (
               <div>default</div>
+            ) : props.disabled ? (
+              <div className="text-tertiary italic">hidden</div>
             ) : (
               <ColorField className="w-fit gap-1">
                 <Input
-                  disabled={props.disabled}
                   onMouseDown={onMouseDown}
                   onFocus={(e) => {
                     e.currentTarget.setSelectionRange(
@@ -83,10 +84,13 @@ export const ColorPicker = (props: {
                 />
               </ColorField>
             )}
-            {props.alpha && (
+            {props.alpha && !props.disabled && (
               <>
                 <Separator classname="my-1" />
-                <ColorField className="w-fit pl-[6px]" channel="alpha">
+                <ColorField
+                  className={`w-fit pl-[6px] ${props.disabled ? "opacity-50" : ""}`}
+                  channel="alpha"
+                >
                   <Input
                     disabled={props.disabled}
                     onMouseDown={onMouseDown}
