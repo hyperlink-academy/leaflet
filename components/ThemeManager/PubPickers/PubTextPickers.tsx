@@ -26,7 +26,8 @@ export const PagePickers = (props: {
         openPicker={props.openPicker}
         setOpenPicker={props.setOpenPicker}
       />
-      <hr className="border-borer-light" />
+      {/* FONT PICKERS HIDDEN FOR NOW */}
+      {/* <hr className="border-border-light" />
       <div className="flex gap-2">
         <div className="w-6 h-6 font-bold text-center rounded-md  bg-border-light">
           Aa
@@ -38,7 +39,7 @@ export const PagePickers = (props: {
           Aa
         </div>{" "}
         <div className="font-bold">Body</div> <div>iA Writer</div>
-      </div>
+      </div> */}
     </div>
   );
 };

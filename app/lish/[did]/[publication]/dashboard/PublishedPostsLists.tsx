@@ -53,10 +53,13 @@ export function PublishedPostsList() {
                 <div className="publishedPost grow flex flex-col hover:!no-underline">
                   <div className="flex justify-between gap-2">
                     <a
+                      className="hover:!no-underline"
                       target="_blank"
                       href={`${getPublicationURL(publication)}/${uri.rkey}`}
                     >
-                      <h3 className="text-primary grow">{record.title}</h3>
+                      <h3 className="text-primary grow leading-snug">
+                        {record.title}
+                      </h3>
                     </a>
                     <div className="flex justify-start align-top flex-row gap-1">
                       {leaflet && (

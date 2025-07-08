@@ -118,7 +118,7 @@ export default async function Post(props: {
           <div
             className={`sm:max-w-prose max-w-[var(--page-width-units)] w-[1000px] mx-auto px-3 sm:px-4 py-3  ${hasPageBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] rounded-lg border border-border" : "h-fit "}`}
           >
-            <div className="pubHeader flex flex-col pb-5">
+            <div className="postHeader flex flex-col pb-5">
               <Link
                 className="font-bold hover:no-underline text-accent-contrast"
                 href={getPublicationURL(
@@ -127,9 +127,11 @@ export default async function Post(props: {
               >
                 {decodeURIComponent((await props.params).publication)}
               </Link>
-              <h2 className="">{record.title}</h2>
+              <h2 className="leading-snug">{record.title}</h2>
               {record.description ? (
-                <p className="italic text-secondary">{record.description}</p>
+                <p className="italic text-secondary pt-0.5">
+                  {record.description}
+                </p>
               ) : null}
 
               <div className="text-sm text-tertiary pt-3 flex gap-1">
