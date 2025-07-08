@@ -171,9 +171,9 @@ export const useLocalPubTheme = (
       accentContrast,
     };
   }, [pubTheme, localOverrides]);
-
   return {
     theme: mergedTheme,
     setTheme,
+    changes: Object.keys(localOverrides).length > 0,
   };
 };

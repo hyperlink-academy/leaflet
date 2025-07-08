@@ -32,7 +32,7 @@ export const PubThemeSetter = () => {
   let [showPageBackground, setShowPageBackground] = useState(
     !!record?.theme?.showPageBackground,
   );
-  let { theme: localPubTheme, setTheme } = useLocalPubTheme(record);
+  let { theme: localPubTheme, setTheme, changes } = useLocalPubTheme(record);
   let [image, setImage] = useState<ImageState | null>(
     PubLeafletThemeBackgroundImage.isMain(record?.theme?.backgroundImage)
       ? {
@@ -53,6 +53,7 @@ export const PubThemeSetter = () => {
   return (
     <BaseThemeProvider local {...localPubTheme}>
       <form
+        className="bg-accent-1 -mx-3 -mt-2  px-3 py-1 mb-1 flex justify-between items-center"
         onSubmit={async (e) => {
           e.preventDefault();
           if (!pub) return;
@@ -81,8 +82,21 @@ export const PubThemeSetter = () => {
           setLoading(false);
         }}
       >
-        <ButtonSecondary>{loading ? <DotLoader /> : "Update"}</ButtonSecondary>
+        <h4 className="text-accent-2">Publication Theme</h4>
+        <ButtonSecondary
+          compact
+          disabled={
+            !(
+              changes ||
+              !!image?.file ||
+              record?.theme?.backgroundImage?.width !== image?.repeat
+            )
+          }
+        >
+          {loading ? <DotLoader /> : "Update"}
+        </ButtonSecondary>
       </form>
+
       <div>
         <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
           <div className="themeBGLeaflet flex">
