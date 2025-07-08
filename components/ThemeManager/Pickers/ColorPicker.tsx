@@ -88,7 +88,7 @@ export const ColorPicker = (props: {
               <>
                 <Separator classname="my-1" />
                 <ColorField
-                  className={`w-fit pl-[6px] ${props.disabled ? "opacity-50" : ""}`}
+                  className={`w-[48px] pl-[6px] ${props.disabled ? "opacity-50" : ""}`}
                   channel="alpha"
                 >
                   <Input
@@ -134,7 +134,7 @@ export const ColorPicker = (props: {
                     colorSpace="hsb"
                     className="w-full mt-1 rounded-full"
                     style={{
-                      backgroundImage: `url(./transparent-bg.png)`,
+                      backgroundImage: `url(/transparent-bg.png)`,
                       backgroundRepeat: "repeat",
                       backgroundSize: "8px",
                     }}

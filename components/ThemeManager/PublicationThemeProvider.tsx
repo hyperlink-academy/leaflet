@@ -110,6 +110,7 @@ export function PublicationThemeProvider(props: {
 export const usePubTheme = (record?: PubLeafletPublication.Record | null) => {
   let bgLeaflet = useColor(record, "backgroundColor");
   let bgPage = useColor(record, "pageBackground");
+  bgPage = record?.theme?.pageBackground ? bgPage : bgLeaflet;
   let primary = useColor(record, "primary");
 
   let accent1 = useColor(record, "accentBackground");
@@ -131,7 +132,6 @@ export const usePubTheme = (record?: PubLeafletPublication.Record | null) => {
   })[0];
   return {
     bgLeaflet,
-    //For now we have a single color we use for both background, or if there's a background image, containers
     bgPage,
     primary,
     accent1,

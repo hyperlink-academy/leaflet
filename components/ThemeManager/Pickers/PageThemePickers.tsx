@@ -138,6 +138,7 @@ export const PageBackgroundColorPicker = (props: {
   setOpenPicker: (thisPicker: pickers) => void;
   setValue: (c: Color) => void;
   value: Color;
+  alpha?: boolean;
 }) => {
   return (
     <ColorPicker
@@ -149,7 +150,7 @@ export const PageBackgroundColorPicker = (props: {
       openPicker={props.openPicker}
       setOpenPicker={props.setOpenPicker}
       closePicker={() => props.setOpenPicker("null")}
-      alpha
+      alpha={props.alpha}
     />
   );
 };
@@ -261,7 +262,7 @@ export const PageBackgroundImagePicker = (props: {
               colorSpace="hsb"
               className="w-full mt-1 rounded-full"
               style={{
-                backgroundImage: `url(./transparent-bg.png)`,
+                backgroundImage: `url(/transparent-bg.png)`,
                 backgroundRepeat: "repeat",
                 backgroundSize: "8px",
               }}

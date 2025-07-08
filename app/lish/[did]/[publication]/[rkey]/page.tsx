@@ -97,12 +97,12 @@ export default async function Post(props: {
   let pubRecord = document.documents_in_publications[0]?.publications
     .record as PubLeafletPublication.Record;
 
-  let backgroundAlpha =
-    PubLeafletThemeColor.isRgba(pubRecord?.theme?.backgroundColor) &&
-    pubRecord?.theme?.backgroundColor?.a;
+  let pageBackgroundAlpha =
+    PubLeafletThemeColor.isRgba(pubRecord?.theme?.pageBackground) &&
+    pubRecord?.theme?.pageBackground?.a;
 
-  let hasBackground =
-    !!pubRecord.theme?.backgroundImage && backgroundAlpha !== 0;
+  let hasPageBackground =
+    pubRecord.theme?.pageBackground !== undefined && pageBackgroundAlpha !== 0;
 
   return (
     <PublicationThemeProvider
@@ -118,10 +118,10 @@ export default async function Post(props: {
         }
       >
         <div
-          className={`flex flex-col sm:py-6 h-full   ${hasBackground ? "max-w-prose mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
+          className={`flex flex-col sm:py-6 h-full   ${hasPageBackground ? "max-w-prose mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
         >
           <div
-            className={`sm:max-w-prose max-w-[var(--page-width-units)] w-[1000px] mx-auto px-3 sm:px-4 py-3  ${hasBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] rounded-lg border border-border" : "h-fit"}`}
+            className={`sm:max-w-prose max-w-[var(--page-width-units)] w-[1000px] mx-auto px-3 sm:px-4 py-3  ${hasPageBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] rounded-lg border border-border" : "h-fit "}`}
           >
             <div className="pubHeader flex flex-col pb-5">
               <Link

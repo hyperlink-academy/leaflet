@@ -1,32 +1,23 @@
 import { usePublicationData } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { useState } from "react";
 import { pickers, SectionArrow } from "./ThemeSetter";
-import { theme } from "tailwind.config";
-import {
-  PageBackgroundColorPicker,
-  PageBackgroundPicker,
-  PageTextPicker,
-} from "./Pickers/PageThemePickers";
-import { Color, ColorSwatch } from "react-aria-components";
+import { Color } from "react-aria-components";
 import {
   PubLeafletPublication,
   PubLeafletThemeBackgroundImage,
 } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { useLocalPubTheme } from "./PublicationThemeProvider";
-import { BaseThemeProvider, getColorContrast } from "./ThemeProvider";
-import { BlockImageSmall } from "components/Icons/BlockImageSmall";
-import { ColorPicker } from "./Pickers/ColorPicker";
-import { CloseContrastSmall } from "components/Icons/CloseContrastSmall";
-import * as Slider from "@radix-ui/react-slider";
+import { BaseThemeProvider } from "./ThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { ButtonSecondary } from "components/Buttons";
 import { updatePublicationTheme } from "app/lish/createPub/updatePublication";
 import { DotLoader } from "components/utils/DotLoader";
-import { set } from "colorjs.io/fn";
-import { Toggle } from "components/Toggle";
+import { PagePickers } from "./PubPickers/PubTextPickers";
+import { BackgroundPicker } from "./PubPickers/PubBackgroundPickers";
+import { PubAccentPickers } from "./PubPickers/PubAcccentPickers";
 
-type ImageState = {
+export type ImageState = {
   src: string;
   file?: File;
   repeat: number | null;
@@ -102,8 +93,8 @@ export const PubThemeSetter = () => {
                   bgImage={image}
                   setBgImage={setImage}
                   backgroundColor={localPubTheme.bgLeaflet}
-                  pageBackgroundColor={localPubTheme.bgPage}
-                  setPageBackgroundColor={(color) => {
+                  pageBackground={localPubTheme.bgPage}
+                  setPageBackground={(color) => {
                     setTheme((t) => ({ ...t, bgPage: color }));
                   }}
                   setBackgroundColor={(color) => {
@@ -111,6 +102,8 @@ export const PubThemeSetter = () => {
                   }}
                   openPicker={openPicker}
                   setOpenPicker={setOpenPicker}
+                  hasPageBackground={!!hasPageBackground}
+                  setHasPageBackground={setHasPageBackground}
                 />
               </div>
 
@@ -133,15 +126,6 @@ export const PubThemeSetter = () => {
             }}
             className={` relative bg-bg-leaflet px-3 py-4 flex flex-col rounded-md  border border-border `}
           >
-            {pubBGImage && (
-              <div
-                className="absolute top-0 bottom-0 right-0 left-0"
-                style={{
-                  backgroundColor:
-                    "rgba(var(--bg-leaflet), var(--bg-page-alpha))",
-                }}
-              />
-            )}
             <div className={`flex flex-col  gap-3 z-10`}>
               <PagePickers
                 pageBackground={localPubTheme.bgPage}
@@ -154,10 +138,9 @@ export const PubThemeSetter = () => {
                 }}
                 openPicker={openPicker}
                 setOpenPicker={(pickers) => setOpenPicker(pickers)}
-                hasPageBackground={!!hasPageBackground}
-                setHasPageBackground={setHasPageBackground}
+                hasPageBackground={hasPageBackground}
               />
-              <AccentPickers
+              <PubAccentPickers
                 accent1={localPubTheme.accent1}
                 setAccent1={(color) => {
                   setTheme((t) => ({ ...t, accent1: color }));
@@ -192,7 +175,8 @@ const SamplePub = (props: {
     .getComputedStyle(document.body)
     .getPropertyValue("--bg-page-alpha");
 
-  let hasBackground = props.pubBGImage !== null && backgroundAlpha !== "0";
+  let hasBackground =
+    !!record?.theme?.pageBackground && backgroundAlpha !== "0";
 
   return (
     <div
@@ -209,10 +193,10 @@ const SamplePub = (props: {
       className={`bg-bg-leaflet p-3  flex flex-col gap-3 rounded-t-md  border border-border border-b-0 pb-0`}
     >
       <div
-        className="sampleContent rounded-md border-border pb-4 px-1"
+        className="sampleContent rounded-md border-border pb-4 px-[6px]"
         style={{
           background: hasBackground
-            ? "rgba(var(--bg-leaflet), var(--bg-page-alpha))"
+            ? "rgba(var(--bg-page), var(--bg-page-alpha))"
             : undefined,
         }}
       >
@@ -302,255 +286,7 @@ const SamplePost = (props: {
   );
 };
 
-const BackgroundPicker = (props: {
-  backgroundColor: Color;
-  setBackgroundColor: (c: Color) => void;
-  pageBackgroundColor: Color;
-  setPageBackgroundColor: (c: Color) => void;
-  openPicker: pickers;
-  setOpenPicker: (p: pickers) => void;
-  bgImage: ImageState | null;
-  setBgImage: (i: ImageState | null) => void;
-}) => {
-  if (props.bgImage && props.bgImage !== null)
-    return (
-      <BackgroundImagePicker
-        bgColor={props.backgroundColor}
-        bgImage={props.bgImage}
-        setBgImage={props.setBgImage}
-        thisPicker={"page-background-image"}
-        openPicker={props.openPicker}
-        setOpenPicker={props.setOpenPicker}
-        closePicker={() => props.setOpenPicker("null")}
-        setValue={props.setBackgroundColor}
-      />
-    );
-  else
-    return (
-      <div className="relative">
-        <ColorPicker
-          label={"Background"}
-          value={props.backgroundColor}
-          setValue={props.setBackgroundColor}
-          thisPicker={"page"}
-          openPicker={props.openPicker}
-          setOpenPicker={props.setOpenPicker}
-          closePicker={() => props.setOpenPicker("null")}
-          alpha={!!props.bgImage}
-        />
-        {!props.bgImage && (
-          <label
-            className={`
-              text-[#969696] hover:cursor-pointer  shrink-0
-              absolute top-0 right-0
-            `}
-          >
-            <BlockImageSmall />
-            <div className="hidden">
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={async (e) => {
-                  let file = e.currentTarget.files?.[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                      console.log("loaded!", props.bgImage);
-                      props.setBgImage({
-                        src: e.target?.result as string,
-                        file,
-                        repeat: null,
-                      });
-                      props.setOpenPicker("page-background-image");
-                    };
-                    reader.readAsDataURL(file);
-                  }
-                }}
-              />
-            </div>
-          </label>
-        )}
-      </div>
-    );
-};
-
-const BackgroundImagePicker = (props: {
-  disabled?: boolean;
-  bgImage: ImageState | null;
-  setBgImage: (i: ImageState | null) => void;
-  bgColor: Color;
-  openPicker: pickers;
-  thisPicker: pickers;
-  setOpenPicker: (thisPicker: pickers) => void;
-  closePicker: () => void;
-  setValue: (c: Color) => void;
-}) => {
-  let open = props.openPicker == props.thisPicker;
-
-  return (
-    <>
-      <div className="bgPickerColorLabel flex gap-2 items-center">
-        <button
-          disabled={props.disabled}
-          onClick={() => {
-            if (props.openPicker === props.thisPicker) {
-              props.setOpenPicker("null");
-            } else {
-              props.setOpenPicker(props.thisPicker);
-            }
-          }}
-          className="flex gap-2 items-center disabled:text-tertiary"
-        >
-          <ColorSwatch
-            color={props.bgColor}
-            className={`w-6 h-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C] ${props.disabled ? "opacity-50" : ""}`}
-            style={{
-              backgroundImage: props.bgImage
-                ? `url(${props.bgImage.src})`
-                : undefined,
-              backgroundPosition: "center",
-              backgroundSize: "cover",
-            }}
-          />
-          <strong className={` text-[#595959]`}>BG Image</strong>
-        </button>
-      </div>
-      {open && (
-        <div className="pageImagePicker flex flex-col gap-2">
-          <ImageSettings
-            bgImage={props.bgImage}
-            setBgImage={props.setBgImage}
-          />
-        </div>
-      )}
-    </>
-  );
-};
-
-export const ImageSettings = (props: {
-  bgImage: ImageState | null;
-  setBgImage: (i: ImageState | null) => void;
-}) => {
-  return (
-    <>
-      <div
-        style={{
-          backgroundImage: props.bgImage
-            ? `url(${props.bgImage.src})`
-            : undefined,
-          backgroundPosition: "center",
-          backgroundSize: "cover",
-        }}
-        className="themeBGImagePreview flex gap-2 place-items-center justify-center w-full h-[128px]  bg-cover bg-center bg-no-repeat"
-      >
-        <label className="hover:cursor-pointer ">
-          <div
-            className="flex gap-2 rounded-md px-2 py-1 text-accent-contrast font-bold"
-            style={{ backgroundColor: "rgba(var(--bg-page), .8" }}
-          >
-            <BlockImageSmall /> Change Image
-          </div>
-          <div className="hidden">
-            <input
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={async (e) => {
-                let file = e.currentTarget.files?.[0];
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onload = (e) => {
-                    if (!props.bgImage) return;
-                    props.setBgImage({
-                      ...props.bgImage,
-                      src: e.target?.result as string,
-                      file,
-                    });
-                  };
-                  reader.readAsDataURL(file);
-                }
-              }}
-            />
-          </div>
-        </label>
-        <button
-          onClick={() => {
-            props.setBgImage(null);
-          }}
-        >
-          <CloseContrastSmall
-            fill={theme.colors["accent-1"]}
-            stroke={theme.colors["accent-2"]}
-          />
-        </button>
-      </div>
-      <div className="themeBGImageControls font-bold flex gap-2 items-center">
-        <label htmlFor="cover" className="flex shrink-0">
-          <input
-            className="appearance-none"
-            type="radio"
-            id="cover"
-            name="bg-image-options"
-            value="cover"
-            checked={!props.bgImage?.repeat}
-            onChange={async (e) => {
-              if (!e.currentTarget.checked) return;
-              if (!props.bgImage) return;
-              props.setBgImage({ ...props.bgImage, repeat: null });
-            }}
-          />
-          <div
-            className={`shink-0 grow-0 w-fit border border-accent-1 rounded-md px-1 py-0.5 cursor-pointer ${!props.bgImage?.repeat ? "bg-accent-1 text-accent-2" : "bg-transparent text-accent-1"}`}
-          >
-            cover
-          </div>
-        </label>
-        <label htmlFor="repeat" className="flex shrink-0">
-          <input
-            className={`appearance-none `}
-            type="radio"
-            id="repeat"
-            name="bg-image-options"
-            value="repeat"
-            checked={!!props.bgImage?.repeat}
-            onChange={async (e) => {
-              if (!e.currentTarget.checked) return;
-              if (!props.bgImage) return;
-              props.setBgImage({ ...props.bgImage, repeat: 500 });
-            }}
-          />
-          <div
-            className={`shink-0 grow-0 w-fit z-10 border border-accent-1 rounded-md px-1 py-0.5 cursor-pointer ${props.bgImage?.repeat ? "bg-accent-1 text-accent-2" : "bg-transparent text-accent-1"}`}
-          >
-            repeat
-          </div>
-        </label>
-        {props.bgImage?.repeat && (
-          <Slider.Root
-            className="relative grow flex items-center select-none touch-none w-full h-fit"
-            value={[props.bgImage?.repeat || 500]}
-            max={3000}
-            min={10}
-            step={10}
-            onValueChange={(value) => {
-              if (!props.bgImage) return;
-              props.setBgImage({ ...props.bgImage, repeat: value[0] });
-            }}
-          >
-            <Slider.Track className="bg-accent-1 relative grow rounded-full h-[3px]"></Slider.Track>
-            <Slider.Thumb
-              className="flex w-4 h-4 rounded-full border-2 border-white bg-accent-1 shadow-[0_0_0_1px_#8C8C8C,_inset_0_0_0_1px_#8C8C8C] cursor-pointer"
-              aria-label="Volume"
-            />
-          </Slider.Root>
-        )}
-      </div>
-    </>
-  );
-};
-
-function ColorToRGBA(color: Color) {
+export function ColorToRGBA(color: Color) {
   if (!color)
     return {
       $type: "pub.leaflet.theme.color#rgba" as const,
@@ -591,91 +327,3 @@ function ColorToRGB(color: Color) {
     b: Math.round(b),
   };
 }
-
-export const AccentPickers = (props: {
-  accent1: Color;
-  accent2: Color;
-  setAccent1: (color: Color) => void;
-  setAccent2: (color: Color) => void;
-  openPicker: pickers;
-  setOpenPicker: (thisPicker: pickers) => void;
-}) => {
-  return (
-    <>
-      <div
-        className="themeLeafletControls text-accent-2 flex flex-col gap-2 h-full  bg-bg-leaflet p-2 rounded-md border border-accent-2 shadow-[0_0_0_1px_rgb(var(--accent-1))]"
-        style={{
-          backgroundColor: "rgba(var(--accent-1), 0.5)",
-        }}
-      >
-        <ColorPicker
-          label="Accent"
-          value={props.accent1}
-          setValue={props.setAccent1}
-          thisPicker={"accent-1"}
-          openPicker={props.openPicker}
-          setOpenPicker={props.setOpenPicker}
-          closePicker={() => props.setOpenPicker("null")}
-        />
-        <ColorPicker
-          label="Text on Accent"
-          value={props.accent2}
-          setValue={props.setAccent2}
-          thisPicker={"accent-2"}
-          openPicker={props.openPicker}
-          setOpenPicker={props.setOpenPicker}
-          closePicker={() => props.setOpenPicker("null")}
-        />
-      </div>
-    </>
-  );
-};
-
-const PagePickers = (props: {
-  primary: Color;
-  pageBackground: Color;
-  setPrimary: (color: Color) => void;
-  setPageBackground: (color: Color) => void;
-  openPicker: pickers;
-  setOpenPicker: (thisPicker: pickers) => void;
-  hasPageBackground: boolean;
-  setHasPageBackground: (s: boolean) => void;
-}) => {
-  return (
-    <div
-      className="themeLeafletControls text-primary flex flex-col gap-2 h-full  bg-bg-page p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))]"
-      style={{
-        backgroundColor: props.hasPageBackground
-          ? "rgba(var(--bg-page), var(--bg-page-alpha))"
-          : "transparent",
-      }}
-    >
-      <div className="relative pubThemePageBGWrapper">
-        <PageBackgroundColorPicker
-          disabled={!props.hasPageBackground}
-          label={"Page"}
-          value={props.pageBackground}
-          setValue={props.setPageBackground}
-          thisPicker={"page"}
-          openPicker={props.openPicker}
-          setOpenPicker={props.setOpenPicker}
-        />
-        <div className="absolute pubThemePageBGToggle right-1 top-[2px]">
-          <Toggle
-            toggleOn={props.hasPageBackground}
-            setToggleOn={() => {
-              props.setHasPageBackground(!props.hasPageBackground);
-              props.hasPageBackground && props.setOpenPicker("null");
-            }}
-          />
-        </div>
-      </div>
-      <PageTextPicker
-        value={props.primary}
-        setValue={props.setPrimary}
-        openPicker={props.openPicker}
-        setOpenPicker={props.setOpenPicker}
-      />
-    </div>
-  );
-};

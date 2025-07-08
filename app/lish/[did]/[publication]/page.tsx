@@ -67,9 +67,9 @@ export default async function Publication(props: {
   let record = publication?.record as PubLeafletPublication.Record | null;
 
   let backgroundAlpha =
-    PubLeafletThemeColor.isRgba(record?.theme?.backgroundColor) &&
-    record?.theme?.backgroundColor?.a;
-  let hasBackground = !!record?.theme?.backgroundImage && backgroundAlpha !== 0;
+    PubLeafletThemeColor.isRgba(record?.theme?.pageBackground) &&
+    record?.theme?.pageBackground?.a;
+  let hasBackground = !!record?.theme?.pageBackground && backgroundAlpha !== 0;
 
   if (!publication) return <PubNotFound />;
   try {
