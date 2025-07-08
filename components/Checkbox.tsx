@@ -1,6 +1,7 @@
 import { CheckboxChecked } from "./Icons/CheckboxChecked";
 import { CheckboxEmpty } from "./Icons/CheckboxEmpty";
 import { Props } from "./Icons/Props";
+import React, { forwardRef, type JSX } from "react";
 
 export function Checkbox(props: {
   checked: boolean;
@@ -33,16 +34,16 @@ export function Checkbox(props: {
   );
 }
 
-export function Radio(props: {
-  checked: boolean;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  id: string;
-  name: string;
-  value: string;
-  children: React.ReactNode;
-  radioEmptyClassName?: string;
-  radioCheckedClassName?: string;
-}) {
+type RadioProps = Omit<JSX.IntrinsicElements["input"], "content">;
+
+export function Radio(
+  props: {
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    children: React.ReactNode;
+    radioEmptyClassName?: string;
+    radioCheckedClassName?: string;
+  } & JSX.IntrinsicElements["input"],
+) {
   return (
     <label
       htmlFor={props.id}

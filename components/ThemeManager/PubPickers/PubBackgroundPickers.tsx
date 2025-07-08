@@ -9,6 +9,8 @@ import * as Slider from "@radix-ui/react-slider";
 import { Toggle } from "components/Toggle";
 import { DeleteSmall } from "components/Icons/DeleteSmall";
 import { ImageState } from "../PubThemeSetter";
+import { Radio } from "components/Checkbox";
+import { Input } from "components/Input";
 
 export const BackgroundPicker = (props: {
   backgroundColor: Color;
@@ -160,12 +162,41 @@ const BackgroundImagePicker = (props: {
           <strong className={` text-[#595959]`}>Background</strong>
           <div className="italic text-[#8C8C8C]">image</div>
         </button>
-        <button
-          className="text-[#8C8C8C]"
-          onClick={() => props.setBgImage(null)}
-        >
-          <DeleteSmall />
-        </button>
+        <div className="flex gap-1">
+          <label className="hover:cursor-pointer ">
+            <div className="flex gap-2 rounded-md  text-[#8C8C8C] ">
+              <BlockImageSmall />
+            </div>
+            <div className="hidden">
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={async (e) => {
+                  let file = e.currentTarget.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      if (!props.bgImage) return;
+                      props.setBgImage({
+                        ...props.bgImage,
+                        src: e.target?.result as string,
+                        file,
+                      });
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+            </div>
+          </label>
+          <button
+            className="text-[#8C8C8C]"
+            onClick={() => props.setBgImage(null)}
+          >
+            <DeleteSmall />
+          </button>
+        </div>
       </div>
       {open && (
         <div className="pageImagePicker flex flex-col gap-2">
@@ -185,7 +216,7 @@ export const ImageSettings = (props: {
 }) => {
   return (
     <>
-      <div
+      {/* <div
         style={{
           backgroundImage: props.bgImage
             ? `url(${props.bgImage.src})`
@@ -235,11 +266,12 @@ export const ImageSettings = (props: {
             stroke={theme.colors["accent-2"]}
           />
         </button>
-      </div>
-      <div className="themeBGImageControls font-bold flex gap-2 items-center">
-        <label htmlFor="cover" className="flex shrink-0">
-          <input
-            className="appearance-none"
+      </div> */}
+      <div className="themeBGImageControls font-bold flex flex-col gap-1 items-center px-3">
+        <label htmlFor="cover" className="w-full">
+          <Radio
+            radioCheckedClassName="!text-[#595959]"
+            radioEmptyClassName="!text-[#969696]"
             type="radio"
             id="cover"
             name="bg-image-options"
@@ -250,52 +282,81 @@ export const ImageSettings = (props: {
               if (!props.bgImage) return;
               props.setBgImage({ ...props.bgImage, repeat: null });
             }}
-          />
-          <div
-            className={`shink-0 grow-0 w-fit border border-accent-1 rounded-md px-1 py-0.5 cursor-pointer ${!props.bgImage?.repeat ? "bg-accent-1 text-accent-2" : "bg-transparent text-accent-1"}`}
           >
-            cover
-          </div>
+            <div
+              className={`w-full cursor-pointer ${!props.bgImage?.repeat ? "text-[#595959]" : " text-[#969696]"}`}
+            >
+              cover
+            </div>
+          </Radio>
         </label>
-        <label htmlFor="repeat" className="flex shrink-0">
-          <input
-            className={`appearance-none `}
+        <label htmlFor="repeat" className="pb-3 w-full">
+          <Radio
             type="radio"
             id="repeat"
             name="bg-image-options"
             value="repeat"
+            radioCheckedClassName="!text-[#595959]"
+            radioEmptyClassName="!text-[#969696]"
             checked={!!props.bgImage?.repeat}
             onChange={async (e) => {
               if (!e.currentTarget.checked) return;
               if (!props.bgImage) return;
               props.setBgImage({ ...props.bgImage, repeat: 500 });
             }}
-          />
-          <div
-            className={`shink-0 grow-0 w-fit z-10 border border-accent-1 rounded-md px-1 py-0.5 cursor-pointer ${props.bgImage?.repeat ? "bg-accent-1 text-accent-2" : "bg-transparent text-accent-1"}`}
           >
-            repeat
-          </div>
+            <div className="flex flex-col gap-2 w-full">
+              <div className="flex gap-2">
+                <div
+                  className={`shink-0 grow-0 w-fit z-10 cursor-pointer ${props.bgImage?.repeat ? "text-[#595959]" : " text-[#969696]"}`}
+                >
+                  repeat
+                </div>
+                <div
+                  className={`flex font-normal ${props.bgImage?.repeat ? "text-[#969696]" : " text-[#C3C3C3]"}`}
+                >
+                  <Input
+                    type="number"
+                    className="w-10 text-right appearance-none"
+                    max={3000}
+                    min={10}
+                    value={props.bgImage?.repeat || 500}
+                    onChange={(e) => {
+                      if (!props.bgImage) return;
+                      props.setBgImage({
+                        ...props.bgImage,
+                        repeat: parseInt(e.currentTarget.value),
+                      });
+                    }}
+                  />{" "}
+                  px
+                </div>
+              </div>
+              <Slider.Root
+                className={`relative grow flex items-center select-none touch-none w-full h-fit px-1 `}
+                value={[props.bgImage?.repeat || 500]}
+                max={3000}
+                min={10}
+                step={10}
+                onValueChange={(value) => {
+                  if (!props.bgImage) return;
+                  props.setBgImage({ ...props.bgImage, repeat: value[0] });
+                }}
+              >
+                <Slider.Track
+                  className={`${props.bgImage?.repeat ? "bg-[#595959]" : " bg-[#C3C3C3]"} relative grow rounded-full h-[3px]`}
+                ></Slider.Track>
+                <Slider.Thumb
+                  className={`
+                    flex w-4 h-4 rounded-full border-2 border-white cursor-pointer
+                    ${props.bgImage?.repeat ? "bg-[#595959]" : " bg-[#C3C3C3] "}
+                    ${props.bgImage?.repeat && "shadow-[0_0_0_1px_#8C8C8C,_inset_0_0_0_1px_#8C8C8C]"} `}
+                  aria-label="Volume"
+                />
+              </Slider.Root>
+            </div>
+          </Radio>
         </label>
-        {props.bgImage?.repeat && (
-          <Slider.Root
-            className="relative grow flex items-center select-none touch-none w-full h-fit"
-            value={[props.bgImage?.repeat || 500]}
-            max={3000}
-            min={10}
-            step={10}
-            onValueChange={(value) => {
-              if (!props.bgImage) return;
-              props.setBgImage({ ...props.bgImage, repeat: value[0] });
-            }}
-          >
-            <Slider.Track className="bg-accent-1 relative grow rounded-full h-[3px]"></Slider.Track>
-            <Slider.Thumb
-              className="flex w-4 h-4 rounded-full border-2 border-white bg-accent-1 shadow-[0_0_0_1px_#8C8C8C,_inset_0_0_0_1px_#8C8C8C] cursor-pointer"
-              aria-label="Volume"
-            />
-          </Slider.Root>
-        )}
       </div>
     </>
   );
