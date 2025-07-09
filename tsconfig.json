@@ -1,13 +1,7 @@
 {
   "compilerOptions": {
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    "types": [
-      "@cloudflare/workers-types"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "types": ["@cloudflare/workers-types"],
     "baseUrl": ".",
     "allowJs": true,
     "skipLibCheck": true,
@@ -30,6 +24,7 @@
     "target": "ES2017"
   },
   "include": [
+    "my-types.d.ts",
     "next-env.d.ts",
     ".next/types/**/*.ts",
     "**/*.js",
@@ -37,7 +32,5 @@
     "**/*.tsx",
     "**/*.mdx"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }
