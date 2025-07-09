@@ -10,7 +10,7 @@ export function useCardBorderHidden(entityID: string) {
   let cardBorderHidden =
     useEntity(entityID, "theme/card-border-hidden") || rootCardBorderHidden;
   if (!cardBorderHidden && !rootCardBorderHidden) {
-    if (pub?.publications) {
+    if (pub?.publications?.record) {
       let record = pub.publications.record as PubLeafletPublication.Record;
       if (record.theme?.backgroundImage) return false;
       return true;
