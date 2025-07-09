@@ -13,6 +13,8 @@ import {
 import { Json } from "supabase/database.types";
 import { PubLeafletPublication } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
 
 export const MyPublicationList = () => {
   let { identity } = useIdentityData();
@@ -53,26 +55,47 @@ const PublicationList = (props: {
 
 function Publication(props: { uri: string; name: string; record: Json }) {
   let record = props.record as PubLeafletPublication.Record | null;
+  let pub_creator = new AtUri(props.uri).host;
+  let backgroundImage = record?.theme?.backgroundImage?.image?.ref
+    ? blobRefToSrc(record?.theme?.backgroundImage?.image?.ref, pub_creator)
+    : null;
+
+  let backgroundImageRepeat = record?.theme?.backgroundImage?.repeat;
+  let backgroundImageSize = record?.theme?.backgroundImage?.width || 500;
+  let showPageBackground = !!record?.theme?.showPageBackground;
   return (
-    <Link
-      className="pubListItem sm:w-full sm:min-w-0 min-w-40 w-36  px-1 sm:px-2 py-1 sm:h-max  hover:no-underline "
-      href={`${getBasePublicationURL(props)}/dashboard`}
-    >
-      <div className="p-3 h-full w-full flex flex-col gap-1 place-items-center opaque-container rounded-lg! text-secondary text-center  transparent-outline outline-2 outline-offset-1 hover:outline-border  grow ">
-        {record?.icon && (
-          <div
-            style={{
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "center",
-              backgroundSize: "cover",
-              backgroundImage: `url(/api/atproto_images?did=${new AtUri(props.uri).host}&cid=${(record.icon?.ref as unknown as { $link: string })["$link"]})`,
-            }}
-            className="w-6 h-6 rounded-full"
-          />
-        )}
-        <h4 className="font-bold w-full truncate my-auto">{props.name}</h4>
-      </div>
-    </Link>
+    <PublicationThemeProvider record={record} local pub_creator={pub_creator}>
+      <Link
+        className="pubListItem sm:w-full sm:min-w-0 min-w-40 w-36  px-1 sm:px-2 py-1 sm:h-max  hover:no-underline "
+        href={`${getBasePublicationURL(props)}/dashboard`}
+      >
+        <div
+          style={{
+            backgroundImage: `url(${backgroundImage})`,
+            backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
+            backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
+          }}
+          className="p-3 h-full w-full flex flex-col gap-1 place-items-center bg-bg-leaflet border border-border-light rounded-lg text-secondary text-center  transparent-outline outline-2 outline-offset-1 hover:outline-border  grow "
+        >
+          {record?.icon && (
+            <div
+              style={{
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center",
+                backgroundSize: "cover",
+                backgroundImage: `url(/api/atproto_images?did=${new AtUri(props.uri).host}&cid=${(record.icon?.ref as unknown as { $link: string })["$link"]})`,
+              }}
+              className="w-6 h-6 rounded-full"
+            />
+          )}
+          <h4
+            className={`font-bold w-full truncate my-auto ${showPageBackground ? "bg-[rgba(var(--bg-page),0.8)]" : ""}`}
+          >
+            {props.name}
+          </h4>
+        </div>
+      </Link>
+    </PublicationThemeProvider>
   );
 }
 
