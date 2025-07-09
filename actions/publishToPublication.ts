@@ -80,6 +80,7 @@ export async function publishToPublication({
   let imageMap = new Map<string, BlobRef>();
   await Promise.all(
     [...links, ...images].map(async (b) => {
+      if (!b) return;
       let data = await fetch(b.data.src);
       if (data.status !== 200) return;
       let binary = await data.blob();
@@ -268,7 +269,9 @@ function blockToRecord(
     let [description] = scan.eav(b.value, "link/description");
     let [src] = scan.eav(b.value, "link/url");
     if (!src) return;
-    let blobref = imageMap.get(previewImage.data.src);
+    let blobref = previewImage
+      ? imageMap.get(previewImage?.data.src)
+      : undefined;
     let [title] = scan.eav(b.value, "link/title");
     let block: $Typed<PubLeafletBlocksWebsite.Main> = {
       $type: "pub.leaflet.blocks.website",
