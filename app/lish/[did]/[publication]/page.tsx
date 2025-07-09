@@ -37,7 +37,7 @@ export async function generateMetadata(props: {
 
   let record = publication.record as PubLeafletPublication.Record | null;
   return {
-    title: decodeURIComponent(params.publication),
+    title: record?.name || "Untitled Publication",
     description: record?.description || "",
   };
 }
@@ -49,6 +49,15 @@ export default async function Publication(props: {
   let did = decodeURIComponent(params.did);
   if (!did) return <PubNotFound />;
   let agent = new BskyAgent({ service: "https://public.api.bsky.app" });
+  let uri;
+  let publication_name = decodeURIComponent(params.publication);
+  if (/^(?!\.$|\.\.S)[A-Za-z0-9._:~-]{1,512}$/.test(publication_name)) {
+    uri = AtUri.make(
+      did,
+      "pub.leaflet.publication",
+      publication_name,
+    ).toString();
+  }
   let [{ data: publication }, { data: profile }] = await Promise.all([
     supabaseServerClient
       .from("publications")
@@ -59,7 +68,7 @@ export default async function Publication(props: {
       `,
       )
       .eq("identity_did", did)
-      .eq("name", decodeURIComponent(params.publication))
+      .or(`name.eq."${publication_name}", uri.eq."${uri}"`)
       .single(),
     agent.getProfile({ actor: did }),
   ]);

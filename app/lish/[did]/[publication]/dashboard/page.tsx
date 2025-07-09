@@ -34,8 +34,10 @@ export async function generateMetadata(props: {
     },
     { supabase: supabaseServerClient },
   );
+  let record =
+    (publication?.record as PubLeafletPublication.Record) || undefined;
   if (!publication) return { title: "404 Publication" };
-  return { title: decodeURIComponent((await props.params).publication) };
+  return { title: record?.name || "Untitled Publication" };
 }
 
 //This is the admin dashboard of the publication
