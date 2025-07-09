@@ -104,7 +104,6 @@ export default async function Publication(props: {
                     Subscribers: <PublicationSubscribers />,
                   }}
                   defaultTab={"Drafts"}
-                  showPageBackground={showPageBackground}
                 />
               </div>
               <Footer>
