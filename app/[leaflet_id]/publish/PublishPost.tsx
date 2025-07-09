@@ -37,7 +37,7 @@ export function PublishPost(props: Props) {
           record={props.record}
           publication_uri={props.publication_uri}
           post_url={publishState.post_url}
-          posts_in_pub={props.posts_in_pub || 0}
+          posts_in_pub={(props.posts_in_pub || 0) + 1}
         />
       )}
     </div>
