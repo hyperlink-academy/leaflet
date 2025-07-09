@@ -8,14 +8,18 @@ import { Footer } from "components/ActionBar/Footer";
 import { PublicationDashboard } from "./PublicationDashboard";
 import { DraftList } from "./DraftList";
 import { getIdentityData } from "actions/getIdentityData";
-import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { Actions } from "./Actions";
 import React from "react";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { PublicationSWRDataProvider } from "./PublicationSWRProvider";
 import { PublishedPostsList } from "./PublishedPostsLists";
-import { PubLeafletPublication } from "lexicons/api";
+import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
 import { PublicationSubscribers } from "./PublicationSubscribers";
+import {
+  PublicationThemeProvider,
+  PublicationThemeProviderDashboard,
+} from "components/ThemeManager/PublicationThemeProvider";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -61,6 +65,9 @@ export default async function Publication(props: {
   );
 
   let record = publication?.record as PubLeafletPublication.Record | null;
+
+  let showPageBackground = !!record?.theme?.showPageBackground;
+
   if (!publication || identity.atp_did !== publication.identity_did)
     return <PubNotFound />;
 
@@ -71,21 +78,21 @@ export default async function Publication(props: {
         publication_name={publication.name}
         publication_data={publication}
       >
-        <ThemeProvider entityID={null}>
-          <div className="w-screen h-full flex place-items-center bg-[#FDFCFA]">
-            <div className="relative w-max h-full  flex sm:flex-row flex-col sm:items-stretch pwa-padding">
+        <PublicationThemeProviderDashboard record={record}>
+          <div className="pubDashWrapper relative w-max h-full flex  items-stretch">
+            <div className="flex sm:flex-row flex-col max-h-full h-full">
               <div
-                className="spacer flex justify-end items-start"
+                className="pubDashSidebarWrapper flex justify-end items-start "
                 style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
               >
-                <div className="relative w-16 justify-items-end">
+                <div className="pubDashSidebar relative w-16 justify-items-end">
                   <Sidebar className="mt-6 p-2 ">
                     <Actions publication={publication.uri} />
                   </Sidebar>
                 </div>
               </div>
               <div
-                className={`h-full overflow-y-scroll pt-4 sm:pt-8 max-w-[var(--page-width-units)]`}
+                className={`pubDash grow sm:h-full h-32 w-full flex flex-col items-stretch pt-2 sm:pt-6   ml-[6px] sm:ml-0 max-w-[var(--page-width-units)] ${showPageBackground ? "sm:pb-8 pb-1" : "pb-0"}`}
               >
                 <PublicationDashboard
                   did={did}
@@ -104,7 +111,7 @@ export default async function Publication(props: {
               </Footer>
             </div>
           </div>
-        </ThemeProvider>
+        </PublicationThemeProviderDashboard>
       </PublicationSWRDataProvider>
     );
   } catch (e) {

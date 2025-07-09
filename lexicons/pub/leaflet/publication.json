@@ -30,7 +30,59 @@
               "image/*"
             ],
             "maxSize": 1000000
+          },
+          "theme": {
+            "type": "ref",
+            "ref": "#theme"
           }
+        }
+      }
+    },
+    "theme": {
+      "type": "object",
+      "properties": {
+        "backgroundColor": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.theme.color#rgba",
+            "pub.leaflet.theme.color#rgb"
+          ]
+        },
+        "backgroundImage": {
+          "type": "ref",
+          "ref": "pub.leaflet.theme.backgroundImage"
+        },
+        "primary": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.theme.color#rgba",
+            "pub.leaflet.theme.color#rgb"
+          ]
+        },
+        "pageBackground": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.theme.color#rgba",
+            "pub.leaflet.theme.color#rgb"
+          ]
+        },
+        "showPageBackground": {
+          "type": "boolean",
+          "default": false
+        },
+        "accentBackground": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.theme.color#rgba",
+            "pub.leaflet.theme.color#rgb"
+          ]
+        },
+        "accentText": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.theme.color#rgba",
+            "pub.leaflet.theme.color#rgb"
+          ]
         }
       }
     }

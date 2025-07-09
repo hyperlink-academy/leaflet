@@ -2,12 +2,12 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { pickers, SectionArrow } from "./ThemeSetter";
 
-import { PageThemePickers } from "./PageThemePickers";
+import { PageThemePickers } from "./Pickers/PageThemePickers";
 import { useState } from "react";
 import { theme } from "tailwind.config";
 import { ButtonPrimary } from "components/Buttons";
 import { PaintSmall } from "components/Icons/PaintSmall";
-import { AccentThemePickers } from "./AccentThemePickers";
+import { AccentPickers } from "./Pickers/AccentPickers";
 
 export const PageThemeSetter = (props: { entityID: string }) => {
   let { rootEntity } = useReplicache();
@@ -40,7 +40,7 @@ export const PageThemeSetter = (props: { entityID: string }) => {
             : `calc(${leafletBGRepeat.data.value}px / 2 )`,
         }}
       >
-        <AccentThemePickers
+        <AccentPickers
           entityID={props.entityID}
           openPicker={openPicker}
           setOpenPicker={(pickers) => setOpenPicker(pickers)}

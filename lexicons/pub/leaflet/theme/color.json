@@ -1,0 +1,62 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.theme.color",
+  "defs": {
+    "rgba": {
+      "type": "object",
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "properties": {
+        "r": {
+          "type": "integer",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "g": {
+          "type": "integer",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "b": {
+          "type": "integer",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "a": {
+          "type": "integer",
+          "maximum": 100,
+          "minimum": 0
+        }
+      }
+    },
+    "rgb": {
+      "type": "object",
+      "required": [
+        "r",
+        "g",
+        "b"
+      ],
+      "properties": {
+        "r": {
+          "type": "integer",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "g": {
+          "type": "integer",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "b": {
+          "type": "integer",
+          "maximum": 255,
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

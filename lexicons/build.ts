@@ -2,6 +2,7 @@ import * as PageLexicons from "./src/pages";
 import { BlockLexicons } from "./src/blocks";
 import { PubLeafletDocument } from "./src/document";
 import * as PublicationLexicons from "./src/publication";
+import { ThemeLexicons } from "./src/theme";
 
 import * as fs from "fs";
 import * as path from "path";
@@ -18,6 +19,7 @@ const lexicons = [
   PubLeafletDocument,
   PubLeafletRichTextFacet,
   PageLexicons.PubLeafletPagesLinearDocument,
+  ...ThemeLexicons,
   ...BlockLexicons,
   ...Object.values(PublicationLexicons),
 ];

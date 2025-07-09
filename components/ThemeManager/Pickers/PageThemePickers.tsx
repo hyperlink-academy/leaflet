@@ -17,8 +17,8 @@ import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
 import { Separator } from "components/Layout";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
-import { pickers, setColorAttribute } from "./ThemeSetter";
-import { ImageInput, ImageSettings } from "./ImageSetters";
+import { pickers, setColorAttribute } from "../ThemeSetter";
+import { ImageInput, ImageSettings } from "./ImagePicker";
 
 import { ColorPicker, thumbStyle } from "./ColorPicker";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
@@ -27,7 +27,6 @@ import { CanvasBackgroundPattern } from "components/Canvas";
 
 export const PageThemePickers = (props: {
   entityID: string;
-  home?: boolean;
   openPicker: pickers;
   setOpenPicker: (thisPicker: pickers) => void;
 }) => {
@@ -37,8 +36,11 @@ export const PageThemePickers = (props: {
   }, [rep, props.entityID]);
 
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
-  let pageValue = useColorAttribute(props.entityID, "theme/card-background");
   let primaryValue = useColorAttribute(props.entityID, "theme/primary");
+  let pageBackgroundValue = useColorAttribute(
+    props.entityID,
+    "theme/card-background",
+  );
   let pageBGImage = useEntity(props.entityID, "theme/card-background-image");
   let pageBorderHidden = useEntity(props.entityID, "theme/card-border-hidden");
 
@@ -53,28 +55,67 @@ export const PageThemePickers = (props: {
           <hr className="border-border-light w-full" />
         </>
       )}
-      <ColorPicker
-        disabled={pageBorderHidden?.data.value}
-        label="Page"
-        value={pageValue}
-        setValue={set("theme/card-background")}
-        thisPicker={"page"}
+      {pageBGImage && pageBGImage !== null && (
+        <PageBackgroundPicker
+          entityID={props.entityID}
+          setValue={set("theme/card-background")}
+          openPicker={props.openPicker}
+          setOpenPicker={props.setOpenPicker}
+        />
+      )}
+      <PageTextPicker
+        value={primaryValue}
+        setValue={set("theme/primary")}
         openPicker={props.openPicker}
         setOpenPicker={props.setOpenPicker}
-        closePicker={() => props.setOpenPicker("null")}
-        alpha
-      >
+      />
+      <hr className="border-border-light" />
+      <PageBorderHider entityID={props.entityID} />
+    </div>
+  );
+};
+
+export const PageBackgroundPicker = (props: {
+  entityID: string;
+  setValue: (c: Color) => void;
+  openPicker: pickers;
+  setOpenPicker: (p: pickers) => void;
+}) => {
+  let pageValue = useColorAttribute(props.entityID, "theme/card-background");
+  let pageBGImage = useEntity(props.entityID, "theme/card-background-image");
+  let pageBorderHidden = useEntity(props.entityID, "theme/card-border-hidden");
+
+  return (
+    <>
+      {pageBGImage && pageBGImage !== null && (
+        <PageBackgroundImagePicker
+          disabled={pageBorderHidden?.data.value}
+          entityID={props.entityID}
+          thisPicker={"page-background-image"}
+          openPicker={props.openPicker}
+          setOpenPicker={props.setOpenPicker}
+          closePicker={() => props.setOpenPicker("null")}
+          setValue={props.setValue}
+        />
+      )}
+      <div className="relative">
+        <PageBackgroundColorPicker
+          disabled={pageBorderHidden?.data.value}
+          label={pageBGImage && pageBGImage !== null ? "Menus" : "Page"}
+          value={pageValue}
+          setValue={props.setValue}
+          thisPicker={"page"}
+          openPicker={props.openPicker}
+          setOpenPicker={props.setOpenPicker}
+        />
         {(pageBGImage === null || !pageBGImage) && (
           <label
-            className={`m-0 h-max w-full  py-0.5 px-1
-                bg-accent-1  outline-transparent
-                rounded-md text-base font-bold text-accent-2
-                hover:cursor-pointer
-                flex gap-2 items-center justify-center shrink-0
-                transparent-outline hover:outline-accent-1 outline-offset-1
-              `}
+            className={`
+              text-primary hover:cursor-pointer  shrink-0
+              absolute top-0 right-0
+            `}
           >
-            <BlockImageSmall /> Add Background Image
+            <BlockImageSmall />
             <div className="hidden">
               <ImageInput
                 entityID={props.entityID}
@@ -84,64 +125,37 @@ export const PageThemePickers = (props: {
             </div>
           </label>
         )}
-      </ColorPicker>
-      {pageBGImage && pageBGImage !== null && (
-        <PageBGPicker
-          disabled={pageBorderHidden?.data.value}
-          entityID={props.entityID}
-          thisPicker={"page-background-image"}
-          openPicker={props.openPicker}
-          setOpenPicker={props.setOpenPicker}
-          closePicker={() => props.setOpenPicker("null")}
-          setValue={set("theme/card-background")}
-        />
-      )}
-      <ColorPicker
-        label="Text"
-        value={primaryValue}
-        setValue={set("theme/primary")}
-        thisPicker={"text"}
-        openPicker={props.openPicker}
-        setOpenPicker={props.setOpenPicker}
-        closePicker={() => props.setOpenPicker("null")}
-      />
-      <hr />
-      <PageBorderHider entityID={props.entityID} />
-    </div>
-  );
-};
-
-export const PageBorderHider = (props: { entityID: string }) => {
-  let { rep, rootEntity } = useReplicache();
-  let rootPageBorderHidden = useEntity(rootEntity, "theme/card-border-hidden");
-  let entityPageBorderHidden = useEntity(
-    props.entityID,
-    "theme/card-border-hidden",
-  );
-  let pageBorderHidden =
-    (entityPageBorderHidden || rootPageBorderHidden)?.data.value || false;
-
-  return (
-    <>
-      <Checkbox
-        small
-        className="pl-[6px] !gap-3"
-        checked={pageBorderHidden}
-        onChange={(e) => {
-          rep?.mutate.assertFact({
-            entity: props.entityID,
-            attribute: "theme/card-border-hidden",
-            data: { type: "boolean", value: !pageBorderHidden },
-          });
-        }}
-      >
-        No Page Borders
-      </Checkbox>
+      </div>
     </>
   );
 };
 
-export const PageBGPicker = (props: {
+export const PageBackgroundColorPicker = (props: {
+  disabled?: boolean;
+  label: string;
+  openPicker: pickers;
+  thisPicker: pickers;
+  setOpenPicker: (thisPicker: pickers) => void;
+  setValue: (c: Color) => void;
+  value: Color;
+  alpha?: boolean;
+}) => {
+  return (
+    <ColorPicker
+      disabled={props.disabled}
+      label={props.label}
+      value={props.value}
+      setValue={props.setValue}
+      thisPicker={"page"}
+      openPicker={props.openPicker}
+      setOpenPicker={props.setOpenPicker}
+      closePicker={() => props.setOpenPicker("null")}
+      alpha={props.alpha}
+    />
+  );
+};
+
+export const PageBackgroundImagePicker = (props: {
   disabled?: boolean;
   entityID: string;
   openPicker: pickers;
@@ -248,7 +262,7 @@ export const PageBGPicker = (props: {
               colorSpace="hsb"
               className="w-full mt-1 rounded-full"
               style={{
-                backgroundImage: `url(./transparent-bg.png)`,
+                backgroundImage: `url(/transparent-bg.png)`,
                 backgroundRepeat: "repeat",
                 backgroundSize: "8px",
               }}
@@ -313,5 +327,54 @@ const CanvasBGPatternPicker = (props: {
         <CanvasBackgroundPattern pattern="plain" />
       </button>
     </div>
+  );
+};
+
+export const PageTextPicker = (props: {
+  openPicker: pickers;
+  setOpenPicker: (thisPicker: pickers) => void;
+  value: Color;
+  setValue: (c: Color) => void;
+}) => {
+  return (
+    <ColorPicker
+      label="Text"
+      value={props.value}
+      setValue={props.setValue}
+      thisPicker={"text"}
+      openPicker={props.openPicker}
+      setOpenPicker={props.setOpenPicker}
+      closePicker={() => props.setOpenPicker("null")}
+    />
+  );
+};
+
+export const PageBorderHider = (props: { entityID: string }) => {
+  let { rep, rootEntity } = useReplicache();
+  let rootPageBorderHidden = useEntity(rootEntity, "theme/card-border-hidden");
+  let entityPageBorderHidden = useEntity(
+    props.entityID,
+    "theme/card-border-hidden",
+  );
+  let pageBorderHidden =
+    (entityPageBorderHidden || rootPageBorderHidden)?.data.value || false;
+
+  return (
+    <>
+      <Checkbox
+        small
+        className="pl-[6px] !gap-3"
+        checked={pageBorderHidden}
+        onChange={(e) => {
+          rep?.mutate.assertFact({
+            entity: props.entityID,
+            attribute: "theme/card-border-hidden",
+            data: { type: "boolean", value: !pageBorderHidden },
+          });
+        }}
+      >
+        No Page Borders
+      </Checkbox>
+    </>
   );
 };

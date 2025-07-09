@@ -29,7 +29,7 @@ export function PublishPost(props: Props) {
     { state: "default" } | { state: "success"; post_url: string }
   >({ state: "default" });
   return (
-    <div className="publishPage w-screen h-full bg-[#FDFCFA] flex sm:pt-0 pt-4 sm:place-items-center justify-center">
+    <div className="publishPage w-screen h-full bg-bg-page flex sm:pt-0 pt-4 sm:place-items-center justify-center">
       {publishState.state === "default" ? (
         <PublishPostForm setPublishState={setPublishState} {...props} />
       ) : (
