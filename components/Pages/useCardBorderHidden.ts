@@ -12,8 +12,7 @@ export function useCardBorderHidden(entityID: string) {
   if (!cardBorderHidden && !rootCardBorderHidden) {
     if (pub?.publications?.record) {
       let record = pub.publications.record as PubLeafletPublication.Record;
-      if (record.theme?.backgroundImage) return false;
-      return true;
+      return !record.theme?.showPageBackground;
     }
     return false;
   }

@@ -3,6 +3,8 @@ import { BlobRef } from "@atproto/lexicon";
 import { useState } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
 import { theme } from "tailwind.config";
+import { usePublicationData } from "./PublicationSWRProvider";
+import { PubLeafletPublication } from "lexicons/api";
 
 type Tabs = { [tabName: string]: React.ReactNode };
 export function PublicationDashboard<T extends Tabs>(props: {
@@ -11,8 +13,10 @@ export function PublicationDashboard<T extends Tabs>(props: {
   defaultTab: keyof T;
   icon: BlobRef | null;
   did: string;
-  showPageBackground: boolean;
 }) {
+  let { data: pub } = usePublicationData();
+  let showPageBackground = !!(pub?.record as PubLeafletPublication.Record)
+    ?.theme?.showPageBackground;
   let [tab, setTab] = useState(props.defaultTab);
   let content = props.tabs[tab];
 
@@ -21,7 +25,7 @@ export function PublicationDashboard<T extends Tabs>(props: {
       <div className="pubDashHeader flex flex-row gap-2 w-full justify-between border-b border-border text-secondary items-center ">
         <div className="max-w-full w-[1000px] h-full ">
           <div
-            className={`flex gap-2 h-fit  py-0.5 pl-1 pr-2 w-fit  rounded-md ${props.showPageBackground ? "bg-[rgba(var(--bg-page),0.8)]" : ""}`}
+            className={`flex gap-2 h-fit  py-0.5 pl-1 pr-2 w-fit  rounded-md ${showPageBackground ? "bg-[rgba(var(--bg-page),0.8)]" : ""}`}
           >
             {props.icon && (
               <div
@@ -46,13 +50,13 @@ export function PublicationDashboard<T extends Tabs>(props: {
               name={t}
               selected={t === tab}
               onSelect={() => setTab(t)}
-              showPageBackground={props.showPageBackground}
+              showPageBackground={showPageBackground}
             />
           ))}
         </div>
       </div>
       <div
-        className={`pubDashContent py-4 px-3 sm:px-4 h-full overflow-auto ${props.showPageBackground ? "rounded-b-md border border-border border-t-0 bg-[rgba(var(--bg-page),var(--bg-page-alpha))]" : ""}`}
+        className={`pubDashContent py-4 px-3 sm:px-4 h-full overflow-auto ${showPageBackground ? "rounded-b-md border border-border border-t-0 bg-[rgba(var(--bg-page),var(--bg-page-alpha))]" : ""}`}
       >
         {content}
       </div>
