@@ -125,6 +125,7 @@ export default async function Publication(props: {
                 )}
                 <div className="sm:pt-4 pt-4">
                   <SubscribeWithBluesky
+                    base_url={getPublicationURL(publication)}
                     pubName={publication.name}
                     pub_uri={publication.uri}
                     subscribers={publication.publication_subscriptions}

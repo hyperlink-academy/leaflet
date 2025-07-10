@@ -191,6 +191,9 @@ export default async function Post(props: {
             ) : (
               <SubscribeWithBluesky
                 isPost
+                base_url={getPublicationURL(
+                  document.documents_in_publications[0].publications,
+                )}
                 pub_uri={document.documents_in_publications[0].publications.uri}
                 subscribers={
                   document.documents_in_publications[0].publications

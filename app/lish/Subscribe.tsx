@@ -183,6 +183,7 @@ export const SubscribeWithBluesky = (props: {
   isPost?: boolean;
   pubName: string;
   pub_uri: string;
+  base_url: string;
   subscribers: { identity: string }[];
 }) => {
   let { identity } = useIdentityData();
@@ -216,7 +217,7 @@ export const SubscribeWithBluesky = (props: {
           pub_uri={props.pub_uri}
           setSuccessModalOpen={setSuccessModalOpen}
         />
-        <a href={`/rss`} className="flex" target="_blank">
+        <a href={`${props.base_url}/rss`} className="flex" target="_blank">
           <RSSSmall className="self-center" />
         </a>
       </div>
