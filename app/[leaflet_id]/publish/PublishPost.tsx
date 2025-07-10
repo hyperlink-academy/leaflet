@@ -72,7 +72,7 @@ const PublishPostForm = (
         title: props.title,
         url: post_url,
         description: props.description,
-        record: doc.record,
+        document_record: doc.record,
         rkey: doc.rkey,
       });
     setIsLoading(false);
