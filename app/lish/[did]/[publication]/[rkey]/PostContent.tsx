@@ -51,7 +51,6 @@ let Block = ({
 
   // non text blocks, they need this padding, pt-3 sm:pt-4, which is applied in each case
   let className = `
-    flex
     postBlockWrapper
     pt-1
     ${isList ? "isListItem pb-0 " : "pb-2 last:pb-3 last:sm:pb-4 first:pt-2 sm:first:pt-3"}
