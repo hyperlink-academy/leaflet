@@ -40,16 +40,22 @@ let Block = ({
   isList?: boolean;
 }) => {
   let b = block;
-  let alignment = b.alignment;
+  let alignment =
+    b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignRight"
+      ? "text-right justify-end"
+      : b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignCenter"
+        ? "text-center justify-center"
+        : "";
   if (!alignment && PubLeafletBlocksImage.isMain(b.block))
-    alignment = "lex:pub.leaflet.pages.linearDocument#textAlignCenter";
+    alignment = "text-center justify-center";
 
   // non text blocks, they need this padding, pt-3 sm:pt-4, which is applied in each case
   let className = `
+    flex
     postBlockWrapper
     pt-1
     ${isList ? "isListItem pb-0 " : "pb-2 last:pb-3 last:sm:pb-4 first:pt-2 sm:first:pt-3"}
-    ${alignment === "lex:pub.leaflet.pages.linearDocument#textAlignRight" ? "text-right" : alignment === "lex:pub.leaflet.pages.linearDocument#textAlignCenter" ? "text-center" : ""}
+    ${alignment}
     `;
 
   switch (true) {
@@ -119,12 +125,12 @@ let Block = ({
     }
     case PubLeafletBlocksImage.isMain(b.block): {
       return (
-        <div className="relative">
+        <div className={`relative flex ${alignment}`}>
           <img
             alt={b.block.alt}
             height={b.block.aspectRatio?.height}
             width={b.block.aspectRatio?.width}
-            className={`!pt-3 sm:!pt-4 ${className} rounded-md`}
+            className={`!pt-3 sm:!pt-4 rounded-md ${className}`}
             src={blobRefToSrc(b.block.image.ref, did)}
           />
           {b.block.alt && (
