@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { create } from "zustand";
-import { useReplicache } from "src/replicache";
+import { ReplicacheMutators, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { scanIndex } from "src/replicache/utils";
 import { focusBlock } from "src/utils/focusBlock";
@@ -18,6 +18,7 @@ import { copySelection } from "src/utils/copySelection";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { useIsMobile } from "src/hooks/isMobile";
 import { deleteBlock } from "./Blocks/DeleteBlock";
+import { Replicache } from "replicache";
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
@@ -31,44 +32,9 @@ export function SelectionManager() {
   let { rep, undoManager } = useReplicache();
   let isMobile = useIsMobile();
   useEffect(() => {
-    if (!entity_set.permissions.write) return;
+    if (!entity_set.permissions.write || !rep) return;
     if (isMobile) return;
-    const getSortedSelection = async () => {
-      let selectedBlocks = useUIState.getState().selectedBlocks;
-      let foldedBlocks = useUIState.getState().foldedBlocks;
-      if (!selectedBlocks[0]) return [[], []];
-      let siblings =
-        (await rep?.query((tx) =>
-          getBlocksWithType(tx, selectedBlocks[0].parent),
-        )) || [];
-      let sortedBlocks = siblings.filter((s) => {
-        let selected = selectedBlocks.find((sb) => sb.value === s.value);
-        return selected;
-      });
-      let sortedBlocksWithChildren = siblings.filter((s) => {
-        let selected = selectedBlocks.find((sb) => sb.value === s.value);
-        if (s.listData && !selected) {
-          //Select the children of folded list blocks (in order to copy them)
-          return s.listData.path.find(
-            (p) =>
-              selectedBlocks.find((sb) => sb.value === p.entity) &&
-              foldedBlocks.includes(p.entity),
-          );
-        }
-        return selected;
-      });
-      return [
-        sortedBlocks,
-        siblings.filter(
-          (f) =>
-            !f.listData ||
-            !f.listData.path.find(
-              (p) => foldedBlocks.includes(p.entity) && p.entity !== f.value,
-            ),
-        ),
-        sortedBlocksWithChildren,
-      ];
-    };
+    const getSortedSelectionBound = getSortedSelection.bind(null, rep);
     let removeListener = addShortcut(
       [
         {
@@ -114,7 +80,7 @@ export function SelectionManager() {
           altKey: true,
           key: ["l", "¬"],
           handler: async () => {
-            let [sortedBlocks, siblings] = await getSortedSelection();
+            let [sortedBlocks, siblings] = await getSortedSelectionBound();
             for (let block of sortedBlocks) {
               if (!block.listData) {
                 await rep?.mutate.assertFact({
@@ -133,7 +99,7 @@ export function SelectionManager() {
           shift: true,
           key: ["ArrowDown", "J"],
           handler: async () => {
-            let [sortedBlocks, siblings] = await getSortedSelection();
+            let [sortedBlocks, siblings] = await getSortedSelectionBound();
             let block = sortedBlocks[0];
             let nextBlock = siblings
               .slice(siblings.findIndex((s) => s.value === block.value) + 1)
@@ -169,7 +135,7 @@ export function SelectionManager() {
           shift: true,
           key: ["ArrowUp", "K"],
           handler: async () => {
-            let [sortedBlocks, siblings] = await getSortedSelection();
+            let [sortedBlocks, siblings] = await getSortedSelectionBound();
             let block = sortedBlocks[0];
             let previousBlock =
               siblings?.[
@@ -216,7 +182,7 @@ export function SelectionManager() {
           shift: true,
           key: "Enter",
           handler: async () => {
-            let [sortedBlocks, siblings] = await getSortedSelection();
+            let [sortedBlocks, siblings] = await getSortedSelectionBound();
             if (!sortedBlocks[0].listData) return;
             useUIState.getState().toggleFold(sortedBlocks[0].value);
           },
@@ -233,7 +199,7 @@ export function SelectionManager() {
           if (!entity_set.permissions.write) return;
           if (moreThanOneSelected) {
             e.preventDefault();
-            let [sortedBlocks, siblings] = await getSortedSelection();
+            let [sortedBlocks, siblings] = await getSortedSelectionBound();
             let selectedBlocks = useUIState.getState().selectedBlocks;
             let firstBlock = sortedBlocks[0];
 
@@ -274,7 +240,7 @@ export function SelectionManager() {
           deleteBlocks();
         }
         if (e.key === "ArrowUp") {
-          let [sortedBlocks, siblings] = await getSortedSelection();
+          let [sortedBlocks, siblings] = await getSortedSelectionBound();
           let focusedBlock = useUIState.getState().focusedEntity;
           if (!e.shiftKey && !e.ctrlKey) {
             if (e.defaultPrevented) return;
@@ -346,7 +312,7 @@ export function SelectionManager() {
           }
         }
         if (e.key === "ArrowLeft") {
-          let [sortedSelection, siblings] = await getSortedSelection();
+          let [sortedSelection, siblings] = await getSortedSelectionBound();
           if (sortedSelection.length === 1) return;
           let firstBlock = sortedSelection[0];
           if (!firstBlock) return;
@@ -361,7 +327,7 @@ export function SelectionManager() {
           );
         }
         if (e.key === "ArrowRight") {
-          let [sortedSelection, siblings] = await getSortedSelection();
+          let [sortedSelection, siblings] = await getSortedSelectionBound();
           if (sortedSelection.length === 1) return;
           let lastBlock = sortedSelection[sortedSelection.length - 1];
           if (!lastBlock) return;
@@ -376,7 +342,7 @@ export function SelectionManager() {
           );
         }
         if (e.key === "Tab") {
-          let [sortedSelection, siblings] = await getSortedSelection();
+          let [sortedSelection, siblings] = await getSortedSelectionBound();
           if (sortedSelection.length <= 1) return;
           e.preventDefault();
           if (e.shiftKey) {
@@ -424,7 +390,7 @@ export function SelectionManager() {
           }
         }
         if (e.key === "ArrowDown") {
-          let [sortedSelection, siblings] = await getSortedSelection();
+          let [sortedSelection, siblings] = await getSortedSelectionBound();
           let focusedBlock = useUIState.getState().focusedEntity;
           if (!e.shiftKey) {
             if (sortedSelection.length === 1) return;
@@ -497,7 +463,8 @@ export function SelectionManager() {
         }
         if ((e.key === "c" || e.key === "x") && (e.metaKey || e.ctrlKey)) {
           if (!rep) return;
-          let [, , selectionWithFoldedChildren] = await getSortedSelection();
+          let [, , selectionWithFoldedChildren] =
+            await getSortedSelectionBound();
           if (!selectionWithFoldedChildren) return;
           let el = document.activeElement as HTMLElement;
           if (
@@ -657,3 +624,42 @@ function getContentEditableParent(e: Node | null): Node | null {
   }
   return null;
 }
+
+export const getSortedSelection = async (
+  rep: Replicache<ReplicacheMutators>,
+) => {
+  let selectedBlocks = useUIState.getState().selectedBlocks;
+  let foldedBlocks = useUIState.getState().foldedBlocks;
+  if (!selectedBlocks[0]) return [[], []];
+  let siblings =
+    (await rep?.query((tx) =>
+      getBlocksWithType(tx, selectedBlocks[0].parent),
+    )) || [];
+  let sortedBlocks = siblings.filter((s) => {
+    let selected = selectedBlocks.find((sb) => sb.value === s.value);
+    return selected;
+  });
+  let sortedBlocksWithChildren = siblings.filter((s) => {
+    let selected = selectedBlocks.find((sb) => sb.value === s.value);
+    if (s.listData && !selected) {
+      //Select the children of folded list blocks (in order to copy them)
+      return s.listData.path.find(
+        (p) =>
+          selectedBlocks.find((sb) => sb.value === p.entity) &&
+          foldedBlocks.includes(p.entity),
+      );
+    }
+    return selected;
+  });
+  return [
+    sortedBlocks,
+    siblings.filter(
+      (f) =>
+        !f.listData ||
+        !f.listData.path.find(
+          (p) => foldedBlocks.includes(p.entity) && p.entity !== f.value,
+        ),
+    ),
+    sortedBlocksWithChildren,
+  ];
+};
