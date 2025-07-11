@@ -40,13 +40,16 @@ let Block = ({
   isList?: boolean;
 }) => {
   let b = block;
+  let alignment = b.alignment;
+  if (!alignment && PubLeafletBlocksImage.isMain(b.block))
+    alignment = "lex:pub.leaflet.pages.linearDocument#textAlignCenter";
 
   // non text blocks, they need this padding, pt-3 sm:pt-4, which is applied in each case
   let className = `
     postBlockWrapper
     pt-1
     ${isList ? "isListItem pb-0 " : "pb-2 last:pb-3 last:sm:pb-4 first:pt-2 sm:first:pt-3"}
-    ${b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignRight" ? "text-right" : b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignCenter" ? "text-center" : ""}
+    ${alignment === "lex:pub.leaflet.pages.linearDocument#textAlignRight" ? "text-right" : alignment === "lex:pub.leaflet.pages.linearDocument#textAlignCenter" ? "text-center" : ""}
     `;
 
   switch (true) {
