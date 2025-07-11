@@ -1,13 +1,17 @@
 import { useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { pickers, SectionArrow } from "./ThemeSetter";
+import { pickers, SectionArrow, setColorAttribute } from "./ThemeSetter";
 
-import { PageThemePickers } from "./Pickers/PageThemePickers";
-import { useState } from "react";
+import {
+  PageBackgroundPicker,
+  PageThemePickers,
+} from "./Pickers/PageThemePickers";
+import { useMemo, useState } from "react";
 import { theme } from "tailwind.config";
 import { ButtonPrimary } from "components/Buttons";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { AccentPickers } from "./Pickers/AccentPickers";
+import Page from "twilio/lib/base/Page";
 
 export const PageThemeSetter = (props: { entityID: string }) => {
   let { rootEntity } = useReplicache();
@@ -19,6 +23,11 @@ export const PageThemeSetter = (props: { entityID: string }) => {
 
   if (!permission) return null;
 
+  let { rep } = useReplicache();
+  let set = useMemo(() => {
+    return setColorAttribute(rep, props.entityID);
+  }, [rep, props.entityID]);
+
   return (
     <>
       <div className="pageThemeSetter flex flex-row gap-2 px-3 py-1 z-10">
@@ -27,8 +36,9 @@ export const PageThemeSetter = (props: { entityID: string }) => {
         </div>
         <ResetButton entityID={props.entityID} />
       </div>
+
       <div
-        className="pageThemeSetterContent bg-bg-leaflet w-80 p-3 pb-0 flex flex-col gap-2 rounded-md -mb-1"
+        className="pageThemeSetterContent bg-bg-leaflet w-80 p-3 pb-0 flex flex-col gap-4 rounded-md -mb-1"
         style={{
           backgroundImage: leafletBGImage
             ? `url(${leafletBGImage.data.src})`
@@ -40,23 +50,30 @@ export const PageThemeSetter = (props: { entityID: string }) => {
             : `calc(${leafletBGRepeat.data.value}px / 2 )`,
         }}
       >
-        <AccentPickers
-          entityID={props.entityID}
-          openPicker={openPicker}
-          setOpenPicker={(pickers) => setOpenPicker(pickers)}
-        />
-        <div className="flex flex-col -mb-[14px] mt-4 z-10">
+        <div
+          className="pageThemeBG flex flex-col gap-2 h-full text-primary bg-bg-leaflet p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))]"
+          style={{ backgroundColor: "rgba(var(--bg-page), 0.6)" }}
+        >
+          <PageBackgroundPicker
+            entityID={props.entityID}
+            openPicker={openPicker}
+            setOpenPicker={(pickers) => setOpenPicker(pickers)}
+            setValue={set("theme/page-background")}
+          />
+        </div>
+
+        <div className="flex flex-col  z-10">
           <PageThemePickers
             entityID={props.entityID}
             openPicker={openPicker}
             setOpenPicker={(pickers) => setOpenPicker(pickers)}
           />
-          <SectionArrow
-            fill={theme.colors["primary"]}
-            stroke={theme.colors["bg-page"]}
-            className="ml-2"
-          />
         </div>
+        <AccentPickers
+          entityID={props.entityID}
+          openPicker={openPicker}
+          setOpenPicker={(pickers) => setOpenPicker(pickers)}
+        />
         <SamplePage entityID={props.entityID} />
       </div>
     </>

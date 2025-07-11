@@ -20,6 +20,7 @@ import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
 import { Separator } from "components/Layout";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
+import { DeleteSmall } from "components/Icons/DeleteSmall";
 
 export const LeafletBGPicker = (props: {
   entityID: string;
@@ -30,6 +31,7 @@ export const LeafletBGPicker = (props: {
   setValue: (c: Color) => void;
 }) => {
   let bgImage = useEntity(props.entityID, "theme/background-image");
+  let bgRepeat = useEntity(props.entityID, "theme/background-image-repeat");
   let bgColor = useColorAttribute(props.entityID, "theme/page-background");
   let open = props.openPicker == props.thisPicker;
   let { rep } = useReplicache();
@@ -93,19 +95,29 @@ export const LeafletBGPicker = (props: {
             )}
           </div>
         </div>
-        <label className="hover:cursor-pointer h-fit">
-          <div className={"text-[#8C8C8C] hover:text-[#0000FF]"}>
-            <BlockImageSmall />
-          </div>
-          <div className="hidden">
-            <ImageInput
-              {...props}
-              onChange={() => {
-                props.setOpenPicker(props.thisPicker);
+        <div className="flex gap-1 justify-end grow text-[#969696]">
+          {bgImage && (
+            <button
+              onClick={() => {
+                if (bgImage) rep?.mutate.retractFact({ factID: bgImage.id });
+                if (bgRepeat) rep?.mutate.retractFact({ factID: bgRepeat.id });
               }}
-            />
-          </div>
-        </label>
+            >
+              <DeleteSmall />
+            </button>
+          )}
+          <label>
+            <BlockImageSmall />
+            <div className="hidden">
+              <ImageInput
+                {...props}
+                onChange={() => {
+                  props.setOpenPicker(props.thisPicker);
+                }}
+              />
+            </div>
+          </label>
+        </div>
       </div>
       {open && (
         <div className="bgImageAndColorPicker w-full flex flex-col gap-2 ">

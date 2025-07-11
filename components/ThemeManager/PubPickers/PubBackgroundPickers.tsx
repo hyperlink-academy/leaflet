@@ -99,7 +99,9 @@ export const BackgroundPicker = (props: {
           toggleOn={props.hasPageBackground}
           setToggleOn={() => {
             props.setHasPageBackground(!props.hasPageBackground);
-            props.hasPageBackground && props.setOpenPicker("null");
+            props.hasPageBackground &&
+              props.openPicker === "page" &&
+              props.setOpenPicker("null");
           }}
           disabledColor1="#8C8C8C"
           disabledColor2="#DBDBDB"
@@ -162,11 +164,12 @@ const BackgroundImagePicker = (props: {
           <strong className={` text-[#595959]`}>Background</strong>
           <div className="italic text-[#8C8C8C]">image</div>
         </button>
-        <div className="flex gap-1">
+        <div className="flex gap-1 text-[#8C8C8C]">
+          <button onClick={() => props.setBgImage(null)}>
+            <DeleteSmall />
+          </button>
           <label className="hover:cursor-pointer ">
-            <div className="flex gap-2 rounded-md  text-[#8C8C8C] ">
-              <BlockImageSmall />
-            </div>
+            <BlockImageSmall />
             <div className="hidden">
               <input
                 type="file"
@@ -190,12 +193,6 @@ const BackgroundImagePicker = (props: {
               />
             </div>
           </label>
-          <button
-            className="text-[#8C8C8C]"
-            onClick={() => props.setBgImage(null)}
-          >
-            <DeleteSmall />
-          </button>
         </div>
       </div>
       {open && (
@@ -216,57 +213,6 @@ export const ImageSettings = (props: {
 }) => {
   return (
     <>
-      {/* <div
-        style={{
-          backgroundImage: props.bgImage
-            ? `url(${props.bgImage.src})`
-            : undefined,
-          backgroundPosition: "center",
-          backgroundSize: "cover",
-        }}
-        className="themeBGImagePreview flex gap-2 place-items-center justify-center w-full h-[128px]  bg-cover bg-center bg-no-repeat"
-      >
-        <label className="hover:cursor-pointer ">
-          <div
-            className="flex gap-2 rounded-md px-2 py-1 text-accent-contrast font-bold"
-            style={{ backgroundColor: "rgba(var(--bg-page), .8" }}
-          >
-            <BlockImageSmall /> Change Image
-          </div>
-          <div className="hidden">
-            <input
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={async (e) => {
-                let file = e.currentTarget.files?.[0];
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onload = (e) => {
-                    if (!props.bgImage) return;
-                    props.setBgImage({
-                      ...props.bgImage,
-                      src: e.target?.result as string,
-                      file,
-                    });
-                  };
-                  reader.readAsDataURL(file);
-                }
-              }}
-            />
-          </div>
-        </label>
-        <button
-          onClick={() => {
-            props.setBgImage(null);
-          }}
-        >
-          <CloseContrastSmall
-            fill={theme.colors["accent-1"]}
-            stroke={theme.colors["accent-2"]}
-          />
-        </button>
-      </div> */}
       <div className="themeBGImageControls font-bold flex flex-col gap-1 items-center px-3">
         <label htmlFor="cover" className="w-full">
           <Radio

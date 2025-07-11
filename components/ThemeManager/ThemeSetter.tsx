@@ -5,7 +5,11 @@ import { theme } from "../../tailwind.config";
 import { Color } from "react-aria-components";
 
 import { LeafletBGPicker } from "./Pickers/LeafletBGPicker";
-import { PageThemePickers } from "./Pickers/PageThemePickers";
+import {
+  PageBackgroundPicker,
+  PageBorderHider,
+  PageThemePickers,
+} from "./Pickers/PageThemePickers";
 import { useMemo, useState } from "react";
 import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { Replicache } from "replicache";
@@ -87,6 +91,18 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                   closePicker={() => setOpenPicker("null")}
                   setValue={set("theme/page-background")}
                 />
+                <PageBackgroundPicker
+                  entityID={props.entityID}
+                  setValue={set("theme/card-background")}
+                  openPicker={openPicker}
+                  setOpenPicker={setOpenPicker}
+                />
+                <hr className=" border-[#CCCCCC]" />
+                <PageBorderHider
+                  entityID={props.entityID}
+                  openPicker={openPicker}
+                  setOpenPicker={setOpenPicker}
+                />
               </div>
 
               <SectionArrow
@@ -111,36 +127,30 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                 ? "cover"
                 : `calc(${leafletBGRepeat.data.value}px / 2 )`,
             }}
-            className={`bg-bg-leaflet p-3  mb-2 flex flex-col rounded-md  border border-border pb-0`}
+            className={`bg-bg-leaflet px-3 pt-4  pb-0 mb-2 flex flex-col gap-4 rounded-md  border border-border`}
           >
-            <div className={`flex flex-col z-10 mt-4 -mb-[6px] `}>
-              <AccentPickers
-                entityID={props.entityID}
-                openPicker={openPicker}
-                setOpenPicker={(pickers) => setOpenPicker(pickers)}
-              />
-              <SectionArrow
-                fill={theme.colors["accent-2"]}
-                stroke={theme.colors["accent-1"]}
-                className="ml-2"
-              />
-            </div>
-
-            <SampleButton
+            <PageThemePickers
               entityID={props.entityID}
-              setOpenPicker={setOpenPicker}
+              openPicker={openPicker}
+              setOpenPicker={(pickers) => setOpenPicker(pickers)}
             />
+            <div className="flex flex-col -gap-[6px]">
+              <div className={`flex flex-col z-10  -mb-[6px] `}>
+                <AccentPickers
+                  entityID={props.entityID}
+                  openPicker={openPicker}
+                  setOpenPicker={(pickers) => setOpenPicker(pickers)}
+                />
+                <SectionArrow
+                  fill={theme.colors["accent-2"]}
+                  stroke={theme.colors["accent-1"]}
+                  className="ml-2"
+                />
+              </div>
 
-            <div className="flex flex-col mt-8 -mb-[6px] z-10">
-              <PageThemePickers
+              <SampleButton
                 entityID={props.entityID}
-                openPicker={openPicker}
-                setOpenPicker={(pickers) => setOpenPicker(pickers)}
-              />
-              <SectionArrow
-                fill={theme.colors["primary"]}
-                stroke={theme.colors["bg-page"]}
-                className=" ml-2"
+                setOpenPicker={setOpenPicker}
               />
             </div>
 
