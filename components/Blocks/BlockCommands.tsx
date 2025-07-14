@@ -204,22 +204,6 @@ export const blockCommands: Command[] = [
     },
   },
   {
-    name: "Mailbox",
-    icon: <BlockMailboxSmall />,
-    type: "block",
-    hiddenInPublication: true,
-    onSelect: async (rep, props, um) => {
-      props.entityID && clearCommandSearchText(props.entityID);
-      await createBlockWithType(rep, props, "mailbox");
-      um.add({
-        undo: () => {
-          props.entityID && focusTextBlock(props.entityID);
-        },
-        redo: () => {},
-      });
-    },
-  },
-  {
     name: "Poll",
     icon: <BlockPollSmall />,
     type: "block",
@@ -285,17 +269,6 @@ export const blockCommands: Command[] = [
   },
 
   // EVENT STUFF
-
-  {
-    name: "RSVP",
-    icon: <BlockRSVPSmall />,
-    type: "event",
-    hiddenInPublication: true,
-    onSelect: (rep, props) => {
-      props.entityID && clearCommandSearchText(props.entityID);
-      return createBlockWithType(rep, props, "rsvp");
-    },
-  },
   {
     name: "Date and Time",
     icon: <BlockCalendarSmall />,
