@@ -112,7 +112,7 @@ export const ExternalLinkBlock = (
   );
 };
 
-const BlockLinkInput = (props: BlockProps) => {
+const BlockLinkInput = (props: BlockProps & { preview?: boolean }) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
@@ -167,7 +167,9 @@ const BlockLinkInput = (props: BlockProps) => {
         />
         <Separator />
         <Input
-          id={elementId.block(props.entityID).input}
+          id={
+            !props.preview ? elementId.block(props.entityID).input : undefined
+          }
           type="url"
           disabled={isLocked}
           className="w-full grow border-none outline-none bg-transparent "
