@@ -156,21 +156,21 @@ let Block = ({
     case PubLeafletBlocksHeader.isMain(b.block): {
       if (b.block.level === 1)
         return (
-          <h1 className={`${className}`}>
-            <TextBlock {...b.block} />
-          </h1>
-        );
-      if (b.block.level === 2)
-        return (
           <h2 className={`${className}`}>
             <TextBlock {...b.block} />
           </h2>
         );
-      if (b.block.level === 3)
+      if (b.block.level === 2)
         return (
           <h3 className={`${className}`}>
             <TextBlock {...b.block} />
           </h3>
+        );
+      if (b.block.level === 3)
+        return (
+          <h4 className={`${className}`}>
+            <TextBlock {...b.block} />
+          </h4>
         );
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
