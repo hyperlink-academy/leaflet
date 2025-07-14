@@ -19,6 +19,24 @@ export const PubLeafletBlocksText: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksLeafletQuote: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.leafletQuote",
+  defs: {
+    main: {
+      type: "object",
+      required: ["src"],
+      properties: {
+        record: { type: "ref", ref: "com.atproto.repo.strongRef" },
+        position: {
+          type: "union",
+          refs: ["pub.leaflet.pages.linearDocument#quote"],
+        },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksWebsite: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.website",

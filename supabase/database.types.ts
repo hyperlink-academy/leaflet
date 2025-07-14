@@ -34,6 +34,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      bsky_posts: {
+        Row: {
+          cid: string
+          indexed_at: string
+          post_view: Json
+          uri: string
+        }
+        Insert: {
+          cid: string
+          indexed_at?: string
+          post_view: Json
+          uri: string
+        }
+        Update: {
+          cid?: string
+          indexed_at?: string
+          post_view?: Json
+          uri?: string
+        }
+        Relationships: []
+      }
       bsky_profiles: {
         Row: {
           did: string
@@ -118,18 +139,21 @@ export type Database = {
           created_at: string
           domain: string
           identity: string | null
+          identity_id: string | null
         }
         Insert: {
           confirmed: boolean
           created_at?: string
           domain: string
           identity?: string | null
+          identity_id?: string | null
         }
         Update: {
           confirmed?: boolean
           created_at?: string
           domain?: string
           identity?: string | null
+          identity_id?: string | null
         }
         Relationships: [
           {
@@ -139,39 +163,44 @@ export type Database = {
             referencedRelation: "identities"
             referencedColumns: ["email"]
           },
+          {
+            foreignKeyName: "custom_domains_identity_id_fkey"
+            columns: ["identity_id"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["id"]
+          },
         ]
       }
       document_mentions_in_bsky: {
         Row: {
-          cid: string
           document: string
-          indexed_at: string
           link: string
-          record: Json
           uri: string
         }
         Insert: {
-          cid: string
           document: string
-          indexed_at?: string
           link: string
-          record: Json
           uri: string
         }
         Update: {
-          cid?: string
           document?: string
-          indexed_at?: string
           link?: string
-          record?: Json
           uri?: string
         }
         Relationships: [
           {
-            foreignKeyName: "publication_mentions_in_bsky_document_fkey"
+            foreignKeyName: "document_mentions_in_bsky_document_fkey"
             columns: ["document"]
             isOneToOne: false
             referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "document_mentions_in_bsky_uri_fkey"
+            columns: ["uri"]
+            isOneToOne: false
+            referencedRelation: "bsky_posts"
             referencedColumns: ["uri"]
           },
         ]

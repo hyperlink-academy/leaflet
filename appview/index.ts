@@ -21,6 +21,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { QUOTE_PARAM } from "app/lish/[did]/[publication]/[rkey]/useHighlight";
+import { inngest } from "app/api/inngest/client";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
 
@@ -189,31 +190,10 @@ async function main() {
             : null;
         let pubUrl = embed || link;
         if (pubUrl) {
-          let url = new URL(pubUrl);
-          let path = url.pathname.split("/").filter(Boolean);
-          let { data: pub } = await supabaseServerClient
-            .from("publications")
-            .select("*, documents_in_publications!inner(*)")
-            .eq("record->>base_path", url.host)
-            .eq("documents_in_publications.rkey", path[0])
-            .single();
-          if (pub) {
-            let path = url.pathname.split("/").filter(Boolean);
-            await supabaseServerClient
-              .from("document_mentions_in_bsky")
-              .insert({
-                uri: evt.uri.toString(),
-                cid: evt.cid.toString(),
-                document: AtUri.make(
-                  pub.identity_did,
-                  ids.PubLeafletDocument,
-                  path[0],
-                ).toString(),
-                record: evt.record as Json,
-                publication: pub.uri,
-                link: pubUrl,
-              });
-          }
+          inngest.send({
+            name: "appview/bsky/index-post-mention",
+            data: { post_uri: evt.uri.toString(), document_link: pubUrl },
+          });
         }
       }
     },

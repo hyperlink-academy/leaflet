@@ -13,7 +13,7 @@ import {
 import { Metadata } from "next";
 import { TextBlock } from "./TextBlock";
 import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
-import { BskyAgent } from "@atproto/api";
+import { AtpAgent } from "@atproto/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { QuoteHandler } from "./QuoteHandler";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
@@ -62,7 +62,7 @@ export default async function Post(props: {
         </p>
       </div>
     );
-  let agent = new BskyAgent({ service: "https://public.api.bsky.app" });
+  let agent = new AtpAgent({ service: "https://public.api.bsky.app" });
   let [{ data: document }] = await Promise.all([
     supabaseServerClient
       .from("documents")
