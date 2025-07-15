@@ -28,6 +28,7 @@ import {
 } from "components/Icons/BlockTextSmall";
 import { LinkSmall } from "components/Icons/LinkSmall";
 import { BlockRSVPSmall } from "components/Icons/BlockRSVPSmall";
+import { ListUnorderedSmall } from "components/Toolbar/ListToolbar";
 
 type Props = {
   parent: string;
@@ -141,6 +142,20 @@ export const blockCommands: Command[] = [
       await setHeaderCommand(3, rep, props);
     },
   },
+  {
+    name: "List",
+    icon: <ListUnorderedSmall />,
+    type: "text",
+    onSelect: async (rep, props, um) => {
+      let entity = await createBlockWithType(rep, props, "text");
+      await rep?.mutate.assertFact({
+        entity,
+        attribute: "block/is-list",
+        data: { value: true, type: "boolean" },
+      });
+      clearCommandSearchText(entity);
+    },
+  },
 
   {
     name: "Image",
@@ -180,22 +195,6 @@ export const blockCommands: Command[] = [
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       await createBlockWithType(rep, props, "button");
-      um.add({
-        undo: () => {
-          props.entityID && focusTextBlock(props.entityID);
-        },
-        redo: () => {},
-      });
-    },
-  },
-  {
-    name: "Mailbox",
-    icon: <BlockMailboxSmall />,
-    type: "block",
-    hiddenInPublication: true,
-    onSelect: async (rep, props, um) => {
-      props.entityID && clearCommandSearchText(props.entityID);
-      await createBlockWithType(rep, props, "mailbox");
       um.add({
         undo: () => {
           props.entityID && focusTextBlock(props.entityID);
@@ -270,17 +269,6 @@ export const blockCommands: Command[] = [
   },
 
   // EVENT STUFF
-
-  {
-    name: "RSVP",
-    icon: <BlockRSVPSmall />,
-    type: "event",
-    hiddenInPublication: true,
-    onSelect: (rep, props) => {
-      props.entityID && clearCommandSearchText(props.entityID);
-      return createBlockWithType(rep, props, "rsvp");
-    },
-  },
   {
     name: "Date and Time",
     icon: <BlockCalendarSmall />,

@@ -11,6 +11,7 @@ import { PubLeafletPublication } from "lexicons/api";
 import { publishPostToBsky } from "./publishBskyPost";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AtUri } from "@atproto/syntax";
+import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 
 type Props = {
   title: string;
@@ -20,6 +21,7 @@ type Props = {
   description: string;
   publication_uri: string;
   record?: PubLeafletPublication.Record;
+  posts_in_pub?: number;
 };
 
 export function PublishPost(props: Props) {
@@ -27,7 +29,7 @@ export function PublishPost(props: Props) {
     { state: "default" } | { state: "success"; post_url: string }
   >({ state: "default" });
   return (
-    <div className="publishPage w-screen h-screen bg-[#FDFCFA] flex place-items-center justify-center">
+    <div className="publishPage w-screen h-full bg-bg-page flex sm:pt-0 pt-4 sm:place-items-center justify-center">
       {publishState.state === "default" ? (
         <PublishPostForm setPublishState={setPublishState} {...props} />
       ) : (
@@ -35,6 +37,7 @@ export function PublishPost(props: Props) {
           record={props.record}
           publication_uri={props.publication_uri}
           post_url={publishState.post_url}
+          posts_in_pub={(props.posts_in_pub || 0) + 1}
         />
       )}
     </div>
@@ -69,7 +72,7 @@ const PublishPostForm = (
         title: props.title,
         url: post_url,
         description: props.description,
-        record: doc.record,
+        document_record: doc.record,
         rkey: doc.rkey,
       });
     setIsLoading(false);
@@ -77,7 +80,7 @@ const PublishPostForm = (
   }
 
   return (
-    <div className="flex flex-col gap-4 w-[640px] max-w-full">
+    <div className="flex flex-col gap-4 w-[640px] max-w-full sm:px-4 px-3">
       <h3>Publish Options</h3>
       <form
         onSubmit={(e) => {
@@ -100,7 +103,7 @@ const PublishPostForm = (
             <div className="flex flex-col">
               <div className="font-bold">Share Quietly</div>
               <div className="text-sm text-tertiary font-normal">
-                Subscribers will not be notified about this post
+                No one will be notified about this post
               </div>
             </div>
           </Radio>
@@ -118,7 +121,7 @@ const PublishPostForm = (
             <div className="flex flex-col">
               <div className="font-bold">Share on Bluesky</div>
               <div className="text-sm text-tertiary font-normal">
-                Subscribers will get updated via a custom Bluesky feed
+                Pub subscribers will be updated via a custom Bluesky feed
               </div>
             </div>
           </Radio>
@@ -145,9 +148,6 @@ const PublishPostForm = (
                       }
                       placeholder="Write a post to share your writing!"
                     />
-                    <div className="text-xs text-secondary italic place-self-end">
-                      {postContent.length}/300
-                    </div>
                   </div>
                   <div className="opaque-container overflow-hidden flex flex-col mt-4 w-full">
                     {/* <div className="h-[260px] w-full bg-test" /> */}
@@ -159,6 +159,9 @@ const PublishPostForm = (
                         {props.record?.base_path}
                       </p>
                     </div>
+                  </div>
+                  <div className="text-xs text-secondary italic place-self-end pt-2">
+                    {postContent.length}/300
                   </div>
                 </div>
               </div>
@@ -185,20 +188,20 @@ const PublishPostSuccess = (props: {
   post_url: string;
   publication_uri: string;
   record: Props["record"];
+  posts_in_pub: number;
 }) => {
   let uri = new AtUri(props.publication_uri);
   return (
-    <div>
-      <h1>Woo! You published your post!</h1>
-      <div className="flex gap-2 justify-center">
-        <Link
-          className="hover:!no-underline font-bold"
-          href={`/lish/${uri.host}/${props.record?.name}/dashboard`}
-        >
-          Back To Dashboard
-        </Link>
-        <a href={props.post_url}>See post</a>
-      </div>
+    <div className="container p-4 m-3 sm:m-4 flex flex-col gap-1 justify-center text-center w-fit h-fit mx-auto">
+      <PublishIllustration posts_in_pub={props.posts_in_pub} />
+      <h2 className="pt-2">Published!</h2>
+      <Link
+        className="hover:!no-underline font-bold place-self-center pt-2"
+        href={`/lish/${uri.host}/${props.record?.name}/dashboard`}
+      >
+        <ButtonPrimary>Back to Dashboard</ButtonPrimary>
+      </Link>
+      <a href={props.post_url}>See published post</a>
     </div>
   );
 };

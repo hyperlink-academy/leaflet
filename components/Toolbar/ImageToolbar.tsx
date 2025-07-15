@@ -1,12 +1,16 @@
+"use client";
 import { ToolbarButton } from ".";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { Props } from "components/Icons/Props";
+import { ImageAltSmall, ImageRemoveAltSmall } from "components/Icons/ImageAlt";
 
 export const ImageFullBleedButton = (props: {}) => {
   let { rep } = useReplicache();
   let focusedBlock = useUIState((s) => s.focusedEntity)?.entityID || null;
   let isFullBleed = useEntity(focusedBlock, "image/full-bleed")?.data.value;
+  let hasSrc = useEntity(focusedBlock, "block/image")?.data;
+  if (!hasSrc) return null;
 
   return (
     <ToolbarButton
@@ -25,6 +29,53 @@ export const ImageFullBleedButton = (props: {}) => {
       tooltipContent={<div className="">Toggle Full Bleed</div>}
     >
       {isFullBleed ? <ImageFullBleedOnSmall /> : <ImageFullBleedOffSmall />}
+    </ToolbarButton>
+  );
+};
+
+export const ImageAltTextButton = (props: {
+  setToolbarState: (s: "img-alt-text") => void;
+}) => {
+  let { rep } = useReplicache();
+  let focusedBlock = useUIState((s) => s.focusedEntity)?.entityID || null;
+
+  let altText = useEntity(focusedBlock, "image/alt")?.data.value;
+
+  let setAltEditorOpen = useUIState((s) => s.setOpenPopover);
+  let altEditorOpen = useUIState((s) => s.openPopover === focusedBlock);
+  let hasSrc = useEntity(focusedBlock, "block/image")?.data;
+  if (!hasSrc) return null;
+
+  return (
+    <ToolbarButton
+      active={altText !== undefined}
+      onClick={async (e) => {
+        e.preventDefault();
+        if (!focusedBlock) return;
+        if (!altText) {
+          await rep?.mutate.assertFact({
+            entity: focusedBlock,
+            attribute: "image/alt",
+            data: { type: "string", value: "" },
+          });
+          setAltEditorOpen(focusedBlock);
+        } else {
+          await rep?.mutate.retractAttribute({
+            entity: focusedBlock,
+            attribute: "image/alt",
+          });
+          setAltEditorOpen(null);
+        }
+      }}
+      tooltipContent={
+        <div>{altText === undefined ? "Add " : "Remove "}Alt Text</div>
+      }
+    >
+      {altText === undefined ? (
+        <ImageAltSmall fillColor="transparent" />
+      ) : (
+        <ImageRemoveAltSmall />
+      )}
     </ToolbarButton>
   );
 };

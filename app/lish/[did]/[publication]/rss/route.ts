@@ -2,9 +2,15 @@ import { AtUri } from "@atproto/syntax";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { Feed } from "feed";
 import fs from "fs/promises";
-import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
+import {
+  PubLeafletDocument,
+  PubLeafletPagesLinearDocument,
+  PubLeafletPublication,
+} from "lexicons/api";
 import { NextRequest, NextResponse } from "next/server";
+import { createElement } from "react";
 import { supabaseServerClient } from "supabase/serverClient";
+import { StaticPostContent } from "../[rkey]/StaticPostContent";
 
 export async function GET(
   req: Request,
@@ -12,6 +18,9 @@ export async function GET(
     params: Promise<{ publication: string; did: string }>;
   },
 ) {
+  let renderToStaticMarkup = await import("react-dom/server").then(
+    (module) => module.renderToStaticMarkup,
+  );
   let params = await props.params;
   let { result: publication } = await get_publication_data.handler(
     {
@@ -40,19 +49,28 @@ export async function GET(
   publication?.documents_in_publications.forEach((doc) => {
     if (!doc.documents) return;
     let record = doc.documents?.data as PubLeafletDocument.Record;
-    let rkey = new AtUri(doc.documents?.uri).rkey;
+    let uri = new AtUri(doc.documents?.uri);
+    let rkey = uri.rkey;
     if (!record) return;
+    let firstPage = record.pages[0];
+    let blocks: PubLeafletPagesLinearDocument.Block[] = [];
+    if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
+      blocks = firstPage.blocks || [];
+    }
     feed.addItem({
       title: record.title,
       description: record.description,
       date: record.publishedAt ? new Date(record.publishedAt) : new Date(),
       id: `https://${pubRecord.base_path}/${rkey}`,
       link: `https://${pubRecord.base_path}/${rkey}`,
+      content: renderToStaticMarkup(
+        createElement(StaticPostContent, { blocks, did: uri.host }),
+      ),
     });
   });
   return new Response(feed.rss2(), {
     headers: {
-      "Content-Type": "application/rss+xml",
+      "Content-Type": "text/xml",
     },
   });
 }

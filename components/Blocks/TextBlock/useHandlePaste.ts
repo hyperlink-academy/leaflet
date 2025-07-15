@@ -69,7 +69,9 @@ export const useHandlePaste = (
         return true;
       }
       // if there is no html, but there is text, convert the text to markdown
-      if (!textHTML && text) {
+      //
+      let xml = new DOMParser().parseFromString(textHTML, "text/html");
+      if ((!textHTML || !xml.children.length) && text) {
         textHTML = markdownToHtml(text);
       }
       // if thre is html
@@ -77,12 +79,12 @@ export const useHandlePaste = (
         let xml = new DOMParser().parseFromString(textHTML, "text/html");
         let currentPosition = propsRef.current.position;
         let children = flattenHTMLToTextBlocks(xml.body);
+        let hasImage = false;
+        for (let item of e.clipboardData.items) {
+          if (item.type.includes("image")) hasImage = true;
+        }
         if (
-          !(
-            children.length === 1 &&
-            children[0].tagName === "IMG" &&
-            e.clipboardData.items.length > 0
-          )
+          !(children.length === 1 && children[0].tagName === "IMG" && hasImage)
         ) {
           children.forEach((child, index) => {
             createBlockFromHTML(child, {
@@ -325,8 +327,8 @@ const createBlockFromHTML = (
     }
   }
 
-  if (child.tagName === "DIV" && child.getAttribute("data-entityID")) {
-    let oldEntityID = child.getAttribute("data-entityID") as string;
+  if (child.tagName === "DIV" && child.getAttribute("data-entityid")) {
+    let oldEntityID = child.getAttribute("data-entityid") as string;
     let factsData = child.getAttribute("data-facts");
     if (factsData) {
       let facts = JSON.parse(atob(factsData)) as Fact<any>[];
@@ -472,8 +474,7 @@ const createBlockFromHTML = (
         },
       });
     }
-    if (last && !hasChildren) {
-      if (block?.editor.selection.from !== undefined) return;
+    if (last && !hasChildren && !first) {
       focusBlock(
         {
           value: entityID,
@@ -489,6 +490,13 @@ const createBlockFromHTML = (
 function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
   // Function to recursively collect HTML from nodes
   function collectHTML(node: Node, htmlBlocks: HTMLElement[]): void {
+    if (node.nodeType === Node.TEXT_NODE) {
+      if (node.textContent && node.textContent.trim() !== "") {
+        let newElement = document.createElement("p");
+        newElement.textContent = node.textContent;
+        htmlBlocks.push(newElement);
+      }
+    }
     if (node.nodeType === Node.ELEMENT_NODE) {
       const elementNode = node as HTMLElement;
       // Collect outer HTML for paragraph-like elements
@@ -507,7 +515,7 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
           "A",
           "SPAN",
         ].includes(elementNode.tagName) ||
-        elementNode.getAttribute("data-entityID")
+        elementNode.getAttribute("data-entityid")
       ) {
         htmlBlocks.push(elementNode);
       } else {

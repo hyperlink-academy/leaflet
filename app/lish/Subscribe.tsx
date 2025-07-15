@@ -22,6 +22,7 @@ import { DotLoader } from "components/utils/DotLoader";
 import { addFeed } from "./addFeed";
 import { useSearchParams } from "next/navigation";
 import LoginForm from "app/login/LoginForm";
+import { RSSSmall } from "components/Icons/RSSSmall";
 
 type State =
   | { state: "email" }
@@ -182,6 +183,7 @@ export const SubscribeWithBluesky = (props: {
   isPost?: boolean;
   pubName: string;
   pub_uri: string;
+  base_url: string;
   subscribers: { identity: string }[];
 }) => {
   let { identity } = useIdentityData();
@@ -210,10 +212,15 @@ export const SubscribeWithBluesky = (props: {
           Get updates from {props.pubName}!
         </div>
       )}
-      <BlueskySubscribeButton
-        pub_uri={props.pub_uri}
-        setSuccessModalOpen={setSuccessModalOpen}
-      />
+      <div className="flex flex-row gap-2 place-self-center">
+        <BlueskySubscribeButton
+          pub_uri={props.pub_uri}
+          setSuccessModalOpen={setSuccessModalOpen}
+        />
+        <a href={`${props.base_url}/rss`} className="flex" target="_blank">
+          <RSSSmall className="self-center" />
+        </a>
+      </div>
     </div>
   );
 };
@@ -316,7 +323,10 @@ let BlueskySubscribeButton = (props: {
 
   return (
     <>
-      <form action={subscribe} className="place-self-center">
+      <form
+        action={subscribe}
+        className="place-self-center flex flex-row gap-1"
+      >
         <ButtonPrimary>
           {subscribePending ? (
             <DotLoader />
@@ -339,6 +349,8 @@ const SubscribeSuccessModal = ({
   setOpen: (open: boolean) => void;
 }) => {
   let searchParams = useSearchParams();
+  let [loading, setLoading] = useState(false);
+  let toaster = useToaster();
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild></Dialog.Trigger>
@@ -363,13 +375,18 @@ const SubscribeSuccessModal = ({
             <ButtonPrimary
               className="place-self-center mt-4"
               onClick={async () => {
+                if (loading) return;
+
+                setLoading(true);
                 let feedurl =
                   "https://bsky.app/profile/leaflet.pub/feed/subscribedPublications";
                 await addFeed();
+                toaster({ content: "Feed added!", type: "success" });
+                setLoading(false);
                 window.open(feedurl, "_blank");
               }}
             >
-              Add Bluesky Feed
+              {loading ? <DotLoader /> : "Add Bluesky Feed"}
             </ButtonPrimary>
             <button
               className="text-accent-contrast mt-1"

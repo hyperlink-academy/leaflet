@@ -17,7 +17,7 @@ export async function getIdentityData() {
             *,
             bsky_profiles(*),
             subscribers_to_publications(*),
-            custom_domains(*),
+            custom_domains!custom_domains_identity_id_fkey(publication_domains(*), *),
             home_leaflet:permission_tokens!identities_home_page_fkey(*, permission_token_rights(*)),
             permission_token_on_homepage(
               created_at,
@@ -25,7 +25,7 @@ export async function getIdentityData() {
                 id,
                 root_entity,
                 permission_token_rights(*),
-                leaflets_in_publications(*)
+                leaflets_in_publications(*, publications(*))
               )
             )
           )`,

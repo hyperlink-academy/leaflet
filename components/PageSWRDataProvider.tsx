@@ -67,7 +67,12 @@ let useLeafletData = () => {
 export function useLeafletPublicationData() {
   let { data, mutate } = useLeafletData();
   return {
-    data: data?.leaflets_in_publications?.[0] || null,
+    data:
+      data?.leaflets_in_publications?.[0] ||
+      data?.permission_token_rights[0].entity_sets?.permission_tokens?.find(
+        (p) => p.leaflets_in_publications.length,
+      )?.leaflets_in_publications?.[0] ||
+      null,
     mutate,
   };
 }

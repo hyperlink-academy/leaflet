@@ -9,9 +9,11 @@ import { Fragment, useState } from "react";
 import { useParams } from "next/navigation";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { Menu, MenuItem } from "components/Layout";
-import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { deletePost } from "./deletePost";
 import { mutate } from "swr";
+import { Button } from "react-aria-components";
+import { ButtonPrimary } from "components/Buttons";
+import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 
 export function PublishedPostsList() {
   let { data: publication } = usePublicationData();
@@ -24,7 +26,7 @@ export function PublishedPostsList() {
       </div>
     );
   return (
-    <div className="publishedList w-full flex flex-col gap-4 pb-8 sm:pb-12">
+    <div className="publishedList w-full flex flex-col gap-4 pb-4">
       {publication.documents_in_publications
         .sort((a, b) => {
           let aRecord = a.documents?.data! as PubLeafletDocument.Record;
@@ -47,13 +49,28 @@ export function PublishedPostsList() {
 
           return (
             <Fragment key={doc.documents?.uri}>
-              <div className="flex  w-full ">
-                <Link
-                  target="_blank"
-                  href={`${getPublicationURL(publication)}/${uri.rkey}`}
-                  className="publishedPost grow flex flex-col hover:!no-underline"
-                >
-                  <h3 className="text-primary">{record.title}</h3>
+              <div className="flex gap-2 w-full ">
+                <div className="publishedPost grow flex flex-col hover:!no-underline">
+                  <div className="flex justify-between gap-2">
+                    <a
+                      className="hover:!no-underline"
+                      target="_blank"
+                      href={`${getPublicationURL(publication)}/${uri.rkey}`}
+                    >
+                      <h3 className="text-primary grow leading-snug">
+                        {record.title}
+                      </h3>
+                    </a>
+                    <div className="flex justify-start align-top flex-row gap-1">
+                      {leaflet && (
+                        <Link className="pt-[6px]" href={`/${leaflet.leaflet}`}>
+                          <EditTiny />
+                        </Link>
+                      )}
+                      <Options document_uri={doc.documents.uri} />
+                    </div>
+                  </div>
+
                   {record.description ? (
                     <p className="italic text-secondary">
                       {record.description}
@@ -72,14 +89,6 @@ export function PublishedPostsList() {
                       )}
                     </p>
                   ) : null}
-                </Link>
-                <div className="flex justify-start align-top flex-row">
-                  {leaflet && (
-                    <Link className="pt-[6px]" href={`/${leaflet.leaflet}`}>
-                      <EditTiny />
-                    </Link>
-                  )}
-                  <Options document_uri={doc.documents.uri} />
                 </div>
               </div>
               <hr className="last:hidden border-border-light" />
@@ -96,8 +105,8 @@ let Options = (props: { document_uri: string }) => {
       align="end"
       asChild
       trigger={
-        <button className="text-secondary hover:accent-primary border border-accent-2 rounded-md h-min w-min pt-2.5">
-          <MoreOptionsTiny className="rotate-90 h-min w-min " />
+        <button className="text-secondary rounded-md selected-outline !border-transparent hover:!border-border h-min">
+          <MoreOptionsVerticalTiny />
         </button>
       }
     >
@@ -110,31 +119,50 @@ let Options = (props: { document_uri: string }) => {
 
 function DeletePost(props: { document_uri: string }) {
   let { mutate } = usePublicationData();
-  let [confirm, setConfirm] = useState(false);
-  return (
-    <MenuItem
-      onSelect={async (e) => {
-        if (!confirm) {
+  let [state, setState] = useState<"normal" | "confirm">("normal");
+
+  if (state === "normal") {
+    return (
+      <MenuItem
+        onSelect={async (e) => {
           e.preventDefault();
-          setConfirm(true);
+          setState("confirm");
           return;
-        }
-        await mutate((data) => {
-          if (!data) return data;
-          return {
-            ...data,
-            leaflets_in_publications: data.leaflets_in_publications.filter(
-              (l) => l.doc !== props.document_uri,
-            ),
-            documents_in_publications: data.documents_in_publications.filter(
-              (d) => d.documents?.uri !== props.document_uri,
-            ),
-          };
-        }, false);
-        await deletePost(props.document_uri);
-      }}
-    >
-      {!confirm ? "Delete Post" : "Are you sure?"}
-    </MenuItem>
-  );
+        }}
+      >
+        Delete Post
+      </MenuItem>
+    );
+  }
+  if (state === "confirm") {
+    return (
+      <div className="flex flex-col items-center font-bold text-secondary px-2 py-1">
+        Are you sure?
+        <div className="text-sm text-tertiary font-normal">
+          This action cannot be undone!
+        </div>
+        <ButtonPrimary
+          className="mt-2"
+          onClick={async () => {
+            await mutate((data) => {
+              if (!data) return data;
+              return {
+                ...data,
+                leaflets_in_publications: data.leaflets_in_publications.filter(
+                  (l) => l.doc !== props.document_uri,
+                ),
+                documents_in_publications:
+                  data.documents_in_publications.filter(
+                    (d) => d.documents?.uri !== props.document_uri,
+                  ),
+              };
+            }, false);
+            await deletePost(props.document_uri);
+          }}
+        >
+          Delete
+        </ButtonPrimary>
+      </div>
+    );
+  }
 }

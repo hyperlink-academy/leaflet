@@ -7,17 +7,24 @@ import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
 import { CollapsedPostHeader } from "./CollapsedPostHeader";
 import { Interactions } from "../Interactions/Interactions";
+import { getIdentityData } from "actions/getIdentityData";
+import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 
 export async function PostHeader(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
 }) {
   let did = decodeURIComponent((await props.params).did);
+  let identity = await getIdentityData();
   let agent = new BskyAgent({ service: "https://public.api.bsky.app" });
   let [{ data: document }, { data: profile }] = await Promise.all([
     supabaseServerClient
       .from("documents")
       .select(
-        "*, documents_in_publications(publications(*, publication_subscriptions(*)))",
+        `*,
+        documents_in_publications(publications(*, publication_subscriptions(*))),
+        leaflets_in_publications(*),
+        document_mentions_in_bsky(*)
+        `,
       )
       .eq(
         "uri",
@@ -76,6 +83,20 @@ export async function PostHeader(props: {
               </>
             ) : null}
             | <Interactions compact />
+            {identity &&
+              identity.atp_did ===
+                document.documents_in_publications[0]?.publications
+                  .identity_did && (
+                <>
+                  {" "}
+                  |
+                  <a
+                    href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
+                  >
+                    Edit Post
+                  </a>
+                </>
+              )}
           </div>
         </div>
       </div>

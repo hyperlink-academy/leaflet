@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
+import { AtUri } from "@atproto/syntax";
 
 export type GetPublicationDataReturnType = Awaited<
   ReturnType<(typeof get_publication_data)["handler"]>
@@ -15,7 +16,15 @@ export const get_publication_data = makeRoute({
     { did, publication_name },
     { supabase }: Pick<Env, "supabase">,
   ) => {
-    let { data: publication } = await supabase
+    let uri;
+    if (/^(?!\.$|\.\.S)[A-Za-z0-9._:~-]{1,512}$/.test(publication_name)) {
+      uri = AtUri.make(
+        did,
+        "pub.leaflet.publication",
+        publication_name,
+      ).toString();
+    }
+    let { data: publication, error } = await supabase
       .from("publications")
       .select(
         `*,
@@ -29,8 +38,8 @@ export const get_publication_data = makeRoute({
          )
         )`,
       )
+      .or(`name.eq."${publication_name}", uri.eq."${uri}"`)
       .eq("identity_did", did)
-      .eq("name", publication_name)
       .single();
 
     return { result: publication };

@@ -43,7 +43,7 @@ export const EditPubForm = () => {
 
   return (
     <form
-      className="flex flex-col gap-3 w-full py-1"
+      className="flex flex-col gap-3 w-[1000px] max-w-full py-1"
       onSubmit={async (e) => {
         if (!pubData) return;
         e.preventDefault();
@@ -100,7 +100,7 @@ export const EditPubForm = () => {
           Publication Name
         </p>
         <Input
-          className="input-with-border w-full "
+          className="input-with-border w-full text-primary"
           type="text"
           id="pubName"
           value={nameValue}
@@ -115,7 +115,7 @@ export const EditPubForm = () => {
         </p>
         <Input
           textarea
-          className="input-with-border w-full "
+          className="input-with-border w-full text-primary"
           rows={3}
           id="pubDescription"
           value={descriptionValue}
@@ -274,8 +274,8 @@ function Domain(props: {
   console.log(props.domain, data);
 
   return (
-    <div className="text-sm text-secondary relative">
-      {props.domain}
+    <div className="text-sm text-secondary relative w-full ">
+      <div className="pr-8 truncate">{props.domain}</div>
       <div className="absolute right-0 top-0 bottom-0 flex justify-end items-center w-4 ">
         {pending ? (
           <button

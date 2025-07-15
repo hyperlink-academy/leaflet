@@ -8,14 +8,18 @@ import { Footer } from "components/ActionBar/Footer";
 import { PublicationDashboard } from "./PublicationDashboard";
 import { DraftList } from "./DraftList";
 import { getIdentityData } from "actions/getIdentityData";
-import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { Actions } from "./Actions";
 import React from "react";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { PublicationSWRDataProvider } from "./PublicationSWRProvider";
 import { PublishedPostsList } from "./PublishedPostsLists";
-import { PubLeafletPublication } from "lexicons/api";
+import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
 import { PublicationSubscribers } from "./PublicationSubscribers";
+import {
+  PublicationThemeProvider,
+  PublicationThemeProviderDashboard,
+} from "components/ThemeManager/PublicationThemeProvider";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -30,8 +34,10 @@ export async function generateMetadata(props: {
     },
     { supabase: supabaseServerClient },
   );
+  let record =
+    (publication?.record as PubLeafletPublication.Record) || undefined;
   if (!publication) return { title: "404 Publication" };
-  return { title: decodeURIComponent((await props.params).publication) };
+  return { title: record?.name || "Untitled Publication" };
 }
 
 //This is the admin dashboard of the publication
@@ -61,6 +67,9 @@ export default async function Publication(props: {
   );
 
   let record = publication?.record as PubLeafletPublication.Record | null;
+
+  let showPageBackground = !!record?.theme?.showPageBackground;
+
   if (!publication || identity.atp_did !== publication.identity_did)
     return <PubNotFound />;
 
@@ -71,16 +80,21 @@ export default async function Publication(props: {
         publication_name={publication.name}
         publication_data={publication}
       >
-        <ThemeProvider entityID={null}>
-          <div className="w-screen h-screen flex place-items-center bg-[#FDFCFA]">
-            <div className="relative max-w-prose w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6">
-              <div className="w-12 relative">
-                <Sidebar className="mt-6 p-2">
-                  <Actions publication={publication.uri} />
-                </Sidebar>
+        <PublicationThemeProviderDashboard record={record}>
+          <div className="pubDashWrapper relative w-max h-full flex  items-stretch">
+            <div className="flex sm:flex-row flex-col max-h-full h-full">
+              <div
+                className="pubDashSidebarWrapper flex justify-end items-start "
+                style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
+              >
+                <div className="pubDashSidebar relative w-16 justify-items-end">
+                  <Sidebar className="mt-6 p-2 ">
+                    <Actions publication={publication.uri} />
+                  </Sidebar>
+                </div>
               </div>
               <div
-                className={`h-full overflow-y-scroll pt-4 sm:pl-5 sm:pt-8 w-full`}
+                className={`pubDash grow sm:h-full h-32 w-full flex flex-col items-stretch pt-2 sm:pt-6   ml-[6px] sm:ml-0 max-w-[var(--page-width-units)] ${showPageBackground ? "sm:pb-8 pb-1" : "pb-0"}`}
               >
                 <PublicationDashboard
                   did={did}
@@ -94,14 +108,12 @@ export default async function Publication(props: {
                   defaultTab={"Drafts"}
                 />
               </div>
-              <Media mobile>
-                <Footer>
-                  <Actions publication={publication.uri} />
-                </Footer>
-              </Media>
+              <Footer>
+                <Actions publication={publication.uri} />
+              </Footer>
             </div>
           </div>
-        </ThemeProvider>
+        </PublicationThemeProviderDashboard>
       </PublicationSWRDataProvider>
     );
   } catch (e) {

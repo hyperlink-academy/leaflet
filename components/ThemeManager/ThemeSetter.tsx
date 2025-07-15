@@ -4,8 +4,12 @@ import { theme } from "../../tailwind.config";
 
 import { Color } from "react-aria-components";
 
-import { LeafletBGPicker } from "./LeafletBGPicker";
-import { PageThemePickers } from "./PageThemePickers";
+import { LeafletBGPicker } from "./Pickers/LeafletBGPicker";
+import {
+  PageBackgroundPicker,
+  PageBorderHider,
+  PageThemePickers,
+} from "./Pickers/PageThemePickers";
 import { useMemo, useState } from "react";
 import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { Replicache } from "replicache";
@@ -16,7 +20,8 @@ import { ActionButton } from "components/ActionBar/ActionButton";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { PaintSmall } from "components/Icons/PaintSmall";
-import { AccentThemePickers } from "./AccentThemePickers";
+import { AccentPickers } from "./Pickers/AccentPickers";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 
 export type pickers =
   | "null"
@@ -44,6 +49,7 @@ export function setColorAttribute(
 }
 export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   let { rep } = useReplicache();
+  let { data: pub } = useLeafletPublicationData();
 
   // I need to get these variables from replicache and then write them to the DB. I also need to parse them into a state that can be used here.
   let permission = useEntitySetContext().permissions.write;
@@ -61,6 +67,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   }, [rep, props.entityID]);
 
   if (!permission) return null;
+  if (pub) return null;
 
   return (
     <>
@@ -83,6 +90,18 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                   setOpenPicker={setOpenPicker}
                   closePicker={() => setOpenPicker("null")}
                   setValue={set("theme/page-background")}
+                />
+                <PageBackgroundPicker
+                  entityID={props.entityID}
+                  setValue={set("theme/card-background")}
+                  openPicker={openPicker}
+                  setOpenPicker={setOpenPicker}
+                />
+                <hr className=" border-[#CCCCCC]" />
+                <PageBorderHider
+                  entityID={props.entityID}
+                  openPicker={openPicker}
+                  setOpenPicker={setOpenPicker}
                 />
               </div>
 
@@ -108,37 +127,30 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                 ? "cover"
                 : `calc(${leafletBGRepeat.data.value}px / 2 )`,
             }}
-            className={`bg-bg-leaflet p-3  mb-2 flex flex-col rounded-md  border border-border pb-0`}
+            className={`bg-bg-leaflet px-3 pt-4  pb-0 mb-2 flex flex-col gap-4 rounded-md  border border-border`}
           >
-            <div className={`flex flex-col z-10 mt-4 -mb-[6px] `}>
-              <AccentThemePickers
-                entityID={props.entityID}
-                openPicker={openPicker}
-                setOpenPicker={(pickers) => setOpenPicker(pickers)}
-              />
-              <SectionArrow
-                fill={theme.colors["accent-2"]}
-                stroke={theme.colors["accent-1"]}
-                className="ml-2"
-              />
-            </div>
-
-            <SampleButton
+            <PageThemePickers
               entityID={props.entityID}
-              setOpenPicker={setOpenPicker}
+              openPicker={openPicker}
+              setOpenPicker={(pickers) => setOpenPicker(pickers)}
             />
+            <div className="flex flex-col -gap-[6px]">
+              <div className={`flex flex-col z-10  -mb-[6px] `}>
+                <AccentPickers
+                  entityID={props.entityID}
+                  openPicker={openPicker}
+                  setOpenPicker={(pickers) => setOpenPicker(pickers)}
+                />
+                <SectionArrow
+                  fill={theme.colors["accent-2"]}
+                  stroke={theme.colors["accent-1"]}
+                  className="ml-2"
+                />
+              </div>
 
-            <div className="flex flex-col mt-8 -mb-[6px] z-10">
-              <PageThemePickers
-                home
+              <SampleButton
                 entityID={props.entityID}
-                openPicker={openPicker}
-                setOpenPicker={(pickers) => setOpenPicker(pickers)}
-              />
-              <SectionArrow
-                fill={theme.colors["primary"]}
-                stroke={theme.colors["bg-page"]}
-                className=" ml-2"
+                setOpenPicker={setOpenPicker}
               />
             </div>
 
@@ -233,12 +245,14 @@ const SamplePage = (props: {
       onClick={(e) => {
         e.currentTarget === e.target && props.setOpenPicker("page");
       }}
-      className={
-        pageBorderHidden
-          ? "py-2 px-0 border border-transparent"
-          : `${props.home ? "rounded-md " : "rounded-t-lg "} relative cursor-pointer p-2  border border-border border-b-transparent shadow-md text-primary
-        `
-      }
+      className={`
+        text-primary relative
+        ${
+          pageBorderHidden
+            ? "py-2 px-0 border border-transparent"
+            : `cursor-pointer p-2 border border-border border-b-transparent shadow-md
+          ${props.home ? "rounded-md " : "rounded-t-lg "}`
+        }`}
       style={
         pageBorderHidden
           ? undefined
@@ -265,7 +279,7 @@ const SamplePage = (props: {
               }
         }
       />
-      <div>
+      <div className="z-10 relative">
         <p
           onClick={() => {
             props.setOpenPicker("text");

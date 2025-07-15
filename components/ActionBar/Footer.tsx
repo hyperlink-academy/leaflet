@@ -5,7 +5,7 @@ export function Footer(props: { children?: React.ReactNode }) {
     <Media
       mobile
       className={`
-        actionFooter touch-none
+        actionFooter touch-none shrink-0
         w-full z-10
         px-2 pt-1 pwa-padding-bottom
         flex justify-start gap-1

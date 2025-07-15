@@ -23,6 +23,7 @@ function remarkTightListify() {
 }
 
 export function markdownToHtml(markdown: string): string {
+  markdown = markdown.replace(/\n(?=[^\n])/g, "\n\n");
   return String(
     unified()
       .use(remarkParse) // Parse markdown content to a syntax tree

@@ -7,16 +7,20 @@ import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { Replicache } from "replicache";
 import { LockBlockButton } from "./LockBlockButton";
 import { Props } from "components/Icons/Props";
+import { TextAlignmentButton } from "./TextAlignmentToolbar";
+import { getSortedSelection } from "components/SelectionManager";
 
 export const MultiselectToolbar = (props: {
-  setToolbarState: (state: "areYouSure" | "multiselect") => void;
+  setToolbarState: (
+    state: "areYouSure" | "multiselect" | "text-alignment",
+  ) => void;
 }) => {
   const { rep } = useReplicache();
   const smoker = useSmoker();
 
   const handleCopy = async (event: React.MouseEvent) => {
     if (!rep) return;
-    const sortedSelection = await getSortedSelection(rep);
+    const [sortedSelection] = await getSortedSelection(rep);
     await copySelection(rep, sortedSelection);
     smoker({
       position: { x: event.clientX, y: event.clientY },
@@ -42,33 +46,13 @@ export const MultiselectToolbar = (props: {
         >
           <CopySmall />
         </ToolbarButton>
+        <TextAlignmentButton setToolbarState={props.setToolbarState} />
         <LockBlockButton />
-        {/* Add more multi-select toolbar buttons here */}
       </div>
     </div>
   );
 };
 
-// Helper function to get sorted selection
-async function getSortedSelection(rep: Replicache<ReplicacheMutators>) {
-  const selectedBlocks = useUIState.getState().selectedBlocks;
-  const foldedBlocks = useUIState.getState().foldedBlocks;
-  const siblings =
-    (await rep?.query((tx) =>
-      getBlocksWithType(tx, selectedBlocks[0].parent),
-    )) || [];
-  return siblings.filter((s) => {
-    let selected = selectedBlocks.find((sb) => sb.value === s.value);
-    if (s.listData && !selected) {
-      //Select the children of folded list blocks
-      return s.listData.path.find(
-        (p) =>
-          selectedBlocks.find((sb) => sb.value === p.entity) &&
-          foldedBlocks.includes(p.entity),
-      );
-    }
-  });
-}
 const CopySmall = (props: Props) => {
   return (
     <svg

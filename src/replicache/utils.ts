@@ -69,7 +69,7 @@ export const scanIndexLocal = (initialFacts: Fact<any>[]) => ({
   eav<A extends Attribute>(entity: string, attribute: A) {
     return initialFacts.filter(
       (f) => f.entity === entity && f.attribute === attribute,
-    ) as Fact<A>[];
+    ) as SafeArray<Fact<A>>;
   },
 });
 

@@ -80,6 +80,7 @@ export async function publishToPublication({
   let imageMap = new Map<string, BlobRef>();
   await Promise.all(
     [...links, ...images].map(async (b) => {
+      if (!b) return;
       let data = await fetch(b.data.src);
       if (data.status !== 200) return;
       let binary = await data.blob();
@@ -97,14 +98,14 @@ export async function publishToPublication({
   );
 
   let existingRecord =
-    (draft?.documents?.data as PubLeafletDocument.Record) || {};
+    (draft?.documents?.data as PubLeafletDocument.Record | undefined) || {};
   let record: PubLeafletDocument.Record = {
-    ...existingRecord,
     $type: "pub.leaflet.document",
     author: credentialSession.did!,
-    title: title || "Untitled",
     publication: publication_uri,
     publishedAt: new Date().toISOString(),
+    ...existingRecord,
+    title: title || "Untitled",
     description: description || "",
     pages: [
       {
@@ -249,6 +250,7 @@ function blockToRecord(
   if (b.type == "image") {
     let [image] = scan.eav(b.value, "block/image");
     if (!image) return;
+    let [altText] = scan.eav(b.value, "image/alt");
     let blobref = imageMap.get(image.data.src);
     if (!blobref) return;
     let block: $Typed<PubLeafletBlocksImage.Main> = {
@@ -258,6 +260,7 @@ function blockToRecord(
         height: image.data.height,
         width: image.data.width,
       },
+      alt: altText ? altText.data.value : undefined,
     };
     return block;
   }
@@ -266,7 +269,9 @@ function blockToRecord(
     let [description] = scan.eav(b.value, "link/description");
     let [src] = scan.eav(b.value, "link/url");
     if (!src) return;
-    let blobref = imageMap.get(previewImage.data.src);
+    let blobref = previewImage
+      ? imageMap.get(previewImage?.data.src)
+      : undefined;
     let [title] = scan.eav(b.value, "link/title");
     let block: $Typed<PubLeafletBlocksWebsite.Main> = {
       $type: "pub.leaflet.blocks.website",
