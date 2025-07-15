@@ -120,13 +120,25 @@ export default async function Post(props: {
           >
             <div className="postHeader flex flex-col pb-5">
               <Link
-                className="font-bold hover:no-underline text-accent-contrast"
+                className="font-bold hover:no-underline text-accent-contrast flex gap-2 items-center"
                 href={getPublicationURL(
                   document.documents_in_publications[0].publications,
                 )}
               >
+                {pubRecord.icon && (
+                  <div
+                    className="pubDashLogo shrink-0 w-5 h-5 rounded-full  border border-bg-page "
+                    style={{
+                      backgroundImage: `url(/api/atproto_images?did=${document.documents_in_publications[0].publications.identity_did}&cid=${(pubRecord.icon.ref as unknown as { $link: string })["$link"]})`,
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "center",
+                      backgroundSize: "cover",
+                    }}
+                  />
+                )}
                 {decodeURIComponent((await props.params).publication)}
               </Link>
+
               <h2 className="leading-snug">{record.title}</h2>
               {record.description ? (
                 <p className="italic text-secondary pt-0.5">
