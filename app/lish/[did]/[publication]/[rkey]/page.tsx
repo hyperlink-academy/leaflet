@@ -127,7 +127,7 @@ export default async function Post(props: {
               >
                 {pubRecord.icon && (
                   <div
-                    className="pubDashLogo shrink-0 w-5 h-5 rounded-full  border border-bg-page "
+                    className="pubDashLogo shrink-0 w-5 h-5 rounded-full border-bg-page "
                     style={{
                       backgroundImage: `url(/api/atproto_images?did=${document.documents_in_publications[0].publications.identity_did}&cid=${(pubRecord.icon.ref as unknown as { $link: string })["$link"]})`,
                       backgroundRepeat: "no-repeat",
