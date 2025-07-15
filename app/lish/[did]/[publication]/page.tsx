@@ -12,7 +12,7 @@ import {
 import Link from "next/link";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
-import { SubscribeWithBluesky } from "app/lish/Subscribe";
+import { Subscribe } from "app/lish/Subscribe";
 import React from "react";
 import {
   PublicationBackgroundProvider,
@@ -124,7 +124,7 @@ export default async function Publication(props: {
                   </p>
                 )}
                 <div className="sm:pt-4 pt-4">
-                  <SubscribeWithBluesky
+                  <Subscribe
                     base_url={getPublicationURL(publication)}
                     pubName={publication.name}
                     pub_uri={publication.uri}

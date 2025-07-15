@@ -12,7 +12,7 @@ import { Metadata } from "next";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { TextBlock } from "./TextBlock";
 import { BskyAgent } from "@atproto/api";
-import { SubscribeWithBluesky } from "app/lish/Subscribe";
+import { Subscribe } from "app/lish/Subscribe";
 import {
   PublicationBackgroundProvider,
   PublicationThemeProvider,
@@ -189,7 +189,7 @@ export default async function Post(props: {
                 <EditTiny /> Edit Post
               </a>
             ) : (
-              <SubscribeWithBluesky
+              <Subscribe
                 isPost
                 base_url={getPublicationURL(
                   document.documents_in_publications[0].publications,
