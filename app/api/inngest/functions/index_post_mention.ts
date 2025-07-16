@@ -11,15 +11,17 @@ export const index_post_mention = inngest.createFunction(
     let url = new URL(event.data.document_link);
     let path = url.pathname.split("/").filter(Boolean);
 
-    let { data: pub } = await supabaseServerClient
+    let { data: pub, error } = await supabaseServerClient
       .from("publications")
-      .select("*, documents_in_publications!inner(*)")
+      .select("*")
       .eq("record->>base_path", url.host)
-      .eq("documents_in_publications.rkey", path[0])
       .single();
 
     if (!pub) {
-      return { message: `No publication found for ${url.host}/${path[0]}` };
+      return {
+        message: `No publication found for ${url.host}/${path[0]}`,
+        error,
+      };
     }
 
     let bsky_post = await step.run("get-bsky-post-data", async () => {
@@ -35,7 +37,7 @@ export const index_post_mention = inngest.createFunction(
       return { message: `No post found for ${event.data.post_uri}` };
     }
 
-    step.run("index-bsky-post", async () => {
+    await step.run("index-bsky-post", async () => {
       await supabaseServerClient.from("bsky_posts").insert({
         uri: bsky_post.uri,
         cid: bsky_post.cid,
@@ -48,7 +50,6 @@ export const index_post_mention = inngest.createFunction(
           ids.PubLeafletDocument,
           path[0],
         ).toString(),
-        publication: pub.uri,
         link: event.data.document_link,
       });
     });
