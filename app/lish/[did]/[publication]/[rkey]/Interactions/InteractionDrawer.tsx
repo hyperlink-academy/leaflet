@@ -15,7 +15,7 @@ export const InteractionDrawer = (props: {
     <>
       <Media
         mobile={false}
-        className="fixed r-0 top-0 shrink w-96 py-6 h-full max-w-full flex"
+        className="fixed r-0 top-0 shrink w-96 py-6 h-full max-w-full flex z-10"
       >
         <div
           id="interaction-drawer"
