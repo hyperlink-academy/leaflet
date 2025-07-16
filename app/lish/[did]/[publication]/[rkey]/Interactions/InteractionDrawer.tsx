@@ -2,8 +2,12 @@
 import { Media } from "components/Media";
 import { Quotes } from "./Quotes";
 import { useInteractionState } from "./Interactions";
+import { Json } from "supabase/database.types";
 
-export const InteractionDrawer = () => {
+export const InteractionDrawer = (props: {
+  quotes: { link: string; bsky_posts: { post_view: Json } | null }[];
+  did: string;
+}) => {
   let { drawerOpen: open } = useInteractionState();
 
   if (!open) return null;
@@ -11,13 +15,13 @@ export const InteractionDrawer = () => {
     <>
       <Media
         mobile={false}
-        className="sticky top-0 shrink w-96 py-6 h-full max-w-full flex"
+        className="fixed r-0 top-0 shrink w-96 py-6 h-full max-w-full flex"
       >
         <div
           id="interaction-drawer"
           className="opaque-container h-full w-full px-4 pt-3 pb-6 overflow-scroll "
         >
-          <Quotes />
+          <Quotes {...props} />
         </div>
       </Media>
       <Media
@@ -28,7 +32,7 @@ export const InteractionDrawer = () => {
           className="max-h-full px-3 pt-2 pb-6 overflow-auto"
           id="interaction-drawer-mobile"
         >
-          <Quotes />
+          <Quotes {...props} />
         </div>
       </Media>
     </>

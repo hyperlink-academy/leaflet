@@ -1,34 +1,38 @@
 "use client";
 import { CloseTiny } from "components/Icons/CloseTiny";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useInteractionState } from "./Interactions";
 import Link from "next/link";
+import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
+import { AppBskyFeedPost, AtUri, UnicodeString } from "@atproto/api";
+import { Json } from "supabase/database.types";
+import { PostPageContext } from "../PostPageContext";
+import {
+  PubLeafletBlocksText,
+  PubLeafletBlocksUnorderedList,
+  PubLeafletBlocksHeader,
+  PubLeafletBlocksImage,
+  PubLeafletBlocksWebsite,
+  PubLeafletDocument,
+  PubLeafletPagesLinearDocument,
+} from "lexicons/api";
+import {
+  decodeQuotePosition,
+  QUOTE_PARAM,
+  QuotePosition,
+} from "../useHighlight";
+import { TextBlock } from "../TextBlock";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { PostContent } from "../PostContent";
 
-export const Quotes = () => {
+export const Quotes = (props: {
+  quotes: { link: string; bsky_posts: { post_view: Json } | null }[];
+  did: string;
+}) => {
   let isMobile = useIsMobile();
+  let data = useContext(PostPageContext);
 
-  let [quotes, setQuotes] = useState<Element[]>([]);
-  useEffect(() => {
-    function updateQuotes() {
-      setQuotes(
-        Array.from(window.document.getElementsByClassName("highlight")),
-      );
-    }
-    updateQuotes();
-    const observer = new MutationObserver(() => {
-      updateQuotes();
-    });
-
-    observer.observe(document.body, {
-      childList: true, // Watch for added/removed child nodes
-      subtree: true, // Watch the entire subtree
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
   return (
     <div className="flex flex-col gap-2">
       <div className="w-full flex justify-between text-secondary font-bold">
@@ -40,14 +44,19 @@ export const Quotes = () => {
           <CloseTiny />
         </button>
       </div>
-      {quotes.length === 0 ? (
+      {props.quotes.length === 0 ? (
         <div className="opaque-container flex flex-col gap-0.5 p-[6px] text-tertiary italic text-sm text-center">
           <div className="font-bold">no quotes yet!</div>
           <div>highlight any part of this post to quote it</div>
         </div>
       ) : (
         <div className="quotes flex flex-col gap-12">
-          {quotes.map((q, index) => {
+          {props.quotes.map((q, index) => {
+            let pv = q.bsky_posts?.post_view as unknown as PostView;
+            let content = getQuoteFromDocument(
+              data?.data as PubLeafletDocument.Record,
+              q.link,
+            );
             return (
               <div className="quoteSection flex flex-col gap-2" key={index}>
                 <button
@@ -72,44 +81,14 @@ export const Quotes = () => {
                     });
                   }}
                 >
-                  <span className="line-clamp-3">
-                    <span
-                      className="rounded-md px-0.5"
-                      style={{
-                        backgroundColor: "rgba(var(--accent-contrast), .15)",
-                      }}
-                    >
-                      {q.textContent}
-                    </span>
-                  </span>
+                  <PostContent blocks={content || []} did={props.did} />
+                  <BskyPost
+                    rkey={new AtUri(pv.uri).rkey}
+                    content={pv.record.text as string}
+                    user={pv.author.displayName || pv.author.handle}
+                    handle={pv.author.handle}
+                  />
                 </button>
-
-                <div className="flex flex-col gap-2">
-                  {QuoteSectionBskyItems.map((i) => {
-                    return (
-                      <QuoteSectionBskyItem
-                        content={i.content}
-                        user={i.user}
-                        handle={i.handle}
-                      />
-                    );
-                  })}
-                </div>
-                {QuoteSectionBskyItems.length > 0 &&
-                  QuoteSectionLeafletItems.length > 0 && (
-                    <hr className="border-border-light my-1" />
-                  )}
-                <div className="flex flex-col gap-2">
-                  {QuoteSectionLeafletItems.map((i) => {
-                    return (
-                      <QuoteSectionLeafletItem
-                        pub={i.pub}
-                        title={i.title}
-                        description={i.description}
-                      />
-                    );
-                  })}
-                </div>
               </div>
             );
           })}
@@ -119,13 +98,14 @@ export const Quotes = () => {
   );
 };
 
-const QuoteSectionBskyItem = (props: {
+const BskyPost = (props: {
+  rkey: string;
   content: string;
   user: string;
   handle: string;
 }) => {
   return (
-    <Link
+    <a
       href="/"
       className="quoteSectionBskyItem opaque-container py-1 px-2 text-sm flex gap-[6px]"
     >
@@ -137,50 +117,207 @@ const QuoteSectionBskyItem = (props: {
         </div>
         <div className="text-secondary">{props.content}</div>
       </div>
-    </Link>
+    </a>
   );
 };
+function getQuoteFromDocument(
+  doc: PubLeafletDocument.Record,
+  quoteLink: string,
+) {
+  const url = new URL(quoteLink);
+  const quoteParam = url.searchParams.get(QUOTE_PARAM);
+  if (!quoteParam) return null;
 
-const QuoteSectionLeafletItem = (props: {
-  title: string;
-  description: string;
-  pub: string;
-}) => {
-  return (
-    <Link
-      href="/"
-      className="quoteSectionLeafletItem text-sm text-secondary opaque-container py-1 px-2"
-    >
-      <div className="font-bold">{props.title}</div>
-      {props.description}
-      <hr className="border-border-light mt-2 mb-0.5" />
-      <div className="items-center flex gap-1">
-        <div className="w-3 h-3 bg-test rounded-full" />
-        <div className="text-accent-contrast text-xs">{props.pub}</div>
-      </div>
-    </Link>
+  const quotePosition = decodeQuotePosition(quoteParam);
+  if (!quotePosition) return null;
+
+  let page = doc.pages[0] as PubLeafletPagesLinearDocument.Main;
+  // Extract blocks within the quote range
+  const quotedBlocks = extractQuotedBlocks(
+    page.blocks || [],
+    quotePosition,
+    [],
   );
-};
 
-let QuoteSectionBskyItems = [
-  { content: "hello :3", user: "celine", handle: "@cozylitte.house" },
-  {
-    content:
-      "What if I wrote something that's pretty long. Like if I had a really deep thought that I want people to really engage with me seriously about. There's something really special about having a thought. May the thoughts just keep on rolling.",
-    user: "jared",
-    handle: "@awarm.space",
-  },
-  {
-    content: "Oh, heck yeah I love this",
-    user: "Brendan",
-    handle: "@schlage.town",
-  },
-];
-let QuoteSectionLeafletItems = [
-  {
-    title: "This is a Blog Post",
-    description:
-      "This is a pub where I pretend that there are things I want to write!",
-    pub: "celine's pub",
-  },
-];
+  return quotedBlocks;
+}
+
+function extractQuotedBlocks(
+  blocks: PubLeafletPagesLinearDocument.Block[],
+  quotePosition: QuotePosition,
+  currentPath: number[],
+): PubLeafletPagesLinearDocument.Block[] {
+  const result: PubLeafletPagesLinearDocument.Block[] = [];
+
+  blocks.forEach((block, index) => {
+    const blockPath = [...currentPath, index];
+
+    // Check if this block is within the quote range
+    if (!isBlockInRange(blockPath, quotePosition)) {
+      return;
+    }
+
+    // Handle different block types
+    if (PubLeafletBlocksUnorderedList.isMain(block.block)) {
+      // For lists, recursively extract quoted items
+      const quotedChildren = extractQuotedListItems(
+        block.block.children,
+        quotePosition,
+        blockPath,
+      );
+
+      if (quotedChildren.length > 0) {
+        result.push({
+          ...block,
+          block: {
+            ...block.block,
+            children: quotedChildren,
+          },
+        });
+      }
+    } else if (
+      PubLeafletBlocksText.isMain(block.block) ||
+      PubLeafletBlocksHeader.isMain(block.block)
+    ) {
+      // For text blocks, trim to quoted portion
+      const trimmedBlock = trimTextBlock(block, blockPath, quotePosition);
+      if (trimmedBlock) {
+        result.push(trimmedBlock);
+      }
+    } else {
+      // For other blocks (images, websites), include the whole block if in range
+      result.push(block);
+    }
+  });
+
+  return result;
+}
+
+function extractQuotedListItems(
+  items: PubLeafletBlocksUnorderedList.ListItem[],
+  quotePosition: QuotePosition,
+  parentPath: number[],
+): PubLeafletBlocksUnorderedList.ListItem[] {
+  const result: PubLeafletBlocksUnorderedList.ListItem[] = [];
+
+  items.forEach((item, index) => {
+    const itemPath = [...parentPath, index];
+
+    if (!isBlockInRange(itemPath, quotePosition)) {
+      return;
+    }
+
+    // Check if the content is in range
+    const contentBlock = { block: item.content };
+    const trimmedContent = trimTextBlock(contentBlock, itemPath, quotePosition);
+
+    if (!trimmedContent) return;
+
+    // Recursively handle children
+    let quotedChildren: PubLeafletBlocksUnorderedList.ListItem[] = [];
+    if (item.children) {
+      quotedChildren = extractQuotedListItems(
+        item.children,
+        quotePosition,
+        itemPath,
+      );
+    }
+
+    result.push({
+      content: trimmedContent.block,
+      children: quotedChildren.length > 0 ? quotedChildren : undefined,
+    });
+  });
+
+  return result;
+}
+
+function isBlockInRange(
+  blockPath: number[],
+  quotePosition: QuotePosition,
+): boolean {
+  const { start, end } = quotePosition;
+
+  // Compare paths lexicographically
+  const isAfterStart = compareBlockPaths(blockPath, start.block) >= 0;
+  const isBeforeEnd = compareBlockPaths(blockPath, end.block) <= 0;
+
+  return isAfterStart && isBeforeEnd;
+}
+
+function compareBlockPaths(path1: number[], path2: number[]): number {
+  const minLength = Math.min(path1.length, path2.length);
+
+  for (let i = 0; i < minLength; i++) {
+    if (path1[i] < path2[i]) return -1;
+    if (path1[i] > path2[i]) return 1;
+  }
+
+  return path1.length - path2.length;
+}
+
+function trimTextBlock(
+  block: PubLeafletPagesLinearDocument.Block,
+  blockPath: number[],
+  quotePosition: QuotePosition,
+): PubLeafletPagesLinearDocument.Block | null {
+  if (
+    !PubLeafletBlocksText.isMain(block.block) &&
+    !PubLeafletBlocksHeader.isMain(block.block)
+  ) {
+    return block;
+  }
+
+  const { start, end } = quotePosition;
+  let startOffset = 0;
+  let endOffset = block.block.plaintext.length;
+
+  // If this is the start block, use the start offset
+  if (arraysEqual(blockPath, start.block)) {
+    startOffset = start.offset;
+  }
+
+  // If this is the end block, use the end offset
+  if (arraysEqual(blockPath, end.block)) {
+    endOffset = end.offset;
+  }
+
+  // Extract the quoted portion
+  const quotedText = block.block.plaintext.substring(startOffset, endOffset);
+  if (!quotedText) return null;
+
+  // Adjust facets to the new text range
+  const adjustedFacets = block.block.facets
+    ?.map((facet) => {
+      const facetStart = facet.index.byteStart;
+      const facetEnd = facet.index.byteEnd;
+
+      // Skip facets outside the quoted range
+      if (facetEnd <= startOffset || facetStart >= endOffset) {
+        return null;
+      }
+
+      // Adjust facet indices
+      return {
+        ...facet,
+        index: {
+          byteStart: Math.max(0, facetStart - startOffset),
+          byteEnd: Math.min(quotedText.length, facetEnd - startOffset),
+        },
+      };
+    })
+    .filter((f) => f !== null) as typeof block.block.facets;
+
+  return {
+    ...block,
+    block: {
+      ...block.block,
+      plaintext: quotedText,
+      facets: adjustedFacets,
+    },
+  };
+}
+
+function arraysEqual(a: number[], b: number[]): boolean {
+  return a.length === b.length && a.every((val, index) => val === b[index]);
+}

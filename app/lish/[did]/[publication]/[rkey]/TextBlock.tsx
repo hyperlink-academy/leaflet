@@ -11,11 +11,10 @@ export function TextBlock(props: {
   index: number[];
 }) {
   let children = [];
-  let highlight = useHighlight(props.index);
+  let highlights = useHighlight(props.index);
   let richText = useMemo(() => {
     let facets = props.facets || [];
-    if (props.index[0] === 0) console.log("highlight", highlight);
-    if (highlight) {
+    for (let highlight of highlights) {
       facets.push({
         $type: "pub.leaflet.richtext.facet",
         index: {
@@ -32,7 +31,7 @@ export function TextBlock(props: {
     }
     console.log(props.facets);
     return new RichText({ text: props.plaintext, facets: props.facets || [] });
-  }, [props.plaintext, props.facets, highlight]);
+  }, [props.plaintext, props.facets, highlights]);
   let counter = 0;
   for (const segment of richText.segments()) {
     let link = segment.facet?.find(PubLeafletRichtextFacet.isLink);

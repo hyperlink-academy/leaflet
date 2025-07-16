@@ -1,6 +1,8 @@
 // Generated w/ Claude 4
 
 import { useSearchParams } from "next/navigation";
+import { useContext } from "react";
+import { PostPageContext } from "./PostPageContext";
 
 export interface QuotePosition {
   start: {
@@ -16,38 +18,56 @@ export interface QuotePosition {
 export const QUOTE_PARAM = "l_quote";
 
 export const useHighlight = (pos: number[]) => {
+  let doc = useContext(PostPageContext);
   let params = useSearchParams();
-  let highlight = params.get(QUOTE_PARAM);
-  if (!highlight) return null;
-  let quotePosition = decodeQuotePosition(highlight);
-  if (!quotePosition) return null;
-  if (
-    !pos.reduce(
-      (acc, i, index) =>
-        acc &&
-        i >= quotePosition?.start.block[index] &&
-        i <= quotePosition.end.block[index],
-      true,
-    )
-  ) {
-    return null;
-  }
-  let startOffset: number | null = null;
-  let endOffset: number | null = null;
-  if (
-    pos.length === quotePosition.start.block.length &&
-    pos.every((val, index) => val === quotePosition.start.block[index])
-  ) {
-    startOffset = quotePosition.start.offset;
-  }
+  let param_highlight = params.get(QUOTE_PARAM);
+  let highlights =
+    doc?.document_mentions_in_bsky
+      .map((mention) => {
+        return new URL(mention.link).searchParams.get(QUOTE_PARAM);
+      })
+      .filter((s) => s !== null) || [];
+  if (param_highlight) highlights.push(param_highlight);
+  return highlights
+    .map((highlight) => {
+      let quotePosition = decodeQuotePosition(highlight);
+      if (!quotePosition) return null;
+      let maxLength = Math.max(
+        quotePosition.start.block.length,
+        quotePosition.end.block.length,
+      );
+      let expandedPos = pos.concat(
+        Array(Math.max(0, maxLength - pos.length)).fill(-1),
+      );
+      if (
+        !expandedPos.reduce(
+          (acc, i, index) =>
+            acc &&
+            i >= quotePosition?.start.block[index] &&
+            i <= quotePosition.end.block[index],
+          true,
+        )
+      ) {
+        return null;
+      }
+      let startOffset: number | null = null;
+      let endOffset: number | null = null;
+      if (
+        pos.length === quotePosition.start.block.length &&
+        pos.every((val, index) => val === quotePosition.start.block[index])
+      ) {
+        startOffset = quotePosition.start.offset;
+      }
 
-  if (
-    pos.length === quotePosition.end.block.length &&
-    pos.every((val, index) => val === quotePosition.end.block[index])
-  ) {
-    endOffset = quotePosition.end.offset;
-  }
-  return { startOffset, endOffset };
+      if (
+        pos.length === quotePosition.end.block.length &&
+        pos.every((val, index) => val === quotePosition.end.block[index])
+      ) {
+        endOffset = quotePosition.end.offset;
+      }
+      return { startOffset, endOffset };
+    })
+    .filter((highlight) => highlight !== null);
 };
 
 /**
@@ -79,11 +99,11 @@ export function decodeQuotePosition(encoded: string): QuotePosition | null {
 
     const position: QuotePosition = {
       start: {
-        block: startBlockPath.split(".").map(parseInt),
+        block: startBlockPath.split(".").map((i) => parseInt(i)),
         offset: parseInt(startOffset, 10),
       },
       end: {
-        block: endBlockPath.split(".").map(parseInt),
+        block: endBlockPath.split(".").map((i) => parseInt(i)),
         offset: parseInt(endOffset, 10),
       },
     };

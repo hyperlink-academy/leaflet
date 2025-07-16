@@ -177,10 +177,13 @@ export const QuoteOptionButtons = () => {
     console.log(startIndex, endIndex);
     let quotePosition = encodeQuotePosition({
       start: {
-        block: startIndex.split(".").map(parseInt),
+        block: startIndex.split(".").map((i) => parseInt(i)),
         offset: startOffset,
       },
-      end: { block: endIndex.split(".").map(parseInt), offset: endOffset },
+      end: {
+        block: endIndex.split(".").map((i) => parseInt(i)),
+        offset: endOffset,
+      },
     });
     let currentUrl = new URL(window.location.href);
     currentUrl.searchParams.set(QUOTE_PARAM, quotePosition);

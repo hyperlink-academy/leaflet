@@ -21,7 +21,7 @@ export function PostContent({
   did: string;
 }) {
   return (
-    <div className="postContent flex flex-col">
+    <div id="post-content" className="postContent flex flex-col">
       {blocks.map((b, index) => {
         return <Block block={b} did={did} key={index} index={[index]} />;
       })}
@@ -209,7 +209,7 @@ function ListItem(props: {
       <div
         className={`listMarker shrink-0 mx-2 z-[1] mt-[14px] h-[5px] w-[5px] rounded-full bg-secondary`}
       />
-      <div className="flex flex-col">
+      <div className="flex flex-col w-full">
         <Block
           block={{ block: props.item.content }}
           did={props.did}
