@@ -204,11 +204,27 @@ function ListItem(props: {
   did: string;
   className?: string;
 }) {
+  let children = props.item.children?.length ? (
+    <ul className="-ml-[7px] sm:ml-[7px]">
+      {props.item.children.map((child, index) => (
+        <ListItem
+          index={[...props.index, index]}
+          item={child}
+          did={props.did}
+          key={index}
+          className={props.className}
+        />
+      ))}
+    </ul>
+  ) : null;
+
   return (
     <li className={`!pb-0 flex flex-row gap-2`}>
-      <div
-        className={`listMarker shrink-0 mx-2 z-[1] mt-[14px] h-[5px] w-[5px] rounded-full bg-secondary`}
-      />
+      {props.item.content.$type !== "null" && (
+        <div
+          className={`listMarker shrink-0 mx-2 z-[1] mt-[14px] h-[5px] w-[5px] rounded-full bg-secondary`}
+        />
+      )}
       <div className="flex flex-col w-full">
         <Block
           block={{ block: props.item.content }}
@@ -216,19 +232,7 @@ function ListItem(props: {
           isList
           index={props.index}
         />
-        {props.item.children?.length ? (
-          <ul className="-ml-[7px] sm:ml-[7px]">
-            {props.item.children.map((child, index) => (
-              <ListItem
-                index={[...props.index, index]}
-                item={child}
-                did={props.did}
-                key={index}
-                className={props.className}
-              />
-            ))}
-          </ul>
-        ) : null}
+        {children}{" "}
       </div>
     </li>
   );

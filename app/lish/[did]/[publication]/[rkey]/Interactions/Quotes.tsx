@@ -152,11 +152,6 @@ function extractQuotedBlocks(
   blocks.forEach((block, index) => {
     const blockPath = [...currentPath, index];
 
-    // Check if this block is within the quote range
-    if (!isBlockInRange(blockPath, quotePosition)) {
-      return;
-    }
-
     // Handle different block types
     if (PubLeafletBlocksUnorderedList.isMain(block.block)) {
       // For lists, recursively extract quoted items
@@ -175,7 +170,13 @@ function extractQuotedBlocks(
           },
         });
       }
-    } else if (
+      return;
+    }
+
+    if (!isBlockInRange(blockPath, quotePosition)) {
+      return;
+    }
+    if (
       PubLeafletBlocksText.isMain(block.block) ||
       PubLeafletBlocksHeader.isMain(block.block)
     ) {
@@ -203,15 +204,11 @@ function extractQuotedListItems(
   items.forEach((item, index) => {
     const itemPath = [...parentPath, index];
 
-    if (!isBlockInRange(itemPath, quotePosition)) {
-      return;
-    }
-
     // Check if the content is in range
     const contentBlock = { block: item.content };
-    const trimmedContent = trimTextBlock(contentBlock, itemPath, quotePosition);
-
-    if (!trimmedContent) return;
+    const trimmedContent = isBlockInRange(itemPath, quotePosition)
+      ? trimTextBlock(contentBlock, itemPath, quotePosition)
+      : null;
 
     // Recursively handle children
     let quotedChildren: PubLeafletBlocksUnorderedList.ListItem[] = [];
@@ -224,7 +221,7 @@ function extractQuotedListItems(
     }
 
     result.push({
-      content: trimmedContent.block,
+      content: trimmedContent?.block || { $type: "null" },
       children: quotedChildren.length > 0 ? quotedChildren : undefined,
     });
   });
