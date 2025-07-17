@@ -12,6 +12,7 @@ import { theme } from "tailwind.config";
 import { getBasePublicationURL, getPublicationURL } from "./getPublicationURL";
 import { string } from "zod";
 import { DotLoader } from "components/utils/DotLoader";
+import { Checkbox } from "components/Checkbox";
 
 type DomainState =
   | { status: "empty" }
@@ -24,6 +25,7 @@ export const CreatePubForm = () => {
   let [formState, setFormState] = useState<"normal" | "loading">("normal");
   let [nameValue, setNameValue] = useState("");
   let [descriptionValue, setDescriptionValue] = useState("");
+  let [showInDiscover, setShowInDiscover] = useState(true);
   let [logoFile, setLogoFile] = useState<File | null>(null);
   let [logoPreview, setLogoPreview] = useState<string | null>(null);
   let [domainValue, setDomainValue] = useState("");
@@ -45,6 +47,7 @@ export const CreatePubForm = () => {
           description: descriptionValue,
           iconFile: logoFile,
           subdomain: domainValue,
+          preferences: { showInDiscover },
         });
         // Show a spinner while this is happening! Maybe a progress bar?
         setTimeout(() => {
@@ -117,6 +120,18 @@ export const CreatePubForm = () => {
         domainState={domainState}
         setDomainState={setDomainState}
       />
+
+      <Checkbox
+        checked={showInDiscover}
+        onChange={(e) => setShowInDiscover(e.target.checked)}
+      >
+        <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
+          Show In{" "}
+          <a href="/discover" target="_blank">
+            Discover
+          </a>
+        </p>
+      </Checkbox>
 
       <div className="flex w-full justify-center">
         <ButtonPrimary

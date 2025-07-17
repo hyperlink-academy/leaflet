@@ -17,6 +17,8 @@ import { addPublicationDomain } from "actions/domains/addDomain";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
 import { PinTiny } from "components/Icons/PinTiny";
 import { Verification } from "@vercel/sdk/esm/models/getprojectdomainop";
+import Link from "next/link";
+import { Checkbox } from "components/Checkbox";
 
 export const EditPubForm = () => {
   let { data: pubData } = usePublicationData();
@@ -24,6 +26,11 @@ export const EditPubForm = () => {
   let [formState, setFormState] = useState<"normal" | "loading">("normal");
 
   let [nameValue, setNameValue] = useState(record?.name || "");
+  let [showInDiscover, setShowInDiscover] = useState(
+    record?.preferences?.showInDiscover === undefined
+      ? true
+      : record.preferences.showInDiscover,
+  );
   let [descriptionValue, setDescriptionValue] = useState(
     record?.description || "",
   );
@@ -53,6 +60,9 @@ export const EditPubForm = () => {
           name: nameValue,
           description: descriptionValue,
           iconFile: iconFile,
+          preferences: {
+            showInDiscover: showInDiscover,
+          },
         });
         toast({ type: "success", content: "Updated!" });
         setFormState("normal");
@@ -95,6 +105,17 @@ export const EditPubForm = () => {
           }}
         />
       </div>
+      <Checkbox
+        checked={showInDiscover}
+        onChange={(e) => setShowInDiscover(e.target.checked)}
+      >
+        <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
+          Show In{" "}
+          <a href="/discover" target="_blank">
+            Discover
+          </a>
+        </p>
+      </Checkbox>
       <label>
         <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
           Publication Name

@@ -34,7 +34,20 @@
           "theme": {
             "type": "ref",
             "ref": "#theme"
+          },
+          "preferences": {
+            "type": "ref",
+            "ref": "#preferences"
           }
+        }
+      }
+    },
+    "preferences": {
+      "type": "object",
+      "properties": {
+        "showInDiscover": {
+          "type": "boolean",
+          "default": true
         }
       }
     },

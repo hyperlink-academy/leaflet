@@ -13,7 +13,10 @@ export default async function Discover(props: {
   let { data: publications, error } = await supabaseServerClient
     .from("publications")
     .select(
-      "documents_in_publications(*, documents(*)), *, publication_subscriptions(count)",
+      "*, documents_in_publications(*, documents(*)), publication_subscriptions(count)",
+    )
+    .or(
+      "record->preferences->showInDiscover.is.null,record->preferences->>showInDiscover.eq.true",
     )
     .order("indexed_at", {
       referencedTable: "documents_in_publications",
