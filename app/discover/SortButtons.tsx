@@ -1,39 +1,35 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import { theme } from "tailwind.config";
 
-export default function SortButtons() {
+export default function SortButtons(props: { order: string }) {
   const [selected, setSelected] = useState<"recentlyUpdated" | "popular">(
     "recentlyUpdated",
   );
 
   return (
     <div className="flex gap-2 pt-1">
-      <SortButton
-        onClick={() => setSelected("recentlyUpdated")}
-        selected={selected === "recentlyUpdated"}
-      >
-        Recently Updated
-      </SortButton>
-      <SortButton
-        onClick={() => setSelected("popular")}
-        selected={selected === "popular"}
-      >
-        Popular
-      </SortButton>
+      <Link href="?order=recentlyUpdated">
+        <SortButton selected={props.order === "recentlyUpdated"}>
+          Recently Updated
+        </SortButton>
+      </Link>
+
+      <Link href="?order=popular">
+        <SortButton selected={props.order === "popular"}>Popular</SortButton>
+      </Link>
     </div>
   );
 }
 
 const SortButton = (props: {
   children: React.ReactNode;
-  onClick: () => void;
   selected: boolean;
 }) => {
   return (
     <div className="relative">
       <button
-        onClick={() => props.onClick()}
         style={
           props.selected
             ? { backgroundColor: `rgba(var(--accent-1), 0.2)` }
