@@ -3,7 +3,7 @@ import SortButtons from "./SortButtons";
 
 export default function Discover() {
   return (
-    <div className="bg-[#FDFCFA] w-full h-fullgi">
+    <div className="bg-[#FDFCFA] w-full h-full">
       <div className="max-w-prose mx-auto sm:py-6 py-4 ">
         <div className="discoverHeader flex flex-col ">
           <h1>Discover</h1>
