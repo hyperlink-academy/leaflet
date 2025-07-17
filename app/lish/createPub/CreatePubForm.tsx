@@ -120,18 +120,24 @@ export const CreatePubForm = () => {
         domainState={domainState}
         setDomainState={setDomainState}
       />
-
+      <hr className="border-border-light" />
       <Checkbox
         checked={showInDiscover}
         onChange={(e) => setShowInDiscover(e.target.checked)}
       >
-        <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
-          Show In{" "}
-          <a href="/discover" target="_blank">
-            Discover
-          </a>
-        </p>
+        <div className=" pt-0.5 flex flex-col text-sm text-tertiary  ">
+          <p className="font-bold italic">
+            Show In{" "}
+            <a href="/discover" target="_blank">
+              Discover
+            </a>
+          </p>
+          <p className="text-sm text-tertiary font-normal">
+            This publication will appear on our public Discover page
+          </p>
+        </div>
       </Checkbox>
+      <hr className="border-border-light" />
 
       <div className="flex w-full justify-center">
         <ButtonPrimary

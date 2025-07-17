@@ -105,17 +105,7 @@ export const EditPubForm = () => {
           }}
         />
       </div>
-      <Checkbox
-        checked={showInDiscover}
-        onChange={(e) => setShowInDiscover(e.target.checked)}
-      >
-        <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
-          Show In{" "}
-          <a href="/discover" target="_blank">
-            Discover
-          </a>
-        </p>
-      </Checkbox>
+
       <label>
         <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
           Publication Name
@@ -147,6 +137,26 @@ export const EditPubForm = () => {
       </label>
 
       <CustomDomainForm />
+      <hr className="border-border-light" />
+
+      <Checkbox
+        checked={showInDiscover}
+        onChange={(e) => setShowInDiscover(e.target.checked)}
+      >
+        <div className=" pt-0.5 flex flex-col  text-sm italic text-tertiary ">
+          <p className="font-bold">
+            Show In{" "}
+            <a href="/discover" target="_blank">
+              Discover
+            </a>
+          </p>
+          <p className="text-xs text-tertiary font-normal">
+            This publication will appear on our public Discover page
+          </p>
+        </div>
+      </Checkbox>
+      <hr className="border-border-light" />
+
       <ButtonPrimary className="place-self-end" type="submit">
         {formState === "loading" ? <DotLoader /> : "Update!"}
       </ButtonPrimary>
