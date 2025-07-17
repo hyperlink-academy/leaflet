@@ -14,10 +14,7 @@ create table "public"."document_mentions_in_bsky" (
     "document" text not null
 );
 
-
 alter table "public"."document_mentions_in_bsky" enable row level security;
-
-alter table "public"."custom_domains" add column "identity_id" uuid;
 
 CREATE UNIQUE INDEX bsky_posts_pkey ON public.bsky_posts USING btree (uri);
 
@@ -27,9 +24,6 @@ alter table "public"."bsky_posts" add constraint "bsky_posts_pkey" PRIMARY KEY u
 
 alter table "public"."document_mentions_in_bsky" add constraint "document_mentions_in_bsky_pkey" PRIMARY KEY using index "document_mentions_in_bsky_pkey";
 
-alter table "public"."custom_domains" add constraint "custom_domains_identity_id_fkey" FOREIGN KEY (identity_id) REFERENCES identities(id) ON DELETE CASCADE not valid;
-
-alter table "public"."custom_domains" validate constraint "custom_domains_identity_id_fkey";
 
 alter table "public"."document_mentions_in_bsky" add constraint "document_mentions_in_bsky_document_fkey" FOREIGN KEY (document) REFERENCES documents(uri) ON DELETE CASCADE not valid;
 
