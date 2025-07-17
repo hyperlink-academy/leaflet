@@ -109,51 +109,82 @@ export default async function Post(props: {
             document.documents_in_publications[0].publications.identity_did
           }
         >
-          <div
-            id="post-page"
-            className={`relative flex sm:py-6 h-full   ${hasPageBackground ? "max-w-prose mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
-          >
-            <div
-              className={`relative sm:max-w-prose max-w-[var(--page-width-units)] w-[1000px] mx-auto px-3 sm:px-4 py-3  ${hasPageBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] rounded-lg border border-border" : "h-fit "}`}
-            >
-              <InteractionDrawer
-                quotes={document.document_mentions_in_bsky}
-                did={did}
-              />
-              <PostHeader data={document} params={props.params} />
-              <PostContent blocks={blocks} did={did} />
-              <Interactions quotes={document.document_mentions_in_bsky} />
-              <hr className="border-border-light mb-4 mt-2" />
-              {identity &&
-              identity.atp_did ===
-                document.documents_in_publications[0]?.publications
-                  .identity_did ? (
-                <a
-                  href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
-                  className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1 mx-auto"
-                >
-                  <EditTiny /> Edit Post
-                </a>
-              ) : (
-                <SubscribeWithBluesky
-                  isPost
-                  base_url={getPublicationURL(
-                    document.documents_in_publications[0].publications,
-                  )}
-                  pub_uri={
-                    document.documents_in_publications[0].publications.uri
-                  }
-                  subscribers={
-                    document.documents_in_publications[0].publications
-                      .publication_subscriptions
-                  }
-                  pubName={decodeURIComponent((await props.params).publication)}
-                />
-              )}
-            </div>
+          {/*
+          TODO: SCROLL PAGE TO FIT DRAWER
+          If the drawer fits without scrolling, dont scroll
+          If both drawer and page fit if you scrolled it, scroll it all into the center
+          If the drawer and pafe doesn't all fit, scroll to drawer
 
-            <QuoteHandler />
+          TODO: SROLL BAR
+          If there is no drawer && there is no page bg, scroll the entire page
+          If there is either a drawer open OR a page background, scroll just the post content
+
+          TODO: HIGHLIGHTING BORKED
+          on chrome, if you scroll backward, things stop working
+          seems like if you use an older browser, sel direction is not a thing yet
+           */}
+          <div
+            className="post w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full pwa-padding"
+            id="page-carousel"
+          >
+            {/* if you adjust this padding, remember to adjust the negative margins on page in Pages/index when card borders are hidden (also applies for the pb in the parent div)*/}
+            <div id="pages" className="postWrapper flex py-2 sm:py-6">
+              <div
+                className="spacer"
+                style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
+              />
+              <div id="page" className="flex gap-6 h-full">
+                <div
+                  className={`relative sm:max-w-prose w-[var(--page-width-units)] mx-auto px-3 sm:px-4 py-3  ${hasPageBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] rounded-lg border border-border" : "h-fit "}`}
+                >
+                  <PostHeader data={document} params={props.params} />
+                  <PostContent blocks={blocks} did={did} />
+                  <Interactions quotes={document.document_mentions_in_bsky} />
+                  <hr className="border-border-light mb-4 mt-4" />
+                  {identity &&
+                  identity.atp_did ===
+                    document.documents_in_publications[0]?.publications
+                      .identity_did ? (
+                    <a
+                      href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
+                      className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1 mx-auto"
+                    >
+                      <EditTiny /> Edit Post
+                    </a>
+                  ) : (
+                    <SubscribeWithBluesky
+                      isPost
+                      base_url={getPublicationURL(
+                        document.documents_in_publications[0].publications,
+                      )}
+                      pub_uri={
+                        document.documents_in_publications[0].publications.uri
+                      }
+                      subscribers={
+                        document.documents_in_publications[0].publications
+                          .publication_subscriptions
+                      }
+                      pubName={decodeURIComponent(
+                        (await props.params).publication,
+                      )}
+                    />
+                  )}
+                </div>
+                <InteractionDrawer
+                  quotes={document.document_mentions_in_bsky}
+                  did={did}
+                />
+              </div>
+              <div
+                className="spacer"
+                style={{
+                  width: `calc(50vw - ((var(--page-width-units)/2 + 13rem))`,
+                }}
+              />
+            </div>
           </div>
+
+          <QuoteHandler />
         </PublicationBackgroundProvider>
       </PublicationThemeProvider>
     </PostPageContextProvider>
