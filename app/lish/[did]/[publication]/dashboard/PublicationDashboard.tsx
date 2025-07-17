@@ -72,7 +72,7 @@ function Tab(props: {
 }) {
   return (
     <div
-      className={`pubTabs border  border-b-0 px-2 pt-1 pb-0.5 rounded-t-md border-border hover:cursor-pointer ${props.selected ? "text-accent-1 font-bold -mb-[1px]" : ""} ${props.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))]" : ""}`}
+      className={`pubTabs border  border-b-0 px-2 pt-1 pb-0.5 rounded-t-md border-border hover:cursor-pointer ${props.selected ? "text-accent-contrast font-bold -mb-[1px]" : ""} ${props.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))]" : ""}`}
       onClick={() => props.onSelect()}
     >
       {props.name}
