@@ -6,8 +6,12 @@ import {
   useInteractionState,
 } from "../Interactions/Interactions";
 import { useState, useEffect } from "react";
+import { Json } from "supabase/database.types";
 
-export const CollapsedPostHeader = (props: { title: string }) => {
+export const CollapsedPostHeader = (props: {
+  title: string;
+  quotes: { link: string; bsky_posts: { post_view: Json } | null }[];
+}) => {
   let [headerVisible, setHeaderVisible] = useState(false);
   let { drawerOpen: open } = useInteractionState();
 
@@ -40,7 +44,7 @@ export const CollapsedPostHeader = (props: { title: string }) => {
         <div className="text-tertiary font-bold text-sm truncate pr-1">
           {props.title}
         </div>
-        <Interactions compact />
+        <Interactions compact quotes={props.quotes} />
         <div className="w-4 h-4 rounded-full bg-test shrink-0" />
       </div>
     </Media>

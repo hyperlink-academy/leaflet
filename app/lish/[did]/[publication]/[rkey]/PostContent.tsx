@@ -16,14 +16,24 @@ import { ImageAltSmall } from "components/Icons/ImageAlt";
 export function PostContent({
   blocks,
   did,
+  preview,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   did: string;
+  preview?: boolean;
 }) {
   return (
     <div id="post-content" className="postContent flex flex-col">
       {blocks.map((b, index) => {
-        return <Block block={b} did={did} key={index} index={[index]} />;
+        return (
+          <Block
+            block={b}
+            did={did}
+            key={index}
+            index={[index]}
+            preview={preview}
+          />
+        );
       })}
     </div>
   );
@@ -34,7 +44,9 @@ let Block = ({
   did,
   isList,
   index,
+  preview,
 }: {
+  preview?: boolean;
   index: number[];
   block: PubLeafletPagesLinearDocument.Block;
   did: string;
@@ -43,7 +55,7 @@ let Block = ({
   let b = block;
   let blockProps = {
     style: { scrollMarginTop: "10rem", scrollMarginBottom: "10rem" },
-    id: index.join("."),
+    id: preview ? undefined : index.join("."),
     "data-index": index.join("."),
   };
   let alignment =
@@ -163,6 +175,7 @@ let Block = ({
             facets={b.block.facets}
             plaintext={b.block.plaintext}
             index={index}
+            preview={preview}
           />
         </p>
       );
@@ -170,26 +183,26 @@ let Block = ({
       if (b.block.level === 1)
         return (
           <h2 className={`${className}`} {...blockProps}>
-            <TextBlock {...b.block} index={index} />
+            <TextBlock {...b.block} index={index} preview={preview} />
           </h2>
         );
       if (b.block.level === 2)
         return (
           <h3 className={`${className}`} {...blockProps}>
-            <TextBlock {...b.block} index={index} />
+            <TextBlock {...b.block} index={index} preview={preview} />
           </h3>
         );
       if (b.block.level === 3)
         return (
           <h4 className={`${className}`} {...blockProps}>
-            <TextBlock {...b.block} index={index} />
+            <TextBlock {...b.block} index={index} preview={preview} />
           </h4>
         );
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
         <h6 className={`${className}`} {...blockProps}>
-          <TextBlock {...b.block} index={index} />
+          <TextBlock {...b.block} index={index} preview={preview} />
         </h6>
       );
     }
@@ -220,11 +233,9 @@ function ListItem(props: {
 
   return (
     <li className={`!pb-0 flex flex-row gap-2`}>
-      {props.item.content.$type !== "null" && (
-        <div
-          className={`listMarker shrink-0 mx-2 z-[1] mt-[14px] h-[5px] w-[5px] rounded-full bg-secondary`}
-        />
-      )}
+      <div
+        className={`listMarker shrink-0 mx-2 z-[1] mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
+      />
       <div className="flex flex-col w-full">
         <Block
           block={{ block: props.item.content }}

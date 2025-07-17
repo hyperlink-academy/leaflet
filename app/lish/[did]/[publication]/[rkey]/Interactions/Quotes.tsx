@@ -1,19 +1,16 @@
 "use client";
 import { CloseTiny } from "components/Icons/CloseTiny";
-import { useState, useEffect, useContext } from "react";
+import { useContext } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useInteractionState } from "./Interactions";
-import Link from "next/link";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { AppBskyFeedPost, AtUri, UnicodeString } from "@atproto/api";
+import { AtUri } from "@atproto/api";
 import { Json } from "supabase/database.types";
 import { PostPageContext } from "../PostPageContext";
 import {
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksHeader,
-  PubLeafletBlocksImage,
-  PubLeafletBlocksWebsite,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
@@ -22,8 +19,6 @@ import {
   QUOTE_PARAM,
   QuotePosition,
 } from "../useHighlight";
-import { TextBlock } from "../TextBlock";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PostContent } from "../PostContent";
 
 export const Quotes = (props: {
@@ -53,9 +48,19 @@ export const Quotes = (props: {
         <div className="quotes flex flex-col gap-12">
           {props.quotes.map((q, index) => {
             let pv = q.bsky_posts?.post_view as unknown as PostView;
-            let content = getQuoteFromDocument(
-              data?.data as PubLeafletDocument.Record,
-              q.link,
+            let record = data?.data as PubLeafletDocument.Record;
+            const url = new URL(q.link);
+            const quoteParam = url.searchParams.get(QUOTE_PARAM);
+            if (!quoteParam) return null;
+            const quotePosition = decodeQuotePosition(quoteParam);
+            if (!quotePosition) return null;
+
+            let page = record.pages[0] as PubLeafletPagesLinearDocument.Main;
+            // Extract blocks within the quote range
+            const content = extractQuotedBlocks(
+              page.blocks || [],
+              quotePosition,
+              [],
             );
             return (
               <div className="quoteSection flex flex-col gap-2" key={index}>
@@ -67,12 +72,16 @@ export const Quotes = (props: {
                       : e.currentTarget.getBoundingClientRect().top;
                     let scrollContainer =
                       window.document.getElementById("post-page");
+                    let el = window.document.getElementById(
+                      quotePosition.start.block.join("."),
+                    );
+                    if (!el || !scrollContainer) return;
                     let quoteScrollTop =
                       (scrollContainer &&
-                        q.getBoundingClientRect().top +
+                        el.getBoundingClientRect().top +
                           scrollContainer.scrollTop) ||
                       0;
-                    console.log("quote : " + q.getBoundingClientRect().top);
+                    console.log("quote : " + el.getBoundingClientRect().top);
                     console.log("parent : " + scrollContainer?.scrollTop);
 
                     scrollContainer?.scrollTo({
@@ -81,7 +90,7 @@ export const Quotes = (props: {
                     });
                   }}
                 >
-                  <PostContent blocks={content || []} did={props.did} />
+                  <PostContent blocks={content || []} did={props.did} preview />
                   <BskyPost
                     rkey={new AtUri(pv.uri).rkey}
                     content={pv.record.text as string}
@@ -120,27 +129,6 @@ const BskyPost = (props: {
     </a>
   );
 };
-function getQuoteFromDocument(
-  doc: PubLeafletDocument.Record,
-  quoteLink: string,
-) {
-  const url = new URL(quoteLink);
-  const quoteParam = url.searchParams.get(QUOTE_PARAM);
-  if (!quoteParam) return null;
-
-  const quotePosition = decodeQuotePosition(quoteParam);
-  if (!quotePosition) return null;
-
-  let page = doc.pages[0] as PubLeafletPagesLinearDocument.Main;
-  // Extract blocks within the quote range
-  const quotedBlocks = extractQuotedBlocks(
-    page.blocks || [],
-    quotePosition,
-    [],
-  );
-
-  return quotedBlocks;
-}
 
 function extractQuotedBlocks(
   blocks: PubLeafletPagesLinearDocument.Block[],
@@ -151,6 +139,7 @@ function extractQuotedBlocks(
 
   blocks.forEach((block, index) => {
     const blockPath = [...currentPath, index];
+    console.log(blockPath);
 
     // Handle different block types
     if (PubLeafletBlocksUnorderedList.isMain(block.block)) {

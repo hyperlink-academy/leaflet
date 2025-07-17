@@ -9,29 +9,32 @@ export function TextBlock(props: {
   plaintext: string;
   facets?: Facet[];
   index: number[];
+  preview?: boolean;
 }) {
   let children = [];
   let highlights = useHighlight(props.index);
   let richText = useMemo(() => {
-    let facets = props.facets || [];
-    for (let highlight of highlights) {
-      facets.push({
-        $type: "pub.leaflet.richtext.facet",
-        index: {
-          byteStart: highlight.startOffset
-            ? new UnicodeString(props.plaintext.slice(0, highlight.startOffset))
-                .length
-            : 0,
-          byteEnd: new UnicodeString(
-            props.plaintext.slice(0, highlight.endOffset || undefined),
-          ).length,
-        },
-        features: [{ $type: "pub.leaflet.richtext.facet#highlight" }],
-      });
+    let facets = [...(props.facets || [])];
+    if (!props.preview) {
+      for (let highlight of highlights) {
+        facets.push({
+          $type: "pub.leaflet.richtext.facet",
+          index: {
+            byteStart: highlight.startOffset
+              ? new UnicodeString(
+                  props.plaintext.slice(0, highlight.startOffset),
+                ).length
+              : 0,
+            byteEnd: new UnicodeString(
+              props.plaintext.slice(0, highlight.endOffset || undefined),
+            ).length,
+          },
+          features: [{ $type: "pub.leaflet.richtext.facet#highlight" }],
+        });
+      }
     }
-    console.log(props.facets);
-    return new RichText({ text: props.plaintext, facets: props.facets || [] });
-  }, [props.plaintext, props.facets, highlights]);
+    return new RichText({ text: props.plaintext, facets });
+  }, [props.plaintext, props.facets, highlights, props.preview]);
   let counter = 0;
   for (const segment of richText.segments()) {
     let link = segment.facet?.find(PubLeafletRichtextFacet.isLink);

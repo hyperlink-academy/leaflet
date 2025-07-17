@@ -110,6 +110,7 @@ export default async function Post(props: {
           }
         >
           <div
+            id="post-page"
             className={`relative flex sm:py-6 h-full   ${hasPageBackground ? "max-w-prose mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
           >
             <div
@@ -119,9 +120,9 @@ export default async function Post(props: {
                 quotes={document.document_mentions_in_bsky}
                 did={did}
               />
-              <PostHeader params={props.params} />
+              <PostHeader data={document} params={props.params} />
               <PostContent blocks={blocks} did={did} />
-              <Interactions />
+              <Interactions quotes={document.document_mentions_in_bsky} />
               <hr className="border-border-light mb-4 mt-2" />
               {identity &&
               identity.atp_did ===

@@ -8,31 +8,17 @@ import { BskyAgent } from "@atproto/api";
 import { CollapsedPostHeader } from "./CollapsedPostHeader";
 import { Interactions } from "../Interactions/Interactions";
 import { getIdentityData } from "actions/getIdentityData";
-import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { PostPageData } from "../getPostPageData";
 
 export async function PostHeader(props: {
+  data: PostPageData;
   params: Promise<{ publication: string; did: string; rkey: string }>;
 }) {
   let did = decodeURIComponent((await props.params).did);
   let identity = await getIdentityData();
   let agent = new BskyAgent({ service: "https://public.api.bsky.app" });
-  let [{ data: document }, { data: profile }] = await Promise.all([
-    supabaseServerClient
-      .from("documents")
-      .select(
-        `*,
-        documents_in_publications(publications(*, publication_subscriptions(*))),
-        leaflets_in_publications(*),
-        document_mentions_in_bsky(*)
-        `,
-      )
-      .eq(
-        "uri",
-        AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey),
-      )
-      .single(),
-    agent.getProfile({ actor: did }),
-  ]);
+  let document = props.data;
+  let { data: profile } = await agent.getProfile({ actor: did });
 
   let record = document?.data as PubLeafletDocument.Record;
 
@@ -40,7 +26,10 @@ export async function PostHeader(props: {
     return;
   return (
     <>
-      <CollapsedPostHeader title={record.title} />
+      <CollapsedPostHeader
+        title={record.title}
+        quotes={document.document_mentions_in_bsky}
+      />
       <div className="max-w-prose w-full mx-auto" id="post-header">
         <div className="pubHeader flex flex-col pb-5">
           <Link
@@ -82,7 +71,8 @@ export async function PostHeader(props: {
                 </p>
               </>
             ) : null}
-            | <Interactions compact />
+            |{" "}
+            <Interactions compact quotes={document.document_mentions_in_bsky} />
             {identity &&
               identity.atp_did ===
                 document.documents_in_publications[0]?.publications

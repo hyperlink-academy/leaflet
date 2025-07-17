@@ -8,14 +8,9 @@ import { useInteractionState } from "./Interactions/Interactions";
 import { encodeQuotePosition, QUOTE_PARAM } from "./useHighlight";
 
 export function QuoteHandler() {
-  let [selectionText, setSelectionText] = useState<string | undefined>(
-    undefined,
+  let [position, setPosition] = useState<{ top: number; left: number } | null>(
+    null,
   );
-  let [focusRect, setFocusRect] = useState<DOMRect | null>(null);
-  let [selectionDir, setSelectionDir] = useState<
-    "forward" | "backward" | "none" | null
-  >(null);
-
   useEffect(() => {
     const handleSelectionChange = (e: Event) => {
       const selection = document.getSelection();
@@ -27,42 +22,34 @@ export function QuoteHandler() {
             )
           : false;
 
-      if (!selection || !isWithinPostContent) {
-        setFocusRect(null);
-        setSelectionDir(null);
-        setSelectionText(undefined);
-        return;
-      }
-      const focusNode = selection?.focusNode;
-      const focusOffset = selection?.focusOffset;
-      const selectionText = selection?.toString();
+      if (!selection || !isWithinPostContent || !selection?.toString())
+        return setPosition(null);
       const quoteRect = selection?.getRangeAt(0).getBoundingClientRect();
+      if (!quoteRect) return setPosition(null);
 
-      setSelectionText(selectionText);
-
-      let focusRect;
-      if (focusNode?.nodeType === Node.TEXT_NODE && focusOffset !== undefined) {
+      const screenScroll =
+        window.document.getElementById("post-page")?.scrollTop || 0;
+      let selectionTop = quoteRect.top + screenScroll;
+      let selectionLeft = quoteRect.left;
+      if (selection?.focusNode && selection?.focusOffset) {
         const range = document.createRange();
-        range.setStart(focusNode, focusOffset);
-        range.setEnd(focusNode, focusOffset);
+        range.setStart(selection?.focusNode, selection?.focusOffset);
+        range.setEnd(selection?.focusNode, selection?.focusOffset);
 
-        focusRect = range.getBoundingClientRect();
-        setFocusRect(focusRect);
-      } else if (focusNode?.nodeType === Node.ELEMENT_NODE) {
-        focusRect = (e?.target as HTMLElement)?.getBoundingClientRect();
-        setFocusRect(focusRect);
+        let endCursorRect = range.getBoundingClientRect();
+        selectionLeft = endCursorRect.left - 128;
       }
 
-      quoteRect &&
-        focusRect &&
-        setSelectionDir(
-          quoteRect.top < focusRect.top
-            ? "forward"
-            : quoteRect.top === focusRect.top &&
-                quoteRect.right === focusRect.right
-              ? "forward"
-              : "backward",
-        );
+      if (selection.direction === "forward") {
+        selectionTop += quoteRect.height + 8;
+      } else if (selection?.direction === "backward") {
+        selectionTop -= 28;
+      }
+
+      setPosition({
+        top: selectionTop,
+        left: selectionLeft,
+      });
     };
 
     document.addEventListener("selectionchange", handleSelectionChange);
@@ -70,92 +57,16 @@ export function QuoteHandler() {
       document.removeEventListener("selectionchange", handleSelectionChange);
     };
   }, []);
-  let smoker = useSmoker();
 
-  // Memoize calculations to avoid server-side rendering issues
-  const {
-    selectionTop,
-    selectionBottom,
-    parentLeft,
-    parentRight,
-    selectionRight,
-    leftBumper,
-    rightBumper,
-  } = useMemo(() => {
-    if (typeof window === "undefined" || !focusRect) {
-      return {
-        screenScroll: 0,
-        selectionTop: null,
-        selectionBottom: null,
-        parentLeft: 0,
-        screenRight: 0,
-        parentRight: 0,
-        selectionRight: null,
-        width: 273,
-        leftBumper: false,
-        rightBumper: false,
-      };
-    }
-
-    const screenScroll =
-      window.document.getElementById("post-page")?.scrollTop || 0;
-    const selectionTop = focusRect.top + screenScroll;
-    const selectionBottom = focusRect.bottom + screenScroll;
-
-    const parent = document
-      .getElementById("post-content")
-      ?.getBoundingClientRect();
-    const parentLeft = parent?.left || 0;
-
-    const screenRight =
-      window.document.getElementById("post-page")?.getBoundingClientRect()
-        .right || 0;
-    const parentRight = (parent && screenRight - parent.right) || 0;
-    const selectionRight = screenRight - focusRect.right;
-
-    const width = 273;
-
-    const leftBumper = focusRect.left - parentLeft < width;
-    const rightBumper = selectionRight - parentRight < width;
-
-    return {
-      selectionTop,
-      selectionBottom,
-      parentLeft,
-      parentRight,
-      selectionRight,
-      leftBumper,
-      rightBumper,
-    };
-  }, [focusRect]);
-
-  if (selectionText && selectionText !== "") {
+  if (position) {
     return (
       <div
         id="quote-trigger"
-        className="accent-container border border-border-light  text-accent-contrast px-1 flex gap-2 text-sm justify-center text-center items-center"
+        className={`accent-container border border-border-light  text-accent-contrast px-1 flex gap-2 text-sm justify-center text-center items-center`}
         style={{
           position: "absolute",
-          top:
-            selectionDir === "forward"
-              ? `calc(${selectionBottom}px + 4px )`
-              : `calc(${selectionTop}px - 28px )`,
-          right:
-            selectionDir === "forward" && leftBumper
-              ? undefined
-              : selectionDir === "forward"
-                ? `${selectionRight}px`
-                : rightBumper
-                  ? `${parentRight}px`
-                  : undefined,
-          left:
-            selectionDir === "forward" && leftBumper
-              ? `${parentLeft + 16}px`
-              : selectionDir === "forward"
-                ? undefined
-                : rightBumper
-                  ? undefined
-                  : `calc(${focusRect?.left}px)`,
+          top: position.top,
+          left: position.left,
         }}
       >
         <QuoteOptionButtons />
