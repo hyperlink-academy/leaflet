@@ -86,8 +86,7 @@ export const PageBackgroundPicker = (props: {
       )}
       <div className="relative">
         <PageBackgroundColorPicker
-          disabled={pageBorderHidden?.data.value && !pageBGImage}
-          label={pageBGImage && pageBGImage !== null ? "Menus" : "Page"}
+          label={pageBorderHidden?.data.value ? "Menus" : "Page"}
           value={pageValue}
           setValue={props.setValue}
           thisPicker={"page"}
@@ -95,7 +94,8 @@ export const PageBackgroundPicker = (props: {
           setOpenPicker={props.setOpenPicker}
           alpha
         />
-        {(pageBGImage === null || !pageBGImage) && (
+        {(pageBGImage === null ||
+          (!pageBGImage && !pageBorderHidden?.data.value)) && (
           <label
             className={`
                hover:cursor-pointer  text-[#969696] shrink-0
