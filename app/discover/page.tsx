@@ -1,10 +1,15 @@
-import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
+import {
+  BaseThemeProvider,
+  ThemeProvider,
+} from "components/ThemeManager/ThemeProvider";
 import SortButtons from "./SortButtons";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { PubLeafletPublication } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/syntax";
+import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
+import { PubListing } from "./PubListing";
 
 export default async function Discover(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -56,103 +61,9 @@ export default async function Discover(props: {
               );
               return bDate.getTime() - aDate.getTime();
             })
-            .map((pub) => <PubListing2 key={pub.uri} {...pub} />)}
+            .map((pub) => <PubListing key={pub.uri} {...pub} />)}
         </div>
       </div>
     </div>
   );
-}
-
-const PubListing = (props: {
-  record: Json;
-  uri: string;
-  documents_in_publications: { indexed_at: string }[];
-}) => {
-  let record = props.record as PubLeafletPublication.Record;
-  if (!record) return null;
-  return (
-    <>
-      <div className="flex gap-2">
-        <div
-          style={{
-            backgroundImage: record?.icon
-              ? `url(${blobRefToSrc(record.icon?.ref, new AtUri(props.uri).host)})`
-              : undefined,
-          }}
-          className="w-6 h-6 mt-0.5 rounded-full bg-test"
-        />
-        <div className="flex flex-col ">
-          <h3>{record.name}</h3>
-          <p className="text-secondary">{record.description}</p>
-          <div className="flex gap-2 text-sm text-tertiary pt-2 items-center">
-            Updated {timeAgo(props.documents_in_publications[0].indexed_at)}
-          </div>
-        </div>
-      </div>
-      <hr className="last:hidden border-border-light" />
-    </>
-  );
-};
-
-const PubListing2 = (props: {
-  record: Json;
-  uri: string;
-  documents_in_publications: {
-    indexed_at: string;
-    documents: { data: Json } | null;
-  }[];
-}) => {
-  let record = props.record as PubLeafletPublication.Record;
-  if (!record) return null;
-  return (
-    <a
-      target="_blank"
-      href={`https://${record.base_path}`}
-      className="!no-underline flex flex-row gap-2 border border-border-light rounded-lg px-3 py-3 selected-outline hover:outline-accent-contrast hover:border-accent-contrast"
-    >
-      <div
-        style={{
-          backgroundRepeat: "no-repeat",
-          backgroundPosition: "center",
-          backgroundSize: "cover",
-          backgroundImage: record?.icon
-            ? `url(${blobRefToSrc(record.icon?.ref, new AtUri(props.uri).host)})`
-            : undefined,
-        }}
-        className="w-6 h-6 mt-0.5 rounded-full bg-test shrink-0"
-      />
-      <div className="flex flex-col ">
-        <h3>{record.name}</h3>
-        <p className="text-secondary">{record.description}</p>
-        <div className="flex gap-1 items-center text-sm text-tertiary pt-2 ">
-          <p>
-            Updated {timeAgo(props.documents_in_publications[0].indexed_at)}
-          </p>
-        </div>
-      </div>
-    </a>
-  );
-};
-
-function timeAgo(timestamp: string): string {
-  const now = new Date();
-  const date = new Date(timestamp);
-  const diffMs = now.getTime() - date.getTime();
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
-  const diffYears = Math.floor(diffDays / 365);
-
-  if (diffYears > 0) {
-    return `${diffYears} year${diffYears === 1 ? "" : "s"} ago`;
-  } else if (diffDays > 0) {
-    return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
-  } else if (diffHours > 0) {
-    return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
-  } else if (diffMinutes > 0) {
-    return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
-  } else {
-    return "just now";
-  }
 }
