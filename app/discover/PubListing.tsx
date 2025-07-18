@@ -51,7 +51,7 @@ export const PubListing = (props: {
               ? `url(${blobRefToSrc(record.icon?.ref, new AtUri(props.uri).host)})`
               : undefined,
           }}
-          className="w-6 h-6 mt-0.5 rounded-full bg-test shrink-0"
+          className={`w-6 h-6 mt-0.5 rounded-full bg-test shrink-0 ${record.theme?.showPageBackground ? "mt-[10px]" : "mt-0.5"}`}
         />
         <div
           className={`flex w-full flex-col ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] p-2 rounded-lg" : ""}`}
