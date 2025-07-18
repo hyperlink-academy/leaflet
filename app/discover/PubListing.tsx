@@ -51,10 +51,12 @@ export const PubListing = (props: {
               ? `url(${blobRefToSrc(record.icon?.ref, new AtUri(props.uri).host)})`
               : undefined,
           }}
-          className={`w-6 h-6 mt-0.5 rounded-full bg-test shrink-0 ${record.theme?.showPageBackground ? "mt-[10px]" : "mt-0.5"}`}
-        />
+          className={`w-6 h-6 mt-0.5 rounded-full bg-accent-1 text-accent-2 flex place-content-center leading-snug font-bold text-center shrink-0 ${record.theme?.showPageBackground ? "mt-[10px]" : "mt-0.5"}`}
+        >
+          {!record?.icon ? record.name.slice(0, 1).toLocaleUpperCase() : null}
+        </div>
         <div
-          className={`flex w-full flex-col ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] p-2 rounded-lg" : ""}`}
+          className={`flex w-full flex-col ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] px-2 py-1 rounded-lg" : ""}`}
         >
           <h3>{record.name}</h3>
           <p className="text-secondary">{record.description}</p>
