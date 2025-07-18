@@ -35,8 +35,8 @@ export default async function Discover(props: {
 
   return (
     <div className="bg-[#FDFCFA] w-full h-full overflow-scroll">
-      <div className="max-w-prose mx-auto sm:py-6 py-4 ">
-        <div className="discoverHeader flex flex-col ">
+      <div className="max-w-prose mx-auto sm:py-6 py-4 px-4">
+        <div className="discoverHeader flex flex-col items-center px-4">
           <h1>Discover</h1>
           <p className="text-lg text-secondary italic mb-1">
             Explore publications on Leaflet! Or{" "}
