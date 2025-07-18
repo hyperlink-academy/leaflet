@@ -51,7 +51,7 @@ export const PubListing = (props: {
               ? `url(${blobRefToSrc(record.icon?.ref, new AtUri(props.uri).host)})`
               : undefined,
           }}
-          className={`w-6 h-6 mt-0.5 rounded-full bg-accent-1 text-accent-2 flex place-content-center leading-snug font-bold text-center shrink-0 ${record.theme?.showPageBackground ? "mt-[10px]" : "mt-0.5"}`}
+          className={`w-6 h-6 rounded-full bg-accent-1 text-accent-2 flex place-content-center leading-snug font-bold text-center shrink-0 ${record.theme?.showPageBackground ? "mt-[6px]" : "mt-0.5"}`}
         >
           {!record?.icon ? record.name.slice(0, 1).toLocaleUpperCase() : null}
         </div>
