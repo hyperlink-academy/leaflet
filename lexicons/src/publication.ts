@@ -18,7 +18,14 @@ export const PubLeafletPublication: LexiconDoc = {
           description: { type: "string", maxLength: 2000 },
           icon: { type: "blob", accept: ["image/*"], maxSize: 1000000 },
           theme: { type: "ref", ref: "#theme" },
+          preferences: { type: "ref", ref: "#preferences" },
         },
+      },
+    },
+    preferences: {
+      type: "object",
+      properties: {
+        showInDiscover: { type: "boolean", default: true },
       },
     },
     theme: {

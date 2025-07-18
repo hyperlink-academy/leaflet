@@ -95,6 +95,19 @@ export const schemaDict = {
               type: 'ref',
               ref: 'lex:pub.leaflet.publication#theme',
             },
+            preferences: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.publication#preferences',
+            },
+          },
+        },
+      },
+      preferences: {
+        type: 'object',
+        properties: {
+          showInDiscover: {
+            type: 'boolean',
+            default: true,
           },
         },
       },

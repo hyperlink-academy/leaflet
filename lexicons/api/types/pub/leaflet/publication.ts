@@ -19,6 +19,7 @@ export interface Record {
   description?: string
   icon?: BlobRef
   theme?: Theme
+  preferences?: Preferences
   [k: string]: unknown
 }
 
@@ -30,6 +31,21 @@ export function isRecord<V>(v: V) {
 
 export function validateRecord<V>(v: V) {
   return validate<Record & V>(v, id, hashRecord, true)
+}
+
+export interface Preferences {
+  $type?: 'pub.leaflet.publication#preferences'
+  showInDiscover: boolean
+}
+
+const hashPreferences = 'preferences'
+
+export function isPreferences<V>(v: V) {
+  return is$typed(v, id, hashPreferences)
+}
+
+export function validatePreferences<V>(v: V) {
+  return validate<Preferences & V>(v, id, hashPreferences)
 }
 
 export interface Theme {

@@ -19,11 +19,13 @@ export async function updatePublication({
   name,
   description,
   iconFile,
+  preferences,
 }: {
   uri: string;
   name: string;
   description: string;
   iconFile: File | null;
+  preferences?: Omit<PubLeafletPublication.Preferences, "$type">;
 }) {
   const oauthClient = await createOauthClient();
   let identity = await getIdentityData();
@@ -46,6 +48,9 @@ export async function updatePublication({
     ...(existingPub.record as object),
     name,
   };
+  if (preferences) {
+    record.preferences = preferences;
+  }
 
   if (description) {
     record.description = description;

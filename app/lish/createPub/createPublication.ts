@@ -23,11 +23,13 @@ export async function createPublication({
   description,
   iconFile,
   subdomain,
+  preferences,
 }: {
   name: string;
   description: string;
   iconFile: File | null;
   subdomain: string;
+  preferences: Omit<PubLeafletPublication.Preferences, "$type">;
 }) {
   let isSubdomainValid = subdomainValidator.safeParse(subdomain);
   if (!isSubdomainValid.success) {
@@ -46,6 +48,7 @@ export async function createPublication({
   let record: Un$Typed<PubLeafletPublication.Record> = {
     name,
     base_path: domain,
+    preferences,
   };
 
   if (description) {
