@@ -39,8 +39,8 @@ export default async function Discover(props: {
         <div className="discoverHeader flex flex-col ">
           <h1>Discover</h1>
           <p className="text-lg text-secondary italic mb-1">
-            Check out all the coolest publications on Leaflet! Or{" "}
-            <Link href="/lish/createPub">create your own!</Link>.
+            Explore publications on Leaflet! Or{" "}
+            <Link href="/lish/createPub">create your own</Link>!
           </p>
           <SortButtons order={order} />
         </div>
