@@ -8,6 +8,7 @@ import { Json } from "supabase/database.types";
 import { PubLeafletPublication } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/syntax";
+import Link from "next/link";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { PubListing } from "./PubListing";
 
@@ -38,7 +39,8 @@ export default async function Discover(props: {
         <div className="discoverHeader flex flex-col ">
           <h1>Discover</h1>
           <p className="text-lg text-secondary italic mb-1">
-            Check out all the coolest publications on Leaflet!
+            Check out all the coolest publications on Leaflet! Or{" "}
+            <Link href="/lish/createPub">create your own!</Link>.
           </p>
           <SortButtons order={order} />
         </div>

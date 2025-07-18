@@ -311,7 +311,7 @@ let BlueskySubscribeButton = (props: {
       >
         {isClient && (
           <LoginForm
-            publication
+            text="Log in to Bluesky to subscribe this publication!"
             noEmail
             redirectRoute={window?.location.href + "?refreshAuth"}
             action={{ action: "subscribe", publication: props.pub_uri }}
