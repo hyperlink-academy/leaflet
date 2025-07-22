@@ -10,7 +10,8 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 export function CodeBlock(props: BlockProps) {
   let content = useEntity(props.entityID, "block/code");
   let lang =
-    useEntity(props.entityID, "block/code-language")?.data.value || "ts";
+    useEntity(props.entityID, "block/code-language")?.data.value ||
+    "typescript";
   let focusedBlock = useUIState(
     (s) => s.focusedEntity?.entityID === props.entityID,
   );
@@ -28,35 +29,38 @@ export function CodeBlock(props: BlockProps) {
     });
   }, [content, lang]);
   return (
-    <div className="w-full relative">
+    <div className="codeBlock w-full flex flex-col rounded-md gap-0.5 ">
       {permissions.write && (
-        <select
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          className="absolute top-0 right-0 z-10"
-          value={lang}
-          onChange={async (e) => {
-            await rep?.mutate.assertFact({
-              attribute: "block/code-language",
-              entity: props.entityID,
-              data: { type: "string", value: e.target.value },
-            });
-          }}
-        >
-          {bundledLanguagesInfo.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name}
-            </option>
-          ))}
-        </select>
+        <div className="text-sm text-tertiary flex justify-between">
+          <div className="codeBlockTheme">Theme: Solarized</div>
+          <select
+            className="codeBlockLang text-right bg-transparent pr-1"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            value={lang}
+            onChange={async (e) => {
+              await rep?.mutate.assertFact({
+                attribute: "block/code-language",
+                entity: props.entityID,
+                data: { type: "string", value: e.target.value },
+              });
+            }}
+          >
+            {bundledLanguagesInfo.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
-      {focusedBlock && permissions.write ? (
-        <div className="w-full -m-2">
+      <div className="w-full rounded-md border-border-light outline-border-light selected-outline">
+        {focusedBlock && permissions.write ? (
           <BaseTextareaBlock
             block={props}
-            className="border border-border rounded-md p-2 w-full whitespace-nowrap !overflow-auto"
+            className="codeBlockEditor p-2 pt-[9px] whitespace-nowrap !overflow-auto font-mono "
             value={content?.data.value}
             onChange={async (e) => {
               // Update the entity with the new value
@@ -67,18 +71,18 @@ export function CodeBlock(props: BlockProps) {
               });
             }}
           />
-        </div>
-      ) : !html && content?.data.value ? (
-        <pre className="-m-2 border border-border rounded-md p-2 w-full !overflow-auto">
-          {content?.data.value}
-        </pre>
-      ) : (
-        <pre
-          data-lang={lang}
-          className="-m-2 border border-border rounded-md p-2 w-full !overflow-auto"
-          dangerouslySetInnerHTML={{ __html: html || "" }}
-        ></pre>
-      )}
+        ) : !html && content?.data.value ? (
+          <pre className="codeBlockRendered  rounded-md w-full !overflow-auto">
+            {content?.data.value}
+          </pre>
+        ) : (
+          <pre
+            data-lang={lang}
+            className="codeBlockEmpty rounded-md w-full  !overflow-auto"
+            dangerouslySetInnerHTML={{ __html: html || "" }}
+          ></pre>
+        )}
+      </div>
     </div>
   );
 }

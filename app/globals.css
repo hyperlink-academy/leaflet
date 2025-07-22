@@ -157,6 +157,11 @@ input[type="number"] {
   );
 }
 
+pre.shiki {
+  @apply p-2;
+  @apply rounded-md;
+}
+
 .highlight {
   @apply px-[1px];
   @apply py-[1px];

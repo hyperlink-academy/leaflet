@@ -6,7 +6,6 @@ import { elementId } from "src/utils/elementId";
 import { useEditorStates } from "src/state/useEditorState";
 import { scrollIntoViewIfNeeded } from "./scrollIntoViewIfNeeded";
 import { getPosAtCoordinates } from "./getCoordinatesInTextarea";
-import { useCoordState } from "components/utils/CoordDebugger";
 
 export function focusBlock(
   block: Pick<Block, "type" | "value" | "parent">,
@@ -44,10 +43,6 @@ export function focusBlock(
             .getElementById(elementId.block(block.value).container)
             ?.getBoundingClientRect().bottom || 0;
 
-        useCoordState.setState({
-          x: position.left,
-          y: bottom - 16,
-        });
         let pos = getPosAtCoordinates(position.left + 2, bottom - 16);
         if (pos.offset) {
           let el = pos.textNode as HTMLTextAreaElement;

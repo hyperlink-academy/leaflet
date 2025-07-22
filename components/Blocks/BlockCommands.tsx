@@ -29,6 +29,8 @@ import {
 import { LinkSmall } from "components/Icons/LinkSmall";
 import { BlockRSVPSmall } from "components/Icons/BlockRSVPSmall";
 import { ListUnorderedSmall } from "components/Toolbar/ListToolbar";
+import { BlockMathSmall } from "components/Icons/BlockMathSmall";
+import { BlockCodeSmall } from "components/Icons/BlockCodeSmall";
 
 type Props = {
   parent: string;
@@ -285,7 +287,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "Math",
-    icon: "ICON",
+    icon: <BlockMathSmall />,
     type: "block",
     hiddenInPublication: false,
     onSelect: async (rep, props) => {
@@ -293,8 +295,8 @@ export const blockCommands: Command[] = [
     },
   },
   {
-    name: "code",
-    icon: "ICON",
+    name: "Code",
+    icon: <BlockCodeSmall />,
     type: "block",
     hiddenInPublication: false,
     onSelect: async (rep, props) => {

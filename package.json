@@ -79,6 +79,7 @@
     "remark-stringify": "^11.0.0",
     "replicache": "^14.2.2",
     "sharp": "^0.34.2",
+    "shiki": "^3.8.1",
     "swr": "^2.3.3",
     "thumbhash": "^0.1.1",
     "twilio": "^5.3.7",

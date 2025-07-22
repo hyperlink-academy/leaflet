@@ -33,33 +33,29 @@ export function MathBlock(props: BlockProps) {
       throw error;
     }
   }, [content?.data.value]);
-  return (
-    <div className="w-full">
-      {focusedBlock ? (
-        <BaseTextareaBlock
-          block={props}
-          className="bg-border-light rounded-md p-2 w-full min-h-[48px] whitespace-nowrap !overflow-auto"
-          placeholder="write some LaTex here..."
-          value={content?.data.value}
-          onChange={async (e) => {
-            // Update the entity with the new value
-            await rep?.mutate.assertFact({
-              attribute: "block/math",
-              entity: props.entityID,
-              data: { type: "string", value: e.target.value },
-            });
-          }}
-        />
-      ) : html && content?.data.value ? (
-        <div
-          className="text-lg min-h-[46px]"
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
-      ) : (
-        <div className="text-tertiary italic rounded-md p-2 w-full min-h-16">
-          write some LaTex here...
-        </div>
-      )}
+  return focusedBlock ? (
+    <BaseTextareaBlock
+      block={props}
+      className="bg-border-light rounded-md p-2 w-full min-h-[48px] whitespace-nowrap !overflow-auto border-border-light outline-border-light selected-outline"
+      placeholder="write some LaTex here..."
+      value={content?.data.value}
+      onChange={async (e) => {
+        // Update the entity with the new value
+        await rep?.mutate.assertFact({
+          attribute: "block/math",
+          entity: props.entityID,
+          data: { type: "string", value: e.target.value },
+        });
+      }}
+    />
+  ) : html && content?.data.value ? (
+    <div
+      className="text-lg min-h-[66px] w-full border border-transparent"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  ) : (
+    <div className="text-tertiary italic rounded-md p-2 w-full min-h-16">
+      write some LaTex here...
     </div>
   );
 }
