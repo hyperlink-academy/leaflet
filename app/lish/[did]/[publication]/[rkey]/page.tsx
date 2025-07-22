@@ -5,14 +5,21 @@ import { ids } from "lexicons/api/lexicons";
 import {
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
+  PubLeafletPublication,
+  PubLeafletThemeColor,
 } from "lexicons/api";
 import { Metadata } from "next";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { TextBlock } from "./TextBlock";
 import { BskyAgent } from "@atproto/api";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
+import {
+  PublicationBackgroundProvider,
+  PublicationThemeProvider,
+} from "components/ThemeManager/PublicationThemeProvider";
 import { PostContent } from "./PostContent";
 import { getIdentityData } from "actions/getIdentityData";
+import { EditTiny } from "components/Icons/EditTiny";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -86,91 +93,130 @@ export default async function Post(props: {
   if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
     blocks = firstPage.blocks || [];
   }
-  return (
-    <ThemeProvider entityID={null}>
-      <div className="flex flex-col px-3 sm:px-4 py-3 sm:py-9 w-full bg-[#FDFCFA] h-full min-h-fit overflow-auto">
-        <div className="max-w-prose mx-auto w-full">
-          <div className="pubHeader flex flex-col pb-5">
-            <Link
-              className="font-bold hover:no-underline text-accent-contrast"
-              href={getPublicationURL(
-                document.documents_in_publications[0].publications,
-              )}
-            >
-              {decodeURIComponent((await props.params).publication)}
-            </Link>
-            <h2 className="">{record.title}</h2>
-            {record.description ? (
-              <p className="italic text-secondary">{record.description}</p>
-            ) : null}
 
-            <div className="text-sm text-tertiary pt-3 flex gap-1">
-              {profile ? (
-                <>
-                  <a
-                    className="text-tertiary"
-                    href={`https://bsky.app/profile/${profile.handle}`}
-                  >
-                    by {profile.displayName || profile.handle}
-                  </a>
-                </>
+  let pubRecord = document.documents_in_publications[0]?.publications
+    .record as PubLeafletPublication.Record;
+
+  let hasPageBackground = !!pubRecord.theme?.showPageBackground;
+
+  return (
+    <PublicationThemeProvider
+      record={pubRecord}
+      pub_creator={
+        document.documents_in_publications[0].publications.identity_did
+      }
+    >
+      <PublicationBackgroundProvider
+        record={pubRecord}
+        pub_creator={
+          document.documents_in_publications[0].publications.identity_did
+        }
+      >
+        <div
+          className={`flex flex-col sm:py-6 h-full   ${hasPageBackground ? "max-w-prose mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
+        >
+          <div
+            className={`sm:max-w-prose max-w-[var(--page-width-units)] w-[1000px] mx-auto px-3 sm:px-4 py-3  ${hasPageBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] rounded-lg border border-border" : "h-fit "}`}
+          >
+            <div className="postHeader flex flex-col pb-5">
+              <Link
+                className="font-bold hover:no-underline text-accent-contrast flex gap-2 items-center"
+                href={getPublicationURL(
+                  document.documents_in_publications[0].publications,
+                )}
+              >
+                {pubRecord.icon && (
+                  <div
+                    className="pubDashLogo shrink-0 w-5 h-5 rounded-full border-bg-page "
+                    style={{
+                      backgroundImage: `url(/api/atproto_images?did=${document.documents_in_publications[0].publications.identity_did}&cid=${(pubRecord.icon.ref as unknown as { $link: string })["$link"]})`,
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "center",
+                      backgroundSize: "cover",
+                    }}
+                  />
+                )}
+                {decodeURIComponent((await props.params).publication)}
+              </Link>
+
+              <h2 className="leading-snug">{record.title}</h2>
+              {record.description ? (
+                <p className="italic text-secondary pt-0.5">
+                  {record.description}
+                </p>
               ) : null}
-              {record.publishedAt ? (
-                <>
-                  {" "}
-                  |
-                  <p>
-                    Published{" "}
-                    {new Date(record.publishedAt).toLocaleDateString(
-                      undefined,
-                      {
-                        year: "numeric",
-                        month: "long",
-                        day: "2-digit",
-                      },
-                    )}
-                  </p>
-                </>
-              ) : null}
-              {identity &&
-                identity.atp_did ===
-                  document.documents_in_publications[0]?.publications
-                    .identity_did && (
+
+              <div className="text-sm text-tertiary pt-3 flex gap-1">
+                {profile ? (
                   <>
-                    {" "}
-                    |
                     <a
-                      href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
+                      className="text-tertiary"
+                      href={`https://bsky.app/profile/${profile.handle}`}
                     >
-                      Edit Post
+                      by {profile.displayName || profile.handle}
                     </a>
                   </>
-                )}
+                ) : null}
+                {record.publishedAt ? (
+                  <>
+                    |
+                    <p>
+                      {new Date(record.publishedAt).toLocaleDateString(
+                        undefined,
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "2-digit",
+                        },
+                      )}
+                    </p>
+                  </>
+                ) : null}
+                {identity &&
+                  identity.atp_did ===
+                    document.documents_in_publications[0]?.publications
+                      .identity_did && (
+                    <>
+                      {" "}
+                      |
+                      <a
+                        href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
+                      >
+                        Edit Post
+                      </a>
+                    </>
+                  )}
+              </div>
             </div>
+            <PostContent blocks={blocks} did={did} />
+            <hr className="border-border-light mb-4 mt-2" />
+            {identity &&
+            identity.atp_did ===
+              document.documents_in_publications[0]?.publications
+                .identity_did ? (
+              <a
+                href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
+                className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1 mx-auto"
+              >
+                <EditTiny /> Edit Post
+              </a>
+            ) : (
+              <SubscribeWithBluesky
+                isPost
+                base_url={getPublicationURL(
+                  document.documents_in_publications[0].publications,
+                )}
+                pub_uri={document.documents_in_publications[0].publications.uri}
+                subscribers={
+                  document.documents_in_publications[0].publications
+                    .publication_subscriptions
+                }
+                pubName={decodeURIComponent((await props.params).publication)}
+              />
+            )}
           </div>
-          <PostContent blocks={blocks} did={did} />
-          <hr className="border-border-light mb-4 mt-2" />
-          {identity &&
-          identity.atp_did ===
-            document.documents_in_publications[0]?.publications.identity_did ? (
-            <a
-              href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
-            >
-              Edit Post
-            </a>
-          ) : (
-            <SubscribeWithBluesky
-              isPost
-              pub_uri={document.documents_in_publications[0].publications.uri}
-              subscribers={
-                document.documents_in_publications[0].publications
-                  .publication_subscriptions
-              }
-              pubName={decodeURIComponent((await props.params).publication)}
-            />
-          )}
         </div>
-      </div>
-    </ThemeProvider>
+      </PublicationBackgroundProvider>
+    </PublicationThemeProvider>
   );
 }

@@ -91,6 +91,71 @@ export const schemaDict = {
               accept: ['image/*'],
               maxSize: 1000000,
             },
+            theme: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.publication#theme',
+            },
+            preferences: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.publication#preferences',
+            },
+          },
+        },
+      },
+      preferences: {
+        type: 'object',
+        properties: {
+          showInDiscover: {
+            type: 'boolean',
+            default: true,
+          },
+        },
+      },
+      theme: {
+        type: 'object',
+        properties: {
+          backgroundColor: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+          backgroundImage: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.theme.backgroundImage',
+          },
+          primary: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+          pageBackground: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+          showPageBackground: {
+            type: 'boolean',
+            default: false,
+          },
+          accentBackground: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+          accentText: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
           },
         },
       },
@@ -408,6 +473,82 @@ export const schemaDict = {
         description: 'Facet feature for italic text',
         required: [],
         properties: {},
+      },
+    },
+  },
+  PubLeafletThemeBackgroundImage: {
+    lexicon: 1,
+    id: 'pub.leaflet.theme.backgroundImage',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['image'],
+        properties: {
+          image: {
+            type: 'blob',
+            accept: ['image/*'],
+            maxSize: 1000000,
+          },
+          width: {
+            type: 'integer',
+          },
+          repeat: {
+            type: 'boolean',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletThemeColor: {
+    lexicon: 1,
+    id: 'pub.leaflet.theme.color',
+    defs: {
+      rgba: {
+        type: 'object',
+        required: ['r', 'g', 'b', 'a'],
+        properties: {
+          r: {
+            type: 'integer',
+            maximum: 255,
+            minimum: 0,
+          },
+          g: {
+            type: 'integer',
+            maximum: 255,
+            minimum: 0,
+          },
+          b: {
+            type: 'integer',
+            maximum: 255,
+            minimum: 0,
+          },
+          a: {
+            type: 'integer',
+            maximum: 100,
+            minimum: 0,
+          },
+        },
+      },
+      rgb: {
+        type: 'object',
+        required: ['r', 'g', 'b'],
+        properties: {
+          r: {
+            type: 'integer',
+            maximum: 255,
+            minimum: 0,
+          },
+          g: {
+            type: 'integer',
+            maximum: 255,
+            minimum: 0,
+          },
+          b: {
+            type: 'integer',
+            maximum: 255,
+            minimum: 0,
+          },
+        },
       },
     },
   },
@@ -1459,6 +1600,8 @@ export const ids = {
   PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
   PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
   PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
+  PubLeafletThemeBackgroundImage: 'pub.leaflet.theme.backgroundImage',
+  PubLeafletThemeColor: 'pub.leaflet.theme.color',
   ComAtprotoLabelDefs: 'com.atproto.label.defs',
   ComAtprotoRepoApplyWrites: 'com.atproto.repo.applyWrites',
   ComAtprotoRepoCreateRecord: 'com.atproto.repo.createRecord',

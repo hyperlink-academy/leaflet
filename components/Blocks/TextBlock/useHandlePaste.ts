@@ -79,12 +79,12 @@ export const useHandlePaste = (
         let xml = new DOMParser().parseFromString(textHTML, "text/html");
         let currentPosition = propsRef.current.position;
         let children = flattenHTMLToTextBlocks(xml.body);
+        let hasImage = false;
+        for (let item of e.clipboardData.items) {
+          if (item.type.includes("image")) hasImage = true;
+        }
         if (
-          !(
-            children.length === 1 &&
-            children[0].tagName === "IMG" &&
-            e.clipboardData.items.length > 0
-          )
+          !(children.length === 1 && children[0].tagName === "IMG" && hasImage)
         ) {
           children.forEach((child, index) => {
             createBlockFromHTML(child, {

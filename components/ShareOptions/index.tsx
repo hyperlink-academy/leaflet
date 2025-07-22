@@ -62,7 +62,7 @@ export function ShareOptions() {
     >
       {menuState === "login" ? (
         <div className="px-3 py-1">
-          <LoginForm />
+          <LoginForm text="Save your Leaflets and access them on multiple devices!" />
         </div>
       ) : menuState === "domain" ? (
         <CustomDomainMenu setShareMenuState={setMenuState} />

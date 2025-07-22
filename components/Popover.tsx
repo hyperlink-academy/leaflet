@@ -1,3 +1,4 @@
+"use client";
 import * as RadixPopover from "@radix-ui/react-popover";
 import { theme } from "tailwind.config";
 import { NestedCardThemeProvider } from "./ThemeManager/ThemeProvider";

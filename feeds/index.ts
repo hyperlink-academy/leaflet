@@ -23,9 +23,11 @@ app.get("/.well-known/did.json", (c) => {
     ],
   });
 });
+//Cursor format ts::uri
 
 app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
   let auth = await validateAuth(c.req, serviceDid);
+  let cursor = c.req.query("cursor");
   if (!auth) return c.json({ feed: [] });
 
   let { data: publications } = await supabaseServerClient
@@ -47,15 +49,36 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
         ? new Date(bRecord.publishedAt)
         : new Date(0);
       return bDate.getTime() - aDate.getTime(); // Sort by most recent first
-    })
-    .flatMap((p) => {
+    });
+  let posts;
+  if (!cursor) {
+    posts = feed.slice(0, 25);
+  } else {
+    let date = cursor.split("::")[0];
+    let uri = cursor.split("::")[1];
+    posts = feed
+      .filter((p) => {
+        if (!p.documents?.data) return false;
+        let record = p.documents.data as PubLeafletDocument.Record;
+        if (!record.publishedAt) return false;
+        return record.publishedAt <= date && uri !== p.documents?.uri;
+      })
+      .slice(0, 25);
+  }
+
+  let lastPost = posts[posts.length - 1];
+  let lastRecord = lastPost?.documents?.data! as PubLeafletDocument.Record;
+  let newCursor = lastRecord
+    ? `${lastRecord.publishedAt}::${lastPost.documents?.uri}`
+    : null;
+  return c.json({
+    cursor: newCursor || cursor,
+    feed: posts.flatMap((p) => {
       if (!p.documents?.data) return [];
       let record = p.documents.data as PubLeafletDocument.Record;
       if (!record.postRef) return [];
       return { post: record.postRef.uri };
-    });
-  return c.json({
-    feed,
+    }),
   });
 });
 

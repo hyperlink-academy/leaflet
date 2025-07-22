@@ -12,7 +12,7 @@ import {
   SliderTrack,
   ColorSwatch,
 } from "react-aria-components";
-import { pickers } from "./ThemeSetter";
+import { pickers } from "../ThemeSetter";
 import { Separator } from "components/Layout";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
 
@@ -54,16 +54,17 @@ export const ColorPicker = (props: {
                 backgroundSize: "cover",
               }}
             />
-            <strong className="">{props.label}</strong>
+            <strong className="w-max">{props.label}</strong>
           </button>
 
           <div className="flex gap-1">
             {props.value === undefined ? (
               <div>default</div>
+            ) : props.disabled ? (
+              <div className="text-tertiary italic">hidden</div>
             ) : (
               <ColorField className="w-fit gap-1">
                 <Input
-                  disabled={props.disabled}
                   onMouseDown={onMouseDown}
                   onFocus={(e) => {
                     e.currentTarget.setSelectionRange(
@@ -83,10 +84,13 @@ export const ColorPicker = (props: {
                 />
               </ColorField>
             )}
-            {props.alpha && (
+            {props.alpha && !props.disabled && (
               <>
                 <Separator classname="my-1" />
-                <ColorField className="w-fit pl-[6px]" channel="alpha">
+                <ColorField
+                  className={`w-[48px] pl-[6px] ${props.disabled ? "opacity-50" : ""}`}
+                  channel="alpha"
+                >
                   <Input
                     disabled={props.disabled}
                     onMouseDown={onMouseDown}
@@ -101,7 +105,7 @@ export const ColorPicker = (props: {
                         e.currentTarget.blur();
                       } else return;
                     }}
-                    className="w-[72px] bg-transparent outline-none text-primary disabled:text-tertiary"
+                    className="w-[72px] bg-transparent outline-none "
                   />
                 </ColorField>
               </>
@@ -130,7 +134,7 @@ export const ColorPicker = (props: {
                     colorSpace="hsb"
                     className="w-full mt-1 rounded-full"
                     style={{
-                      backgroundImage: `url(./transparent-bg.png)`,
+                      backgroundImage: `url(/transparent-bg.png)`,
                       backgroundRepeat: "repeat",
                       backgroundSize: "8px",
                     }}

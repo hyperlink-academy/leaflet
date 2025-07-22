@@ -29,7 +29,7 @@ export function PublishPost(props: Props) {
     { state: "default" } | { state: "success"; post_url: string }
   >({ state: "default" });
   return (
-    <div className="publishPage w-screen h-full bg-[#FDFCFA] flex sm:pt-0 pt-4 sm:place-items-center justify-center">
+    <div className="publishPage w-screen h-full bg-bg-page flex sm:pt-0 pt-4 sm:place-items-center justify-center">
       {publishState.state === "default" ? (
         <PublishPostForm setPublishState={setPublishState} {...props} />
       ) : (
@@ -37,7 +37,7 @@ export function PublishPost(props: Props) {
           record={props.record}
           publication_uri={props.publication_uri}
           post_url={publishState.post_url}
-          posts_in_pub={props.posts_in_pub || 0}
+          posts_in_pub={(props.posts_in_pub || 0) + 1}
         />
       )}
     </div>
@@ -72,7 +72,7 @@ const PublishPostForm = (
         title: props.title,
         url: post_url,
         description: props.description,
-        record: doc.record,
+        document_record: doc.record,
         rkey: doc.rkey,
       });
     setIsLoading(false);

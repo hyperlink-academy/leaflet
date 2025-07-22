@@ -80,19 +80,21 @@ export const DomainOptions = (props: {
     <div className="px-3 py-1 flex flex-col gap-3 max-w-full w-[600px]">
       <h3 className="text-secondary">Choose a Domain</h3>
       <div className="flex flex-col gap-1 text-secondary">
-        {identity?.custom_domains.map((domain) => {
-          return (
-            <DomainOption
-              selectedRoute={selectedRoute}
-              setSelectedRoute={setSelectedRoute}
-              key={domain.domain}
-              domain={domain.domain}
-              checked={selectedDomain === domain.domain}
-              setChecked={setSelectedDomain}
-              setDomainMenuState={props.setDomainMenuState}
-            />
-          );
-        })}
+        {identity?.custom_domains
+          .filter((d) => !d.publication_domains.length)
+          .map((domain) => {
+            return (
+              <DomainOption
+                selectedRoute={selectedRoute}
+                setSelectedRoute={setSelectedRoute}
+                key={domain.domain}
+                domain={domain.domain}
+                checked={selectedDomain === domain.domain}
+                setChecked={setSelectedDomain}
+                setDomainMenuState={props.setDomainMenuState}
+              />
+            );
+          })}
         <button
           onMouseDown={() => {
             props.setDomainMenuState({ state: "add-domain" });
@@ -261,6 +263,7 @@ export const AddDomain = (props: {
   setDomainMenuState: (state: DomainMenuState) => void;
 }) => {
   let [value, setValue] = useState("");
+  let { mutate } = useIdentityData();
   let smoker = useSmoker();
   return (
     <div className="flex flex-col gap-1 px-3 py-1 max-w-full w-[600px]">
@@ -300,6 +303,7 @@ export const AddDomain = (props: {
             });
             return;
           }
+          mutate();
           props.setDomainMenuState({ state: "domain-settings", domain: value });
         }}
       >

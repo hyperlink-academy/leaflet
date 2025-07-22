@@ -278,6 +278,12 @@ const backspace =
 
         return false;
       }
+
+      if (propsRef.current.pageType === "canvas") {
+        repRef.current?.mutate.removeBlock({
+          blockEntity: propsRef.current.entityID,
+        });
+      }
       return true;
     }
 

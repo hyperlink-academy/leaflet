@@ -5,17 +5,15 @@ import {
 } from "app/lish/createPub/getPublicationURL";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { GoBackSmall } from "components/Icons/GoBackSmall";
+import { PaintSmall } from "components/Icons/PaintSmall";
 import { PublishSmall } from "components/Icons/PublishSmall";
-import { useIdentityData } from "components/IdentityProvider";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import router from "next/router";
 import { useState } from "react";
-import { useBlocks } from "src/hooks/queries/useBlocks";
-import { useReplicache, useEntity } from "src/replicache";
+import { useReplicache } from "src/replicache";
 import { Json } from "supabase/database.types";
 
 export const BackToPubButton = (props: {

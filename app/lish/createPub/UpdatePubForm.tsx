@@ -17,6 +17,8 @@ import { addPublicationDomain } from "actions/domains/addDomain";
 import { LoadingTiny } from "components/Icons/LoadingTiny";
 import { PinTiny } from "components/Icons/PinTiny";
 import { Verification } from "@vercel/sdk/esm/models/getprojectdomainop";
+import Link from "next/link";
+import { Checkbox } from "components/Checkbox";
 
 export const EditPubForm = () => {
   let { data: pubData } = usePublicationData();
@@ -24,6 +26,11 @@ export const EditPubForm = () => {
   let [formState, setFormState] = useState<"normal" | "loading">("normal");
 
   let [nameValue, setNameValue] = useState(record?.name || "");
+  let [showInDiscover, setShowInDiscover] = useState(
+    record?.preferences?.showInDiscover === undefined
+      ? true
+      : record.preferences.showInDiscover,
+  );
   let [descriptionValue, setDescriptionValue] = useState(
     record?.description || "",
   );
@@ -43,7 +50,7 @@ export const EditPubForm = () => {
 
   return (
     <form
-      className="flex flex-col gap-3 w-full py-1"
+      className="flex flex-col gap-3 w-[1000px] max-w-full py-1"
       onSubmit={async (e) => {
         if (!pubData) return;
         e.preventDefault();
@@ -53,6 +60,9 @@ export const EditPubForm = () => {
           name: nameValue,
           description: descriptionValue,
           iconFile: iconFile,
+          preferences: {
+            showInDiscover: showInDiscover,
+          },
         });
         toast({ type: "success", content: "Updated!" });
         setFormState("normal");
@@ -95,12 +105,13 @@ export const EditPubForm = () => {
           }}
         />
       </div>
+
       <label>
         <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
           Publication Name
         </p>
         <Input
-          className="input-with-border w-full "
+          className="input-with-border w-full text-primary"
           type="text"
           id="pubName"
           value={nameValue}
@@ -115,7 +126,7 @@ export const EditPubForm = () => {
         </p>
         <Input
           textarea
-          className="input-with-border w-full "
+          className="input-with-border w-full text-primary"
           rows={3}
           id="pubDescription"
           value={descriptionValue}
@@ -126,6 +137,26 @@ export const EditPubForm = () => {
       </label>
 
       <CustomDomainForm />
+      <hr className="border-border-light" />
+
+      <Checkbox
+        checked={showInDiscover}
+        onChange={(e) => setShowInDiscover(e.target.checked)}
+      >
+        <div className=" pt-0.5 flex flex-col  text-sm italic text-tertiary ">
+          <p className="font-bold">
+            Show In{" "}
+            <a href="/discover" target="_blank">
+              Discover
+            </a>
+          </p>
+          <p className="text-xs text-tertiary font-normal">
+            This publication will appear on our public Discover page
+          </p>
+        </div>
+      </Checkbox>
+      <hr className="border-border-light" />
+
       <ButtonPrimary className="place-self-end" type="submit">
         {formState === "loading" ? <DotLoader /> : "Update!"}
       </ButtonPrimary>
@@ -274,8 +305,8 @@ function Domain(props: {
   console.log(props.domain, data);
 
   return (
-    <div className="text-sm text-secondary relative">
-      {props.domain}
+    <div className="text-sm text-secondary relative w-full ">
+      <div className="pr-8 truncate">{props.domain}</div>
       <div className="absolute right-0 top-0 bottom-0 flex justify-end items-center w-4 ">
         {pending ? (
           <button

@@ -16,9 +16,9 @@ import { mutate } from "swr";
 
 export default function LoginForm(props: {
   noEmail?: boolean;
-  publication?: boolean;
   redirectRoute?: string;
   action?: ActionAfterSignIn;
+  text: React.ReactNode;
 }) {
   type FormState =
     | {
@@ -121,11 +121,7 @@ export default function LoginForm(props: {
     <div className="flex flex-col gap-3 w-full max-w-xs pb-1">
       <div className="flex flex-col">
         <h4 className="text-primary">Log In or Sign Up</h4>
-        <div className=" text-tertiary text-sm">
-          {props.publication
-            ? "Log in to Bluesky to subscribe this publication!"
-            : "Save your Leaflets and access them on multiple devices!"}
-        </div>
+        <div className=" text-tertiary text-sm">{props.text}</div>
       </div>
 
       <BlueskyLogin {...props} />

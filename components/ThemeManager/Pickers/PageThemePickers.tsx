@@ -17,17 +17,18 @@ import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
 import { Separator } from "components/Layout";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
-import { pickers, setColorAttribute } from "./ThemeSetter";
-import { ImageInput, ImageSettings } from "./ImageSetters";
+import { pickers, setColorAttribute } from "../ThemeSetter";
+import { ImageInput, ImageSettings } from "./ImagePicker";
 
 import { ColorPicker, thumbStyle } from "./ColorPicker";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { Replicache } from "replicache";
 import { CanvasBackgroundPattern } from "components/Canvas";
+import { Toggle } from "components/Toggle";
+import { DeleteSmall } from "components/Icons/DeleteSmall";
 
 export const PageThemePickers = (props: {
   entityID: string;
-  home?: boolean;
   openPicker: pickers;
   setOpenPicker: (thisPicker: pickers) => void;
 }) => {
@@ -37,10 +38,7 @@ export const PageThemePickers = (props: {
   }, [rep, props.entityID]);
 
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
-  let pageValue = useColorAttribute(props.entityID, "theme/card-background");
   let primaryValue = useColorAttribute(props.entityID, "theme/primary");
-  let pageBGImage = useEntity(props.entityID, "theme/card-background-image");
-  let pageBorderHidden = useEntity(props.entityID, "theme/card-border-hidden");
 
   return (
     <div
@@ -53,28 +51,58 @@ export const PageThemePickers = (props: {
           <hr className="border-border-light w-full" />
         </>
       )}
-      <ColorPicker
-        disabled={pageBorderHidden?.data.value}
-        label="Page"
-        value={pageValue}
-        setValue={set("theme/card-background")}
-        thisPicker={"page"}
+      <PageTextPicker
+        value={primaryValue}
+        setValue={set("theme/primary")}
         openPicker={props.openPicker}
         setOpenPicker={props.setOpenPicker}
-        closePicker={() => props.setOpenPicker("null")}
-        alpha
-      >
-        {(pageBGImage === null || !pageBGImage) && (
+      />
+    </div>
+  );
+};
+
+export const PageBackgroundPicker = (props: {
+  entityID: string;
+  setValue: (c: Color) => void;
+  openPicker: pickers;
+  setOpenPicker: (p: pickers) => void;
+}) => {
+  let pageValue = useColorAttribute(props.entityID, "theme/card-background");
+  let pageBGImage = useEntity(props.entityID, "theme/card-background-image");
+  let pageBorderHidden = useEntity(props.entityID, "theme/card-border-hidden");
+
+  return (
+    <>
+      {pageBGImage && pageBGImage !== null && (
+        <PageBackgroundImagePicker
+          disabled={pageBorderHidden?.data.value}
+          entityID={props.entityID}
+          thisPicker={"page-background-image"}
+          openPicker={props.openPicker}
+          setOpenPicker={props.setOpenPicker}
+          closePicker={() => props.setOpenPicker("null")}
+          setValue={props.setValue}
+        />
+      )}
+      <div className="relative">
+        <PageBackgroundColorPicker
+          label={pageBorderHidden?.data.value ? "Menus" : "Page"}
+          value={pageValue}
+          setValue={props.setValue}
+          thisPicker={"page"}
+          openPicker={props.openPicker}
+          setOpenPicker={props.setOpenPicker}
+          alpha
+        />
+        {(pageBGImage === null ||
+          (!pageBGImage && !pageBorderHidden?.data.value)) && (
           <label
-            className={`m-0 h-max w-full  py-0.5 px-1
-                bg-accent-1  outline-transparent
-                rounded-md text-base font-bold text-accent-2
-                hover:cursor-pointer
-                flex gap-2 items-center justify-center shrink-0
-                transparent-outline hover:outline-accent-1 outline-offset-1
-              `}
+            className={`
+               hover:cursor-pointer  text-[#969696] shrink-0
+              absolute top-0 right-0
+            `}
           >
-            <BlockImageSmall /> Add Background Image
+            <BlockImageSmall />
             <div className="hidden">
               <ImageInput
                 entityID={props.entityID}
@@ -84,64 +112,37 @@ export const PageThemePickers = (props: {
             </div>
           </label>
         )}
-      </ColorPicker>
-      {pageBGImage && pageBGImage !== null && (
-        <PageBGPicker
-          disabled={pageBorderHidden?.data.value}
-          entityID={props.entityID}
-          thisPicker={"page-background-image"}
-          openPicker={props.openPicker}
-          setOpenPicker={props.setOpenPicker}
-          closePicker={() => props.setOpenPicker("null")}
-          setValue={set("theme/card-background")}
-        />
-      )}
-      <ColorPicker
-        label="Text"
-        value={primaryValue}
-        setValue={set("theme/primary")}
-        thisPicker={"text"}
-        openPicker={props.openPicker}
-        setOpenPicker={props.setOpenPicker}
-        closePicker={() => props.setOpenPicker("null")}
-      />
-      <hr />
-      <PageBorderHider entityID={props.entityID} />
-    </div>
-  );
-};
-
-export const PageBorderHider = (props: { entityID: string }) => {
-  let { rep, rootEntity } = useReplicache();
-  let rootPageBorderHidden = useEntity(rootEntity, "theme/card-border-hidden");
-  let entityPageBorderHidden = useEntity(
-    props.entityID,
-    "theme/card-border-hidden",
-  );
-  let pageBorderHidden =
-    (entityPageBorderHidden || rootPageBorderHidden)?.data.value || false;
-
-  return (
-    <>
-      <Checkbox
-        small
-        className="pl-[6px] !gap-3"
-        checked={pageBorderHidden}
-        onChange={(e) => {
-          rep?.mutate.assertFact({
-            entity: props.entityID,
-            attribute: "theme/card-border-hidden",
-            data: { type: "boolean", value: !pageBorderHidden },
-          });
-        }}
-      >
-        No Page Borders
-      </Checkbox>
+      </div>
     </>
   );
 };
 
-export const PageBGPicker = (props: {
+export const PageBackgroundColorPicker = (props: {
+  disabled?: boolean;
+  label: string;
+  openPicker: pickers;
+  thisPicker: pickers;
+  setOpenPicker: (thisPicker: pickers) => void;
+  setValue: (c: Color) => void;
+  value: Color;
+  alpha?: boolean;
+}) => {
+  return (
+    <ColorPicker
+      disabled={props.disabled}
+      label={props.label}
+      value={props.value}
+      setValue={props.setValue}
+      thisPicker={"page"}
+      openPicker={props.openPicker}
+      setOpenPicker={props.setOpenPicker}
+      closePicker={() => props.setOpenPicker("null")}
+      alpha={props.alpha}
+    />
+  );
+};
+
+export const PageBackgroundImagePicker = (props: {
   disabled?: boolean;
   entityID: string;
   openPicker: pickers;
@@ -151,6 +152,10 @@ export const PageBGPicker = (props: {
   setValue: (c: Color) => void;
 }) => {
   let bgImage = useEntity(props.entityID, "theme/card-background-image");
+  let bgRepeat = useEntity(
+    props.entityID,
+    "theme/card-background-image-repeat",
+  );
   let bgColor = useColorAttribute(props.entityID, "theme/card-background");
   let bgAlpha =
     useEntity(props.entityID, "theme/card-background-image-opacity")?.data
@@ -173,7 +178,7 @@ export const PageBGPicker = (props: {
               props.setOpenPicker(props.thisPicker);
             }
           }}
-          className="flex gap-2 items-center disabled:text-tertiary"
+          className="flex gap-2 items-center disabled:text-[#969696]"
         >
           <ColorSwatch
             color={bgColor}
@@ -187,10 +192,11 @@ export const PageBGPicker = (props: {
             }}
           />
           <strong
-            className={`${props.disabled ? "text-tertiary" : "text-primary "}`}
+            className={`${props.disabled ? "text-[#969696]" : " text-[#272727] "}`}
           >
-            BG Image
+            Page
           </strong>
+          <div className="">Image</div>
         </button>
 
         <SpectrumColorPicker
@@ -204,7 +210,7 @@ export const PageBGPicker = (props: {
             });
           }}
         >
-          <Separator classname="h-5 my-1" />
+          <Separator classname="!h-4 my-1 !border-[#C3C3C3]" />
           <ColorField className="w-fit pl-[6px]" channel="alpha">
             <Input
               disabled={props.disabled}
@@ -220,10 +226,30 @@ export const PageBGPicker = (props: {
                   e.currentTarget.blur();
                 } else return;
               }}
-              className={`w-[48px] bg-transparent outline-none disabled:text-tertiary`}
+              className={`w-[48px] bg-transparent outline-none disabled:text-[#969696]`}
             />
           </ColorField>
         </SpectrumColorPicker>
+        <div className="flex gap-1 justify-end grow  text-[#969696]">
+          <button
+            onClick={() => {
+              if (bgImage) rep?.mutate.retractFact({ factID: bgImage.id });
+              if (bgRepeat) rep?.mutate.retractFact({ factID: bgRepeat.id });
+            }}
+          >
+            <DeleteSmall />
+          </button>
+          <label>
+            <BlockImageSmall />
+            <div className="hidden">
+              <ImageInput
+                entityID={props.entityID}
+                onChange={() => props.setOpenPicker("page-background-image")}
+                card
+              />
+            </div>
+          </label>
+        </div>
       </div>
       {open && (
         <div className="pageImagePicker flex flex-col gap-2">
@@ -232,33 +258,35 @@ export const PageBGPicker = (props: {
             card
             setValue={props.setValue}
           />
-
-          <SpectrumColorPicker
-            value={alphaColor}
-            onChange={(c) => {
-              let alpha = c.getChannelValue("alpha");
-              rep?.mutate.assertFact({
-                entity: props.entityID,
-                attribute: "theme/card-background-image-opacity",
-                data: { type: "number", value: alpha },
-              });
-            }}
-          >
-            <ColorSlider
-              colorSpace="hsb"
-              className="w-full mt-1 rounded-full"
-              style={{
-                backgroundImage: `url(./transparent-bg.png)`,
-                backgroundRepeat: "repeat",
-                backgroundSize: "8px",
+          <div className="flex flex-col gap-2 pr-2 pl-8 -mt-2 mb-2">
+            <hr className="border-[#DBDBDB]" />
+            <SpectrumColorPicker
+              value={alphaColor}
+              onChange={(c) => {
+                let alpha = c.getChannelValue("alpha");
+                rep?.mutate.assertFact({
+                  entity: props.entityID,
+                  attribute: "theme/card-background-image-opacity",
+                  data: { type: "number", value: alpha },
+                });
               }}
-              channel="alpha"
             >
-              <SliderTrack className="h-2 w-full rounded-md">
-                <ColorThumb className={`${thumbStyle} mt-[4px]`} />
-              </SliderTrack>
-            </ColorSlider>
-          </SpectrumColorPicker>
+              <ColorSlider
+                colorSpace="hsb"
+                className="w-full mt-1 rounded-full"
+                style={{
+                  backgroundImage: `url(/transparent-bg.png)`,
+                  backgroundRepeat: "repeat",
+                  backgroundSize: "8px",
+                }}
+                channel="alpha"
+              >
+                <SliderTrack className="h-2 w-full rounded-md">
+                  <ColorThumb className={`${thumbStyle} mt-[4px]`} />
+                </SliderTrack>
+              </ColorSlider>
+            </SpectrumColorPicker>
+          </div>
         </div>
       )}
     </>
@@ -313,5 +341,77 @@ const CanvasBGPatternPicker = (props: {
         <CanvasBackgroundPattern pattern="plain" />
       </button>
     </div>
+  );
+};
+
+export const PageTextPicker = (props: {
+  openPicker: pickers;
+  setOpenPicker: (thisPicker: pickers) => void;
+  value: Color;
+  setValue: (c: Color) => void;
+}) => {
+  return (
+    <ColorPicker
+      label="Text"
+      value={props.value}
+      setValue={props.setValue}
+      thisPicker={"text"}
+      openPicker={props.openPicker}
+      setOpenPicker={props.setOpenPicker}
+      closePicker={() => props.setOpenPicker("null")}
+    />
+  );
+};
+
+export const PageBorderHider = (props: {
+  entityID: string;
+  setOpenPicker: (p: pickers) => void;
+  openPicker: pickers;
+}) => {
+  let { rep, rootEntity } = useReplicache();
+  let rootPageBorderHidden = useEntity(rootEntity, "theme/card-border-hidden");
+  let entityPageBorderHidden = useEntity(
+    props.entityID,
+    "theme/card-border-hidden",
+  );
+  let pageBorderHidden =
+    (entityPageBorderHidden || rootPageBorderHidden)?.data.value || false;
+
+  function handleToggle() {
+    rep?.mutate.assertFact({
+      entity: props.entityID,
+      attribute: "theme/card-border-hidden",
+      data: { type: "boolean", value: !pageBorderHidden },
+    });
+
+    (pageBorderHidden && props.openPicker === "page") ||
+      (props.openPicker === "page-background-image" &&
+        props.setOpenPicker("null"));
+  }
+
+  return (
+    <>
+      <div className="flex gap-2 items-center">
+        <Toggle
+          toggleOn={!pageBorderHidden}
+          setToggleOn={() => {
+            handleToggle();
+          }}
+          disabledColor1="#8C8C8C"
+          disabledColor2="#DBDBDB"
+        />
+        <button
+          className="flex gap-2 items-center"
+          onClick={() => {
+            handleToggle();
+          }}
+        >
+          <div className="font-bold">Page Background</div>
+          <div className="italic text-[#8C8C8C]">
+            {pageBorderHidden ? "hidden" : ""}
+          </div>
+        </button>
+      </div>
+    </>
   );
 };

@@ -12,11 +12,11 @@ import { elementId } from "src/utils/elementId";
 import { createContext, useContext, useEffect, useState } from "react";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { Popover } from "components/Popover";
-import { ImageAltSmall } from "components/Toolbar/ImageToolbar";
 import { theme } from "tailwind.config";
 import { EditTiny } from "components/Icons/EditTiny";
 import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { set } from "colorjs.io/fn";
+import { ImageAltSmall } from "components/Icons/ImageAlt";
 
 export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let { rep } = useReplicache();
@@ -177,10 +177,20 @@ const ImageAlt = (props: { entityID: string }) => {
     <div className="absolute bottom-0 right-2 h-max">
       <Popover
         open={altEditorOpen}
-        onOpenChange={(o) => setAltEditorOpen(o ? props.entityID : null)}
         className="text-sm max-w-xs  min-w-0"
         side="left"
-        trigger={<ImageAltSmall fillColor={theme.colors["bg-page"]} />}
+        asChild
+        trigger={
+          <button
+            onClick={() =>
+              setAltEditorOpen(altEditorOpen ? null : props.entityID)
+            }
+          >
+            <ImageAltSmall
+              fillColor={theme.colors["bg-page"]}
+            />
+          </button>
+        }
       >
         {entity_set.permissions.write ? (
           <AsyncValueAutosizeTextarea

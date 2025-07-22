@@ -10,7 +10,7 @@ import {
 import { NextRequest, NextResponse } from "next/server";
 import { createElement } from "react";
 import { supabaseServerClient } from "supabase/serverClient";
-import { PostContent } from "../[rkey]/PostContent";
+import { StaticPostContent } from "../[rkey]/StaticPostContent";
 
 export async function GET(
   req: Request,
@@ -64,7 +64,7 @@ export async function GET(
       id: `https://${pubRecord.base_path}/${rkey}`,
       link: `https://${pubRecord.base_path}/${rkey}`,
       content: renderToStaticMarkup(
-        createElement(PostContent, { blocks, did: uri.host }),
+        createElement(StaticPostContent, { blocks, did: uri.host }),
       ),
     });
   });
