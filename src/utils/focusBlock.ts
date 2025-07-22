@@ -6,51 +6,55 @@ import { elementId } from "src/utils/elementId";
 import { useEditorStates } from "src/state/useEditorState";
 import { scrollIntoViewIfNeeded } from "./scrollIntoViewIfNeeded";
 import { getPosAtCoordinates } from "./getCoordinatesInTextarea";
+import { flushSync } from "react-dom";
 
 export function focusBlock(
   block: Pick<Block, "type" | "value" | "parent">,
   position: Position,
 ) {
   // focus the block
-  useUIState.getState().setSelectedBlock(block);
-  useUIState.getState().setFocusedBlock({
-    entityType: "block",
-    entityID: block.value,
-    parent: block.parent,
+  flushSync(() => {
+    useUIState.getState().setSelectedBlock(block);
+    useUIState.getState().setFocusedBlock({
+      entityType: "block",
+      entityID: block.value,
+      parent: block.parent,
+    });
   });
   scrollIntoViewIfNeeded(
     document.getElementById(elementId.block(block.value).container),
     false,
   );
   if (block.type === "math" || block.type === "code") {
-    setTimeout(() => {
-      //Change the constants here based on padding!
-      if (position.type === "top") {
-        let top =
-          document
-            .getElementById(elementId.block(block.value).container)
-            ?.getBoundingClientRect().top || 0;
-        let pos = getPosAtCoordinates(position.left + 2, top + 16);
-        if (pos.offset) {
-          let el = pos.textNode as HTMLTextAreaElement;
-          el.focus();
-          el?.setSelectionRange(pos.offset, pos.offset);
-        }
-      }
-      if (position.type === "bottom") {
-        let bottom =
-          document
-            .getElementById(elementId.block(block.value).container)
-            ?.getBoundingClientRect().bottom || 0;
+    //Change the constants here based on padding!
+    if (position.type === "top") {
+      let top =
+        document
+          .getElementById(elementId.block(block.value).container)
+          ?.getBoundingClientRect().top || 0;
+      let pos = getPosAtCoordinates(
+        position.left + 2,
+        top + (block.type === "code" ? 48 : 32),
+      );
 
-        let pos = getPosAtCoordinates(position.left + 2, bottom - 16);
-        if (pos.offset) {
-          let el = pos.textNode as HTMLTextAreaElement;
-          el.focus();
-          el?.setSelectionRange(pos.offset, pos.offset);
-        }
+      if (pos.offset) {
+        let el = pos.textNode as HTMLTextAreaElement;
+        el.focus();
+        el?.setSelectionRange(pos.offset, pos.offset);
       }
-    }, 10);
+    }
+    if (position.type === "bottom") {
+      let bottom =
+        document
+          .getElementById(elementId.block(block.value).container)
+          ?.getBoundingClientRect().bottom || 0;
+
+      let pos = getPosAtCoordinates(position.left + 2, bottom - 32);
+      if (pos.offset) {
+        let el = pos.textNode as HTMLTextAreaElement;
+        el?.setSelectionRange?.(pos.offset, pos.offset);
+      }
+    }
   }
 
   // if its not a text block, that's all we need to do

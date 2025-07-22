@@ -32,6 +32,7 @@ export function useBlockMouseHandlers(props: Block) {
         e.preventDefault();
         useUIState.getState().addBlockToSelection(props);
       } else {
+        if (e.isDefaultPrevented()) return;
         useUIState.getState().setFocusedBlock({
           entityType: "block",
           entityID: props.value,

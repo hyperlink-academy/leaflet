@@ -11,7 +11,7 @@
   content: attr(data-replicated-value) " ";
 
   /* This is how textarea text behaves */
-  white-space: pre-wrap;
+  white-space: pre;
 
   /* Hidden from view, clicks, and screen readers */
   visibility: hidden;

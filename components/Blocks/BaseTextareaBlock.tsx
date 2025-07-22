@@ -11,9 +11,10 @@ export function BaseTextareaBlock(
     block: Pick<BlockProps, "previousBlock" | "nextBlock">;
   },
 ) {
+  let { block, ...passDownProps } = props;
   return (
     <AsyncValueAutosizeTextarea
-      {...props}
+      {...passDownProps}
       onKeyDown={(e) => {
         if (e.key === "ArrowUp") {
           let selection = e.currentTarget.selectionStart;

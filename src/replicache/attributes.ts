@@ -243,6 +243,10 @@ export const ThemeAttributes = {
     type: "color",
     cardinality: "one",
   },
+  "theme/code-theme": {
+    type: "string",
+    cardinality: "one",
+  },
 } as const;
 
 export const Attributes = {

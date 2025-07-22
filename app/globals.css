@@ -157,6 +157,10 @@ input[type="number"] {
   );
 }
 
+pre.shiki code {
+  display: block;
+}
+
 pre.shiki {
   @apply p-2;
   @apply rounded-md;
