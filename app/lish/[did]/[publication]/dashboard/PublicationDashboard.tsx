@@ -19,6 +19,7 @@ export function PublicationDashboard<T extends Tabs>(props: {
     ?.theme?.showPageBackground;
   let [tab, setTab] = useState(props.defaultTab);
   let content = props.tabs[tab];
+  let subscribers = pub?.publication_subscriptions.length;
 
   return (
     <>
@@ -48,6 +49,7 @@ export function PublicationDashboard<T extends Tabs>(props: {
             <Tab
               key={t}
               name={t}
+              subscribers={subscribers}
               selected={t === tab}
               onSelect={() => setTab(t)}
               showPageBackground={showPageBackground}
@@ -67,6 +69,7 @@ export function PublicationDashboard<T extends Tabs>(props: {
 function Tab(props: {
   name: string;
   selected: boolean;
+  subscribers: number | undefined;
   showPageBackground: boolean;
   onSelect: () => void;
 }) {
@@ -75,7 +78,9 @@ function Tab(props: {
       className={`pubTabs border  border-b-0 px-2 pt-1 pb-0.5 rounded-t-md border-border hover:cursor-pointer ${props.selected ? "text-accent-1 font-bold -mb-[1px]" : ""} ${props.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))]" : ""}`}
       onClick={() => props.onSelect()}
     >
-      {props.name}
+      {props.name === "Subscribers"
+        ? `${props.subscribers ? props.subscribers : ""} Subscriber${props.subscribers === 1 ? "" : "s"}`
+        : props.name}
     </div>
   );
 }
