@@ -10,6 +10,8 @@ export const useLongPress = (cb: () => void, cancel?: boolean) => {
 
   let onPointerDown = useCallback(
     (e: React.MouseEvent) => {
+      let el = e.target as HTMLElement;
+      if (el.tagName === "SELECT") return;
       if (e.button === 2) {
         return;
       }

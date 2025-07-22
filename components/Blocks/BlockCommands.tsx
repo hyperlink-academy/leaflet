@@ -292,6 +292,15 @@ export const blockCommands: Command[] = [
       createBlockWithType(rep, props, "math");
     },
   },
+  {
+    name: "code",
+    icon: "ICON",
+    type: "block",
+    hiddenInPublication: false,
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "code");
+    },
+  },
 
   // EVENT STUFF
 

@@ -23,7 +23,7 @@ export function focusBlock(
     document.getElementById(elementId.block(block.value).container),
     false,
   );
-  if (block.type === "math") {
+  if (block.type === "math" || block.type === "code") {
     setTimeout(() => {
       //Change the constants here based on padding!
       if (position.type === "top") {
@@ -31,7 +31,7 @@ export function focusBlock(
           document
             .getElementById(elementId.block(block.value).container)
             ?.getBoundingClientRect().top || 0;
-        let pos = getPosAtCoordinates(position.left, top + 32);
+        let pos = getPosAtCoordinates(position.left + 2, top + 16);
         if (pos.offset) {
           let el = pos.textNode as HTMLTextAreaElement;
           el.focus();
@@ -44,7 +44,11 @@ export function focusBlock(
             .getElementById(elementId.block(block.value).container)
             ?.getBoundingClientRect().bottom || 0;
 
-        let pos = getPosAtCoordinates(position.left, bottom - 32);
+        useCoordState.setState({
+          x: position.left,
+          y: bottom - 16,
+        });
+        let pos = getPosAtCoordinates(position.left + 2, bottom - 16);
         if (pos.offset) {
           let el = pos.textNode as HTMLTextAreaElement;
           el.focus();
