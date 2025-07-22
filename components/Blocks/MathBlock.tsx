@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import { useUIState } from "src/useUIState";
 import { focusBlock } from "src/utils/focusBlock";
 import { getCoordinatesInTextarea } from "src/utils/getCoordinatesInTextarea";
+import { theme } from "tailwind.config";
 export function MathBlock(props: BlockProps) {
   let content = useEntity(props.entityID, "block/math");
   let focusedBlock = useUIState(
@@ -18,6 +19,10 @@ export function MathBlock(props: BlockProps) {
       const html = Katex.renderToString(content?.data.value || "", {
         displayMode: true,
         throwOnError: false,
+        errorColor: theme.colors["accent-contrast"],
+        macros: {
+          "\\f": "#1f(#2)",
+        },
       });
 
       return { html, error: undefined };
@@ -34,7 +39,8 @@ export function MathBlock(props: BlockProps) {
       {focusedBlock ? (
         <AsyncValueAutosizeTextarea
           autoFocus
-          className="border border-border rounded-md p-2 w-full whitespace-nowrap !overflow-auto"
+          className="bg-border-light rounded-md p-2 w-full min-h-[48px] whitespace-nowrap !overflow-auto"
+          placeholder="write some LaTex here..."
           value={content?.data.value}
           onKeyDown={(e) => {
             if (e.key === "ArrowUp") {
@@ -88,9 +94,14 @@ export function MathBlock(props: BlockProps) {
           }}
         />
       ) : html && content?.data.value ? (
-        <div className="text-lg" dangerouslySetInnerHTML={{ __html: html }} />
+        <div
+          className="text-lg min-h-[46px]"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
       ) : (
-        <div className="text-lg">Write LaTex here</div>
+        <div className="text-tertiary italic rounded-md p-2 w-full min-h-16">
+          write some LaTex here...
+        </div>
       )}
     </div>
   );
