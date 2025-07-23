@@ -1,0 +1,23 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.blocks.code",
+  "defs": {
+    "main": {
+      "type": "object",
+      "required": [
+        "plaintext"
+      ],
+      "properties": {
+        "plaintext": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        },
+        "syntaxHighlightingTheme": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

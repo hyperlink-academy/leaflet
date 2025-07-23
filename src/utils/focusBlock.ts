@@ -5,22 +5,55 @@ import { elementId } from "src/utils/elementId";
 
 import { useEditorStates } from "src/state/useEditorState";
 import { scrollIntoViewIfNeeded } from "./scrollIntoViewIfNeeded";
+import { getPosAtCoordinates } from "./getCoordinatesInTextarea";
+import { flushSync } from "react-dom";
 
 export function focusBlock(
   block: Pick<Block, "type" | "value" | "parent">,
   position: Position,
 ) {
   // focus the block
-  useUIState.getState().setSelectedBlock(block);
-  useUIState.getState().setFocusedBlock({
-    entityType: "block",
-    entityID: block.value,
-    parent: block.parent,
+  flushSync(() => {
+    useUIState.getState().setSelectedBlock(block);
+    useUIState.getState().setFocusedBlock({
+      entityType: "block",
+      entityID: block.value,
+      parent: block.parent,
+    });
   });
   scrollIntoViewIfNeeded(
     document.getElementById(elementId.block(block.value).container),
     false,
   );
+  if (block.type === "math" || block.type === "code") {
+    let el = document.getElementById(
+      elementId.block(block.value).input,
+    ) as HTMLTextAreaElement;
+    let pos;
+    if (position.type === "start") {
+      pos = { offset: 0 };
+    }
+
+    if (position.type === "end") {
+      pos = { offset: el.textContent?.length || 0 };
+    }
+    if (position.type === "top" || position.type === "bottom") {
+      let inputRect = el?.getBoundingClientRect();
+      let left = Math.max(position.left, inputRect?.left || 0);
+      let top =
+        position.type === "top"
+          ? (inputRect?.top || 0) + 10
+          : (inputRect?.bottom || 0) - 10;
+      pos = getPosAtCoordinates(left, top);
+    }
+
+    if (pos?.offset !== undefined) {
+      el?.focus();
+      requestAnimationFrame(() => {
+        el?.setSelectionRange(pos.offset, pos.offset);
+      });
+    }
+  }
 
   // if its not a text block, that's all we need to do
   if (block.type !== "text" && block.type !== "heading") {
@@ -44,10 +77,12 @@ export function focusBlock(
       break;
     }
     case "top": {
+      console.log(position.left);
       pos = nextBlock.view.posAtCoords({
         top: nextBlockViewClientRect.top + 12,
         left: position.left,
       });
+      console.log(pos);
       break;
     }
     case "bottom": {

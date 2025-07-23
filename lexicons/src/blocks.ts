@@ -18,6 +18,35 @@ export const PubLeafletBlocksText: LexiconDoc = {
     },
   },
 };
+export const PubLeafletBlocksCode: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.code",
+  defs: {
+    main: {
+      type: "object",
+      required: ["plaintext"],
+      properties: {
+        plaintext: { type: "string" },
+        language: { type: "string" },
+        syntaxHighlightingTheme: { type: "string" },
+      },
+    },
+  },
+};
+
+export const PubLeafletBlocksMath: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.math",
+  defs: {
+    main: {
+      type: "object",
+      required: ["tex"],
+      properties: {
+        tex: { type: "string" },
+      },
+    },
+  },
+};
 
 export const PubLeafletBlocksWebsite: LexiconDoc = {
   lexicon: 1,
@@ -119,6 +148,8 @@ export const BlockLexicons = [
   PubLeafletBlocksImage,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
+  PubLeafletBlocksMath,
+  PubLeafletBlocksCode,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",

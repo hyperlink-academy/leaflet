@@ -208,6 +208,10 @@ const createBlockFromHTML = (
       type = "text";
       break;
     }
+    case "PRE": {
+      type = "code";
+      break;
+    }
     case "P": {
       type = "text";
       break;
@@ -312,6 +316,35 @@ const createBlockFromHTML = (
       }
     }
   }
+  if (child.tagName === "PRE") {
+    let lang = child.getAttribute("data-language") || "plaintext";
+    if (child.firstElementChild && child.firstElementChild.className) {
+      let className = child.firstElementChild.className;
+      let match = className.match(/language-(\w+)/);
+      if (match) {
+        lang = match[1];
+      }
+    }
+    if (child.textContent) {
+      rep.mutate.assertFact([
+        {
+          entity: entityID,
+          attribute: "block/type",
+          data: { type: "block-type-union", value: "code" },
+        },
+        {
+          entity: entityID,
+          attribute: "block/code-language",
+          data: { type: "string", value: lang },
+        },
+        {
+          entity: entityID,
+          attribute: "block/code",
+          data: { type: "string", value: child.textContent },
+        },
+      ]);
+    }
+  }
   if (child.tagName === "IMG") {
     let src = child.getAttribute("src");
     if (src) {
@@ -325,6 +358,21 @@ const createBlockFromHTML = (
           });
         });
     }
+  }
+  if (child.tagName === "DIV" && child.getAttribute("data-tex")) {
+    let tex = child.getAttribute("data-tex");
+    rep.mutate.assertFact([
+      {
+        entity: entityID,
+        attribute: "block/type",
+        data: { type: "block-type-union", value: "math" },
+      },
+      {
+        entity: entityID,
+        attribute: "block/math",
+        data: { type: "string", value: tex || "" },
+      },
+    ]);
   }
 
   if (child.tagName === "DIV" && child.getAttribute("data-entityid")) {
@@ -503,6 +551,7 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
       if (
         [
           "P",
+          "PRE",
           "H1",
           "H2",
           "H3",
@@ -515,7 +564,8 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
           "A",
           "SPAN",
         ].includes(elementNode.tagName) ||
-        elementNode.getAttribute("data-entityid")
+        elementNode.getAttribute("data-entityid") ||
+        elementNode.getAttribute("data-tex")
       ) {
         htmlBlocks.push(elementNode);
       } else {
