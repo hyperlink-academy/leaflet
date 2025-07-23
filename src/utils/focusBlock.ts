@@ -26,34 +26,28 @@ export function focusBlock(
     false,
   );
   if (block.type === "math" || block.type === "code") {
-    //Change the constants here based on padding!
-    if (position.type === "top") {
-      let top =
-        document
-          .getElementById(elementId.block(block.value).container)
-          ?.getBoundingClientRect().top || 0;
-      let pos = getPosAtCoordinates(
-        position.left + 2,
-        top + (block.type === "code" ? 48 : 32),
-      );
-
-      if (pos.offset) {
-        let el = pos.textNode as HTMLTextAreaElement;
-        el.focus();
-        el?.setSelectionRange(pos.offset, pos.offset);
-      }
+    let el = document.getElementById(
+      elementId.block(block.value).input,
+    ) as HTMLTextAreaElement;
+    let pos;
+    if (position.type === "start") {
+      pos = { offset: 0 };
     }
-    if (position.type === "bottom") {
-      let bottom =
-        document
-          .getElementById(elementId.block(block.value).container)
-          ?.getBoundingClientRect().bottom || 0;
+    if (position.type === "top" || position.type === "bottom") {
+      let inputRect = el?.getBoundingClientRect();
+      let left = Math.max(position.left, inputRect?.left || 0);
+      let top =
+        position.type === "top"
+          ? (inputRect?.top || 0) + 10
+          : (inputRect?.bottom || 0) - 10;
+      pos = getPosAtCoordinates(left, top);
+    }
 
-      let pos = getPosAtCoordinates(position.left + 2, bottom - 32);
-      if (pos.offset) {
-        let el = pos.textNode as HTMLTextAreaElement;
-        el?.setSelectionRange?.(pos.offset, pos.offset);
-      }
+    if (pos?.offset !== undefined) {
+      el?.focus();
+      requestAnimationFrame(() => {
+        el?.setSelectionRange(pos.offset, pos.offset);
+      });
     }
   }
 
