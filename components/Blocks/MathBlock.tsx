@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { useUIState } from "src/useUIState";
 import { theme } from "tailwind.config";
 import { BaseTextareaBlock } from "./BaseTextareaBlock";
+import { elementId } from "src/utils/elementId";
 
 export function MathBlock(props: BlockProps) {
   let content = useEntity(props.entityID, "block/math");
@@ -35,6 +36,7 @@ export function MathBlock(props: BlockProps) {
   }, [content?.data.value]);
   return focusedBlock ? (
     <BaseTextareaBlock
+      id={elementId.block(props.entityID).input}
       block={props}
       className="bg-border-light rounded-md p-2 w-full min-h-[48px] whitespace-nowrap !overflow-auto border-border-light outline-border-light selected-outline"
       placeholder="write some LaTex here..."

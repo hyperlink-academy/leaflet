@@ -164,6 +164,7 @@ pre.shiki code {
 pre.shiki {
   @apply p-2;
   @apply rounded-md;
+  @apply overflow-auto;
 }
 
 .highlight {

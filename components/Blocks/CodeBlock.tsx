@@ -116,7 +116,7 @@ export function CodeBlock(props: BlockProps) {
           </select>
         </div>
       )}
-      <div className="w-full rounded-md border-border-light outline-border-light selected-outline">
+      <div className="w-full min-h-[42px] rounded-md border-border-light outline-border-light selected-outline">
         {focusedBlock && permissions.write ? (
           <BaseTextareaBlock
             data-editable-block
@@ -134,11 +134,11 @@ export function CodeBlock(props: BlockProps) {
               });
             }}
           />
-        ) : !html && content?.data.value ? (
+        ) : !html ? (
           <pre
             onClick={onClick}
             onMouseDown={(e) => e.stopPropagation()}
-            className="codeBlockRendered !overflow-auto font-mono p-2"
+            className="codeBlockRendered !overflow-auto font-mono p-2 w-full h-full"
           >
             {content?.data.value}
           </pre>
