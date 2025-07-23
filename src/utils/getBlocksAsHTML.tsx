@@ -7,6 +7,7 @@ import * as base64 from "base64-js";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Block } from "components/Blocks/Block";
 import { List, parseBlocksToList } from "./parseBlocksToList";
+import Katex from "katex";
 
 export async function getBlocksAsHTML(
   rep: Replicache<ReplicacheMutators>,
@@ -80,6 +81,24 @@ async function renderBlock(
     let [lang] = await scanIndex(tx).eav(b.value, "block/code-language");
     return renderToStaticMarkup(
       <pre data-lang={lang?.data.value}>{code?.data.value || ""}</pre>,
+    );
+  }
+  if (b.type === "math") {
+    let [math] = await scanIndex(tx).eav(b.value, "block/math");
+    const html = Katex.renderToString(math?.data.value || "", {
+      displayMode: true,
+      throwOnError: false,
+      macros: {
+        "\\f": "#1f(#2)",
+      },
+    });
+    return renderToStaticMarkup(
+      <div
+        data-type="math"
+        data-tex={math?.data.value}
+        data-alignment={alignment?.data.value}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />,
     );
   }
   if (b.type === "image") {

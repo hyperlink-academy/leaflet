@@ -208,6 +208,10 @@ const createBlockFromHTML = (
       type = "text";
       break;
     }
+    case "PRE": {
+      type = "code";
+      break;
+    }
     case "P": {
       type = "text";
       break;
@@ -347,6 +351,21 @@ const createBlockFromHTML = (
           });
         });
     }
+  }
+  if (child.tagName === "DIV" && child.getAttribute("data-tex")) {
+    let tex = child.getAttribute("data-tex");
+    rep.mutate.assertFact([
+      {
+        entity: entityID,
+        attribute: "block/type",
+        data: { type: "block-type-union", value: "math" },
+      },
+      {
+        entity: entityID,
+        attribute: "block/math",
+        data: { type: "string", value: tex || "" },
+      },
+    ]);
   }
 
   if (child.tagName === "DIV" && child.getAttribute("data-entityid")) {
@@ -538,7 +557,8 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
           "A",
           "SPAN",
         ].includes(elementNode.tagName) ||
-        elementNode.getAttribute("data-entityid")
+        elementNode.getAttribute("data-entityid") ||
+        elementNode.getAttribute("data-tex")
       ) {
         htmlBlocks.push(elementNode);
       } else {

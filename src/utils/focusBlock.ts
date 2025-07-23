@@ -33,6 +33,10 @@ export function focusBlock(
     if (position.type === "start") {
       pos = { offset: 0 };
     }
+
+    if (position.type === "end") {
+      pos = { offset: el.textContent?.length || 0 };
+    }
     if (position.type === "top" || position.type === "bottom") {
       let inputRect = el?.getBoundingClientRect();
       let left = Math.max(position.left, inputRect?.left || 0);
