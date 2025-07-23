@@ -18,11 +18,10 @@ export function CodeBlock(props: BlockProps) {
   let { rep, rootEntity } = useReplicache();
   let content = useEntity(props.entityID, "block/code");
   let lang =
-    useEntity(props.entityID, "block/code-language")?.data.value ||
-    "typescript";
+    useEntity(props.entityID, "block/code-language")?.data.value || "plaintext";
 
   let theme =
-    useEntity(rootEntity, "theme/code-theme")?.data.value || "solarized-light";
+    useEntity(rootEntity, "theme/code-theme")?.data.value || "github-light";
   let focusedBlock = useUIState(
     (s) => s.focusedEntity?.entityID === props.entityID,
   );
@@ -108,6 +107,7 @@ export function CodeBlock(props: BlockProps) {
               });
             }}
           >
+            <option value="plaintext">Plaintext</option>
             {bundledLanguagesInfo.map((l) => (
               <option key={l.id} value={l.id}>
                 {l.name}

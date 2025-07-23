@@ -20,9 +20,6 @@ export function MathBlock(props: BlockProps) {
         displayMode: true,
         throwOnError: false,
         errorColor: theme.colors["accent-contrast"],
-        macros: {
-          "\\f": "#1f(#2)",
-        },
       });
 
       return { html, error: undefined };
@@ -39,7 +36,7 @@ export function MathBlock(props: BlockProps) {
       id={elementId.block(props.entityID).input}
       block={props}
       className="bg-border-light rounded-md p-2 w-full min-h-[48px] whitespace-nowrap !overflow-auto border-border-light outline-border-light selected-outline"
-      placeholder="write some LaTex here..."
+      placeholder="write some Tex here..."
       value={content?.data.value}
       onChange={async (e) => {
         // Update the entity with the new value
@@ -57,7 +54,7 @@ export function MathBlock(props: BlockProps) {
     />
   ) : (
     <div className="text-tertiary italic rounded-md p-2 w-full min-h-16">
-      write some LaTex here...
+      write some Tex here...
     </div>
   );
 }

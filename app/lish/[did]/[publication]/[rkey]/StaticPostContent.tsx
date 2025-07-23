@@ -1,6 +1,8 @@
 import {
+  PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
+  PubLeafletBlocksMath,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
@@ -9,6 +11,8 @@ import {
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { TextBlock } from "./TextBlock";
+import { StaticMathBlock } from "./StaticMathBlock";
+import { codeToHtml } from "shiki";
 
 export function StaticPostContent({
   blocks,
@@ -26,7 +30,7 @@ export function StaticPostContent({
   );
 }
 
-let Block = ({
+let Block = async ({
   block,
   did,
   isList,
@@ -38,6 +42,21 @@ let Block = ({
   let b = block;
 
   switch (true) {
+    case PubLeafletBlocksMath.isMain(b.block): {
+      return <StaticMathBlock block={b.block} />;
+    }
+    case PubLeafletBlocksCode.isMain(b.block): {
+      let html = await codeToHtml(b.block.plaintext, {
+        lang: b.block.language || "plaintext",
+        theme: b.block.syntaxHighlightingTheme || "github-light",
+      });
+      return (
+        <div
+          className="w-full min-h-[42px] rounded-md border-border-light outline-border-light selected-outline"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      );
+    }
     case PubLeafletBlocksUnorderedList.isMain(b.block): {
       return (
         <ul>
