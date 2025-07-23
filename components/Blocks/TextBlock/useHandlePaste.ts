@@ -312,6 +312,28 @@ const createBlockFromHTML = (
       }
     }
   }
+  if (child.tagName === "PRE") {
+    let lang = child.getAttribute("data-language") || "plaintext";
+    if (child.textContent) {
+      rep.mutate.assertFact([
+        {
+          entity: entityID,
+          attribute: "block/type",
+          data: { type: "block-type-union", value: "code" },
+        },
+        {
+          entity: entityID,
+          attribute: "block/code-language",
+          data: { type: "string", value: lang },
+        },
+        {
+          entity: entityID,
+          attribute: "block/code",
+          data: { type: "string", value: child.textContent },
+        },
+      ]);
+    }
+  }
   if (child.tagName === "IMG") {
     let src = child.getAttribute("src");
     if (src) {
@@ -503,6 +525,7 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
       if (
         [
           "P",
+          "PRE",
           "H1",
           "H2",
           "H3",
