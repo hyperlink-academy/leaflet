@@ -66,6 +66,7 @@ export const PageBackgroundPicker = (props: {
   setValue: (c: Color) => void;
   openPicker: pickers;
   setOpenPicker: (p: pickers) => void;
+  home?: boolean;
 }) => {
   let pageValue = useColorAttribute(props.entityID, "theme/card-background");
   let pageBGImage = useEntity(props.entityID, "theme/card-background-image");
@@ -82,12 +83,12 @@ export const PageBackgroundPicker = (props: {
           setOpenPicker={props.setOpenPicker}
           closePicker={() => props.setOpenPicker("null")}
           setValue={props.setValue}
+          home={props.home}
         />
       )}
       <div className="relative">
         <PageBackgroundColorPicker
-          disabled={pageBorderHidden?.data.value && !pageBGImage}
-          label={pageBGImage && pageBGImage !== null ? "Menus" : "Page"}
+          label={pageBorderHidden?.data.value ? "Menus" : "Page"}
           value={pageValue}
           setValue={props.setValue}
           thisPicker={"page"}
@@ -95,7 +96,8 @@ export const PageBackgroundPicker = (props: {
           setOpenPicker={props.setOpenPicker}
           alpha
         />
-        {(pageBGImage === null || !pageBGImage) && (
+        {(pageBGImage === null ||
+          (!pageBGImage && !pageBorderHidden?.data.value && !props.home)) && (
           <label
             className={`
                hover:cursor-pointer  text-[#969696] shrink-0
@@ -150,6 +152,7 @@ export const PageBackgroundImagePicker = (props: {
   setOpenPicker: (thisPicker: pickers) => void;
   closePicker: () => void;
   setValue: (c: Color) => void;
+  home?: boolean;
 }) => {
   let bgImage = useEntity(props.entityID, "theme/card-background-image");
   let bgRepeat = useEntity(

@@ -1,4 +1,6 @@
 import {
+  PubLeafletBlocksMath,
+  PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
   PubLeafletBlocksText,
@@ -12,6 +14,9 @@ import { TextBlock } from "./TextBlock";
 import { Popover } from "components/Popover";
 import { theme } from "tailwind.config";
 import { ImageAltSmall } from "components/Icons/ImageAlt";
+import { codeToHtml } from "shiki";
+import Katex from "katex";
+import { StaticMathBlock } from "./StaticMathBlock";
 
 export function PostContent({
   blocks,
@@ -39,7 +44,7 @@ export function PostContent({
   );
 }
 
-let Block = ({
+let Block = async ({
   block,
   did,
   isList,
@@ -89,6 +94,21 @@ let Block = ({
             />
           ))}
         </ul>
+      );
+    }
+    case PubLeafletBlocksMath.isMain(b.block): {
+      return <StaticMathBlock block={b.block} />;
+    }
+    case PubLeafletBlocksCode.isMain(b.block): {
+      let html = await codeToHtml(b.block.plaintext, {
+        lang: b.block.language || "plaintext",
+        theme: b.block.syntaxHighlightingTheme || "github-light",
+      });
+      return (
+        <div
+          className="w-full min-h-[42px] rounded-md border-border-light outline-border-light selected-outline"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
       );
     }
     case PubLeafletBlocksWebsite.isMain(b.block): {

@@ -96,6 +96,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                   setValue={set("theme/card-background")}
                   openPicker={openPicker}
                   setOpenPicker={setOpenPicker}
+                  home={props.home}
                 />
                 <hr className=" border-[#CCCCCC]" />
                 <PageBorderHider

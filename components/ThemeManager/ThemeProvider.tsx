@@ -88,6 +88,10 @@ export function LeafletThemeProvider(props: {
 }) {
   let bgLeaflet = useColorAttribute(props.entityID, "theme/page-background");
   let bgPage = useColorAttribute(props.entityID, "theme/card-background");
+  let showPageBackground = !useEntity(
+    props.entityID,
+    "theme/card-border-hidden",
+  )?.data.value;
   let primary = useColorAttribute(props.entityID, "theme/primary");
 
   let highlight1 = useEntity(props.entityID, "theme/highlight-1");
@@ -99,8 +103,14 @@ export function LeafletThemeProvider(props: {
   // set accent contrast to the accent color that has the highest contrast with the page background
   let accentContrast = [accent1, accent2].sort((a, b) => {
     return (
-      getColorContrast(colorToString(b, "rgb"), colorToString(bgPage, "rgb")) -
-      getColorContrast(colorToString(a, "rgb"), colorToString(bgPage, "rgb"))
+      getColorContrast(
+        colorToString(b, "rgb"),
+        colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
+      ) -
+      getColorContrast(
+        colorToString(a, "rgb"),
+        colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
+      )
     );
   })[0];
 

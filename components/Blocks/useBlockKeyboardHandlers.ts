@@ -53,6 +53,7 @@ export function useBlockKeyboardHandlers(
         (el.tagName === "LABEL" ||
           el.tagName === "INPUT" ||
           el.tagName === "TEXTAREA" ||
+          el.tagName === "SELECT" ||
           el.contentEditable === "true") &&
         !isTextBlock[props.type]
       ) {

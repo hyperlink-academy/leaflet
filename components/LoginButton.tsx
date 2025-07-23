@@ -18,7 +18,7 @@ export function LoginButton() {
         </ButtonPrimary>
       }
     >
-      <LoginForm />
+      <LoginForm text="Save your Leaflets and access them on multiple devices!" />
     </Popover>
   );
 }
@@ -33,7 +33,7 @@ export function LoginActionButton() {
         <ActionButton secondary icon={<AccountSmall />} label="Sign In" />
       }
     >
-      <LoginForm />
+      <LoginForm text="Save your Leaflets and access them on multiple devices!" />
     </Popover>
   );
 }

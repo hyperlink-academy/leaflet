@@ -18,8 +18,8 @@ export async function GET(
     params: Promise<{ publication: string; did: string }>;
   },
 ) {
-  let renderToStaticMarkup = await import("react-dom/server").then(
-    (module) => module.renderToStaticMarkup,
+  let renderToReadableStream = await import("react-dom/server").then(
+    (module) => module.renderToReadableStream,
   );
   let params = await props.params;
   let { result: publication } = await get_publication_data.handler(
@@ -46,28 +46,42 @@ export async function GET(
     },
   });
 
-  publication?.documents_in_publications.forEach((doc) => {
-    if (!doc.documents) return;
-    let record = doc.documents?.data as PubLeafletDocument.Record;
-    let uri = new AtUri(doc.documents?.uri);
-    let rkey = uri.rkey;
-    if (!record) return;
-    let firstPage = record.pages[0];
-    let blocks: PubLeafletPagesLinearDocument.Block[] = [];
-    if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
-      blocks = firstPage.blocks || [];
-    }
-    feed.addItem({
-      title: record.title,
-      description: record.description,
-      date: record.publishedAt ? new Date(record.publishedAt) : new Date(),
-      id: `https://${pubRecord.base_path}/${rkey}`,
-      link: `https://${pubRecord.base_path}/${rkey}`,
-      content: renderToStaticMarkup(
+  await Promise.all(
+    publication?.documents_in_publications.map(async (doc) => {
+      if (!doc.documents) return;
+      let record = doc.documents?.data as PubLeafletDocument.Record;
+      let uri = new AtUri(doc.documents?.uri);
+      let rkey = uri.rkey;
+      if (!record) return;
+      let firstPage = record.pages[0];
+      let blocks: PubLeafletPagesLinearDocument.Block[] = [];
+      if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
+        blocks = firstPage.blocks || [];
+      }
+      let stream = await renderToReadableStream(
         createElement(StaticPostContent, { blocks, did: uri.host }),
-      ),
-    });
-  });
+      );
+      const reader = stream.getReader();
+      const chunks = [];
+
+      let done, value;
+      while (!done) {
+        ({ done, value } = await reader.read());
+        if (value) {
+          chunks.push(new TextDecoder().decode(value));
+        }
+      }
+
+      feed.addItem({
+        title: record.title,
+        description: record.description,
+        date: record.publishedAt ? new Date(record.publishedAt) : new Date(),
+        id: `https://${pubRecord.base_path}/${rkey}`,
+        link: `https://${pubRecord.base_path}/${rkey}`,
+        content: chunks.join(""),
+      });
+    }),
+  );
   return new Response(feed.rss2(), {
     headers: {
       "Content-Type": "text/xml",

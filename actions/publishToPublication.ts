@@ -14,6 +14,8 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletRichtextFacet,
   PubLeafletBlocksWebsite,
+  PubLeafletBlocksCode,
+  PubLeafletBlocksMath,
 } from "lexicons/api";
 import { Block } from "components/Blocks/Block";
 import { TID } from "@atproto/common";
@@ -95,6 +97,7 @@ export async function publishToPublication({
     blocks,
     imageMap,
     scan,
+    root_entity,
   );
 
   let existingRecord =
@@ -149,6 +152,7 @@ function blocksToRecord(
   blocks: Block[],
   imageMap: Map<string, BlobRef>,
   scan: ReturnType<typeof scanIndexLocal>,
+  root_entity: string,
 ): PubLeafletPagesLinearDocument.Block[] {
   let parsedBlocks = parseBlocksToList(blocks);
   return parsedBlocks.flatMap((blockOrList) => {
@@ -162,7 +166,7 @@ function blocksToRecord(
           : alignmentValue === "right"
             ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
             : undefined;
-      let b = blockToRecord(blockOrList.block, imageMap, scan);
+      let b = blockToRecord(blockOrList.block, imageMap, scan, root_entity);
       if (!b) return [];
       let block: PubLeafletPagesLinearDocument.Block = {
         $type: "pub.leaflet.pages.linearDocument#block",
@@ -175,7 +179,12 @@ function blocksToRecord(
         $type: "pub.leaflet.pages.linearDocument#block",
         block: {
           $type: "pub.leaflet.blocks.unorderedList",
-          children: childrenToRecord(blockOrList.children, imageMap, scan),
+          children: childrenToRecord(
+            blockOrList.children,
+            imageMap,
+            scan,
+            root_entity,
+          ),
         },
       };
       return [block];
@@ -187,14 +196,15 @@ function childrenToRecord(
   children: List[],
   imageMap: Map<string, BlobRef>,
   scan: ReturnType<typeof scanIndexLocal>,
+  root_entity: string,
 ) {
   return children.flatMap((child) => {
-    let content = blockToRecord(child.block, imageMap, scan);
+    let content = blockToRecord(child.block, imageMap, scan, root_entity);
     if (!content) return [];
     let record: PubLeafletBlocksUnorderedList.ListItem = {
       $type: "pub.leaflet.blocks.unorderedList#listItem",
       content,
-      children: childrenToRecord(child.children, imageMap, scan),
+      children: childrenToRecord(child.children, imageMap, scan, root_entity),
     };
     return record;
   });
@@ -203,6 +213,7 @@ function blockToRecord(
   b: Block,
   imageMap: Map<string, BlobRef>,
   scan: ReturnType<typeof scanIndexLocal>,
+  root_entity: string,
 ) {
   const getBlockContent = (b: string) => {
     let [content] = scan.eav(b, "block/text");
@@ -219,11 +230,11 @@ function blockToRecord(
     b.type !== "text" &&
     b.type !== "heading" &&
     b.type !== "image" &&
-    b.type !== "link"
+    b.type !== "link" &&
+    b.type !== "code" &&
+    b.type !== "math"
   )
     return;
-  let alignmentValue =
-    scan.eav(b.value, "block/text-alignment")[0]?.data.value || "left";
 
   if (b.type === "heading") {
     let [headingLevel] = scan.eav(b.value, "block/heading-level");
@@ -279,6 +290,26 @@ function blockToRecord(
       src: src.data.value,
       description: description.data.value,
       title: title.data.value,
+    };
+    return block;
+  }
+  if (b.type === "code") {
+    let [language] = scan.eav(b.value, "block/code-language");
+    let [code] = scan.eav(b.value, "block/code");
+    let [theme] = scan.eav(root_entity, "theme/code-theme");
+    let block: $Typed<PubLeafletBlocksCode.Main> = {
+      $type: "pub.leaflet.blocks.code",
+      language: language?.data.value,
+      plaintext: code?.data.value || "",
+      syntaxHighlightingTheme: theme?.data.value,
+    };
+    return block;
+  }
+  if (b.type === "math") {
+    let [math] = scan.eav(b.value, "block/math");
+    let block: $Typed<PubLeafletBlocksMath.Main> = {
+      $type: "pub.leaflet.blocks.math",
+      tex: math?.data.value || "",
     };
     return block;
   }

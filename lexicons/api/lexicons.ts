@@ -95,6 +95,19 @@ export const schemaDict = {
               type: 'ref',
               ref: 'lex:pub.leaflet.publication#theme',
             },
+            preferences: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.publication#preferences',
+            },
+          },
+        },
+      },
+      preferences: {
+        type: 'object',
+        properties: {
+          showInDiscover: {
+            type: 'boolean',
+            default: true,
           },
         },
       },
@@ -143,6 +156,27 @@ export const schemaDict = {
               'lex:pub.leaflet.theme.color#rgba',
               'lex:pub.leaflet.theme.color#rgb',
             ],
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksCode: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.code',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['plaintext'],
+        properties: {
+          plaintext: {
+            type: 'string',
+          },
+          language: {
+            type: 'string',
+          },
+          syntaxHighlightingTheme: {
+            type: 'string',
           },
         },
       },
@@ -208,6 +242,21 @@ export const schemaDict = {
           },
           height: {
             type: 'integer',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksMath: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.math',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['tex'],
+        properties: {
+          tex: {
+            type: 'string',
           },
         },
       },
@@ -351,6 +400,8 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.image',
               'lex:pub.leaflet.blocks.unorderedList',
               'lex:pub.leaflet.blocks.website',
+              'lex:pub.leaflet.blocks.math',
+              'lex:pub.leaflet.blocks.code',
             ],
           },
           alignment: {
@@ -1579,8 +1630,10 @@ export function validate(
 export const ids = {
   PubLeafletDocument: 'pub.leaflet.document',
   PubLeafletPublication: 'pub.leaflet.publication',
+  PubLeafletBlocksCode: 'pub.leaflet.blocks.code',
   PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
+  PubLeafletBlocksMath: 'pub.leaflet.blocks.math',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
   PubLeafletBlocksWebsite: 'pub.leaflet.blocks.website',

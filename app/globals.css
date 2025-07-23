@@ -157,6 +157,16 @@ input[type="number"] {
   );
 }
 
+pre.shiki code {
+  display: block;
+}
+
+pre.shiki {
+  @apply p-2;
+  @apply rounded-md;
+  @apply overflow-auto;
+}
+
 .highlight {
   @apply px-[1px];
   @apply py-[1px];

@@ -29,6 +29,8 @@ import {
 import { LinkSmall } from "components/Icons/LinkSmall";
 import { BlockRSVPSmall } from "components/Icons/BlockRSVPSmall";
 import { ListUnorderedSmall } from "components/Toolbar/ListToolbar";
+import { BlockMathSmall } from "components/Icons/BlockMathSmall";
+import { BlockCodeSmall } from "components/Icons/BlockCodeSmall";
 
 type Props = {
   parent: string;
@@ -265,6 +267,24 @@ export const blockCommands: Command[] = [
     hiddenInPublication: true,
     onSelect: async (rep, props) => {
       createBlockWithType(rep, props, "bluesky-post");
+    },
+  },
+  {
+    name: "Math",
+    icon: <BlockMathSmall />,
+    type: "block",
+    hiddenInPublication: false,
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "math");
+    },
+  },
+  {
+    name: "Code",
+    icon: <BlockCodeSmall />,
+    type: "block",
+    hiddenInPublication: false,
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "code");
     },
   },
 

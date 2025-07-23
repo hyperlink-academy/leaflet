@@ -1,0 +1,149 @@
+"use client";
+import Link from "next/link";
+import { useState } from "react";
+import { theme } from "tailwind.config";
+import { PublicationsList } from "./page";
+import { PubListing } from "./PubListing";
+
+export function SortedPublicationList(props: {
+  publications: PublicationsList;
+  order: string;
+}) {
+  let [order, setOrder] = useState(props.order);
+  return (
+    <div className="discoverHeader flex flex-col items-center px-4">
+      <SortButtons
+        order={order}
+        setOrder={(o) => {
+          const url = new URL(window.location.href);
+          url.searchParams.set("order", o);
+          window.history.pushState({}, "", url);
+          setOrder(o);
+        }}
+      />
+      <div className="discoverPubList flex flex-col gap-3 pt-6">
+        {props.publications
+          ?.filter((pub) => pub.documents_in_publications.length > 0)
+          ?.sort((a, b) => {
+            if (order === "popular") {
+              console.log("sorting by popularity");
+              return (
+                b.publication_subscriptions[0].count -
+                a.publication_subscriptions[0].count
+              );
+            }
+            const aDate = new Date(
+              a.documents_in_publications[0]?.indexed_at || 0,
+            );
+            const bDate = new Date(
+              b.documents_in_publications[0]?.indexed_at || 0,
+            );
+            return bDate.getTime() - aDate.getTime();
+          })
+          .map((pub) => <PubListing key={pub.uri} {...pub} />)}
+      </div>
+    </div>
+  );
+}
+
+export default function SortButtons(props: {
+  order: string;
+  setOrder: (order: string) => void;
+}) {
+  const [selected, setSelected] = useState<"recentlyUpdated" | "popular">(
+    "recentlyUpdated",
+  );
+
+  return (
+    <div className="flex gap-2 pt-1">
+      <SortButton
+        selected={props.order === "recentlyUpdated"}
+        onClick={() => props.setOrder("recentlyUpdated")}
+      >
+        Recently Updated
+      </SortButton>
+
+      <SortButton
+        selected={props.order === "popular"}
+        onClick={() => props.setOrder("popular")}
+      >
+        Popular
+      </SortButton>
+    </div>
+  );
+}
+
+const SortButton = (props: {
+  children: React.ReactNode;
+  onClick: () => void;
+  selected: boolean;
+}) => {
+  return (
+    <div className="relative">
+      <button
+        onClick={props.onClick}
+        style={
+          props.selected
+            ? { backgroundColor: `rgba(var(--accent-1), 0.2)` }
+            : {}
+        }
+        className={`text-sm  rounded-md px-[8px] py-0.5 border ${props.selected ? "border-accent-contrast text-accent-1 font-bold" : "text-tertiary border-border-light"}`}
+      >
+        {props.children}
+      </button>
+      {props.selected && (
+        <>
+          <div className="absolute top-0 -left-2">
+            <GlitterBig />
+          </div>
+          <div className="absolute top-4 left-0">
+            <GlitterSmall />
+          </div>
+          <div className="absolute -top-2 -right-1">
+            <GlitterSmall />
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+const GlitterBig = () => {
+  return (
+    <svg
+      width="16"
+      height="17"
+      viewBox="0 0 16 17"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M8.16553 0.804321C8.5961 0.804329 8.97528 1.03925 9.22803 1.40393C9.47845 1.76546 9.6128 2.25816 9.61279 2.84338C9.61279 2.98187 9.6178 3.11647 9.62646 3.2467C9.65365 3.65499 9.72104 4.02319 9.81006 4.35022C10.0833 5.35388 10.5641 5.96726 10.7349 6.14221C10.7443 6.15184 10.7543 6.16234 10.7642 6.17249C10.9808 6.39533 11.3925 6.8162 12.0142 7.09338C12.206 7.17892 12.4177 7.2502 12.6489 7.29749C12.8402 7.3366 13.0466 7.35993 13.2681 7.35999H13.269C14.2688 7.36032 14.9747 7.96603 14.9771 8.77014C14.9793 9.57755 14.272 10.1833 13.2681 10.1832C13.0278 10.1832 12.8137 10.2034 12.6226 10.2369C12.3793 10.2796 12.1697 10.3455 11.9858 10.4254C11.4714 10.6492 11.1325 10.9918 10.7935 11.3405C10.7739 11.3605 10.7544 11.381 10.7349 11.401C10.3936 11.7507 10.0271 12.1792 9.81006 12.9352C9.72175 13.2428 9.65679 13.6119 9.63135 14.0592C9.62378 14.1924 9.61963 14.3325 9.61963 14.4801C9.61963 15.5836 9.06909 16.4876 8.17822 16.4996C7.74928 16.5053 7.36767 16.2783 7.11182 15.9147C6.85918 15.5556 6.72412 15.065 6.72412 14.4801C6.72412 14.3385 6.71808 14.2015 6.70654 14.069C6.6724 13.6774 6.59177 13.324 6.48779 13.0123C6.16402 12.0419 5.61395 11.4722 5.54443 11.401C5.54371 11.4003 5.54043 11.3977 5.53467 11.3922C5.52778 11.3857 5.51839 11.3767 5.50635 11.3658C5.4823 11.3442 5.44954 11.3158 5.40869 11.2819C5.3268 11.2139 5.21473 11.1255 5.07764 11.0289C4.80173 10.8346 4.43374 10.6113 4.01611 10.443C3.82579 10.3663 3.62728 10.3019 3.42432 10.2565C3.21687 10.21 3.00599 10.1832 2.79541 10.1832C1.79834 10.1832 1.11533 9.56575 1.11865 8.76917C1.12219 7.9773 1.80451 7.36002 2.79541 7.35999C3.01821 7.35999 3.22798 7.33422 3.42432 7.29065C3.62557 7.24597 3.81426 7.18216 3.98877 7.10608C4.6567 6.81484 5.10772 6.35442 5.3042 6.15295C5.30777 6.1493 5.31147 6.14577 5.31494 6.14221C5.51076 5.94157 6.14024 5.28964 6.48584 4.26233C6.59001 3.95264 6.66793 3.60887 6.70068 3.23303C6.71166 3.10697 6.71826 2.977 6.71826 2.84338L6.72412 2.62854C6.75331 2.13723 6.88387 1.72031 7.10303 1.40393C7.35578 1.03923 7.73495 0.804326 8.16553 0.804321Z"
+        fill={theme.colors["accent-1"]}
+        stroke={theme.colors["bg-leaflet"]}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+};
+
+const GlitterSmall = () => {
+  return (
+    <svg
+      width="13"
+      height="14"
+      viewBox="0 0 13 14"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M6.37585 1.23596C6.7489 1.23598 7.07064 1.44034 7.28015 1.7428C7.48716 2.04187 7.59266 2.4408 7.59265 2.901C7.59266 3.00294 7.59605 3.10213 7.60242 3.19788C7.62244 3.49844 7.67183 3.76938 7.73718 4.0094C7.93813 4.74731 8.29123 5.1934 8.4071 5.31213L8.57703 5.48206C8.75042 5.64731 9.00188 5.85577 9.33777 6.00549C9.47565 6.06695 9.62723 6.11812 9.79285 6.15198C9.92991 6.18 10.0779 6.1959 10.2372 6.19592C11.0418 6.19604 11.6503 6.69195 11.6522 7.38538C11.654 8.08176 11.0444 8.57683 10.2372 8.57678C10.0618 8.57678 9.90679 8.59077 9.76941 8.61487C9.59484 8.6455 9.4456 8.69297 9.31531 8.74963C8.95055 8.9083 8.70884 9.15057 8.45203 9.41467C8.43719 9.42993 8.42207 9.44621 8.4071 9.46155C8.15582 9.71904 7.89358 10.0262 7.73718 10.5709C7.67315 10.7941 7.62512 11.064 7.60632 11.3942C7.60073 11.4925 7.59754 11.5963 7.59753 11.7057C7.59753 12.5657 7.16303 13.3455 6.38757 13.3561C6.01608 13.3611 5.6911 13.1642 5.47839 12.8619C5.26902 12.5643 5.16394 12.1657 5.16394 11.7057C5.16393 11.6022 5.15871 11.5017 5.15027 11.4049C5.1253 11.1189 5.06701 10.861 4.99109 10.6334C4.75475 9.92518 4.35324 9.51044 4.30554 9.46155C4.30554 9.46155 4.27494 9.43195 4.21179 9.37952C4.15207 9.32993 4.06961 9.26511 3.96863 9.19397C3.76515 9.05064 3.49524 8.88718 3.19031 8.76428C3.05151 8.70835 2.90782 8.66129 2.7616 8.62854C2.61218 8.59509 2.4616 8.57679 2.31238 8.57678C1.50706 8.57678 0.918891 8.07006 0.921753 7.3844C0.924612 6.70329 1.51125 6.19594 2.31238 6.19592C2.47154 6.19591 2.6213 6.17821 2.7616 6.14709C2.90554 6.11514 3.04128 6.06904 3.16687 6.01428C3.64904 5.80395 3.97684 5.47074 4.1239 5.31995C4.12648 5.3173 4.12918 5.31473 4.13171 5.31213C4.27635 5.16393 4.73656 4.68608 4.98914 3.93518C5.06511 3.70931 5.12247 3.45905 5.14636 3.18518C5.15436 3.09338 5.15905 2.99838 5.15906 2.901C5.15906 2.44078 5.26453 2.04187 5.47156 1.7428C5.68108 1.44033 6.00279 1.23595 6.37585 1.23596Z"
+        fill={theme.colors["accent-1"]}
+        stroke={theme.colors["bg-leaflet"]}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+};

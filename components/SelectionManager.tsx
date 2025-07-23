@@ -514,6 +514,7 @@ export function SelectionManager() {
       savedSelection.current = null;
       if (
         initialContentEditableParent.current &&
+        !(e.target as Element).getAttribute("data-draggable") &&
         getContentEditableParent(e.target as Node) !==
           initialContentEditableParent.current
       ) {
@@ -617,7 +618,10 @@ export function restoreSelection(savedRanges: SavedRange[]) {
 function getContentEditableParent(e: Node | null): Node | null {
   let element: Node | null = e;
   while (element && element !== document) {
-    if ((element as HTMLElement).contentEditable === "true") {
+    if (
+      (element as HTMLElement).contentEditable === "true" ||
+      (element as HTMLElement).getAttribute("data-editable-block")
+    ) {
       return element;
     }
     element = element.parentNode;

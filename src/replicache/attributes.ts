@@ -83,6 +83,18 @@ const BlockAttributes = {
     type: "bluesky-post",
     cardinality: "one",
   },
+  "block/math": {
+    type: "string",
+    cardinality: "one",
+  },
+  "block/code": {
+    type: "string",
+    cardinality: "one",
+  },
+  "block/code-language": {
+    type: "string",
+    cardinality: "one",
+  },
 } as const;
 
 const MailboxAttributes = {
@@ -231,6 +243,10 @@ export const ThemeAttributes = {
     type: "color",
     cardinality: "one",
   },
+  "theme/code-theme": {
+    type: "string",
+    cardinality: "one",
+  },
 } as const;
 
 export const Attributes = {
@@ -313,7 +329,9 @@ export type Data<A extends keyof typeof Attributes> = {
       | "embed"
       | "button"
       | "poll"
-      | "bluesky-post";
+      | "bluesky-post"
+      | "math"
+      | "code";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";
