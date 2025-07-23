@@ -10,6 +10,7 @@ import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
 import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
+import { flushSync } from "react-dom";
 export const inputrules = (
   propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
   repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
@@ -84,6 +85,21 @@ export const inputrules = (
             .removeStoredMark(schema.marks.em);
           return tr;
         }
+        return null;
+      }),
+
+      // Code Block
+      new InputRule(/^```\s$/, (state, match) => {
+        flushSync(() =>
+          repRef.current?.mutate.assertFact({
+            entity: propsRef.current.entityID,
+            attribute: "block/type",
+            data: { type: "block-type-union", value: "code" },
+          }),
+        );
+        setTimeout(() => {
+          focusBlock({ ...propsRef.current, type: "code" }, { type: "start" });
+        }, 20);
         return null;
       }),
 
