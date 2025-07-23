@@ -318,6 +318,13 @@ const createBlockFromHTML = (
   }
   if (child.tagName === "PRE") {
     let lang = child.getAttribute("data-language") || "plaintext";
+    if (child.firstElementChild && child.firstElementChild.className) {
+      let className = child.firstElementChild.className;
+      let match = className.match(/language-(\w+)/);
+      if (match) {
+        lang = match[1];
+      }
+    }
     if (child.textContent) {
       rep.mutate.assertFact([
         {
