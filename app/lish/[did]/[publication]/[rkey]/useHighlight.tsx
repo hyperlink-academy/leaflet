@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useContext } from "react";
 import { PostPageContext } from "./PostPageContext";
+import { create } from "zustand";
 
 export interface QuotePosition {
   start: {
@@ -16,13 +17,20 @@ export interface QuotePosition {
 }
 
 export const QUOTE_PARAM = "l_quote";
+export const useActiveHighlightState = create(() => ({
+  activeHighlight: null as null | number,
+}));
 
 export const useHighlight = (pos: number[]) => {
   let doc = useContext(PostPageContext);
   let params = useSearchParams();
   let param_highlight = params.get(QUOTE_PARAM);
+  let activeHighlight = useActiveHighlightState(
+    (state) => state.activeHighlight,
+  );
   let highlights =
     doc?.document_mentions_in_bsky
+      .filter((m, i) => i === activeHighlight)
       .map((mention) => {
         return new URL(mention.link).searchParams.get(QUOTE_PARAM);
       })

@@ -19,6 +19,7 @@ import {
   decodeQuotePosition,
   QUOTE_PARAM,
   QuotePosition,
+  useActiveHighlightState,
 } from "../useHighlight";
 import { PostContent } from "../PostContent";
 
@@ -64,7 +65,16 @@ export const Quotes = (props: {
               [],
             );
             return (
-              <div className="quoteSection flex flex-col gap-2" key={index}>
+              <div
+                className="quoteSection flex flex-col gap-2"
+                key={index}
+                onMouseLeave={() => {
+                  useActiveHighlightState.setState({ activeHighlight: null });
+                }}
+                onMouseEnter={() => {
+                  useActiveHighlightState.setState({ activeHighlight: index });
+                }}
+              >
                 <button
                   className="quoteSectionQuote text-secondary text-sm italic text-left pb-1 x "
                   onClick={(e) => {
