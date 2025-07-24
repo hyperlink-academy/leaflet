@@ -38,9 +38,10 @@ export async function publishPostToBsky(args: {
   let binary = await preview_image.blob();
   let resized_preview_image = await sharp(await binary.arrayBuffer())
     .resize({
-      width: 1024,
+      width: 1200,
       fit: "cover",
     })
+    .webp({ quality: 85 })
     .toBuffer();
 
   let blob = await agent.com.atproto.repo.uploadBlob(resized_preview_image, {
