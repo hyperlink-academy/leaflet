@@ -58,11 +58,12 @@ export function QuoteHandler() {
               : "backward";
         }
       }
-      if (selection.direction === "forward") {
-        selectionTop += quoteRect.height + 8;
-      } else if (selection?.direction === "backward") {
+
+      if (selection.direction === "backward") {
         selectionTop -= 28;
       } else {
+        // forward
+        selectionTop += quoteRect.height + 8;
       }
 
       setPosition({
