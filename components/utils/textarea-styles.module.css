@@ -11,7 +11,7 @@
   content: attr(data-replicated-value) " ";
 
   /* This is how textarea text behaves */
-  white-space: pre;
+  white-space: pre-wrap;
 
   /* Hidden from view, clicks, and screen readers */
   visibility: hidden;
@@ -35,4 +35,8 @@
 
 .grow-wrap > textarea:focus {
   outline: none;
+}
+
+.no-wrap::after {
+  white-space: pre !important;
 }

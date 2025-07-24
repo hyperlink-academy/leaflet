@@ -10,23 +10,25 @@ import styles from "./textarea-styles.module.css";
 export type AutosizeTextareaProps = React.DetailedHTMLProps<
   React.TextareaHTMLAttributes<HTMLTextAreaElement>,
   HTMLTextAreaElement
->;
+> & { noWrap?: boolean };
 export const AutosizeTextarea = forwardRef<
   HTMLTextAreaElement,
   AutosizeTextareaProps
->((props: AutosizeTextareaProps, ref) => {
+>((props: AutosizeTextareaProps & { noWrap?: boolean }, ref) => {
   let textarea = useRef<HTMLTextAreaElement | null>(null);
+  let { noWrap, ...rest } = props;
   useImperativeHandle(ref, () => textarea.current as HTMLTextAreaElement);
 
+  console.log({ noWrap });
   return (
     <div
-      className={`${styles["grow-wrap"]} ${props.className} `}
+      className={`${styles["grow-wrap"]} ${props.className} ${noWrap ? styles["no-wrap"] : ""}`}
       data-replicated-value={props.value}
       style={props.style}
     >
       <textarea
         rows={1}
-        {...props}
+        {...rest}
         ref={textarea}
         className={`placeholder:text-tertiary bg-transparent ${props.className}`}
       />
