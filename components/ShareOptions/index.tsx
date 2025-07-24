@@ -180,13 +180,14 @@ const ShareMenu = (props: {
 };
 
 export const ShareButton = (props: {
-  text: string;
+  text: React.ReactNode;
   subtext: React.ReactNode;
   helptext?: string;
   smokerText: string;
   id: string;
   link: null | string;
   fullLink?: string;
+  className?: string;
 }) => {
   let smoker = useSmoker();
 
@@ -212,7 +213,7 @@ export const ShareButton = (props: {
         }
       }}
     >
-      <div className={`group/${props.id}`}>
+      <div className={`group/${props.id} ${props.className}`}>
         <div className={`group-hover/${props.id}:text-accent-contrast`}>
           {props.text}
         </div>

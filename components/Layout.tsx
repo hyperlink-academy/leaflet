@@ -15,8 +15,9 @@ export const Menu = (props: {
   open?: boolean;
   trigger: React.ReactNode;
   children: React.ReactNode;
-  align?: "start" | "end" | "center";
-  side?: "top" | "bottom" | "right" | "left";
+  align?: "start" | "end" | "center" | undefined;
+  alignOffset?: number;
+  side?: "top" | "bottom" | "right" | "left" | undefined;
   background?: string;
   border?: string;
   className?: string;
@@ -41,6 +42,7 @@ export const Menu = (props: {
             <DropdownMenu.Content
               side={props.side ? props.side : "bottom"}
               align={props.align ? props.align : "center"}
+              alignOffset={props.alignOffset ? props.alignOffset : undefined}
               sideOffset={4}
               collisionPadding={16}
               className={`dropdownMenu z-20 bg-bg-page flex flex-col py-1 gap-0.5 border border-border rounded-md shadow-md ${props.className}`}
