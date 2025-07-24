@@ -22,6 +22,7 @@ import {
   useActiveHighlightState,
 } from "../useHighlight";
 import { PostContent } from "../PostContent";
+import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 
 export const Quotes = (props: {
   quotes: { link: string; bsky_posts: { post_view: Json } | null }[];
@@ -106,6 +107,7 @@ export const Quotes = (props: {
                     rkey={new AtUri(pv.uri).rkey}
                     content={pv.record.text as string}
                     user={pv.author.displayName || pv.author.handle}
+                    profile={pv.author}
                     handle={pv.author.handle}
                   />
                 </button>
@@ -123,6 +125,7 @@ const BskyPost = (props: {
   content: string;
   user: string;
   handle: string;
+  profile: ProfileViewBasic;
 }) => {
   return (
     <a
@@ -130,7 +133,13 @@ const BskyPost = (props: {
       href={`https://bsky.app/profile/${props.handle}/post/${props.rkey}`}
       className="quoteSectionBskyItem opaque-container py-1 px-2 text-sm flex gap-[6px]"
     >
-      <div className="w-4 h-4 bg-test rounded-full shrink-0 mt-1" />
+      {props.profile.avatar && (
+        <img
+          className="rounded-full w-8 h-8"
+          src={props.profile.avatar}
+          alt={props.profile.displayName}
+        />
+      )}
       <div className="flex flex-col">
         <div className="flex items-center gap-1">
           <div className="font-bold">{props.user}</div>
