@@ -15,6 +15,7 @@ export function BaseTextareaBlock(
   return (
     <AsyncValueAutosizeTextarea
       {...passDownProps}
+      noWrap
       onKeyDown={(e) => {
         if (e.key === "ArrowUp") {
           let selection = e.currentTarget.selectionStart;
