@@ -46,7 +46,7 @@ export function PostPage({
       )}
       <div
         id="post-page"
-        className={`relative h-full py-2 sm:py-6 overflow-y-auto
+        className={`relative h-full py-3 sm:py-6 overflow-y-auto
           ${!drawerOpen ? "w-full mx-auto" : "max-w-[var(--page-width-units)] shrink-0 snap-center"}
           ${
             hasPageBackground
@@ -54,7 +54,7 @@ export function PostPage({
               : "h-fit "
           }`}
       >
-        <div className={`sm:max-w-prose mx-auto w-fit px-2`}>
+        <div className={`sm:max-w-prose mx-auto w-fit px-3`}>
           <PostHeader data={document} profile={profile} name={name} />
           <PostContent
             blocks={blocks}

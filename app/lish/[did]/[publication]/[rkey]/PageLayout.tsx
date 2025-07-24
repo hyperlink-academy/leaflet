@@ -11,7 +11,7 @@ export function PageLayout(props: { children: React.ReactNode }) {
       id="page-carousel"
     >
       {/* if you adjust this padding, remember to adjust the negative margins on page in Pages/index when card borders are hidden (also applies for the pb in the parent div)*/}
-      <div id="pages" className="postWrapper flex h-full gap-6  w-full">
+      <div id="pages" className="postWrapper flex h-full gap-1  w-full">
         {props.children}
       </div>
     </div>
