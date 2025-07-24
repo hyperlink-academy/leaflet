@@ -17,15 +17,18 @@ import { ImageAltSmall } from "components/Icons/ImageAlt";
 import { codeToHtml } from "shiki";
 import Katex from "katex";
 import { StaticMathBlock } from "./StaticMathBlock";
+import { PubCodeBlock } from "./PubCodeBlock";
 
 export function PostContent({
   blocks,
   did,
   preview,
+  prerenderedCodeBlocks,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   did: string;
   preview?: boolean;
+  prerenderedCodeBlocks?: Map<string, string>;
 }) {
   return (
     <div id="post-content" className="postContent flex flex-col">
@@ -37,6 +40,7 @@ export function PostContent({
             key={index}
             index={[index]}
             preview={preview}
+            prerenderedCodeBlocks={prerenderedCodeBlocks}
           />
         );
       })}
@@ -44,18 +48,20 @@ export function PostContent({
   );
 }
 
-let Block = async ({
+let Block = ({
   block,
   did,
   isList,
   index,
   preview,
+  prerenderedCodeBlocks,
 }: {
   preview?: boolean;
   index: number[];
   block: PubLeafletPagesLinearDocument.Block;
   did: string;
   isList?: boolean;
+  prerenderedCodeBlocks?: Map<string, string>;
 }) => {
   let b = block;
   let blockProps = {
@@ -100,16 +106,8 @@ let Block = async ({
       return <StaticMathBlock block={b.block} />;
     }
     case PubLeafletBlocksCode.isMain(b.block): {
-      let html = await codeToHtml(b.block.plaintext, {
-        lang: b.block.language || "plaintext",
-        theme: b.block.syntaxHighlightingTheme || "github-light",
-      });
-      return (
-        <div
-          className="w-full min-h-[42px] rounded-md border-border-light outline-border-light selected-outline"
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
-      );
+      let html = prerenderedCodeBlocks?.get(index.join("."));
+      return <PubCodeBlock block={b.block} prerenderedCode={html} />;
     }
     case PubLeafletBlocksWebsite.isMain(b.block): {
       return (

@@ -65,6 +65,7 @@
     min-height: -webkit-fill-available;
     @apply font-sans;
     font-synthesis: none;
+    scrollbar-gutter: stable;
   }
 
   #__next {

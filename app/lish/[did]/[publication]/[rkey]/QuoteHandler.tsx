@@ -40,10 +40,29 @@ export function QuoteHandler() {
         selectionLeft = endCursorRect.left - 128;
       }
 
+      let dir = selection.direction;
+      if (!dir) {
+        const range = selection.getRangeAt(0);
+        const startContainer = range.startContainer;
+        const endContainer = range.endContainer;
+        const startOffset = range.startOffset;
+        const endOffset = range.endOffset;
+
+        if (startContainer === endContainer) {
+          dir = startOffset <= endOffset ? "forward" : "backward";
+        } else {
+          const position = startContainer.compareDocumentPosition(endContainer);
+          dir =
+            (position & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+              ? "forward"
+              : "backward";
+        }
+      }
       if (selection.direction === "forward") {
         selectionTop += quoteRect.height + 8;
       } else if (selection?.direction === "backward") {
         selectionTop -= 28;
+      } else {
       }
 
       setPosition({

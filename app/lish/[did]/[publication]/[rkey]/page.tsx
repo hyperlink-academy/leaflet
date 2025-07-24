@@ -9,20 +9,16 @@ import {
 import { Metadata } from "next";
 import { AtpAgent } from "@atproto/api";
 import { QuoteHandler } from "./QuoteHandler";
-import { PostHeader } from "./PostHeader/PostHeader";
-import { Interactions } from "./Interactions/Interactions";
 import { InteractionDrawer } from "./Interactions/InteractionDrawer";
-import { SubscribeWithBluesky } from "app/lish/Subscribe";
 import {
   PublicationBackgroundProvider,
   PublicationThemeProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
-import { PostContent } from "./PostContent";
-import { getIdentityData } from "actions/getIdentityData";
-import { EditTiny } from "components/Icons/EditTiny";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { getPostPageData } from "./getPostPageData";
 import { PostPageContextProvider } from "./PostPageContext";
+import { PostPage } from "./PostPage";
+import { PageLayout } from "./PageLayout";
+import { extractCodeBlocks } from "./extractCodeBlocks";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -65,14 +61,17 @@ export default async function Post(props: {
         </p>
       </div>
     );
-  let identity = await getIdentityData();
-  let document = await getPostPageData(
-    AtUri.make(
-      did,
-      ids.PubLeafletDocument,
-      (await props.params).rkey,
-    ).toString(),
-  );
+  let agent = new AtpAgent({ service: "https://public.api.bsky.app" });
+  let [document, profile] = await Promise.all([
+    getPostPageData(
+      AtUri.make(
+        did,
+        ids.PubLeafletDocument,
+        (await props.params).rkey,
+      ).toString(),
+    ),
+    agent.getProfile({ actor: did }),
+  ]);
   if (!document?.data || !document.documents_in_publications[0].publications)
     return (
       <div className="p-4 text-lg text-center flex flex-col gap-4">
@@ -94,6 +93,7 @@ export default async function Post(props: {
     .record as PubLeafletPublication.Record;
 
   let hasPageBackground = !!pubRecord.theme?.showPageBackground;
+  let prerenderedCodeBlocks = await extractCodeBlocks(blocks);
 
   return (
     <PostPageContextProvider value={document}>
@@ -123,66 +123,21 @@ export default async function Post(props: {
           on chrome, if you scroll backward, things stop working
           seems like if you use an older browser, sel direction is not a thing yet
            */}
-          <div
-            className="post w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full pwa-padding"
-            id="page-carousel"
-          >
-            {/* if you adjust this padding, remember to adjust the negative margins on page in Pages/index when card borders are hidden (also applies for the pb in the parent div)*/}
-            <div id="pages" className="postWrapper flex py-2 sm:py-6">
-              <div
-                className="spacer"
-                style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
-              />
-              <div id="page" className="flex gap-6 h-full">
-                <div
-                  className={`relative sm:max-w-prose w-[var(--page-width-units)] mx-auto px-3 sm:px-4 py-3  ${hasPageBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] rounded-lg border border-border" : "h-fit "}`}
-                >
-                  <PostHeader data={document} params={props.params} />
-                  <PostContent blocks={blocks} did={did} />
-                  <Interactions quotes={document.document_mentions_in_bsky} />
-                  <hr className="border-border-light mb-4 mt-4" />
-                  {identity &&
-                  identity.atp_did ===
-                    document.documents_in_publications[0]?.publications
-                      .identity_did ? (
-                    <a
-                      href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
-                      className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1 mx-auto"
-                    >
-                      <EditTiny /> Edit Post
-                    </a>
-                  ) : (
-                    <SubscribeWithBluesky
-                      isPost
-                      base_url={getPublicationURL(
-                        document.documents_in_publications[0].publications,
-                      )}
-                      pub_uri={
-                        document.documents_in_publications[0].publications.uri
-                      }
-                      subscribers={
-                        document.documents_in_publications[0].publications
-                          .publication_subscriptions
-                      }
-                      pubName={decodeURIComponent(
-                        (await props.params).publication,
-                      )}
-                    />
-                  )}
-                </div>
-                <InteractionDrawer
-                  quotes={document.document_mentions_in_bsky}
-                  did={did}
-                />
-              </div>
-              <div
-                className="spacer"
-                style={{
-                  width: `calc(50vw - ((var(--page-width-units)/2 + 13rem))`,
-                }}
-              />
-            </div>
-          </div>
+          <PageLayout>
+            <PostPage
+              pubRecord={pubRecord}
+              profile={profile.data}
+              document={document}
+              did={did}
+              blocks={blocks}
+              name={decodeURIComponent((await props.params).publication)}
+              prerenderedCodeBlocks={prerenderedCodeBlocks}
+            />
+            <InteractionDrawer
+              quotes={document.document_mentions_in_bsky}
+              did={did}
+            />
+          </PageLayout>
 
           <QuoteHandler />
         </PublicationBackgroundProvider>

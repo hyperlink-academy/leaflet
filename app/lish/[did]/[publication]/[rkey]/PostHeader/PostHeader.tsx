@@ -1,26 +1,23 @@
+"use client";
 import Link from "next/link";
-import { supabaseServerClient } from "supabase/serverClient";
-import { AtUri } from "@atproto/syntax";
-import { ids } from "lexicons/api/lexicons";
 import { PubLeafletDocument } from "lexicons/api";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import { BskyAgent } from "@atproto/api";
 import { CollapsedPostHeader } from "./CollapsedPostHeader";
 import { Interactions } from "../Interactions/Interactions";
-import { getIdentityData } from "actions/getIdentityData";
 import { PostPageData } from "../getPostPageData";
+import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { useIdentityData } from "components/IdentityProvider";
 
-export async function PostHeader(props: {
+export function PostHeader(props: {
   data: PostPageData;
-  params: Promise<{ publication: string; did: string; rkey: string }>;
+  name: string;
+  profile: ProfileViewDetailed;
 }) {
-  let did = decodeURIComponent((await props.params).did);
-  let identity = await getIdentityData();
-  let agent = new BskyAgent({ service: "https://public.api.bsky.app" });
+  let { identity } = useIdentityData();
   let document = props.data;
-  let { data: profile } = await agent.getProfile({ actor: did });
 
   let record = document?.data as PubLeafletDocument.Record;
+  let profile = props.profile;
 
   if (!document?.data || !document.documents_in_publications[0].publications)
     return;
@@ -41,7 +38,7 @@ export async function PostHeader(props: {
               )
             }
           >
-            {decodeURIComponent((await props.params).publication)}
+            {props.name}
           </Link>
           <h2 className="">{record.title}</h2>
           {record.description ? (

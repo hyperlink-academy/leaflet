@@ -13,6 +13,7 @@ import {
   PubLeafletBlocksHeader,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
+  PubLeafletBlocksCode,
 } from "lexicons/api";
 import {
   decodeQuotePosition,
@@ -76,14 +77,14 @@ export const Quotes = (props: {
                       quotePosition.start.block.join("."),
                     );
                     if (!el || !scrollContainer) return;
+                    let blockRect = el.getBoundingClientRect();
                     let quoteScrollTop =
                       (scrollContainer &&
-                        el.getBoundingClientRect().top +
-                          scrollContainer.scrollTop) ||
+                        blockRect.top + scrollContainer.scrollTop) ||
                       0;
-                    console.log("quote : " + el.getBoundingClientRect().top);
-                    console.log("parent : " + scrollContainer?.scrollTop);
 
+                    if (blockRect.left < 0)
+                      scrollContainer.scrollIntoView({ behavior: "smooth" });
                     scrollContainer?.scrollTo({
                       top: quoteScrollTop - scrollMargin,
                       behavior: "smooth",
@@ -115,7 +116,8 @@ const BskyPost = (props: {
 }) => {
   return (
     <a
-      href="/"
+      target="_blank"
+      href={`https://bsky.app/profile/${props.handle}/post/${props.rkey}`}
       className="quoteSectionBskyItem opaque-container py-1 px-2 text-sm flex gap-[6px]"
     >
       <div className="w-4 h-4 bg-test rounded-full shrink-0 mt-1" />
@@ -167,7 +169,8 @@ function extractQuotedBlocks(
     }
     if (
       PubLeafletBlocksText.isMain(block.block) ||
-      PubLeafletBlocksHeader.isMain(block.block)
+      PubLeafletBlocksHeader.isMain(block.block) ||
+      PubLeafletBlocksCode.isMain(block.block)
     ) {
       // For text blocks, trim to quoted portion
       const trimmedBlock = trimTextBlock(block, blockPath, quotePosition);
@@ -249,7 +252,8 @@ function trimTextBlock(
 ): PubLeafletPagesLinearDocument.Block | null {
   if (
     !PubLeafletBlocksText.isMain(block.block) &&
-    !PubLeafletBlocksHeader.isMain(block.block)
+    !PubLeafletBlocksHeader.isMain(block.block) &&
+    !PubLeafletBlocksCode.isMain(block.block)
   ) {
     return block;
   }
@@ -273,32 +277,39 @@ function trimTextBlock(
   if (!quotedText) return null;
 
   // Adjust facets to the new text range
-  const adjustedFacets = block.block.facets
-    ?.map((facet) => {
-      const facetStart = facet.index.byteStart;
-      const facetEnd = facet.index.byteEnd;
+  let adjustedFacets;
+  if (
+    PubLeafletBlocksText.isMain(block.block) ||
+    PubLeafletBlocksHeader.isMain(block.block)
+  ) {
+    adjustedFacets = block.block?.facets
+      ?.map((facet) => {
+        const facetStart = facet.index.byteStart;
+        const facetEnd = facet.index.byteEnd;
 
-      // Skip facets outside the quoted range
-      if (facetEnd <= startOffset || facetStart >= endOffset) {
-        return null;
-      }
+        // Skip facets outside the quoted range
+        if (facetEnd <= startOffset || facetStart >= endOffset) {
+          return null;
+        }
 
-      // Adjust facet indices
-      return {
-        ...facet,
-        index: {
-          byteStart: Math.max(0, facetStart - startOffset),
-          byteEnd: Math.min(quotedText.length, facetEnd - startOffset),
-        },
-      };
-    })
-    .filter((f) => f !== null) as typeof block.block.facets;
+        // Adjust facet indices
+        return {
+          ...facet,
+          index: {
+            byteStart: Math.max(0, facetStart - startOffset),
+            byteEnd: Math.min(quotedText.length, facetEnd - startOffset),
+          },
+        };
+      })
+      .filter((f) => f !== null) as typeof block.block.facets;
+  }
 
   return {
     ...block,
     block: {
       ...block.block,
       plaintext: quotedText,
+      //@ts-ignore
       facets: adjustedFacets,
     },
   };
