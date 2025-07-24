@@ -16,6 +16,7 @@ export const Menu = (props: {
   trigger: React.ReactNode;
   children: React.ReactNode;
   align?: "start" | "end" | "center";
+  side?: "top" | "bottom" | "right" | "left";
   background?: string;
   border?: string;
   className?: string;
@@ -38,6 +39,7 @@ export const Menu = (props: {
         <DropdownMenu.Portal>
           <NestedCardThemeProvider>
             <DropdownMenu.Content
+              side={props.side ? props.side : "bottom"}
               align={props.align ? props.align : "center"}
               sideOffset={4}
               collisionPadding={16}

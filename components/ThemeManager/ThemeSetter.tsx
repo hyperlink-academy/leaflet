@@ -22,6 +22,7 @@ import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { AccentPickers } from "./Pickers/AccentPickers";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export type pickers =
   | "null"
@@ -50,6 +51,7 @@ export function setColorAttribute(
 export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   let { rep } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
+  let isMobile = useIsMobile();
 
   // I need to get these variables from replicache and then write them to the DB. I also need to parse them into a state that can be used here.
   let permission = useEntitySetContext().permissions.write;
@@ -75,6 +77,8 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
         className="w-80 bg-white"
         arrowFill="#FFFFFF"
         asChild
+        side={isMobile ? "top" : "right"}
+        align={isMobile ? "center" : "start"}
         trigger={<ActionButton icon={<PaintSmall />} label="Theme" />}
       >
         <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">

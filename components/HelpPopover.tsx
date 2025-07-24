@@ -8,11 +8,16 @@ import { useState } from "react";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { HelpSmall } from "./Icons/HelpSmall";
 import { isMac } from "src/utils/isDevice";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export const HelpPopover = (props: { noShortcuts?: boolean }) => {
   let entity_set = useEntitySetContext();
+  let isMobile = useIsMobile();
+
   return entity_set.permissions.write ? (
     <Popover
+      side={isMobile ? "top" : "right"}
+      align={isMobile ? "center" : "start"}
       asChild
       className="max-w-xs w-full"
       trigger={<ActionButton icon={<HelpSmall />} label="About" />}
