@@ -38,23 +38,27 @@ export function PostPage({
   let hasPageBackground = !!pubRecord.theme?.showPageBackground;
   return (
     <>
-      {drawerOpen && (
+      {(drawerOpen || hasPageBackground) && (
         <div
           className="spacer sm:block hidden"
-          style={{ width: `calc(50vw - 24px - ((var(--page-width-units)/2))` }}
+          style={{
+            width: `calc(50vw - 24px - ((var(--page-width-units)/2))`,
+          }}
         />
       )}
       <div
         id="post-page"
-        className={`relative h-full py-3 sm:py-6 overflow-y-auto
-          ${!drawerOpen ? "w-full mx-auto" : "max-w-[var(--page-width-units)] shrink-0 snap-center"}
+        className={`postPageWrapper relative overflow-y-auto sm:mx-0 mx-[6px]
+          ${drawerOpen || hasPageBackground ? "max-w-[var(--page-width-units)] shrink-0 snap-center " : "w-full"}
           ${
             hasPageBackground
-              ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] rounded-lg border border-border"
-              : "h-fit "
+              ? "h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] rounded-lg border border-border "
+              : "sm:h-[calc(100%+48px)] h-[calc(100%+24px)] sm:-my-6 -my-3  "
           }`}
       >
-        <div className={`sm:max-w-prose mx-auto w-fit px-3`}>
+        <div
+          className={`postPageContent sm:max-w-prose mx-auto h-fit w-fit px-3 sm:px-4 ${hasPageBackground ? " pt-2 pb-3 sm:pb-6" : "py-6 sm:py-9"}`}
+        >
           <PostHeader data={document} profile={profile} name={name} />
           <PostContent
             blocks={blocks}

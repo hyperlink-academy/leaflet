@@ -34,7 +34,6 @@ export const Interactions = (props: {
 }) => {
   let { drawerOpen } = useInteractionState();
 
-  if (props.quotes.length === 0) return null;
   return (
     <div
       className={`flex gap-2 text-tertiary ${props.compact ? "text-sm" : ""} ${props.className}`}

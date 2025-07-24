@@ -1,12 +1,14 @@
 "use client";
 import Link from "next/link";
-import { PubLeafletDocument } from "lexicons/api";
+import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { CollapsedPostHeader } from "./CollapsedPostHeader";
 import { Interactions } from "../Interactions/Interactions";
 import { PostPageData } from "../getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { useIdentityData } from "components/IdentityProvider";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { AtUri } from "@atproto/syntax";
 
 export function PostHeader(props: {
   data: PostPageData;
@@ -18,12 +20,19 @@ export function PostHeader(props: {
 
   let record = document?.data as PubLeafletDocument.Record;
   let profile = props.profile;
+  let pub = props.data?.documents_in_publications[0].publications;
+  let pubRecord = pub?.record as PubLeafletPublication.Record;
 
   if (!document?.data || !document.documents_in_publications[0].publications)
     return;
   return (
     <>
       <CollapsedPostHeader
+        pubIcon={
+          pubRecord?.icon && pub
+            ? blobRefToSrc(pubRecord.icon.ref, new AtUri(pub.uri).host)
+            : undefined
+        }
         title={record.title}
         quotes={document.document_mentions_in_bsky}
       />

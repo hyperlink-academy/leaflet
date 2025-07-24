@@ -12,11 +12,11 @@ export const InteractionDrawer = (props: {
   if (!open) return null;
   return (
     <>
-      <div className="sm:pr-4 pr-[6px] py-3 sm:py-6 snap-center">
+      <div className="sm:pr-4 pr-[6px] snap-center">
         <div className="shrink-0 w-96 max-w-[var(--page-width-units)] h-full  flex z-10">
           <div
             id="interaction-drawer"
-            className="opaque-container h-full w-full px-4 pt-3 pb-6 overflow-scroll "
+            className="opaque-container !rounded-lg h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6 overflow-scroll "
           >
             <Quotes {...props} />
           </div>
