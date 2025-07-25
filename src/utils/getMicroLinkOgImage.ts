@@ -7,7 +7,7 @@ export async function getMicroLinkOgImage(path: string) {
   let protocol = headersList.get("x-forwarded-proto");
   let full_path = `${protocol}://${hostname}${path}`;
   let response = await fetch(
-    `https://pro.microlink.io/?url=${full_path}&screenshot=true&viewport.width=1400&viewport.height=733&meta=false&embed=screenshot.url&force=true`,
+    `https://pro.microlink.io/?url=${encodeURIComponent(full_path)}&screenshot=true&viewport.width=1400&viewport.height=733&meta=false&embed=screenshot.url&force=true`,
     {
       headers: {
         "x-api-key": process.env.MICROLINK_API_KEY!,
