@@ -1,4 +1,5 @@
 // Generated w/ Claude 4
+"use client";
 
 import { useSearchParams } from "next/navigation";
 import { useContext } from "react";
