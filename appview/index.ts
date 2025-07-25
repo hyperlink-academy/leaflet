@@ -191,7 +191,7 @@ async function main() {
         let pubUrl = embed || link;
         if (pubUrl) {
           inngest.send({
-            name: "appview/bsky/index-post-mention",
+            name: "appview/index-bsky-post-mention",
             data: { post_uri: evt.uri.toString(), document_link: pubUrl },
           });
         }
