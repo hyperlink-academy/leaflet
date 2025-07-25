@@ -215,4 +215,8 @@ async function main() {
   process.on("SIGTERM", cleanup);
 }
 
+inngest.send({
+  name: "appview/come-online",
+  data: {},
+});
 main();

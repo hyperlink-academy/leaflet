@@ -9,6 +9,7 @@ export type Events = {
       document_link: string;
     };
   };
+  "appview/come-online": { data: {} };
 };
 
 // Create a client to send and receive events
