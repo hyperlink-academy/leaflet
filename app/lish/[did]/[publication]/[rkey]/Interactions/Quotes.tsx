@@ -76,8 +76,8 @@ export const Quotes = (props: {
                   useActiveHighlightState.setState({ activeHighlight: index });
                 }}
               >
-                <button
-                  className="quoteSectionQuote text-secondary text-sm italic text-left pb-1 x "
+                <div
+                  className="quoteSectionQuote text-secondary text-sm text-left pb-1 hover:cursor-pointer"
                   onClick={(e) => {
                     let scrollMargin = isMobile
                       ? 16
@@ -102,7 +102,13 @@ export const Quotes = (props: {
                     });
                   }}
                 >
-                  <PostContent blocks={content || []} did={props.did} preview />
+                  <div className="italic">
+                    <PostContent
+                      blocks={content || []}
+                      did={props.did}
+                      preview
+                    />
+                  </div>
                   <BskyPost
                     rkey={new AtUri(pv.uri).rkey}
                     content={pv.record.text as string}
@@ -110,7 +116,7 @@ export const Quotes = (props: {
                     profile={pv.author}
                     handle={pv.author.handle}
                   />
-                </button>
+                </div>
               </div>
             );
           })}
@@ -131,19 +137,19 @@ const BskyPost = (props: {
     <a
       target="_blank"
       href={`https://bsky.app/profile/${props.handle}/post/${props.rkey}`}
-      className="quoteSectionBskyItem opaque-container py-1 px-2 text-sm flex gap-[6px]"
+      className="quoteSectionBskyItem opaque-container py-2 px-2 text-sm flex gap-[6px] hover:no-underline font-normal"
     >
       {props.profile.avatar && (
         <img
-          className="rounded-full w-8 h-8"
+          className="rounded-full w-6 h-6"
           src={props.profile.avatar}
           alt={props.profile.displayName}
         />
       )}
       <div className="flex flex-col">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <div className="font-bold">{props.user}</div>
-          <div className="text-tertiary">{props.handle}</div>
+          <div className="text-tertiary">@{props.handle}</div>
         </div>
         <div className="text-secondary">{props.content}</div>
       </div>
