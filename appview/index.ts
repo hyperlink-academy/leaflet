@@ -20,7 +20,6 @@ import { createIdentity } from "actions/createIdentity";
 import { supabaseServerClient } from "supabase/serverClient";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { QUOTE_PARAM } from "app/lish/[did]/[publication]/[rkey]/useHighlight";
 import { inngest } from "app/api/inngest/client";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
@@ -29,6 +28,7 @@ let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
 );
+const QUOTE_PARAM = "/quote/";
 async function main() {
   let startCursor;
   try {

@@ -5,7 +5,8 @@ import { Separator } from "components/Layout";
 import { useSmoker } from "components/Toast";
 import { useEffect, useMemo, useState } from "react";
 import { useInteractionState } from "./Interactions/Interactions";
-import { encodeQuotePosition, QUOTE_PARAM } from "./useHighlight";
+import { encodeQuotePosition } from "./useHighlight";
+import { useParams } from "next/navigation";
 
 export function QuoteHandler() {
   let [position, setPosition] = useState<{ top: number; left: number } | null>(
@@ -115,7 +116,11 @@ export const QuoteOptionButtons = () => {
       },
     });
     let currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set(QUOTE_PARAM, quotePosition);
+    if (currentUrl.pathname.includes("/quote/")) {
+      currentUrl.pathname = currentUrl.pathname.split("/quote/")[0];
+    }
+    currentUrl.pathname = currentUrl.pathname + `/quote/${quotePosition}`;
+
     currentUrl.hash = `#${startIndex}`;
     return currentUrl.toString();
   };

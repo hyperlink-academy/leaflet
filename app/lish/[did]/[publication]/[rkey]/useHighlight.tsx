@@ -1,7 +1,7 @@
 // Generated w/ Claude 4
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useContext } from "react";
 import { PostPageContext } from "./PostPageContext";
 import { create } from "zustand";
@@ -17,15 +17,13 @@ export interface QuotePosition {
   };
 }
 
-export const QUOTE_PARAM = "l_quote";
 export const useActiveHighlightState = create(() => ({
   activeHighlight: null as null | number,
 }));
 
 export const useHighlight = (pos: number[]) => {
   let doc = useContext(PostPageContext);
-  let params = useSearchParams();
-  let param_highlight = params.get(QUOTE_PARAM);
+  let { quote } = useParams();
   let activeHighlight = useActiveHighlightState(
     (state) => state.activeHighlight,
   );
@@ -33,10 +31,10 @@ export const useHighlight = (pos: number[]) => {
     doc?.document_mentions_in_bsky
       .filter((m, i) => i === activeHighlight)
       .map((mention) => {
-        return new URL(mention.link).searchParams.get(QUOTE_PARAM);
+        return new URL(mention.link).pathname.split("/quote/")[1];
       })
       .filter((s) => s !== null) || [];
-  if (param_highlight) highlights.push(param_highlight);
+  if (quote) highlights.push(quote as string);
   return highlights
     .map((highlight) => {
       let quotePosition = decodeQuotePosition(highlight);
