@@ -27,9 +27,7 @@ export function QuoteHandler() {
       const quoteRect = selection?.getRangeAt(0).getBoundingClientRect();
       if (!quoteRect) return setPosition(null);
 
-      const screenScroll =
-        window.document.getElementById("post-page")?.scrollTop || 0;
-      let selectionTop = quoteRect.top + screenScroll;
+      let selectionTop = quoteRect.top;
       let selectionLeft = quoteRect.left;
       if (selection?.focusNode && selection?.focusOffset) {
         const range = document.createRange();
