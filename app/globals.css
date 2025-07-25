@@ -65,6 +65,7 @@
     min-height: -webkit-fill-available;
     @apply font-sans;
     font-synthesis: none;
+    scrollbar-gutter: stable;
   }
 
   #__next {
@@ -252,6 +253,12 @@ pre.shiki {
   @apply outline-offset-1;
   @apply outline-2;
   @apply outline-border;
+}
+
+.transparent-container {
+  @apply border;
+  @apply border-border-light;
+  @apply rounded-md;
 }
 
 .container {

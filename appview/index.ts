@@ -9,12 +9,19 @@ import {
   PubLeafletGraphSubscription,
   PubLeafletPublication,
 } from "lexicons/api";
+import {
+  AppBskyEmbedExternal,
+  AppBskyFeedPost,
+  AppBskyRichtextFacet,
+} from "@atproto/api";
 import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 import { createIdentity } from "actions/createIdentity";
 import { supabaseServerClient } from "supabase/serverClient";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { QUOTE_PARAM } from "app/lish/[did]/[publication]/[rkey]/useHighlight";
+import { inngest } from "app/api/inngest/client";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
 
@@ -48,6 +55,7 @@ async function main() {
       ids.PubLeafletPublication,
       ids.PubLeafletGraphSubscription,
       ids.AppBskyActorProfile,
+      "app.bsky.feed.post",
     ],
     handleEvent: async (evt) => {
       if (evt.event === "identity") {
@@ -156,6 +164,36 @@ async function main() {
             .from("bsky_profiles")
             .update({ record: evt.record as Json })
             .eq("did", evt.did);
+        }
+      }
+      if (evt.collection === "app.bsky.feed.post") {
+        if (evt.event !== "create") return;
+        let record = AppBskyFeedPost.validateRecord(evt.record);
+        if (!record.success) return;
+        let linkFacet = record.value.facets?.find((f) =>
+          f.features.find(
+            (f) =>
+              AppBskyRichtextFacet.isLink(f) && f.uri.includes(QUOTE_PARAM),
+          ),
+        );
+        let link = (
+          linkFacet?.features.find(
+            (f) =>
+              AppBskyRichtextFacet.isLink(f) && f.uri.includes(QUOTE_PARAM),
+          ) as AppBskyRichtextFacet.Link | undefined
+        )?.uri;
+
+        let embed =
+          AppBskyEmbedExternal.isMain(record.value.embed) &&
+          record.value.embed.external.uri.includes(QUOTE_PARAM)
+            ? record.value.embed.external.uri
+            : null;
+        let pubUrl = embed || link;
+        if (pubUrl) {
+          inngest.send({
+            name: "appview/index-bsky-post-mention",
+            data: { post_uri: evt.uri.toString(), document_link: pubUrl },
+          });
         }
       }
     },

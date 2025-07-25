@@ -29,5 +29,20 @@ export const PubLeafletPagesLinearDocument: LexiconDoc = {
     textAlignLeft: { type: "token" },
     textAlignCenter: { type: "token" },
     textAlignRight: { type: "token" },
+    quote: {
+      type: "object",
+      required: ["start", "end"],
+      properties: {
+        start: { type: "ref", ref: "#position" },
+        end: { type: "ref", ref: "#position" },
+      },
+    },
+    position: {
+      type: "object",
+      properties: {
+        path: { type: "array", items: { type: "integer" } },
+        offset: { type: "integer" },
+      },
+    },
   },
 };

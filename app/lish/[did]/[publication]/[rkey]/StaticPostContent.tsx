@@ -96,33 +96,37 @@ let Block = async ({
     case PubLeafletBlocksText.isMain(b.block):
       return (
         <p>
-          <TextBlock facets={b.block.facets} plaintext={b.block.plaintext} />
+          <TextBlock
+            facets={b.block.facets}
+            plaintext={b.block.plaintext}
+            index={[]}
+          />
         </p>
       );
     case PubLeafletBlocksHeader.isMain(b.block): {
       if (b.block.level === 1)
         return (
           <h1>
-            <TextBlock {...b.block} />
+            <TextBlock {...b.block} index={[]} />
           </h1>
         );
       if (b.block.level === 2)
         return (
           <h2>
-            <TextBlock {...b.block} />
+            <TextBlock {...b.block} index={[]} />
           </h2>
         );
       if (b.block.level === 3)
         return (
           <h3>
-            <TextBlock {...b.block} />
+            <TextBlock {...b.block} index={[]} />
           </h3>
         );
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
         <h6>
-          <TextBlock {...b.block} />
+          <TextBlock {...b.block} index={[]} />
         </h6>
       );
     }

@@ -27,14 +27,16 @@ app.get("/.well-known/did.json", (c) => {
 
 app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
   let auth = await validateAuth(c.req, serviceDid);
-  let cursor = c.req.query("cursor");
   if (!auth) return c.json({ feed: [] });
+  let cursor = c.req.query("cursor");
+  let limit = parseInt(c.req.query("limit") || "10");
 
   let { data: publications } = await supabaseServerClient
     .from("publication_subscriptions")
     .select(`publications(documents_in_publications(documents(*)))`)
     .eq("identity", auth);
-  const feed = (publications || [])
+
+  const allPosts = (publications || [])
     .flatMap((pub) => {
       let posts = pub.publications?.documents_in_publications || [];
       return posts;
@@ -52,11 +54,11 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
     });
   let posts;
   if (!cursor) {
-    posts = feed.slice(0, 25);
+    posts = allPosts.slice(0, 25);
   } else {
     let date = cursor.split("::")[0];
     let uri = cursor.split("::")[1];
-    posts = feed
+    posts = allPosts
       .filter((p) => {
         if (!p.documents?.data) return false;
         let record = p.documents.data as PubLeafletDocument.Record;
