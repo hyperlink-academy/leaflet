@@ -27,7 +27,7 @@ export function PostHeader(props: {
     return;
   return (
     <>
-      <CollapsedPostHeader
+      {/* <CollapsedPostHeader
         pubIcon={
           pubRecord?.icon && pub
             ? blobRefToSrc(pubRecord.icon.ref, new AtUri(pub.uri).host)
@@ -35,7 +35,7 @@ export function PostHeader(props: {
         }
         title={record.title}
         quotes={document.document_mentions_in_bsky}
-      />
+      /> */}
       <div className="max-w-prose w-full mx-auto" id="post-header">
         <div className="pubHeader flex flex-col pb-5">
           <Link
