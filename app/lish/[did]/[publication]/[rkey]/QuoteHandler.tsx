@@ -99,19 +99,28 @@ export const QuoteOptionButtons = () => {
   const getURL = () => {
     let selection = document.getSelection()?.getRangeAt(0);
     if (!selection) return;
-    let startIndex = findDataIndex(selection.startContainer);
-    let startOffset = selection.startOffset;
-    let endIndex = findDataIndex(selection.endContainer);
-    let endOffset = selection.endOffset;
-    if (!startIndex || !endIndex) return;
-    console.log(startIndex, endIndex);
+    let startResult = findDataIndex(selection.startContainer);
+    let endResult = findDataIndex(selection.endContainer);
+    if (!startResult || !endResult) return;
+
+    let startOffset = calculateOffsetFromDataParent(
+      selection.startContainer,
+      selection.startOffset,
+      startResult.element,
+    );
+    let endOffset = calculateOffsetFromDataParent(
+      selection.endContainer,
+      selection.endOffset,
+      endResult.element,
+    );
+
     let quotePosition = encodeQuotePosition({
       start: {
-        block: startIndex.split(".").map((i) => parseInt(i)),
+        block: startResult.index.split(".").map((i) => parseInt(i)),
         offset: startOffset,
       },
       end: {
-        block: endIndex.split(".").map((i) => parseInt(i)),
+        block: endResult.index.split(".").map((i) => parseInt(i)),
         offset: endOffset,
       },
     });
@@ -121,7 +130,7 @@ export const QuoteOptionButtons = () => {
     }
     currentUrl.pathname = currentUrl.pathname + `/quote/${quotePosition}`;
 
-    currentUrl.hash = `#${startIndex}`;
+    currentUrl.hash = `#${startResult.index}`;
     return currentUrl.toString();
   };
 
@@ -172,11 +181,14 @@ export const QuoteOptionButtons = () => {
   );
 };
 
-function findDataIndex(node: Node): string | null {
+function findDataIndex(node: Node): { index: string; element: Element } | null {
   if (node.nodeType === Node.ELEMENT_NODE) {
     const element = node as Element;
     if (element.hasAttribute("data-index")) {
-      return element.getAttribute("data-index");
+      const index = element.getAttribute("data-index");
+      if (index) {
+        return { index, element };
+      }
     }
   }
 
@@ -187,12 +199,21 @@ function findDataIndex(node: Node): string | null {
   return null;
 }
 
-function highlightContent() {
-  let span = document.createElement("span");
-  span.classList.add("highlight", "rounded-md", "scroll-my-6");
-  span.style.backgroundColor = "rgba(var(--accent-contrast), .15)";
-  span.onclick = () => {};
-  const selection = document.getSelection();
-  selection?.getRangeAt(0).surroundContents(span);
-  useInteractionState.setState({ drawerOpen: true });
+function calculateOffsetFromDataParent(
+  selectionNode: Node,
+  selectionOffset: number,
+  dataParentElement: Element,
+): number {
+  // If the selection is directly in the data parent, return the offset as-is
+  if (selectionNode === dataParentElement) {
+    return selectionOffset;
+  }
+
+  // Create a range from the start of the data parent to the selection point
+  const range = document.createRange();
+  range.setStart(dataParentElement, 0);
+  range.setEnd(selectionNode, selectionOffset);
+
+  // Get the text content of this range, which gives us the offset from the data parent
+  return range.toString().length;
 }
