@@ -50,7 +50,8 @@ export const useHighlight = (pos: number[]) => {
         !expandedPos.reduce(
           (acc, i, index) =>
             acc &&
-            i >= quotePosition?.start.block[index] &&
+            ((i === -1 && quotePosition?.start.block[index] === undefined) ||
+              i >= (quotePosition?.start.block[index] ?? -1)) &&
             i <= quotePosition.end.block[index],
           true,
         )
