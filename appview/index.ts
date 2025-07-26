@@ -169,6 +169,20 @@ async function main() {
       }
       if (evt.collection === "app.bsky.feed.post") {
         if (evt.event !== "create") return;
+
+        // Early exit if no embed
+        if (
+          !evt.record ||
+          typeof evt.record !== "object" ||
+          !("embed" in evt.record)
+        )
+          return;
+
+        // Quick check if embed might contain our quote param
+        const embedStr = JSON.stringify(evt.record.embed);
+        if (!embedStr.includes(QUOTE_PARAM)) return;
+
+        // Now validate the record since we know it might be relevant
         let record = AppBskyFeedPost.validateRecord(evt.record);
         if (!record.success) return;
 
@@ -177,11 +191,10 @@ async function main() {
           record.value.embed.external.uri.includes(QUOTE_PARAM)
             ? record.value.embed.external.uri
             : null;
-        let pubUrl = embed;
-        if (pubUrl) {
+        if (embed) {
           inngest.send({
             name: "appview/index-bsky-post-mention",
-            data: { post_uri: evt.uri.toString(), document_link: pubUrl },
+            data: { post_uri: evt.uri.toString(), document_link: embed },
           });
         }
       }
