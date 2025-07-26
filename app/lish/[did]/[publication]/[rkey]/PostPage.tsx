@@ -48,7 +48,7 @@ export function PostPage({
       )}
       <div
         id="post-page"
-        className={`postPageWrapper relative overflow-y-auto sm:mx-0 mx-[6px]
+        className={`postPageWrapper relative overflow-y-auto sm:mx-0 mx-[6px] w-full
           ${drawerOpen || hasPageBackground ? "max-w-[var(--page-width-units)] shrink-0 snap-center " : "w-full"}
           ${
             hasPageBackground
@@ -57,7 +57,7 @@ export function PostPage({
           }`}
       >
         <div
-          className={`postPageContent sm:max-w-prose mx-auto h-fit w-fit px-3 sm:px-4 ${hasPageBackground ? " pt-2 pb-3 sm:pb-6" : "py-6 sm:py-9"}`}
+          className={`postPageContent sm:max-w-prose mx-auto h-fit w-full px-3 sm:px-4 ${hasPageBackground ? " pt-2 pb-3 sm:pb-6" : "py-6 sm:py-9"}`}
         >
           <PostHeader data={document} profile={profile} name={name} />
           <PostContent
