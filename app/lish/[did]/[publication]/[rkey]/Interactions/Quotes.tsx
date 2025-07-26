@@ -52,7 +52,7 @@ export const Quotes = (props: {
             let pv = q.bsky_posts?.post_view as unknown as PostView;
             let record = data?.data as PubLeafletDocument.Record;
             const url = new URL(q.link);
-            const quoteParam = url.pathname.split("/quote/")[1];
+            const quoteParam = url.pathname.split("/l-quote/")[1];
             if (!quoteParam) return null;
             const quotePosition = decodeQuotePosition(quoteParam);
             if (!quotePosition) return null;

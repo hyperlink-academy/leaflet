@@ -125,10 +125,10 @@ export const QuoteOptionButtons = () => {
       },
     });
     let currentUrl = new URL(window.location.href);
-    if (currentUrl.pathname.includes("/quote/")) {
-      currentUrl.pathname = currentUrl.pathname.split("/quote/")[0];
+    if (currentUrl.pathname.includes("/l-quote/")) {
+      currentUrl.pathname = currentUrl.pathname.split("/l-quote/")[0];
     }
-    currentUrl.pathname = currentUrl.pathname + `/quote/${quotePosition}`;
+    currentUrl.pathname = currentUrl.pathname + `/l-quote/${quotePosition}`;
 
     currentUrl.hash = `#${startResult.index}`;
     return currentUrl.toString();

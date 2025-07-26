@@ -28,7 +28,7 @@ let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
 );
-const QUOTE_PARAM = "/quote/";
+const QUOTE_PARAM = "/l-quote/";
 async function main() {
   let startCursor;
   try {

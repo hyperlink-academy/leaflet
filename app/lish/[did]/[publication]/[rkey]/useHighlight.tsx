@@ -31,7 +31,7 @@ export const useHighlight = (pos: number[]) => {
     doc?.document_mentions_in_bsky
       .filter((m, i) => i === activeHighlight)
       .map((mention) => {
-        return new URL(mention.link).pathname.split("/quote/")[1];
+        return new URL(mention.link).pathname.split("/l-quote/")[1];
       })
       .filter((s) => s !== null) || [];
   if (quote) highlights.push(quote as string);
