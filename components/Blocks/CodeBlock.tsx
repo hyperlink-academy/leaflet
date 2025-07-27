@@ -71,7 +71,7 @@ export function CodeBlock(props: BlockProps) {
           <div className="flex gap-1">
             Theme:{" "}
             <select
-              className="codeBlockLang text-left bg-transparent pr-1"
+              className="codeBlockLang text-left bg-transparent pr-1 sm:max-w-none max-w-24"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -93,7 +93,7 @@ export function CodeBlock(props: BlockProps) {
             </select>
           </div>
           <select
-            className="codeBlockLang text-right bg-transparent pr-1"
+            className="codeBlockLang text-right bg-transparent pr-1 sm:max-w-none max-w-24"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
