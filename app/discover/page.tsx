@@ -1,6 +1,7 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import Link from "next/link";
 import { SortedPublicationList } from "./SortedPublicationList";
+import { Metadata } from "next";
 
 export type PublicationsList = Awaited<ReturnType<typeof getPublications>>;
 async function getPublications() {
@@ -19,6 +20,12 @@ async function getPublications() {
     .limit(1, { referencedTable: "documents_in_publications" });
   return publications;
 }
+
+export const metadata: Metadata = {
+  title: "Discover",
+  description: "Explore publications on Leaflet ✨ Or make your own!",
+};
+
 export default async function Discover(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
