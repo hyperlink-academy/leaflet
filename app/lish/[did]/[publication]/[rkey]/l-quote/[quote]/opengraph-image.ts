@@ -10,5 +10,9 @@ export default async function OpenGraphImage(props: {
   let quotePosition = decodeQuotePosition(props.params.quote);
   return getMicroLinkOgImage(
     `/lish/${decodeURIComponent(props.params.did)}/${decodeURIComponent(props.params.publication)}/${props.params.rkey}/l-quote/${props.params.quote}#${quotePosition?.start.block.join(".")}_${quotePosition?.start.offset}`,
+    {
+      width: 660,
+      height: 345,
+    },
   );
 }
