@@ -21,7 +21,7 @@ export function PubCodeBlock({
   }, [block]);
   return (
     <div
-      className="w-full min-h-[42px] rounded-md border-border-light outline-border-light selected-outline"
+      className="w-full min-h-[42px] my-2 rounded-md border-border-light outline-border-light selected-outline"
       dangerouslySetInnerHTML={{ __html: html || "" }}
     />
   );

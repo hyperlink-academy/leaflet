@@ -86,6 +86,7 @@ let Block = ({
   let className = `
     postBlockWrapper
     pt-1
+    min-h-7
     ${isList ? "isListItem pb-0 " : "pb-2 last:pb-3 last:sm:pb-4 first:pt-2 sm:first:pt-3"}
     ${alignment}
     `;
@@ -120,6 +121,7 @@ let Block = ({
           href={b.block.src}
           target="_blank"
           className={`
+            my-2
           externalLinkBlock flex relative group/linkBlock
           h-[104px] w-full bg-bg-page overflow-hidden text-primary hover:no-underline no-underline
           hover:border-accent-contrast  shadow-sm

@@ -13,7 +13,7 @@ export const StaticMathBlock = ({
     throwOnError: false,
   });
   return (
-    <div className="math-block">
+    <div className="math-block my-2">
       <div dangerouslySetInnerHTML={{ __html: html }} />
     </div>
   );
