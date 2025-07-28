@@ -65,7 +65,11 @@ let Block = ({
 }) => {
   let b = block;
   let blockProps = {
-    style: { scrollMarginTop: "10rem", scrollMarginBottom: "10rem" },
+    style: {
+      scrollMarginTop: "10rem",
+      scrollMarginBottom: "10rem",
+      wordBreak: "break-word" as React.CSSProperties["wordBreak"],
+    },
     id: preview ? undefined : index.join("."),
     "data-index": index.join("."),
   };
