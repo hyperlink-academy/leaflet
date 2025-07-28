@@ -81,7 +81,7 @@ export function QuoteHandler() {
     return (
       <div
         id="quote-trigger"
-        className={`accent-container border border-border-light  text-accent-contrast px-1 flex gap-2 text-sm justify-center text-center items-center`}
+        className={`accent-container border border-border-light text-accent-contrast px-2 flex gap-1 text-sm justify-center text-center items-center`}
         style={{
           position: "absolute",
           top: position.top,
@@ -139,7 +139,7 @@ export const QuoteOptionButtons = () => {
       <div className="">Share Quote via</div>
 
       <button
-        className="flex gap-1 items-center hover:font-bold"
+        className="flex gap-1 items-center hover:font-bold p-1"
         role="link"
         onClick={() => {
           let url = getURL();
@@ -156,7 +156,7 @@ export const QuoteOptionButtons = () => {
       <Separator classname="h-3" />
       <button
         id="copy-quote-link"
-        className="flex gap-1 items-center  hover:font-bold"
+        className="flex gap-1 items-center hover:font-bold p-1"
         onClick={() => {
           let rect = document
             .getElementById("copy-quote-link")
