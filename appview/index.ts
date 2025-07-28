@@ -192,7 +192,7 @@ async function main() {
             ? record.value.embed.external.uri
             : null;
         if (embed) {
-          inngest.send({
+          await inngest.send({
             name: "appview/index-bsky-post-mention",
             data: { post_uri: evt.uri.toString(), document_link: embed },
           });
@@ -217,8 +217,4 @@ async function main() {
   process.on("SIGTERM", cleanup);
 }
 
-inngest.send({
-  name: "appview/come-online",
-  data: {},
-});
 main();
