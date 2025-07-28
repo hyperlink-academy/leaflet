@@ -54,7 +54,7 @@ export function PostHeader(props: {
             <p className="italic text-secondary">{record.description}</p>
           ) : null}
 
-          <div className="text-sm text-tertiary pt-3 flex gap-1">
+          <div className="text-sm text-tertiary pt-3 flex gap-1 flex-wrap">
             {profile ? (
               <>
                 <a
