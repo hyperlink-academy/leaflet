@@ -41,6 +41,7 @@ async function main() {
     startCursor,
     setCursor: async (cursor) => {
       await writeFile(cursorFile, cursor.toString());
+      console.log("Wrote cursor: " + cursor.toString());
       // persist cursor
     },
   });
