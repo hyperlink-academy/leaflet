@@ -19,6 +19,7 @@ export interface Main {
     | $Typed<Highlight>
     | $Typed<Underline>
     | $Typed<Strikethrough>
+    | $Typed<Id>
     | $Typed<Bold>
     | $Typed<Italic>
     | { $type: string }
@@ -111,6 +112,22 @@ export function isStrikethrough<V>(v: V) {
 
 export function validateStrikethrough<V>(v: V) {
   return validate<Strikethrough & V>(v, id, hashStrikethrough)
+}
+
+/** Facet feature for an identifier. Used for linking to a segment */
+export interface Id {
+  $type?: 'pub.leaflet.richtext.facet#id'
+  id?: string
+}
+
+const hashId = 'id'
+
+export function isId<V>(v: V) {
+  return is$typed(v, id, hashId)
+}
+
+export function validateId<V>(v: V) {
+  return validate<Id & V>(v, id, hashId)
 }
 
 /** Facet feature for bold text */

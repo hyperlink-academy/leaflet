@@ -27,6 +27,13 @@ const FacetItems: LexiconDoc["defs"] = {
     required: [],
     properties: {},
   },
+  id: {
+    type: "object",
+    description:
+      "Facet feature for an identifier. Used for linking to a segment",
+    required: [],
+    properties: { id: { type: "string" } },
+  },
   bold: {
     type: "object",
     description: "Facet feature for bold text",

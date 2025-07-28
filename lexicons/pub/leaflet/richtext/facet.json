@@ -23,6 +23,7 @@
               "#highlight",
               "#underline",
               "#strikethrough",
+              "#id",
               "#bold",
               "#italic"
             ]
@@ -78,6 +79,16 @@
       "description": "Facet feature for strikethrough markup",
       "required": [],
       "properties": {}
+    },
+    "id": {
+      "type": "object",
+      "description": "Facet feature for an identifier. Used for linking to a segment",
+      "required": [],
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
     },
     "bold": {
       "type": "object",

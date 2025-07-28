@@ -29,7 +29,13 @@ export function TextBlock(props: {
               props.plaintext.slice(0, highlight.endOffset || undefined),
             ).length,
           },
-          features: [{ $type: "pub.leaflet.richtext.facet#highlight" }],
+          features: [
+            { $type: "pub.leaflet.richtext.facet#highlight" },
+            {
+              $type: "pub.leaflet.richtext.facet#id",
+              id: `${props.index.join(".")}_${highlight.startOffset}`,
+            },
+          ],
         });
       }
     }
@@ -37,6 +43,7 @@ export function TextBlock(props: {
   }, [props.plaintext, props.facets, highlights, props.preview]);
   let counter = 0;
   for (const segment of richText.segments()) {
+    let id = segment.facet?.find(PubLeafletRichtextFacet.isId);
     let link = segment.facet?.find(PubLeafletRichtextFacet.isLink);
     let isBold = segment.facet?.find(PubLeafletRichtextFacet.isBold);
     let isStrikethrough = segment.facet?.find(
@@ -48,6 +55,7 @@ export function TextBlock(props: {
       PubLeafletRichtextFacet.isHighlight,
     );
     let className = `
+      ${id ? "scroll-mt-12 scroll-mb-16" : ""}
       ${isBold ? "font-bold" : ""}
       ${isItalic ? "italic" : ""}
       ${isUnderline ? "underline" : ""}
@@ -67,7 +75,7 @@ export function TextBlock(props: {
       );
     } else {
       children.push(
-        <span key={counter} className={className}>
+        <span key={counter} className={className} id={id?.id}>
           {segment.text}
         </span>,
       );

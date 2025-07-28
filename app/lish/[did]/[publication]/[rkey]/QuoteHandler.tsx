@@ -130,7 +130,7 @@ export const QuoteOptionButtons = () => {
     }
     currentUrl.pathname = currentUrl.pathname + `/l-quote/${quotePosition}`;
 
-    currentUrl.hash = `#${startResult.index}`;
+    currentUrl.hash = `#${startResult.index}_${startOffset}`;
     return currentUrl.toString();
   };
 
