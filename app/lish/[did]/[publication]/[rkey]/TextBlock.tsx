@@ -55,7 +55,7 @@ export function TextBlock(props: {
       PubLeafletRichtextFacet.isHighlight,
     );
     let className = `
-      ${id ? "scroll-mt-12 scroll-mb-16" : ""}
+      ${id ? "scroll-mt-6 scroll-mb-10" : ""}
       ${isBold ? "font-bold" : ""}
       ${isItalic ? "italic" : ""}
       ${isUnderline ? "underline" : ""}
