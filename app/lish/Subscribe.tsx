@@ -121,17 +121,13 @@ const ManageSubscriptionButton = (props: {
   );
 };
 
-const SubscribeForm = (props: {
+export const SubscribeForm = (props: {
   pub_uri: string;
   subscribed?: boolean;
   base_url: string;
 }) => {
   let { identity } = useIdentityData();
-  let [state, setState] = useState<State>(
-    identity?.atp_did || identity?.email
-      ? { state: "success" }
-      : { state: "default" },
-  );
+  let [state, setState] = useState<State>({ state: "default" });
 
   let [emailInputValue, setEmailInputValue] = useState("");
 
@@ -204,7 +200,7 @@ const LoginToSubscribe = (props: {
         setState={props.setState}
         emailInputValue={props.emailInputValue}
         setEmailInputValue={props.setEmailInputValue}
-        label={<h4>Subscribe with Email</h4>}
+        label={null}
       />
       <div className="flex text-tertiary italic text-sm gap-2 items-center w-full">
         <hr className="border-border-light grow" />
@@ -215,10 +211,10 @@ const LoginToSubscribe = (props: {
         {/* THIS WILL TAKE YOU TO THE BSKY AUTH,
           ONCE YOURE DONT WITH THAT, IT SHOULD COME BACK HERE
           WITH THE SUCCESS POPOVER OPEN (so that know it worked and can change email) */}
-        <ButtonSecondary fullWidth>
+        <ButtonPrimary fullWidth>
           <BlueskyTiny />
           Subscribe with Bluesky
-        </ButtonSecondary>
+        </ButtonPrimary>
         <button className="text-accent-contrast text-sm">
           or use an ATProto Handle
         </button>
@@ -309,7 +305,7 @@ const EmailInput = (props: {
   pub_uri: string;
   emailInputValue: string;
   setEmailInputValue: (value: string) => void;
-  label?: React.ReactNode;
+  label?: React.ReactNode | null;
 }) => {
   let { identity, mutate } = useIdentityData();
   async function emailSubmit() {
@@ -326,9 +322,13 @@ const EmailInput = (props: {
   return (
     <form
       action={emailSubmit}
-      className=" flex flex-col gap-2 py-1 text-center justify-center text-secondary"
+      className=" flex flex-col gap-2 text-center justify-center text-secondary"
     >
-      {props.label ? props.label : <h4>Enter your email</h4>}
+      {props.label !== undefined ? (
+        props.label
+      ) : props.label === null ? null : (
+        <h4>Enter your email</h4>
+      )}
       <div className="subscribeEmailInput flex gap-1 relative">
         <Input
           type="email"
