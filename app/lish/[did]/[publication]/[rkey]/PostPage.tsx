@@ -42,7 +42,7 @@ export function PostPage({
         <div
           className="spacer sm:block hidden"
           style={{
-            width: `calc(50vw - 24px - ((var(--page-width-units)/2))`,
+            width: `calc(50vw - 12px - ((var(--page-width-units)/2))`,
           }}
         />
       )}
