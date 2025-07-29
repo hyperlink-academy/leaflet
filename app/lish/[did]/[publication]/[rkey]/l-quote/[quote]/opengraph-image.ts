@@ -11,8 +11,8 @@ export default async function OpenGraphImage(props: {
   return getMicroLinkOgImage(
     `/lish/${decodeURIComponent(props.params.did)}/${decodeURIComponent(props.params.publication)}/${props.params.rkey}/l-quote/${props.params.quote}#${quotePosition?.start.block.join(".")}_${quotePosition?.start.offset}`,
     {
-      width: 1132,
-      height: 592,
+      width: 566,
+      height: 296,
       deviceScaleFactor: 2,
     },
   );
