@@ -22,7 +22,7 @@ async function getPublications() {
 }
 
 export const metadata: Metadata = {
-  title: "Discover",
+  title: "Leaflet Discover",
   description: "Explore publications on Leaflet ✨ Or make your own!",
 };
 
