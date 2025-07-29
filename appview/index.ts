@@ -135,15 +135,15 @@ async function main() {
           .eq("uri", evt.uri.toString());
       }
     }
-    if (evt.collection === ids.AppBskyActorProfile) {
-      //only listen to updates because we should fetch it for the first time when they subscribe!
-      if (evt.event === "update") {
-        await supabaseServerClient
-          .from("bsky_profiles")
-          .update({ record: evt.record as Json })
-          .eq("did", evt.did);
-      }
-    }
+    // if (evt.collection === ids.AppBskyActorProfile) {
+    //   //only listen to updates because we should fetch it for the first time when they subscribe!
+    //   if (evt.event === "update") {
+    //     await supabaseServerClient
+    //       .from("bsky_profiles")
+    //       .update({ record: evt.record as Json })
+    //       .eq("did", evt.did);
+    //   }
+    // }
     if (evt.collection === "app.bsky.feed.post") {
       if (evt.event !== "create") return;
 
@@ -224,7 +224,7 @@ async function main() {
       ids.PubLeafletDocument,
       ids.PubLeafletPublication,
       ids.PubLeafletGraphSubscription,
-      ids.AppBskyActorProfile,
+      // ids.AppBskyActorProfile,
       "app.bsky.feed.post",
     ],
     handleEvent: timedHandleEvent,
