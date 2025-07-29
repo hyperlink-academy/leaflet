@@ -143,6 +143,7 @@ function OptionsMenu(props: { document_uri: string }) {
           subtext=""
           smokerText="Post link copied!"
           id="get-post-link"
+          fullLink={postLink?.includes("https") ? postLink : undefined}
           link={postLink}
         />
 

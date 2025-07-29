@@ -165,6 +165,7 @@ const ShareMenu = (props: {
             subtext=""
             smokerText="Post link copied!"
             id="get-post-link"
+            fullLink={postLink.includes("http") ? postLink : undefined}
             link={postLink}
           />
         </>
