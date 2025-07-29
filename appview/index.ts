@@ -138,10 +138,13 @@ async function main() {
     if (evt.collection === ids.AppBskyActorProfile) {
       //only listen to updates because we should fetch it for the first time when they subscribe!
       if (evt.event === "update") {
-        await supabaseServerClient
-          .from("bsky_profiles")
-          .update({ record: evt.record as Json })
-          .eq("did", evt.did);
+        await inngest.send({
+          name: "appview/profile-update",
+          data: {
+            did: evt.did,
+            record: evt.record,
+          },
+        });
       }
     }
     if (evt.collection === "app.bsky.feed.post") {
