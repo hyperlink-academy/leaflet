@@ -17,7 +17,6 @@ import {
 import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 import { createIdentity } from "actions/createIdentity";
-import { supabaseServerClient } from "supabase/serverClient";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { inngest } from "app/api/inngest/client";
@@ -169,6 +168,9 @@ async function main() {
           ? record.value.embed.external.uri
           : null;
       if (embed) {
+        console.log(
+          "processing post mention: " + embed + " in " + evt.uri.toString(),
+        );
         await inngest.send({
           name: "appview/index-bsky-post-mention",
           data: { post_uri: evt.uri.toString(), document_link: embed },
@@ -210,7 +212,6 @@ async function main() {
     startCursor,
     setCursor: async (cursor) => {
       await writeFile(cursorFile, cursor.toString());
-      console.log("Wrote cursor: " + cursor.toString());
       // persist cursor
     },
   });
@@ -227,7 +228,7 @@ async function main() {
       // ids.AppBskyActorProfile,
       "app.bsky.feed.post",
     ],
-    handleEvent: timedHandleEvent,
+    handleEvent,
     onError: (err) => {
       console.error(err);
     },
