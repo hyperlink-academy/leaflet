@@ -26,7 +26,7 @@ export function TextBlock(props: {
                 ).length
               : 0,
             byteEnd: new UnicodeString(
-              props.plaintext.slice(0, highlight.endOffset || undefined),
+              props.plaintext.slice(0, highlight.endOffset ?? undefined),
             ).length,
           },
           features: [
