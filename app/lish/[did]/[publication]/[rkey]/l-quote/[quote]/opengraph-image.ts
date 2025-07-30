@@ -13,7 +13,7 @@ export default async function OpenGraphImage(props: {
     {
       width: 566,
       height: 296,
-      deviceScaleFactor: 2,
+      deviceScaleFactor: 1.9,
     },
   );
 }
