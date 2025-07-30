@@ -3,8 +3,16 @@ import { get_leaflet_data } from "app/api/rpc/[command]/get_leaflet_data";
 import { PublishPost } from "./PublishPost";
 import { PubLeafletPublication } from "lexicons/api";
 import { getIdentityData } from "actions/getIdentityData";
-
+import {
+  ThemeBackgroundProvider,
+  ThemeProvider,
+} from "components/ThemeManager/ThemeProvider";
 import { AtpAgent } from "@atproto/api";
+import {
+  PublicationBackgroundProvider,
+  PublicationThemeProvider,
+  PublicationThemeProviderDashboard,
+} from "components/ThemeManager/PublicationThemeProvider";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -41,15 +49,25 @@ export default async function LeafletPage(props: Props) {
 
   let profile = await agent.getProfile({ actor: identity.atp_did });
   return (
-    <PublishPost
-      leaflet_id={leaflet_id}
-      root_entity={rootEntity}
-      profile={profile.data}
-      title={pub.title}
-      publication_uri={pub.publication}
-      description={pub.description}
-      record={pub.publications?.record as PubLeafletPublication.Record}
-      posts_in_pub={pub.publications?.documents_in_publications[0].count}
-    />
+    <PublicationThemeProvider
+      pub_creator={pub?.publications?.identity_did || ""}
+      record={pub?.publications?.record as PubLeafletPublication.Record}
+    >
+      <PublicationBackgroundProvider
+        record={pub?.publications?.record as PubLeafletPublication.Record}
+        pub_creator={pub?.publications?.identity_did || ""}
+      >
+        <PublishPost
+          leaflet_id={leaflet_id}
+          root_entity={rootEntity}
+          profile={profile.data}
+          title={pub.title}
+          publication_uri={pub.publication}
+          description={pub.description}
+          record={pub.publications?.record as PubLeafletPublication.Record}
+          posts_in_pub={pub.publications?.documents_in_publications[0].count}
+        />
+      </PublicationBackgroundProvider>
+    </PublicationThemeProvider>
   );
 }

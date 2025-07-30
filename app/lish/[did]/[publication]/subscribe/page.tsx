@@ -66,7 +66,7 @@ export default async function SubscribePage(props: {
                   backgroundSize: "cover",
                 }}
               />
-            )}{" "}
+            )}
             <h2 className="pt-1">{record?.name}</h2>
             {record?.description && <div>{record?.description}</div>}
             <div className="text-sm text-tertiary pt-1">
