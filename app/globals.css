@@ -179,6 +179,13 @@ pre.shiki {
   @apply overflow-auto;
 }
 
+.highlight:has(~ .highlight) {
+  @apply rounded-r-none;
+}
+.highlight + .highlight {
+  @apply rounded-l-none;
+}
+
 .highlight {
   @apply px-[1px];
   @apply py-[1px];
