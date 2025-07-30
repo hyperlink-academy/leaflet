@@ -70,6 +70,24 @@ export const inputrules = (
         return null;
       }),
 
+      //Code
+      new InputRule(/\`([^`]+)\`$/, (state, match, start, end) => {
+        const [fullMatch, content] = match;
+        const { tr } = state;
+        if (content) {
+          const startIndex = start + fullMatch.indexOf("`");
+          tr.replaceWith(startIndex, end, state.schema.text(content))
+            .addMark(
+              startIndex,
+              startIndex + content.length,
+              schema.marks.code.create(),
+            )
+            .removeStoredMark(schema.marks.code);
+          return tr;
+        }
+        return null;
+      }),
+
       //Italic
       new InputRule(/(?:^|[^*])\*([^*]+)\*$/, (state, match, start, end) => {
         const [fullMatch, content] = match;

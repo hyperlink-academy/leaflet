@@ -30,7 +30,6 @@
 
     --safe-padding-bottom: max(calc(env(safe-area-inset-bottom) - 8px), 16px);
   }
-
   @media (max-width: 640px) {
     :root {
       --list-marker-width: 20px;
@@ -155,6 +154,19 @@ input[type="number"] {
     rgb(var(--primary)),
     rgb(var(--bg-page)) 55%
   );
+}
+
+.inline-code {
+  display: inline;
+  font-size: 1em;
+  @apply bg-border-light;
+  @apply font-mono;
+  @apply px-[1px];
+  @apply py-[1px];
+  @apply -mx-[1px];
+  @apply -my-[1px];
+  @apply rounded-[4px];
+  @apply box-decoration-clone;
 }
 
 pre.shiki code {

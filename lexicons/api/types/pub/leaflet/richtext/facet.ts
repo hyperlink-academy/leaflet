@@ -16,6 +16,7 @@ export interface Main {
   index: ByteSlice
   features: (
     | $Typed<Link>
+    | $Typed<Code>
     | $Typed<Highlight>
     | $Typed<Underline>
     | $Typed<Strikethrough>
@@ -67,6 +68,21 @@ export function isLink<V>(v: V) {
 
 export function validateLink<V>(v: V) {
   return validate<Link & V>(v, id, hashLink)
+}
+
+/** Facet feature for inline code. */
+export interface Code {
+  $type?: 'pub.leaflet.richtext.facet#code'
+}
+
+const hashCode = 'code'
+
+export function isCode<V>(v: V) {
+  return is$typed(v, id, hashCode)
+}
+
+export function validateCode<V>(v: V) {
+  return validate<Code & V>(v, id, hashCode)
 }
 
 /** Facet feature for highlighted text. */

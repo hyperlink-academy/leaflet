@@ -9,6 +9,12 @@ const FacetItems: LexiconDoc["defs"] = {
       uri: { type: "string", format: "uri" },
     },
   },
+  code: {
+    type: "object",
+    description: "Facet feature for inline code.",
+    required: [],
+    properties: {},
+  },
   highlight: {
     type: "object",
     description: "Facet feature for highlighted text.",

@@ -45,6 +45,7 @@ export function TextBlock(props: {
     let id = segment.facet?.find(PubLeafletRichtextFacet.isId);
     let link = segment.facet?.find(PubLeafletRichtextFacet.isLink);
     let isBold = segment.facet?.find(PubLeafletRichtextFacet.isBold);
+    let isCode = segment.facet?.find(PubLeafletRichtextFacet.isCode);
     let isStrikethrough = segment.facet?.find(
       PubLeafletRichtextFacet.isStrikethrough,
     );
@@ -54,6 +55,7 @@ export function TextBlock(props: {
       PubLeafletRichtextFacet.isHighlight,
     );
     let className = `
+      ${isCode ? "inline-code" : ""}
       ${id ? "scroll-mt-12 scroll-mb-10" : ""}
       ${isBold ? "font-bold" : ""}
       ${isItalic ? "italic" : ""}
@@ -61,7 +63,13 @@ export function TextBlock(props: {
       ${isStrikethrough ? "line-through decoration-tertiary" : ""}
       ${isHighlighted ? "highlight bg-highlight-1" : ""}`;
 
-    if (link) {
+    if (isCode) {
+      children.push(
+        <code key={counter} className={className} id={id?.id}>
+          {segment.text}
+        </code>,
+      );
+    } else if (link) {
       children.push(
         <a
           key={counter}

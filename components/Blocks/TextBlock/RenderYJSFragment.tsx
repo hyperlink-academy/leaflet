@@ -83,6 +83,7 @@ export type Delta = {
   insert: string;
   attributes?: {
     strong?: {};
+    code?: {};
     em?: {};
     underline?: {};
     strikethrough?: {};
@@ -98,6 +99,8 @@ function attributesToStyle(d: Delta) {
   } as { style: CSSProperties; className: string } & {
     [s: `data-${string}`]: any;
   };
+
+  if (d.attributes?.code) props.className += " inline-code";
   if (d.attributes?.strong) props.style.fontWeight = "700";
   if (d.attributes?.em) props.style.fontStyle = "italic";
   if (d.attributes?.underline) props.style.textDecoration = "underline";
@@ -106,7 +109,7 @@ function attributesToStyle(d: Delta) {
       (props.style.textDecorationColor = theme.colors.tertiary);
   }
   if (d.attributes?.highlight) {
-    props.className = "highlight";
+    props.className += " highlight";
     props["data-color"] = d.attributes.highlight.color;
     props.style.backgroundColor =
       d.attributes?.highlight.color === "1"

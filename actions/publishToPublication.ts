@@ -389,6 +389,8 @@ function YJSFragmentToFacets(
           $type: "pub.leaflet.richtext.facet#strikethrough",
         });
 
+      if (d.attributes?.code)
+        facet.features.push({ $type: "pub.leaflet.richtext.facet#code" });
       if (d.attributes?.highlight)
         facet.features.push({ $type: "pub.leaflet.richtext.facet#highlight" });
       if (d.attributes?.underline)

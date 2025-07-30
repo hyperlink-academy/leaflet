@@ -444,9 +444,11 @@ export const schemaDict = {
               type: 'union',
               refs: [
                 'lex:pub.leaflet.richtext.facet#link',
+                'lex:pub.leaflet.richtext.facet#code',
                 'lex:pub.leaflet.richtext.facet#highlight',
                 'lex:pub.leaflet.richtext.facet#underline',
                 'lex:pub.leaflet.richtext.facet#strikethrough',
+                'lex:pub.leaflet.richtext.facet#id',
                 'lex:pub.leaflet.richtext.facet#bold',
                 'lex:pub.leaflet.richtext.facet#italic',
               ],
@@ -482,6 +484,12 @@ export const schemaDict = {
           },
         },
       },
+      code: {
+        type: 'object',
+        description: 'Facet feature for inline code.',
+        required: [],
+        properties: {},
+      },
       highlight: {
         type: 'object',
         description: 'Facet feature for highlighted text.',
@@ -499,6 +507,17 @@ export const schemaDict = {
         description: 'Facet feature for strikethrough markup',
         required: [],
         properties: {},
+      },
+      id: {
+        type: 'object',
+        description:
+          'Facet feature for an identifier. Used for linking to a segment',
+        required: [],
+        properties: {
+          id: {
+            type: 'string',
+          },
+        },
       },
       bold: {
         type: 'object',

@@ -6,6 +6,17 @@ let baseSchema = {
   marks: {
     strong: marks.strong,
     em: marks.em,
+    code: {
+      parseDOM: [
+        {
+          tag: "code",
+        },
+      ],
+
+      toDOM() {
+        return ["code", { class: "inline-code" }, 0];
+      },
+    } as MarkSpec,
     underline: {
       parseDOM: [
         { tag: "u" },
