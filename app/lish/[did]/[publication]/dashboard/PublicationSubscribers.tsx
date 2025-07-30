@@ -108,6 +108,7 @@ export function PublicationSubscribers() {
                 handle={handle ? handle : undefined}
                 email={"dummyemail@email.com"}
                 did={`${subscriber.identities.bsky_profiles?.did}`}
+                createdAt={subscriber.created_at}
                 checkedSubscribers={checkedSubscribers}
                 setCheckedSubscribers={setCheckedSubscribers}
                 checked={checkedSubscribers.some(
@@ -125,6 +126,7 @@ const SubscriberListItem = (props: {
   handle: string | undefined;
   email: string | undefined;
   did: string | undefined;
+  createdAt: string;
   checkedSubscribers: subscriber[];
   setCheckedSubscribers: (subscribers: subscriber[]) => void;
   checked: boolean;
@@ -180,7 +182,11 @@ const SubscriberListItem = (props: {
         </div>
       </div>
       <div className="px-1 py-0 h-max rounded-md accent-container border border-border text-tertiary">
-        6/24/25
+        {new Date(props.createdAt).toLocaleString(undefined, {
+          year: "2-digit",
+          month: "2-digit",
+          day: "2-digit",
+        })}
       </div>
     </Checkbox>
   );
