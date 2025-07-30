@@ -179,7 +179,7 @@ pre.shiki {
   @apply overflow-auto;
 }
 
-.highlight:has(~ .highlight) {
+.highlight:has(+ .highlight) {
   @apply rounded-r-none;
 }
 .highlight + .highlight {
