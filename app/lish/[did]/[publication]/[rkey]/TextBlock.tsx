@@ -17,25 +17,29 @@ export function TextBlock(props: {
     let facets = [...(props.facets || [])];
     if (!props.preview) {
       for (let highlight of highlights) {
-        facets = addFacet(facets, {
-          index: {
-            byteStart: highlight.startOffset
-              ? new UnicodeString(
-                  props.plaintext.slice(0, highlight.startOffset),
-                ).length
-              : 0,
-            byteEnd: new UnicodeString(
-              props.plaintext.slice(0, highlight.endOffset ?? undefined),
-            ).length,
-          },
-          features: [
-            { $type: "pub.leaflet.richtext.facet#highlight" },
-            {
-              $type: "pub.leaflet.richtext.facet#id",
-              id: `${props.index.join(".")}_${highlight.startOffset || 0}`,
+        facets = addFacet(
+          facets,
+          {
+            index: {
+              byteStart: highlight.startOffset
+                ? new UnicodeString(
+                    props.plaintext.slice(0, highlight.startOffset),
+                  ).length
+                : 0,
+              byteEnd: new UnicodeString(
+                props.plaintext.slice(0, highlight.endOffset ?? undefined),
+              ).length,
             },
-          ],
-        });
+            features: [
+              { $type: "pub.leaflet.richtext.facet#highlight" },
+              {
+                $type: "pub.leaflet.richtext.facet#id",
+                id: `${props.index.join(".")}_${highlight.startOffset || 0}`,
+              },
+            ],
+          },
+          new UnicodeString(props.plaintext).length,
+        );
       }
     }
     return new RichText({ text: props.plaintext, facets });
@@ -153,119 +157,45 @@ export class RichText {
     }
   }
 }
-
-function addFacet(facets: Facet[], facet: Facet) {
-  // Handle empty facets array
+function addFacet(facets: Facet[], newFacet: Facet, length: number) {
   if (facets.length === 0) {
-    return [facet];
+    return [newFacet];
   }
 
-  const newStart = facet.index.byteStart;
-  const newEnd = facet.index.byteEnd;
+  const allFacets = [...facets, newFacet];
 
-  // Find facets that overlap with the new facet
-  const overlapping: number[] = [];
-  for (let i = 0; i < facets.length; i++) {
-    const existing = facets[i];
-    const existingStart = existing.index.byteStart;
-    const existingEnd = existing.index.byteEnd;
+  // Collect all boundary positions
+  const boundaries = new Set<number>();
+  boundaries.add(0);
+  boundaries.add(length);
 
-    // Check if there's any overlap
-    if (newEnd > existingStart && newStart < existingEnd) {
-      overlapping.push(i);
-    }
+  for (const facet of allFacets) {
+    boundaries.add(facet.index.byteStart);
+    boundaries.add(facet.index.byteEnd);
   }
 
-  // No overlaps - just insert the new facet at the right position
-  if (overlapping.length === 0) {
-    // Find the correct position to insert (maintain sorted order)
-    let insertIndex = facets.length;
-    for (let i = 0; i < facets.length; i++) {
-      if (newStart < facets[i].index.byteStart) {
-        insertIndex = i;
-        break;
-      }
-    }
+  const sortedBoundaries = Array.from(boundaries).sort((a, b) => a - b);
+  const result: Facet[] = [];
 
-    let newFacets = [...facets];
-    newFacets.splice(insertIndex, 0, facet);
-    return newFacets;
-  }
+  // Process segments between consecutive boundaries
+  for (let i = 0; i < sortedBoundaries.length - 1; i++) {
+    const start = sortedBoundaries[i];
+    const end = sortedBoundaries[i + 1];
 
-  // Handle overlaps by splitting and merging
-  const newFacets: Facet[] = [];
-  let processedUpTo = 0;
+    // Find facets that are active at the start position
+    const activeFacets = allFacets.filter(
+      (facet) => facet.index.byteStart <= start && facet.index.byteEnd > start,
+    );
 
-  for (let i = 0; i < facets.length; i++) {
-    const existing = facets[i];
-    const existingStart = existing.index.byteStart;
-    const existingEnd = existing.index.byteEnd;
-
-    // Add non-overlapping facets before the current one
-    if (!overlapping.includes(i)) {
-      newFacets.push(existing);
-      continue;
-    }
-
-    // Split the existing facet based on overlap with new facet
-    const overlapStart = Math.max(existingStart, newStart);
-    const overlapEnd = Math.min(existingEnd, newEnd);
-
-    // Part before overlap
-    if (existingStart < overlapStart) {
-      newFacets.push({
-        index: {
-          byteStart: existingStart,
-          byteEnd: overlapStart,
-        },
-        features: [...existing.features],
+    // Only create facet if there are active facets (features present)
+    if (activeFacets.length > 0) {
+      const features = activeFacets.flatMap((f) => f.features);
+      result.push({
+        index: { byteStart: start, byteEnd: end },
+        features,
       });
     }
-
-    // Overlapping part - merge features
-    newFacets.push({
-      index: {
-        byteStart: overlapStart,
-        byteEnd: overlapEnd,
-      },
-      features: [...existing.features, ...facet.features],
-    });
-
-    // Part after overlap
-    if (overlapEnd < existingEnd) {
-      newFacets.push({
-        index: {
-          byteStart: overlapEnd,
-          byteEnd: existingEnd,
-        },
-        features: [...existing.features],
-      });
-    }
-
-    // Track what part of the new facet we've processed
-    if (newStart < overlapStart && processedUpTo < overlapStart) {
-      // Add the part of new facet before this overlap
-      newFacets.push({
-        index: {
-          byteStart: newStart,
-          byteEnd: overlapStart,
-        },
-        features: [...facet.features],
-      });
-    }
-    processedUpTo = overlapEnd;
   }
 
-  // Add any remaining part of the new facet after all overlaps
-  if (processedUpTo < newEnd) {
-    newFacets.push({
-      index: {
-        byteStart: processedUpTo,
-        byteEnd: newEnd,
-      },
-      features: [...facet.features],
-    });
-  }
-
-  return newFacets.sort((a, b) => a.index.byteStart - b.index.byteStart);
+  return result;
 }
