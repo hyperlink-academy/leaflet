@@ -10,7 +10,7 @@ import {
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { TextBlock } from "./TextBlock";
+import { BaseTextBlock } from "./BaseTextBlock";
 import { StaticMathBlock } from "./StaticMathBlock";
 import { codeToHtml } from "shiki";
 
@@ -96,7 +96,7 @@ let Block = async ({
     case PubLeafletBlocksText.isMain(b.block):
       return (
         <p>
-          <TextBlock
+          <BaseTextBlock
             facets={b.block.facets}
             plaintext={b.block.plaintext}
             index={[]}
@@ -107,26 +107,26 @@ let Block = async ({
       if (b.block.level === 1)
         return (
           <h1>
-            <TextBlock {...b.block} index={[]} />
+            <BaseTextBlock {...b.block} index={[]} />
           </h1>
         );
       if (b.block.level === 2)
         return (
           <h2>
-            <TextBlock {...b.block} index={[]} />
+            <BaseTextBlock {...b.block} index={[]} />
           </h2>
         );
       if (b.block.level === 3)
         return (
           <h3>
-            <TextBlock {...b.block} index={[]} />
+            <BaseTextBlock {...b.block} index={[]} />
           </h3>
         );
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
         <h6>
-          <TextBlock {...b.block} index={[]} />
+          <BaseTextBlock {...b.block} index={[]} />
         </h6>
       );
     }
