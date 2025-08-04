@@ -1,4 +1,3 @@
-"use client";
 import { UnicodeString } from "@atproto/api";
 import { PubLeafletRichtextFacet } from "lexicons/api";
 
