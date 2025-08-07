@@ -243,6 +243,10 @@ const createBlockFromHTML = (
       type = "link";
       break;
     }
+    case "HR": {
+      type = "horizontal-rule";
+      break;
+    }
     default:
       type = null;
   }
@@ -563,6 +567,7 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
           "IMG",
           "A",
           "SPAN",
+          "HR",
         ].includes(elementNode.tagName) ||
         elementNode.getAttribute("data-entityid") ||
         elementNode.getAttribute("data-tex")

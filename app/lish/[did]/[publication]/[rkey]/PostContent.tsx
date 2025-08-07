@@ -8,6 +8,7 @@ import {
   PubLeafletBlocksWebsite,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
+  PubLeafletBlocksHorizontalRule,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { TextBlock } from "./TextBlock";
@@ -92,6 +93,9 @@ let Block = ({
     `;
 
   switch (true) {
+    case PubLeafletBlocksHorizontalRule.isMain(b.block): {
+      return <hr className="my-2 w-full border-border-light" />;
+    }
     case PubLeafletBlocksUnorderedList.isMain(b.block): {
       return (
         <ul className="-ml-[1px] sm:ml-[9px] pb-2">

@@ -12,6 +12,7 @@ import type * as PubLeafletBlocksUnorderedList from '../blocks/unorderedList'
 import type * as PubLeafletBlocksWebsite from '../blocks/website'
 import type * as PubLeafletBlocksMath from '../blocks/math'
 import type * as PubLeafletBlocksCode from '../blocks/code'
+import type * as PubLeafletBlocksHorizontalRule from '../blocks/horizontalRule'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -42,6 +43,7 @@ export interface Block {
     | $Typed<PubLeafletBlocksWebsite.Main>
     | $Typed<PubLeafletBlocksMath.Main>
     | $Typed<PubLeafletBlocksCode.Main>
+    | $Typed<PubLeafletBlocksHorizontalRule.Main>
     | { $type: string }
   alignment?:
     | 'lex:pub.leaflet.pages.linearDocument#textAlignLeft'

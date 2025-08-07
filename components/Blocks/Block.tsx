@@ -28,6 +28,7 @@ import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { LockTiny } from "components/Icons/LockTiny";
 import { MathBlock } from "./MathBlock";
 import { CodeBlock } from "./CodeBlock";
+import { HorizontalRule } from "./HorizontalRule";
 
 export type Block = {
   factID: string;
@@ -184,6 +185,7 @@ const BlockTypeComponents: {
   button: ButtonBlock,
   poll: PollBlock,
   "bluesky-post": BlueskyPostBlock,
+  "horizontal-rule": HorizontalRule,
 };
 
 export const BlockMultiselectIndicator = (props: BlockProps) => {

@@ -16,6 +16,7 @@ import {
   PubLeafletBlocksWebsite,
   PubLeafletBlocksCode,
   PubLeafletBlocksMath,
+  PubLeafletBlocksHorizontalRule,
 } from "lexicons/api";
 import { Block } from "components/Blocks/Block";
 import { TID } from "@atproto/common";
@@ -232,9 +233,17 @@ function blockToRecord(
     b.type !== "image" &&
     b.type !== "link" &&
     b.type !== "code" &&
-    b.type !== "math"
+    b.type !== "math" &&
+    b.type !== "horizontal-rule"
   )
     return;
+
+  if (b.type === "horizontal-rule") {
+    let block: $Typed<PubLeafletBlocksHorizontalRule.Main> = {
+      $type: ids.PubLeafletBlocksHorizontalRule,
+    };
+    return block;
+  }
 
   if (b.type === "heading") {
     let [headingLevel] = scan.eav(b.value, "block/heading-level");

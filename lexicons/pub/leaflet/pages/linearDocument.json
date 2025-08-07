@@ -29,7 +29,8 @@
             "pub.leaflet.blocks.unorderedList",
             "pub.leaflet.blocks.website",
             "pub.leaflet.blocks.math",
-            "pub.leaflet.blocks.code"
+            "pub.leaflet.blocks.code",
+            "pub.leaflet.blocks.horizontalRule"
           ]
         },
         "alignment": {

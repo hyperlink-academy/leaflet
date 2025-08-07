@@ -209,6 +209,17 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksHorizontalRule: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.horizontalRule',
+    defs: {
+      main: {
+        type: 'object',
+        required: [],
+        properties: {},
+      },
+    },
+  },
   PubLeafletBlocksImage: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.image',
@@ -402,6 +413,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.website',
               'lex:pub.leaflet.blocks.math',
               'lex:pub.leaflet.blocks.code',
+              'lex:pub.leaflet.blocks.horizontalRule',
             ],
           },
           alignment: {
@@ -1651,6 +1663,7 @@ export const ids = {
   PubLeafletPublication: 'pub.leaflet.publication',
   PubLeafletBlocksCode: 'pub.leaflet.blocks.code',
   PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
+  PubLeafletBlocksHorizontalRule: 'pub.leaflet.blocks.horizontalRule',
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksMath: 'pub.leaflet.blocks.math',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',

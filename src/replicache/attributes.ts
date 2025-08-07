@@ -331,7 +331,8 @@ export type Data<A extends keyof typeof Attributes> = {
       | "poll"
       | "bluesky-post"
       | "math"
-      | "code";
+      | "code"
+      | "horizontal-rule";
   };
   "canvas-pattern-union": {
     type: "canvas-pattern-union";

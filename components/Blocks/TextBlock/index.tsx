@@ -342,6 +342,17 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
         <pre
           data-entityid={props.entityID}
           onBlur={async () => {
+            if (
+              ["***", "---", "___"].includes(
+                editorState?.doc.textContent.trim() || "",
+              )
+            ) {
+              await rep.rep?.mutate.assertFact({
+                entity: props.entityID,
+                attribute: "block/type",
+                data: { type: "block-type-union", value: "horizontal-rule" },
+              });
+            }
             if (actionTimeout.current) {
               rep.undoManager.endGroup();
               window.clearTimeout(actionTimeout.current);

@@ -1,6 +1,7 @@
 import {
   PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
+  PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksImage,
   PubLeafletBlocksMath,
   PubLeafletBlocksText,
@@ -42,6 +43,9 @@ let Block = async ({
   let b = block;
 
   switch (true) {
+    case PubLeafletBlocksHorizontalRule.isMain(b.block): {
+      return <hr className="my-2 w-full border-border-light" />;
+    }
     case PubLeafletBlocksMath.isMain(b.block): {
       return <StaticMathBlock block={b.block} />;
     }

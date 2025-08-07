@@ -76,6 +76,9 @@ async function renderBlock(
 ) {
   let wrapper: undefined | "h1" | "h2" | "h3";
   let [alignment] = await scanIndex(tx).eav(b.value, "block/text-alignment");
+  if (b.type === "horizontal-rule") {
+    return "<hr />";
+  }
   if (b.type === "code") {
     let [code] = await scanIndex(tx).eav(b.value, "block/code");
     let [lang] = await scanIndex(tx).eav(b.value, "block/code-language");

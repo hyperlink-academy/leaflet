@@ -1,0 +1,11 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.blocks.horizontalRule",
+  "defs": {
+    "main": {
+      "type": "object",
+      "required": [],
+      "properties": {}
+    }
+  }
+}
