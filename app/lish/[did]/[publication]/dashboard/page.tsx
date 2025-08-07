@@ -81,7 +81,7 @@ export default async function Publication(props: {
         publication_data={publication}
       >
         <PublicationThemeProviderDashboard record={record}>
-          <div className="pubDashWrapper relative w-max h-full flex  items-stretch">
+          <div className="pubDashWrapper relative w-max h-full flex items-stretch pwa-padding">
             <div className="flex sm:flex-row flex-col max-h-full h-full">
               <div
                 className="pubDashSidebarWrapper flex justify-end items-start "
