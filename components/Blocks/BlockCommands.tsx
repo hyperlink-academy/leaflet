@@ -206,6 +206,21 @@ export const blockCommands: Command[] = [
     },
   },
   {
+    name: "Horizontal Rule",
+    icon: "—",
+    type: "block",
+    onSelect: async (rep, props, um) => {
+      props.entityID && clearCommandSearchText(props.entityID);
+      await createBlockWithType(rep, props, "horizontal-rule");
+      um.add({
+        undo: () => {
+          props.entityID && focusTextBlock(props.entityID);
+        },
+        redo: () => {},
+      });
+    },
+  },
+  {
     name: "Poll",
     icon: <BlockPollSmall />,
     type: "block",
