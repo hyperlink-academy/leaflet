@@ -166,7 +166,7 @@ export function RenderedTextBlock(props: {
     );
   }
   return (
-    <pre
+    <div
       style={{ wordBreak: "break-word" }} // better than tailwind break-all!
       className={`
         ${alignmentClass}
@@ -174,7 +174,7 @@ export function RenderedTextBlock(props: {
       w-full whitespace-pre-wrap outline-none ${props.className} `}
     >
       {content}
-    </pre>
+    </div>
   );
 }
 
