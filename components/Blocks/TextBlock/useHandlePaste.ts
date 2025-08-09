@@ -447,7 +447,9 @@ const createBlockFromHTML = (
   }
 
   if (child.tagName === "LI") {
-    let ul = Array.from(child.children).find((f) => f.tagName === "UL");
+    let ul = Array.from(child.children)
+      .flatMap((f) => flattenHTMLToTextBlocks(f as HTMLElement))
+      .find((f) => f.tagName === "UL");
     let checked = child.getAttribute("data-checked");
     if (checked !== null) {
       rep.mutate.assertFact({
