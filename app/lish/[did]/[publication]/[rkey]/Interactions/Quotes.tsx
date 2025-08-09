@@ -236,6 +236,10 @@ function extractQuotedListItems(
       );
     }
 
+    if (!trimmedContent && !quotedChildren.length) {
+      return;
+    }
+
     result.push({
       content: trimmedContent?.block || { $type: "null" },
       children: quotedChildren.length > 0 ? quotedChildren : undefined,
