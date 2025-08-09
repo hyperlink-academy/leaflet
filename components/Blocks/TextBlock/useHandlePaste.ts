@@ -487,9 +487,12 @@ const createBlockFromHTML = (
     let block = useEditorStates.getState().editorStates[entityID];
     if (block) {
       let tr = block.editor.tr;
-      if (block.editor.selection.from && block.editor.selection.to)
+      if (
+        block.editor.selection.from !== undefined &&
+        block.editor.selection.to !== undefined
+      )
         tr.delete(block.editor.selection.from, block.editor.selection.to);
-      tr.insert(block.editor.selection.from || 0, content.content);
+      tr.insert(block.editor.selection.from || 1, content.content);
       let newState = block.editor.apply(tr);
       setEditorState(entityID, {
         editor: newState,
