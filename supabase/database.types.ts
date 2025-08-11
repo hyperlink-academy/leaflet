@@ -84,6 +84,45 @@ export type Database = {
           },
         ]
       }
+      comments_on_documents: {
+        Row: {
+          document: string | null
+          indexed_at: string
+          profile: string | null
+          record: Json
+          uri: string
+        }
+        Insert: {
+          document?: string | null
+          indexed_at?: string
+          profile?: string | null
+          record: Json
+          uri: string
+        }
+        Update: {
+          document?: string | null
+          indexed_at?: string
+          profile?: string | null
+          record?: Json
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_on_documents_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "comments_on_documents_profile_fkey"
+            columns: ["profile"]
+            isOneToOne: false
+            referencedRelation: "bsky_profiles"
+            referencedColumns: ["did"]
+          },
+        ]
+      }
       custom_domain_routes: {
         Row: {
           created_at: string
@@ -838,7 +877,15 @@ export type Database = {
           record?: Json | null
           uri?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "publications_identity_did_fkey"
+            columns: ["identity_did"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+        ]
       }
       replicache_clients: {
         Row: {

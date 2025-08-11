@@ -126,7 +126,7 @@ export default async function Post(props: {
           <PageLayout>
             <PostPage
               pubRecord={pubRecord}
-              profile={profile.data}
+              profile={JSON.parse(JSON.stringify(profile.data))}
               document={document}
               did={did}
               blocks={blocks}
@@ -134,6 +134,8 @@ export default async function Post(props: {
               prerenderedCodeBlocks={prerenderedCodeBlocks}
             />
             <InteractionDrawer
+              document_uri={document.uri}
+              comments={document.comments_on_documents}
               quotes={document.document_mentions_in_bsky}
               did={did}
             />

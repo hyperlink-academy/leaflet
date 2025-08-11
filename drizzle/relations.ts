@@ -1,15 +1,17 @@
 import { relations } from "drizzle-orm/relations";
-import { identities, bsky_profiles, entities, facts, entity_sets, permission_tokens, email_subscriptions_to_entity, email_auth_tokens, custom_domains, phone_rsvps_to_entity, custom_domain_routes, poll_votes_on_entity, subscribers_to_publications, publications, documents, document_mentions_in_bsky, bsky_posts, permission_token_on_homepage, documents_in_publications, publication_domains, publication_subscriptions, leaflets_in_publications, permission_token_rights } from "./schema";
+import { identities, bsky_profiles, publications, documents, comments_on_documents, entities, facts, entity_sets, permission_tokens, email_subscriptions_to_entity, email_auth_tokens, custom_domains, phone_rsvps_to_entity, custom_domain_routes, poll_votes_on_entity, subscribers_to_publications, document_mentions_in_bsky, bsky_posts, permission_token_on_homepage, documents_in_publications, publication_domains, publication_subscriptions, leaflets_in_publications, permission_token_rights } from "./schema";
 
-export const bsky_profilesRelations = relations(bsky_profiles, ({one}) => ({
+export const bsky_profilesRelations = relations(bsky_profiles, ({one, many}) => ({
 	identity: one(identities, {
 		fields: [bsky_profiles.did],
 		references: [identities.atp_did]
 	}),
+	comments_on_documents: many(comments_on_documents),
 }));
 
 export const identitiesRelations = relations(identities, ({one, many}) => ({
 	bsky_profiles: many(bsky_profiles),
+	publications: many(publications),
 	permission_token: one(permission_tokens, {
 		fields: [identities.home_page],
 		references: [permission_tokens.id]
@@ -25,6 +27,36 @@ export const identitiesRelations = relations(identities, ({one, many}) => ({
 	permission_token_on_homepages: many(permission_token_on_homepage),
 	publication_domains: many(publication_domains),
 	publication_subscriptions: many(publication_subscriptions),
+}));
+
+export const publicationsRelations = relations(publications, ({one, many}) => ({
+	identity: one(identities, {
+		fields: [publications.identity_did],
+		references: [identities.atp_did]
+	}),
+	subscribers_to_publications: many(subscribers_to_publications),
+	documents_in_publications: many(documents_in_publications),
+	publication_domains: many(publication_domains),
+	publication_subscriptions: many(publication_subscriptions),
+	leaflets_in_publications: many(leaflets_in_publications),
+}));
+
+export const comments_on_documentsRelations = relations(comments_on_documents, ({one}) => ({
+	document: one(documents, {
+		fields: [comments_on_documents.document],
+		references: [documents.uri]
+	}),
+	bsky_profile: one(bsky_profiles, {
+		fields: [comments_on_documents.profile],
+		references: [bsky_profiles.did]
+	}),
+}));
+
+export const documentsRelations = relations(documents, ({many}) => ({
+	comments_on_documents: many(comments_on_documents),
+	document_mentions_in_bskies: many(document_mentions_in_bsky),
+	documents_in_publications: many(documents_in_publications),
+	leaflets_in_publications: many(leaflets_in_publications),
 }));
 
 export const factsRelations = relations(facts, ({one}) => ({
@@ -155,14 +187,6 @@ export const subscribers_to_publicationsRelations = relations(subscribers_to_pub
 	}),
 }));
 
-export const publicationsRelations = relations(publications, ({many}) => ({
-	subscribers_to_publications: many(subscribers_to_publications),
-	documents_in_publications: many(documents_in_publications),
-	publication_domains: many(publication_domains),
-	publication_subscriptions: many(publication_subscriptions),
-	leaflets_in_publications: many(leaflets_in_publications),
-}));
-
 export const document_mentions_in_bskyRelations = relations(document_mentions_in_bsky, ({one}) => ({
 	document: one(documents, {
 		fields: [document_mentions_in_bsky.document],
@@ -172,12 +196,6 @@ export const document_mentions_in_bskyRelations = relations(document_mentions_in
 		fields: [document_mentions_in_bsky.uri],
 		references: [bsky_posts.uri]
 	}),
-}));
-
-export const documentsRelations = relations(documents, ({many}) => ({
-	document_mentions_in_bskies: many(document_mentions_in_bsky),
-	documents_in_publications: many(documents_in_publications),
-	leaflets_in_publications: many(leaflets_in_publications),
 }));
 
 export const bsky_postsRelations = relations(bsky_posts, ({many}) => ({

@@ -35,7 +35,7 @@ export const publications = pgTable("publications", {
 	uri: text("uri").primaryKey().notNull(),
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	name: text("name").notNull(),
-	identity_did: text("identity_did").notNull(),
+	identity_did: text("identity_did").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
 	record: jsonb("record"),
 });
 
@@ -44,6 +44,14 @@ export const bsky_posts = pgTable("bsky_posts", {
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	post_view: jsonb("post_view").notNull(),
 	cid: text("cid").notNull(),
+});
+
+export const comments_on_documents = pgTable("comments_on_documents", {
+	uri: text("uri").primaryKey().notNull(),
+	record: jsonb("record").notNull(),
+	document: text("document").references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	profile: text("profile").references(() => bsky_profiles.did, { onDelete: "set null", onUpdate: "cascade" } ),
 });
 
 export const facts = pgTable("facts", {
