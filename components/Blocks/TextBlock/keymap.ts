@@ -641,31 +641,3 @@ const metaA =
       return true;
     }
   };
-
-export const createParagraphNear: Command = (state, dispatch) => {
-  let sel = state.selection,
-    { $from, $to } = sel;
-  if (
-    sel instanceof AllSelection ||
-    $from.parent.inlineContent ||
-    $to.parent.inlineContent
-  ) {
-    console.log("here?");
-    console.log(sel instanceof AllSelection);
-    console.log(sel.$from);
-    console.log(sel.$from);
-    return false;
-  }
-  let type = defaultBlockAt($to.parent.contentMatchAt($to.indexAfter()));
-  console.log(type);
-  if (!type || !type.isTextblock) return false;
-  if (dispatch) {
-    let side = (
-      !$from.parentOffset && $to.index() < $to.parent.childCount ? $from : $to
-    ).pos;
-    let tr = state.tr.insert(side, type.createAndFill()!);
-    tr.setSelection(TextSelection.create(tr.doc, side + 1));
-    dispatch(tr.scrollIntoView());
-  }
-  return true;
-};

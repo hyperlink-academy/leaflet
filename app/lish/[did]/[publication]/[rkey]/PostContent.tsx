@@ -9,6 +9,7 @@ import {
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
   PubLeafletBlocksHorizontalRule,
+  PubLeafletBlocksBlockquote,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { TextBlock } from "./TextBlock";
@@ -194,6 +195,21 @@ let Block = ({
             </div>
           )}
         </div>
+      );
+    }
+    case PubLeafletBlocksBlockquote.isMain(b.block): {
+      return (
+        <blockquote
+          className={`border-l-2 border-border pl-2 ${className}`}
+          {...blockProps}
+        >
+          <TextBlock
+            facets={b.block.facets}
+            plaintext={b.block.plaintext}
+            index={index}
+            preview={preview}
+          />
+        </blockquote>
       );
     }
     case PubLeafletBlocksText.isMain(b.block):

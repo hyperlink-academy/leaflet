@@ -32,6 +32,7 @@ import { ListUnorderedSmall } from "components/Toolbar/ListToolbar";
 import { BlockMathSmall } from "components/Icons/BlockMathSmall";
 import { BlockCodeSmall } from "components/Icons/BlockCodeSmall";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
+import { QuoteSmall } from "components/Icons/QuoteSmall";
 
 type Props = {
   parent: string;
@@ -161,7 +162,7 @@ export const blockCommands: Command[] = [
   },
   {
     name: "Block Quote",
-    icon: <QuoteTiny width={24} height={24} />,
+    icon: <QuoteSmall />,
     type: "text",
     onSelect: async (rep, props, um) => {
       if (props.entityID) clearCommandSearchText(props.entityID);
