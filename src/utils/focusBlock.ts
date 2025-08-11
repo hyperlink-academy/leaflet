@@ -105,7 +105,7 @@ export function focusBlock(
     }
   }
 
-  if (block.type === "blockquote") {
+  if (block.type === "blockquote" && position.type === "start") {
     let sel = NodeSelection.create(tr.doc, 0);
     nextBlock.view.dispatch(tr.setSelection(sel));
   } else {
