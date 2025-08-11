@@ -140,7 +140,8 @@ export function RenderedTextBlock(props: {
     if (permissions.write && (props.first || props.pageType === "canvas"))
       content = (
         <div
-          className={`${props.className} pointer-events-none italic text-tertiary flex flex-col `}
+          className={`${props.className}
+            pointer-events-none italic text-tertiary flex flex-col `}
         >
           {headingLevel?.data.value === 1
             ? "Title"
@@ -173,6 +174,7 @@ export function RenderedTextBlock(props: {
       style={{ wordBreak: "break-word" }} // better than tailwind break-all!
       className={`
         ${alignmentClass}
+        ${props.type === "blockquote" ? "border-l-2 border-border pl-2 " : ""}
         ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
       w-full whitespace-pre-wrap outline-none ${props.className} `}
     >
