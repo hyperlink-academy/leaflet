@@ -500,7 +500,9 @@ const createBlockFromHTML = (
         tr.delete(block.editor.selection.from, block.editor.selection.to);
       if (type === "blockquote") {
         tr.replaceWith(0, tr.doc.content.size, content.content);
-      } else tr.insert(block.editor.selection.from || 1, content.content);
+      } else {
+        tr.replaceSelectionWith(content);
+      }
       let newState = block.editor.apply(tr);
       setEditorState(entityID, {
         editor: newState,
