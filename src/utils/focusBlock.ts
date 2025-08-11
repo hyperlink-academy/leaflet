@@ -81,10 +81,9 @@ export function focusBlock(
       break;
     }
     case "top": {
-      console.log(position.left);
       pos = nextBlock.view.posAtCoords({
         top: nextBlockViewClientRect.top + 12,
-        left: position.left,
+        left: Math.max(position.left, nextBlockViewClientRect.left),
       });
       console.log(pos);
       break;
@@ -92,7 +91,7 @@ export function focusBlock(
     case "bottom": {
       pos = nextBlock.view.posAtCoords({
         top: nextBlockViewClientRect.bottom - 12,
-        left: position.left,
+        left: Math.max(position.left, nextBlockViewClientRect.left),
       });
       break;
     }
