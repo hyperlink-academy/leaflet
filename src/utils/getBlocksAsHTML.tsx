@@ -162,6 +162,31 @@ async function renderBlock(
       </div>,
     );
   }
+  if (b.type === "blockquote") {
+    let value = (await scanIndex(tx).eav(b.value, "block/text"))[0];
+    if (!value) return "<blockquote></blockquote>";
+    let doc = new Y.Doc();
+    const update = base64.toByteArray(value.data.value);
+    Y.applyUpdate(doc, update);
+    let nodes = doc.getXmlElement("prosemirror").toArray();
+    //Have to handle this specially because it's a multi-line block
+    return `<blockquote>${nodes
+      .map((node) => {
+        if (node.constructor === Y.XmlElement) {
+          let children = node.toArray();
+          if (children.length === 0) return "<p></p>";
+          return renderToStaticMarkup(
+            <RenderYJSFragment
+              attrs={{
+                "data-alignment": alignment?.data.value,
+              }}
+              node={node}
+            />,
+          );
+        }
+      })
+      .join("\n")}</blockquote>`;
+  }
   let value = (await scanIndex(tx).eav(b.value, "block/text"))[0];
   if (!value)
     return ignoreWrapper ? "" : `<${wrapper || "p"}></${wrapper || "p"}>`;

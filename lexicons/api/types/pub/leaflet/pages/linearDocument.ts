@@ -6,6 +6,7 @@ import { CID } from 'multiformats/cid'
 import { validate as _validate } from '../../../../lexicons'
 import { $Typed, is$typed as _is$typed, OmitKey } from '../../../../util'
 import type * as PubLeafletBlocksText from '../blocks/text'
+import type * as PubLeafletBlocksBlockquote from '../blocks/blockquote'
 import type * as PubLeafletBlocksHeader from '../blocks/header'
 import type * as PubLeafletBlocksImage from '../blocks/image'
 import type * as PubLeafletBlocksUnorderedList from '../blocks/unorderedList'
@@ -37,6 +38,7 @@ export interface Block {
   $type?: 'pub.leaflet.pages.linearDocument#block'
   block:
     | $Typed<PubLeafletBlocksText.Main>
+    | $Typed<PubLeafletBlocksBlockquote.Main>
     | $Typed<PubLeafletBlocksHeader.Main>
     | $Typed<PubLeafletBlocksImage.Main>
     | $Typed<PubLeafletBlocksUnorderedList.Main>

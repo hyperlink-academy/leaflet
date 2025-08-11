@@ -161,6 +161,28 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksBlockquote: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.blockquote',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['plaintext'],
+        properties: {
+          plaintext: {
+            type: 'string',
+          },
+          facets: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.richtext.facet',
+            },
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksCode: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.code',
@@ -407,6 +429,7 @@ export const schemaDict = {
             type: 'union',
             refs: [
               'lex:pub.leaflet.blocks.text',
+              'lex:pub.leaflet.blocks.blockquote',
               'lex:pub.leaflet.blocks.header',
               'lex:pub.leaflet.blocks.image',
               'lex:pub.leaflet.blocks.unorderedList',
@@ -1661,6 +1684,7 @@ export function validate(
 export const ids = {
   PubLeafletDocument: 'pub.leaflet.document',
   PubLeafletPublication: 'pub.leaflet.publication',
+  PubLeafletBlocksBlockquote: 'pub.leaflet.blocks.blockquote',
   PubLeafletBlocksCode: 'pub.leaflet.blocks.code',
   PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
   PubLeafletBlocksHorizontalRule: 'pub.leaflet.blocks.horizontalRule',
