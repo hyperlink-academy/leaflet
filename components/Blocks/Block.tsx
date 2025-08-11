@@ -175,6 +175,7 @@ const BlockTypeComponents: {
   math: MathBlock,
   card: PageLinkBlock,
   text: TextBlock,
+  blockquote: TextBlock,
   heading: TextBlock,
   image: ImageBlock,
   link: ExternalLinkBlock,

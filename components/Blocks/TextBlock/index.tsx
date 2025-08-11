@@ -17,7 +17,7 @@ import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
 import { TextBlockKeymap } from "./keymap";
-import { schema } from "./schema";
+import { multiBlockSchema, schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { addBlueskyPostBlock, addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockCommandBar } from "components/Blocks/BlockCommandBar";
@@ -44,7 +44,10 @@ const HeadingStyle = {
 } as { [level: number]: string };
 
 export function TextBlock(
-  props: BlockProps & { className?: string; preview?: boolean },
+  props: BlockProps & {
+    className?: string;
+    preview?: boolean;
+  },
 ) {
   let isLocked = useEntity(props.entityID, "block/is-locked");
   let initialized = useInitialPageLoad();
@@ -213,9 +216,14 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
   let handlePaste = useHandlePaste(props.entityID, propsRef);
   useLayoutEffect(() => {
     if (!mountRef.current) return;
-    let km = TextBlockKeymap(propsRef, repRef, rep.undoManager);
+    let km = TextBlockKeymap(
+      propsRef,
+      repRef,
+      rep.undoManager,
+      props.type === "blockquote",
+    );
     let editor = EditorState.create({
-      schema,
+      schema: props.type === "blockquote" ? multiBlockSchema : schema,
       plugins: [
         ySyncPlugin(value),
         keymap(km),
@@ -332,12 +340,15 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
         },
       }));
     };
-  }, [props.entityID, props.parent, value, handlePaste, rep]);
+  }, [props.entityID, props.parent, value, handlePaste, rep, props.type]);
 
   return (
     <>
       <div
-        className={`flex items-center justify-between w-full ${selected && props.pageType === "canvas" && "bg-bg-page rounded-md"} `}
+        className={`flex items-center justify-between w-full
+          ${selected && props.pageType === "canvas" && "bg-bg-page rounded-md"}
+          ${props.type === "blockquote" ? "border-l-2 border-border pl-2 " : ""}
+          `}
       >
         <pre
           data-entityid={props.entityID}

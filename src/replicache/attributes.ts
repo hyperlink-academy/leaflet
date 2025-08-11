@@ -332,6 +332,7 @@ export type Data<A extends keyof typeof Attributes> = {
       | "bluesky-post"
       | "math"
       | "code"
+      | "blockquote"
       | "horizontal-rule";
   };
   "canvas-pattern-union": {

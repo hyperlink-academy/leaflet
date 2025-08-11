@@ -31,6 +31,7 @@ import { BlockRSVPSmall } from "components/Icons/BlockRSVPSmall";
 import { ListUnorderedSmall } from "components/Toolbar/ListToolbar";
 import { BlockMathSmall } from "components/Icons/BlockMathSmall";
 import { BlockCodeSmall } from "components/Icons/BlockCodeSmall";
+import { QuoteTiny } from "components/Icons/QuoteTiny";
 
 type Props = {
   parent: string;
@@ -155,6 +156,16 @@ export const blockCommands: Command[] = [
         attribute: "block/is-list",
         data: { value: true, type: "boolean" },
       });
+      clearCommandSearchText(entity);
+    },
+  },
+  {
+    name: "Block Quote",
+    icon: <QuoteTiny width={24} height={24} />,
+    type: "text",
+    onSelect: async (rep, props, um) => {
+      if (props.entityID) clearCommandSearchText(props.entityID);
+      let entity = await createBlockWithType(rep, props, "blockquote");
       clearCommandSearchText(entity);
     },
   },

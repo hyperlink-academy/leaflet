@@ -2,7 +2,7 @@ import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
 import { EditorView } from "prosemirror-view";
 import { generateKeyBetween } from "fractional-indexing";
-import { setBlockType, toggleMark } from "prosemirror-commands";
+import { baseKeymap, setBlockType, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import {
   Command,
@@ -30,6 +30,7 @@ export const TextBlockKeymap = (
   propsRef: PropsRef,
   repRef: RefObject<Replicache<ReplicacheMutators> | null>,
   um: UndoManager,
+  multiLine?: boolean,
 ) =>
   ({
     "Meta-b": toggleMark(schema.marks.strong),
@@ -132,11 +133,16 @@ export const TextBlockKeymap = (
       ),
     "Shift-Backspace": backspace(propsRef, repRef),
     Enter: (state, dispatch, view) => {
+      if (multiLine && state.doc.content.size - state.selection.anchor > 1)
+        return false;
       return um.withUndoGroup(() =>
         enter(propsRef, repRef)(state, dispatch, view),
       );
     },
     "Shift-Enter": (state, dispatch, view) => {
+      if (multiLine) {
+        return baseKeymap.Enter(state, dispatch, view);
+      }
       return um.withUndoGroup(() =>
         enter(propsRef, repRef)(state, dispatch, view),
       );
@@ -635,3 +641,31 @@ const metaA =
       return true;
     }
   };
+
+export const createParagraphNear: Command = (state, dispatch) => {
+  let sel = state.selection,
+    { $from, $to } = sel;
+  if (
+    sel instanceof AllSelection ||
+    $from.parent.inlineContent ||
+    $to.parent.inlineContent
+  ) {
+    console.log("here?");
+    console.log(sel instanceof AllSelection);
+    console.log(sel.$from);
+    console.log(sel.$from);
+    return false;
+  }
+  let type = defaultBlockAt($to.parent.contentMatchAt($to.indexAfter()));
+  console.log(type);
+  if (!type || !type.isTextblock) return false;
+  if (dispatch) {
+    let side = (
+      !$from.parentOffset && $to.index() < $to.parent.childCount ? $from : $to
+    ).pos;
+    let tr = state.tr.insert(side, type.createAndFill()!);
+    tr.setSelection(TextSelection.create(tr.doc, side + 1));
+    dispatch(tr.scrollIntoView());
+  }
+  return true;
+};
