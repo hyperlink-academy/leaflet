@@ -152,17 +152,17 @@ export const inputrules = (
         return tr;
       }),
 
-      //Blockquote
-      new InputRule(/^([>]{1})\s$/, (state, match) => {
-        let tr = state.tr;
-        tr.delete(0, 2);
-        repRef.current?.mutate.assertFact({
-          entity: propsRef.current.entityID,
-          attribute: "block/type",
-          data: { type: "block-type-union", value: "blockquote" },
-        });
-        return tr;
-      }),
+      // //Blockquote
+      // new InputRule(/^([>]{1})\s$/, (state, match) => {
+      //   let tr = state.tr;
+      //   tr.delete(0, 2);
+      //   repRef.current?.mutate.assertFact({
+      //     entity: propsRef.current.entityID,
+      //     attribute: "block/type",
+      //     data: { type: "block-type-union", value: "blockquote" },
+      //   });
+      //   return tr;
+      // }),
 
       //Header
       new InputRule(/^([#]{1,3})\s$/, (state, match) => {

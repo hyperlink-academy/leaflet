@@ -160,16 +160,16 @@ export const blockCommands: Command[] = [
       clearCommandSearchText(entity);
     },
   },
-  {
-    name: "Block Quote",
-    icon: <QuoteSmall />,
-    type: "text",
-    onSelect: async (rep, props, um) => {
-      if (props.entityID) clearCommandSearchText(props.entityID);
-      let entity = await createBlockWithType(rep, props, "blockquote");
-      clearCommandSearchText(entity);
-    },
-  },
+  // {
+  //   name: "Block Quote",
+  //   icon: <QuoteSmall />,
+  //   type: "text",
+  //   onSelect: async (rep, props, um) => {
+  //     if (props.entityID) clearCommandSearchText(props.entityID);
+  //     let entity = await createBlockWithType(rep, props, "blockquote");
+  //     clearCommandSearchText(entity);
+  //   },
+  // },
 
   {
     name: "Image",
