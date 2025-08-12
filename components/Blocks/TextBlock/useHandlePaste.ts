@@ -254,8 +254,7 @@ const createBlockFromHTML = (
     default:
       type = null;
   }
-  let content =
-    type === "blockquote" ? multilineParser.parse(child) : parser.parse(child);
+  let content = parser.parse(child);
   if (!type) return;
 
   let entityID: string;
@@ -498,11 +497,7 @@ const createBlockFromHTML = (
         block.editor.selection.to !== undefined
       )
         tr.delete(block.editor.selection.from, block.editor.selection.to);
-      if (type === "blockquote") {
-        tr.replaceWith(0, tr.doc.content.size, content.content);
-      } else {
-        tr.replaceSelectionWith(content);
-      }
+      tr.replaceSelectionWith(content);
       let newState = block.editor.apply(tr);
       setEditorState(entityID, {
         editor: newState,

@@ -9,7 +9,7 @@ export function RenderYJSFragment({
   attrs,
 }: {
   node: XmlElement | XmlText | XmlHook;
-  wrapper?: "h1" | "h2" | "h3" | null;
+  wrapper?: "h1" | "h2" | "h3" | null | "blockquote";
   attrs?: { [k: string]: any };
 }) {
   if (node.constructor === XmlElement) {
@@ -63,13 +63,16 @@ export function RenderYJSFragment({
 }
 
 const BlockWrapper = (props: {
-  wrapper?: "h1" | "h2" | "h3" | null;
+  wrapper?: "h1" | "h2" | "h3" | null | "blockquote";
   children: React.ReactNode;
   attrs?: { [k: string]: any };
 }) => {
   if (props.wrapper === null) return <>{props.children}</>;
   if (!props.wrapper) return <p {...props.attrs}>{props.children}</p>;
   switch (props.wrapper) {
+    case "blockquote":
+      return <blockquote {...props.attrs}>{props.children}</blockquote>;
+
     case "h1":
       return <h1 {...props.attrs}>{props.children}</h1>;
     case "h2":

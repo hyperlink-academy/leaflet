@@ -74,7 +74,7 @@ async function renderBlock(
   tx: ReadTransaction,
   ignoreWrapper?: boolean,
 ) {
-  let wrapper: undefined | "h1" | "h2" | "h3";
+  let wrapper: undefined | "h1" | "h2" | "h3" | "blockquote";
   let [alignment] = await scanIndex(tx).eav(b.value, "block/text-alignment");
   if (b.type === "horizontal-rule") {
     return "<hr />";
@@ -125,6 +125,9 @@ async function renderBlock(
       </a>,
     );
   }
+  if (b.type === "blockquote") {
+    wrapper = "blockquote";
+  }
   if (b.type === "heading") {
     let headingLevel =
       (await scanIndex(tx).eav(b.value, "block/heading-level"))[0]?.data
@@ -162,32 +165,8 @@ async function renderBlock(
       </div>,
     );
   }
-  if (b.type === "blockquote") {
-    let value = (await scanIndex(tx).eav(b.value, "block/text"))[0];
-    if (!value) return "<blockquote></blockquote>";
-    let doc = new Y.Doc();
-    const update = base64.toByteArray(value.data.value);
-    Y.applyUpdate(doc, update);
-    let nodes = doc.getXmlElement("prosemirror").toArray();
-    //Have to handle this specially because it's a multi-line block
-    return `<blockquote>${nodes
-      .map((node) => {
-        if (node.constructor === Y.XmlElement) {
-          let children = node.toArray();
-          if (children.length === 0) return "<p></p>";
-          return renderToStaticMarkup(
-            <RenderYJSFragment
-              attrs={{
-                "data-alignment": alignment?.data.value,
-              }}
-              node={node}
-            />,
-          );
-        }
-      })
-      .join("\n")}</blockquote>`;
-  }
   let value = (await scanIndex(tx).eav(b.value, "block/text"))[0];
+  console.log("getBlockasHTML", value);
   if (!value)
     return ignoreWrapper ? "" : `<${wrapper || "p"}></${wrapper || "p"}>`;
   let doc = new Y.Doc();

@@ -31,7 +31,6 @@ import { BlockRSVPSmall } from "components/Icons/BlockRSVPSmall";
 import { ListUnorderedSmall } from "components/Toolbar/ListToolbar";
 import { BlockMathSmall } from "components/Icons/BlockMathSmall";
 import { BlockCodeSmall } from "components/Icons/BlockCodeSmall";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { QuoteSmall } from "components/Icons/QuoteSmall";
 
 type Props = {
@@ -160,16 +159,16 @@ export const blockCommands: Command[] = [
       clearCommandSearchText(entity);
     },
   },
-  // {
-  //   name: "Block Quote",
-  //   icon: <QuoteSmall />,
-  //   type: "text",
-  //   onSelect: async (rep, props, um) => {
-  //     if (props.entityID) clearCommandSearchText(props.entityID);
-  //     let entity = await createBlockWithType(rep, props, "blockquote");
-  //     clearCommandSearchText(entity);
-  //   },
-  // },
+  {
+    name: "Block Quote",
+    icon: <QuoteSmall />,
+    type: "text",
+    onSelect: async (rep, props, um) => {
+      if (props.entityID) clearCommandSearchText(props.entityID);
+      let entity = await createBlockWithType(rep, props, "blockquote");
+      clearCommandSearchText(entity);
+    },
+  },
 
   {
     name: "Image",

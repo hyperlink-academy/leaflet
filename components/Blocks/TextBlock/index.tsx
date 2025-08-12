@@ -218,14 +218,9 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
   let handlePaste = useHandlePaste(props.entityID, propsRef);
   useLayoutEffect(() => {
     if (!mountRef.current) return;
-    let km = TextBlockKeymap(
-      propsRef,
-      repRef,
-      rep.undoManager,
-      props.type === "blockquote",
-    );
+    let km = TextBlockKeymap(propsRef, repRef, rep.undoManager);
     let editor = EditorState.create({
-      schema: props.type === "blockquote" ? multiBlockSchema : schema,
+      schema: schema,
       plugins: [
         ySyncPlugin(value),
         keymap(km),
@@ -342,7 +337,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
         },
       }));
     };
-  }, [props.entityID, props.parent, value, handlePaste, rep, props.type]);
+  }, [props.entityID, props.parent, value, handlePaste, rep]);
 
   return (
     <>
