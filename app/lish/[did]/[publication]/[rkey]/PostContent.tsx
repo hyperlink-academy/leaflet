@@ -40,6 +40,7 @@ export function PostContent({
             block={b}
             did={did}
             key={index}
+            previousBlock={blocks[index - 1]}
             index={[index]}
             preview={preview}
             prerenderedCodeBlocks={prerenderedCodeBlocks}
@@ -56,6 +57,7 @@ let Block = ({
   isList,
   index,
   preview,
+  previousBlock,
   prerenderedCodeBlocks,
 }: {
   preview?: boolean;
@@ -63,6 +65,7 @@ let Block = ({
   block: PubLeafletPagesLinearDocument.Block;
   did: string;
   isList?: boolean;
+  previousBlock?: PubLeafletPagesLinearDocument.Block;
   prerenderedCodeBlocks?: Map<string, string>;
 }) => {
   let b = block;
@@ -200,7 +203,7 @@ let Block = ({
     case PubLeafletBlocksBlockquote.isMain(b.block): {
       return (
         <blockquote
-          className={`border-l-2 border-border pl-2 ${className}`}
+          className={`border-l-2 border-border pl-2 ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-2" : ""}`}
           {...blockProps}
         >
           <TextBlock
