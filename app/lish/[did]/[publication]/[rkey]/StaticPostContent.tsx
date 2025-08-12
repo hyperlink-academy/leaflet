@@ -1,4 +1,5 @@
 import {
+  PubLeafletBlocksBlockquote,
   PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
   PubLeafletBlocksHorizontalRule,
@@ -43,6 +44,17 @@ let Block = async ({
   let b = block;
 
   switch (true) {
+    case PubLeafletBlocksBlockquote.isMain(b.block): {
+      return (
+        <blockquote className={`border-l-2 border-border pl-2`}>
+          <BaseTextBlock
+            facets={b.block.facets}
+            plaintext={b.block.plaintext}
+            index={[]}
+          />
+        </blockquote>
+      );
+    }
     case PubLeafletBlocksHorizontalRule.isMain(b.block): {
       return <hr className="my-2 w-full border-border-light" />;
     }
