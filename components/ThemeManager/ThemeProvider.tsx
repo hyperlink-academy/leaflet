@@ -151,7 +151,7 @@ export const BaseThemeProvider = ({
     getColorContrast(
       colorToString(accent2, "rgb"),
       colorToString(primary, "rgb"),
-    )
+    ) < 30
   ) {
     accentContrast = accent1;
   } else
