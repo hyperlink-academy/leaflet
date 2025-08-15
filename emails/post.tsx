@@ -3,21 +3,21 @@ import {
   Column,
   Container,
   Head,
-  Heading,
+  Heading as ReactEmailHeading,
   Hr,
   Html,
   Img,
   Link,
-  Text,
+  Text as ReactEmailText,
   Section,
   Row,
   Button,
-  CodeBlock,
+  CodeBlock as ReactEmailCodeBlock,
   dracula,
 } from "@react-email/components";
 import { Tailwind, pixelBasedPreset } from "@react-email/components";
-
-let borderless = false;
+import { Block } from "components/Blocks/Block";
+import React from "react";
 
 export const PostEmail = (props: {}) => (
   <Html>
@@ -110,16 +110,20 @@ export const PostEmail = (props: {}) => (
             </Row>
           </Button>
 
-          <Heading as="h1" className={`${h1} !mt-0 !mb-0`}>
+          <Heading as="h1" noPadding>
             Post Title Here
           </Heading>
-          <Text className={`${secondary} italic !mb-0 !mt-1`}>
+          <Text noPadding className={`text-secondary italic pt-1`}>
             Hello this is a description of everything that is to come
           </Text>
 
-          <Section className={`${tertiary} text-sm !mb-7 !mt-3`}>
+          <Section className={`!mb-7 !mt-3`}>
             <Row>
-              <Column width="auto">celine | Jun 23, 2025 </Column>
+              <Column width="auto">
+                <Text className="text-sm text-tertiary">
+                  celine | Jun 23, 2025
+                </Text>
+              </Column>
               <Column style={{ width: "16px" }}>
                 <Button href="/">
                   <Img width={16} height={16} src="/static/quote.png" />
@@ -142,183 +146,230 @@ export const PostEmail = (props: {}) => (
             </Row>
           </Section>
           <Section className="postContent">
-            <Text className={primary}>
+            <Text>
               This would be the post. I'll give it a little lorem ipsum to make
               it look longer so i don't forget which thing is what.
             </Text>
-            <Text className={primary}>
+            <Text>
               Here's what an image block looks like. It also needs to align if
               you have a small picture. Let's see what that looks like. I will
               need to import a new one and that sounds like so much work but
               whatever, it's easy actually im just lazy
             </Text>
             <Img width="100%" src="/static/test.jpg" className={`${image}`} />
-            <Text className={primary}>And here we have all the Headers</Text>
-            <Heading as="h1" className={h1}>
-              This is an Title
-            </Heading>
-            <Text className={primary}>
+            <Text>And here we have all the Headers</Text>
+            <Heading as="h1">This is an Title</Heading>
+            <Text>
               We'll keep it nice an separate to i can see what it looks like.
               After all i want this to look like a real text document.
             </Text>
 
-            <Heading as="h2" className={h2}>
-              And a Header
-            </Heading>
-            <Text className={primary}>
+            <Heading as="h2">And a Header</Heading>
+            <Text>
               If i didn't do this it would be difficult to know waht things look
               like so its important to get jiggy with the flavor text
             </Text>
-            <Heading as="h2" className={h3}>
-              And finally a SubHeader
-            </Heading>
-            <Text className={primary}>
+            <Heading as="h3">And finally a SubHeader</Heading>
+            <Text>
               It ain't easy to be jiggy but I make it look breezy. Like you
               rhymes are cheesy, I'm allergic they make me sneezy. Besides,
               relying on rhymes is sleazy like yo, it's measely.
             </Text>
 
-            <Text className={primary}>how about lists????? </Text>
-            <Section className={`${blockPadding} !-mt-1`}>
-              <ul className={list}>
-                <li className={listItem}>fruits</li>
-                <ul className={list}>
-                  <li className={listItem}>apple</li>
-                  <li className={listItem}>banana</li>
-                  <li className={listItem}>loop</li>
-                </ul>
-                <li className={listItem}>veggies</li>
-                <li className={listItem}>other</li>
-              </ul>
-            </Section>
+            <Text>how about lists????? </Text>
+            <List />
 
-            <Text className={primary}>and blockquote!!! </Text>
+            <Text>and blockquote!!! </Text>
             <Row className={blockPadding}>
               <Column className="!my-0 w-[2px] bg-border" />
               <Column className="w-2" />
               <Column>
-                <Text className="my-0.5 text-base">
+                <Text className="!my-0.5">
                   Hi this is some text. I want to make it wrap this so that it's
                   multiline but idk how long that will end up being
                 </Text>
               </Column>
             </Row>
-            <Text className={primary}>code block??? </Text>
-            <CodeBlock
-              className={`${blockPadding} !p-2 rounded-md border border-light`}
-              code={`export default async (req, res) => {
-  try {
-    const html = await renderAsync(
-      EmailTemplate({ firstName: 'John' })
-    );
-    return NextResponse.json({ html });
-  } catch (error) {
-    return NextResponse.json({ error });
-  }
-}`}
-              theme={dracula}
-              language="javascript"
-            />
-            <Text className={primary}>
+            <Text>code block??? </Text>
+            <CodeBlock />
+
+            <Text>
               I don't even know if we an do external link but why not give it a
-              go.{" "}
+              go.
             </Text>
+            <LinkBlock />
 
-            <Row
-              border={1}
-              className={`${blockPadding} h-[104px] border-accent-contrast rounded-lg !p-0 border-solid`}
-            >
-              <Column
-                style={{ verticalAlign: "top" }}
-                className="border-transparent py-1 px-2 "
-              >
-                <Text className={`text-base font-bold !my-0 `}>
-                  Link Title Here
-                </Text>
-                {/* what happens if the description is super long? is there
-                anyway to truncate it? overflow is only partially supported by
-                email */}
-                <Text className={`text-base text-secondary !my-0`}>
-                  Description on the link if such a thing is applicable.
-                </Text>
-                <Text className={`text-accent-contrast italic text-sm !my-0 `}>
-                  www.example.com
-                </Text>
-              </Column>
-              <Column className="border-none w-24 pr-2 pt-2">
-                <Container className="bg-test rounded-t-md w-full h-full" />
-              </Column>
-            </Row>
-
-            <Text className={primary}>
-              can't forget about the horizontal rule
-            </Text>
+            <Text>can't forget about the horizontal rule</Text>
 
             <Hr className="border-border-light my-3" />
 
-            <Text className={primary}>
+            <Text>
               and what if we don't support it? like math and code blocks? though
               maybe we should support code? there's a component after all.
             </Text>
-            <Container
-              className={`bg-border-light h-20 rounded-md text-tertiary ${blockPadding}`}
-            >
-              <Text className={"text-tertiary text-sm text-center my-0 italic"}>
-                This media isn't supported in email...
-              </Text>
-              <Text className="text-center my-0">
-                <Link
-                  className={`w-full text-accent-contrast text-sm text-center font-bold`}
-                >
-                  See full post
-                </Link>
-              </Text>
-            </Container>
+            <BlockNotSupported />
           </Section>
 
-          <Text className="my-0 text-center leading-5">
+          <Text noPadding className="text-center leading-5">
             <Button className={`${link} font-bold text-sm leading-5 !my-0`}>
               See Full Post
             </Button>
           </Text>
-          <Text className="my-0 text-center leading-5">
-            <Button className={`${tertiary} text-sm leading-5 !my-0`}>
-              Unsubscribe
-            </Button>
+          <Text
+            noPadding
+            className="text-sm text-tertiary text-center leading-5"
+          >
+            <Button className={`leading-5 !my-0`}>Unsubscribe</Button>
           </Text>
         </Container>
         <Hr className="border-border-light mt-6 mb-3" />
 
-        <Container className={` w-fit `}>
-          <Button href="/">
-            <Row className={`${tertiary} italic text-sm`}>
-              <Column style={{ width: "16px" }}>
-                <Img width={16} height={16} src="/static/leaflet.png" />
-              </Column>
-              <Column width="4px" />
-              <Column style={{ width: "164px" }}>
-                Published with{" "}
-                <Link className={`${link} font-bold text-sm`}>Leaflet</Link>
-              </Column>
-            </Row>
-          </Button>
-        </Container>
+        <LeafletWatermark />
       </Body>
     </Tailwind>
   </Html>
 );
 export default PostEmail;
 
-const blockPadding = "mt-1 mb-3 sm:mb-4";
-const headerPadding = "mt-1 mb-0";
+export const LeafletWatermark = () => {
+  return (
+    <Container className={` w-fit `}>
+      <Button href="/">
+        <Row className={`text-tertiary italic text-sm`}>
+          <Column style={{ width: "16px" }}>
+            <Img width={16} height={16} src="/static/leaflet.png" />
+          </Column>
+          <Column width="4px" />
+          <Column style={{ width: "164px" }}>
+            Published with{" "}
+            <Link className={`${link} font-bold text-sm`}>Leaflet</Link>
+          </Column>
+        </Row>
+      </Button>
+    </Container>
+  );
+};
 
-const h1 = `text-xl font-bold ${blockPadding}`;
-const h2 = `text-lg font-bold ${headerPadding}`;
-const h3 = `text-base font-bold text-secondary ${headerPadding}`;
-const primary = `text-base text-primary ${blockPadding}`;
-const secondary = `text-base text-secondary ${blockPadding}`;
-const tertiary = `text-base text-tertiary ${blockPadding}`;
-const list = `my-0 !pl-6`;
-const listItem = `${headerPadding} !ml-2`;
+const blockPadding = "mt-1 mb-3 sm:mb-4";
+const headingPadding = "mt-1 mb-0";
+
+export const Text = (props: {
+  children: React.ReactNode;
+  noPadding?: boolean;
+  small?: boolean;
+  className?: string;
+}) => {
+  return (
+    <ReactEmailText
+      className={`text-primary ${props.small ? "text-sm" : "text-base"} ${props.noPadding ? "!my-0" : blockPadding} ${props.className}`}
+    >
+      {props.children}
+    </ReactEmailText>
+  );
+};
+
+export const Heading = (props: {
+  children: React.ReactNode;
+  noPadding?: boolean;
+  as: "h1" | "h2" | "h3";
+  className?: string;
+}) => {
+  return (
+    <ReactEmailHeading
+      as={props.as}
+      className={` font-bold ${props.noPadding ? "!my-0" : headingPadding} ${props.as === "h1" ? "text-xl" : props.as === "h2" ? "text-lg" : "text-base text-secondary"}`}
+    >
+      {props.children}
+    </ReactEmailHeading>
+  );
+};
+
+export const List = () => {
+  let list = `my-0 !pl-6`;
+  let listItem = `${headingPadding} !ml-2`;
+  return (
+    <Section className={`${blockPadding} !-mt-1`}>
+      <ul className={list}>
+        <li className={listItem}>fruits</li>
+        <ul className={list}>
+          <li className={listItem}>apple</li>
+          <li className={listItem}>banana</li>
+          <li className={listItem}>loop</li>
+        </ul>
+        <li className={listItem}>veggies</li>
+        <li className={listItem}>other</li>
+      </ul>
+    </Section>
+  );
+};
+
+export const LinkBlock = () => {
+  return (
+    <Row
+      border={1}
+      className={`${blockPadding} h-[104px] border-accent-contrast rounded-lg !p-0 border-solid`}
+    >
+      <Column
+        style={{ verticalAlign: "top" }}
+        className="border-transparent py-1 px-2 "
+      >
+        <Text noPadding className={`font-bold`}>
+          Link Title Here
+        </Text>
+        {/* what happens if the description is super long? is there
+        anyway to truncate it? overflow is only partially supported by
+        email */}
+        <Text noPadding className={`text-secondary`}>
+          Description on the link if such a thing is applicable.
+        </Text>
+        <Text small noPadding className={`text-accent-contrast italic`}>
+          www.example.com
+        </Text>
+      </Column>
+      <Column className="border-none w-28 pr-2 pt-2">
+        <Container className="bg-test rounded-t-md w-full h-full" />
+      </Column>
+    </Row>
+  );
+};
+
+export const CodeBlock = () => {
+  return (
+    <ReactEmailCodeBlock
+      className={`${blockPadding} !p-2 rounded-md border border-light`}
+      code={`export default async (req, res) => {
+try {
+const html = await renderAsync(
+EmailTemplate({ firstName: 'John' })
+);
+return NextResponse.json({ html });
+} catch (error) {
+return NextResponse.json({ error });
+}
+}`}
+      theme={dracula}
+      language="javascript"
+    />
+  );
+};
+export const BlockNotSupported = () => {
+  return (
+    <Container
+      className={`bg-border-light h-20 rounded-md text-tertiary ${blockPadding}`}
+    >
+      <Text noPadding small className={"text-tertiary text-center italic"}>
+        This media isn't supported in email...
+      </Text>
+      <Text noPadding small className="text-center">
+        <Link
+          className={`w-full text-accent-contrast text-sm text-center font-bold`}
+        >
+          See full post
+        </Link>
+      </Text>
+    </Container>
+  );
+};
+
 const link = `text-base text-accent-contrast ${blockPadding}`;
 const image = `${blockPadding} text-center`;
