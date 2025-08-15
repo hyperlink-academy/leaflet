@@ -147,26 +147,38 @@ export const BaseThemeProvider = ({
 }) => {
   // set accent contrast to the accent color that has the highest contrast with the page background
   let accentContrast;
+
+  //sorting the accents by contrast on background
+  let sortedAccents = [accent1, accent2].sort((a, b) => {
+    return (
+      getColorContrast(
+        colorToString(b, "rgb"),
+        colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
+      ) -
+      getColorContrast(
+        colorToString(a, "rgb"),
+        colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
+      )
+    );
+  });
+
+  // if the contrast-y accent is too similar to the primary text color,
+  // and the not contrast-y option is different from the backgrond,
+  // then use the not contrasty option
+
   if (
     getColorContrast(
-      colorToString(accent2, "rgb"),
+      colorToString(sortedAccents[0], "rgb"),
       colorToString(primary, "rgb"),
-    ) < 30
+    ) < 30 &&
+    getColorContrast(
+      colorToString(sortedAccents[1], "rgb"),
+      colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
+    ) > 12
   ) {
-    accentContrast = accent1;
-  } else
-    accentContrast = [accent1, accent2].sort((a, b) => {
-      return (
-        getColorContrast(
-          colorToString(b, "rgb"),
-          colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
-        ) -
-        getColorContrast(
-          colorToString(a, "rgb"),
-          colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
-        )
-      );
-    })[0];
+    accentContrast = sortedAccents[1];
+  } else accentContrast = sortedAccents[0];
+
   useEffect(() => {
     if (local) return;
     let el = document.querySelector(":root") as HTMLElement;
