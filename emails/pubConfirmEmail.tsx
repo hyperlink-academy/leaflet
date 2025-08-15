@@ -3,21 +3,20 @@ import {
   Column,
   Container,
   Head,
-  Heading,
   Hr,
   Html,
   Img,
   Link,
-  Text,
   Section,
   Row,
   Button,
   CodeBlock,
 } from "@react-email/components";
+import { Text, Heading } from "./post";
 import { Tailwind, pixelBasedPreset } from "@react-email/components";
 import { LeafletWatermark } from "./post";
 
-export const ConfirmEmail = (props: {}) => (
+export const PubConfirmEmail = (props: {}) => (
   <Html>
     <Tailwind
       config={{
@@ -91,33 +90,45 @@ export const ConfirmEmail = (props: {}) => (
     >
       <Head />
 
-      <Body className={`bg-bg-leaflet font-sans p-2 sm:px-4 sm:py-6 !m-0 `}>
-        <Container className={`bg-transparent rounded-lg border border-border`}>
-          <Text>Thank you for subscribing to</Text>
-          <Text> [[PUB NAME HERE]]</Text>
-          <Text>Here is your verification code</Text>
-          <Container>
-            <Heading as="h2">000000</Heading>
-          </Container>
+      <Body className={`bg-bg-page font-sans px-2 py-4 !m-0 `}>
+        <Row
+          border={1}
+          className={`w-fit max-w-full bg-transparent rounded-lg !border !border-border !border-solid  text-center px-6 py-6 mb-2`}
+        >
+          <Column className="border-transparent">
+            <Text noPadding className="font-bold text-secondary">
+              Thank you for subscribing to
+            </Text>
+            <Row className="w-fit mt-1">
+              <Column width="24px">
+                <Img
+                  width={24}
+                  height={24}
+                  src="/static/test.jpg"
+                  className="rounded-full"
+                />
+              </Column>
+              <Column width={"8px"} />
 
-          <LeafletWatermark />
-        </Container>
+              <Column>
+                <Heading noPadding as="h2">
+                  Leaflet Explorers
+                </Heading>
+              </Column>
+            </Row>
+            <Text className="!mt-6 !mb-1 text-secondary">
+              Verify your email with this code
+            </Text>
+            <Container className="bg-border-light rounded-md w-fit px-2 py-1">
+              <Heading noPadding as="h1">
+                000000
+              </Heading>
+            </Container>
+          </Column>
+        </Row>
+        <LeafletWatermark />
       </Body>
     </Tailwind>
   </Html>
 );
-export default ConfirmEmail;
-
-const blockPadding = "mt-1 mb-3 sm:mb-4";
-const headerPadding = "mt-1 mb-0";
-
-const h1 = `text-xl font-bold ${blockPadding}`;
-const h2 = `text-lg font-bold ${headerPadding}`;
-const h3 = `text-base font-bold text-secondary ${headerPadding}`;
-const primary = `text-base text-primary ${blockPadding}`;
-const secondary = `text-base text-secondary ${blockPadding}`;
-const tertiary = `text-base text-tertiary ${blockPadding}`;
-const list = `my-0 !pl-6`;
-const listItem = `${headerPadding} !ml-2`;
-const link = `text-base text-accent-contrast ${blockPadding}`;
-const image = `${blockPadding} text-center`;
+export default PubConfirmEmail;

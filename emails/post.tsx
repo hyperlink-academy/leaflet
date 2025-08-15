@@ -92,7 +92,7 @@ export const PostEmail = (props: {}) => (
       }}
     >
       <Head />
-      <Body className={`bg-bg-leaflet font-sans p-2 sm:px-4 sm:py-6 !m-0 `}>
+      <Body className={`bg-bg-page font-sans p-2 sm:px-4 sm:py-6 !m-0 `}>
         <Container className={`bg-transparent rounded-lg border border-border`}>
           <Button href="/" className={`${link} font-bold !my-0`}>
             <Row>
@@ -117,7 +117,7 @@ export const PostEmail = (props: {}) => (
             Hello this is a description of everything that is to come
           </Text>
 
-          <Section className={`!mb-7 !mt-3`}>
+          <Section className={`postActions !mb-7 !mt-3`}>
             <Row>
               <Column width="auto">
                 <Text className="text-sm text-tertiary">
@@ -209,20 +209,21 @@ export const PostEmail = (props: {}) => (
             </Text>
             <BlockNotSupported />
           </Section>
-
-          <Text noPadding className="text-center leading-5">
-            <Button className={`${link} font-bold text-sm leading-5 !my-0`}>
-              See Full Post
-            </Button>
-          </Text>
-          <Text
-            noPadding
-            className="text-sm text-tertiary text-center leading-5"
-          >
-            <Button className={`leading-5 !my-0`}>Unsubscribe</Button>
-          </Text>
+          <Section className="pt-4">
+            <Text noPadding className="text-center leading-5">
+              <Button className={`${link} font-bold text-sm leading-5 !my-0`}>
+                See Full Post
+              </Button>
+            </Text>
+            <Text
+              noPadding
+              className="text-sm text-tertiary text-center leading-5"
+            >
+              <Button className={`leading-5 !my-0`}>Unsubscribe</Button>
+            </Text>
+          </Section>
         </Container>
-        <Hr className="border-border-light mt-6 mb-3" />
+        <Hr className="border-border-light my-3" />
 
         <LeafletWatermark />
       </Body>
@@ -252,6 +253,7 @@ export const LeafletWatermark = () => {
 
 const blockPadding = "mt-1 mb-3 sm:mb-4";
 const headingPadding = "mt-1 mb-0";
+const link = `text-base text-accent-contrast ${blockPadding}`;
 
 export const Text = (props: {
   children: React.ReactNode;
@@ -371,5 +373,4 @@ export const BlockNotSupported = () => {
   );
 };
 
-const link = `text-base text-accent-contrast ${blockPadding}`;
 const image = `${blockPadding} text-center`;
