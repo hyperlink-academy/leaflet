@@ -64,13 +64,15 @@ export default async function Post(props: {
         </p>
       </div>
     );
-  let identity = await getIdentityData();
-  let agent;
-  if (identity?.atp_did) {
-    const oauthClient = await createOauthClient();
-    let credentialSession = await oauthClient.restore(identity.atp_did);
-    agent = new Agent(credentialSession);
-  } else agent = new AtpAgent({ service: "https://public.api.bsky.app" });
+  let agent = new AtpAgent({
+    service: "https://public.api.bsky.app",
+    fetch: (...args) =>
+      fetch(args[0], {
+        ...args[1],
+        cache: "no-store",
+        next: { revalidate: 3600 },
+      }),
+  });
   let [document, profile] = await Promise.all([
     getPostPageData(
       AtUri.make(
@@ -100,14 +102,17 @@ export default async function Post(props: {
   });
   let bskyPostData =
     bskyPosts.length > 0
-      ? await agent.getPosts({
-          uris: bskyPosts
-            .map((p) => {
-              let block = p?.block as PubLeafletBlocksBskyPost.Main;
-              return block.postRef.uri;
-            })
-            .slice(0, 24),
-        })
+      ? await agent.getPosts(
+          {
+            uris: bskyPosts
+              .map((p) => {
+                let block = p?.block as PubLeafletBlocksBskyPost.Main;
+                return block.postRef.uri;
+              })
+              .slice(0, 24),
+          },
+          { headers: {} },
+        )
       : { data: { posts: [] } };
   let firstPage = record.pages[0];
   let blocks: PubLeafletPagesLinearDocument.Block[] = [];
