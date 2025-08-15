@@ -100,19 +100,6 @@ export function LeafletThemeProvider(props: {
 
   let accent1 = useColorAttribute(props.entityID, "theme/accent-background");
   let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
-  // set accent contrast to the accent color that has the highest contrast with the page background
-  let accentContrast = [accent1, accent2].sort((a, b) => {
-    return (
-      getColorContrast(
-        colorToString(b, "rgb"),
-        colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
-      ) -
-      getColorContrast(
-        colorToString(a, "rgb"),
-        colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
-      )
-    );
-  })[0];
 
   return (
     <BaseThemeProvider
@@ -125,7 +112,7 @@ export function LeafletThemeProvider(props: {
       highlight1={highlight1?.data.value}
       accent1={accent1}
       accent2={accent2}
-      accentContrast={accentContrast}
+      showPageBackground={showPageBackground}
     >
       {props.children}
     </BaseThemeProvider>
@@ -140,24 +127,46 @@ export const BaseThemeProvider = ({
   primary,
   accent1,
   accent2,
-  accentContrast,
   highlight1,
   highlight2,
   highlight3,
+  showPageBackground,
   children,
 }: {
   local?: boolean;
+  showPageBackground?: boolean;
   bgLeaflet: AriaColor;
   bgPage: AriaColor;
   primary: AriaColor;
   accent1: AriaColor;
   accent2: AriaColor;
-  accentContrast: AriaColor;
   highlight1?: string;
   highlight2: AriaColor;
   highlight3: AriaColor;
   children: React.ReactNode;
 }) => {
+  // set accent contrast to the accent color that has the highest contrast with the page background
+  let accentContrast;
+  if (
+    getColorContrast(
+      colorToString(accent2, "rgb"),
+      colorToString(primary, "rgb"),
+    )
+  ) {
+    accentContrast = accent1;
+  } else
+    accentContrast = [accent1, accent2].sort((a, b) => {
+      return (
+        getColorContrast(
+          colorToString(b, "rgb"),
+          colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
+        ) -
+        getColorContrast(
+          colorToString(a, "rgb"),
+          colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
+        )
+      );
+    })[0];
   useEffect(() => {
     if (local) return;
     let el = document.querySelector(":root") as HTMLElement;

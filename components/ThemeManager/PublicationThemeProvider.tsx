@@ -122,19 +122,6 @@ export const usePubTheme = (record?: PubLeafletPublication.Record | null) => {
   let highlight2 = useColorAttribute(null, "theme/highlight-2");
   let highlight3 = useColorAttribute(null, "theme/highlight-3");
 
-  // set accent contrast to the accent color that has the highest contrast with the page background
-  let accentContrast = [accent1, accent2].sort((a, b) => {
-    return (
-      getColorContrast(
-        colorToString(b, "rgb"),
-        colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
-      ) -
-      getColorContrast(
-        colorToString(a, "rgb"),
-        colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
-      )
-    );
-  })[0];
   return {
     bgLeaflet,
     bgPage,
@@ -144,7 +131,6 @@ export const usePubTheme = (record?: PubLeafletPublication.Record | null) => {
     highlight1,
     highlight2,
     highlight3,
-    accentContrast,
     showPageBackground,
   };
 };
