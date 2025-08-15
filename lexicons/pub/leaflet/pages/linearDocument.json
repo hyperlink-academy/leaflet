@@ -31,7 +31,8 @@
             "pub.leaflet.blocks.website",
             "pub.leaflet.blocks.math",
             "pub.leaflet.blocks.code",
-            "pub.leaflet.blocks.horizontalRule"
+            "pub.leaflet.blocks.horizontalRule",
+            "pub.leaflet.blocks.bskyPost"
           ]
         },
         "alignment": {

@@ -12,6 +12,7 @@ import { Interactions, useInteractionState } from "./Interactions/Interactions";
 import { PostContent } from "./PostContent";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { useIdentityData } from "components/IdentityProvider";
+import { AppBskyFeedDefs } from "@atproto/api";
 
 export function PostPage({
   document,
@@ -21,6 +22,7 @@ export function PostPage({
   profile,
   pubRecord,
   prerenderedCodeBlocks,
+  bskyPostData,
 }: {
   document: PostPageData;
   blocks: PubLeafletPagesLinearDocument.Block[];
@@ -29,6 +31,7 @@ export function PostPage({
   pubRecord: PubLeafletPublication.Record;
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;
+  bskyPostData: AppBskyFeedDefs.PostView[];
 }) {
   let { identity } = useIdentityData();
   let { drawerOpen } = useInteractionState();
@@ -61,6 +64,7 @@ export function PostPage({
         >
           <PostHeader data={document} profile={profile} name={name} />
           <PostContent
+            bskyPostData={bskyPostData}
             blocks={blocks}
             did={did}
             prerenderedCodeBlocks={prerenderedCodeBlocks}

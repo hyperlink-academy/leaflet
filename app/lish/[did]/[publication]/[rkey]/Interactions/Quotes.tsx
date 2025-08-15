@@ -103,6 +103,7 @@ export const Quotes = (props: {
                 >
                   <div className="italic">
                     <PostContent
+                      bskyPostData={[]}
                       blocks={content || []}
                       did={props.did}
                       preview

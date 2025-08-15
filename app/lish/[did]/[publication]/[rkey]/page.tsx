@@ -2,12 +2,13 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
 import { ids } from "lexicons/api/lexicons";
 import {
+  PubLeafletBlocksBskyPost,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
   PubLeafletPublication,
 } from "lexicons/api";
 import { Metadata } from "next";
-import { AtpAgent } from "@atproto/api";
+import { AtpAgent, Agent, AtpBaseClient } from "@atproto/api";
 import { QuoteHandler } from "./QuoteHandler";
 import { InteractionDrawer } from "./Interactions/InteractionDrawer";
 import {
@@ -19,6 +20,8 @@ import { PostPageContextProvider } from "./PostPageContext";
 import { PostPage } from "./PostPage";
 import { PageLayout } from "./PageLayout";
 import { extractCodeBlocks } from "./extractCodeBlocks";
+import { getIdentityData } from "actions/getIdentityData";
+import { createOauthClient } from "src/atproto-oauth";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -61,7 +64,13 @@ export default async function Post(props: {
         </p>
       </div>
     );
-  let agent = new AtpAgent({ service: "https://public.api.bsky.app" });
+  let identity = await getIdentityData();
+  let agent;
+  if (identity?.atp_did) {
+    const oauthClient = await createOauthClient();
+    let credentialSession = await oauthClient.restore(identity.atp_did);
+    agent = new Agent(credentialSession);
+  } else agent = new AtpAgent({ service: "https://public.api.bsky.app" });
   let [document, profile] = await Promise.all([
     getPostPageData(
       AtUri.make(
@@ -83,6 +92,23 @@ export default async function Post(props: {
       </div>
     );
   let record = document.data as PubLeafletDocument.Record;
+  let bskyPosts = record.pages.flatMap((p) => {
+    let page = p as PubLeafletPagesLinearDocument.Main;
+    return page.blocks?.filter(
+      (b) => b.block.$type === ids.PubLeafletBlocksBskyPost,
+    );
+  });
+  let bskyPostData =
+    bskyPosts.length > 0
+      ? await agent.getPosts({
+          uris: bskyPosts
+            .map((p) => {
+              let block = p?.block as PubLeafletBlocksBskyPost.Main;
+              return block.postRef.uri;
+            })
+            .slice(0, 24),
+        })
+      : { data: { posts: [] } };
   let firstPage = record.pages[0];
   let blocks: PubLeafletPagesLinearDocument.Block[] = [];
   if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
@@ -128,6 +154,7 @@ export default async function Post(props: {
               pubRecord={pubRecord}
               profile={profile.data}
               document={document}
+              bskyPostData={bskyPostData.data.posts}
               did={did}
               blocks={blocks}
               name={decodeURIComponent((await props.params).publication)}
