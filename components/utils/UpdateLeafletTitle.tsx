@@ -27,6 +27,7 @@ export function UpdateLeafletTitle(props: { entityID: string }) {
   useEffect(() => {
     if (pub?.title) {
       document.title = pub.title;
+      return;
     }
     if (title) {
       document.title = title;

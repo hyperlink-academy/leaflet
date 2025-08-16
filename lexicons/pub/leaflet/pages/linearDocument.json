@@ -24,13 +24,15 @@
           "type": "union",
           "refs": [
             "pub.leaflet.blocks.text",
+            "pub.leaflet.blocks.blockquote",
             "pub.leaflet.blocks.header",
             "pub.leaflet.blocks.image",
             "pub.leaflet.blocks.unorderedList",
             "pub.leaflet.blocks.website",
             "pub.leaflet.blocks.math",
             "pub.leaflet.blocks.code",
-            "pub.leaflet.blocks.horizontalRule"
+            "pub.leaflet.blocks.horizontalRule",
+            "pub.leaflet.blocks.bskyPost"
           ]
         },
         "alignment": {

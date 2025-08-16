@@ -3,7 +3,7 @@ import { Fact, ReplicacheMutators, useReplicache } from "src/replicache";
 import { EditorView } from "prosemirror-view";
 import { setEditorState, useEditorStates } from "src/state/useEditorState";
 import { MarkType, DOMParser as ProsemirrorDOMParser } from "prosemirror-model";
-import { schema } from "./schema";
+import { multiBlockSchema, schema } from "./schema";
 import { generateKeyBetween } from "fractional-indexing";
 import { addImage } from "src/utils/addImage";
 import { BlockProps } from "../Block";
@@ -19,6 +19,7 @@ import { addLinkBlock } from "src/utils/addLinkBlock";
 import { UndoManager } from "src/undoManager";
 
 const parser = ProsemirrorDOMParser.fromSchema(schema);
+const multilineParser = ProsemirrorDOMParser.fromSchema(multiBlockSchema);
 export const useHandlePaste = (
   entityID: string,
   propsRef: MutableRefObject<BlockProps>,
@@ -180,7 +181,6 @@ const createBlockFromHTML = (
     getPosition: () => string;
   },
 ) => {
-  let content = parser.parse(child);
   let type: Fact<"block/type">["data"]["value"] | null;
   let headingLevel: number | null = null;
   let hasChildren = false;
@@ -203,6 +203,10 @@ const createBlockFromHTML = (
     }
   }
   switch (child.tagName) {
+    case "BLOCKQUOTE": {
+      type = "blockquote";
+      break;
+    }
     case "LI":
     case "SPAN": {
       type = "text";
@@ -250,6 +254,7 @@ const createBlockFromHTML = (
     default:
       type = null;
   }
+  let content = parser.parse(child);
   if (!type) return;
 
   let entityID: string;
@@ -492,7 +497,7 @@ const createBlockFromHTML = (
         block.editor.selection.to !== undefined
       )
         tr.delete(block.editor.selection.from, block.editor.selection.to);
-      tr.insert(block.editor.selection.from || 1, content.content);
+      tr.replaceSelectionWith(content);
       let newState = block.editor.apply(tr);
       setEditorState(entityID, {
         editor: newState,
@@ -559,6 +564,7 @@ function flattenHTMLToTextBlocks(element: HTMLElement): HTMLElement[] {
       // Collect outer HTML for paragraph-like elements
       if (
         [
+          "BLOCKQUOTE",
           "P",
           "PRE",
           "H1",

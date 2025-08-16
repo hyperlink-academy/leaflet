@@ -74,7 +74,7 @@ async function renderBlock(
   tx: ReadTransaction,
   ignoreWrapper?: boolean,
 ) {
-  let wrapper: undefined | "h1" | "h2" | "h3";
+  let wrapper: undefined | "h1" | "h2" | "h3" | "blockquote";
   let [alignment] = await scanIndex(tx).eav(b.value, "block/text-alignment");
   if (b.type === "horizontal-rule") {
     return "<hr />";
@@ -125,6 +125,9 @@ async function renderBlock(
       </a>,
     );
   }
+  if (b.type === "blockquote") {
+    wrapper = "blockquote";
+  }
   if (b.type === "heading") {
     let headingLevel =
       (await scanIndex(tx).eav(b.value, "block/heading-level"))[0]?.data
@@ -163,6 +166,7 @@ async function renderBlock(
     );
   }
   let value = (await scanIndex(tx).eav(b.value, "block/text"))[0];
+  console.log("getBlockasHTML", value);
   if (!value)
     return ignoreWrapper ? "" : `<${wrapper || "p"}></${wrapper || "p"}>`;
   let doc = new Y.Doc();

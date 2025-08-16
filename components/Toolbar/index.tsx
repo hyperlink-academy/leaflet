@@ -65,7 +65,11 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
 
   useEffect(() => {
     if (!blockType) return;
-    if (blockType !== "heading" && blockType !== "text") {
+    if (
+      blockType !== "heading" &&
+      blockType !== "text" &&
+      blockType !== "blockquote"
+    ) {
       setToolbarState("block");
     } else {
       setToolbarState("default");

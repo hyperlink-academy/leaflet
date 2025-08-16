@@ -23,8 +23,8 @@ const prodconfig: OAuthClientMetadata = {
   client_name: `Leaflet`,
   client_uri: hostname,
   logo_uri: `${hostname}/logo.png`,
-  tos_uri: `${hostname}/tos`,
-  policy_uri: `${hostname}/policy`,
+  tos_uri: `${hostname}/legal?terms`,
+  policy_uri: `${hostname}/legal?privacy`,
   redirect_uris:
     process.env.NODE_ENV === "development"
       ? [`http://127.0.0.1:3000/api/oauth/callback`]

@@ -17,6 +17,7 @@ import {
   PubLeafletBlocksCode,
   PubLeafletBlocksMath,
   PubLeafletBlocksHorizontalRule,
+  PubLeafletBlocksBskyPost,
 } from "lexicons/api";
 import { Block } from "components/Blocks/Block";
 import { TID } from "@atproto/common";
@@ -227,17 +228,19 @@ function blockToRecord(
     let facets = YJSFragmentToFacets(nodes[0]);
     return [stringValue, facets] as const;
   };
-  if (
-    b.type !== "text" &&
-    b.type !== "heading" &&
-    b.type !== "image" &&
-    b.type !== "link" &&
-    b.type !== "code" &&
-    b.type !== "math" &&
-    b.type !== "horizontal-rule"
-  )
-    return;
 
+  if (b.type === "bluesky-post") {
+    let [post] = scan.eav(b.value, "block/bluesky-post");
+    if (!post || !post.data.value.post) return;
+    let block: $Typed<PubLeafletBlocksBskyPost.Main> = {
+      $type: ids.PubLeafletBlocksBskyPost,
+      postRef: {
+        uri: post.data.value.post.uri,
+        cid: post.data.value.post.cid,
+      },
+    };
+    return block;
+  }
   if (b.type === "horizontal-rule") {
     let block: $Typed<PubLeafletBlocksHorizontalRule.Main> = {
       $type: ids.PubLeafletBlocksHorizontalRule,

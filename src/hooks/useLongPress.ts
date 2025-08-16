@@ -37,6 +37,14 @@ export const useLongPress = (cb: () => void, cancel?: boolean) => {
       // Set the starting position
       startPosition.current = { x: e.clientX, y: e.clientY };
 
+      isLongPress.current = false;
+
+      longPressTimer.current = window.setTimeout(() => {
+        isLongPress.current = true;
+        cb();
+        end();
+      }, 500);
+
       // Add mousemove and touchmove listeners
       mouseMoveListener.current = (e: MouseEvent) => {
         if (!startPosition.current) return;

@@ -1,0 +1,18 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.blocks.bskyPost",
+  "defs": {
+    "main": {
+      "type": "object",
+      "required": [
+        "postRef"
+      ],
+      "properties": {
+        "postRef": {
+          "type": "ref",
+          "ref": "com.atproto.repo.strongRef"
+        }
+      }
+    }
+  }
+}

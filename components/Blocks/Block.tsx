@@ -104,6 +104,7 @@ export const Block = memo(function Block(
             ? "pb-0"
             : "pb-2"
       }
+      ${props.type === "blockquote" && props.previousBlock?.type === "blockquote" ? "-mt-3" : ""}
       ${
         !props.previousBlock
           ? props.type === "heading" || props.type === "text"
@@ -175,6 +176,7 @@ const BlockTypeComponents: {
   math: MathBlock,
   card: PageLinkBlock,
   text: TextBlock,
+  blockquote: TextBlock,
   heading: TextBlock,
   image: ImageBlock,
   link: ExternalLinkBlock,

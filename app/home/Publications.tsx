@@ -75,7 +75,7 @@ function Publication(props: { uri: string; name: string; record: Json }) {
             backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
             backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
           }}
-          className="p-3 h-full w-full flex flex-col gap-1 place-items-center bg-bg-leaflet border border-border-light rounded-lg text-secondary text-center  transparent-outline outline-2 outline-offset-1 hover:outline-border  grow "
+          className="py-3 px-2 h-full w-full flex flex-col gap-1 place-items-center bg-bg-leaflet border border-border-light rounded-lg text-secondary text-center  transparent-outline outline-2 outline-offset-1 hover:outline-border  grow "
         >
           {record?.icon && (
             <div
@@ -89,7 +89,7 @@ function Publication(props: { uri: string; name: string; record: Json }) {
             />
           )}
           <h4
-            className={`font-bold w-full truncate my-auto ${showPageBackground ? "bg-[rgba(var(--bg-page),0.8)]" : ""}`}
+            className={`font-bold w-full px-1 rounded-md truncate my-auto ${showPageBackground ? "bg-[rgba(var(--bg-page),0.8)]" : ""}`}
           >
             {props.name}
           </h4>

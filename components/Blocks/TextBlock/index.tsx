@@ -17,7 +17,7 @@ import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
 import { TextBlockKeymap } from "./keymap";
-import { schema } from "./schema";
+import { multiBlockSchema, schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { addBlueskyPostBlock, addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockCommandBar } from "components/Blocks/BlockCommandBar";
@@ -44,7 +44,10 @@ const HeadingStyle = {
 } as { [level: number]: string };
 
 export function TextBlock(
-  props: BlockProps & { className?: string; preview?: boolean },
+  props: BlockProps & {
+    className?: string;
+    preview?: boolean;
+  },
 ) {
   let isLocked = useEntity(props.entityID, "block/is-locked");
   let initialized = useInitialPageLoad();
@@ -137,7 +140,8 @@ export function RenderedTextBlock(props: {
     if (permissions.write && (props.first || props.pageType === "canvas"))
       content = (
         <div
-          className={`${props.className} pointer-events-none italic text-tertiary flex flex-col `}
+          className={`${props.className}
+            pointer-events-none italic text-tertiary flex flex-col `}
         >
           {headingLevel?.data.value === 1
             ? "Title"
@@ -170,6 +174,7 @@ export function RenderedTextBlock(props: {
       style={{ wordBreak: "break-word" }} // better than tailwind break-all!
       className={`
         ${alignmentClass}
+        ${props.type === "blockquote" ? "border-l-2 border-border pl-2 " : ""}
         ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
       w-full whitespace-pre-wrap outline-none ${props.className} `}
     >
@@ -215,7 +220,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
     if (!mountRef.current) return;
     let km = TextBlockKeymap(propsRef, repRef, rep.undoManager);
     let editor = EditorState.create({
-      schema,
+      schema: schema,
       plugins: [
         ySyncPlugin(value),
         keymap(km),
@@ -337,7 +342,10 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
   return (
     <>
       <div
-        className={`flex items-center justify-between w-full ${selected && props.pageType === "canvas" && "bg-bg-page rounded-md"} `}
+        className={`flex items-center justify-between w-full
+          ${selected && props.pageType === "canvas" && "bg-bg-page rounded-md"}
+          ${props.type === "blockquote" ? "border-l-2 border-border pl-2 " : ""}
+          `}
       >
         <pre
           data-entityid={props.entityID}

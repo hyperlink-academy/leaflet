@@ -1,4 +1,4 @@
-import { TextSelection } from "prosemirror-state";
+import { NodeSelection, TextSelection } from "prosemirror-state";
 import { useUIState } from "src/useUIState";
 import { Block } from "components/Blocks/Block";
 import { elementId } from "src/utils/elementId";
@@ -56,7 +56,11 @@ export function focusBlock(
   }
 
   // if its not a text block, that's all we need to do
-  if (block.type !== "text" && block.type !== "heading") {
+  if (
+    block.type !== "text" &&
+    block.type !== "heading" &&
+    block.type !== "blockquote"
+  ) {
     return true;
   }
   // if its a text block, and not an empty block that is last on the page,
@@ -77,10 +81,9 @@ export function focusBlock(
       break;
     }
     case "top": {
-      console.log(position.left);
       pos = nextBlock.view.posAtCoords({
         top: nextBlockViewClientRect.top + 12,
-        left: position.left,
+        left: Math.max(position.left, nextBlockViewClientRect.left),
       });
       console.log(pos);
       break;
@@ -88,7 +91,7 @@ export function focusBlock(
     case "bottom": {
       pos = nextBlock.view.posAtCoords({
         top: nextBlockViewClientRect.bottom - 12,
-        left: position.left,
+        left: Math.max(position.left, nextBlockViewClientRect.left),
       });
       break;
     }

@@ -5,4 +5,5 @@ export const isTextBlock: {
 } = {
   text: true,
   heading: true,
+  blockquote: true,
 };

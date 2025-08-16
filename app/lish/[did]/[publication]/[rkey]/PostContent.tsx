@@ -9,6 +9,8 @@ import {
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
   PubLeafletBlocksHorizontalRule,
+  PubLeafletBlocksBlockquote,
+  PubLeafletBlocksBskyPost,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { TextBlock } from "./TextBlock";
@@ -19,26 +21,32 @@ import { codeToHtml } from "shiki";
 import Katex from "katex";
 import { StaticMathBlock } from "./StaticMathBlock";
 import { PubCodeBlock } from "./PubCodeBlock";
+import { AppBskyFeedDefs } from "@atproto/api";
+import { PubBlueskyPostBlock } from "./PublishBskyPostBlock";
 
 export function PostContent({
   blocks,
   did,
   preview,
   prerenderedCodeBlocks,
+  bskyPostData,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   did: string;
   preview?: boolean;
   prerenderedCodeBlocks?: Map<string, string>;
+  bskyPostData: AppBskyFeedDefs.PostView[];
 }) {
   return (
     <div id="post-content" className="postContent flex flex-col">
       {blocks.map((b, index) => {
         return (
           <Block
+            bskyPostData={bskyPostData}
             block={b}
             did={did}
             key={index}
+            previousBlock={blocks[index - 1]}
             index={[index]}
             preview={preview}
             prerenderedCodeBlocks={prerenderedCodeBlocks}
@@ -55,14 +63,18 @@ let Block = ({
   isList,
   index,
   preview,
+  previousBlock,
   prerenderedCodeBlocks,
+  bskyPostData,
 }: {
   preview?: boolean;
   index: number[];
   block: PubLeafletPagesLinearDocument.Block;
   did: string;
   isList?: boolean;
+  previousBlock?: PubLeafletPagesLinearDocument.Block;
   prerenderedCodeBlocks?: Map<string, string>;
+  bskyPostData: AppBskyFeedDefs.PostView[];
 }) => {
   let b = block;
   let blockProps = {
@@ -93,6 +105,12 @@ let Block = ({
     `;
 
   switch (true) {
+    case PubLeafletBlocksBskyPost.isMain(b.block): {
+      let uri = b.block.postRef.uri;
+      let post = bskyPostData.find((p) => p.uri === uri);
+      if (!post) return <div>no prefetched post rip</div>;
+      return <PubBlueskyPostBlock post={post} />;
+    }
     case PubLeafletBlocksHorizontalRule.isMain(b.block): {
       return <hr className="my-2 w-full border-border-light" />;
     }
@@ -101,6 +119,7 @@ let Block = ({
         <ul className="-ml-[1px] sm:ml-[9px] pb-2">
           {b.block.children.map((child, i) => (
             <ListItem
+              bskyPostData={bskyPostData}
               index={[...index, i]}
               item={child}
               did={did}
@@ -196,6 +215,21 @@ let Block = ({
         </div>
       );
     }
+    case PubLeafletBlocksBlockquote.isMain(b.block): {
+      return (
+        <blockquote
+          className={`border-l-2 border-border pl-2 ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-2" : ""}`}
+          {...blockProps}
+        >
+          <TextBlock
+            facets={b.block.facets}
+            plaintext={b.block.plaintext}
+            index={index}
+            preview={preview}
+          />
+        </blockquote>
+      );
+    }
     case PubLeafletBlocksText.isMain(b.block):
       return (
         <p className={` ${className}`} {...blockProps}>
@@ -244,11 +278,13 @@ function ListItem(props: {
   item: PubLeafletBlocksUnorderedList.ListItem;
   did: string;
   className?: string;
+  bskyPostData: AppBskyFeedDefs.PostView[];
 }) {
   let children = props.item.children?.length ? (
     <ul className="-ml-[7px] sm:ml-[7px]">
       {props.item.children.map((child, index) => (
         <ListItem
+          bskyPostData={props.bskyPostData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
@@ -266,6 +302,7 @@ function ListItem(props: {
       />
       <div className="flex flex-col w-full">
         <Block
+          bskyPostData={props.bskyPostData}
           block={{ block: props.item.content }}
           did={props.did}
           isList

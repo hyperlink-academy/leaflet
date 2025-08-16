@@ -19,6 +19,38 @@ export const PubLeafletBlocksText: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksBskyPost: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.bskyPost",
+  defs: {
+    main: {
+      type: "object",
+      required: ["postRef"],
+      properties: {
+        postRef: { type: "ref", ref: "com.atproto.repo.strongRef" },
+      },
+    },
+  },
+};
+
+export const PubLeafletBlocksBlockQuote: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.blockquote",
+  defs: {
+    main: {
+      type: "object",
+      required: ["plaintext"],
+      properties: {
+        plaintext: { type: "string" },
+        facets: {
+          type: "array",
+          items: { type: "ref", ref: PubLeafletRichTextFacet.id },
+        },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksHorizontalRule: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.horizontalRule",
@@ -175,6 +207,7 @@ export const PubLeafletBlocksUnorderedList: LexiconDoc = {
 };
 export const BlockLexicons = [
   PubLeafletBlocksText,
+  PubLeafletBlocksBlockQuote,
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
   PubLeafletBlocksUnorderedList,
@@ -182,6 +215,7 @@ export const BlockLexicons = [
   PubLeafletBlocksMath,
   PubLeafletBlocksCode,
   PubLeafletBlocksHorizontalRule,
+  PubLeafletBlocksBskyPost,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",
