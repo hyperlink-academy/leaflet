@@ -18,6 +18,7 @@ import {
   PubLeafletBlocksMath,
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksBskyPost,
+  PubLeafletBlocksBlockquote,
 } from "lexicons/api";
 import { Block } from "components/Blocks/Block";
 import { TID } from "@atproto/common";
@@ -255,6 +256,16 @@ function blockToRecord(
     let block: $Typed<PubLeafletBlocksHeader.Main> = {
       $type: "pub.leaflet.blocks.header",
       level: headingLevel?.data.value || 1,
+      plaintext: stringValue,
+      facets,
+    };
+    return block;
+  }
+
+  if (b.type === "blockquote") {
+    let [stringValue, facets] = getBlockContent(b.value);
+    let block: $Typed<PubLeafletBlocksBlockquote.Main> = {
+      $type: ids.PubLeafletBlocksBlockquote,
       plaintext: stringValue,
       facets,
     };
