@@ -6,7 +6,7 @@ import {
 import { PostPageData } from "./getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import { Subscribe, SubscribeWithBluesky } from "app/lish/Subscribe";
+import { Subscribe } from "app/lish/Subscribe";
 import { EditTiny } from "components/Icons/EditTiny";
 import { Interactions, useInteractionState } from "./Interactions/Interactions";
 import { PostContent } from "./PostContent";
