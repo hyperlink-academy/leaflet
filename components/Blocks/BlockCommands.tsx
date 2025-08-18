@@ -29,6 +29,9 @@ import {
 import { LinkSmall } from "components/Icons/LinkSmall";
 import { BlockRSVPSmall } from "components/Icons/BlockRSVPSmall";
 import { ListUnorderedSmall } from "components/Toolbar/ListToolbar";
+import { BlockMathSmall } from "components/Icons/BlockMathSmall";
+import { BlockCodeSmall } from "components/Icons/BlockCodeSmall";
+import { QuoteSmall } from "components/Icons/QuoteSmall";
 
 type Props = {
   parent: string;
@@ -156,6 +159,16 @@ export const blockCommands: Command[] = [
       clearCommandSearchText(entity);
     },
   },
+  {
+    name: "Block Quote",
+    icon: <QuoteSmall />,
+    type: "text",
+    onSelect: async (rep, props, um) => {
+      if (props.entityID) clearCommandSearchText(props.entityID);
+      let entity = await createBlockWithType(rep, props, "blockquote");
+      clearCommandSearchText(entity);
+    },
+  },
 
   {
     name: "Image",
@@ -204,13 +217,12 @@ export const blockCommands: Command[] = [
     },
   },
   {
-    name: "Mailbox",
-    icon: <BlockMailboxSmall />,
+    name: "Horizontal Rule",
+    icon: "—",
     type: "block",
-    hiddenInPublication: true,
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
-      await createBlockWithType(rep, props, "mailbox");
+      await createBlockWithType(rep, props, "horizontal-rule");
       um.add({
         undo: () => {
           props.entityID && focusTextBlock(props.entityID);
@@ -283,19 +295,26 @@ export const blockCommands: Command[] = [
       createBlockWithType(rep, props, "bluesky-post");
     },
   },
-
-  // EVENT STUFF
-
   {
-    name: "RSVP",
-    icon: <BlockRSVPSmall />,
-    type: "event",
-    hiddenInPublication: true,
-    onSelect: (rep, props) => {
-      props.entityID && clearCommandSearchText(props.entityID);
-      return createBlockWithType(rep, props, "rsvp");
+    name: "Math",
+    icon: <BlockMathSmall />,
+    type: "block",
+    hiddenInPublication: false,
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "math");
     },
   },
+  {
+    name: "Code",
+    icon: <BlockCodeSmall />,
+    type: "block",
+    hiddenInPublication: false,
+    onSelect: async (rep, props) => {
+      createBlockWithType(rep, props, "code");
+    },
+  },
+
+  // EVENT STUFF
   {
     name: "Date and Time",
     icon: <BlockCalendarSmall />,

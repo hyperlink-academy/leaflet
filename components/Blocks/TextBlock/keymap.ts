@@ -2,7 +2,7 @@ import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
 import { EditorView } from "prosemirror-view";
 import { generateKeyBetween } from "fractional-indexing";
-import { setBlockType, toggleMark } from "prosemirror-commands";
+import { baseKeymap, setBlockType, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import {
   Command,
@@ -30,6 +30,7 @@ export const TextBlockKeymap = (
   propsRef: PropsRef,
   repRef: RefObject<Replicache<ReplicacheMutators> | null>,
   um: UndoManager,
+  multiLine?: boolean,
 ) =>
   ({
     "Meta-b": toggleMark(schema.marks.strong),
@@ -132,11 +133,16 @@ export const TextBlockKeymap = (
       ),
     "Shift-Backspace": backspace(propsRef, repRef),
     Enter: (state, dispatch, view) => {
+      if (multiLine && state.doc.content.size - state.selection.anchor > 1)
+        return false;
       return um.withUndoGroup(() =>
         enter(propsRef, repRef)(state, dispatch, view),
       );
     },
     "Shift-Enter": (state, dispatch, view) => {
+      if (multiLine) {
+        return baseKeymap.Enter(state, dispatch, view);
+      }
       return um.withUndoGroup(() =>
         enter(propsRef, repRef)(state, dispatch, view),
       );
@@ -277,6 +283,12 @@ const backspace =
         );
 
         return false;
+      }
+
+      if (propsRef.current.pageType === "canvas") {
+        repRef.current?.mutate.removeBlock({
+          blockEntity: propsRef.current.entityID,
+        });
       }
       return true;
     }

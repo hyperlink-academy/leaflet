@@ -30,7 +30,6 @@
 
     --safe-padding-bottom: max(calc(env(safe-area-inset-bottom) - 8px), 16px);
   }
-
   @media (max-width: 640px) {
     :root {
       --list-marker-width: 20px;
@@ -129,6 +128,10 @@
   /* END GLOBAL STYLING */
 }
 
+blockquote {
+  margin: 0;
+}
+
 /* Hide scrollbar for Chrome, Safari and Opera */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
@@ -155,6 +158,36 @@ input[type="number"] {
     rgb(var(--primary)),
     rgb(var(--bg-page)) 55%
   );
+}
+
+.inline-code {
+  display: inline;
+  font-size: 1em;
+  @apply bg-border-light;
+  @apply font-mono;
+  @apply px-[1px];
+  @apply py-[1px];
+  @apply -mx-[1px];
+  @apply -my-[1px];
+  @apply rounded-[4px];
+  @apply box-decoration-clone;
+}
+
+pre.shiki code {
+  display: block;
+}
+
+pre.shiki {
+  @apply p-2;
+  @apply rounded-md;
+  @apply overflow-auto;
+}
+
+.highlight:has(+ .highlight) {
+  @apply rounded-r-none;
+}
+.highlight + .highlight {
+  @apply rounded-l-none;
 }
 
 .highlight {
@@ -242,6 +275,12 @@ input[type="number"] {
   @apply outline-offset-1;
   @apply outline-2;
   @apply outline-border;
+}
+
+.transparent-container {
+  @apply border;
+  @apply border-border-light;
+  @apply rounded-md;
 }
 
 .container {

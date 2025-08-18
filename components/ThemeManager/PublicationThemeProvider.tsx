@@ -111,6 +111,8 @@ export const usePubTheme = (record?: PubLeafletPublication.Record | null) => {
   let bgLeaflet = useColor(record, "backgroundColor");
   let bgPage = useColor(record, "pageBackground");
   bgPage = record?.theme?.pageBackground ? bgPage : bgLeaflet;
+  let showPageBackground = record?.theme?.showPageBackground;
+
   let primary = useColor(record, "primary");
 
   let accent1 = useColor(record, "accentBackground");
@@ -120,16 +122,6 @@ export const usePubTheme = (record?: PubLeafletPublication.Record | null) => {
   let highlight2 = useColorAttribute(null, "theme/highlight-2");
   let highlight3 = useColorAttribute(null, "theme/highlight-3");
 
-  // set accent contrast to the accent color that has the highest contrast with the page background
-  let accentContrast = [accent1, accent2].sort((a, b) => {
-    return (
-      getColorContrast(
-        colorToString(b, "rgb"),
-        colorToString(bgLeaflet, "rgb"),
-      ) -
-      getColorContrast(colorToString(a, "rgb"), colorToString(bgLeaflet, "rgb"))
-    );
-  })[0];
   return {
     bgLeaflet,
     bgPage,
@@ -139,12 +131,13 @@ export const usePubTheme = (record?: PubLeafletPublication.Record | null) => {
     highlight1,
     highlight2,
     highlight3,
-    accentContrast,
+    showPageBackground,
   };
 };
 
 export const useLocalPubTheme = (
   record: PubLeafletPublication.Record | undefined,
+  showPageBackground?: boolean,
 ) => {
   const pubTheme = usePubTheme(record);
   const [localOverrides, setTheme] = useState<Partial<typeof pubTheme>>({});
@@ -153,24 +146,47 @@ export const useLocalPubTheme = (
     let newTheme = {
       ...pubTheme,
       ...localOverrides,
+      showPageBackground,
     };
-    let accentContrast = [newTheme.accent1, newTheme.accent2].sort((a, b) => {
+    let newAccentContrast;
+    let sortedAccents = [newTheme.accent1, newTheme.accent2].sort((a, b) => {
       return (
         getColorContrast(
           colorToString(b, "rgb"),
-          colorToString(newTheme.bgLeaflet, "rgb"),
+          colorToString(
+            showPageBackground ? newTheme.bgPage : newTheme.bgLeaflet,
+            "rgb",
+          ),
         ) -
         getColorContrast(
           colorToString(a, "rgb"),
-          colorToString(newTheme.bgLeaflet, "rgb"),
+          colorToString(
+            showPageBackground ? newTheme.bgPage : newTheme.bgLeaflet,
+            "rgb",
+          ),
         )
       );
-    })[0];
+    });
+    if (
+      getColorContrast(
+        colorToString(sortedAccents[0], "rgb"),
+        colorToString(newTheme.primary, "rgb"),
+      ) < 30 &&
+      getColorContrast(
+        colorToString(sortedAccents[1], "rgb"),
+        colorToString(
+          showPageBackground ? newTheme.bgPage : newTheme.bgLeaflet,
+          "rgb",
+        ),
+      ) > 12
+    ) {
+      newAccentContrast = sortedAccents[1];
+    } else newAccentContrast = sortedAccents[0];
     return {
       ...newTheme,
-      accentContrast,
+      accentContrast: newAccentContrast,
     };
-  }, [pubTheme, localOverrides]);
+  }, [pubTheme, localOverrides, showPageBackground]);
   return {
     theme: mergedTheme,
     setTheme,

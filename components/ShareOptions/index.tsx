@@ -15,6 +15,10 @@ import {
   useLeafletPublicationData,
 } from "components/PageSWRDataProvider";
 import { ShareSmall } from "components/Icons/ShareSmall";
+import { PubLeafletDocument } from "lexicons/api";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { AtUri } from "@atproto/syntax";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export type ShareMenuStates = "default" | "login" | "domain";
 
@@ -43,10 +47,13 @@ export let usePublishLink = () => {
 export function ShareOptions() {
   let [menuState, setMenuState] = useState<ShareMenuStates>("default");
   let { data: pub } = useLeafletPublicationData();
+  let isMobile = useIsMobile();
 
   return (
     <Menu
       asChild
+      side={isMobile ? "top" : "right"}
+      align={isMobile ? "center" : "start"}
       className="max-w-xs"
       onOpenChange={() => {
         setMenuState("default");
@@ -62,7 +69,7 @@ export function ShareOptions() {
     >
       {menuState === "login" ? (
         <div className="px-3 py-1">
-          <LoginForm />
+          <LoginForm text="Save your Leaflets and access them on multiple devices!" />
         </div>
       ) : menuState === "domain" ? (
         <CustomDomainMenu setShareMenuState={setMenuState} />
@@ -83,7 +90,14 @@ const ShareMenu = (props: {
   isPub?: boolean;
 }) => {
   let { permission_token } = useReplicache();
+  let { data: pub } = useLeafletPublicationData();
 
+  let record = pub?.documents?.data as PubLeafletDocument.Record | null;
+
+  let postLink =
+    pub?.publications && pub.documents
+      ? `${getPublicationURL(pub.publications)}/${new AtUri(pub?.documents.uri).rkey}`
+      : null;
   let publishLink = usePublishLink();
   let [collabLink, setCollabLink] = useState<null | string>(null);
   useEffect(() => {
@@ -110,15 +124,16 @@ const ShareMenu = (props: {
           <hr className="border-border my-1" />
         </>
       )}
+
       <ShareButton
-        text="Share Edit Link"
+        text={`Share ${postLink ? "Draft" : ""} Edit Link`}
         subtext=""
         smokerText="Edit link copied!"
         id="get-edit-link"
         link={collabLink}
       />
       <ShareButton
-        text="Share View Link"
+        text={`Share ${postLink ? "Draft" : ""} View Link`}
         subtext=<>
           {domains?.[0] ? (
             <>
@@ -141,6 +156,20 @@ const ShareMenu = (props: {
         }
         link={publishLink || ""}
       />
+      {postLink && (
+        <>
+          <hr className="border-border-light" />
+
+          <ShareButton
+            text="Share Published Link"
+            subtext=""
+            smokerText="Post link copied!"
+            id="get-post-link"
+            fullLink={postLink.includes("http") ? postLink : undefined}
+            link={postLink}
+          />
+        </>
+      )}
       {!props.isPub && (
         <>
           <hr className="border-border mt-1" />
@@ -152,13 +181,14 @@ const ShareMenu = (props: {
 };
 
 export const ShareButton = (props: {
-  text: string;
+  text: React.ReactNode;
   subtext: React.ReactNode;
   helptext?: string;
   smokerText: string;
   id: string;
   link: null | string;
   fullLink?: string;
+  className?: string;
 }) => {
   let smoker = useSmoker();
 
@@ -184,7 +214,7 @@ export const ShareButton = (props: {
         }
       }}
     >
-      <div className={`group/${props.id}`}>
+      <div className={`group/${props.id} ${props.className}`}>
         <div className={`group-hover/${props.id}:text-accent-contrast`}>
           {props.text}
         </div>

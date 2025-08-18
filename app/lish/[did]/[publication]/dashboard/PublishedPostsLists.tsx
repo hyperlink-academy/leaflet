@@ -14,6 +14,9 @@ import { mutate } from "swr";
 import { Button } from "react-aria-components";
 import { ButtonPrimary } from "components/Buttons";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
+import { DeleteSmall } from "components/Icons/DeleteSmall";
+import { ShareSmall } from "components/Icons/ShareSmall";
+import { ShareButton } from "components/ShareOptions";
 
 export function PublishedPostsList() {
   let { data: publication } = usePublicationData();
@@ -103,6 +106,7 @@ let Options = (props: { document_uri: string }) => {
   return (
     <Menu
       align="end"
+      alignOffset={20}
       asChild
       trigger={
         <button className="text-secondary rounded-md selected-outline !border-transparent hover:!border-border h-min">
@@ -111,27 +115,51 @@ let Options = (props: { document_uri: string }) => {
       }
     >
       <>
-        <DeletePost document_uri={props.document_uri} />
+        <OptionsMenu document_uri={props.document_uri} />
       </>
     </Menu>
   );
 };
 
-function DeletePost(props: { document_uri: string }) {
-  let { mutate } = usePublicationData();
+function OptionsMenu(props: { document_uri: string }) {
+  let { mutate, data: publication } = usePublicationData();
   let [state, setState] = useState<"normal" | "confirm">("normal");
+
+  let postLink = publication
+    ? `${getPublicationURL(publication)}/${new AtUri(props.document_uri).rkey}`
+    : null;
 
   if (state === "normal") {
     return (
-      <MenuItem
-        onSelect={async (e) => {
-          e.preventDefault();
-          setState("confirm");
-          return;
-        }}
-      >
-        Delete Post
-      </MenuItem>
+      <>
+        <ShareButton
+          className="justify-end"
+          text={
+            <div className="flex gap-2">
+              Share Post Link
+              <ShareSmall />
+            </div>
+          }
+          subtext=""
+          smokerText="Post link copied!"
+          id="get-post-link"
+          fullLink={postLink?.includes("https") ? postLink : undefined}
+          link={postLink}
+        />
+
+        <hr className="border-border-light" />
+        <MenuItem
+          className="justify-end"
+          onSelect={async (e) => {
+            e.preventDefault();
+            setState("confirm");
+            return;
+          }}
+        >
+          Delete Post
+          <DeleteSmall />
+        </MenuItem>
+      </>
     );
   }
   if (state === "confirm") {

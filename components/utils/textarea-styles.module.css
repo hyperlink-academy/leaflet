@@ -36,3 +36,7 @@
 .grow-wrap > textarea:focus {
   outline: none;
 }
+
+.no-wrap::after {
+  white-space: pre !important;
+}

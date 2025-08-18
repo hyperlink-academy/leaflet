@@ -34,6 +34,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      bsky_posts: {
+        Row: {
+          cid: string
+          indexed_at: string
+          post_view: Json
+          uri: string
+        }
+        Insert: {
+          cid: string
+          indexed_at?: string
+          post_view: Json
+          uri: string
+        }
+        Update: {
+          cid?: string
+          indexed_at?: string
+          post_view?: Json
+          uri?: string
+        }
+        Relationships: []
+      }
       bsky_profiles: {
         Row: {
           did: string
@@ -148,6 +169,39 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "identities"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_mentions_in_bsky: {
+        Row: {
+          document: string
+          link: string
+          uri: string
+        }
+        Insert: {
+          document: string
+          link: string
+          uri: string
+        }
+        Update: {
+          document?: string
+          link?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_mentions_in_bsky_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "document_mentions_in_bsky_uri_fkey"
+            columns: ["uri"]
+            isOneToOne: false
+            referencedRelation: "bsky_posts"
+            referencedColumns: ["uri"]
           },
         ]
       }

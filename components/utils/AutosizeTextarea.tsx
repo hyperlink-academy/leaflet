@@ -7,36 +7,39 @@ import {
 } from "react";
 import styles from "./textarea-styles.module.css";
 
-type Props = React.DetailedHTMLProps<
+export type AutosizeTextareaProps = React.DetailedHTMLProps<
   React.TextareaHTMLAttributes<HTMLTextAreaElement>,
   HTMLTextAreaElement
->;
-export const AutosizeTextarea = forwardRef<HTMLTextAreaElement, Props>(
-  (props: Props, ref) => {
-    let textarea = useRef<HTMLTextAreaElement | null>(null);
-    useImperativeHandle(ref, () => textarea.current as HTMLTextAreaElement);
+> & { noWrap?: boolean };
+export const AutosizeTextarea = forwardRef<
+  HTMLTextAreaElement,
+  AutosizeTextareaProps
+>((props: AutosizeTextareaProps & { noWrap?: boolean }, ref) => {
+  let textarea = useRef<HTMLTextAreaElement | null>(null);
+  let { noWrap, ...rest } = props;
+  useImperativeHandle(ref, () => textarea.current as HTMLTextAreaElement);
 
-    return (
-      <div
-        className={`${styles["grow-wrap"]} ${props.className} `}
-        data-replicated-value={props.value}
-        style={props.style}
-      >
-        <textarea
-          rows={1}
-          {...props}
-          ref={textarea}
-          className="placeholder:text-tertiary bg-transparent"
-        />
-      </div>
-    );
-  },
-);
+  console.log({ noWrap });
+  return (
+    <div
+      className={`${styles["grow-wrap"]} ${props.className} ${noWrap ? styles["no-wrap"] : ""}`}
+      data-replicated-value={props.value}
+      style={props.style}
+    >
+      <textarea
+        rows={1}
+        {...rest}
+        ref={textarea}
+        className={`placeholder:text-tertiary bg-transparent ${props.className}`}
+      />
+    </div>
+  );
+});
 
 export const AsyncValueAutosizeTextarea = forwardRef<
   HTMLTextAreaElement,
-  Props
->((props: Props, ref) => {
+  AutosizeTextareaProps
+>((props: AutosizeTextareaProps, ref) => {
   let [intermediateState, setIntermediateState] = useState(
     props.value as string,
   );

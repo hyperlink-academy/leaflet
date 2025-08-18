@@ -18,6 +18,8 @@ export function useBlockMouseHandlers(props: Block) {
     (e: MouseEvent) => {
       if ((e.target as Element).getAttribute("data-draggable")) return;
       if ((e.target as Element).tagName === "BUTTON") return;
+      if ((e.target as Element).tagName === "SELECT") return;
+      if ((e.target as Element).tagName === "OPTION") return;
       if (isMobile) return;
       if (!entity_set.permissions.write) return;
       useSelectingMouse.setState({ start: props.value });
@@ -30,6 +32,7 @@ export function useBlockMouseHandlers(props: Block) {
         e.preventDefault();
         useUIState.getState().addBlockToSelection(props);
       } else {
+        if (e.isDefaultPrevented()) return;
         useUIState.getState().setFocusedBlock({
           entityType: "block",
           entityID: props.value,

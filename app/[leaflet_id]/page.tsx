@@ -70,13 +70,18 @@ export default async function LeafletPage(props: Props) {
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
-  let res = await supabaseServerClient
-    .from("permission_tokens")
-    .select("*, permission_token_rights(*)")
-    .eq("id", (await props.params).leaflet_id)
-    .single();
+  let { result: res } = await get_leaflet_data.handler(
+    { token_id: (await props.params).leaflet_id },
+    { supabase: supabaseServerClient },
+  );
   let rootEntity = res.data?.root_entity;
   if (!rootEntity || !res.data) return { title: "Leaflet not found" };
+  if (res.data.leaflets_in_publications[0]) {
+    return {
+      title: res.data.leaflets_in_publications[0].title || "Untitled",
+      description: res.data.leaflets_in_publications[0].description,
+    };
+  }
   let { data } = await supabaseServerClient.rpc("get_facts", {
     root: rootEntity,
   });

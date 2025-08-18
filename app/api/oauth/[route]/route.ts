@@ -43,7 +43,7 @@ export async function GET(
       const ac = new AbortController();
 
       const url = await client.authorize(handle || "https://bsky.social", {
-        scope: "atproto transition:generic",
+        scope: "atproto transition:generic transition:email",
         signal: ac.signal,
         state: JSON.stringify(state),
       });

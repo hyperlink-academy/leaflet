@@ -26,7 +26,7 @@ export function PublicationDashboard<T extends Tabs>(props: {
       <div className="pubDashHeader flex flex-row gap-2 w-full justify-between border-b border-border text-secondary items-center ">
         <div className="max-w-full w-[1000px] h-full ">
           <div
-            className={`flex gap-2 h-fit  py-0.5 pl-1 pr-2 w-fit  rounded-md ${showPageBackground ? "bg-[rgba(var(--bg-page),0.8)]" : ""}`}
+            className={`flex gap-2 h-fit py-0.5 pl-1 pr-2 w-fit rounded-md ${showPageBackground ? "bg-none sm:bg-[rgba(var(--bg-page),0.8)]" : ""}`}
           >
             {props.icon && (
               <div
@@ -75,7 +75,7 @@ function Tab(props: {
 }) {
   return (
     <div
-      className={`pubTabs border  border-b-0 px-2 pt-1 pb-0.5 rounded-t-md border-border hover:cursor-pointer ${props.selected ? "text-accent-1 font-bold -mb-[1px]" : ""} ${props.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))]" : ""}`}
+      className={`pubTabs border  border-b-0 px-2 pt-1 pb-0.5 rounded-t-md border-border hover:cursor-pointer ${props.selected ? "text-accent-contrast font-bold -mb-[1px]" : ""} ${props.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))]" : ""}`}
       onClick={() => props.onSelect()}
     >
       {props.name === "Subscribers"

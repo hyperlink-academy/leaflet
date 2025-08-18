@@ -32,7 +32,11 @@ export const PubThemeSetter = () => {
   let [showPageBackground, setShowPageBackground] = useState(
     !!record?.theme?.showPageBackground,
   );
-  let { theme: localPubTheme, setTheme, changes } = useLocalPubTheme(record);
+  let {
+    theme: localPubTheme,
+    setTheme,
+    changes,
+  } = useLocalPubTheme(record, showPageBackground);
   let [image, setImage] = useState<ImageState | null>(
     PubLeafletThemeBackgroundImage.isMain(record?.theme?.backgroundImage)
       ? {

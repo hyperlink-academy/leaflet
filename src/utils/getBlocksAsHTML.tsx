@@ -7,6 +7,7 @@ import * as base64 from "base64-js";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Block } from "components/Blocks/Block";
 import { List, parseBlocksToList } from "./parseBlocksToList";
+import Katex from "katex";
 
 export async function getBlocksAsHTML(
   rep: Replicache<ReplicacheMutators>,
@@ -73,8 +74,36 @@ async function renderBlock(
   tx: ReadTransaction,
   ignoreWrapper?: boolean,
 ) {
-  let wrapper: undefined | "h1" | "h2" | "h3";
+  let wrapper: undefined | "h1" | "h2" | "h3" | "blockquote";
   let [alignment] = await scanIndex(tx).eav(b.value, "block/text-alignment");
+  if (b.type === "horizontal-rule") {
+    return "<hr />";
+  }
+  if (b.type === "code") {
+    let [code] = await scanIndex(tx).eav(b.value, "block/code");
+    let [lang] = await scanIndex(tx).eav(b.value, "block/code-language");
+    return renderToStaticMarkup(
+      <pre data-lang={lang?.data.value}>{code?.data.value || ""}</pre>,
+    );
+  }
+  if (b.type === "math") {
+    let [math] = await scanIndex(tx).eav(b.value, "block/math");
+    const html = Katex.renderToString(math?.data.value || "", {
+      displayMode: true,
+      throwOnError: false,
+      macros: {
+        "\\f": "#1f(#2)",
+      },
+    });
+    return renderToStaticMarkup(
+      <div
+        data-type="math"
+        data-tex={math?.data.value}
+        data-alignment={alignment?.data.value}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />,
+    );
+  }
   if (b.type === "image") {
     let [src] = await scanIndex(tx).eav(b.value, "block/image");
     if (!src) return "";
@@ -95,6 +124,9 @@ async function renderBlock(
         {text.data.value}
       </a>,
     );
+  }
+  if (b.type === "blockquote") {
+    wrapper = "blockquote";
   }
   if (b.type === "heading") {
     let headingLevel =
@@ -134,6 +166,7 @@ async function renderBlock(
     );
   }
   let value = (await scanIndex(tx).eav(b.value, "block/text"))[0];
+  console.log("getBlockasHTML", value);
   if (!value)
     return ignoreWrapper ? "" : `<${wrapper || "p"}></${wrapper || "p"}>`;
   let doc = new Y.Doc();

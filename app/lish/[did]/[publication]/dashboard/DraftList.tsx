@@ -73,6 +73,7 @@ export function DeleteDraft(props: { id: string }) {
   if (state === "normal") {
     return (
       <MenuItem
+        className="justify-end"
         onSelect={(e) => {
           if (state === "normal") {
             e.preventDefault();
@@ -80,8 +81,8 @@ export function DeleteDraft(props: { id: string }) {
           }
         }}
       >
-        <DeleteSmall />
         Delete Draft
+        <DeleteSmall />
       </MenuItem>
     );
   }

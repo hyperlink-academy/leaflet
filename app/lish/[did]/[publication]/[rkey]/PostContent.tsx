@@ -1,4 +1,6 @@
 import {
+  PubLeafletBlocksMath,
+  PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
   PubLeafletBlocksText,
@@ -6,24 +8,50 @@ import {
   PubLeafletBlocksWebsite,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
+  PubLeafletBlocksHorizontalRule,
+  PubLeafletBlocksBlockquote,
+  PubLeafletBlocksBskyPost,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { TextBlock } from "./TextBlock";
 import { Popover } from "components/Popover";
 import { theme } from "tailwind.config";
 import { ImageAltSmall } from "components/Icons/ImageAlt";
+import { codeToHtml } from "shiki";
+import Katex from "katex";
+import { StaticMathBlock } from "./StaticMathBlock";
+import { PubCodeBlock } from "./PubCodeBlock";
+import { AppBskyFeedDefs } from "@atproto/api";
+import { PubBlueskyPostBlock } from "./PublishBskyPostBlock";
 
 export function PostContent({
   blocks,
   did,
+  preview,
+  prerenderedCodeBlocks,
+  bskyPostData,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   did: string;
+  preview?: boolean;
+  prerenderedCodeBlocks?: Map<string, string>;
+  bskyPostData: AppBskyFeedDefs.PostView[];
 }) {
   return (
-    <div className="postContent flex flex-col">
+    <div id="post-content" className="postContent flex flex-col">
       {blocks.map((b, index) => {
-        return <Block block={b} did={did} key={index} />;
+        return (
+          <Block
+            bskyPostData={bskyPostData}
+            block={b}
+            did={did}
+            key={index}
+            previousBlock={blocks[index - 1]}
+            index={[index]}
+            preview={preview}
+            prerenderedCodeBlocks={prerenderedCodeBlocks}
+          />
+        );
       })}
     </div>
   );
@@ -33,12 +61,31 @@ let Block = ({
   block,
   did,
   isList,
+  index,
+  preview,
+  previousBlock,
+  prerenderedCodeBlocks,
+  bskyPostData,
 }: {
+  preview?: boolean;
+  index: number[];
   block: PubLeafletPagesLinearDocument.Block;
   did: string;
   isList?: boolean;
+  previousBlock?: PubLeafletPagesLinearDocument.Block;
+  prerenderedCodeBlocks?: Map<string, string>;
+  bskyPostData: AppBskyFeedDefs.PostView[];
 }) => {
   let b = block;
+  let blockProps = {
+    style: {
+      scrollMarginTop: "4rem",
+      scrollMarginBottom: "4rem",
+      wordBreak: "break-word" as React.CSSProperties["wordBreak"],
+    },
+    id: preview ? undefined : index.join("."),
+    "data-index": index.join("."),
+  };
   let alignment =
     b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignRight"
       ? "text-right justify-end"
@@ -52,31 +99,52 @@ let Block = ({
   let className = `
     postBlockWrapper
     pt-1
+    min-h-7
     ${isList ? "isListItem pb-0 " : "pb-2 last:pb-3 last:sm:pb-4 first:pt-2 sm:first:pt-3"}
     ${alignment}
     `;
 
   switch (true) {
+    case PubLeafletBlocksBskyPost.isMain(b.block): {
+      let uri = b.block.postRef.uri;
+      let post = bskyPostData.find((p) => p.uri === uri);
+      if (!post) return <div>no prefetched post rip</div>;
+      return <PubBlueskyPostBlock post={post} />;
+    }
+    case PubLeafletBlocksHorizontalRule.isMain(b.block): {
+      return <hr className="my-2 w-full border-border-light" />;
+    }
     case PubLeafletBlocksUnorderedList.isMain(b.block): {
       return (
         <ul className="-ml-[1px] sm:ml-[9px] pb-2">
-          {b.block.children.map((child, index) => (
+          {b.block.children.map((child, i) => (
             <ListItem
+              bskyPostData={bskyPostData}
+              index={[...index, i]}
               item={child}
               did={did}
-              key={index}
+              key={i}
               className={className}
             />
           ))}
         </ul>
       );
     }
+    case PubLeafletBlocksMath.isMain(b.block): {
+      return <StaticMathBlock block={b.block} />;
+    }
+    case PubLeafletBlocksCode.isMain(b.block): {
+      let html = prerenderedCodeBlocks?.get(index.join("."));
+      return <PubCodeBlock block={b.block} prerenderedCode={html} />;
+    }
     case PubLeafletBlocksWebsite.isMain(b.block): {
       return (
         <a
+          {...blockProps}
           href={b.block.src}
           target="_blank"
           className={`
+            my-2
           externalLinkBlock flex relative group/linkBlock
           h-[104px] w-full bg-bg-page overflow-hidden text-primary hover:no-underline no-underline
           hover:border-accent-contrast  shadow-sm
@@ -123,7 +191,7 @@ let Block = ({
     }
     case PubLeafletBlocksImage.isMain(b.block): {
       return (
-        <div className={`relative flex ${alignment}`}>
+        <div className={`relative flex ${alignment}`} {...blockProps}>
           <img
             alt={b.block.alt}
             height={b.block.aspectRatio?.height}
@@ -147,36 +215,56 @@ let Block = ({
         </div>
       );
     }
+    case PubLeafletBlocksBlockquote.isMain(b.block): {
+      return (
+        <blockquote
+          className={`border-l-2 border-border pl-2 ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-2" : ""}`}
+          {...blockProps}
+        >
+          <TextBlock
+            facets={b.block.facets}
+            plaintext={b.block.plaintext}
+            index={index}
+            preview={preview}
+          />
+        </blockquote>
+      );
+    }
     case PubLeafletBlocksText.isMain(b.block):
       return (
-        <p className={` ${className}`}>
-          <TextBlock facets={b.block.facets} plaintext={b.block.plaintext} />
+        <p className={` ${className}`} {...blockProps}>
+          <TextBlock
+            facets={b.block.facets}
+            plaintext={b.block.plaintext}
+            index={index}
+            preview={preview}
+          />
         </p>
       );
     case PubLeafletBlocksHeader.isMain(b.block): {
       if (b.block.level === 1)
         return (
-          <h2 className={`${className}`}>
-            <TextBlock {...b.block} />
+          <h2 className={`${className}`} {...blockProps}>
+            <TextBlock {...b.block} index={index} preview={preview} />
           </h2>
         );
       if (b.block.level === 2)
         return (
-          <h3 className={`${className}`}>
-            <TextBlock {...b.block} />
+          <h3 className={`${className}`} {...blockProps}>
+            <TextBlock {...b.block} index={index} preview={preview} />
           </h3>
         );
       if (b.block.level === 3)
         return (
-          <h4 className={`${className}`}>
-            <TextBlock {...b.block} />
+          <h4 className={`${className}`} {...blockProps}>
+            <TextBlock {...b.block} index={index} preview={preview} />
           </h4>
         );
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
-        <h6 className={`${className}`}>
-          <TextBlock {...b.block} />
+        <h6 className={`${className}`} {...blockProps}>
+          <TextBlock {...b.block} index={index} preview={preview} />
         </h6>
       );
     }
@@ -186,29 +274,41 @@ let Block = ({
 };
 
 function ListItem(props: {
+  index: number[];
   item: PubLeafletBlocksUnorderedList.ListItem;
   did: string;
   className?: string;
+  bskyPostData: AppBskyFeedDefs.PostView[];
 }) {
+  let children = props.item.children?.length ? (
+    <ul className="-ml-[7px] sm:ml-[7px]">
+      {props.item.children.map((child, index) => (
+        <ListItem
+          bskyPostData={props.bskyPostData}
+          index={[...props.index, index]}
+          item={child}
+          did={props.did}
+          key={index}
+          className={props.className}
+        />
+      ))}
+    </ul>
+  ) : null;
+
   return (
     <li className={`!pb-0 flex flex-row gap-2`}>
       <div
-        className={`listMarker shrink-0 mx-2 z-[1] mt-[14px] h-[5px] w-[5px] rounded-full bg-secondary`}
+        className={`listMarker shrink-0 mx-2 z-[1] mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
       />
-      <div className="flex flex-col">
-        <Block block={{ block: props.item.content }} did={props.did} isList />
-        {props.item.children?.length ? (
-          <ul className="-ml-[7px] sm:ml-[7px]">
-            {props.item.children.map((child, index) => (
-              <ListItem
-                item={child}
-                did={props.did}
-                key={index}
-                className={props.className}
-              />
-            ))}
-          </ul>
-        ) : null}
+      <div className="flex flex-col w-full">
+        <Block
+          bskyPostData={props.bskyPostData}
+          block={{ block: props.item.content }}
+          did={props.did}
+          isList
+          index={props.index}
+        />
+        {children}{" "}
       </div>
     </li>
   );

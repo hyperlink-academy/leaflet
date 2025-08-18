@@ -19,6 +19,98 @@ export const PubLeafletBlocksText: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksBskyPost: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.bskyPost",
+  defs: {
+    main: {
+      type: "object",
+      required: ["postRef"],
+      properties: {
+        postRef: { type: "ref", ref: "com.atproto.repo.strongRef" },
+      },
+    },
+  },
+};
+
+export const PubLeafletBlocksBlockQuote: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.blockquote",
+  defs: {
+    main: {
+      type: "object",
+      required: ["plaintext"],
+      properties: {
+        plaintext: { type: "string" },
+        facets: {
+          type: "array",
+          items: { type: "ref", ref: PubLeafletRichTextFacet.id },
+        },
+      },
+    },
+  },
+};
+
+export const PubLeafletBlocksHorizontalRule: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.horizontalRule",
+  defs: {
+    main: {
+      type: "object",
+      required: [],
+      properties: {},
+    },
+  },
+};
+
+export const PubLeafletBlocksCode: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.code",
+  defs: {
+    main: {
+      type: "object",
+      required: ["plaintext"],
+      properties: {
+        plaintext: { type: "string" },
+        language: { type: "string" },
+        syntaxHighlightingTheme: { type: "string" },
+      },
+    },
+  },
+};
+
+export const PubLeafletBlocksMath: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.math",
+  defs: {
+    main: {
+      type: "object",
+      required: ["tex"],
+      properties: {
+        tex: { type: "string" },
+      },
+    },
+  },
+};
+
+export const PubLeafletBlocksLeafletQuote: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.leafletQuote",
+  defs: {
+    main: {
+      type: "object",
+      required: ["src"],
+      properties: {
+        record: { type: "ref", ref: "com.atproto.repo.strongRef" },
+        position: {
+          type: "union",
+          refs: ["pub.leaflet.pages.linearDocument#quote"],
+        },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksWebsite: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.website",
@@ -115,10 +207,15 @@ export const PubLeafletBlocksUnorderedList: LexiconDoc = {
 };
 export const BlockLexicons = [
   PubLeafletBlocksText,
+  PubLeafletBlocksBlockQuote,
   PubLeafletBlocksHeader,
   PubLeafletBlocksImage,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
+  PubLeafletBlocksMath,
+  PubLeafletBlocksCode,
+  PubLeafletBlocksHorizontalRule,
+  PubLeafletBlocksBskyPost,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",

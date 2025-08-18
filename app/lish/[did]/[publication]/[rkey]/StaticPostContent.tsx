@@ -1,6 +1,10 @@
 import {
+  PubLeafletBlocksBlockquote,
+  PubLeafletBlocksCode,
   PubLeafletBlocksHeader,
+  PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksImage,
+  PubLeafletBlocksMath,
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksWebsite,
@@ -8,7 +12,9 @@ import {
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { TextBlock } from "./TextBlock";
+import { BaseTextBlock } from "./BaseTextBlock";
+import { StaticMathBlock } from "./StaticMathBlock";
+import { codeToHtml } from "shiki";
 
 export function StaticPostContent({
   blocks,
@@ -26,7 +32,7 @@ export function StaticPostContent({
   );
 }
 
-let Block = ({
+let Block = async ({
   block,
   did,
   isList,
@@ -38,6 +44,35 @@ let Block = ({
   let b = block;
 
   switch (true) {
+    case PubLeafletBlocksBlockquote.isMain(b.block): {
+      return (
+        <blockquote className={`border-l-2 border-border pl-2`}>
+          <BaseTextBlock
+            facets={b.block.facets}
+            plaintext={b.block.plaintext}
+            index={[]}
+          />
+        </blockquote>
+      );
+    }
+    case PubLeafletBlocksHorizontalRule.isMain(b.block): {
+      return <hr className="my-2 w-full border-border-light" />;
+    }
+    case PubLeafletBlocksMath.isMain(b.block): {
+      return <StaticMathBlock block={b.block} />;
+    }
+    case PubLeafletBlocksCode.isMain(b.block): {
+      let html = await codeToHtml(b.block.plaintext, {
+        lang: b.block.language || "plaintext",
+        theme: b.block.syntaxHighlightingTheme || "github-light",
+      });
+      return (
+        <div
+          className="w-full min-h-[42px] rounded-md border-border-light outline-border-light selected-outline"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      );
+    }
     case PubLeafletBlocksUnorderedList.isMain(b.block): {
       return (
         <ul>
@@ -77,33 +112,37 @@ let Block = ({
     case PubLeafletBlocksText.isMain(b.block):
       return (
         <p>
-          <TextBlock facets={b.block.facets} plaintext={b.block.plaintext} />
+          <BaseTextBlock
+            facets={b.block.facets}
+            plaintext={b.block.plaintext}
+            index={[]}
+          />
         </p>
       );
     case PubLeafletBlocksHeader.isMain(b.block): {
       if (b.block.level === 1)
         return (
           <h1>
-            <TextBlock {...b.block} />
+            <BaseTextBlock {...b.block} index={[]} />
           </h1>
         );
       if (b.block.level === 2)
         return (
           <h2>
-            <TextBlock {...b.block} />
+            <BaseTextBlock {...b.block} index={[]} />
           </h2>
         );
       if (b.block.level === 3)
         return (
           <h3>
-            <TextBlock {...b.block} />
+            <BaseTextBlock {...b.block} index={[]} />
           </h3>
         );
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
         <h6>
-          <TextBlock {...b.block} />
+          <BaseTextBlock {...b.block} index={[]} />
         </h6>
       );
     }

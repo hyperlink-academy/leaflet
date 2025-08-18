@@ -88,6 +88,10 @@ export function LeafletThemeProvider(props: {
 }) {
   let bgLeaflet = useColorAttribute(props.entityID, "theme/page-background");
   let bgPage = useColorAttribute(props.entityID, "theme/card-background");
+  let showPageBackground = !useEntity(
+    props.entityID,
+    "theme/card-border-hidden",
+  )?.data.value;
   let primary = useColorAttribute(props.entityID, "theme/primary");
 
   let highlight1 = useEntity(props.entityID, "theme/highlight-1");
@@ -96,13 +100,6 @@ export function LeafletThemeProvider(props: {
 
   let accent1 = useColorAttribute(props.entityID, "theme/accent-background");
   let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
-  // set accent contrast to the accent color that has the highest contrast with the page background
-  let accentContrast = [accent1, accent2].sort((a, b) => {
-    return (
-      getColorContrast(colorToString(b, "rgb"), colorToString(bgPage, "rgb")) -
-      getColorContrast(colorToString(a, "rgb"), colorToString(bgPage, "rgb"))
-    );
-  })[0];
 
   return (
     <BaseThemeProvider
@@ -115,7 +112,7 @@ export function LeafletThemeProvider(props: {
       highlight1={highlight1?.data.value}
       accent1={accent1}
       accent2={accent2}
-      accentContrast={accentContrast}
+      showPageBackground={showPageBackground}
     >
       {props.children}
     </BaseThemeProvider>
@@ -130,24 +127,58 @@ export const BaseThemeProvider = ({
   primary,
   accent1,
   accent2,
-  accentContrast,
   highlight1,
   highlight2,
   highlight3,
+  showPageBackground,
   children,
 }: {
   local?: boolean;
+  showPageBackground?: boolean;
   bgLeaflet: AriaColor;
   bgPage: AriaColor;
   primary: AriaColor;
   accent1: AriaColor;
   accent2: AriaColor;
-  accentContrast: AriaColor;
   highlight1?: string;
   highlight2: AriaColor;
   highlight3: AriaColor;
   children: React.ReactNode;
 }) => {
+  // set accent contrast to the accent color that has the highest contrast with the page background
+  let accentContrast;
+
+  //sorting the accents by contrast on background
+  let sortedAccents = [accent1, accent2].sort((a, b) => {
+    return (
+      getColorContrast(
+        colorToString(b, "rgb"),
+        colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
+      ) -
+      getColorContrast(
+        colorToString(a, "rgb"),
+        colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
+      )
+    );
+  });
+
+  // if the contrast-y accent is too similar to the primary text color,
+  // and the not contrast-y option is different from the backgrond,
+  // then use the not contrasty option
+
+  if (
+    getColorContrast(
+      colorToString(sortedAccents[0], "rgb"),
+      colorToString(primary, "rgb"),
+    ) < 30 &&
+    getColorContrast(
+      colorToString(sortedAccents[1], "rgb"),
+      colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
+    ) > 12
+  ) {
+    accentContrast = sortedAccents[1];
+  } else accentContrast = sortedAccents[0];
+
   useEffect(() => {
     if (local) return;
     let el = document.querySelector(":root") as HTMLElement;

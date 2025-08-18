@@ -1,25 +1,25 @@
-import Link from "next/link";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
 import { ids } from "lexicons/api/lexicons";
 import {
+  PubLeafletBlocksBskyPost,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
   PubLeafletPublication,
-  PubLeafletThemeColor,
 } from "lexicons/api";
 import { Metadata } from "next";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import { TextBlock } from "./TextBlock";
-import { BskyAgent } from "@atproto/api";
-import { Subscribe } from "app/lish/Subscribe";
+import { AtpAgent } from "@atproto/api";
+import { QuoteHandler } from "./QuoteHandler";
+import { InteractionDrawer } from "./Interactions/InteractionDrawer";
 import {
   PublicationBackgroundProvider,
   PublicationThemeProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
-import { PostContent } from "./PostContent";
-import { getIdentityData } from "actions/getIdentityData";
-import { EditTiny } from "components/Icons/EditTiny";
+import { getPostPageData } from "./getPostPageData";
+import { PostPageContextProvider } from "./PostPageContext";
+import { PostPage } from "./PostPage";
+import { PageLayout } from "./PageLayout";
+import { extractCodeBlocks } from "./extractCodeBlocks";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -62,19 +62,23 @@ export default async function Post(props: {
         </p>
       </div>
     );
-  let agent = new BskyAgent({ service: "https://public.api.bsky.app" });
-  let identity = await getIdentityData();
-  let [{ data: document }, { data: profile }] = await Promise.all([
-    supabaseServerClient
-      .from("documents")
-      .select(
-        "*, leaflets_in_publications(*), documents_in_publications(publications(*, publication_subscriptions(*)))",
-      )
-      .eq(
-        "uri",
-        AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey),
-      )
-      .single(),
+  let agent = new AtpAgent({
+    service: "https://public.api.bsky.app",
+    fetch: (...args) =>
+      fetch(args[0], {
+        ...args[1],
+        cache: "no-store",
+        next: { revalidate: 3600 },
+      }),
+  });
+  let [document, profile] = await Promise.all([
+    getPostPageData(
+      AtUri.make(
+        did,
+        ids.PubLeafletDocument,
+        (await props.params).rkey,
+      ).toString(),
+    ),
     agent.getProfile({ actor: did }),
   ]);
   if (!document?.data || !document.documents_in_publications[0].publications)
@@ -88,6 +92,26 @@ export default async function Post(props: {
       </div>
     );
   let record = document.data as PubLeafletDocument.Record;
+  let bskyPosts = record.pages.flatMap((p) => {
+    let page = p as PubLeafletPagesLinearDocument.Main;
+    return page.blocks?.filter(
+      (b) => b.block.$type === ids.PubLeafletBlocksBskyPost,
+    );
+  });
+  let bskyPostData =
+    bskyPosts.length > 0
+      ? await agent.getPosts(
+          {
+            uris: bskyPosts
+              .map((p) => {
+                let block = p?.block as PubLeafletBlocksBskyPost.Main;
+                return block.postRef.uri;
+              })
+              .slice(0, 24),
+          },
+          { headers: {} },
+        )
+      : { data: { posts: [] } };
   let firstPage = record.pages[0];
   let blocks: PubLeafletPagesLinearDocument.Block[] = [];
   if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
@@ -98,113 +122,56 @@ export default async function Post(props: {
     .record as PubLeafletPublication.Record;
 
   let hasPageBackground = !!pubRecord.theme?.showPageBackground;
+  let prerenderedCodeBlocks = await extractCodeBlocks(blocks);
 
   return (
-    <PublicationThemeProvider
-      record={pubRecord}
-      pub_creator={
-        document.documents_in_publications[0].publications.identity_did
-      }
-    >
-      <PublicationBackgroundProvider
+    <PostPageContextProvider value={document}>
+      <PublicationThemeProvider
         record={pubRecord}
         pub_creator={
           document.documents_in_publications[0].publications.identity_did
         }
       >
-        <div
-          className={`flex flex-col sm:py-6 h-full   ${hasPageBackground ? "max-w-prose mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
+        <PublicationBackgroundProvider
+          record={pubRecord}
+          pub_creator={
+            document.documents_in_publications[0].publications.identity_did
+          }
         >
-          <div
-            className={`sm:max-w-prose max-w-[var(--page-width-units)] w-[1000px] mx-auto px-3 sm:px-4 py-3  ${hasPageBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] rounded-lg border border-border" : "h-fit "}`}
-          >
-            <div className="postHeader flex flex-col pb-5">
-              <Link
-                className="font-bold hover:no-underline text-accent-contrast"
-                href={getPublicationURL(
-                  document.documents_in_publications[0].publications,
-                )}
-              >
-                {decodeURIComponent((await props.params).publication)}
-              </Link>
-              <h2 className="leading-snug">{record.title}</h2>
-              {record.description ? (
-                <p className="italic text-secondary pt-0.5">
-                  {record.description}
-                </p>
-              ) : null}
+          {/*
+          TODO: SCROLL PAGE TO FIT DRAWER
+          If the drawer fits without scrolling, dont scroll
+          If both drawer and page fit if you scrolled it, scroll it all into the center
+          If the drawer and pafe doesn't all fit, scroll to drawer
 
-              <div className="text-sm text-tertiary pt-3 flex gap-1">
-                {profile ? (
-                  <>
-                    <a
-                      className="text-tertiary"
-                      href={`https://bsky.app/profile/${profile.handle}`}
-                    >
-                      by {profile.displayName || profile.handle}
-                    </a>
-                  </>
-                ) : null}
-                {record.publishedAt ? (
-                  <>
-                    |
-                    <p>
-                      {new Date(record.publishedAt).toLocaleDateString(
-                        undefined,
-                        {
-                          year: "numeric",
-                          month: "long",
-                          day: "2-digit",
-                        },
-                      )}
-                    </p>
-                  </>
-                ) : null}
-                {identity &&
-                  identity.atp_did ===
-                    document.documents_in_publications[0]?.publications
-                      .identity_did && (
-                    <>
-                      {" "}
-                      |
-                      <a
-                        href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
-                      >
-                        Edit Post
-                      </a>
-                    </>
-                  )}
-              </div>
-            </div>
-            <PostContent blocks={blocks} did={did} />
-            <hr className="border-border-light mb-4 mt-2" />
-            {identity &&
-            identity.atp_did ===
-              document.documents_in_publications[0]?.publications
-                .identity_did ? (
-              <a
-                href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
-                className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1 mx-auto"
-              >
-                <EditTiny /> Edit Post
-              </a>
-            ) : (
-              <Subscribe
-                isPost
-                base_url={getPublicationURL(
-                  document.documents_in_publications[0].publications,
-                )}
-                pub_uri={document.documents_in_publications[0].publications.uri}
-                subscribers={
-                  document.documents_in_publications[0].publications
-                    .publication_subscriptions
-                }
-                pubName={decodeURIComponent((await props.params).publication)}
-              />
-            )}
-          </div>
-        </div>
-      </PublicationBackgroundProvider>
-    </PublicationThemeProvider>
+          TODO: SROLL BAR
+          If there is no drawer && there is no page bg, scroll the entire page
+          If there is either a drawer open OR a page background, scroll just the post content
+
+          TODO: HIGHLIGHTING BORKED
+          on chrome, if you scroll backward, things stop working
+          seems like if you use an older browser, sel direction is not a thing yet
+           */}
+          <PageLayout>
+            <PostPage
+              pubRecord={pubRecord}
+              profile={profile.data}
+              document={document}
+              bskyPostData={bskyPostData.data.posts}
+              did={did}
+              blocks={blocks}
+              name={decodeURIComponent((await props.params).publication)}
+              prerenderedCodeBlocks={prerenderedCodeBlocks}
+            />
+            <InteractionDrawer
+              quotes={document.document_mentions_in_bsky}
+              did={did}
+            />
+          </PageLayout>
+
+          <QuoteHandler />
+        </PublicationBackgroundProvider>
+      </PublicationThemeProvider>
+    </PostPageContextProvider>
   );
 }

@@ -95,6 +95,19 @@ export const schemaDict = {
               type: 'ref',
               ref: 'lex:pub.leaflet.publication#theme',
             },
+            preferences: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.publication#preferences',
+            },
+          },
+        },
+      },
+      preferences: {
+        type: 'object',
+        properties: {
+          showInDiscover: {
+            type: 'boolean',
+            default: true,
           },
         },
       },
@@ -148,6 +161,65 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksBlockquote: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.blockquote',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['plaintext'],
+        properties: {
+          plaintext: {
+            type: 'string',
+          },
+          facets: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.richtext.facet',
+            },
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksBskyPost: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.bskyPost',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['postRef'],
+        properties: {
+          postRef: {
+            type: 'ref',
+            ref: 'lex:com.atproto.repo.strongRef',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksCode: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.code',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['plaintext'],
+        properties: {
+          plaintext: {
+            type: 'string',
+          },
+          language: {
+            type: 'string',
+          },
+          syntaxHighlightingTheme: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksHeader: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.header',
@@ -172,6 +244,17 @@ export const schemaDict = {
             },
           },
         },
+      },
+    },
+  },
+  PubLeafletBlocksHorizontalRule: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.horizontalRule',
+    defs: {
+      main: {
+        type: 'object',
+        required: [],
+        properties: {},
       },
     },
   },
@@ -208,6 +291,21 @@ export const schemaDict = {
           },
           height: {
             type: 'integer',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksMath: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.math',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['tex'],
+        properties: {
+          tex: {
+            type: 'string',
           },
         },
       },
@@ -347,10 +445,15 @@ export const schemaDict = {
             type: 'union',
             refs: [
               'lex:pub.leaflet.blocks.text',
+              'lex:pub.leaflet.blocks.blockquote',
               'lex:pub.leaflet.blocks.header',
               'lex:pub.leaflet.blocks.image',
               'lex:pub.leaflet.blocks.unorderedList',
               'lex:pub.leaflet.blocks.website',
+              'lex:pub.leaflet.blocks.math',
+              'lex:pub.leaflet.blocks.code',
+              'lex:pub.leaflet.blocks.horizontalRule',
+              'lex:pub.leaflet.blocks.bskyPost',
             ],
           },
           alignment: {
@@ -393,9 +496,11 @@ export const schemaDict = {
               type: 'union',
               refs: [
                 'lex:pub.leaflet.richtext.facet#link',
+                'lex:pub.leaflet.richtext.facet#code',
                 'lex:pub.leaflet.richtext.facet#highlight',
                 'lex:pub.leaflet.richtext.facet#underline',
                 'lex:pub.leaflet.richtext.facet#strikethrough',
+                'lex:pub.leaflet.richtext.facet#id',
                 'lex:pub.leaflet.richtext.facet#bold',
                 'lex:pub.leaflet.richtext.facet#italic',
               ],
@@ -431,6 +536,12 @@ export const schemaDict = {
           },
         },
       },
+      code: {
+        type: 'object',
+        description: 'Facet feature for inline code.',
+        required: [],
+        properties: {},
+      },
       highlight: {
         type: 'object',
         description: 'Facet feature for highlighted text.',
@@ -448,6 +559,17 @@ export const schemaDict = {
         description: 'Facet feature for strikethrough markup',
         required: [],
         properties: {},
+      },
+      id: {
+        type: 'object',
+        description:
+          'Facet feature for an identifier. Used for linking to a segment',
+        required: [],
+        properties: {
+          id: {
+            type: 'string',
+          },
+        },
       },
       bold: {
         type: 'object',
@@ -1579,8 +1701,13 @@ export function validate(
 export const ids = {
   PubLeafletDocument: 'pub.leaflet.document',
   PubLeafletPublication: 'pub.leaflet.publication',
+  PubLeafletBlocksBlockquote: 'pub.leaflet.blocks.blockquote',
+  PubLeafletBlocksBskyPost: 'pub.leaflet.blocks.bskyPost',
+  PubLeafletBlocksCode: 'pub.leaflet.blocks.code',
   PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
+  PubLeafletBlocksHorizontalRule: 'pub.leaflet.blocks.horizontalRule',
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
+  PubLeafletBlocksMath: 'pub.leaflet.blocks.math',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
   PubLeafletBlocksWebsite: 'pub.leaflet.blocks.website',

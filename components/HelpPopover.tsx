@@ -8,24 +8,30 @@ import { useState } from "react";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { HelpSmall } from "./Icons/HelpSmall";
 import { isMac } from "src/utils/isDevice";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export const HelpPopover = (props: { noShortcuts?: boolean }) => {
   let entity_set = useEntitySetContext();
+  let isMobile = useIsMobile();
+
   return entity_set.permissions.write ? (
     <Popover
+      side={isMobile ? "top" : "right"}
+      align={isMobile ? "center" : "start"}
       asChild
       className="max-w-xs w-full"
       trigger={<ActionButton icon={<HelpSmall />} label="About" />}
     >
       <div className="flex flex-col text-sm gap-2 text-secondary">
-        {/* about leaflet */}
-        {/* <div>
-          Welcome to <strong>Leaflet</strong> — a fun, fast, easy-to-share
-          document editor.
-        </div> */}
+        {/* about links */}
         <HelpLink text="📖 Leaflet Manual" url="https://about.leaflet.pub" />
         <HelpLink text="💡 Make with Leaflet" url="https://make.leaflet.pub" />
+        <HelpLink
+          text="✨ Explore Publications"
+          url="https://leaflet.pub/discover"
+        />
         <HelpLink text="📣 Newsletter" url="https://buttondown.com/leaflet" />
+        {/* contact links */}
         <div className="columns-2 gap-2">
           <HelpLink
             text="🦋 Bluesky"

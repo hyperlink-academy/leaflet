@@ -14,6 +14,11 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletRichtextFacet,
   PubLeafletBlocksWebsite,
+  PubLeafletBlocksCode,
+  PubLeafletBlocksMath,
+  PubLeafletBlocksHorizontalRule,
+  PubLeafletBlocksBskyPost,
+  PubLeafletBlocksBlockquote,
 } from "lexicons/api";
 import { Block } from "components/Blocks/Block";
 import { TID } from "@atproto/common";
@@ -95,6 +100,7 @@ export async function publishToPublication({
     blocks,
     imageMap,
     scan,
+    root_entity,
   );
 
   let existingRecord =
@@ -149,6 +155,7 @@ function blocksToRecord(
   blocks: Block[],
   imageMap: Map<string, BlobRef>,
   scan: ReturnType<typeof scanIndexLocal>,
+  root_entity: string,
 ): PubLeafletPagesLinearDocument.Block[] {
   let parsedBlocks = parseBlocksToList(blocks);
   return parsedBlocks.flatMap((blockOrList) => {
@@ -162,7 +169,7 @@ function blocksToRecord(
           : alignmentValue === "right"
             ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
             : undefined;
-      let b = blockToRecord(blockOrList.block, imageMap, scan);
+      let b = blockToRecord(blockOrList.block, imageMap, scan, root_entity);
       if (!b) return [];
       let block: PubLeafletPagesLinearDocument.Block = {
         $type: "pub.leaflet.pages.linearDocument#block",
@@ -175,7 +182,12 @@ function blocksToRecord(
         $type: "pub.leaflet.pages.linearDocument#block",
         block: {
           $type: "pub.leaflet.blocks.unorderedList",
-          children: childrenToRecord(blockOrList.children, imageMap, scan),
+          children: childrenToRecord(
+            blockOrList.children,
+            imageMap,
+            scan,
+            root_entity,
+          ),
         },
       };
       return [block];
@@ -187,14 +199,15 @@ function childrenToRecord(
   children: List[],
   imageMap: Map<string, BlobRef>,
   scan: ReturnType<typeof scanIndexLocal>,
+  root_entity: string,
 ) {
   return children.flatMap((child) => {
-    let content = blockToRecord(child.block, imageMap, scan);
+    let content = blockToRecord(child.block, imageMap, scan, root_entity);
     if (!content) return [];
     let record: PubLeafletBlocksUnorderedList.ListItem = {
       $type: "pub.leaflet.blocks.unorderedList#listItem",
       content,
-      children: childrenToRecord(child.children, imageMap, scan),
+      children: childrenToRecord(child.children, imageMap, scan, root_entity),
     };
     return record;
   });
@@ -203,6 +216,7 @@ function blockToRecord(
   b: Block,
   imageMap: Map<string, BlobRef>,
   scan: ReturnType<typeof scanIndexLocal>,
+  root_entity: string,
 ) {
   const getBlockContent = (b: string) => {
     let [content] = scan.eav(b, "block/text");
@@ -215,15 +229,25 @@ function blockToRecord(
     let facets = YJSFragmentToFacets(nodes[0]);
     return [stringValue, facets] as const;
   };
-  if (
-    b.type !== "text" &&
-    b.type !== "heading" &&
-    b.type !== "image" &&
-    b.type !== "link"
-  )
-    return;
-  let alignmentValue =
-    scan.eav(b.value, "block/text-alignment")[0]?.data.value || "left";
+
+  if (b.type === "bluesky-post") {
+    let [post] = scan.eav(b.value, "block/bluesky-post");
+    if (!post || !post.data.value.post) return;
+    let block: $Typed<PubLeafletBlocksBskyPost.Main> = {
+      $type: ids.PubLeafletBlocksBskyPost,
+      postRef: {
+        uri: post.data.value.post.uri,
+        cid: post.data.value.post.cid,
+      },
+    };
+    return block;
+  }
+  if (b.type === "horizontal-rule") {
+    let block: $Typed<PubLeafletBlocksHorizontalRule.Main> = {
+      $type: ids.PubLeafletBlocksHorizontalRule,
+    };
+    return block;
+  }
 
   if (b.type === "heading") {
     let [headingLevel] = scan.eav(b.value, "block/heading-level");
@@ -232,6 +256,16 @@ function blockToRecord(
     let block: $Typed<PubLeafletBlocksHeader.Main> = {
       $type: "pub.leaflet.blocks.header",
       level: headingLevel?.data.value || 1,
+      plaintext: stringValue,
+      facets,
+    };
+    return block;
+  }
+
+  if (b.type === "blockquote") {
+    let [stringValue, facets] = getBlockContent(b.value);
+    let block: $Typed<PubLeafletBlocksBlockquote.Main> = {
+      $type: ids.PubLeafletBlocksBlockquote,
       plaintext: stringValue,
       facets,
     };
@@ -279,6 +313,26 @@ function blockToRecord(
       src: src.data.value,
       description: description.data.value,
       title: title.data.value,
+    };
+    return block;
+  }
+  if (b.type === "code") {
+    let [language] = scan.eav(b.value, "block/code-language");
+    let [code] = scan.eav(b.value, "block/code");
+    let [theme] = scan.eav(root_entity, "theme/code-theme");
+    let block: $Typed<PubLeafletBlocksCode.Main> = {
+      $type: "pub.leaflet.blocks.code",
+      language: language?.data.value,
+      plaintext: code?.data.value || "",
+      syntaxHighlightingTheme: theme?.data.value,
+    };
+    return block;
+  }
+  if (b.type === "math") {
+    let [math] = scan.eav(b.value, "block/math");
+    let block: $Typed<PubLeafletBlocksMath.Main> = {
+      $type: "pub.leaflet.blocks.math",
+      tex: math?.data.value || "",
     };
     return block;
   }
@@ -358,6 +412,8 @@ function YJSFragmentToFacets(
           $type: "pub.leaflet.richtext.facet#strikethrough",
         });
 
+      if (d.attributes?.code)
+        facet.features.push({ $type: "pub.leaflet.richtext.facet#code" });
       if (d.attributes?.highlight)
         facet.features.push({ $type: "pub.leaflet.richtext.facet#highlight" });
       if (d.attributes?.underline)

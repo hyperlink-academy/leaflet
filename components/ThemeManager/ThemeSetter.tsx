@@ -22,6 +22,8 @@ import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { AccentPickers } from "./Pickers/AccentPickers";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { useIsMobile } from "src/hooks/isMobile";
+import { Toggle } from "components/Toggle";
 
 export type pickers =
   | "null"
@@ -50,6 +52,7 @@ export function setColorAttribute(
 export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   let { rep } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
+  let isMobile = useIsMobile();
 
   // I need to get these variables from replicache and then write them to the DB. I also need to parse them into a state that can be used here.
   let permission = useEntitySetContext().permissions.write;
@@ -75,6 +78,8 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
         className="w-80 bg-white"
         arrowFill="#FFFFFF"
         asChild
+        side={isMobile ? "top" : "right"}
+        align={isMobile ? "center" : "start"}
         trigger={<ActionButton icon={<PaintSmall />} label="Theme" />}
       >
         <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
@@ -96,6 +101,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
                   setValue={set("theme/card-background")}
                   openPicker={openPicker}
                   setOpenPicker={setOpenPicker}
+                  home={props.home}
                 />
                 <hr className=" border-[#CCCCCC]" />
                 <PageBorderHider
@@ -170,34 +176,36 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
 function WatermarkSetter(props: { entityID: string }) {
   let { rep } = useReplicache();
   let checked = useEntity(props.entityID, "theme/page-leaflet-watermark");
+
+  function handleToggle() {
+    rep?.mutate.assertFact({
+      entity: props.entityID,
+      attribute: "theme/page-leaflet-watermark",
+      data: { type: "boolean", value: !checked?.data.value },
+    });
+  }
   return (
-    <label className="px-3 pb-3 flex gap-2 items-start cursor-pointer">
-      <input
-        type="checkbox"
-        checked={!!checked?.data.value}
-        className="hidden"
-        onChange={(e) => {
-          rep?.mutate.assertFact({
-            entity: props.entityID,
-            attribute: "theme/page-leaflet-watermark",
-            data: { type: "boolean", value: e.currentTarget.checked },
-          });
+    <div className="flex gap-2 items-start mt-0.5">
+      <Toggle
+        toggleOn={!!checked?.data.value}
+        setToggleOn={() => {
+          handleToggle();
         }}
+        disabledColor1="#8C8C8C"
+        disabledColor2="#DBDBDB"
       />
-      {!checked?.data.value ? (
-        <CheckboxEmpty className="shrink-0 mt-1 text-[#595959]" />
-      ) : (
-        <CheckboxChecked className="shrink-0 mt-1 text-[#595959]" />
-      )}
-      <div className="flex flex-col gap-0">
-        <div className="text-sm font-bold text-[#595959]">
-          Show Leaflet Watermark
+      <button
+        className="flex gap-2 items-center -mt-0.5"
+        onClick={() => {
+          handleToggle();
+        }}
+      >
+        <div className="flex flex-col gap-0 items-start">
+          <div className="font-bold">Show Leaflet Watermark</div>
+          <div className="text-sm text-[#969696]">Help us spread the word!</div>
         </div>
-        <div className="text-sm text-[#969696]">
-          If you like using Leaflet, consider helping us spread the word!
-        </div>
-      </div>
-    </label>
+      </button>
+    </div>
   );
 }
 
@@ -284,15 +292,14 @@ const SamplePage = (props: {
           onClick={() => {
             props.setOpenPicker("text");
           }}
-          className=" cursor-pointer font-bold w-fit"
+          className="cursor-pointer font-bold w-fit"
         >
           Hello!
         </p>
         <small onClick={() => props.setOpenPicker("text")}>
           Welcome to{" "}
-          <span className="font-bold text-accent-contrast">Leaflet</span>.
-          It&apos;s a super easy and fun way to make, share, and collab on
-          little bits of paper
+          <span className="font-bold text-accent-contrast">Leaflet</span> — a
+          fun and easy way to make, share, and collab on little bits of paper ✨
         </small>
       </div>
     </div>

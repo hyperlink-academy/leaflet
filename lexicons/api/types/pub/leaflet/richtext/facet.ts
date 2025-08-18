@@ -16,9 +16,11 @@ export interface Main {
   index: ByteSlice
   features: (
     | $Typed<Link>
+    | $Typed<Code>
     | $Typed<Highlight>
     | $Typed<Underline>
     | $Typed<Strikethrough>
+    | $Typed<Id>
     | $Typed<Bold>
     | $Typed<Italic>
     | { $type: string }
@@ -68,6 +70,21 @@ export function validateLink<V>(v: V) {
   return validate<Link & V>(v, id, hashLink)
 }
 
+/** Facet feature for inline code. */
+export interface Code {
+  $type?: 'pub.leaflet.richtext.facet#code'
+}
+
+const hashCode = 'code'
+
+export function isCode<V>(v: V) {
+  return is$typed(v, id, hashCode)
+}
+
+export function validateCode<V>(v: V) {
+  return validate<Code & V>(v, id, hashCode)
+}
+
 /** Facet feature for highlighted text. */
 export interface Highlight {
   $type?: 'pub.leaflet.richtext.facet#highlight'
@@ -111,6 +128,22 @@ export function isStrikethrough<V>(v: V) {
 
 export function validateStrikethrough<V>(v: V) {
   return validate<Strikethrough & V>(v, id, hashStrikethrough)
+}
+
+/** Facet feature for an identifier. Used for linking to a segment */
+export interface Id {
+  $type?: 'pub.leaflet.richtext.facet#id'
+  id?: string
+}
+
+const hashId = 'id'
+
+export function isId<V>(v: V) {
+  return is$typed(v, id, hashId)
+}
+
+export function validateId<V>(v: V) {
+  return validate<Id & V>(v, id, hashId)
 }
 
 /** Facet feature for bold text */

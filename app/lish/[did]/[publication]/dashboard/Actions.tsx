@@ -17,6 +17,7 @@ import { usePublicationData } from "./PublicationSWRProvider";
 import { useSmoker } from "components/Toast";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { PubThemeSetter } from "components/ThemeManager/PubThemeSetter";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export const Actions = (props: { publication: string }) => {
   return (
@@ -53,8 +54,12 @@ export const Actions = (props: { publication: string }) => {
 function PublicationShareButton() {
   let { data: pub } = usePublicationData();
   let smoker = useSmoker();
+  let isMobile = useIsMobile();
+
   return (
     <Menu
+      side={isMobile ? "top" : "right"}
+      align={isMobile ? "center" : "start"}
       className="max-w-xs"
       asChild
       trigger={
@@ -104,9 +109,12 @@ function PublicationShareButton() {
 }
 
 function PublicationSettingsButton(props: { publication: string }) {
+  let isMobile = useIsMobile();
   return (
     <Popover
       asChild
+      side={isMobile ? "top" : "right"}
+      align={isMobile ? "center" : "start"}
       className="max-w-xs"
       trigger={
         <ActionButton
@@ -122,10 +130,14 @@ function PublicationSettingsButton(props: { publication: string }) {
 }
 
 function PublicationThemeButton() {
+  let isMobile = useIsMobile();
+
   return (
     <Popover
       asChild
       className="max-w-xs pb-0 !bg-white"
+      side={isMobile ? "top" : "right"}
+      align={isMobile ? "center" : "start"}
       trigger={
         <ActionButton id="pub-theme-button" icon=<PaintSmall /> label="Theme" />
       }

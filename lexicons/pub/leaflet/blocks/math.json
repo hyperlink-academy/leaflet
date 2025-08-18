@@ -1,0 +1,17 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.blocks.math",
+  "defs": {
+    "main": {
+      "type": "object",
+      "required": [
+        "tex"
+      ],
+      "properties": {
+        "tex": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

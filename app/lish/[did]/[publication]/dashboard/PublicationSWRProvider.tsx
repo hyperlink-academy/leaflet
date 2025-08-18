@@ -12,6 +12,7 @@ export function PublicationSWRDataProvider(props: {
   publication_data: GetPublicationDataReturnType["result"];
   children: React.ReactNode;
 }) {
+  let key = `publication-data-${props.publication_did}`;
   return (
     <PublicationContext
       value={{ name: props.publication_name, did: props.publication_did }}
@@ -19,7 +20,7 @@ export function PublicationSWRDataProvider(props: {
       <SWRConfig
         value={{
           fallback: {
-            "publication-data": props.publication_data,
+            [key]: props.publication_data,
           },
         }}
       >
@@ -31,8 +32,9 @@ export function PublicationSWRDataProvider(props: {
 
 export function usePublicationData() {
   let { name, did } = useContext(PublicationContext);
+  let key = `publication-data-${did}`;
   let { data, mutate } = useSWR(
-    "publication-data",
+    key,
     async () =>
       (await callRPC("get_publication_data", { publication_name: name, did }))
         ?.result,

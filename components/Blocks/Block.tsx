@@ -26,6 +26,9 @@ import { BlueskyPostBlock } from "./BlueskyPostBlock";
 import { CheckboxChecked } from "components/Icons/CheckboxChecked";
 import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { LockTiny } from "components/Icons/LockTiny";
+import { MathBlock } from "./MathBlock";
+import { CodeBlock } from "./CodeBlock";
+import { HorizontalRule } from "./HorizontalRule";
 
 export type Block = {
   factID: string;
@@ -101,6 +104,7 @@ export const Block = memo(function Block(
             ? "pb-0"
             : "pb-2"
       }
+      ${props.type === "blockquote" && props.previousBlock?.type === "blockquote" ? "-mt-3" : ""}
       ${
         !props.previousBlock
           ? props.type === "heading" || props.type === "text"
@@ -168,8 +172,11 @@ const BlockTypeComponents: {
     BlockProps & { preview?: boolean }
   >;
 } = {
+  code: CodeBlock,
+  math: MathBlock,
   card: PageLinkBlock,
   text: TextBlock,
+  blockquote: TextBlock,
   heading: TextBlock,
   image: ImageBlock,
   link: ExternalLinkBlock,
@@ -180,6 +187,7 @@ const BlockTypeComponents: {
   button: ButtonBlock,
   poll: PollBlock,
   "bluesky-post": BlueskyPostBlock,
+  "horizontal-rule": HorizontalRule,
 };
 
 export const BlockMultiselectIndicator = (props: BlockProps) => {
