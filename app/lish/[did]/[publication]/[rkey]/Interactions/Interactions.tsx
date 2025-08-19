@@ -46,7 +46,7 @@ export const Interactions = (props: {
         }}
       >
         <QuoteTiny /> {props.quotes.length}{" "}
-        {!props.compact && `Quote${props.quotes.length > 1 ? "s" : ""}`}
+        {!props.compact && `Quote${props.quotes.length === 1 ? "" : "s"}`}
       </button>
     </div>
   );
