@@ -11,6 +11,8 @@ import { CommentTiny } from "components/Icons/CommentTiny";
 import { Separator } from "components/Layout";
 import { ButtonPrimary } from "components/Buttons";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
+import { Popover } from "components/Popover";
+import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 
 export type Comment = {
   record: Json;
@@ -64,9 +66,9 @@ const Comment = (props: {
 }) => {
   return (
     <div className="comment">
-      <div className="flex gap-2 text-sm text-tertiary ">
-        <div className="font-bold">celine</div>{" "}
-        <div className="italic">5/3/25</div>
+      <div className="flex gap-2 items-baseline">
+        <ProfilePopover />
+        <DatePopover />
       </div>
       <pre
         key={props.comment.uri}
@@ -131,7 +133,7 @@ const ReplyButton = (props: { comment_uri: string }) => {
             {replyBoxOpen && <CommentBox doc_uri={props.comment_uri} />}
             <div className="reply">
               <div className="flex gap-2 text-sm text-tertiary">
-                <div className="font-bold">celine</div>{" "}
+                <div className="font-bold">celine</div>
                 <div className="italic">5/3/25</div>
               </div>
               hello this is a reply
@@ -149,6 +151,74 @@ const ReplyButton = (props: { comment_uri: string }) => {
         </div>
       )}
     </>
+  );
+};
+
+const DatePopover = () => {
+  return (
+    <Popover
+      trigger={
+        <div className="italic text-sm text-tertiary hover:underline">
+          Yesterday
+        </div>
+      }
+    >
+      <div className="text-sm text-secondary">8/18/2025 4:32PM</div>
+    </Popover>
+  );
+};
+
+const ProfilePopover = () => {
+  let following = true;
+  let followsYou = false;
+
+  return (
+    <Popover
+      align="start"
+      trigger={<div className="font-bold hover:underline">celine</div>}
+      className="max-w-sm"
+    >
+      <div className="profilePopover text-sm flex gap-2">
+        <div className="w-5 h-5 bg-test rounded-full shrink-0 mt-[2px]" />
+        <div className="flex flex-col">
+          <div className="flex justify-between">
+            <div className="profileHeader flex gap-2 items-center">
+              <div className="font-bold">celine</div>
+              <a className="text-tertiary" href="/">
+                @cozylittle.house
+              </a>
+            </div>
+          </div>
+
+          <div className="profileBio text-secondary ">
+            Design at leaflet.pub! Let's pretend my bio is a bit longer than
+            this, what do i think of this now?
+          </div>
+          <div className="flex flex-row gap-2 items-center pt-2 font-bold">
+            {!following ? (
+              <div className="text-tertiary bg-border-light rounded-md px-1 py-0">
+                Following
+              </div>
+            ) : (
+              <ButtonPrimary compact className="text-sm">
+                Follow <BlueskyTiny />
+              </ButtonPrimary>
+            )}
+            {followsYou && <div className="text-tertiary">Follows You</div>}
+          </div>
+        </div>
+      </div>
+
+      <hr className="my-2 border-border-light" />
+      <div className="flex gap-2 leading-tight items-center text-tertiary text-sm">
+        <div className="flex flex-col w-6 justify-center">
+          <div className="w-[18px] h-[18px] bg-test rounded-full border-2 border-bg-page" />
+          <div className="w-[18px] h-[18px] bg-test rounded-full -mt-2 border-2 border-bg-page" />
+          <div className="w-[18px] h-[18px] bg-test rounded-full -mt-2 border-2 border-bg-page" />
+        </div>
+        followed by Emily Liu, Maxim Leyzerovich, and 3 others
+      </div>
+    </Popover>
   );
 };
 
