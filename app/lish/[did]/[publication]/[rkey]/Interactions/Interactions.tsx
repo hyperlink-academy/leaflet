@@ -45,7 +45,8 @@ export const Interactions = (props: {
           else useInteractionState.setState({ drawerOpen: false });
         }}
       >
-        <QuoteTiny /> {props.quotes.length} {!props.compact && "Quotes"}
+        <QuoteTiny /> {props.quotes.length}{" "}
+        {!props.compact && `Quote${props.quotes.length > 1 ? "s" : ""}`}
       </button>
     </div>
   );
