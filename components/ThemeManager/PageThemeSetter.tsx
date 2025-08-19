@@ -58,7 +58,7 @@ export const PageThemeSetter = (props: { entityID: string }) => {
             entityID={props.entityID}
             openPicker={openPicker}
             setOpenPicker={(pickers) => setOpenPicker(pickers)}
-            setValue={set("theme/page-background")}
+            setValue={set("theme/card-background")}
           />
         </div>
 
