@@ -14,7 +14,7 @@ export function PageLayout(props: { children: React.ReactNode }) {
         in [rkey]/page/PostPage when card borders are hidden */}
       <div
         id="pages"
-        className="postWrapper flex h-full gap-3 py-2 sm:py-6 w-full"
+        className="postWrapper flex h-full gap-0 sm:gap-3 py-2 sm:py-6 w-full"
       >
         {props.children}
       </div>

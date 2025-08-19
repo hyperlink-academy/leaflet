@@ -87,7 +87,7 @@ export const TextToolbar = (props: {
   );
 };
 
-const ItalicSmall = (props: Props) => {
+export const ItalicSmall = (props: Props) => {
   return (
     <svg
       width="24"
@@ -105,7 +105,7 @@ const ItalicSmall = (props: Props) => {
   );
 };
 
-const StrikethroughSmall = (props: Props) => {
+export const StrikethroughSmall = (props: Props) => {
   return (
     <svg
       width="24"
@@ -124,7 +124,7 @@ const StrikethroughSmall = (props: Props) => {
     </svg>
   );
 };
-const BoldSmall = (props: Props) => {
+export const BoldSmall = (props: Props) => {
   return (
     <svg
       width="24"

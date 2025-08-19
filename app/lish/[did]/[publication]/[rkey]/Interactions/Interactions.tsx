@@ -16,21 +16,17 @@ export function openInteractionDrawer(drawer: "comments" | "quotes") {
     useInteractionState.setState({ drawerOpen: true, drawer });
   });
   let el = document.getElementById("interaction-drawer");
-  let isIntersecting = false;
+  let isOffscreen = false;
   if (el) {
     const rect = el.getBoundingClientRect();
     const windowHeight =
       window.innerHeight || document.documentElement.clientHeight;
     const windowWidth =
       window.innerWidth || document.documentElement.clientWidth;
-    isIntersecting =
-      rect.top < windowHeight &&
-      rect.bottom > 0 &&
-      rect.left < windowWidth &&
-      rect.right > 0;
+    isOffscreen = rect.right > windowWidth;
   }
 
-  if (el && !isIntersecting) el.scrollIntoView({ behavior: "smooth" });
+  if (el && isOffscreen) el.scrollIntoView({ behavior: "smooth" });
 }
 
 export const Interactions = (props: {
