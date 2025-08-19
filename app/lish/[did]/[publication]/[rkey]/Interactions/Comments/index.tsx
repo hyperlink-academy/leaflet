@@ -13,6 +13,7 @@ import { ButtonPrimary } from "components/Buttons";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { Popover } from "components/Popover";
 import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export type Comment = {
   record: Json;
@@ -66,7 +67,7 @@ const Comment = (props: {
 }) => {
   return (
     <div className="comment">
-      <div className="flex gap-2 items-baseline">
+      <div className="flex gap-2 ">
         <ProfilePopover />
         <DatePopover />
       </div>
@@ -80,12 +81,12 @@ const Comment = (props: {
           facets={props.record.facets}
         />
       </pre>
-      <ReplyButton comment_uri={props.comment.uri} />
+      <Replies comment_uri={props.comment.uri} />
     </div>
   );
 };
 
-const ReplyButton = (props: { comment_uri: string }) => {
+const Replies = (props: { comment_uri: string }) => {
   let { identity } = useIdentityData();
 
   let [replyBoxOpen, setReplyBoxOpen] = useState(false);
@@ -121,7 +122,7 @@ const ReplyButton = (props: { comment_uri: string }) => {
       {repliesOpen && (
         <div className="repliesWrapper flex">
           <button
-            className="repliesCollapse pr-3 ml-[7px] pt-0.5"
+            className="repliesCollapse pr-[14px] ml-[7px] pt-0.5"
             onClick={() => {
               setReplyBoxOpen(false);
               setRepliesOpen(false);
@@ -132,17 +133,17 @@ const ReplyButton = (props: { comment_uri: string }) => {
           <div className="repliesContent flex flex-col gap-3 pt-2 w-full">
             {replyBoxOpen && <CommentBox doc_uri={props.comment_uri} />}
             <div className="reply">
-              <div className="flex gap-2 text-sm text-tertiary">
-                <div className="font-bold">celine</div>
-                <div className="italic">5/3/25</div>
+              <div className="flex gap-2">
+                <ProfilePopover />
+                <DatePopover />
               </div>
               hello this is a reply
               <DummyReplyButton />
             </div>
             <div className="reply">
-              <div className="flex gap-2 text-sm text-tertiary">
-                <div className="font-bold">celine</div>{" "}
-                <div className="italic">5/3/25</div>
+              <div className="flex gap-2 ">
+                <ProfilePopover />
+                <DatePopover />
               </div>
               hello this is a reply
               <DummyReplyButton />
@@ -151,6 +152,45 @@ const ReplyButton = (props: { comment_uri: string }) => {
         </div>
       )}
     </>
+  );
+};
+
+const DummyReplyButton = () => {
+  // this is a button that doesn't do anything
+  // it should do the same thing as reply button, but because of the way i am writing this for testing
+  // if i put replybutton within reply button it will recurse forever
+  // please wire it when we have real data!
+
+  let { identity } = useIdentityData();
+
+  let [replyBoxOpen, setReplyBoxOpen] = useState(false);
+  let [repliesOpen, setRepliesOpen] = useState(true);
+  return (
+    <div className="flex gap-2 items-center">
+      <button
+        className="flex gap-1 items-center text-sm text-tertiary"
+        onClick={() => {
+          setRepliesOpen(!repliesOpen);
+          setReplyBoxOpen(false);
+        }}
+      >
+        <CommentTiny className="text-border" /> 0
+      </button>
+      {!identity?.atp_did && (
+        <>
+          <Separator classname="h-[14px]" />
+          <button
+            className="text-accent-contrast text-sm"
+            onClick={() => {
+              setRepliesOpen(true);
+              setReplyBoxOpen(true);
+            }}
+          >
+            Reply
+          </button>
+        </>
+      )}
+    </div>
   );
 };
 
@@ -169,13 +209,24 @@ const DatePopover = () => {
 };
 
 const ProfilePopover = () => {
+  let isMobile = useIsMobile();
+
   let following = true;
   let followsYou = false;
-
+  if (isMobile)
+    return (
+      <a className="font-bold  text-tertiary text-sm hover:underline" href="/">
+        celine
+      </a>
+    );
   return (
     <Popover
       align="start"
-      trigger={<div className="font-bold hover:underline">celine</div>}
+      trigger={
+        <div className="font-bold  text-tertiary text-sm hover:underline">
+          celine
+        </div>
+      }
       className="max-w-sm"
     >
       <div className="profilePopover text-sm flex gap-2">
@@ -219,44 +270,5 @@ const ProfilePopover = () => {
         followed by Emily Liu, Maxim Leyzerovich, and 3 others
       </div>
     </Popover>
-  );
-};
-
-const DummyReplyButton = () => {
-  // this is a button that doesn't do anything
-  // it should do the same thing as reply button, but because of the way i am writing this for testing
-  // if i put replybutton within reply button it will recurse forever
-  // please wire it when we have real data!
-
-  let { identity } = useIdentityData();
-
-  let [replyBoxOpen, setReplyBoxOpen] = useState(false);
-  let [repliesOpen, setRepliesOpen] = useState(true);
-  return (
-    <div className="flex gap-2 items-center">
-      <button
-        className="flex gap-1 items-center text-sm text-tertiary"
-        onClick={() => {
-          setRepliesOpen(!repliesOpen);
-          setReplyBoxOpen(false);
-        }}
-      >
-        <CommentTiny className="text-border" /> 0
-      </button>
-      {!identity?.atp_did && (
-        <>
-          <Separator classname="h-[14px]" />
-          <button
-            className="text-accent-contrast text-sm"
-            onClick={() => {
-              setRepliesOpen(true);
-              setReplyBoxOpen(true);
-            }}
-          >
-            Reply
-          </button>
-        </>
-      )}
-    </div>
   );
 };
