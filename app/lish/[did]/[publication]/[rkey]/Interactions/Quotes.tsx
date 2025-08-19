@@ -47,7 +47,7 @@ export const Quotes = (props: {
           <div>highlight any part of this post to quote it</div>
         </div>
       ) : (
-        <div className="quotes flex flex-col gap-12">
+        <div className="quotes flex flex-col gap-8">
           {props.quotes.map((q, index) => {
             let pv = q.bsky_posts?.post_view as unknown as PostView;
             let record = data?.data as PubLeafletDocument.Record;

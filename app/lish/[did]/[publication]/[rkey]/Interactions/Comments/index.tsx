@@ -6,9 +6,11 @@ import { CommentBox } from "./CommentBox";
 import { Json } from "supabase/database.types";
 import { PubLeafletComment } from "lexicons/api";
 import { BaseTextBlock } from "../../BaseTextBlock";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { Separator } from "components/Layout";
+import { ButtonPrimary } from "components/Buttons";
+import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 
 export type Comment = {
   record: Json;
@@ -38,7 +40,12 @@ export function Comments(props: {
       {identity?.atp_did ? (
         <CommentBox doc_uri={props.document_uri} />
       ) : (
-        <div>login with bluesky to comment</div>
+        <div className="w-full accent-container text-tertiary text-center italic p-3">
+          Connect a Bluesky account to comment
+          <ButtonPrimary compact className="mx-auto mt-1">
+            <BlueskyTiny /> Connect to Bluesky
+          </ButtonPrimary>
+        </div>
       )}
       <hr className="border-border-light" />
       <div className="flex flex-col gap-6">
@@ -77,6 +84,8 @@ const Comment = (props: {
 };
 
 const ReplyButton = (props: { comment_uri: string }) => {
+  let { identity } = useIdentityData();
+
   let [replyBoxOpen, setReplyBoxOpen] = useState(false);
   let [repliesOpen, setRepliesOpen] = useState(true);
 
@@ -92,27 +101,31 @@ const ReplyButton = (props: { comment_uri: string }) => {
         >
           <CommentTiny className="text-border" /> 0
         </button>
-        <Separator classname="h-[14px]" />
-        <button
-          className="text-accent-contrast text-sm"
-          onClick={() => {
-            setRepliesOpen(true);
-            setReplyBoxOpen(true);
-          }}
-        >
-          Reply
-        </button>
+        {identity?.atp_did && (
+          <>
+            <Separator classname="h-[14px]" />
+            <button
+              className="text-accent-contrast text-sm"
+              onClick={() => {
+                setRepliesOpen(true);
+                setReplyBoxOpen(true);
+              }}
+            >
+              Reply
+            </button>
+          </>
+        )}
       </div>
       {repliesOpen && (
-        <div className="repliesWrapper flex pt-1">
+        <div className="repliesWrapper flex">
           <button
-            className="repliesCollapse pr-3 ml-[7px] mt-1"
+            className="repliesCollapse pr-3 ml-[7px] pt-0.5"
             onClick={() => {
               setReplyBoxOpen(false);
               setRepliesOpen(false);
             }}
           >
-            <div className="bg-border w-[2px] h-full" />
+            <div className="bg-border-light w-[2px] h-full" />
           </button>
           <div className="repliesContent flex flex-col gap-3 pt-2 w-full">
             {replyBoxOpen && <CommentBox doc_uri={props.comment_uri} />}
@@ -145,6 +158,8 @@ const DummyReplyButton = () => {
   // if i put replybutton within reply button it will recurse forever
   // please wire it when we have real data!
 
+  let { identity } = useIdentityData();
+
   let [replyBoxOpen, setReplyBoxOpen] = useState(false);
   let [repliesOpen, setRepliesOpen] = useState(true);
   return (
@@ -158,16 +173,20 @@ const DummyReplyButton = () => {
       >
         <CommentTiny className="text-border" /> 0
       </button>
-      <Separator classname="h-[14px]" />
-      <button
-        className="text-accent-contrast text-sm"
-        onClick={() => {
-          setRepliesOpen(true);
-          setReplyBoxOpen(true);
-        }}
-      >
-        Reply
-      </button>
+      {!identity?.atp_did && (
+        <>
+          <Separator classname="h-[14px]" />
+          <button
+            className="text-accent-contrast text-sm"
+            onClick={() => {
+              setRepliesOpen(true);
+              setReplyBoxOpen(true);
+            }}
+          >
+            Reply
+          </button>
+        </>
+      )}
     </div>
   );
 };
