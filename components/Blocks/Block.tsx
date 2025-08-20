@@ -29,6 +29,7 @@ import { LockTiny } from "components/Icons/LockTiny";
 import { MathBlock } from "./MathBlock";
 import { CodeBlock } from "./CodeBlock";
 import { HorizontalRule } from "./HorizontalRule";
+import { deepEquals } from "src/utils/deepEquals";
 
 export type Block = {
   factID: string;
@@ -121,7 +122,109 @@ export const Block = memo(function Block(
       />
     </div>
   );
-});
+}, deepEqualsBlockProps);
+
+function deepEqualsBlockProps(
+  prevProps: BlockProps & { preview?: boolean },
+  nextProps: BlockProps & { preview?: boolean },
+): boolean {
+  // Compare primitive fields
+  if (
+    prevProps.pageType !== nextProps.pageType ||
+    prevProps.entityID !== nextProps.entityID ||
+    prevProps.parent !== nextProps.parent ||
+    prevProps.position !== nextProps.position ||
+    prevProps.factID !== nextProps.factID ||
+    prevProps.value !== nextProps.value ||
+    prevProps.type !== nextProps.type ||
+    prevProps.nextPosition !== nextProps.nextPosition ||
+    prevProps.preview !== nextProps.preview
+  ) {
+    return false;
+  }
+
+  // Compare listData if present
+  if (prevProps.listData !== nextProps.listData) {
+    if (!prevProps.listData || !nextProps.listData) {
+      return false; // One is undefined, the other isn't
+    }
+
+    if (
+      prevProps.listData.checklist !== nextProps.listData.checklist ||
+      prevProps.listData.parent !== nextProps.listData.parent ||
+      prevProps.listData.depth !== nextProps.listData.depth
+    ) {
+      return false;
+    }
+
+    // Compare path array
+    if (prevProps.listData.path.length !== nextProps.listData.path.length) {
+      return false;
+    }
+
+    for (let i = 0; i < prevProps.listData.path.length; i++) {
+      if (
+        prevProps.listData.path[i].depth !== nextProps.listData.path[i].depth ||
+        prevProps.listData.path[i].entity !== nextProps.listData.path[i].entity
+      ) {
+        return false;
+      }
+    }
+  }
+
+  // Compare nextBlock
+  if (prevProps.nextBlock !== nextProps.nextBlock) {
+    if (!prevProps.nextBlock || !nextProps.nextBlock) {
+      return false; // One is null, the other isn't
+    }
+
+    if (
+      prevProps.nextBlock.factID !== nextProps.nextBlock.factID ||
+      prevProps.nextBlock.parent !== nextProps.nextBlock.parent ||
+      prevProps.nextBlock.position !== nextProps.nextBlock.position ||
+      prevProps.nextBlock.value !== nextProps.nextBlock.value ||
+      prevProps.nextBlock.type !== nextProps.nextBlock.type
+    ) {
+      return false;
+    }
+
+    // Compare nextBlock's listData (using deepEquals for simplicity)
+    if (
+      !deepEquals(prevProps.nextBlock.listData, nextProps.nextBlock.listData)
+    ) {
+      return false;
+    }
+  }
+
+  // Compare previousBlock
+  if (prevProps.previousBlock !== nextProps.previousBlock) {
+    if (!prevProps.previousBlock || !nextProps.previousBlock) {
+      return false; // One is null, the other isn't
+    }
+
+    if (
+      prevProps.previousBlock.factID !== nextProps.previousBlock.factID ||
+      prevProps.previousBlock.parent !== nextProps.previousBlock.parent ||
+      prevProps.previousBlock.position !== nextProps.previousBlock.position ||
+      prevProps.previousBlock.value !== nextProps.previousBlock.value ||
+      prevProps.previousBlock.type !== nextProps.previousBlock.type
+    ) {
+      return false;
+    }
+
+    // Compare previousBlock's listData (using deepEquals for simplicity)
+    if (
+      !deepEquals(
+        prevProps.previousBlock.listData,
+        nextProps.previousBlock.listData,
+      )
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 export const BaseBlock = (
   props: BlockProps & {
