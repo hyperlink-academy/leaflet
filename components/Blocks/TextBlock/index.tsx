@@ -592,7 +592,8 @@ function useYJSValue(entityID: string) {
   useEffect(() => {
     if (!rep.rep) return;
     let timeout = null as null | number;
-    const f = async () => {
+    const f = async (events: Y.YEvent<any>[], transaction: Y.Transaction) => {
+      if (!transaction.origin) return;
       const updateReplicache = async () => {
         const update = Y.encodeStateAsUpdate(ydoc);
         await rep.rep?.mutate.assertFact({
