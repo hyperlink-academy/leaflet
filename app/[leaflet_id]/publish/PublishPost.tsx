@@ -197,7 +197,7 @@ const PublishPostSuccess = (props: {
       <h2 className="pt-2">Published!</h2>
       <Link
         className="hover:!no-underline font-bold place-self-center pt-2"
-        href={`/lish/${uri.host}/${props.record?.name}/dashboard`}
+        href={`/lish/${uri.host}/${encodeURIComponent(props.record?.name || "")}/dashboard`}
       >
         <ButtonPrimary>Back to Dashboard</ButtonPrimary>
       </Link>

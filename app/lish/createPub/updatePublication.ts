@@ -88,7 +88,9 @@ export async function updatePublication({
     .select()
     .single();
   if (name !== existingPub.name)
-    return redirect(`/lish/${aturi.host}/${name}/dashboard`);
+    return redirect(
+      `/lish/${aturi.host}/${encodeURIComponent(name)}/dashboard`,
+    );
 
   return { success: true, publication };
 }
