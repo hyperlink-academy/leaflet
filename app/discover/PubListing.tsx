@@ -71,7 +71,7 @@ export const PubListing = (props: {
   );
 };
 
-function timeAgo(timestamp: string): string {
+export function timeAgo(timestamp: string): string {
   const now = new Date();
   const date = new Date(timestamp);
   const diffMs = now.getTime() - date.getTime();

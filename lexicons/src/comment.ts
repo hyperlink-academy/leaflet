@@ -28,10 +28,9 @@ export const PubLeafletComment: LexiconDoc = {
     },
     replyRef: {
       type: "object",
-      required: ["root", "parent"],
+      required: ["parent"],
       properties: {
-        root: { type: "ref", ref: "com.atproto.repo.strongRef" },
-        parent: { type: "ref", ref: "com.atproto.repo.strongRef" },
+        parent: { type: "string", format: "at-uri" },
       },
     },
   },

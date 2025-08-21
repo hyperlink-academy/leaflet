@@ -11,7 +11,11 @@ import { Json } from "supabase/database.types";
 
 export async function publishComment(args: {
   document: string;
-  comment: { plaintext: string; facets: PubLeafletRichtextFacet.Main[] };
+  comment: {
+    plaintext: string;
+    facets: PubLeafletRichtextFacet.Main[];
+    replyTo?: string;
+  };
 }) {
   const oauthClient = await createOauthClient();
   let identity = await getIdentityData();
@@ -26,6 +30,7 @@ export async function publishComment(args: {
     createdAt: new Date().toISOString(),
     plaintext: args.comment.plaintext,
     facets: args.comment.facets,
+    reply: args.comment.replyTo ? { parent: args.comment.replyTo } : undefined,
   };
   let rkey = TID.nextStr();
   let uri = AtUri.make(credentialSession.did!, "pub.leaflet.comment", rkey);
@@ -35,16 +40,16 @@ export async function publishComment(args: {
       rkey: "self",
     }),
     agent.pub.leaflet.comment.create(
-      { rkey: TID.nextStr(), repo: credentialSession.did! },
+      { rkey, repo: credentialSession.did! },
       record,
     ),
   ]);
 
   await supabaseServerClient.from("bsky_profiles").upsert({
     did: credentialSession.did!,
-    record: profile as Json,
+    record: profile.value as Json,
   });
-  let { data } = await supabaseServerClient
+  let { data, error } = await supabaseServerClient
     .from("comments_on_documents")
     .insert({
       uri: uri.toString(),
@@ -57,5 +62,9 @@ export async function publishComment(args: {
     })
     .select();
 
-  return { record: data?.[0], profile: { record: profile } };
+  return {
+    record: data?.[0].record as Json,
+    profile: profile.value,
+    uri: uri.toString(),
+  };
 }

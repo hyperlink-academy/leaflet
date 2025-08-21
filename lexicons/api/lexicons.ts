@@ -51,15 +51,11 @@ export const schemaDict = {
       },
       replyRef: {
         type: 'object',
-        required: ['root', 'parent'],
+        required: ['parent'],
         properties: {
-          root: {
-            type: 'ref',
-            ref: 'lex:com.atproto.repo.strongRef',
-          },
           parent: {
-            type: 'ref',
-            ref: 'lex:com.atproto.repo.strongRef',
+            type: 'string',
+            format: 'at-uri',
           },
         },
       },

@@ -1,45 +1,61 @@
 import { UnicodeString } from "@atproto/api";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
-import { multiBlockSchema, schema } from "components/Blocks/TextBlock/schema";
+import { multiBlockSchema } from "components/Blocks/TextBlock/schema";
 import { PubLeafletRichtextFacet } from "lexicons/api";
 import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
-import { Mark, Node } from "prosemirror-model";
-import { EditorState } from "prosemirror-state";
+import { Mark, MarkType, Node } from "prosemirror-model";
+import { EditorState, TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
-import { useLayoutEffect, useRef, useState } from "react";
+import {
+  MutableRefObject,
+  RefObject,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { publishComment } from "./commentAction";
-import { AutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { ButtonPrimary } from "components/Buttons";
 import { ShareSmall } from "components/Icons/ShareSmall";
+import { useInteractionState } from "../Interactions";
+import { DotLoader } from "components/utils/DotLoader";
+import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
+import { setMark } from "src/utils/prosemirror/setMark";
+import { multi } from "linkifyjs";
+import { Json } from "supabase/database.types";
 
-export function CommentBox(props: { doc_uri: string }) {
+export function CommentBox(props: {
+  doc_uri: string;
+  replyTo?: string;
+  onSubmit?: () => void;
+}) {
   let mountRef = useRef<HTMLPreElement | null>(null);
   let [editorState, setEditorState] = useState(() =>
     EditorState.create({
       schema: multiBlockSchema,
       plugins: [
-        keymap(baseKeymap),
         keymap({
-          "Meta-b": toggleMark(schema.marks.strong),
-          "Ctrl-b": toggleMark(schema.marks.strong),
-          "Meta-u": toggleMark(schema.marks.underline),
-          "Ctrl-u": toggleMark(schema.marks.underline),
-          "Meta-i": toggleMark(schema.marks.em),
-          "Ctrl-i": toggleMark(schema.marks.em),
-          "Ctrl-Meta-x": toggleMark(schema.marks.strikethrough),
+          "Meta-b": toggleMark(multiBlockSchema.marks.strong),
+          "Ctrl-b": toggleMark(multiBlockSchema.marks.strong),
+          "Meta-u": toggleMark(multiBlockSchema.marks.underline),
+          "Ctrl-u": toggleMark(multiBlockSchema.marks.underline),
+          "Meta-i": toggleMark(multiBlockSchema.marks.em),
+          "Ctrl-i": toggleMark(multiBlockSchema.marks.em),
+          "Ctrl-Meta-x": toggleMark(multiBlockSchema.marks.strikethrough),
         }),
+        keymap(baseKeymap),
         autolink({
-          type: schema.marks.link,
+          type: multiBlockSchema.marks.link,
           shouldAutoLink: () => true,
           defaultProtocol: "https",
         }),
       ],
     }),
   );
+  let view = useRef<null | EditorView>(null);
   useLayoutEffect(() => {
     if (!mountRef.current) return;
-    let view = new EditorView(
+    view.current = new EditorView(
       { mount: mountRef.current },
       {
         state: editorState,
@@ -49,25 +65,28 @@ export function CommentBox(props: { doc_uri: string }) {
           let mark =
             node
               .nodeAt(_pos - 1)
-              ?.marks.find((f) => f.type === schema.marks.link) ||
+              ?.marks.find((f) => f.type === multiBlockSchema.marks.link) ||
             node
               .nodeAt(Math.max(_pos - 2, 0))
-              ?.marks.find((f) => f.type === schema.marks.link);
+              ?.marks.find((f) => f.type === multiBlockSchema.marks.link);
           if (mark) {
             window.open(mark.attrs.href, "_blank");
           }
         },
         dispatchTransaction(tr) {
+          console.log("dispatching?");
           let newState = this.state.apply(tr);
           setEditorState(newState);
-          view.updateState(newState);
+          view.current?.updateState(newState);
         },
       },
     );
     return () => {
-      view.destroy();
+      view.current?.destroy();
+      view.current = null;
     };
   }, []);
+  let [loading, setLoading] = useState(false);
   return (
     <div className=" flex flex-col gap-1">
       <pre
@@ -76,27 +95,50 @@ export function CommentBox(props: { doc_uri: string }) {
       />
       <div className="flex justify-between">
         <div className="flex gap-1">
-          <button className="rounded-md hover:bg-border-light p-1">
-            <BoldTiny />
-          </button>
-          <button className=" rounded-md hover:bg-border-light p-1">
-            <ItalicTiny />
-          </button>
-          <button className=" rounded-md hover:bg-border-light p-1">
-            <StrikethroughTiny />
-          </button>
+          <TextDecorationButton
+            mark={multiBlockSchema.marks.strong}
+            icon={<BoldTiny />}
+            editor={editorState}
+            view={view}
+          />
+          <TextDecorationButton
+            mark={multiBlockSchema.marks.em}
+            icon={<ItalicTiny />}
+            editor={editorState}
+            view={view}
+          />
+          <TextDecorationButton
+            mark={multiBlockSchema.marks.strikethrough}
+            icon={<StrikethroughTiny />}
+            editor={editorState}
+            view={view}
+          />
         </div>
         <ButtonPrimary
           compact
           onClick={async () => {
+            setLoading(true);
             let [plaintext, facets] = docToFacetedText(editorState.doc);
-            await publishComment({
+            let comment = await publishComment({
               document: props.doc_uri,
-              comment: { plaintext, facets },
+              comment: { plaintext, facets, replyTo: props.replyTo },
             });
+
+            setLoading(false);
+            props.onSubmit?.();
+            useInteractionState.setState((s) => ({
+              localComments: [
+                ...s.localComments,
+                {
+                  record: comment.record,
+                  uri: comment.uri,
+                  bsky_profiles: { record: comment.profile as Json },
+                },
+              ],
+            }));
           }}
         >
-          <ShareSmall />
+          {loading ? <DotLoader /> : <ShareSmall />}
         </ButtonPrimary>
       </div>
     </div>
@@ -249,3 +291,60 @@ const StrikethroughTiny = () => {
     </svg>
   );
 };
+
+function TextDecorationButton(props: {
+  editor: EditorState;
+  mark: MarkType;
+  icon: React.ReactNode;
+  view: RefObject<EditorView | null>;
+}) {
+  let hasMark: boolean = false;
+  let mark: Mark | null = null;
+  if (props.editor) {
+    let { to, from, $cursor, $to, $from } = props.editor
+      .selection as TextSelection;
+
+    mark = rangeHasMark(props.editor, props.mark, from, to);
+    if ($cursor)
+      hasMark = !!props.mark.isInSet(
+        props.editor.storedMarks || $cursor.marks(),
+      );
+    else {
+      hasMark = !!mark;
+    }
+  }
+
+  return (
+    <button
+      className={`rounded-md hover:bg-border-light p-1 ${hasMark ? "bg-border-light text-primary" : "text-border"}`}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        if (!props.view.current) return;
+        toggleMarkInCommentBox(props.view.current, props.mark);
+      }}
+    >
+      {props.icon}
+    </button>
+  );
+}
+
+function toggleMarkInCommentBox(
+  view: EditorView,
+  markT: MarkType,
+  attrs?: any,
+) {
+  let { to, from, $cursor } = view.state.selection as TextSelection;
+  let mark = rangeHasMark(view.state, markT, from, to);
+  if (
+    to === from &&
+    markT?.isInSet(view.state.storedMarks || $cursor?.marks() || [])
+  ) {
+    return toggleMark(markT, attrs)(view.state, view.dispatch);
+  }
+  if (
+    mark &&
+    (!attrs || JSON.stringify(attrs) === JSON.stringify(mark.attrs))
+  ) {
+    toggleMark(markT, attrs)(view.state, view.dispatch);
+  } else setMark(markT, attrs)(view.state, view.dispatch);
+}

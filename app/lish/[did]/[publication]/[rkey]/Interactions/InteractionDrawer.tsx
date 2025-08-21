@@ -3,12 +3,12 @@ import { Media } from "components/Media";
 import { Quotes } from "./Quotes";
 import { useInteractionState } from "./Interactions";
 import { Json } from "supabase/database.types";
-import { Comments } from "./Comments";
+import { Comment, Comments } from "./Comments";
 
 export const InteractionDrawer = (props: {
   document_uri: string;
   quotes: { link: string; bsky_posts: { post_view: Json } | null }[];
-  comments: { record: Json; uri: string }[];
+  comments: Comment[];
   did: string;
 }) => {
   let { drawerOpen: open, drawer } = useInteractionState();

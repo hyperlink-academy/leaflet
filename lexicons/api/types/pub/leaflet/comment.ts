@@ -6,7 +6,6 @@ import { CID } from 'multiformats/cid'
 import { validate as _validate } from '../../../lexicons'
 import { $Typed, is$typed as _is$typed, OmitKey } from '../../../util'
 import type * as PubLeafletRichtextFacet from './richtext/facet'
-import type * as ComAtprotoRepoStrongRef from '../../com/atproto/repo/strongRef'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -34,8 +33,7 @@ export function validateRecord<V>(v: V) {
 
 export interface ReplyRef {
   $type?: 'pub.leaflet.comment#replyRef'
-  root: ComAtprotoRepoStrongRef.Main
-  parent: ComAtprotoRepoStrongRef.Main
+  parent: string
 }
 
 const hashReplyRef = 'replyRef'
