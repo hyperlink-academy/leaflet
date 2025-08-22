@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import { CollapsedPostHeader } from "./CollapsedPostHeader";
 import { Interactions } from "../Interactions/Interactions";
 import { PostPageData } from "../getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
@@ -92,7 +91,11 @@ export function PostHeader(props: {
               </>
             ) : null}
             |{" "}
-            <Interactions compact quotes={document.document_mentions_in_bsky} />
+            <Interactions
+              compact
+              quotesCount={document.document_mentions_in_bsky.length}
+              commentsCount={document.comments_on_documents.length}
+            />
           </div>
         </div>
       </div>

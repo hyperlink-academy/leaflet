@@ -30,7 +30,8 @@ export function openInteractionDrawer(drawer: "comments" | "quotes") {
 }
 
 export const Interactions = (props: {
-  quotes: { link: string; bsky_posts: { post_view: Json } | null }[];
+  quotesCount: number;
+  commentsCount: number;
   compact?: boolean;
   className?: string;
 }) => {
@@ -48,7 +49,7 @@ export const Interactions = (props: {
           else useInteractionState.setState({ drawerOpen: false });
         }}
       >
-        <QuoteTiny /> {props.quotes.length} {!props.compact && "Quotes"}
+        <QuoteTiny /> {props.quotesCount} {!props.compact && "Quotes"}
       </button>
       <button
         className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
@@ -58,7 +59,7 @@ export const Interactions = (props: {
           else useInteractionState.setState({ drawerOpen: false });
         }}
       >
-        <CommentTiny /> {props.quotes.length} {!props.compact && "Comments"}
+        <CommentTiny /> {props.commentsCount} {!props.compact && "Comments"}
       </button>
     </div>
   );
