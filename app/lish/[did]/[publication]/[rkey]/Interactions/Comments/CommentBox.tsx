@@ -10,6 +10,7 @@ import { EditorView } from "prosemirror-view";
 import {
   MutableRefObject,
   RefObject,
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -23,6 +24,7 @@ import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 import { setMark } from "src/utils/prosemirror/setMark";
 import { multi } from "linkifyjs";
 import { Json } from "supabase/database.types";
+import { isIOS } from "src/utils/isDevice";
 
 export function CommentBox(props: {
   doc_uri: string;
@@ -89,10 +91,13 @@ export function CommentBox(props: {
   let [loading, setLoading] = useState(false);
   return (
     <div className=" flex flex-col gap-1">
-      <pre
-        ref={mountRef}
-        className={`border whitespace-pre-wrap input-with-border min-h-32 h-fit`}
-      />
+      <div className="w-full relative">
+        <pre
+          ref={mountRef}
+          className={`border whitespace-pre-wrap input-with-border min-h-32 h-fit`}
+        />
+        <IOSBS view={view} />
+      </div>
       <div className="flex justify-between">
         <div className="flex gap-1">
           <TextDecorationButton
@@ -142,6 +147,34 @@ export function CommentBox(props: {
         </ButtonPrimary>
       </div>
     </div>
+  );
+}
+
+export function IOSBS(props: { view: RefObject<EditorView | null> }) {
+  let [initialRender, setInitialRender] = useState(true);
+  useEffect(() => {
+    setInitialRender(false);
+  }, []);
+  if (initialRender || !isIOS()) return null;
+  return (
+    <div
+      className="h-full w-full absolute cursor-text group-focus-within:hidden py-[18px]"
+      onPointerUp={(e) => {
+        if (!props.view.current) return;
+        e.preventDefault();
+
+        let pos = props.view.current.posAtCoords({
+          top: e.clientY,
+          left: e.clientX,
+        });
+
+        let tr = props.view.current.state.tr;
+        props.view.current.dispatch(
+          tr.setSelection(TextSelection.create(tr.doc, pos?.pos || 1)),
+        );
+        props.view.current.focus();
+      }}
+    />
   );
 }
 
