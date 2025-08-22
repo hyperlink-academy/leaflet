@@ -135,8 +135,8 @@ const Replies = (props: {
       let aRecord = a.record as PubLeafletComment.Record;
       let bRecord = b.record as PubLeafletComment.Record;
       return (
-        new Date(bRecord.createdAt).getTime() -
-        new Date(aRecord.createdAt).getTime()
+        new Date(aRecord.createdAt).getTime() -
+        new Date(bRecord.createdAt).getTime()
       );
     });
   return (
