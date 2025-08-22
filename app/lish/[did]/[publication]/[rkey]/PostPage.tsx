@@ -69,7 +69,10 @@ export function PostPage({
             did={did}
             prerenderedCodeBlocks={prerenderedCodeBlocks}
           />
-          <Interactions quotes={document.document_mentions_in_bsky} />
+          <Interactions
+            quotesCount={document.document_mentions_in_bsky.length}
+            commentsCount={document.comments_on_documents.length}
+          />
           <hr className="border-border-light mb-4 mt-4" />
           {identity &&
           identity.atp_did ===

@@ -5,6 +5,7 @@ import { XrpcClient, FetchHandler, FetchHandlerOptions } from '@atproto/xrpc'
 import { schemas } from './lexicons'
 import { CID } from 'multiformats/cid'
 import { OmitKey, Un$Typed } from './util'
+import * as PubLeafletComment from './types/pub/leaflet/comment'
 import * as PubLeafletDocument from './types/pub/leaflet/document'
 import * as PubLeafletPublication from './types/pub/leaflet/publication'
 import * as PubLeafletBlocksBlockquote from './types/pub/leaflet/blocks/blockquote'
@@ -37,6 +38,7 @@ import * as ComAtprotoRepoStrongRef from './types/com/atproto/repo/strongRef'
 import * as ComAtprotoRepoUploadBlob from './types/com/atproto/repo/uploadBlob'
 import * as AppBskyActorProfile from './types/app/bsky/actor/profile'
 
+export * as PubLeafletComment from './types/pub/leaflet/comment'
 export * as PubLeafletDocument from './types/pub/leaflet/document'
 export * as PubLeafletPublication from './types/pub/leaflet/publication'
 export * as PubLeafletBlocksBlockquote from './types/pub/leaflet/blocks/blockquote'
@@ -107,6 +109,7 @@ export class PubNS {
 
 export class PubLeafletNS {
   _client: XrpcClient
+  comment: CommentRecord
   document: DocumentRecord
   publication: PublicationRecord
   blocks: PubLeafletBlocksNS
@@ -122,6 +125,7 @@ export class PubLeafletNS {
     this.pages = new PubLeafletPagesNS(client)
     this.richtext = new PubLeafletRichtextNS(client)
     this.theme = new PubLeafletThemeNS(client)
+    this.comment = new CommentRecord(client)
     this.document = new DocumentRecord(client)
     this.publication = new PublicationRecord(client)
   }
@@ -231,6 +235,67 @@ export class PubLeafletThemeNS {
 
   constructor(client: XrpcClient) {
     this._client = client
+  }
+}
+
+export class CommentRecord {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+
+  async list(
+    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
+  ): Promise<{
+    cursor?: string
+    records: { uri: string; value: PubLeafletComment.Record }[]
+  }> {
+    const res = await this._client.call('com.atproto.repo.listRecords', {
+      collection: 'pub.leaflet.comment',
+      ...params,
+    })
+    return res.data
+  }
+
+  async get(
+    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
+  ): Promise<{ uri: string; cid: string; value: PubLeafletComment.Record }> {
+    const res = await this._client.call('com.atproto.repo.getRecord', {
+      collection: 'pub.leaflet.comment',
+      ...params,
+    })
+    return res.data
+  }
+
+  async create(
+    params: OmitKey<
+      ComAtprotoRepoCreateRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletComment.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.comment'
+    const res = await this._client.call(
+      'com.atproto.repo.createRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async delete(
+    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
+    headers?: Record<string, string>,
+  ): Promise<void> {
+    await this._client.call(
+      'com.atproto.repo.deleteRecord',
+      undefined,
+      { collection: 'pub.leaflet.comment', ...params },
+      { headers },
+    )
   }
 }
 

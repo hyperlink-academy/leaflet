@@ -2,13 +2,13 @@
 import Link from "next/link";
 import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import { CollapsedPostHeader } from "./CollapsedPostHeader";
 import { Interactions } from "../Interactions/Interactions";
 import { PostPageData } from "../getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { useIdentityData } from "components/IdentityProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/syntax";
+import { EditTiny } from "components/Icons/EditTiny";
 
 export function PostHeader(props: {
   data: PostPageData;
@@ -38,17 +38,30 @@ export function PostHeader(props: {
       /> */}
       <div className="max-w-prose w-full mx-auto" id="post-header">
         <div className="pubHeader flex flex-col pb-5">
-          <Link
-            className="font-bold hover:no-underline text-accent-contrast"
-            href={
-              document &&
-              getPublicationURL(
-                document.documents_in_publications[0].publications,
-              )
-            }
-          >
-            {props.name}
-          </Link>
+          <div className="flex justify-between w-full">
+            <Link
+              className="font-bold hover:no-underline text-accent-contrast"
+              href={
+                document &&
+                getPublicationURL(
+                  document.documents_in_publications[0].publications,
+                )
+              }
+            >
+              {props.name}
+            </Link>
+            {identity &&
+              identity.atp_did ===
+                document.documents_in_publications[0]?.publications
+                  .identity_did && (
+                <a
+                  className=" rounded-full  flex place-items-center"
+                  href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
+                >
+                  <EditTiny className="shrink-0" />
+                </a>
+              )}
+          </div>
           <h2 className="">{record.title}</h2>
           {record.description ? (
             <p className="italic text-secondary">{record.description}</p>
@@ -78,21 +91,11 @@ export function PostHeader(props: {
               </>
             ) : null}
             |{" "}
-            <Interactions compact quotes={document.document_mentions_in_bsky} />
-            {identity &&
-              identity.atp_did ===
-                document.documents_in_publications[0]?.publications
-                  .identity_did && (
-                <>
-                  {" "}
-                  |
-                  <a
-                    href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
-                  >
-                    Edit Post
-                  </a>
-                </>
-              )}
+            <Interactions
+              compact
+              quotesCount={document.document_mentions_in_bsky.length}
+              commentsCount={document.comments_on_documents.length}
+            />
           </div>
         </div>
       </div>

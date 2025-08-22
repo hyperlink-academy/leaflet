@@ -85,12 +85,16 @@ export default async function Post(props: {
   ]);
   if (!document?.data || !document.documents_in_publications[0].publications)
     return (
-      <div className="p-4 text-lg text-center flex flex-col gap-4">
-        <p>Sorry, post not found!</p>
-        <p>
-          This may be a glitch on our end. If the issue persists please{" "}
-          <a href="mailto:contact@leaflet.pub">send us a note</a>.
-        </p>
+      <div className="bg-bg-leaflet h-full p-3 text-center relative">
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-md w-full">
+          <div className=" px-3 py-4 opaque-container  flex flex-col gap-1 mx-2 ">
+            <h3>Sorry, post not found!</h3>
+            <p>
+              This may be a glitch on our end. If the issue persists please{" "}
+              <a href="mailto:contact@leaflet.pub">send us a note</a>.
+            </p>
+          </div>
+        </div>
       </div>
     );
   let record = document.data as PubLeafletDocument.Record;
@@ -157,7 +161,7 @@ export default async function Post(props: {
           <PageLayout>
             <PostPage
               pubRecord={pubRecord}
-              profile={profile.data}
+              profile={JSON.parse(JSON.stringify(profile.data))}
               document={document}
               bskyPostData={bskyPostData.data.posts}
               did={did}
@@ -166,6 +170,8 @@ export default async function Post(props: {
               prerenderedCodeBlocks={prerenderedCodeBlocks}
             />
             <InteractionDrawer
+              document_uri={document.uri}
+              comments={document.comments_on_documents}
               quotes={document.document_mentions_in_bsky}
               did={did}
             />

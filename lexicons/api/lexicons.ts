@@ -10,6 +10,57 @@ import {
 import { $Typed, is$typed, maybe$typed } from './util'
 
 export const schemaDict = {
+  PubLeafletComment: {
+    lexicon: 1,
+    id: 'pub.leaflet.comment',
+    revision: 1,
+    description: 'A lexicon for comments on documents',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description: 'Record containing a comment',
+        record: {
+          type: 'object',
+          required: ['subject', 'plaintext', 'createdAt'],
+          properties: {
+            subject: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+            reply: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.comment#replyRef',
+            },
+            plaintext: {
+              type: 'string',
+            },
+            facets: {
+              type: 'array',
+              items: {
+                type: 'ref',
+                ref: 'lex:pub.leaflet.richtext.facet',
+              },
+            },
+          },
+        },
+      },
+      replyRef: {
+        type: 'object',
+        required: ['parent'],
+        properties: {
+          parent: {
+            type: 'string',
+            format: 'at-uri',
+          },
+        },
+      },
+    },
+  },
   PubLeafletDocument: {
     lexicon: 1,
     id: 'pub.leaflet.document',
@@ -1699,6 +1750,7 @@ export function validate(
 }
 
 export const ids = {
+  PubLeafletComment: 'pub.leaflet.comment',
   PubLeafletDocument: 'pub.leaflet.document',
   PubLeafletPublication: 'pub.leaflet.publication',
   PubLeafletBlocksBlockquote: 'pub.leaflet.blocks.blockquote',

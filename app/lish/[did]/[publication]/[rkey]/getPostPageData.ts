@@ -7,6 +7,8 @@ export async function getPostPageData(uri: string) {
     .select(
       `
         data,
+        uri,
+        comments_on_documents(*, bsky_profiles(*)),
         documents_in_publications(publications(*, publication_subscriptions(*))),
         document_mentions_in_bsky(*, bsky_posts(*)),
         leaflets_in_publications(*)
