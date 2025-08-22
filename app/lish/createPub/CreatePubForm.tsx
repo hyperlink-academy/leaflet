@@ -47,7 +47,7 @@ export const CreatePubForm = () => {
           description: descriptionValue,
           iconFile: logoFile,
           subdomain: domainValue,
-          preferences: { showInDiscover },
+          preferences: { showInDiscover, showComments: true },
         });
         // Show a spinner while this is happening! Maybe a progress bar?
         setTimeout(() => {
