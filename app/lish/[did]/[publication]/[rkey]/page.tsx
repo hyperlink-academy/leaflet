@@ -175,12 +175,6 @@ export default async function Post(props: {
               quotes={document.document_mentions_in_bsky}
               did={did}
             />
-            <div
-              className="spacer sm:block hidden"
-              style={{
-                width: `calc(50vw - 12px - ((var(--page-width-units)/2))`,
-              }}
-            />
           </PageLayout>
 
           <QuoteHandler />
