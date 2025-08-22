@@ -31,6 +31,11 @@ export const EditPubForm = () => {
       ? true
       : record.preferences.showInDiscover,
   );
+  let [showComments, setShowComments] = useState(
+    record?.preferences?.showComments === undefined
+      ? true
+      : record.preferences.showComments,
+  );
   let [descriptionValue, setDescriptionValue] = useState(
     record?.description || "",
   );
@@ -62,6 +67,7 @@ export const EditPubForm = () => {
           iconFile: iconFile,
           preferences: {
             showInDiscover: showInDiscover,
+            showComments: showComments,
           },
         });
         toast({ type: "success", content: "Updated!" });
@@ -153,6 +159,15 @@ export const EditPubForm = () => {
           <p className="text-xs text-tertiary font-normal">
             This publication will appear on our public Discover page
           </p>
+        </div>
+      </Checkbox>
+
+      <Checkbox
+        checked={showComments}
+        onChange={(e) => setShowComments(e.target.checked)}
+      >
+        <div className=" pt-0.5 flex flex-col  text-sm italic text-tertiary ">
+          <p className="font-bold">Show comments on posts</p>
         </div>
       </Checkbox>
       <hr className="border-border-light" />

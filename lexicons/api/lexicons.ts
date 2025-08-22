@@ -160,6 +160,10 @@ export const schemaDict = {
             type: 'boolean',
             default: true,
           },
+          showComments: {
+            type: 'boolean',
+            default: true,
+          },
         },
       },
       theme: {

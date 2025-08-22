@@ -34,6 +34,7 @@ export const Interactions = (props: {
   commentsCount: number;
   compact?: boolean;
   className?: string;
+  showComments?: boolean;
 }) => {
   let { drawerOpen, drawer } = useInteractionState();
 
@@ -52,17 +53,19 @@ export const Interactions = (props: {
         <QuoteTiny /> {props.quotesCount}{" "}
         {!props.compact && `Quote${props.quotesCount === 1 ? "" : "s"}`}
       </button>
-      <button
-        className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
-        onClick={() => {
-          if (!drawerOpen || drawer !== "comments")
-            openInteractionDrawer("comments");
-          else useInteractionState.setState({ drawerOpen: false });
-        }}
-      >
-        <CommentTiny /> {props.commentsCount}{" "}
-        {!props.compact && `Comment${props.commentsCount === 1 ? "" : "s"}`}
-      </button>
+      {props.showComments === false ? null : (
+        <button
+          className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
+          onClick={() => {
+            if (!drawerOpen || drawer !== "comments")
+              openInteractionDrawer("comments");
+            else useInteractionState.setState({ drawerOpen: false });
+          }}
+        >
+          <CommentTiny /> {props.commentsCount}{" "}
+          {!props.compact && `Comment${props.commentsCount === 1 ? "" : "s"}`}
+        </button>
+      )}
     </div>
   );
 };

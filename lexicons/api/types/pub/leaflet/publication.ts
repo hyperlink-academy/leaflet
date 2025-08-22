@@ -36,6 +36,7 @@ export function validateRecord<V>(v: V) {
 export interface Preferences {
   $type?: 'pub.leaflet.publication#preferences'
   showInDiscover: boolean
+  showComments: boolean
 }
 
 const hashPreferences = 'preferences'

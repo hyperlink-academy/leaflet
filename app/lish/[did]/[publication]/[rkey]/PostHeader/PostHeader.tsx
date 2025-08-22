@@ -14,6 +14,7 @@ export function PostHeader(props: {
   data: PostPageData;
   name: string;
   profile: ProfileViewDetailed;
+  preferences: { showComments?: boolean };
 }) {
   let { identity } = useIdentityData();
   let document = props.data;
@@ -92,6 +93,7 @@ export function PostHeader(props: {
             ) : null}
             |{" "}
             <Interactions
+              showComments={props.preferences.showComments}
               compact
               quotesCount={document.document_mentions_in_bsky.length}
               commentsCount={document.comments_on_documents.length}

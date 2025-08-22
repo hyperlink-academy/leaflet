@@ -48,6 +48,10 @@
         "showInDiscover": {
           "type": "boolean",
           "default": true
+        },
+        "showComments": {
+          "type": "boolean",
+          "default": true
         }
       }
     },

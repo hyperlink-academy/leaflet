@@ -160,6 +160,7 @@ export default async function Post(props: {
            */}
           <PageLayout>
             <PostPage
+              preferences={pubRecord.preferences || {}}
               pubRecord={pubRecord}
               profile={JSON.parse(JSON.stringify(profile.data))}
               document={document}
@@ -171,7 +172,11 @@ export default async function Post(props: {
             />
             <InteractionDrawer
               document_uri={document.uri}
-              comments={document.comments_on_documents}
+              comments={
+                pubRecord.preferences?.showComments === false
+                  ? []
+                  : document.comments_on_documents
+              }
               quotes={document.document_mentions_in_bsky}
               did={did}
             />

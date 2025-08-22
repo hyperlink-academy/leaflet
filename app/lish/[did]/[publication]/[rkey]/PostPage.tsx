@@ -20,6 +20,7 @@ export function PostPage({
   name,
   did,
   profile,
+  preferences,
   pubRecord,
   prerenderedCodeBlocks,
   bskyPostData,
@@ -32,6 +33,7 @@ export function PostPage({
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  preferences: { showComments?: boolean };
 }) {
   let { identity } = useIdentityData();
   let { drawerOpen } = useInteractionState();
@@ -62,7 +64,12 @@ export function PostPage({
         <div
           className={`postPageContent sm:max-w-prose mx-auto h-fit w-full px-3 sm:px-4 ${hasPageBackground ? " pt-2 pb-3 sm:pb-6" : "py-6 sm:py-9"}`}
         >
-          <PostHeader data={document} profile={profile} name={name} />
+          <PostHeader
+            data={document}
+            profile={profile}
+            name={name}
+            preferences={preferences}
+          />
           <PostContent
             bskyPostData={bskyPostData}
             blocks={blocks}
@@ -70,6 +77,7 @@ export function PostPage({
             prerenderedCodeBlocks={prerenderedCodeBlocks}
           />
           <Interactions
+            showComments={preferences.showComments}
             quotesCount={document.document_mentions_in_bsky.length}
             commentsCount={document.comments_on_documents.length}
           />
