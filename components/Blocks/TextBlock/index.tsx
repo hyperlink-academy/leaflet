@@ -189,10 +189,12 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
   let headingLevel = useEntity(props.entityID, "block/heading-level");
   let entity_set = useEntitySetContext();
-  let propsRef = useRef({ ...props, entity_set });
+  let alignment =
+    useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
+  let propsRef = useRef({ ...props, entity_set, alignment });
   useEffect(() => {
-    propsRef.current = { ...props, entity_set };
-  }, [props, entity_set]);
+    propsRef.current = { ...props, entity_set, alignment };
+  }, [props, entity_set, alignment]);
   let rep = useReplicache();
   useEffect(() => {
     repRef.current = rep.rep;
@@ -202,8 +204,6 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
     (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   let focused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
-  let alignment =
-    useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
   let alignmentClass = {
     left: "text-left",
     right: "text-right",
@@ -592,7 +592,8 @@ function useYJSValue(entityID: string) {
   useEffect(() => {
     if (!rep.rep) return;
     let timeout = null as null | number;
-    const f = async () => {
+    const f = async (events: Y.YEvent<any>[], transaction: Y.Transaction) => {
+      if (!transaction.origin) return;
       const updateReplicache = async () => {
         const update = Y.encodeStateAsUpdate(ydoc);
         await rep.rep?.mutate.assertFact({

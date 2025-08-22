@@ -104,7 +104,7 @@ export const Block = memo(function Block(
             ? "pb-0"
             : "pb-2"
       }
-      ${props.type === "blockquote" && props.previousBlock?.type === "blockquote" ? "-mt-3" : ""}
+      ${props.type === "blockquote" && props.previousBlock?.type === "blockquote" ? (!props.listData ? "-mt-3" : "-mt-1") : ""}
       ${
         !props.previousBlock
           ? props.type === "heading" || props.type === "text"

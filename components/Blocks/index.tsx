@@ -229,7 +229,6 @@ const BlockListBottom = (props: {
   lastVisibleBlock: Block | undefined;
   entityID: string;
 }) => {
-  let newEntityID = v7();
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
 
@@ -238,6 +237,7 @@ const BlockListBottom = (props: {
     <div
       className="blockListClickableBottomArea shrink-0 h-[50vh]"
       onClick={() => {
+        let newEntityID = v7();
         if (
           // if the last visible(not-folded) block is a text block, focus it
           props.lastRootBlock &&

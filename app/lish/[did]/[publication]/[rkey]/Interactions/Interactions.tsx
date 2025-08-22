@@ -49,7 +49,8 @@ export const Interactions = (props: {
           else useInteractionState.setState({ drawerOpen: false });
         }}
       >
-        <QuoteTiny /> {props.quotesCount} {!props.compact && "Quotes"}
+        <QuoteTiny /> {props.quotesCount}{" "}
+        {!props.compact && `Quote${props.quotesCount === 1 ? "" : "s"}`}
       </button>
       <button
         className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
@@ -59,7 +60,8 @@ export const Interactions = (props: {
           else useInteractionState.setState({ drawerOpen: false });
         }}
       >
-        <CommentTiny /> {props.commentsCount} {!props.compact && "Comments"}
+        <CommentTiny /> {props.commentsCount}{" "}
+        {!props.compact && `Comment${props.commentsCount === 1 ? "" : "s"}`}
       </button>
     </div>
   );

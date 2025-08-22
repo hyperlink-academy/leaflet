@@ -3,6 +3,9 @@ import Link from "next/link";
 import { SortedPublicationList } from "./SortedPublicationList";
 import { Metadata } from "next";
 
+export const dynamic = "force-static";
+export const revalidate = 60;
+
 export type PublicationsList = Awaited<ReturnType<typeof getPublications>>;
 async function getPublications() {
   let { data: publications, error } = await supabaseServerClient

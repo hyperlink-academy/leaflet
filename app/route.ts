@@ -7,7 +7,5 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
 export async function GET() {
-  let auth_token = (await cookies()).get("auth_token")?.value;
-  if (auth_token) redirect("/home");
-  else await createNewLeaflet({ pageType: "doc", redirectUser: true });
+  redirect("/home");
 }

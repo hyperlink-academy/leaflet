@@ -12,7 +12,7 @@ import {
 } from "prosemirror-state";
 import { RefObject } from "react";
 import { Replicache } from "replicache";
-import type { ReplicacheMutators } from "src/replicache";
+import type { Fact, ReplicacheMutators } from "src/replicache";
 import { elementId } from "src/utils/elementId";
 import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
@@ -25,7 +25,12 @@ import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { UndoManager } from "src/undoManager";
 
-type PropsRef = RefObject<BlockProps & { entity_set: { set: string } }>;
+type PropsRef = RefObject<
+  BlockProps & {
+    entity_set: { set: string };
+    alignment: Fact<"block/text-alignment">["data"]["value"];
+  }
+>;
 export const TextBlockKeymap = (
   propsRef: PropsRef,
   repRef: RefObject<Replicache<ReplicacheMutators> | null>,
@@ -377,7 +382,7 @@ const shifttab =
 
 const enter =
   (
-    propsRef: RefObject<BlockProps & { entity_set: { set: string } }>,
+    propsRef: PropsRef,
     repRef: RefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
   (
@@ -393,10 +398,6 @@ const enter =
 
     let newEntityID = v7();
     let position: string;
-    useUIState.getState().setSelectedBlock({
-      value: newEntityID,
-      parent: propsRef.current.parent,
-    });
     let asyncRun = async () => {
       let blockType =
         propsRef.current.type === "heading" && state.selection.anchor <= 2
@@ -547,45 +548,48 @@ const enter =
           data: { type: "number", value: headingLevel.data.value || 0 },
         });
       }
-      let alignment = await repRef.current?.query((tx) =>
-        scanIndex(tx).eav(propsRef.current.entityID, "block/text-alignment"),
-      );
-      if (alignment?.[0] && alignment?.[0].data.value !== "left") {
+      if (propsRef.current.alignment !== "left") {
         await repRef.current?.mutate.assertFact({
           entity: newEntityID,
           attribute: "block/text-alignment",
           data: {
             type: "text-alignment-type-union",
-            value: alignment?.[0].data.value,
+            value: propsRef.current.alignment,
           },
         });
       }
     };
-    asyncRun();
+    asyncRun().then(() => {
+      useUIState.getState().setSelectedBlock({
+        value: newEntityID,
+        parent: propsRef.current.parent,
+      });
+
+      setTimeout(() => {
+        let block = useEditorStates.getState().editorStates[newEntityID];
+        if (block) {
+          let tr = block.editor.tr;
+          if (newContent.content.size > 2) {
+            tr.replaceWith(0, tr.doc.content.size, newContent.content);
+            tr.setSelection(TextSelection.create(tr.doc, 0));
+            let newState = block.editor.apply(tr);
+            setEditorState(newEntityID, {
+              editor: newState,
+            });
+          }
+          focusBlock(
+            {
+              value: newEntityID,
+              parent: propsRef.current.parent,
+              type: "text",
+            },
+            { type: "start" },
+          );
+        }
+      }, 10);
+    });
 
     // if you are in the middle of a text block, split the block
-    setTimeout(() => {
-      let block = useEditorStates.getState().editorStates[newEntityID];
-      if (block) {
-        let tr = block.editor.tr;
-        if (newContent.content.size > 2) {
-          tr.replaceWith(0, tr.doc.content.size, newContent.content);
-          tr.setSelection(TextSelection.create(tr.doc, 0));
-          let newState = block.editor.apply(tr);
-          setEditorState(newEntityID, {
-            editor: newState,
-          });
-        }
-        focusBlock(
-          {
-            value: newEntityID,
-            parent: propsRef.current.parent,
-            type: "text",
-          },
-          { type: "start" },
-        );
-      }
-    }, 10);
     return true;
   };
 
