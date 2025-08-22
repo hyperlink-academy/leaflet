@@ -149,7 +149,7 @@ const Replies = (props: {
             setReplyBoxOpen(false);
           }}
         >
-          <CommentTiny className="text-border" /> 0
+          <CommentTiny className="text-border" /> {replies.length}
         </button>
         {identity?.atp_did && (
           <>
