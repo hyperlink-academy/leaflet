@@ -91,7 +91,7 @@ export function CommentBox(props: {
   let [loading, setLoading] = useState(false);
   return (
     <div className=" flex flex-col gap-1">
-      <div className="w-full relative">
+      <div className="w-full relative group">
         <pre
           ref={mountRef}
           className={`border whitespace-pre-wrap input-with-border min-h-32 h-fit`}
