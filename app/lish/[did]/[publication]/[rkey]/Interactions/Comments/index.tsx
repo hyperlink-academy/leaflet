@@ -6,19 +6,14 @@ import { CommentBox } from "./CommentBox";
 import { Json } from "supabase/database.types";
 import { PubLeafletComment } from "lexicons/api";
 import { BaseTextBlock } from "../../BaseTextBlock";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { Separator } from "components/Layout";
 import { ButtonPrimary } from "components/Buttons";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { Popover } from "components/Popover";
-import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
-import { useIsMobile } from "src/hooks/isMobile";
 import { AppBskyActorProfile, AtUri } from "@atproto/api";
 import { timeAgo } from "app/discover/PubListing";
-import { Media } from "components/Media";
-import useSWR from "swr";
-import { getProfile } from "./getProfile";
 
 export type Comment = {
   record: Json;
@@ -212,45 +207,6 @@ const Replies = (props: {
         )}
       </div>
     </>
-  );
-};
-
-const DummyReplyButton = () => {
-  // this is a button that doesn't do anything
-  // it should do the same thing as reply button, but because of the way i am writing this for testing
-  // if i put replybutton within reply button it will recurse forever
-  // please wire it when we have real data!
-
-  let { identity } = useIdentityData();
-
-  let [replyBoxOpen, setReplyBoxOpen] = useState(false);
-  let [repliesOpen, setRepliesOpen] = useState(true);
-  return (
-    <div className="flex gap-2 items-center">
-      <button
-        className="flex gap-1 items-center text-sm text-tertiary"
-        onClick={() => {
-          setRepliesOpen(!repliesOpen);
-          setReplyBoxOpen(false);
-        }}
-      >
-        <CommentTiny className="text-border" /> 0
-      </button>
-      {!identity?.atp_did && (
-        <>
-          <Separator classname="h-[14px]" />
-          <button
-            className="text-accent-contrast text-sm"
-            onClick={() => {
-              setRepliesOpen(true);
-              setReplyBoxOpen(true);
-            }}
-          >
-            Reply
-          </button>
-        </>
-      )}
-    </div>
   );
 };
 
