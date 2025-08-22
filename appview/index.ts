@@ -8,6 +8,7 @@ import {
   PubLeafletDocument,
   PubLeafletGraphSubscription,
   PubLeafletPublication,
+  PubLeafletComment,
 } from "lexicons/api";
 import {
   AppBskyEmbedExternal,
@@ -101,6 +102,24 @@ async function main() {
       if (evt.event === "delete") {
         await supabase
           .from("publications")
+          .delete()
+          .eq("uri", evt.uri.toString());
+      }
+    }
+    if (evt.collection === ids.PubLeafletComment) {
+      if (evt.event === "create" || evt.event === "update") {
+        let record = PubLeafletComment.validateRecord(evt.record);
+        if (!record.success) return;
+        let { error } = await supabase.from("comments_on_documents").upsert({
+          uri: evt.uri.toString(),
+          profile: evt.did,
+          document: record.value.subject,
+          record: record.value as Json,
+        });
+      }
+      if (evt.event === "delete") {
+        await supabase
+          .from("comments_on_documents")
           .delete()
           .eq("uri", evt.uri.toString());
       }
@@ -225,6 +244,7 @@ async function main() {
       ids.PubLeafletDocument,
       ids.PubLeafletPublication,
       ids.PubLeafletGraphSubscription,
+      ids.PubLeafletComment,
       // ids.AppBskyActorProfile,
       "app.bsky.feed.post",
     ],
