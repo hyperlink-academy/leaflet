@@ -55,8 +55,8 @@ export function Comments(props: { document_uri: string; comments: Comment[] }) {
             let aRecord = a.record as PubLeafletComment.Record;
             let bRecord = b.record as PubLeafletComment.Record;
             return (
-              new Date(aRecord.createdAt).getTime() -
-              new Date(bRecord.createdAt).getTime()
+              new Date(bRecord.createdAt).getTime() -
+              new Date(aRecord.createdAt).getTime()
             );
           })
           .filter(
@@ -135,8 +135,8 @@ const Replies = (props: {
       let aRecord = a.record as PubLeafletComment.Record;
       let bRecord = b.record as PubLeafletComment.Record;
       return (
-        new Date(aRecord.createdAt).getTime() -
-        new Date(bRecord.createdAt).getTime()
+        new Date(bRecord.createdAt).getTime() -
+        new Date(aRecord.createdAt).getTime()
       );
     });
   return (
