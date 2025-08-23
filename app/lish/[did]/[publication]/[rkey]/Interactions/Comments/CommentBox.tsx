@@ -158,7 +158,7 @@ export function IOSBS(props: { view: RefObject<EditorView | null> }) {
   if (initialRender || !isIOS()) return null;
   return (
     <div
-      className="h-full w-full absolute cursor-text group-focus-within:hidden"
+      className="h-full w-full absolute top-0 cursor-text group-focus-within:hidden bg-test"
       onPointerUp={(e) => {
         if (!props.view.current) return;
         e.preventDefault();
