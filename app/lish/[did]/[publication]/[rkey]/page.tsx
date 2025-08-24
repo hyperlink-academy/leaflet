@@ -22,12 +22,22 @@ import { PageLayout } from "./PageLayout";
 import { extractCodeBlocks } from "./extractCodeBlocks";
 import { getIdentityData } from "actions/getIdentityData";
 import { createOauthClient } from "src/atproto-oauth";
+import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
 }): Promise<Metadata> {
   let did = decodeURIComponent((await props.params).did);
   if (!did) return { title: "Publication 404" };
+
+  let { result: publication } = await get_publication_data.handler(
+    {
+      did,
+      publication_name: decodeURIComponent((await props.params).publication),
+    },
+    { supabase: supabaseServerClient },
+  );
+  if (!publication) return { title: "404" };
 
   let [{ data: document }] = await Promise.all([
     supabaseServerClient
@@ -41,13 +51,23 @@ export async function generateMetadata(props: {
   ]);
 
   if (!document) return { title: "404" };
-  let record = document.data as PubLeafletDocument.Record;
+
+  let docRecord = document.data as PubLeafletDocument.Record;
+  let pubRecord = publication.record as PubLeafletPublication.Record;
+
   return {
     title:
-      record.title +
+      docRecord.title +
       " - " +
       decodeURIComponent((await props.params).publication),
-    description: record?.description || "",
+    description: docRecord?.description || "",
+    alternates: pubRecord?.base_path
+      ? {
+          types: {
+            "application/rss+xml": `https://${pubRecord?.base_path}/rss`,
+          },
+        }
+      : undefined,
   };
 }
 export default async function Post(props: {
