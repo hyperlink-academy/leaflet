@@ -1,14 +1,7 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
-
-import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
-import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { AtUri } from "@atproto/syntax";
-import {
-  PubLeafletDocument,
-  PubLeafletPublication,
-  PubLeafletThemeColor,
-} from "lexicons/api";
+import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import Link from "next/link";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
@@ -18,37 +11,24 @@ import {
   PublicationBackgroundProvider,
   PublicationThemeProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
+import { generatePublicationMetadata } from "./layout";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
 }): Promise<Metadata> {
   let params = await props.params;
+
   let did = decodeURIComponent(params.did);
   if (!did) return { title: "Publication 404" };
+  let publication_name = decodeURIComponent(params.publication);
+  if (!publication_name) return { title: "Publication 404" };
 
-  let { result: publication } = await get_publication_data.handler(
-    {
-      did,
-      publication_name: decodeURIComponent(params.publication),
-    },
-    { supabase: supabaseServerClient },
-  );
-  if (!publication) return { title: "404 Publication" };
-
-  let record = publication.record as PubLeafletPublication.Record | null;
-  return {
-    title: record?.name || "Untitled Publication",
-    description: record?.description || "",
-    alternates: record?.base_path
-      ? {
-          types: {
-            "application/rss+xml": `https://${record?.base_path}/rss`,
-            "application/atom+xml": `https://${record?.base_path}/atom`,
-            "application/json": `https://${record?.base_path}/json`,
-          },
-        }
-      : undefined,
-  };
+  let metadata = await generatePublicationMetadata(did, publication_name);
+  if (!metadata) {
+    return { title: "Publication 404" };
+  } else {
+    return metadata;
+  }
 }
 
 export default async function Publication(props: {

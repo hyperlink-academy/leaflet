@@ -8,7 +8,7 @@ import {
   PubLeafletPublication,
 } from "lexicons/api";
 import { Metadata } from "next";
-import { AtpAgent, Agent, AtpBaseClient } from "@atproto/api";
+import { AtpAgent } from "@atproto/api";
 import { QuoteHandler } from "./QuoteHandler";
 import { InteractionDrawer } from "./Interactions/InteractionDrawer";
 import {
@@ -20,56 +20,33 @@ import { PostPageContextProvider } from "./PostPageContext";
 import { PostPage } from "./PostPage";
 import { PageLayout } from "./PageLayout";
 import { extractCodeBlocks } from "./extractCodeBlocks";
-import { getIdentityData } from "actions/getIdentityData";
-import { createOauthClient } from "src/atproto-oauth";
-import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
+import { generatePublicationMetadata } from "../layout";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
 }): Promise<Metadata> {
-  let did = decodeURIComponent((await props.params).did);
+  let params = await props.params;
+  let did = decodeURIComponent(params.did);
+  let publication = decodeURIComponent(params.publication);
   if (!did) return { title: "Publication 404" };
-
-  let { result: publication } = await get_publication_data.handler(
-    {
-      did,
-      publication_name: decodeURIComponent((await props.params).publication),
-    },
-    { supabase: supabaseServerClient },
-  );
-  if (!publication) return { title: "404" };
 
   let [{ data: document }] = await Promise.all([
     supabaseServerClient
       .from("documents")
       .select("*")
-      .eq(
-        "uri",
-        AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey),
-      )
+      .eq("uri", AtUri.make(did, ids.PubLeafletDocument, params.rkey))
       .single(),
   ]);
-
   if (!document) return { title: "404" };
 
   let docRecord = document.data as PubLeafletDocument.Record;
-  let pubRecord = publication.record as PubLeafletPublication.Record;
+  const pubMetadata = await generatePublicationMetadata(did, publication);
+  const feedAlternates = pubMetadata?.alternates;
 
   return {
-    title:
-      docRecord.title +
-      " - " +
-      decodeURIComponent((await props.params).publication),
+    title: docRecord.title + " - " + publication,
     description: docRecord?.description || "",
-    alternates: pubRecord?.base_path
-      ? {
-          types: {
-            "application/rss+xml": `https://${pubRecord?.base_path}/rss`,
-            "application/atom+xml": `https://${pubRecord?.base_path}/atom`,
-            "application/json": `https://${pubRecord?.base_path}/json`,
-          },
-        }
-      : undefined,
+    alternates: feedAlternates,
   };
 }
 export default async function Post(props: {
