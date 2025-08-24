@@ -84,9 +84,9 @@ export async function GET(
       });
     }),
   );
-  return new Response(feed.rss2(), {
+  return new Response(feed.atom1(), {
     headers: {
-      "Content-Type": "application/rss+xml",
+      "Content-Type": "application/atom+xml",
     },
   });
 }

@@ -43,6 +43,8 @@ export async function generateMetadata(props: {
       ? {
           types: {
             "application/rss+xml": `https://${record?.base_path}/rss`,
+            "application/atom+xml": `https://${record?.base_path}/atom`,
+            "application/json": `https://${record?.base_path}/json`,
           },
         }
       : undefined,

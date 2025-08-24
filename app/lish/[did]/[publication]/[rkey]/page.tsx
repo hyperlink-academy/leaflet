@@ -65,6 +65,8 @@ export async function generateMetadata(props: {
       ? {
           types: {
             "application/rss+xml": `https://${pubRecord?.base_path}/rss`,
+            "application/atom+xml": `https://${pubRecord?.base_path}/atom`,
+            "application/json": `https://${pubRecord?.base_path}/json`,
           },
         }
       : undefined,
