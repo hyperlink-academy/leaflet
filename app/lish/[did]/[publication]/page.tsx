@@ -39,6 +39,13 @@ export async function generateMetadata(props: {
   return {
     title: record?.name || "Untitled Publication",
     description: record?.description || "",
+    alternates: record?.base_path
+      ? {
+          types: {
+            "application/rss+xml": `https://${record?.base_path}/rss`,
+          },
+        }
+      : undefined,
   };
 }
 
