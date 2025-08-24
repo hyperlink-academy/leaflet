@@ -36,6 +36,7 @@ export async function GET(
       const handle = searchParams.get("handle") as string;
       // Put originating page here!
       let redirect = searchParams.get("redirect_url");
+      if (redirect) redirect = decodeURIComponent(redirect);
       let action = parseActionFromSearchParam(searchParams.get("action"));
       let state: OauthRequestClientState = { redirect, action };
 
@@ -58,7 +59,7 @@ export async function GET(
       try {
         const { session, state } = await client.callback(params);
         let s: OauthRequestClientState = JSON.parse(state || "{}");
-        redirectPath = s.redirect || "/";
+        redirectPath = decodeURIComponent(s.redirect || "/");
         let { data: identity } = await supabaseServerClient
           .from("identities")
           .select()
@@ -116,14 +117,16 @@ const handleAction = async (
   action: ActionAfterSignIn | null,
   redirectPath: string,
 ) => {
-  let [base, pathparams] = redirectPath.split("?");
-  let searchParams = new URLSearchParams(pathparams);
+  let url = new URL(decodeURIComponent(redirectPath), "https://example.com");
   if (action?.action === "subscribe") {
     let result = await subscribeToPublication(action.publication);
     console.log(result);
     if (result.hasFeed === false)
-      searchParams.set("showSubscribeSuccess", "true");
+      url.searchParams.set("showSubscribeSuccess", "true");
   }
 
-  return redirect(base + "?" + searchParams.toString());
+  let path = url.pathname;
+  if (url.search) path += url.search;
+  if (url.hash) path += url.hash;
+  return redirect(path);
 };

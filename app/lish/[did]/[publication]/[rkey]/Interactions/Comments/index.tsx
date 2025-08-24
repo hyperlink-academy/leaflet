@@ -14,6 +14,8 @@ import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { Popover } from "components/Popover";
 import { AppBskyActorProfile, AtUri } from "@atproto/api";
 import { timeAgo } from "app/discover/PubListing";
+import { BlueskyLogin } from "app/login/LoginForm";
+import { usePathname } from "next/navigation";
 
 export type Comment = {
   record: Json;
@@ -26,9 +28,10 @@ export function Comments(props: { document_uri: string; comments: Comment[] }) {
   let comments = useMemo(() => {
     return [...localComments, ...props.comments];
   }, [props.comments, localComments]);
+  let pathname = usePathname();
 
   return (
-    <div className="flex flex-col gap-2 relative">
+    <div id={"commentsDrawer"} className="flex flex-col gap-2 relative">
       <div className="w-full flex justify-between text-secondary font-bold">
         Comments
         <button
@@ -41,11 +44,13 @@ export function Comments(props: { document_uri: string; comments: Comment[] }) {
       {identity?.atp_did ? (
         <CommentBox doc_uri={props.document_uri} />
       ) : (
-        <div className="w-full accent-container text-tertiary text-center italic p-3">
+        <div className="w-full accent-container text-tertiary text-center italic p-3 flex flex-col gap-2">
           Connect a Bluesky account to comment
-          <ButtonPrimary compact className="mx-auto mt-1">
-            <BlueskyTiny /> Connect to Bluesky
-          </ButtonPrimary>
+          <BlueskyLogin
+            redirectRoute={
+              pathname + "?interactionDrawer=comments#commentsDrawer"
+            }
+          />
         </div>
       )}
       <hr className="border-border-light" />

@@ -4,6 +4,7 @@ import { Quotes } from "./Quotes";
 import { useInteractionState } from "./Interactions";
 import { Json } from "supabase/database.types";
 import { Comment, Comments } from "./Comments";
+import { useSearchParams } from "next/navigation";
 
 export const InteractionDrawer = (props: {
   document_uri: string;
@@ -11,8 +12,12 @@ export const InteractionDrawer = (props: {
   comments: Comment[];
   did: string;
 }) => {
+  let params = useSearchParams();
+  let interactionDrawerSearchParam = params.get("interactionDrawer");
   let { drawerOpen: open, drawer } = useInteractionState();
-  if (!open) return null;
+  if (open === false || (open === undefined && !interactionDrawerSearchParam))
+    return null;
+  let currentDrawer = drawer || interactionDrawerSearchParam;
   return (
     <>
       <div className="sm:pr-4 pr-[6px] snap-center">
@@ -21,7 +26,7 @@ export const InteractionDrawer = (props: {
             id="interaction-drawer"
             className="opaque-container !rounded-lg h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6 overflow-scroll "
           >
-            {drawer === "quotes" ? (
+            {currentDrawer === "quotes" ? (
               <Quotes {...props} />
             ) : (
               <Comments

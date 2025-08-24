@@ -7,7 +7,7 @@ import { create } from "zustand";
 import type { Comment } from "./Comments";
 
 export let useInteractionState = create(() => ({
-  drawerOpen: false,
+  drawerOpen: undefined as boolean | undefined,
   drawer: undefined as undefined | "comments" | "quotes",
   localComments: [] as Comment[],
 }));
