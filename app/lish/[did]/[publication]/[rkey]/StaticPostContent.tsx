@@ -46,7 +46,7 @@ let Block = async ({
   switch (true) {
     case PubLeafletBlocksBlockquote.isMain(b.block): {
       return (
-        <blockquote className={`border-l-2 border-border pl-2`}>
+        <blockquote className={` blockquote `}>
           <BaseTextBlock
             facets={b.block.facets}
             plaintext={b.block.plaintext}

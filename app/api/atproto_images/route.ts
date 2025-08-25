@@ -28,6 +28,10 @@ export async function GET(req: NextRequest) {
     "Cache-Control",
     "public, max-age=31536000, immutable",
   );
+  cachedResponse.headers.set(
+    "CDN-Cache-Control",
+    "s-maxage=86400, stale-while-revalidate=86400",
+  );
 
   return cachedResponse;
 }
