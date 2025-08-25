@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateFeed } from "../layout";
+import { generateFeed } from "../generateFeed";
 
 export async function GET(
   req: Request,
