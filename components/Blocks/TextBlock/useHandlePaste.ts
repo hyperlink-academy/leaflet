@@ -263,6 +263,7 @@ const createBlockFromHTML = (
     (parentType === "canvas" && activeBlockProps?.current) ||
     (first &&
       (activeBlockProps?.current.type === "heading" ||
+        activeBlockProps?.current.type === "blockquote" ||
         type === activeBlockProps?.current.type))
   )
     entityID = activeBlockProps.current.entityID;
