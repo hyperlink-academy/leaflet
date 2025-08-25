@@ -9,10 +9,13 @@ export default async function PublicationLayout(props: {
   return <>{props.children}</>;
 }
 
-export async function generateMetadata(params: {
-  did: string;
-  publication: string;
+export async function generateMetadata(props: {
+  params: Promise<{
+    did: string;
+    publication: string;
+  }>;
 }): Promise<Metadata> {
+  let params = await props.params;
   if (!params.did || !params.publication) return { title: "Publication 404" };
   let { result: publication } = await get_publication_data.handler(
     {
