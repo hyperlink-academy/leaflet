@@ -6,7 +6,6 @@ import {
   PubLeafletPublication,
 } from "lexicons/api";
 import { createElement } from "react";
-import { renderToReadableStream } from "react-dom/server";
 import { StaticPostContent } from "./[rkey]/StaticPostContent";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -16,6 +15,9 @@ export async function generateFeed(
   did: string,
   publication_name: string,
 ): Promise<Feed | NextResponse<unknown>> {
+  let renderToReadableStream = await import("react-dom/server").then(
+    (module) => module.renderToReadableStream,
+  );
   let { result: publication } = await get_publication_data.handler(
     {
       did: did,
