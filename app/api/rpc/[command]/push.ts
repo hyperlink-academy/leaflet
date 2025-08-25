@@ -108,14 +108,13 @@ export const push = makeRoute({
           lastMutations.set(mutation.clientID, mutation.id);
         }
 
-        let lastMutationIdsUpdate = lastMutations
-          .entries()
-          .map((entries) => ({
+        let lastMutationIdsUpdate = Array.from(lastMutations.entries()).map(
+          (entries) => ({
             client_group: pushRequest.clientGroupID,
             client_id: entries[0],
             last_mutation: entries[1],
-          }))
-          .toArray();
+          }),
+        );
         if (lastMutationIdsUpdate.length > 0)
           await tx
             .insert(replicache_clients)
