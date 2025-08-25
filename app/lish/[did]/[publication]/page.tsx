@@ -1,5 +1,4 @@
 import { supabaseServerClient } from "supabase/serverClient";
-import { Metadata } from "next";
 import { AtUri } from "@atproto/syntax";
 import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import Link from "next/link";
@@ -11,25 +10,6 @@ import {
   PublicationBackgroundProvider,
   PublicationThemeProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
-import { generatePublicationMetadata } from "./layout";
-
-export async function generateMetadata(props: {
-  params: Promise<{ publication: string; did: string }>;
-}): Promise<Metadata> {
-  let params = await props.params;
-
-  let did = decodeURIComponent(params.did);
-  if (!did) return { title: "Publication 404" };
-  let publication_name = decodeURIComponent(params.publication);
-  if (!publication_name) return { title: "Publication 404" };
-
-  let metadata = await generatePublicationMetadata(did, publication_name);
-  if (!metadata) {
-    return { title: "Publication 404" };
-  } else {
-    return metadata;
-  }
-}
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;

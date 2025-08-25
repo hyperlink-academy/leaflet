@@ -20,7 +20,6 @@ import { PostPageContextProvider } from "./PostPageContext";
 import { PostPage } from "./PostPage";
 import { PageLayout } from "./PageLayout";
 import { extractCodeBlocks } from "./extractCodeBlocks";
-import { generatePublicationMetadata } from "../layout";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -40,13 +39,10 @@ export async function generateMetadata(props: {
   if (!document) return { title: "404" };
 
   let docRecord = document.data as PubLeafletDocument.Record;
-  const pubMetadata = await generatePublicationMetadata(did, publication);
-  const feedAlternates = pubMetadata?.alternates;
 
   return {
     title: docRecord.title + " - " + publication,
     description: docRecord?.description || "",
-    alternates: feedAlternates,
   };
 }
 export default async function Post(props: {

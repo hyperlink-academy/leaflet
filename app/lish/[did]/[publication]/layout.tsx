@@ -13,18 +13,25 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { NextResponse } from "next/server";
 import { Metadata } from "next";
 
-export async function generatePublicationMetadata(
-  did: string,
-  publication_name: string,
-): Promise<Metadata | undefined> {
+export default async function PublicationLayout(props: {
+  children: React.ReactNode;
+}) {
+  return <>{props.children}</>;
+}
+
+export async function generateMetadata(params: {
+  did: string;
+  publication: string;
+}): Promise<Metadata> {
+  if (!params.did || !params.publication) return { title: "Publication 404" };
   let { result: publication } = await get_publication_data.handler(
     {
-      did: did,
-      publication_name: publication_name,
+      did: decodeURIComponent(params.did),
+      publication_name: decodeURIComponent(params.publication),
     },
     { supabase: supabaseServerClient },
   );
-  if (!publication) return undefined;
+  if (!publication) return { title: "Publication 404" };
 
   let pubRecord = publication?.record as PubLeafletPublication.Record;
 
