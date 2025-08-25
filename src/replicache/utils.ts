@@ -4,15 +4,14 @@ import type { Fact } from ".";
 import { replicache_clients } from "drizzle/schema";
 import type { Attribute, FilterAttributes } from "./attributes";
 import { ReadTransaction, WriteTransaction } from "replicache";
+import { PgTransaction } from "drizzle-orm/pg-core";
 
 export function FactWithIndexes(f: Fact<Attribute>) {
   let indexes: {
     eav: string;
-    aev: string;
     vae?: string;
   } = {
     eav: `${f.entity}-${f.attribute}-${f.id}`,
-    aev: `${f.attribute}-${f.entity}-${f.id}`,
   };
   if (
     f.data.type === "reference" ||
@@ -24,7 +23,7 @@ export function FactWithIndexes(f: Fact<Attribute>) {
 }
 
 export async function getClientGroup(
-  db: PostgresJsDatabase,
+  db: PgTransaction<any, any, any>,
   clientGroupID: string,
 ): Promise<{ [clientID: string]: number }> {
   let data = await db

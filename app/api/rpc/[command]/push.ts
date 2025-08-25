@@ -5,9 +5,11 @@ import { getClientGroup } from "src/replicache/utils";
 import { makeRoute } from "../lib";
 import { z } from "zod";
 import type { Env } from "./route";
-import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
 import { cachedServerMutationContext } from "src/replicache/cachedServerMutationContext";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import { attachDatabasePool } from "@vercel/functions";
+import { DbPool } from "@vercel/functions/db-connections";
 
 const mutationV0Schema = z.object({
   id: z.number(),
@@ -44,6 +46,15 @@ const pushRequestSchema = z.discriminatedUnion("pushVersion", [
 
 type PushRequestZ = z.infer<typeof pushRequestSchema>;
 
+const pool = new Pool({
+  idleTimeoutMillis: 5000,
+  min: 1,
+  connectionString: process.env.DB_URL,
+});
+
+// Attach the pool to ensure idle connections close before suspension
+attachDatabasePool(pool as DbPool);
+
 export const push = makeRoute({
   route: "push",
   input: z.object({
@@ -58,70 +69,73 @@ export const push = makeRoute({
       };
     }
 
-    const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+    let client = await pool.connect();
     const db = drizzle(client);
 
-    await db.transaction(async (tx) => {
-      let clientGroup = await getClientGroup(tx, pushRequest.clientGroupID);
-      let token_rights = await tx
-        .select()
-        .from(permission_token_rights)
-        .where(eq(permission_token_rights.token, token.id));
-      let { ctx, flush } = cachedServerMutationContext(
-        tx,
-        token.id,
-        token_rights,
-      );
-
-      let lastMutations = new Map<string, number>();
-      console.log(pushRequest.mutations.map((m) => m.name));
-      for (let mutation of pushRequest.mutations) {
-        let lastMutationID = clientGroup[mutation.clientID] || 0;
-        if (mutation.id <= lastMutationID) continue;
-        clientGroup[mutation.clientID] = mutation.id;
-        let name = mutation.name as keyof typeof mutations;
-        if (!mutations[name]) {
-          continue;
-        }
-        try {
-          await mutations[name](mutation.args as any, ctx);
-        } catch (e) {
-          console.log(
-            `Error occured while running mutation: ${name}`,
-            JSON.stringify(e),
-            JSON.stringify(mutation, null, 2),
-          );
-        }
-        lastMutations.set(mutation.clientID, mutation.id);
-      }
-
-      let lastMutationIdsUpdate = lastMutations
-        .entries()
-        .map((entries) => ({
-          client_group: pushRequest.clientGroupID,
-          client_id: entries[0],
-          last_mutation: entries[1],
-        }))
-        .toArray();
-      if (lastMutationIdsUpdate.length > 0)
-        await tx
-          .insert(replicache_clients)
-          .values(lastMutationIdsUpdate)
-          .onConflictDoUpdate({
-            target: replicache_clients.client_id,
-            set: { last_mutation: sql`excluded.last_mutation` },
-          });
-      await flush();
-    });
-
     let channel = supabase.channel(`rootEntity:${rootEntity}`);
-    await channel.send({
-      type: "broadcast",
-      event: "poke",
-      payload: { message: "poke" },
-    });
-    client.end();
-    supabase.removeChannel(channel);
-    return { result: undefined } as const;
+    try {
+      await db.transaction(async (tx) => {
+        let clientGroup = await getClientGroup(tx, pushRequest.clientGroupID);
+        let token_rights = await tx
+          .select()
+          .from(permission_token_rights)
+          .where(eq(permission_token_rights.token, token.id));
+        let { ctx, flush } = cachedServerMutationContext(
+          tx,
+          token.id,
+          token_rights,
+        );
+
+        let lastMutations = new Map<string, number>();
+        console.log(pushRequest.mutations.map((m) => m.name));
+        for (let mutation of pushRequest.mutations) {
+          let lastMutationID = clientGroup[mutation.clientID] || 0;
+          if (mutation.id <= lastMutationID) continue;
+          clientGroup[mutation.clientID] = mutation.id;
+          let name = mutation.name as keyof typeof mutations;
+          if (!mutations[name]) {
+            continue;
+          }
+          try {
+            await mutations[name](mutation.args as any, ctx);
+          } catch (e) {
+            console.log(
+              `Error occured while running mutation: ${name}`,
+              JSON.stringify(e),
+              JSON.stringify(mutation, null, 2),
+            );
+          }
+          lastMutations.set(mutation.clientID, mutation.id);
+        }
+
+        let lastMutationIdsUpdate = lastMutations
+          .entries()
+          .map((entries) => ({
+            client_group: pushRequest.clientGroupID,
+            client_id: entries[0],
+            last_mutation: entries[1],
+          }))
+          .toArray();
+        if (lastMutationIdsUpdate.length > 0)
+          await tx
+            .insert(replicache_clients)
+            .values(lastMutationIdsUpdate)
+            .onConflictDoUpdate({
+              target: replicache_clients.client_id,
+              set: { last_mutation: sql`excluded.last_mutation` },
+            });
+        await flush();
+      });
+
+      await channel.send({
+        type: "broadcast",
+        event: "poke",
+        payload: { message: "poke" },
+      });
+    } finally {
+      client.release();
+      supabase.removeChannel(channel);
+      return { result: undefined } as const;
+    }
   },
 });
