@@ -132,6 +132,8 @@ export const push = makeRoute({
         event: "poke",
         payload: { message: "poke" },
       });
+    } catch (e) {
+      console.log(e);
     } finally {
       client.release();
       supabase.removeChannel(channel);
