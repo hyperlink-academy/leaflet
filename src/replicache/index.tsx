@@ -132,7 +132,7 @@ export function ReplicacheProvider(props: {
       pusher: async (pushRequest) => {
         let smolpushRequest = {
           ...pushRequest,
-          mutations: pushRequest.mutations.slice(0, 250),
+          mutations: pushRequest.mutations.slice(0, 50),
         } as PushRequest;
         return {
           response: (
