@@ -51,7 +51,7 @@ type PushRequestZ = z.infer<typeof pushRequestSchema>;
 const pool = new Pool({
   idleTimeoutMillis: 5000,
   min: 1,
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.DB_URL,
 });
 
 // Attach the pool to ensure idle connections close before suspension
