@@ -49,6 +49,7 @@ export default async function middleware(req: NextRequest) {
       return initiateAuthCallback(req);
     }
     let aturi = new AtUri(pub?.uri);
+    if (req.nextUrl.pathname.startsWith("/lish")) return;
     return NextResponse.rewrite(
       new URL(
         `/lish/${aturi.host}/${encodeURIComponent(pub.name)}${req.nextUrl.pathname}`,
