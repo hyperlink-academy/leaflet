@@ -8,7 +8,7 @@ import {
   PubLeafletPublication,
 } from "lexicons/api";
 import { Metadata } from "next";
-import { AtpAgent, Agent, AtpBaseClient } from "@atproto/api";
+import { AtpAgent } from "@atproto/api";
 import { QuoteHandler } from "./QuoteHandler";
 import { InteractionDrawer } from "./Interactions/InteractionDrawer";
 import {
@@ -20,34 +20,29 @@ import { PostPageContextProvider } from "./PostPageContext";
 import { PostPage } from "./PostPage";
 import { PageLayout } from "./PageLayout";
 import { extractCodeBlocks } from "./extractCodeBlocks";
-import { getIdentityData } from "actions/getIdentityData";
-import { createOauthClient } from "src/atproto-oauth";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
 }): Promise<Metadata> {
-  let did = decodeURIComponent((await props.params).did);
+  let params = await props.params;
+  let did = decodeURIComponent(params.did);
+  let publication = decodeURIComponent(params.publication);
   if (!did) return { title: "Publication 404" };
 
   let [{ data: document }] = await Promise.all([
     supabaseServerClient
       .from("documents")
       .select("*")
-      .eq(
-        "uri",
-        AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey),
-      )
+      .eq("uri", AtUri.make(did, ids.PubLeafletDocument, params.rkey))
       .single(),
   ]);
-
   if (!document) return { title: "404" };
-  let record = document.data as PubLeafletDocument.Record;
+
+  let docRecord = document.data as PubLeafletDocument.Record;
+
   return {
-    title:
-      record.title +
-      " - " +
-      decodeURIComponent((await props.params).publication),
-    description: record?.description || "",
+    title: docRecord.title + " - " + publication,
+    description: docRecord?.description || "",
   };
 }
 export default async function Post(props: {
