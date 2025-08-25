@@ -198,15 +198,20 @@ export function cachedServerMutationContext(
     let factDeletes = writeCache.flatMap((f) =>
       f.type === "put" ? [] : [f.fact.id],
     );
-    if (factDeletes.length > 0)
-      await tx
-        .delete(facts)
-        .where(
-          driz.or(
-            driz.inArray(facts.id, factDeletes),
-            driz.sql`(data->>'type' = 'ordered-reference' or data ->>'type' = 'reference' or data ->>'type' = 'spatial-reference') and data->>'value' in ${deleteEntitiesCache}`,
-          ),
+    if (factDeletes.length > 0 || deleteEntitiesCache.length > 0) {
+      const conditions = [];
+      if (factDeletes.length > 0) {
+        conditions.push(driz.inArray(facts.id, factDeletes));
+      }
+      if (deleteEntitiesCache.length > 0) {
+        conditions.push(
+          driz.sql`(data->>'type' = 'ordered-reference' or data->>'type' = 'reference' or data->>'type' = 'spatial-reference') and data->>'value' = ANY(${deleteEntitiesCache}::text[])`,
         );
+      }
+      if (conditions.length > 0) {
+        await tx.delete(facts).where(driz.or(...conditions));
+      }
+    }
 
     writeCache = [];
     eavCache.clear();
