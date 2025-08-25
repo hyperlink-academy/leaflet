@@ -174,7 +174,7 @@ export function RenderedTextBlock(props: {
       style={{ wordBreak: "break-word" }} // better than tailwind break-all!
       className={`
         ${alignmentClass}
-        ${props.type === "blockquote" ? "border-l-2 border-border pl-2 " : ""}
+        ${props.type === "blockquote" ? " blockquote " : ""}
         ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
       w-full whitespace-pre-wrap outline-none ${props.className} `}
     >
@@ -344,7 +344,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
       <div
         className={`flex items-center justify-between w-full
           ${selected && props.pageType === "canvas" && "bg-bg-page rounded-md"}
-          ${props.type === "blockquote" ? "border-l-2 border-border pl-2 " : ""}
+          ${props.type === "blockquote" ? " blockquote  " : ""}
           `}
       >
         <pre

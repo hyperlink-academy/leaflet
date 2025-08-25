@@ -277,6 +277,12 @@ pre.shiki {
   @apply outline-border;
 }
 
+.blockquote {
+  @apply border-l-2;
+  @apply border-border;
+  @apply pl-3;
+  @apply ml-2;
+}
 .transparent-container {
   @apply border;
   @apply border-border-light;
