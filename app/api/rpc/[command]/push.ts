@@ -1,6 +1,5 @@
-import { serverMutationContext } from "src/replicache/serverMutationContext";
 import { mutations } from "src/replicache/mutations";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { permission_token_rights, replicache_clients } from "drizzle/schema";
 import { getClientGroup } from "src/replicache/utils";
 import { makeRoute } from "../lib";
@@ -8,6 +7,7 @@ import { z } from "zod";
 import type { Env } from "./route";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { cachedServerMutationContext } from "src/replicache/cachedServerMutationContext";
 
 const mutationV0Schema = z.object({
   id: z.number(),
@@ -67,6 +67,14 @@ export const push = makeRoute({
         .select()
         .from(permission_token_rights)
         .where(eq(permission_token_rights.token, token.id));
+      let { ctx, flush } = cachedServerMutationContext(
+        tx,
+        token.id,
+        token_rights,
+      );
+
+      let lastMutations = new Map<string, number>();
+      console.log(pushRequest.mutations.map((m) => m.name));
       for (let mutation of pushRequest.mutations) {
         let lastMutationID = clientGroup[mutation.clientID] || 0;
         if (mutation.id <= lastMutationID) continue;
@@ -76,10 +84,7 @@ export const push = makeRoute({
           continue;
         }
         try {
-          await mutations[name](
-            mutation.args as any,
-            serverMutationContext(tx, token.id, token_rights),
-          );
+          await mutations[name](mutation.args as any, ctx);
         } catch (e) {
           console.log(
             `Error occured while running mutation: ${name}`,
@@ -87,18 +92,26 @@ export const push = makeRoute({
             JSON.stringify(mutation, null, 2),
           );
         }
+        lastMutations.set(mutation.clientID, mutation.id);
+      }
+
+      let lastMutationIdsUpdate = lastMutations
+        .entries()
+        .map((entries) => ({
+          client_group: pushRequest.clientGroupID,
+          client_id: entries[0],
+          last_mutation: entries[1],
+        }))
+        .toArray();
+      if (lastMutationIdsUpdate.length > 0)
         await tx
           .insert(replicache_clients)
-          .values({
-            client_group: pushRequest.clientGroupID,
-            client_id: mutation.clientID,
-            last_mutation: mutation.id,
-          })
+          .values(lastMutationIdsUpdate)
           .onConflictDoUpdate({
             target: replicache_clients.client_id,
-            set: { last_mutation: mutation.id },
+            set: { last_mutation: sql`excluded.last_mutation` },
           });
-      }
+      await flush();
     });
 
     let channel = supabase.channel(`rootEntity:${rootEntity}`);
