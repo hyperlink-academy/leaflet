@@ -168,7 +168,6 @@ export function ReplicacheProvider(props: {
       },
     });
 
-    window.testRep = newRep;
     setRep(newRep);
     let channel: RealtimeChannel | null = null;
     if (!props.disablePull) {
