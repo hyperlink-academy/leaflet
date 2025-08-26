@@ -592,26 +592,25 @@ function useYJSValue(entityID: string) {
   useEffect(() => {
     if (!rep.rep) return;
     let timeout = null as null | number;
+    const updateReplicache = async () => {
+      const update = Y.encodeStateAsUpdate(ydoc);
+      await rep.rep?.mutate.assertFact({
+        //These undos are handled above in the Prosemirror context
+        ignoreUndo: true,
+        entity: entityID,
+        attribute: "block/text",
+        data: {
+          value: base64.fromByteArray(update),
+          type: "text",
+        },
+      });
+    };
     const f = async (events: Y.YEvent<any>[], transaction: Y.Transaction) => {
       if (!transaction.origin) return;
-      const updateReplicache = async () => {
-        const update = Y.encodeStateAsUpdate(ydoc);
-        await rep.rep?.mutate.assertFact({
-          //These undos are handled above in the Prosemirror context
-          ignoreUndo: true,
-          entity: entityID,
-          attribute: "block/text",
-          data: {
-            value: base64.fromByteArray(update),
-            type: "text",
-          },
-        });
-      };
       if (timeout) clearTimeout(timeout);
-      updateReplicache();
       timeout = window.setTimeout(async () => {
         updateReplicache();
-      }, 20);
+      }, 300);
     };
 
     yText.observeDeep(f);
