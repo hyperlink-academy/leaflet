@@ -7,9 +7,8 @@ import { z } from "zod";
 import type { Env } from "./route";
 import { cachedServerMutationContext } from "src/replicache/cachedServerMutationContext";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
-import { attachDatabasePool } from "@vercel/functions";
-import { DbPool } from "@vercel/functions/db-connections";
+import { Lock } from "src/utils/lock";
+import { pool } from "supabase/pool";
 
 const mutationV0Schema = z.object({
   id: z.number(),
@@ -46,17 +45,6 @@ const pushRequestSchema = z.discriminatedUnion("pushVersion", [
 
 type PushRequestZ = z.infer<typeof pushRequestSchema>;
 
-const pool = new Pool({
-  idleTimeoutMillis: 5000,
-  min: 1,
-  connectionString: process.env.DB_URL,
-});
-
-// Attach the pool to ensure idle connections close before suspension
-attachDatabasePool(pool as DbPool);
-
-import { Lock } from "src/utils/lock";
-
 let locks = new Map<string, Lock>();
 
 export const push = makeRoute({
@@ -72,8 +60,14 @@ export const push = makeRoute({
         result: { error: "VersionNotSupported", versionType: "push" } as const,
       };
     }
+    let timeWaitingForLock: number;
+    let timeWaitingForDbConnection: number;
+    let timeProcessingMutations: number = 0;
 
+    let start = performance.now();
     let client = await pool.connect();
+    timeWaitingForDbConnection = performance.now() - start;
+    start = performance.now();
     const db = drizzle(client);
     let channel = supabase.channel(`rootEntity:${rootEntity}`);
     let lock = locks.get(token.id);
@@ -82,6 +76,8 @@ export const push = makeRoute({
       locks.set(token.id, lock);
     }
     let release = await lock.lock();
+    timeWaitingForLock = performance.now() - start;
+    start = performance.now();
     try {
       await db.transaction(async (tx) => {
         let clientGroup = await getClientGroup(tx, pushRequest.clientGroupID);
@@ -135,6 +131,7 @@ export const push = makeRoute({
             });
         await flush();
       });
+      timeProcessingMutations = performance.now() - start;
 
       await channel.send({
         type: "broadcast",
@@ -142,8 +139,15 @@ export const push = makeRoute({
         payload: { message: "poke" },
       });
     } catch (e) {
+      timeProcessingMutations = performance.now() - start;
       console.log(e);
     } finally {
+      console.log(
+        `Total Elapsed:                 ${timeProcessingMutations.toFixed(2)}ms
+        Time Waiting for DB Connection: ${timeWaitingForDbConnection.toFixed(2)}ms
+        Time Waiting For Lock: ${timeWaitingForLock.toFixed(2)}ms
+        `,
+      );
       client.release();
       release();
       supabase.removeChannel(channel);
