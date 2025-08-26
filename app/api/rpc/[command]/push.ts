@@ -80,7 +80,7 @@ export const push = makeRoute({
           .select()
           .from(permission_token_rights)
           .where(eq(permission_token_rights.token, token.id));
-        let { ctx, flush } = cachedServerMutationContext(
+        let { getContext, flush } = cachedServerMutationContext(
           tx,
           token.id,
           token_rights,
@@ -97,6 +97,7 @@ export const push = makeRoute({
             continue;
           }
           try {
+            let ctx = getContext(mutation.clientID, mutation.id);
             await mutations[name](mutation.args as any, ctx);
           } catch (e) {
             console.log(

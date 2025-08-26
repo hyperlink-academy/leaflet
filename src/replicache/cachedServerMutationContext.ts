@@ -23,6 +23,9 @@ export function cachedServerMutationContext(
   let permissionsCache: { [key: string]: boolean } = {};
   let entitiesCache: { set: string; id: string }[] = [];
   let deleteEntitiesCache: string[] = [];
+  let textAttributeWriteCache = {} as {
+    [entityAttribute: string]: { [clientID: string]: string };
+  };
 
   const scanIndex = {
     async eav<A extends Attribute>(entity: string, attribute: A) {
@@ -72,99 +75,97 @@ export function cachedServerMutationContext(
       ) as DeepReadonly<Fact<A>>[];
     },
   };
-  let ctx: MutationContext & {
-    checkPermission: (entity: string) => Promise<boolean>;
-  } = {
-    scanIndex,
-    permission_token_id,
-    async runOnServer(cb) {
-      return cb({ supabase: supabaseServerClient });
-    },
-    async checkPermission(entity: string) {
-      if (deleteEntitiesCache.includes(entity)) return false;
-      let cachedEntity = entitiesCache.find((e) => e.id === entity);
-      if (cachedEntity) {
-        return !!token_rights.find(
-          (r) => r.entity_set === cachedEntity?.set && r.write === true,
-        );
-      }
-      if (permissionsCache[entity] !== undefined)
-        return permissionsCache[entity];
-      let [permission_set] = await tx
-        .select({ entity_set: entities.set })
-        .from(entities)
-        .where(driz.eq(entities.id, entity));
-      let hasPermission =
-        !!permission_set &&
-        !!token_rights.find(
-          (r) => r.entity_set === permission_set.entity_set && r.write == true,
-        );
-      permissionsCache[entity] = hasPermission;
-      return hasPermission;
-    },
-    async runOnClient(_cb) {},
-    async createEntity({ entityID, permission_set }) {
-      if (
-        !token_rights.find(
-          (r) => r.entity_set === permission_set && r.write === true,
-        )
-      ) {
-        return false;
-      }
-      if (!entitiesCache.find((e) => e.id === entityID))
-        entitiesCache.push({ set: permission_set, id: entityID });
-      deleteEntitiesCache = deleteEntitiesCache.filter((e) => e === entityID);
-      return true;
-    },
-    async deleteEntity(entity) {
-      if (!(await this.checkPermission(entity))) return;
-      deleteEntitiesCache.push(entity);
-      entitiesCache = entitiesCache.filter((e) => e.id === entity);
-    },
-    async assertFact(f) {
-      if (!f.entity) return;
-      let attribute = Attributes[f.attribute as Attribute];
-      if (!attribute) return;
-      let id = f.id || v7();
-      let data = { ...f.data };
-      if (!(await this.checkPermission(f.entity))) return;
-      if (attribute.cardinality === "one") {
-        let existingFact = await scanIndex.eav(f.entity, f.attribute);
-        if (existingFact[0]) {
-          id = existingFact[0].id;
-          if (attribute.type === "text") {
-            const oldUpdate = base64.toByteArray(
-              (
-                existingFact[0]?.data as Fact<
-                  keyof FilterAttributes<{ type: "text" }>
-                >["data"]
-              ).value,
-            );
-
-            let textData = data as Fact<
-              keyof FilterAttributes<{ type: "text" }>
-            >["data"];
-            const newUpdate = base64.toByteArray(textData.value);
-            const updateBytes = Y.mergeUpdates([oldUpdate, newUpdate]);
-            textData.value = base64.fromByteArray(updateBytes);
+  let getContext = (clientID: string, mutationID: number) => {
+    let ctx: MutationContext & {
+      checkPermission: (entity: string) => Promise<boolean>;
+    } = {
+      scanIndex,
+      permission_token_id,
+      async runOnServer(cb) {
+        return cb({ supabase: supabaseServerClient });
+      },
+      async checkPermission(entity: string) {
+        if (deleteEntitiesCache.includes(entity)) return false;
+        let cachedEntity = entitiesCache.find((e) => e.id === entity);
+        if (cachedEntity) {
+          return !!token_rights.find(
+            (r) => r.entity_set === cachedEntity?.set && r.write === true,
+          );
+        }
+        if (permissionsCache[entity] !== undefined)
+          return permissionsCache[entity];
+        let [permission_set] = await tx
+          .select({ entity_set: entities.set })
+          .from(entities)
+          .where(driz.eq(entities.id, entity));
+        let hasPermission =
+          !!permission_set &&
+          !!token_rights.find(
+            (r) =>
+              r.entity_set === permission_set.entity_set && r.write == true,
+          );
+        permissionsCache[entity] = hasPermission;
+        return hasPermission;
+      },
+      async runOnClient(_cb) {},
+      async createEntity({ entityID, permission_set }) {
+        if (
+          !token_rights.find(
+            (r) => r.entity_set === permission_set && r.write === true,
+          )
+        ) {
+          return false;
+        }
+        if (!entitiesCache.find((e) => e.id === entityID))
+          entitiesCache.push({ set: permission_set, id: entityID });
+        deleteEntitiesCache = deleteEntitiesCache.filter((e) => e === entityID);
+        return true;
+      },
+      async deleteEntity(entity) {
+        if (!(await this.checkPermission(entity))) return;
+        deleteEntitiesCache.push(entity);
+        entitiesCache = entitiesCache.filter((e) => e.id === entity);
+      },
+      async assertFact(f) {
+        if (!f.entity) return;
+        let attribute = Attributes[f.attribute as Attribute];
+        if (!attribute) return;
+        let id = f.id || v7();
+        let data = { ...f.data };
+        if (!(await this.checkPermission(f.entity))) return;
+        if (attribute.cardinality === "one") {
+          let existingFact = await scanIndex.eav(f.entity, f.attribute);
+          if (existingFact[0]) {
+            id = existingFact[0].id;
+            if (attribute.type === "text") {
+              let c =
+                textAttributeWriteCache[`${f.entity}-${f.attribute}`] || {};
+              textAttributeWriteCache[`${f.entity}-${f.attribute}`] = {
+                ...c,
+                [clientID]: (
+                  data as Fact<keyof FilterAttributes<{ type: "text" }>>["data"]
+                ).value,
+              };
+            }
           }
         }
-      }
-      writeCache = writeCache.filter((f) => f.fact.id !== id);
-      writeCache.push({
-        type: "put",
-        fact: {
-          id: id,
-          entity: f.entity,
-          data: data,
-          attribute: f.attribute,
-        },
-      });
-    },
-    async retractFact(factID) {
-      writeCache = writeCache.filter((f) => f.fact.id !== factID);
-      writeCache.push({ type: "del", fact: { id: factID } });
-    },
+        writeCache = writeCache.filter((f) => f.fact.id !== id);
+        writeCache.push({
+          type: "put",
+          fact: {
+            id: id,
+            entity: f.entity,
+            data: data,
+            attribute: f.attribute,
+          },
+        });
+      },
+      async retractFact(factID) {
+        writeCache = writeCache.filter((f) => f.fact.id !== factID);
+        writeCache.push({ type: "del", fact: { id: factID } });
+      },
+    };
+    return ctx;
   };
   let flush = async () => {
     if (entitiesCache.length > 0)
@@ -178,14 +179,34 @@ export function cachedServerMutationContext(
       await tx
         .insert(facts)
         .values(
-          factWrites.map((f) => {
-            return {
-              id: f.id,
-              entity: f.entity,
-              data: driz.sql`${f.data}::jsonb`,
-              attribute: f.attribute,
-            };
-          }),
+          await Promise.all(
+            factWrites.map(async (f) => {
+              let attribute = Attributes[f.attribute as Attribute];
+              let data = f.data;
+              if (
+                attribute.type === "text" &&
+                attribute.cardinality === "one"
+              ) {
+                let values = Object.values(
+                  textAttributeWriteCache[`${f.entity}-${f.attribute}`],
+                );
+
+                let existingFact = await scanIndex.eav(f.entity, f.attribute);
+                if (existingFact[0]) values.push(existingFact[0].data.value);
+                let updateBytes = Y.mergeUpdates(
+                  values.map((v) => base64.toByteArray(v)),
+                );
+                data.value = base64.fromByteArray(updateBytes);
+              }
+
+              return {
+                id: f.id,
+                entity: f.entity,
+                data: driz.sql`${data}::jsonb`,
+                attribute: f.attribute,
+              };
+            }),
+          ),
         )
         .onConflictDoUpdate({
           target: facts.id,
@@ -224,7 +245,7 @@ export function cachedServerMutationContext(
   };
 
   return {
-    ctx,
+    getContext,
     flush,
   };
 }
