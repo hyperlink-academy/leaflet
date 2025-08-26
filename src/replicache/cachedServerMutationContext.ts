@@ -205,7 +205,10 @@ export function cachedServerMutationContext(
       }
       if (deleteEntitiesCache.length > 0) {
         conditions.push(
-          driz.sql`(data->>'type' = 'ordered-reference' or data->>'type' = 'reference' or data->>'type' = 'spatial-reference') and data->>'value' = ANY(${deleteEntitiesCache}::text[])`,
+          driz.and(
+            driz.sql`(data->>'type' = 'ordered-reference' or data->>'type' = 'reference' or data->>'type' = 'spatial-reference')`,
+            driz.inArray(driz.sql`data->>'value'`, deleteEntitiesCache),
+          ),
         );
       }
       if (conditions.length > 0) {
