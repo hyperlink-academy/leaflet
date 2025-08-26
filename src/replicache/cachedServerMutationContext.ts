@@ -188,15 +188,16 @@ export function cachedServerMutationContext(
                 attribute.cardinality === "one"
               ) {
                 let values = Object.values(
-                  textAttributeWriteCache[`${f.entity}-${f.attribute}`],
+                  textAttributeWriteCache[`${f.entity}-${f.attribute}`] || {},
                 );
-
-                let existingFact = await scanIndex.eav(f.entity, f.attribute);
-                if (existingFact[0]) values.push(existingFact[0].data.value);
-                let updateBytes = Y.mergeUpdates(
-                  values.map((v) => base64.toByteArray(v)),
-                );
-                data.value = base64.fromByteArray(updateBytes);
+                if (values.length > 0) {
+                  let existingFact = await scanIndex.eav(f.entity, f.attribute);
+                  if (existingFact[0]) values.push(existingFact[0].data.value);
+                  let updateBytes = Y.mergeUpdates(
+                    values.map((v) => base64.toByteArray(v)),
+                  );
+                  data.value = base64.fromByteArray(updateBytes);
+                }
               }
 
               return {
