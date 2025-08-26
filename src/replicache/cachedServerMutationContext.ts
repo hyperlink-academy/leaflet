@@ -118,13 +118,13 @@ export function cachedServerMutationContext(
         }
         if (!entitiesCache.find((e) => e.id === entityID))
           entitiesCache.push({ set: permission_set, id: entityID });
-        deleteEntitiesCache = deleteEntitiesCache.filter((e) => e === entityID);
+        deleteEntitiesCache = deleteEntitiesCache.filter((e) => e !== entityID);
         return true;
       },
       async deleteEntity(entity) {
         if (!(await this.checkPermission(entity))) return;
         deleteEntitiesCache.push(entity);
-        entitiesCache = entitiesCache.filter((e) => e.id === entity);
+        entitiesCache = entitiesCache.filter((e) => e.id !== entity);
       },
       async assertFact(f) {
         if (!f.entity) return;
