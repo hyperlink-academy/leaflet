@@ -219,7 +219,7 @@ let Block = ({
       return (
         // highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
         <blockquote
-          className={` blockquote !py-0 !mt-1 !mb-2 last:!mb-3 last:sm:!mb-4 first:!mt-2 sm:first:pt-3 ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-2" : ""}`}
+          className={` blockquote !py-0 !mb-2 last:!mb-3 last:sm:!mb-4 first:!mt-2 sm:first:pt-3 ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "!-mt-2" : "!mt-1"}`}
           {...blockProps}
         >
           <TextBlock
