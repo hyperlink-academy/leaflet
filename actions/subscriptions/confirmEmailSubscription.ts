@@ -2,7 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { and, eq, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import {
   email_subscriptions_to_entity,
   facts,
@@ -11,13 +11,14 @@ import {
 import postgres from "postgres";
 import type { Fact } from "src/replicache";
 import { Database } from "supabase/database.types";
+import { pool } from "supabase/pool";
 import { v7 } from "uuid";
 
 export async function confirmEmailSubscription(
   subscriptionID: string,
   code: string,
 ) {
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const client = await pool.connect();
   const db = drizzle(client);
   let subscription = await db.transaction(async (tx) => {
     let [{ email_subscriptions_to_entity: sub, permission_tokens: token }] =
@@ -80,6 +81,6 @@ export async function confirmEmailSubscription(
     payload: { message: "poke" },
   });
   supabase.removeChannel(channel);
-  client.end();
+  client.release();
   return subscription;
 }

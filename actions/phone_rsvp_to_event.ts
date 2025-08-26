@@ -1,6 +1,6 @@
 "use server";
 
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import {
   entities,
   phone_number_auth_tokens,
@@ -13,6 +13,7 @@ import { eq, sql } from "drizzle-orm";
 import { Database } from "supabase/database.types";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { pool } from "supabase/pool";
 
 export async function submitRSVP(args: {
   entity: string;
@@ -20,7 +21,7 @@ export async function submitRSVP(args: {
   name: string;
   plus_ones: number;
 }) {
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const client = await pool.connect();
   const db = drizzle(client);
   let token = (await cookies()).get("phone_auth_token");
   if (!token) throw new Error("No auth token found");
@@ -58,6 +59,6 @@ export async function submitRSVP(args: {
       });
   });
 
-  client.end();
+  client.release();
   return { success: true };
 }

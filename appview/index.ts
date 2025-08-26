@@ -18,9 +18,9 @@ import {
 import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 import { createIdentity } from "actions/createIdentity";
-import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { inngest } from "app/api/inngest/client";
+import { pool } from "supabase/pool";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
 
@@ -35,7 +35,7 @@ async function main() {
     startCursor = parseInt((await readFile(cursorFile)).toString());
   } catch (e) {}
 
-  const client = postgres(process.env.DB_URL!);
+  const client = await pool.connect();
   const db = drizzle(client);
   async function handleEvent(evt: Event) {
     if (evt.event === "identity") {
@@ -257,7 +257,7 @@ async function main() {
   firehose.start();
   const cleanup = async () => {
     console.log("shutting down firehose...");
-    await client.end();
+    await client.release();
     await firehose.destroy();
     await runner.destroy();
     process.exit();

@@ -60,7 +60,6 @@
     "multiformats": "^13.3.2",
     "next": "^15.5.0",
     "pg": "^8.16.3",
-    "postgres": "^3.4.4",
     "prosemirror-commands": "^1.5.2",
     "prosemirror-inputrules": "^1.4.0",
     "prosemirror-keymap": "^1.2.2",

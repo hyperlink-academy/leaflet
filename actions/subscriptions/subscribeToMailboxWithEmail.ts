@@ -3,7 +3,7 @@
 import * as base64 from "base64-js";
 import { createServerClient } from "@supabase/ssr";
 import { and, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { email_subscriptions_to_entity } from "drizzle/schema";
 import postgres from "postgres";
 import { getBlocksWithTypeLocal } from "src/hooks/queries/useBlocks";
@@ -12,6 +12,7 @@ import type { Attribute } from "src/replicache/attributes";
 import { Database } from "supabase/database.types";
 import * as Y from "yjs";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
+import { pool } from "supabase/pool";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -37,7 +38,7 @@ export async function subscribeToMailboxWithEmail(
   email: string,
   token: PermissionToken,
 ) {
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const client = await pool.connect();
   const db = drizzle(client);
   let newCode = generateCode();
   let subscription = await db.transaction(async (tx) => {
@@ -82,7 +83,7 @@ ${subscription.confirmation_code}
       `,
     }),
   });
-  client.end();
+  client.release();
   return subscription;
 }
 

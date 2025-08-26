@@ -1,9 +1,7 @@
 "use server";
 
 import { createServerClient } from "@supabase/ssr";
-import { drizzle } from "drizzle-orm/postgres-js";
-import { NextRequest } from "next/server";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/node-postgres";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { Database } from "supabase/database.types";
@@ -19,6 +17,7 @@ import {
 import { sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { pool } from "supabase/pool";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -84,7 +83,7 @@ export async function createNewLeafletFromTemplate(
     }),
   );
 
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const client = await pool.connect();
   const db = drizzle(client);
 
   let { permissionToken } = await db.transaction(async (tx) => {
@@ -138,7 +137,7 @@ export async function createNewLeafletFromTemplate(
     return { permissionToken, rights, entity_set };
   });
 
-  client.end();
+  client.release();
   if (redirectUser) redirect(`/${permissionToken.id}`);
   return { id: permissionToken.id, error: null } as const;
 }
