@@ -2,10 +2,8 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { pickers, SectionArrow, setColorAttribute } from "./ThemeSetter";
 
-import {
-  PageBackgroundPicker,
-  PageThemePickers,
-} from "./Pickers/PageThemePickers";
+import { TextPickers } from "./Pickers/TextPickers";
+import { PageBackgroundPicker } from "./Pickers/BackgroundPickers";
 import { useMemo, useState } from "react";
 import { theme } from "tailwind.config";
 import { ButtonPrimary } from "components/Buttons";
@@ -63,10 +61,11 @@ export const PageThemeSetter = (props: { entityID: string }) => {
         </div>
 
         <div className="flex flex-col  z-10">
-          <PageThemePickers
+          <TextPickers
             entityID={props.entityID}
             openPicker={openPicker}
             setOpenPicker={(pickers) => setOpenPicker(pickers)}
+            noFontOptions
           />
         </div>
         <AccentPickers

@@ -4,12 +4,12 @@ import { theme } from "../../tailwind.config";
 
 import { Color } from "react-aria-components";
 
-import { LeafletBGPicker } from "./Pickers/LeafletBGPicker";
 import {
+  LeafletBGPicker,
   PageBackgroundPicker,
   PageBorderHider,
-  PageThemePickers,
-} from "./Pickers/PageThemePickers";
+} from "./Pickers/BackgroundPickers";
+import { TextPickers } from "./Pickers/TextPickers";
 import { useMemo, useState } from "react";
 import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { Replicache } from "replicache";
@@ -17,8 +17,6 @@ import { FilterAttributes } from "src/replicache/attributes";
 import { colorToString } from "components/ThemeManager/useColorAttribute";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { ActionButton } from "components/ActionBar/ActionButton";
-import { CheckboxChecked } from "components/Icons/CheckboxChecked";
-import { CheckboxEmpty } from "components/Icons/CheckboxEmpty";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { AccentPickers } from "./Pickers/AccentPickers";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
@@ -135,10 +133,10 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
             }}
             className={`bg-bg-leaflet px-3 pt-4  pb-0 mb-2 flex flex-col gap-4 rounded-md  border border-border`}
           >
-            <PageThemePickers
+            <TextPickers
               entityID={props.entityID}
               openPicker={openPicker}
-              setOpenPicker={(pickers) => setOpenPicker(pickers)}
+              setOpenPicker={(pickers: pickers) => setOpenPicker(pickers)}
             />
             <div className="flex flex-col -gap-[6px]">
               <div className={`flex flex-col z-10  -mb-[6px] `}>

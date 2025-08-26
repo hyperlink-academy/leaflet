@@ -1,5 +1,5 @@
 import { pickers } from "../ThemeSetter";
-import { PageTextPicker } from "../Pickers/PageThemePickers";
+import { PageTextPicker } from "../Pickers/TextPickers";
 import { Color } from "react-aria-components";
 
 export const PagePickers = (props: {
@@ -26,20 +26,6 @@ export const PagePickers = (props: {
         openPicker={props.openPicker}
         setOpenPicker={props.setOpenPicker}
       />
-      {/* FONT PICKERS HIDDEN FOR NOW */}
-      {/* <hr className="border-border-light" />
-      <div className="flex gap-2">
-        <div className="w-6 h-6 font-bold text-center rounded-md  bg-border-light">
-          Aa
-        </div>
-        <div className="font-bold">Header</div> <div>iA Writer</div>
-      </div>
-      <div className="flex gap-2">
-        <div className="w-6 h-6 place-items-center text-center rounded-md bg-border-light">
-          Aa
-        </div>{" "}
-        <div className="font-bold">Body</div> <div>iA Writer</div>
-      </div> */}
     </div>
   );
 };

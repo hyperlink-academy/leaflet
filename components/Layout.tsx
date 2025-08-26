@@ -18,6 +18,7 @@ export const Menu = (props: {
   align?: "start" | "end" | "center" | undefined;
   alignOffset?: number;
   side?: "top" | "bottom" | "right" | "left" | undefined;
+  sideOffset?: number;
   background?: string;
   border?: string;
   className?: string;
@@ -43,7 +44,7 @@ export const Menu = (props: {
               side={props.side ? props.side : "bottom"}
               align={props.align ? props.align : "center"}
               alignOffset={props.alignOffset ? props.alignOffset : undefined}
-              sideOffset={4}
+              sideOffset={props.sideOffset ? props.sideOffset : 4}
               collisionPadding={16}
               className={`dropdownMenu z-20 bg-bg-page flex flex-col py-1 gap-0.5 border border-border rounded-md shadow-md ${props.className}`}
             >

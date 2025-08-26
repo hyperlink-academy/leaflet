@@ -1,6 +1,6 @@
 import { pickers } from "../ThemeSetter";
 import { theme } from "tailwind.config";
-import { PageBackgroundColorPicker } from "../Pickers/PageThemePickers";
+import { PageBackgroundColorPicker } from "../Pickers/BackgroundPickers";
 import { Color, ColorSwatch } from "react-aria-components";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { ColorPicker } from "../Pickers/ColorPicker";
