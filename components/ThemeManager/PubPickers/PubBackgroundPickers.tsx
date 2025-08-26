@@ -12,7 +12,7 @@ import { ImageState } from "../PubThemeSetter";
 import { Radio } from "components/Checkbox";
 import { Input } from "components/Input";
 
-export const BackgroundPicker = (props: {
+export const PubBackgroundPicker = (props: {
   backgroundColor: Color;
   setBackgroundColor: (c: Color) => void;
   pageBackground: Color;

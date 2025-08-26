@@ -1,8 +1,8 @@
 import { pickers } from "../ThemeSetter";
-import { PageTextPicker } from "../Pickers/TextPickers";
+import { FontPicker, PageTextPicker } from "../Pickers/TextPickers";
 import { Color } from "react-aria-components";
 
-export const PagePickers = (props: {
+export const PubTextPickers = (props: {
   primary: Color;
   pageBackground: Color;
   setPrimary: (color: Color) => void;
@@ -26,6 +26,8 @@ export const PagePickers = (props: {
         openPicker={props.openPicker}
         setOpenPicker={props.setOpenPicker}
       />
+      <FontPicker label="Heading" />
+      <FontPicker label="Body" />
     </div>
   );
 };

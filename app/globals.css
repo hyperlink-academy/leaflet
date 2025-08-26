@@ -117,6 +117,10 @@
     font-size: inherit;
   }
 
+  input::placeholder {
+    @apply text-tertiary;
+    @apply italic;
+  }
   ::placeholder {
     @apply text-tertiary;
     @apply italic;

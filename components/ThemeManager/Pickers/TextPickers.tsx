@@ -1,6 +1,7 @@
 "use client";
 
-import { Color, Input } from "react-aria-components";
+import { Color } from "react-aria-components";
+import { Input } from "components/Input";
 import { useMemo, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useColorAttribute } from "components/ThemeManager/useColorAttribute";
@@ -73,7 +74,7 @@ export const PageTextPicker = (props: {
   );
 };
 
-const FontPicker = (props: { label: string }) => {
+export const FontPicker = (props: { label: string }) => {
   let isMobile = useIsMobile();
   let [searchValue, setSearchValue] = useState("");
   let [font, setFont] = useState("Quattro");
@@ -111,7 +112,7 @@ const FontPicker = (props: { label: string }) => {
     >
       <Input
         value={searchValue}
-        className="px-3 pb-1 appearance-none !outline-none"
+        className="px-3 pb-1 appearance-none !outline-none bg-transparent"
         placeholder="search..."
         onChange={(e) => {
           setSearchValue(e.currentTarget.value);

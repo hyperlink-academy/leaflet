@@ -13,8 +13,8 @@ import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { ButtonSecondary } from "components/Buttons";
 import { updatePublicationTheme } from "app/lish/createPub/updatePublication";
 import { DotLoader } from "components/utils/DotLoader";
-import { PagePickers } from "./PubPickers/PubTextPickers";
-import { BackgroundPicker } from "./PubPickers/PubBackgroundPickers";
+import { PubTextPickers } from "./PubPickers/PubTextPickers";
+import { PubBackgroundPicker } from "./PubPickers/PubBackgroundPickers";
 import { PubAccentPickers } from "./PubPickers/PubAcccentPickers";
 import { Separator } from "components/Layout";
 
@@ -109,7 +109,7 @@ export const PubThemeSetter = () => {
               className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
             >
               <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md text-[#595959] bg-white">
-                <BackgroundPicker
+                <PubBackgroundPicker
                   bgImage={image}
                   setBgImage={setImage}
                   backgroundColor={localPubTheme.bgLeaflet}
@@ -147,7 +147,7 @@ export const PubThemeSetter = () => {
             className={` relative bg-bg-leaflet px-3 py-4 flex flex-col rounded-md  border border-border `}
           >
             <div className={`flex flex-col  gap-3 z-10`}>
-              <PagePickers
+              <PubTextPickers
                 pageBackground={localPubTheme.bgPage}
                 primary={localPubTheme.primary}
                 setPageBackground={(color) => {
