@@ -55,6 +55,15 @@ const pool = new Pool({
 // Attach the pool to ensure idle connections close before suspension
 attachDatabasePool(pool as DbPool);
 
+import Client from "ioredis";
+import Redlock from "redlock";
+
+let redlock: Redlock | undefined;
+if (process.env.REDIS_URL) {
+  const client = new Client(process.env.REDIS_URL!);
+  redlock = new Redlock([client]);
+}
+
 export const push = makeRoute({
   route: "push",
   input: z.object({
@@ -68,6 +77,7 @@ export const push = makeRoute({
         result: { error: "VersionNotSupported", versionType: "push" } as const,
       };
     }
+    let lock = await redlock?.acquire([token.id], 45e3);
 
     let client = await pool.connect();
     const db = drizzle(client);
@@ -136,6 +146,7 @@ export const push = makeRoute({
       console.log(e);
     } finally {
       client.release();
+      lock?.release();
       supabase.removeChannel(channel);
       return { result: undefined } as const;
     }
