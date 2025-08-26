@@ -1,15 +1,13 @@
-import { serverMutationContext } from "src/replicache/serverMutationContext";
 import { mutations } from "src/replicache/mutations";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { permission_token_rights, replicache_clients } from "drizzle/schema";
 import { getClientGroup } from "src/replicache/utils";
 import { makeRoute } from "../lib";
 import { z } from "zod";
 import type { Env } from "./route";
+import { cachedServerMutationContext } from "src/replicache/cachedServerMutationContext";
 import { drizzle } from "drizzle-orm/node-postgres";
-
 import { Pool } from "pg";
-
 import { attachDatabasePool } from "@vercel/functions";
 import { DbPool } from "@vercel/functions/db-connections";
 
@@ -57,6 +55,10 @@ const pool = new Pool({
 // Attach the pool to ensure idle connections close before suspension
 attachDatabasePool(pool as DbPool);
 
+import { Lock } from "src/utils/lock";
+
+let locks = new Map<string, Lock>();
+
 export const push = makeRoute({
   route: "push",
   input: z.object({
@@ -73,8 +75,13 @@ export const push = makeRoute({
 
     let client = await pool.connect();
     const db = drizzle(client);
-
     let channel = supabase.channel(`rootEntity:${rootEntity}`);
+    let lock = locks.get(token.id);
+    if (!lock) {
+      lock = new Lock();
+      locks.set(token.id, lock);
+    }
+    let release = await lock.lock();
     try {
       await db.transaction(async (tx) => {
         let clientGroup = await getClientGroup(tx, pushRequest.clientGroupID);
@@ -82,6 +89,14 @@ export const push = makeRoute({
           .select()
           .from(permission_token_rights)
           .where(eq(permission_token_rights.token, token.id));
+        let { getContext, flush } = cachedServerMutationContext(
+          tx,
+          token.id,
+          token_rights,
+        );
+
+        let lastMutations = new Map<string, number>();
+        console.log(pushRequest.mutations.map((m) => m.name));
         for (let mutation of pushRequest.mutations) {
           let lastMutationID = clientGroup[mutation.clientID] || 0;
           if (mutation.id <= lastMutationID) continue;
@@ -91,10 +106,8 @@ export const push = makeRoute({
             continue;
           }
           try {
-            await mutations[name](
-              mutation.args as any,
-              serverMutationContext(tx, token.id, token_rights),
-            );
+            let ctx = getContext(mutation.clientID, mutation.id);
+            await mutations[name](mutation.args as any, ctx);
           } catch (e) {
             console.log(
               `Error occured while running mutation: ${name}`,
@@ -102,18 +115,25 @@ export const push = makeRoute({
               JSON.stringify(mutation, null, 2),
             );
           }
+          lastMutations.set(mutation.clientID, mutation.id);
+        }
+
+        let lastMutationIdsUpdate = Array.from(lastMutations.entries()).map(
+          (entries) => ({
+            client_group: pushRequest.clientGroupID,
+            client_id: entries[0],
+            last_mutation: entries[1],
+          }),
+        );
+        if (lastMutationIdsUpdate.length > 0)
           await tx
             .insert(replicache_clients)
-            .values({
-              client_group: pushRequest.clientGroupID,
-              client_id: mutation.clientID,
-              last_mutation: mutation.id,
-            })
+            .values(lastMutationIdsUpdate)
             .onConflictDoUpdate({
               target: replicache_clients.client_id,
-              set: { last_mutation: mutation.id },
+              set: { last_mutation: sql`excluded.last_mutation` },
             });
-        }
+        await flush();
       });
 
       await channel.send({
@@ -121,8 +141,11 @@ export const push = makeRoute({
         event: "poke",
         payload: { message: "poke" },
       });
+    } catch (e) {
+      console.log(e);
     } finally {
       client.release();
+      release();
       supabase.removeChannel(channel);
       return { result: undefined } as const;
     }
