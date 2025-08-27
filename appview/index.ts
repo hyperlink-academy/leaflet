@@ -235,6 +235,7 @@ async function main() {
     },
   });
   let firehose = new Firehose({
+    service: "wss://bsky.network",
     subscriptionReconnectDelay: 3000,
     excludeAccount: true,
     excludeIdentity: true,
@@ -257,7 +258,7 @@ async function main() {
   firehose.start();
   const cleanup = async () => {
     console.log("shutting down firehose...");
-    await client.release();
+    client.release();
     await firehose.destroy();
     await runner.destroy();
     process.exit();
