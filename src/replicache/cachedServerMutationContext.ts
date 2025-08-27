@@ -182,7 +182,8 @@ export function cachedServerMutationContext(
     if (entitiesCache.length > 0)
       await tx
         .insert(entities)
-        .values(entitiesCache.map((e) => ({ set: e.set, id: e.id })));
+        .values(entitiesCache.map((e) => ({ set: e.set, id: e.id })))
+        .onConflictDoNothing({ target: entities.id });
     timeInsertingEntities = performance.now() - entityInsertStart;
 
     // Process fact writes
