@@ -44,6 +44,7 @@ export default async function middleware(req: NextRequest) {
     let cookie = req.cookies.get("external_auth_token");
     if (
       (!cookie || req.nextUrl.searchParams.has("refreshAuth")) &&
+      !req.nextUrl.searchParams.has("auth_completed") &&
       !hostname.includes("leaflet.pub")
     ) {
       return initiateAuthCallback(req);
@@ -135,6 +136,8 @@ async function receiveAuthCallback(req: NextRequest) {
 
   let token: CROSS_SITE_AUTH_RESPONSE = JSON.parse(atob(payload));
 
+  let url = new URL(token.redirect);
+  url.searchParams.set("auth_completed", "true");
   let response = NextResponse.redirect(token.redirect);
   response.cookies.set("external_auth_token", token.auth_token || "null");
   return response;
