@@ -124,6 +124,11 @@ export function cachedServerMutationContext(
         if (!(await this.checkPermission(entity))) return;
         deleteEntitiesCache.push(entity);
         entitiesCache = entitiesCache.filter((e) => e.id !== entity);
+        writeCache = writeCache.filter(
+          (f) =>
+            f.type !== "put" ||
+            (f.fact.entity !== entity && f.fact.data.value !== entity),
+        );
       },
       async assertFact(f) {
         if (!f.entity) return;
@@ -136,16 +141,6 @@ export function cachedServerMutationContext(
           let existingFact = await scanIndex.eav(f.entity, f.attribute);
           if (existingFact[0]) {
             id = existingFact[0].id;
-            if (attribute.type === "text") {
-              let c =
-                textAttributeWriteCache[`${f.entity}-${f.attribute}`] || {};
-              textAttributeWriteCache[`${f.entity}-${f.attribute}`] = {
-                ...c,
-                [clientID]: (
-                  data as Fact<keyof FilterAttributes<{ type: "text" }>>["data"]
-                ).value,
-              };
-            }
           }
         }
         writeCache = writeCache.filter((f) => f.fact.id !== id);
