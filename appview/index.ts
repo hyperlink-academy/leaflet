@@ -1,30 +1,3 @@
-const https = require("https");
-
-const originalRequest = https.request;
-
-https.request = function (options: any, callback: any) {
-  console.log(
-    "→",
-    options.method || "GET",
-    typeof options === "string"
-      ? options
-      : `${options.host}${options.path || "/"}`,
-  );
-
-  const req = originalRequest.call(this, options, callback);
-
-  req.on("response", (res) => {
-    console.log(
-      "←",
-      res.statusCode,
-      res.statusMessage,
-      JSON.stringify(res.body || "No body"),
-    );
-  });
-
-  return req;
-};
-
 import { createClient } from "@supabase/supabase-js";
 import { Database, Json } from "supabase/database.types";
 import { IdResolver } from "@atproto/identity";
@@ -259,13 +232,12 @@ async function main() {
   const runner = new MemoryRunner({
     startCursor,
     setCursor: async (cursor) => {
-      console.log(cursor);
       await writeFile(cursorFile, cursor.toString());
       // persist cursor
     },
   });
   let firehose = new Firehose({
-    service: "wss://bsky.network",
+    service: "wss://relay1.us-west.bsky.network",
     subscriptionReconnectDelay: 3000,
     excludeAccount: true,
     excludeIdentity: true,
