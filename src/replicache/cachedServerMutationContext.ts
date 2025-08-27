@@ -6,13 +6,12 @@ import { entities, facts } from "drizzle/schema";
 import * as driz from "drizzle-orm";
 import { Attribute, Attributes, FilterAttributes } from "./attributes";
 import { v7 } from "uuid";
-import * as base64 from "base64-js";
-import * as Y from "src/ywasm";
 import { DeepReadonly } from "replicache";
 
 type WriteCacheEntry =
   | { type: "put"; fact: Fact<any> }
   | { type: "del"; fact: { id: string } };
+
 export function cachedServerMutationContext(
   tx: PgTransaction<any, any, any>,
   permission_token_id: string,
@@ -193,28 +192,6 @@ export function cachedServerMutationContext(
     );
     if (factWrites.length > 0) {
       for (let f of factWrites) {
-        let attribute = Attributes[f.attribute as Attribute];
-        let data = f.data;
-
-        // Text merging timing
-        let textMergeStart = performance.now();
-        if (attribute.type === "text" && attribute.cardinality === "one") {
-          let values = Object.values(
-            textAttributeWriteCache[`${f.entity}-${f.attribute}`] || {},
-          );
-          if (values.length > 0) {
-            let existingFact = await scanIndex.eav(f.entity, f.attribute);
-            if (existingFact[0] && !values.includes(existingFact[0].data.value))
-              values.push(existingFact[0].data.value);
-            if (values.length > 1)
-              data.value = base64.fromByteArray(
-                Y.mergeUpdatesV1(values.map((v) => base64.toByteArray(v))),
-              );
-          }
-        }
-        timeTextMerging += performance.now() - textMergeStart;
-
-        // Fact insert timing
         let factInsertStart = performance.now();
         await tx.transaction((tx2) =>
           tx2
@@ -222,7 +199,7 @@ export function cachedServerMutationContext(
             .values({
               id: f.id,
               entity: f.entity,
-              data: driz.sql`${data}::jsonb`,
+              data: driz.sql`${f.data}::jsonb`,
               attribute: f.attribute,
             })
             .onConflictDoUpdate({
