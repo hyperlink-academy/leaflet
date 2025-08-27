@@ -175,44 +175,43 @@ export function cachedServerMutationContext(
     let factWrites = writeCache.flatMap((f) =>
       f.type === "del" ? [] : [f.fact],
     );
-    if (factWrites.length > 0)
-      await tx
-        .insert(facts)
-        .values(
-          await Promise.all(
-            factWrites.map(async (f) => {
-              let attribute = Attributes[f.attribute as Attribute];
-              let data = f.data;
-              if (
-                attribute.type === "text" &&
-                attribute.cardinality === "one"
-              ) {
-                let values = Object.values(
-                  textAttributeWriteCache[`${f.entity}-${f.attribute}`] || {},
-                );
-                if (values.length > 0) {
-                  let existingFact = await scanIndex.eav(f.entity, f.attribute);
-                  if (existingFact[0]) values.push(existingFact[0].data.value);
-                  let updateBytes = Y.mergeUpdates(
-                    values.map((v) => base64.toByteArray(v)),
-                  );
-                  data.value = base64.fromByteArray(updateBytes);
-                }
-              }
+    if (factWrites.length > 0) {
+      for (let f of factWrites) {
+        let attribute = Attributes[f.attribute as Attribute];
+        let data = f.data;
+        if (attribute.type === "text" && attribute.cardinality === "one") {
+          let values = Object.values(
+            textAttributeWriteCache[`${f.entity}-${f.attribute}`] || {},
+          );
+          if (values.length > 0) {
+            let existingFact = await scanIndex.eav(f.entity, f.attribute);
+            if (existingFact[0]) values.push(existingFact[0].data.value);
+            let updateBytes = Y.mergeUpdates(
+              values.map((v) => base64.toByteArray(v)),
+            );
+            data.value = base64.fromByteArray(updateBytes);
+          }
+        }
 
-              return {
-                id: f.id,
-                entity: f.entity,
-                data: driz.sql`${data}::jsonb`,
-                attribute: f.attribute,
-              };
-            }),
-          ),
-        )
-        .onConflictDoUpdate({
-          target: facts.id,
-          set: { data: driz.sql`excluded.data` },
-        });
+        await tx.transaction((tx2) =>
+          tx2
+            .insert(facts)
+            .values({
+              id: f.id,
+              entity: f.entity,
+              data: driz.sql`${data}::jsonb`,
+              attribute: f.attribute,
+            })
+            .onConflictDoUpdate({
+              target: facts.id,
+              set: { data: driz.sql`excluded.data` },
+            })
+            .catch((e) =>
+              console.log(`error on inserting fact: `, JSON.stringify(e)),
+            ),
+        );
+      }
+    }
     if (deleteEntitiesCache.length > 0)
       await tx
         .delete(entities)
@@ -242,6 +241,7 @@ export function cachedServerMutationContext(
     eavCache.clear();
     permissionsCache = {};
     entitiesCache = [];
+    permissionsCache = {};
     deleteEntitiesCache = [];
   };
 
