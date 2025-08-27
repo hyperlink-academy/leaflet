@@ -7,9 +7,6 @@ export async function GET(
     params: Promise<{ publication: string; did: string }>;
   },
 ) {
-  let renderToReadableStream = await import("react-dom/server").then(
-    (module) => module.renderToReadableStream,
-  );
   const params = await props.params;
   const did = decodeURIComponent(params.did);
   const publication = decodeURIComponent(params.publication);
@@ -22,6 +19,7 @@ export async function GET(
   return new Response(feed.rss2(), {
     headers: {
       "Content-Type": "application/rss+xml",
+      "CDN-Cache-Control": "s-maxage=300, stale-while-revalidate=3600",
     },
   });
 }
