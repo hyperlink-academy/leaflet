@@ -41,8 +41,14 @@ export default async function middleware(req: NextRequest) {
 
   let pub = routes?.publication_domains[0]?.publications;
   if (pub) {
+    if (req.nextUrl.pathname.startsWith("/lish")) return;
     let cookie = req.cookies.get("external_auth_token");
+    let isStaticReq =
+      req.nextUrl.pathname.includes("/rss") ||
+      req.nextUrl.pathname.includes("/atom") ||
+      req.nextUrl.pathname.includes("/json");
     if (
+      !isStaticReq &&
       (!cookie || req.nextUrl.searchParams.has("refreshAuth")) &&
       !req.nextUrl.searchParams.has("auth_completed") &&
       !hostname.includes("leaflet.pub")
@@ -50,7 +56,6 @@ export default async function middleware(req: NextRequest) {
       return initiateAuthCallback(req);
     }
     let aturi = new AtUri(pub?.uri);
-    if (req.nextUrl.pathname.startsWith("/lish")) return;
     return NextResponse.rewrite(
       new URL(
         `/lish/${aturi.host}/${encodeURIComponent(pub.name)}${req.nextUrl.pathname}`,
