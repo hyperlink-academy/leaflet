@@ -5,7 +5,7 @@ import { DbPool } from "@vercel/functions/db-connections";
 export const pool = new Pool({
   idleTimeoutMillis: 5000,
   min: 1,
-  max: 20,
+  max: 50,
   connectionString: process.env.DB_URL,
 });
 
