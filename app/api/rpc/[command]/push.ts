@@ -105,6 +105,7 @@ export const push = makeRoute({
         );
 
         let lastMutations = new Map<string, number>();
+        console.log(`Processing mutations on ${token.id}`);
         console.log(
           `Processing ${pushRequest.mutations.length} mutations:`,
           pushRequest.mutations.map((m) => m.name),
@@ -184,7 +185,7 @@ export const push = makeRoute({
       );
 
       console.log(`
-Push Request Performance Summary:
+Push Request Performance Summary (${timeProcessingMutations.toFixed(2)}ms):
 ================================
 Total Elapsed Time:              ${timeProcessingMutations.toFixed(2)}ms
 Time Waiting for DB Connection:  ${timeWaitingForDbConnection.toFixed(2)}ms
