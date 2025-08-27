@@ -168,10 +168,25 @@ export function cachedServerMutationContext(
     return ctx;
   };
   let flush = async () => {
+    let flushStart = performance.now();
+    let timeInsertingEntities = 0;
+    let timeProcessingFactWrites = 0;
+    let timeTextMerging = 0;
+    let timeFactInserts = 0;
+    let timeDeletingEntities = 0;
+    let timeDeletingFacts = 0;
+    let timeCacheCleanup = 0;
+
+    // Insert entities
+    let entityInsertStart = performance.now();
     if (entitiesCache.length > 0)
       await tx
         .insert(entities)
         .values(entitiesCache.map((e) => ({ set: e.set, id: e.id })));
+    timeInsertingEntities = performance.now() - entityInsertStart;
+
+    // Process fact writes
+    let factWritesStart = performance.now();
     let factWrites = writeCache.flatMap((f) =>
       f.type === "del" ? [] : [f.fact],
     );
@@ -179,22 +194,29 @@ export function cachedServerMutationContext(
       for (let f of factWrites) {
         let attribute = Attributes[f.attribute as Attribute];
         let data = f.data;
+
+        // Text merging timing
+        let textMergeStart = performance.now();
         if (attribute.type === "text" && attribute.cardinality === "one") {
           let values = Object.values(
             textAttributeWriteCache[`${f.entity}-${f.attribute}`] || {},
           );
           if (values.length > 0) {
             let existingFact = await scanIndex.eav(f.entity, f.attribute);
-            if (existingFact[0]) values.push(existingFact[0].data.value);
-            let updateBytes = Y.mergeUpdatesV1(
-              values.map((v) => base64.toByteArray(v)),
-            );
-            data.value = base64.fromByteArray(updateBytes);
+            if (existingFact[0] && !values.includes(existingFact[0].data.value))
+              values.push(existingFact[0].data.value);
+            if (values.length > 1)
+              data.value = base64.fromByteArray(
+                Y.mergeUpdatesV1(values.map((v) => base64.toByteArray(v))),
+              );
           }
         }
+        timeTextMerging += performance.now() - textMergeStart;
 
-        try {
-          await tx
+        // Fact insert timing
+        let factInsertStart = performance.now();
+        await tx.transaction((tx2) =>
+          tx2
             .insert(facts)
             .values({
               id: f.id,
@@ -205,16 +227,26 @@ export function cachedServerMutationContext(
             .onConflictDoUpdate({
               target: facts.id,
               set: { data: driz.sql`excluded.data` },
-            });
-        } catch (e) {
-          console.log(`error on inserting fact: `, JSON.stringify(e));
-        }
+            })
+            .catch((e) =>
+              console.log(`error on inserting fact: `, JSON.stringify(e)),
+            ),
+        );
+        timeFactInserts += performance.now() - factInsertStart;
       }
     }
+    timeProcessingFactWrites = performance.now() - factWritesStart;
+
+    // Delete entities
+    let entityDeleteStart = performance.now();
     if (deleteEntitiesCache.length > 0)
       await tx
         .delete(entities)
         .where(driz.inArray(entities.id, deleteEntitiesCache));
+    timeDeletingEntities = performance.now() - entityDeleteStart;
+
+    // Delete facts
+    let factDeleteStart = performance.now();
     let factDeletes = writeCache.flatMap((f) =>
       f.type === "put" ? [] : [f.fact.id],
     );
@@ -235,13 +267,30 @@ export function cachedServerMutationContext(
         await tx.delete(facts).where(driz.or(...conditions));
       }
     }
+    timeDeletingFacts = performance.now() - factDeleteStart;
 
+    // Cache cleanup
+    let cacheCleanupStart = performance.now();
     writeCache = [];
     eavCache.clear();
     permissionsCache = {};
     entitiesCache = [];
     permissionsCache = {};
     deleteEntitiesCache = [];
+    timeCacheCleanup = performance.now() - cacheCleanupStart;
+
+    let totalFlushTime = performance.now() - flushStart;
+    console.log(`
+Flush Performance Breakdown (${totalFlushTime.toFixed(2)}ms):
+==========================================
+Entity Insertions (${entitiesCache.length} entities):     ${timeInsertingEntities.toFixed(2)}ms
+Fact Processing (${factWrites.length} facts):             ${timeProcessingFactWrites.toFixed(2)}ms
+  - Text Merging:                                          ${timeTextMerging.toFixed(2)}ms
+  - Fact Inserts (nested transactions):                   ${timeFactInserts.toFixed(2)}ms
+Entity Deletions (${deleteEntitiesCache.length} entities): ${timeDeletingEntities.toFixed(2)}ms
+Fact Deletions:                                           ${timeDeletingFacts.toFixed(2)}ms
+Cache Cleanup:                                             ${timeCacheCleanup.toFixed(2)}ms
+    `);
   };
 
   return {
