@@ -7,7 +7,7 @@ import * as driz from "drizzle-orm";
 import { Attribute, Attributes, FilterAttributes } from "./attributes";
 import { v7 } from "uuid";
 import * as base64 from "base64-js";
-import * as Y from "yjs";
+import * as Y from "src/ywasm";
 import { DeepReadonly } from "replicache";
 
 type WriteCacheEntry =
@@ -186,7 +186,7 @@ export function cachedServerMutationContext(
           if (values.length > 0) {
             let existingFact = await scanIndex.eav(f.entity, f.attribute);
             if (existingFact[0]) values.push(existingFact[0].data.value);
-            let updateBytes = Y.mergeUpdates(
+            let updateBytes = Y.mergeUpdatesV1(
               values.map((v) => base64.toByteArray(v)),
             );
             data.value = base64.fromByteArray(updateBytes);
