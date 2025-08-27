@@ -81,7 +81,10 @@ export const getBlocksWithType = async (
   return (
     await Promise.all(
       blocks
-        .sort((a, b) => (a.data.position > b.data.position ? 1 : -1))
+        .sort((a, b) => {
+          if (a.data.position === b.data.position) return a.id > b.id ? 1 : -1;
+          return a.data.position > b.data.position ? 1 : -1;
+        })
         .map(async (b) => {
           let type = (await scan.eav(b.data.value, "block/type"))[0];
           let isList = await scan.eav(b.data.value, "block/is-list");
@@ -148,7 +151,10 @@ export const getBlocksWithTypeLocal = (
   let scan = scanIndexLocal(initialFacts);
   let blocks = scan.eav(entityID, "card/block");
   return blocks
-    .sort((a, b) => (a.data.position > b.data.position ? 1 : -1))
+    .sort((a, b) => {
+      if (a.data.position === b.data.position) return a.id > b.id ? 1 : -1;
+      return a.data.position > b.data.position ? 1 : -1;
+    })
     .map((b) => {
       let type = scan.eav(b.data.value, "block/type")[0];
       let isList = scan.eav(b.data.value, "block/is-list");
