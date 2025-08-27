@@ -7,7 +7,6 @@ import { z } from "zod";
 import type { Env } from "./route";
 import { cachedServerMutationContext } from "src/replicache/cachedServerMutationContext";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Lock } from "src/utils/lock";
 import { pool } from "supabase/pool";
 
 const mutationV0Schema = z.object({
@@ -45,8 +44,6 @@ const pushRequestSchema = z.discriminatedUnion("pushVersion", [
 
 type PushRequestZ = z.infer<typeof pushRequestSchema>;
 
-let locks = new Map<string, Lock>();
-
 export const push = makeRoute({
   route: "push",
   input: z.object({
@@ -78,12 +75,6 @@ export const push = makeRoute({
     start = performance.now();
     const db = drizzle(client);
     let channel = supabase.channel(`rootEntity:${rootEntity}`);
-    let lock = locks.get(token.id);
-    if (!lock) {
-      lock = new Lock();
-      locks.set(token.id, lock);
-    }
-    let release = await lock.lock();
     timeWaitingForLock = performance.now() - start;
     start = performance.now();
     try {
@@ -210,7 +201,6 @@ ${mutationTimings
       `);
 
       client.release();
-      release();
       await supabase.removeChannel(channel);
       return { result: undefined } as const;
     }
