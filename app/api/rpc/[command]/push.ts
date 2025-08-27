@@ -63,6 +63,14 @@ export const push = makeRoute({
     let timeWaitingForLock: number;
     let timeWaitingForDbConnection: number;
     let timeProcessingMutations: number = 0;
+    let timeGettingClientGroup: number = 0;
+    let timeGettingTokenRights: number = 0;
+    let timeFlushingContext: number = 0;
+    let timeUpdatingLastMutations: number = 0;
+    let mutationTimings: Array<{
+      name: string;
+      duration: number;
+    }> = [];
 
     let start = performance.now();
     let client = await pool.connect();
@@ -80,11 +88,16 @@ export const push = makeRoute({
     start = performance.now();
     try {
       await db.transaction(async (tx) => {
+        let clientGroupStart = performance.now();
         let clientGroup = await getClientGroup(tx, pushRequest.clientGroupID);
+        timeGettingClientGroup = performance.now() - clientGroupStart;
+
+        let tokenRightsStart = performance.now();
         let token_rights = await tx
           .select()
           .from(permission_token_rights)
           .where(eq(permission_token_rights.token, token.id));
+        timeGettingTokenRights = performance.now() - tokenRightsStart;
         let { getContext, flush } = cachedServerMutationContext(
           tx,
           token.id,
@@ -92,21 +105,38 @@ export const push = makeRoute({
         );
 
         let lastMutations = new Map<string, number>();
-        console.log(pushRequest.mutations.map((m) => m.name));
+        console.log(
+          `Processing ${pushRequest.mutations.length} mutations:`,
+          pushRequest.mutations.map((m) => m.name),
+        );
+
         for (let mutation of pushRequest.mutations) {
           let lastMutationID = clientGroup[mutation.clientID] || 0;
           if (mutation.id <= lastMutationID) continue;
+
           clientGroup[mutation.clientID] = mutation.id;
           let name = mutation.name as keyof typeof mutations;
           if (!mutations[name]) {
             continue;
           }
+
+          let mutationStart = performance.now();
           try {
             let ctx = getContext(mutation.clientID, mutation.id);
             await mutations[name](mutation.args as any, ctx);
+            let mutationDuration = performance.now() - mutationStart;
+            mutationTimings.push({
+              name: mutation.name,
+              duration: mutationDuration,
+            });
           } catch (e) {
+            let mutationDuration = performance.now() - mutationStart;
+            mutationTimings.push({
+              name: mutation.name,
+              duration: mutationDuration,
+            });
             console.log(
-              `Error occured while running mutation: ${name}`,
+              `Error occurred while running mutation: ${name} after ${mutationDuration.toFixed(2)}ms`,
               JSON.stringify(e),
               JSON.stringify(mutation, null, 2),
             );
@@ -114,6 +144,7 @@ export const push = makeRoute({
           lastMutations.set(mutation.clientID, mutation.id);
         }
 
+        let dbUpdateStart = performance.now();
         let lastMutationIdsUpdate = Array.from(lastMutations.entries()).map(
           (entries) => ({
             client_group: pushRequest.clientGroupID,
@@ -129,7 +160,11 @@ export const push = makeRoute({
               target: replicache_clients.client_id,
               set: { last_mutation: sql`excluded.last_mutation` },
             });
+        timeUpdatingLastMutations = performance.now() - dbUpdateStart;
+
+        let flushStart = performance.now();
         await flush();
+        timeFlushingContext = performance.now() - flushStart;
       });
       timeProcessingMutations = performance.now() - start;
 
@@ -142,12 +177,46 @@ export const push = makeRoute({
       timeProcessingMutations = performance.now() - start;
       console.log(e);
     } finally {
-      console.log(
-        `Total Elapsed:                 ${timeProcessingMutations.toFixed(2)}ms
-        Time Waiting for DB Connection: ${timeWaitingForDbConnection.toFixed(2)}ms
-        Time Waiting For Lock: ${timeWaitingForLock.toFixed(2)}ms
-        `,
+      // Calculate mutation statistics
+      let totalMutationTime = mutationTimings.reduce(
+        (sum, m) => sum + m.duration,
+        0,
       );
+
+      console.log(`
+Push Request Performance Summary:
+================================
+Total Elapsed Time:              ${timeProcessingMutations.toFixed(2)}ms
+Time Waiting for DB Connection:  ${timeWaitingForDbConnection.toFixed(2)}ms
+Time Waiting For Lock:           ${timeWaitingForLock.toFixed(2)}ms
+Time Getting Client Group:       ${timeGettingClientGroup.toFixed(2)}ms
+Time Getting Token Rights:       ${timeGettingTokenRights.toFixed(2)}ms
+Time Updating Last Mutations:    ${timeUpdatingLastMutations.toFixed(2)}ms
+Time Flushing Context:           ${timeFlushingContext.toFixed(2)}ms
+
+Mutation Statistics:
+===================
+Total Mutations Processed:       ${mutationTimings.length}
+Total Mutation Execution Time:   ${totalMutationTime.toFixed(2)}ms
+Average Mutation Time:           ${mutationTimings.length > 0 ? (totalMutationTime / mutationTimings.length).toFixed(2) : "0.00"}ms
+
+Slowest Mutations:
+${mutationTimings
+  .sort((a, b) => b.duration - a.duration)
+  .slice(0, 5)
+  .map((m) => `  ${m.name}: ${m.duration.toFixed(2)}ms`)
+  .join("\n")}
+      `);
+
+      if (mutationTimings.length > 10) {
+        console.log(
+          "\nDetailed Mutation Timings:",
+          mutationTimings.map((m) => ({
+            mutation: m.name,
+            duration: `${m.duration.toFixed(2)}ms`,
+          })),
+        );
+      }
       client.release();
       release();
       supabase.removeChannel(channel);
