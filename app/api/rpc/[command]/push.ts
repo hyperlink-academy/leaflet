@@ -144,6 +144,7 @@ export const push = makeRoute({
             last_mutation: entries[1],
           }),
         );
+        console.log("lastMutationIdsUpdate:", lastMutationIdsUpdate);
         if (lastMutationIdsUpdate.length > 0)
           await tx
             .insert(replicache_clients)
