@@ -7,7 +7,7 @@ import useSWR, { SWRConfig } from "swr";
 
 const PublicationContext = createContext({ name: "", did: "" });
 export function PublicationSWRDataProvider(props: {
-  publication_name: string;
+  publication_rkey: string;
   publication_did: string;
   publication_data: GetPublicationDataReturnType["result"];
   children: React.ReactNode;
@@ -15,7 +15,7 @@ export function PublicationSWRDataProvider(props: {
   let key = `publication-data-${props.publication_did}`;
   return (
     <PublicationContext
-      value={{ name: props.publication_name, did: props.publication_did }}
+      value={{ name: props.publication_rkey, did: props.publication_did }}
     >
       <SWRConfig
         value={{
