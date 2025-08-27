@@ -9,6 +9,7 @@ import { cachedServerMutationContext } from "src/replicache/cachedServerMutation
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Lock } from "src/utils/lock";
 import { pool } from "supabase/pool";
+import { serverMutationContext } from "src/replicache/serverMutationContext";
 
 const mutationV0Schema = z.object({
   id: z.number(),
@@ -85,12 +86,6 @@ export const push = makeRoute({
           .select()
           .from(permission_token_rights)
           .where(eq(permission_token_rights.token, token.id));
-        let { getContext, flush } = cachedServerMutationContext(
-          tx,
-          token.id,
-          token_rights,
-        );
-
         let lastMutations = new Map<string, number>();
         console.log(pushRequest.mutations.map((m) => m.name));
         for (let mutation of pushRequest.mutations) {
@@ -102,7 +97,7 @@ export const push = makeRoute({
             continue;
           }
           try {
-            let ctx = getContext(mutation.clientID, mutation.id);
+            let ctx = serverMutationContext(tx, token.id, token_rights);
             await mutations[name](mutation.args as any, ctx);
           } catch (e) {
             console.log(
@@ -129,7 +124,6 @@ export const push = makeRoute({
               target: replicache_clients.client_id,
               set: { last_mutation: sql`excluded.last_mutation` },
             });
-        await flush();
       });
       timeProcessingMutations = performance.now() - start;
 
