@@ -259,6 +259,7 @@ async function main() {
   const runner = new MemoryRunner({
     startCursor,
     setCursor: async (cursor) => {
+      console.log(cursor);
       await writeFile(cursorFile, cursor.toString());
       // persist cursor
     },
