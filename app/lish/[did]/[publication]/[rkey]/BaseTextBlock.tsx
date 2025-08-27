@@ -34,7 +34,7 @@ export function BaseTextBlock(props: {
       ${isItalic ? "italic" : ""}
       ${isUnderline ? "underline" : ""}
       ${isStrikethrough ? "line-through decoration-tertiary" : ""}
-      ${isHighlighted ? "highlight bg-highlight-1" : ""}`;
+      ${isHighlighted ? "highlight bg-highlight-1" : ""}`.replaceAll("\n", " ");
 
     if (isCode) {
       children.push(
