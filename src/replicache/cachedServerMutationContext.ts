@@ -193,8 +193,8 @@ export function cachedServerMutationContext(
           }
         }
 
-        await tx.transaction((tx2) =>
-          tx2
+        try {
+          await tx
             .insert(facts)
             .values({
               id: f.id,
@@ -205,11 +205,10 @@ export function cachedServerMutationContext(
             .onConflictDoUpdate({
               target: facts.id,
               set: { data: driz.sql`excluded.data` },
-            })
-            .catch((e) =>
-              console.log(`error on inserting fact: `, JSON.stringify(e)),
-            ),
-        );
+            });
+        } catch (e) {
+          console.log(`error on inserting fact: `, JSON.stringify(e));
+        }
       }
     }
     if (deleteEntitiesCache.length > 0)
