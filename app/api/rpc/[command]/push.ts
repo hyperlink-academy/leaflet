@@ -209,18 +209,9 @@ ${mutationTimings
   .join("\n")}
       `);
 
-      if (mutationTimings.length > 10) {
-        console.log(
-          "\nDetailed Mutation Timings:",
-          mutationTimings.map((m) => ({
-            mutation: m.name,
-            duration: `${m.duration.toFixed(2)}ms`,
-          })),
-        );
-      }
       client.release();
       release();
-      supabase.removeChannel(channel);
+      await supabase.removeChannel(channel);
       return { result: undefined } as const;
     }
   },
