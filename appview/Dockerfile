@@ -9,4 +9,4 @@ RUN npm ci
 # copy rest and build
 COPY . /code/.
 RUN npm run build-appview
-CMD ["timeout", "2h", "node", "/code/appview/dist/index.js"]
+CMD ["node", "/code/appview/dist/index.js"]
