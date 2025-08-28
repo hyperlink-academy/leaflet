@@ -199,7 +199,10 @@ export function cachedServerMutationContext(
             })
             .onConflictDoUpdate({
               target: facts.id,
-              set: { data: driz.sql`excluded.data` },
+              set: {
+                data: driz.sql`excluded.data`,
+                entity: driz.sql`excluded.entity`,
+              },
             })
             .catch((e) =>
               console.log(`error on inserting fact: `, JSON.stringify(e)),
