@@ -115,7 +115,7 @@ function PublicationSettingsButton(props: { publication: string }) {
       asChild
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className="max-w-xs"
+      className="max-w-xs relative"
       trigger={
         <ActionButton
           id="pub-settings-button"

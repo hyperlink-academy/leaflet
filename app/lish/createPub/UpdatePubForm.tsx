@@ -229,7 +229,7 @@ export function CustomDomainForm() {
               </React.Fragment>
             ))}
             <button
-              className="text-accent-contrast text-sm w-fit "
+              className="text-accent-contrast text-sm w-fit font-bold "
               onClick={() => setState({ type: "addDomain" })}
               type="button"
             >
@@ -253,8 +253,8 @@ function AddDomain(props: {
   return (
     <div className="w-full flex flex-col gap-0.5 py-1">
       <label>
-        <p className="pl-0.5 text-tertiary italic text-sm">
-          Add a Custom Domain
+        <p className="pl-0.5 text-tertiary italic text-sm font-bold">
+          Add Custom Domain
         </p>
         <Input
           className="w-full input-with-border"
@@ -405,7 +405,6 @@ const DomainSettings = (props: {
             Back
           </button>
         </div>
-        <button className="text-accent-contrast w-fit">verify</button>
       </div>
     );
 

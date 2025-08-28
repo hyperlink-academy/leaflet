@@ -1,1 +1,0 @@
-import { Props } from "./Props";
