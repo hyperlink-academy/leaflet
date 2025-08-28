@@ -311,8 +311,8 @@ function blockToRecord(
       $type: "pub.leaflet.blocks.website",
       previewImage: blobref,
       src: src.data.value,
-      description: description.data.value,
-      title: title.data.value,
+      description: description?.data.value,
+      title: title?.data.value,
     };
     return block;
   }
