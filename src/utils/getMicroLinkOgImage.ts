@@ -16,6 +16,12 @@ export async function getMicroLinkOgImage(
       },
     },
   );
+  const clonedResponse = response.clone();
+  if (clonedResponse.status == 200)
+    clonedResponse.headers.set(
+      "CDN-Cache-Control",
+      "s-maxage=600, stale-while-revalidate=3600",
+    );
 
-  return response;
+  return clonedResponse;
 }
