@@ -8,13 +8,11 @@ export async function GET(req: NextRequest) {
     did: url.searchParams.get("did") ?? "",
     cid: url.searchParams.get("cid") ?? "",
   };
-  console.log(params);
   if (!params.did || !params.cid)
     return new NextResponse(null, { status: 404 });
 
   let identity = await idResolver.did.resolve(params.did);
   let service = identity?.service?.find((f) => f.id === "#atproto_pds");
-  console.log(identity);
   if (!service) return new NextResponse(null, { status: 404 });
   const response = await fetch(
     `${service.serviceEndpoint}/xrpc/com.atproto.sync.getBlob?did=${params.did}&cid=${params.cid}`,
