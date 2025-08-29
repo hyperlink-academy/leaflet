@@ -233,7 +233,7 @@ async function main() {
     setCursor: async (cursor) => {
       console.log(cursor);
       // persist cursor
-      await writeFile(cursorFile, (cursor - 300 * 60 * 60 * 24).toString());
+      await writeFile(cursorFile, cursor.toString());
     },
   });
   let firehose = new Firehose({
