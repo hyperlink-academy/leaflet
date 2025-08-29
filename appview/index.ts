@@ -30,11 +30,11 @@ let supabase = createClient<Database>(
 const QUOTE_PARAM = "/l-quote/";
 async function main() {
   let startCursor;
-  try {
-    let file = (await readFile(cursorFile)).toString();
-    startCursor = parseInt(file);
-    if (Number.isNaN(startCursor)) startCursor = undefined;
-  } catch (e) {}
+  // try {
+  //   let file = (await readFile(cursorFile)).toString();
+  //   startCursor = parseInt(file);
+  //   if (Number.isNaN(startCursor)) startCursor = undefined;
+  // } catch (e) {}
 
   async function handleEvent(evt: Event) {
     if (evt.event === "identity") {
