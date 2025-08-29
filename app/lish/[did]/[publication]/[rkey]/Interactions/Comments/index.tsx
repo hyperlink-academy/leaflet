@@ -217,8 +217,17 @@ const Replies = (props: {
 };
 
 const DatePopover = (props: { date: string }) => {
-  let t = useMemo(() => {
-    return timeAgo(props.date);
+  let [t, full] = useMemo(() => {
+    return [
+      timeAgo(props.date),
+      new Date(props.date).toLocaleTimeString(undefined, {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    ];
   }, [props.date]);
   return (
     <Popover
@@ -226,7 +235,7 @@ const DatePopover = (props: { date: string }) => {
         <div className="italic text-sm text-tertiary hover:underline">{t}</div>
       }
     >
-      <div className="text-sm text-secondary">8/18/2025 4:32PM</div>
+      <div className="text-sm text-secondary">{full}</div>
     </Popover>
   );
 };
