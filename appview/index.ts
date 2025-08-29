@@ -20,6 +20,7 @@ import { writeFile, readFile } from "fs/promises";
 import { createIdentity } from "actions/createIdentity";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { inngest } from "app/api/inngest/client";
+import { Pool } from "pg";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
 
@@ -30,6 +31,9 @@ let supabase = createClient<Database>(
 const QUOTE_PARAM = "/l-quote/";
 async function main() {
   let startCursor;
+  const pool = new Pool({
+    connectionString: process.env.DB_URL,
+  });
   try {
     let file = (await readFile(cursorFile)).toString();
     console.log("START CURSOR: " + file);
@@ -90,8 +94,10 @@ async function main() {
         });
 
         if (error && error.code === "23503") {
-          let db = drizzle(process.env.DB_URL!);
+          let c = await pool.connect();
+          let db = drizzle(c);
           await createIdentity(db, { atp_did: evt.did });
+          c.release();
           await supabase.from("publications").upsert({
             uri: evt.uri.toString(),
             identity_did: evt.did,
@@ -138,7 +144,10 @@ async function main() {
             record: record.value as Json,
           });
         if (error && error.code === "23503") {
+          let c = await pool.connect();
+          let db = drizzle(c);
           await createIdentity(db, { atp_did: evt.did });
+          c.release();
           await supabase.from("publication_subscriptions").upsert({
             uri: evt.uri.toString(),
             identity: evt.did,
@@ -260,7 +269,7 @@ async function main() {
   firehose.start();
   const cleanup = async () => {
     console.log("shutting down firehose...");
-    client.release();
+    pool.end();
     await firehose.destroy();
     await runner.destroy();
     process.exit();
