@@ -20,7 +20,6 @@ import { writeFile, readFile } from "fs/promises";
 import { createIdentity } from "actions/createIdentity";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { inngest } from "app/api/inngest/client";
-import { pool } from "supabase/pool";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
 
@@ -37,8 +36,6 @@ async function main() {
     if (Number.isNaN(startCursor)) startCursor = undefined;
   } catch (e) {}
 
-  const client = await pool.connect();
-  const db = drizzle(client);
   async function handleEvent(evt: Event) {
     if (evt.event === "identity") {
       if (evt.handle)
@@ -92,6 +89,7 @@ async function main() {
         });
 
         if (error && error.code === "23503") {
+          let db = drizzle(process.env.DB_URL!);
           await createIdentity(db, { atp_did: evt.did });
           await supabase.from("publications").upsert({
             uri: evt.uri.toString(),
@@ -232,8 +230,9 @@ async function main() {
   const runner = new MemoryRunner({
     startCursor,
     setCursor: async (cursor) => {
-      await writeFile(cursorFile, cursor.toString());
+      console.log(cursor);
       // persist cursor
+      await writeFile(cursorFile, cursor.toString());
     },
   });
   let firehose = new Firehose({
