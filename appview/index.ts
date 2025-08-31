@@ -93,6 +93,7 @@ async function main() {
         });
 
         if (error && error.code === "23503") {
+          console.log("creating identity");
           await createIdentity(db, { atp_did: evt.did });
           await supabase.from("publications").upsert({
             uri: evt.uri.toString(),
@@ -140,6 +141,7 @@ async function main() {
             record: record.value as Json,
           });
         if (error && error.code === "23503") {
+          console.log("creating identity");
           await createIdentity(db, { atp_did: evt.did });
           await supabase.from("publication_subscriptions").upsert({
             uri: evt.uri.toString(),
