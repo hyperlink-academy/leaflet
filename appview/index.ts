@@ -233,6 +233,7 @@ async function main() {
   }
 
   const runner = new MemoryRunner({
+    concurrency: 4,
     startCursor,
     setCursor: async (cursor) => {
       console.log(cursor);
