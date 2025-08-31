@@ -11,6 +11,7 @@ import {
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksBskyPost,
+  PubLeafletBlocksIframe,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { TextBlock } from "./TextBlock";
@@ -110,6 +111,18 @@ let Block = ({
       let post = bskyPostData.find((p) => p.uri === uri);
       if (!post) return <div>no prefetched post rip</div>;
       return <PubBlueskyPostBlock post={post} />;
+    }
+    case PubLeafletBlocksIframe.isMain(b.block): {
+      return (
+        <iframe
+          className={`flex flex-col relative w-full overflow-hidden group/embedBlock block-border my-2`}
+          width="100%"
+          height={b.block.height}
+          src={b.block.url}
+          allow="fullscreen"
+          loading="lazy"
+        />
+      );
     }
     case PubLeafletBlocksHorizontalRule.isMain(b.block): {
       return <hr className="my-2 w-full border-border-light" />;

@@ -23,6 +23,7 @@
         "block": {
           "type": "union",
           "refs": [
+            "pub.leaflet.blocks.iframe",
             "pub.leaflet.blocks.text",
             "pub.leaflet.blocks.blockquote",
             "pub.leaflet.blocks.header",

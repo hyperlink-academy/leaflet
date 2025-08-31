@@ -205,7 +205,23 @@ export const PubLeafletBlocksUnorderedList: LexiconDoc = {
     },
   },
 };
+
+export const PubLeafletBlocksIFrame: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.iframe",
+  defs: {
+    main: {
+      type: "object",
+      required: ["url"],
+      properties: {
+        url: { type: "string", format: "uri" },
+        height: { type: "integer", minimum: 16, maximum: 1600 },
+      },
+    },
+  },
+};
 export const BlockLexicons = [
+  PubLeafletBlocksIFrame,
   PubLeafletBlocksText,
   PubLeafletBlocksBlockQuote,
   PubLeafletBlocksHeader,

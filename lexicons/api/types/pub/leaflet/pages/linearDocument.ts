@@ -5,6 +5,7 @@ import { ValidationResult, BlobRef } from '@atproto/lexicon'
 import { CID } from 'multiformats/cid'
 import { validate as _validate } from '../../../../lexicons'
 import { $Typed, is$typed as _is$typed, OmitKey } from '../../../../util'
+import type * as PubLeafletBlocksIframe from '../blocks/iframe'
 import type * as PubLeafletBlocksText from '../blocks/text'
 import type * as PubLeafletBlocksBlockquote from '../blocks/blockquote'
 import type * as PubLeafletBlocksHeader from '../blocks/header'
@@ -38,6 +39,7 @@ export function validateMain<V>(v: V) {
 export interface Block {
   $type?: 'pub.leaflet.pages.linearDocument#block'
   block:
+    | $Typed<PubLeafletBlocksIframe.Main>
     | $Typed<PubLeafletBlocksText.Main>
     | $Typed<PubLeafletBlocksBlockquote.Main>
     | $Typed<PubLeafletBlocksHeader.Main>
