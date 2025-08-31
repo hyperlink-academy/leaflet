@@ -79,6 +79,13 @@ export const push = makeRoute({
     start = performance.now();
     try {
       await db.transaction(async (tx) => {
+        // Acquire transaction-scoped advisory lock on token ID
+        // Convert token ID to a stable integer for pg_advisory_xact_lock
+        const tokenHash = token.id.split("").reduce((acc, char) => {
+          return ((acc << 5) - acc + char.charCodeAt(0)) | 0;
+        }, 0);
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(${tokenHash})`);
+
         let clientGroupStart = performance.now();
         let clientGroup = await getClientGroup(tx, pushRequest.clientGroupID);
         timeGettingClientGroup = performance.now() - clientGroupStart;
