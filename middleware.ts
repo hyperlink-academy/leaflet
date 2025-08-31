@@ -19,6 +19,19 @@ export const config = {
 let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+  {
+    global: {
+      fetch: async (...args) => {
+        const response = await fetch(args[0], {
+          ...args[1],
+          next: {
+            revalidate: 60,
+          },
+        });
+        return response;
+      },
+    },
+  },
 );
 
 const auth_callback_route = "/auth_callback";
