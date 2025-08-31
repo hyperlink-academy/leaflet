@@ -82,17 +82,8 @@ export const push = makeRoute({
         const tokenHash = token.id.split("").reduce((acc, char) => {
           return ((acc << 5) - acc + char.charCodeAt(0)) | 0;
         }, 0);
-        const clientGroupHash = pushRequest.clientGroupID
-          .split("")
-          .reduce((acc, char) => {
-            return ((acc << 5) - acc + char.charCodeAt(0)) | 0;
-          }, 0);
 
-        await tx.execute(sql`
-          SELECT
-            pg_advisory_xact_lock(${tokenHash}),
-            pg_advisory_xact_lock(${clientGroupHash})
-        `);
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(${tokenHash})`);
 
         let clientGroupStart = performance.now();
         let clientGroup = await getClientGroup(tx, pushRequest.clientGroupID);
