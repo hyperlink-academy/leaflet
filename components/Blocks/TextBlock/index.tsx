@@ -445,6 +445,7 @@ const BlockifyLink = (props: {
     editorState?.doc.textContent.includes("post");
   // only if the line stats with http or https and doesn't have other content
   // if its bluesky, change text to embed post
+
   if (
     !isLocked &&
     focused &&
@@ -455,8 +456,40 @@ const BlockifyLink = (props: {
     return (
       <button
         onClick={async (e) => {
+          if (!rep.rep) return;
           rep.undoManager.startGroup();
-          if (isBlueskyPost && rep.rep) {
+          let isYoutubeUrl = editorState.doc.textContent.startsWith(
+            "https://www.youtube.com/watch?v=",
+          );
+          if (isYoutubeUrl) {
+            let url = new URL(editorState.doc.textContent);
+            let videoId = url.searchParams.get("v");
+            await rep.rep.mutate.assertFact([
+              {
+                entity: props.entityID,
+                attribute: "block/type",
+                data: { type: "block-type-union", value: "embed" },
+              },
+              {
+                entity: props.entityID,
+                attribute: "embed/url",
+                data: {
+                  type: "string",
+                  value: `https://youtube.com/embed/${videoId}`,
+                },
+              },
+              {
+                entity: props.entityID,
+                attribute: "embed/height",
+                data: {
+                  type: "number",
+                  value: 315,
+                },
+              },
+            ]);
+            return;
+          }
+          if (isBlueskyPost) {
             let success = await addBlueskyPostBlock(
               editorState.doc.textContent,
               props.entityID,
