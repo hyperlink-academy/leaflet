@@ -165,8 +165,6 @@ export function cachedServerMutationContext(
     let flushStart = performance.now();
     let timeInsertingEntities = 0;
     let timeProcessingFactWrites = 0;
-    let timeTextMerging = 0;
-    let timeFactInserts = 0;
     let timeDeletingEntities = 0;
     let timeDeletingFacts = 0;
     let timeCacheCleanup = 0;
@@ -186,30 +184,23 @@ export function cachedServerMutationContext(
       f.type === "del" ? [] : [f.fact],
     );
     if (factWrites.length > 0) {
-      for (let f of factWrites) {
-        let factInsertStart = performance.now();
-        await tx.transaction((tx2) =>
-          tx2
-            .insert(facts)
-            .values({
-              id: f.id,
-              entity: f.entity,
-              data: driz.sql`${f.data}::jsonb`,
-              attribute: f.attribute,
-            })
-            .onConflictDoUpdate({
-              target: facts.id,
-              set: {
-                data: driz.sql`excluded.data`,
-                entity: driz.sql`excluded.entity`,
-              },
-            })
-            .catch((e) =>
-              console.log(`error on inserting fact: `, JSON.stringify(e)),
-            ),
-        );
-        timeFactInserts += performance.now() - factInsertStart;
-      }
+      await tx
+        .insert(facts)
+        .values(
+          factWrites.map((f) => ({
+            id: f.id,
+            entity: f.entity,
+            data: driz.sql`${f.data}::jsonb`,
+            attribute: f.attribute,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: facts.id,
+          set: {
+            data: driz.sql`excluded.data`,
+            entity: driz.sql`excluded.entity`,
+          },
+        });
     }
     timeProcessingFactWrites = performance.now() - factWritesStart;
 
@@ -261,8 +252,6 @@ Flush Performance Breakdown (${totalFlushTime.toFixed(2)}ms):
 ==========================================
 Entity Insertions (${entitiesCache.length} entities):     ${timeInsertingEntities.toFixed(2)}ms
 Fact Processing (${factWrites.length} facts):             ${timeProcessingFactWrites.toFixed(2)}ms
-  - Text Merging:                                          ${timeTextMerging.toFixed(2)}ms
-  - Fact Inserts (nested transactions):                   ${timeFactInserts.toFixed(2)}ms
 Entity Deletions (${deleteEntitiesCache.length} entities): ${timeDeletingEntities.toFixed(2)}ms
 Fact Deletions:                                           ${timeDeletingFacts.toFixed(2)}ms
 Cache Cleanup:                                             ${timeCacheCleanup.toFixed(2)}ms
