@@ -12,6 +12,7 @@ import {
 } from "lexicons/api";
 import {
   AppBskyEmbedExternal,
+  AppBskyEmbedRecordWithMedia,
   AppBskyFeedPost,
   AppBskyRichtextFacet,
 } from "@atproto/api";
@@ -186,11 +187,20 @@ async function main() {
       let record = AppBskyFeedPost.validateRecord(evt.record);
       if (!record.success) return;
 
-      let embed =
+      let embed: string | null = null;
+      if (
         AppBskyEmbedExternal.isMain(record.value.embed) &&
         record.value.embed.external.uri.includes(QUOTE_PARAM)
-          ? record.value.embed.external.uri
-          : null;
+      ) {
+        embed = record.value.embed.external.uri;
+      }
+      if (
+        AppBskyEmbedRecordWithMedia.isMain(record.value.embed) &&
+        AppBskyEmbedExternal.isMain(record.value.embed.media) &&
+        record.value.embed.media?.external?.uri.includes(QUOTE_PARAM)
+      ) {
+        embed = record.value.embed.media.external.uri;
+      }
       if (embed) {
         console.log(
           "processing post mention: " + embed + " in " + evt.uri.toString(),
