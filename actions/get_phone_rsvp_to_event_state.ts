@@ -1,6 +1,6 @@
 "use server";
 
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { and, eq } from "drizzle-orm";
 import postgres from "postgres";
 import {
@@ -9,6 +9,7 @@ import {
 } from "drizzle/schema";
 import { cookies } from "next/headers";
 import { Database } from "supabase/database.types";
+import { pool } from "supabase/pool";
 
 export async function getPhoneRSVPToEventState(entityId: string) {
   const token = (await cookies()).get("phone_auth_token");
@@ -17,7 +18,7 @@ export async function getPhoneRSVPToEventState(entityId: string) {
     return null;
   }
 
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const client = await pool.connect();
   const db = drizzle(client);
 
   const [authToken] = await db
@@ -26,7 +27,7 @@ export async function getPhoneRSVPToEventState(entityId: string) {
     .where(eq(phone_number_auth_tokens.id, token.value));
 
   if (!authToken || !authToken.confirmed) {
-    client.end();
+    client.release();
     return null;
   }
 
@@ -40,6 +41,6 @@ export async function getPhoneRSVPToEventState(entityId: string) {
       ),
     );
 
-  client.end();
+  client.release();
   return rsvp;
 }

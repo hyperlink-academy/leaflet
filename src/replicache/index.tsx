@@ -130,18 +130,24 @@ export function ReplicacheProvider(props: {
       ) as ReplicacheMutators,
       licenseKey: "l381074b8d5224dabaef869802421225a",
       pusher: async (pushRequest) => {
+        const batchSize = 250;
         let smolpushRequest = {
           ...pushRequest,
-          mutations: pushRequest.mutations.slice(0, 250),
+          mutations: pushRequest.mutations.slice(0, batchSize),
         } as PushRequest;
+        let response = (
+          await callRPC("push", {
+            pushRequest: smolpushRequest,
+            token: props.token,
+            rootEntity: props.name,
+          })
+        ).result;
+        if (pushRequest.mutations.length > batchSize)
+          setTimeout(() => {
+            newRep.push();
+          }, 50);
         return {
-          response: (
-            await callRPC("push", {
-              pushRequest: smolpushRequest,
-              token: props.token,
-              rootEntity: props.name,
-            })
-          ).result,
+          response,
           httpRequestInfo: { errorMessage: "", httpStatusCode: 200 },
         };
       },
@@ -158,10 +164,10 @@ export function ReplicacheProvider(props: {
       name: props.name,
       indexes: {
         eav: { jsonPointer: "/indexes/eav", allowEmpty: true },
-        aev: { jsonPointer: "/indexes/aev", allowEmpty: true },
         vae: { jsonPointer: "/indexes/vae", allowEmpty: true },
       },
     });
+
     setRep(newRep);
     let channel: RealtimeChannel | null = null;
     if (!props.disablePull) {

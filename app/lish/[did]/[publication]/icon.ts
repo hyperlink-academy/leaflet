@@ -4,6 +4,7 @@ import { AtUri } from "@atproto/syntax";
 import { PubLeafletPublication } from "lexicons/api";
 import { supabaseServerClient } from "supabase/serverClient";
 import sharp from "sharp";
+import { redirect } from "next/navigation";
 
 let idResolver = new IdResolver();
 
@@ -40,7 +41,7 @@ export default async function Icon({
     .single();
 
   let record = publication?.record as PubLeafletPublication.Record | null;
-  if (!record?.icon) return null;
+  if (!record?.icon) return redirect("/icon.png");
 
   let identity = await idResolver.did.resolve(did);
   let service = identity?.service?.find((f) => f.id === "#atproto_pds");
@@ -58,7 +59,7 @@ export default async function Icon({
   return new Response(new Uint8Array(resizedImage), {
     headers: {
       "Content-Type": "image/png",
-      "CDN-Cache-Control": "s-max-age=86400, stale-while-revalidate=86400",
+      "CDN-Cache-Control": "s-maxage=86400, stale-while-revalidate=86400",
       "Cache-Control": "public, max-age=3600",
     },
   });

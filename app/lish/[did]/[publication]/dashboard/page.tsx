@@ -20,6 +20,7 @@ import {
   PublicationThemeProviderDashboard,
 } from "components/ThemeManager/PublicationThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { AtUri } from "@atproto/syntax";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -66,18 +67,18 @@ export default async function Publication(props: {
     { supabase: supabaseServerClient },
   );
 
-  let record = publication?.record as PubLeafletPublication.Record | null;
-
-  let showPageBackground = !!record?.theme?.showPageBackground;
-
   if (!publication || identity.atp_did !== publication.identity_did)
     return <PubNotFound />;
+  let record = publication?.record as PubLeafletPublication.Record | null;
+  let uri = new AtUri(publication.uri);
+
+  let showPageBackground = !!record?.theme?.showPageBackground;
 
   try {
     return (
       <PublicationSWRDataProvider
         publication_did={did}
-        publication_name={publication.name}
+        publication_rkey={uri.rkey}
         publication_data={publication}
       >
         <PublicationThemeProviderDashboard record={record}>

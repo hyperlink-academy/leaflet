@@ -7,8 +7,7 @@ import {
 } from "components/ThemeManager/ThemeProvider";
 import { EntitySetProvider } from "components/EntitySetProvider";
 import { createIdentity } from "actions/createIdentity";
-import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { IdentitySetter } from "./IdentitySetter";
 import { LeafletList } from "./LeafletList";
 import { getIdentityData } from "actions/getIdentityData";
@@ -18,6 +17,7 @@ import { HomeFooter } from "./HomeFooter";
 import { Media } from "components/Media";
 import { MyPublicationList } from "./Publications";
 import { supabaseServerClient } from "supabase/serverClient";
+import { pool } from "supabase/pool";
 
 export default async function Home() {
   let cookieStore = await cookies();
@@ -27,10 +27,10 @@ export default async function Home() {
   else identity = cookieStore.get("identity")?.value;
   let needstosetcookie = false;
   if (!identity) {
-    const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+    const client = await pool.connect();
     const db = drizzle(client);
     let newIdentity = await createIdentity(db);
-    client.end();
+    client.release();
     identity = newIdentity.id;
     needstosetcookie = true;
   }

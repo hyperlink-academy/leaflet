@@ -1,22 +1,13 @@
 "use server";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
-import postgres from "postgres";
 import {
   entities,
   permission_token_rights,
   phone_rsvps_to_entity,
 } from "drizzle/schema";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "supabase/database.types";
 import twilio from "twilio";
-
-const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
-let supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
-  process.env.SUPABASE_SERVICE_ROLE_KEY as string,
-);
-const db = drizzle(client);
+import { pool } from "supabase/pool";
 
 export async function sendUpdateToRSVPS(
   token: { id: string },
@@ -34,6 +25,8 @@ export async function sendUpdateToRSVPS(
     sendto: { GOING: boolean; MAYBE: boolean; NOT_GOING: boolean };
   },
 ) {
+  let dbclient = await pool.connect();
+  const db = drizzle(dbclient);
   let token_rights = await db
     .select()
     .from(permission_token_rights)
@@ -44,6 +37,8 @@ export async function sendUpdateToRSVPS(
     .from(phone_rsvps_to_entity)
     .innerJoin(entities, eq(phone_rsvps_to_entity.entity, entities.id))
     .where(eq(phone_rsvps_to_entity.entity, entity));
+
+  dbclient.release();
 
   if (!token_rights[0]?.write) return;
   let rsvps = await RSVPS;

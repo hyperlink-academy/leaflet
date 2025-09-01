@@ -281,7 +281,6 @@ export const blockCommands: Command[] = [
     name: "Embed Website",
     icon: <BlockEmbedSmall />,
     type: "block",
-    hiddenInPublication: true,
     onSelect: async (rep, props) => {
       createBlockWithType(rep, props, "embed");
     },

@@ -16,9 +16,9 @@ export async function GET(
     return feed;
   }
 
-  return new Response(feed.rss2(), {
+  return new Response(feed.atom1(), {
     headers: {
-      "Content-Type": "application/rss+xml",
+      "Content-Type": "application/atom+xml",
       "CDN-Cache-Control": "s-maxage=300, stale-while-revalidate=3600",
     },
   });

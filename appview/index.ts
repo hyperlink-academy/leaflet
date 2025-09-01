@@ -18,9 +18,9 @@ import {
 import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
 import { createIdentity } from "actions/createIdentity";
-import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { inngest } from "app/api/inngest/client";
+import { Client } from "pg";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
 
@@ -31,12 +31,15 @@ let supabase = createClient<Database>(
 const QUOTE_PARAM = "/l-quote/";
 async function main() {
   let startCursor;
+  let client = new Client({ connectionString: process.env.DB_URL });
+  let db = drizzle(client);
   try {
-    startCursor = parseInt((await readFile(cursorFile)).toString());
+    let file = (await readFile(cursorFile)).toString();
+    console.log("START CURSOR: " + file);
+    startCursor = parseInt(file);
+    if (Number.isNaN(startCursor)) startCursor = undefined;
   } catch (e) {}
 
-  const client = postgres(process.env.DB_URL!);
-  const db = drizzle(client);
   async function handleEvent(evt: Event) {
     if (evt.event === "identity") {
       if (evt.handle)
@@ -90,6 +93,7 @@ async function main() {
         });
 
         if (error && error.code === "23503") {
+          console.log("creating identity");
           await createIdentity(db, { atp_did: evt.did });
           await supabase.from("publications").upsert({
             uri: evt.uri.toString(),
@@ -137,6 +141,7 @@ async function main() {
             record: record.value as Json,
           });
         if (error && error.code === "23503") {
+          console.log("creating identity");
           await createIdentity(db, { atp_did: evt.did });
           await supabase.from("publication_subscriptions").upsert({
             uri: evt.uri.toString(),
@@ -228,13 +233,16 @@ async function main() {
   }
 
   const runner = new MemoryRunner({
+    concurrency: 4,
     startCursor,
     setCursor: async (cursor) => {
-      await writeFile(cursorFile, cursor.toString());
+      console.log(cursor);
       // persist cursor
+      await writeFile(cursorFile, cursor.toString());
     },
   });
   let firehose = new Firehose({
+    service: "wss://relay1.us-west.bsky.network",
     subscriptionReconnectDelay: 3000,
     excludeAccount: true,
     excludeIdentity: true,
@@ -255,9 +263,12 @@ async function main() {
   });
   console.log("starting firehose consumer");
   firehose.start();
+  let cleaningUp = false;
   const cleanup = async () => {
+    if (cleaningUp) return;
+    cleaningUp = true;
     console.log("shutting down firehose...");
-    await client.end();
+    client.end();
     await firehose.destroy();
     await runner.destroy();
     process.exit();

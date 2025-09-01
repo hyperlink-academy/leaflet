@@ -19,6 +19,7 @@ import {
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksBlockquote,
+  PubLeafletBlocksIframe,
 } from "lexicons/api";
 import { Block } from "components/Blocks/Block";
 import { TID } from "@atproto/common";
@@ -281,6 +282,17 @@ function blockToRecord(
     };
     return block;
   }
+  if (b.type === "embed") {
+    let [url] = scan.eav(b.value, "embed/url");
+    let [height] = scan.eav(b.value, "embed/height");
+    if (!url) return;
+    let block: $Typed<PubLeafletBlocksIframe.Main> = {
+      $type: "pub.leaflet.blocks.iframe",
+      url: url.data.value,
+      height: height?.data.value || 600,
+    };
+    return block;
+  }
   if (b.type == "image") {
     let [image] = scan.eav(b.value, "block/image");
     if (!image) return;
@@ -311,8 +323,8 @@ function blockToRecord(
       $type: "pub.leaflet.blocks.website",
       previewImage: blobref,
       src: src.data.value,
-      description: description.data.value,
-      title: title.data.value,
+      description: description?.data.value,
+      title: title?.data.value,
     };
     return block;
   }

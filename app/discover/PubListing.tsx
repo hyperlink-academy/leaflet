@@ -29,7 +29,6 @@ export const PubListing = (props: {
   return (
     <BaseThemeProvider {...theme} local>
       <a
-        target="_blank"
         href={`https://${record.base_path}`}
         style={{
           backgroundImage: `url(${backgroundImage})`,

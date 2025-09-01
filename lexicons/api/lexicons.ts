@@ -313,6 +313,27 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksIframe: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.iframe',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['url'],
+        properties: {
+          url: {
+            type: 'string',
+            format: 'uri',
+          },
+          height: {
+            type: 'integer',
+            minimum: 16,
+            maximum: 1600,
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksImage: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.image',
@@ -499,6 +520,7 @@ export const schemaDict = {
           block: {
             type: 'union',
             refs: [
+              'lex:pub.leaflet.blocks.iframe',
               'lex:pub.leaflet.blocks.text',
               'lex:pub.leaflet.blocks.blockquote',
               'lex:pub.leaflet.blocks.header',
@@ -1762,6 +1784,7 @@ export const ids = {
   PubLeafletBlocksCode: 'pub.leaflet.blocks.code',
   PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
   PubLeafletBlocksHorizontalRule: 'pub.leaflet.blocks.horizontalRule',
+  PubLeafletBlocksIframe: 'pub.leaflet.blocks.iframe',
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksMath: 'pub.leaflet.blocks.math',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',

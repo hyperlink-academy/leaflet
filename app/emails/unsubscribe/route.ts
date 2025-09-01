@@ -1,13 +1,14 @@
 import { NextRequest } from "next/server";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { email_subscriptions_to_entity } from "drizzle/schema";
 import postgres from "postgres";
 import { eq } from "drizzle-orm";
+import { pool } from "supabase/pool";
 
 export async function POST(request: NextRequest) {
   let sub_id = request.nextUrl.searchParams.get("sub_id");
   if (!sub_id) return new Response(null, { status: 404 });
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const client = await pool.connect();
   const db = drizzle(client);
 
   try {
@@ -17,6 +18,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.log(error);
   }
-  client.end();
+  client.release();
   return new Response(null, { status: 200 });
 }

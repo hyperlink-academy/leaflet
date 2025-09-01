@@ -1,13 +1,14 @@
 "use server";
 
 import { randomBytes } from "crypto";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import postgres from "postgres";
 import { email_auth_tokens, identities } from "drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { createIdentity } from "./createIdentity";
 import { setAuthToken } from "src/auth";
+import { pool } from "supabase/pool";
 
 async function sendAuthCode(email: string, code: string) {
   if (process.env.NODE_ENV === "development") {
@@ -42,7 +43,7 @@ ${code}
 
 export async function requestAuthEmailToken(emailNonNormalized: string) {
   let email = emailNonNormalized.toLowerCase();
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const client = await pool.connect();
   const db = drizzle(client);
 
   const code = randomBytes(3).toString("hex").toUpperCase();
@@ -60,12 +61,12 @@ export async function requestAuthEmailToken(emailNonNormalized: string) {
 
   await sendAuthCode(email, code);
 
-  client.end();
+  client.release();
   return token.id;
 }
 
 export async function confirmEmailAuthToken(tokenId: string, code: string) {
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const client = await pool.connect();
   const db = drizzle(client);
 
   const [token] = await db
@@ -74,17 +75,17 @@ export async function confirmEmailAuthToken(tokenId: string, code: string) {
     .where(eq(email_auth_tokens.id, tokenId));
 
   if (!token || !token.email) {
-    client.end();
+    client.release();
     return null;
   }
 
   if (token.confirmation_code !== code) {
-    client.end();
+    client.release();
     return null;
   }
 
   if (token.confirmed) {
-    client.end();
+    client.release();
     return null;
   }
   let authToken = (await cookies()).get("auth_token");
@@ -102,7 +103,7 @@ export async function confirmEmailAuthToken(tokenId: string, code: string) {
         .update(identities)
         .set({ email: token.email })
         .where(eq(identities.id, existingToken.identities.id));
-      client.end();
+      client.release();
       return existingToken;
     }
   }
@@ -135,6 +136,6 @@ export async function confirmEmailAuthToken(tokenId: string, code: string) {
 
   await setAuthToken(confirmedToken.id);
 
-  client.end();
+  client.release();
   return confirmedToken;
 }

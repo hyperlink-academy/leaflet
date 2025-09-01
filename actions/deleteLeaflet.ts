@@ -1,21 +1,17 @@
 "use server";
 
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import {
   entities,
   permission_tokens,
   permission_token_rights,
 } from "drizzle/schema";
-import { redirect } from "next/navigation";
-import postgres from "postgres";
-import { v7 } from "uuid";
-import { eq, sql } from "drizzle-orm";
-import { cookies } from "next/headers";
+import { eq } from "drizzle-orm";
 import { PermissionToken } from "src/replicache";
-import { revalidatePath } from "next/cache";
+import { pool } from "supabase/pool";
 
 export async function deleteLeaflet(permission_token: PermissionToken) {
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const client = await pool.connect();
   const db = drizzle(client);
   await db.transaction(async (tx) => {
     let [token] = await tx
@@ -35,6 +31,6 @@ export async function deleteLeaflet(permission_token: PermissionToken) {
       .delete(permission_tokens)
       .where(eq(permission_tokens.id, permission_token.id));
   });
-  client.end();
+  client.release();
   return;
 }

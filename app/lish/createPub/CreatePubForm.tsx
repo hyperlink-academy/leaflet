@@ -39,6 +39,7 @@ export const CreatePubForm = () => {
     <form
       className="flex flex-col gap-3"
       onSubmit={async (e) => {
+        if (formState !== "normal") return;
         e.preventDefault();
         if (!subdomainValidator.safeParse(domainValue).success) return;
         setFormState("loading");

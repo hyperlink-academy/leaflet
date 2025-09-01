@@ -7,11 +7,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useInteractionState } from "./Interactions/Interactions";
 import { encodeQuotePosition } from "./useHighlight";
 import { useParams } from "next/navigation";
+import { decodeQuotePosition, QuotePosition } from "./quotePosition";
 
 export function QuoteHandler() {
-  let [position, setPosition] = useState<{ top: number; left: number } | null>(
-    null,
-  );
+  let [position, setPosition] = useState<{
+    top: number;
+    left: number;
+    position: string;
+  } | null>(null);
   useEffect(() => {
     const handleSelectionChange = (e: Event) => {
       const selection = document.getSelection();
@@ -40,8 +43,8 @@ export function QuoteHandler() {
       }
 
       let dir = selection.direction;
+      const range = selection.getRangeAt(0);
       if (!dir) {
-        const range = selection.getRangeAt(0);
         const startContainer = range.startContainer;
         const endContainer = range.endContainer;
         const startOffset = range.startOffset;
@@ -65,9 +68,33 @@ export function QuoteHandler() {
         selectionTop += quoteRect.height + 8;
       }
 
+      let startIndex = findDataIndex(range.startContainer);
+      let endIndex = findDataIndex(range.endContainer);
+      if (!startIndex || !endIndex) return;
+      let startOffset = calculateOffsetFromDataParent(
+        range.startContainer,
+        range.startOffset,
+        startIndex?.element,
+      );
+      let endOffset = calculateOffsetFromDataParent(
+        range.endContainer,
+        range.endOffset,
+        endIndex?.element,
+      );
+      let position: QuotePosition = {
+        start: {
+          block: startIndex?.index.split(".").map(parseInt),
+          offset: startOffset,
+        },
+        end: {
+          block: endIndex.index.split(".").map(parseInt),
+          offset: endOffset,
+        },
+      };
       setPosition({
         top: selectionTop,
         left: selectionLeft,
+        position: encodeQuotePosition(position),
       });
     };
 
@@ -88,71 +115,39 @@ export function QuoteHandler() {
           left: position.left,
         }}
       >
-        <QuoteOptionButtons />
+        <QuoteOptionButtons position={position.position} />
       </div>
     );
   }
 }
 
-export const QuoteOptionButtons = () => {
+export const QuoteOptionButtons = (props: { position: string }) => {
   let smoker = useSmoker();
-  const getURL = () => {
-    let selection = document.getSelection()?.getRangeAt(0);
-    if (!selection) return;
-    let startResult = findDataIndex(selection.startContainer);
-    let endResult = findDataIndex(selection.endContainer);
-    if (!startResult || !endResult) return;
-
-    let startOffset = calculateOffsetFromDataParent(
-      selection.startContainer,
-      selection.startOffset,
-      startResult.element,
-    );
-    let endOffset = calculateOffsetFromDataParent(
-      selection.endContainer,
-      selection.endOffset,
-      endResult.element,
-    );
-
-    let quotePosition = encodeQuotePosition({
-      start: {
-        block: startResult.index.split(".").map((i) => parseInt(i)),
-        offset: startOffset,
-      },
-      end: {
-        block: endResult.index.split(".").map((i) => parseInt(i)),
-        offset: endOffset,
-      },
-    });
+  let url = useMemo(() => {
     let currentUrl = new URL(window.location.href);
+    let pos = decodeQuotePosition(props.position);
     if (currentUrl.pathname.includes("/l-quote/")) {
       currentUrl.pathname = currentUrl.pathname.split("/l-quote/")[0];
     }
-    currentUrl.pathname = currentUrl.pathname + `/l-quote/${quotePosition}`;
+    currentUrl.pathname = currentUrl.pathname + `/l-quote/${props.position}`;
 
-    currentUrl.hash = `#${startResult.index}_${startOffset}`;
+    currentUrl.hash = `#${pos?.start.block.join(".")}_${pos?.start.offset}`;
     return currentUrl.toString();
-  };
+  }, [props.position]);
 
   return (
     <>
       <div className="">Share Quote via</div>
 
-      <button
+      <a
         className="flex gap-1 items-center hover:font-bold p-1"
         role="link"
-        onClick={() => {
-          let url = getURL();
-          if (!url) return;
-          window.open(
-            `https://bsky.app/intent/compose?text=${encodeURIComponent(url.toString())}`,
-            "_blank",
-          );
-        }}
+        href={`https://bsky.app/intent/compose?text=${encodeURIComponent(url)}`}
+        target="_blank"
       >
         <BlueskyLinkTiny className="shrink-0" />
         Bluesky
-      </button>
+      </a>
       <Separator classname="h-3" />
       <button
         id="copy-quote-link"
@@ -161,9 +156,8 @@ export const QuoteOptionButtons = () => {
           let rect = document
             .getElementById("copy-quote-link")
             ?.getBoundingClientRect();
-          let url = getURL();
           if (!url) return;
-          navigator.clipboard.writeText(url.toString());
+          navigator.clipboard.writeText(url);
 
           smoker({
             text: <strong>Copied Link</strong>,
