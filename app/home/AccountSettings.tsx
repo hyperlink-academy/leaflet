@@ -70,10 +70,10 @@ const DefaultOptions = (props: { setState: (s: state) => void }) => {
 };
 
 const DomainOptions = (props: { setState: (s: state) => void }) => {
-  let pubDomains = domains
+  let pubDomains = dummyDomains
     .filter((domain) => domain.type === "pub")
     .sort((a, b) => a.base_url.localeCompare(b.base_url));
-  let leafletDomains = domains
+  let leafletDomains = dummyDomains
     .filter((domain) => domain.type === "leaflet")
     .sort((a, b) => a.base_url.localeCompare(b.base_url));
   return (
@@ -142,7 +142,7 @@ const Domain = (props: {
   );
 };
 
-const SubDomain = (props: {
+export const SubDomain = (props: {
   path: string;
   title: string;
   base_url: string;
@@ -206,10 +206,11 @@ const SubDomain = (props: {
   );
 };
 
-const domains = [
+export const dummyDomains = [
   {
     base_url: "cozylittle.house",
     type: "leaflet",
+    state: "pending",
 
     subdomains: [
       {
@@ -227,6 +228,8 @@ const domains = [
   {
     base_url: "theseare.my",
     type: "leaflet",
+    state: "linked",
+
     subdomains: [
       {
         path: "/hobbies",
@@ -235,8 +238,25 @@ const domains = [
     ],
   },
   {
+    base_url: "awarm.space",
+    type: "leaflet",
+    state: "available",
+
+    subdomains: [{ path: "/", title: "Hi, I'm Jared" }],
+  },
+
+  {
+    base_url: "leaflet.cafe",
+    type: "leaflet",
+    state: "available",
+
+    subdomains: [{ path: "/", title: "Leafleting" }],
+  },
+  {
     base_url: "cyberspaceline.online",
     type: "pub",
+    state: "available",
+
     subdomains: [{ path: "/", title: "Celine in Cyberspace" }],
   },
 ];

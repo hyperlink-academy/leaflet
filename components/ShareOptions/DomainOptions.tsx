@@ -13,6 +13,11 @@ import { addDomainPath } from "actions/domains/addDomainPath";
 import { useReplicache } from "src/replicache";
 import { deleteDomain } from "actions/domains/deleteDomain";
 import { AddTiny } from "components/Icons/AddTiny";
+import { GoToArrow } from "components/Icons/GoToArrow";
+import { dummyDomains } from "app/home/AccountSettings";
+import Link from "next/link";
+import { LoadingTiny } from "components/Icons/LoadingTiny";
+import { UnlinkTiny } from "components/Icons/UnlinkTiny";
 
 type DomainMenuState =
   | {
@@ -66,6 +71,21 @@ export const DomainOptions = (props: {
   let [selectedDomain, setSelectedDomain] = useState<string | undefined>(
     domains?.[0]?.domain,
   );
+
+  let [selectedDummyDomain, setSelectedDummyDomain] = useState<
+    string | undefined
+  >(undefined);
+
+  let linkedDomains = dummyDomains?.filter((domain) => {
+    return domain.type === "leaflet" && domain.state === "linked";
+  });
+  let availableDomains = dummyDomains?.filter((domain) => {
+    return domain.type === "leaflet" && domain.state === "available";
+  });
+  let pendingDomains = dummyDomains?.filter((domain) => {
+    return domain.type === "leaflet" && domain.state === "pending";
+  });
+
   let [selectedRoute, setSelectedRoute] = useState(
     domains?.[0]?.route.slice(1) || "",
   );
@@ -73,14 +93,25 @@ export const DomainOptions = (props: {
   let { permission_token } = useReplicache();
 
   let toaster = useToaster();
-  let smoker = useSmoker();
   let publishLink = usePublishLink();
 
+  console.log(dummyDomains.filter((domain) => domain.type === "leaflet"));
   return (
-    <div className="px-3 py-1 flex flex-col gap-3 max-w-full w-[600px]">
-      <h3 className="text-secondary">Choose a Domain</h3>
-      <div className="flex flex-col gap-1 text-secondary">
-        {identity?.custom_domains
+    <div className="px-3 py-1 flex flex-col gap-2 max-w-full w-[600px]">
+      <div className="flex justify-between">
+        <h4 className="">Choose a Domain</h4>
+        <button
+          className="text-accent-contrast rotate-180"
+          onClick={() => {
+            props.setShareMenuState("default");
+          }}
+        >
+          <GoToArrow />
+        </button>
+      </div>
+      <hr className="border-border-light -mx-3" />
+      <div className="flex flex-col gap-3 text-secondary">
+        {/*{identity?.custom_domains
           .filter((d) => !d.publication_domains.length)
           .map((domain) => {
             return (
@@ -94,87 +125,189 @@ export const DomainOptions = (props: {
                 setDomainMenuState={props.setDomainMenuState}
               />
             );
-          })}
-        <button
+          })}*/}
+        {linkedDomains.length > 0 && (
+          <div className="flex flex-col gap-0.5">
+            <strong className="text-sm">Currently Linked</strong>
+            {linkedDomains.map((domain) => {
+              return (
+                <DummyDomainOption
+                  selectedDummyDomain={selectedDomain}
+                  setSelectedDummyDomain={setSelectedDummyDomain}
+                  domain={domain}
+                />
+              );
+            })}
+          </div>
+        )}
+        {availableDomains.length > 0 && (
+          <div className="flex flex-col gap-0.5">
+            <strong className="text-sm">Available</strong>
+            {availableDomains.map((domain) => {
+              return (
+                <DummyDomainOption
+                  selectedDummyDomain={selectedDomain}
+                  setSelectedDummyDomain={setSelectedDummyDomain}
+                  domain={domain}
+                />
+              );
+            })}
+          </div>
+        )}
+        {pendingDomains.length > 0 && (
+          <div className="flex flex-col gap-0.5">
+            <strong className="text-sm">Pending</strong>
+            {pendingDomains.map((domain) => {
+              return (
+                <DummyDomainOption
+                  selectedDummyDomain={selectedDomain}
+                  setSelectedDummyDomain={setSelectedDummyDomain}
+                  domain={domain}
+                />
+              );
+            })}
+          </div>
+        )}
+        <div className="text-sm text-tertiary">
+          Add or delete domains from the account settings on{" "}
+          <Link href="/home">home</Link>
+        </div>
+
+        {/*<button
           onMouseDown={() => {
             props.setDomainMenuState({ state: "add-domain" });
           }}
-          className="text-accent-contrast flex gap-2 items-center px-1 py-0.5"
+          className="text-accent-contrast text-sm flex justify-between gap-2 items-center px-1 py-0.5 border block-border hover:outline-accent-contrast !border-accent-contrast  !rounded-md font-bold my-2"
         >
-          <AddTiny /> Add a New Domain
+          Add a New Domain <AddTiny />
+        </button>*/}
+      </div>
+
+      <ButtonPrimary
+        id="publish-to-domain"
+        className="place-self-end"
+        disabled={
+          domains?.[0]
+            ? domains[0].domain === selectedDomain &&
+              domains[0].route.slice(1) === selectedRoute
+            : !selectedDomain
+        }
+        onClick={async () => {
+          // let rect = document
+          //   .getElementById("publish-to-domain")
+          //   ?.getBoundingClientRect();
+          // smoker({
+          //   error: true,
+          //   text: "url already in use!",
+          //   position: {
+          //     x: rect ? rect.left : 0,
+          //     y: rect ? rect.top + 26 : 0,
+          //   },
+          // });
+          if (!selectedDomain || !publishLink) return;
+          await addDomainPath({
+            domain: selectedDomain,
+            route: "/" + selectedRoute,
+            view_permission_token: publishLink,
+            edit_permission_token: permission_token.id,
+          });
+
+          toaster({
+            content: (
+              <div className="font-bold">
+                Published to custom domain!{" "}
+                <a
+                  className="underline text-accent-2"
+                  href={`https://${selectedDomain}/${selectedRoute}`}
+                  target="_blank"
+                >
+                  View
+                </a>
+              </div>
+            ),
+            type: "success",
+          });
+          mutateDomains();
+          props.setShareMenuState("default");
+        }}
+      >
+        Publish!
+      </ButtonPrimary>
+    </div>
+  );
+};
+
+const DummyDomainOption = (props: {
+  domain: {
+    base_url: string;
+    type: string;
+    state: string;
+    subdomains: {
+      path: string;
+      title: string;
+    }[];
+  };
+  selectedDummyDomain?: string;
+  setSelectedDummyDomain: (domain: string) => void;
+}) => {
+  let [pathValue, setPathValue] = useState("");
+
+  if (props.domain.state === "linked") {
+    return (
+      <div
+        className={`
+        text-sm flex justify-between
+        px-1 py-0.5
+        bg-accent-1 text-accent-2 rounded-md`}
+      >
+        <div className="font-bold w-full truncate">
+          {props.domain.base_url}
+          <span className="font-normal">{props.domain.subdomains[0].path}</span>
+        </div>
+        <button>
+          <UnlinkTiny />
         </button>
       </div>
+    );
+  }
+  return (
+    <div
+      className={`
+        text-sm flex
+        px-1 py-0.5
+        border  block-border !rounded-md
 
-      {/* ONLY SHOW IF A DOMAIN IS CURRENTLY CONNECTED */}
-      <div className="flex gap-3 items-center justify-end">
-        {props.domainConnected && (
-          <button
-            onMouseDown={() => {
-              props.setShareMenuState("default");
-              toaster({
-                content: (
-                  <div className="font-bold">
-                    Unpublished from custom domain!
-                  </div>
-                ),
-                type: "error",
-              });
-            }}
-          >
-            Unpublish
-          </button>
-        )}
-
-        <ButtonPrimary
-          id="publish-to-domain"
-          disabled={
-            domains?.[0]
-              ? domains[0].domain === selectedDomain &&
-                domains[0].route.slice(1) === selectedRoute
-              : !selectedDomain
-          }
-          onClick={async () => {
-            // let rect = document
-            //   .getElementById("publish-to-domain")
-            //   ?.getBoundingClientRect();
-            // smoker({
-            //   error: true,
-            //   text: "url already in use!",
-            //   position: {
-            //     x: rect ? rect.left : 0,
-            //     y: rect ? rect.top + 26 : 0,
-            //   },
+        ${props.selectedDummyDomain === props.domain.base_url ? "!outline-accent-contrast !border-accent-contrast" : ""}
+        `}
+      onClick={() => {
+        props.setSelectedDummyDomain(props.domain.base_url);
+      }}
+    >
+      <div className="font-bold">{props.domain.base_url}/</div>{" "}
+      <Input
+        value={pathValue}
+        disabled={props.domain.state === "pending"}
+        onChange={(e) => setPathValue(e.currentTarget.value)}
+        className="w-full bg-transparent appearance-none focus:!outline-none"
+        placeholder={
+          props.selectedDummyDomain === props.domain.base_url
+            ? "optional path"
+            : ""
+        }
+      />
+      {props.domain.state === "pending" && (
+        <button
+          className="text-accent-contrast text-sm"
+          onMouseDown={() => {
+            // props.setDomainMenuState({
+            //   state: "domain-settings",
+            //   domain: props.domain,
             // });
-            if (!selectedDomain || !publishLink) return;
-            await addDomainPath({
-              domain: selectedDomain,
-              route: "/" + selectedRoute,
-              view_permission_token: publishLink,
-              edit_permission_token: permission_token.id,
-            });
-
-            toaster({
-              content: (
-                <div className="font-bold">
-                  Published to custom domain!{" "}
-                  <a
-                    className="underline text-accent-2"
-                    href={`https://${selectedDomain}/${selectedRoute}`}
-                    target="_blank"
-                  >
-                    View
-                  </a>
-                </div>
-              ),
-              type: "success",
-            });
-            mutateDomains();
-            props.setShareMenuState("default");
           }}
         >
-          Publish!
-        </ButtonPrimary>
-      </div>
+          <LoadingTiny className="animate-spin text-accent-contrast group-hover/pending:text-accent-2 " />
+        </button>
+      )}
     </div>
   );
 };
@@ -262,37 +395,49 @@ const DomainOption = (props: {
 export const AddDomain = (props: {
   setDomainMenuState: (state: DomainMenuState) => void;
 }) => {
-  let [value, setValue] = useState("");
+  let [domainValue, setDomainValue] = useState("");
+  let [pathValue, setPathValue] = useState("");
+
+  let baseDomain = domainValue.replace(/^https?:\/\//, "").split("/")[0];
+
   let { mutate } = useIdentityData();
   let smoker = useSmoker();
   return (
-    <div className="flex flex-col gap-1 px-3 py-1 max-w-full w-[600px]">
-      <div>
-        <h3 className="text-secondary">Add a New Domain</h3>
-        <div className="text-xs italic text-secondary">
-          Don't include the protocol or path, just the base domain name for now
-        </div>
+    <div className="flex flex-col gap-2 px-3 py-1 max-w-full w-[600px]">
+      <div className="flex justify-between">
+        <h4 className="text-secondary ">Add a New Domain</h4>{" "}
+        <button
+          className="rotate-180 text-accent-contrast"
+          onClick={() => props.setDomainMenuState({ state: "default" })}
+        >
+          <GoToArrow />
+        </button>
       </div>
-
+      <hr className="border-border-light -mx-3" />
+      <div className="text-sm  text-secondary">
+        <strong>Enter the just the base domain.</strong>
+        <br />
+        Once this domain is verified come back to link it to this leaflet.
+      </div>
       <Input
-        className="input-with-border text-primary"
+        className="!outline-none w-full min-w-0 input-with-border"
         placeholder="www.example.com"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
+        value={domainValue}
+        onChange={(e) => setDomainValue(e.target.value)}
       />
 
       <ButtonPrimary
-        disabled={!value}
+        disabled={!domainValue}
         className="place-self-end mt-2"
         onMouseDown={async (e) => {
           // call the vercel api, set the thing...
-          let { error } = await addDomain(value);
+          let { error } = await addDomain(baseDomain);
           if (error) {
             smoker({
               error: true,
               text:
                 error === "invalid_domain"
-                  ? "Invalid domain! Use just the base domain"
+                  ? "Invalid domain! Only inlcude the base domain"
                   : error === "domain_already_in_use"
                     ? "That domain is already in use!"
                     : "An unknown error occured",
@@ -304,7 +449,10 @@ export const AddDomain = (props: {
             return;
           }
           mutate();
-          props.setDomainMenuState({ state: "domain-settings", domain: value });
+          props.setDomainMenuState({
+            state: "domain-settings",
+            domain: domainValue,
+          });
         }}
       >
         Verify Domain
@@ -368,7 +516,10 @@ const DomainSettings = (props: {
         <div>
           Once you do this, the status may be pending for up to a few hours.
         </div>
-        <div>Check back later to see if verification was successful.</div>
+        <div>
+          Check back later to see if verification was successful and to link it
+          to this leaflet.
+        </div>
       </div>
 
       <div className="flex gap-3 justify-between items-center mt-2">
@@ -379,7 +530,7 @@ const DomainSettings = (props: {
             props.setDomainMenuState({ state: "default" });
           }}
         >
-          Delete Domain
+          Cancel Verification
         </button>
         <ButtonPrimary
           onMouseDown={() => {
