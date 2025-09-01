@@ -289,7 +289,6 @@ export const blockCommands: Command[] = [
     name: "Bluesky Post",
     icon: <BlockBlueskySmall />,
     type: "block",
-    hiddenInPublication: true,
     onSelect: async (rep, props) => {
       createBlockWithType(rep, props, "bluesky-post");
     },
