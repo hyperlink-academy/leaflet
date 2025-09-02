@@ -60,13 +60,25 @@ export default async function middleware(req: NextRequest) {
       req.nextUrl.pathname.includes("/rss") ||
       req.nextUrl.pathname.includes("/atom") ||
       req.nextUrl.pathname.includes("/json");
+
+    // Check if we've already completed auth (prevents redirect loop when cookies are disabled)
+    let authCompleted = req.nextUrl.searchParams.has("auth_completed");
+
     if (
       !isStaticReq &&
       (!cookie || req.nextUrl.searchParams.has("refreshAuth")) &&
-      !req.nextUrl.searchParams.has("auth_completed") &&
+      !authCompleted &&
       !hostname.includes("leaflet.pub")
     ) {
       return initiateAuthCallback(req);
+    }
+
+    // If auth was completed but we still don't have a cookie, cookies might be disabled
+    // Continue without auth rather than looping
+    if (authCompleted && !cookie) {
+      console.warn(
+        "Auth completed but no cookie set - cookies may be disabled",
+      );
     }
     let aturi = new AtUri(pub?.uri);
     return NextResponse.rewrite(
@@ -156,7 +168,7 @@ async function receiveAuthCallback(req: NextRequest) {
 
   let url = new URL(token.redirect);
   url.searchParams.set("auth_completed", "true");
-  let response = NextResponse.redirect(token.redirect);
+  let response = NextResponse.redirect(url.toString());
   response.cookies.set("external_auth_token", token.auth_token || "null");
   return response;
 }
