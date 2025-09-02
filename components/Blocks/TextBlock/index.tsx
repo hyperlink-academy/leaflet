@@ -458,12 +458,14 @@ const BlockifyLink = (props: {
         onClick={async (e) => {
           if (!rep.rep) return;
           rep.undoManager.startGroup();
-          let isYoutubeUrl = editorState.doc.textContent.startsWith(
-            "https://www.youtube.com/watch?v=",
-          );
-          if (isYoutubeUrl) {
-            let url = new URL(editorState.doc.textContent);
-            let videoId = url.searchParams.get("v");
+          function extractYoutubeId(url: string) {
+            const pattern =
+              /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+            const match = url.match(pattern);
+            return match ? match[1] : null;
+          }
+          let videoId = extractYoutubeId(editorState.doc.textContent);
+          if (videoId) {
             await rep.rep.mutate.assertFact([
               {
                 entity: props.entityID,
