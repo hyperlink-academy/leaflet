@@ -5,12 +5,13 @@ import { flushSync } from "react-dom";
 import type { Json } from "supabase/database.types";
 import { create } from "zustand";
 import type { Comment } from "./Comments";
+import { QuotePosition } from "../quotePosition";
 
 export let useInteractionState = create(() => ({
   drawerOpen: undefined as boolean | undefined,
   drawer: undefined as undefined | "comments" | "quotes",
   localComments: [] as Comment[],
-  commentBox: { quote: null as string | null },
+  commentBox: { quote: null as QuotePosition | null },
 }));
 export function openInteractionDrawer(drawer: "comments" | "quotes") {
   flushSync(() => {

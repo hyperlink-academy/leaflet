@@ -128,7 +128,7 @@ export function QuoteHandler() {
 export const QuoteOptionButtons = (props: { position: string }) => {
   let smoker = useSmoker();
   let { identity } = useIdentityData();
-  let url = useMemo(() => {
+  let [url, position] = useMemo(() => {
     let currentUrl = new URL(window.location.href);
     let pos = decodeQuotePosition(props.position);
     if (currentUrl.pathname.includes("/l-quote/")) {
@@ -137,7 +137,7 @@ export const QuoteOptionButtons = (props: { position: string }) => {
     currentUrl.pathname = currentUrl.pathname + `/l-quote/${props.position}`;
 
     currentUrl.hash = `#${pos?.start.block.join(".")}_${pos?.start.offset}`;
-    return currentUrl.toString();
+    return [currentUrl.toString(), pos];
   }, [props.position]);
 
   return (
@@ -180,10 +180,11 @@ export const QuoteOptionButtons = (props: { position: string }) => {
         <button
           className="flex gap-1 items-center hover:font-bold p-1"
           onClick={() => {
+            if (!position) return;
             useInteractionState.setState({
               drawer: "comments",
               drawerOpen: true,
-              commentBox: { quote: url },
+              commentBox: { quote: position },
             });
           }}
         >

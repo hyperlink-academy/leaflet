@@ -71,3 +71,35 @@ export function validateBlock<V>(v: V) {
 export const TEXTALIGNLEFT = `${id}#textAlignLeft`
 export const TEXTALIGNCENTER = `${id}#textAlignCenter`
 export const TEXTALIGNRIGHT = `${id}#textAlignRight`
+
+export interface Quote {
+  $type?: 'pub.leaflet.pages.linearDocument#quote'
+  start: Position
+  end: Position
+}
+
+const hashQuote = 'quote'
+
+export function isQuote<V>(v: V) {
+  return is$typed(v, id, hashQuote)
+}
+
+export function validateQuote<V>(v: V) {
+  return validate<Quote & V>(v, id, hashQuote)
+}
+
+export interface Position {
+  $type?: 'pub.leaflet.pages.linearDocument#position'
+  block: number[]
+  offset: number
+}
+
+const hashPosition = 'position'
+
+export function isPosition<V>(v: V) {
+  return is$typed(v, id, hashPosition)
+}
+
+export function validatePosition<V>(v: V) {
+  return validate<Position & V>(v, id, hashPosition)
+}

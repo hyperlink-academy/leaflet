@@ -46,9 +46,18 @@ export const Quotes = (props: {
         <div className="quotes flex flex-col gap-8">
           {props.quotes.map((q, index) => {
             let pv = q.bsky_posts?.post_view as unknown as PostView;
+            const url = new URL(q.link);
+            const quoteParam = url.pathname.split("/l-quote/")[1];
+            if (!quoteParam) return null;
+            const quotePosition = decodeQuotePosition(quoteParam);
+            if (!quotePosition) return null;
             return (
               <div key={index} className="flex flex-col gap-2">
-                <QuoteContent index={index} link={q.link} did={props.did} />
+                <QuoteContent
+                  index={index}
+                  did={props.did}
+                  position={quotePosition}
+                />
                 <BskyPost
                   rkey={new AtUri(pv.uri).rkey}
                   content={pv.record.text as string}
@@ -66,23 +75,17 @@ export const Quotes = (props: {
 };
 
 export const QuoteContent = (props: {
+  position: QuotePosition;
   index: number;
-  link: string;
   did: string;
 }) => {
   let isMobile = useIsMobile();
   const data = useContext(PostPageContext);
 
-  const url = new URL(props.link);
-  const quoteParam = url.pathname.split("/l-quote/")[1];
-  if (!quoteParam) return null;
-  const quotePosition = decodeQuotePosition(quoteParam);
-  if (!quotePosition) return null;
-
   let record = data?.data as PubLeafletDocument.Record;
   let page = record.pages[0] as PubLeafletPagesLinearDocument.Main;
   // Extract blocks within the quote range
-  const content = extractQuotedBlocks(page.blocks || [], quotePosition, []);
+  const content = extractQuotedBlocks(page.blocks || [], props.position, []);
   return (
     <div
       className="quoteSection"
@@ -101,7 +104,7 @@ export const QuoteContent = (props: {
             : e.currentTarget.getBoundingClientRect().top;
           let scrollContainer = window.document.getElementById("post-page");
           let el = window.document.getElementById(
-            quotePosition.start.block.join("."),
+            props.position.start.block.join("."),
           );
           if (!el || !scrollContainer) return;
           let blockRect = el.getBoundingClientRect();

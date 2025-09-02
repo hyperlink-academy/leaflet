@@ -84,7 +84,14 @@ export function CommentBox(props: {
             text?.includes(QUOTE_PARAM) &&
             text.includes(window.location.toString())
           ) {
-            useInteractionState.setState({ commentBox: { quote: text } });
+            const url = new URL(text);
+            const quoteParam = url.pathname.split("/l-quote/")[1];
+            if (!quoteParam) return;
+            const quotePosition = decodeQuotePosition(quoteParam);
+            if (!quotePosition) return;
+            useInteractionState.setState({
+              commentBox: { quote: quotePosition },
+            });
             return true;
           }
         },
@@ -120,8 +127,7 @@ export function CommentBox(props: {
     <div className=" flex flex-col gap-1">
       {quote && (
         <div>
-          <h3>a quote</h3>
-          <QuoteContent link={quote} did="" index={0} />
+          <QuoteContent position={quote} did="" index={-1} />
           <button
             onClick={() =>
               useInteractionState.setState({ commentBox: { quote: null } })
@@ -166,12 +172,26 @@ export function CommentBox(props: {
             let [plaintext, facets] = docToFacetedText(editorState.doc);
             let comment = await publishComment({
               document: props.doc_uri,
-              comment: { plaintext, facets, replyTo: props.replyTo },
+              comment: {
+                plaintext,
+                facets,
+                replyTo: props.replyTo,
+                attachment: quote
+                  ? {
+                      $type: "pub.leaflet.comment#linearDocumentQuote",
+                      document: props.doc_uri,
+                      quote,
+                    }
+                  : undefined,
+              },
             });
 
             setLoading(false);
             props.onSubmit?.();
             useInteractionState.setState((s) => ({
+              commentBox: {
+                quote: null,
+              },
               localComments: [
                 ...s.localComments,
                 {

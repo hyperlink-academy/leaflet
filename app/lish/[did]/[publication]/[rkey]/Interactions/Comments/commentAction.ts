@@ -15,6 +15,7 @@ export async function publishComment(args: {
     plaintext: string;
     facets: PubLeafletRichtextFacet.Main[];
     replyTo?: string;
+    attachment: PubLeafletComment.Record["attachment"];
   };
 }) {
   const oauthClient = await createOauthClient();
@@ -31,6 +32,7 @@ export async function publishComment(args: {
     plaintext: args.comment.plaintext,
     facets: args.comment.facets,
     reply: args.comment.replyTo ? { parent: args.comment.replyTo } : undefined,
+    attachment: args.comment.attachment,
   };
   let rkey = TID.nextStr();
   let uri = AtUri.make(credentialSession.did!, "pub.leaflet.comment", rkey);

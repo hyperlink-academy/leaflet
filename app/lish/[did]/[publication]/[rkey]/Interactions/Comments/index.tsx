@@ -16,6 +16,7 @@ import { AppBskyActorProfile, AtUri } from "@atproto/api";
 import { timeAgo } from "app/discover/PubListing";
 import { BlueskyLogin } from "app/login/LoginForm";
 import { usePathname } from "next/navigation";
+import { QuoteContent } from "../Quotes";
 
 export type Comment = {
   record: Json;
@@ -102,6 +103,16 @@ const Comment = (props: {
         )}
         <DatePopover date={props.record.createdAt} />
       </div>
+      {props.record.attachment &&
+        PubLeafletComment.isLinearDocumentQuote(props.record.attachment) && (
+          <div className="border p-1">
+            <QuoteContent
+              index={-1}
+              position={props.record.attachment.quote}
+              did={new AtUri(props.record.attachment.document).host}
+            />
+          </div>
+        )}
       <pre
         key={props.comment.uri}
         style={{ wordBreak: "break-word" }}
