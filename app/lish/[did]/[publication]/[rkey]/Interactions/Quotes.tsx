@@ -15,11 +15,8 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletBlocksCode,
 } from "lexicons/api";
-import {
-  decodeQuotePosition,
-  QuotePosition,
-  useActiveHighlightState,
-} from "../useHighlight";
+import { decodeQuotePosition, QuotePosition } from "../quotePosition";
+import { useActiveHighlightState } from "../useHighlight";
 import { PostContent } from "../PostContent";
 import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 
@@ -27,7 +24,6 @@ export const Quotes = (props: {
   quotes: { link: string; bsky_posts: { post_view: Json } | null }[];
   did: string;
 }) => {
-  let isMobile = useIsMobile();
   let data = useContext(PostPageContext);
 
   return (
@@ -50,78 +46,85 @@ export const Quotes = (props: {
         <div className="quotes flex flex-col gap-8">
           {props.quotes.map((q, index) => {
             let pv = q.bsky_posts?.post_view as unknown as PostView;
-            let record = data?.data as PubLeafletDocument.Record;
-            const url = new URL(q.link);
-            const quoteParam = url.pathname.split("/l-quote/")[1];
-            if (!quoteParam) return null;
-            const quotePosition = decodeQuotePosition(quoteParam);
-            if (!quotePosition) return null;
-
-            let page = record.pages[0] as PubLeafletPagesLinearDocument.Main;
-            // Extract blocks within the quote range
-            const content = extractQuotedBlocks(
-              page.blocks || [],
-              quotePosition,
-              [],
-            );
             return (
-              <div
-                className="quoteSection flex flex-col gap-2"
-                key={index}
-                onMouseLeave={() => {
-                  useActiveHighlightState.setState({ activeHighlight: null });
-                }}
-                onMouseEnter={() => {
-                  useActiveHighlightState.setState({ activeHighlight: index });
-                }}
-              >
-                <div
-                  className="quoteSectionQuote text-secondary text-sm text-left pb-1 hover:cursor-pointer"
-                  onClick={(e) => {
-                    let scrollMargin = isMobile
-                      ? 16
-                      : e.currentTarget.getBoundingClientRect().top;
-                    let scrollContainer =
-                      window.document.getElementById("post-page");
-                    let el = window.document.getElementById(
-                      quotePosition.start.block.join("."),
-                    );
-                    if (!el || !scrollContainer) return;
-                    let blockRect = el.getBoundingClientRect();
-                    let quoteScrollTop =
-                      (scrollContainer &&
-                        blockRect.top + scrollContainer.scrollTop) ||
-                      0;
-
-                    if (blockRect.left < 0)
-                      scrollContainer.scrollIntoView({ behavior: "smooth" });
-                    scrollContainer?.scrollTo({
-                      top: quoteScrollTop - scrollMargin,
-                      behavior: "smooth",
-                    });
-                  }}
-                >
-                  <div className="italic">
-                    <PostContent
-                      bskyPostData={[]}
-                      blocks={content || []}
-                      did={props.did}
-                      preview
-                    />
-                  </div>
-                  <BskyPost
-                    rkey={new AtUri(pv.uri).rkey}
-                    content={pv.record.text as string}
-                    user={pv.author.displayName || pv.author.handle}
-                    profile={pv.author}
-                    handle={pv.author.handle}
-                  />
-                </div>
+              <div key={index} className="flex flex-col gap-2">
+                <QuoteContent index={index} link={q.link} did={props.did} />
+                <BskyPost
+                  rkey={new AtUri(pv.uri).rkey}
+                  content={pv.record.text as string}
+                  user={pv.author.displayName || pv.author.handle}
+                  profile={pv.author}
+                  handle={pv.author.handle}
+                />
               </div>
             );
           })}
         </div>
       )}
+    </div>
+  );
+};
+
+export const QuoteContent = (props: {
+  index: number;
+  link: string;
+  did: string;
+}) => {
+  let isMobile = useIsMobile();
+  const data = useContext(PostPageContext);
+
+  const url = new URL(props.link);
+  const quoteParam = url.pathname.split("/l-quote/")[1];
+  if (!quoteParam) return null;
+  const quotePosition = decodeQuotePosition(quoteParam);
+  if (!quotePosition) return null;
+
+  let record = data?.data as PubLeafletDocument.Record;
+  let page = record.pages[0] as PubLeafletPagesLinearDocument.Main;
+  // Extract blocks within the quote range
+  const content = extractQuotedBlocks(page.blocks || [], quotePosition, []);
+  return (
+    <div
+      className="quoteSection"
+      onMouseLeave={() => {
+        useActiveHighlightState.setState({ activeHighlight: null });
+      }}
+      onMouseEnter={() => {
+        useActiveHighlightState.setState({ activeHighlight: props.index });
+      }}
+    >
+      <div
+        className="quoteSectionQuote text-secondary text-sm text-left pb-1 hover:cursor-pointer"
+        onClick={(e) => {
+          let scrollMargin = isMobile
+            ? 16
+            : e.currentTarget.getBoundingClientRect().top;
+          let scrollContainer = window.document.getElementById("post-page");
+          let el = window.document.getElementById(
+            quotePosition.start.block.join("."),
+          );
+          if (!el || !scrollContainer) return;
+          let blockRect = el.getBoundingClientRect();
+          let quoteScrollTop =
+            (scrollContainer && blockRect.top + scrollContainer.scrollTop) || 0;
+
+          if (blockRect.left < 0)
+            scrollContainer.scrollIntoView({ behavior: "smooth" });
+          scrollContainer?.scrollTo({
+            top: quoteScrollTop - scrollMargin,
+            behavior: "smooth",
+          });
+        }}
+      >
+        <div className="italic">
+          <PostContent
+            bskyPostData={[]}
+            blocks={content}
+            did={props.did}
+            preview
+          />
+        </div>
+      </div>
     </div>
   );
 };

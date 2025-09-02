@@ -25,6 +25,13 @@ import { setMark } from "src/utils/prosemirror/setMark";
 import { multi } from "linkifyjs";
 import { Json } from "supabase/database.types";
 import { isIOS } from "src/utils/isDevice";
+import {
+  decodeQuotePosition,
+  QUOTE_PARAM,
+  QuotePosition,
+} from "../../quotePosition";
+import { QuoteContent } from "../Quotes";
+import { create } from "zustand";
 
 export function CommentBox(props: {
   doc_uri: string;
@@ -32,6 +39,7 @@ export function CommentBox(props: {
   onSubmit?: () => void;
 }) {
   let mountRef = useRef<HTMLPreElement | null>(null);
+  let quote = useInteractionState((s) => s.commentBox.quote);
   let [editorState, setEditorState] = useState(() =>
     EditorState.create({
       schema: multiBlockSchema,
@@ -61,6 +69,25 @@ export function CommentBox(props: {
       { mount: mountRef.current },
       {
         state: editorState,
+        handlePaste: (view, e) => {
+          let text =
+            e.clipboardData?.getData("text") ||
+            e.clipboardData?.getData("text/html");
+          let html = e.clipboardData?.getData("text/html");
+          if (!text && html) {
+            let xml = new DOMParser().parseFromString(html, "text/html");
+            text = xml.textContent || "";
+          }
+          console.log("URL: " + window.location.toString());
+          console.log("TEXT: " + text, text?.includes(QUOTE_PARAM));
+          if (
+            text?.includes(QUOTE_PARAM) &&
+            text.includes(window.location.toString())
+          ) {
+            useInteractionState.setState({ commentBox: { quote: text } });
+            return true;
+          }
+        },
         handleClickOn: (view, _pos, node, _nodePos, _event, direct) => {
           if (!direct) return;
           if (node.nodeSize - 2 <= _pos) return;
@@ -91,6 +118,19 @@ export function CommentBox(props: {
   let [loading, setLoading] = useState(false);
   return (
     <div className=" flex flex-col gap-1">
+      {quote && (
+        <div>
+          <h3>a quote</h3>
+          <QuoteContent link={quote} did="" index={0} />
+          <button
+            onClick={() =>
+              useInteractionState.setState({ commentBox: { quote: null } })
+            }
+          >
+            clear
+          </button>
+        </div>
+      )}
       <div className="w-full relative group">
         <pre
           ref={mountRef}

@@ -10,6 +10,7 @@ export let useInteractionState = create(() => ({
   drawerOpen: undefined as boolean | undefined,
   drawer: undefined as undefined | "comments" | "quotes",
   localComments: [] as Comment[],
+  commentBox: { quote: null as string | null },
 }));
 export function openInteractionDrawer(drawer: "comments" | "quotes") {
   flushSync(() => {

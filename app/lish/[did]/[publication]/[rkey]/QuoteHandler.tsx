@@ -4,10 +4,14 @@ import { CopyTiny } from "components/Icons/CopyTiny";
 import { Separator } from "components/Layout";
 import { useSmoker } from "components/Toast";
 import { useEffect, useMemo, useState } from "react";
+import {
+  encodeQuotePosition,
+  decodeQuotePosition,
+  QuotePosition,
+} from "./quotePosition";
+import { useIdentityData } from "components/IdentityProvider";
+import { CommentTiny } from "components/Icons/CommentTiny";
 import { useInteractionState } from "./Interactions/Interactions";
-import { encodeQuotePosition } from "./useHighlight";
-import { useParams } from "next/navigation";
-import { decodeQuotePosition, QuotePosition } from "./quotePosition";
 
 export function QuoteHandler() {
   let [position, setPosition] = useState<{
@@ -123,6 +127,7 @@ export function QuoteHandler() {
 
 export const QuoteOptionButtons = (props: { position: string }) => {
   let smoker = useSmoker();
+  let { identity } = useIdentityData();
   let url = useMemo(() => {
     let currentUrl = new URL(window.location.href);
     let pos = decodeQuotePosition(props.position);
@@ -171,6 +176,20 @@ export const QuoteOptionButtons = (props: { position: string }) => {
         <CopyTiny className="shrink-0" />
         Link
       </button>
+      {identity?.atp_did && (
+        <button
+          className="flex gap-1 items-center hover:font-bold p-1"
+          onClick={() => {
+            useInteractionState.setState({
+              drawer: "comments",
+              drawerOpen: true,
+              commentBox: { quote: url },
+            });
+          }}
+        >
+          <CommentTiny /> Comment
+        </button>
+      )}
     </>
   );
 };
