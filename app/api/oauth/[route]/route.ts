@@ -116,7 +116,10 @@ const handleAction = async (
   action: ActionAfterSignIn | null,
   redirectPath: string,
 ) => {
-  let url = new URL(decodeURIComponent(redirectPath), "https://example.com");
+  let parsePath = decodeURIComponent(redirectPath);
+  let url;
+  if (parsePath.includes("://")) url = new URL(parsePath);
+  else url = new URL(decodeURIComponent(redirectPath), "https://example.com");
   if (action?.action === "subscribe") {
     let result = await subscribeToPublication(action.publication);
     console.log(result);
@@ -127,5 +130,5 @@ const handleAction = async (
   let path = url.pathname;
   if (url.search) path += url.search;
   if (url.hash) path += url.hash;
-  return redirect(path);
+  return parsePath.includes("://") ? redirect(url.toString()) : redirect(path);
 };
