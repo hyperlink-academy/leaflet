@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import { AtUri } from "@atproto/syntax";
 import { PubLeafletDocument } from "lexicons/api";
 import { EditTiny } from "components/Icons/EditTiny";
@@ -10,13 +9,12 @@ import { useParams } from "next/navigation";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { Menu, MenuItem } from "components/Layout";
 import { deletePost } from "./deletePost";
-import { mutate } from "swr";
-import { Button } from "react-aria-components";
 import { ButtonPrimary } from "components/Buttons";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 import { DeleteSmall } from "components/Icons/DeleteSmall";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { ShareButton } from "components/ShareOptions";
+import { SpeedyLink } from "components/SpeedyLink";
 
 export function PublishedPostsList() {
   let { data: publication } = usePublicationData();
@@ -66,9 +64,12 @@ export function PublishedPostsList() {
                     </a>
                     <div className="flex justify-start align-top flex-row gap-1">
                       {leaflet && (
-                        <Link className="pt-[6px]" href={`/${leaflet.leaflet}`}>
+                        <SpeedyLink
+                          className="pt-[6px]"
+                          href={`/${leaflet.leaflet}`}
+                        >
                           <EditTiny />
-                        </Link>
+                        </SpeedyLink>
                       )}
                       <Options document_uri={doc.documents.uri} />
                     </div>

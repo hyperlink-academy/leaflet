@@ -5,12 +5,11 @@ import {
 } from "app/lish/createPub/getPublicationURL";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { GoBackSmall } from "components/Icons/GoBackSmall";
-import { PaintSmall } from "components/Icons/PaintSmall";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { SpeedyLink } from "components/SpeedyLink";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useReplicache } from "src/replicache";
@@ -26,7 +25,7 @@ export const BackToPubButton = (props: {
   };
 }) => {
   return (
-    <Link
+    <SpeedyLink
       href={`${getBasePublicationURL(props.publication)}/dashboard`}
       className="hover:!no-underline"
     >
@@ -34,7 +33,7 @@ export const BackToPubButton = (props: {
         icon={<GoBackSmall className="shrink-0" />}
         label="To Pub"
       />
-    </Link>
+    </SpeedyLink>
   );
 };
 
@@ -84,11 +83,11 @@ const UpdateButton = () => {
           content: (
             <div>
               {pub.doc ? "Updated! " : "Published! "}
-              <Link
+              <SpeedyLink
                 href={`${getPublicationURL(pub.publications)}/${doc?.rkey}`}
               >
                 link
-              </Link>
+              </SpeedyLink>
             </div>
           ),
           type: "success",
