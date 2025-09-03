@@ -35,8 +35,7 @@ async function get_link_image_preview(url: string) {
       },
     },
   );
-
-  let key = `preview-${Date.now()}-${url}`;
+  let key = await hash(url);
   if (image.status === 200) {
     await supabase.storage
       .from("url-previews")
@@ -56,6 +55,17 @@ async function get_link_image_preview(url: string) {
     width: 240,
   };
 }
+const hash = async (str: string) => {
+  let hashBuffer = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(str),
+  );
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+  return hashHex;
+};
 
 async function get_link_metadata(url: string) {
   let response = await fetch(
