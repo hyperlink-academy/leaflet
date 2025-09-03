@@ -36,6 +36,7 @@ import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { isIOS } from "src/utils/isDevice";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { DotLoader } from "components/utils/DotLoader";
 
 const HeadingStyle = {
   1: "text-xl font-bold",
@@ -434,6 +435,7 @@ const BlockifyLink = (props: {
   entityID: string;
   editorState: EditorState | undefined;
 }) => {
+  let [loading, setLoading] = useState(false);
   let { editorState } = props;
   let rep = useReplicache();
   let smoker = useSmoker();
@@ -458,39 +460,6 @@ const BlockifyLink = (props: {
         onClick={async (e) => {
           if (!rep.rep) return;
           rep.undoManager.startGroup();
-          function extractYoutubeId(url: string) {
-            const pattern =
-              /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
-            const match = url.match(pattern);
-            return match ? match[1] : null;
-          }
-          let videoId = extractYoutubeId(editorState.doc.textContent);
-          if (videoId) {
-            await rep.rep.mutate.assertFact([
-              {
-                entity: props.entityID,
-                attribute: "block/type",
-                data: { type: "block-type-union", value: "embed" },
-              },
-              {
-                entity: props.entityID,
-                attribute: "embed/url",
-                data: {
-                  type: "string",
-                  value: `https://youtube.com/embed/${videoId}`,
-                },
-              },
-              {
-                entity: props.entityID,
-                attribute: "embed/height",
-                data: {
-                  type: "number",
-                  value: 315,
-                },
-              },
-            ]);
-            return;
-          }
           if (isBlueskyPost) {
             let success = await addBlueskyPostBlock(
               editorState.doc.textContent,
@@ -507,17 +476,19 @@ const BlockifyLink = (props: {
                 },
               });
           } else {
+            setLoading(true);
             await addLinkBlock(
               editorState.doc.textContent,
               props.entityID,
               rep.rep,
             );
+            setLoading(false);
           }
           rep.undoManager.endGroup();
         }}
         className="absolute right-0 top-0 px-1 py-0.5 text-xs text-tertiary sm:hover:text-accent-contrast border border-border-light sm:hover:border-accent-contrast sm:outline-accent-tertiary rounded-md bg-bg-page selected-outline "
       >
-        embed
+        {loading ? <DotLoader /> : "embed"}
       </button>
     );
   } else return null;
