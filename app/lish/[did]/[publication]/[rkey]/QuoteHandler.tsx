@@ -87,11 +87,11 @@ export function QuoteHandler() {
       );
       let position: QuotePosition = {
         start: {
-          block: startIndex?.index.split(".").map(parseInt),
+          block: startIndex?.index.split(".").map((i) => parseInt(i)),
           offset: startOffset,
         },
         end: {
-          block: endIndex.index.split(".").map(parseInt),
+          block: endIndex.index.split(".").map((i) => parseInt(i)),
           offset: endOffset,
         },
       };
