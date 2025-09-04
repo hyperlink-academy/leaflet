@@ -32,6 +32,8 @@ import {
 } from "../../quotePosition";
 import { QuoteContent } from "../Quotes";
 import { create } from "zustand";
+import { CloseTiny } from "components/Icons/CloseTiny";
+import { CloseFillTiny } from "components/Icons/CloseFillTiny";
 
 export function CommentBox(props: {
   doc_uri: string;
@@ -124,27 +126,28 @@ export function CommentBox(props: {
   }, []);
   let [loading, setLoading] = useState(false);
   return (
-    <div className=" flex flex-col gap-1">
+    <div className=" flex flex-col">
       {quote && (
-        <div>
+        <div className="relative mt-2 mb-2">
           <QuoteContent position={quote} did="" index={-1} />
           <button
+            className="text-border absolute -top-3 right-1 bg-bg-page p-1 rounded-full"
             onClick={() =>
               useInteractionState.setState({ commentBox: { quote: null } })
             }
           >
-            clear
+            <CloseFillTiny />
           </button>
         </div>
       )}
       <div className="w-full relative group">
         <pre
           ref={mountRef}
-          className={`border whitespace-pre-wrap input-with-border min-h-32 h-fit`}
+          className={`border whitespace-pre-wrap input-with-border min-h-32 h-fit !px-2 !py-[6px]`}
         />
         <IOSBS view={view} />
       </div>
-      <div className="flex justify-between">
+      <div className="flex justify-between pt-1">
         <div className="flex gap-1">
           <TextDecorationButton
             mark={multiBlockSchema.marks.strong}

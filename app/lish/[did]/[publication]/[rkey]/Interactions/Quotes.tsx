@@ -52,12 +52,14 @@ export const Quotes = (props: {
             const quotePosition = decodeQuotePosition(quoteParam);
             if (!quotePosition) return null;
             return (
-              <div key={index} className="flex flex-col gap-2">
+              <div key={index} className="flex flex-col ">
                 <QuoteContent
                   index={index}
                   did={props.did}
                   position={quotePosition}
                 />
+
+                <div className="h-5 w-1 ml-5 border-l border-border-light" />
                 <BskyPost
                   rkey={new AtUri(pv.uri).rkey}
                   content={pv.record.text as string}
@@ -97,7 +99,7 @@ export const QuoteContent = (props: {
       }}
     >
       <div
-        className="quoteSectionQuote text-secondary text-sm text-left pb-1 hover:cursor-pointer"
+        className="quoteSectionQuote text-secondary text-sm text-left hover:cursor-pointer"
         onClick={(e) => {
           let scrollMargin = isMobile
             ? 16
@@ -119,12 +121,13 @@ export const QuoteContent = (props: {
           });
         }}
       >
-        <div className="italic">
+        <div className="italic border border-border-light rounded-md px-2 pt-1">
           <PostContent
             bskyPostData={[]}
             blocks={content}
             did={props.did}
             preview
+            className="!py-0"
           />
         </div>
       </div>
@@ -143,7 +146,7 @@ const BskyPost = (props: {
     <a
       target="_blank"
       href={`https://bsky.app/profile/${props.handle}/post/${props.rkey}`}
-      className="quoteSectionBskyItem opaque-container py-2 px-2 text-sm flex gap-[6px] hover:no-underline font-normal"
+      className="quoteSectionBskyItem px-2  flex gap-[6px] hover:no-underline font-normal"
     >
       {props.profile.avatar && (
         <img
@@ -157,7 +160,7 @@ const BskyPost = (props: {
           <div className="font-bold">{props.user}</div>
           <div className="text-tertiary">@{props.handle}</div>
         </div>
-        <div className="text-secondary">{props.content}</div>
+        <div className="text-primary">{props.content}</div>
       </div>
     </a>
   );

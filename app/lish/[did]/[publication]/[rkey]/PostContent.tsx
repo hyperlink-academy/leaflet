@@ -29,17 +29,22 @@ export function PostContent({
   blocks,
   did,
   preview,
+  className,
   prerenderedCodeBlocks,
   bskyPostData,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   did: string;
   preview?: boolean;
+  className?: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
 }) {
   return (
-    <div id="post-content" className="postContent flex flex-col">
+    <div
+      id="post-content"
+      className={`postContent flex flex-col  pb-1 sm:pb-2 pt-1 sm:pt-2 ${className}`}
+    >
       {blocks.map((b, index) => {
         return (
           <Block
@@ -99,9 +104,9 @@ let Block = ({
   // non text blocks, they need this padding, pt-3 sm:pt-4, which is applied in each case
   let className = `
     postBlockWrapper
-    pt-1
     min-h-7
-    ${isList ? "isListItem pb-0 " : "pb-2 last:pb-3 last:sm:pb-4 first:pt-2 sm:first:pt-3"}
+    pt-1 pb-2
+    ${isList && "isListItem !pb-0 "}
     ${alignment}
     `;
 

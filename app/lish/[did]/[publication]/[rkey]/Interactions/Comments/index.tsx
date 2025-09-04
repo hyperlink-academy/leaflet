@@ -58,7 +58,7 @@ export function Comments(props: { document_uri: string; comments: Comment[] }) {
         </div>
       )}
       <hr className="border-border-light" />
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 py-2">
         {comments
           .sort((a, b) => {
             let aRecord = a.record as PubLeafletComment.Record;
@@ -100,7 +100,7 @@ const Comment = (props: {
 }) => {
   return (
     <div className="comment">
-      <div className="flex gap-2 ">
+      <div className="flex gap-2">
         {props.profile && (
           <ProfilePopover profile={props.profile} comment={props.comment.uri} />
         )}
@@ -108,7 +108,7 @@ const Comment = (props: {
       </div>
       {props.record.attachment &&
         PubLeafletComment.isLinearDocumentQuote(props.record.attachment) && (
-          <div className="border p-1">
+          <div className="mt-1 mb-2">
             <QuoteContent
               index={-1}
               position={props.record.attachment.quote}
@@ -119,7 +119,7 @@ const Comment = (props: {
       <pre
         key={props.comment.uri}
         style={{ wordBreak: "break-word" }}
-        className="whitespace-pre-wrap text-secondary pb-[4px]"
+        className="whitespace-pre-wrap text-secondary pb-[4px] "
       >
         <BaseTextBlock
           index={[]}
