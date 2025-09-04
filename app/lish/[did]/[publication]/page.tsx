@@ -11,6 +11,8 @@ import {
   PublicationThemeProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
 import { SpeedyLink } from "components/SpeedyLink";
+import { QuoteTiny } from "components/Icons/QuoteTiny";
+import { CommentTiny } from "components/Icons/CommentTiny";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -34,7 +36,11 @@ export default async function Publication(props: {
       .select(
         `*,
         publication_subscriptions(*),
-      documents_in_publications(documents(*))
+        documents_in_publications(documents(
+          *,
+          comments_on_documents(count),
+          document_mentions_in_bsky(count)
+        ))
       `,
       )
       .eq("identity_did", did)
@@ -121,31 +127,58 @@ export default async function Publication(props: {
                   .map((doc) => {
                     if (!doc.documents) return null;
                     let uri = new AtUri(doc.documents.uri);
-                    let record = doc.documents
+                    let doc_record = doc.documents
                       .data as PubLeafletDocument.Record;
+                    let quotes =
+                      doc.documents.document_mentions_in_bsky[0].count || 0;
+                    let comments =
+                      record?.preferences?.showComments === false
+                        ? 0
+                        : doc.documents.comments_on_documents[0].count || 0;
+
                     return (
                       <React.Fragment key={doc.documents?.uri}>
-                        <div className="flex w-full ">
+                        <div className="flex w-full grow flex-col ">
                           <SpeedyLink
                             href={`${getPublicationURL(publication)}/${uri.rkey}`}
-                            className="publishedPost grow flex flex-col hover:!no-underline"
+                            className="publishedPost hover:!no-underline flex flex-col"
                           >
-                            <h3 className="text-primary">{record.title}</h3>
+                            <h3 className="text-primary">{doc_record.title}</h3>
                             <p className="italic text-secondary">
-                              {record.description}
-                            </p>
-                            <p className="text-sm text-tertiary pt-2">
-                              {record.publishedAt &&
-                                new Date(record.publishedAt).toLocaleDateString(
-                                  undefined,
-                                  {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "2-digit",
-                                  },
-                                )}{" "}
+                              {doc_record.description}
                             </p>
                           </SpeedyLink>
+
+                          <div className="text-sm text-tertiary flex gap-1 flex-wrap pt-2">
+                            <p className="text-sm text-tertiary ">
+                              {doc_record.publishedAt &&
+                                new Date(
+                                  doc_record.publishedAt,
+                                ).toLocaleDateString(undefined, {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "2-digit",
+                                })}{" "}
+                            </p>
+                            {comments > 0 || quotes > 0 ? "| " : ""}
+                            {quotes > 0 && (
+                              <SpeedyLink
+                                href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=quotes`}
+                                className="flex flex-row gap-0 text-sm text-tertiary items-center flex-wrap"
+                              >
+                                <QuoteTiny /> {quotes}
+                              </SpeedyLink>
+                            )}
+                            {comments > 0 &&
+                              record?.preferences?.showComments !== false && (
+                                <SpeedyLink
+                                  href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=comments`}
+                                  className="flex flex-row gap-0 text-sm text-tertiary items-center flex-wrap"
+                                >
+                                  <CommentTiny /> {comments}
+                                </SpeedyLink>
+                              )}
+                          </div>
                         </div>
                         <hr className="last:hidden border-border-light" />
                       </React.Fragment>
