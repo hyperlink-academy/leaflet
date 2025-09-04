@@ -55,6 +55,7 @@ const PublishPostForm = (
   let params = useParams();
 
   async function submit() {
+    if (isLoading) return;
     setIsLoading(true);
     let doc = await publishToPublication({
       root_entity: props.root_entity,
