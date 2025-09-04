@@ -6,6 +6,7 @@ import { CID } from 'multiformats/cid'
 import { validate as _validate } from '../../../lexicons'
 import { $Typed, is$typed as _is$typed, OmitKey } from '../../../util'
 import type * as PubLeafletRichtextFacet from './richtext/facet'
+import type * as PubLeafletPagesLinearDocument from './pages/linearDocument'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -18,6 +19,7 @@ export interface Record {
   reply?: ReplyRef
   plaintext: string
   facets?: PubLeafletRichtextFacet.Main[]
+  attachment?: $Typed<LinearDocumentQuote> | { $type: string }
   [k: string]: unknown
 }
 
@@ -29,6 +31,22 @@ export function isRecord<V>(v: V) {
 
 export function validateRecord<V>(v: V) {
   return validate<Record & V>(v, id, hashRecord, true)
+}
+
+export interface LinearDocumentQuote {
+  $type?: 'pub.leaflet.comment#linearDocumentQuote'
+  document: string
+  quote: PubLeafletPagesLinearDocument.Quote
+}
+
+const hashLinearDocumentQuote = 'linearDocumentQuote'
+
+export function isLinearDocumentQuote<V>(v: V) {
+  return is$typed(v, id, hashLinearDocumentQuote)
+}
+
+export function validateLinearDocumentQuote<V>(v: V) {
+  return validate<LinearDocumentQuote & V>(v, id, hashLinearDocumentQuote)
 }
 
 export interface ReplyRef {

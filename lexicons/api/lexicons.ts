@@ -46,6 +46,24 @@ export const schemaDict = {
                 ref: 'lex:pub.leaflet.richtext.facet',
               },
             },
+            attachment: {
+              type: 'union',
+              refs: ['lex:pub.leaflet.comment#linearDocumentQuote'],
+            },
+          },
+        },
+      },
+      linearDocumentQuote: {
+        type: 'object',
+        required: ['document', 'quote'],
+        properties: {
+          document: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          quote: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.pages.linearDocument#quote',
           },
         },
       },
@@ -551,6 +569,35 @@ export const schemaDict = {
       },
       textAlignRight: {
         type: 'token',
+      },
+      quote: {
+        type: 'object',
+        required: ['start', 'end'],
+        properties: {
+          start: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.pages.linearDocument#position',
+          },
+          end: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.pages.linearDocument#position',
+          },
+        },
+      },
+      position: {
+        type: 'object',
+        required: ['block', 'offset'],
+        properties: {
+          block: {
+            type: 'array',
+            items: {
+              type: 'integer',
+            },
+          },
+          offset: {
+            type: 'integer',
+          },
+        },
       },
     },
   },

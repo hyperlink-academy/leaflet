@@ -16,6 +16,7 @@ import { AppBskyActorProfile, AtUri } from "@atproto/api";
 import { timeAgo } from "app/discover/PubListing";
 import { BlueskyLogin } from "app/login/LoginForm";
 import { usePathname } from "next/navigation";
+import { QuoteContent } from "../Quotes";
 
 export type Comment = {
   record: Json;
@@ -57,7 +58,7 @@ export function Comments(props: { document_uri: string; comments: Comment[] }) {
         </div>
       )}
       <hr className="border-border-light" />
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 py-2">
         {comments
           .sort((a, b) => {
             let aRecord = a.record as PubLeafletComment.Record;
@@ -99,16 +100,26 @@ const Comment = (props: {
 }) => {
   return (
     <div className="comment">
-      <div className="flex gap-2 ">
+      <div className="flex gap-2">
         {props.profile && (
           <ProfilePopover profile={props.profile} comment={props.comment.uri} />
         )}
         <DatePopover date={props.record.createdAt} />
       </div>
+      {props.record.attachment &&
+        PubLeafletComment.isLinearDocumentQuote(props.record.attachment) && (
+          <div className="mt-1 mb-2">
+            <QuoteContent
+              index={-1}
+              position={props.record.attachment.quote}
+              did={new AtUri(props.record.attachment.document).host}
+            />
+          </div>
+        )}
       <pre
         key={props.comment.uri}
         style={{ wordBreak: "break-word" }}
-        className="whitespace-pre-wrap text-secondary pb-[4px]"
+        className="whitespace-pre-wrap text-secondary pb-[4px] "
       >
         <BaseTextBlock
           index={[]}

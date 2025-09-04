@@ -25,6 +25,15 @@ import { setMark } from "src/utils/prosemirror/setMark";
 import { multi } from "linkifyjs";
 import { Json } from "supabase/database.types";
 import { isIOS } from "src/utils/isDevice";
+import {
+  decodeQuotePosition,
+  QUOTE_PARAM,
+  QuotePosition,
+} from "../../quotePosition";
+import { QuoteContent } from "../Quotes";
+import { create } from "zustand";
+import { CloseTiny } from "components/Icons/CloseTiny";
+import { CloseFillTiny } from "components/Icons/CloseFillTiny";
 
 export function CommentBox(props: {
   doc_uri: string;
@@ -32,6 +41,7 @@ export function CommentBox(props: {
   onSubmit?: () => void;
 }) {
   let mountRef = useRef<HTMLPreElement | null>(null);
+  let quote = useInteractionState((s) => s.commentBox.quote);
   let [editorState, setEditorState] = useState(() =>
     EditorState.create({
       schema: multiBlockSchema,
@@ -61,6 +71,32 @@ export function CommentBox(props: {
       { mount: mountRef.current },
       {
         state: editorState,
+        handlePaste: (view, e) => {
+          let text =
+            e.clipboardData?.getData("text") ||
+            e.clipboardData?.getData("text/html");
+          let html = e.clipboardData?.getData("text/html");
+          if (!text && html) {
+            let xml = new DOMParser().parseFromString(html, "text/html");
+            text = xml.textContent || "";
+          }
+          console.log("URL: " + window.location.toString());
+          console.log("TEXT: " + text, text?.includes(QUOTE_PARAM));
+          if (
+            text?.includes(QUOTE_PARAM) &&
+            text.includes(window.location.toString())
+          ) {
+            const url = new URL(text);
+            const quoteParam = url.pathname.split("/l-quote/")[1];
+            if (!quoteParam) return;
+            const quotePosition = decodeQuotePosition(quoteParam);
+            if (!quotePosition) return;
+            useInteractionState.setState({
+              commentBox: { quote: quotePosition },
+            });
+            return true;
+          }
+        },
         handleClickOn: (view, _pos, node, _nodePos, _event, direct) => {
           if (!direct) return;
           if (node.nodeSize - 2 <= _pos) return;
@@ -90,15 +126,28 @@ export function CommentBox(props: {
   }, []);
   let [loading, setLoading] = useState(false);
   return (
-    <div className=" flex flex-col gap-1">
+    <div className=" flex flex-col">
+      {quote && (
+        <div className="relative mt-2 mb-2">
+          <QuoteContent position={quote} did="" index={-1} />
+          <button
+            className="text-border absolute -top-3 right-1 bg-bg-page p-1 rounded-full"
+            onClick={() =>
+              useInteractionState.setState({ commentBox: { quote: null } })
+            }
+          >
+            <CloseFillTiny />
+          </button>
+        </div>
+      )}
       <div className="w-full relative group">
         <pre
           ref={mountRef}
-          className={`border whitespace-pre-wrap input-with-border min-h-32 h-fit`}
+          className={`border whitespace-pre-wrap input-with-border min-h-32 h-fit !px-2 !py-[6px]`}
         />
         <IOSBS view={view} />
       </div>
-      <div className="flex justify-between">
+      <div className="flex justify-between pt-1">
         <div className="flex gap-1">
           <TextDecorationButton
             mark={multiBlockSchema.marks.strong}
@@ -126,12 +175,26 @@ export function CommentBox(props: {
             let [plaintext, facets] = docToFacetedText(editorState.doc);
             let comment = await publishComment({
               document: props.doc_uri,
-              comment: { plaintext, facets, replyTo: props.replyTo },
+              comment: {
+                plaintext,
+                facets,
+                replyTo: props.replyTo,
+                attachment: quote
+                  ? {
+                      $type: "pub.leaflet.comment#linearDocumentQuote",
+                      document: props.doc_uri,
+                      quote,
+                    }
+                  : undefined,
+              },
             });
 
             setLoading(false);
             props.onSubmit?.();
             useInteractionState.setState((s) => ({
+              commentBox: {
+                quote: null,
+              },
               localComments: [
                 ...s.localComments,
                 {

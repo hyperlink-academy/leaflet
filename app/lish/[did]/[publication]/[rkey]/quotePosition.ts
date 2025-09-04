@@ -9,7 +9,7 @@ export interface QuotePosition {
   };
 }
 
-export const QUOTE_PARAM = "l_quote";
+export const QUOTE_PARAM = "/l-quote/";
 
 /**
  * Encodes quote position into a URL-friendly string

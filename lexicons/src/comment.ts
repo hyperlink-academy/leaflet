@@ -23,7 +23,16 @@ export const PubLeafletComment: LexiconDoc = {
             type: "array",
             items: { type: "ref", ref: PubLeafletRichTextFacet.id },
           },
+          attachment: { type: "union", refs: ["#linearDocumentQuote"] },
         },
+      },
+    },
+    linearDocumentQuote: {
+      type: "object",
+      required: ["document", "quote"],
+      properties: {
+        document: { type: "string", format: "at-uri" },
+        quote: { type: "ref", ref: "pub.leaflet.pages.linearDocument#quote" },
       },
     },
     replyRef: {

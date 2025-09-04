@@ -4,10 +4,14 @@ import { CopyTiny } from "components/Icons/CopyTiny";
 import { Separator } from "components/Layout";
 import { useSmoker } from "components/Toast";
 import { useEffect, useMemo, useState } from "react";
+import {
+  encodeQuotePosition,
+  decodeQuotePosition,
+  QuotePosition,
+} from "./quotePosition";
+import { useIdentityData } from "components/IdentityProvider";
+import { CommentTiny } from "components/Icons/CommentTiny";
 import { useInteractionState } from "./Interactions/Interactions";
-import { encodeQuotePosition } from "./useHighlight";
-import { useParams } from "next/navigation";
-import { decodeQuotePosition, QuotePosition } from "./quotePosition";
 
 export function QuoteHandler() {
   let [position, setPosition] = useState<{
@@ -108,7 +112,7 @@ export function QuoteHandler() {
     return (
       <div
         id="quote-trigger"
-        className={`accent-container border border-border-light text-accent-contrast px-2 flex gap-1 text-sm justify-center text-center items-center`}
+        className={`accent-container border border-border-light text-accent-contrast px-1 flex gap-1 text-sm justify-center text-center items-center`}
         style={{
           position: "absolute",
           top: position.top,
@@ -123,7 +127,8 @@ export function QuoteHandler() {
 
 export const QuoteOptionButtons = (props: { position: string }) => {
   let smoker = useSmoker();
-  let url = useMemo(() => {
+  let { identity } = useIdentityData();
+  let [url, position] = useMemo(() => {
     let currentUrl = new URL(window.location.href);
     let pos = decodeQuotePosition(props.position);
     if (currentUrl.pathname.includes("/l-quote/")) {
@@ -132,15 +137,15 @@ export const QuoteOptionButtons = (props: { position: string }) => {
     currentUrl.pathname = currentUrl.pathname + `/l-quote/${props.position}`;
 
     currentUrl.hash = `#${pos?.start.block.join(".")}_${pos?.start.offset}`;
-    return currentUrl.toString();
+    return [currentUrl.toString(), pos];
   }, [props.position]);
 
   return (
     <>
-      <div className="">Share Quote via</div>
+      <div className="">Share via</div>
 
       <a
-        className="flex gap-1 items-center hover:font-bold p-1"
+        className="flex gap-1 items-center hover:font-bold px-1 hover:!no-underline"
         role="link"
         href={`https://bsky.app/intent/compose?text=${encodeURIComponent(url)}`}
         target="_blank"
@@ -148,10 +153,10 @@ export const QuoteOptionButtons = (props: { position: string }) => {
         <BlueskyLinkTiny className="shrink-0" />
         Bluesky
       </a>
-      <Separator classname="h-3" />
+      <Separator classname="h-4" />
       <button
         id="copy-quote-link"
-        className="flex gap-1 items-center hover:font-bold p-1"
+        className="flex gap-1 items-center hover:font-bold px-1"
         onClick={() => {
           let rect = document
             .getElementById("copy-quote-link")
@@ -171,6 +176,23 @@ export const QuoteOptionButtons = (props: { position: string }) => {
         <CopyTiny className="shrink-0" />
         Link
       </button>
+      <Separator classname="h-4" />
+
+      {identity?.atp_did && (
+        <button
+          className="flex gap-1 items-center hover:font-bold px-1"
+          onClick={() => {
+            if (!position) return;
+            useInteractionState.setState({
+              drawer: "comments",
+              drawerOpen: true,
+              commentBox: { quote: position },
+            });
+          }}
+        >
+          <CommentTiny /> Comment
+        </button>
+      )}
     </>
   );
 };
