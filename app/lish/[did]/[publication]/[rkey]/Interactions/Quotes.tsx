@@ -95,7 +95,7 @@ export const QuoteContent = (props: {
         useActiveHighlightState.setState({ activeHighlight: null });
       }}
       onMouseEnter={() => {
-        useActiveHighlightState.setState({ activeHighlight: props.index });
+        useActiveHighlightState.setState({ activeHighlight: props.position });
       }}
     >
       <div
@@ -175,7 +175,6 @@ function extractQuotedBlocks(
 
   blocks.forEach((block, index) => {
     const blockPath = [...currentPath, index];
-    console.log(blockPath);
 
     // Handle different block types
     if (PubLeafletBlocksUnorderedList.isMain(block.block)) {

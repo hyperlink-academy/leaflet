@@ -1,14 +1,14 @@
 // Generated w/ Claude 4
 "use client";
 
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useContext } from "react";
 import { PostPageContext } from "./PostPageContext";
 import { create } from "zustand";
-import { decodeQuotePosition } from "./quotePosition";
+import { decodeQuotePosition, QuotePosition } from "./quotePosition";
 
 export const useActiveHighlightState = create(() => ({
-  activeHighlight: null as null | number,
+  activeHighlight: null as null | QuotePosition,
 }));
 
 export const useHighlight = (pos: number[]) => {
@@ -17,17 +17,12 @@ export const useHighlight = (pos: number[]) => {
   let activeHighlight = useActiveHighlightState(
     (state) => state.activeHighlight,
   );
-  let highlights =
-    doc?.document_mentions_in_bsky
-      .filter((m, i) => i === activeHighlight)
-      .map((mention) => {
-        return new URL(mention.link).pathname.split("/l-quote/")[1];
-      })
-      .filter((s) => s !== null) || [];
-  if (quote) highlights.push(quote as string);
+  let highlights = activeHighlight ? [activeHighlight] : [];
+  let decodedQuote = quote ? decodeQuotePosition(quote as string) : null;
+  if (decodedQuote) highlights.push(decodedQuote);
+  console.log(highlights);
   return highlights
-    .map((highlight) => {
-      let quotePosition = decodeQuotePosition(highlight);
+    .map((quotePosition) => {
       if (!quotePosition) return null;
       let maxLength = Math.max(
         quotePosition.start.block.length,
