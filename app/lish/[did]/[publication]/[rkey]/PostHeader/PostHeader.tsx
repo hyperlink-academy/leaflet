@@ -1,14 +1,12 @@
 "use client";
-import Link from "next/link";
 import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { Interactions } from "../Interactions/Interactions";
 import { PostPageData } from "../getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { useIdentityData } from "components/IdentityProvider";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { AtUri } from "@atproto/syntax";
 import { EditTiny } from "components/Icons/EditTiny";
+import { SpeedyLink } from "components/SpeedyLink";
 
 export function PostHeader(props: {
   data: PostPageData;
@@ -40,7 +38,7 @@ export function PostHeader(props: {
       <div className="max-w-prose w-full mx-auto" id="post-header">
         <div className="pubHeader flex flex-col pb-5">
           <div className="flex justify-between w-full">
-            <Link
+            <SpeedyLink
               className="font-bold hover:no-underline text-accent-contrast"
               href={
                 document &&
@@ -50,7 +48,7 @@ export function PostHeader(props: {
               }
             >
               {props.name}
-            </Link>
+            </SpeedyLink>
             {identity &&
               identity.atp_did ===
                 document.documents_in_publications[0]?.publications

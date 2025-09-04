@@ -10,6 +10,7 @@ import {
   PublicationBackgroundProvider,
   PublicationThemeProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
+import { SpeedyLink } from "components/SpeedyLink";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -125,7 +126,7 @@ export default async function Publication(props: {
                     return (
                       <React.Fragment key={doc.documents?.uri}>
                         <div className="flex w-full ">
-                          <Link
+                          <SpeedyLink
                             href={`${getPublicationURL(publication)}/${uri.rkey}`}
                             className="publishedPost grow flex flex-col hover:!no-underline"
                           >
@@ -144,7 +145,7 @@ export default async function Publication(props: {
                                   },
                                 )}{" "}
                             </p>
-                          </Link>
+                          </SpeedyLink>
                         </div>
                         <hr className="last:hidden border-border-light" />
                       </React.Fragment>

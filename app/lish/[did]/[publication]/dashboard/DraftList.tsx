@@ -1,15 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { NewDraftSecondaryButton } from "./NewDraftButton";
 import React, { useState } from "react";
 import { usePublicationData } from "./PublicationSWRProvider";
 import { Menu, MenuItem } from "components/Layout";
 import { deleteDraft } from "./deleteDraft";
 import { DeleteSmall } from "components/Icons/DeleteSmall";
-import { PrimaryKey } from "drizzle-orm/sqlite-core";
 import { ButtonPrimary } from "components/Buttons";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
+import { SpeedyLink } from "components/SpeedyLink";
 
 export function DraftList() {
   let { data: pub_data } = usePublicationData();
@@ -35,7 +34,7 @@ function Draft(props: { id: string; title: string; description: string }) {
   let [open, setOpen] = useState(false);
   return (
     <div className="flex flex-row gap-2 items-start">
-      <Link
+      <SpeedyLink
         key={props.id}
         href={`/${props.id}`}
         className="flex flex-col gap-0 hover:!no-underline grow"
@@ -46,7 +45,7 @@ function Draft(props: { id: string; title: string; description: string }) {
           <h3 className="text-tertiary italic">Untitled</h3>
         )}
         <div className="text-secondary italic">{props.description}</div>
-      </Link>
+      </SpeedyLink>
       <Menu
         open={open}
         onOpenChange={(o) => setOpen(o)}

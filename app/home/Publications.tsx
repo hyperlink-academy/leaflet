@@ -15,6 +15,7 @@ import { PubLeafletPublication } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
+import { SpeedyLink } from "components/SpeedyLink";
 
 export const MyPublicationList = () => {
   let { identity } = useIdentityData();
@@ -23,12 +24,12 @@ export const MyPublicationList = () => {
     <div className="pubListWrapper w-full sm:w-[200px] flex flex-col sm:gap-1  container py-2 sm:p-0 sm:bg-transparent sm:border-0">
       <div className="flex justify-between items-center font-bold text-tertiary text-sm px-2 ">
         Publications
-        <Link
-          href={"./lish/createPub"}
+        <SpeedyLink
+          href={"/lish/createPub"}
           className="pubListCreateNew  text-accent-contrast font-bold hover:text-accent-contrast"
         >
           <AddTiny />
-        </Link>
+        </SpeedyLink>
       </div>
       <PublicationList publications={identity.publications} />
     </div>
@@ -65,7 +66,7 @@ function Publication(props: { uri: string; name: string; record: Json }) {
   let showPageBackground = !!record?.theme?.showPageBackground;
   return (
     <PublicationThemeProvider record={record} local pub_creator={pub_creator}>
-      <Link
+      <SpeedyLink
         className="pubListItem sm:w-full sm:min-w-0 min-w-40 w-36  px-1 sm:px-2 py-1 sm:h-max  hover:no-underline "
         href={`${getBasePublicationURL(props)}/dashboard`}
       >
@@ -94,7 +95,7 @@ function Publication(props: { uri: string; name: string; record: Json }) {
             {props.name}
           </h4>
         </div>
-      </Link>
+      </SpeedyLink>
     </PublicationThemeProvider>
   );
 }

@@ -29,6 +29,7 @@ import {
   PublicationMetadata,
   PublicationMetadataPreview,
 } from "components/Pages/PublicationMetadata";
+import { SpeedyLink } from "components/SpeedyLink";
 
 export const LeafletPreview = (props: {
   draft?: boolean;
@@ -97,7 +98,10 @@ export const LeafletPreview = (props: {
                   </div>
                 </div>
               </ThemeBackgroundProvider>
-              <LeafletPreviewLink id={props.token.id} />
+              <SpeedyLink
+                href={`/${props.token.id}`}
+                className={`no-underline sm:hover:no-underline text-primary absolute inset-0 w-full h-full`}
+              />
             </div>
           ) : (
             <LeafletAreYouSure token={props.token} setState={setState} />
@@ -247,18 +251,5 @@ const LeafletTemplateIndicator = (props: { isTemplate: boolean }) => {
     <div className="absolute -top-3 right-1">
       <TemplateSmall fill={theme.colors["bg-page"]} />
     </div>
-  );
-};
-
-const LeafletPreviewLink = (props: { id: string }) => {
-  let [prefetch, setPrefetch] = useState(false);
-  return (
-    <Link
-      onMouseEnter={() => setPrefetch(true)}
-      onPointerDown={() => setPrefetch(true)}
-      prefetch={prefetch}
-      href={`/${props.id}`}
-      className={`no-underline sm:hover:no-underline text-primary absolute inset-0 w-full h-full`}
-    />
   );
 };

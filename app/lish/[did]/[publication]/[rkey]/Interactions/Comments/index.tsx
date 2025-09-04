@@ -30,6 +30,13 @@ export function Comments(props: { document_uri: string; comments: Comment[] }) {
     return [...localComments, ...props.comments];
   }, [props.comments, localComments]);
   let pathname = usePathname();
+  let redirectRoute = useMemo(() => {
+    let url = new URL(pathname, window.location.origin);
+    url.searchParams.set("refreshAuth", "");
+    url.searchParams.set("interactionDrawer", "comments");
+    url.hash = "commentsDrawer";
+    return url.toString();
+  }, []);
 
   return (
     <div id={"commentsDrawer"} className="flex flex-col gap-2 relative">
@@ -47,11 +54,7 @@ export function Comments(props: { document_uri: string; comments: Comment[] }) {
       ) : (
         <div className="w-full accent-container text-tertiary text-center italic p-3 flex flex-col gap-2">
           Connect a Bluesky account to comment
-          <BlueskyLogin
-            redirectRoute={
-              pathname + "?interactionDrawer=comments#commentsDrawer"
-            }
-          />
+          <BlueskyLogin redirectRoute={redirectRoute} />
         </div>
       )}
       <hr className="border-border-light" />

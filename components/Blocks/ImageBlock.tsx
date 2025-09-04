@@ -146,7 +146,9 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
           className={className}
         />
       )}
-      {altText !== undefined ? <ImageAlt entityID={props.value} /> : null}
+      {altText !== undefined && !props.preview ? (
+        <ImageAlt entityID={props.value} />
+      ) : null}
     </div>
   );
 }
@@ -186,9 +188,7 @@ const ImageAlt = (props: { entityID: string }) => {
               setAltEditorOpen(altEditorOpen ? null : props.entityID)
             }
           >
-            <ImageAltSmall
-              fillColor={theme.colors["bg-page"]}
-            />
+            <ImageAltSmall fillColor={theme.colors["bg-page"]} />
           </button>
         }
       >
