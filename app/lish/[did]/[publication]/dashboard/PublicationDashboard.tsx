@@ -27,7 +27,7 @@ export function PublicationDashboard<T extends Tabs>(props: {
           <div
             className={`flex gap-2 h-fit py-0.5 pl-1 pr-2 w-fit rounded-md ${showPageBackground ? "bg-none sm:bg-[rgba(var(--bg-page),0.8)]" : ""}`}
           >
-            {props.icon && (
+            {props.icon ? (
               <div
                 className="pubDashLogo shrink-0 w-6 h-6 rounded-full  border-2 border-bg-page "
                 style={{
@@ -37,6 +37,12 @@ export function PublicationDashboard<T extends Tabs>(props: {
                   backgroundSize: "cover",
                 }}
               />
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-accent-1 relative">
+                <div className="font-bold text-sm absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-2">
+                  {props.name.slice(0, 1)}
+                </div>
+              </div>
             )}
             <div className="pubDashName font-bold grow text-tertiary max-w-full truncate  sm:block hidden">
               {props.name}

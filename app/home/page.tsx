@@ -19,6 +19,7 @@ import { MyPublicationList } from "./Publications";
 import { supabaseServerClient } from "supabase/serverClient";
 import { pool } from "supabase/pool";
 import { HomeHeader } from "./HomeHeader";
+import { DashboardLayout } from "components/PageLayout";
 
 export default async function Home() {
   let cookieStore = await cookies();
@@ -100,22 +101,17 @@ export default async function Home() {
         set={permission_token.permission_token_rights[0].entity_set}
       >
         <ThemeProvider entityID={root_entity}>
-          <div className="homeWrapper flex h-full bg-bg-leaflet pwa-padding">
-            <ThemeBackgroundProvider entityID={root_entity}>
-              <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6 ">
-                <HomeSidebar />
-
-                <div
-                  className={`w-full h-full relative overflow-y-scroll`}
-                  id="home-content"
-                >
-                  <HomeHeader />
-                  <LeafletList initialFacts={home_docs_initialFacts} />
-                </div>
-                <HomeFooter />
-              </div>
-            </ThemeBackgroundProvider>
-          </div>
+          <ThemeBackgroundProvider entityID={root_entity}>
+            <DashboardLayout
+              title={<HomeHeader />}
+              footer={<HomeFooter />}
+              sidebar={<HomeSidebar />}
+              defaultTab="home"
+              tabs={{
+                home: <LeafletList initialFacts={home_docs_initialFacts} />,
+              }}
+            />
+          </ThemeBackgroundProvider>
         </ThemeProvider>
       </EntitySetProvider>
     </ReplicacheProvider>

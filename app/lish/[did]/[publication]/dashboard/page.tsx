@@ -21,6 +21,8 @@ import {
 } from "components/ThemeManager/PublicationThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { AtUri } from "@atproto/syntax";
+import { DashboardLayout } from "components/PageLayout";
+import { DashboardHeader } from "./DashboardHeader";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -82,38 +84,31 @@ export default async function Publication(props: {
         publication_data={publication}
       >
         <PublicationThemeProviderDashboard record={record}>
-          <div className="pubDashWrapper relative w-max h-full flex items-stretch pwa-padding">
-            <div className="flex sm:flex-row flex-col max-h-full h-full">
-              <div
-                className="pubDashSidebarWrapper flex justify-end items-start "
-                style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
-              >
-                <div className="pubDashSidebar relative w-16 justify-items-end">
-                  <Sidebar className="mt-6 p-2 ">
-                    <Actions publication={publication.uri} />
-                  </Sidebar>
-                </div>
-              </div>
-              <div
-                className={`pubDash grow sm:h-full h-32 w-full flex flex-col items-stretch pt-2 sm:pt-6   ml-[6px] sm:ml-0 max-w-[var(--page-width-units)] ${showPageBackground ? "sm:pb-8 pb-1" : "pb-0"}`}
-              >
-                <PublicationDashboard
-                  did={did}
-                  icon={record?.icon ? record.icon : null}
-                  name={publication.name}
-                  tabs={{
-                    Drafts: <DraftList />,
-                    Published: <PublishedPostsList />,
-                    Subscribers: <PublicationSubscribers />,
-                  }}
-                  defaultTab={"Drafts"}
-                />
-              </div>
+          <DashboardLayout
+            defaultTab="Drafts"
+            tabs={{
+              Drafts: <DraftList />,
+              Published: <PublishedPostsList />,
+              Subscribers: <PublicationSubscribers />,
+            }}
+            footer={
               <Footer>
                 <Actions publication={publication.uri} />
               </Footer>
-            </div>
-          </div>
+            }
+            sidebar={
+              <Sidebar alwaysOpen className="mt-6 p-2 ">
+                <Actions publication={publication.uri} />
+              </Sidebar>
+            }
+            title={
+              <DashboardHeader
+                did={did}
+                icon={record?.icon ? record.icon : null}
+                name={publication.name}
+              />
+            }
+          />
         </PublicationThemeProviderDashboard>
       </PublicationSWRDataProvider>
     );

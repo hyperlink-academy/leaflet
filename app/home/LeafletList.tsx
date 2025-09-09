@@ -63,41 +63,36 @@ export function LeafletList(props: {
         .map((ll) => ll.token);
 
   return (
-    <div className="homeLeafletGrid grow w-full h-full">
-      <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-8 gap-x-4 sm:gap-x-6 sm:gap-y-8 grow pt-3 pb-28 px-2 sm:pt-3 sm:pb-12 sm:pl-6 sm:pr-4">
-        {leaflets.map((leaflet, index) => (
-          <ReplicacheProvider
-            disablePull
-            initialFactsOnly={!!identity}
-            key={leaflet.id}
-            rootEntity={leaflet.root_entity}
-            token={leaflet}
-            name={leaflet.root_entity}
-            initialFacts={initialFacts?.[leaflet.root_entity] || []}
+    <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-8 gap-x-4 sm:gap-x-6 sm:gap-y-8 grow sw-full h-full">
+      {leaflets.map((leaflet, index) => (
+        <ReplicacheProvider
+          disablePull
+          initialFactsOnly={!!identity}
+          key={leaflet.id}
+          rootEntity={leaflet.root_entity}
+          token={leaflet}
+          name={leaflet.root_entity}
+          initialFacts={initialFacts?.[leaflet.root_entity] || []}
+        >
+          <StaticLeafletDataContext
+            value={{
+              ...leaflet,
+              leaflets_in_publications: leaflet.leaflets_in_publications || [],
+              blocked_by_admin: null,
+              custom_domain_routes: [],
+            }}
           >
-            <StaticLeafletDataContext
-              value={{
-                ...leaflet,
-                leaflets_in_publications:
-                  leaflet.leaflets_in_publications || [],
-                blocked_by_admin: null,
-                custom_domain_routes: [],
-              }}
-            >
-              <LeafletPreview
-                index={index}
-                token={leaflet}
-                draft={!!leaflet.leaflets_in_publications?.length}
-                published={
-                  !!leaflet.leaflets_in_publications?.find((l) => l.doc)
-                }
-                leaflet_id={leaflet.root_entity}
-                loggedIn={!!identity}
-              />
-            </StaticLeafletDataContext>
-          </ReplicacheProvider>
-        ))}
-      </div>
+            <LeafletPreview
+              index={index}
+              token={leaflet}
+              draft={!!leaflet.leaflets_in_publications?.length}
+              published={!!leaflet.leaflets_in_publications?.find((l) => l.doc)}
+              leaflet_id={leaflet.root_entity}
+              loggedIn={!!identity}
+            />
+          </StaticLeafletDataContext>
+        </ReplicacheProvider>
+      ))}
     </div>
   );
 }
