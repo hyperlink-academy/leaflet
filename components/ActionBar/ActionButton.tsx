@@ -14,6 +14,8 @@ export const ActionButton = forwardRef<
     label: React.ReactNode;
     primary?: boolean;
     secondary?: boolean;
+    nav?: boolean;
+    className?: string;
   }
 >((props, ref) => {
   let { id, icon, label, primary, secondary, ...buttonProps } = props;
@@ -42,8 +44,11 @@ export const ActionButton = forwardRef<
           ? "w-full bg-accent-1 border-accent-1 text-accent-2 transparent-outline sm:hover:outline-accent-contrast focus:outline-accent-1 outline-offset-1 mx-1 first:ml-0"
           : props.secondary
             ? "sm:w-full w-max bg-bg-page border-accent-contrast text-accent-contrast transparent-outline focus:outline-accent-contrast sm:hover:outline-accent-contrast outline-offset-1 mx-1 first:ml-0"
-            : "sm:w-full w-max border-transparent text-accent-contrast sm:hover:border-accent-contrast"
+            : props.nav
+              ? "sm:w-full w-max border-transparent text-secondary sm:hover:border-border"
+              : "sm:w-full w-max border-transparent text-accent-contrast sm:hover:border-accent-contrast"
       }
+      ${props.className}
       `}
     >
       <div className="shrink-0">{props.icon}</div>
