@@ -18,6 +18,7 @@ import { Media } from "components/Media";
 import { MyPublicationList } from "./Publications";
 import { supabaseServerClient } from "supabase/serverClient";
 import { pool } from "supabase/pool";
+import { HomeHeader } from "./HomeHeader";
 
 export default async function Home() {
   let cookieStore = await cookies();
@@ -103,12 +104,12 @@ export default async function Home() {
             <ThemeBackgroundProvider entityID={root_entity}>
               <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6 ">
                 <HomeSidebar />
-                <div className={`h-full overflow-y-scroll`}>
-                  <Media mobile>
-                    <div className="pubListWrapper p-2 ">
-                      <MyPublicationList />
-                    </div>
-                  </Media>
+
+                <div
+                  className={`w-full h-full relative overflow-y-scroll`}
+                  id="home-content"
+                >
+                  <HomeHeader />
                   <LeafletList initialFacts={home_docs_initialFacts} />
                 </div>
                 <HomeFooter />
