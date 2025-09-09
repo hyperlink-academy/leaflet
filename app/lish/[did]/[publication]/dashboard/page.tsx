@@ -83,16 +83,7 @@ export default async function Publication(props: {
               Published: <PublishedPostsList />,
               Subscribers: <PublicationSubscribers />,
             }}
-            footer={
-              <Footer>
-                <Actions publication={publication.uri} />
-              </Footer>
-            }
-            sidebar={
-              <Sidebar alwaysOpen className="mt-6 p-2 ">
-                <Actions publication={publication.uri} />
-              </Sidebar>
-            }
+            actions={<Actions publication={publication.uri} />}
             title={
               <div className="font-bold text-secondary flex gap-2 items-center">
                 {record?.icon ? (

@@ -11,7 +11,6 @@ import {
 import { ActionButton } from "./ActionButton";
 import { Sidebar } from "./Sidebar";
 import { Popover } from "components/Popover";
-import { AddTiny } from "components/Icons/AddTiny";
 import { useIdentityData } from "components/IdentityProvider";
 import { Json } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
@@ -28,7 +27,9 @@ export const Navigation = () => {
   return (
     <div>
       <Sidebar alwaysOpen>
-        {/*<ActionButton nav icon={<HomeSmall />} label="Home" />*/}
+        <Link href={"/home"} className="hover:!no-underline">
+          <ActionButton nav icon={<HomeSmall />} label="Home" />
+        </Link>
         <PublicationsButton />
 
         {subs ? (

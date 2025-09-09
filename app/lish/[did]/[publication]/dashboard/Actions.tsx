@@ -22,31 +22,10 @@ import { useIsMobile } from "src/hooks/isMobile";
 export const Actions = (props: { publication: string }) => {
   return (
     <>
-      <Media mobile>
-        <Link
-          href="/home"
-          prefetch
-          className="hover:no-underline"
-          style={{ textDecorationLine: "none !important" }}
-        >
-          <ActionButton icon={<HomeSmall />} label="Go Home" />
-        </Link>
-      </Media>
       <NewDraftActionButton publication={props.publication} />
       <PublicationShareButton />
       <PublicationThemeButton />
       <PublicationSettingsButton publication={props.publication} />
-      <hr className="border-border-light" />
-      <Media mobile={false}>
-        <Link
-          href="/home"
-          prefetch
-          className="hover:no-underline"
-          style={{ textDecorationLine: "none !important" }}
-        >
-          <ActionButton icon={<HomeSmall />} label="Go Home" />
-        </Link>
-      </Media>
     </>
   );
 };

@@ -12,10 +12,8 @@ import { IdentitySetter } from "./IdentitySetter";
 import { LeafletList } from "./LeafletList";
 import { getIdentityData } from "actions/getIdentityData";
 import { getFactsFromHomeLeaflets } from "app/api/rpc/[command]/getFactsFromHomeLeaflets";
-import { HomeSidebar } from "./HomeSidebar";
-import { HomeFooter } from "./HomeFooter";
-import { Media } from "components/Media";
-import { MyPublicationList } from "./Publications";
+import { Actions } from "./Actions";
+
 import { supabaseServerClient } from "supabase/serverClient";
 import { pool } from "supabase/pool";
 
@@ -110,8 +108,7 @@ export default async function Home() {
                   <HomeSmall /> Home
                 </div>
               }
-              footer={<HomeFooter />}
-              sidebar={<HomeSidebar />}
+              actions={<Actions />}
               defaultTab="home"
               tabs={{
                 home: <LeafletList initialFacts={home_docs_initialFacts} />,
