@@ -18,8 +18,10 @@ import { Media } from "components/Media";
 import { MyPublicationList } from "./Publications";
 import { supabaseServerClient } from "supabase/serverClient";
 import { pool } from "supabase/pool";
-import { HomeHeader } from "./HomeHeader";
-import { DashboardLayout } from "components/PageLayout";
+
+import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
+import { HomeSmall } from "components/Icons/HomeSmall";
+import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 
 export default async function Home() {
   let cookieStore = await cookies();
@@ -61,13 +63,13 @@ export default async function Home() {
 
   if (!permission_token)
     return (
-      <div className="p-4 text-lg text-center flex flex-col gap-4">
-        <p>Sorry, home page not found!</p>
+      <NotFoundLayout>
+        <p className="font-bold">Sorry, we can't find this home!</p>
         <p>
           This may be a glitch on our end. If the issue persists please{" "}
           <a href="mailto:contact@leaflet.pub">send us a note</a>.
         </p>
-      </div>
+      </NotFoundLayout>
     );
   let [homeLeafletFacts, allLeafletFacts] = await Promise.all([
     supabaseServerClient.rpc("get_facts", {
@@ -103,7 +105,11 @@ export default async function Home() {
         <ThemeProvider entityID={root_entity}>
           <ThemeBackgroundProvider entityID={root_entity}>
             <DashboardLayout
-              title={<HomeHeader />}
+              title={
+                <div className="font-bold text-secondary flex gap-2 items-center">
+                  <HomeSmall /> Home
+                </div>
+              }
               footer={<HomeFooter />}
               sidebar={<HomeSidebar />}
               defaultTab="home"

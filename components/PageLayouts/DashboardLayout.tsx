@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Header } from "./PageHeader";
+import { Header } from "../PageHeader";
 
 export function DashboardLayout<
   T extends { [name: string]: React.ReactNode },

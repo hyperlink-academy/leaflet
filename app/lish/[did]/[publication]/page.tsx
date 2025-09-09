@@ -10,6 +10,7 @@ import {
   PublicationBackgroundProvider,
   PublicationThemeProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
+import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -164,12 +165,12 @@ export default async function Publication(props: {
 
 const PubNotFound = () => {
   return (
-    <div className="p-4 text-lg text-center flex flex-col gap-4">
-      <p>Sorry, publication not found!</p>
+    <NotFoundLayout>
+      <p className="font-bold">Sorry, we can't find this publication!</p>
       <p>
         This may be a glitch on our end. If the issue persists please{" "}
         <a href="mailto:contact@leaflet.pub">send us a note</a>.
       </p>
-    </div>
+    </NotFoundLayout>
   );
 };

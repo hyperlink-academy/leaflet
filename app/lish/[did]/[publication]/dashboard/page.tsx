@@ -3,9 +3,7 @@ import { Metadata } from "next";
 
 import { Sidebar } from "components/ActionBar/Sidebar";
 
-import { Media } from "components/Media";
 import { Footer } from "components/ActionBar/Footer";
-import { PublicationDashboard } from "./PublicationDashboard";
 import { DraftList } from "./DraftList";
 import { getIdentityData } from "actions/getIdentityData";
 import { Actions } from "./Actions";
@@ -13,16 +11,12 @@ import React from "react";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { PublicationSWRDataProvider } from "./PublicationSWRProvider";
 import { PublishedPostsList } from "./PublishedPostsLists";
-import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
+import { PubLeafletPublication } from "lexicons/api";
 import { PublicationSubscribers } from "./PublicationSubscribers";
-import {
-  PublicationThemeProvider,
-  PublicationThemeProviderDashboard,
-} from "components/ThemeManager/PublicationThemeProvider";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { PublicationThemeProviderDashboard } from "components/ThemeManager/PublicationThemeProvider";
 import { AtUri } from "@atproto/syntax";
-import { DashboardLayout } from "components/PageLayout";
-import { DashboardHeader } from "./DashboardHeader";
+import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
+import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -74,8 +68,6 @@ export default async function Publication(props: {
   let record = publication?.record as PubLeafletPublication.Record | null;
   let uri = new AtUri(publication.uri);
 
-  let showPageBackground = !!record?.theme?.showPageBackground;
-
   try {
     return (
       <PublicationSWRDataProvider
@@ -102,11 +94,26 @@ export default async function Publication(props: {
               </Sidebar>
             }
             title={
-              <DashboardHeader
-                did={did}
-                icon={record?.icon ? record.icon : null}
-                name={publication.name}
-              />
+              <div className="font-bold text-secondary flex gap-2 items-center">
+                {record?.icon ? (
+                  <div
+                    className="pubDashLogo shrink-0 w-6 h-6 rounded-full  border-2 border-bg-page "
+                    style={{
+                      backgroundImage: `url(/api/atproto_images?did=${record?.did}&cid=${(record?.icon.ref as unknown as { $link: string })["$link"]})`,
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "center",
+                      backgroundSize: "cover",
+                    }}
+                  />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-accent-1 relative">
+                    <div className="font-bold text-sm absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-2">
+                      {record?.name.slice(0, 1)}
+                    </div>
+                  </div>
+                )}
+                {record?.name}
+              </div>
             }
           />
         </PublicationThemeProviderDashboard>
@@ -120,12 +127,12 @@ export default async function Publication(props: {
 
 const PubNotFound = () => {
   return (
-    <div className="p-4 text-lg text-center flex flex-col gap-4">
-      <p>Sorry, publication not found!</p>
+    <NotFoundLayout>
+      <p className="font-bold">Sorry, we can't find this publication!</p>
       <p>
         This may be a glitch on our end. If the issue persists please{" "}
         <a href="mailto:contact@leaflet.pub">send us a note</a>.
       </p>
-    </div>
+    </NotFoundLayout>
   );
 };
