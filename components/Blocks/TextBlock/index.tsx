@@ -157,18 +157,7 @@ export function RenderedTextBlock(props: {
         </div>
       );
   } else {
-    let doc = new Y.Doc();
-    const update = base64.toByteArray(initialFact.data.value);
-    Y.applyUpdate(doc, update);
-    let nodes = doc.getXmlElement("prosemirror").toArray();
-    content = (
-      <>
-        {nodes.length === 0 && <br />}
-        {nodes.map((node, index) => (
-          <RenderYJSFragment key={index} node={node} />
-        ))}
-      </>
-    );
+    content = <RenderYJSFragment value={initialFact.data.value} wrapper="p" />;
   }
   return (
     <div
