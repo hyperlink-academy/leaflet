@@ -19,35 +19,23 @@ import Link from "next/link";
 import { getBasePublicationURL } from "app/lish/createPub/getPublicationURL";
 import { DiscoverSmall } from "components/Icons/DiscoverSmall";
 
-export const Navigation = () => {
+export type navPages = "home" | "reader" | "pub";
+
+export const Navigation = (props: {
+  currentPage: navPages;
+  publication?: string;
+}) => {
   let unreadNotifications = true;
-  let unreadReader = true;
-  let subs = false;
-
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       <Sidebar alwaysOpen>
-        <Link href={"/home"} className="hover:!no-underline">
-          <ActionButton nav icon={<HomeSmall />} label="Home" />
-        </Link>
+        <CurrentPage page={props.currentPage} publication={props.publication} />
+
+        {props.currentPage !== "home" && <HomeButton />}
         <PublicationsButton />
-
-        {subs ? (
-          <ActionButton
-            nav
-            icon={unreadReader ? <ReaderUnreadSmall /> : <ReaderReadSmall />}
-            label="Reader"
-            className={
-              unreadReader && "!text-accent-contrast border-accent-contrast"
-            }
-          />
-        ) : (
-          <Link href={"/discover"} className="hover:!no-underline">
-            <ActionButton nav icon={<DiscoverSmall />} label="Discover" />
-          </Link>
-        )}
-
-        <hr className="border-border-light" />
+        {props.currentPage !== "reader" && <ReaderButton />}
+      </Sidebar>
+      <Sidebar alwaysOpen>
         <ActionButton
           icon={
             unreadNotifications ? (
@@ -63,6 +51,47 @@ export const Navigation = () => {
   );
 };
 
+const CurrentPage = (props: { page: navPages; publication?: string }) => {
+  let { identity } = useIdentityData();
+  let thisPublication = identity?.publications?.find(
+    (pub) => pub.uri === props.publication,
+  );
+
+  switch (props.page) {
+    case "home":
+      return <HomeButton current />;
+    case "reader":
+      return <ReaderButton current />;
+    case "pub":
+      return (
+        thisPublication && (
+          <PublicationOption
+            uri={thisPublication?.uri}
+            name={thisPublication.name}
+            record={thisPublication.record}
+            asActionButton
+            current
+          />
+        )
+      );
+    default:
+      return null;
+  }
+};
+
+const HomeButton = (props: { current?: boolean }) => {
+  return (
+    <Link href={"/home"} className="hover:!no-underline">
+      <ActionButton
+        nav
+        icon={<HomeSmall />}
+        label="Home"
+        className={props.current ? "!bg-bg-page !border-border-light" : ""}
+      />
+    </Link>
+  );
+};
+
 const PublicationsButton = () => {
   let { identity } = useIdentityData();
 
@@ -70,15 +99,15 @@ const PublicationsButton = () => {
   // we show a "start a pub" banner instead
   if (!identity || !identity.atp_did) return;
 
-  if (identity.publications.length === 1)
-    return (
-      <Publication
-        name={identity.publications[4].name}
-        uri={identity.publications[4].uri}
-        record={identity.publications[4].record}
-        asActionButton
-      />
-    );
+  // if (identity.publications.length === 1)
+  //   return (
+  //     <PublicationOption
+  //       name={identity.publications[0].name}
+  //       uri={identity.publications[0].uri}
+  //       record={identity.publications[0].record}
+  //       asActionButton
+  //     />
+  //   );
   return (
     <Popover
       asChild
@@ -90,7 +119,7 @@ const PublicationsButton = () => {
     >
       <div className="pubListWrapper w-full  flex flex-col gap-[6px]  container pt-2 sm:p-0 sm:bg-transparent sm:border-0">
         {identity.publications?.map((d) => (
-          <Publication {...d} key={d.uri} record={d.record} />
+          <PublicationOption {...d} key={d.uri} record={d.record} />
         ))}
         <hr className="border-border-light myt-2" />
         <Link
@@ -104,11 +133,12 @@ const PublicationsButton = () => {
   );
 };
 
-const Publication = (props: {
+const PublicationOption = (props: {
   uri: string;
   name: string;
   record: Json;
   asActionButton?: boolean;
+  current?: boolean;
 }) => {
   let record = props.record as PubLeafletPublication.Record | null;
   if (!record) return;
@@ -134,7 +164,14 @@ const Publication = (props: {
   };
 
   if (props.asActionButton)
-    return <ActionButton label={record.name} icon={<RecordIcon />} />;
+    return (
+      <ActionButton
+        label={record.name}
+        icon={<RecordIcon />}
+        nav
+        className={props.current ? "!bg-bg-page border-border-light" : ""}
+      />
+    );
   return (
     <Link
       href={`${getBasePublicationURL(props)}/dashboard`}
@@ -143,6 +180,33 @@ const Publication = (props: {
       <RecordIcon />
 
       {record.name}
+    </Link>
+  );
+};
+
+const ReaderButton = (props: { current?: boolean }) => {
+  let readerUnreads = true;
+  let subs = false;
+
+  if (subs)
+    return (
+      <ActionButton
+        nav
+        icon={readerUnreads ? <ReaderUnreadSmall /> : <ReaderReadSmall />}
+        label="Reader"
+        className={`
+          ${readerUnreads ? "!text-accent-contrast border-accent-contrast" : props.current ? "!bg-border-light border-border" : ""}
+        `}
+      />
+    );
+  return (
+    <Link href={"/discover"} className="hover:!no-underline">
+      <ActionButton
+        nav
+        icon={<DiscoverSmall />}
+        label="Discover"
+        className={props.current ? "!bg-border-light border-border" : ""}
+      />
     </Link>
   );
 };

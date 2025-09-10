@@ -85,28 +85,8 @@ export default async function Publication(props: {
               Subscribers: <PublicationSubscribers />,
             }}
             actions={<Actions publication={publication.uri} />}
-            title={
-              <div className="font-bold text-secondary flex gap-2 items-center">
-                {record?.icon ? (
-                  <div
-                    className="pubDashLogo shrink-0 w-6 h-6 rounded-full  border-2 border-bg-page "
-                    style={{
-                      backgroundImage: `url(/api/atproto_images?did=${did}&cid=${(record?.icon.ref as unknown as { $link: string })["$link"]})`,
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "center",
-                      backgroundSize: "cover",
-                    }}
-                  />
-                ) : (
-                  <div className="w-5 h-5 rounded-full bg-accent-1 relative">
-                    <div className="font-bold text-sm absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-2">
-                      {record?.name.slice(0, 1)}
-                    </div>
-                  </div>
-                )}
-                {record?.name}
-              </div>
-            }
+            currentPage="pub"
+            publication={publication.uri}
           />
         </PublicationThemeProviderDashboard>
       </PublicationSWRDataProvider>

@@ -9,7 +9,7 @@ import { EntitySetProvider } from "components/EntitySetProvider";
 import { createIdentity } from "actions/createIdentity";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { IdentitySetter } from "./IdentitySetter";
-import { LeafletList } from "./LeafletList";
+
 import { getIdentityData } from "actions/getIdentityData";
 import { getFactsFromHomeLeaflets } from "app/api/rpc/[command]/getFactsFromHomeLeaflets";
 import { Actions } from "./Actions";

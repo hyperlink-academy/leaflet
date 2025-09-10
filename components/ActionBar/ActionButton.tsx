@@ -53,7 +53,7 @@ export const ActionButton = forwardRef<
     >
       <div className="shrink-0">{icon}</div>
       <div
-        className={`pr-1 w-max ${sidebar.open ? "block" : primary || secondary ? "sm:hidden block" : "hidden"}`}
+        className={`truncate pr-1 w-max ${sidebar.open ? "block" : primary || secondary ? "sm:hidden block" : "hidden"}`}
       >
         {label}
       </div>

@@ -31,13 +31,9 @@ export const HomeLayout = (props: {
   return (
     <DashboardLayout
       hasBackgroundImage={hasBackgroundImage}
-      title={
-        <div className="font-bold text-secondary flex gap-2 items-center">
-          <HomeSmall /> Home
-        </div>
-      }
-      actions={<Actions />}
+      currentPage="home"
       defaultTab="home"
+      actions={<Actions />}
       tabs={{
         home: <LeafletList initialFacts={props.initialFacts} />,
       }}
