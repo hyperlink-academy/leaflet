@@ -77,6 +77,7 @@ export default async function Publication(props: {
       >
         <PublicationThemeProviderDashboard record={record}>
           <DashboardLayout
+            hasBackgroundImage={!!record?.theme?.backgroundImage}
             defaultTab="Drafts"
             tabs={{
               Drafts: <DraftList />,
@@ -90,7 +91,7 @@ export default async function Publication(props: {
                   <div
                     className="pubDashLogo shrink-0 w-6 h-6 rounded-full  border-2 border-bg-page "
                     style={{
-                      backgroundImage: `url(/api/atproto_images?did=${record?.did}&cid=${(record?.icon.ref as unknown as { $link: string })["$link"]})`,
+                      backgroundImage: `url(/api/atproto_images?did=${did}&cid=${(record?.icon.ref as unknown as { $link: string })["$link"]})`,
                       backgroundRepeat: "no-repeat",
                       backgroundPosition: "center",
                       backgroundSize: "cover",

@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { Fact, ReplicacheProvider } from "src/replicache";
+import { Fact, ReplicacheProvider, useEntity } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import {
   ThemeBackgroundProvider,
@@ -20,6 +20,7 @@ import { pool } from "supabase/pool";
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
 import { HomeSmall } from "components/Icons/HomeSmall";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
+import { HomeLayout } from "./HomeLayout";
 
 export default async function Home() {
   let cookieStore = await cookies();
@@ -89,6 +90,7 @@ export default async function Home() {
 
   let root_entity = permission_token.root_entity;
   let home_docs_initialFacts = allLeafletFacts?.result || {};
+
   return (
     <ReplicacheProvider
       rootEntity={root_entity}
@@ -102,17 +104,9 @@ export default async function Home() {
       >
         <ThemeProvider entityID={root_entity}>
           <ThemeBackgroundProvider entityID={root_entity}>
-            <DashboardLayout
-              title={
-                <div className="font-bold text-secondary flex gap-2 items-center">
-                  <HomeSmall /> Home
-                </div>
-              }
-              actions={<Actions />}
-              defaultTab="home"
-              tabs={{
-                home: <LeafletList initialFacts={home_docs_initialFacts} />,
-              }}
+            <HomeLayout
+              entityID={root_entity}
+              initialFacts={home_docs_initialFacts}
             />
           </ThemeBackgroundProvider>
         </ThemeProvider>

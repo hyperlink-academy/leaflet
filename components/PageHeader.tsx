@@ -1,7 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
 
-export const Header = (props: { children: React.ReactNode }) => {
+export const Header = (props: {
+  children: React.ReactNode;
+  hasBackgroundImage: boolean;
+}) => {
   let [scrollPos, setScrollPos] = useState(0);
 
   useEffect(() => {
@@ -19,6 +22,10 @@ export const Header = (props: { children: React.ReactNode }) => {
     }
   }, []);
 
+  let headerBGColor = props.hasBackgroundImage
+    ? "var(--bg-page)"
+    : "var(--bg-leaflet)";
+
   return (
     <div
       className={`
@@ -28,14 +35,13 @@ export const Header = (props: { children: React.ReactNode }) => {
       `}
     >
       <div
-        className="-mx-2"
         style={
           scrollPos < 20
             ? {
-                paddingLeft: `calc(${scrollPos / 20}*16px)`,
-                paddingRight: `calc(${scrollPos / 20}*16px)`,
+                paddingLeft: `calc(${scrollPos / 20}*8px)`,
+                paddingRight: `calc(${scrollPos / 20}*8px)`,
               }
-            : { paddingLeft: `16px`, paddingRight: `16px` }
+            : { paddingLeft: `8px`, paddingRight: `8px` }
         }
       >
         <div
@@ -43,14 +49,24 @@ export const Header = (props: { children: React.ReactNode }) => {
             headerContent
             border rounded-lg
             ${scrollPos > 20 ? "border-border-light" : "border-transparent"}
-            py-1 px-2
+            py-1
             w-full flex justify-between items-center gap-2`}
           style={
             scrollPos < 20
               ? {
-                  backgroundColor: `rgba(var(--bg-leaflet), ${scrollPos / 20})`,
+                  backgroundColor: `rgba(${headerBGColor}, ${scrollPos / 40 + 0.5})`,
+                  paddingLeft: props.hasBackgroundImage
+                    ? "8px"
+                    : `calc(${scrollPos / 20}*8px)`,
+                  paddingRight: props.hasBackgroundImage
+                    ? "8px"
+                    : `calc(${scrollPos / 20}*8px)`,
                 }
-              : { backgroundColor: "rgb(var(--bg-leaflet))" }
+              : {
+                  backgroundColor: `rgb(${headerBGColor})`,
+                  paddingLeft: "8px",
+                  paddingRight: "8px",
+                }
           }
         >
           {props.children}

@@ -42,7 +42,9 @@ export const Navigation = () => {
             }
           />
         ) : (
-          <ActionButton nav icon={<DiscoverSmall />} label="Discover" />
+          <Link href={"/discover"} className="hover:!no-underline">
+            <ActionButton nav icon={<DiscoverSmall />} label="Discover" />
+          </Link>
         )}
 
         <hr className="border-border-light" />
