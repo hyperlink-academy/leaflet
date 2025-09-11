@@ -1,6 +1,4 @@
 "use client";
-import { Footer } from "components/ActionBar/Footer";
-import { Media } from "components/Media";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { CreateNewLeafletButton } from "./CreateNewButton";
 import { HelpPopover } from "components/HelpPopover";

@@ -12,13 +12,9 @@ import { IdentitySetter } from "./IdentitySetter";
 
 import { getIdentityData } from "actions/getIdentityData";
 import { getFactsFromHomeLeaflets } from "app/api/rpc/[command]/getFactsFromHomeLeaflets";
-import { Actions } from "./Actions";
-
 import { supabaseServerClient } from "supabase/serverClient";
 import { pool } from "supabase/pool";
 
-import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
-import { HomeSmall } from "components/Icons/HomeSmall";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { HomeLayout } from "./HomeLayout";
 

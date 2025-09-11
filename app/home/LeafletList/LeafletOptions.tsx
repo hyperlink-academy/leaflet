@@ -2,11 +2,10 @@
 
 import { Menu, MenuItem } from "components/Layout";
 import type { PermissionToken } from "src/replicache";
-import { hideDoc } from "./storage";
+import { hideDoc } from "../storage";
 import { useState } from "react";
 import { ButtonPrimary } from "components/Buttons";
-import { useTemplateState } from "./CreateNewButton";
-import { Item } from "@radix-ui/react-dropdown-menu";
+import { useTemplateState } from "../Actions/CreateNewButton";
 import { useSmoker } from "components/Toast";
 import { removeLeafletFromHome } from "actions/removeLeafletFromHome";
 import { useIdentityData } from "components/IdentityProvider";
@@ -14,6 +13,7 @@ import { HideSmall } from "components/Icons/HideSmall";
 import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { TemplateRemoveSmall } from "components/Icons/TemplateRemoveSmall";
 import { TemplateSmall } from "components/Icons/TemplateSmall";
+import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 
 export const LeafletOptions = (props: {
   leaflet: PermissionToken;
@@ -34,8 +34,8 @@ export const LeafletOptions = (props: {
           setState("normal");
         }}
         trigger={
-          <div className="bg-accent-1 text-accent-2 px-2 py-1 border border-accent-2 rounded-md">
-            <MoreOptionsTiny />
+          <div className="text-secondary">
+            <MoreOptionsVerticalTiny />
           </div>
         }
       >

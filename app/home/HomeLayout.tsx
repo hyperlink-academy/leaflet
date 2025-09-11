@@ -8,14 +8,14 @@ import {
   ReplicacheProvider,
   useEntity,
 } from "src/replicache";
-import { LeafletPreview } from "./LeafletPreview";
+import { LeafletListItem } from "./LeafletList/LeafletListItem";
 import { useIdentityData } from "components/IdentityProvider";
 import type { Attribute } from "src/replicache/attributes";
 import { callRPC } from "app/api/rpc/client";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 import { HomeSmall } from "components/Icons/HomeSmall";
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
-import { Actions } from "./Actions";
+import { Actions } from "./Actions/Actions";
 
 export const HomeLayout = (props: {
   entityID: string;
@@ -35,7 +35,7 @@ export const HomeLayout = (props: {
       defaultTab="home"
       actions={<Actions />}
       tabs={{
-        home: <LeafletList initialFacts={props.initialFacts} />,
+        home: <LeafletList initialFacts={props.initialFacts} display="list" />,
       }}
     />
   );
@@ -45,6 +45,7 @@ export function LeafletList(props: {
   initialFacts: {
     [root_entity: string]: Fact<Attribute>[];
   };
+  display: "list" | "grid";
 }) {
   let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
     fallbackData: [],
@@ -94,7 +95,11 @@ export function LeafletList(props: {
         .map((ll) => ll.token);
 
   return (
-    <div className="grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-8 gap-x-4 sm:gap-x-6 sm:gap-y-8 grow sw-full h-full">
+    <div
+      className={`
+        w-full h-full
+        ${props.display === "grid" ? "grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-6 sm:gap-y-5 grow" : "flex flex-col gap-2 pt-2"} `}
+    >
       {leaflets.map((leaflet, index) => (
         <ReplicacheProvider
           disablePull
@@ -113,13 +118,14 @@ export function LeafletList(props: {
               custom_domain_routes: [],
             }}
           >
-            <LeafletPreview
+            <LeafletListItem
               index={index}
               token={leaflet}
               draft={!!leaflet.leaflets_in_publications?.length}
               published={!!leaflet.leaflets_in_publications?.find((l) => l.doc)}
               leaflet_id={leaflet.root_entity}
               loggedIn={!!identity}
+              display={props.display}
             />
           </StaticLeafletDataContext>
         </ReplicacheProvider>
