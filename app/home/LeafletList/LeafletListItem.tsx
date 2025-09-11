@@ -32,7 +32,14 @@ export const LeafletListItem = (props: {
     return (
       <>
         <div
-          className={`flex gap-3 ${props.cardBorderHidden ? "" : "bg-bg-page p-1 block-border hover:outline-border"}`}
+          className={`flex gap-3 ${props.cardBorderHidden ? "" : "p-1 block-border hover:outline-border"}`}
+          style={
+            props.cardBorderHidden
+              ? { backgroundColor: "transparent" }
+              : {
+                  backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
+                }
+          }
         >
           <LeafletListPreview {...props} />
           <Link
@@ -55,8 +62,14 @@ export const LeafletListItem = (props: {
       className={`leafletGridListItem relative
         flex flex-col h-52
         overflow-hidden block-border !border-border hover:outline-border
-        ${props.cardBorderHidden ? "bg-transparent" : "bg-bg-page"}
         `}
+      style={
+        props.cardBorderHidden
+          ? { backgroundColor: "transparent" }
+          : {
+              backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
+            }
+      }
     >
       <div className="grow p-1">
         <LeafletGridPreview {...props} />
