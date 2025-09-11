@@ -13,7 +13,7 @@ export const LeafletInfo = (props: {
   className?: string;
 }) => {
   return (
-    <div className="flex flex-col w-full">
+    <div className={`leafletInfo flex flex-col w-full ${props.className}`}>
       <div className="flex justify-between shrink-0 w-full gap-2 leading-tight">
         <h3 className="grow truncate">Title goes here</h3>
 
@@ -27,10 +27,10 @@ export const LeafletInfo = (props: {
         <div
           className={`text-xs  italic ${props.published ? "font-bold text-tertiary" : "text-tertiary"}`}
         >
-          {props.published ? "Published!" : "Draft"}
+          {props.published ? "Published xx/xx/xx" : "Draft Edited xx/xx/xx"}
         </div>
       ) : (
-        <div className="text-xs text-tertiary italic">date</div>
+        <div className="text-xs text-tertiary italic">Edited xx/xx/xx</div>
       )}
     </div>
   );

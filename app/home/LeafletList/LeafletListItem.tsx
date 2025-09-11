@@ -9,6 +9,9 @@ import { useTemplateState } from "../Actions/CreateNewButton";
 import { TemplateSmall } from "components/Icons/TemplateSmall";
 import { LeafletListPreview, LeafletGridPreview } from "./LeafletPreview";
 import { LeafletInfo } from "./LeafletInfo";
+import Link from "next/link";
+import { useState } from "react";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 export const LeafletListItem = (props: {
   draft?: boolean;
@@ -18,27 +21,54 @@ export const LeafletListItem = (props: {
   leaflet_id: string;
   loggedIn: boolean;
   display: "list" | "grid";
+  cardBorderHidden: boolean;
 }) => {
   let isTemplate = useTemplateState(
     (s) => !!s.templates.find((t) => t.id === props.token.id),
   );
+  let [prefetch, setPrefetch] = useState(false);
 
   if (props.display === "list")
     return (
       <>
-        <div className="flex gap-2">
+        <div
+          className={`flex gap-3 ${props.cardBorderHidden ? "" : "bg-bg-page p-1 block-border hover:outline-border"}`}
+        >
           <LeafletListPreview {...props} />
-          <LeafletInfo isTemplate={isTemplate} {...props} />
+          <Link
+            onMouseEnter={() => setPrefetch(true)}
+            onPointerDown={() => setPrefetch(true)}
+            prefetch={prefetch}
+            href={`/${props.token.id}`}
+            className={`no-underline sm:hover:no-underline text-primary w-full h-full py-1`}
+          >
+            <LeafletInfo isTemplate={isTemplate} {...props} />
+          </Link>
         </div>
-        <hr className="last:hidden border-border-light" />
+        {props.cardBorderHidden && (
+          <hr className="last:hidden border-border-light" />
+        )}
       </>
     );
   return (
-    <div className="relative flex flex-col h-52 overflow-hidden block-border !border-border hover:outline-border">
+    <div
+      className={`leafletGridListItem relative
+        flex flex-col h-52
+        overflow-hidden block-border !border-border hover:outline-border
+        ${props.cardBorderHidden ? "bg-transparent" : "bg-bg-page"}
+        `}
+    >
       <div className="grow p-1">
         <LeafletGridPreview {...props} />
       </div>
-      <LeafletInfo isTemplate={isTemplate} className="p-2 pt-1" {...props} />
+      <LeafletInfo isTemplate={isTemplate} className="px-2 py-1" {...props} />
+      {/*in grid view, link needs to be handled as overlay on item since a tag
+      cannot contain images etc*/}
+      <LeafletPreviewLink
+        id={props.token.id}
+        prefetch={prefetch}
+        setPrefetch={setPrefetch}
+      />
     </div>
   );
 };
@@ -92,5 +122,21 @@ const LeafletTemplateIndicator = (props: { isTemplate: boolean }) => {
     <div className="absolute -top-3 right-1">
       <TemplateSmall fill={theme.colors["bg-page"]} />
     </div>
+  );
+};
+
+const LeafletPreviewLink = (props: {
+  id: string;
+  prefetch: boolean;
+  setPrefetch: (value: boolean) => void;
+}) => {
+  return (
+    <Link
+      onMouseEnter={() => props.setPrefetch(true)}
+      onPointerDown={() => props.setPrefetch(true)}
+      prefetch={props.prefetch}
+      href={`/${props.id}`}
+      className={`no-underline sm:hover:no-underline text-primary absolute inset-0 w-full h-full`}
+    />
   );
 };

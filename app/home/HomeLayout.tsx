@@ -16,6 +16,7 @@ import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 import { HomeSmall } from "components/Icons/HomeSmall";
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
 import { Actions } from "./Actions/Actions";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 export const HomeLayout = (props: {
   entityID: string;
@@ -28,6 +29,7 @@ export const HomeLayout = (props: {
     "theme/background-image",
   );
 
+  let cardBorderHidden = !!useCardBorderHidden(props.entityID);
   return (
     <DashboardLayout
       hasBackgroundImage={hasBackgroundImage}
@@ -35,7 +37,13 @@ export const HomeLayout = (props: {
       defaultTab="home"
       actions={<Actions />}
       tabs={{
-        home: <LeafletList initialFacts={props.initialFacts} display="list" />,
+        home: (
+          <LeafletList
+            initialFacts={props.initialFacts}
+            display="list"
+            cardBorderHidden={cardBorderHidden}
+          />
+        ),
       }}
     />
   );
@@ -46,6 +54,7 @@ export function LeafletList(props: {
     [root_entity: string]: Fact<Attribute>[];
   };
   display: "list" | "grid";
+  cardBorderHidden: boolean;
 }) {
   let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
     fallbackData: [],
@@ -97,6 +106,7 @@ export function LeafletList(props: {
   return (
     <div
       className={`
+        leafletList
         w-full h-full
         ${props.display === "grid" ? "grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-6 sm:gap-y-5 grow" : "flex flex-col gap-2 pt-2"} `}
     >
@@ -126,6 +136,7 @@ export function LeafletList(props: {
               leaflet_id={leaflet.root_entity}
               loggedIn={!!identity}
               display={props.display}
+              cardBorderHidden={props.cardBorderHidden}
             />
           </StaticLeafletDataContext>
         </ReplicacheProvider>
