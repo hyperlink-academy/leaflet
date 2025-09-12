@@ -189,6 +189,13 @@ export function CommentBox(props: {
               },
             });
 
+            let tr = editorState.tr;
+            tr = tr.replaceWith(
+              0,
+              editorState.doc.content.size,
+              multiBlockSchema.nodes.paragraph.createAndFill()!,
+            );
+            view.current?.dispatch(tr);
             setLoading(false);
             props.onSubmit?.();
             useInteractionState.setState((s) => ({
