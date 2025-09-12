@@ -3,6 +3,7 @@ import { PermissionToken } from "src/replicache";
 import { LeafletOptions } from "./LeafletOptions";
 
 export const LeafletInfo = (props: {
+  title?: string;
   draft?: boolean;
   published?: boolean;
   index: number;
@@ -15,7 +16,7 @@ export const LeafletInfo = (props: {
   return (
     <div className={`leafletInfo flex flex-col w-full ${props.className}`}>
       <div className="flex justify-between shrink-0 w-full gap-2 leading-tight">
-        <h3 className="grow truncate">Title goes here</h3>
+        <h3 className="grow truncate">{props.title}</h3>
 
         <LeafletOptions
           leaflet={props.token}

@@ -20,6 +20,7 @@ import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 export const HomeLayout = (props: {
   entityID: string;
+  titles: { [root_entity: string]: string };
   initialFacts: {
     [root_entity: string]: Fact<Attribute>[];
   };
@@ -39,8 +40,9 @@ export const HomeLayout = (props: {
       tabs={{
         home: (
           <LeafletList
+            titles={props.titles}
             initialFacts={props.initialFacts}
-            display="list"
+            display="grid"
             cardBorderHidden={cardBorderHidden}
           />
         ),
@@ -50,6 +52,8 @@ export const HomeLayout = (props: {
 };
 
 export function LeafletList(props: {
+  titles: { [root_entity: string]: string };
+
   initialFacts: {
     [root_entity: string]: Fact<Attribute>[];
   };
@@ -72,7 +76,7 @@ export function LeafletList(props: {
         return result;
       }
     },
-    { fallbackData: props.initialFacts },
+    { fallbackData: { facts: props.initialFacts, titles: props.titles } },
   );
   let leaflets: Array<
     PermissionToken & {
@@ -107,7 +111,7 @@ export function LeafletList(props: {
     <div
       className={`
         leafletList
-        w-full h-full
+        w-full
         ${props.display === "grid" ? "grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-6 sm:gap-y-5 grow" : "flex flex-col gap-2 pt-2"} `}
     >
       {leaflets.map((leaflet, index) => (
@@ -118,7 +122,7 @@ export function LeafletList(props: {
           rootEntity={leaflet.root_entity}
           token={leaflet}
           name={leaflet.root_entity}
-          initialFacts={initialFacts?.[leaflet.root_entity] || []}
+          initialFacts={initialFacts?.facts?.[leaflet.root_entity] || []}
         >
           <StaticLeafletDataContext
             value={{
@@ -129,6 +133,7 @@ export function LeafletList(props: {
             }}
           >
             <LeafletListItem
+              title={initialFacts?.titles?.[leaflet.root_entity] || "Untitled"}
               index={index}
               token={leaflet}
               draft={!!leaflet.leaflets_in_publications?.length}
@@ -141,6 +146,7 @@ export function LeafletList(props: {
           </StaticLeafletDataContext>
         </ReplicacheProvider>
       ))}
+      <div className="spacer h-12 w-full bg-transparent shrink-0 " />
     </div>
   );
 }

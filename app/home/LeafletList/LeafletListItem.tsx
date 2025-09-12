@@ -14,6 +14,7 @@ import { useState } from "react";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 export const LeafletListItem = (props: {
+  title: string;
   draft?: boolean;
   published?: boolean;
   index: number;
@@ -60,7 +61,7 @@ export const LeafletListItem = (props: {
   return (
     <div
       className={`leafletGridListItem relative
-        flex flex-col h-52
+        flex flex-col gap-1 p-1 h-52
         overflow-hidden block-border !border-border hover:outline-border
         `}
       style={
@@ -71,10 +72,14 @@ export const LeafletListItem = (props: {
             }
       }
     >
-      <div className="grow p-1">
+      <div className="grow">
         <LeafletGridPreview {...props} />
       </div>
-      <LeafletInfo isTemplate={isTemplate} className="px-2 py-1" {...props} />
+      <LeafletInfo
+        isTemplate={isTemplate}
+        className="px-1 pb-0.5 shrink-0"
+        {...props}
+      />
       {/*in grid view, link needs to be handled as overlay on item since a tag
       cannot contain images etc*/}
       <LeafletPreviewLink

@@ -101,8 +101,9 @@ export default async function Home() {
         <ThemeProvider entityID={root_entity}>
           <ThemeBackgroundProvider entityID={root_entity}>
             <HomeLayout
+              titles={home_docs_initialFacts.titles || {}}
               entityID={root_entity}
-              initialFacts={home_docs_initialFacts}
+              initialFacts={home_docs_initialFacts.facts || {}}
             />
           </ThemeBackgroundProvider>
         </ThemeProvider>
