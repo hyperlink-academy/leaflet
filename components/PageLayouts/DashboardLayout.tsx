@@ -14,7 +14,7 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 
 export const useDashboardState = create(() => ({
   display: "grid" as "grid" | "list",
-  sort: "alphabetical" as "created" | "alphabetical",
+  sort: "created" as "created" | "alphabetical",
   filter: { drafts: false, published: false, docs: false },
 }));
 

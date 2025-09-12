@@ -34,7 +34,13 @@ export const LeafletOptions = (props: {
           setState("normal");
         }}
         trigger={
-          <div className="text-secondary">
+          <div
+            className="text-secondary"
+            onClick={(e) => {
+              e.preventDefault;
+              e.stopPropagation;
+            }}
+          >
             <MoreOptionsVerticalTiny />
           </div>
         }
