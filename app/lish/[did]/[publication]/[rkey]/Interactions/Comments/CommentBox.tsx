@@ -7,6 +7,7 @@ import { keymap } from "prosemirror-keymap";
 import { Mark, MarkType, Node } from "prosemirror-model";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
+import { history, redo, undo } from "prosemirror-history";
 import {
   MutableRefObject,
   RefObject,
@@ -54,6 +55,9 @@ export function CommentBox(props: {
           "Meta-i": toggleMark(multiBlockSchema.marks.em),
           "Ctrl-i": toggleMark(multiBlockSchema.marks.em),
           "Ctrl-Meta-x": toggleMark(multiBlockSchema.marks.strikethrough),
+          "Mod-z": undo,
+          "Mod-y": redo,
+          "Shift-Mod-z": redo,
         }),
         keymap(baseKeymap),
         autolink({
@@ -61,6 +65,7 @@ export function CommentBox(props: {
           shouldAutoLink: () => true,
           defaultProtocol: "https",
         }),
+        history(),
       ],
     }),
   );
