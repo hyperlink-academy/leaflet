@@ -133,6 +133,7 @@ export function RenderedTextBlock(props: {
     left: "text-left",
     right: "text-right",
     center: "text-center",
+    justify: "text-justify",
   }[alignment];
   let { permissions } = useEntitySetContext();
 
@@ -198,6 +199,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
     left: "text-left",
     right: "text-right",
     center: "text-center",
+    justify: "text-justify",
   }[alignment];
 
   let value = useYJSValue(props.entityID);

@@ -55,6 +55,7 @@ export interface Block {
     | 'lex:pub.leaflet.pages.linearDocument#textAlignLeft'
     | 'lex:pub.leaflet.pages.linearDocument#textAlignCenter'
     | 'lex:pub.leaflet.pages.linearDocument#textAlignRight'
+    | 'lex:pub.leaflet.pages.linearDocument#textAlignJustify'
     | (string & {})
 }
 

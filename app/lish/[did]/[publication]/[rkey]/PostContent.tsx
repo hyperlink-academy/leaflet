@@ -97,7 +97,10 @@ let Block = ({
       ? "text-right justify-end"
       : b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignCenter"
         ? "text-center justify-center"
-        : "";
+        : b.alignment ===
+            "lex:pub.leaflet.pages.linearDocument#textAlignJustify"
+          ? "text-justify justify-start"
+          : "";
   if (!alignment && PubLeafletBlocksImage.isMain(b.block))
     alignment = "text-center justify-center";
 

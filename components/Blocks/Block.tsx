@@ -247,6 +247,7 @@ export const BaseBlock = (
       left: "justify-start",
       right: "justify-end",
       center: "justify-center",
+      justify: "justify-start",
     }[alignment];
 
   if (!BlockTypeComponent) return <div>unknown block</div>;

@@ -22,6 +22,7 @@ export const PubLeafletPagesLinearDocument: LexiconDoc = {
             "#textAlignLeft",
             "#textAlignCenter",
             "#textAlignRight",
+            "#textAlignJustify",
           ],
         },
       },

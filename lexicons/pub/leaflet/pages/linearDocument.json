@@ -41,7 +41,8 @@
           "knownValues": [
             "#textAlignLeft",
             "#textAlignCenter",
-            "#textAlignRight"
+            "#textAlignRight",
+            "#textAlignJustify"
           ]
         }
       }
