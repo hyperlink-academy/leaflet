@@ -15,6 +15,8 @@ import { DeleteSmall } from "components/Icons/DeleteSmall";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { ShareButton } from "components/ShareOptions";
 import { SpeedyLink } from "components/SpeedyLink";
+import { QuoteTiny } from "components/Icons/QuoteTiny";
+import { CommentTiny } from "components/Icons/CommentTiny";
 
 export function PublishedPostsList() {
   let { data: publication } = usePublicationData();
@@ -47,6 +49,10 @@ export function PublishedPostsList() {
           );
           let uri = new AtUri(doc.documents.uri);
           let record = doc.documents.data as PubLeafletDocument.Record;
+          let quotes =
+            doc.documents.document_mentions_in_bsky[0]?.count || 0;
+          let comments =
+            doc.documents.comments_on_documents[0]?.count || 0;
 
           return (
             <Fragment key={doc.documents?.uri}>
@@ -80,19 +86,39 @@ export function PublishedPostsList() {
                       {record.description}
                     </p>
                   ) : null}
-                  {record.publishedAt ? (
-                    <p className="text-sm text-tertiary pt-3">
-                      Published{" "}
-                      {new Date(record.publishedAt).toLocaleDateString(
-                        undefined,
-                        {
-                          year: "numeric",
-                          month: "long",
-                          day: "2-digit",
-                        },
-                      )}
-                    </p>
-                  ) : null}
+                  <div className="text-sm text-tertiary flex gap-1 flex-wrap pt-3">
+                    {record.publishedAt ? (
+                      <p className="text-sm text-tertiary">
+                        Published{" "}
+                        {new Date(record.publishedAt).toLocaleDateString(
+                          undefined,
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "2-digit",
+                          },
+                        )}
+                      </p>
+                    ) : null}
+                    {(comments > 0 || quotes > 0) && record.publishedAt ? " | " : ""}
+                    {quotes > 0 && (
+                      <SpeedyLink
+                        href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=quotes`}
+                        className="flex flex-row gap-1 text-sm text-tertiary items-center"
+                      >
+                        <QuoteTiny /> {quotes}
+                      </SpeedyLink>
+                    )}
+                    {comments > 0 && quotes > 0 ? " " : ""}
+                    {comments > 0 && (
+                      <SpeedyLink
+                        href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=comments`}
+                        className="flex flex-row gap-1 text-sm text-tertiary items-center"
+                      >
+                        <CommentTiny /> {comments}
+                      </SpeedyLink>
+                    )}
+                  </div>
                 </div>
               </div>
               <hr className="last:hidden border-border-light" />
