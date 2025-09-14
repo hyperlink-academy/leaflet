@@ -84,18 +84,16 @@ export async function publishToPublication({
     .filter((b) => b.type == "link")
     .map((b) => scan.eav(b.value, "link/preview")[0]);
   let imageMap = new Map<string, BlobRef>();
-  await Promise.all(
-    [...links, ...images].map(async (b) => {
-      if (!b) return;
-      let data = await fetch(b.data.src);
-      if (data.status !== 200) return;
-      let binary = await data.blob();
-      let blob = await agent.com.atproto.repo.uploadBlob(binary, {
-        headers: { "Content-Type": binary.type },
-      });
-      imageMap.set(b.data.src, blob.data.blob);
-    }),
-  );
+  for (const b of [...links, ...images]) {
+    if (!b) continue;
+    let data = await fetch(b.data.src);
+    if (data.status !== 200) continue;
+    let binary = await data.blob();
+    let blob = await agent.com.atproto.repo.uploadBlob(binary, {
+      headers: { "Content-Type": binary.type },
+    });
+    imageMap.set(b.data.src, blob.data.blob);
+  }
 
   let b: PubLeafletPagesLinearDocument.Block[] = blocksToRecord(
     blocks,
