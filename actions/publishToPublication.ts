@@ -93,6 +93,11 @@ export async function publishToPublication({
       let blob = await agent.com.atproto.repo.uploadBlob(binary, {
         headers: { "Content-Type": binary.type },
       });
+      if (!blob.success) {
+        console.log(blob);
+        console.log("Error uploading image: " + b.data.src);
+        throw new Error("Failed to upload image");
+      }
       imageMap.set(b.data.src, blob.data.blob);
     } catch (e) {
       console.error(e);
