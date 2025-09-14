@@ -89,10 +89,16 @@ export async function publishToPublication({
     let data = await fetch(b.data.src);
     if (data.status !== 200) continue;
     let binary = await data.blob();
-    let blob = await agent.com.atproto.repo.uploadBlob(binary, {
-      headers: { "Content-Type": binary.type },
-    });
-    imageMap.set(b.data.src, blob.data.blob);
+    try {
+      let blob = await agent.com.atproto.repo.uploadBlob(binary, {
+        headers: { "Content-Type": binary.type },
+      });
+      imageMap.set(b.data.src, blob.data.blob);
+    } catch (e) {
+      console.error(e);
+      console.log("Error uploading image: " + b.data.src);
+      throw new Error("Failed to upload image");
+    }
   }
 
   let b: PubLeafletPagesLinearDocument.Block[] = blocksToRecord(
