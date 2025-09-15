@@ -191,6 +191,7 @@ const Replies = (props: {
           <CommentBox
             doc_uri={props.document}
             replyTo={props.comment_uri}
+            autoFocus={true}
             onSubmit={() => {
               setReplyBoxOpen(false);
             }}

@@ -40,6 +40,7 @@ export function CommentBox(props: {
   doc_uri: string;
   replyTo?: string;
   onSubmit?: () => void;
+  autoFocus?: boolean;
 }) {
   let mountRef = useRef<HTMLPreElement | null>(null);
   let quote = useInteractionState((s) => s.commentBox.quote);
@@ -145,6 +146,11 @@ export function CommentBox(props: {
         },
       },
     );
+
+    if (props.autoFocus) {
+      view.current.focus();
+    }
+
     return () => {
       view.current?.destroy();
       view.current = null;
