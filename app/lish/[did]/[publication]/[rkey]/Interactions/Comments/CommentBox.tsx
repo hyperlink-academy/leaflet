@@ -19,7 +19,7 @@ import {
 import { publishComment } from "./commentAction";
 import { ButtonPrimary } from "components/Buttons";
 import { ShareSmall } from "components/Icons/ShareSmall";
-import { useInteractionState } from "../Interactions";
+import { useInteractionState, setInteractionState } from "../Interactions";
 import { DotLoader } from "components/utils/DotLoader";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 import { setMark } from "src/utils/prosemirror/setMark";
@@ -43,7 +43,7 @@ export function CommentBox(props: {
   autoFocus?: boolean;
 }) {
   let mountRef = useRef<HTMLPreElement | null>(null);
-  let quote = useInteractionState((s) => s.commentBox.quote);
+  let { commentBox: { quote } } = useInteractionState(props.doc_uri);
   let [editorState, setEditorState] = useState(() =>
     EditorState.create({
       schema: multiBlockSchema,
@@ -118,7 +118,7 @@ export function CommentBox(props: {
             if (!quoteParam) return;
             const quotePosition = decodeQuotePosition(quoteParam);
             if (!quotePosition) return;
-            useInteractionState.setState({
+            setInteractionState(props.doc_uri, {
               commentBox: { quote: quotePosition },
             });
             return true;
@@ -165,7 +165,7 @@ export function CommentBox(props: {
           <button
             className="text-border absolute -top-3 right-1 bg-bg-page p-1 rounded-full"
             onClick={() =>
-              useInteractionState.setState({ commentBox: { quote: null } })
+              setInteractionState(props.doc_uri, { commentBox: { quote: null } })
             }
           >
             <CloseFillTiny />
@@ -230,7 +230,7 @@ export function CommentBox(props: {
             view.current?.dispatch(tr);
             setLoading(false);
             props.onSubmit?.();
-            useInteractionState.setState((s) => ({
+            setInteractionState(props.doc_uri, (s) => ({
               commentBox: {
                 quote: null,
               },
