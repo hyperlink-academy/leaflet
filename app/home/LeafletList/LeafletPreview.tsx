@@ -45,12 +45,20 @@ export const LeafletListPreview = (props: {
       delayDuration={0}
       side="right"
       trigger={
-        <div className="w-4 h-full rounded-md  overflow-hidden">
+        <div className="w-12 h-full rounded-md  overflow-hidden">
           <ThemeProvider local entityID={root} className="">
             <ThemeBackgroundProvider entityID={root}>
-              <div className="w-4 h-full rounded-md p-1 border border-border">
+              <div className="w-full h-full rounded-md p-1 border border-border">
                 <div
-                  className={`w-full h-full  rounded-[2px] ${cardBorderHidden ? "bg-primary" : "bg-bg-page"}`}
+                  className={`w-full h-full  rounded-[2px]`}
+                  style={
+                    cardBorderHidden
+                      ? { backgroundColor: "rgb(var(--primary))" }
+                      : {
+                          backgroundColor:
+                            "rgba(var(--bg-page), var(--bg-page-alpha))",
+                        }
+                  }
                 />
               </div>
             </ThemeBackgroundProvider>

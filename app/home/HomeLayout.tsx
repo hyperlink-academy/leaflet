@@ -21,6 +21,7 @@ import {
 import { Actions } from "./Actions/Actions";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { Json } from "supabase/database.types";
+import { useTemplateState } from "./Actions/CreateNewButton";
 
 type leaflets = Array<{
   added_at: string;
@@ -199,14 +200,24 @@ function useFilteredLeaflets(leaflets: leaflets) {
     let published = !!leaflet.leaflets_in_publications?.find((l) => l.doc);
     let drafts = !!leaflet.leaflets_in_publications?.length && !published;
     let docs = !leaflet.leaflets_in_publications?.length;
+    let templates = useTemplateState(
+      (s) => !!s.templates.find((t) => t.id === leaflet.id),
+    );
 
     // If no filters are active, show all
-    if (!filter.drafts && !filter.published && !filter.docs) return true;
+    if (
+      !filter.drafts &&
+      !filter.published &&
+      !filter.docs &&
+      !filter.templates
+    )
+      return true;
 
     return (
       (filter.drafts && drafts) ||
       (filter.published && published) ||
-      (filter.docs && docs)
+      (filter.docs && docs) ||
+      (filter.templates && templates)
     );
   });
 }

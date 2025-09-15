@@ -15,7 +15,7 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 export const useDashboardState = create(() => ({
   display: "grid" as "grid" | "list",
   sort: "created" as "created" | "alphabetical",
-  filter: { drafts: false, published: false, docs: false },
+  filter: { drafts: false, published: false, docs: false, templates: false },
 }));
 
 export function DashboardLayout<
@@ -73,7 +73,7 @@ export function DashboardLayout<
               {display === "list" ? "Grid" : "List"}
             </button>
             <Separator classname="h-4" />
-            <FilterOptions />
+            {!props.publication && <FilterOptions />}
             <Separator classname="h-4" />
 
             <button
@@ -138,6 +138,17 @@ const FilterOptions = () => {
       </Checkbox>
       <Checkbox
         small
+        checked={filter.templates}
+        onChange={(e) =>
+          useDashboardState.setState({
+            filter: { ...filter, templates: !!e.target.checked },
+          })
+        }
+      >
+        Templates
+      </Checkbox>
+      <Checkbox
+        small
         checked={filter.docs}
         onChange={(e) =>
           useDashboardState.setState({
@@ -152,7 +163,12 @@ const FilterOptions = () => {
         className="flex gap-1 items-center -mx-[2px] text-tertiary"
         onClick={() => {
           useDashboardState.setState({
-            filter: { docs: false, published: false, drafts: false },
+            filter: {
+              docs: false,
+              published: false,
+              drafts: false,
+              templates: false,
+            },
           });
         }}
       >
