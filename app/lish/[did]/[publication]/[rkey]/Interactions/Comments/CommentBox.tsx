@@ -81,6 +81,27 @@ export function CommentBox(props: {
             e.clipboardData?.getData("text") ||
             e.clipboardData?.getData("text/html");
           let html = e.clipboardData?.getData("text/html");
+          if (text && betterIsUrl(text)) {
+            let selection = view.state.selection as TextSelection;
+            let tr = view.state.tr;
+            let { from, to } = selection;
+            if (selection.empty) {
+              tr.insertText(text, selection.from);
+              tr.addMark(
+                from,
+                from + text.length,
+                multiBlockSchema.marks.link.create({ href: text }),
+              );
+            } else {
+              tr.addMark(
+                from,
+                to,
+                multiBlockSchema.marks.link.create({ href: text }),
+              );
+            }
+            view.dispatch(tr);
+            return true;
+          }
           if (!text && html) {
             let xml = new DOMParser().parseFromString(html, "text/html");
             text = xml.textContent || "";
