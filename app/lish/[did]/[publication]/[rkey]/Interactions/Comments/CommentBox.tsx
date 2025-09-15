@@ -35,6 +35,7 @@ import { QuoteContent } from "../Quotes";
 import { create } from "zustand";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { CloseFillTiny } from "components/Icons/CloseFillTiny";
+import { betterIsUrl } from "src/utils/isURL";
 
 export function CommentBox(props: {
   doc_uri: string;
