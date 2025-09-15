@@ -45,6 +45,54 @@ export function CommentBox(props: {
 }) {
   let mountRef = useRef<HTMLPreElement | null>(null);
   let { commentBox: { quote } } = useInteractionState(props.doc_uri);
+  let [loading, setLoading] = useState(false);
+  
+  const handleSubmit = async () => {
+    if (loading || !view.current) return;
+    
+    setLoading(true);
+    let currentState = view.current.state;
+    let [plaintext, facets] = docToFacetedText(currentState.doc);
+    let comment = await publishComment({
+      document: props.doc_uri,
+      comment: {
+        plaintext,
+        facets,
+        replyTo: props.replyTo,
+        attachment: quote
+          ? {
+              $type: "pub.leaflet.comment#linearDocumentQuote",
+              document: props.doc_uri,
+              quote,
+            }
+          : undefined,
+      },
+    });
+
+    let tr = currentState.tr;
+    tr = tr.replaceWith(
+      0,
+      currentState.doc.content.size,
+      multiBlockSchema.nodes.paragraph.createAndFill()!,
+    );
+    view.current.dispatch(tr);
+    setLoading(false);
+    props.onSubmit?.();
+    setInteractionState(props.doc_uri, (s) => ({
+      commentBox: {
+        quote: null,
+      },
+      localComments: [
+        ...s.localComments,
+        {
+          record: comment.record,
+          uri: comment.uri,
+          bsky_profiles: { record: comment.profile as Json },
+        },
+      ],
+    }));
+  };
+
   let [editorState, setEditorState] = useState(() =>
     EditorState.create({
       schema: multiBlockSchema,
@@ -60,6 +108,8 @@ export function CommentBox(props: {
           "Mod-z": undo,
           "Mod-y": redo,
           "Shift-Mod-z": redo,
+          "Ctrl-Enter": () => { handleSubmit(); return true; },
+          "Meta-Enter": () => { handleSubmit(); return true; },
         }),
         keymap(baseKeymap),
         autolink({
@@ -157,7 +207,7 @@ export function CommentBox(props: {
       view.current = null;
     };
   }, []);
-  let [loading, setLoading] = useState(false);
+  
   return (
     <div className=" flex flex-col">
       {quote && (
@@ -203,48 +253,7 @@ export function CommentBox(props: {
         </div>
         <ButtonPrimary
           compact
-          onClick={async () => {
-            setLoading(true);
-            let [plaintext, facets] = docToFacetedText(editorState.doc);
-            let comment = await publishComment({
-              document: props.doc_uri,
-              comment: {
-                plaintext,
-                facets,
-                replyTo: props.replyTo,
-                attachment: quote
-                  ? {
-                      $type: "pub.leaflet.comment#linearDocumentQuote",
-                      document: props.doc_uri,
-                      quote,
-                    }
-                  : undefined,
-              },
-            });
-
-            let tr = editorState.tr;
-            tr = tr.replaceWith(
-              0,
-              editorState.doc.content.size,
-              multiBlockSchema.nodes.paragraph.createAndFill()!,
-            );
-            view.current?.dispatch(tr);
-            setLoading(false);
-            props.onSubmit?.();
-            setInteractionState(props.doc_uri, (s) => ({
-              commentBox: {
-                quote: null,
-              },
-              localComments: [
-                ...s.localComments,
-                {
-                  record: comment.record,
-                  uri: comment.uri,
-                  bsky_profiles: { record: comment.profile as Json },
-                },
-              ],
-            }));
-          }}
+          onClick={handleSubmit}
         >
           {loading ? <DotLoader /> : <ShareSmall />}
         </ButtonPrimary>
