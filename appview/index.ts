@@ -179,11 +179,16 @@ async function main() {
       )
         return;
 
-      // Quick check if embed might contain our quote param
-      const embedStr = JSON.stringify(evt.record.embed);
-      if (!embedStr.includes(QUOTE_PARAM)) return;
+      // Check if embed contains our quote param using optional chaining
+      const embedRecord = evt.record as any;
+      const hasQuoteParam =
+        embedRecord.embed?.external?.uri?.includes(QUOTE_PARAM) ||
+        embedRecord.embed?.media?.external?.uri?.includes(QUOTE_PARAM);
 
-      // Now validate the record since we know it might be relevant
+      if (!hasQuoteParam) return;
+      console.log("FOUND EMBED!!!");
+
+      // Now validate the record since we know it contains our quote param
       let record = AppBskyFeedPost.validateRecord(evt.record);
       if (!record.success) return;
 
