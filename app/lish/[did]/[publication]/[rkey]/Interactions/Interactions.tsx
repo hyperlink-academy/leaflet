@@ -51,13 +51,29 @@ export function setInteractionState(
     const updatedState =
       typeof update === "function" ? update(currentDocState) : update;
 
-    return {
+    const newState = {
       ...state,
       [document_uri]: {
         ...currentDocState,
         ...updatedState,
       },
     };
+
+    // Update query parameter when drawer state changes
+    if (typeof window !== "undefined" && (updatedState.drawerOpen !== undefined || updatedState.drawer !== undefined)) {
+      const url = new URL(window.location.href);
+      const newDocState = newState[document_uri];
+      
+      if (newDocState.drawerOpen && newDocState.drawer) {
+        url.searchParams.set("interactionDrawer", newDocState.drawer);
+      } else {
+        url.searchParams.delete("interactionDrawer");
+      }
+      
+      window.history.replaceState({}, "", url.toString());
+    }
+
+    return newState;
   });
 }
 export function openInteractionDrawer(
