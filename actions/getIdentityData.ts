@@ -25,7 +25,7 @@ export async function getIdentityData() {
                 id,
                 root_entity,
                 permission_token_rights(*),
-                leaflets_in_publications(*, publications(*))
+                leaflets_in_publications(*, publications(*), documents(*))
               )
             )
           )`,

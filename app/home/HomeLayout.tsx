@@ -20,9 +20,11 @@ import {
 } from "components/PageLayouts/DashboardLayout";
 import { Actions } from "./Actions/Actions";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
+import { Json } from "supabase/database.types";
 
-type leaflets = Array<
-  PermissionToken & {
+type leaflets = Array<{
+  added_at: string;
+  token: PermissionToken & {
     leaflets_in_publications?: Array<{
       doc: string;
       description: string;
@@ -30,10 +32,10 @@ type leaflets = Array<
       leaflet: string;
       title: string;
       publications: null;
-      documents: null;
+      documents: { data: Json; indexed_at: string; uri: string };
     }>;
-  }
->;
+  };
+}>;
 
 export const HomeLayout = (props: {
   entityID: string;
@@ -74,12 +76,6 @@ export function LeafletList(props: {
   cardBorderHidden: boolean;
 }) {
   let display = useDashboardState((state) => state.display);
-  let sort = useDashboardState((state) => state.sort);
-  let filter = useDashboardState((state) => state.filter);
-
-  let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
-    fallbackData: [],
-  });
   let { identity } = useIdentityData();
   let { data: initialFacts } = useSWR(
     "home-leaflet-data",
@@ -98,6 +94,9 @@ export function LeafletList(props: {
 
   let sortedLeaflets: leaflets = useSortedLeaflets(props.titles);
   let filteredLeaflets: leaflets = useFilteredLeaflets(sortedLeaflets);
+  console.log(
+    filteredLeaflets.filter((l) => l.token.leaflets_in_publications?.[0]),
+  );
 
   return (
     <div
@@ -106,7 +105,7 @@ export function LeafletList(props: {
         w-full
         ${display === "grid" ? "grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-6 sm:gap-y-5 grow" : "flex flex-col gap-2 pt-2"} `}
     >
-      {filteredLeaflets.map((leaflet, index) => (
+      {filteredLeaflets.map(({ token: leaflet, added_at }, index) => (
         <ReplicacheProvider
           disablePull
           initialFactsOnly={!!identity}
@@ -130,9 +129,14 @@ export function LeafletList(props: {
               token={leaflet}
               draft={!!leaflet.leaflets_in_publications?.length}
               published={!!leaflet.leaflets_in_publications?.find((l) => l.doc)}
+              publishedAt={
+                leaflet.leaflets_in_publications?.find((l) => l.doc)?.documents
+                  ?.indexed_at
+              }
               leaflet_id={leaflet.root_entity}
               loggedIn={!!identity}
               display={display}
+              added_at={added_at}
               cardBorderHidden={props.cardBorderHidden}
             />
           </StaticLeafletDataContext>
@@ -178,17 +182,20 @@ function useSortedLeaflets(titles: { [root_entity: string]: string }) {
             }
           }
         })
-        .map((ptoh) => ptoh.permission_tokens)
+        .map((ptoh) => ({
+          added_at: ptoh.created_at,
+          token: ptoh.permission_tokens as PermissionToken,
+        }))
     : localLeaflets
         .sort((a, b) => (a.added_at > b.added_at ? -1 : 1))
         .filter((d) => !d.hidden)
-        .map((ll) => ll.token);
+        .map((ll) => ll);
 }
 
 function useFilteredLeaflets(leaflets: leaflets) {
   let filter = useDashboardState((state) => state.filter);
 
-  return leaflets.filter((leaflet) => {
+  return leaflets.filter(({ token: leaflet }) => {
     let published = !!leaflet.leaflets_in_publications?.find((l) => l.doc);
     let drafts = !!leaflet.leaflets_in_publications?.length && !published;
     let docs = !leaflet.leaflets_in_publications?.length;

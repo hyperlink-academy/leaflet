@@ -52,7 +52,6 @@ export const getFactsFromHomeLeaflets = makeRoute({
           }
         }
       }
-      console.log(titles);
       return {
         result: { facts, titles },
       };
