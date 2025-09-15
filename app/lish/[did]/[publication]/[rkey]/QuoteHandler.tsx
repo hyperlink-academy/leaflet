@@ -135,6 +135,9 @@ export const QuoteOptionButtons = (props: { position: string }) => {
       currentUrl.pathname = currentUrl.pathname.split("/l-quote/")[0];
     }
     currentUrl.pathname = currentUrl.pathname + `/l-quote/${props.position}`;
+    
+    // Clear existing query parameters
+    currentUrl.search = "";
 
     currentUrl.hash = `#${pos?.start.block.join(".")}_${pos?.start.offset}`;
     return [currentUrl.toString(), pos];
