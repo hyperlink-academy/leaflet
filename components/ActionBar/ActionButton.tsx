@@ -1,4 +1,5 @@
 "use client";
+
 import { useContext, useEffect } from "react";
 import { SidebarContext } from "./Sidebar";
 import React, { forwardRef, type JSX } from "react";
@@ -6,9 +7,8 @@ import { PopoverOpenContext } from "components/Popover";
 
 type ButtonProps = Omit<JSX.IntrinsicElements["button"], "content">;
 
-export const ActionButton = forwardRef<
-  HTMLButtonElement,
-  ButtonProps & {
+export const ActionButton = (
+  props: ButtonProps & {
     id?: string;
     icon: React.ReactNode;
     label: React.ReactNode;
@@ -16,8 +16,8 @@ export const ActionButton = forwardRef<
     secondary?: boolean;
     nav?: boolean;
     className?: string;
-  }
->((props, ref) => {
+  },
+) => {
   let { id, icon, label, primary, secondary, nav, ...buttonProps } = props;
   let sidebar = useContext(SidebarContext);
   let inOpenPopover = useContext(PopoverOpenContext);
@@ -32,8 +32,6 @@ export const ActionButton = forwardRef<
   return (
     <button
       {...buttonProps}
-      ref={ref}
-      id={props.id}
       className={`
       actionButton relative font-bold
       rounded-md border
@@ -59,6 +57,4 @@ export const ActionButton = forwardRef<
       </div>
     </button>
   );
-});
-
-ActionButton.displayName = "ActionButton";
+};
