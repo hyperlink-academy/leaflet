@@ -3,7 +3,11 @@ import { useState } from "react";
 import { Header } from "../PageHeader";
 import { Footer } from "components/ActionBar/Footer";
 import { Sidebar } from "components/ActionBar/Sidebar";
-import { Navigation, navPages } from "components/ActionBar/Navigation";
+import {
+  DesktopNavigation,
+  MobileNavigation,
+  navPages,
+} from "components/ActionBar/Navigation";
 import { PubLeafletPublication } from "lexicons/api";
 import { create } from "zustand";
 import { Popover } from "components/Popover";
@@ -11,6 +15,7 @@ import { Checkbox } from "components/Checkbox";
 import { Separator } from "components/Layout";
 import { CloseEvent } from "node:http";
 import { CloseTiny } from "components/Icons/CloseTiny";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export const useDashboardState = create(() => ({
   display: "grid" as "grid" | "list",
@@ -30,21 +35,25 @@ export function DashboardLayout<
 }) {
   let [tab, setTab] = useState(props.defaultTab);
   let content = props.tabs[tab];
+  let isMobile = useIsMobile();
 
   let display = useDashboardState((state) => state.display);
   let sort = useDashboardState((state) => state.sort);
 
   return (
     <div className="home pwa-padding relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6 ">
-      <div className="flex flex-col gap-4 my-6">
-        <Navigation
-          currentPage={props.currentPage}
-          publication={props.publication}
-        />
-        <Sidebar alwaysOpen>{props.actions}</Sidebar>
-      </div>
+      {!isMobile && (
+        <div className="flex flex-col gap-4 my-6">
+          <DesktopNavigation
+            currentPage={props.currentPage}
+            publication={props.publication}
+          />
+
+          <Sidebar alwaysOpen>{props.actions}</Sidebar>
+        </div>
+      )}
       <div
-        className={`w-full  flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-12 px-2 sm:pt-8 sm:pb-12 sm:pl-6 sm:pr-4 `}
+        className={`w-full h-full flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-12 px-2 sm:pt-8 sm:pb-12 sm:pl-6 sm:pr-4 `}
         id="home-content"
       >
         <Header hasBackgroundImage={props.hasBackgroundImage}>
@@ -89,7 +98,13 @@ export function DashboardLayout<
         </Header>
         {content}
       </div>
-      <Footer>{props.actions}</Footer>
+      <Footer>
+        <MobileNavigation
+          currentPage={props.currentPage}
+          publication={props.publication}
+        />
+        {props.actions}
+      </Footer>
     </div>
   );
 }

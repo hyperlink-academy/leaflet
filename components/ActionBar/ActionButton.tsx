@@ -45,15 +45,15 @@ export const ActionButton = forwardRef<
           : secondary
             ? "sm:w-full w-max bg-bg-page border-accent-contrast text-accent-contrast transparent-outline focus:outline-accent-contrast sm:hover:outline-accent-contrast outline-offset-1 mx-1 first:ml-0"
             : nav
-              ? "sm:w-full w-max border-transparent text-secondary sm:hover:border-border"
-              : "sm:w-full w-max border-transparent text-accent-contrast sm:hover:border-accent-contrast"
+              ? "w-full border-transparent text-secondary sm:hover:border-border !justify-start"
+              : "sm:w-full border-transparent text-accent-contrast sm:hover:border-accent-contrast"
       }
       ${props.className}
       `}
     >
       <div className="shrink-0">{icon}</div>
       <div
-        className={`truncate pr-1 w-max ${sidebar.open ? "block" : primary || secondary ? "sm:hidden block" : "hidden"}`}
+        className={`truncate pr-1 w-max ${sidebar.open ? "block" : primary || secondary || nav ? "sm:hidden block" : "hidden"}`}
       >
         {label}
       </div>

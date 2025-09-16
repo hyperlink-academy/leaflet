@@ -15,89 +15,75 @@ import { PubLeafletPublication } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
+import { ActionButton } from "./ActionButton";
+import { BlobRef } from "@atproto/lexicon";
 
-export const MyPublicationList = () => {
+export const PublicationButtons = (props: {
+  currentPubUri: string | undefined;
+}) => {
   let { identity } = useIdentityData();
+
+  // don't show pub list button if not logged in or no pub list
+  // we show a "start a pub" banner instead
   if (!identity || !identity.atp_did) return <PubListEmpty />;
   return (
-    <div className="pubListWrapper w-full sm:w-[200px] flex flex-col sm:gap-1  container py-2 sm:p-0 sm:bg-transparent sm:border-0">
-      <div className="flex justify-between items-center font-bold text-tertiary text-sm px-2 ">
-        Publications
-        <Link
-          href={"./lish/createPub"}
-          className="pubListCreateNew  text-accent-contrast font-bold hover:text-accent-contrast"
-        >
-          <AddTiny />
-        </Link>
-      </div>
-      <PublicationList publications={identity.publications} />
-    </div>
-  );
-};
+    <div className="pubListWrapper w-full  flex flex-col gap-1  container pt-2 sm:p-0 sm:bg-transparent sm:border-0">
+      {identity.publications?.map((d) => {
+        // console.log("thisURI : " + d.uri);
+        // console.log("currentURI : " + props.currentPubUri);
+        console.log(d.uri === props.currentPubUri);
 
-const PublicationList = (props: {
-  publications: {
-    identity_did: string;
-    indexed_at: string;
-    name: string;
-    record: Json;
-    uri: string;
-  }[];
-}) => {
-  return (
-    <div className="pubList w-full flex flex-row sm:flex-col gap-0 overflow-auto items-stretch">
-      {props.publications?.map((d) => (
-        <Publication {...d} key={d.uri} record={d.record} />
-      ))}
-    </div>
-  );
-};
-
-function Publication(props: { uri: string; name: string; record: Json }) {
-  let record = props.record as PubLeafletPublication.Record | null;
-  let pub_creator = new AtUri(props.uri).host;
-  let backgroundImage = record?.theme?.backgroundImage?.image?.ref
-    ? blobRefToSrc(record?.theme?.backgroundImage?.image?.ref, pub_creator)
-    : null;
-
-  let backgroundImageRepeat = record?.theme?.backgroundImage?.repeat;
-  let backgroundImageSize = record?.theme?.backgroundImage?.width || 500;
-  let showPageBackground = !!record?.theme?.showPageBackground;
-  return (
-    <PublicationThemeProvider record={record} local pub_creator={pub_creator}>
+        return (
+          <PublicationOption
+            {...d}
+            key={d.uri}
+            record={d.record}
+            asActionButton
+            current={d.uri === props.currentPubUri}
+          />
+        );
+      })}
       <Link
-        className="pubListItem sm:w-full sm:min-w-0 min-w-40 w-36  px-1 sm:px-2 py-1 sm:h-max  hover:no-underline "
-        href={`${getBasePublicationURL(props)}/dashboard`}
+        href={"./lish/createPub"}
+        className="pubListCreateNew  text-accent-contrast text-sm place-self-end hover:text-accent-contrast"
       >
-        <div
-          style={{
-            backgroundImage: `url(${backgroundImage})`,
-            backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
-            backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
-          }}
-          className="py-3 px-2 h-full w-full flex flex-col gap-1 place-items-center bg-bg-leaflet border border-border-light rounded-lg text-secondary text-center  transparent-outline outline-2 outline-offset-1 hover:outline-border  grow "
-        >
-          {record?.icon && (
-            <div
-              style={{
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "center",
-                backgroundSize: "cover",
-                backgroundImage: `url(/api/atproto_images?did=${new AtUri(props.uri).host}&cid=${(record.icon?.ref as unknown as { $link: string })["$link"]})`,
-              }}
-              className="w-6 h-6 rounded-full"
-            />
-          )}
-          <h4
-            className={`font-bold w-full px-1 rounded-md truncate my-auto ${showPageBackground ? "bg-[rgba(var(--bg-page),0.8)]" : ""}`}
-          >
-            {props.name}
-          </h4>
-        </div>
+        New
       </Link>
-    </PublicationThemeProvider>
+    </div>
   );
-}
+};
+
+export const PublicationOption = (props: {
+  uri: string;
+  name: string;
+  record: Json;
+  asActionButton?: boolean;
+  current?: boolean;
+}) => {
+  let record = props.record as PubLeafletPublication.Record | null;
+  if (!record) return;
+
+  return (
+    <Link
+      href={`${getBasePublicationURL(props)}/dashboard`}
+      className="flex gap-2 items-start text-secondary font-bold hover:!no-underline hover:text-accent-contrast w-full"
+    >
+      {props.asActionButton ? (
+        <ActionButton
+          label={record.name}
+          icon={<PubIcon record={record} uri={props.uri} />}
+          nav
+          className={props.current ? "!bg-bg-page !border-border" : ""}
+        />
+      ) : (
+        <>
+          <PubIcon record={record} uri={props.uri} />
+          <div className="truncate">{record.name}</div>
+        </>
+      )}
+    </Link>
+  );
+};
 
 const PubListEmpty = () => {
   let { identity } = useIdentityData();
@@ -129,6 +115,31 @@ const PubListEmpty = () => {
             </ButtonSecondary>
           </form>
         )}
+      </div>
+    </div>
+  );
+};
+
+export const PubIcon = (props: {
+  record: PubLeafletPublication.Record;
+  uri: string;
+}) => {
+  if (!props.record) return;
+
+  return props.record.icon ? (
+    <div
+      style={{
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center",
+        backgroundSize: "cover",
+        backgroundImage: `url(/api/atproto_images?did=${new AtUri(props.uri).host}&cid=${(props.record.icon?.ref as unknown as { $link: string })["$link"]})`,
+      }}
+      className="w-6 h-6 rounded-full"
+    />
+  ) : (
+    <div className="w-5 h-5 rounded-full bg-accent-1 relative">
+      <div className="font-bold text-sm absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-2">
+        {props.record?.name.slice(0, 1)}
       </div>
     </div>
   );
