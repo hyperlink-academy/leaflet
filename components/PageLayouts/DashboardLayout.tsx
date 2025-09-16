@@ -16,6 +16,7 @@ import { Separator } from "components/Layout";
 import { CloseEvent } from "node:http";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { useIsMobile } from "src/hooks/isMobile";
+import { Media, MediaContents } from "components/Media";
 
 export const useDashboardState = create(() => ({
   display: "grid" as "grid" | "list",
@@ -35,23 +36,23 @@ export function DashboardLayout<
 }) {
   let [tab, setTab] = useState(props.defaultTab);
   let content = props.tabs[tab];
-  let isMobile = useIsMobile();
 
   let display = useDashboardState((state) => state.display);
   let sort = useDashboardState((state) => state.sort);
 
   return (
     <div className="home pwa-padding relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6 ">
-      {!isMobile && (
+      <MediaContents mobile={false}>
         <div className="flex flex-col gap-4 my-6">
-          <DesktopNavigation
-            currentPage={props.currentPage}
-            publication={props.publication}
-          />
-
-          <Sidebar alwaysOpen>{props.actions}</Sidebar>
+          <Sidebar alwaysOpen>
+            <DesktopNavigation
+              currentPage={props.currentPage}
+              publication={props.publication}
+            />
+            {props.actions}
+          </Sidebar>
         </div>
-      )}
+      </MediaContents>
       <div
         className={`w-full h-full flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-12 px-2 sm:pt-8 sm:pb-12 sm:pl-6 sm:pr-4 `}
         id="home-content"
