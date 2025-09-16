@@ -19,46 +19,38 @@ export function LeafletSidebar(props: { leaflet_id: string }) {
   let { identity } = useIdentityData();
 
   return (
-    <div
-      className="spacer flex justify-end items-start"
-      style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
-      onClick={(e) => {
-        e.currentTarget === e.target && blurPage();
-      }}
+    <Media
+      mobile={false}
+      className="sidebarContainer relative flex flex-col justify-end h-full w-16"
     >
-      <Media
-        mobile={false}
-        className="sidebarContainer relative flex flex-col justify-end h-full w-16"
-      >
-        {entity_set.permissions.write && (
-          <Sidebar>
-            {pub?.publications &&
-            identity?.atp_did &&
-            pub.publications.identity_did === identity.atp_did ? (
-              <>
-                <PublishButton />
-                <ShareOptions />
-                <ThemePopover entityID={props.leaflet_id} />
-                <HelpPopover />
-                <hr className="text-border" />
-                <BackToPubButton publication={pub.publications} />
-              </>
-            ) : (
-              <>
-                <ShareOptions />
-                <ThemePopover entityID={props.leaflet_id} />
-                <HelpPopover />
-                <hr className="text-border" />
-                <HomeButton />
-              </>
-            )}
-          </Sidebar>
-        )}
-        <div className="h-full flex items-end">
-          <Watermark />
-        </div>
-      </Media>
-    </div>
+      {entity_set.permissions.write && (
+        <Sidebar>
+          {pub?.publications &&
+          identity?.atp_did &&
+          pub.publications.identity_did === identity.atp_did ? (
+            <>
+              <PublishButton />
+              <ShareOptions />
+              <ThemePopover entityID={props.leaflet_id} />
+              <HelpPopover />
+              <hr className="text-border" />
+              <BackToPubButton publication={pub.publications} />
+            </>
+          ) : (
+            <>
+              <ShareOptions />
+              <ThemePopover entityID={props.leaflet_id} />
+              <HelpPopover />
+              <hr className="text-border" />
+              <HomeButton />
+            </>
+          )}
+        </Sidebar>
+      )}
+      <div className="h-full flex items-end">
+        <Watermark />
+      </div>
+    </Media>
   );
 }
 

@@ -17,9 +17,9 @@ import {
 } from "components/ThemeManager/PublicationThemeProvider";
 import { getPostPageData } from "./getPostPageData";
 import { PostPageContextProvider } from "./PostPageContext";
-import { PostPage } from "./PostPage";
-import { PageLayout } from "./PageLayout";
+import { PostPages } from "./PostPage";
 import { extractCodeBlocks } from "./extractCodeBlocks";
+import { LeafletLayout } from "components/LeafletLayout";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -122,7 +122,6 @@ export default async function Post(props: {
   let pubRecord = document.documents_in_publications[0]?.publications
     .record as PubLeafletPublication.Record;
 
-  let hasPageBackground = !!pubRecord.theme?.showPageBackground;
   let prerenderedCodeBlocks = await extractCodeBlocks(blocks);
 
   return (
@@ -153,8 +152,8 @@ export default async function Post(props: {
           on chrome, if you scroll backward, things stop working
           seems like if you use an older browser, sel direction is not a thing yet
            */}
-          <PageLayout>
-            <PostPage
+          <LeafletLayout>
+            <PostPages
               preferences={pubRecord.preferences || {}}
               pubRecord={pubRecord}
               profile={JSON.parse(JSON.stringify(profile.data))}
@@ -165,17 +164,7 @@ export default async function Post(props: {
               name={decodeURIComponent((await props.params).publication)}
               prerenderedCodeBlocks={prerenderedCodeBlocks}
             />
-            <InteractionDrawer
-              document_uri={document.uri}
-              comments={
-                pubRecord.preferences?.showComments === false
-                  ? []
-                  : document.comments_on_documents
-              }
-              quotes={document.document_mentions_in_bsky}
-              did={did}
-            />
-          </PageLayout>
+          </LeafletLayout>
 
           <QuoteHandler />
         </PublicationBackgroundProvider>

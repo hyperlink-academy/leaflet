@@ -21,7 +21,6 @@ import { Media } from "../Media";
 import { DesktopPageFooter } from "../DesktopFooter";
 import { ThemePopover } from "../ThemeManager/ThemeSetter";
 import { Canvas } from "../Canvas";
-import { DraftPostOptions } from "../Blocks/MailboxBlock";
 import { Blocks } from "components/Blocks";
 import { MenuItem, Menu } from "../Layout";
 import { scanIndex } from "src/replicache/utils";
@@ -37,6 +36,8 @@ import { ShareSmall } from "components/Icons/ShareSmall";
 import { PublicationMetadata } from "./PublicationMetadata";
 import { useCardBorderHidden } from "./useCardBorderHidden";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { BookendSpacers, SandwichSpacer } from "components/LeafletLayout";
+import { LeafletSidebar } from "app/[leaflet_id]/Sidebar";
 
 export function Pages(props: { rootPage: string }) {
   let rootPage = useEntity(props.rootPage, "root/page")[0];
@@ -47,6 +48,13 @@ export function Pages(props: { rootPage: string }) {
 
   return (
     <>
+      <BookendSpacers
+        onClick={(e) => {
+          e.currentTarget === e.target && blurPage();
+        }}
+      >
+        <LeafletSidebar leaflet_id={props.rootPage} />
+      </BookendSpacers>
       <div className="flex items-stretch">
         <CardThemeProvider entityID={firstPage}>
           <Page entityID={firstPage} first />
@@ -59,9 +67,7 @@ export function Pages(props: { rootPage: string }) {
           </CardThemeProvider>
         </div>
       ))}
-      <div
-        className="spacer"
-        style={{ width: `calc(50vw - ((var(--page-width-units)/2))` }}
+      <BookendSpacers
         onClick={(e) => {
           e.currentTarget === e.target && blurPage();
         }}
@@ -79,7 +85,7 @@ export const LeafletOptions = (props: { entityID: string }) => {
 };
 
 function Page(props: { entityID: string; first?: boolean }) {
-  let { rep, rootEntity } = useReplicache();
+  let { rep } = useReplicache();
   let isDraft = useReferenceToEntity("mailbox/draft", props.entityID);
 
   let isFocused = useUIState((s) => {
@@ -95,8 +101,7 @@ function Page(props: { entityID: string; first?: boolean }) {
   return (
     <>
       {!props.first && (
-        <div
-          className="w-6 lg:snap-center"
+        <SandwichSpacer
           onClick={(e) => {
             e.currentTarget === e.target && blurPage();
           }}
@@ -128,32 +133,17 @@ function Page(props: { entityID: string; first?: boolean }) {
               ${isFocused ? "shadow-md border-border" : "border-border-light"}
             `}
         >
-          <Media mobile={true}>
-            <PageOptions entityID={props.entityID} first={props.first} />
-          </Media>
-          <DesktopPageFooter pageID={props.entityID} />
-          {isDraft.length > 0 && (
-            <div
-              className={`pageStatus pt-[6px] pb-1 ${!props.first ? "pr-10 pl-3 sm:px-4" : "px-3 sm:px-4"} border-b border-border text-tertiary`}
-              style={{
-                backgroundColor:
-                  "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
-              }}
-            >
-              <DraftPostOptions mailboxEntity={isDraft[0].entity} />
-            </div>
-          )}
-
+          <PageOptions
+            entityID={props.entityID}
+            first={props.first}
+            isFocused={isFocused}
+          />
           {props.first && (
             <PublicationMetadata cardBorderHidden={!!cardBorderHidden} />
           )}
           <PageContent entityID={props.entityID} />
         </div>
-        <Media mobile={false}>
-          {isFocused && (
-            <PageOptions entityID={props.entityID} first={props.first} />
-          )}
-        </Media>
+        <DesktopPageFooter pageID={props.entityID} />
       </div>
     </>
   );
@@ -282,13 +272,16 @@ const PageOptionButton = ({
 const PageOptions = (props: {
   entityID: string;
   first: boolean | undefined;
+  isFocused: boolean;
 }) => {
-  let { rootEntity } = useReplicache();
   let cardBorderHidden = useCardBorderHidden(props.entityID);
 
   return (
     <div
-      className={`z-10 w-fit absolute  ${cardBorderHidden ? "top-1" : "sm:top-3"} sm:-right-[19px] top-0 right-3 flex sm:flex-col flex-row-reverse gap-1 items-start`}
+      className={`pageOptions w-fit z-10
+        ${props.isFocused ? "block" : "sm:hidden block"}
+        absolute sm:-right-[19px] right-3 ${cardBorderHidden ? "top-1" : "sm:top-3 top-0"}
+        flex sm:flex-col flex-row-reverse gap-1 items-start`}
     >
       {!props.first && (
         <PageOptionButton

@@ -13,6 +13,7 @@ import { AddLeafletToHomepage } from "components/utils/AddLeafletToHomepage";
 import { UpdateLeafletTitle } from "components/utils/UpdateLeafletTitle";
 import { useUIState } from "src/useUIState";
 import { LeafletSidebar } from "./Sidebar";
+import { LeafletLayout } from "components/LeafletLayout";
 
 export function Leaflet(props: {
   token: PermissionToken;
@@ -36,22 +37,9 @@ export function Leaflet(props: {
             <SelectionManager />
             {/* we need the padding bottom here because if we don't have it the mobile footer will cut off...
             the dropshadow on the page... the padding is compensated by a negative top margin in mobile footer  */}
-            <div
-              className="leafletContentWrapper w-full relative overflow-x-scroll snap-x snap-mandatory no-scrollbar grow items-stretch flex h-full pb-4 pwa-padding"
-              id="page-carousel"
-            >
-              {/* if you adjust this padding, remember to adjust the negative margins on page in Pages/index when card borders are hidden (also applies for the pb in the parent div)*/}
-              <div
-                id="pages"
-                className="pages flex pt-2 pb-1 sm:pb-8 sm:pt-6"
-                onClick={(e) => {
-                  e.currentTarget === e.target && blurPage();
-                }}
-              >
-                <LeafletSidebar leaflet_id={props.leaflet_id} />
-                <Pages rootPage={props.leaflet_id} />
-              </div>
-            </div>
+            <LeafletLayout className="!pb-[70px] sm:!pb-6">
+              <Pages rootPage={props.leaflet_id} />
+            </LeafletLayout>
             <LeafletFooter entityID={props.leaflet_id} />
           </ThemeBackgroundProvider>
         </ThemeProvider>
@@ -59,10 +47,3 @@ export function Leaflet(props: {
     </ReplicacheProvider>
   );
 }
-
-const blurPage = () => {
-  useUIState.setState(() => ({
-    focusedEntity: null,
-    selectedBlocks: [],
-  }));
-};
