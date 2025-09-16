@@ -16,6 +16,7 @@ import type * as PubLeafletBlocksMath from '../blocks/math'
 import type * as PubLeafletBlocksCode from '../blocks/code'
 import type * as PubLeafletBlocksHorizontalRule from '../blocks/horizontalRule'
 import type * as PubLeafletBlocksBskyPost from '../blocks/bskyPost'
+import type * as PubLeafletBlocksPage from '../blocks/page'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -23,7 +24,8 @@ const id = 'pub.leaflet.pages.linearDocument'
 
 export interface Main {
   $type?: 'pub.leaflet.pages.linearDocument'
-  blocks?: Block[]
+  id?: string
+  blocks: Block[]
 }
 
 const hashMain = 'main'
@@ -50,6 +52,7 @@ export interface Block {
     | $Typed<PubLeafletBlocksCode.Main>
     | $Typed<PubLeafletBlocksHorizontalRule.Main>
     | $Typed<PubLeafletBlocksBskyPost.Main>
+    | $Typed<PubLeafletBlocksPage.Main>
     | { $type: string }
   alignment?:
     | 'lex:pub.leaflet.pages.linearDocument#textAlignLeft'

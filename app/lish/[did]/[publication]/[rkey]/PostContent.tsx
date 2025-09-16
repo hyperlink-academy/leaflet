@@ -1,3 +1,4 @@
+"use client";
 import {
   PubLeafletBlocksMath,
   PubLeafletBlocksCode,
@@ -12,18 +13,19 @@ import {
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksIframe,
+  PubLeafletBlocksPage,
 } from "lexicons/api";
+
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { TextBlock } from "./TextBlock";
 import { Popover } from "components/Popover";
 import { theme } from "tailwind.config";
 import { ImageAltSmall } from "components/Icons/ImageAlt";
-import { codeToHtml } from "shiki";
-import Katex from "katex";
 import { StaticMathBlock } from "./StaticMathBlock";
 import { PubCodeBlock } from "./PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./PublishBskyPostBlock";
+import { openPage, usePostPageUIState } from "./PostPage";
 
 export function PostContent({
   blocks,
@@ -32,8 +34,10 @@ export function PostContent({
   className,
   prerenderedCodeBlocks,
   bskyPostData,
+  pageId,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
+  pageId?: string;
   did: string;
   preview?: boolean;
   className?: string;
@@ -48,6 +52,7 @@ export function PostContent({
       {blocks.map((b, index) => {
         return (
           <Block
+            pageId={pageId}
             bskyPostData={bskyPostData}
             block={b}
             did={did}
@@ -72,7 +77,9 @@ let Block = ({
   previousBlock,
   prerenderedCodeBlocks,
   bskyPostData,
+  pageId,
 }: {
+  pageId?: string;
   preview?: boolean;
   index: number[];
   block: PubLeafletPagesLinearDocument.Block;
@@ -114,6 +121,18 @@ let Block = ({
     `;
 
   switch (true) {
+    case PubLeafletBlocksPage.isMain(b.block): {
+      let id = b.block.id;
+      return (
+        <div
+          onClick={() => {
+            openPage(pageId, id);
+          }}
+        >
+          ITS A BLOCK
+        </div>
+      );
+    }
     case PubLeafletBlocksBskyPost.isMain(b.block): {
       let uri = b.block.postRef.uri;
       let post = bskyPostData.find((p) => p.uri === uri);

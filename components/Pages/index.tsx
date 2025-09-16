@@ -144,6 +144,9 @@ function Page(props: { entityID: string; first?: boolean }) {
             </div>
           )}
 
+          {props.first && (
+            <PublicationMetadata cardBorderHidden={!!cardBorderHidden} />
+          )}
           <PageContent entityID={props.entityID} />
         </div>
         <Media mobile={false}>
@@ -233,7 +236,6 @@ const DocContent = (props: { entityID: string }) => {
           }}
         />
       ) : null}
-      <PublicationMetadata cardBorderHidden={!!cardBorderHidden} />
       <Blocks entityID={props.entityID} />
       {/* we handle page bg in this sepate div so that
     we can apply an opacity the background image

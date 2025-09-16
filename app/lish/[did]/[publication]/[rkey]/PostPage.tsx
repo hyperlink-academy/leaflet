@@ -1,5 +1,6 @@
 "use client";
 import {
+  PubLeafletDocument,
   PubLeafletPagesLinearDocument,
   PubLeafletPublication,
 } from "lexicons/api";
@@ -13,6 +14,29 @@ import { PostContent } from "./PostContent";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { useIdentityData } from "components/IdentityProvider";
 import { AppBskyFeedDefs } from "@atproto/api";
+import { create } from "zustand/react";
+export const usePostPageUIState = create(() => ({
+  pages: [] as string[],
+}));
+
+export const openPage = (parent: string | undefined, page: string) =>
+  usePostPageUIState.setState((state) => {
+    let parentPosition = state.pages.findIndex((s) => s == parent);
+    return {
+      pages:
+        parentPosition === -1
+          ? [page]
+          : [...state.pages.slice(0, parentPosition + 1), page],
+    };
+  });
+
+export const closePage = (page: string) =>
+  usePostPageUIState.setState((state) => {
+    let parentPosition = state.pages.findIndex((s) => s == page);
+    return {
+      pages: state.pages.slice(0, parentPosition),
+    };
+  });
 
 export function PostPage({
   document,
@@ -37,6 +61,7 @@ export function PostPage({
 }) {
   let { identity } = useIdentityData();
   let { drawerOpen } = useInteractionState();
+  let pages = usePostPageUIState((s) => s.pages);
   if (!document || !document.documents_in_publications[0].publications)
     return null;
 
@@ -87,7 +112,7 @@ export function PostPage({
             document.documents_in_publications[0]?.publications
               ?.identity_did ? (
             <a
-              href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
+              href={`https://leaflet.pub/${document.leaflets_in_publications[0]?.leaflet}`}
               className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1 mx-auto"
             >
               <EditTiny /> Edit Post
@@ -108,6 +133,35 @@ export function PostPage({
           )}
         </div>
       </div>
+      {pages.map((p) => {
+        let record = document.data as PubLeafletDocument.Record;
+        let page = record.pages.find(
+          (page) => (page as PubLeafletPagesLinearDocument.Main).id === p,
+        ) as PubLeafletPagesLinearDocument.Main | undefined;
+        if (!page) return null;
+        return (
+          <div
+            key={page.id}
+            id="post-page"
+            className={`postPageWrapper relative overflow-y-auto sm:mx-0 mx-[6px] w-full
+            ${drawerOpen || hasPageBackground ? "max-w-[var(--page-width-units)] shrink-0 snap-center " : "w-full"}
+            ${
+              hasPageBackground
+                ? "h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] rounded-lg border border-border "
+                : "sm:h-[calc(100%+48px)] h-[calc(100%+24px)] sm:-my-6 -my-3  "
+            }`}
+          >
+            <button onClick={() => closePage(page?.id!)}>close</button>
+            <PostContent
+              pageId={page.id}
+              bskyPostData={bskyPostData}
+              blocks={page.blocks}
+              did={did}
+              prerenderedCodeBlocks={prerenderedCodeBlocks}
+            />
+          </div>
+        );
+      })}
     </>
   );
 }
