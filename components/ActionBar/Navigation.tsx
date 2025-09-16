@@ -61,7 +61,7 @@ export const MobileNavigation = (props: {
       asChild
       className="!px-2 max-w-xs"
       trigger={
-        <div className="shrink-0 h-full flex items-center">
+        <div className="shrink-0 p-1 text-accent-contrast h-full flex items-center">
           {props.currentPage === "home" ? (
             <HomeSmall />
           ) : props.currentPage === "reader" ? (
@@ -101,34 +101,6 @@ const NavigationOptions = (props: {
       <PublicationButtons currentPubUri={thisPublication?.uri} />
     </>
   );
-};
-
-const CurrentPageButton = (props: { page: navPages; publication?: string }) => {
-  let { identity } = useIdentityData();
-  let currentPublication = identity?.publications?.find(
-    (pub) => pub.uri === props.publication,
-  );
-
-  switch (props.page) {
-    case "home":
-      return <HomeButton current />;
-    case "reader":
-      return <ReaderButton current />;
-    case "pub":
-      return (
-        currentPublication && (
-          <PublicationOption
-            uri={currentPublication?.uri}
-            name={currentPublication.name}
-            record={currentPublication.record}
-            asActionButton
-            current
-          />
-        )
-      );
-    default:
-      return null;
-  }
 };
 
 const HomeButton = (props: { current?: boolean }) => {
