@@ -87,14 +87,17 @@ export function openInteractionDrawer(
   let isOffscreen = false;
   if (el) {
     const rect = el.getBoundingClientRect();
-    const windowHeight =
-      window.innerHeight || document.documentElement.clientHeight;
     const windowWidth =
       window.innerWidth || document.documentElement.clientWidth;
-    isOffscreen = rect.right > windowWidth;
+    isOffscreen = rect.right > windowWidth - 64;
   }
 
-  if (el && isOffscreen) el.scrollIntoView({ behavior: "smooth" });
+  if (el && isOffscreen)
+    el.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+      inline: "center",
+    });
 }
 
 export const Interactions = (props: {
