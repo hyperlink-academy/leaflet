@@ -76,10 +76,15 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   );
   let rootEntity = res.data?.root_entity;
   if (!rootEntity || !res.data) return { title: "Leaflet not found" };
-  if (res.data.leaflets_in_publications[0]) {
+  let publication_data =
+    res.data?.leaflets_in_publications?.[0] ||
+    res.data?.permission_token_rights[0].entity_sets?.permission_tokens?.find(
+      (p) => p.leaflets_in_publications.length,
+    )?.leaflets_in_publications?.[0];
+  if (publication_data) {
     return {
-      title: res.data.leaflets_in_publications[0].title || "Untitled",
-      description: res.data.leaflets_in_publications[0].description,
+      title: publication_data.title || "Untitled",
+      description: publication_data.description,
     };
   }
   let { data } = await supabaseServerClient.rpc("get_facts", {
