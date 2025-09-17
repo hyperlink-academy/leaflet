@@ -52,7 +52,8 @@ export function PostHeader(props: {
             {identity &&
               identity.atp_did ===
                 document.documents_in_publications[0]?.publications
-                  .identity_did && (
+                  .identity_did &&
+              document.leaflets_in_publications[0] && (
                 <a
                   className=" rounded-full  flex place-items-center"
                   href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
