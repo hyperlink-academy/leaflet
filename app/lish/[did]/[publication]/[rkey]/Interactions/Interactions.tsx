@@ -42,7 +42,7 @@ export const Interactions = (props: {
 
   return (
     <div
-      className={`flex gap-2 text-tertiary ${props.compact ? "text-sm" : ""} ${props.className}`}
+      className={`flex gap-2 text-tertiary px-3 sm:px-4 ${props.compact ? "text-sm" : ""} ${props.className}`}
     >
       <button
         className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}

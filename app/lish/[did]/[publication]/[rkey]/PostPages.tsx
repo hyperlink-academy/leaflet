@@ -98,30 +98,33 @@ export function PostPages({
           quotesCount={document.document_mentions_in_bsky.length}
           commentsCount={document.comments_on_documents.length}
         />
-        <hr className="border-border-light mb-4 mt-4" />
-        {identity &&
-        identity.atp_did ===
-          document.documents_in_publications[0]?.publications?.identity_did ? (
-          <a
-            href={`https://leaflet.pub/${document.leaflets_in_publications[0]?.leaflet}`}
-            className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1 mx-auto"
-          >
-            <EditTiny /> Edit Post
-          </a>
-        ) : (
-          <SubscribeWithBluesky
-            isPost
-            base_url={getPublicationURL(
-              document.documents_in_publications[0].publications,
-            )}
-            pub_uri={document.documents_in_publications[0].publications.uri}
-            subscribers={
-              document.documents_in_publications[0].publications
-                .publication_subscriptions
-            }
-            pubName={name}
-          />
-        )}
+        <hr className="border-border-light mb-4 mt-4 sm:mx-4 mx-3" />
+        <div className="pb-6 sm:px-4 px-3">
+          {identity &&
+          identity.atp_did ===
+            document.documents_in_publications[0]?.publications
+              ?.identity_did ? (
+            <a
+              href={`https://leaflet.pub/${document.leaflets_in_publications[0]?.leaflet}`}
+              className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1 mx-auto"
+            >
+              <EditTiny /> Edit Post
+            </a>
+          ) : (
+            <SubscribeWithBluesky
+              isPost
+              base_url={getPublicationURL(
+                document.documents_in_publications[0].publications,
+              )}
+              pub_uri={document.documents_in_publications[0].publications.uri}
+              subscribers={
+                document.documents_in_publications[0].publications
+                  .publication_subscriptions
+              }
+              pubName={name}
+            />
+          )}
+        </div>
       </PageWrapper>
 
       {drawerOpen && (
@@ -189,35 +192,6 @@ const PageOptions = (props: {
       >
         <CloseTiny />
       </PageOptionButton>
-    </div>
-  );
-};
-
-const PostPageWrapper = (props: {
-  children: React.ReactNode;
-  hasPageBackground: boolean;
-  fullPageScroll: boolean;
-}) => {
-  return (
-    <div
-      id="post-page"
-      className={`
-        postPageWrapper
-        relative overflow-y-auto
-        w-full  sm:mx-0
-        shrink-0 snap-center
-      ${!props.fullPageScroll && "max-w-[var(--page-width-units)]"}
-      ${
-        props.hasPageBackground
-          ? "h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] rounded-lg border border-border pt-2 pb-3"
-          : "sm:h-[calc(100%+48px)] h-[calc(100%+28px)] sm:-my-6 sm:py-6 -my-3 py-3 "
-      }`}
-    >
-      <div
-        className={`postPageContent sm:max-w-[var(--page-width-units)]  mx-auto h-fit w-full ${!props.hasPageBackground ? "px-4 sm:pt-3 pt-2" : "px-3 sm:px-4"}`}
-      >
-        {props.children}
-      </div>
     </div>
   );
 };
