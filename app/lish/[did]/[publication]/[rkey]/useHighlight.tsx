@@ -20,7 +20,6 @@ export const useHighlight = (pos: number[]) => {
   let highlights = activeHighlight ? [activeHighlight] : [];
   let decodedQuote = quote ? decodeQuotePosition(quote as string) : null;
   if (decodedQuote) highlights.push(decodedQuote);
-  console.log(highlights);
   return highlights
     .map((quotePosition) => {
       if (!quotePosition) return null;

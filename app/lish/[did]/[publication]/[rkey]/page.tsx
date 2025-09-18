@@ -17,7 +17,7 @@ import {
 } from "components/ThemeManager/PublicationThemeProvider";
 import { getPostPageData } from "./getPostPageData";
 import { PostPageContextProvider } from "./PostPageContext";
-import { PostPages } from "./PostPage";
+import { PostPages } from "./PostPages";
 import { extractCodeBlocks } from "./extractCodeBlocks";
 import { LeafletLayout } from "components/LeafletLayout";
 

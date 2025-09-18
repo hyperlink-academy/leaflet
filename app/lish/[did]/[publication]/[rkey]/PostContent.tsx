@@ -25,7 +25,7 @@ import { StaticMathBlock } from "./StaticMathBlock";
 import { PubCodeBlock } from "./PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./PublishBskyPostBlock";
-import { openPage, usePostPageUIState } from "./PostPage";
+import { openPage } from "./PostPages";
 
 export function PostContent({
   blocks,
@@ -47,7 +47,7 @@ export function PostContent({
   return (
     <div
       id="post-content"
-      className={`postContent flex flex-col  pb-1 sm:pb-2 pt-1 sm:pt-2 ${className}`}
+      className={`postContent flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-1 sm:pb-2 ${className}`}
     >
       {blocks.map((b, index) => {
         return (

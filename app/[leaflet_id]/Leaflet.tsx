@@ -12,7 +12,6 @@ import { EntitySetProvider } from "components/EntitySetProvider";
 import { AddLeafletToHomepage } from "components/utils/AddLeafletToHomepage";
 import { UpdateLeafletTitle } from "components/utils/UpdateLeafletTitle";
 import { useUIState } from "src/useUIState";
-import { LeafletSidebar } from "./Sidebar";
 import { LeafletLayout } from "components/LeafletLayout";
 
 export function Leaflet(props: {
@@ -37,7 +36,7 @@ export function Leaflet(props: {
             <SelectionManager />
             {/* we need the padding bottom here because if we don't have it the mobile footer will cut off...
             the dropshadow on the page... the padding is compensated by a negative top margin in mobile footer  */}
-            <LeafletLayout className="!pb-[70px] sm:!pb-6">
+            <LeafletLayout className="!pb-[64px] sm:!pb-6">
               <Pages rootPage={props.leaflet_id} />
             </LeafletLayout>
             <LeafletFooter entityID={props.leaflet_id} />

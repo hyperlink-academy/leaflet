@@ -11,8 +11,7 @@ export const LeafletLayout = (props: {
         flex items-stretch  grow`}
       id="page-carousel"
     >
-      {/* if you adjust this padding, remember to adjust the negative margins on page
-        in [rkey]/page/PostPage when card borders are hidden */}
+      {/* if you adjust this padding, remember to adjust the negative margins on page in components/Pages/Page.tsx in pageScrollWrapper when card borders are hidden */}
       <div
         id="pages"
         className={`pagesWrapper
@@ -28,7 +27,7 @@ export const LeafletLayout = (props: {
   );
 };
 
-export const BookendSpacers = (props: {
+export const BookendSpacer = (props: {
   onClick?: (e: React.MouseEvent) => void;
   children?: React.ReactNode;
 }) => {

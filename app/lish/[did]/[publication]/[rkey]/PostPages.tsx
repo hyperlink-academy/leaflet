@@ -16,7 +16,11 @@ import { useIdentityData } from "components/IdentityProvider";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { create } from "zustand/react";
 import { InteractionDrawer } from "./Interactions/InteractionDrawer";
-import { BookendSpacers, SandwichSpacer } from "components/LeafletLayout";
+import { BookendSpacer, SandwichSpacer } from "components/LeafletLayout";
+import { CSS } from "@react-spring/web";
+import { PageOptionButton } from "components/Pages/PageOptions";
+import { CloseTiny } from "components/Icons/CloseTiny";
+import { PageWrapper } from "components/Pages/Page";
 export const usePostPageUIState = create(() => ({
   pages: [] as string[],
 }));
@@ -68,12 +72,14 @@ export function PostPages({
     return null;
 
   let hasPageBackground = !!pubRecord.theme?.showPageBackground;
+  let fullPageScroll = !hasPageBackground && !drawerOpen && pages.length === 0;
   return (
     <>
-      {(drawerOpen || hasPageBackground) && <BookendSpacers />}
+      {!fullPageScroll && <BookendSpacer />}
       <PageWrapper
-        hasPageBackground={hasPageBackground}
-        drawerOpen={drawerOpen}
+        fullPageScroll={fullPageScroll}
+        cardBorderHidden={!hasPageBackground}
+        id={"post-page"}
       >
         <PostHeader
           data={document}
@@ -141,11 +147,16 @@ export function PostPages({
           <>
             <SandwichSpacer />
             <PageWrapper
-              hasPageBackground={hasPageBackground}
-              drawerOpen={drawerOpen}
+              cardBorderHidden={!hasPageBackground}
+              id={"post-page"}
+              fullPageScroll={false}
+              pageOptions={
+                <PageOptions
+                  onClick={() => closePage(page?.id!)}
+                  hasPageBackground={hasPageBackground}
+                />
+              }
             >
-              <button onClick={() => closePage(page?.id!)}>close</button>
-
               <PostContent
                 pageId={page.id}
                 bskyPostData={bskyPostData}
@@ -157,29 +168,53 @@ export function PostPages({
           </>
         );
       })}
-      <BookendSpacers />
+      {!fullPageScroll && <BookendSpacer />}
     </>
   );
 }
 
-const PageWrapper = (props: {
+const PageOptions = (props: {
+  onClick: () => void;
+  hasPageBackground: boolean;
+}) => {
+  return (
+    <div
+      className={`pageOptions w-fit z-10
+      absolute sm:-right-[20px] right-3 sm:top-3 top-0
+      flex sm:flex-col flex-row-reverse gap-1 items-start`}
+    >
+      <PageOptionButton
+        cardBorderHidden={!props.hasPageBackground}
+        onClick={props.onClick}
+      >
+        <CloseTiny />
+      </PageOptionButton>
+    </div>
+  );
+};
+
+const PostPageWrapper = (props: {
   children: React.ReactNode;
   hasPageBackground: boolean;
-  drawerOpen: boolean | undefined;
+  fullPageScroll: boolean;
 }) => {
   return (
     <div
       id="post-page"
-      className={`postPageWrapper relative overflow-y-auto sm:mx-0  w-full
-      ${props.drawerOpen || props.hasPageBackground ? "max-w-[var(--page-width-units)] shrink-0 snap-center " : "w-full"}
+      className={`
+        postPageWrapper
+        relative overflow-y-auto
+        w-full  sm:mx-0
+        shrink-0 snap-center
+      ${!props.fullPageScroll && "max-w-[var(--page-width-units)]"}
       ${
         props.hasPageBackground
-          ? "h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] rounded-lg border border-border "
-          : "sm:h-[calc(100%+48px)] h-[calc(100%+24px)] sm:-my-6 -my-3  "
+          ? "h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] rounded-lg border border-border pt-2 pb-3"
+          : "sm:h-[calc(100%+48px)] h-[calc(100%+28px)] sm:-my-6 sm:py-6 -my-3 py-3 "
       }`}
     >
       <div
-        className={`postPageContent sm:max-w-prose mx-auto h-fit w-full px-3 sm:px-4 ${props.hasPageBackground ? " pt-2 pb-3 sm:pb-6" : "py-6 sm:py-9"}`}
+        className={`postPageContent sm:max-w-[var(--page-width-units)]  mx-auto h-fit w-full ${!props.hasPageBackground ? "px-4 sm:pt-3 pt-2" : "px-3 sm:px-4"}`}
       >
         {props.children}
       </div>
