@@ -33,6 +33,7 @@ export const get_publication_data = makeRoute({
         publication_subscriptions(*, identities(bsky_profiles(*))),
         publication_domains(*),
         leaflets_in_publications(*,
+          documents(*),
           permission_tokens(*,
             permission_token_rights(*),
             custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*)
@@ -46,11 +47,13 @@ export const get_publication_data = makeRoute({
     let leaflet_data = await getFactsFromHomeLeaflets.handler(
       {
         tokens:
-          publication?.leaflets_in_publications.map((l) => l.leaflet) || [],
+          publication?.leaflets_in_publications.map(
+            (l) => l.permission_tokens?.root_entity!,
+          ) || [],
       },
       { supabase },
     );
 
-    return { result: { publication, leaflet_data } };
+    return { result: { publication, leaflet_data: leaflet_data.result } };
   },
 });
