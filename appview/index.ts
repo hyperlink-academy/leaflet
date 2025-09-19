@@ -144,7 +144,10 @@ async function main() {
           });
         if (error && error.code === "23503") {
           console.log("creating identity");
+          let client = new Client({ connectionString: process.env.DB_URL });
+          let db = drizzle(client);
           await createIdentity(db, { atp_did: evt.did });
+          client.end();
           await supabase.from("publication_subscriptions").upsert({
             uri: evt.uri.toString(),
             identity: evt.did,
