@@ -16,25 +16,25 @@ import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 import { HomeSmall } from "components/Icons/HomeSmall";
 import {
   DashboardLayout,
+  DashboardState,
   useDashboardState,
 } from "components/PageLayouts/DashboardLayout";
 import { Actions } from "./Actions/Actions";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { Json } from "supabase/database.types";
 import { useTemplateState } from "./Actions/CreateNewButton";
+import {
+  get_leaflet_data,
+  GetLeafletDataReturnType,
+} from "app/api/rpc/[command]/get_leaflet_data";
 
 type Leaflet = {
   added_at: string;
   token: PermissionToken & {
-    leaflets_in_publications?: Array<{
-      doc: string;
-      description: string;
-      publication: string;
-      leaflet: string;
-      title: string;
-      publications: null;
-      documents: { data: Json; indexed_at: string; uri: string };
-    }>;
+    leaflets_in_publications?: Exclude<
+      GetLeafletDataReturnType["result"]["data"],
+      null
+    >["leaflets_in_publications"];
   };
 };
 
@@ -52,6 +52,7 @@ export const HomeLayout = (props: {
   let cardBorderHidden = !!useCardBorderHidden(props.entityID);
   return (
     <DashboardLayout
+      defaultDisplay="grid"
       id="home"
       hasBackgroundImage={hasBackgroundImage}
       currentPage="home"
@@ -115,6 +116,7 @@ export function HomeLeafletList(props: {
 
   return (
     <LeafletList
+      defaultDisplay="grid"
       leaflets={leaflets}
       titles={initialFacts?.titles || {}}
       cardBorderHidden={props.cardBorderHidden}
@@ -126,6 +128,7 @@ export function HomeLeafletList(props: {
 export function LeafletList(props: {
   leaflets: Leaflet[];
   titles: { [root_entity: string]: string };
+  defaultDisplay: Exclude<DashboardState["display"], undefined>;
   initialFacts: {
     [root_entity: string]: Fact<Attribute>[];
   };
@@ -133,6 +136,7 @@ export function LeafletList(props: {
 }) {
   let { identity } = useIdentityData();
   let { display } = useDashboardState();
+  display = display || props.defaultDisplay;
   let sortedLeaflets: Leaflet[] = useSortedLeaflets(
     props.titles,
     props.leaflets,

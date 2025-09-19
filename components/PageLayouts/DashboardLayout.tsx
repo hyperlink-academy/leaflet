@@ -17,9 +17,9 @@ import { MediaContents } from "components/Media";
 import { SortSmall } from "components/Icons/SortSmall";
 import { TabsSmall } from "components/Icons/TabsSmall";
 
-type DashboardState = {
-  display: "grid" | "list";
-  sort: "created" | "alphabetical";
+export type DashboardState = {
+  display?: "grid" | "list";
+  sort?: "created" | "alphabetical";
   filter: {
     drafts: boolean;
     published: boolean;
@@ -35,8 +35,8 @@ type DashboardStore = {
 };
 
 const defaultDashboardState: DashboardState = {
-  display: "grid",
-  sort: "created",
+  display: undefined,
+  sort: undefined,
   filter: { drafts: false, published: false, docs: false, templates: false },
 };
 
@@ -86,6 +86,7 @@ export function DashboardLayout<
 >(props: {
   id: string;
   hasBackgroundImage: boolean;
+  defaultDisplay: Exclude<DashboardState["display"], undefined>;
   tabs: T;
   defaultTab: keyof T;
   currentPage: navPages;
@@ -141,12 +142,18 @@ export function DashboardLayout<
                   <SortSmall />
                 </button>
                 <div className={`sm:block hidden`}>
-                  <DashboardControls showFilter={!props.publication} />
+                  <DashboardControls
+                    showFilter={!props.publication}
+                    defaultDisplay={props.defaultDisplay}
+                  />
                 </div>
               </>
             ) : (
               <>
-                <DashboardControls showFilter={!props.publication} />
+                <DashboardControls
+                  showFilter={!props.publication}
+                  defaultDisplay={props.defaultDisplay}
+                />
                 <button
                   className="text-tertiary"
                   onClick={() => {
@@ -172,8 +179,13 @@ export function DashboardLayout<
   );
 }
 
-let DashboardControls = (props: { showFilter: Boolean }) => {
+let DashboardControls = (props: {
+  showFilter: Boolean;
+
+  defaultDisplay: Exclude<DashboardState["display"], undefined>;
+}) => {
   let { display, sort } = useDashboardState();
+  display = props.defaultDisplay;
   let setState = useSetDashboardState();
   return (
     <div className="flex gap-2 items-center text-sm text-tertiary">

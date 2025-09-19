@@ -21,11 +21,13 @@ export const LeafletInfo = (props: {
   publishedAt?: string;
 }) => {
   let [prefetch, setPrefetch] = useState(false);
-  let prettyCreatedAt = new Date(props.added_at).toLocaleDateString("en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric",
-  });
+  let prettyCreatedAt = props.added_at
+    ? new Date(props.added_at).toLocaleDateString("en-US", {
+        month: "2-digit",
+        day: "2-digit",
+        year: "numeric",
+      })
+    : "";
 
   let prettyPublishedAt =
     props.publishedAt &&
