@@ -23,7 +23,7 @@ import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { Json } from "supabase/database.types";
 import { useTemplateState } from "./Actions/CreateNewButton";
 
-type leaflets = Array<{
+type Leaflet = {
   added_at: string;
   token: PermissionToken & {
     leaflets_in_publications?: Array<{
@@ -36,7 +36,7 @@ type leaflets = Array<{
       documents: { data: Json; indexed_at: string; uri: string };
     }>;
   };
-}>;
+};
 
 export const HomeLayout = (props: {
   entityID: string;
@@ -52,13 +52,14 @@ export const HomeLayout = (props: {
   let cardBorderHidden = !!useCardBorderHidden(props.entityID);
   return (
     <DashboardLayout
+      id="home"
       hasBackgroundImage={hasBackgroundImage}
       currentPage="home"
       defaultTab="home"
       actions={<Actions />}
       tabs={{
         home: (
-          <LeafletList
+          <HomeLeafletList
             titles={props.titles}
             initialFacts={props.initialFacts}
             cardBorderHidden={cardBorderHidden}
@@ -69,14 +70,14 @@ export const HomeLayout = (props: {
   );
 };
 
-export function LeafletList(props: {
+export function HomeLeafletList(props: {
   titles: { [root_entity: string]: string };
   initialFacts: {
     [root_entity: string]: Fact<Attribute>[];
   };
   cardBorderHidden: boolean;
 }) {
-  let display = useDashboardState((state) => state.display);
+  let { display } = useDashboardState();
   let { identity } = useIdentityData();
   let { data: initialFacts } = useSWR(
     "home-leaflet-data",
@@ -93,8 +94,50 @@ export function LeafletList(props: {
     { fallbackData: { facts: props.initialFacts, titles: props.titles } },
   );
 
-  let sortedLeaflets: leaflets = useSortedLeaflets(props.titles);
-  let filteredLeaflets: leaflets = useFilteredLeaflets(sortedLeaflets);
+  let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
+    fallbackData: [],
+  });
+  let leaflets = identity
+    ? identity.permission_token_on_homepage.map((ptoh) => ({
+        added_at: ptoh.created_at,
+        token: ptoh.permission_tokens as PermissionToken,
+      }))
+    : localLeaflets
+        .sort((a, b) => (a.added_at > b.added_at ? -1 : 1))
+        .filter((d) => !d.hidden)
+        .map((ll) => ll);
+
+  let sortedLeaflets: Leaflet[] = useSortedLeaflets(props.titles, leaflets);
+  let filteredLeaflets: Leaflet[] = useFilteredLeaflets(sortedLeaflets);
+  console.log(
+    filteredLeaflets.filter((l) => l.token.leaflets_in_publications?.[0]),
+  );
+
+  return (
+    <LeafletList
+      leaflets={leaflets}
+      titles={initialFacts?.titles || {}}
+      cardBorderHidden={props.cardBorderHidden}
+      initialFacts={initialFacts?.facts || {}}
+    />
+  );
+}
+
+export function LeafletList(props: {
+  leaflets: Leaflet[];
+  titles: { [root_entity: string]: string };
+  initialFacts: {
+    [root_entity: string]: Fact<Attribute>[];
+  };
+  cardBorderHidden: boolean;
+}) {
+  let { identity } = useIdentityData();
+  let { display } = useDashboardState();
+  let sortedLeaflets: Leaflet[] = useSortedLeaflets(
+    props.titles,
+    props.leaflets,
+  );
+  let filteredLeaflets: Leaflet[] = useFilteredLeaflets(sortedLeaflets);
   console.log(
     filteredLeaflets.filter((l) => l.token.leaflets_in_publications?.[0]),
   );
@@ -114,7 +157,7 @@ export function LeafletList(props: {
           rootEntity={leaflet.root_entity}
           token={leaflet}
           name={leaflet.root_entity}
-          initialFacts={initialFacts?.facts?.[leaflet.root_entity] || []}
+          initialFacts={props.initialFacts?.[leaflet.root_entity] || []}
         >
           <StaticLeafletDataContext
             value={{
@@ -125,7 +168,7 @@ export function LeafletList(props: {
             }}
           >
             <LeafletListItem
-              title={initialFacts?.titles?.[leaflet.root_entity] || "Untitled"}
+              title={props?.titles?.[leaflet.root_entity] || "Untitled"}
               index={index}
               token={leaflet}
               draft={!!leaflet.leaflets_in_publications?.length}
@@ -148,62 +191,42 @@ export function LeafletList(props: {
   );
 }
 
-function useSortedLeaflets(titles: { [root_entity: string]: string }) {
-  let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
-    fallbackData: [],
+function useSortedLeaflets(
+  titles: { [root_entity: string]: string },
+  leaflets: Leaflet[],
+) {
+  let { sort } = useDashboardState();
+  return leaflets.sort((a, b) => {
+    if (sort === "created") {
+      return a.added_at === b.added_at
+        ? a.token.root_entity > b.token.root_entity
+          ? -1
+          : 1
+        : a.added_at > b.added_at
+          ? -1
+          : 1;
+    } else {
+      if (titles[a.token.root_entity] === titles[b.token.root_entity]) {
+        return a.added_at > b.added_at ? -1 : 1;
+      } else {
+        return titles[a.token.root_entity].toLocaleLowerCase() >
+          titles[b.token.root_entity].toLocaleLowerCase()
+          ? 1
+          : -1;
+      }
+    }
   });
-  let { identity } = useIdentityData();
-  let sort = useDashboardState((state) => state.sort);
-
-  return identity
-    ? identity.permission_token_on_homepage
-        .sort((a, b) => {
-          if (sort === "created") {
-            return a.created_at === b.created_at
-              ? a.permission_tokens.root_entity >
-                b.permission_tokens.root_entity
-                ? -1
-                : 1
-              : a.created_at > b.created_at
-                ? -1
-                : 1;
-          } else {
-            if (
-              titles[a.permission_tokens.root_entity] ===
-              titles[b.permission_tokens.root_entity]
-            ) {
-              return a.created_at > b.created_at ? -1 : 1;
-            } else {
-              return titles[
-                a.permission_tokens.root_entity
-              ].toLocaleLowerCase() >
-                titles[b.permission_tokens.root_entity].toLocaleLowerCase()
-                ? 1
-                : -1;
-            }
-          }
-        })
-        .map((ptoh) => ({
-          added_at: ptoh.created_at,
-          token: ptoh.permission_tokens as PermissionToken,
-        }))
-    : localLeaflets
-        .sort((a, b) => (a.added_at > b.added_at ? -1 : 1))
-        .filter((d) => !d.hidden)
-        .map((ll) => ll);
 }
 
-function useFilteredLeaflets(leaflets: leaflets) {
-  let filter = useDashboardState((state) => state.filter);
+function useFilteredLeaflets(leaflets: Leaflet[]) {
+  let { filter } = useDashboardState();
+  let allTemplates = useTemplateState((s) => s.templates);
 
   return leaflets.filter(({ token: leaflet }) => {
     let published = !!leaflet.leaflets_in_publications?.find((l) => l.doc);
     let drafts = !!leaflet.leaflets_in_publications?.length && !published;
     let docs = !leaflet.leaflets_in_publications?.length;
-    let templates = useTemplateState(
-      (s) => !!s.templates.find((t) => t.id === leaflet.id),
-    );
-
+    let templates = !!allTemplates.find((t) => t.id === leaflet.id);
     // If no filters are active, show all
     if (
       !filter.drafts &&
