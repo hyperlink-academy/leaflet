@@ -77,6 +77,7 @@ export default async function Publication(props: {
       >
         <PublicationThemeProviderDashboard record={record}>
           <DashboardLayout
+            id={publication.uri}
             hasBackgroundImage={!!record?.theme?.backgroundImage}
             defaultTab="Drafts"
             tabs={{
