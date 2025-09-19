@@ -32,8 +32,6 @@ let supabase = createClient<Database>(
 const QUOTE_PARAM = "/l-quote/";
 async function main() {
   let startCursor;
-  let client = new Client({ connectionString: process.env.DB_URL });
-  let db = drizzle(client);
   try {
     let file = (await readFile(cursorFile)).toString();
     console.log("START CURSOR: " + file);
@@ -95,7 +93,10 @@ async function main() {
 
         if (error && error.code === "23503") {
           console.log("creating identity");
+          let client = new Client({ connectionString: process.env.DB_URL });
+          let db = drizzle(client);
           await createIdentity(db, { atp_did: evt.did });
+          client.end();
           await supabase.from("publications").upsert({
             uri: evt.uri.toString(),
             identity_did: evt.did,
@@ -283,7 +284,6 @@ async function main() {
     if (cleaningUp) return;
     cleaningUp = true;
     console.log("shutting down firehose...");
-    client.end();
     await firehose.destroy();
     await runner.destroy();
     process.exit();
