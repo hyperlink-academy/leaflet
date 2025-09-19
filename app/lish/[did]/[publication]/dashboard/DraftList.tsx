@@ -13,11 +13,14 @@ import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTin
 
 export function DraftList() {
   let { data: pub_data } = usePublicationData();
-  if (!pub_data) return null;
+  if (!pub_data?.publication) return null;
   return (
     <div className="flex flex-col gap-4 pb-4">
-      <NewDraftSecondaryButton fullWidth publication={pub_data?.uri} />
-      {pub_data.leaflets_in_publications
+      <NewDraftSecondaryButton
+        fullWidth
+        publication={pub_data?.publication?.uri}
+      />
+      {pub_data.publication.leaflets_in_publications
         .filter((d) => !d.doc)
         .map((d) => {
           return (
@@ -100,9 +103,13 @@ export function DeleteDraft(props: { id: string }) {
               if (!data) return data;
               return {
                 ...data,
-                leaflets_in_publications: data.leaflets_in_publications.filter(
-                  (d) => d.leaflet !== props.id,
-                ),
+                publications: {
+                  ...data.publication,
+                  leaflets_in_publications:
+                    data.publication?.leaflets_in_publications.filter(
+                      (d) => d.leaflet !== props.id,
+                    ),
+                },
               };
             }, false);
             await deleteDraft(props.id);

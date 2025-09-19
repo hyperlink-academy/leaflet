@@ -19,8 +19,9 @@ import { ShareSmall } from "components/Icons/ShareSmall";
 import { ShareButton } from "components/ShareOptions";
 
 export function PublishedPostsList() {
-  let { data: publication } = usePublicationData();
+  let { data } = usePublicationData();
   let params = useParams();
+  let { publication } = data!;
   if (!publication) return null;
   if (publication.documents_in_publications.length === 0)
     return (
@@ -122,11 +123,11 @@ let Options = (props: { document_uri: string }) => {
 };
 
 function OptionsMenu(props: { document_uri: string }) {
-  let { mutate, data: publication } = usePublicationData();
+  let { mutate, data } = usePublicationData();
   let [state, setState] = useState<"normal" | "confirm">("normal");
 
-  let postLink = publication
-    ? `${getPublicationURL(publication)}/${new AtUri(props.document_uri).rkey}`
+  let postLink = data?.publication
+    ? `${getPublicationURL(data?.publication)}/${new AtUri(props.document_uri).rkey}`
     : null;
 
   if (state === "normal") {
@@ -176,13 +177,17 @@ function OptionsMenu(props: { document_uri: string }) {
               if (!data) return data;
               return {
                 ...data,
-                leaflets_in_publications: data.leaflets_in_publications.filter(
-                  (l) => l.doc !== props.document_uri,
-                ),
-                documents_in_publications:
-                  data.documents_in_publications.filter(
-                    (d) => d.documents?.uri !== props.document_uri,
-                  ),
+                publication: {
+                  ...data.publication!,
+                  leaflets_in_publications:
+                    data.publication?.leaflets_in_publications.filter(
+                      (l) => l.doc !== props.document_uri,
+                    ) || [],
+                  documents_in_publications:
+                    data.publication?.documents_in_publications.filter(
+                      (d) => d.documents?.uri !== props.document_uri,
+                    ) || [],
+                },
               };
             }, false);
             await deletePost(props.document_uri);

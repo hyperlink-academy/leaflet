@@ -21,7 +21,8 @@ import Link from "next/link";
 import { Checkbox } from "components/Checkbox";
 
 export const EditPubForm = () => {
-  let { data: pubData } = usePublicationData();
+  let { data } = usePublicationData();
+  let { publication: pubData } = data || {};
   let record = pubData?.record as PubLeafletPublication.Record;
   let [formState, setFormState] = useState<"normal" | "loading">("normal");
 
@@ -180,7 +181,8 @@ export const EditPubForm = () => {
 };
 
 export function CustomDomainForm() {
-  let { data: pubData } = usePublicationData();
+  let { data } = usePublicationData();
+  let { publication: pubData } = data || {};
   if (!pubData) return null;
   let record = pubData?.record as PubLeafletPublication.Record;
   let [state, setState] = useState<

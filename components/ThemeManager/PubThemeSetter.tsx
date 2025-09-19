@@ -27,7 +27,8 @@ export const PubThemeSetter = () => {
   let [loading, setLoading] = useState(false);
   let [sample, setSample] = useState<"pub" | "post">("pub");
   let [openPicker, setOpenPicker] = useState<pickers>("null");
-  let { data: pub, mutate } = usePublicationData();
+  let { data, mutate } = usePublicationData();
+  let { publication: pub } = data || {};
   let record = pub?.record as PubLeafletPublication.Record | undefined;
   let [showPageBackground, setShowPageBackground] = useState(
     !!record?.theme?.showPageBackground,
@@ -216,7 +217,8 @@ const SamplePub = (props: {
   pubBGRepeat: number | null;
   showPageBackground: boolean;
 }) => {
-  let { data: publication } = usePublicationData();
+  let { data } = usePublicationData();
+  let { publication } = data || {};
   let record = publication?.record as PubLeafletPublication.Record | null;
 
   return (
@@ -283,7 +285,8 @@ const SamplePost = (props: {
   pubBGRepeat: number | null;
   showPageBackground: boolean;
 }) => {
-  let { data: publication } = usePublicationData();
+  let { data } = usePublicationData();
+  let { publication } = data || {};
   let record = publication?.record as PubLeafletPublication.Record | null;
   return (
     <div

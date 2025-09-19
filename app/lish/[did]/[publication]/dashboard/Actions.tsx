@@ -53,7 +53,7 @@ function PublicationShareButton() {
     >
       <MenuItem onSelect={() => {}}>
         <Link
-          href={getPublicationURL(pub!)}
+          href={getPublicationURL(pub?.publication!)}
           className="text-secondary hover:no-underline"
         >
           <div>Viewer Mode</div>
@@ -66,7 +66,7 @@ function PublicationShareButton() {
         onSelect={(e) => {
           e.preventDefault();
           let rect = (e.currentTarget as Element)?.getBoundingClientRect();
-          navigator.clipboard.writeText(getPublicationURL(pub!));
+          navigator.clipboard.writeText(getPublicationURL(pub?.publication!));
           smoker({
             position: {
               x: rect ? rect.left + (rect.right - rect.left) / 2 : 0,

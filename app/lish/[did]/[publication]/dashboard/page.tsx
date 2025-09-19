@@ -24,13 +24,14 @@ export async function generateMetadata(props: {
   let did = decodeURIComponent((await props.params).did);
   if (!did) return { title: "Publication 404" };
 
-  let { result: publication } = await get_publication_data.handler(
+  let { result: publication_data } = await get_publication_data.handler(
     {
       did,
       publication_name: decodeURIComponent((await props.params).publication),
     },
     { supabase: supabaseServerClient },
   );
+  let { publication, leaflet_data } = publication_data;
   let record =
     (publication?.record as PubLeafletPublication.Record) || undefined;
   if (!publication) return { title: "404 Publication" };
@@ -55,13 +56,14 @@ export default async function Publication(props: {
     );
   let did = decodeURIComponent(params.did);
   if (!did) return <PubNotFound />;
-  let { result: publication } = await get_publication_data.handler(
+  let { result: publication_data } = await get_publication_data.handler(
     {
       did,
       publication_name: decodeURIComponent((await props.params).publication),
     },
     { supabase: supabaseServerClient },
   );
+  let { publication, leaflet_data } = publication_data;
 
   if (!publication || identity.atp_did !== publication.identity_did)
     return <PubNotFound />;
@@ -73,7 +75,7 @@ export default async function Publication(props: {
       <PublicationSWRDataProvider
         publication_did={did}
         publication_rkey={uri.rkey}
-        publication_data={publication}
+        publication_data={publication_data}
       >
         <PublicationThemeProviderDashboard record={record}>
           <DashboardLayout

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { AtUri } from "@atproto/syntax";
+import { getFactsFromHomeLeaflets } from "./getFactsFromHomeLeaflets";
 
 export type GetPublicationDataReturnType = Awaited<
   ReturnType<(typeof get_publication_data)["handler"]>
@@ -42,6 +43,14 @@ export const get_publication_data = makeRoute({
       .eq("identity_did", did)
       .single();
 
-    return { result: publication };
+    let leaflet_data = await getFactsFromHomeLeaflets.handler(
+      {
+        tokens:
+          publication?.leaflets_in_publications.map((l) => l.leaflet) || [],
+      },
+      { supabase },
+    );
+
+    return { result: { publication, leaflet_data } };
   },
 });

@@ -7,9 +7,10 @@ import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { useSmoker } from "components/Toast";
 
 export function PublicationSubscribers() {
-  let { data: publication } = usePublicationData();
+  let { data } = usePublicationData();
   let smoker = useSmoker();
 
+  let { publication } = data!;
   if (!publication) return <div>null</div>;
   if (publication.publication_subscriptions.length === 0)
     return (
