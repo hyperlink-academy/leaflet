@@ -152,21 +152,21 @@ const BlockTypeToHTML: {
     let [url] = await scanIndex(tx).eav(b.value, "link/url");
     let [title] = await scanIndex(tx).eav(b.value, "link/title");
     if (!url) return "";
-    return renderToStaticMarkup(
+    return (
       <a href={url.data.value} target="_blank">
         {title.data.value}
-      </a>,
+      </a>
     );
   },
   card: async (b, tx, a) => {
     let [card] = await scanIndex(tx).eav(b.value, "block/card");
     let facts = await getAllFacts(tx, card.data.value);
-    return renderToStaticMarkup(
+    return (
       <div
         data-type="card"
         data-facts={btoa(JSON.stringify(facts))}
         data-entityid={card.data.value}
-      />,
+      />
     );
   },
   text: async (b, tx, a) => {
@@ -186,5 +186,7 @@ const BlockTypeToHTML: {
 async function renderBlock(b: Block, tx: ReadTransaction) {
   let [alignment] = await scanIndex(tx).eav(b.value, "block/text-alignment");
   let toHtml = BlockTypeToHTML[b.type];
-  return renderToStaticMarkup(await toHtml(b, tx, alignment?.data.value));
+  let element = await toHtml(b, tx, alignment?.data.value);
+  console.log(element);
+  return renderToStaticMarkup(element);
 }
