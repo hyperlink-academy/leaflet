@@ -15,7 +15,10 @@ import { PubLeafletPublication } from "lexicons/api";
 import { PublicationSubscribers } from "./PublicationSubscribers";
 import { PublicationThemeProviderDashboard } from "components/ThemeManager/PublicationThemeProvider";
 import { AtUri } from "@atproto/syntax";
-import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
+import {
+  DashboardControls,
+  DashboardLayout,
+} from "components/PageLayouts/DashboardLayout";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 
 export async function generateMetadata(props: {
@@ -84,9 +87,17 @@ export default async function Publication(props: {
             hasBackgroundImage={!!record?.theme?.backgroundImage}
             defaultTab="Drafts"
             tabs={{
-              Drafts: <DraftList />,
-              Published: <PublishedPostsList />,
-              Subscribers: <PublicationSubscribers />,
+              Drafts: {
+                content: <DraftList />,
+                controls: (
+                  <DashboardControls defaultDisplay={"grid"} showFilter />
+                ),
+              },
+              Published: { content: <PublishedPostsList />, controls: null },
+              Subscribers: {
+                content: <PublicationSubscribers />,
+                controls: null,
+              },
             }}
             actions={<Actions publication={publication.uri} />}
             currentPage="pub"

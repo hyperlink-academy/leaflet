@@ -82,7 +82,9 @@ export const useSetDashboardState = () => {
 };
 
 export function DashboardLayout<
-  T extends { [name: string]: React.ReactNode },
+  T extends {
+    [name: string]: { content: React.ReactNode; controls: React.ReactNode };
+  },
 >(props: {
   id: string;
   hasBackgroundImage: boolean;
@@ -94,7 +96,7 @@ export function DashboardLayout<
   actions: React.ReactNode;
 }) {
   let [tab, setTab] = useState(props.defaultTab);
-  let content = props.tabs[tab];
+  let { content, controls } = props.tabs[tab];
 
   let [state, setState] = useState<"default" | "controls">("default");
 
@@ -133,27 +135,21 @@ export function DashboardLayout<
                     </div>
                   )}
                 </div>
-                <button
-                  className={`sm:hidden block text-tertiary`}
-                  onClick={() => {
-                    setState("controls");
-                  }}
-                >
-                  <SortSmall />
-                </button>
-                <div className={`sm:block hidden`}>
-                  <DashboardControls
-                    showFilter={!props.publication}
-                    defaultDisplay={props.defaultDisplay}
-                  />
-                </div>
+                {controls && (
+                  <button
+                    className={`sm:hidden block text-tertiary`}
+                    onClick={() => {
+                      setState("controls");
+                    }}
+                  >
+                    <SortSmall />
+                  </button>
+                )}
+                <div className={`sm:block hidden`}>{controls}</div>
               </>
             ) : (
               <>
-                <DashboardControls
-                  showFilter={!props.publication}
-                  defaultDisplay={props.defaultDisplay}
-                />
+                {controls}
                 <button
                   className="text-tertiary"
                   onClick={() => {
@@ -179,7 +175,7 @@ export function DashboardLayout<
   );
 }
 
-let DashboardControls = (props: {
+export const DashboardControls = (props: {
   showFilter: Boolean;
 
   defaultDisplay: Exclude<DashboardState["display"], undefined>;

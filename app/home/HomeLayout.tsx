@@ -15,6 +15,7 @@ import { callRPC } from "app/api/rpc/client";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 import { HomeSmall } from "components/Icons/HomeSmall";
 import {
+  DashboardControls,
   DashboardLayout,
   DashboardState,
   useDashboardState,
@@ -59,13 +60,16 @@ export const HomeLayout = (props: {
       defaultTab="home"
       actions={<Actions />}
       tabs={{
-        home: (
-          <HomeLeafletList
-            titles={props.titles}
-            initialFacts={props.initialFacts}
-            cardBorderHidden={cardBorderHidden}
-          />
-        ),
+        home: {
+          controls: <DashboardControls defaultDisplay={"grid"} showFilter />,
+          content: (
+            <HomeLeafletList
+              titles={props.titles}
+              initialFacts={props.initialFacts}
+              cardBorderHidden={cardBorderHidden}
+            />
+          ),
+        },
       }}
     />
   );
