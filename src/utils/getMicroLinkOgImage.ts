@@ -14,6 +14,9 @@ export async function getMicroLinkOgImage(
       headers: {
         "x-api-key": process.env.MICROLINK_API_KEY!,
       },
+      next: {
+        revalidate: 600,
+      },
     },
   );
   const clonedResponse = response.clone();
