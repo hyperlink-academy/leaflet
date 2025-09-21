@@ -226,7 +226,7 @@ async function main() {
     startCursor,
     setCursor: async (cursor) => {
       // persist cursor
-      await writeFile(cursorFile, cursor.toString());
+      await writeFile(cursorFile, cursor.toString(), { flush: true });
     },
   });
   let firehose = new Firehose({
