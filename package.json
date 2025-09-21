@@ -19,7 +19,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@atproto/api": "^0.14.2",
+    "@atproto/api": "^0.16.9",
     "@atproto/common": "^0.4.8",
     "@atproto/identity": "^0.4.6",
     "@atproto/oauth-client-node": "^0.3.8",
