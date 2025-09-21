@@ -54,7 +54,7 @@ async function main() {
     )
       return;
     if (evt.collection !== "app.bsky.feed.post")
-      console.log(`${evt.event} in ${evt.collection}`);
+      console.log(`${evt.event} in ${evt.collection} @ ${evt.seq}: ${evt.uri}`);
     if (evt.collection === ids.PubLeafletDocument) {
       if (evt.event === "create" || evt.event === "update") {
         let record = PubLeafletDocument.validateRecord(evt.record);
