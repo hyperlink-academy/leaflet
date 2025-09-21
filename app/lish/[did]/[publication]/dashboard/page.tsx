@@ -90,7 +90,7 @@ export default async function Publication(props: {
               Drafts: {
                 content: <DraftList />,
                 controls: (
-                  <DashboardControls defaultDisplay={"grid"} showFilter />
+                  <DashboardControls defaultDisplay={"list"} showFilter />
                 ),
               },
               Published: { content: <PublishedPostsList />, controls: null },

@@ -30,7 +30,6 @@ export type DashboardState = {
 
 type DashboardStore = {
   dashboards: { [id: string]: DashboardState };
-  getDashboard: (id: string) => DashboardState;
   setDashboard: (id: string, partial: Partial<DashboardState>) => void;
 };
 
@@ -42,16 +41,13 @@ const defaultDashboardState: DashboardState = {
 
 export const useDashboardStore = create<DashboardStore>((set, get) => ({
   dashboards: {},
-  getDashboard: (id: string) => {
-    const state = get();
-    return state.dashboards[id] || defaultDashboardState;
-  },
   setDashboard: (id: string, partial: Partial<DashboardState>) => {
+    console.log(partial);
     set((state) => ({
       dashboards: {
         ...state.dashboards,
         [id]: {
-          ...state.getDashboard(id),
+          ...(state.dashboards[id] || defaultDashboardState),
           ...partial,
         },
       },
@@ -71,8 +67,9 @@ export const useDashboardId = () => {
 
 export const useDashboardState = () => {
   const id = useDashboardId();
-  const getDashboard = useDashboardStore((state) => state.getDashboard);
-  return getDashboard(id);
+  return useDashboardStore(
+    (state) => state.dashboards[id] || defaultDashboardState,
+  );
 };
 
 export const useSetDashboardState = () => {
@@ -181,18 +178,19 @@ export const DashboardControls = (props: {
   defaultDisplay: Exclude<DashboardState["display"], undefined>;
 }) => {
   let { display, sort } = useDashboardState();
-  display = props.defaultDisplay;
+  console.log({ display, props });
+  display = display || props.defaultDisplay;
   let setState = useSetDashboardState();
   return (
     <div className="flex gap-2 items-center text-sm text-tertiary">
       <button
-        onClick={() =>
+        onClick={() => {
           setState({
             display: display === "list" ? "grid" : "list",
-          })
-        }
+          });
+        }}
       >
-        {display === "list" ? "Grid" : "List"}
+        {display === "list" ? "List" : "Grid"}
       </button>
       <Separator classname="h-4" />
       {props.showFilter && (
