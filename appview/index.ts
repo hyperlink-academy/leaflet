@@ -36,6 +36,7 @@ async function main() {
     let file = (await readFile(cursorFile)).toString();
     console.log("START CURSOR: " + file);
     startCursor = parseInt(file);
+    console.log(startCursor);
     if (Number.isNaN(startCursor)) startCursor = undefined;
   } catch (e) {}
 
