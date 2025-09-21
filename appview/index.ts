@@ -255,7 +255,6 @@ async function main() {
     concurrency: 8,
     startCursor,
     setCursor: async (cursor) => {
-      console.log(cursor);
       // persist cursor
       await writeFile(cursorFile, cursor.toString());
     },
