@@ -221,38 +221,8 @@ async function main() {
       }
     }
   }
-  async function timedHandleEvent(evt: Event) {
-    const startTime = performance.now();
-
-    if (evt.event === "identity") {
-      if (evt.handle)
-        await supabase
-          .from("bsky_profiles")
-          .update({ handle: evt.handle })
-          .eq("did", evt.did);
-    }
-
-    await handleEvent(evt);
-    if (
-      evt.event == "account" ||
-      evt.event === "identity" ||
-      evt.event === "sync"
-    ) {
-      const endTime = performance.now();
-      console.log(
-        `${evt.event} in ${evt.event || "unknown"} took ${endTime - startTime}ms`,
-      );
-      return;
-    }
-
-    const endTime = performance.now();
-    console.log(
-      `${evt.event} in ${evt.collection || "unknown"} took ${endTime - startTime}ms`,
-    );
-  }
 
   const runner = new MemoryRunner({
-    concurrency: 8,
     startCursor,
     setCursor: async (cursor) => {
       // persist cursor
