@@ -16,6 +16,8 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 import { MediaContents } from "components/Media";
 import { SortSmall } from "components/Icons/SortSmall";
 import { TabsSmall } from "components/Icons/TabsSmall";
+import { Input } from "components/Input";
+import { SearchTiny } from "components/Icons/SearchTiny";
 
 export type DashboardState = {
   display?: "grid" | "list";
@@ -95,20 +97,19 @@ export function DashboardLayout<
   let [tab, setTab] = useState(props.defaultTab);
   let { content, controls } = props.tabs[tab];
 
-  let [state, setState] = useState<"default" | "controls">("default");
-
+  let [headerState, setHeaderState] = useState<"default" | "controls">(
+    "default",
+  );
   return (
     <DashboardIdContext.Provider value={props.id}>
       <div className="home pwa-padding relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6 ">
         <MediaContents mobile={false}>
           <div className="flex flex-col gap-4 my-6">
-            <Sidebar alwaysOpen>
-              <DesktopNavigation
-                currentPage={props.currentPage}
-                publication={props.publication}
-              />
-              {props.actions}
-            </Sidebar>
+            <DesktopNavigation
+              currentPage={props.currentPage}
+              publication={props.publication}
+            />
+            <Sidebar alwaysOpen>{props.actions}</Sidebar>
           </div>
         </MediaContents>
         <div
@@ -116,33 +117,35 @@ export function DashboardLayout<
           id="home-content"
         >
           <Header hasBackgroundImage={props.hasBackgroundImage}>
-            {state === "default" ? (
+            {headerState === "default" ? (
               <>
-                <div className="flex items-center gap-4">
-                  {Object.keys(props.tabs).length > 1 && (
-                    <div className="pubDashTabs flex flex-row gap-1">
-                      {Object.keys(props.tabs).map((t) => (
-                        <Tab
-                          key={t}
-                          name={t}
-                          selected={t === tab}
-                          onSelect={() => setTab(t)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {controls && (
+                {Object.keys(props.tabs).length > 1 && (
+                  <div className="pubDashTabs flex flex-row gap-1">
+                    {Object.keys(props.tabs).map((t) => (
+                      <Tab
+                        key={t}
+                        name={t}
+                        selected={t === tab}
+                        onSelect={() => setTab(t)}
+                      />
+                    ))}
+                  </div>
+                )}
+                {props.publication && (
                   <button
                     className={`sm:hidden block text-tertiary`}
                     onClick={() => {
-                      setState("controls");
+                      setHeaderState("controls");
                     }}
                   >
                     <SortSmall />
                   </button>
                 )}
-                <div className={`sm:block hidden`}>{controls}</div>
+                <div
+                  className={`sm:block ${props.publication && "hidden"} grow`}
+                >
+                  {controls}
+                </div>
               </>
             ) : (
               <>
@@ -150,7 +153,7 @@ export function DashboardLayout<
                 <button
                   className="text-tertiary"
                   onClick={() => {
-                    setState("default");
+                    setHeaderState("default");
                   }}
                 >
                   <TabsSmall />
@@ -174,7 +177,9 @@ export function DashboardLayout<
 
 export const DashboardControls = (props: {
   showFilter: Boolean;
-
+  searchValue: string;
+  setSearchValueAction: (searchValue: string) => void;
+  hasBackgroundImage: boolean;
   defaultDisplay: Exclude<DashboardState["display"], undefined>;
 }) => {
   let { display, sort } = useDashboardState();
@@ -182,32 +187,39 @@ export const DashboardControls = (props: {
   display = display || props.defaultDisplay;
   let setState = useSetDashboardState();
   return (
-    <div className="flex gap-2 items-center text-sm text-tertiary">
-      <button
-        onClick={() => {
-          setState({
-            display: display === "list" ? "grid" : "list",
-          });
-        }}
-      >
-        {display === "list" ? "List" : "Grid"}
-      </button>
-      <Separator classname="h-4" />
-      {props.showFilter && (
-        <>
-          <FilterOptions /> <Separator classname="h-4" />
-        </>
-      )}
+    <div className="dashboardControls w-full flex gap-4">
+      <SearchInput
+        searchValue={props.searchValue}
+        setSearchValue={props.setSearchValueAction}
+        hasBackgroundImage={props.hasBackgroundImage}
+      />
+      <div className="flex gap-2 w-max shrink-0 items-center text-sm text-tertiary">
+        <button
+          onClick={() => {
+            setState({
+              display: display === "list" ? "grid" : "list",
+            });
+          }}
+        >
+          {display === "list" ? "List" : "Grid"}
+        </button>
+        <Separator classname="h-4" />
+        {props.showFilter && (
+          <>
+            <FilterOptions /> <Separator classname="h-4" />
+          </>
+        )}
 
-      <button
-        onClick={() =>
-          setState({
-            sort: sort === "created" ? "alphabetical" : "created",
-          })
-        }
-      >
-        Sort: {sort === "created" ? "Created On" : "A to Z"}
-      </button>
+        <button
+          onClick={() =>
+            setState({
+              sort: sort === "created" ? "alphabetical" : "created",
+            })
+          }
+        >
+          Sort: {sort === "created" ? "Created On" : "A to Z"}
+        </button>
+      </div>
     </div>
   );
 };
@@ -294,5 +306,34 @@ const FilterOptions = () => {
         <CloseTiny className="scale-75" /> Clear
       </button>
     </Popover>
+  );
+};
+
+const SearchInput = (props: {
+  searchValue: string;
+  setSearchValue: (searchValue: string) => void;
+  hasBackgroundImage: boolean;
+}) => {
+  return (
+    <div className="relative grow shrink-0">
+      <Input
+        className={`dashboardSearchInput
+          !appearance-none !outline-none
+          w-full min-w-0 text-primary relative pl-7  pr-1 -my-[1px]
+          border rounded-md border-transparent focus-within:border-border
+          bg-transparent ${props.hasBackgroundImage ? "focus-within:bg-bg-page" : "focus-within:bg-bg-leaflet"} `}
+        type="text"
+        id="pubName"
+        size={1}
+        placeholder="search..."
+        value={props.searchValue}
+        onChange={(e) => {
+          props.setSearchValue(e.currentTarget.value);
+        }}
+      />
+      <div className="absolute left-[6px] top-[4px] text-tertiary">
+        <SearchTiny />
+      </div>
+    </div>
   );
 };

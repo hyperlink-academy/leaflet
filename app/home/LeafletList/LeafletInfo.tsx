@@ -10,7 +10,6 @@ export const LeafletInfo = (props: {
   title?: string;
   draft?: boolean;
   published?: boolean;
-  index: number;
   token: PermissionToken;
   leaflet_id: string;
   loggedIn: boolean;

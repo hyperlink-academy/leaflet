@@ -3,9 +3,11 @@ import { PermissionToken } from "src/replicache";
 import { useTemplateState } from "../Actions/CreateNewButton";
 import { LeafletListPreview, LeafletGridPreview } from "./LeafletPreview";
 import { LeafletInfo } from "./LeafletInfo";
+import { useState, useRef, useEffect } from "react";
+import index from "swr";
+import { PgNumericBuilder } from "drizzle-orm/pg-core";
 
 export const LeafletListItem = (props: {
-  index: number;
   token: PermissionToken;
   leaflet_id: string;
   loggedIn: boolean;
@@ -16,25 +18,49 @@ export const LeafletListItem = (props: {
   draft?: boolean;
   published?: boolean;
   publishedAt?: string;
+  index: number;
+  isHidden: boolean;
 }) => {
   let isTemplate = useTemplateState(
     (s) => !!s.templates.find((t) => t.id === props.token.id),
   );
 
+  let [isOnScreen, setIsOnScreen] = useState(props.index < 16 ? true : false);
+  let previewRef = useRef<HTMLDivElement | null>(null);
+
+  console.log(props.isHidden);
+  useEffect(() => {
+    if (!previewRef.current) return;
+    let observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsOnScreen(true);
+          } else {
+            setIsOnScreen(false);
+          }
+        });
+      },
+      { threshold: 0.1, root: null },
+    );
+    observer.observe(previewRef.current);
+    return () => observer.disconnect();
+  }, [previewRef]);
+
   if (props.display === "list")
     return (
       <>
         <div
-          className={`flex gap-3 w-full ${props.cardBorderHidden ? "" : "p-1 block-border hover:outline-border"}`}
-          style={
-            props.cardBorderHidden
-              ? { backgroundColor: "transparent" }
-              : {
-                  backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-                }
-          }
+          className={`gap-3 w-full ${props.cardBorderHidden ? "" : "p-1 block-border hover:outline-border"}`}
+          style={{
+            backgroundColor: props.cardBorderHidden
+              ? "transparent"
+              : "rgba(var(--bg-page), var(--bg-page-alpha))",
+
+            display: props.isHidden ? "none" : "flex",
+          }}
         >
-          <LeafletListPreview {...props} />
+          <LeafletListPreview isVisible={isOnScreen} {...props} />
           <LeafletInfo isTemplate={isTemplate} {...props} />
         </div>
         {props.cardBorderHidden && (
@@ -48,16 +74,16 @@ export const LeafletListItem = (props: {
         flex flex-col gap-1 p-1 h-52
        block-border !border-border hover:outline-border
         `}
-      style={
-        props.cardBorderHidden
-          ? { backgroundColor: "transparent" }
-          : {
-              backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-            }
-      }
+      style={{
+        backgroundColor: props.cardBorderHidden
+          ? "transparent"
+          : "rgba(var(--bg-page), var(--bg-page-alpha))",
+
+        display: props.isHidden ? "none" : "flex",
+      }}
     >
       <div className="grow">
-        <LeafletGridPreview {...props} />
+        <LeafletGridPreview {...props} isVisible={isOnScreen} />
       </div>
       <LeafletInfo
         isTemplate={isTemplate}

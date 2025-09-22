@@ -28,6 +28,8 @@ import {
   get_leaflet_data,
   GetLeafletDataReturnType,
 } from "app/api/rpc/[command]/get_leaflet_data";
+import { useEffect, useRef, useState } from "react";
+import { Input } from "components/Input";
 
 type Leaflet = {
   added_at: string;
@@ -51,6 +53,9 @@ export const HomeLayout = (props: {
     "theme/background-image",
   );
   let cardBorderHidden = !!useCardBorderHidden(props.entityID);
+
+  let [searchValue, setSearchValue] = useState("");
+
   return (
     <DashboardLayout
       defaultDisplay="grid"
@@ -61,12 +66,21 @@ export const HomeLayout = (props: {
       actions={<Actions />}
       tabs={{
         home: {
-          controls: <DashboardControls defaultDisplay={"grid"} showFilter />,
+          controls: (
+            <DashboardControls
+              defaultDisplay={"grid"}
+              showFilter
+              searchValue={searchValue}
+              setSearchValueAction={setSearchValue}
+              hasBackgroundImage={hasBackgroundImage}
+            />
+          ),
           content: (
             <HomeLeafletList
               titles={props.titles}
               initialFacts={props.initialFacts}
               cardBorderHidden={cardBorderHidden}
+              searchValue={searchValue}
             />
           ),
         },
@@ -80,9 +94,9 @@ export function HomeLeafletList(props: {
   initialFacts: {
     [root_entity: string]: Fact<Attribute>[];
   };
+  searchValue: string;
   cardBorderHidden: boolean;
 }) {
-  let { display } = useDashboardState();
   let { identity } = useIdentityData();
   let { data: initialFacts } = useSWR(
     "home-leaflet-data",
@@ -112,15 +126,10 @@ export function HomeLeafletList(props: {
         .filter((d) => !d.hidden)
         .map((ll) => ll);
 
-  let sortedLeaflets: Leaflet[] = useSortedLeaflets(props.titles, leaflets);
-  let filteredLeaflets: Leaflet[] = useFilteredLeaflets(sortedLeaflets);
-  console.log(
-    filteredLeaflets.filter((l) => l.token.leaflets_in_publications?.[0]),
-  );
-
   return (
     <LeafletList
       defaultDisplay="grid"
+      searchValue={props.searchValue}
       leaflets={leaflets}
       titles={initialFacts?.titles || {}}
       cardBorderHidden={props.cardBorderHidden}
@@ -136,18 +145,23 @@ export function LeafletList(props: {
   initialFacts: {
     [root_entity: string]: Fact<Attribute>[];
   };
+  searchValue: string;
   cardBorderHidden: boolean;
 }) {
   let { identity } = useIdentityData();
   let { display } = useDashboardState();
+
   display = display || props.defaultDisplay;
   let sortedLeaflets: Leaflet[] = useSortedLeaflets(
     props.titles,
     props.leaflets,
   );
   let filteredLeaflets: Leaflet[] = useFilteredLeaflets(sortedLeaflets);
-  console.log(
-    filteredLeaflets.filter((l) => l.token.leaflets_in_publications?.[0]),
+
+  let searchedLeaflets = useSearchedLeaflets(
+    filteredLeaflets,
+    props.titles,
+    props.searchValue,
   );
 
   return (
@@ -157,7 +171,7 @@ export function LeafletList(props: {
         w-full
         ${display === "grid" ? "grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-6 sm:gap-y-5 grow" : "flex flex-col gap-2 pt-2"} `}
     >
-      {filteredLeaflets.map(({ token: leaflet, added_at }, index) => (
+      {props.leaflets.map(({ token: leaflet, added_at }, index) => (
         <ReplicacheProvider
           disablePull
           initialFactsOnly={!!identity}
@@ -177,7 +191,6 @@ export function LeafletList(props: {
           >
             <LeafletListItem
               title={props?.titles?.[leaflet.root_entity] || "Untitled"}
-              index={index}
               token={leaflet}
               draft={!!leaflet.leaflets_in_publications?.length}
               published={!!leaflet.leaflets_in_publications?.find((l) => l.doc)}
@@ -190,6 +203,12 @@ export function LeafletList(props: {
               display={display}
               added_at={added_at}
               cardBorderHidden={props.cardBorderHidden}
+              index={index}
+              isHidden={
+                !searchedLeaflets.some(
+                  (sl) => sl.token.root_entity === leaflet.root_entity,
+                )
+              }
             />
           </StaticLeafletDataContext>
         </ReplicacheProvider>
@@ -250,5 +269,18 @@ function useFilteredLeaflets(leaflets: Leaflet[]) {
       (filter.docs && docs) ||
       (filter.templates && templates)
     );
+  });
+}
+
+function useSearchedLeaflets(
+  leaflets: Leaflet[],
+  titles: { [root_entity: string]: string },
+  searchValue: string,
+) {
+  return leaflets.filter(({ token: leaflet }) => {
+    return titles[leaflet.root_entity]
+
+      .toLowerCase()
+      .includes(searchValue.toLowerCase());
   });
 }

@@ -26,7 +26,6 @@ export function SortedPublicationList(props: {
           ?.filter((pub) => pub.documents_in_publications.length > 0)
           ?.sort((a, b) => {
             if (order === "popular") {
-              console.log("sorting by popularity");
               return (
                 b.publication_subscriptions[0].count -
                 a.publication_subscriptions[0].count

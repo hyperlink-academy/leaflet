@@ -18,7 +18,7 @@ import Link from "next/link";
 export const LeafletListPreview = (props: {
   draft?: boolean;
   published?: boolean;
-  index: number;
+  isVisible: boolean;
   token: PermissionToken;
   leaflet_id: string;
   loggedIn: boolean;
@@ -95,7 +95,7 @@ export const LeafletListPreview = (props: {
                     }
               }
             >
-              <LeafletContent entityID={page} index={props.index} />
+              <LeafletContent entityID={page} isOnScreen={props.isVisible} />
             </div>
           </div>
         </ThemeBackgroundProvider>
@@ -107,14 +107,11 @@ export const LeafletListPreview = (props: {
 export const LeafletGridPreview = (props: {
   draft?: boolean;
   published?: boolean;
-  index: number;
   token: PermissionToken;
   leaflet_id: string;
   loggedIn: boolean;
+  isVisible: boolean;
 }) => {
-  let isTemplate = useTemplateState(
-    (s) => !!s.templates.find((t) => t.id === props.token.id),
-  );
   let root =
     useReferenceToEntity("root/page", props.leaflet_id)[0]?.entity ||
     props.leaflet_id;
@@ -162,7 +159,7 @@ export const LeafletGridPreview = (props: {
                       }
                 }
               >
-                <LeafletContent entityID={page} index={props.index} />
+                <LeafletContent entityID={page} isOnScreen={props.isVisible} />
               </div>
               <LeafletPreviewLink id={props.token.id} />
             </div>

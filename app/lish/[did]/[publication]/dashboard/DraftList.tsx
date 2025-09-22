@@ -16,6 +16,7 @@ export function DraftList() {
         publication={pub_data?.publication?.uri}
       />
       <LeafletList
+        searchValue=""
         defaultDisplay="list"
         cardBorderHidden={true}
         leaflets={leaflets_in_publications.map((l) => {

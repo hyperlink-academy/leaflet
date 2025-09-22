@@ -7,28 +7,13 @@ import { CanvasContent } from "components/Canvas";
 import styles from "./LeafletPreview.module.css";
 import { PublicationMetadataPreview } from "components/Pages/PublicationMetadata";
 
-export const LeafletContent = (props: { entityID: string; index: number }) => {
+export const LeafletContent = (props: {
+  entityID: string;
+  isOnScreen: boolean;
+}) => {
   let type = useEntity(props.entityID, "page/type")?.data.value || "doc";
   let blocks = useBlocks(props.entityID);
   let previewRef = useRef<HTMLDivElement | null>(null);
-  let [isVisible, setIsVisible] = useState(props.index > 16 ? false : true);
-  useEffect(() => {
-    if (!previewRef.current) return;
-    let observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          } else {
-            setIsVisible(false);
-          }
-        });
-      },
-      { threshold: 0.1, root: null },
-    );
-    observer.observe(previewRef.current);
-    return () => observer.disconnect();
-  }, [previewRef]);
 
   if (type === "canvas")
     return (
@@ -42,7 +27,9 @@ export const LeafletContent = (props: { entityID: string; index: number }) => {
             height: "calc(1272px * 2)",
           }}
         >
-          {isVisible && <CanvasContent entityID={props.entityID} preview />}
+          {props.isOnScreen && (
+            <CanvasContent entityID={props.entityID} preview />
+          )}
         </div>
       </div>
     );
@@ -60,7 +47,7 @@ export const LeafletContent = (props: { entityID: string; index: number }) => {
       >
         <PublicationMetadataPreview />
 
-        {isVisible &&
+        {props.isOnScreen &&
           blocks.slice(0, 10).map((b, index, arr) => {
             return (
               <BlockPreview

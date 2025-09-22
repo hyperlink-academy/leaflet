@@ -90,7 +90,13 @@ export default async function Publication(props: {
               Drafts: {
                 content: <DraftList />,
                 controls: (
-                  <DashboardControls defaultDisplay={"list"} showFilter />
+                  <DashboardControls
+                    defaultDisplay={"list"}
+                    showFilter
+                    hasBackgroundImage={!!record?.theme?.backgroundImage}
+                    searchValue=""
+                    setSearchValueAction={() => {}}
+                  />
                 ),
               },
               Published: { content: <PublishedPostsList />, controls: null },

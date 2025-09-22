@@ -50,7 +50,7 @@ export const Header = (props: {
             border rounded-lg
             ${scrollPos > 20 ? "border-border-light" : "border-transparent"}
             py-1
-            w-full flex justify-between items-center gap-2`}
+            w-full flex justify-between items-center gap-4`}
           style={
             scrollPos < 20
               ? {
