@@ -93,7 +93,7 @@
     "zustand": "^5.0.4"
   },
   "devDependencies": {
-    "@atproto/lex-cli": "^0.6.1",
+    "@atproto/lex-cli": "^0.9.5",
     "@atproto/lexicon": "^0.4.7",
     "@cloudflare/workers-types": "^4.20240512.0",
     "@types/katex": "^0.16.7",
