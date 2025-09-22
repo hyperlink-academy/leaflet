@@ -108,7 +108,7 @@ async function handleEvent(evt: Event) {
       }
       let docInPublicationResult = await supabase
         .from("documents_in_publications")
-        .insert({
+        .upsert({
           publication: record.value.publication,
           document: evt.uri.toString(),
         });
