@@ -7,7 +7,6 @@ import { Footer } from "components/ActionBar/Footer";
 import { DraftList } from "./DraftList";
 import { getIdentityData } from "actions/getIdentityData";
 import { Actions } from "./Actions";
-import React from "react";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { PublicationSWRDataProvider } from "./PublicationSWRProvider";
 import { PublishedPostsList } from "./PublishedPostsLists";
@@ -20,6 +19,8 @@ import {
   DashboardLayout,
 } from "components/PageLayouts/DashboardLayout";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
+import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
+import PublicationDashboard from "./PublicationDashboard";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -34,7 +35,7 @@ export async function generateMetadata(props: {
     },
     { supabase: supabaseServerClient },
   );
-  let { publication, leaflet_data } = publication_data;
+  let { publication } = publication_data;
   let record =
     (publication?.record as PubLeafletPublication.Record) || undefined;
   if (!publication) return { title: "404 Publication" };
@@ -67,10 +68,10 @@ export default async function Publication(props: {
     { supabase: supabaseServerClient },
   );
   let { publication, leaflet_data } = publication_data;
-
-  if (!publication || identity.atp_did !== publication.identity_did)
-    return <PubNotFound />;
   let record = publication?.record as PubLeafletPublication.Record | null;
+
+  if (!publication || identity.atp_did !== publication.identity_did || !record)
+    return <PubNotFound />;
   let uri = new AtUri(publication.uri);
 
   try {
@@ -81,34 +82,7 @@ export default async function Publication(props: {
         publication_data={publication_data}
       >
         <PublicationThemeProviderDashboard record={record}>
-          <DashboardLayout
-            defaultDisplay="list"
-            id={publication.uri}
-            hasBackgroundImage={!!record?.theme?.backgroundImage}
-            defaultTab="Drafts"
-            tabs={{
-              Drafts: {
-                content: <DraftList />,
-                controls: (
-                  <HomeDashboardControls
-                    defaultDisplay={"list"}
-                    showFilter
-                    hasBackgroundImage={!!record?.theme?.backgroundImage}
-                    searchValue=""
-                    setSearchValueAction={() => {}}
-                  />
-                ),
-              },
-              Published: { content: <PublishedPostsList />, controls: null },
-              Subscribers: {
-                content: <PublicationSubscribers />,
-                controls: null,
-              },
-            }}
-            actions={<Actions publication={publication.uri} />}
-            currentPage="pub"
-            publication={publication.uri}
-          />
+          <PublicationDashboard publication={publication} record={record} />
         </PublicationThemeProviderDashboard>
       </PublicationSWRDataProvider>
     );

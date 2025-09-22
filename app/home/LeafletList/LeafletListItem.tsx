@@ -64,7 +64,12 @@ export const LeafletListItem = (props: {
           <LeafletInfo isTemplate={isTemplate} {...props} />
         </div>
         {props.cardBorderHidden && (
-          <hr className="last:hidden border-border-light" />
+          <hr
+            className="last:hidden border-border-light"
+            style={{
+              display: props.isHidden ? "none" : "block",
+            }}
+          />
         )}
       </>
     );

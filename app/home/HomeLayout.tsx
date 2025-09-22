@@ -162,11 +162,6 @@ export function LeafletList(props: {
   let { display } = useDashboardState();
 
   display = display || props.defaultDisplay;
-  // let sortedLeaflets: Leaflet[] = useSortedLeaflets(
-  //   props.titles,
-  //   props.leaflets,
-  // );
-  // let filteredLeaflets: Leaflet[] = useFilteredLeaflets(sortedLeaflets);
 
   let searchedLeaflets = useSearchedLeaflets(
     props.leaflets,

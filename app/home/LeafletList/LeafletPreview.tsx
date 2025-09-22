@@ -53,7 +53,10 @@ export const LeafletListPreview = (props: {
                   className={`w-full h-full  rounded-[2px]`}
                   style={
                     cardBorderHidden
-                      ? { backgroundColor: "rgb(var(--primary))" }
+                      ? {
+                          borderWidth: "2px",
+                          borderColor: "rgb(var(--primary))",
+                        }
                       : {
                           backgroundColor:
                             "rgba(var(--bg-page), var(--bg-page-alpha))",

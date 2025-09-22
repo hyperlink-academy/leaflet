@@ -18,7 +18,7 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 
-export function PublishedPostsList() {
+export function PublishedPostsList(props: { searchValue: string }) {
   let { data } = usePublicationData();
   let params = useParams();
   let { publication } = data!;
@@ -50,10 +50,8 @@ export function PublishedPostsList() {
           );
           let uri = new AtUri(doc.documents.uri);
           let record = doc.documents.data as PubLeafletDocument.Record;
-          let quotes =
-            doc.documents.document_mentions_in_bsky[0]?.count || 0;
-          let comments =
-            doc.documents.comments_on_documents[0]?.count || 0;
+          let quotes = doc.documents.document_mentions_in_bsky[0]?.count || 0;
+          let comments = doc.documents.comments_on_documents[0]?.count || 0;
 
           return (
             <Fragment key={doc.documents?.uri}>
@@ -101,7 +99,9 @@ export function PublishedPostsList() {
                         )}
                       </p>
                     ) : null}
-                    {(comments > 0 || quotes > 0) && record.publishedAt ? " | " : ""}
+                    {(comments > 0 || quotes > 0) && record.publishedAt
+                      ? " | "
+                      : ""}
                     {quotes > 0 && (
                       <SpeedyLink
                         href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=quotes`}
