@@ -1,6 +1,10 @@
 "use server";
 
-import { Agent as BskyAgent } from "@atproto/api";
+import {
+  AppBskyRichtextFacet,
+  Agent as BskyAgent,
+  UnicodeString,
+} from "@atproto/api";
 import sharp from "sharp";
 import { TID } from "@atproto/common";
 import { getIdentityData } from "actions/getIdentityData";
@@ -48,6 +52,7 @@ export async function publishPostToBsky(args: {
     headers: { "Content-Type": binary.type },
   });
   let bsky = new BskyAgent(credentialSession);
+  let facets = await getFacetsFromText(args.text, bsky);
   let post = await bsky.app.bsky.feed.post.create(
     {
       repo: credentialSession.did!,
@@ -56,6 +61,7 @@ export async function publishPostToBsky(args: {
     {
       text: args.text,
       createdAt: new Date().toISOString(),
+      facets,
       embed: {
         $type: "app.bsky.embed.external",
         external: {
@@ -84,4 +90,56 @@ export async function publishPostToBsky(args: {
     })
     .eq("uri", result.uri);
   return true;
+}
+
+const mentionRegex = /@(\S+)/g;
+const hashtagRegex = /#(\S+)/g;
+async function getFacetsFromText(text: string, agent: BskyAgent) {
+  let facets: AppBskyRichtextFacet.Main[] = [];
+  const unicodeString = new UnicodeString(text);
+  let mentions = text.matchAll(mentionRegex);
+  for (let match of mentions) {
+    const mention = match[0]; // Full match including @
+    const handle = match[1]; // Just the handle part
+    const startIndex = match.index;
+    const endIndex = startIndex + mention.length;
+    const byteStart = unicodeString.utf16IndexToUtf8Index(startIndex);
+    const byteEnd = unicodeString.utf16IndexToUtf8Index(endIndex);
+    let did = await agent.resolveHandle({ handle });
+    if (!did.success) continue;
+    facets.push({
+      index: {
+        byteStart,
+        byteEnd,
+      },
+      features: [
+        {
+          $type: "app.bsky.richtext.facet#mention",
+          did: did.data.did,
+        },
+      ],
+    });
+  }
+  let hashtags = text.matchAll(hashtagRegex);
+  for (let match of hashtags) {
+    const hashtag = match[0]; // Full match including #
+    const tag = match[1]; // Just the tag part
+    const startIndex = match.index;
+    const endIndex = startIndex + hashtag.length;
+    const byteStart = unicodeString.utf16IndexToUtf8Index(startIndex);
+    const byteEnd = unicodeString.utf16IndexToUtf8Index(endIndex);
+    facets.push({
+      index: {
+        byteStart,
+        byteEnd,
+      },
+      features: [
+        {
+          $type: "app.bsky.richtext.facet#tag",
+          tag,
+        },
+      ],
+    });
+  }
+  return facets;
 }

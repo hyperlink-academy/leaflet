@@ -13,6 +13,7 @@ import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/act
 import { AtUri } from "@atproto/syntax";
 import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 import { useReplicache } from "src/replicache";
+import { BlueskyPostEditor } from "./BskyPostEditor";
 
 type Props = {
   title: string;
@@ -145,12 +146,9 @@ const PublishPostForm = (
                     <p className="text-tertiary">@{props.profile.handle}</p>
                   </div>
                   <div className="flex flex-col">
-                    <AutosizeTextarea
+                    <BlueskyPostEditor
                       value={postContent}
-                      onChange={(e) =>
-                        setPostContent(e.currentTarget.value.slice(0, 300))
-                      }
-                      placeholder="Write a post to share your writing!"
+                      setValue={(value) => setPostContent(value)}
                     />
                   </div>
                   <div className="opaque-container overflow-hidden flex flex-col mt-4 w-full">
