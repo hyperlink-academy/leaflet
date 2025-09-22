@@ -92,22 +92,28 @@ async function handleEvent(evt: Event) {
     if (evt.event === "create" || evt.event === "update") {
       let record = PubLeafletDocument.validateRecord(evt.record);
       if (!record.success) {
+        console.log(record.error);
         return;
       }
-      await supabase.from("documents").upsert({
+      let docResult = await supabase.from("documents").upsert({
         uri: evt.uri.toString(),
         data: record.value as Json,
       });
+      if (docResult.error) console.log(docResult.error);
       let publicationURI = new AtUri(record.value.publication);
 
       if (publicationURI.host !== evt.uri.host) {
         console.log("Unauthorized to create post!");
         return;
       }
-      await supabase.from("documents_in_publications").insert({
-        publication: record.value.publication,
-        document: evt.uri.toString(),
-      });
+      let docInPublicationResult = await supabase
+        .from("documents_in_publications")
+        .insert({
+          publication: record.value.publication,
+          document: evt.uri.toString(),
+        });
+      if (docInPublicationResult.error)
+        console.log(docInPublicationResult.error);
     }
     if (evt.event === "delete") {
       await supabase.from("documents").delete().eq("uri", evt.uri.toString());
