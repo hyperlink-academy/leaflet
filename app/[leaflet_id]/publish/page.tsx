@@ -20,6 +20,7 @@ export default async function PublishLeafletPage(props: Props) {
     .from("permission_tokens")
     .select(
       `*,
+      permission_token_rights(*),
        leaflets_in_publications(
          *,
          publications(
