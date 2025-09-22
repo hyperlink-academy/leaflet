@@ -48,7 +48,7 @@ export default async function PublishLeafletPage(props: Props) {
   return (
     <ReplicacheProvider
       rootEntity={rootEntity}
-      token={res.data}
+      token={data}
       name={rootEntity}
       initialFacts={[]}
     >
