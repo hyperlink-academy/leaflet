@@ -2,7 +2,11 @@
 import { getIdentityData } from "actions/getIdentityData";
 import { createContext, useContext } from "react";
 import useSWR, { KeyedMutator, mutate } from "swr";
+import { DashboardState } from "./PageLayouts/DashboardLayout";
 
+export type InterfaceState = {
+  dashboards: { [id: string]: DashboardState | undefined };
+};
 type Identity = Awaited<ReturnType<typeof getIdentityData>>;
 let IdentityContext = createContext({
   identity: null as Identity,

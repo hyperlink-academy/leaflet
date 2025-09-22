@@ -18,6 +18,8 @@ import { SortSmall } from "components/Icons/SortSmall";
 import { TabsSmall } from "components/Icons/TabsSmall";
 import { Input } from "components/Input";
 import { SearchTiny } from "components/Icons/SearchTiny";
+import { InterfaceState, useIdentityData } from "components/IdentityProvider";
+import { updateIdentityInterfaceState } from "actions/updateIdentityInterfaceState";
 
 export type DashboardState = {
   display?: "grid" | "list";
@@ -69,15 +71,48 @@ export const useDashboardId = () => {
 
 export const useDashboardState = () => {
   const id = useDashboardId();
-  return useDashboardStore(
+  let { identity } = useIdentityData();
+  let localState = useDashboardStore(
     (state) => state.dashboards[id] || defaultDashboardState,
   );
+  if (!identity) return localState;
+  let metadata = identity.interface_state as InterfaceState;
+  return metadata?.dashboards?.[id] || defaultDashboardState;
 };
 
 export const useSetDashboardState = () => {
   const id = useDashboardId();
+  let { identity, mutate } = useIdentityData();
   const setDashboard = useDashboardStore((state) => state.setDashboard);
-  return (partial: Partial<DashboardState>) => setDashboard(id, partial);
+  return async (partial: Partial<DashboardState>) => {
+    if (!identity) return setDashboard(id, partial);
+
+    let interface_state = (identity.interface_state as InterfaceState) || {};
+    let newDashboardState = {
+      ...defaultDashboardState,
+      ...interface_state.dashboards?.[id],
+      ...partial,
+    };
+    mutate(
+      {
+        ...identity,
+        interface_state: {
+          ...interface_state,
+          dashboards: {
+            ...interface_state.dashboards,
+            [id]: newDashboardState,
+          },
+        },
+      },
+      { revalidate: false },
+    );
+    await updateIdentityInterfaceState({
+      ...interface_state,
+      dashboards: {
+        [id]: newDashboardState,
+      },
+    });
+  };
 };
 
 export function DashboardLayout<
