@@ -210,7 +210,7 @@ export function DashboardLayout<
   );
 }
 
-export const DashboardControls = (props: {
+export const HomeDashboardControls = (props: {
   showFilter: Boolean;
   searchValue: string;
   setSearchValueAction: (searchValue: string) => void;

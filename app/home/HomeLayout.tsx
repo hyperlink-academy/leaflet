@@ -15,7 +15,7 @@ import { callRPC } from "app/api/rpc/client";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 import { HomeSmall } from "components/Icons/HomeSmall";
 import {
-  DashboardControls,
+  HomeDashboardControls,
   DashboardLayout,
   DashboardState,
   useDashboardState,
@@ -30,6 +30,7 @@ import {
 } from "app/api/rpc/[command]/get_leaflet_data";
 import { useEffect, useRef, useState } from "react";
 import { Input } from "components/Input";
+import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 
 type Leaflet = {
   added_at: string;
@@ -55,6 +56,15 @@ export const HomeLayout = (props: {
   let cardBorderHidden = !!useCardBorderHidden(props.entityID);
 
   let [searchValue, setSearchValue] = useState("");
+  let [debouncedSearchValue, setDebouncedSearchValue] = useState("");
+
+  useDebouncedEffect(
+    () => {
+      setDebouncedSearchValue(searchValue);
+    },
+    200,
+    [searchValue],
+  );
 
   return (
     <DashboardLayout
@@ -67,7 +77,7 @@ export const HomeLayout = (props: {
       tabs={{
         home: {
           controls: (
-            <DashboardControls
+            <HomeDashboardControls
               defaultDisplay={"grid"}
               showFilter
               searchValue={searchValue}
@@ -80,7 +90,7 @@ export const HomeLayout = (props: {
               titles={props.titles}
               initialFacts={props.initialFacts}
               cardBorderHidden={cardBorderHidden}
-              searchValue={searchValue}
+              searchValue={debouncedSearchValue}
             />
           ),
         },
@@ -152,14 +162,14 @@ export function LeafletList(props: {
   let { display } = useDashboardState();
 
   display = display || props.defaultDisplay;
-  let sortedLeaflets: Leaflet[] = useSortedLeaflets(
-    props.titles,
-    props.leaflets,
-  );
-  let filteredLeaflets: Leaflet[] = useFilteredLeaflets(sortedLeaflets);
+  // let sortedLeaflets: Leaflet[] = useSortedLeaflets(
+  //   props.titles,
+  //   props.leaflets,
+  // );
+  // let filteredLeaflets: Leaflet[] = useFilteredLeaflets(sortedLeaflets);
 
   let searchedLeaflets = useSearchedLeaflets(
-    filteredLeaflets,
+    props.leaflets,
     props.titles,
     props.searchValue,
   );
@@ -218,12 +228,14 @@ export function LeafletList(props: {
   );
 }
 
-function useSortedLeaflets(
-  titles: { [root_entity: string]: string },
+function useSearchedLeaflets(
   leaflets: Leaflet[],
+  titles: { [root_entity: string]: string },
+  searchValue: string,
 ) {
-  let { sort } = useDashboardState();
-  return leaflets.sort((a, b) => {
+  let { sort, filter } = useDashboardState();
+
+  let sortedLeaflets = leaflets.sort((a, b) => {
     if (sort === "created") {
       return a.added_at === b.added_at
         ? a.token.root_entity > b.token.root_entity
@@ -243,13 +255,9 @@ function useSortedLeaflets(
       }
     }
   });
-}
 
-function useFilteredLeaflets(leaflets: Leaflet[]) {
-  let { filter } = useDashboardState();
   let allTemplates = useTemplateState((s) => s.templates);
-
-  return leaflets.filter(({ token: leaflet }) => {
+  let filteredLeaflets = sortedLeaflets.filter(({ token: leaflet }) => {
     let published = !!leaflet.leaflets_in_publications?.find((l) => l.doc);
     let drafts = !!leaflet.leaflets_in_publications?.length && !published;
     let docs = !leaflet.leaflets_in_publications?.length;
@@ -270,17 +278,12 @@ function useFilteredLeaflets(leaflets: Leaflet[]) {
       (filter.templates && templates)
     );
   });
-}
 
-function useSearchedLeaflets(
-  leaflets: Leaflet[],
-  titles: { [root_entity: string]: string },
-  searchValue: string,
-) {
-  return leaflets.filter(({ token: leaflet }) => {
+  let searchedLeaflets = filteredLeaflets.filter(({ token: leaflet }) => {
     return titles[leaflet.root_entity]
-
       .toLowerCase()
       .includes(searchValue.toLowerCase());
   });
+
+  return searchedLeaflets;
 }

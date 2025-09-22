@@ -16,7 +16,7 @@ import { PublicationSubscribers } from "./PublicationSubscribers";
 import { PublicationThemeProviderDashboard } from "components/ThemeManager/PublicationThemeProvider";
 import { AtUri } from "@atproto/syntax";
 import {
-  DashboardControls,
+  HomeDashboardControls,
   DashboardLayout,
 } from "components/PageLayouts/DashboardLayout";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
@@ -90,7 +90,7 @@ export default async function Publication(props: {
               Drafts: {
                 content: <DraftList />,
                 controls: (
-                  <DashboardControls
+                  <HomeDashboardControls
                     defaultDisplay={"list"}
                     showFilter
                     hasBackgroundImage={!!record?.theme?.backgroundImage}
