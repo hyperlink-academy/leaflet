@@ -14,6 +14,7 @@ import { AtUri } from "@atproto/syntax";
 import {
   HomeDashboardControls,
   DashboardLayout,
+  PublicationDashboardControls,
 } from "components/PageLayouts/DashboardLayout";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 
@@ -40,7 +41,6 @@ export default function PublicationDashboard({
 
   return (
     <DashboardLayout
-      defaultDisplay="list"
       id={publication.uri}
       hasBackgroundImage={!!record?.theme?.backgroundImage}
       defaultTab="Drafts"
@@ -48,9 +48,8 @@ export default function PublicationDashboard({
         Drafts: {
           content: <DraftList searchValue={debouncedSearchValue} />,
           controls: (
-            <HomeDashboardControls
+            <PublicationDashboardControls
               defaultDisplay={"list"}
-              showFilter
               hasBackgroundImage={!!record?.theme?.backgroundImage}
               searchValue={searchValue}
               setSearchValueAction={setSearchValue}

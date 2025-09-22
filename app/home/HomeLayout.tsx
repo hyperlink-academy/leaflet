@@ -66,9 +66,14 @@ export const HomeLayout = (props: {
     [searchValue],
   );
 
+  let { identity } = useIdentityData();
+
+  let hasPubs = !identity || identity.publications.length === 0 ? false : true;
+  let hasTemplates =
+    useTemplateState((s) => s.templates).length === 0 ? false : true;
+
   return (
     <DashboardLayout
-      defaultDisplay="grid"
       id="home"
       hasBackgroundImage={hasBackgroundImage}
       currentPage="home"
@@ -79,10 +84,11 @@ export const HomeLayout = (props: {
           controls: (
             <HomeDashboardControls
               defaultDisplay={"grid"}
-              showFilter
               searchValue={searchValue}
               setSearchValueAction={setSearchValue}
               hasBackgroundImage={hasBackgroundImage}
+              hasPubs={hasPubs}
+              hasTemplates={hasTemplates}
             />
           ),
           content: (
@@ -231,15 +237,7 @@ function useSearchedLeaflets(
   let { sort, filter } = useDashboardState();
 
   let sortedLeaflets = leaflets.sort((a, b) => {
-    if (sort === "created") {
-      return a.added_at === b.added_at
-        ? a.token.root_entity > b.token.root_entity
-          ? -1
-          : 1
-        : a.added_at > b.added_at
-          ? -1
-          : 1;
-    } else {
+    if (sort === "alphabetical") {
       if (titles[a.token.root_entity] === titles[b.token.root_entity]) {
         return a.added_at > b.added_at ? -1 : 1;
       } else {
@@ -248,6 +246,14 @@ function useSearchedLeaflets(
           ? 1
           : -1;
       }
+    } else {
+      return a.added_at === b.added_at
+        ? a.token.root_entity > b.token.root_entity
+          ? -1
+          : 1
+        : a.added_at > b.added_at
+          ? -1
+          : 1;
     }
   });
 
@@ -273,10 +279,10 @@ function useSearchedLeaflets(
       (filter.templates && templates)
     );
   });
-
+  if (searchValue === "") return filteredLeaflets;
   let searchedLeaflets = filteredLeaflets.filter(({ token: leaflet }) => {
     return titles[leaflet.root_entity]
-      .toLowerCase()
+      ?.toLowerCase()
       .includes(searchValue.toLowerCase());
   });
 

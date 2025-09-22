@@ -51,7 +51,7 @@ export const LeafletInfo = (props: {
           <h3 className=" truncate w-full min-w-0">{props.title}</h3>
         </Link>
         <div className="flex gap-1 shrink-0">
-          {!props.isTemplate && props.display === "list" ? (
+          {props.isTemplate && props.display === "list" ? (
             <TemplateSmall
               fill={theme.colors["bg-page"]}
               className="text-tertiary"

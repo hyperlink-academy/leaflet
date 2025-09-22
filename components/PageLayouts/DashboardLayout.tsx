@@ -122,7 +122,6 @@ export function DashboardLayout<
 >(props: {
   id: string;
   hasBackgroundImage: boolean;
-  defaultDisplay: Exclude<DashboardState["display"], undefined>;
   tabs: T;
   defaultTab: keyof T;
   currentPage: navPages;
@@ -211,7 +210,52 @@ export function DashboardLayout<
 }
 
 export const HomeDashboardControls = (props: {
-  showFilter: Boolean;
+  searchValue: string;
+  setSearchValueAction: (searchValue: string) => void;
+  hasBackgroundImage: boolean;
+  defaultDisplay: Exclude<DashboardState["display"], undefined>;
+  hasPubs: boolean;
+  hasTemplates: boolean;
+}) => {
+  let { display, sort } = useDashboardState();
+  console.log({ display, props });
+  display = display || props.defaultDisplay;
+  let setState = useSetDashboardState();
+
+  let { identity } = useIdentityData();
+  console.log(props);
+
+  return (
+    <div className="dashboardControls w-full flex gap-4">
+      {identity && (
+        <SearchInput
+          searchValue={props.searchValue}
+          setSearchValue={props.setSearchValueAction}
+          hasBackgroundImage={props.hasBackgroundImage}
+        />
+      )}
+      <div className="flex gap-2 w-max shrink-0 items-center text-sm text-tertiary">
+        <DisplayToggle setState={setState} display={display} />
+        <Separator classname="h-4 !min-h-4" />
+
+        {props.hasPubs || props.hasTemplates ? (
+          <>
+            {props.hasPubs}
+            {props.hasTemplates}
+            <FilterOptions
+              hasPubs={props.hasPubs}
+              hasTemplates={props.hasTemplates}
+            />
+            <Separator classname="h-4 !min-h-4" />{" "}
+          </>
+        ) : null}
+        <SortToggle setState={setState} sort={sort} />
+      </div>
+    </div>
+  );
+};
+
+export const PublicationDashboardControls = (props: {
   searchValue: string;
   setSearchValueAction: (searchValue: string) => void;
   hasBackgroundImage: boolean;
@@ -229,33 +273,45 @@ export const HomeDashboardControls = (props: {
         hasBackgroundImage={props.hasBackgroundImage}
       />
       <div className="flex gap-2 w-max shrink-0 items-center text-sm text-tertiary">
-        <button
-          onClick={() => {
-            setState({
-              display: display === "list" ? "grid" : "list",
-            });
-          }}
-        >
-          {display === "list" ? "List" : "Grid"}
-        </button>
-        <Separator classname="h-4" />
-        {props.showFilter && (
-          <>
-            <FilterOptions /> <Separator classname="h-4" />
-          </>
-        )}
-
-        <button
-          onClick={() =>
-            setState({
-              sort: sort === "created" ? "alphabetical" : "created",
-            })
-          }
-        >
-          Sort: {sort === "created" ? "Created On" : "A to Z"}
-        </button>
+        <DisplayToggle setState={setState} display={display} />
+        <Separator classname="h-4 !min-h-4" />
+        <SortToggle setState={setState} sort={sort} />
       </div>
     </div>
+  );
+};
+
+const SortToggle = (props: {
+  setState: (partial: Partial<DashboardState>) => Promise<void>;
+  sort: string | undefined;
+}) => {
+  return (
+    <button
+      onClick={() =>
+        props.setState({
+          sort: props.sort === "created" ? "alphabetical" : "created",
+        })
+      }
+    >
+      Sort: {props.sort === "created" ? "Created On" : "A to Z"}
+    </button>
+  );
+};
+
+const DisplayToggle = (props: {
+  setState: (partial: Partial<DashboardState>) => Promise<void>;
+  display: string | undefined;
+}) => {
+  return (
+    <button
+      onClick={() => {
+        props.setState({
+          display: props.display === "list" ? "grid" : "list",
+        });
+      }}
+    >
+      {props.display === "list" ? "List" : "Grid"}
+    </button>
   );
 };
 
@@ -270,7 +326,7 @@ function Tab(props: { name: string; selected: boolean; onSelect: () => void }) {
   );
 }
 
-const FilterOptions = () => {
+const FilterOptions = (props: { hasPubs: boolean; hasTemplates: boolean }) => {
   let { filter } = useDashboardState();
   let setState = useSetDashboardState();
   let filterCount = Object.values(filter).filter(Boolean).length;
@@ -280,39 +336,48 @@ const FilterOptions = () => {
       className="text-sm !px-2 !py-1"
       trigger={<div>Filter {filterCount > 0 && `(${filterCount})`}</div>}
     >
-      <Checkbox
-        small
-        checked={filter.drafts}
-        onChange={(e) =>
-          setState({
-            filter: { ...filter, drafts: !!e.target.checked },
-          })
-        }
-      >
-        Drafts
-      </Checkbox>
-      <Checkbox
-        small
-        checked={filter.published}
-        onChange={(e) =>
-          setState({
-            filter: { ...filter, published: !!e.target.checked },
-          })
-        }
-      >
-        Published
-      </Checkbox>
-      <Checkbox
-        small
-        checked={filter.templates}
-        onChange={(e) =>
-          setState({
-            filter: { ...filter, templates: !!e.target.checked },
-          })
-        }
-      >
-        Templates
-      </Checkbox>
+      {props.hasPubs && (
+        <>
+          <Checkbox
+            small
+            checked={filter.drafts}
+            onChange={(e) =>
+              setState({
+                filter: { ...filter, drafts: !!e.target.checked },
+              })
+            }
+          >
+            Drafts
+          </Checkbox>
+          <Checkbox
+            small
+            checked={filter.published}
+            onChange={(e) =>
+              setState({
+                filter: { ...filter, published: !!e.target.checked },
+              })
+            }
+          >
+            Published
+          </Checkbox>
+        </>
+      )}
+
+      {props.hasTemplates && (
+        <>
+          <Checkbox
+            small
+            checked={filter.templates}
+            onChange={(e) =>
+              setState({
+                filter: { ...filter, templates: !!e.target.checked },
+              })
+            }
+          >
+            Templates
+          </Checkbox>
+        </>
+      )}
       <Checkbox
         small
         checked={filter.docs}
