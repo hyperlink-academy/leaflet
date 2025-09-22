@@ -32,7 +32,7 @@ export const DesktopNavigation = (props: {
           publication={props.publication}
         />
       </Sidebar>
-      <Sidebar alwaysOpen>
+      {/*<Sidebar alwaysOpen>
         <ActionButton
           icon={
             unreadNotifications ? (
@@ -43,7 +43,7 @@ export const DesktopNavigation = (props: {
           }
           label="Notifications"
         />
-      </Sidebar>
+      </Sidebar>*/}
     </div>
   );
 };
@@ -117,20 +117,20 @@ const HomeButton = (props: { current?: boolean }) => {
 };
 
 const ReaderButton = (props: { current?: boolean }) => {
-  let readerUnreads = true;
-  let subs = false;
+  // let readerUnreads = true;
+  // let subs = false;
 
-  if (subs)
-    return (
-      <ActionButton
-        nav
-        icon={readerUnreads ? <ReaderUnreadSmall /> : <ReaderReadSmall />}
-        label="Reader"
-        className={`
-          ${readerUnreads ? "!text-accent-contrast border-accent-contrast" : props.current ? "!bg-border-light border-border" : ""}
-        `}
-      />
-    );
+  // if (subs)
+  //   return (
+  //     <ActionButton
+  //       nav
+  //       icon={readerUnreads ? <ReaderUnreadSmall /> : <ReaderReadSmall />}
+  //       label="Reader"
+  //       className={`
+  //         ${readerUnreads ? "!text-accent-contrast border-accent-contrast" : props.current ? "!bg-border-light border-border" : ""}
+  //       `}
+  //     />
+  //   );
   return (
     <Link href={"/discover"} className="hover:!no-underline">
       <ActionButton
