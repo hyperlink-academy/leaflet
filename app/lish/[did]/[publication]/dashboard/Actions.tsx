@@ -9,7 +9,6 @@ import { SettingsSmall } from "components/Icons/SettingsSmall";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { Menu } from "components/Layout";
 import { MenuItem } from "components/Layout";
-import Link from "next/link";
 import { HomeSmall } from "components/Icons/HomeSmall";
 import { EditPubForm } from "app/lish/createPub/UpdatePubForm";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
@@ -18,6 +17,7 @@ import { useSmoker } from "components/Toast";
 import { PaintSmall } from "components/Icons/PaintSmall";
 import { PubThemeSetter } from "components/ThemeManager/PubThemeSetter";
 import { useIsMobile } from "src/hooks/isMobile";
+import { SpeedyLink } from "components/SpeedyLink";
 
 export const Actions = (props: { publication: string }) => {
   return (
@@ -52,7 +52,7 @@ function PublicationShareButton() {
       }
     >
       <MenuItem onSelect={() => {}}>
-        <Link
+        <SpeedyLink
           href={getPublicationURL(pub?.publication!)}
           className="text-secondary hover:no-underline"
         >
@@ -60,7 +60,7 @@ function PublicationShareButton() {
           <div className="font-normal text-tertiary text-sm">
             View your publication as a reader
           </div>
-        </Link>
+        </SpeedyLink>
       </MenuItem>
       <MenuItem
         onSelect={(e) => {

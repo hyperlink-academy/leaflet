@@ -36,6 +36,7 @@ import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { isIOS } from "src/utils/isDevice";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { DotLoader } from "components/utils/DotLoader";
 
 const HeadingStyle = {
   1: "text-xl font-bold",
@@ -132,6 +133,7 @@ export function RenderedTextBlock(props: {
     left: "text-left",
     right: "text-right",
     center: "text-center",
+    justify: "text-justify",
   }[alignment];
   let { permissions } = useEntitySetContext();
 
@@ -156,18 +158,7 @@ export function RenderedTextBlock(props: {
         </div>
       );
   } else {
-    let doc = new Y.Doc();
-    const update = base64.toByteArray(initialFact.data.value);
-    Y.applyUpdate(doc, update);
-    let nodes = doc.getXmlElement("prosemirror").toArray();
-    content = (
-      <>
-        {nodes.length === 0 && <br />}
-        {nodes.map((node, index) => (
-          <RenderYJSFragment key={index} node={node} />
-        ))}
-      </>
-    );
+    content = <RenderYJSFragment value={initialFact.data.value} wrapper="p" />;
   }
   return (
     <div
@@ -208,6 +199,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
     left: "text-left",
     right: "text-right",
     center: "text-center",
+    justify: "text-justify",
   }[alignment];
 
   let value = useYJSValue(props.entityID);
@@ -434,6 +426,7 @@ const BlockifyLink = (props: {
   entityID: string;
   editorState: EditorState | undefined;
 }) => {
+  let [loading, setLoading] = useState(false);
   let { editorState } = props;
   let rep = useReplicache();
   let smoker = useSmoker();
@@ -458,37 +451,6 @@ const BlockifyLink = (props: {
         onClick={async (e) => {
           if (!rep.rep) return;
           rep.undoManager.startGroup();
-          let isYoutubeUrl = editorState.doc.textContent.startsWith(
-            "https://www.youtube.com/watch?v=",
-          );
-          if (isYoutubeUrl) {
-            let url = new URL(editorState.doc.textContent);
-            let videoId = url.searchParams.get("v");
-            await rep.rep.mutate.assertFact([
-              {
-                entity: props.entityID,
-                attribute: "block/type",
-                data: { type: "block-type-union", value: "embed" },
-              },
-              {
-                entity: props.entityID,
-                attribute: "embed/url",
-                data: {
-                  type: "string",
-                  value: `https://youtube.com/embed/${videoId}`,
-                },
-              },
-              {
-                entity: props.entityID,
-                attribute: "embed/height",
-                data: {
-                  type: "number",
-                  value: 315,
-                },
-              },
-            ]);
-            return;
-          }
           if (isBlueskyPost) {
             let success = await addBlueskyPostBlock(
               editorState.doc.textContent,
@@ -505,17 +467,19 @@ const BlockifyLink = (props: {
                 },
               });
           } else {
+            setLoading(true);
             await addLinkBlock(
               editorState.doc.textContent,
               props.entityID,
               rep.rep,
             );
+            setLoading(false);
           }
           rep.undoManager.endGroup();
         }}
         className="absolute right-0 top-0 px-1 py-0.5 text-xs text-tertiary sm:hover:text-accent-contrast border border-border-light sm:hover:border-accent-contrast sm:outline-accent-tertiary rounded-md bg-bg-page selected-outline "
       >
-        embed
+        {loading ? <DotLoader /> : "embed"}
       </button>
     );
   } else return null;

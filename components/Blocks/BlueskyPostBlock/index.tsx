@@ -103,11 +103,15 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
           {post.post.author && record && (
             <>
               <div className="bskyAuthor w-full flex items-center gap-2">
-                <img
-                  src={post.post.author?.avatar}
-                  alt={`${post.post.author?.displayName}'s avatar`}
-                  className="shink-0 w-8 h-8 rounded-full border border-border-light"
-                />
+                {post.post.author?.avatar ? (
+                  <img
+                    src={post.post.author?.avatar}
+                    alt={`${post.post.author?.displayName}'s avatar`}
+                    className="shrink-0 w-8 h-8 rounded-full border border-border-light"
+                  />
+                ) : (
+                  <div className="shrink-0 w-8 h-8 rounded-full border border-border-light bg-border"></div>
+                )}
                 <div className="grow flex flex-col gap-0.5 leading-tight">
                   <div className=" font-bold text-secondary">
                     {post.post.author?.displayName}

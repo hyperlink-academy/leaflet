@@ -29,7 +29,11 @@ export const get_publication_data = makeRoute({
       .from("publications")
       .select(
         `*,
-        documents_in_publications(documents(*)),
+        documents_in_publications(documents(
+          *,
+          comments_on_documents(count),
+          document_mentions_in_bsky(count)
+        )),
         publication_subscriptions(*, identities(bsky_profiles(*))),
         publication_domains(*),
         leaflets_in_publications(*,

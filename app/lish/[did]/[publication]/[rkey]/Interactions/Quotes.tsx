@@ -2,7 +2,7 @@
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { useContext } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
-import { useInteractionState } from "./Interactions";
+import { setInteractionState } from "./Interactions";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { AtUri } from "@atproto/api";
 import { Json } from "supabase/database.types";
@@ -15,11 +15,8 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletBlocksCode,
 } from "lexicons/api";
-import {
-  decodeQuotePosition,
-  QuotePosition,
-  useActiveHighlightState,
-} from "../useHighlight";
+import { decodeQuotePosition, QuotePosition } from "../quotePosition";
+import { useActiveHighlightState } from "../useHighlight";
 import { PostContent } from "../PostContent";
 import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 
@@ -27,8 +24,9 @@ export const Quotes = (props: {
   quotes: { link: string; bsky_posts: { post_view: Json } | null }[];
   did: string;
 }) => {
-  let isMobile = useIsMobile();
   let data = useContext(PostPageContext);
+  const document_uri = data?.uri;
+  if (!document_uri) throw new Error('document_uri not available in PostPageContext');
 
   return (
     <div className="flex flex-col gap-2">
@@ -36,7 +34,7 @@ export const Quotes = (props: {
         Quotes
         <button
           className="text-tertiary"
-          onClick={() => useInteractionState.setState({ drawerOpen: false })}
+          onClick={() => setInteractionState(document_uri, { drawerOpen: false })}
         >
           <CloseTiny />
         </button>
@@ -50,78 +48,91 @@ export const Quotes = (props: {
         <div className="quotes flex flex-col gap-8">
           {props.quotes.map((q, index) => {
             let pv = q.bsky_posts?.post_view as unknown as PostView;
-            let record = data?.data as PubLeafletDocument.Record;
             const url = new URL(q.link);
             const quoteParam = url.pathname.split("/l-quote/")[1];
             if (!quoteParam) return null;
             const quotePosition = decodeQuotePosition(quoteParam);
             if (!quotePosition) return null;
-
-            let page = record.pages[0] as PubLeafletPagesLinearDocument.Main;
-            // Extract blocks within the quote range
-            const content = extractQuotedBlocks(
-              page.blocks || [],
-              quotePosition,
-              [],
-            );
             return (
-              <div
-                className="quoteSection flex flex-col gap-2"
-                key={index}
-                onMouseLeave={() => {
-                  useActiveHighlightState.setState({ activeHighlight: null });
-                }}
-                onMouseEnter={() => {
-                  useActiveHighlightState.setState({ activeHighlight: index });
-                }}
-              >
-                <div
-                  className="quoteSectionQuote text-secondary text-sm text-left pb-1 hover:cursor-pointer"
-                  onClick={(e) => {
-                    let scrollMargin = isMobile
-                      ? 16
-                      : e.currentTarget.getBoundingClientRect().top;
-                    let scrollContainer =
-                      window.document.getElementById("post-page");
-                    let el = window.document.getElementById(
-                      quotePosition.start.block.join("."),
-                    );
-                    if (!el || !scrollContainer) return;
-                    let blockRect = el.getBoundingClientRect();
-                    let quoteScrollTop =
-                      (scrollContainer &&
-                        blockRect.top + scrollContainer.scrollTop) ||
-                      0;
+              <div key={index} className="flex flex-col ">
+                <QuoteContent
+                  index={index}
+                  did={props.did}
+                  position={quotePosition}
+                />
 
-                    if (blockRect.left < 0)
-                      scrollContainer.scrollIntoView({ behavior: "smooth" });
-                    scrollContainer?.scrollTo({
-                      top: quoteScrollTop - scrollMargin,
-                      behavior: "smooth",
-                    });
-                  }}
-                >
-                  <div className="italic">
-                    <PostContent
-                      bskyPostData={[]}
-                      blocks={content || []}
-                      did={props.did}
-                      preview
-                    />
-                  </div>
-                  <BskyPost
-                    rkey={new AtUri(pv.uri).rkey}
-                    content={pv.record.text as string}
-                    user={pv.author.displayName || pv.author.handle}
-                    profile={pv.author}
-                    handle={pv.author.handle}
-                  />
-                </div>
+                <div className="h-5 w-1 ml-5 border-l border-border-light" />
+                <BskyPost
+                  rkey={new AtUri(pv.uri).rkey}
+                  content={pv.record.text as string}
+                  user={pv.author.displayName || pv.author.handle}
+                  profile={pv.author}
+                  handle={pv.author.handle}
+                />
               </div>
             );
           })}
         </div>
       )}
+    </div>
+  );
+};
+
+export const QuoteContent = (props: {
+  position: QuotePosition;
+  index: number;
+  did: string;
+}) => {
+  let isMobile = useIsMobile();
+  const data = useContext(PostPageContext);
+
+  let record = data?.data as PubLeafletDocument.Record;
+  let page = record.pages[0] as PubLeafletPagesLinearDocument.Main;
+  // Extract blocks within the quote range
+  const content = extractQuotedBlocks(page.blocks || [], props.position, []);
+  return (
+    <div
+      className="quoteSection"
+      onMouseLeave={() => {
+        useActiveHighlightState.setState({ activeHighlight: null });
+      }}
+      onMouseEnter={() => {
+        useActiveHighlightState.setState({ activeHighlight: props.position });
+      }}
+    >
+      <div
+        className="quoteSectionQuote text-secondary text-sm text-left hover:cursor-pointer"
+        onClick={(e) => {
+          let scrollMargin = isMobile
+            ? 16
+            : e.currentTarget.getBoundingClientRect().top;
+          let scrollContainer = window.document.getElementById("post-page");
+          let el = window.document.getElementById(
+            props.position.start.block.join("."),
+          );
+          if (!el || !scrollContainer) return;
+          let blockRect = el.getBoundingClientRect();
+          let quoteScrollTop =
+            (scrollContainer && blockRect.top + scrollContainer.scrollTop) || 0;
+
+          if (blockRect.left < 0)
+            scrollContainer.scrollIntoView({ behavior: "smooth" });
+          scrollContainer?.scrollTo({
+            top: quoteScrollTop - scrollMargin,
+            behavior: "smooth",
+          });
+        }}
+      >
+        <div className="italic border border-border-light rounded-md px-2 pt-1">
+          <PostContent
+            bskyPostData={[]}
+            blocks={content}
+            did={props.did}
+            preview
+            className="!py-0"
+          />
+        </div>
+      </div>
     </div>
   );
 };
@@ -137,7 +148,7 @@ const BskyPost = (props: {
     <a
       target="_blank"
       href={`https://bsky.app/profile/${props.handle}/post/${props.rkey}`}
-      className="quoteSectionBskyItem opaque-container py-2 px-2 text-sm flex gap-[6px] hover:no-underline font-normal"
+      className="quoteSectionBskyItem px-2  flex gap-[6px] hover:no-underline font-normal"
     >
       {props.profile.avatar && (
         <img
@@ -151,7 +162,7 @@ const BskyPost = (props: {
           <div className="font-bold">{props.user}</div>
           <div className="text-tertiary">@{props.handle}</div>
         </div>
-        <div className="text-secondary">{props.content}</div>
+        <div className="text-primary">{props.content}</div>
       </div>
     </a>
   );
@@ -166,7 +177,6 @@ function extractQuotedBlocks(
 
   blocks.forEach((block, index) => {
     const blockPath = [...currentPath, index];
-    console.log(blockPath);
 
     // Handle different block types
     if (PubLeafletBlocksUnorderedList.isMain(block.block)) {

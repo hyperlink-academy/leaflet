@@ -84,18 +84,27 @@ export async function publishToPublication({
     .filter((b) => b.type == "link")
     .map((b) => scan.eav(b.value, "link/preview")[0]);
   let imageMap = new Map<string, BlobRef>();
-  await Promise.all(
-    [...links, ...images].map(async (b) => {
-      if (!b) return;
-      let data = await fetch(b.data.src);
-      if (data.status !== 200) return;
-      let binary = await data.blob();
+  for (const b of [...links, ...images]) {
+    if (!b) continue;
+    let data = await fetch(b.data.src);
+    if (data.status !== 200) continue;
+    let binary = await data.blob();
+    try {
       let blob = await agent.com.atproto.repo.uploadBlob(binary, {
         headers: { "Content-Type": binary.type },
       });
+      if (!blob.success) {
+        console.log(blob);
+        console.log("Error uploading image: " + b.data.src);
+        throw new Error("Failed to upload image");
+      }
       imageMap.set(b.data.src, blob.data.blob);
-    }),
-  );
+    } catch (e) {
+      console.error(e);
+      console.log("Error uploading image: " + b.data.src);
+      throw new Error("Failed to upload image");
+    }
+  }
 
   let b: PubLeafletPagesLinearDocument.Block[] = blocksToRecord(
     blocks,
@@ -289,7 +298,7 @@ function blockToRecord(
     let block: $Typed<PubLeafletBlocksIframe.Main> = {
       $type: "pub.leaflet.blocks.iframe",
       url: url.data.value,
-      height: height?.data.value || 600,
+      height: Math.floor(height?.data.value || 600),
     };
     return block;
   }

@@ -461,6 +461,7 @@ export type Database = {
           email: string | null
           home_page: string
           id: string
+          interface_state: Json | null
         }
         Insert: {
           atp_did?: string | null
@@ -468,6 +469,7 @@ export type Database = {
           email?: string | null
           home_page: string
           id?: string
+          interface_state?: Json | null
         }
         Update: {
           atp_did?: string | null
@@ -475,6 +477,7 @@ export type Database = {
           email?: string | null
           home_page?: string
           id?: string
+          interface_state?: Json | null
         }
         Relationships: [
           {

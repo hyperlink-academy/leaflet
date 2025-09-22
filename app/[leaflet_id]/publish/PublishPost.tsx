@@ -12,6 +12,7 @@ import { publishPostToBsky } from "./publishBskyPost";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AtUri } from "@atproto/syntax";
 import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
+import { useReplicache } from "src/replicache";
 
 type Props = {
   title: string;
@@ -53,9 +54,12 @@ const PublishPostForm = (
   let [postContent, setPostContent] = useState("");
   let [isLoading, setIsLoading] = useState(false);
   let params = useParams();
+  let { rep } = useReplicache();
 
   async function submit() {
+    if (isLoading) return;
     setIsLoading(true);
+    await rep?.push();
     let doc = await publishToPublication({
       root_entity: props.root_entity,
       publication_uri: props.publication_uri,

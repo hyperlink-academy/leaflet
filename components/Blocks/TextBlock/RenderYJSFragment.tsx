@@ -1,17 +1,25 @@
-import { XmlElement, XmlHook, XmlText } from "yjs";
+import { Doc, applyUpdate, XmlElement, XmlHook, XmlText } from "yjs";
 import { nodes, marks } from "prosemirror-schema-basic";
-import { CSSProperties } from "react";
+import { CSSProperties, Fragment } from "react";
 import { theme } from "tailwind.config";
+import * as base64 from "base64-js";
 
+type BlockElements = "h1" | "h2" | "h3" | null | "blockquote" | "p";
 export function RenderYJSFragment({
-  node,
+  value,
   wrapper,
   attrs,
 }: {
-  node: XmlElement | XmlText | XmlHook;
-  wrapper?: "h1" | "h2" | "h3" | null | "blockquote";
+  value: string;
+  wrapper: BlockElements;
   attrs?: { [k: string]: any };
 }) {
+  if (!value)
+    return <BlockWrapper wrapper={wrapper} attrs={attrs}></BlockWrapper>;
+  let doc = new Doc();
+  const update = base64.toByteArray(value);
+  applyUpdate(doc, update);
+  let [node] = doc.getXmlElement("prosemirror").toArray();
   if (node.constructor === XmlElement) {
     switch (node.nodeName as keyof typeof nodes) {
       case "paragraph": {
@@ -21,9 +29,39 @@ export function RenderYJSFragment({
             {children.length === 0 ? (
               <div />
             ) : (
-              node
-                .toArray()
-                .map((f, index) => <RenderYJSFragment node={f} key={index} />)
+              node.toArray().map((node, index) => {
+                if (node.constructor === XmlText) {
+                  let deltas = node.toDelta() as Delta[];
+                  if (deltas.length === 0) return <br />;
+                  return (
+                    <Fragment key={index}>
+                      {deltas.map((d, index) => {
+                        if (d.attributes?.link)
+                          return (
+                            <a
+                              href={d.attributes.link.href}
+                              key={index}
+                              {...attributesToStyle(d)}
+                            >
+                              {d.insert}
+                            </a>
+                          );
+                        return (
+                          <span
+                            key={index}
+                            {...attributesToStyle(d)}
+                            {...attrs}
+                          >
+                            {d.insert}
+                          </span>
+                        );
+                      })}
+                    </Fragment>
+                  );
+                }
+
+                return null;
+              })
             )}
           </BlockWrapper>
         );
@@ -34,42 +72,19 @@ export function RenderYJSFragment({
         return null;
     }
   }
-  if (node.constructor === XmlText) {
-    let deltas = node.toDelta() as Delta[];
-    if (deltas.length === 0) return <br />;
-    return (
-      <>
-        {deltas.map((d, index) => {
-          if (d.attributes?.link)
-            return (
-              <a
-                href={d.attributes.link.href}
-                key={index}
-                {...attributesToStyle(d)}
-              >
-                {d.insert}
-              </a>
-            );
-          return (
-            <span key={index} {...attributesToStyle(d)} {...attrs}>
-              {d.insert}
-            </span>
-          );
-        })}
-      </>
-    );
-  }
-  return null;
+  return <br />;
 }
 
 const BlockWrapper = (props: {
-  wrapper?: "h1" | "h2" | "h3" | null | "blockquote";
-  children: React.ReactNode;
+  wrapper: BlockElements;
+  children?: React.ReactNode;
   attrs?: { [k: string]: any };
 }) => {
+  if (props.wrapper === null && props.children === null) return <br />;
   if (props.wrapper === null) return <>{props.children}</>;
-  if (!props.wrapper) return <p {...props.attrs}>{props.children}</p>;
   switch (props.wrapper) {
+    case "p":
+      return <p {...props.attrs}>{props.children}</p>;
     case "blockquote":
       return <blockquote {...props.attrs}>{props.children}</blockquote>;
 

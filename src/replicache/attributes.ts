@@ -183,6 +183,10 @@ const PollBlockAttributes = {
 } as const;
 
 export const ThemeAttributes = {
+  "theme/font": {
+    type: "string",
+    cardinality: "one",
+  },
   "theme/page-leaflet-watermark": {
     type: "boolean",
     cardinality: "one",
@@ -312,7 +316,7 @@ export type Data<A extends keyof typeof Attributes> = {
   reference: { type: "reference"; value: string };
   "text-alignment-type-union": {
     type: "text-alignment-type-union";
-    value: "right" | "left" | "center";
+    value: "right" | "left" | "center" | "justify";
   };
   "page-type-union": { type: "page-type-union"; value: "doc" | "canvas" };
   "block-type-union": {

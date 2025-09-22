@@ -52,7 +52,7 @@ export async function updatePublication({
     record.preferences = preferences;
   }
 
-  if (description) {
+  if (description !== undefined) {
     record.description = description;
   }
 

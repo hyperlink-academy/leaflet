@@ -17,6 +17,7 @@ import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
 import { ActionButton } from "./ActionButton";
 import { BlobRef } from "@atproto/lexicon";
+import { SpeedyLink } from "components/SpeedyLink";
 
 export const PublicationButtons = (props: {
   currentPubUri: string | undefined;
@@ -64,7 +65,7 @@ export const PublicationOption = (props: {
   if (!record) return;
 
   return (
-    <Link
+    <SpeedyLink
       href={`${getBasePublicationURL(props)}/dashboard`}
       className="flex gap-2 items-start text-secondary font-bold hover:!no-underline hover:text-accent-contrast w-full"
     >
@@ -81,7 +82,7 @@ export const PublicationOption = (props: {
           <div className="truncate">{record.name}</div>
         </>
       )}
-    </Link>
+    </SpeedyLink>
   );
 };
 

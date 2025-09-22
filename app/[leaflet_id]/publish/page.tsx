@@ -4,6 +4,7 @@ import { PubLeafletPublication } from "lexicons/api";
 import { getIdentityData } from "actions/getIdentityData";
 
 import { AtpAgent } from "@atproto/api";
+import { ReplicacheProvider } from "src/replicache";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -45,15 +46,22 @@ export default async function PublishLeafletPage(props: Props) {
 
   let profile = await agent.getProfile({ actor: identity.atp_did });
   return (
-    <PublishPost
-      leaflet_id={leaflet_id}
-      root_entity={rootEntity}
-      profile={profile.data}
-      title={pub.title}
-      publication_uri={pub.publication}
-      description={pub.description}
-      record={pub.publications?.record as PubLeafletPublication.Record}
-      posts_in_pub={pub.publications?.documents_in_publications[0].count}
-    />
+    <ReplicacheProvider
+      rootEntity={rootEntity}
+      token={res.data}
+      name={rootEntity}
+      initialFacts={[]}
+    >
+      <PublishPost
+        leaflet_id={leaflet_id}
+        root_entity={rootEntity}
+        profile={profile.data}
+        title={pub.title}
+        publication_uri={pub.publication}
+        description={pub.description}
+        record={pub.publications?.record as PubLeafletPublication.Record}
+        posts_in_pub={pub.publications?.documents_in_publications[0].count}
+      />
+    </ReplicacheProvider>
   );
 }

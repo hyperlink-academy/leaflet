@@ -92,7 +92,7 @@ export const PubThemeSetter = () => {
           compact
           disabled={
             !(
-              showPageBackground !== !!record?.theme?.showPageBackground ||
+              showPageBackground === !!record?.theme?.showPageBackground ||
               changes ||
               !!image?.file ||
               record?.theme?.backgroundImage?.width !== image?.repeat

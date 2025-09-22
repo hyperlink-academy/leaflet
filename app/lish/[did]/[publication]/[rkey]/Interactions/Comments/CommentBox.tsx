@@ -7,6 +7,7 @@ import { keymap } from "prosemirror-keymap";
 import { Mark, MarkType, Node } from "prosemirror-model";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
+import { history, redo, undo } from "prosemirror-history";
 import {
   MutableRefObject,
   RefObject,
@@ -18,20 +19,80 @@ import {
 import { publishComment } from "./commentAction";
 import { ButtonPrimary } from "components/Buttons";
 import { ShareSmall } from "components/Icons/ShareSmall";
-import { useInteractionState } from "../Interactions";
+import { useInteractionState, setInteractionState } from "../Interactions";
 import { DotLoader } from "components/utils/DotLoader";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 import { setMark } from "src/utils/prosemirror/setMark";
 import { multi } from "linkifyjs";
 import { Json } from "supabase/database.types";
 import { isIOS } from "src/utils/isDevice";
+import {
+  decodeQuotePosition,
+  QUOTE_PARAM,
+  QuotePosition,
+} from "../../quotePosition";
+import { QuoteContent } from "../Quotes";
+import { create } from "zustand";
+import { CloseTiny } from "components/Icons/CloseTiny";
+import { CloseFillTiny } from "components/Icons/CloseFillTiny";
+import { betterIsUrl } from "src/utils/isURL";
 
 export function CommentBox(props: {
   doc_uri: string;
   replyTo?: string;
   onSubmit?: () => void;
+  autoFocus?: boolean;
 }) {
   let mountRef = useRef<HTMLPreElement | null>(null);
+  let { commentBox: { quote } } = useInteractionState(props.doc_uri);
+  let [loading, setLoading] = useState(false);
+  
+  const handleSubmit = async () => {
+    if (loading || !view.current) return;
+    
+    setLoading(true);
+    let currentState = view.current.state;
+    let [plaintext, facets] = docToFacetedText(currentState.doc);
+    let comment = await publishComment({
+      document: props.doc_uri,
+      comment: {
+        plaintext,
+        facets,
+        replyTo: props.replyTo,
+        attachment: quote
+          ? {
+              $type: "pub.leaflet.comment#linearDocumentQuote",
+              document: props.doc_uri,
+              quote,
+            }
+          : undefined,
+      },
+    });
+
+    let tr = currentState.tr;
+    tr = tr.replaceWith(
+      0,
+      currentState.doc.content.size,
+      multiBlockSchema.nodes.paragraph.createAndFill()!,
+    );
+    view.current.dispatch(tr);
+    setLoading(false);
+    props.onSubmit?.();
+    setInteractionState(props.doc_uri, (s) => ({
+      commentBox: {
+        quote: null,
+      },
+      localComments: [
+        ...s.localComments,
+        {
+          record: comment.record,
+          uri: comment.uri,
+          bsky_profiles: { record: comment.profile as Json },
+        },
+      ],
+    }));
+  };
+
   let [editorState, setEditorState] = useState(() =>
     EditorState.create({
       schema: multiBlockSchema,
@@ -44,6 +105,11 @@ export function CommentBox(props: {
           "Meta-i": toggleMark(multiBlockSchema.marks.em),
           "Ctrl-i": toggleMark(multiBlockSchema.marks.em),
           "Ctrl-Meta-x": toggleMark(multiBlockSchema.marks.strikethrough),
+          "Mod-z": undo,
+          "Mod-y": redo,
+          "Shift-Mod-z": redo,
+          "Ctrl-Enter": () => { handleSubmit(); return true; },
+          "Meta-Enter": () => { handleSubmit(); return true; },
         }),
         keymap(baseKeymap),
         autolink({
@@ -51,6 +117,7 @@ export function CommentBox(props: {
           shouldAutoLink: () => true,
           defaultProtocol: "https",
         }),
+        history(),
       ],
     }),
   );
@@ -61,6 +128,53 @@ export function CommentBox(props: {
       { mount: mountRef.current },
       {
         state: editorState,
+        handlePaste: (view, e) => {
+          let text =
+            e.clipboardData?.getData("text") ||
+            e.clipboardData?.getData("text/html");
+          let html = e.clipboardData?.getData("text/html");
+          if (text && betterIsUrl(text)) {
+            let selection = view.state.selection as TextSelection;
+            let tr = view.state.tr;
+            let { from, to } = selection;
+            if (selection.empty) {
+              tr.insertText(text, selection.from);
+              tr.addMark(
+                from,
+                from + text.length,
+                multiBlockSchema.marks.link.create({ href: text }),
+              );
+            } else {
+              tr.addMark(
+                from,
+                to,
+                multiBlockSchema.marks.link.create({ href: text }),
+              );
+            }
+            view.dispatch(tr);
+            return true;
+          }
+          if (!text && html) {
+            let xml = new DOMParser().parseFromString(html, "text/html");
+            text = xml.textContent || "";
+          }
+          console.log("URL: " + window.location.toString());
+          console.log("TEXT: " + text, text?.includes(QUOTE_PARAM));
+          if (
+            text?.includes(QUOTE_PARAM) &&
+            text.includes(window.location.toString())
+          ) {
+            const url = new URL(text);
+            const quoteParam = url.pathname.split("/l-quote/")[1];
+            if (!quoteParam) return;
+            const quotePosition = decodeQuotePosition(quoteParam);
+            if (!quotePosition) return;
+            setInteractionState(props.doc_uri, {
+              commentBox: { quote: quotePosition },
+            });
+            return true;
+          }
+        },
         handleClickOn: (view, _pos, node, _nodePos, _event, direct) => {
           if (!direct) return;
           if (node.nodeSize - 2 <= _pos) return;
@@ -83,22 +197,40 @@ export function CommentBox(props: {
         },
       },
     );
+
+    if (props.autoFocus) {
+      view.current.focus();
+    }
+
     return () => {
       view.current?.destroy();
       view.current = null;
     };
   }, []);
-  let [loading, setLoading] = useState(false);
+  
   return (
-    <div className=" flex flex-col gap-1">
+    <div className=" flex flex-col">
+      {quote && (
+        <div className="relative mt-2 mb-2">
+          <QuoteContent position={quote} did="" index={-1} />
+          <button
+            className="text-border absolute -top-3 right-1 bg-bg-page p-1 rounded-full"
+            onClick={() =>
+              setInteractionState(props.doc_uri, { commentBox: { quote: null } })
+            }
+          >
+            <CloseFillTiny />
+          </button>
+        </div>
+      )}
       <div className="w-full relative group">
         <pre
           ref={mountRef}
-          className={`border whitespace-pre-wrap input-with-border min-h-32 h-fit`}
+          className={`border whitespace-pre-wrap input-with-border min-h-32 h-fit !px-2 !py-[6px]`}
         />
         <IOSBS view={view} />
       </div>
-      <div className="flex justify-between">
+      <div className="flex justify-between pt-1">
         <div className="flex gap-1">
           <TextDecorationButton
             mark={multiBlockSchema.marks.strong}
@@ -121,27 +253,7 @@ export function CommentBox(props: {
         </div>
         <ButtonPrimary
           compact
-          onClick={async () => {
-            setLoading(true);
-            let [plaintext, facets] = docToFacetedText(editorState.doc);
-            let comment = await publishComment({
-              document: props.doc_uri,
-              comment: { plaintext, facets, replyTo: props.replyTo },
-            });
-
-            setLoading(false);
-            props.onSubmit?.();
-            useInteractionState.setState((s) => ({
-              localComments: [
-                ...s.localComments,
-                {
-                  record: comment.record,
-                  uri: comment.uri,
-                  bsky_profiles: { record: comment.profile as Json },
-                },
-              ],
-            }));
-          }}
+          onClick={handleSubmit}
         >
           {loading ? <DotLoader /> : <ShareSmall />}
         </ButtonPrimary>

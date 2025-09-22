@@ -36,7 +36,8 @@ export function PostPage({
   preferences: { showComments?: boolean };
 }) {
   let { identity } = useIdentityData();
-  let { drawerOpen } = useInteractionState();
+  const document_uri = document?.uri;
+  let { drawerOpen } = useInteractionState(document_uri);
   if (!document || !document.documents_in_publications[0].publications)
     return null;
 

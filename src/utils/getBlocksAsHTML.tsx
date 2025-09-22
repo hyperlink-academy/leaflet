@@ -2,8 +2,6 @@ import { ReadTransaction, Replicache } from "replicache";
 import type { Fact, ReplicacheMutators } from "src/replicache";
 import { scanIndex } from "src/replicache/utils";
 import { renderToStaticMarkup } from "react-dom/server";
-import * as Y from "yjs";
-import * as base64 from "base64-js";
 import { RenderYJSFragment } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { Block } from "components/Blocks/Block";
 import { List, parseBlocksToList } from "./parseBlocksToList";
@@ -38,7 +36,7 @@ async function renderList(l: List, tx: ReadTransaction): Promise<string> {
     await Promise.all(l.children.map(async (c) => await renderList(c, tx)))
   ).join("\n");
   let [checked] = await scanIndex(tx).eav(l.block.value, "block/check-list");
-  return `<li ${checked ? `data-checked=${checked.data.value}` : ""}>${await renderBlock(l.block, tx, true)} ${
+  return `<li ${checked ? `data-checked=${checked.data.value}` : ""}>${await renderBlock(l.block, tx)} ${
     l.children.length > 0
       ? `
   <ul>${children}</ul>
@@ -69,24 +67,20 @@ async function getAllFacts(
   return [...facts, ...childFacts];
 }
 
-async function renderBlock(
-  b: Block,
-  tx: ReadTransaction,
-  ignoreWrapper?: boolean,
-) {
-  let wrapper: undefined | "h1" | "h2" | "h3" | "blockquote";
-  let [alignment] = await scanIndex(tx).eav(b.value, "block/text-alignment");
-  if (b.type === "horizontal-rule") {
-    return "<hr />";
-  }
-  if (b.type === "code") {
-    let [code] = await scanIndex(tx).eav(b.value, "block/code");
-    let [lang] = await scanIndex(tx).eav(b.value, "block/code-language");
-    return renderToStaticMarkup(
-      <pre data-lang={lang?.data.value}>{code?.data.value || ""}</pre>,
-    );
-  }
-  if (b.type === "math") {
+const BlockTypeToHTML: {
+  [K in Fact<"block/type">["data"]["value"]]: (
+    b: Block,
+    tx: ReadTransaction,
+    alignment?: Fact<"block/text-alignment">["data"]["value"],
+  ) => Promise<React.ReactNode>;
+} = {
+  datetime: async () => null,
+  rsvp: async () => null,
+  mailbox: async () => null,
+  poll: async () => null,
+  embed: async () => null,
+  "bluesky-post": async () => null,
+  math: async (b, tx, a) => {
     let [math] = await scanIndex(tx).eav(b.value, "block/math");
     const html = Katex.renderToString(math?.data.value || "", {
       displayMode: true,
@@ -99,87 +93,100 @@ async function renderBlock(
       <div
         data-type="math"
         data-tex={math?.data.value}
-        data-alignment={alignment?.data.value}
+        data-alignment={a}
         dangerouslySetInnerHTML={{ __html: html }}
       />,
     );
-  }
-  if (b.type === "image") {
+  },
+  "horizontal-rule": async () => <hr />,
+  image: async (b, tx, a) => {
     let [src] = await scanIndex(tx).eav(b.value, "block/image");
     if (!src) return "";
-    return renderToStaticMarkup(
-      <img src={src.data.src} data-alignment={alignment?.data.value} />,
-    );
-  }
-  if (b.type === "button") {
+    return <img src={src.data.src} data-alignment={a} />;
+  },
+  code: async (b, tx, a) => {
+    let [code] = await scanIndex(tx).eav(b.value, "block/code");
+    let [lang] = await scanIndex(tx).eav(b.value, "block/code-language");
+    return <pre data-lang={lang?.data.value}>{code?.data.value || ""}</pre>;
+  },
+  button: async (b, tx, a) => {
     let [text] = await scanIndex(tx).eav(b.value, "button/text");
     let [url] = await scanIndex(tx).eav(b.value, "button/url");
     if (!text || !url) return "";
-    return renderToStaticMarkup(
-      <a
-        href={url.data.value}
-        data-type="button"
-        data-alignment={alignment?.data.value}
-      >
+    return (
+      <a href={url.data.value} data-type="button" data-alignment={a}>
         {text.data.value}
-      </a>,
+      </a>
     );
-  }
-  if (b.type === "blockquote") {
-    wrapper = "blockquote";
-  }
-  if (b.type === "heading") {
-    let headingLevel =
-      (await scanIndex(tx).eav(b.value, "block/heading-level"))[0]?.data
-        .value || 1;
-    wrapper = "h" + headingLevel;
-  }
-  if (b.type === "link") {
+  },
+  blockquote: async (b, tx, a) => {
+    let [value] = await scanIndex(tx).eav(b.value, "block/text");
+    return (
+      <RenderYJSFragment
+        value={value?.data.value}
+        attrs={{
+          "data-alignment": a,
+        }}
+        wrapper={"blockquote"}
+      />
+    );
+  },
+  heading: async (b, tx, a) => {
+    let [value] = await scanIndex(tx).eav(b.value, "block/text");
+    let [headingLevel] = await scanIndex(tx).eav(
+      b.value,
+      "block/heading-level",
+    );
+    let wrapper = ("h" + (headingLevel?.data.value || 1)) as "h1" | "h2" | "h3";
+    return (
+      <RenderYJSFragment
+        value={value?.data.value}
+        attrs={{
+          "data-alignment": a,
+        }}
+        wrapper={wrapper}
+      />
+    );
+  },
+  link: async (b, tx, a) => {
     let [url] = await scanIndex(tx).eav(b.value, "link/url");
     let [title] = await scanIndex(tx).eav(b.value, "link/title");
     if (!url) return "";
-    return renderToStaticMarkup(
+    return (
       <a href={url.data.value} target="_blank">
         {title.data.value}
-      </a>,
+      </a>
     );
-  }
-  if (b.type === "card") {
+  },
+  card: async (b, tx, a) => {
     let [card] = await scanIndex(tx).eav(b.value, "block/card");
     let facts = await getAllFacts(tx, card.data.value);
-    return renderToStaticMarkup(
+    return (
       <div
         data-type="card"
         data-facts={btoa(JSON.stringify(facts))}
         data-entityid={card.data.value}
-      />,
+      />
     );
-  }
-  if (b.type === "mailbox") {
-    return renderToStaticMarkup(
-      <div>
-        <a href={window.location.href} target="_blank">
-          View {b.type}
-        </a>{" "}
-        in Leaflet!
-      </div>,
+  },
+  text: async (b, tx, a) => {
+    let [value] = await scanIndex(tx).eav(b.value, "block/text");
+    return (
+      <RenderYJSFragment
+        value={value?.data.value}
+        attrs={{
+          "data-alignment": a,
+        }}
+        wrapper="p"
+      />
     );
-  }
-  let value = (await scanIndex(tx).eav(b.value, "block/text"))[0];
-  console.log("getBlockasHTML", value);
-  if (!value)
-    return ignoreWrapper ? "" : `<${wrapper || "p"}></${wrapper || "p"}>`;
-  let doc = new Y.Doc();
-  const update = base64.toByteArray(value.data.value);
-  Y.applyUpdate(doc, update);
-  let nodes = doc.getXmlElement("prosemirror").toArray();
-  return renderToStaticMarkup(
-    <RenderYJSFragment
-      attrs={{
-        "data-alignment": alignment?.data.value,
-      }}
-      node={nodes[0]}
-      wrapper={ignoreWrapper ? null : wrapper}
-    />,
-  );
+  },
+};
+
+async function renderBlock(b: Block, tx: ReadTransaction) {
+  let [alignment] = await scanIndex(tx).eav(b.value, "block/text-alignment");
+  let toHtml = BlockTypeToHTML[b.type];
+  let element = await toHtml(b, tx, alignment?.data.value);
+  console.log(element);
+  return renderToStaticMarkup(element);
 }

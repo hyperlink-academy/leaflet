@@ -1,6 +1,6 @@
 "use client";
 import { CloseTiny } from "components/Icons/CloseTiny";
-import { useInteractionState } from "../Interactions";
+import { useInteractionState, setInteractionState } from "../Interactions";
 import { useIdentityData } from "components/IdentityProvider";
 import { CommentBox } from "./CommentBox";
 import { Json } from "supabase/database.types";
@@ -16,6 +16,7 @@ import { AppBskyActorProfile, AtUri } from "@atproto/api";
 import { timeAgo } from "app/discover/PubListing";
 import { BlueskyLogin } from "app/login/LoginForm";
 import { usePathname } from "next/navigation";
+import { QuoteContent } from "../Quotes";
 
 export type Comment = {
   record: Json;
@@ -24,11 +25,18 @@ export type Comment = {
 };
 export function Comments(props: { document_uri: string; comments: Comment[] }) {
   let { identity } = useIdentityData();
-  let localComments = useInteractionState((l) => l.localComments);
+  let { localComments } = useInteractionState(props.document_uri);
   let comments = useMemo(() => {
     return [...localComments, ...props.comments];
   }, [props.comments, localComments]);
   let pathname = usePathname();
+  let redirectRoute = useMemo(() => {
+    let url = new URL(pathname, window.location.origin);
+    url.searchParams.set("refreshAuth", "");
+    url.searchParams.set("interactionDrawer", "comments");
+    url.hash = "commentsDrawer";
+    return url.toString();
+  }, []);
 
   return (
     <div id={"commentsDrawer"} className="flex flex-col gap-2 relative">
@@ -36,7 +44,7 @@ export function Comments(props: { document_uri: string; comments: Comment[] }) {
         Comments
         <button
           className="text-tertiary"
-          onClick={() => useInteractionState.setState({ drawerOpen: false })}
+          onClick={() => setInteractionState(props.document_uri, { drawerOpen: false })}
         >
           <CloseTiny />
         </button>
@@ -46,15 +54,11 @@ export function Comments(props: { document_uri: string; comments: Comment[] }) {
       ) : (
         <div className="w-full accent-container text-tertiary text-center italic p-3 flex flex-col gap-2">
           Connect a Bluesky account to comment
-          <BlueskyLogin
-            redirectRoute={
-              pathname + "?interactionDrawer=comments#commentsDrawer"
-            }
-          />
+          <BlueskyLogin redirectRoute={redirectRoute} />
         </div>
       )}
       <hr className="border-border-light" />
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 py-2">
         {comments
           .sort((a, b) => {
             let aRecord = a.record as PubLeafletComment.Record;
@@ -96,16 +100,26 @@ const Comment = (props: {
 }) => {
   return (
     <div className="comment">
-      <div className="flex gap-2 ">
+      <div className="flex gap-2">
         {props.profile && (
           <ProfilePopover profile={props.profile} comment={props.comment.uri} />
         )}
         <DatePopover date={props.record.createdAt} />
       </div>
+      {props.record.attachment &&
+        PubLeafletComment.isLinearDocumentQuote(props.record.attachment) && (
+          <div className="mt-1 mb-2">
+            <QuoteContent
+              index={-1}
+              position={props.record.attachment.quote}
+              did={new AtUri(props.record.attachment.document).host}
+            />
+          </div>
+        )}
       <pre
         key={props.comment.uri}
         style={{ wordBreak: "break-word" }}
-        className="whitespace-pre-wrap text-secondary pb-[4px]"
+        className="whitespace-pre-wrap text-secondary pb-[4px] "
       >
         <BaseTextBlock
           index={[]}
@@ -177,6 +191,7 @@ const Replies = (props: {
           <CommentBox
             doc_uri={props.document}
             replyTo={props.comment_uri}
+            autoFocus={true}
             onSubmit={() => {
               setReplyBoxOpen(false);
             }}
