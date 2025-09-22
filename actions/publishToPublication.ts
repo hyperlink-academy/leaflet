@@ -298,7 +298,7 @@ function blockToRecord(
     let block: $Typed<PubLeafletBlocksIframe.Main> = {
       $type: "pub.leaflet.blocks.iframe",
       url: url.data.value,
-      height: height?.data.value || 600,
+      height: Math.floor(height?.data.value || 600),
     };
     return block;
   }
