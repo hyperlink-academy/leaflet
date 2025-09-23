@@ -14,6 +14,7 @@ import { LeafletContent } from "./LeafletContent";
 import { Tooltip } from "components/Tooltip";
 import { useState } from "react";
 import Link from "next/link";
+import { SpeedyLink } from "components/SpeedyLink";
 
 export const LeafletListPreview = (props: {
   draft?: boolean;
@@ -133,7 +134,7 @@ export const LeafletGridPreview = (props: {
   );
   return (
     <ThemeProvider local entityID={root} className="!w-full">
-      <div className="border border-border-light rounded-md w-full h-full overflow-hidden">
+      <div className="border border-border-light rounded-md w-full h-full overflow-hidden relative">
         <div className="relative w-full h-full">
           <ThemeBackgroundProvider entityID={root}>
             <div className="leafletPreview relative grow shrink-0 h-full w-full px-2 pt-2 sm:px-3 sm:pt-3 flex items-end pointer-events-none">
@@ -164,25 +165,20 @@ export const LeafletGridPreview = (props: {
               >
                 <LeafletContent entityID={page} isOnScreen={props.isVisible} />
               </div>
-              <LeafletPreviewLink id={props.token.id} />
             </div>
           </ThemeBackgroundProvider>
         </div>
+        <LeafletPreviewLink id={props.token.id} />
       </div>
     </ThemeProvider>
   );
 };
 
 const LeafletPreviewLink = (props: { id: string }) => {
-  let [prefetch, setPrefetch] = useState(false);
-
   return (
-    <Link
-      onMouseEnter={() => setPrefetch(true)}
-      onPointerDown={() => setPrefetch(true)}
-      prefetch={prefetch}
+    <SpeedyLink
       href={`/${props.id}`}
-      className={`hello no-underline sm:hover:no-underline text-primary absolute inset-0 w-full h-full`}
+      className={`hello no-underline sm:hover:no-underline text-primary absolute inset-0 w-full h-full bg-bg-test`}
     />
   );
 };
