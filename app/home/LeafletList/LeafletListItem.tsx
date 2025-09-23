@@ -4,8 +4,6 @@ import { useTemplateState } from "../Actions/CreateNewButton";
 import { LeafletListPreview, LeafletGridPreview } from "./LeafletPreview";
 import { LeafletInfo } from "./LeafletInfo";
 import { useState, useRef, useEffect } from "react";
-import index from "swr";
-import { PgNumericBuilder } from "drizzle-orm/pg-core";
 
 export const LeafletListItem = (props: {
   token: PermissionToken;
@@ -28,7 +26,6 @@ export const LeafletListItem = (props: {
   let [isOnScreen, setIsOnScreen] = useState(props.index < 16 ? true : false);
   let previewRef = useRef<HTMLDivElement | null>(null);
 
-  console.log(props.isHidden);
   useEffect(() => {
     if (!previewRef.current) return;
     let observer = new IntersectionObserver(
@@ -51,6 +48,7 @@ export const LeafletListItem = (props: {
     return (
       <>
         <div
+          ref={previewRef}
           className={`gap-3 w-full ${props.cardBorderHidden ? "" : "p-1 block-border hover:outline-border"}`}
           style={{
             backgroundColor: props.cardBorderHidden
@@ -75,6 +73,7 @@ export const LeafletListItem = (props: {
     );
   return (
     <div
+      ref={previewRef}
       className={`leafletGridListItem relative
         flex flex-col gap-1 p-1 h-52
        block-border !border-border hover:outline-border
