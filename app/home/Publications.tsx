@@ -28,7 +28,8 @@ export const MyPublicationList = () => {
           href={"/lish/createPub"}
           className="pubListCreateNew  text-accent-contrast font-bold hover:text-accent-contrast"
         >
-          <AddTiny />
+          <span className="sr-only">Create new publication</span>
+          <AddTiny aria-hidden />
         </SpeedyLink>
       </div>
       <PublicationList publications={identity.publications} />
