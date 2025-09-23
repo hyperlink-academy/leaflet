@@ -123,7 +123,19 @@ export function HomeLeafletList(props: {
             (ptrh) => ptrh.permission_tokens.root_entity,
           ),
         });
-        return result;
+        let titles = {
+          ...result.titles,
+          ...identity.permission_token_on_homepage.reduce(
+            (acc, tok) => {
+              let title =
+                tok.permission_tokens.leaflets_in_publications[0]?.title;
+              if (title) acc[tok.permission_tokens.root_entity] = title;
+              return acc;
+            },
+            {} as { [k: string]: string },
+          ),
+        };
+        return { ...result, titles };
       }
     },
     { fallbackData: { facts: props.initialFacts, titles: props.titles } },

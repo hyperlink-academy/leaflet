@@ -101,7 +101,18 @@ export default async function Home() {
         <ThemeProvider entityID={root_entity}>
           <ThemeBackgroundProvider entityID={root_entity}>
             <HomeLayout
-              titles={home_docs_initialFacts.titles || {}}
+              titles={{
+                ...home_docs_initialFacts.titles,
+                ...auth_res?.permission_token_on_homepage.reduce(
+                  (acc, tok) => {
+                    let title =
+                      tok.permission_tokens.leaflets_in_publications[0]?.title;
+                    if (title) acc[tok.permission_tokens.root_entity] = title;
+                    return acc;
+                  },
+                  {} as { [k: string]: string },
+                ),
+              }}
               entityID={root_entity}
               initialFacts={home_docs_initialFacts.facts || {}}
             />

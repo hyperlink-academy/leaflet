@@ -1,10 +1,7 @@
 "use client";
 
 import { DraftList } from "./DraftList";
-import {
-  get_publication_data,
-  GetPublicationDataReturnType,
-} from "app/api/rpc/[command]/get_publication_data";
+import { GetPublicationDataReturnType } from "app/api/rpc/[command]/get_publication_data";
 import { Actions } from "./Actions";
 import React, { useState } from "react";
 import { PublishedPostsList } from "./PublishedPostsLists";
