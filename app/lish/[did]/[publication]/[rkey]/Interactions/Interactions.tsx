@@ -132,8 +132,11 @@ export const Interactions = (props: {
       >
         <span className="sr-only">Post quotes</span>
         <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
-        {!props.compact &&
-          `<span aria-hidden>Quote${props.quotesCount === 1 ? "" : "s"}</span>`}
+        {!props.compact && (
+          <span
+            aria-hidden
+          >{`Quote${props.quotesCount === 1 ? "" : "s"}`}</span>
+        )}
       </button>
       {props.showComments === false ? null : (
         <button
@@ -146,8 +149,11 @@ export const Interactions = (props: {
         >
           <span className="sr-only">Post comments</span>
           <CommentTiny aria-hidden /> {props.commentsCount}{" "}
-          {!props.compact &&
-            `<span aria-hidden>Comment${props.commentsCount === 1 ? "" : "s"}</span>`}
+          {!props.compact && (
+            <span
+              aria-hidden
+            >{`Comment${props.commentsCount === 1 ? "" : "s"}`}</span>
+          )}
         </button>
       )}
     </div>
