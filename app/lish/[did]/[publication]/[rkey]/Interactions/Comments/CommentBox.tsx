@@ -226,7 +226,7 @@ export function CommentBox(props: {
       <div className="w-full relative group">
         <pre
           ref={mountRef}
-          className={`border whitespace-pre-wrap input-with-border min-h-32 h-fit !px-2 !py-[6px]`}
+          className={`border whitespace-pre-wrap input-with-border min-h-32 h-fit px-2! py-[6px]!`}
         />
         <IOSBS view={view} />
       </div>

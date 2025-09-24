@@ -69,7 +69,7 @@ export default async function Publication(props: {
             className={`pubWrapper flex flex-col sm:py-6 h-full   ${showPageBackground ? "max-w-prose mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
           >
             <div
-              className={`pub sm:max-w-prose max-w-[var(--page-width-units)] w-[1000px] mx-auto px-3 sm:px-4 py-5  ${showPageBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg" : "h-fit"}`}
+              className={`pub sm:max-w-prose max-w-(--page-width-units) w-[1000px] mx-auto px-3 sm:px-4 py-5  ${showPageBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg" : "h-fit"}`}
             >
               <div className="pubHeader flex flex-col pb-8 w-full text-center justify-center ">
                 {record?.icon && (
@@ -142,7 +142,7 @@ export default async function Publication(props: {
                         <div className="flex w-full grow flex-col ">
                           <SpeedyLink
                             href={`${getPublicationURL(publication)}/${uri.rkey}`}
-                            className="publishedPost hover:!no-underline flex flex-col"
+                            className="publishedPost hover:no-underline! flex flex-col"
                           >
                             <h3 className="text-primary">{doc_record.title}</h3>
                             <p className="italic text-secondary">

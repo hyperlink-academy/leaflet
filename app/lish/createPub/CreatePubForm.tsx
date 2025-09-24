@@ -207,14 +207,14 @@ function DomainInput(props: {
 
   return (
     <div className="flex flex-col gap-1">
-      <label className=" input-with-border flex flex-col text-sm text-tertiary font-bold italic leading-tight !py-1 !px-[6px]">
+      <label className=" input-with-border flex flex-col text-sm text-tertiary font-bold italic leading-tight py-1! px-[6px]!">
         <div>Choose your domain</div>
         <div className="flex flex-row  items-center">
           <Input
             minLength={3}
             maxLength={63}
             placeholder="domain"
-            className="appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 outline-none"
+            className="appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 outline-hidden"
             value={props.domain}
             onChange={(e) => props.setDomain(e.currentTarget.value)}
           />

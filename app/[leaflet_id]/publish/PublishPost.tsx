@@ -133,7 +133,7 @@ const PublishPostForm = (
           <div
             className={`w-full pl-5 pb-4 ${shareOption !== "bluesky" ? "opacity-50" : ""}`}
           >
-            <div className="opaque-container p-3  !rounded-lg">
+            <div className="opaque-container p-3  rounded-lg!">
               <div className="flex gap-2">
                 <img
                   className="bg-test rounded-full w-[42px] h-[42px] shrink-0"
@@ -173,7 +173,7 @@ const PublishPostForm = (
           </div>
           <div className="flex justify-between">
             <Link
-              className="hover:!no-underline font-bold"
+              className="hover:no-underline! font-bold"
               href={`/${params.leaflet_id}`}
             >
               Back
@@ -200,7 +200,7 @@ const PublishPostSuccess = (props: {
       <PublishIllustration posts_in_pub={props.posts_in_pub} />
       <h2 className="pt-2">Published!</h2>
       <Link
-        className="hover:!no-underline font-bold place-self-center pt-2"
+        className="hover:no-underline! font-bold place-self-center pt-2"
         href={`/lish/${uri.host}/${encodeURIComponent(props.record?.name || "")}/dashboard`}
       >
         <ButtonPrimary>Back to Dashboard</ButtonPrimary>

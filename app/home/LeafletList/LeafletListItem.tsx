@@ -76,7 +76,7 @@ export const LeafletListItem = (props: {
       ref={previewRef}
       className={`leafletGridListItem relative
         flex flex-col gap-1 p-1 h-52
-       block-border !border-border hover:outline-border
+       block-border border-border! hover:outline-border
         `}
       style={{
         backgroundColor: props.cardBorderHidden

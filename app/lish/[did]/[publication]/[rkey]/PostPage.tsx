@@ -55,7 +55,7 @@ export function PostPage({
       <div
         id="post-page"
         className={`postPageWrapper relative overflow-y-auto sm:mx-0 mx-[6px] w-full
-          ${drawerOpen || hasPageBackground ? "max-w-[var(--page-width-units)] shrink-0 snap-center " : "w-full"}
+          ${drawerOpen || hasPageBackground ? "max-w-(--page-width-units) shrink-0 snap-center " : "w-full"}
           ${
             hasPageBackground
               ? "h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] rounded-lg border border-border "
@@ -89,7 +89,7 @@ export function PostPage({
               ?.identity_did ? (
             <a
               href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
-              className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1 mx-auto"
+              className="flex gap-2 items-center hover:no-underline! selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg border-accent-1! outline-accent-1! mx-auto"
             >
               <EditTiny /> Edit Post
             </a>

@@ -114,7 +114,7 @@ function PublicationThemeButton() {
   return (
     <Popover
       asChild
-      className="max-w-xs pb-0 !bg-white"
+      className="max-w-xs pb-0 bg-white!"
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
       trigger={

@@ -69,7 +69,7 @@ export const LeafletListPreview = (props: {
           </ThemeProvider>
         </div>
       }
-      className="!p-1"
+      className="p-1!"
     >
       <ThemeProvider local entityID={root} className="rounded-sm">
         <ThemeBackgroundProvider entityID={root}>
@@ -133,7 +133,7 @@ export const LeafletGridPreview = (props: {
     "theme/card-background-image-opacity",
   );
   return (
-    <ThemeProvider local entityID={root} className="!w-full">
+    <ThemeProvider local entityID={root} className="w-full!">
       <div className="border border-border-light rounded-md w-full h-full overflow-hidden relative">
         <div className="relative w-full h-full">
           <ThemeBackgroundProvider entityID={root}>

@@ -59,7 +59,7 @@ export const PublicationMetadata = ({
       </div>
       <AsyncValueAutosizeTextarea
         disabled={!permissions.write}
-        className="text-xl font-bold outline-none bg-transparent"
+        className="text-xl font-bold outline-hidden bg-transparent"
         value={title}
         onChange={async (e) => {
           await rep?.mutate.updatePublicationDraft({
@@ -72,7 +72,7 @@ export const PublicationMetadata = ({
       <AsyncValueAutosizeTextarea
         disabled={!permissions.write}
         placeholder="add an optional description..."
-        className="italic text-secondary outline-none bg-transparent"
+        className="italic text-secondary outline-hidden bg-transparent"
         value={description}
         onChange={async (e) => {
           await rep?.mutate.updatePublicationDraft({
@@ -125,11 +125,11 @@ export const PublicationMetadataPreview = () => {
       </div>
 
       <div
-        className={`text-xl font-bold outline-none bg-transparent ${!pub.title && "text-tertiary italic"}`}
+        className={`text-xl font-bold outline-hidden bg-transparent ${!pub.title && "text-tertiary italic"}`}
       >
         {pub.title ? pub.title : "Untitled"}
       </div>
-      <div className="italic text-secondary outline-none bg-transparent">
+      <div className="italic text-secondary outline-hidden bg-transparent">
         {pub.description}
       </div>
 

@@ -253,7 +253,7 @@ export const BaseBlock = (
   if (!BlockTypeComponent) return <div>unknown block</div>;
   return (
     <div
-      className={`blockContentWrapper w-full grow flex gap-2 z-[1] ${alignmentStyle}`}
+      className={`blockContentWrapper w-full grow flex gap-2 z-1 ${alignmentStyle}`}
     >
       {props.listData && <ListMarker {...props} />}
       {props.areYouSure ? (
@@ -385,7 +385,7 @@ export const ListMarker = (
   let { rep } = useReplicache();
   return (
     <div
-      className={`shrink-0  flex justify-end items-center h-3 z-[1]
+      className={`shrink-0  flex justify-end items-center h-3 z-1
                   ${props.className}
                   ${
                     props.type === "heading"

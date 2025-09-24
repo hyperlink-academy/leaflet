@@ -56,10 +56,10 @@ export function PublishedPostsList(props: { searchValue: string }) {
           return (
             <Fragment key={doc.documents?.uri}>
               <div className="flex gap-2 w-full ">
-                <div className="publishedPost grow flex flex-col hover:!no-underline">
+                <div className="publishedPost grow flex flex-col hover:no-underline!">
                   <div className="flex justify-between gap-2">
                     <a
-                      className="hover:!no-underline"
+                      className="hover:no-underline!"
                       target="_blank"
                       href={`${getPublicationURL(publication)}/${uri.rkey}`}
                     >
@@ -137,7 +137,7 @@ let Options = (props: { document_uri: string }) => {
       alignOffset={20}
       asChild
       trigger={
-        <button className="text-secondary rounded-md selected-outline !border-transparent hover:!border-border h-min">
+        <button className="text-secondary rounded-md selected-outline border-transparent! hover:border-border! h-min">
           <MoreOptionsVerticalTiny />
         </button>
       }

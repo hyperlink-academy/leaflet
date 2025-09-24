@@ -131,7 +131,7 @@ export const PubThemeSetter = () => {
               <SectionArrow
                 fill="white"
                 stroke="#CCCCCC"
-                className="ml-2 -mt-[1px]"
+                className="ml-2 -mt-px"
               />
             </div>
           </div>
@@ -178,7 +178,7 @@ export const PubThemeSetter = () => {
           <div className="flex flex-col mt-4 ">
             <div className="flex gap-2 items-center text-sm  text-[#8C8C8C]">
               <div className="text-sm">Preview</div>
-              <Separator classname="!h-4" />{" "}
+              <Separator classname="h-4!" />{" "}
               <button
                 className={`${sample === "pub" ? "font-bold  text-[#595959]" : ""}`}
                 onClick={() => setSample("pub")}
@@ -262,7 +262,7 @@ const SamplePub = (props: {
           <div className="text-[7px] font-normal text-tertiary">
             {record?.description}
           </div>
-          <div className=" flex gap-1 items-center mt-[6px] bg-accent-1 text-accent-2 py-[1px] px-[4px] text-[7px] w-fit font-bold rounded-[2px] mx-auto">
+          <div className=" flex gap-1 items-center mt-[6px] bg-accent-1 text-accent-2 py-px px-[4px] text-[7px] w-fit font-bold rounded-[2px] mx-auto">
             <div className="h-[7px] w-[7px] rounded-full bg-accent-2" />
             Subscribe with Bluesky
           </div>

@@ -129,7 +129,7 @@ export const QuoteContent = (props: {
             blocks={content}
             did={props.did}
             preview
-            className="!py-0"
+            className="py-0!"
           />
         </div>
       </div>

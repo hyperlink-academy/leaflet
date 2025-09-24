@@ -39,8 +39,8 @@ export const Popover = (props: {
               className={`
               z-20 bg-bg-page
               px-3 py-2
-              max-w-[var(--radix-popover-content-available-width)]
-              max-h-[var(--radix-popover-content-available-height)]
+              max-w-(--radix-popover-content-available-width)
+              max-h-(--radix-popover-content-available-height)
               border border-border rounded-md shadow-md
               overflow-y-scroll no-scrollbar
               ${props.className}

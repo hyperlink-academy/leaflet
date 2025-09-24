@@ -136,7 +136,7 @@ export function DashboardLayout<
   );
   return (
     <DashboardIdContext.Provider value={props.id}>
-      <div className="home pwa-padding relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6 ">
+      <div className="home pwa-padding relative max-w-(--breakpoint-lg) w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6 ">
         <MediaContents mobile={false}>
           <div className="flex flex-col gap-4 my-6">
             <DesktopNavigation
@@ -236,7 +236,7 @@ export const HomeDashboardControls = (props: {
       )}
       <div className="flex gap-2 w-max shrink-0 items-center text-sm text-tertiary">
         <DisplayToggle setState={setState} display={display} />
-        <Separator classname="h-4 !min-h-4" />
+        <Separator classname="h-4 min-h-4!" />
 
         {props.hasPubs || props.hasTemplates ? (
           <>
@@ -246,7 +246,7 @@ export const HomeDashboardControls = (props: {
               hasPubs={props.hasPubs}
               hasTemplates={props.hasTemplates}
             />
-            <Separator classname="h-4 !min-h-4" />{" "}
+            <Separator classname="h-4 min-h-4!" />{" "}
           </>
         ) : null}
         <SortToggle setState={setState} sort={sort} />
@@ -274,7 +274,7 @@ export const PublicationDashboardControls = (props: {
       />
       <div className="flex gap-2 w-max shrink-0 items-center text-sm text-tertiary">
         <DisplayToggle setState={setState} display={display} />
-        <Separator classname="h-4 !min-h-4" />
+        <Separator classname="h-4 min-h-4!" />
         <SortToggle setState={setState} sort={sort} />
       </div>
     </div>
@@ -318,7 +318,7 @@ const DisplayToggle = (props: {
 function Tab(props: { name: string; selected: boolean; onSelect: () => void }) {
   return (
     <div
-      className={`pubTabs px-1 py-0 rounded-md hover:cursor-pointer ${props.selected ? "text-accent-2 bg-accent-1 font-bold -mb-[1px]" : "text-tertiary"}`}
+      className={`pubTabs px-1 py-0 rounded-md hover:cursor-pointer ${props.selected ? "text-accent-2 bg-accent-1 font-bold -mb-px" : "text-tertiary"}`}
       onClick={() => props.onSelect()}
     >
       {props.name}
@@ -333,7 +333,7 @@ const FilterOptions = (props: { hasPubs: boolean; hasTemplates: boolean }) => {
 
   return (
     <Popover
-      className="text-sm !px-2 !py-1"
+      className="text-sm px-2! py-1!"
       trigger={<div>Filter {filterCount > 0 && `(${filterCount})`}</div>}
     >
       {props.hasPubs && (
@@ -418,8 +418,8 @@ const SearchInput = (props: {
     <div className="relative grow shrink-0">
       <Input
         className={`dashboardSearchInput
-          !appearance-none !outline-none
-          w-full min-w-0 text-primary relative pl-7  pr-1 -my-[1px]
+          appearance-none! outline-hidden!
+          w-full min-w-0 text-primary relative pl-7  pr-1 -my-px
           border rounded-md border-transparent focus-within:border-border
           bg-transparent ${props.hasBackgroundImage ? "focus-within:bg-bg-page" : "focus-within:bg-bg-leaflet"} `}
         type="text"

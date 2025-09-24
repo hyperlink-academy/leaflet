@@ -59,7 +59,7 @@ export const MobileNavigation = (props: {
   return (
     <Popover
       asChild
-      className="!px-2 max-w-xs"
+      className="px-2! max-w-xs"
       trigger={
         <div className="shrink-0 p-1 text-accent-contrast h-full flex items-center">
           {props.currentPage === "home" ? (
@@ -105,12 +105,12 @@ const NavigationOptions = (props: {
 
 const HomeButton = (props: { current?: boolean }) => {
   return (
-    <Link href={"/home"} className="hover:!no-underline">
+    <Link href={"/home"} className="hover:no-underline!">
       <ActionButton
         nav
         icon={<HomeSmall />}
         label="Home"
-        className={props.current ? "!bg-bg-page !border-border-light" : ""}
+        className={props.current ? "bg-bg-page! border-border-light!" : ""}
       />
     </Link>
   );
@@ -127,17 +127,17 @@ const ReaderButton = (props: { current?: boolean }) => {
   //       icon={readerUnreads ? <ReaderUnreadSmall /> : <ReaderReadSmall />}
   //       label="Reader"
   //       className={`
-  //         ${readerUnreads ? "!text-accent-contrast border-accent-contrast" : props.current ? "!bg-border-light border-border" : ""}
+  //         ${readerUnreads ? "text-accent-contrast! border-accent-contrast" : props.current ? "bg-border-light! border-border" : ""}
   //       `}
   //     />
   //   );
   return (
-    <Link href={"/discover"} className="hover:!no-underline">
+    <Link href={"/discover"} className="hover:no-underline!">
       <ActionButton
         nav
         icon={<DiscoverSmall />}
         label="Discover"
-        className={props.current ? "!bg-border-light border-border" : ""}
+        className={props.current ? "bg-border-light! border-border" : ""}
       />
     </Link>
   );

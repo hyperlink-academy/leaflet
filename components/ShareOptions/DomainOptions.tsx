@@ -234,7 +234,7 @@ const DomainOption = (props: {
             <Input
               type="text"
               autoFocus
-              className="appearance-none focus:outline-none font-normal text-accent-2 w-full bg-transparent placeholder:text-accent-2 placeholder:opacity-50"
+              className="appearance-none focus:outline-hidden font-normal text-accent-2 w-full bg-transparent placeholder:text-accent-2 placeholder:opacity-50"
               placeholder="add-optional-path"
               onChange={(e) => props.setSelectedRoute(e.target.value)}
               value={props.selectedRoute}

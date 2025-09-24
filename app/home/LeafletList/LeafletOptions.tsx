@@ -188,7 +188,7 @@ const AddTemplateForm = (props: {
           value={name}
           onChange={(e) => setName(e.target.value)}
           type="text"
-          className=" text-primary font-normal border border-border rounded-md outline-none px-2 py-1 w-64"
+          className=" text-primary font-normal border border-border rounded-md outline-hidden px-2 py-1 w-64"
         />
       </label>
 

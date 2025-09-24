@@ -67,14 +67,14 @@ export const PublicationOption = (props: {
   return (
     <SpeedyLink
       href={`${getBasePublicationURL(props)}/dashboard`}
-      className="flex gap-2 items-start text-secondary font-bold hover:!no-underline hover:text-accent-contrast w-full"
+      className="flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full"
     >
       {props.asActionButton ? (
         <ActionButton
           label={record.name}
           icon={<PubIcon record={record} uri={props.uri} />}
           nav
-          className={props.current ? "!bg-bg-page !border-border" : ""}
+          className={props.current ? "bg-bg-page! border-border!" : ""}
         />
       ) : (
         <>

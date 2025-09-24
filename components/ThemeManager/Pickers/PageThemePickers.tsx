@@ -213,7 +213,7 @@ export const PageBackgroundImagePicker = (props: {
             });
           }}
         >
-          <Separator classname="!h-4 my-1 !border-[#C3C3C3]" />
+          <Separator classname="h-4! my-1 border-[#C3C3C3]!" />
           <ColorField className="w-fit pl-[6px]" channel="alpha">
             <Input
               disabled={props.disabled}
@@ -229,7 +229,7 @@ export const PageBackgroundImagePicker = (props: {
                   e.currentTarget.blur();
                 } else return;
               }}
-              className={`w-[48px] bg-transparent outline-none disabled:text-[#969696]`}
+              className={`w-[48px] bg-transparent outline-hidden disabled:text-[#969696]`}
             />
           </ColorField>
         </SpectrumColorPicker>
@@ -305,7 +305,7 @@ const CanvasBGPatternPicker = (props: {
   return (
     <div className="flex gap-2 h-8 ">
       <button
-        className={`w-full rounded-md bg-bg-page border  ${selectedPattern === "grid" ? "outline outline-tertiary border-tertiary" : "transparent-outline hover:outline-border border-border "}`}
+        className={`w-full rounded-md bg-bg-page border  ${selectedPattern === "grid" ? "outline-solid outline-tertiary border-tertiary" : "transparent-outline hover:outline-border border-border "}`}
         onMouseDown={() => {
           props.rep &&
             props.rep.mutate.assertFact({
@@ -318,7 +318,7 @@ const CanvasBGPatternPicker = (props: {
         <CanvasBackgroundPattern pattern="grid" scale={0.5} />
       </button>
       <button
-        className={`w-full rounded-md bg-bg-page border  ${selectedPattern === "dot" ? "outline outline-tertiary border-tertiary" : "transparent-outline hover:outline-border border-border "}`}
+        className={`w-full rounded-md bg-bg-page border  ${selectedPattern === "dot" ? "outline-solid outline-tertiary border-tertiary" : "transparent-outline hover:outline-border border-border "}`}
         onMouseDown={() => {
           props.rep &&
             props.rep.mutate.assertFact({
@@ -331,7 +331,7 @@ const CanvasBGPatternPicker = (props: {
         <CanvasBackgroundPattern pattern="dot" scale={0.5} />
       </button>
       <button
-        className={`w-full rounded-md bg-bg-page border  ${selectedPattern === "plain" ? "outline outline-tertiary border-tertiary" : "transparent-outline hover:outline-border border-border "}`}
+        className={`w-full rounded-md bg-bg-page border  ${selectedPattern === "plain" ? "outline-solid outline-tertiary border-tertiary" : "transparent-outline hover:outline-border border-border "}`}
         onMouseDown={() => {
           props.rep &&
             props.rep.mutate.assertFact({

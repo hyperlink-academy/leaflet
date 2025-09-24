@@ -88,7 +88,7 @@ export const BlueskyPostEmpty = (props: BlockProps) => {
         <Separator />
         <Input
           type="text"
-          className="w-full grow border-none outline-none bg-transparent "
+          className="w-full grow border-none outline-hidden bg-transparent "
           placeholder="bsky.app/post-url"
           value={urlValue}
           disabled={isLocked}

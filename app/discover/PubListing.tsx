@@ -35,7 +35,7 @@ export const PubListing = (props: {
           backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
           backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
         }}
-        className={`!no-underline flex flex-row gap-2
+        className={`no-underline! flex flex-row gap-2
           bg-bg-leaflet
           border border-border-light rounded-lg
           px-3 py-3 selected-outline

@@ -43,7 +43,7 @@ export const ActionButton = (
           : secondary
             ? "sm:w-full w-max bg-bg-page border-accent-contrast text-accent-contrast transparent-outline focus:outline-accent-contrast sm:hover:outline-accent-contrast outline-offset-1 mx-1 first:ml-0"
             : nav
-              ? "w-full border-transparent text-secondary sm:hover:border-border !justify-start"
+              ? "w-full border-transparent text-secondary sm:hover:border-border justify-start!"
               : "sm:w-full border-transparent text-accent-contrast sm:hover:border-accent-contrast"
       }
       ${props.className}
