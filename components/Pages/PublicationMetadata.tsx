@@ -18,6 +18,7 @@ import {
 } from "app/lish/createPub/getPublicationURL";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { timeAgo } from "src/utils/timeAgo";
 export const PublicationMetadata = ({
   cardBorderHidden,
 }: {
@@ -84,16 +85,7 @@ export const PublicationMetadata = ({
       {pub.doc ? (
         <div className="flex flex-row items-center gap-2 pt-3">
           <p className="text-sm text-tertiary">
-            Published{" "}
-            {publishedAt &&
-              new Date(publishedAt).toLocaleString(undefined, {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              })}
+            Published {publishedAt && timeAgo(publishedAt)}
           </p>
           <Separator classname="h-4" />
           <Link
@@ -136,16 +128,7 @@ export const PublicationMetadataPreview = () => {
       {pub.doc ? (
         <div className="flex flex-row items-center gap-2 pt-3">
           <p className="text-sm text-tertiary">
-            Published{" "}
-            {publishedAt &&
-              new Date(publishedAt).toLocaleString(undefined, {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              })}
+            Published {publishedAt && timeAgo(publishedAt)}
           </p>
         </div>
       ) : (
