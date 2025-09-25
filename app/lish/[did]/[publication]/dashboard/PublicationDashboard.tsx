@@ -61,7 +61,12 @@ export default function PublicationDashboard({
           ),
         },
         Published: {
-          content: <PublishedPostsList searchValue={debouncedSearchValue} />,
+          content: (
+            <PublishedPostsList
+              searchValue={debouncedSearchValue}
+              showPageBackground={!!record.theme?.showPageBackground}
+            />
+          ),
           controls: null,
         },
         Subscribers: {

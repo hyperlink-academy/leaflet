@@ -18,7 +18,10 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 
-export function PublishedPostsList(props: { searchValue: string }) {
+export function PublishedPostsList(props: {
+  searchValue: string;
+  showPageBackground: boolean;
+}) {
   let { data } = usePublicationData();
   let params = useParams();
   let { publication } = data!;
@@ -30,7 +33,7 @@ export function PublishedPostsList(props: { searchValue: string }) {
       </div>
     );
   return (
-    <div className="publishedList w-full flex flex-col gap-4 pb-4">
+    <div className="publishedList w-full flex flex-col gap-2 pb-4">
       {publication.documents_in_publications
         .sort((a, b) => {
           let aRecord = a.documents?.data! as PubLeafletDocument.Record;
@@ -56,7 +59,14 @@ export function PublishedPostsList(props: { searchValue: string }) {
           return (
             <Fragment key={doc.documents?.uri}>
               <div className="flex gap-2 w-full ">
-                <div className="publishedPost grow flex flex-col hover:no-underline!">
+                <div
+                  className={`publishedPost grow flex flex-col  hover:no-underline! rounded-lg border ${props.showPageBackground ? "border-border-light py-1 px-2" : "border-transparent px-1"}`}
+                  style={{
+                    backgroundColor: props.showPageBackground
+                      ? "rgba(var(--bg-page), var(--bg-page-alpha))"
+                      : "transparent",
+                  }}
+                >
                   <div className="flex justify-between gap-2">
                     <a
                       className="hover:no-underline!"
@@ -122,7 +132,9 @@ export function PublishedPostsList(props: { searchValue: string }) {
                   </div>
                 </div>
               </div>
-              <hr className="last:hidden border-border-light" />
+              {!props.showPageBackground && (
+                <hr className="last:hidden border-border-light" />
+              )}
             </Fragment>
           );
         })}

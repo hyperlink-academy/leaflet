@@ -46,7 +46,7 @@ export const HomeSettings = (props: { cardBorderHidden?: boolean }) => {
     );
 };
 
-const SettingSectionButton = (props: {
+export const SettingSectionButton = (props: {
   setSettingsState: (s: settings) => void;
   setting: settings;
   cardBorderHidden?: boolean;
@@ -56,7 +56,7 @@ const SettingSectionButton = (props: {
     <>
       <button
         onClick={() => props.setSettingsState(props.setting)}
-        className={` px-2 py-1 rounded-md flex justify-between items-center font-bold border ${props.cardBorderHidden ? " border-transparent" : "border-border-light  "}`}
+        className={` w-full px-2 py-1 rounded-md flex justify-between items-center font-bold border ${props.cardBorderHidden ? " border-transparent" : "border-border-light  "}`}
         style={{
           backgroundColor: props.cardBorderHidden
             ? "transparent"
