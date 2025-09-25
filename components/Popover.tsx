@@ -17,6 +17,7 @@ export const Popover = (props: {
   className?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onOpenAutoFocus?: (e: Event) => void;
   asChild?: boolean;
   arrowFill?: string;
 }) => {
@@ -49,6 +50,7 @@ export const Popover = (props: {
               align={props.align ? props.align : "center"}
               sideOffset={4}
               collisionPadding={16}
+              onOpenAutoFocus={props.onOpenAutoFocus}
             >
               {props.children}
               <RadixPopover.Arrow

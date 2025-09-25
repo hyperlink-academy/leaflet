@@ -1,22 +1,11 @@
 import { HomeSmall } from "components/Icons/HomeSmall";
-import {
-  NotificationsUnreadSmall,
-  NotificationsReadSmall,
-} from "components/Icons/NotificationSmall";
-import {
-  ReaderUnreadSmall,
-  ReaderReadSmall,
-} from "components/Icons/ReaderSmall";
 import { ActionButton } from "./ActionButton";
 import { Sidebar } from "./Sidebar";
 import { useIdentityData } from "components/IdentityProvider";
 import Link from "next/link";
 import { DiscoverSmall } from "components/Icons/DiscoverSmall";
-import { PubIcon, PublicationButtons, PublicationOption } from "./Publications";
+import { PublicationButtons } from "./Publications";
 import { Popover } from "components/Popover";
-import { PubLeafletPublication } from "lexicons/api";
-import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
-import { GoToArrow } from "components/Icons/GoToArrow";
 import { MenuSmall } from "components/Icons/MenuSmall";
 
 export type navPages = "home" | "reader" | "pub";
@@ -61,6 +50,7 @@ export const MobileNavigation = (props: {
   );
   return (
     <Popover
+      onOpenAutoFocus={(e) => e.preventDefault()}
       asChild
       className="px-2! !max-w-[256px]"
       trigger={
