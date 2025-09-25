@@ -46,7 +46,11 @@ import { theme } from "tailwind.config";
 import Link from "next/link";
 import { DiscoverIllo } from "./HomeEmpty/DiscoverIllo";
 import { WelcomeToLeafletIllo } from "./HomeEmpty/WelcomeToLeafletIllo";
-import { HomeEmptyState } from "./HomeEmpty/HomeEmpty";
+import {
+  DiscoverBanner,
+  HomeEmptyState,
+  PublicationBanner,
+} from "./HomeEmpty/HomeEmpty";
 
 type Leaflet = {
   added_at: string;
@@ -176,14 +180,21 @@ export function HomeLeafletList(props: {
   return leaflets.length === 0 ? (
     <HomeEmptyState />
   ) : (
-    <LeafletList
-      defaultDisplay="grid"
-      searchValue={props.searchValue}
-      leaflets={leaflets}
-      titles={initialFacts?.titles || {}}
-      cardBorderHidden={props.cardBorderHidden}
-      initialFacts={initialFacts?.facts || {}}
-    />
+    <>
+      <LeafletList
+        defaultDisplay="grid"
+        searchValue={props.searchValue}
+        leaflets={leaflets}
+        titles={initialFacts?.titles || {}}
+        cardBorderHidden={props.cardBorderHidden}
+        initialFacts={initialFacts?.facts || {}}
+      />
+      <div className="spacer h-4 w-full bg-transparent shrink-0 " />
+
+      <PublicationBanner small />
+      <DiscoverBanner small />
+      <div className="spacer h-8 w-full bg-transparent shrink-0 " />
+    </>
   );
 }
 
@@ -257,7 +268,6 @@ export function LeafletList(props: {
           </StaticLeafletDataContext>
         </ReplicacheProvider>
       ))}
-      <div className="spacer h-12 w-full bg-transparent shrink-0 " />
     </div>
   );
 }

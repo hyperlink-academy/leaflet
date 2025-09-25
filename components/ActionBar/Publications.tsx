@@ -18,6 +18,7 @@ import { PublicationThemeProvider } from "components/ThemeManager/PublicationThe
 import { ActionButton } from "./ActionButton";
 import { BlobRef } from "@atproto/lexicon";
 import { SpeedyLink } from "components/SpeedyLink";
+import { PublishSmall } from "components/Icons/PublishSmall";
 
 export const PublicationButtons = (props: {
   currentPubUri: string | undefined;
@@ -87,37 +88,15 @@ export const PublicationOption = (props: {
 };
 
 const PubListEmpty = () => {
-  let { identity } = useIdentityData();
   return (
-    <div className="pubListEmpty accent-container text-sm sm:text-center py-4 px-3 w-full sm:max-w-[200px] flex flex-row sm:flex-col items-start sm:place-items-center justify-center gap-3 sm:gap-1">
-      <div className="shrink-0">
-        <PubListEmptyIllo />
-      </div>
-      <div className="flex flex-col sm:place-items-center">
-        <strong>Publish with Leaflet!</strong>
-        <div className="text-tertiary">
-          {!identity
-            ? "Link a Bluesky account to publish your writing to a blog or newletter"
-            : identity && !!identity.atp_did
-              ? "Publish your writing to a blog or newletter on the ATmosphere"
-              : ""}
-        </div>
-
-        {identity && !!identity.atp_did ? (
-          <Link href="/lish/createPub">
-            <ButtonSecondary compact className="text-sm mt-3">
-              Start a Publication!
-            </ButtonSecondary>
-          </Link>
-        ) : (
-          <form action="/api/oauth/login?redirect_url=/" method="GET">
-            <ButtonSecondary compact className="text-sm mt-3">
-              <BlueskyTiny /> Link Bluesky
-            </ButtonSecondary>
-          </form>
-        )}
-      </div>
-    </div>
+    <SpeedyLink href={`lish/createPub`} className=" hover:no-underline!">
+      <ActionButton
+        label="Publish on ATP"
+        icon={<PublishSmall />}
+        nav
+        subtext="Start a blog or newletter on the Atmosphere"
+      />
+    </SpeedyLink>
   );
 };
 

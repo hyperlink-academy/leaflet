@@ -10,11 +10,12 @@ export function DraftList(props: { searchValue: string }) {
   if (!pub_data?.publication) return null;
   let { leaflets_in_publications, ...publication } = pub_data.publication;
   return (
-    <div className="flex flex-col gap-4 pb-4">
+    <div className="flex flex-col gap-4">
       <NewDraftSecondaryButton
         fullWidth
         publication={pub_data?.publication?.uri}
       />
+
       <LeafletList
         searchValue={props.searchValue}
         defaultDisplay="list"
@@ -49,6 +50,7 @@ export function DraftList(props: { searchValue: string }) {
           ),
         }}
       />
+      <div className="spacer h-12 w-full bg-transparent shrink-0 " />
     </div>
   );
 }
