@@ -24,6 +24,9 @@ import { Actions } from "./Actions/Actions";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { Json } from "supabase/database.types";
 import { useTemplateState } from "./Actions/CreateNewButton";
+import { CreateNewLeafletButton } from "./Actions/CreateNewButton";
+import { ActionButton } from "components/ActionBar/ActionButton";
+import { AddTiny } from "components/Icons/AddTiny";
 import {
   get_leaflet_data,
   GetLeafletDataReturnType,
@@ -31,6 +34,11 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Input } from "components/Input";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
+import {
+  ButtonPrimary,
+  ButtonSecondary,
+  ButtonTertiary,
+} from "components/Buttons";
 
 type Leaflet = {
   added_at: string;
@@ -154,7 +162,12 @@ export function HomeLeafletList(props: {
         .filter((d) => !d.hidden)
         .map((ll) => ll);
 
-  return (
+  // TESTING ONLY!
+  leaflets = [];
+
+  return leaflets.length === 0 ? (
+    <HomeEmptyState />
+  ) : (
     <LeafletList
       defaultDisplay="grid"
       searchValue={props.searchValue}
@@ -299,4 +312,57 @@ function useSearchedLeaflets(
   });
 
   return searchedLeaflets;
+}
+
+function HomeEmptyState() {
+  let { identity } = useIdentityData();
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 text-center mt-8 max-w-lg m-auto">
+      <div className="text-xl font-semibold">
+        Leaflet is a platform for social publishing.
+      </div>
+      <div className="flex flex-col gap-2">
+        <p>
+          Share single <strong>docs</strong>, or blog with{" "}
+          <strong>publications</strong> — as part of the <em>atmosphere</em>.
+        </p>
+        {/* TODO: make 'atmosphere' = popover with short explainer! */}
+        <p>
+          Learn more: <a href="https://about.leaflet.pub">Leaflet Manual</a>
+        </p>
+      </div>
+      <div className="flex flex-col gap-2 items-center">
+        {/* TODO: wire up these buttons! */}
+
+        {/* maybe use this? BUT: not showing "new doc" text on desktop */}
+        {/* <CreateNewLeafletButton /> */}
+
+        {/* anyone can make a new doc */}
+        <ButtonPrimary>New Doc</ButtonPrimary>
+
+        {/* but you must be logged in with atproto to make a pub */}
+        {!identity || (identity && !identity.atp_did) ? (
+          <div className="flex flex-col gap-2 place-items-center">
+            <ButtonPrimary disabled>New Publication</ButtonPrimary>
+            <p className="text-sm italic">
+              Log in with atproto to start your publication!
+            </p>
+          </div>
+        ) : (
+          <ButtonPrimary>New Pub</ButtonPrimary>
+        )}
+        {/* anyone can explore though :) */}
+        <ButtonSecondary>Explore Publications!</ButtonSecondary>
+      </div>
+      {/* TODO: add lil leafy illo…or one for each button? */}
+      <div>
+        <p>
+          <em>
+            Right now docs and publications are separate. Soon you'll be able to
+            send docs to pubs!
+          </em>
+        </p>
+      </div>
+    </div>
+  );
 }
