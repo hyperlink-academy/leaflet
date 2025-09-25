@@ -185,10 +185,7 @@
     @apply text-accent-contrast;
     @apply hover:cursor-pointer;
     @apply no-underline;
-  }
-
-  a:hover {
-    @apply underline;
+    @apply hover:underline;
   }
 
   pre {
