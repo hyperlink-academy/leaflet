@@ -14,7 +14,7 @@ export const Actions = () => {
     <>
       <CreateNewLeafletButton />
       {identity ? <AccountSettings /> : <LoginActionButton />}
-      <HelpPopover noShortcuts />
+      {/*<HelpPopover noShortcuts />*/}
       <ThemePopover entityID={rootEntity} home />
     </>
   );

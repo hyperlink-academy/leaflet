@@ -45,7 +45,6 @@ function PublicationShareButton() {
         <ActionButton
           id="pub-share-button"
           icon=<ShareSmall />
-          secondary
           label="Share"
           onClick={() => {}}
         />

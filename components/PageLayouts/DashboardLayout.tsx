@@ -202,6 +202,7 @@ export function DashboardLayout<
             currentPage={props.currentPage}
             publication={props.publication}
           />
+          <Separator />
           {props.actions}
         </Footer>
       </div>

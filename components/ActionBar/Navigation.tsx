@@ -15,6 +15,9 @@ import { DiscoverSmall } from "components/Icons/DiscoverSmall";
 import { PubIcon, PublicationButtons, PublicationOption } from "./Publications";
 import { Popover } from "components/Popover";
 import { PubLeafletPublication } from "lexicons/api";
+import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
+import { GoToArrow } from "components/Icons/GoToArrow";
+import { MenuSmall } from "components/Icons/MenuSmall";
 
 export type navPages = "home" | "reader" | "pub";
 
@@ -59,21 +62,19 @@ export const MobileNavigation = (props: {
   return (
     <Popover
       asChild
-      className="px-2! max-w-xs"
+      className="px-2! !max-w-[256px]"
       trigger={
-        <div className="shrink-0 p-1 text-accent-contrast h-full flex items-center">
-          {props.currentPage === "home" ? (
-            <HomeSmall />
-          ) : props.currentPage === "reader" ? (
-            <ReaderUnreadSmall />
-          ) : props.currentPage === "pub" ? (
-            thisPublication && (
-              <PubIcon
-                record={thisPublication.record as PubLeafletPublication.Record}
-                uri={thisPublication.uri}
-              />
-            )
-          ) : null}
+        <div className="shrink-0 p-1 pr-2 text-accent-contrast h-full flex gap-2 font-bold items-center">
+          <MenuSmall />
+          <div className="truncate max-w-[64px]">
+            {props.currentPage === "home" ? (
+              <>Home</>
+            ) : props.currentPage === "reader" ? (
+              <>Reader</>
+            ) : props.currentPage === "pub" ? (
+              thisPublication && <>{thisPublication.name}</>
+            ) : null}
+          </div>
         </div>
       }
     >
@@ -137,6 +138,9 @@ const ReaderButton = (props: { current?: boolean }) => {
         nav
         icon={<DiscoverSmall />}
         label="Discover"
+        subtext={
+          !props.current ? "Check out what others are writing!" : undefined
+        }
         className={props.current ? "bg-border-light! border-border" : ""}
       />
     </Link>

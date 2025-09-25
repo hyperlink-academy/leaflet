@@ -16,6 +16,7 @@ export const ActionButton = (
     secondary?: boolean;
     nav?: boolean;
     className?: string;
+    subtext?: string;
   },
 ) => {
   let { id, icon, label, primary, secondary, nav, ...buttonProps } = props;
@@ -35,7 +36,7 @@ export const ActionButton = (
       className={`
       actionButton relative font-bold
       rounded-md border
-      flex gap-2 items-center sm:justify-start justify-center
+      flex gap-2 items-start sm:justify-start justify-center
       p-1 sm:mx-0
       ${
         primary
@@ -51,9 +52,14 @@ export const ActionButton = (
     >
       <div className="shrink-0">{icon}</div>
       <div
-        className={`truncate pr-1 w-max ${sidebar.open ? "block" : primary || secondary || nav ? "sm:hidden block" : "hidden"}`}
+        className={`flex flex-col pr-1 leading-snug  ${sidebar.open ? "block" : primary || secondary || nav ? "sm:hidden block" : "hidden"}`}
       >
-        {label}
+        <div className="truncate text-left">{label}</div>
+        {props.subtext && (
+          <div className="text-xs text-tertiary font-normal text-left">
+            {props.subtext}
+          </div>
+        )}
       </div>
     </button>
   );
