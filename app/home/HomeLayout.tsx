@@ -46,6 +46,7 @@ import { theme } from "tailwind.config";
 import Link from "next/link";
 import { DiscoverIllo } from "./HomeEmpty/DiscoverIllo";
 import { WelcomeToLeafletIllo } from "./HomeEmpty/WelcomeToLeafletIllo";
+import { HomeEmptyState } from "./HomeEmpty/HomeEmpty";
 
 type Leaflet = {
   added_at: string;
@@ -319,99 +320,4 @@ function useSearchedLeaflets(
   });
 
   return searchedLeaflets;
-}
-
-function HomeEmptyState() {
-  return (
-    <div className="flex flex-col gap-4 font-bold">
-      <div className="container p-2 flex gap-4">
-        <div className="w-[72px]">
-          <WelcomeToLeafletIllo />
-        </div>
-        <div className="flex flex-col ">
-          <h3 className="text-xl font-semibold pt-2">Leaflet</h3>
-          {/*<h3>A platform for social publishing.</h3>*/}
-          <div className="font-normal text-tertiary italic">
-            Write and share delightful documents!
-          </div>
-          <ButtonPrimary className="!text-lg my-3">
-            <AddSmall /> Write a Doc!
-          </ButtonPrimary>
-        </div>
-      </div>
-      <div className="flex gap-2 w-full items-center text-tertiary font-normal italic">
-        <hr className="border-border w-full" />
-        <div>or</div>
-        <hr className="border-border w-full" />
-      </div>
-      <div className="accent-container p-4 flex gap-4">
-        <div className="w-[64px] mx-auto">
-          <PubListEmptyIllo />
-        </div>
-        <div>
-          <Link href={"/"}>Start a Publication</Link> and blog on the Atmosphere
-        </div>
-      </div>
-      <div className="accent-container p-4 flex gap-4">
-        <div className="w-[64px] mx-auto">
-          <DiscoverIllo />
-        </div>
-        <div>
-          <Link href={"/discover"}>Explore blogs</Link> already on the network
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function HomeEmptyState2() {
-  let { identity } = useIdentityData();
-  return (
-    <div className="flex flex-col items-center justify-center gap-4 text-center mt-8 max-w-lg m-auto">
-      <h2 className="text-xl font-semibold">Leaflet</h2>
-      <h3>A platform for social publishing.</h3>
-      <div className="flex flex-col gap-2">
-        <p>
-          Share single <strong>docs</strong>, or blog with{" "}
-          <strong>publications</strong> — as part of the <em>atmosphere</em>.
-        </p>
-        {/* TODO: make 'atmosphere' = popover with short explainer! */}
-        <p>
-          Learn more: <a href="https://about.leaflet.pub">Leaflet Manual</a>
-        </p>
-      </div>
-      <div className="flex flex-col gap-2 items-center">
-        {/* TODO: wire up these buttons! */}
-
-        {/* maybe use this? BUT: not showing "new doc" text on desktop */}
-        {/* <CreateNewLeafletButton /> */}
-
-        {/* anyone can make a new doc */}
-        <ButtonPrimary>New Doc</ButtonPrimary>
-
-        {/* but you must be logged in with atproto to make a pub */}
-        {!identity || (identity && !identity.atp_did) ? (
-          <div className="flex flex-col gap-2 place-items-center">
-            <ButtonPrimary disabled>New Publication</ButtonPrimary>
-            <p className="text-sm italic">
-              Log in with atproto to start your publication!
-            </p>
-          </div>
-        ) : (
-          <ButtonPrimary>New Pub</ButtonPrimary>
-        )}
-        {/* anyone can explore though :) */}
-        <ButtonSecondary>Explore Publications!</ButtonSecondary>
-      </div>
-      {/* TODO: add lil leafy illo…or one for each button? */}
-      <div>
-        <p>
-          <em>
-            Right now docs and publications are separate. Soon you'll be able to
-            send docs to pubs!
-          </em>
-        </p>
-      </div>
-    </div>
-  );
 }
