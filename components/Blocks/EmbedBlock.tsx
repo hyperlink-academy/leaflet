@@ -74,6 +74,7 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
       </label>
     );
   }
+  if (props.preview) return null;
 
   return (
     <div
