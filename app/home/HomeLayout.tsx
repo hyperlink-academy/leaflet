@@ -39,6 +39,13 @@ import {
   ButtonSecondary,
   ButtonTertiary,
 } from "components/Buttons";
+import { AddSmall } from "components/Icons/AddSmall";
+import { PublishIllustration } from "app/[leaflet_id]/publish/PublishIllustration/PublishIllustration";
+import { PubListEmptyIllo } from "components/ActionBar/Publications";
+import { theme } from "tailwind.config";
+import Link from "next/link";
+import { DiscoverIllo } from "./HomeEmpty/DiscoverIllo";
+import { WelcomeToLeafletIllo } from "./HomeEmpty/WelcomeToLeafletIllo";
 
 type Leaflet = {
   added_at: string;
@@ -315,12 +322,54 @@ function useSearchedLeaflets(
 }
 
 function HomeEmptyState() {
+  return (
+    <div className="flex flex-col gap-4 font-bold">
+      <div className="container p-2 flex gap-4">
+        <div className="w-[72px]">
+          <WelcomeToLeafletIllo />
+        </div>
+        <div className="flex flex-col ">
+          <h3 className="text-xl font-semibold pt-2">Leaflet</h3>
+          {/*<h3>A platform for social publishing.</h3>*/}
+          <div className="font-normal text-tertiary italic">
+            Write and share delightful documents!
+          </div>
+          <ButtonPrimary className="!text-lg my-3">
+            <AddSmall /> Write a Doc!
+          </ButtonPrimary>
+        </div>
+      </div>
+      <div className="flex gap-2 w-full items-center text-tertiary font-normal italic">
+        <hr className="border-border w-full" />
+        <div>or</div>
+        <hr className="border-border w-full" />
+      </div>
+      <div className="accent-container p-4 flex gap-4">
+        <div className="w-[64px] mx-auto">
+          <PubListEmptyIllo />
+        </div>
+        <div>
+          <Link href={"/"}>Start a Publication</Link> and blog on the Atmosphere
+        </div>
+      </div>
+      <div className="accent-container p-4 flex gap-4">
+        <div className="w-[64px] mx-auto">
+          <DiscoverIllo />
+        </div>
+        <div>
+          <Link href={"/discover"}>Explore blogs</Link> already on the network
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HomeEmptyState2() {
   let { identity } = useIdentityData();
   return (
     <div className="flex flex-col items-center justify-center gap-4 text-center mt-8 max-w-lg m-auto">
-      <div className="text-xl font-semibold">
-        Leaflet is a platform for social publishing.
-      </div>
+      <h2 className="text-xl font-semibold">Leaflet</h2>
+      <h3>A platform for social publishing.</h3>
       <div className="flex flex-col gap-2">
         <p>
           Share single <strong>docs</strong>, or blog with{" "}

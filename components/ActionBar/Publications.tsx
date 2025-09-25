@@ -146,7 +146,7 @@ export const PubIcon = (props: {
   );
 };
 
-const PubListEmptyIllo = () => {
+export const PubListEmptyIllo = () => {
   return (
     <svg
       width="59"
