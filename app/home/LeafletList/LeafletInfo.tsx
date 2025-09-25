@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { theme } from "tailwind.config";
 import { TemplateSmall } from "components/Icons/TemplateSmall";
+import { timeAgo } from "src/utils/timeAgo";
 
 export const LeafletInfo = (props: {
   title?: string;
@@ -20,21 +21,9 @@ export const LeafletInfo = (props: {
   publishedAt?: string;
 }) => {
   let [prefetch, setPrefetch] = useState(false);
-  let prettyCreatedAt = props.added_at
-    ? new Date(props.added_at).toLocaleDateString("en-US", {
-        month: "2-digit",
-        day: "2-digit",
-        year: "numeric",
-      })
-    : "";
+  let prettyCreatedAt = props.added_at ? timeAgo(props.added_at) : "";
 
-  let prettyPublishedAt =
-    props.publishedAt &&
-    new Date(props.publishedAt).toLocaleDateString("en-US", {
-      month: "2-digit",
-      day: "2-digit",
-      year: "numeric",
-    });
+  let prettyPublishedAt = props.publishedAt ? timeAgo(props.publishedAt) : "";
 
   return (
     <div
