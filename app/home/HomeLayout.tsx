@@ -164,7 +164,7 @@ export function HomeLeafletList(props: {
   let { data: localLeaflets } = useSWR("leaflets", () => getHomeDocs(), {
     fallbackData: [],
   });
-  let leaflets = identity
+  let leaflets: Leaflet[] = identity
     ? identity.permission_token_on_homepage.map((ptoh) => ({
         added_at: ptoh.created_at,
         token: ptoh.permission_tokens as PermissionToken,
@@ -173,9 +173,6 @@ export function HomeLeafletList(props: {
         .sort((a, b) => (a.added_at > b.added_at ? -1 : 1))
         .filter((d) => !d.hidden)
         .map((ll) => ll);
-
-  // TESTING ONLY!
-  // leaflets = [];
 
   return leaflets.length === 0 ? (
     <HomeEmptyState />
@@ -191,7 +188,8 @@ export function HomeLeafletList(props: {
       />
       <div className="spacer h-4 w-full bg-transparent shrink-0 " />
 
-      <PublicationBanner small />
+      {leaflets.filter((l) => !!l.token.leaflets_in_publications).length ===
+        0 && <PublicationBanner small />}
       <DiscoverBanner small />
       <div className="spacer h-8 w-full bg-transparent shrink-0 " />
     </>

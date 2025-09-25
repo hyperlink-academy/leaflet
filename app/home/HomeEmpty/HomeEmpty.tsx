@@ -52,6 +52,7 @@ export function HomeEmptyState() {
         <div>or</div>
         <hr className="border-border w-full" />
       </div>
+
       <PublicationBanner />
       <DiscoverBanner />
       <div className="text-tertiary italic text-sm font-normal -mt-2">
