@@ -163,7 +163,7 @@ export function HomeLeafletList(props: {
         .map((ll) => ll);
 
   // TESTING ONLY!
-  leaflets = [];
+  // leaflets = [];
 
   return leaflets.length === 0 ? (
     <HomeEmptyState />
