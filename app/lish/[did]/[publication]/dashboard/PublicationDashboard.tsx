@@ -14,8 +14,6 @@ import {
   PublicationDashboardControls,
 } from "components/PageLayouts/DashboardLayout";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
-import { SettingsSmall } from "components/Icons/SettingsSmall";
-import { PublicationSettings } from "./PublicationSettings";
 
 export default function PublicationDashboard({
   publication,
@@ -45,12 +43,7 @@ export default function PublicationDashboard({
       defaultTab="Drafts"
       tabs={{
         Drafts: {
-          content: (
-            <DraftList
-              searchValue={debouncedSearchValue}
-              showPageBackground={!!record.theme?.showPageBackground}
-            />
-          ),
+          content: <DraftList searchValue={debouncedSearchValue} />,
           controls: (
             <PublicationDashboardControls
               defaultDisplay={"list"}
@@ -72,11 +65,6 @@ export default function PublicationDashboard({
         Subscribers: {
           content: <PublicationSubscribers />,
           controls: null,
-        },
-        Settings: {
-          content: <PublicationSettings />,
-          controls: null,
-          label: <SettingsSmall />,
         },
       }}
       actions={<Actions publication={publication.uri} />}

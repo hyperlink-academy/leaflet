@@ -28,7 +28,7 @@ export const PublicationButtons = (props: {
   // we show a "start a pub" banner instead
   if (!identity || !identity.atp_did) return <PubListEmpty />;
   return (
-    <div className="pubListWrapper w-full  flex flex-col gap-1  sm:bg-transparent sm:border-0">
+    <div className="pubListWrapper w-full  flex flex-col gap-1 container sm:bg-transparent sm:border-0">
       {identity.publications?.map((d) => {
         // console.log("thisURI : " + d.uri);
         // console.log("currentURI : " + props.currentPubUri);

@@ -6,7 +6,6 @@ import { Sidebar } from "components/ActionBar/Sidebar";
 import {
   DesktopNavigation,
   MobileNavigation,
-  MobileNavOnHome,
   navPages,
 } from "components/ActionBar/Navigation";
 import { create } from "zustand";
@@ -118,11 +117,7 @@ export const useSetDashboardState = () => {
 
 export function DashboardLayout<
   T extends {
-    [name: string]: {
-      content: React.ReactNode;
-      controls: React.ReactNode;
-      label?: React.ReactNode;
-    };
+    [name: string]: { content: React.ReactNode; controls: React.ReactNode };
   },
 >(props: {
   id: string;
@@ -158,17 +153,19 @@ export function DashboardLayout<
           <Header hasBackgroundImage={props.hasBackgroundImage}>
             {headerState === "default" ? (
               <>
-                <div className="pubDashTabs flex flex-row gap-1 ">
-                  {Object.keys(props.tabs).map((t) => (
-                    <Tab
-                      key={t}
-                      name={props.tabs[t].label || t}
-                      selected={t === tab}
-                      onSelect={() => setTab(t)}
-                    />
-                  ))}
-                </div>
-                {controls === null ? null : (
+                {Object.keys(props.tabs).length > 1 && (
+                  <div className="pubDashTabs flex flex-row gap-1">
+                    {Object.keys(props.tabs).map((t) => (
+                      <Tab
+                        key={t}
+                        name={t}
+                        selected={t === tab}
+                        onSelect={() => setTab(t)}
+                      />
+                    ))}
+                  </div>
+                )}
+                {props.publication && (
                   <button
                     className={`sm:hidden block text-tertiary`}
                     onClick={() => {
@@ -178,7 +175,11 @@ export function DashboardLayout<
                     <SortSmall />
                   </button>
                 )}
-                <div className={`grow sm:block hidden`}>{controls}</div>
+                <div
+                  className={`sm:block ${props.publication && "hidden"} grow`}
+                >
+                  {controls}
+                </div>
               </>
             ) : (
               <>
@@ -197,14 +198,10 @@ export function DashboardLayout<
           {content}
         </div>
         <Footer>
-          {props.currentPage === "home" ? (
-            <MobileNavOnHome />
-          ) : (
-            <MobileNavigation
-              currentPage={props.currentPage}
-              publication={props.publication}
-            />
-          )}
+          <MobileNavigation
+            currentPage={props.currentPage}
+            publication={props.publication}
+          />
           {props.actions}
         </Footer>
       </div>
@@ -229,7 +226,7 @@ export const HomeDashboardControls = (props: {
   console.log(props);
 
   return (
-    <div className="dashboardControls w-full flex gap-4 grow justify-end">
+    <div className="dashboardControls w-full flex gap-4">
       {identity && (
         <SearchInput
           searchValue={props.searchValue}
@@ -318,11 +315,7 @@ const DisplayToggle = (props: {
   );
 };
 
-function Tab(props: {
-  name: React.ReactNode;
-  selected: boolean;
-  onSelect: () => void;
-}) {
+function Tab(props: { name: string; selected: boolean; onSelect: () => void }) {
   return (
     <div
       className={`pubTabs px-1 py-0 rounded-md hover:cursor-pointer ${props.selected ? "text-accent-2 bg-accent-1 font-bold -mb-px" : "text-tertiary"}`}

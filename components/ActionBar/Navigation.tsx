@@ -15,11 +15,8 @@ import { DiscoverSmall } from "components/Icons/DiscoverSmall";
 import { PubIcon, PublicationButtons, PublicationOption } from "./Publications";
 import { Popover } from "components/Popover";
 import { PubLeafletPublication } from "lexicons/api";
-import { PublishSmall } from "components/Icons/PublishSmall";
-import { Separator } from "components/Layout";
-import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 
-export type navPages = "reader" | "home" | "pub";
+export type navPages = "home" | "reader" | "pub";
 
 export const DesktopNavigation = (props: {
   currentPage: navPages;
@@ -48,19 +45,6 @@ export const DesktopNavigation = (props: {
         />
       </Sidebar>*/}
     </div>
-  );
-};
-
-export const MobileNavOnHome = () => {
-  return (
-    <>
-      <div className="flex flex-row gap-1 items-center h-full p-1 text-secondary">
-        <HomeSmall className="shrink-0 text-tertiary" />
-      </div>
-      <ActionButton nav label="Read" icon={<DiscoverSmall />} />
-      <ActionButton nav label="Publish" icon={<PublishSmall />} />
-      <Separator />
-    </>
   );
 };
 

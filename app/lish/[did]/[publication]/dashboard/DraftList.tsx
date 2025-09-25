@@ -5,10 +5,7 @@ import React from "react";
 import { usePublicationData } from "./PublicationSWRProvider";
 import { LeafletList } from "app/home/HomeLayout";
 
-export function DraftList(props: {
-  searchValue: string;
-  showPageBackground: boolean;
-}) {
+export function DraftList(props: { searchValue: string }) {
   let { data: pub_data } = usePublicationData();
   if (!pub_data?.publication) return null;
   let { leaflets_in_publications, ...publication } = pub_data.publication;
@@ -21,7 +18,7 @@ export function DraftList(props: {
       <LeafletList
         searchValue={props.searchValue}
         defaultDisplay="list"
-        cardBorderHidden={!props.showPageBackground}
+        cardBorderHidden={true}
         leaflets={leaflets_in_publications.map((l) => {
           return {
             token: {

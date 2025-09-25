@@ -136,7 +136,7 @@ const PublishPostForm = (
             <div className="opaque-container p-3  rounded-lg!">
               <div className="flex gap-2">
                 <img
-                  className="bg-bg-page rounded-full w-[42px] h-[42px] shrink-0"
+                  className="bg-test rounded-full w-[42px] h-[42px] shrink-0"
                   src={props.profile.avatar}
                 />
                 <div className="flex flex-col w-full">
