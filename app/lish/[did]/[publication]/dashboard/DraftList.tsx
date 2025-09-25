@@ -19,22 +19,24 @@ export function DraftList(props: { searchValue: string }) {
         searchValue={props.searchValue}
         defaultDisplay="list"
         cardBorderHidden={true}
-        leaflets={leaflets_in_publications.map((l) => {
-          return {
-            token: {
-              ...l.permission_tokens!,
-              leaflets_in_publications: [
-                {
-                  ...l,
-                  publications: {
-                    ...publication,
+        leaflets={leaflets_in_publications
+          .filter((l) => !l.documents)
+          .map((l) => {
+            return {
+              token: {
+                ...l.permission_tokens!,
+                leaflets_in_publications: [
+                  {
+                    ...l,
+                    publications: {
+                      ...publication,
+                    },
                   },
-                },
-              ],
-            },
-            added_at: "",
-          };
-        })}
+                ],
+              },
+              added_at: "",
+            };
+          })}
         initialFacts={pub_data.leaflet_data.facts || {}}
         titles={{
           ...leaflets_in_publications.reduce(
