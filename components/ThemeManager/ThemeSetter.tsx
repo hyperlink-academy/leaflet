@@ -82,94 +82,116 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
         align={isMobile ? "center" : "start"}
         trigger={<ActionButton icon={<PaintSmall />} label="Theme" />}
       >
-        <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
-          <div className="themeBGLeaflet flex">
-            <div
-              className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
-            >
-              <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md">
-                <LeafletBGPicker
-                  entityID={props.entityID}
-                  thisPicker={"leaflet"}
-                  openPicker={openPicker}
-                  setOpenPicker={setOpenPicker}
-                  closePicker={() => setOpenPicker("null")}
-                  setValue={set("theme/page-background")}
-                />
-                <PageBackgroundPicker
-                  entityID={props.entityID}
-                  setValue={set("theme/card-background")}
-                  openPicker={openPicker}
-                  setOpenPicker={setOpenPicker}
-                  home={props.home}
-                />
-                <hr className=" border-[#CCCCCC]" />
-                <PageBorderHider
-                  entityID={props.entityID}
-                  openPicker={openPicker}
-                  setOpenPicker={setOpenPicker}
-                />
-              </div>
+        <ThemeSetterContent entityID={props.entityID} home={props.home} />
+      </Popover>
+    </>
+  );
+};
 
-              <SectionArrow
-                fill="white"
-                stroke="#CCCCCC"
-                className="ml-2 -mt-px"
-              />
-            </div>
+export const ThemeSetterContent = (props: {
+  entityID: string;
+  home?: boolean;
+}) => {
+  let { rep } = useReplicache();
+  let { data: pub } = useLeafletPublicationData();
+
+  // I need to get these variables from replicache and then write them to the DB. I also need to parse them into a state that can be used here.
+  let permission = useEntitySetContext().permissions.write;
+  let leafletBGImage = useEntity(props.entityID, "theme/background-image");
+  let leafletBGRepeat = useEntity(
+    props.entityID,
+    "theme/background-image-repeat",
+  );
+
+  let [openPicker, setOpenPicker] = useState<pickers>(
+    props.home === true ? "leaflet" : "null",
+  );
+  let set = useMemo(() => {
+    return setColorAttribute(rep, props.entityID);
+  }, [rep, props.entityID]);
+
+  if (!permission) return null;
+  if (pub) return null;
+  return (
+    <div
+      className={`themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar `}
+    >
+      <div className="themeBGLeaflet flex">
+        <div className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}>
+          <div className="bgPickerBody bg-white w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md">
+            <LeafletBGPicker
+              entityID={props.entityID}
+              thisPicker={"leaflet"}
+              openPicker={openPicker}
+              setOpenPicker={setOpenPicker}
+              closePicker={() => setOpenPicker("null")}
+              setValue={set("theme/page-background")}
+            />
+            <PageBackgroundPicker
+              entityID={props.entityID}
+              setValue={set("theme/card-background")}
+              openPicker={openPicker}
+              setOpenPicker={setOpenPicker}
+              home={props.home}
+            />
+            <hr className=" border-[#CCCCCC]" />
+            <PageBorderHider
+              entityID={props.entityID}
+              openPicker={openPicker}
+              setOpenPicker={setOpenPicker}
+            />
           </div>
 
-          <div
-            onClick={(e) => {
-              e.currentTarget === e.target && setOpenPicker("leaflet");
-            }}
-            style={{
-              backgroundImage: leafletBGImage
-                ? `url(${leafletBGImage.data.src})`
-                : undefined,
-              backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
-              backgroundPosition: "center",
-              backgroundSize: !leafletBGRepeat
-                ? "cover"
-                : `calc(${leafletBGRepeat.data.value}px / 2 )`,
-            }}
-            className={`bg-bg-leaflet px-3 pt-4  pb-0 mb-2 flex flex-col gap-4 rounded-md  border border-border`}
-          >
-            <PageThemePickers
+          <SectionArrow fill="white" stroke="#CCCCCC" className="ml-2 -mt-px" />
+        </div>
+      </div>
+
+      <div
+        onClick={(e) => {
+          e.currentTarget === e.target && setOpenPicker("leaflet");
+        }}
+        style={{
+          backgroundImage: leafletBGImage
+            ? `url(${leafletBGImage.data.src})`
+            : undefined,
+          backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
+          backgroundPosition: "center",
+          backgroundSize: !leafletBGRepeat
+            ? "cover"
+            : `calc(${leafletBGRepeat.data.value}px / 2 )`,
+        }}
+        className={`bg-bg-leaflet px-3 pt-4  pb-0 mb-2 flex flex-col gap-4 rounded-md  border border-border`}
+      >
+        <PageThemePickers
+          entityID={props.entityID}
+          openPicker={openPicker}
+          setOpenPicker={(pickers) => setOpenPicker(pickers)}
+        />
+        <div className="flex flex-col -gap-[6px]">
+          <div className={`flex flex-col z-10  -mb-[6px] `}>
+            <AccentPickers
               entityID={props.entityID}
               openPicker={openPicker}
               setOpenPicker={(pickers) => setOpenPicker(pickers)}
             />
-            <div className="flex flex-col -gap-[6px]">
-              <div className={`flex flex-col z-10  -mb-[6px] `}>
-                <AccentPickers
-                  entityID={props.entityID}
-                  openPicker={openPicker}
-                  setOpenPicker={(pickers) => setOpenPicker(pickers)}
-                />
-                <SectionArrow
-                  fill={theme.colors["accent-2"]}
-                  stroke={theme.colors["accent-1"]}
-                  className="ml-2"
-                />
-              </div>
-
-              <SampleButton
-                entityID={props.entityID}
-                setOpenPicker={setOpenPicker}
-              />
-            </div>
-
-            <SamplePage
-              setOpenPicker={setOpenPicker}
-              home={props.home}
-              entityID={props.entityID}
+            <SectionArrow
+              fill={theme.colors["accent-2"]}
+              stroke={theme.colors["accent-1"]}
+              className="ml-2"
             />
           </div>
-          {!props.home && <WatermarkSetter entityID={props.entityID} />}
+
+          <SampleButton
+            entityID={props.entityID}
+            setOpenPicker={setOpenPicker}
+          />
         </div>
-      </Popover>
-    </>
+        {!props.home && (
+          <SamplePage home={props.home} entityID={props.entityID} />
+        )}
+      </div>
+      {!props.home && <WatermarkSetter entityID={props.entityID} />}
+    </div>
   );
 };
 
@@ -231,11 +253,17 @@ const SampleButton = (props: {
     </div>
   );
 };
-const SamplePage = (props: {
+
+export const SamplePage = (props: {
   entityID: string;
   home: boolean | undefined;
-  setOpenPicker: (picker: "page" | "text") => void;
 }) => {
+  let leafletBGImage = useEntity(props.entityID, "theme/background-image");
+  let leafletBGRepeat = useEntity(
+    props.entityID,
+    "theme/background-image-repeat",
+  );
+
   let pageBGImage = useEntity(props.entityID, "theme/card-background-image");
   let pageBGRepeat = useEntity(
     props.entityID,
@@ -250,57 +278,66 @@ const SamplePage = (props: {
 
   return (
     <div
-      onClick={(e) => {
-        e.currentTarget === e.target && props.setOpenPicker("page");
-      }}
-      className={`
-        text-primary relative
+      style={
+        props.home
+          ? {
+              backgroundImage: leafletBGImage
+                ? `url(${leafletBGImage.data.src})`
+                : undefined,
+              backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
+              backgroundPosition: "center",
+              backgroundSize: !leafletBGRepeat
+                ? "cover"
+                : `calc(${leafletBGRepeat.data.value}px / 2 )`,
+            }
+          : {}
+      }
+      className={`bg-bg-leaflet px-3 pt-4  pb-0 mb-2 flex flex-col gap-4 rounded-md  border border-border`}
+    >
+      <div
+        className={`
+        text-primary relative rounded-t-lg
         ${
           pageBorderHidden
             ? "py-2 px-0 border border-transparent"
             : `cursor-pointer p-2 border border-border border-b-transparent shadow-md
-          ${props.home ? "rounded-md " : "rounded-t-lg "}`
+          ${props.home ? "h-full" : " "}`
         }`}
-      style={
-        pageBorderHidden
-          ? undefined
-          : {
-              backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
-            }
-      }
-    >
-      <div
-        className="background absolute top-0 right-0 bottom-0 left-0 z-0  rounded-t-lg"
         style={
           pageBorderHidden
             ? undefined
             : {
-                backgroundImage: pageBGImage
-                  ? `url(${pageBGImage.data.src})`
-                  : undefined,
-
-                backgroundRepeat: pageBGRepeat ? "repeat" : "no-repeat",
-                opacity: pageBGOpacity?.data.value || 1,
-                backgroundSize: !pageBGRepeat
-                  ? "cover"
-                  : `calc(${pageBGRepeat.data.value}px / 2 )`,
+                backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
               }
         }
-      />
-      <div className="z-10 relative">
-        <p
-          onClick={() => {
-            props.setOpenPicker("text");
-          }}
-          className="cursor-pointer font-bold w-fit"
-        >
-          Hello!
-        </p>
-        <small onClick={() => props.setOpenPicker("text")}>
-          Welcome to{" "}
-          <span className="font-bold text-accent-contrast">Leaflet</span> — a
-          fun and easy way to make, share, and collab on little bits of paper ✨
-        </small>
+      >
+        <div
+          className="background absolute top-0 right-0 bottom-0 left-0 z-0  rounded-t-lg"
+          style={
+            pageBorderHidden
+              ? undefined
+              : {
+                  backgroundImage: pageBGImage
+                    ? `url(${pageBGImage.data.src})`
+                    : undefined,
+
+                  backgroundRepeat: pageBGRepeat ? "repeat" : "no-repeat",
+                  opacity: pageBGOpacity?.data.value || 1,
+                  backgroundSize: !pageBGRepeat
+                    ? "cover"
+                    : `calc(${pageBGRepeat.data.value}px / 2 )`,
+                }
+          }
+        />
+        <div className="z-10 relative">
+          <p className="cursor-pointer font-bold w-fit">Hello!</p>
+          <small>
+            Welcome to{" "}
+            <span className="font-bold text-accent-contrast">Leaflet</span> — a
+            fun and easy way to make, share, and collab on little bits of paper
+            ✨
+          </small>
+        </div>
       </div>
     </div>
   );

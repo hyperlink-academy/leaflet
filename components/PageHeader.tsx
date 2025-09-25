@@ -38,10 +38,10 @@ export const Header = (props: {
         style={
           scrollPos < 20
             ? {
-                paddingLeft: `calc(${scrollPos / 20}*8px)`,
+                paddingLeft: `calc(${scrollPos / 20}*4px)`,
                 paddingRight: `calc(${scrollPos / 20}*8px)`,
               }
-            : { paddingLeft: `8px`, paddingRight: `8px` }
+            : { paddingLeft: `4px`, paddingRight: `8px` }
         }
       >
         <div
@@ -56,15 +56,15 @@ export const Header = (props: {
               ? {
                   backgroundColor: `rgba(${headerBGColor}, ${scrollPos / 40 + 0.5})`,
                   paddingLeft: props.hasBackgroundImage
-                    ? "8px"
-                    : `calc(${scrollPos / 20}*8px)`,
+                    ? "4px"
+                    : `calc(${scrollPos / 20}*4px)`,
                   paddingRight: props.hasBackgroundImage
                     ? "8px"
                     : `calc(${scrollPos / 20}*8px)`,
                 }
               : {
                   backgroundColor: `rgb(${headerBGColor})`,
-                  paddingLeft: "8px",
+                  paddingLeft: "4px",
                   paddingRight: "8px",
                 }
           }

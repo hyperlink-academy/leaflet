@@ -39,6 +39,8 @@ import {
   ButtonSecondary,
   ButtonTertiary,
 } from "components/Buttons";
+import { HomeSettings } from "./HomeSettings";
+import { AccountSmall } from "components/Icons/AccountSmall";
 
 type Leaflet = {
   added_at: string;
@@ -82,13 +84,13 @@ export const HomeLayout = (props: {
 
   return (
     <DashboardLayout
-      id="home"
+      id="docs"
       hasBackgroundImage={hasBackgroundImage}
       currentPage="home"
-      defaultTab="home"
+      defaultTab="Docs"
       actions={<Actions />}
       tabs={{
-        home: {
+        Docs: {
           controls: (
             <HomeDashboardControls
               defaultDisplay={"grid"}
@@ -107,6 +109,11 @@ export const HomeLayout = (props: {
               searchValue={debouncedSearchValue}
             />
           ),
+        },
+        Settings: {
+          controls: null,
+          label: <AccountSmall />,
+          content: <HomeSettings cardBorderHidden={cardBorderHidden} />,
         },
       }}
     />

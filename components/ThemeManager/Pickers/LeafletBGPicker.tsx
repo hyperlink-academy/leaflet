@@ -120,7 +120,7 @@ export const LeafletBGPicker = (props: {
         </div>
       </div>
       {open && (
-        <div className="bgImageAndColorPicker w-full flex flex-col gap-2 ">
+        <div className="bgImageAndColorPicker w-full flex flex-col gap-2 pb-4 ">
           <SpectrumColorPicker
             value={bgColor}
             onChange={setColorAttribute(
