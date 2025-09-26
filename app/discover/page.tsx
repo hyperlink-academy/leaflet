@@ -59,7 +59,7 @@ const DiscoverContent = async (props: { order: string }) => {
   let publications = await getPublications();
 
   return (
-    <div className="max-w-prose mx-auto">
+    <div className="max-w-prose mx-auto w-full">
       <div className="discoverHeader flex flex-col items-center text-center pt-2 px-4">
         <h1>Discover</h1>
         <p className="text-lg text-secondary italic mb-2">
