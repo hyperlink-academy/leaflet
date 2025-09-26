@@ -54,7 +54,7 @@ export const Header = (props: {
           style={
             scrollPos < 20
               ? {
-                  backgroundColor: `rgba(${headerBGColor}, ${scrollPos / 40 + 0.5})`,
+                  backgroundColor: `rgba(${headerBGColor}, ${scrollPos / 60 + 0.75})`,
                   paddingLeft: props.hasBackgroundImage
                     ? "8px"
                     : `calc(${scrollPos / 20}*8px)`,
