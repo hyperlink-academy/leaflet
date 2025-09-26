@@ -5,7 +5,10 @@ import React from "react";
 import { usePublicationData } from "./PublicationSWRProvider";
 import { LeafletList } from "app/home/HomeLayout";
 
-export function DraftList(props: { searchValue: string }) {
+export function DraftList(props: {
+  searchValue: string;
+  showPageBackground: boolean;
+}) {
   let { data: pub_data } = usePublicationData();
   if (!pub_data?.publication) return null;
   let { leaflets_in_publications, ...publication } = pub_data.publication;
@@ -20,7 +23,7 @@ export function DraftList(props: { searchValue: string }) {
         searchValue={props.searchValue}
         showPreview={false}
         defaultDisplay="list"
-        cardBorderHidden={true}
+        cardBorderHidden={!props.showPageBackground}
         leaflets={leaflets_in_publications
           .filter((l) => !l.documents)
           .map((l) => {

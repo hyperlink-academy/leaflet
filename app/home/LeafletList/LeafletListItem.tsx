@@ -50,7 +50,7 @@ export const LeafletListItem = (props: {
       <>
         <div
           ref={previewRef}
-          className={`gap-3 w-full ${props.cardBorderHidden ? "" : "p-1 block-border hover:outline-border"}`}
+          className={`gap-3 w-full ${props.cardBorderHidden ? "" : "px-2 py-1 block-border hover:outline-border"}`}
           style={{
             backgroundColor: props.cardBorderHidden
               ? "transparent"

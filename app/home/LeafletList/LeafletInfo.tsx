@@ -27,7 +27,7 @@ export const LeafletInfo = (props: {
 
   return (
     <div
-      className={`leafletInfo w-full min-w-0 py-1 flex flex-col ${props.className}`}
+      className={`leafletInfo w-full min-w-0 flex flex-col ${props.className}`}
     >
       <div className="flex justify-between items-center shrink-0 max-w-full gap-2 leading-tight overflow-hidden">
         <Link

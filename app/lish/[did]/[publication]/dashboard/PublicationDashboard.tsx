@@ -43,7 +43,12 @@ export default function PublicationDashboard({
       defaultTab="Drafts"
       tabs={{
         Drafts: {
-          content: <DraftList searchValue={debouncedSearchValue} />,
+          content: (
+            <DraftList
+              searchValue={debouncedSearchValue}
+              showPageBackground={!!record.theme?.showPageBackground}
+            />
+          ),
           controls: (
             <PublicationDashboardControls
               defaultDisplay={"list"}
