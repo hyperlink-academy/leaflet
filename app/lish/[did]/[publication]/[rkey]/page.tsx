@@ -52,13 +52,13 @@ export default async function Post(props: {
   let did = decodeURIComponent((await props.params).did);
   if (!did)
     return (
-      <div className="p-4 text-lg text-center flex flex-col gap-4">
-        <p>Sorry, can&apos;t resolve handle.</p>
+      <NotFoundLayout>
+        <p className="font-bold">Sorry, can&apos;t resolve handle.</p>
         <p>
           This may be a glitch on our end. If the issue persists please{" "}
           <a href="mailto:contact@leaflet.pub">send us a note</a>.
         </p>
-      </div>
+      </NotFoundLayout>
     );
   let agent = new AtpAgent({
     service: "https://public.api.bsky.app",

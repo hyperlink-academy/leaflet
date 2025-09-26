@@ -1,26 +1,14 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
-
-import { Sidebar } from "components/ActionBar/Sidebar";
-
-import { Footer } from "components/ActionBar/Footer";
-import { DraftList } from "./DraftList";
 import { getIdentityData } from "actions/getIdentityData";
-import { Actions } from "./Actions";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { PublicationSWRDataProvider } from "./PublicationSWRProvider";
-import { PublishedPostsList } from "./PublishedPostsLists";
 import { PubLeafletPublication } from "lexicons/api";
-import { PublicationSubscribers } from "./PublicationSubscribers";
 import { PublicationThemeProviderDashboard } from "components/ThemeManager/PublicationThemeProvider";
 import { AtUri } from "@atproto/syntax";
-import {
-  HomeDashboardControls,
-  DashboardLayout,
-} from "components/PageLayouts/DashboardLayout";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
-import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import PublicationDashboard from "./PublicationDashboard";
+import Link from "next/link";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -50,13 +38,13 @@ export default async function Publication(props: {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did)
     return (
-      <div className="p-4 text-lg text-center flex flex-col gap-4">
-        <p>Sorry, looks like you&apos;re not logged in.</p>
+      <NotFoundLayout>
+        <p>Looks like you&apos;re not logged in.</p>
         <p>
-          This may be a glitch on our end. If the issue persists please{" "}
+          If the issue persists please{" "}
           <a href="mailto:contact@leaflet.pub">send us a note</a>.
         </p>
-      </div>
+      </NotFoundLayout>
     );
   let did = decodeURIComponent(params.did);
   if (!did) return <PubNotFound />;
