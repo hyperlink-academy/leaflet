@@ -55,7 +55,7 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
         canvasWrapper
         h-full w-fit mx-auto
         max-w-[calc(100vw-12px)]
-        ${!narrowWidth ? "sm:max-w-[calc(100vw-128px)] lg:max-w-[calc(var(--page-width-units)*2 + 24px))]" : " sm:max-w-[var(--page-width-units)]"}
+        ${!narrowWidth ? "sm:max-w-[calc(100vw-128px)] lg:max-w-[calc(var(--page-width-units)*2 + 24px))]" : " sm:max-w-(--page-width-units)"}
         rounded-lg
         overflow-y-scroll
       `}
@@ -161,7 +161,7 @@ function CanvasWidthHandle(props: { entityID: string }) {
          ${canvasFocused ? "sm:block hidden" : "hidden"}
         w-[8px] h-12
         absolute top-1/2 right-0 -translate-y-1/2 translate-x-[3px]
-        rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
+        rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,inset_0_0_0_1px_white]`}
     />
   );
 }
@@ -186,7 +186,7 @@ const AddCanvasBlockButton = (props: {
             <div className="font-normal">or double click anywhere</div>
           </div>
         }
-        className="w-fit p-2 rounded-full bg-accent-1 border-2 outline outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-2"
+        className="w-fit p-2 rounded-full bg-accent-1 border-2 outline-solid outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-2"
         onMouseDown={() => {
           let page = document.getElementById(
             elementId.page(props.entityID).canvasScrollArea,
@@ -395,7 +395,7 @@ function CanvasBlock(props: {
           hidden group-hover/canvas-block:block
           w-[5px] h-6 -ml-[3px]
           absolute top-1/2 right-3 -translate-y-1/2 translate-x-[2px]
-          rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
+          rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,inset_0_0_0_1px_white]`}
           {...widthHandle.handlers}
         />
       )}
@@ -408,7 +408,7 @@ function CanvasBlock(props: {
             w-[8px] h-[8px]
             absolute bottom-0 -right-0
             -translate-y-1/2 -translate-x-1/2
-            rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
+            rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,inset_0_0_0_1px_white]`}
           {...rotateHandle.handlers}
         />
       )}

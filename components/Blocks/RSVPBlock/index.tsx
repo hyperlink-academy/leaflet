@@ -119,12 +119,12 @@ export const RSVPButtons = (props: {
   return (
     <div className="relative w-full sm:p-6  py-4 px-3 rounded-md border-[1.5px] border-accent-1">
       <RSVPBackground />
-      <div className="relative flex flex-row gap-2 items-center mx-auto z-[1] w-fit">
+      <div className="relative flex flex-row gap-2 items-center mx-auto z-1 w-fit">
         <ButtonSecondary
           type="button"
           className={
             props.status === "MAYBE"
-              ? "!text-accent-2 !bg-accent-1 text-lg"
+              ? "text-accent-2! bg-accent-1! text-lg"
               : ""
           }
           onClick={() => props.setStatus("MAYBE")}
@@ -135,7 +135,7 @@ export const RSVPButtons = (props: {
           type="button"
           className={
             props.status === "GOING"
-              ? "!text-accent-2 !bg-accent-1 text-lg"
+              ? "text-accent-2! bg-accent-1! text-lg"
               : props.status === undefined
                 ? "text-lg"
                 : ""
@@ -149,7 +149,7 @@ export const RSVPButtons = (props: {
           type="button"
           className={
             props.status === "NOT_GOING"
-              ? "!text-accent-2 !bg-accent-1 text-lg"
+              ? "text-accent-2! bg-accent-1! text-lg"
               : ""
           }
           onClick={() => props.setStatus("NOT_GOING")}
@@ -207,7 +207,7 @@ function YourRSVPStatus(props: {
       className={`relative w-full p-4 pb-5 rounded-md border-[1.5px] border-accent-1 font-bold items-center`}
     >
       <RSVPBackground />
-      <div className=" relative flex flex-col gap-1 sm:gap-2 z-[1] justify-center w-fit mx-auto">
+      <div className=" relative flex flex-col gap-1 sm:gap-2 z-1 justify-center w-fit mx-auto">
         <div
           className=" w-fit text-xl text-center text-accent-2"
           style={{
@@ -225,7 +225,7 @@ function YourRSVPStatus(props: {
         </div>
         {existingRSVP?.plus_ones && existingRSVP?.plus_ones > 0 ? (
           <div className="absolute -top-2 -right-6 rotate-12 h-fit w-10 bg-accent-1 font-bold text-accent-2 rounded-full -z-10">
-            <div className="w-full text-center pr-[4px] pb-[1px]">
+            <div className="w-full text-center pr-[4px] pb-px">
               +{existingRSVP?.plus_ones}
             </div>
           </div>

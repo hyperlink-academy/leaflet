@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { Fact, ReplicacheProvider } from "src/replicache";
+import { Fact, ReplicacheProvider, useEntity } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import {
   ThemeBackgroundProvider,
@@ -9,15 +9,14 @@ import { EntitySetProvider } from "components/EntitySetProvider";
 import { createIdentity } from "actions/createIdentity";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { IdentitySetter } from "./IdentitySetter";
-import { LeafletList } from "./LeafletList";
+
 import { getIdentityData } from "actions/getIdentityData";
 import { getFactsFromHomeLeaflets } from "app/api/rpc/[command]/getFactsFromHomeLeaflets";
-import { HomeSidebar } from "./HomeSidebar";
-import { HomeFooter } from "./HomeFooter";
-import { Media } from "components/Media";
-import { MyPublicationList } from "./Publications";
 import { supabaseServerClient } from "supabase/serverClient";
 import { pool } from "supabase/pool";
+
+import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
+import { HomeLayout } from "./HomeLayout";
 
 export default async function Home() {
   let cookieStore = await cookies();
@@ -59,13 +58,13 @@ export default async function Home() {
 
   if (!permission_token)
     return (
-      <div className="p-4 text-lg text-center flex flex-col gap-4">
-        <p>Sorry, home page not found!</p>
+      <NotFoundLayout>
+        <p className="font-bold">Sorry, we can't find this home!</p>
         <p>
           This may be a glitch on our end. If the issue persists please{" "}
           <a href="mailto:contact@leaflet.pub">send us a note</a>.
         </p>
-      </div>
+      </NotFoundLayout>
     );
   let [homeLeafletFacts, allLeafletFacts] = await Promise.all([
     supabaseServerClient.rpc("get_facts", {
@@ -87,6 +86,7 @@ export default async function Home() {
 
   let root_entity = permission_token.root_entity;
   let home_docs_initialFacts = allLeafletFacts?.result || {};
+
   return (
     <ReplicacheProvider
       rootEntity={root_entity}
@@ -99,22 +99,24 @@ export default async function Home() {
         set={permission_token.permission_token_rights[0].entity_set}
       >
         <ThemeProvider entityID={root_entity}>
-          <div className="homeWrapper flex h-full bg-bg-leaflet pwa-padding">
-            <ThemeBackgroundProvider entityID={root_entity}>
-              <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6 ">
-                <HomeSidebar />
-                <div className={`h-full overflow-y-scroll`}>
-                  <Media mobile>
-                    <div className="pubListWrapper p-2 ">
-                      <MyPublicationList />
-                    </div>
-                  </Media>
-                  <LeafletList initialFacts={home_docs_initialFacts} />
-                </div>
-                <HomeFooter />
-              </div>
-            </ThemeBackgroundProvider>
-          </div>
+          <ThemeBackgroundProvider entityID={root_entity}>
+            <HomeLayout
+              titles={{
+                ...home_docs_initialFacts.titles,
+                ...auth_res?.permission_token_on_homepage.reduce(
+                  (acc, tok) => {
+                    let title =
+                      tok.permission_tokens.leaflets_in_publications[0]?.title;
+                    if (title) acc[tok.permission_tokens.root_entity] = title;
+                    return acc;
+                  },
+                  {} as { [k: string]: string },
+                ),
+              }}
+              entityID={root_entity}
+              initialFacts={home_docs_initialFacts.facts || {}}
+            />
+          </ThemeBackgroundProvider>
         </ThemeProvider>
       </EntitySetProvider>
     </ReplicacheProvider>

@@ -18,6 +18,7 @@ import {
 } from "app/lish/createPub/getPublicationURL";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { timeAgo } from "src/utils/timeAgo";
 export const PublicationMetadata = ({
   cardBorderHidden,
 }: {
@@ -59,7 +60,7 @@ export const PublicationMetadata = ({
       </div>
       <AsyncValueAutosizeTextarea
         disabled={!permissions.write}
-        className="text-xl font-bold outline-none bg-transparent"
+        className="text-xl font-bold outline-hidden bg-transparent"
         value={title}
         onChange={async (e) => {
           await rep?.mutate.updatePublicationDraft({
@@ -72,7 +73,7 @@ export const PublicationMetadata = ({
       <AsyncValueAutosizeTextarea
         disabled={!permissions.write}
         placeholder="add an optional description..."
-        className="italic text-secondary outline-none bg-transparent"
+        className="italic text-secondary outline-hidden bg-transparent"
         value={description}
         onChange={async (e) => {
           await rep?.mutate.updatePublicationDraft({
@@ -84,16 +85,7 @@ export const PublicationMetadata = ({
       {pub.doc ? (
         <div className="flex flex-row items-center gap-2 pt-3">
           <p className="text-sm text-tertiary">
-            Published{" "}
-            {publishedAt &&
-              new Date(publishedAt).toLocaleString(undefined, {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              })}
+            Published {publishedAt && timeAgo(publishedAt)}
           </p>
           <Separator classname="h-4" />
           <Link
@@ -125,27 +117,18 @@ export const PublicationMetadataPreview = () => {
       </div>
 
       <div
-        className={`text-xl font-bold outline-none bg-transparent ${!pub.title && "text-tertiary italic"}`}
+        className={`text-xl font-bold outline-hidden bg-transparent ${!pub.title && "text-tertiary italic"}`}
       >
         {pub.title ? pub.title : "Untitled"}
       </div>
-      <div className="italic text-secondary outline-none bg-transparent">
+      <div className="italic text-secondary outline-hidden bg-transparent">
         {pub.description}
       </div>
 
       {pub.doc ? (
         <div className="flex flex-row items-center gap-2 pt-3">
           <p className="text-sm text-tertiary">
-            Published{" "}
-            {publishedAt &&
-              new Date(publishedAt).toLocaleString(undefined, {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              })}
+            Published {publishedAt && timeAgo(publishedAt)}
           </p>
         </div>
       ) : (

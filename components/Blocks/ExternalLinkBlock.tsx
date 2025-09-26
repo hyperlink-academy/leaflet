@@ -70,14 +70,14 @@ export const ExternalLinkBlock = (
         externalLinkBlock flex relative group/linkBlock
         h-[104px] w-full bg-bg-page overflow-hidden text-primary hover:no-underline no-underline
         hover:border-accent-contrast  shadow-sm
-        ${isSelected ? "block-border-selected !outline-accent-contrast !border-accent-contrast" : "block-border"}
+        ${isSelected ? "block-border-selected outline-accent-contrast! border-accent-contrast!" : "block-border"}
 
         `}
     >
       <div className="pt-2 pb-2 px-3 grow min-w-0">
         <div className="flex flex-col w-full min-w-0 h-full grow ">
           <div
-            className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-none resize-none align-top border h-[24px] line-clamp-1`}
+            className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-hidden resize-none align-top border h-[24px] line-clamp-1`}
             style={{
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -88,7 +88,7 @@ export const ExternalLinkBlock = (
           </div>
 
           <div
-            className={`linkBlockDescription text-sm bg-transparent border-none outline-none resize-none align-top  grow line-clamp-2`}
+            className={`linkBlockDescription text-sm bg-transparent border-none outline-hidden resize-none align-top  grow line-clamp-2`}
           >
             {description?.data.value}
           </div>
@@ -172,7 +172,7 @@ const BlockLinkInput = (props: BlockProps & { preview?: boolean }) => {
           }
           type="url"
           disabled={isLocked}
-          className="w-full grow border-none outline-none bg-transparent "
+          className="w-full grow border-none outline-hidden bg-transparent "
           placeholder="www.example.com"
           value={linkValue}
           onChange={(e) => setLinkValue(e.target.value)}

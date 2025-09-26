@@ -114,8 +114,8 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let className = isFullBleed
     ? ""
     : isSelected
-      ? "block-border-selected !border-transparent "
-      : "block-border !border-transparent";
+      ? "block-border-selected border-transparent! "
+      : "block-border border-transparent!";
 
   let isLocalUpload = localImages.get(image.data.src);
 
@@ -156,7 +156,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
 export const FullBleedSelectionIndicator = () => {
   return (
     <div
-      className={`absolute top-3 sm:top-4 bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 border-2 border-bg-page rounded-lg outline-offset-1 outline outline-2 outline-tertiary`}
+      className={`absolute top-3 sm:top-4 bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 border-2 border-bg-page rounded-lg outline-offset-1 outline-solid outline-2 outline-tertiary`}
     />
   );
 };
@@ -194,7 +194,7 @@ const ImageAlt = (props: { entityID: string }) => {
       >
         {entity_set.permissions.write ? (
           <AsyncValueAutosizeTextarea
-            className="text-sm text-secondary outline-none bg-transparent min-w-0"
+            className="text-sm text-secondary outline-hidden bg-transparent min-w-0"
             value={altText}
             onFocus={(e) => {
               e.currentTarget.setSelectionRange(

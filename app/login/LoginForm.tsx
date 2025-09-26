@@ -153,7 +153,7 @@ export default function LoginForm(props: {
 
             <ButtonPrimary
               type="submit"
-              className="place-self-end !px-[2px] absolute right-1 bottom-1"
+              className="place-self-end px-[2px]! absolute right-1 bottom-1"
             >
               <ArrowRightTiny />{" "}
             </ButtonPrimary>

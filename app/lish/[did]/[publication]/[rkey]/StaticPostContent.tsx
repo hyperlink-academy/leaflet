@@ -157,9 +157,9 @@ function ListItem(props: {
   className?: string;
 }) {
   return (
-    <li className={`!pb-0 flex flex-row gap-2`}>
+    <li className={`pb-0! flex flex-row gap-2`}>
       <div
-        className={`listMarker shrink-0 mx-2 z-[1] mt-[14px] h-[5px] w-[5px] rounded-full bg-secondary`}
+        className={`listMarker shrink-0 mx-2 z-1 mt-[14px] h-[5px] w-[5px] rounded-full bg-secondary`}
       />
       <div className="flex flex-col">
         <Block block={{ block: props.item.content }} did={props.did} isList />

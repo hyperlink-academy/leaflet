@@ -49,7 +49,8 @@ export function PublicationThemeProviderDashboard(props: {
   children: React.ReactNode;
   record?: PubLeafletPublication.Record | null;
 }) {
-  let { data: pub } = usePublicationData();
+  let { data } = usePublicationData();
+  let { publication: pub } = data || {};
   return (
     <PublicationThemeProvider
       pub_creator={pub?.identity_did || ""}

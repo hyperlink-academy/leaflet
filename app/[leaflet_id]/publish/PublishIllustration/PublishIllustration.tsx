@@ -78,8 +78,6 @@ export const PublishIllustration = (props: { posts_in_pub: number }) => {
           Math.pow((isPlanet ? y + 14 : y) - (moonPosY + 41), 2),
       );
       if (moonDistance < 60) {
-        console.log("moon collision!");
-
         return true;
       }
 
@@ -90,8 +88,6 @@ export const PublishIllustration = (props: { posts_in_pub: number }) => {
             Math.pow(y - (isPlanet ? star.y + 14 : star.y), 2),
         );
         if (starDistance < 40) {
-          console.log("star collision!");
-
           return true;
         }
       }
@@ -147,7 +143,6 @@ export const PublishIllustration = (props: { posts_in_pub: number }) => {
           y: y,
           rot: Math.random() * 360,
         });
-        console.log("planet : " + type);
       }
       // the first, fouth, and seventh stars are large stars
       else if (
@@ -156,7 +151,6 @@ export const PublishIllustration = (props: { posts_in_pub: number }) => {
         i === numberOfPlanets + 6
       ) {
         let type = Math.floor(Math.random() * 4);
-        console.log("big star : " + type);
         stars.push({
           type:
             type === 0
@@ -172,7 +166,6 @@ export const PublishIllustration = (props: { posts_in_pub: number }) => {
         });
       } else {
         let type = Math.floor(Math.random() * 3);
-        console.log("small star : " + type);
 
         stars.push({
           type: type === 0 ? "S1" : type === 1 ? "S2" : "S3",
@@ -181,7 +174,6 @@ export const PublishIllustration = (props: { posts_in_pub: number }) => {
           rot: Math.random() * 360,
         });
       }
-      console.log("planetcount : " + JSON.stringify(planetCounter));
     }
   }
   // animate the last child

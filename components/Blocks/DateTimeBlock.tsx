@@ -24,7 +24,7 @@ export function DateTimeBlock(props: BlockProps) {
   if (!isClient && !initialPageLoad)
     return (
       <div
-        className={`flex flex-row gap-2 group/date w-64 z-[1] border border-transparent`}
+        className={`flex flex-row gap-2 group/date w-64 z-1 border border-transparent`}
       >
         <BlockCalendarSmall className="text-tertiary" />
       </div>
@@ -119,11 +119,11 @@ export function BaseDateTimeBlock(
   return (
     <Popover
       disabled={isLocked || !permissions.write}
-      className="w-64 z-10 !px-2"
+      className="w-64 z-10 px-2!"
       trigger={
         <div
-          className={`flex flex-row gap-2 group/date w-64 z-[1]
-      ${isSelected ? "block-border-selected !border-transparent" : "border border-transparent"}
+          className={`flex flex-row gap-2 group/date w-64 z-1
+      ${isSelected ? "block-border-selected border-transparent!" : "border border-transparent"}
       ${alignment === "center" ? "justify-center" : alignment === "right" ? "justify-end" : "justify-start"}
       `}
         >
@@ -182,7 +182,7 @@ export function BaseDateTimeBlock(
             chevron: "text-inherit",
             month_grid: "w-full table-fixed",
             weekdays: "text-secondary text-sm",
-            selected: "!bg-accent-1 text-accent-2 rounded-md font-bold",
+            selected: "bg-accent-1! text-accent-2 rounded-md font-bold",
 
             day: "h-[34px]  text-center rounded-md sm:hover:bg-border-light",
             outside: "text-border",

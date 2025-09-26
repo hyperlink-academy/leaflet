@@ -1,7 +1,7 @@
 import { PubLeafletPublication } from "lexicons/api";
-import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
+import { AtUri } from "@atproto/syntax";
 
 export default async function PublicationLayout(props: {
   children: React.ReactNode;
@@ -16,14 +16,29 @@ export async function generateMetadata(props: {
   }>;
 }): Promise<Metadata> {
   let params = await props.params;
+  let did = decodeURIComponent(params.did);
   if (!params.did || !params.publication) return { title: "Publication 404" };
-  let { result: publication } = await get_publication_data.handler(
-    {
-      did: decodeURIComponent(params.did),
-      publication_name: decodeURIComponent(params.publication),
-    },
-    { supabase: supabaseServerClient },
-  );
+
+  let uri;
+  let publication_name = decodeURIComponent(params.publication);
+  if (/^(?!\.$|\.\.S)[A-Za-z0-9._:~-]{1,512}$/.test(publication_name)) {
+    uri = AtUri.make(
+      did,
+      "pub.leaflet.publication",
+      publication_name,
+    ).toString();
+  }
+  let { data: publication } = await supabaseServerClient
+    .from("publications")
+    .select(
+      `*,
+        publication_subscriptions(*),
+      documents_in_publications(documents(*))
+      `,
+    )
+    .eq("identity_did", did)
+    .or(`name.eq."${publication_name}", uri.eq."${uri}"`)
+    .single();
   if (!publication) return { title: "Publication 404" };
 
   let pubRecord = publication?.record as PubLeafletPublication.Record;

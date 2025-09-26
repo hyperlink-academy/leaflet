@@ -109,7 +109,7 @@ let Block = ({
     postBlockWrapper
     min-h-7
     pt-1 pb-2
-    ${isList && "isListItem !pb-0 "}
+    ${isList && "isListItem pb-0! "}
     ${alignment}
     `;
 
@@ -137,7 +137,7 @@ let Block = ({
     }
     case PubLeafletBlocksUnorderedList.isMain(b.block): {
       return (
-        <ul className="-ml-[1px] sm:ml-[9px] pb-2">
+        <ul className="-ml-px sm:ml-[9px] pb-2">
           {b.block.children.map((child, i) => (
             <ListItem
               bskyPostData={bskyPostData}
@@ -175,7 +175,7 @@ let Block = ({
           <div className="pt-2 pb-2 px-3 grow min-w-0">
             <div className="flex flex-col w-full min-w-0 h-full grow ">
               <div
-                className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-none resize-none align-top border h-[24px] line-clamp-1`}
+                className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-hidden resize-none align-top border h-[24px] line-clamp-1`}
                 style={{
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -186,7 +186,7 @@ let Block = ({
               </div>
 
               <div
-                className={`linkBlockDescription text-sm bg-transparent border-none outline-none resize-none align-top  grow line-clamp-2`}
+                className={`linkBlockDescription text-sm bg-transparent border-none outline-hidden resize-none align-top  grow line-clamp-2`}
               >
                 {b.block.description}
               </div>
@@ -217,7 +217,7 @@ let Block = ({
             alt={b.block.alt}
             height={b.block.aspectRatio?.height}
             width={b.block.aspectRatio?.width}
-            className={`!pt-3 sm:!pt-4 rounded-md ${className}`}
+            className={`pt-3! sm:pt-4! rounded-md ${className}`}
             src={blobRefToSrc(b.block.image.ref, did)}
           />
           {b.block.alt && (
@@ -240,7 +240,7 @@ let Block = ({
       return (
         // highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
         <blockquote
-          className={` blockquote !py-0 !mb-2 last:!mb-3 last:sm:!mb-4 first:!mt-2 sm:first:pt-3 ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "!-mt-2" : "!mt-1"}`}
+          className={` blockquote py-0! mb-2! last:mb-3! sm:last:mb-4! first:mt-2! sm:first:pt-3 ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-2!" : "mt-1!"}`}
           {...blockProps}
         >
           <TextBlock
@@ -318,9 +318,9 @@ function ListItem(props: {
   ) : null;
 
   return (
-    <li className={`!pb-0 flex flex-row gap-2`}>
+    <li className={`pb-0! flex flex-row gap-2`}>
       <div
-        className={`listMarker shrink-0 mx-2 z-[1] mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
+        className={`listMarker shrink-0 mx-2 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
       />
       <div className="flex flex-col w-full">
         <Block

@@ -20,6 +20,7 @@ import { PostPageContextProvider } from "./PostPageContext";
 import { PostPage } from "./PostPage";
 import { PageLayout } from "./PageLayout";
 import { extractCodeBlocks } from "./extractCodeBlocks";
+import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -51,13 +52,13 @@ export default async function Post(props: {
   let did = decodeURIComponent((await props.params).did);
   if (!did)
     return (
-      <div className="p-4 text-lg text-center flex flex-col gap-4">
-        <p>Sorry, can&apos;t resolve handle.</p>
+      <NotFoundLayout>
+        <p className="font-bold">Sorry, can&apos;t resolve handle.</p>
         <p>
           This may be a glitch on our end. If the issue persists please{" "}
           <a href="mailto:contact@leaflet.pub">send us a note</a>.
         </p>
-      </div>
+      </NotFoundLayout>
     );
   let agent = new AtpAgent({
     service: "https://public.api.bsky.app",
@@ -80,17 +81,13 @@ export default async function Post(props: {
   ]);
   if (!document?.data || !document.documents_in_publications[0].publications)
     return (
-      <div className="bg-bg-leaflet h-full p-3 text-center relative">
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-md w-full">
-          <div className=" px-3 py-4 opaque-container  flex flex-col gap-1 mx-2 ">
-            <h3>Sorry, post not found!</h3>
-            <p>
-              This may be a glitch on our end. If the issue persists please{" "}
-              <a href="mailto:contact@leaflet.pub">send us a note</a>.
-            </p>
-          </div>
-        </div>
-      </div>
+      <NotFoundLayout>
+        <p className="font-bold">Sorry, we can't find this post!</p>
+        <p>
+          This may be a glitch on our end. If the issue persists please{" "}
+          <a href="mailto:contact@leaflet.pub">send us a note</a>.
+        </p>
+      </NotFoundLayout>
     );
   let record = document.data as PubLeafletDocument.Record;
   let bskyPosts = record.pages.flatMap((p) => {

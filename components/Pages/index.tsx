@@ -119,12 +119,12 @@ function Page(props: { entityID: string; first?: boolean }) {
               : "rgba(var(--bg-page), var(--bg-page-alpha))",
           }}
           className={`
-            ${pageType === "canvas" ? "!lg:max-w-[1152px]" : "max-w-[var(--page-width-units)]"}
+            ${pageType === "canvas" ? "!lg:max-w-[1152px]" : "max-w-(--page-width-units)"}
               page
               grow flex flex-col
               overscroll-y-none
               overflow-y-auto
-              ${cardBorderHidden ? "border-0 !shadow-none sm:-mt-6 sm:-mb-12 -mt-2 -mb-1 pt-3 " : "border rounded-lg"}
+              ${cardBorderHidden ? "border-0 shadow-none! sm:-mt-6 sm:-mb-12 -mt-2 -mb-1 pt-3 " : "border rounded-lg"}
               ${isFocused ? "shadow-md border-border" : "border-border-light"}
             `}
         >
@@ -359,7 +359,7 @@ const OptionsMenu = (props: {
       trigger={
         <PageOptionButton
           cardBorderHidden={props.cardBorderHidden}
-          className="!w-8 !h-5 sm:!w-5 sm:!h-8"
+          className="w-8! h-5! sm:w-5! sm:h-8!"
         >
           <MoreOptionsTiny className="sm:rotate-90" />
         </PageOptionButton>

@@ -95,7 +95,7 @@ export function Blocks(props: { entityID: string }) {
 
   return (
     <div
-      className={`blocks w-full flex flex-col outline-none h-fit min-h-full`}
+      className={`blocks w-full flex flex-col outline-hidden h-fit min-h-full`}
       onClick={async (e) => {
         if (!permissions.write) return;
         if (useUIState.getState().selectedBlocks.length > 1) return;

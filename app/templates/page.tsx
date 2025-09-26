@@ -11,7 +11,7 @@ export const metadata = {
 export default function Templates() {
   return (
     <div className="flex h-full bg-bg-leaflet">
-      <div className="home relative max-w-screen-lg w-full h-full mx-auto flex sm:flex-row flex-col-reverse px-4 sm:px-6 ">
+      <div className="home relative max-w-(--breakpoint-lg) w-full h-full mx-auto flex sm:flex-row flex-col-reverse px-4 sm:px-6 ">
         <div className="homeOptions z-10 shrink-0 sm:static absolute bottom-0  place-self-end sm:place-self-start flex sm:flex-col flex-row-reverse gap-2 sm:w-fit w-full items-center pb-2 pt-1 sm:pt-7">
           {/* NOT using <HomeButton /> b/c it does a permission check we don't need */}
           <Link href="/home">

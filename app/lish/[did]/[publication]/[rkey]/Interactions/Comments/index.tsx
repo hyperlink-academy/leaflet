@@ -13,10 +13,10 @@ import { ButtonPrimary } from "components/Buttons";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { Popover } from "components/Popover";
 import { AppBskyActorProfile, AtUri } from "@atproto/api";
-import { timeAgo } from "app/discover/PubListing";
 import { BlueskyLogin } from "app/login/LoginForm";
 import { usePathname } from "next/navigation";
 import { QuoteContent } from "../Quotes";
+import { timeAgo } from "src/utils/timeAgo";
 
 export type Comment = {
   record: Json;
@@ -44,7 +44,9 @@ export function Comments(props: { document_uri: string; comments: Comment[] }) {
         Comments
         <button
           className="text-tertiary"
-          onClick={() => setInteractionState(props.document_uri, { drawerOpen: false })}
+          onClick={() =>
+            setInteractionState(props.document_uri, { drawerOpen: false })
+          }
         >
           <CloseTiny />
         </button>

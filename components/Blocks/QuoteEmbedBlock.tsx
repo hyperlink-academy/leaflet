@@ -39,7 +39,7 @@ export const QuoteEmbedBlock = () => {
       </div>
       <hr className="border-border-light" />
       <a
-        className="quoteEmbedFooter flex max-w-full gap-2 px-3 py-2  hover:!no-underline text-secondary"
+        className="quoteEmbedFooter flex max-w-full gap-2 px-3 py-2  hover:no-underline! text-secondary"
         href="#"
       >
         <div className="flex flex-col w-[calc(100%-28px)] grow">
@@ -52,7 +52,7 @@ export const QuoteEmbedBlock = () => {
             <div>celine</div>
           </div>
         </div>
-        <div className=" shrink-0 pt-[1px] bg-test w-5 h-5 rounded-full"></div>
+        <div className=" shrink-0 pt-px bg-test w-5 h-5 rounded-full"></div>
       </a>
     </div>
   );

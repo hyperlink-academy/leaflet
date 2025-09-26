@@ -25,7 +25,7 @@ export function ContactDetailsForm(props: {
 }) {
   let { status, entityID, setState, setStatus } = props;
   let focusWithinStyles =
-    "focus-within:border-tertiary focus-within:outline focus-within:outline-2 focus-within:outline-tertiary focus-within:outline-offset-1";
+    "focus-within:border-tertiary focus-within:outline-solid focus-within:outline-2 focus-within:outline-tertiary focus-within:outline-offset-1";
   let toaster = useToaster();
   let { data, mutate } = useRSVPData();
   let [contactFormState, setContactFormState] = useState<
@@ -212,7 +212,7 @@ export function ContactDetailsForm(props: {
           </div>
           <div className="flex flex-row gap-2 w-full sm:w-32 h-fit">
             <InputWithLabel
-              className="!appearance-none"
+              className="appearance-none!"
               placeholder="0"
               label="Plus ones?"
               type="number"
@@ -330,7 +330,7 @@ const ConfirmationForm = (props: {
         <Input
           autoFocus
           placeholder="000000"
-          className="input-with-border !pt-5 w-full "
+          className="input-with-border pt-5! w-full "
           value={props.value}
           autoComplete="one-time-code"
           onChange={(e) => props.onChange(e.target.value)}

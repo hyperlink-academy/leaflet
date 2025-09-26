@@ -134,7 +134,7 @@ const RecipientPicker = (props: {
       </small> */}
       <div className="flex gap-4 text-secondary">
         <Checkbox
-          className="!w-fit"
+          className="w-fit!"
           checked={props.checked.GOING}
           onChange={() => {
             props.setChecked({
@@ -146,7 +146,7 @@ const RecipientPicker = (props: {
           Going
         </Checkbox>
         <Checkbox
-          className="!w-fit"
+          className="w-fit!"
           checked={props.checked.MAYBE}
           onChange={() => {
             props.setChecked({
@@ -158,7 +158,7 @@ const RecipientPicker = (props: {
           Maybe
         </Checkbox>
         <Checkbox
-          className="!w-fit"
+          className="w-fit!"
           checked={props.checked.NOT_GOING}
           onChange={() => {
             props.setChecked({

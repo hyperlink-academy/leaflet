@@ -17,7 +17,7 @@ import { Separator } from "components/Layout";
 import { onMouseDown } from "src/utils/iosInputMouseDown";
 
 export let thumbStyle =
-  "w-4 h-4 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C,_inset_0_0_0_1px_#8C8C8C]";
+  "w-4 h-4 rounded-full border-2 border-white shadow-[0_0_0_1px_#8C8C8C,inset_0_0_0_1px_#8C8C8C]";
 
 export const ColorPicker = (props: {
   label?: string;
@@ -80,7 +80,7 @@ export const ColorPicker = (props: {
                   onBlur={(e) => {
                     props.setValue(parseColor(e.currentTarget.value));
                   }}
-                  className="w-[72px] bg-transparent outline-none disabled:text-tertiary"
+                  className="w-[72px] bg-transparent outline-hidden disabled:text-tertiary"
                 />
               </ColorField>
             )}
@@ -105,7 +105,7 @@ export const ColorPicker = (props: {
                         e.currentTarget.blur();
                       } else return;
                     }}
-                    className="w-[72px] bg-transparent outline-none "
+                    className="w-[72px] bg-transparent outline-hidden "
                   />
                 </ColorField>
               </>

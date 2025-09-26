@@ -43,7 +43,7 @@ export const SubscribeButton = (props: {
         <div className="flex relative w-full max-w-sm">
           <Input
             type="email"
-            className="input-with-border !pr-[104px] !py-1 grow w-full"
+            className="input-with-border pr-[104px]! py-1! grow w-full"
             placeholder={
               props.compact ? "subscribe with email..." : "email here..."
             }
@@ -55,7 +55,7 @@ export const SubscribeButton = (props: {
           />
           <ButtonPrimary
             compact
-            className="absolute right-1 top-1 !outline-0"
+            className="absolute right-1 top-1 outline-0!"
             onClick={async () => {
               if (identity?.email) {
                 await subscribeToPublicationWithEmail(props.publication);
@@ -151,7 +151,7 @@ const ConfirmCodeInput = (props: {
       <Input
         type="text"
         pattern="[0-9]"
-        className="input-with-border !pr-[88px] !py-1 max-w-[156px]"
+        className="input-with-border pr-[88px]! py-1! max-w-[156px]"
         placeholder="000000"
         value={props.codeInputValue}
         onChange={(e) => {
@@ -160,7 +160,7 @@ const ConfirmCodeInput = (props: {
       />
       <ButtonPrimary
         compact
-        className="absolute right-1 top-1 !outline-0"
+        className="absolute right-1 top-1 outline-0!"
         onClick={async () => {
           console.log(
             await confirmEmailAuthToken(props.token, props.codeInputValue),
@@ -356,14 +356,14 @@ const SubscribeSuccessModal = ({
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild></Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-primary data-[state=open]:animate-overlayShow opacity-10 blur-sm" />
+        <Dialog.Overlay className="fixed inset-0 bg-primary data-[state=open]:animate-overlayShow opacity-10 blur-xs" />
         <Dialog.Content
           className={`
       z-20 opaque-container
       fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
       w-96 px-3 py-4
-      max-w-[var(--radix-popover-content-available-width)]
-      max-h-[var(--radix-popover-content-available-height)]
+      max-w-(--radix-popover-content-available-width)
+      max-h-(--radix-popover-content-available-height)
       overflow-y-scroll no-scrollbar
       flex flex-col gap-1 text-center justify-center
       `}

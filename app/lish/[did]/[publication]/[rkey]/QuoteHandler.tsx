@@ -152,7 +152,7 @@ export const QuoteOptionButtons = (props: { position: string }) => {
       <div className="">Share via</div>
 
       <a
-        className="flex gap-1 items-center hover:font-bold px-1 hover:!no-underline"
+        className="flex gap-1 items-center hover:font-bold px-1 hover:no-underline!"
         role="link"
         href={`https://bsky.app/intent/compose?text=${encodeURIComponent(url)}`}
         target="_blank"

@@ -167,7 +167,7 @@ export function RenderedTextBlock(props: {
         ${alignmentClass}
         ${props.type === "blockquote" ? " blockquote " : ""}
         ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
-      w-full whitespace-pre-wrap outline-none ${props.className} `}
+      w-full whitespace-pre-wrap outline-hidden ${props.className} `}
     >
       {content}
     </div>
@@ -379,7 +379,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           className={`
             ${alignmentClass}
           grow resize-none align-top whitespace-pre-wrap bg-transparent
-          outline-none
+          outline-hidden
 
           ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
           ${props.className}`}

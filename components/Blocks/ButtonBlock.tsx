@@ -34,7 +34,7 @@ export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
     <a
       href={url?.data.value}
       target="_blank"
-      className={`hover:outline-accent-contrast !rounded-md  ${isSelected ? "block-border-selected !border-0" : "block-border !border-transparent !border-0"}`}
+      className={`hover:outline-accent-contrast rounded-md!  ${isSelected ? "block-border-selected border-0!" : "block-border border-transparent! border-0!"}`}
     >
       <ButtonPrimary role="link" type="submit">
         {text?.data.value}
@@ -117,7 +117,7 @@ const ButtonBlockSettings = (props: BlockProps) => {
         w-full bg-bg-page
     		text-tertiary hover:text-accent-contrast hover:cursor-pointer hover:p-0
     		flex flex-col gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg
-  		  ${isSelected ? "border-2 border-tertiary p-0" : "border border-border p-[1px]"}
+  		  ${isSelected ? "border-2 border-tertiary p-0" : "border border-border p-px"}
   		  `}
         onSubmit={(e) => {
           e.preventDefault();
@@ -169,7 +169,7 @@ const ButtonBlockSettings = (props: BlockProps) => {
             <Input
               type="text"
               autoFocus
-              className="w-full grow border-none outline-none bg-transparent"
+              className="w-full grow border-none outline-hidden bg-transparent"
               placeholder="button text"
               value={textValue}
               disabled={isLocked}
@@ -192,7 +192,7 @@ const ButtonBlockSettings = (props: BlockProps) => {
             <Input
               type="text"
               id="button-block-url-input"
-              className="w-full grow border-none outline-none bg-transparent"
+              className="w-full grow border-none outline-hidden bg-transparent"
               placeholder="www.example.com"
               value={urlValue}
               disabled={isLocked}

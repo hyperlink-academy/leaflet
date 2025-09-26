@@ -32,8 +32,8 @@ export const ImageSettings = (props: {
       <div className="themeBGImageControls font-bold flex flex-col gap-1 items-center px-3">
         <label htmlFor="cover" className="w-full">
           <Radio
-            radioCheckedClassName="!text-[#595959]"
-            radioEmptyClassName="!text-[#969696]"
+            radioCheckedClassName="text-[#595959]!"
+            radioEmptyClassName="text-[#969696]!"
             type="radio"
             id="cover"
             name="bg-image-options"
@@ -58,8 +58,8 @@ export const ImageSettings = (props: {
             id="repeat"
             name="bg-image-options"
             value="repeat"
-            radioCheckedClassName="!text-[#595959]"
-            radioEmptyClassName="!text-[#969696]"
+            radioCheckedClassName="text-[#595959]!"
+            radioEmptyClassName="text-[#969696]!"
             checked={!!repeat}
             onChange={async (e) => {
               if (!e.currentTarget.checked) return;
@@ -128,7 +128,7 @@ export const ImageSettings = (props: {
                   className={`
                     flex w-4 h-4 rounded-full border-2 border-white cursor-pointer
                     ${repeat ? "bg-[#595959]" : " bg-[#C3C3C3] "}
-                    ${repeat && "shadow-[0_0_0_1px_#8C8C8C,_inset_0_0_0_1px_#8C8C8C]"} `}
+                    ${repeat && "shadow-[0_0_0_1px_#8C8C8C,inset_0_0_0_1px_#8C8C8C]"} `}
                   aria-label="Volume"
                 />
               </Slider.Root>
