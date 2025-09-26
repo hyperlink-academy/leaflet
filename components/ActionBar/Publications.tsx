@@ -1,22 +1,13 @@
 "use client";
-import { ButtonSecondary } from "components/Buttons";
 import Link from "next/link";
 
 import { useIdentityData } from "components/IdentityProvider";
 import { theme } from "tailwind.config";
-import { BlueskyTiny } from "components/Icons/BlueskyTiny";
-import { AddTiny } from "components/Icons/AddTiny";
-import {
-  getBasePublicationURL,
-  getPublicationURL,
-} from "app/lish/createPub/getPublicationURL";
+import { getBasePublicationURL } from "app/lish/createPub/getPublicationURL";
 import { Json } from "supabase/database.types";
 import { PubLeafletPublication } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { PublicationThemeProvider } from "components/ThemeManager/PublicationThemeProvider";
 import { ActionButton } from "./ActionButton";
-import { BlobRef } from "@atproto/lexicon";
 import { SpeedyLink } from "components/SpeedyLink";
 import { PublishSmall } from "components/Icons/PublishSmall";
 

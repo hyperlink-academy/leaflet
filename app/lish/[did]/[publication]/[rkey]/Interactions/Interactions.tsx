@@ -60,16 +60,20 @@ export function setInteractionState(
     };
 
     // Update query parameter when drawer state changes
-    if (typeof window !== "undefined" && (updatedState.drawerOpen !== undefined || updatedState.drawer !== undefined)) {
+    if (
+      typeof window !== "undefined" &&
+      (updatedState.drawerOpen !== undefined ||
+        updatedState.drawer !== undefined)
+    ) {
       const url = new URL(window.location.href);
       const newDocState = newState[document_uri];
-      
+
       if (newDocState.drawerOpen && newDocState.drawer) {
         url.searchParams.set("interactionDrawer", newDocState.drawer);
       } else {
         url.searchParams.delete("interactionDrawer");
       }
-      
+
       window.history.replaceState({}, "", url.toString());
     }
 
@@ -126,8 +130,13 @@ export const Interactions = (props: {
           else setInteractionState(document_uri, { drawerOpen: false });
         }}
       >
-        <QuoteTiny /> {props.quotesCount}{" "}
-        {!props.compact && `Quote${props.quotesCount === 1 ? "" : "s"}`}
+        <span className="sr-only">Post quotes</span>
+        <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
+        {!props.compact && (
+          <span
+            aria-hidden
+          >{`Quote${props.quotesCount === 1 ? "" : "s"}`}</span>
+        )}
       </button>
       {props.showComments === false ? null : (
         <button
@@ -138,8 +147,13 @@ export const Interactions = (props: {
             else setInteractionState(document_uri, { drawerOpen: false });
           }}
         >
-          <CommentTiny /> {props.commentsCount}{" "}
-          {!props.compact && `Comment${props.commentsCount === 1 ? "" : "s"}`}
+          <span className="sr-only">Post comments</span>
+          <CommentTiny aria-hidden /> {props.commentsCount}{" "}
+          {!props.compact && (
+            <span
+              aria-hidden
+            >{`Comment${props.commentsCount === 1 ? "" : "s"}`}</span>
+          )}
         </button>
       )}
     </div>
