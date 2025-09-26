@@ -68,7 +68,11 @@ export default function PublicationDashboard({
           controls: null,
         },
         Subscribers: {
-          content: <PublicationSubscribers />,
+          content: (
+            <PublicationSubscribers
+              showPageBackground={!!record.theme?.showPageBackground}
+            />
+          ),
           controls: null,
         },
       }}

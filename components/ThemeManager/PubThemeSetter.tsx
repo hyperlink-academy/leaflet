@@ -88,17 +88,7 @@ export const PubThemeSetter = () => {
         }}
       >
         <h4 className="text-accent-2">Publication Theme</h4>
-        <ButtonSecondary
-          compact
-          disabled={
-            !(
-              showPageBackground === !!record?.theme?.showPageBackground ||
-              changes ||
-              !!image?.file ||
-              record?.theme?.backgroundImage?.width !== image?.repeat
-            )
-          }
-        >
+        <ButtonSecondary compact>
           {loading ? <DotLoader /> : "Update"}
         </ButtonSecondary>
       </form>

@@ -54,7 +54,7 @@ export const ActionButton = (
       <div
         className={`flex flex-col pr-1 leading-snug max-w-full min-w-0  ${sidebar.open ? "block" : primary || secondary || nav ? "sm:hidden block" : "hidden"}`}
       >
-        <div className="truncate text-left">{label}</div>
+        <div className="truncate text-left pt-[1px]">{label}</div>
         {props.subtext && (
           <div className="text-xs text-tertiary font-normal text-left">
             {props.subtext}
