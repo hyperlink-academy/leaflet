@@ -11,7 +11,7 @@ export function SortedPublicationList(props: {
 }) {
   let [order, setOrder] = useState(props.order);
   return (
-    <div className="discoverHeader flex flex-col items-center px-4">
+    <div className="discoverHeader flex flex-col items-center ">
       <SortButtons
         order={order}
         setOrder={(o) => {

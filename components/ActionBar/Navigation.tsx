@@ -89,7 +89,7 @@ const NavigationOptions = (props: {
   return (
     <>
       <HomeButton current={props.currentPage === "home"} />
-      <ReaderButton current={props.currentPage === "reader"} />
+      <ReaderButton current={props.currentPage === "discover"} />
       <hr className="border-border-light my-1" />
       <PublicationButtons currentPubUri={thisPublication?.uri} />
     </>
@@ -130,10 +130,8 @@ const ReaderButton = (props: { current?: boolean }) => {
         nav
         icon={<DiscoverSmall />}
         label="Discover"
-        subtext={
-          !props.current ? "Check out what others are writing!" : undefined
-        }
-        className={props.current ? "bg-border-light! border-border" : ""}
+        subtext={"Check out what others are writing!"}
+        className={props.current ? "bg-bg-page! border-border-light!" : ""}
       />
     </Link>
   );
