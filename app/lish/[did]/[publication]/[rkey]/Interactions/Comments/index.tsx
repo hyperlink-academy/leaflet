@@ -1,6 +1,6 @@
 "use client";
 import { CloseTiny } from "components/Icons/CloseTiny";
-import { useInteractionState } from "../Interactions";
+import { useInteractionState, setInteractionState } from "../Interactions";
 import { useIdentityData } from "components/IdentityProvider";
 import { CommentBox } from "./CommentBox";
 import { Json } from "supabase/database.types";
@@ -13,10 +13,10 @@ import { ButtonPrimary } from "components/Buttons";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { Popover } from "components/Popover";
 import { AppBskyActorProfile, AtUri } from "@atproto/api";
-import { timeAgo } from "app/discover/PubListing";
 import { BlueskyLogin } from "app/login/LoginForm";
 import { usePathname } from "next/navigation";
 import { QuoteContent } from "../Quotes";
+import { timeAgo } from "src/utils/timeAgo";
 
 export type Comment = {
   record: Json;
@@ -25,7 +25,7 @@ export type Comment = {
 };
 export function Comments(props: { document_uri: string; comments: Comment[] }) {
   let { identity } = useIdentityData();
-  let localComments = useInteractionState((l) => l.localComments);
+  let { localComments } = useInteractionState(props.document_uri);
   let comments = useMemo(() => {
     return [...localComments, ...props.comments];
   }, [props.comments, localComments]);
@@ -44,7 +44,9 @@ export function Comments(props: { document_uri: string; comments: Comment[] }) {
         Comments
         <button
           className="text-tertiary"
-          onClick={() => useInteractionState.setState({ drawerOpen: false })}
+          onClick={() =>
+            setInteractionState(props.document_uri, { drawerOpen: false })
+          }
         >
           <CloseTiny />
         </button>
@@ -191,6 +193,7 @@ const Replies = (props: {
           <CommentBox
             doc_uri={props.document}
             replyTo={props.comment_uri}
+            autoFocus={true}
             onSubmit={() => {
               setReplyBoxOpen(false);
             }}

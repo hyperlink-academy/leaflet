@@ -1,29 +1,32 @@
 "use client";
 
 import { Menu, MenuItem } from "components/Layout";
-import type { PermissionToken } from "src/replicache";
-import { hideDoc } from "./storage";
+import { useReplicache, type PermissionToken } from "src/replicache";
+import { hideDoc } from "../storage";
 import { useState } from "react";
 import { ButtonPrimary } from "components/Buttons";
-import { useTemplateState } from "./CreateNewButton";
-import { Item } from "@radix-ui/react-dropdown-menu";
-import { useSmoker } from "components/Toast";
+import { useTemplateState } from "../Actions/CreateNewButton";
+import { useSmoker, useToaster } from "components/Toast";
 import { removeLeafletFromHome } from "actions/removeLeafletFromHome";
 import { useIdentityData } from "components/IdentityProvider";
 import { HideSmall } from "components/Icons/HideSmall";
 import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { TemplateRemoveSmall } from "components/Icons/TemplateRemoveSmall";
 import { TemplateSmall } from "components/Icons/TemplateSmall";
+import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
+import { addLeafletToHome } from "actions/addLeafletToHome";
 
 export const LeafletOptions = (props: {
   leaflet: PermissionToken;
   isTemplate: boolean;
   loggedIn: boolean;
+  added_at: string;
 }) => {
   let { mutate: mutateIdentity } = useIdentityData();
   let [state, setState] = useState<"normal" | "template">("normal");
   let [open, setOpen] = useState(false);
   let smoker = useSmoker();
+  let toaster = useToaster();
   return (
     <>
       <Menu
@@ -34,8 +37,14 @@ export const LeafletOptions = (props: {
           setState("normal");
         }}
         trigger={
-          <div className="bg-accent-1 text-accent-2 px-2 py-1 border border-accent-2 rounded-md">
-            <MoreOptionsTiny />
+          <div
+            className="text-secondary shrink-0"
+            onClick={(e) => {
+              e.preventDefault;
+              e.stopPropagation;
+            }}
+          >
+            <MoreOptionsVerticalTiny />
           </div>
         }
       >
@@ -93,6 +102,18 @@ export const LeafletOptions = (props: {
                 } else {
                   hideDoc(props.leaflet);
                 }
+                toaster({
+                  content: (
+                    <div className="font-bold">
+                      Doc removed!{" "}
+                      <UndoRemoveFromHomeButton
+                        leaflet={props.leaflet}
+                        added_at={props.added_at}
+                      />
+                    </div>
+                  ),
+                  type: "success",
+                });
               }}
             >
               <HideSmall />
@@ -110,6 +131,49 @@ export const LeafletOptions = (props: {
   );
 };
 
+const UndoRemoveFromHomeButton = (props: {
+  leaflet: PermissionToken;
+  added_at: string | undefined;
+}) => {
+  let toaster = useToaster();
+  let { mutate } = useIdentityData();
+  return (
+    <button
+      onClick={async (e) => {
+        await mutate(
+          (identity) => {
+            if (!identity) return;
+            return {
+              ...identity,
+              permission_token_on_homepage: [
+                ...identity.permission_token_on_homepage,
+                {
+                  created_at: props.added_at || new Date().toISOString(),
+                  permission_tokens: {
+                    ...props.leaflet,
+                    leaflets_in_publications: [],
+                  },
+                },
+              ],
+            };
+          },
+          { revalidate: false },
+        );
+        await addLeafletToHome(props.leaflet.id);
+        await mutate();
+
+        toaster({
+          content: <div className="font-bold">Recovered Doc!</div>,
+          type: "success",
+        });
+      }}
+      className="underline"
+    >
+      Undo?
+    </button>
+  );
+};
+
 const AddTemplateForm = (props: {
   leaflet: PermissionToken;
   close: () => void;
@@ -124,7 +188,7 @@ const AddTemplateForm = (props: {
           value={name}
           onChange={(e) => setName(e.target.value)}
           type="text"
-          className=" text-primary font-normal border border-border rounded-md outline-none px-2 py-1 w-64"
+          className=" text-primary font-normal border border-border rounded-md outline-hidden px-2 py-1 w-64"
         />
       </label>
 

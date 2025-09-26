@@ -21,7 +21,8 @@ import Link from "next/link";
 import { Checkbox } from "components/Checkbox";
 
 export const EditPubForm = () => {
-  let { data: pubData } = usePublicationData();
+  let { data } = usePublicationData();
+  let { publication: pubData } = data || {};
   let record = pubData?.record as PubLeafletPublication.Record;
   let [formState, setFormState] = useState<"normal" | "loading">("normal");
 
@@ -180,7 +181,8 @@ export const EditPubForm = () => {
 };
 
 export function CustomDomainForm() {
-  let { data: pubData } = usePublicationData();
+  let { data } = usePublicationData();
+  let { publication: pubData } = data || {};
   if (!pubData) return null;
   let record = pubData?.record as PubLeafletPublication.Record;
   let [state, setState] = useState<
@@ -325,7 +327,7 @@ function Domain(props: {
       <div className="absolute right-0 top-0 bottom-0 flex justify-end items-center w-4 ">
         {pending ? (
           <button
-            className="group/pending px-1 py-0.5 flex gap-1 items-center rounded-full  hover:bg-accent-1  hover:text-accent-2 hover:outline-accent-1 border-transparent outline outline-transparent selected-outline"
+            className="group/pending px-1 py-0.5 flex gap-1 items-center rounded-full  hover:bg-accent-1  hover:text-accent-2 hover:outline-accent-1 border-transparent outline-solid outline-transparent selected-outline"
             onClick={() => {
               if (data?.error === "Verification_needed") {
                 props.setDomain(data.verification);
@@ -356,7 +358,7 @@ function Domain(props: {
               });
               mutate("publication-data");
             }}
-            className="group/domain flex gap-1 items-center rounded-full bg-none w-max font-bold px-1 py-0.5 hover:bg-accent-1 hover:text-accent-2 border-transparent outline outline-transparent hover:outline-accent-1  selected-outline"
+            className="group/domain flex gap-1 items-center rounded-full bg-none w-max font-bold px-1 py-0.5 hover:bg-accent-1 hover:text-accent-2 border-transparent outline-solid outline-transparent hover:outline-accent-1  selected-outline"
           >
             <p className="group-hover/domain:block hidden w-max pl-1">
               set as default

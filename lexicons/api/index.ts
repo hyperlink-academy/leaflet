@@ -1,30 +1,15 @@
 /**
  * GENERATED CODE - DO NOT MODIFY
  */
-import { XrpcClient, FetchHandler, FetchHandlerOptions } from '@atproto/xrpc'
+import {
+  XrpcClient,
+  type FetchHandler,
+  type FetchHandlerOptions,
+} from '@atproto/xrpc'
 import { schemas } from './lexicons'
 import { CID } from 'multiformats/cid'
-import { OmitKey, Un$Typed } from './util'
-import * as PubLeafletComment from './types/pub/leaflet/comment'
-import * as PubLeafletDocument from './types/pub/leaflet/document'
-import * as PubLeafletPublication from './types/pub/leaflet/publication'
-import * as PubLeafletBlocksBlockquote from './types/pub/leaflet/blocks/blockquote'
-import * as PubLeafletBlocksBskyPost from './types/pub/leaflet/blocks/bskyPost'
-import * as PubLeafletBlocksCode from './types/pub/leaflet/blocks/code'
-import * as PubLeafletBlocksHeader from './types/pub/leaflet/blocks/header'
-import * as PubLeafletBlocksHorizontalRule from './types/pub/leaflet/blocks/horizontalRule'
-import * as PubLeafletBlocksIframe from './types/pub/leaflet/blocks/iframe'
-import * as PubLeafletBlocksImage from './types/pub/leaflet/blocks/image'
-import * as PubLeafletBlocksMath from './types/pub/leaflet/blocks/math'
-import * as PubLeafletBlocksPage from './types/pub/leaflet/blocks/page'
-import * as PubLeafletBlocksText from './types/pub/leaflet/blocks/text'
-import * as PubLeafletBlocksUnorderedList from './types/pub/leaflet/blocks/unorderedList'
-import * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
-import * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
-import * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
-import * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
-import * as PubLeafletThemeBackgroundImage from './types/pub/leaflet/theme/backgroundImage'
-import * as PubLeafletThemeColor from './types/pub/leaflet/theme/color'
+import { type OmitKey, type Un$Typed } from './util'
+import * as AppBskyActorProfile from './types/app/bsky/actor/profile'
 import * as ComAtprotoLabelDefs from './types/com/atproto/label/defs'
 import * as ComAtprotoRepoApplyWrites from './types/com/atproto/repo/applyWrites'
 import * as ComAtprotoRepoCreateRecord from './types/com/atproto/repo/createRecord'
@@ -38,28 +23,28 @@ import * as ComAtprotoRepoListRecords from './types/com/atproto/repo/listRecords
 import * as ComAtprotoRepoPutRecord from './types/com/atproto/repo/putRecord'
 import * as ComAtprotoRepoStrongRef from './types/com/atproto/repo/strongRef'
 import * as ComAtprotoRepoUploadBlob from './types/com/atproto/repo/uploadBlob'
-import * as AppBskyActorProfile from './types/app/bsky/actor/profile'
+import * as PubLeafletBlocksBlockquote from './types/pub/leaflet/blocks/blockquote'
+import * as PubLeafletBlocksBskyPost from './types/pub/leaflet/blocks/bskyPost'
+import * as PubLeafletBlocksCode from './types/pub/leaflet/blocks/code'
+import * as PubLeafletBlocksHeader from './types/pub/leaflet/blocks/header'
+import * as PubLeafletBlocksHorizontalRule from './types/pub/leaflet/blocks/horizontalRule'
+import * as PubLeafletBlocksIframe from './types/pub/leaflet/blocks/iframe'
+import * as PubLeafletBlocksImage from './types/pub/leaflet/blocks/image'
+import * as PubLeafletBlocksMath from './types/pub/leaflet/blocks/math'
+import * as PubLeafletBlocksPage from './types/pub/leaflet/blocks/page'
+import * as PubLeafletBlocksText from './types/pub/leaflet/blocks/text'
+import * as PubLeafletBlocksUnorderedList from './types/pub/leaflet/blocks/unorderedList'
+import * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
+import * as PubLeafletComment from './types/pub/leaflet/comment'
+import * as PubLeafletDocument from './types/pub/leaflet/document'
+import * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
+import * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
+import * as PubLeafletPublication from './types/pub/leaflet/publication'
+import * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
+import * as PubLeafletThemeBackgroundImage from './types/pub/leaflet/theme/backgroundImage'
+import * as PubLeafletThemeColor from './types/pub/leaflet/theme/color'
 
-export * as PubLeafletComment from './types/pub/leaflet/comment'
-export * as PubLeafletDocument from './types/pub/leaflet/document'
-export * as PubLeafletPublication from './types/pub/leaflet/publication'
-export * as PubLeafletBlocksBlockquote from './types/pub/leaflet/blocks/blockquote'
-export * as PubLeafletBlocksBskyPost from './types/pub/leaflet/blocks/bskyPost'
-export * as PubLeafletBlocksCode from './types/pub/leaflet/blocks/code'
-export * as PubLeafletBlocksHeader from './types/pub/leaflet/blocks/header'
-export * as PubLeafletBlocksHorizontalRule from './types/pub/leaflet/blocks/horizontalRule'
-export * as PubLeafletBlocksIframe from './types/pub/leaflet/blocks/iframe'
-export * as PubLeafletBlocksImage from './types/pub/leaflet/blocks/image'
-export * as PubLeafletBlocksMath from './types/pub/leaflet/blocks/math'
-export * as PubLeafletBlocksPage from './types/pub/leaflet/blocks/page'
-export * as PubLeafletBlocksText from './types/pub/leaflet/blocks/text'
-export * as PubLeafletBlocksUnorderedList from './types/pub/leaflet/blocks/unorderedList'
-export * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
-export * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
-export * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
-export * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
-export * as PubLeafletThemeBackgroundImage from './types/pub/leaflet/theme/backgroundImage'
-export * as PubLeafletThemeColor from './types/pub/leaflet/theme/color'
+export * as AppBskyActorProfile from './types/app/bsky/actor/profile'
 export * as ComAtprotoLabelDefs from './types/com/atproto/label/defs'
 export * as ComAtprotoRepoApplyWrites from './types/com/atproto/repo/applyWrites'
 export * as ComAtprotoRepoCreateRecord from './types/com/atproto/repo/createRecord'
@@ -73,7 +58,26 @@ export * as ComAtprotoRepoListRecords from './types/com/atproto/repo/listRecords
 export * as ComAtprotoRepoPutRecord from './types/com/atproto/repo/putRecord'
 export * as ComAtprotoRepoStrongRef from './types/com/atproto/repo/strongRef'
 export * as ComAtprotoRepoUploadBlob from './types/com/atproto/repo/uploadBlob'
-export * as AppBskyActorProfile from './types/app/bsky/actor/profile'
+export * as PubLeafletBlocksBlockquote from './types/pub/leaflet/blocks/blockquote'
+export * as PubLeafletBlocksBskyPost from './types/pub/leaflet/blocks/bskyPost'
+export * as PubLeafletBlocksCode from './types/pub/leaflet/blocks/code'
+export * as PubLeafletBlocksHeader from './types/pub/leaflet/blocks/header'
+export * as PubLeafletBlocksHorizontalRule from './types/pub/leaflet/blocks/horizontalRule'
+export * as PubLeafletBlocksIframe from './types/pub/leaflet/blocks/iframe'
+export * as PubLeafletBlocksImage from './types/pub/leaflet/blocks/image'
+export * as PubLeafletBlocksMath from './types/pub/leaflet/blocks/math'
+export * as PubLeafletBlocksPage from './types/pub/leaflet/blocks/page'
+export * as PubLeafletBlocksText from './types/pub/leaflet/blocks/text'
+export * as PubLeafletBlocksUnorderedList from './types/pub/leaflet/blocks/unorderedList'
+export * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
+export * as PubLeafletComment from './types/pub/leaflet/comment'
+export * as PubLeafletDocument from './types/pub/leaflet/document'
+export * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
+export * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
+export * as PubLeafletPublication from './types/pub/leaflet/publication'
+export * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
+export * as PubLeafletThemeBackgroundImage from './types/pub/leaflet/theme/backgroundImage'
+export * as PubLeafletThemeColor from './types/pub/leaflet/theme/color'
 
 export const PUB_LEAFLET_PAGES = {
   LinearDocumentTextAlignLeft: 'pub.leaflet.pages.linearDocument#textAlignLeft',
@@ -84,15 +88,15 @@ export const PUB_LEAFLET_PAGES = {
 }
 
 export class AtpBaseClient extends XrpcClient {
-  pub: PubNS
-  com: ComNS
   app: AppNS
+  com: ComNS
+  pub: PubNS
 
   constructor(options: FetchHandler | FetchHandlerOptions) {
     super(options, schemas)
-    this.pub = new PubNS(this)
-    this.com = new ComNS(this)
     this.app = new AppNS(this)
+    this.com = new ComNS(this)
+    this.pub = new PubNS(this)
   }
 
   /** @deprecated use `this` instead */
@@ -101,59 +105,37 @@ export class AtpBaseClient extends XrpcClient {
   }
 }
 
-export class PubNS {
+export class AppNS {
   _client: XrpcClient
-  leaflet: PubLeafletNS
+  bsky: AppBskyNS
 
   constructor(client: XrpcClient) {
     this._client = client
-    this.leaflet = new PubLeafletNS(client)
+    this.bsky = new AppBskyNS(client)
   }
 }
 
-export class PubLeafletNS {
+export class AppBskyNS {
   _client: XrpcClient
-  comment: CommentRecord
-  document: DocumentRecord
-  publication: PublicationRecord
-  blocks: PubLeafletBlocksNS
-  graph: PubLeafletGraphNS
-  pages: PubLeafletPagesNS
-  richtext: PubLeafletRichtextNS
-  theme: PubLeafletThemeNS
+  actor: AppBskyActorNS
 
   constructor(client: XrpcClient) {
     this._client = client
-    this.blocks = new PubLeafletBlocksNS(client)
-    this.graph = new PubLeafletGraphNS(client)
-    this.pages = new PubLeafletPagesNS(client)
-    this.richtext = new PubLeafletRichtextNS(client)
-    this.theme = new PubLeafletThemeNS(client)
-    this.comment = new CommentRecord(client)
-    this.document = new DocumentRecord(client)
-    this.publication = new PublicationRecord(client)
+    this.actor = new AppBskyActorNS(client)
   }
 }
 
-export class PubLeafletBlocksNS {
+export class AppBskyActorNS {
   _client: XrpcClient
+  profile: AppBskyActorProfileRecord
 
   constructor(client: XrpcClient) {
     this._client = client
+    this.profile = new AppBskyActorProfileRecord(client)
   }
 }
 
-export class PubLeafletGraphNS {
-  _client: XrpcClient
-  subscription: SubscriptionRecord
-
-  constructor(client: XrpcClient) {
-    this._client = client
-    this.subscription = new SubscriptionRecord(client)
-  }
-}
-
-export class SubscriptionRecord {
+export class AppBskyActorProfileRecord {
   _client: XrpcClient
 
   constructor(client: XrpcClient) {
@@ -164,10 +146,10 @@ export class SubscriptionRecord {
     params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
   ): Promise<{
     cursor?: string
-    records: { uri: string; value: PubLeafletGraphSubscription.Record }[]
+    records: { uri: string; value: AppBskyActorProfile.Record }[]
   }> {
     const res = await this._client.call('com.atproto.repo.listRecords', {
-      collection: 'pub.leaflet.graph.subscription',
+      collection: 'app.bsky.actor.profile',
       ...params,
     })
     return res.data
@@ -175,13 +157,9 @@ export class SubscriptionRecord {
 
   async get(
     params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
-  ): Promise<{
-    uri: string
-    cid: string
-    value: PubLeafletGraphSubscription.Record
-  }> {
+  ): Promise<{ uri: string; cid: string; value: AppBskyActorProfile.Record }> {
     const res = await this._client.call('com.atproto.repo.getRecord', {
-      collection: 'pub.leaflet.graph.subscription',
+      collection: 'app.bsky.actor.profile',
       ...params,
     })
     return res.data
@@ -192,12 +170,35 @@ export class SubscriptionRecord {
       ComAtprotoRepoCreateRecord.InputSchema,
       'collection' | 'record'
     >,
-    record: Un$Typed<PubLeafletGraphSubscription.Record>,
+    record: Un$Typed<AppBskyActorProfile.Record>,
     headers?: Record<string, string>,
   ): Promise<{ uri: string; cid: string }> {
-    const collection = 'pub.leaflet.graph.subscription'
+    const collection = 'app.bsky.actor.profile'
     const res = await this._client.call(
       'com.atproto.repo.createRecord',
+      undefined,
+      {
+        collection,
+        rkey: 'self',
+        ...params,
+        record: { ...record, $type: collection },
+      },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async put(
+    params: OmitKey<
+      ComAtprotoRepoPutRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<AppBskyActorProfile.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'app.bsky.actor.profile'
+    const res = await this._client.call(
+      'com.atproto.repo.putRecord',
       undefined,
       { collection, ...params, record: { ...record, $type: collection } },
       { encoding: 'application/json', headers },
@@ -212,218 +213,7 @@ export class SubscriptionRecord {
     await this._client.call(
       'com.atproto.repo.deleteRecord',
       undefined,
-      { collection: 'pub.leaflet.graph.subscription', ...params },
-      { headers },
-    )
-  }
-}
-
-export class PubLeafletPagesNS {
-  _client: XrpcClient
-
-  constructor(client: XrpcClient) {
-    this._client = client
-  }
-}
-
-export class PubLeafletRichtextNS {
-  _client: XrpcClient
-
-  constructor(client: XrpcClient) {
-    this._client = client
-  }
-}
-
-export class PubLeafletThemeNS {
-  _client: XrpcClient
-
-  constructor(client: XrpcClient) {
-    this._client = client
-  }
-}
-
-export class CommentRecord {
-  _client: XrpcClient
-
-  constructor(client: XrpcClient) {
-    this._client = client
-  }
-
-  async list(
-    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
-  ): Promise<{
-    cursor?: string
-    records: { uri: string; value: PubLeafletComment.Record }[]
-  }> {
-    const res = await this._client.call('com.atproto.repo.listRecords', {
-      collection: 'pub.leaflet.comment',
-      ...params,
-    })
-    return res.data
-  }
-
-  async get(
-    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
-  ): Promise<{ uri: string; cid: string; value: PubLeafletComment.Record }> {
-    const res = await this._client.call('com.atproto.repo.getRecord', {
-      collection: 'pub.leaflet.comment',
-      ...params,
-    })
-    return res.data
-  }
-
-  async create(
-    params: OmitKey<
-      ComAtprotoRepoCreateRecord.InputSchema,
-      'collection' | 'record'
-    >,
-    record: Un$Typed<PubLeafletComment.Record>,
-    headers?: Record<string, string>,
-  ): Promise<{ uri: string; cid: string }> {
-    const collection = 'pub.leaflet.comment'
-    const res = await this._client.call(
-      'com.atproto.repo.createRecord',
-      undefined,
-      { collection, ...params, record: { ...record, $type: collection } },
-      { encoding: 'application/json', headers },
-    )
-    return res.data
-  }
-
-  async delete(
-    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
-    headers?: Record<string, string>,
-  ): Promise<void> {
-    await this._client.call(
-      'com.atproto.repo.deleteRecord',
-      undefined,
-      { collection: 'pub.leaflet.comment', ...params },
-      { headers },
-    )
-  }
-}
-
-export class DocumentRecord {
-  _client: XrpcClient
-
-  constructor(client: XrpcClient) {
-    this._client = client
-  }
-
-  async list(
-    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
-  ): Promise<{
-    cursor?: string
-    records: { uri: string; value: PubLeafletDocument.Record }[]
-  }> {
-    const res = await this._client.call('com.atproto.repo.listRecords', {
-      collection: 'pub.leaflet.document',
-      ...params,
-    })
-    return res.data
-  }
-
-  async get(
-    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
-  ): Promise<{ uri: string; cid: string; value: PubLeafletDocument.Record }> {
-    const res = await this._client.call('com.atproto.repo.getRecord', {
-      collection: 'pub.leaflet.document',
-      ...params,
-    })
-    return res.data
-  }
-
-  async create(
-    params: OmitKey<
-      ComAtprotoRepoCreateRecord.InputSchema,
-      'collection' | 'record'
-    >,
-    record: Un$Typed<PubLeafletDocument.Record>,
-    headers?: Record<string, string>,
-  ): Promise<{ uri: string; cid: string }> {
-    const collection = 'pub.leaflet.document'
-    const res = await this._client.call(
-      'com.atproto.repo.createRecord',
-      undefined,
-      { collection, ...params, record: { ...record, $type: collection } },
-      { encoding: 'application/json', headers },
-    )
-    return res.data
-  }
-
-  async delete(
-    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
-    headers?: Record<string, string>,
-  ): Promise<void> {
-    await this._client.call(
-      'com.atproto.repo.deleteRecord',
-      undefined,
-      { collection: 'pub.leaflet.document', ...params },
-      { headers },
-    )
-  }
-}
-
-export class PublicationRecord {
-  _client: XrpcClient
-
-  constructor(client: XrpcClient) {
-    this._client = client
-  }
-
-  async list(
-    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
-  ): Promise<{
-    cursor?: string
-    records: { uri: string; value: PubLeafletPublication.Record }[]
-  }> {
-    const res = await this._client.call('com.atproto.repo.listRecords', {
-      collection: 'pub.leaflet.publication',
-      ...params,
-    })
-    return res.data
-  }
-
-  async get(
-    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
-  ): Promise<{
-    uri: string
-    cid: string
-    value: PubLeafletPublication.Record
-  }> {
-    const res = await this._client.call('com.atproto.repo.getRecord', {
-      collection: 'pub.leaflet.publication',
-      ...params,
-    })
-    return res.data
-  }
-
-  async create(
-    params: OmitKey<
-      ComAtprotoRepoCreateRecord.InputSchema,
-      'collection' | 'record'
-    >,
-    record: Un$Typed<PubLeafletPublication.Record>,
-    headers?: Record<string, string>,
-  ): Promise<{ uri: string; cid: string }> {
-    const collection = 'pub.leaflet.publication'
-    const res = await this._client.call(
-      'com.atproto.repo.createRecord',
-      undefined,
-      { collection, ...params, record: { ...record, $type: collection } },
-      { encoding: 'application/json', headers },
-    )
-    return res.data
-  }
-
-  async delete(
-    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
-    headers?: Record<string, string>,
-  ): Promise<void> {
-    await this._client.call(
-      'com.atproto.repo.deleteRecord',
-      undefined,
-      { collection: 'pub.leaflet.publication', ...params },
+      { collection: 'app.bsky.actor.profile', ...params },
       { headers },
     )
   }
@@ -572,37 +362,59 @@ export class ComAtprotoRepoNS {
   }
 }
 
-export class AppNS {
+export class PubNS {
   _client: XrpcClient
-  bsky: AppBskyNS
+  leaflet: PubLeafletNS
 
   constructor(client: XrpcClient) {
     this._client = client
-    this.bsky = new AppBskyNS(client)
+    this.leaflet = new PubLeafletNS(client)
   }
 }
 
-export class AppBskyNS {
+export class PubLeafletNS {
   _client: XrpcClient
-  actor: AppBskyActorNS
+  comment: PubLeafletCommentRecord
+  document: PubLeafletDocumentRecord
+  publication: PubLeafletPublicationRecord
+  blocks: PubLeafletBlocksNS
+  graph: PubLeafletGraphNS
+  pages: PubLeafletPagesNS
+  richtext: PubLeafletRichtextNS
+  theme: PubLeafletThemeNS
 
   constructor(client: XrpcClient) {
     this._client = client
-    this.actor = new AppBskyActorNS(client)
+    this.blocks = new PubLeafletBlocksNS(client)
+    this.graph = new PubLeafletGraphNS(client)
+    this.pages = new PubLeafletPagesNS(client)
+    this.richtext = new PubLeafletRichtextNS(client)
+    this.theme = new PubLeafletThemeNS(client)
+    this.comment = new PubLeafletCommentRecord(client)
+    this.document = new PubLeafletDocumentRecord(client)
+    this.publication = new PubLeafletPublicationRecord(client)
   }
 }
 
-export class AppBskyActorNS {
+export class PubLeafletBlocksNS {
   _client: XrpcClient
-  profile: ProfileRecord
 
   constructor(client: XrpcClient) {
     this._client = client
-    this.profile = new ProfileRecord(client)
   }
 }
 
-export class ProfileRecord {
+export class PubLeafletGraphNS {
+  _client: XrpcClient
+  subscription: PubLeafletGraphSubscriptionRecord
+
+  constructor(client: XrpcClient) {
+    this._client = client
+    this.subscription = new PubLeafletGraphSubscriptionRecord(client)
+  }
+}
+
+export class PubLeafletGraphSubscriptionRecord {
   _client: XrpcClient
 
   constructor(client: XrpcClient) {
@@ -613,10 +425,10 @@ export class ProfileRecord {
     params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
   ): Promise<{
     cursor?: string
-    records: { uri: string; value: AppBskyActorProfile.Record }[]
+    records: { uri: string; value: PubLeafletGraphSubscription.Record }[]
   }> {
     const res = await this._client.call('com.atproto.repo.listRecords', {
-      collection: 'app.bsky.actor.profile',
+      collection: 'pub.leaflet.graph.subscription',
       ...params,
     })
     return res.data
@@ -624,9 +436,13 @@ export class ProfileRecord {
 
   async get(
     params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
-  ): Promise<{ uri: string; cid: string; value: AppBskyActorProfile.Record }> {
+  ): Promise<{
+    uri: string
+    cid: string
+    value: PubLeafletGraphSubscription.Record
+  }> {
     const res = await this._client.call('com.atproto.repo.getRecord', {
-      collection: 'app.bsky.actor.profile',
+      collection: 'pub.leaflet.graph.subscription',
       ...params,
     })
     return res.data
@@ -637,19 +453,32 @@ export class ProfileRecord {
       ComAtprotoRepoCreateRecord.InputSchema,
       'collection' | 'record'
     >,
-    record: Un$Typed<AppBskyActorProfile.Record>,
+    record: Un$Typed<PubLeafletGraphSubscription.Record>,
     headers?: Record<string, string>,
   ): Promise<{ uri: string; cid: string }> {
-    const collection = 'app.bsky.actor.profile'
+    const collection = 'pub.leaflet.graph.subscription'
     const res = await this._client.call(
       'com.atproto.repo.createRecord',
       undefined,
-      {
-        collection,
-        rkey: 'self',
-        ...params,
-        record: { ...record, $type: collection },
-      },
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async put(
+    params: OmitKey<
+      ComAtprotoRepoPutRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletGraphSubscription.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.graph.subscription'
+    const res = await this._client.call(
+      'com.atproto.repo.putRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
       { encoding: 'application/json', headers },
     )
     return res.data
@@ -662,7 +491,272 @@ export class ProfileRecord {
     await this._client.call(
       'com.atproto.repo.deleteRecord',
       undefined,
-      { collection: 'app.bsky.actor.profile', ...params },
+      { collection: 'pub.leaflet.graph.subscription', ...params },
+      { headers },
+    )
+  }
+}
+
+export class PubLeafletPagesNS {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+}
+
+export class PubLeafletRichtextNS {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+}
+
+export class PubLeafletThemeNS {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+}
+
+export class PubLeafletCommentRecord {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+
+  async list(
+    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
+  ): Promise<{
+    cursor?: string
+    records: { uri: string; value: PubLeafletComment.Record }[]
+  }> {
+    const res = await this._client.call('com.atproto.repo.listRecords', {
+      collection: 'pub.leaflet.comment',
+      ...params,
+    })
+    return res.data
+  }
+
+  async get(
+    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
+  ): Promise<{ uri: string; cid: string; value: PubLeafletComment.Record }> {
+    const res = await this._client.call('com.atproto.repo.getRecord', {
+      collection: 'pub.leaflet.comment',
+      ...params,
+    })
+    return res.data
+  }
+
+  async create(
+    params: OmitKey<
+      ComAtprotoRepoCreateRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletComment.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.comment'
+    const res = await this._client.call(
+      'com.atproto.repo.createRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async put(
+    params: OmitKey<
+      ComAtprotoRepoPutRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletComment.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.comment'
+    const res = await this._client.call(
+      'com.atproto.repo.putRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async delete(
+    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
+    headers?: Record<string, string>,
+  ): Promise<void> {
+    await this._client.call(
+      'com.atproto.repo.deleteRecord',
+      undefined,
+      { collection: 'pub.leaflet.comment', ...params },
+      { headers },
+    )
+  }
+}
+
+export class PubLeafletDocumentRecord {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+
+  async list(
+    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
+  ): Promise<{
+    cursor?: string
+    records: { uri: string; value: PubLeafletDocument.Record }[]
+  }> {
+    const res = await this._client.call('com.atproto.repo.listRecords', {
+      collection: 'pub.leaflet.document',
+      ...params,
+    })
+    return res.data
+  }
+
+  async get(
+    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
+  ): Promise<{ uri: string; cid: string; value: PubLeafletDocument.Record }> {
+    const res = await this._client.call('com.atproto.repo.getRecord', {
+      collection: 'pub.leaflet.document',
+      ...params,
+    })
+    return res.data
+  }
+
+  async create(
+    params: OmitKey<
+      ComAtprotoRepoCreateRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletDocument.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.document'
+    const res = await this._client.call(
+      'com.atproto.repo.createRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async put(
+    params: OmitKey<
+      ComAtprotoRepoPutRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletDocument.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.document'
+    const res = await this._client.call(
+      'com.atproto.repo.putRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async delete(
+    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
+    headers?: Record<string, string>,
+  ): Promise<void> {
+    await this._client.call(
+      'com.atproto.repo.deleteRecord',
+      undefined,
+      { collection: 'pub.leaflet.document', ...params },
+      { headers },
+    )
+  }
+}
+
+export class PubLeafletPublicationRecord {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+
+  async list(
+    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
+  ): Promise<{
+    cursor?: string
+    records: { uri: string; value: PubLeafletPublication.Record }[]
+  }> {
+    const res = await this._client.call('com.atproto.repo.listRecords', {
+      collection: 'pub.leaflet.publication',
+      ...params,
+    })
+    return res.data
+  }
+
+  async get(
+    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
+  ): Promise<{
+    uri: string
+    cid: string
+    value: PubLeafletPublication.Record
+  }> {
+    const res = await this._client.call('com.atproto.repo.getRecord', {
+      collection: 'pub.leaflet.publication',
+      ...params,
+    })
+    return res.data
+  }
+
+  async create(
+    params: OmitKey<
+      ComAtprotoRepoCreateRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletPublication.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.publication'
+    const res = await this._client.call(
+      'com.atproto.repo.createRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async put(
+    params: OmitKey<
+      ComAtprotoRepoPutRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletPublication.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.publication'
+    const res = await this._client.call(
+      'com.atproto.repo.putRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async delete(
+    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
+    headers?: Record<string, string>,
+  ): Promise<void> {
+    await this._client.call(
+      'com.atproto.repo.deleteRecord',
+      undefined,
+      { collection: 'pub.leaflet.publication', ...params },
       { headers },
     )
   }

@@ -8,6 +8,7 @@ import {
 import { v7 } from "uuid";
 import { PgTransaction } from "drizzle-orm/pg-core";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { Json } from "supabase/database.types";
 
 export async function createIdentity(
   db: NodePgDatabase,
@@ -43,6 +44,8 @@ export async function createIdentity(
       .insert(identities)
       .values({ home_page: permissionToken.id, ...data })
       .returning();
-    return identity;
+    return identity as Omit<typeof identity, "interface_state"> & {
+      interface_state: Json;
+    };
   });
 }

@@ -7,7 +7,6 @@ import {
 } from "lexicons/api";
 import { createElement } from "react";
 import { StaticPostContent } from "./[rkey]/StaticPostContent";
-import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { supabaseServerClient } from "supabase/serverClient";
 import { NextResponse } from "next/server";
 
@@ -18,13 +17,25 @@ export async function generateFeed(
   let renderToReadableStream = await import("react-dom/server").then(
     (module) => module.renderToReadableStream,
   );
-  let { result: publication } = await get_publication_data.handler(
-    {
-      did: did,
-      publication_name: publication_name,
-    },
-    { supabase: supabaseServerClient },
-  );
+  let uri;
+  if (/^(?!\.$|\.\.S)[A-Za-z0-9._:~-]{1,512}$/.test(publication_name)) {
+    uri = AtUri.make(
+      did,
+      "pub.leaflet.publication",
+      publication_name,
+    ).toString();
+  }
+  let { data: publication } = await supabaseServerClient
+    .from("publications")
+    .select(
+      `*,
+        publication_subscriptions(*),
+      documents_in_publications(documents(*))
+      `,
+    )
+    .eq("identity_did", did)
+    .or(`name.eq."${publication_name}", uri.eq."${uri}"`)
+    .single();
 
   let pubRecord = publication?.record as PubLeafletPublication.Record;
   if (!publication || !pubRecord)

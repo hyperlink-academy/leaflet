@@ -2,805 +2,68 @@
  * GENERATED CODE - DO NOT MODIFY
  */
 import {
-  LexiconDoc,
+  type LexiconDoc,
   Lexicons,
   ValidationError,
-  ValidationResult,
+  type ValidationResult,
 } from '@atproto/lexicon'
-import { $Typed, is$typed, maybe$typed } from './util'
+import { type $Typed, is$typed, maybe$typed } from './util'
 
 export const schemaDict = {
-  PubLeafletComment: {
+  AppBskyActorProfile: {
     lexicon: 1,
-    id: 'pub.leaflet.comment',
-    revision: 1,
-    description: 'A lexicon for comments on documents',
+    id: 'app.bsky.actor.profile',
     defs: {
       main: {
         type: 'record',
-        key: 'tid',
-        description: 'Record containing a comment',
+        description: 'A declaration of a Bluesky account profile.',
+        key: 'literal:self',
         record: {
           type: 'object',
-          required: ['subject', 'plaintext', 'createdAt'],
           properties: {
-            subject: {
+            displayName: {
               type: 'string',
-              format: 'at-uri',
+              maxGraphemes: 64,
+              maxLength: 640,
+            },
+            description: {
+              type: 'string',
+              description: 'Free-form profile description text.',
+              maxGraphemes: 256,
+              maxLength: 2560,
+            },
+            avatar: {
+              type: 'blob',
+              description:
+                "Small image to be displayed next to posts from account. AKA, 'profile picture'",
+              accept: ['image/png', 'image/jpeg'],
+              maxSize: 1000000,
+            },
+            banner: {
+              type: 'blob',
+              description:
+                'Larger horizontal image to display behind profile view.',
+              accept: ['image/png', 'image/jpeg'],
+              maxSize: 1000000,
+            },
+            labels: {
+              type: 'union',
+              description:
+                'Self-label values, specific to the Bluesky application, on the overall account.',
+              refs: ['lex:com.atproto.label.defs#selfLabels'],
+            },
+            joinedViaStarterPack: {
+              type: 'ref',
+              ref: 'lex:com.atproto.repo.strongRef',
+            },
+            pinnedPost: {
+              type: 'ref',
+              ref: 'lex:com.atproto.repo.strongRef',
             },
             createdAt: {
               type: 'string',
               format: 'datetime',
             },
-            reply: {
-              type: 'ref',
-              ref: 'lex:pub.leaflet.comment#replyRef',
-            },
-            plaintext: {
-              type: 'string',
-            },
-            facets: {
-              type: 'array',
-              items: {
-                type: 'ref',
-                ref: 'lex:pub.leaflet.richtext.facet',
-              },
-            },
-            attachment: {
-              type: 'union',
-              refs: ['lex:pub.leaflet.comment#linearDocumentQuote'],
-            },
-          },
-        },
-      },
-      linearDocumentQuote: {
-        type: 'object',
-        required: ['document', 'quote'],
-        properties: {
-          document: {
-            type: 'string',
-            format: 'at-uri',
-          },
-          quote: {
-            type: 'ref',
-            ref: 'lex:pub.leaflet.pages.linearDocument#quote',
-          },
-        },
-      },
-      replyRef: {
-        type: 'object',
-        required: ['parent'],
-        properties: {
-          parent: {
-            type: 'string',
-            format: 'at-uri',
-          },
-        },
-      },
-    },
-  },
-  PubLeafletDocument: {
-    lexicon: 1,
-    id: 'pub.leaflet.document',
-    revision: 1,
-    description: 'A lexicon for long form rich media documents',
-    defs: {
-      main: {
-        type: 'record',
-        key: 'tid',
-        description: 'Record containing a document',
-        record: {
-          type: 'object',
-          required: ['pages', 'author', 'title', 'publication'],
-          properties: {
-            title: {
-              type: 'string',
-              maxLength: 1280,
-              maxGraphemes: 128,
-            },
-            postRef: {
-              type: 'ref',
-              ref: 'lex:com.atproto.repo.strongRef',
-            },
-            description: {
-              type: 'string',
-              maxLength: 3000,
-              maxGraphemes: 300,
-            },
-            publishedAt: {
-              type: 'string',
-              format: 'datetime',
-            },
-            publication: {
-              type: 'string',
-              format: 'at-uri',
-            },
-            author: {
-              type: 'string',
-              format: 'at-identifier',
-            },
-            pages: {
-              type: 'array',
-              items: {
-                type: 'union',
-                refs: ['lex:pub.leaflet.pages.linearDocument'],
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-  PubLeafletPublication: {
-    lexicon: 1,
-    id: 'pub.leaflet.publication',
-    defs: {
-      main: {
-        type: 'record',
-        key: 'tid',
-        description: 'Record declaring a publication',
-        record: {
-          type: 'object',
-          required: ['name'],
-          properties: {
-            name: {
-              type: 'string',
-              maxLength: 2000,
-            },
-            base_path: {
-              type: 'string',
-              format: 'uri',
-            },
-            description: {
-              type: 'string',
-              maxLength: 2000,
-            },
-            icon: {
-              type: 'blob',
-              accept: ['image/*'],
-              maxSize: 1000000,
-            },
-            theme: {
-              type: 'ref',
-              ref: 'lex:pub.leaflet.publication#theme',
-            },
-            preferences: {
-              type: 'ref',
-              ref: 'lex:pub.leaflet.publication#preferences',
-            },
-          },
-        },
-      },
-      preferences: {
-        type: 'object',
-        properties: {
-          showInDiscover: {
-            type: 'boolean',
-            default: true,
-          },
-          showComments: {
-            type: 'boolean',
-            default: true,
-          },
-        },
-      },
-      theme: {
-        type: 'object',
-        properties: {
-          backgroundColor: {
-            type: 'union',
-            refs: [
-              'lex:pub.leaflet.theme.color#rgba',
-              'lex:pub.leaflet.theme.color#rgb',
-            ],
-          },
-          backgroundImage: {
-            type: 'ref',
-            ref: 'lex:pub.leaflet.theme.backgroundImage',
-          },
-          primary: {
-            type: 'union',
-            refs: [
-              'lex:pub.leaflet.theme.color#rgba',
-              'lex:pub.leaflet.theme.color#rgb',
-            ],
-          },
-          pageBackground: {
-            type: 'union',
-            refs: [
-              'lex:pub.leaflet.theme.color#rgba',
-              'lex:pub.leaflet.theme.color#rgb',
-            ],
-          },
-          showPageBackground: {
-            type: 'boolean',
-            default: false,
-          },
-          accentBackground: {
-            type: 'union',
-            refs: [
-              'lex:pub.leaflet.theme.color#rgba',
-              'lex:pub.leaflet.theme.color#rgb',
-            ],
-          },
-          accentText: {
-            type: 'union',
-            refs: [
-              'lex:pub.leaflet.theme.color#rgba',
-              'lex:pub.leaflet.theme.color#rgb',
-            ],
-          },
-        },
-      },
-    },
-  },
-  PubLeafletBlocksBlockquote: {
-    lexicon: 1,
-    id: 'pub.leaflet.blocks.blockquote',
-    defs: {
-      main: {
-        type: 'object',
-        required: ['plaintext'],
-        properties: {
-          plaintext: {
-            type: 'string',
-          },
-          facets: {
-            type: 'array',
-            items: {
-              type: 'ref',
-              ref: 'lex:pub.leaflet.richtext.facet',
-            },
-          },
-        },
-      },
-    },
-  },
-  PubLeafletBlocksBskyPost: {
-    lexicon: 1,
-    id: 'pub.leaflet.blocks.bskyPost',
-    defs: {
-      main: {
-        type: 'object',
-        required: ['postRef'],
-        properties: {
-          postRef: {
-            type: 'ref',
-            ref: 'lex:com.atproto.repo.strongRef',
-          },
-        },
-      },
-    },
-  },
-  PubLeafletBlocksCode: {
-    lexicon: 1,
-    id: 'pub.leaflet.blocks.code',
-    defs: {
-      main: {
-        type: 'object',
-        required: ['plaintext'],
-        properties: {
-          plaintext: {
-            type: 'string',
-          },
-          language: {
-            type: 'string',
-          },
-          syntaxHighlightingTheme: {
-            type: 'string',
-          },
-        },
-      },
-    },
-  },
-  PubLeafletBlocksHeader: {
-    lexicon: 1,
-    id: 'pub.leaflet.blocks.header',
-    defs: {
-      main: {
-        type: 'object',
-        required: ['plaintext'],
-        properties: {
-          level: {
-            type: 'integer',
-            minimum: 1,
-            maximum: 6,
-          },
-          plaintext: {
-            type: 'string',
-          },
-          facets: {
-            type: 'array',
-            items: {
-              type: 'ref',
-              ref: 'lex:pub.leaflet.richtext.facet',
-            },
-          },
-        },
-      },
-    },
-  },
-  PubLeafletBlocksHorizontalRule: {
-    lexicon: 1,
-    id: 'pub.leaflet.blocks.horizontalRule',
-    defs: {
-      main: {
-        type: 'object',
-        required: [],
-        properties: {},
-      },
-    },
-  },
-  PubLeafletBlocksIframe: {
-    lexicon: 1,
-    id: 'pub.leaflet.blocks.iframe',
-    defs: {
-      main: {
-        type: 'object',
-        required: ['url'],
-        properties: {
-          url: {
-            type: 'string',
-            format: 'uri',
-          },
-          height: {
-            type: 'integer',
-            minimum: 16,
-            maximum: 1600,
-          },
-        },
-      },
-    },
-  },
-  PubLeafletBlocksImage: {
-    lexicon: 1,
-    id: 'pub.leaflet.blocks.image',
-    defs: {
-      main: {
-        type: 'object',
-        required: ['image', 'aspectRatio'],
-        properties: {
-          image: {
-            type: 'blob',
-            accept: ['image/*'],
-            maxSize: 1000000,
-          },
-          alt: {
-            type: 'string',
-            description:
-              'Alt text description of the image, for accessibility.',
-          },
-          aspectRatio: {
-            type: 'ref',
-            ref: 'lex:pub.leaflet.blocks.image#aspectRatio',
-          },
-        },
-      },
-      aspectRatio: {
-        type: 'object',
-        required: ['width', 'height'],
-        properties: {
-          width: {
-            type: 'integer',
-          },
-          height: {
-            type: 'integer',
-          },
-        },
-      },
-    },
-  },
-  PubLeafletBlocksMath: {
-    lexicon: 1,
-    id: 'pub.leaflet.blocks.math',
-    defs: {
-      main: {
-        type: 'object',
-        required: ['tex'],
-        properties: {
-          tex: {
-            type: 'string',
-          },
-        },
-      },
-    },
-  },
-  PubLeafletBlocksPage: {
-    lexicon: 1,
-    id: 'pub.leaflet.blocks.page',
-    defs: {
-      main: {
-        type: 'object',
-        required: ['id'],
-        properties: {
-          id: {
-            type: 'string',
-          },
-        },
-      },
-    },
-  },
-  PubLeafletBlocksText: {
-    lexicon: 1,
-    id: 'pub.leaflet.blocks.text',
-    defs: {
-      main: {
-        type: 'object',
-        required: ['plaintext'],
-        properties: {
-          plaintext: {
-            type: 'string',
-          },
-          facets: {
-            type: 'array',
-            items: {
-              type: 'ref',
-              ref: 'lex:pub.leaflet.richtext.facet',
-            },
-          },
-        },
-      },
-    },
-  },
-  PubLeafletBlocksUnorderedList: {
-    lexicon: 1,
-    id: 'pub.leaflet.blocks.unorderedList',
-    defs: {
-      main: {
-        type: 'object',
-        required: ['children'],
-        properties: {
-          children: {
-            type: 'array',
-            items: {
-              type: 'ref',
-              ref: 'lex:pub.leaflet.blocks.unorderedList#listItem',
-            },
-          },
-        },
-      },
-      listItem: {
-        type: 'object',
-        required: ['content'],
-        properties: {
-          content: {
-            type: 'union',
-            refs: [
-              'lex:pub.leaflet.blocks.text',
-              'lex:pub.leaflet.blocks.header',
-              'lex:pub.leaflet.blocks.image',
-            ],
-          },
-          children: {
-            type: 'array',
-            items: {
-              type: 'ref',
-              ref: 'lex:pub.leaflet.blocks.unorderedList#listItem',
-            },
-          },
-        },
-      },
-    },
-  },
-  PubLeafletBlocksWebsite: {
-    lexicon: 1,
-    id: 'pub.leaflet.blocks.website',
-    defs: {
-      main: {
-        type: 'object',
-        required: ['src'],
-        properties: {
-          previewImage: {
-            type: 'blob',
-            accept: ['image/*'],
-            maxSize: 1000000,
-          },
-          title: {
-            type: 'string',
-          },
-          description: {
-            type: 'string',
-          },
-          src: {
-            type: 'string',
-            format: 'uri',
-          },
-        },
-      },
-    },
-  },
-  PubLeafletGraphSubscription: {
-    lexicon: 1,
-    id: 'pub.leaflet.graph.subscription',
-    defs: {
-      main: {
-        type: 'record',
-        key: 'tid',
-        description: 'Record declaring a subscription to a publication',
-        record: {
-          type: 'object',
-          required: ['publication'],
-          properties: {
-            publication: {
-              type: 'string',
-              format: 'at-uri',
-            },
-          },
-        },
-      },
-    },
-  },
-  PubLeafletPagesLinearDocument: {
-    lexicon: 1,
-    id: 'pub.leaflet.pages.linearDocument',
-    defs: {
-      main: {
-        type: 'object',
-        required: ['blocks'],
-        properties: {
-          id: {
-            type: 'string',
-          },
-          blocks: {
-            type: 'array',
-            items: {
-              type: 'ref',
-              ref: 'lex:pub.leaflet.pages.linearDocument#block',
-            },
-          },
-        },
-      },
-      block: {
-        type: 'object',
-        required: ['block'],
-        properties: {
-          block: {
-            type: 'union',
-            refs: [
-              'lex:pub.leaflet.blocks.iframe',
-              'lex:pub.leaflet.blocks.text',
-              'lex:pub.leaflet.blocks.blockquote',
-              'lex:pub.leaflet.blocks.header',
-              'lex:pub.leaflet.blocks.image',
-              'lex:pub.leaflet.blocks.unorderedList',
-              'lex:pub.leaflet.blocks.website',
-              'lex:pub.leaflet.blocks.math',
-              'lex:pub.leaflet.blocks.code',
-              'lex:pub.leaflet.blocks.horizontalRule',
-              'lex:pub.leaflet.blocks.bskyPost',
-              'lex:pub.leaflet.blocks.page',
-            ],
-          },
-          alignment: {
-            type: 'string',
-            knownValues: [
-              'lex:pub.leaflet.pages.linearDocument#textAlignLeft',
-              'lex:pub.leaflet.pages.linearDocument#textAlignCenter',
-              'lex:pub.leaflet.pages.linearDocument#textAlignRight',
-              'lex:pub.leaflet.pages.linearDocument#textAlignJustify',
-            ],
-          },
-        },
-      },
-      textAlignLeft: {
-        type: 'token',
-      },
-      textAlignCenter: {
-        type: 'token',
-      },
-      textAlignRight: {
-        type: 'token',
-      },
-      quote: {
-        type: 'object',
-        required: ['start', 'end'],
-        properties: {
-          start: {
-            type: 'ref',
-            ref: 'lex:pub.leaflet.pages.linearDocument#position',
-          },
-          end: {
-            type: 'ref',
-            ref: 'lex:pub.leaflet.pages.linearDocument#position',
-          },
-        },
-      },
-      position: {
-        type: 'object',
-        required: ['block', 'offset'],
-        properties: {
-          block: {
-            type: 'array',
-            items: {
-              type: 'integer',
-            },
-          },
-          offset: {
-            type: 'integer',
-          },
-        },
-      },
-    },
-  },
-  PubLeafletRichtextFacet: {
-    lexicon: 1,
-    id: 'pub.leaflet.richtext.facet',
-    defs: {
-      main: {
-        type: 'object',
-        description: 'Annotation of a sub-string within rich text.',
-        required: ['index', 'features'],
-        properties: {
-          index: {
-            type: 'ref',
-            ref: 'lex:pub.leaflet.richtext.facet#byteSlice',
-          },
-          features: {
-            type: 'array',
-            items: {
-              type: 'union',
-              refs: [
-                'lex:pub.leaflet.richtext.facet#link',
-                'lex:pub.leaflet.richtext.facet#code',
-                'lex:pub.leaflet.richtext.facet#highlight',
-                'lex:pub.leaflet.richtext.facet#underline',
-                'lex:pub.leaflet.richtext.facet#strikethrough',
-                'lex:pub.leaflet.richtext.facet#id',
-                'lex:pub.leaflet.richtext.facet#bold',
-                'lex:pub.leaflet.richtext.facet#italic',
-              ],
-            },
-          },
-        },
-      },
-      byteSlice: {
-        type: 'object',
-        description:
-          'Specifies the sub-string range a facet feature applies to. Start index is inclusive, end index is exclusive. Indices are zero-indexed, counting bytes of the UTF-8 encoded text. NOTE: some languages, like Javascript, use UTF-16 or Unicode codepoints for string slice indexing; in these languages, convert to byte arrays before working with facets.',
-        required: ['byteStart', 'byteEnd'],
-        properties: {
-          byteStart: {
-            type: 'integer',
-            minimum: 0,
-          },
-          byteEnd: {
-            type: 'integer',
-            minimum: 0,
-          },
-        },
-      },
-      link: {
-        type: 'object',
-        description:
-          'Facet feature for a URL. The text URL may have been simplified or truncated, but the facet reference should be a complete URL.',
-        required: ['uri'],
-        properties: {
-          uri: {
-            type: 'string',
-            format: 'uri',
-          },
-        },
-      },
-      code: {
-        type: 'object',
-        description: 'Facet feature for inline code.',
-        required: [],
-        properties: {},
-      },
-      highlight: {
-        type: 'object',
-        description: 'Facet feature for highlighted text.',
-        required: [],
-        properties: {},
-      },
-      underline: {
-        type: 'object',
-        description: 'Facet feature for underline markup',
-        required: [],
-        properties: {},
-      },
-      strikethrough: {
-        type: 'object',
-        description: 'Facet feature for strikethrough markup',
-        required: [],
-        properties: {},
-      },
-      id: {
-        type: 'object',
-        description:
-          'Facet feature for an identifier. Used for linking to a segment',
-        required: [],
-        properties: {
-          id: {
-            type: 'string',
-          },
-        },
-      },
-      bold: {
-        type: 'object',
-        description: 'Facet feature for bold text',
-        required: [],
-        properties: {},
-      },
-      italic: {
-        type: 'object',
-        description: 'Facet feature for italic text',
-        required: [],
-        properties: {},
-      },
-    },
-  },
-  PubLeafletThemeBackgroundImage: {
-    lexicon: 1,
-    id: 'pub.leaflet.theme.backgroundImage',
-    defs: {
-      main: {
-        type: 'object',
-        required: ['image'],
-        properties: {
-          image: {
-            type: 'blob',
-            accept: ['image/*'],
-            maxSize: 1000000,
-          },
-          width: {
-            type: 'integer',
-          },
-          repeat: {
-            type: 'boolean',
-          },
-        },
-      },
-    },
-  },
-  PubLeafletThemeColor: {
-    lexicon: 1,
-    id: 'pub.leaflet.theme.color',
-    defs: {
-      rgba: {
-        type: 'object',
-        required: ['r', 'g', 'b', 'a'],
-        properties: {
-          r: {
-            type: 'integer',
-            maximum: 255,
-            minimum: 0,
-          },
-          g: {
-            type: 'integer',
-            maximum: 255,
-            minimum: 0,
-          },
-          b: {
-            type: 'integer',
-            maximum: 255,
-            minimum: 0,
-          },
-          a: {
-            type: 'integer',
-            maximum: 100,
-            minimum: 0,
-          },
-        },
-      },
-      rgb: {
-        type: 'object',
-        required: ['r', 'g', 'b'],
-        properties: {
-          r: {
-            type: 'integer',
-            maximum: 255,
-            minimum: 0,
-          },
-          g: {
-            type: 'integer',
-            maximum: 255,
-            minimum: 0,
-          },
-          b: {
-            type: 'integer',
-            maximum: 255,
-            minimum: 0,
           },
         },
       },
@@ -1751,67 +1014,802 @@ export const schemaDict = {
       },
     },
   },
-  AppBskyActorProfile: {
+  PubLeafletBlocksBlockquote: {
     lexicon: 1,
-    id: 'app.bsky.actor.profile',
+    id: 'pub.leaflet.blocks.blockquote',
     defs: {
       main: {
-        type: 'record',
-        description: 'A declaration of a Bluesky account profile.',
-        key: 'literal:self',
-        record: {
-          type: 'object',
-          properties: {
-            displayName: {
-              type: 'string',
-              maxGraphemes: 64,
-              maxLength: 640,
-            },
-            description: {
-              type: 'string',
-              description: 'Free-form profile description text.',
-              maxGraphemes: 256,
-              maxLength: 2560,
-            },
-            avatar: {
-              type: 'blob',
-              description:
-                "Small image to be displayed next to posts from account. AKA, 'profile picture'",
-              accept: ['image/png', 'image/jpeg'],
-              maxSize: 1000000,
-            },
-            banner: {
-              type: 'blob',
-              description:
-                'Larger horizontal image to display behind profile view.',
-              accept: ['image/png', 'image/jpeg'],
-              maxSize: 1000000,
-            },
-            labels: {
-              type: 'union',
-              description:
-                'Self-label values, specific to the Bluesky application, on the overall account.',
-              refs: ['lex:com.atproto.label.defs#selfLabels'],
-            },
-            joinedViaStarterPack: {
+        type: 'object',
+        required: ['plaintext'],
+        properties: {
+          plaintext: {
+            type: 'string',
+          },
+          facets: {
+            type: 'array',
+            items: {
               type: 'ref',
-              ref: 'lex:com.atproto.repo.strongRef',
-            },
-            pinnedPost: {
-              type: 'ref',
-              ref: 'lex:com.atproto.repo.strongRef',
-            },
-            createdAt: {
-              type: 'string',
-              format: 'datetime',
+              ref: 'lex:pub.leaflet.richtext.facet',
             },
           },
         },
       },
     },
   },
+  PubLeafletBlocksBskyPost: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.bskyPost',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['postRef'],
+        properties: {
+          postRef: {
+            type: 'ref',
+            ref: 'lex:com.atproto.repo.strongRef',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksCode: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.code',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['plaintext'],
+        properties: {
+          plaintext: {
+            type: 'string',
+          },
+          language: {
+            type: 'string',
+          },
+          syntaxHighlightingTheme: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksHeader: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.header',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['plaintext'],
+        properties: {
+          level: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 6,
+          },
+          plaintext: {
+            type: 'string',
+          },
+          facets: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.richtext.facet',
+            },
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksHorizontalRule: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.horizontalRule',
+    defs: {
+      main: {
+        type: 'object',
+        required: [],
+        properties: {},
+      },
+    },
+  },
+  PubLeafletBlocksIframe: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.iframe',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['url'],
+        properties: {
+          url: {
+            type: 'string',
+            format: 'uri',
+          },
+          height: {
+            type: 'integer',
+            minimum: 16,
+            maximum: 1600,
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksImage: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.image',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['image', 'aspectRatio'],
+        properties: {
+          image: {
+            type: 'blob',
+            accept: ['image/*'],
+            maxSize: 1000000,
+          },
+          alt: {
+            type: 'string',
+            description:
+              'Alt text description of the image, for accessibility.',
+          },
+          aspectRatio: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.blocks.image#aspectRatio',
+          },
+        },
+      },
+      aspectRatio: {
+        type: 'object',
+        required: ['width', 'height'],
+        properties: {
+          width: {
+            type: 'integer',
+          },
+          height: {
+            type: 'integer',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksMath: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.math',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['tex'],
+        properties: {
+          tex: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksPage: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.page',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksText: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.text',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['plaintext'],
+        properties: {
+          plaintext: {
+            type: 'string',
+          },
+          facets: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.richtext.facet',
+            },
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksUnorderedList: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.unorderedList',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['children'],
+        properties: {
+          children: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.unorderedList#listItem',
+            },
+          },
+        },
+      },
+      listItem: {
+        type: 'object',
+        required: ['content'],
+        properties: {
+          content: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.blocks.text',
+              'lex:pub.leaflet.blocks.header',
+              'lex:pub.leaflet.blocks.image',
+            ],
+          },
+          children: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.blocks.unorderedList#listItem',
+            },
+          },
+        },
+      },
+    },
+  },
+  PubLeafletBlocksWebsite: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.website',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['src'],
+        properties: {
+          previewImage: {
+            type: 'blob',
+            accept: ['image/*'],
+            maxSize: 1000000,
+          },
+          title: {
+            type: 'string',
+          },
+          description: {
+            type: 'string',
+          },
+          src: {
+            type: 'string',
+            format: 'uri',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletComment: {
+    lexicon: 1,
+    id: 'pub.leaflet.comment',
+    revision: 1,
+    description: 'A lexicon for comments on documents',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description: 'Record containing a comment',
+        record: {
+          type: 'object',
+          required: ['subject', 'plaintext', 'createdAt'],
+          properties: {
+            subject: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+            reply: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.comment#replyRef',
+            },
+            plaintext: {
+              type: 'string',
+            },
+            facets: {
+              type: 'array',
+              items: {
+                type: 'ref',
+                ref: 'lex:pub.leaflet.richtext.facet',
+              },
+            },
+            attachment: {
+              type: 'union',
+              refs: ['lex:pub.leaflet.comment#linearDocumentQuote'],
+            },
+          },
+        },
+      },
+      linearDocumentQuote: {
+        type: 'object',
+        required: ['document', 'quote'],
+        properties: {
+          document: {
+            type: 'string',
+            format: 'at-uri',
+          },
+          quote: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.pages.linearDocument#quote',
+          },
+        },
+      },
+      replyRef: {
+        type: 'object',
+        required: ['parent'],
+        properties: {
+          parent: {
+            type: 'string',
+            format: 'at-uri',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletDocument: {
+    lexicon: 1,
+    id: 'pub.leaflet.document',
+    revision: 1,
+    description: 'A lexicon for long form rich media documents',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description: 'Record containing a document',
+        record: {
+          type: 'object',
+          required: ['pages', 'author', 'title', 'publication'],
+          properties: {
+            title: {
+              type: 'string',
+              maxLength: 1280,
+              maxGraphemes: 128,
+            },
+            postRef: {
+              type: 'ref',
+              ref: 'lex:com.atproto.repo.strongRef',
+            },
+            description: {
+              type: 'string',
+              maxLength: 3000,
+              maxGraphemes: 300,
+            },
+            publishedAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+            publication: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            author: {
+              type: 'string',
+              format: 'at-identifier',
+            },
+            pages: {
+              type: 'array',
+              items: {
+                type: 'union',
+                refs: ['lex:pub.leaflet.pages.linearDocument'],
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  PubLeafletGraphSubscription: {
+    lexicon: 1,
+    id: 'pub.leaflet.graph.subscription',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description: 'Record declaring a subscription to a publication',
+        record: {
+          type: 'object',
+          required: ['publication'],
+          properties: {
+            publication: {
+              type: 'string',
+              format: 'at-uri',
+            },
+          },
+        },
+      },
+    },
+  },
+  PubLeafletPagesLinearDocument: {
+    lexicon: 1,
+    id: 'pub.leaflet.pages.linearDocument',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['blocks'],
+        properties: {
+          id: {
+            type: 'string',
+          },
+          blocks: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.pages.linearDocument#block',
+            },
+          },
+        },
+      },
+      block: {
+        type: 'object',
+        required: ['block'],
+        properties: {
+          block: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.blocks.iframe',
+              'lex:pub.leaflet.blocks.text',
+              'lex:pub.leaflet.blocks.blockquote',
+              'lex:pub.leaflet.blocks.header',
+              'lex:pub.leaflet.blocks.image',
+              'lex:pub.leaflet.blocks.unorderedList',
+              'lex:pub.leaflet.blocks.website',
+              'lex:pub.leaflet.blocks.math',
+              'lex:pub.leaflet.blocks.code',
+              'lex:pub.leaflet.blocks.horizontalRule',
+              'lex:pub.leaflet.blocks.bskyPost',
+              'lex:pub.leaflet.blocks.page',
+            ],
+          },
+          alignment: {
+            type: 'string',
+            knownValues: [
+              'lex:pub.leaflet.pages.linearDocument#textAlignLeft',
+              'lex:pub.leaflet.pages.linearDocument#textAlignCenter',
+              'lex:pub.leaflet.pages.linearDocument#textAlignRight',
+              'lex:pub.leaflet.pages.linearDocument#textAlignJustify',
+            ],
+          },
+        },
+      },
+      textAlignLeft: {
+        type: 'token',
+      },
+      textAlignCenter: {
+        type: 'token',
+      },
+      textAlignRight: {
+        type: 'token',
+      },
+      quote: {
+        type: 'object',
+        required: ['start', 'end'],
+        properties: {
+          start: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.pages.linearDocument#position',
+          },
+          end: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.pages.linearDocument#position',
+          },
+        },
+      },
+      position: {
+        type: 'object',
+        required: ['block', 'offset'],
+        properties: {
+          block: {
+            type: 'array',
+            items: {
+              type: 'integer',
+            },
+          },
+          offset: {
+            type: 'integer',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletPublication: {
+    lexicon: 1,
+    id: 'pub.leaflet.publication',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description: 'Record declaring a publication',
+        record: {
+          type: 'object',
+          required: ['name'],
+          properties: {
+            name: {
+              type: 'string',
+              maxLength: 2000,
+            },
+            base_path: {
+              type: 'string',
+              format: 'uri',
+            },
+            description: {
+              type: 'string',
+              maxLength: 2000,
+            },
+            icon: {
+              type: 'blob',
+              accept: ['image/*'],
+              maxSize: 1000000,
+            },
+            theme: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.publication#theme',
+            },
+            preferences: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.publication#preferences',
+            },
+          },
+        },
+      },
+      preferences: {
+        type: 'object',
+        properties: {
+          showInDiscover: {
+            type: 'boolean',
+            default: true,
+          },
+          showComments: {
+            type: 'boolean',
+            default: true,
+          },
+        },
+      },
+      theme: {
+        type: 'object',
+        properties: {
+          backgroundColor: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+          backgroundImage: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.theme.backgroundImage',
+          },
+          primary: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+          pageBackground: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+          showPageBackground: {
+            type: 'boolean',
+            default: false,
+          },
+          accentBackground: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+          accentText: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.theme.color#rgba',
+              'lex:pub.leaflet.theme.color#rgb',
+            ],
+          },
+        },
+      },
+    },
+  },
+  PubLeafletRichtextFacet: {
+    lexicon: 1,
+    id: 'pub.leaflet.richtext.facet',
+    defs: {
+      main: {
+        type: 'object',
+        description: 'Annotation of a sub-string within rich text.',
+        required: ['index', 'features'],
+        properties: {
+          index: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.richtext.facet#byteSlice',
+          },
+          features: {
+            type: 'array',
+            items: {
+              type: 'union',
+              refs: [
+                'lex:pub.leaflet.richtext.facet#link',
+                'lex:pub.leaflet.richtext.facet#code',
+                'lex:pub.leaflet.richtext.facet#highlight',
+                'lex:pub.leaflet.richtext.facet#underline',
+                'lex:pub.leaflet.richtext.facet#strikethrough',
+                'lex:pub.leaflet.richtext.facet#id',
+                'lex:pub.leaflet.richtext.facet#bold',
+                'lex:pub.leaflet.richtext.facet#italic',
+              ],
+            },
+          },
+        },
+      },
+      byteSlice: {
+        type: 'object',
+        description:
+          'Specifies the sub-string range a facet feature applies to. Start index is inclusive, end index is exclusive. Indices are zero-indexed, counting bytes of the UTF-8 encoded text. NOTE: some languages, like Javascript, use UTF-16 or Unicode codepoints for string slice indexing; in these languages, convert to byte arrays before working with facets.',
+        required: ['byteStart', 'byteEnd'],
+        properties: {
+          byteStart: {
+            type: 'integer',
+            minimum: 0,
+          },
+          byteEnd: {
+            type: 'integer',
+            minimum: 0,
+          },
+        },
+      },
+      link: {
+        type: 'object',
+        description:
+          'Facet feature for a URL. The text URL may have been simplified or truncated, but the facet reference should be a complete URL.',
+        required: ['uri'],
+        properties: {
+          uri: {
+            type: 'string',
+          },
+        },
+      },
+      code: {
+        type: 'object',
+        description: 'Facet feature for inline code.',
+        required: [],
+        properties: {},
+      },
+      highlight: {
+        type: 'object',
+        description: 'Facet feature for highlighted text.',
+        required: [],
+        properties: {},
+      },
+      underline: {
+        type: 'object',
+        description: 'Facet feature for underline markup',
+        required: [],
+        properties: {},
+      },
+      strikethrough: {
+        type: 'object',
+        description: 'Facet feature for strikethrough markup',
+        required: [],
+        properties: {},
+      },
+      id: {
+        type: 'object',
+        description:
+          'Facet feature for an identifier. Used for linking to a segment',
+        required: [],
+        properties: {
+          id: {
+            type: 'string',
+          },
+        },
+      },
+      bold: {
+        type: 'object',
+        description: 'Facet feature for bold text',
+        required: [],
+        properties: {},
+      },
+      italic: {
+        type: 'object',
+        description: 'Facet feature for italic text',
+        required: [],
+        properties: {},
+      },
+    },
+  },
+  PubLeafletThemeBackgroundImage: {
+    lexicon: 1,
+    id: 'pub.leaflet.theme.backgroundImage',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['image'],
+        properties: {
+          image: {
+            type: 'blob',
+            accept: ['image/*'],
+            maxSize: 1000000,
+          },
+          width: {
+            type: 'integer',
+          },
+          repeat: {
+            type: 'boolean',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletThemeColor: {
+    lexicon: 1,
+    id: 'pub.leaflet.theme.color',
+    defs: {
+      rgba: {
+        type: 'object',
+        required: ['r', 'g', 'b', 'a'],
+        properties: {
+          r: {
+            type: 'integer',
+            maximum: 255,
+            minimum: 0,
+          },
+          g: {
+            type: 'integer',
+            maximum: 255,
+            minimum: 0,
+          },
+          b: {
+            type: 'integer',
+            maximum: 255,
+            minimum: 0,
+          },
+          a: {
+            type: 'integer',
+            maximum: 100,
+            minimum: 0,
+          },
+        },
+      },
+      rgb: {
+        type: 'object',
+        required: ['r', 'g', 'b'],
+        properties: {
+          r: {
+            type: 'integer',
+            maximum: 255,
+            minimum: 0,
+          },
+          g: {
+            type: 'integer',
+            maximum: 255,
+            minimum: 0,
+          },
+          b: {
+            type: 'integer',
+            maximum: 255,
+            minimum: 0,
+          },
+        },
+      },
+    },
+  },
 } as const satisfies Record<string, LexiconDoc>
-
 export const schemas = Object.values(schemaDict) satisfies LexiconDoc[]
 export const lexicons: Lexicons = new Lexicons(schemas)
 
@@ -1844,26 +1842,7 @@ export function validate(
 }
 
 export const ids = {
-  PubLeafletComment: 'pub.leaflet.comment',
-  PubLeafletDocument: 'pub.leaflet.document',
-  PubLeafletPublication: 'pub.leaflet.publication',
-  PubLeafletBlocksBlockquote: 'pub.leaflet.blocks.blockquote',
-  PubLeafletBlocksBskyPost: 'pub.leaflet.blocks.bskyPost',
-  PubLeafletBlocksCode: 'pub.leaflet.blocks.code',
-  PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
-  PubLeafletBlocksHorizontalRule: 'pub.leaflet.blocks.horizontalRule',
-  PubLeafletBlocksIframe: 'pub.leaflet.blocks.iframe',
-  PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
-  PubLeafletBlocksMath: 'pub.leaflet.blocks.math',
-  PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
-  PubLeafletBlocksText: 'pub.leaflet.blocks.text',
-  PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
-  PubLeafletBlocksWebsite: 'pub.leaflet.blocks.website',
-  PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
-  PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
-  PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
-  PubLeafletThemeBackgroundImage: 'pub.leaflet.theme.backgroundImage',
-  PubLeafletThemeColor: 'pub.leaflet.theme.color',
+  AppBskyActorProfile: 'app.bsky.actor.profile',
   ComAtprotoLabelDefs: 'com.atproto.label.defs',
   ComAtprotoRepoApplyWrites: 'com.atproto.repo.applyWrites',
   ComAtprotoRepoCreateRecord: 'com.atproto.repo.createRecord',
@@ -1877,5 +1856,24 @@ export const ids = {
   ComAtprotoRepoPutRecord: 'com.atproto.repo.putRecord',
   ComAtprotoRepoStrongRef: 'com.atproto.repo.strongRef',
   ComAtprotoRepoUploadBlob: 'com.atproto.repo.uploadBlob',
-  AppBskyActorProfile: 'app.bsky.actor.profile',
+  PubLeafletBlocksBlockquote: 'pub.leaflet.blocks.blockquote',
+  PubLeafletBlocksBskyPost: 'pub.leaflet.blocks.bskyPost',
+  PubLeafletBlocksCode: 'pub.leaflet.blocks.code',
+  PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
+  PubLeafletBlocksHorizontalRule: 'pub.leaflet.blocks.horizontalRule',
+  PubLeafletBlocksIframe: 'pub.leaflet.blocks.iframe',
+  PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
+  PubLeafletBlocksMath: 'pub.leaflet.blocks.math',
+  PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
+  PubLeafletBlocksText: 'pub.leaflet.blocks.text',
+  PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
+  PubLeafletBlocksWebsite: 'pub.leaflet.blocks.website',
+  PubLeafletComment: 'pub.leaflet.comment',
+  PubLeafletDocument: 'pub.leaflet.document',
+  PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
+  PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
+  PubLeafletPublication: 'pub.leaflet.publication',
+  PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
+  PubLeafletThemeBackgroundImage: 'pub.leaflet.theme.backgroundImage',
+  PubLeafletThemeColor: 'pub.leaflet.theme.color',
 } as const

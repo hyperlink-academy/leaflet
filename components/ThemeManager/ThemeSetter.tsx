@@ -114,7 +114,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
               <SectionArrow
                 fill="white"
                 stroke="#CCCCCC"
-                className="ml-2 -mt-[1px]"
+                className="ml-2 -mt-px"
               />
             </div>
           </div>

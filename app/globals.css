@@ -1,6 +1,88 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme inline {
+  --breakpoint-*: initial;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 960px;
+  --breakpoint-lg: 1280px;
+
+  --radius-*: initial;
+  --radius-none: 0;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-full: 9999px;
+
+  --color-*: initial;
+  --color-inherit: inherit;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-primary: rgb(var(--primary));
+  --color-secondary: color-mix(
+    in oklab,
+    rgb(var(--primary)),
+    rgb(var(--bg-page)) 25%
+  );
+  --color-tertiary: color-mix(
+    in oklab,
+    rgb(var(--primary)),
+    rgb(var(--bg-page)) 55%
+  );
+  --color-border: color-mix(
+    in oklab,
+    rgb(var(--primary)),
+    rgb(var(--bg-page)) 75%
+  );
+  --color-border-light: color-mix(
+    in oklab,
+    rgb(var(--primary)),
+    rgb(var(--bg-page)) 85%
+  );
+  --color-white: #ffffff;
+  --color-accent-1: rgb(var(--accent-1));
+  --color-accent-2: rgb(var(--accent-2));
+  --color-accent-contrast: rgb(var(--accent-contrast));
+  --color-bg-leaflet: rgb(var(--bg-leaflet));
+  --color-bg-page: rgb(var(--bg-page));
+  --color-highlight-1: var(--highlight-1);
+  --color-highlight-2: rgb(var(--highlight-2));
+  --color-highlight-3: rgb(var(--highlight-3));
+  --color-test: #e18181;
+  --color-test-blue: #48d1ef;
+
+  --text-*: initial;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.625rem;
+  --text-2xl: 2rem;
+
+  --shadow-sm: 0.9px 1.5px 1.7px -1.8px rgba(var(--primary), 0.2),
+    4.2px 6.9px 7.8px -3.5px rgba(var(--primary), 0.15);
+  --shadow-md: 1.2px 2.5px 2.7px -1.8px rgba(var(--primary), 0.1),
+    5.6px 11.6px 12.5px -3.5px rgba(var(--primary), 0.15);
+
+  --font-sans: var(--font-quattro);
+  --font-serif: Garamond;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
 
 @layer base {
   :root {
@@ -103,10 +185,7 @@
     @apply text-accent-contrast;
     @apply hover:cursor-pointer;
     @apply no-underline;
-  }
-
-  a:hover {
-    @apply underline;
+    @apply hover:underline;
   }
 
   pre {
@@ -126,6 +205,9 @@
   /* START GLOBAL STYLING */
 
   /* END GLOBAL STYLING */
+}
+button:hover {
+  cursor: pointer;
 }
 
 blockquote {
@@ -165,10 +247,10 @@ input[type="number"] {
   font-size: 1em;
   @apply bg-border-light;
   @apply font-mono;
-  @apply px-[1px];
-  @apply py-[1px];
-  @apply -mx-[1px];
-  @apply -my-[1px];
+  @apply px-px;
+  @apply py-px;
+  @apply -mx-px;
+  @apply -my-px;
   @apply rounded-[4px];
   @apply box-decoration-clone;
 }
@@ -191,10 +273,10 @@ pre.shiki {
 }
 
 .highlight {
-  @apply px-[1px];
-  @apply py-[1px];
-  @apply -mx-[1px];
-  @apply -my-[1px];
+  @apply px-px;
+  @apply py-px;
+  @apply -mx-px;
+  @apply -my-px;
   @apply rounded-[4px];
   @apply box-decoration-clone;
 }
@@ -213,19 +295,19 @@ pre.shiki {
 }
 
 .transparent-outline {
-  @apply outline;
+  @apply outline-solid;
   @apply outline-transparent;
 }
 
 .selected-outline {
   @apply border;
-  @apply focus:outline;
+  @apply focus:outline-solid;
   @apply focus:outline-2;
   @apply focus:outline-offset-1;
-  @apply focus-within:outline;
+  @apply focus-within:outline-solid;
   @apply focus-within:outline-2;
   @apply focus-within:outline-offset-1;
-  @apply hover:outline;
+  @apply hover:outline-solid;
   @apply hover:outline-2;
   @apply hover:outline-offset-1;
 }
@@ -240,13 +322,13 @@ pre.shiki {
   @apply hover:border-tertiary;
 
   @apply focus:border-tertiary;
-  @apply focus:outline;
+  @apply focus:outline-solid;
   @apply focus:outline-tertiary;
   @apply focus:outline-2;
   @apply focus:outline-offset-1;
 
   @apply focus-within:border-tertiary;
-  @apply focus-within:outline;
+  @apply focus-within:outline-solid;
   @apply focus-within:outline-tertiary;
   @apply focus-within:outline-2;
   @apply focus-within:outline-offset-1;
@@ -260,7 +342,7 @@ pre.shiki {
   @apply border;
   @apply border-border-light;
   @apply rounded-lg;
-  @apply outline;
+  @apply outline-solid;
   @apply outline-offset-1;
   @apply outline-2;
   @apply outline-transparent;
@@ -271,7 +353,7 @@ pre.shiki {
   @apply border;
   @apply border-border;
   @apply rounded-lg;
-  @apply outline;
+  @apply outline-solid;
   @apply outline-offset-1;
   @apply outline-2;
   @apply outline-border;
@@ -290,7 +372,7 @@ pre.shiki {
 }
 
 .container {
-  background: rgba(var(--bg-page), 0.5);
+  background: rgba(var(--bg-page), 0.75);
   @apply border;
   @apply border-bg-page;
   @apply rounded-md;

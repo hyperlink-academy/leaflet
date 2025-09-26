@@ -31,11 +31,11 @@ export const BlueskyEmbed = (props: {
                 className={`
                   overflow-hidden w-full object-cover
                   ${imageEmbed.images.length === 1 && "h-auto max-h-[800px]"}
-                  ${imageEmbed.images.length === 2 && "basis-1/2 aspect-1/1"}
+                  ${imageEmbed.images.length === 2 && "basis-1/2 aspect-square"}
                   ${imageEmbed.images.length === 3 && "basis-1/3 aspect-2/3"}
                     ${
                       imageEmbed.images.length === 4
-                        ? "basis-1/2 aspect-[3/2]"
+                        ? "basis-1/2 aspect-3/2"
                         : `basis-1/${imageEmbed.images.length} `
                     }
                 `}
@@ -198,7 +198,7 @@ const SeePostOnBluesky = (props: { postUrl: string | undefined }) => {
     <a
       href={props.postUrl}
       target="_blank"
-      className={`block-border flex flex-col p-3 font-normal !rounded-md  border text-tertiary italic text-center hover:no-underline hover:border-accent-contrast ${props.postUrl === undefined && "pointer-events-none"} `}
+      className={`block-border flex flex-col p-3 font-normal rounded-md!  border text-tertiary italic text-center hover:no-underline hover:border-accent-contrast ${props.postUrl === undefined && "pointer-events-none"} `}
     >
       <div> This media is not supported... </div>{" "}
       {props.postUrl === undefined ? null : (

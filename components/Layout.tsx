@@ -90,9 +90,9 @@ export const MenuItem = (props: {
         font-bold z-10 py-1 px-3
         text-left text-secondary
         flex gap-2
-        data-[highlighted]:bg-border-light data-[highlighted]:text-secondary
+        data-highlighted:bg-border-light data-highlighted:text-secondary
         hover:bg-border-light hover:text-secondary
-        outline-none
+        outline-hidden
         cursor-pointer
         ${props.className}
         `}

@@ -1,6 +1,6 @@
 import { Doc, applyUpdate, XmlElement, XmlHook, XmlText } from "yjs";
 import { nodes, marks } from "prosemirror-schema-basic";
-import { CSSProperties } from "react";
+import { CSSProperties, Fragment } from "react";
 import { theme } from "tailwind.config";
 import * as base64 from "base64-js";
 
@@ -34,7 +34,7 @@ export function RenderYJSFragment({
                   let deltas = node.toDelta() as Delta[];
                   if (deltas.length === 0) return <br />;
                   return (
-                    <>
+                    <Fragment key={index}>
                       {deltas.map((d, index) => {
                         if (d.attributes?.link)
                           return (
@@ -56,7 +56,7 @@ export function RenderYJSFragment({
                           </span>
                         );
                       })}
-                    </>
+                    </Fragment>
                   );
                 }
 

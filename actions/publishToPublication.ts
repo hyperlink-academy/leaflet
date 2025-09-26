@@ -359,6 +359,141 @@ async function processBlocksToPages(
     }
     return;
   }
+<<<<<<< HEAD
+=======
+
+  if (b.type === "blockquote") {
+    let [stringValue, facets] = getBlockContent(b.value);
+    let block: $Typed<PubLeafletBlocksBlockquote.Main> = {
+      $type: ids.PubLeafletBlocksBlockquote,
+      plaintext: stringValue,
+      facets,
+    };
+    return block;
+  }
+
+  if (b.type == "text") {
+    let [stringValue, facets] = getBlockContent(b.value);
+    let block: $Typed<PubLeafletBlocksText.Main> = {
+      $type: ids.PubLeafletBlocksText,
+      plaintext: stringValue,
+      facets,
+    };
+    return block;
+  }
+  if (b.type === "embed") {
+    let [url] = scan.eav(b.value, "embed/url");
+    let [height] = scan.eav(b.value, "embed/height");
+    if (!url) return;
+    let block: $Typed<PubLeafletBlocksIframe.Main> = {
+      $type: "pub.leaflet.blocks.iframe",
+      url: url.data.value,
+      height: Math.floor(height?.data.value || 600),
+    };
+    return block;
+  }
+  if (b.type == "image") {
+    let [image] = scan.eav(b.value, "block/image");
+    if (!image) return;
+    let [altText] = scan.eav(b.value, "image/alt");
+    let blobref = imageMap.get(image.data.src);
+    if (!blobref) return;
+    let block: $Typed<PubLeafletBlocksImage.Main> = {
+      $type: "pub.leaflet.blocks.image",
+      image: blobref,
+      aspectRatio: {
+        height: image.data.height,
+        width: image.data.width,
+      },
+      alt: altText ? altText.data.value : undefined,
+    };
+    return block;
+  }
+  if (b.type === "link") {
+    let [previewImage] = scan.eav(b.value, "link/preview");
+    let [description] = scan.eav(b.value, "link/description");
+    let [src] = scan.eav(b.value, "link/url");
+    if (!src) return;
+    let blobref = previewImage
+      ? imageMap.get(previewImage?.data.src)
+      : undefined;
+    let [title] = scan.eav(b.value, "link/title");
+    let block: $Typed<PubLeafletBlocksWebsite.Main> = {
+      $type: "pub.leaflet.blocks.website",
+      previewImage: blobref,
+      src: src.data.value,
+      description: description?.data.value,
+      title: title?.data.value,
+    };
+    return block;
+  }
+  if (b.type === "code") {
+    let [language] = scan.eav(b.value, "block/code-language");
+    let [code] = scan.eav(b.value, "block/code");
+    let [theme] = scan.eav(root_entity, "theme/code-theme");
+    let block: $Typed<PubLeafletBlocksCode.Main> = {
+      $type: "pub.leaflet.blocks.code",
+      language: language?.data.value,
+      plaintext: code?.data.value || "",
+      syntaxHighlightingTheme: theme?.data.value,
+    };
+    return block;
+  }
+  if (b.type === "math") {
+    let [math] = scan.eav(b.value, "block/math");
+    let block: $Typed<PubLeafletBlocksMath.Main> = {
+      $type: "pub.leaflet.blocks.math",
+      tex: math?.data.value || "",
+    };
+    return block;
+  }
+  return;
+}
+
+async function sendPostToEmailSubscribers(
+  publication_uri: string,
+  post: { content: string; title: string },
+) {
+  let { data: publication } = await supabaseServerClient
+    .from("publications")
+    .select("*, subscribers_to_publications(*)")
+    .eq("uri", publication_uri)
+    .single();
+
+  let res = await fetch("https://api.postmarkapp.com/email/batch", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Postmark-Server-Token": process.env.POSTMARK_API_KEY!,
+    },
+    body: JSON.stringify(
+      publication?.subscribers_to_publications.map((sub) => ({
+        Headers: [
+          {
+            Name: "List-Unsubscribe-Post",
+            Value: "List-Unsubscribe=One-Click",
+          },
+          {
+            Name: "List-Unsubscribe",
+            Value: `<${"TODO"}/mail/unsubscribe?sub_id=${sub.identity}>`,
+          },
+        ],
+        MessageStream: "broadcast",
+        From: `${publication.name} <mailbox@leaflet.pub>`,
+        Subject: post.title,
+        To: sub.identity,
+        HtmlBody: `
+        <h1>${publication.name}</h1>
+        <hr style="margin-top: 1em; margin-bottom: 1em;">
+        ${post.content}
+        <hr style="margin-top: 1em; margin-bottom: 1em;">
+        This is a super alpha release! Ask Jared if you want to unsubscribe (sorry)
+        `,
+        TextBody: post.content,
+      })),
+    ),
+  });
+>>>>>>> main
 }
 
 function YJSFragmentToFacets(

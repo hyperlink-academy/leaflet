@@ -316,7 +316,7 @@ const SubscribeForm = (props: {
             <input
               type="number"
               value={code}
-              className="appearance-none focus:outline-none focus:border-border w-20 border border-border-light bg-bg-page rounded-md p-1"
+              className="appearance-none focus:outline-hidden focus:border-border w-20 border border-border-light bg-bg-page rounded-md p-1"
               onChange={(e) => setCode(e.currentTarget.value)}
             />
 
@@ -358,7 +358,7 @@ const SubscribeForm = (props: {
               value={email}
               type="email"
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full appearance-none focus:outline-none bg-transparent"
+              className="w-full appearance-none focus:outline-hidden bg-transparent"
               placeholder="youremail@email.com"
             />
           </div>

@@ -27,9 +27,9 @@ export function Sidebar(props: {
         <div
           className={`
           actionSidebar
-          ${!props.alwaysOpen && "absolute top-0 left-0 z-10"}
-          h-fit w-max p-[6px]
-          flex flex-col gap-2 justify-start border
+          ${!props.alwaysOpen ? "absolute top-0 left-0 z-10 w-max" : "w-[192px] max-w-[192px]"}
+          h-fit p-[6px]
+          flex flex-col gap-1 justify-start border
           rounded-md  bg-bg-page ${open && !props.alwaysOpen ? "border-border-light" : "container"}
           ${props.className}
           `}

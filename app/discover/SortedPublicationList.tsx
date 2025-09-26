@@ -11,7 +11,7 @@ export function SortedPublicationList(props: {
 }) {
   let [order, setOrder] = useState(props.order);
   return (
-    <div className="discoverHeader flex flex-col items-center px-4">
+    <div className="discoverHeader flex flex-col items-center ">
       <SortButtons
         order={order}
         setOrder={(o) => {
@@ -21,12 +21,11 @@ export function SortedPublicationList(props: {
           setOrder(o);
         }}
       />
-      <div className="discoverPubList flex flex-col gap-3 pt-6">
+      <div className="discoverPubList flex flex-col gap-3 pt-6 w-full">
         {props.publications
           ?.filter((pub) => pub.documents_in_publications.length > 0)
           ?.sort((a, b) => {
             if (order === "popular") {
-              console.log("sorting by popularity");
               return (
                 b.publication_subscriptions[0].count -
                 a.publication_subscriptions[0].count

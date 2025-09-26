@@ -8,7 +8,7 @@ export const HorizontalRule = (props: BlockProps) => {
   return (
     <hr
       className={`my-2 w-full border-border-light
-    ${isSelected ? "block-border-selected !outline-offset-[3px]" : ""}
+    ${isSelected ? "block-border-selected outline-offset-[3px]!" : ""}
   `}
     />
   );

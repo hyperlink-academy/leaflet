@@ -27,7 +27,7 @@ export const BackToPubButton = (props: {
   return (
     <SpeedyLink
       href={`${getBasePublicationURL(props.publication)}/dashboard`}
-      className="hover:!no-underline"
+      className="hover:no-underline!"
     >
       <ActionButton
         icon={<GoBackSmall className="shrink-0" />}

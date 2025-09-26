@@ -135,7 +135,7 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
       <Separator classname="h-6" />
       <Input
         autoFocus
-        className="w-full grow bg-transparent border-none outline-none "
+        className="w-full grow bg-transparent border-none outline-hidden "
         placeholder="www.example.com"
         value={linkValue}
         onChange={(e) => setLinkValue(e.target.value)}

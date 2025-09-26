@@ -19,7 +19,7 @@ import {
 import { publishComment } from "./commentAction";
 import { ButtonPrimary } from "components/Buttons";
 import { ShareSmall } from "components/Icons/ShareSmall";
-import { useInteractionState } from "../Interactions";
+import { useInteractionState, setInteractionState } from "../Interactions";
 import { DotLoader } from "components/utils/DotLoader";
 import { rangeHasMark } from "src/utils/prosemirror/rangeHasMark";
 import { setMark } from "src/utils/prosemirror/setMark";
@@ -35,14 +35,64 @@ import { QuoteContent } from "../Quotes";
 import { create } from "zustand";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { CloseFillTiny } from "components/Icons/CloseFillTiny";
+import { betterIsUrl } from "src/utils/isURL";
 
 export function CommentBox(props: {
   doc_uri: string;
   replyTo?: string;
   onSubmit?: () => void;
+  autoFocus?: boolean;
 }) {
   let mountRef = useRef<HTMLPreElement | null>(null);
-  let quote = useInteractionState((s) => s.commentBox.quote);
+  let { commentBox: { quote } } = useInteractionState(props.doc_uri);
+  let [loading, setLoading] = useState(false);
+  
+  const handleSubmit = async () => {
+    if (loading || !view.current) return;
+    
+    setLoading(true);
+    let currentState = view.current.state;
+    let [plaintext, facets] = docToFacetedText(currentState.doc);
+    let comment = await publishComment({
+      document: props.doc_uri,
+      comment: {
+        plaintext,
+        facets,
+        replyTo: props.replyTo,
+        attachment: quote
+          ? {
+              $type: "pub.leaflet.comment#linearDocumentQuote",
+              document: props.doc_uri,
+              quote,
+            }
+          : undefined,
+      },
+    });
+
+    let tr = currentState.tr;
+    tr = tr.replaceWith(
+      0,
+      currentState.doc.content.size,
+      multiBlockSchema.nodes.paragraph.createAndFill()!,
+    );
+    view.current.dispatch(tr);
+    setLoading(false);
+    props.onSubmit?.();
+    setInteractionState(props.doc_uri, (s) => ({
+      commentBox: {
+        quote: null,
+      },
+      localComments: [
+        ...s.localComments,
+        {
+          record: comment.record,
+          uri: comment.uri,
+          bsky_profiles: { record: comment.profile as Json },
+        },
+      ],
+    }));
+  };
+
   let [editorState, setEditorState] = useState(() =>
     EditorState.create({
       schema: multiBlockSchema,
@@ -58,6 +108,8 @@ export function CommentBox(props: {
           "Mod-z": undo,
           "Mod-y": redo,
           "Shift-Mod-z": redo,
+          "Ctrl-Enter": () => { handleSubmit(); return true; },
+          "Meta-Enter": () => { handleSubmit(); return true; },
         }),
         keymap(baseKeymap),
         autolink({
@@ -81,6 +133,27 @@ export function CommentBox(props: {
             e.clipboardData?.getData("text") ||
             e.clipboardData?.getData("text/html");
           let html = e.clipboardData?.getData("text/html");
+          if (text && betterIsUrl(text)) {
+            let selection = view.state.selection as TextSelection;
+            let tr = view.state.tr;
+            let { from, to } = selection;
+            if (selection.empty) {
+              tr.insertText(text, selection.from);
+              tr.addMark(
+                from,
+                from + text.length,
+                multiBlockSchema.marks.link.create({ href: text }),
+              );
+            } else {
+              tr.addMark(
+                from,
+                to,
+                multiBlockSchema.marks.link.create({ href: text }),
+              );
+            }
+            view.dispatch(tr);
+            return true;
+          }
           if (!text && html) {
             let xml = new DOMParser().parseFromString(html, "text/html");
             text = xml.textContent || "";
@@ -96,7 +169,7 @@ export function CommentBox(props: {
             if (!quoteParam) return;
             const quotePosition = decodeQuotePosition(quoteParam);
             if (!quotePosition) return;
-            useInteractionState.setState({
+            setInteractionState(props.doc_uri, {
               commentBox: { quote: quotePosition },
             });
             return true;
@@ -124,12 +197,17 @@ export function CommentBox(props: {
         },
       },
     );
+
+    if (props.autoFocus) {
+      view.current.focus();
+    }
+
     return () => {
       view.current?.destroy();
       view.current = null;
     };
   }, []);
-  let [loading, setLoading] = useState(false);
+  
   return (
     <div className=" flex flex-col">
       {quote && (
@@ -138,7 +216,7 @@ export function CommentBox(props: {
           <button
             className="text-border absolute -top-3 right-1 bg-bg-page p-1 rounded-full"
             onClick={() =>
-              useInteractionState.setState({ commentBox: { quote: null } })
+              setInteractionState(props.doc_uri, { commentBox: { quote: null } })
             }
           >
             <CloseFillTiny />
@@ -148,7 +226,7 @@ export function CommentBox(props: {
       <div className="w-full relative group">
         <pre
           ref={mountRef}
-          className={`border whitespace-pre-wrap input-with-border min-h-32 h-fit !px-2 !py-[6px]`}
+          className={`border whitespace-pre-wrap input-with-border min-h-32 h-fit px-2! py-[6px]!`}
         />
         <IOSBS view={view} />
       </div>
@@ -175,48 +253,7 @@ export function CommentBox(props: {
         </div>
         <ButtonPrimary
           compact
-          onClick={async () => {
-            setLoading(true);
-            let [plaintext, facets] = docToFacetedText(editorState.doc);
-            let comment = await publishComment({
-              document: props.doc_uri,
-              comment: {
-                plaintext,
-                facets,
-                replyTo: props.replyTo,
-                attachment: quote
-                  ? {
-                      $type: "pub.leaflet.comment#linearDocumentQuote",
-                      document: props.doc_uri,
-                      quote,
-                    }
-                  : undefined,
-              },
-            });
-
-            let tr = editorState.tr;
-            tr = tr.replaceWith(
-              0,
-              editorState.doc.content.size,
-              multiBlockSchema.nodes.paragraph.createAndFill()!,
-            );
-            view.current?.dispatch(tr);
-            setLoading(false);
-            props.onSubmit?.();
-            useInteractionState.setState((s) => ({
-              commentBox: {
-                quote: null,
-              },
-              localComments: [
-                ...s.localComments,
-                {
-                  record: comment.record,
-                  uri: comment.uri,
-                  bsky_profiles: { record: comment.profile as Json },
-                },
-              ],
-            }));
-          }}
+          onClick={handleSubmit}
         >
           {loading ? <DotLoader /> : <ShareSmall />}
         </ButtonPrimary>

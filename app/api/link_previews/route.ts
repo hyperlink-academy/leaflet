@@ -33,6 +33,9 @@ async function get_link_image_preview(url: string) {
       headers: {
         "x-api-key": process.env.MICROLINK_API_KEY!,
       },
+      next: {
+        revalidate: 600,
+      },
     },
   );
   let key = await hash(url);

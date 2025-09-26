@@ -1,11 +1,14 @@
-import { OAuthClientMetadata } from "@atproto/oauth-client-node";
+import {
+  OAuthClientMetadata,
+  OAuthClientMetadataInput,
+} from "@atproto/oauth-client-node";
 const hostname =
   process.env.NODE_ENV === "development"
     ? "http://localhost:3000"
     : "https://leaflet.pub";
 
 const scope = "atproto transition:generic transition:email";
-const localconfig: OAuthClientMetadata = {
+const localconfig: OAuthClientMetadataInput = {
   client_id: `http://localhost/?redirect_uri=${encodeURI(`http://127.0.0.1:3000/api/oauth/callback`)}&scope=${encodeURIComponent(scope)}`,
   client_name: `Leaflet`,
   client_uri: hostname,
@@ -18,7 +21,7 @@ const localconfig: OAuthClientMetadata = {
   dpop_bound_access_tokens: true,
 };
 
-const prodconfig: OAuthClientMetadata = {
+const prodconfig: OAuthClientMetadataInput = {
   client_id: `${hostname}/api/oauth/metadata`,
   client_name: `Leaflet`,
   client_uri: hostname,

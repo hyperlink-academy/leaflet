@@ -101,6 +101,7 @@ export const identities = pgTable("identities", {
 	home_page: uuid("home_page").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
 	email: text("email"),
 	atp_did: text("atp_did"),
+	interface_state: jsonb("interface_state"),
 },
 (table) => {
 	return {

@@ -18,9 +18,13 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 
-export function PublishedPostsList() {
-  let { data: publication } = usePublicationData();
+export function PublishedPostsList(props: {
+  searchValue: string;
+  showPageBackground: boolean;
+}) {
+  let { data } = usePublicationData();
   let params = useParams();
+  let { publication } = data!;
   if (!publication) return null;
   if (publication.documents_in_publications.length === 0)
     return (
@@ -29,7 +33,7 @@ export function PublishedPostsList() {
       </div>
     );
   return (
-    <div className="publishedList w-full flex flex-col gap-4 pb-4">
+    <div className="publishedList w-full flex flex-col gap-2 pb-4">
       {publication.documents_in_publications
         .sort((a, b) => {
           let aRecord = a.documents?.data! as PubLeafletDocument.Record;
@@ -49,18 +53,23 @@ export function PublishedPostsList() {
           );
           let uri = new AtUri(doc.documents.uri);
           let record = doc.documents.data as PubLeafletDocument.Record;
-          let quotes =
-            doc.documents.document_mentions_in_bsky[0]?.count || 0;
-          let comments =
-            doc.documents.comments_on_documents[0]?.count || 0;
+          let quotes = doc.documents.document_mentions_in_bsky[0]?.count || 0;
+          let comments = doc.documents.comments_on_documents[0]?.count || 0;
 
           return (
             <Fragment key={doc.documents?.uri}>
               <div className="flex gap-2 w-full ">
-                <div className="publishedPost grow flex flex-col hover:!no-underline">
+                <div
+                  className={`publishedPost grow flex flex-col  hover:no-underline! rounded-lg border ${props.showPageBackground ? "border-border-light py-1 px-2" : "border-transparent px-1"}`}
+                  style={{
+                    backgroundColor: props.showPageBackground
+                      ? "rgba(var(--bg-page), var(--bg-page-alpha))"
+                      : "transparent",
+                  }}
+                >
                   <div className="flex justify-between gap-2">
                     <a
-                      className="hover:!no-underline"
+                      className="hover:no-underline!"
                       target="_blank"
                       href={`${getPublicationURL(publication)}/${uri.rkey}`}
                     >
@@ -100,7 +109,9 @@ export function PublishedPostsList() {
                         )}
                       </p>
                     ) : null}
-                    {(comments > 0 || quotes > 0) && record.publishedAt ? " | " : ""}
+                    {(comments > 0 || quotes > 0) && record.publishedAt
+                      ? " | "
+                      : ""}
                     {quotes > 0 && (
                       <SpeedyLink
                         href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=quotes`}
@@ -121,7 +132,9 @@ export function PublishedPostsList() {
                   </div>
                 </div>
               </div>
-              <hr className="last:hidden border-border-light" />
+              {!props.showPageBackground && (
+                <hr className="last:hidden border-border-light" />
+              )}
             </Fragment>
           );
         })}
@@ -136,7 +149,7 @@ let Options = (props: { document_uri: string }) => {
       alignOffset={20}
       asChild
       trigger={
-        <button className="text-secondary rounded-md selected-outline !border-transparent hover:!border-border h-min">
+        <button className="text-secondary rounded-md selected-outline border-transparent! hover:border-border! h-min">
           <MoreOptionsVerticalTiny />
         </button>
       }
@@ -149,11 +162,11 @@ let Options = (props: { document_uri: string }) => {
 };
 
 function OptionsMenu(props: { document_uri: string }) {
-  let { mutate, data: publication } = usePublicationData();
+  let { mutate, data } = usePublicationData();
   let [state, setState] = useState<"normal" | "confirm">("normal");
 
-  let postLink = publication
-    ? `${getPublicationURL(publication)}/${new AtUri(props.document_uri).rkey}`
+  let postLink = data?.publication
+    ? `${getPublicationURL(data?.publication)}/${new AtUri(props.document_uri).rkey}`
     : null;
 
   if (state === "normal") {
@@ -203,13 +216,17 @@ function OptionsMenu(props: { document_uri: string }) {
               if (!data) return data;
               return {
                 ...data,
-                leaflets_in_publications: data.leaflets_in_publications.filter(
-                  (l) => l.doc !== props.document_uri,
-                ),
-                documents_in_publications:
-                  data.documents_in_publications.filter(
-                    (d) => d.documents?.uri !== props.document_uri,
-                  ),
+                publication: {
+                  ...data.publication!,
+                  leaflets_in_publications:
+                    data.publication?.leaflets_in_publications.filter(
+                      (l) => l.doc !== props.document_uri,
+                    ) || [],
+                  documents_in_publications:
+                    data.publication?.documents_in_publications.filter(
+                      (d) => d.documents?.uri !== props.document_uri,
+                    ) || [],
+                },
               };
             }, false);
             await deletePost(props.document_uri);

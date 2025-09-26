@@ -22,29 +22,10 @@ import { SpeedyLink } from "components/SpeedyLink";
 export const Actions = (props: { publication: string }) => {
   return (
     <>
-      <Media mobile>
-        <SpeedyLink
-          href="/home"
-          className="hover:no-underline"
-          style={{ textDecorationLine: "none !important" }}
-        >
-          <ActionButton icon={<HomeSmall />} label="Go Home" />
-        </SpeedyLink>
-      </Media>
       <NewDraftActionButton publication={props.publication} />
       <PublicationShareButton />
       <PublicationThemeButton />
       <PublicationSettingsButton publication={props.publication} />
-      <hr className="border-border-light" />
-      <Media mobile={false}>
-        <SpeedyLink
-          href="/home"
-          className="hover:no-underline"
-          style={{ textDecorationLine: "none !important" }}
-        >
-          <ActionButton icon={<HomeSmall />} label="Go Home" />
-        </SpeedyLink>
-      </Media>
     </>
   );
 };
@@ -64,7 +45,6 @@ function PublicationShareButton() {
         <ActionButton
           id="pub-share-button"
           icon=<ShareSmall />
-          secondary
           label="Share"
           onClick={() => {}}
         />
@@ -72,7 +52,7 @@ function PublicationShareButton() {
     >
       <MenuItem onSelect={() => {}}>
         <SpeedyLink
-          href={getPublicationURL(pub!)}
+          href={getPublicationURL(pub?.publication!)}
           className="text-secondary hover:no-underline"
         >
           <div>Viewer Mode</div>
@@ -85,7 +65,7 @@ function PublicationShareButton() {
         onSelect={(e) => {
           e.preventDefault();
           let rect = (e.currentTarget as Element)?.getBoundingClientRect();
-          navigator.clipboard.writeText(getPublicationURL(pub!));
+          navigator.clipboard.writeText(getPublicationURL(pub?.publication!));
           smoker({
             position: {
               x: rect ? rect.left + (rect.right - rect.left) / 2 : 0,
@@ -133,7 +113,7 @@ function PublicationThemeButton() {
   return (
     <Popover
       asChild
-      className="max-w-xs pb-0 !bg-white"
+      className="max-w-xs pb-0 bg-white!"
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
       trigger={

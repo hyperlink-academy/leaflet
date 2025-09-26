@@ -2,7 +2,7 @@
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { useContext } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
-import { useInteractionState } from "./Interactions";
+import { setInteractionState } from "./Interactions";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { AtUri } from "@atproto/api";
 import { Json } from "supabase/database.types";
@@ -25,6 +25,8 @@ export const Quotes = (props: {
   did: string;
 }) => {
   let data = useContext(PostPageContext);
+  const document_uri = data?.uri;
+  if (!document_uri) throw new Error('document_uri not available in PostPageContext');
 
   return (
     <div className="flex flex-col gap-2">
@@ -32,7 +34,7 @@ export const Quotes = (props: {
         Quotes
         <button
           className="text-tertiary"
-          onClick={() => useInteractionState.setState({ drawerOpen: false })}
+          onClick={() => setInteractionState(document_uri, { drawerOpen: false })}
         >
           <CloseTiny />
         </button>
@@ -127,7 +129,7 @@ export const QuoteContent = (props: {
             blocks={content}
             did={props.did}
             preview
-            className="!py-0"
+            className="py-0!"
           />
         </div>
       </div>

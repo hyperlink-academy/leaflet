@@ -6,7 +6,7 @@ const FacetItems: LexiconDoc["defs"] = {
       "Facet feature for a URL. The text URL may have been simplified or truncated, but the facet reference should be a complete URL.",
     required: ["uri"],
     properties: {
-      uri: { type: "string", format: "uri" },
+      uri: { type: "string" },
     },
   },
   code: {

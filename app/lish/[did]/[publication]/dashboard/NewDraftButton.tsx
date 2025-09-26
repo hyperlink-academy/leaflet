@@ -17,7 +17,7 @@ export function NewDraftActionButton(props: { publication: string }) {
         router.push(`/${newLeaflet}`);
       }}
       icon=<AddTiny className="m-1 shrink-0" />
-      label="New Draft"
+      label="New"
     />
   );
 }

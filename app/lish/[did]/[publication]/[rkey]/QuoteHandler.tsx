@@ -3,7 +3,7 @@ import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { CopyTiny } from "components/Icons/CopyTiny";
 import { Separator } from "components/Layout";
 import { useSmoker } from "components/Toast";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useContext } from "react";
 import {
   encodeQuotePosition,
   decodeQuotePosition,
@@ -11,7 +11,8 @@ import {
 } from "./quotePosition";
 import { useIdentityData } from "components/IdentityProvider";
 import { CommentTiny } from "components/Icons/CommentTiny";
-import { useInteractionState } from "./Interactions/Interactions";
+import { setInteractionState } from "./Interactions/Interactions";
+import { PostPageContext } from "./PostPageContext";
 
 export function QuoteHandler() {
   let [position, setPosition] = useState<{
@@ -128,6 +129,9 @@ export function QuoteHandler() {
 export const QuoteOptionButtons = (props: { position: string }) => {
   let smoker = useSmoker();
   let { identity } = useIdentityData();
+  const data = useContext(PostPageContext);
+  const document_uri = data?.uri;
+  if (!document_uri) throw new Error('document_uri not available in PostPageContext');
   let [url, position] = useMemo(() => {
     let currentUrl = new URL(window.location.href);
     let pos = decodeQuotePosition(props.position);
@@ -135,6 +139,9 @@ export const QuoteOptionButtons = (props: { position: string }) => {
       currentUrl.pathname = currentUrl.pathname.split("/l-quote/")[0];
     }
     currentUrl.pathname = currentUrl.pathname + `/l-quote/${props.position}`;
+    
+    // Clear existing query parameters
+    currentUrl.search = "";
 
     currentUrl.hash = `#${pos?.start.block.join(".")}_${pos?.start.offset}`;
     return [currentUrl.toString(), pos];
@@ -145,7 +152,7 @@ export const QuoteOptionButtons = (props: { position: string }) => {
       <div className="">Share via</div>
 
       <a
-        className="flex gap-1 items-center hover:font-bold px-1 hover:!no-underline"
+        className="flex gap-1 items-center hover:font-bold px-1 hover:no-underline!"
         role="link"
         href={`https://bsky.app/intent/compose?text=${encodeURIComponent(url)}`}
         target="_blank"
@@ -183,7 +190,7 @@ export const QuoteOptionButtons = (props: { position: string }) => {
           className="flex gap-1 items-center hover:font-bold px-1"
           onClick={() => {
             if (!position) return;
-            useInteractionState.setState({
+            setInteractionState(document_uri, {
               drawer: "comments",
               drawerOpen: true,
               commentBox: { quote: position },
