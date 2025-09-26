@@ -26,6 +26,8 @@ import { PubCodeBlock } from "./PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./PublishBskyPostBlock";
 import { openPage } from "./PostPages";
+import { PageLinkBlock } from "components/Blocks/PageLinkBlock";
+import { PublishedPageLinkBlock } from "./PublishedPageBlock";
 
 export function PostContent({
   blocks,
@@ -35,6 +37,7 @@ export function PostContent({
   prerenderedCodeBlocks,
   bskyPostData,
   pageId,
+  pages,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   pageId?: string;
@@ -43,6 +46,7 @@ export function PostContent({
   className?: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  pages: PubLeafletPagesLinearDocument.Main[];
 }) {
   return (
     <div
@@ -53,6 +57,7 @@ export function PostContent({
         return (
           <Block
             pageId={pageId}
+            pages={pages}
             bskyPostData={bskyPostData}
             block={b}
             did={did}
@@ -78,6 +83,7 @@ let Block = ({
   prerenderedCodeBlocks,
   bskyPostData,
   pageId,
+  pages,
 }: {
   pageId?: string;
   preview?: boolean;
@@ -85,6 +91,7 @@ let Block = ({
   block: PubLeafletPagesLinearDocument.Block;
   did: string;
   isList?: boolean;
+  pages: PubLeafletPagesLinearDocument.Main[];
   previousBlock?: PubLeafletPagesLinearDocument.Block;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
@@ -123,14 +130,16 @@ let Block = ({
   switch (true) {
     case PubLeafletBlocksPage.isMain(b.block): {
       let id = b.block.id;
+      let page = pages.find((p) => p.id === id);
+      if (!page) return;
       return (
-        <div
-          onClick={() => {
-            openPage(pageId, id);
-          }}
-        >
-          ITS A BLOCK
-        </div>
+        <PublishedPageLinkBlock
+          blocks={page.blocks}
+          pageId={id}
+          parentPageId={pageId}
+          did={did}
+          bskyPostData={bskyPostData}
+        />
       );
     }
     case PubLeafletBlocksBskyPost.isMain(b.block): {
@@ -159,6 +168,7 @@ let Block = ({
         <ul className="-ml-px sm:ml-[9px] pb-2">
           {b.block.children.map((child, i) => (
             <ListItem
+              pages={pages}
               bskyPostData={bskyPostData}
               index={[...index, i]}
               item={child}
@@ -316,6 +326,7 @@ let Block = ({
 
 function ListItem(props: {
   index: number[];
+  pages: PubLeafletPagesLinearDocument.Main[];
   item: PubLeafletBlocksUnorderedList.ListItem;
   did: string;
   className?: string;
@@ -325,6 +336,7 @@ function ListItem(props: {
     <ul className="-ml-[7px] sm:ml-[7px]">
       {props.item.children.map((child, index) => (
         <ListItem
+          pages={props.pages}
           bskyPostData={props.bskyPostData}
           index={[...props.index, index]}
           item={child}
@@ -343,6 +355,7 @@ function ListItem(props: {
       />
       <div className="flex flex-col w-full">
         <Block
+          pages={props.pages}
           bskyPostData={props.bskyPostData}
           block={{ block: props.item.content }}
           did={props.did}

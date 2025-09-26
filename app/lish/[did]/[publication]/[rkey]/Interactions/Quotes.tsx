@@ -26,7 +26,8 @@ export const Quotes = (props: {
 }) => {
   let data = useContext(PostPageContext);
   const document_uri = data?.uri;
-  if (!document_uri) throw new Error('document_uri not available in PostPageContext');
+  if (!document_uri)
+    throw new Error("document_uri not available in PostPageContext");
 
   return (
     <div className="flex flex-col gap-2">
@@ -34,7 +35,9 @@ export const Quotes = (props: {
         Quotes
         <button
           className="text-tertiary"
-          onClick={() => setInteractionState(document_uri, { drawerOpen: false })}
+          onClick={() =>
+            setInteractionState(document_uri, { drawerOpen: false })
+          }
         >
           <CloseTiny />
         </button>
@@ -125,6 +128,7 @@ export const QuoteContent = (props: {
       >
         <div className="italic border border-border-light rounded-md px-2 pt-1">
           <PostContent
+            pages={[]}
             bskyPostData={[]}
             blocks={content}
             did={props.did}

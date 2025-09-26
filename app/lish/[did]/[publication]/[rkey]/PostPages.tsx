@@ -21,6 +21,7 @@ import { CSS } from "@react-spring/web";
 import { PageOptionButton } from "components/Pages/PageOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { PageWrapper } from "components/Pages/Page";
+import { Fragment } from "react";
 export const usePostPageUIState = create(() => ({
   pages: [] as string[],
 }));
@@ -73,6 +74,7 @@ export function PostPages({
 
   let hasPageBackground = !!pubRecord.theme?.showPageBackground;
   let fullPageScroll = !hasPageBackground && !drawerOpen && pages.length === 0;
+  let record = document.data as PubLeafletDocument.Record;
   return (
     <>
       {!fullPageScroll && <BookendSpacer />}
@@ -88,6 +90,7 @@ export function PostPages({
           preferences={preferences}
         />
         <PostContent
+          pages={record.pages as PubLeafletPagesLinearDocument.Main[]}
           bskyPostData={bskyPostData}
           blocks={blocks}
           did={did}
@@ -141,13 +144,12 @@ export function PostPages({
       )}
 
       {pages.map((p) => {
-        let record = document.data as PubLeafletDocument.Record;
         let page = record.pages.find(
           (page) => (page as PubLeafletPagesLinearDocument.Main).id === p,
         ) as PubLeafletPagesLinearDocument.Main | undefined;
         if (!page) return null;
         return (
-          <>
+          <Fragment key={p}>
             <SandwichSpacer />
             <PageWrapper
               cardBorderHidden={!hasPageBackground}
@@ -161,6 +163,7 @@ export function PostPages({
               }
             >
               <PostContent
+                pages={record.pages as PubLeafletPagesLinearDocument.Main[]}
                 pageId={page.id}
                 bskyPostData={bskyPostData}
                 blocks={page.blocks}
@@ -168,7 +171,7 @@ export function PostPages({
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
               />
             </PageWrapper>
-          </>
+          </Fragment>
         );
       })}
       {!fullPageScroll && <BookendSpacer />}
