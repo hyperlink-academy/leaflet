@@ -130,7 +130,7 @@ const ReaderButton = (props: { current?: boolean }) => {
         nav
         icon={<DiscoverSmall />}
         label="Discover"
-        subtext={"Check out what others are writing!"}
+        subtext={"Explore publications!"}
         className={props.current ? "bg-bg-page! border-border-light!" : ""}
       />
     </Link>

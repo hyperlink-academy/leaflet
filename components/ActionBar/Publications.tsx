@@ -85,7 +85,7 @@ const PubListEmpty = () => {
         label="Publish on ATP"
         icon={<PublishSmall />}
         nav
-        subtext="Start a blog or newletter on the Atmosphere"
+        subtext="Start a blog in the Atmosphere"
       />
     </SpeedyLink>
   );
