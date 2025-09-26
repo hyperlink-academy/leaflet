@@ -130,18 +130,16 @@ export function PostPages({
         </div>
       </PageWrapper>
 
-      {drawerOpen && (
-        <InteractionDrawer
-          document_uri={document.uri}
-          comments={
-            pubRecord.preferences?.showComments === false
-              ? []
-              : document.comments_on_documents
-          }
-          quotes={document.document_mentions_in_bsky}
-          did={did}
-        />
-      )}
+      <InteractionDrawer
+        document_uri={document.uri}
+        comments={
+          pubRecord.preferences?.showComments === false
+            ? []
+            : document.comments_on_documents
+        }
+        quotes={document.document_mentions_in_bsky}
+        did={did}
+      />
 
       {pages.map((p) => {
         let page = record.pages.find(
