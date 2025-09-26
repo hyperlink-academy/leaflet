@@ -56,8 +56,8 @@ export function HomeEmptyState() {
       <PublicationBanner />
       <DiscoverBanner />
       <div className="text-tertiary italic text-sm font-normal -mt-2">
-        Note: Right now docs and publications are separate. Soon you'll be able
-        to send docs to pubs!
+        Right now docs and publications are separate. Soon you'll be able to add
+        docs to pubs!
       </div>
     </div>
   );
@@ -79,7 +79,7 @@ export const PublicationBanner = (props: { small?: boolean }) => {
         <Link href={"/lish/createPub"} className="font-bold">
           Start a Publication
         </Link>{" "}
-        and blog on the Atmosphere
+        and blog in the Atmosphere
       </div>
     </div>
   );
@@ -101,7 +101,7 @@ export const DiscoverBanner = (props: { small?: boolean }) => {
         <Link href={"/discover"} className="font-bold">
           Explore Publications
         </Link>{" "}
-        already on the network
+        on art, tech, games, music & more!
       </div>
     </div>
   );
