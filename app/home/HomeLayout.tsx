@@ -185,6 +185,7 @@ export function HomeLeafletList(props: {
         titles={initialFacts?.titles || {}}
         cardBorderHidden={props.cardBorderHidden}
         initialFacts={initialFacts?.facts || {}}
+        showPreview
       />
       <div className="spacer h-4 w-full bg-transparent shrink-0 " />
 
@@ -205,6 +206,7 @@ export function LeafletList(props: {
   };
   searchValue: string;
   cardBorderHidden: boolean;
+  showPreview?: boolean;
 }) {
   let { identity } = useIdentityData();
   let { display } = useDashboardState();
@@ -257,6 +259,7 @@ export function LeafletList(props: {
               added_at={added_at}
               cardBorderHidden={props.cardBorderHidden}
               index={index}
+              showPreview={props.showPreview}
               isHidden={
                 !searchedLeaflets.some(
                   (sl) => sl.token.root_entity === leaflet.root_entity,

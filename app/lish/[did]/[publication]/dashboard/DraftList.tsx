@@ -18,6 +18,7 @@ export function DraftList(props: { searchValue: string }) {
 
       <LeafletList
         searchValue={props.searchValue}
+        showPreview={false}
         defaultDisplay="list"
         cardBorderHidden={true}
         leaflets={leaflets_in_publications

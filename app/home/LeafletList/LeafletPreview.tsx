@@ -40,6 +40,7 @@ export const LeafletListPreview = (props: {
     root,
     "theme/card-background-image-opacity",
   );
+
   return (
     <Tooltip
       open={true}

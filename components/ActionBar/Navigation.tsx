@@ -8,7 +8,7 @@ import { PublicationButtons } from "./Publications";
 import { Popover } from "components/Popover";
 import { MenuSmall } from "components/Icons/MenuSmall";
 
-export type navPages = "home" | "reader" | "pub";
+export type navPages = "home" | "reader" | "pub" | "discover";
 
 export const DesktopNavigation = (props: {
   currentPage: navPages;
@@ -56,11 +56,13 @@ export const MobileNavigation = (props: {
       trigger={
         <div className="shrink-0 p-1 pr-2 text-accent-contrast h-full flex gap-2 font-bold items-center">
           <MenuSmall />
-          <div className="truncate max-w-[64px]">
+          <div className="truncate max-w-[72px]">
             {props.currentPage === "home" ? (
               <>Home</>
             ) : props.currentPage === "reader" ? (
               <>Reader</>
+            ) : props.currentPage === "discover" ? (
+              <>Discover</>
             ) : props.currentPage === "pub" ? (
               thisPublication && <>{thisPublication.name}</>
             ) : null}
@@ -96,7 +98,7 @@ const NavigationOptions = (props: {
 
 const HomeButton = (props: { current?: boolean }) => {
   return (
-    <Link href={"/home"} className="hover:no-underline!">
+    <Link href={"/home"} className="hover:!no-underline">
       <ActionButton
         nav
         icon={<HomeSmall />}

@@ -52,7 +52,7 @@ export const ActionButton = (
     >
       <div className="shrink-0">{icon}</div>
       <div
-        className={`flex flex-col pr-1 leading-snug  ${sidebar.open ? "block" : primary || secondary || nav ? "sm:hidden block" : "hidden"}`}
+        className={`flex flex-col pr-1 leading-snug max-w-full min-w-0  ${sidebar.open ? "block" : primary || secondary || nav ? "sm:hidden block" : "hidden"}`}
       >
         <div className="truncate text-left">{label}</div>
         {props.subtext && (

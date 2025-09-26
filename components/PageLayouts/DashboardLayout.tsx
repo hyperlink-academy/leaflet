@@ -136,65 +136,71 @@ export function DashboardLayout<
   );
   return (
     <DashboardIdContext.Provider value={props.id}>
-      <div className="home pwa-padding relative max-w-(--breakpoint-lg) w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6 ">
+      <div
+        className={`dashboard pwa-padding relative max-w-(--breakpoint-lg) w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6`}
+      >
         <MediaContents mobile={false}>
           <div className="flex flex-col gap-4 my-6">
             <DesktopNavigation
               currentPage={props.currentPage}
               publication={props.publication}
             />
-            <Sidebar alwaysOpen>{props.actions}</Sidebar>
+            {props.actions && <Sidebar alwaysOpen>{props.actions}</Sidebar>}
           </div>
         </MediaContents>
         <div
-          className={`w-full h-full flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-12 px-2 sm:pt-8 sm:pb-12 sm:pl-6 sm:pr-4 `}
+          className={`w-full h-full flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-12 px-3 sm:pt-8 sm:pb-12 sm:pl-6 sm:pr-4 `}
           id="home-content"
         >
-          <Header hasBackgroundImage={props.hasBackgroundImage}>
-            {headerState === "default" ? (
-              <>
-                {Object.keys(props.tabs).length > 1 && (
-                  <div className="pubDashTabs flex flex-row gap-1">
-                    {Object.keys(props.tabs).map((t) => (
-                      <Tab
-                        key={t}
-                        name={t}
-                        selected={t === tab}
-                        onSelect={() => setTab(t)}
-                      />
-                    ))}
-                  </div>
+          {Object.keys(props.tabs).length <= 1 && !controls ? null : (
+            <>
+              <Header hasBackgroundImage={props.hasBackgroundImage}>
+                {headerState === "default" ? (
+                  <>
+                    {Object.keys(props.tabs).length > 1 && (
+                      <div className="pubDashTabs flex flex-row gap-1">
+                        {Object.keys(props.tabs).map((t) => (
+                          <Tab
+                            key={t}
+                            name={t}
+                            selected={t === tab}
+                            onSelect={() => setTab(t)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {props.publication && (
+                      <button
+                        className={`sm:hidden block text-tertiary`}
+                        onClick={() => {
+                          setHeaderState("controls");
+                        }}
+                      >
+                        <SortSmall />
+                      </button>
+                    )}
+                    <div
+                      className={`sm:block ${props.publication && "hidden"} grow`}
+                    >
+                      {controls}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {controls}
+                    <button
+                      className="text-tertiary"
+                      onClick={() => {
+                        setHeaderState("default");
+                      }}
+                    >
+                      <TabsSmall />
+                    </button>
+                  </>
                 )}
-                {props.publication && (
-                  <button
-                    className={`sm:hidden block text-tertiary`}
-                    onClick={() => {
-                      setHeaderState("controls");
-                    }}
-                  >
-                    <SortSmall />
-                  </button>
-                )}
-                <div
-                  className={`sm:block ${props.publication && "hidden"} grow`}
-                >
-                  {controls}
-                </div>
-              </>
-            ) : (
-              <>
-                {controls}
-                <button
-                  className="text-tertiary"
-                  onClick={() => {
-                    setHeaderState("default");
-                  }}
-                >
-                  <TabsSmall />
-                </button>
-              </>
-            )}
-          </Header>
+              </Header>
+            </>
+          )}
           {content}
         </div>
         <Footer>
@@ -202,8 +208,12 @@ export function DashboardLayout<
             currentPage={props.currentPage}
             publication={props.publication}
           />
-          <Separator />
-          {props.actions}
+          {props.actions && (
+            <>
+              <Separator />
+              {props.actions}
+            </>
+          )}
         </Footer>
       </div>
     </DashboardIdContext.Provider>

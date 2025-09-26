@@ -18,6 +18,7 @@ export const LeafletListItem = (props: {
   publishedAt?: string;
   index: number;
   isHidden: boolean;
+  showPreview?: boolean;
 }) => {
   let isTemplate = useTemplateState(
     (s) => !!s.templates.find((t) => t.id === props.token.id),
@@ -58,7 +59,9 @@ export const LeafletListItem = (props: {
             display: props.isHidden ? "none" : "flex",
           }}
         >
-          <LeafletListPreview isVisible={isOnScreen} {...props} />
+          {props.showPreview && (
+            <LeafletListPreview isVisible={isOnScreen} {...props} />
+          )}
           <LeafletInfo isTemplate={isTemplate} {...props} />
         </div>
         {props.cardBorderHidden && (

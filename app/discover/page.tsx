@@ -2,6 +2,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import Link from "next/link";
 import { SortedPublicationList } from "./SortedPublicationList";
 import { Metadata } from "next";
+import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
 
 export const dynamic = "force-static";
 export const revalidate = 60;
@@ -36,17 +37,37 @@ export default async function Discover(props: {
   let publications = await getPublications();
 
   return (
-    <div className="bg-[#FDFCFA] w-full h-full overflow-scroll">
-      <div className="max-w-prose mx-auto sm:py-6 py-4 px-4">
-        <div className="discoverHeader flex flex-col items-center px-4">
-          <h1>Discover</h1>
-          <p className="text-lg text-secondary italic mb-2">
-            Explore publications on Leaflet ✨ Or{" "}
-            <Link href="/lish/createPub">make your own</Link>!
-          </p>
-        </div>
-        <SortedPublicationList publications={publications} order={order} />
-      </div>
+    <div className="w-full h-full mx-auto bg-[#FDFCFA]">
+      <DashboardLayout
+        id="discover"
+        hasBackgroundImage={false}
+        currentPage="discover"
+        defaultTab="default"
+        actions={null}
+        tabs={{
+          default: {
+            controls: null,
+            content: <DiscoverContent order={order} />,
+          },
+        }}
+      />
     </div>
   );
 }
+
+const DiscoverContent = async (props: { order: string }) => {
+  let publications = await getPublications();
+
+  return (
+    <div className="max-w-prose mx-auto">
+      <div className="discoverHeader flex flex-col items-center text-center pt-2 px-4">
+        <h1>Discover</h1>
+        <p className="text-lg text-secondary italic mb-2">
+          Explore publications on Leaflet ✨ Or{" "}
+          <Link href="/lish/createPub">make your own</Link>!
+        </p>
+      </div>
+      <SortedPublicationList publications={publications} order={props.order} />
+    </div>
+  );
+};

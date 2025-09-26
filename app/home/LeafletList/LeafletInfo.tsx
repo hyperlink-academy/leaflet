@@ -29,7 +29,7 @@ export const LeafletInfo = (props: {
     <div
       className={`leafletInfo w-full min-w-0 py-1 flex flex-col ${props.className}`}
     >
-      <div className="flex justify-between shrink-0 max-w-full gap-2 leading-tight overflow-hidden">
+      <div className="flex justify-between items-center shrink-0 max-w-full gap-2 leading-tight overflow-hidden">
         <Link
           onMouseEnter={() => setPrefetch(true)}
           onPointerDown={() => setPrefetch(true)}
@@ -37,7 +37,9 @@ export const LeafletInfo = (props: {
           href={`/${props.token.id}`}
           className="no-underline sm:hover:no-underline text-primary grow min-w-0"
         >
-          <h3 className=" truncate w-full min-w-0">{props.title}</h3>
+          <h3 className="sm:text-lg text-base truncate w-full min-w-0">
+            {props.title}
+          </h3>
         </Link>
         <div className="flex gap-1 shrink-0">
           {props.isTemplate && props.display === "list" ? (
