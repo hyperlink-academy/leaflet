@@ -13,21 +13,16 @@ export const InteractionDrawer = (props: {
   comments: Comment[];
   did: string;
 }) => {
-  let params = useSearchParams();
-  let interactionDrawerSearchParam = params.get("interactionDrawer");
-  let { drawerOpen: open, drawer } = useInteractionState();
-  if (open === false || (open === undefined && !interactionDrawerSearchParam))
-    return null;
-  let currentDrawer = drawer || interactionDrawerSearchParam;
+  let drawer = useDrawerOpen();
+  if (!drawer) return null;
   return (
     <>
-      <SandwichSpacer className="!w-1 sm:!w-6" />
       <div className="snap-center h-full  flex z-10 shrink-0  w-[calc(var(--page-width-units)-12px)] sm:w-[var(--page-width-units)]">
         <div
           id="interaction-drawer"
           className="opaque-container !rounded-lg h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6 overflow-scroll "
         >
-          {currentDrawer === "quotes" ? (
+          {drawer === "quotes" ? (
             <Quotes {...props} />
           ) : (
             <Comments
@@ -39,4 +34,13 @@ export const InteractionDrawer = (props: {
       </div>
     </>
   );
+};
+
+export const useDrawerOpen = () => {
+  let params = useSearchParams();
+  let interactionDrawerSearchParam = params.get("interactionDrawer");
+  let { drawerOpen: open, drawer } = useInteractionState();
+  if (open === false || (open === undefined && !interactionDrawerSearchParam))
+    return null;
+  return drawer || interactionDrawerSearchParam;
 };

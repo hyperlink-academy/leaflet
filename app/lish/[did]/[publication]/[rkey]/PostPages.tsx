@@ -15,7 +15,10 @@ import { PostHeader } from "./PostHeader/PostHeader";
 import { useIdentityData } from "components/IdentityProvider";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { create } from "zustand/react";
-import { InteractionDrawer } from "./Interactions/InteractionDrawer";
+import {
+  InteractionDrawer,
+  useDrawerOpen,
+} from "./Interactions/InteractionDrawer";
 import { BookendSpacer, SandwichSpacer } from "components/LeafletLayout";
 import { CSS } from "@react-spring/web";
 import { PageOptionButton } from "components/Pages/PageOptions";
@@ -67,7 +70,7 @@ export function PostPages({
   preferences: { showComments?: boolean };
 }) {
   let { identity } = useIdentityData();
-  let { drawerOpen } = useInteractionState();
+  let drawerOpen = useDrawerOpen();
   let pages = usePostPageUIState((s) => s.pages);
   if (!document || !document.documents_in_publications[0].publications)
     return null;
