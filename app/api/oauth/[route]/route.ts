@@ -54,8 +54,7 @@ export async function GET(
     case "callback": {
       const params = new URLSearchParams(req.url.split("?")[1]);
 
-      //TODO remember to reset this to a better default!
-      let redirectPath = "/lish";
+      let redirectPath = "/";
       try {
         const { session, state } = await client.callback(params);
         let s: OauthRequestClientState = JSON.parse(state || "{}");
