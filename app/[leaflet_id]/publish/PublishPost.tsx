@@ -1,7 +1,7 @@
 "use client";
 import { publishToPublication } from "actions/publishToPublication";
 import { DotLoader } from "components/utils/DotLoader";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { ButtonPrimary } from "components/Buttons";
 import { Radio } from "components/Checkbox";
 import { useParams } from "next/navigation";
@@ -13,7 +13,8 @@ import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/act
 import { AtUri } from "@atproto/syntax";
 import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 import { useReplicache } from "src/replicache";
-import { BlueskyPostEditor } from "./BskyPostEditor";
+import { BlueskyPostEditorProsemirror } from "./BskyPostEditorProsemirror";
+import { EditorState } from "prosemirror-state";
 
 type Props = {
   title: string;
@@ -52,8 +53,9 @@ const PublishPostForm = (
   } & Props,
 ) => {
   let [shareOption, setShareOption] = useState<"bluesky" | "quiet">("bluesky");
-  let [postContent, setPostContent] = useState("");
+  let editorStateRef = useRef<EditorState | null>(null);
   let [isLoading, setIsLoading] = useState(false);
+  let [charCount, setCharCount] = useState(0);
   let params = useParams();
   let { rep } = useReplicache();
 
@@ -73,7 +75,7 @@ const PublishPostForm = (
     let post_url = `https://${props.record?.base_path}/${doc.rkey}`;
     if (shareOption === "bluesky")
       await publishPostToBsky({
-        text: postContent,
+        text: editorStateRef.current?.doc.textContent || "",
         title: props.title,
         url: post_url,
         description: props.description,
@@ -146,9 +148,9 @@ const PublishPostForm = (
                     <p className="text-tertiary">@{props.profile.handle}</p>
                   </div>
                   <div className="flex flex-col">
-                    <BlueskyPostEditor
-                      value={postContent}
-                      setValue={(value) => setPostContent(value)}
+                    <BlueskyPostEditorProsemirror
+                      editorStateRef={editorStateRef}
+                      onCharCountChange={setCharCount}
                     />
                   </div>
                   <div className="opaque-container overflow-hidden flex flex-col mt-4 w-full">
@@ -163,7 +165,7 @@ const PublishPostForm = (
                     </div>
                   </div>
                   <div className="text-xs text-secondary italic place-self-end pt-2">
-                    {postContent.length}/300
+                    {charCount}/300
                   </div>
                 </div>
               </div>
@@ -176,7 +178,11 @@ const PublishPostForm = (
             >
               Back
             </Link>
-            <ButtonPrimary type="submit" className="place-self-end h-[30px]">
+            <ButtonPrimary
+              type="submit"
+              className="place-self-end h-[30px]"
+              disabled={charCount > 300}
+            >
               {isLoading ? <DotLoader /> : "Publish this Post!"}
             </ButtonPrimary>
           </div>
