@@ -1,5 +1,5 @@
 "use client";
-import { Agent } from "@atproto/api";
+import { Agent, AppBskyRichtextFacet, UnicodeString } from "@atproto/api";
 import {
   useState,
   useCallback,
@@ -10,14 +10,16 @@ import {
 import { createPortal } from "react-dom";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import * as Popover from "@radix-ui/react-popover";
-import { EditorState, TextSelection } from "prosemirror-state";
+import { EditorState, TextSelection, Plugin } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { Schema, MarkSpec } from "prosemirror-model";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { history, undo, redo } from "prosemirror-history";
+import { inputRules, InputRule } from "prosemirror-inputrules";
+import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
 
-// Schema with only links and mentions marks
+// Schema with only links, mentions, and hashtags marks
 const bskyPostSchema = new Schema({
   nodes: {
     doc: { content: "block+" },
@@ -54,7 +56,7 @@ const bskyPostSchema = new Schema({
     } as MarkSpec,
     mention: {
       attrs: {
-        handle: {},
+        did: {},
       },
       inclusive: false,
       parseDOM: [
@@ -62,18 +64,45 @@ const bskyPostSchema = new Schema({
           tag: "span.mention",
           getAttrs(dom: HTMLElement) {
             return {
-              handle: dom.getAttribute("data-handle"),
+              did: dom.getAttribute("data-did"),
             };
           },
         },
       ],
       toDOM(node) {
-        let { handle } = node.attrs;
+        let { did } = node.attrs;
         return [
           "span",
           {
             class: "mention text-accent-contrast",
-            "data-handle": handle,
+            "data-did": did,
+          },
+          0,
+        ];
+      },
+    } as MarkSpec,
+    hashtag: {
+      attrs: {
+        tag: {},
+      },
+      inclusive: false,
+      parseDOM: [
+        {
+          tag: "span.hashtag",
+          getAttrs(dom: HTMLElement) {
+            return {
+              tag: dom.getAttribute("data-tag"),
+            };
+          },
+        },
+      ],
+      toDOM(node) {
+        let { tag } = node.attrs;
+        return [
+          "span",
+          {
+            class: "hashtag text-accent-contrast",
+            "data-tag": tag,
           },
           0,
         ];
@@ -81,6 +110,29 @@ const bskyPostSchema = new Schema({
     } as MarkSpec,
   },
 });
+
+// Input rule to automatically apply hashtag mark
+function createHashtagInputRule() {
+  return new InputRule(/#([\w]+)\s$/, (state, match, start, end) => {
+    const [fullMatch, tag] = match;
+    const tr = state.tr;
+
+    // Replace the matched text (including space) with just the hashtag and space
+    tr.replaceWith(start, end, [
+      state.schema.text("#" + tag),
+      state.schema.text(" "),
+    ]);
+
+    // Apply hashtag mark to # and tag text only (not the space)
+    tr.addMark(
+      start,
+      start + tag.length + 1,
+      bskyPostSchema.marks.hashtag.create({ tag }),
+    );
+
+    return tr;
+  });
+}
 
 export function BlueskyPostEditorProsemirror(props: {
   editorStateRef: React.MutableRefObject<EditorState | null>;
@@ -93,11 +145,14 @@ export function BlueskyPostEditorProsemirror(props: {
   const [mentionState, setMentionState] = useState<{
     active: boolean;
     range: { from: number; to: number } | null;
-    selectedHandle: string | null;
-  }>({ active: false, range: null, selectedHandle: null });
+    selectedMention: { handle: string; did: string } | null;
+  }>({ active: false, range: null, selectedMention: null });
 
   const handleMentionSelect = useCallback(
-    (handle: string, range: { from: number; to: number }) => {
+    (
+      mention: { handle: string; did: string },
+      range: { from: number; to: number },
+    ) => {
       if (!viewRef.current) return;
       const view = viewRef.current;
       const { from, to } = range;
@@ -107,14 +162,14 @@ export function BlueskyPostEditorProsemirror(props: {
       tr.delete(from + 1, to);
 
       // Insert the mention text after the @
-      const mentionText = handle;
+      const mentionText = mention.handle;
       tr.insertText(mentionText, from + 1);
 
       // Apply mention mark to @ and handle
       tr.addMark(
         from,
         from + 1 + mentionText.length,
-        bskyPostSchema.marks.mention.create({ handle }),
+        bskyPostSchema.marks.mention.create({ did: mention.did }),
       );
 
       // Add a space after the mention
@@ -144,6 +199,7 @@ export function BlueskyPostEditorProsemirror(props: {
           })
         : undefined,
       plugins: [
+        inputRules({ rules: [createHashtagInputRule()] }),
         keymap({
           "Mod-z": undo,
           "Mod-y": redo,
@@ -153,11 +209,11 @@ export function BlueskyPostEditorProsemirror(props: {
             const currentMentionState = mentionStateRef.current;
             if (
               currentMentionState.active &&
-              currentMentionState.selectedHandle &&
+              currentMentionState.selectedMention &&
               currentMentionState.range
             ) {
               handleMentionSelect(
-                currentMentionState.selectedHandle,
+                currentMentionState.selectedMention,
                 currentMentionState.range,
               );
               return true;
@@ -167,6 +223,11 @@ export function BlueskyPostEditorProsemirror(props: {
           },
         }),
         keymap(baseKeymap),
+        autolink({
+          type: bskyPostSchema.marks.link,
+          shouldAutoLink: () => true,
+          defaultProtocol: "https",
+        }),
         history(),
       ],
     });
@@ -203,8 +264,8 @@ export function BlueskyPostEditorProsemirror(props: {
           editorState={editorState}
           view={viewRef}
           onSelect={handleMentionSelect}
-          onMentionStateChange={(active, range, selectedHandle) => {
-            setMentionState({ active, range, selectedHandle });
+          onMentionStateChange={(active, range, selectedMention) => {
+            setMentionState({ active, range, selectedMention });
           }}
         />
       )}
@@ -223,11 +284,14 @@ export function BlueskyPostEditorProsemirror(props: {
 function MentionAutocomplete(props: {
   editorState: EditorState;
   view: React.RefObject<EditorView | null>;
-  onSelect: (handle: string, range: { from: number; to: number }) => void;
+  onSelect: (
+    mention: { handle: string; did: string },
+    range: { from: number; to: number },
+  ) => void;
   onMentionStateChange: (
     active: boolean,
     range: { from: number; to: number } | null,
-    selectedHandle: string | null,
+    selectedMention: { handle: string; did: string } | null,
   ) => void;
 }) {
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -296,11 +360,11 @@ function MentionAutocomplete(props: {
   // Update parent's mention state
   useEffect(() => {
     const active = mentionQuery !== null && suggestions.length > 0;
-    const selectedHandle =
+    const selectedMention =
       active && suggestions[suggestionIndex]
         ? suggestions[suggestionIndex]
         : null;
-    props.onMentionStateChange(active, mentionRange, selectedHandle);
+    props.onMentionStateChange(active, mentionRange, selectedMention);
   }, [mentionQuery, suggestions, suggestionIndex, mentionRange]);
 
   // Handle keyboard navigation for arrow keys only
@@ -374,7 +438,7 @@ function MentionAutocomplete(props: {
                     hover:bg-border-light hover:text-secondary
                     outline-none
                     `}
-                  key={result}
+                  key={result.did}
                   onClick={() => {
                     if (mentionRange) {
                       props.onSelect(result, mentionRange);
@@ -385,7 +449,7 @@ function MentionAutocomplete(props: {
                   }}
                   onMouseDown={(e) => e.preventDefault()}
                 >
-                  @{result}
+                  @{result.handle}
                 </div>
               );
             })}
@@ -398,7 +462,9 @@ function MentionAutocomplete(props: {
 
 function useMentionSuggestions(query: string | null) {
   const [suggestionIndex, setSuggestionIndex] = useState(0);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<
+    { handle: string; did: string }[]
+  >([]);
 
   useDebouncedEffect(
     async () => {
@@ -412,7 +478,12 @@ function useMentionSuggestions(query: string | null) {
         q: query,
         limit: 8,
       });
-      setSuggestions(result.data.actors.map((actor) => actor.handle));
+      setSuggestions(
+        result.data.actors.map((actor) => ({
+          handle: actor.handle,
+          did: actor.did,
+        })),
+      );
     },
     300,
     [query],
@@ -429,4 +500,82 @@ function useMentionSuggestions(query: string | null) {
     suggestionIndex,
     setSuggestionIndex,
   };
+}
+
+/**
+ * Converts a ProseMirror editor state to Bluesky post facets.
+ * Extracts mentions, links, and hashtags from the editor state and returns them
+ * as an array of Bluesky richtext facets with proper byte positions.
+ */
+export function editorStateToFacets(
+  state: EditorState,
+): AppBskyRichtextFacet.Main[] {
+  const facets: AppBskyRichtextFacet.Main[] = [];
+  const fullText = state.doc.textContent;
+  const unicodeString = new UnicodeString(fullText);
+
+  let byteOffset = 0;
+
+  // Walk through the document to extract marks with their positions
+  state.doc.descendants((node, pos) => {
+    if (node.isText && node.text) {
+      const text = node.text;
+      const textLength = new UnicodeString(text).length;
+
+      // Check for mention mark
+      const mentionMark = node.marks.find((m) => m.type.name === "mention");
+      if (mentionMark) {
+        facets.push({
+          index: {
+            byteStart: byteOffset,
+            byteEnd: byteOffset + textLength,
+          },
+          features: [
+            {
+              $type: "app.bsky.richtext.facet#mention",
+              did: mentionMark.attrs.did,
+            },
+          ],
+        });
+      }
+
+      // Check for link mark
+      const linkMark = node.marks.find((m) => m.type.name === "link");
+      if (linkMark) {
+        facets.push({
+          index: {
+            byteStart: byteOffset,
+            byteEnd: byteOffset + textLength,
+          },
+          features: [
+            {
+              $type: "app.bsky.richtext.facet#link",
+              uri: linkMark.attrs.href,
+            },
+          ],
+        });
+      }
+
+      // Check for hashtag mark
+      const hashtagMark = node.marks.find((m) => m.type.name === "hashtag");
+      if (hashtagMark) {
+        facets.push({
+          index: {
+            byteStart: byteOffset,
+            byteEnd: byteOffset + textLength,
+          },
+          features: [
+            {
+              $type: "app.bsky.richtext.facet#tag",
+              tag: hashtagMark.attrs.tag,
+            },
+          ],
+        });
+      }
+
+      byteOffset += textLength;
+    }
+  });
+
+  return facets;
 }

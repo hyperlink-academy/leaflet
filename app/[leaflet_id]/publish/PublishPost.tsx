@@ -13,7 +13,10 @@ import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/act
 import { AtUri } from "@atproto/syntax";
 import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 import { useReplicache } from "src/replicache";
-import { BlueskyPostEditorProsemirror } from "./BskyPostEditorProsemirror";
+import {
+  BlueskyPostEditorProsemirror,
+  editorStateToFacets,
+} from "./BskyPostEditorProsemirror";
 import { EditorState } from "prosemirror-state";
 
 type Props = {
@@ -73,8 +76,12 @@ const PublishPostForm = (
     if (!doc) return;
 
     let post_url = `https://${props.record?.base_path}/${doc.rkey}`;
+    let facets = editorStateRef.current
+      ? editorStateToFacets(editorStateRef.current)
+      : [];
     if (shareOption === "bluesky")
       await publishPostToBsky({
+        facets,
         text: editorStateRef.current?.doc.textContent || "",
         title: props.title,
         url: post_url,
