@@ -182,6 +182,7 @@ export function PagePreview(props: { entityID: string }) {
   return (
     <div
       ref={previewRef}
+      inert
       className={`pageLinkBlockPreview w-[120px] overflow-clip  mx-3 mt-3 -mb-2  border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center ${cardBorderHidden ? "" : "bg-bg-page"}`}
     >
       <div
