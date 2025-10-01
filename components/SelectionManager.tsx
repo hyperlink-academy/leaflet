@@ -186,8 +186,8 @@ export function SelectionManager() {
           handler: async () => {
             let [sortedBlocks] = await getSortedSelectionBound();
             toggleMarkInBlocks(
-              schema.marks.underline,
               sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+              schema.marks.underline,
             );
           },
         },
@@ -197,8 +197,8 @@ export function SelectionManager() {
           handler: async () => {
             let [sortedBlocks] = await getSortedSelectionBound();
             toggleMarkInBlocks(
-              schema.marks.em,
               sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+              schema.marks.em,
             );
           },
         },
@@ -208,8 +208,22 @@ export function SelectionManager() {
           handler: async () => {
             let [sortedBlocks] = await getSortedSelectionBound();
             toggleMarkInBlocks(
-              schema.marks.strong,
               sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+              schema.marks.strong,
+            );
+          },
+        },
+        {
+          metaAndCtrl: true,
+          key: "h",
+          handler: async () => {
+            let [sortedBlocks] = await getSortedSelectionBound();
+            toggleMarkInBlocks(
+              sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+              schema.marks.highlight,
+              {
+                color: useUIState.getState().lastUsedHighlight,
+              },
             );
           },
         },
@@ -219,8 +233,8 @@ export function SelectionManager() {
           handler: async () => {
             let [sortedBlocks] = await getSortedSelectionBound();
             toggleMarkInBlocks(
-              schema.marks.strikethrough,
               sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+              schema.marks.strikethrough,
             );
           },
         },
@@ -716,7 +730,7 @@ export const getSortedSelection = async (
   ];
 };
 
-function toggleMarkInBlocks(mark: MarkType, blocks: string[]) {
+function toggleMarkInBlocks(blocks: string[], mark: MarkType, attrs?: any) {
   let everyBlockHasMark = blocks.reduce((acc, block) => {
     let editor = useEditorStates.getState().editorStates[block];
     if (!editor) return acc;
@@ -739,7 +753,7 @@ function toggleMarkInBlocks(mark: MarkType, blocks: string[]) {
     if (everyBlockHasMark) {
       tr.removeMark(from, to, mark);
     } else {
-      tr.addMark(from, to, mark.create());
+      tr.addMark(from, to, mark.create(attrs));
     }
 
     view.dispatch(tr);
