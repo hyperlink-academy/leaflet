@@ -43,16 +43,6 @@ export const PubBlueskyPostBlock = ({ post }: { post: PostView }) => {
       let postId = post.uri.split("/")[4];
       let url = `https://bsky.app/profile/${post.author.handle}/post/${postId}`;
 
-      let datetimeFormatted = new Date(
-        timestamp ? timestamp : "",
-      ).toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "numeric",
-        hour12: true,
-      });
       return (
         <div
           className={`
@@ -98,7 +88,7 @@ export const PubBlueskyPostBlock = ({ post }: { post: PostView }) => {
             </>
           )}
           <div className="w-full flex gap-2 items-center justify-between">
-            <div className="text-xs text-tertiary">{datetimeFormatted}</div>
+            <ClientDate date={timestamp} />
             <div className="flex gap-2 items-center">
               {post.replyCount && post.replyCount > 0 && (
                 <>
@@ -122,4 +112,23 @@ export const PubBlueskyPostBlock = ({ post }: { post: PostView }) => {
         </div>
       );
   }
+};
+
+const ClientDate = (props: { date?: string }) => {
+  let pageLoaded = useInitialPageLoad();
+  if (!pageLoaded) return null;
+
+  let datetimeFormatted = new Date(props.date ? props.date : "").toLocaleString(
+    "en-US",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true,
+    },
+  );
+
+  return <div className="text-xs text-tertiary">{datetimeFormatted}</div>;
 };
