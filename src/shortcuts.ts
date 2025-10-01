@@ -5,6 +5,7 @@ import { isMac } from "./utils/isDevice";
 
 type Shortcut = {
   metaKey?: boolean;
+  metaAndCtrl?: boolean;
   altKey?: boolean;
   shift?: boolean;
   key: string | string[];
@@ -15,7 +16,10 @@ export function addShortcut(shortcuts: Shortcut | Shortcut[]) {
     for (let shortcut of [shortcuts].flat()) {
       if (e.shiftKey !== !!shortcut.shift) continue;
       if (e.altKey !== !!shortcut.altKey) continue;
-      if (!!shortcut.metaKey !== (isMac() ? e.metaKey : e.ctrlKey)) continue;
+      if (shortcut.metaAndCtrl) {
+        if (!(e.metaKey && e.ctrlKey)) continue;
+      } else if (!!shortcut.metaKey !== (isMac() ? e.metaKey : e.ctrlKey))
+        continue;
       if (![shortcut.key].flat().includes(e.key)) continue;
       e.preventDefault();
       return shortcut.handler();

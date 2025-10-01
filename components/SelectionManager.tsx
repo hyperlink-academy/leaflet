@@ -214,9 +214,8 @@ export function SelectionManager() {
           },
         },
         {
-          metaKey: true,
-          shift: true,
-          key: "X",
+          metaAndCtrl: true,
+          key: "x",
           handler: async () => {
             let [sortedBlocks] = await getSortedSelectionBound();
             toggleMarkInBlocks(
