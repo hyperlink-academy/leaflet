@@ -19,6 +19,9 @@ import { isTextBlock } from "src/utils/isTextBlock";
 import { useIsMobile } from "src/hooks/isMobile";
 import { deleteBlock } from "./Blocks/DeleteBlock";
 import { Replicache } from "replicache";
+import { schema } from "./Blocks/TextBlock/schema";
+import { TextSelection } from "prosemirror-state";
+import { MarkType } from "prosemirror-model";
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
@@ -175,6 +178,51 @@ export function SelectionManager() {
                 parent: block.listData?.parent || block.parent,
               });
             }
+          },
+        },
+        {
+          metaKey: true,
+          key: "u",
+          handler: async () => {
+            let [sortedBlocks] = await getSortedSelectionBound();
+            toggleMarkInBlocks(
+              schema.marks.underline,
+              sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+            );
+          },
+        },
+        {
+          metaKey: true,
+          key: "i",
+          handler: async () => {
+            let [sortedBlocks] = await getSortedSelectionBound();
+            toggleMarkInBlocks(
+              schema.marks.em,
+              sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+            );
+          },
+        },
+        {
+          metaKey: true,
+          key: "b",
+          handler: async () => {
+            let [sortedBlocks] = await getSortedSelectionBound();
+            toggleMarkInBlocks(
+              schema.marks.strong,
+              sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+            );
+          },
+        },
+        {
+          metaKey: true,
+          shift: true,
+          key: "X",
+          handler: async () => {
+            let [sortedBlocks] = await getSortedSelectionBound();
+            toggleMarkInBlocks(
+              schema.marks.strikethrough,
+              sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+            );
           },
         },
         {
@@ -463,6 +511,7 @@ export function SelectionManager() {
         }
         if ((e.key === "c" || e.key === "x") && (e.metaKey || e.ctrlKey)) {
           if (!rep) return;
+          if (e.shiftKey) return;
           let [, , selectionWithFoldedChildren] =
             await getSortedSelectionBound();
           if (!selectionWithFoldedChildren) return;
@@ -667,3 +716,33 @@ export const getSortedSelection = async (
     sortedBlocksWithChildren,
   ];
 };
+
+function toggleMarkInBlocks(mark: MarkType, blocks: string[]) {
+  let everyBlockHasMark = blocks.reduce((acc, block) => {
+    let editor = useEditorStates.getState().editorStates[block];
+    if (!editor) return acc;
+    let { view } = editor;
+    let from = 0;
+    let to = view.state.doc.content.size;
+    let hasMarkInRange = view.state.doc.rangeHasMark(from, to, mark);
+    return acc && hasMarkInRange;
+  }, true);
+  for (let block of blocks) {
+    let editor = useEditorStates.getState().editorStates[block];
+    if (!editor) return;
+    let { view } = editor;
+    let tr = view.state.tr;
+
+    let from = 0;
+    let to = view.state.doc.content.size;
+
+    tr.setMeta("bulkOp", true);
+    if (everyBlockHasMark) {
+      tr.removeMark(from, to, mark);
+    } else {
+      tr.addMark(from, to, mark.create());
+    }
+
+    view.dispatch(tr);
+  }
+}

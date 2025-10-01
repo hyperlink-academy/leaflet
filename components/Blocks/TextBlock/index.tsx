@@ -257,23 +257,25 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
             let oldEditorState = this.state;
             let newState = this.state.apply(tr);
             let addToHistory = tr.getMeta("addToHistory");
+            let isBulkOp = tr.getMeta("bulkOp");
             let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
             if (addToHistory !== false && docHasChanges) {
               if (actionTimeout.current) {
                 window.clearTimeout(actionTimeout.current);
               } else {
-                rep.undoManager.startGroup();
+                if (!isBulkOp) rep.undoManager.startGroup();
               }
 
-              actionTimeout.current = window.setTimeout(() => {
-                rep.undoManager.endGroup();
-                actionTimeout.current = null;
-              }, 200);
+              if (!isBulkOp)
+                actionTimeout.current = window.setTimeout(() => {
+                  rep.undoManager.endGroup();
+                  actionTimeout.current = null;
+                }, 200);
               rep.undoManager.add({
                 redo: () => {
                   useEditorStates.setState((oldState) => {
                     let view = oldState.editorStates[props.entityID]?.view;
-                    if (!view?.hasFocus()) view?.focus();
+                    if (!view?.hasFocus() && !isBulkOp) view?.focus();
                     return {
                       editorStates: {
                         ...oldState.editorStates,
@@ -288,7 +290,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
                 undo: () => {
                   useEditorStates.setState((oldState) => {
                     let view = oldState.editorStates[props.entityID]?.view;
-                    if (!view?.hasFocus()) view?.focus();
+                    if (!view?.hasFocus() && !isBulkOp) view?.focus();
                     return {
                       editorStates: {
                         ...oldState.editorStates,
