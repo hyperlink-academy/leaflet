@@ -511,7 +511,7 @@ export function SelectionManager() {
         }
         if ((e.key === "c" || e.key === "x") && (e.metaKey || e.ctrlKey)) {
           if (!rep) return;
-          if (e.shiftKey) return;
+          if (e.shiftKey || (e.metaKey && e.ctrlKey)) return;
           let [, , selectionWithFoldedChildren] =
             await getSortedSelectionBound();
           if (!selectionWithFoldedChildren) return;
