@@ -12,7 +12,7 @@ import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import * as Popover from "@radix-ui/react-popover";
 import { EditorState, TextSelection, Plugin } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
-import { Schema, MarkSpec } from "prosemirror-model";
+import { Schema, MarkSpec, Mark } from "prosemirror-model";
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { history, undo, redo } from "prosemirror-history";
@@ -507,75 +507,82 @@ function useMentionSuggestions(query: string | null) {
  * Extracts mentions, links, and hashtags from the editor state and returns them
  * as an array of Bluesky richtext facets with proper byte positions.
  */
-export function editorStateToFacets(
+export function editorStateToFacetedText(
   state: EditorState,
-): AppBskyRichtextFacet.Main[] {
-  const facets: AppBskyRichtextFacet.Main[] = [];
-  const fullText = state.doc.textContent;
-  const unicodeString = new UnicodeString(fullText);
-
+): [string, AppBskyRichtextFacet.Main[]] {
+  let fullText = "";
+  let facets: AppBskyRichtextFacet.Main[] = [];
   let byteOffset = 0;
 
-  // Walk through the document to extract marks with their positions
-  state.doc.descendants((node, pos) => {
-    if (node.isText && node.text) {
-      const text = node.text;
-      const textLength = new UnicodeString(text).length;
+  // Iterate through each paragraph in the document
+  state.doc.forEach((paragraph) => {
+    if (paragraph.type.name !== "paragraph") return;
 
-      // Check for mention mark
-      const mentionMark = node.marks.find((m) => m.type.name === "mention");
-      if (mentionMark) {
-        facets.push({
-          index: {
-            byteStart: byteOffset,
-            byteEnd: byteOffset + textLength,
-          },
-          features: [
-            {
-              $type: "app.bsky.richtext.facet#mention",
-              did: mentionMark.attrs.did,
+    // Process each inline node in the paragraph
+    paragraph.forEach((node) => {
+      if (node.isText) {
+        const text = node.text || "";
+        const unicodeString = new UnicodeString(text);
+
+        // If this text node has marks, create a facet
+        if (node.marks.length > 0) {
+          const facet: AppBskyRichtextFacet.Main = {
+            index: {
+              byteStart: byteOffset,
+              byteEnd: byteOffset + unicodeString.length,
             },
-          ],
-        });
-      }
+            features: marksToFeatures(node.marks),
+          };
 
-      // Check for link mark
-      const linkMark = node.marks.find((m) => m.type.name === "link");
-      if (linkMark) {
-        facets.push({
-          index: {
-            byteStart: byteOffset,
-            byteEnd: byteOffset + textLength,
-          },
-          features: [
-            {
-              $type: "app.bsky.richtext.facet#link",
-              uri: linkMark.attrs.href,
-            },
-          ],
-        });
-      }
+          if (facet.features.length > 0) {
+            facets.push(facet);
+          }
+        }
 
-      // Check for hashtag mark
-      const hashtagMark = node.marks.find((m) => m.type.name === "hashtag");
-      if (hashtagMark) {
-        facets.push({
-          index: {
-            byteStart: byteOffset,
-            byteEnd: byteOffset + textLength,
-          },
-          features: [
-            {
-              $type: "app.bsky.richtext.facet#tag",
-              tag: hashtagMark.attrs.tag,
-            },
-          ],
-        });
+        fullText += text;
+        byteOffset += unicodeString.length;
       }
+    });
 
-      byteOffset += textLength;
+    // Add newline between paragraphs (except after the last one)
+    if (paragraph !== state.doc.lastChild) {
+      const newline = "\n";
+      const unicodeNewline = new UnicodeString(newline);
+      fullText += newline;
+      byteOffset += unicodeNewline.length;
     }
   });
 
-  return facets;
+  return [fullText, facets];
+}
+
+function marksToFeatures(marks: readonly Mark[]) {
+  const features: AppBskyRichtextFacet.Main["features"] = [];
+
+  for (const mark of marks) {
+    switch (mark.type.name) {
+      case "mention": {
+        features.push({
+          $type: "app.bsky.richtext.facet#mention",
+          did: mark.attrs.did,
+        });
+        break;
+      }
+      case "hashtag": {
+        features.push({
+          $type: "app.bsky.richtext.facet#tag",
+          tag: mark.attrs.tag,
+        });
+        break;
+      }
+      case "link":
+        features.push({
+          $type: "app.bsky.richtext.facet#link",
+          uri: mark.attrs.href as string,
+        });
+        break;
+    }
+  }
+
+  return features;
 }

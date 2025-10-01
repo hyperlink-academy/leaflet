@@ -15,7 +15,7 @@ import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 import { useReplicache } from "src/replicache";
 import {
   BlueskyPostEditorProsemirror,
-  editorStateToFacets,
+  editorStateToFacetedText,
 } from "./BskyPostEditorProsemirror";
 import { EditorState } from "prosemirror-state";
 
@@ -76,13 +76,13 @@ const PublishPostForm = (
     if (!doc) return;
 
     let post_url = `https://${props.record?.base_path}/${doc.rkey}`;
-    let facets = editorStateRef.current
-      ? editorStateToFacets(editorStateRef.current)
+    let [text, facets] = editorStateRef.current
+      ? editorStateToFacetedText(editorStateRef.current)
       : [];
     if (shareOption === "bluesky")
       await publishPostToBsky({
-        facets,
-        text: editorStateRef.current?.doc.textContent || "",
+        facets: facets || [],
+        text: text || "",
         title: props.title,
         url: post_url,
         description: props.description,
