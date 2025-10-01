@@ -81,7 +81,7 @@ export function PostHeader(props: {
             {record.publishedAt ? (
               <>
                 |
-                <p>
+                <p suppressHydrationWarning>
                   {new Date(record.publishedAt).toLocaleDateString(undefined, {
                     year: "numeric",
                     month: "long",
