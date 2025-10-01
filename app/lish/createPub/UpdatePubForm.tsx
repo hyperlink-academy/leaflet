@@ -329,7 +329,7 @@ function Domain(props: {
     return await callRPC("get_domain_status", { domain });
   });
 
-  let pending = data?.config?.misconfigured || data?.error;
+  let pending = data?.config?.misconfigured || data?.verification;
 
   return (
     <div className="text-sm text-secondary relative w-full ">
@@ -392,7 +392,7 @@ const DomainSettings = (props: {
   if (!config?.misconfigured && !verification)
     return <div>This domain is verified!</div>;
   return (
-    <div className="flex flex-col gap-[6px] text-sm">
+    <div className="flex flex-col gap-[6px] text-sm text-primary">
       <div>
         To verify this domain, add the following record to your DNS provider for{" "}
         <strong>{props.domain}</strong>.
