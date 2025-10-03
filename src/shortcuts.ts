@@ -3,7 +3,7 @@ import { Replicache } from "replicache";
 import { ReplicacheMutators } from "./replicache";
 import { isMac } from "./utils/isDevice";
 
-type Shortcut = {
+export type Shortcut = {
   metaKey?: boolean;
   metaAndCtrl?: boolean;
   altKey?: boolean;
