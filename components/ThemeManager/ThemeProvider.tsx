@@ -185,6 +185,7 @@ export const BaseThemeProvider = ({
     if (!el) return;
     setCSSVariableToColor(el, "--bg-leaflet", bgLeaflet);
     setCSSVariableToColor(el, "--bg-page", bgPage);
+    document.body.style.backgroundColor = `rgb(${colorToString(bgLeaflet, "rgb")})`;
     document
       .querySelector('meta[name="theme-color"]')
       ?.setAttribute("content", `rgb(${colorToString(bgLeaflet, "rgb")})`);
