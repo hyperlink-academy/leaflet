@@ -49,10 +49,12 @@ export async function subscribeToPublication(
   let bsky = new BskyAgent(credentialSession);
   let [prefs, profile, resolveDid] = await Promise.all([
     bsky.app.bsky.actor.getPreferences(),
-    bsky.app.bsky.actor.profile.get({
-      repo: credentialSession.did!,
-      rkey: "self",
-    }),
+    bsky.app.bsky.actor.profile
+      .get({
+        repo: credentialSession.did!,
+        rkey: "self",
+      })
+      .catch(),
     idResolver.did.resolve(credentialSession.did!),
   ]);
   if (!identity.bsky_profiles && profile.value) {
