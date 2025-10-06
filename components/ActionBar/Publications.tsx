@@ -82,10 +82,10 @@ const PubListEmpty = () => {
   return (
     <SpeedyLink href={`lish/createPub`} className=" hover:no-underline!">
       <ActionButton
-        label="Publish on ATP"
+        label="Publish"
         icon={<PublishSmall />}
         nav
-        subtext="Start a blog in the Atmosphere"
+        subtext="Blog in the Atmosphere"
       />
     </SpeedyLink>
   );
