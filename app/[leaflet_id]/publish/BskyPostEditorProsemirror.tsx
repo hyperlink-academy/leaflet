@@ -269,6 +269,11 @@ export function BlueskyPostEditorProsemirror(props: {
           }}
         />
       )}
+      {editorState?.doc.textContent.length === 0 && (
+        <div className="italic text-tertiary absolute top-0 left-0">
+          Write a post to share your writing!
+        </div>
+      )}
       <div
         ref={mountRef}
         className="border-none outline-none whitespace-pre-wrap min-h-[80px] max-h-[200px] overflow-y-auto prose-sm"
