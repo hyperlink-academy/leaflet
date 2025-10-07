@@ -88,10 +88,10 @@ export const PublicationBanner = (props: { small?: boolean }) => {
 export const DiscoverBanner = (props: { small?: boolean }) => {
   return (
     <div
-      className={`accent-container flex sm:py-2 gap-4 items-center ${props.small ? "items-start p-2 text-sm font-normal" : "items-center p-4"}`}
+      className={`accent-container flex sm:py-2 gap-2 items-center ${props.small ? "items-start p-2 text-sm font-normal" : "items-center p-4"}`}
     >
       {props.small ? (
-        <DiscoverSmall className="shrink-0" />
+        <DiscoverSmall className="shrink-0 text-accent-contrast" />
       ) : (
         <div className="w-[64px] mx-auto">
           <DiscoverIllo />

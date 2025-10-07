@@ -20,6 +20,8 @@ import { Input } from "components/Input";
 import { SearchTiny } from "components/Icons/SearchTiny";
 import { InterfaceState, useIdentityData } from "components/IdentityProvider";
 import { updateIdentityInterfaceState } from "actions/updateIdentityInterfaceState";
+import Link from "next/link";
+import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 
 export type DashboardState = {
   display?: "grid" | "list";
@@ -117,11 +119,15 @@ export const useSetDashboardState = () => {
 
 export function DashboardLayout<
   T extends {
-    [name: string]: { content: React.ReactNode; controls: React.ReactNode };
+    [name: string]: {
+      content: React.ReactNode;
+      controls: React.ReactNode;
+      href?: string;
+    };
   },
 >(props: {
   id: string;
-  hasBackgroundImage: boolean;
+  cardBorderHidden: boolean;
   tabs: T;
   defaultTab: keyof T;
   currentPage: navPages;
@@ -129,7 +135,7 @@ export function DashboardLayout<
   actions: React.ReactNode;
 }) {
   let [tab, setTab] = useState(props.defaultTab);
-  let { content, controls } = props.tabs[tab];
+  let { content, controls, href } = props.tabs[tab];
 
   let [headerState, setHeaderState] = useState<"default" | "controls">(
     "default",
@@ -154,19 +160,36 @@ export function DashboardLayout<
         >
           {Object.keys(props.tabs).length <= 1 && !controls ? null : (
             <>
-              <Header hasBackgroundImage={props.hasBackgroundImage}>
+              <Header cardBorderHidden={props.cardBorderHidden}>
                 {headerState === "default" ? (
                   <>
                     {Object.keys(props.tabs).length > 1 && (
                       <div className="pubDashTabs flex flex-row gap-1">
-                        {Object.keys(props.tabs).map((t) => (
-                          <Tab
-                            key={t}
-                            name={t}
-                            selected={t === tab}
-                            onSelect={() => setTab(t)}
-                          />
-                        ))}
+                        {Object.keys(props.tabs).map((t) => {
+                          if (props.tabs[t].href)
+                            return (
+                              <Link
+                                key={t}
+                                href={props.tabs[t].href}
+                                className="no-underline"
+                              >
+                                <Tab
+                                  name={t}
+                                  selected={t === tab}
+                                  href={props.tabs[t].href}
+                                  onSelect={() => setTab(t)}
+                                />
+                              </Link>
+                            );
+                          return (
+                            <Tab
+                              key={t}
+                              name={t}
+                              selected={t === tab}
+                              onSelect={() => setTab(t)}
+                            />
+                          );
+                        })}
                       </div>
                     )}
                     {props.publication && (
@@ -326,13 +349,19 @@ const DisplayToggle = (props: {
   );
 };
 
-function Tab(props: { name: string; selected: boolean; onSelect: () => void }) {
+function Tab(props: {
+  name: string;
+  selected: boolean;
+  onSelect: () => void;
+  href?: string;
+}) {
   return (
     <div
-      className={`pubTabs px-1 py-0 rounded-md hover:cursor-pointer ${props.selected ? "text-accent-2 bg-accent-1 font-bold -mb-px" : "text-tertiary"}`}
+      className={`pubTabs px-1 py-0 flex gap-1 items-center rounded-md hover:cursor-pointer ${props.selected ? "text-accent-2 bg-accent-1 font-bold -mb-px" : "text-tertiary"}`}
       onClick={() => props.onSelect()}
     >
       {props.name}
+      {props.href && <ExternalLinkTiny />}
     </div>
   );
 }

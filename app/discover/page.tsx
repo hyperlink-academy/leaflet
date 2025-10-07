@@ -40,7 +40,7 @@ export default async function Discover(props: {
     <div className="w-full h-full mx-auto bg-[#FDFCFA]">
       <DashboardLayout
         id="discover"
-        hasBackgroundImage={false}
+        cardBorderHidden={false}
         currentPage="discover"
         defaultTab="default"
         actions={null}

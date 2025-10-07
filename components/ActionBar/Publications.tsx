@@ -24,7 +24,6 @@ export const PublicationButtons = (props: {
       {identity.publications?.map((d) => {
         // console.log("thisURI : " + d.uri);
         // console.log("currentURI : " + props.currentPubUri);
-        console.log(d.uri === props.currentPubUri);
 
         return (
           <PublicationOption

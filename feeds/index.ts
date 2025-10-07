@@ -33,7 +33,7 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
 
   let { data: publications } = await supabaseServerClient
     .from("publication_subscriptions")
-    .select(`publications(documents_in_publications(documents(*)))`)
+    .select(`publications(*, documents_in_publications(documents(*)))`)
     .eq("identity", auth);
 
   const allPosts = (publications || [])

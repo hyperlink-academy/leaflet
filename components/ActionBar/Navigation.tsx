@@ -7,6 +7,10 @@ import { DiscoverSmall } from "components/Icons/DiscoverSmall";
 import { PublicationButtons } from "./Publications";
 import { Popover } from "components/Popover";
 import { MenuSmall } from "components/Icons/MenuSmall";
+import {
+  ReaderReadSmall,
+  ReaderUnreadSmall,
+} from "components/Icons/ReaderSmall";
 
 export type navPages = "home" | "reader" | "pub" | "discover";
 
@@ -110,20 +114,22 @@ const HomeButton = (props: { current?: boolean }) => {
 };
 
 const ReaderButton = (props: { current?: boolean }) => {
-  // let readerUnreads = true;
-  // let subs = false;
+  let readerUnreads = true;
+  let subs = true;
 
-  // if (subs)
-  //   return (
-  //     <ActionButton
-  //       nav
-  //       icon={readerUnreads ? <ReaderUnreadSmall /> : <ReaderReadSmall />}
-  //       label="Reader"
-  //       className={`
-  //         ${readerUnreads ? "text-accent-contrast! border-accent-contrast" : props.current ? "bg-border-light! border-border" : ""}
-  //       `}
-  //     />
-  //   );
+  if (subs)
+    return (
+      <Link href={"/reader"} className="hover:no-underline!">
+        <ActionButton
+          nav
+          icon={readerUnreads ? <ReaderUnreadSmall /> : <ReaderReadSmall />}
+          label="Reader"
+          className={`
+          ${readerUnreads ? "text-accent-contrast! border-accent-contrast" : props.current ? "bg-border-light! border-border" : ""}
+        `}
+        />
+      </Link>
+    );
   return (
     <Link href={"/discover"} className="hover:no-underline!">
       <ActionButton

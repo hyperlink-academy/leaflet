@@ -3,9 +3,10 @@ import { useState, useEffect } from "react";
 
 export const Header = (props: {
   children: React.ReactNode;
-  hasBackgroundImage: boolean;
+  cardBorderHidden: boolean;
 }) => {
   let [scrollPos, setScrollPos] = useState(0);
+  console.log(props.cardBorderHidden);
 
   useEffect(() => {
     const homeContent = document.getElementById("home-content");
@@ -22,9 +23,9 @@ export const Header = (props: {
     }
   }, []);
 
-  let headerBGColor = props.hasBackgroundImage
-    ? "var(--bg-page)"
-    : "var(--bg-leaflet)";
+  let headerBGColor = props.cardBorderHidden
+    ? "var(--bg-leaflet)"
+    : "var(--bg-page)";
 
   return (
     <div
@@ -55,12 +56,12 @@ export const Header = (props: {
             scrollPos < 20
               ? {
                   backgroundColor: `rgba(${headerBGColor}, ${scrollPos / 60 + 0.75})`,
-                  paddingLeft: props.hasBackgroundImage
-                    ? "8px"
-                    : `calc(${scrollPos / 20}*8px)`,
-                  paddingRight: props.hasBackgroundImage
-                    ? "8px"
-                    : `calc(${scrollPos / 20}*8px)`,
+                  paddingLeft: props.cardBorderHidden
+                    ? `calc(${scrollPos / 20}*8px)`
+                    : "8px",
+                  paddingRight: props.cardBorderHidden
+                    ? `calc(${scrollPos / 20}*8px)`
+                    : "8px",
                 }
               : {
                   backgroundColor: `rgb(${headerBGColor})`,
