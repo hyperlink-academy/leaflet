@@ -1,5 +1,6 @@
 "use client";
 import { AtUri } from "@atproto/syntax";
+import { PubIcon } from "components/ActionBar/Publications";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
@@ -42,19 +43,8 @@ export const PubListing = (props: {
           px-3 py-3 selected-outline
           hover:outline-accent-contrast hover:border-accent-contrast`}
       >
-        <div
-          style={{
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-            backgroundSize: "cover",
-            backgroundImage: record?.icon
-              ? `url(${blobRefToSrc(record.icon?.ref, new AtUri(props.uri).host)})`
-              : undefined,
-          }}
-          className={`w-6 h-6 rounded-full bg-accent-1 text-accent-2 flex place-content-center leading-snug font-bold text-center shrink-0 ${record.theme?.showPageBackground ? "mt-[6px]" : "mt-0.5"}`}
-        >
-          {!record?.icon ? record.name.slice(0, 1).toLocaleUpperCase() : null}
-        </div>
+        <PubIcon record={record} uri={props.uri} />
+
         <div
           className={`flex w-full flex-col ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] px-2 py-1 rounded-lg" : ""}`}
         >

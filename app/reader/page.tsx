@@ -18,6 +18,9 @@ import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
 import { ReaderContent } from "./ReaderContent";
 import { SubscriptionsContent } from "./SubscriptionsContent";
+import { Json } from "supabase/database.types";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { PubLeafletDocument } from "lexicons/api";
 
 export default async function Reader(props: {}) {
   let cookieStore = await cookies();
@@ -92,14 +95,44 @@ export default async function Reader(props: {}) {
     .select(`publications(*, documents_in_publications(documents(*)))`)
     .eq("identity", auth_res?.atp_did);
 
-  let subbedPubs = publications?.map((pub) => {
-    let subbedPubsArr: string[] = [];
-    pub.publications?.name && subbedPubsArr.push(pub.publications?.name);
-    return subbedPubsArr;
+  // Flatten all posts from all publications into a single array
+  let posts =
+    publications?.flatMap((publication) => {
+      const postsInPub =
+        publication.publications?.documents_in_publications.filter(
+          (d) => !!d?.documents,
+        );
+
+      if (!postsInPub || postsInPub.length === 0) return [];
+
+      return postsInPub
+        .filter(
+          (postInPub) =>
+            postInPub.documents?.data &&
+            postInPub.documents?.uri &&
+            postInPub.documents?.indexed_at,
+        )
+        .map((postInPub) => ({
+          publication: {
+            href: getPublicationURL(publication.publications!),
+            pubRecord: publication.publications?.record || null,
+            uri: publication.publications?.uri || "",
+          },
+          documents: {
+            data: postInPub.documents!.data,
+            uri: postInPub.documents!.uri,
+            indexed_at: postInPub.documents!.indexed_at,
+          },
+        }));
+    }) || [];
+
+  let sortedPosts = posts.sort((a, b) => {
+    let recordA = a.documents.data as PubLeafletDocument.Record;
+    let recordB = b.documents.data as PubLeafletDocument.Record;
+    const dateA = new Date(recordA.publishedAt || 0);
+    const dateB = new Date(recordB.publishedAt || 0);
+    return dateB.getTime() - dateA.getTime();
   });
-
-  console.log(subbedPubs);
-
   return (
     <ReplicacheProvider
       rootEntity={root_entity}
@@ -121,8 +154,13 @@ export default async function Reader(props: {}) {
               actions={null}
               tabs={{
                 reader: {
-                  controls: <FocusToggle />,
-                  content: <ReaderContent root_entity={root_entity} />,
+                  controls: null,
+                  content: (
+                    <ReaderContent
+                      root_entity={root_entity}
+                      posts={sortedPosts}
+                    />
+                  ),
                 },
                 subs: {
                   controls: null,
@@ -141,7 +179,3 @@ export default async function Reader(props: {}) {
     </ReplicacheProvider>
   );
 }
-
-const FocusToggle = () => {
-  return <div className="grow flex justify-end">focus</div>;
-};

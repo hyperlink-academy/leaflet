@@ -6,7 +6,6 @@ export const Header = (props: {
   cardBorderHidden: boolean;
 }) => {
   let [scrollPos, setScrollPos] = useState(0);
-  console.log(props.cardBorderHidden);
 
   useEffect(() => {
     const homeContent = document.getElementById("home-content");

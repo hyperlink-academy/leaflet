@@ -93,6 +93,8 @@ const PubListEmpty = () => {
 export const PubIcon = (props: {
   record: PubLeafletPublication.Record;
   uri: string;
+  small?: boolean;
+  className?: string;
 }) => {
   if (!props.record) return;
 
@@ -104,11 +106,15 @@ export const PubIcon = (props: {
         backgroundSize: "cover",
         backgroundImage: `url(/api/atproto_images?did=${new AtUri(props.uri).host}&cid=${(props.record.icon?.ref as unknown as { $link: string })["$link"]})`,
       }}
-      className="w-6 h-6 rounded-full"
+      className={`${props.small ? "w-5 h-5" : "w-6 h-6"} rounded-full ${props.className}`}
     />
   ) : (
-    <div className="w-6 h-6 rounded-full bg-accent-1 relative">
-      <div className="font-bold text-sm absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-2">
+    <div
+      className={`${props.small ? "w-5 h-5" : "w-6 h-6"} rounded-full bg-accent-1 relative`}
+    >
+      <div
+        className={`${props.small ? "text-xs" : "text-sm"} font-bold  absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-2`}
+      >
         {props.record?.name.slice(0, 1)}
       </div>
     </div>

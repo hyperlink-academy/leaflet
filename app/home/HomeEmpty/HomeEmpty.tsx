@@ -66,16 +66,16 @@ export function HomeEmptyState() {
 export const PublicationBanner = (props: { small?: boolean }) => {
   return (
     <div
-      className={`accent-container flex sm:py-2 gap-4 items-center ${props.small ? "items-start p-2 text-sm font-normal" : "items-center p-4"}`}
+      className={`accent-container flex sm:py-2  items-center ${props.small ? "items-start gap-2 p-2 text-sm font-normal" : "items-center p-4 gap-4"}`}
     >
       {props.small ? (
-        <PublishSmall className="shrink-0" />
+        <PublishSmall className="shrink-0 text-accent-contrast" />
       ) : (
         <div className="w-[64px] mx-auto">
           <PubListEmptyIllo />
         </div>
       )}
-      <div className="grow">
+      <div className={`${props.small ? "pt-[2px]" : ""} grow`}>
         <Link href={"/lish/createPub"} className="font-bold">
           Start a Publication
         </Link>{" "}
@@ -88,7 +88,7 @@ export const PublicationBanner = (props: { small?: boolean }) => {
 export const DiscoverBanner = (props: { small?: boolean }) => {
   return (
     <div
-      className={`accent-container flex sm:py-2 gap-2 items-center ${props.small ? "items-start p-2 text-sm font-normal" : "items-center p-4"}`}
+      className={`accent-container flex sm:py-2  items-center ${props.small ? "items-start gap-2 p-2 text-sm font-normal" : "items-center p-4 gap-4"}`}
     >
       {props.small ? (
         <DiscoverSmall className="shrink-0 text-accent-contrast" />
@@ -97,7 +97,7 @@ export const DiscoverBanner = (props: { small?: boolean }) => {
           <DiscoverIllo />
         </div>
       )}
-      <div className="grow">
+      <div className={`${props.small ? "pt-[2px]" : ""} grow`}>
         <Link href={"/discover"} className="font-bold">
           Explore Publications
         </Link>{" "}
