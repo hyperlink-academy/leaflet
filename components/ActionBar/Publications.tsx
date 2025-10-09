@@ -37,7 +37,7 @@ export const PublicationButtons = (props: {
         );
       })}
       <Link
-        href={"./lish/createPub"}
+        href={"/lish/createPub"}
         className="pubListCreateNew  text-accent-contrast text-sm place-self-end hover:text-accent-contrast"
       >
         New
