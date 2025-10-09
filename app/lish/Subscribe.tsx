@@ -256,26 +256,23 @@ const ManageSubscription = (props: {
           <h4>Update Options</h4>
 
           {!hasFeed && (
-            <>
-              <div className="flex gap-4  items-center justify-between text-secondary w-full border border-border-light pl-1 pr-0.5 py-0.5 rounded-md">
-                Bluesky Custom Feed
-                <a
-                  href="https://bsky.app/profile/leaflet.pub/feed/subscribedPublications"
-                  target="_blank"
-                  className=" place-self-center"
-                >
-                  <ButtonPrimary compact>View</ButtonPrimary>
-                </a>
-              </div>
-            </>
-          )}
-          <div className="flex gap-2 justify-between text-secondary w-full  border border-border-light px-1 py-0.5 rounded-md">
-            RSS
-            <a href={`${props.base_url}/rss`} className="flex" target="_blank">
-              <span className="sr-only">Subscribe to RSS</span>
-              <ButtonPrimary compact>Get RSS</ButtonPrimary>
+            <a
+              href="https://bsky.app/profile/leaflet.pub/feed/subscribedPublications"
+              target="_blank"
+              className=" place-self-center"
+            >
+              <ButtonPrimary fullWidth compact className="!px-4">
+                View Bluesky Custom Feed
+              </ButtonPrimary>
             </a>
-          </div>
+          )}
+
+          <a href={`${props.base_url}/rss`} className="flex" target="_blank">
+            <span className="sr-only">Subscribe to RSS</span>
+            <ButtonPrimary fullWidth compact>
+              Get RSS
+            </ButtonPrimary>
+          </a>
 
           <hr className="border-border-light my-1" />
 
