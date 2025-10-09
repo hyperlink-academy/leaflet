@@ -231,6 +231,7 @@ const ManageSubscription = (props: {
   pubName: string;
   pub_uri: string;
   subscribers: { identity: string }[];
+  base_url: string;
 }) => {
   let toaster = useToaster();
   let [hasFeed] = useState(false);
@@ -251,22 +252,33 @@ const ManageSubscription = (props: {
       <Popover
         trigger={<div className="text-accent-contrast text-sm">Manage</div>}
       >
-        <div className="max-w-sm flex flex-col gap-3 justify-center text-center">
+        <div className="max-w-sm flex flex-col gap-1">
+          <h4>Update Options</h4>
+
           {!hasFeed && (
             <>
-              <div className="flex flex-col gap-2 font-bold text-secondary w-full">
-                Updates via Bluesky custom feed!
+              <div className="flex gap-4  items-center justify-between text-secondary w-full border border-border-light pl-1 pr-0.5 py-0.5 rounded-md">
+                Bluesky Custom Feed
                 <a
                   href="https://bsky.app/profile/leaflet.pub/feed/subscribedPublications"
                   target="_blank"
                   className=" place-self-center"
                 >
-                  <ButtonPrimary>View Feed</ButtonPrimary>
+                  <ButtonPrimary compact>View</ButtonPrimary>
                 </a>
               </div>
-              <hr className="border-border-light" />
             </>
           )}
+          <div className="flex gap-2 justify-between text-secondary w-full  border border-border-light px-1 py-0.5 rounded-md">
+            RSS
+            <a href={`${props.base_url}/rss`} className="flex" target="_blank">
+              <span className="sr-only">Subscribe to RSS</span>
+              <ButtonPrimary compact>Get RSS</ButtonPrimary>
+            </a>
+          </div>
+
+          <hr className="border-border-light my-1" />
+
           <form action={unsubscribe}>
             <button className="font-bold text-accent-contrast w-max place-self-center">
               {unsubscribePending ? <DotLoader /> : "Unsubscribe"}
