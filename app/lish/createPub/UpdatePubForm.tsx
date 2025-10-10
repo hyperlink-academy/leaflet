@@ -456,7 +456,7 @@ const DomainSettings = (props: {
                   <div style={{ wordBreak: "break-word" }}>
                     {
                       config?.recommendedIPv4.sort((a, b) => a.rank - b.rank)[0]
-                        .value
+                        .value[0]
                     }
                   </div>
                 </td>
