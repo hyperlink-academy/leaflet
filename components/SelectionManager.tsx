@@ -117,14 +117,14 @@ export function SelectionManager() {
           ) {
             if (useUIState.getState().foldedBlocks.includes(nextBlock.value))
               useUIState.getState().toggleFold(nextBlock.value);
-            rep?.mutate.moveBlock({
+            await rep?.mutate.moveBlock({
               block: block.value,
               oldParent: block.listData?.parent,
               newParent: nextBlock.value,
               position: { type: "first" },
             });
           } else {
-            rep?.mutate.moveBlockDown({
+            await rep?.mutate.moveBlockDown({
               entityID: block.value,
               parent: block.listData?.parent || block.parent,
             });
