@@ -122,7 +122,6 @@ export function DashboardLayout<
     [name: string]: {
       content: React.ReactNode;
       controls: React.ReactNode;
-      href?: string;
     };
   },
 >(props: {
@@ -135,7 +134,7 @@ export function DashboardLayout<
   actions: React.ReactNode;
 }) {
   let [tab, setTab] = useState(props.defaultTab);
-  let { content, controls, href } = props.tabs[tab];
+  let { content, controls } = props.tabs[tab];
 
   let [headerState, setHeaderState] = useState<"default" | "controls">(
     "default",
@@ -166,21 +165,6 @@ export function DashboardLayout<
                     {Object.keys(props.tabs).length > 1 && (
                       <div className="pubDashTabs flex flex-row gap-1">
                         {Object.keys(props.tabs).map((t) => {
-                          if (props.tabs[t].href)
-                            return (
-                              <Link
-                                key={t}
-                                href={props.tabs[t].href}
-                                className="no-underline"
-                              >
-                                <Tab
-                                  name={t}
-                                  selected={t === tab}
-                                  href={props.tabs[t].href}
-                                  onSelect={() => setTab(t)}
-                                />
-                              </Link>
-                            );
                           return (
                             <Tab
                               key={t}

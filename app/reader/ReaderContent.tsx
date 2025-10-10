@@ -1,17 +1,16 @@
 "use client";
 import { AtUri } from "@atproto/api";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { Interactions } from "app/lish/[did]/[publication]/[rkey]/Interactions/Interactions";
 import { PubIcon } from "components/ActionBar/Publications";
 import { ButtonPrimary } from "components/Buttons";
+import { CommentTiny } from "components/Icons/CommentTiny";
 import { DiscoverSmall } from "components/Icons/DiscoverSmall";
-import { ShareSmall } from "components/Icons/ShareSmall";
+import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { Separator } from "components/Layout";
-import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { SpeedyLink } from "components/SpeedyLink";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
-import Link from "next/link";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { Json } from "supabase/database.types";
 
@@ -23,7 +22,21 @@ export const ReaderContent = (props: {
       pubRecord: Json;
       uri: string;
     };
-    documents: { data: Json; uri: string; indexed_at: string };
+    documents: {
+      data: Json;
+      uri: string;
+      indexed_at: string;
+      comments_on_documents:
+        | {
+            count: number;
+          }[]
+        | undefined;
+      document_mentions_in_bsky:
+        | {
+            count: number;
+          }[]
+        | undefined;
+    };
   }[];
 }) => {
   if (props.posts.length === 0) return <ReaderEmpty />;
@@ -40,7 +53,21 @@ const Post = (props: {
     uri: string;
     href: string;
   };
-  documents: { data: Json | undefined; uri: string; indexed_at: string };
+  documents: {
+    data: Json;
+    uri: string;
+    indexed_at: string;
+    comments_on_documents:
+      | {
+          count: number;
+        }[]
+      | undefined;
+    document_mentions_in_bsky:
+      | {
+          count: number;
+        }[]
+      | undefined;
+  };
 }) => {
   let pubRecord = props.publication.pubRecord as PubLeafletPublication.Record;
 
@@ -59,6 +86,12 @@ const Post = (props: {
   let backgroundImageSize = pubRecord?.theme?.backgroundImage?.width || 500;
 
   let showPageBackground = pubRecord.theme?.showPageBackground;
+
+  let quotes = props.documents.document_mentions_in_bsky?.[0]?.count || 0;
+  let comments =
+    pubRecord.preferences?.showComments === false
+      ? 0
+      : props.documents.comments_on_documents?.[0]?.count || 0;
 
   return (
     <BaseThemeProvider {...theme} local>
@@ -93,24 +126,25 @@ const Post = (props: {
           <h3 className="text-primary truncate">{postRecord.title}</h3>
 
           <p className="text-secondary">{postRecord.description}</p>
+          <div className="flex justify-between items-end">
+            <div className="flex flex-col-reverse md:flex-row md gap-3 md:gap-2 text-sm text-tertiary items-center justify-start pt-1 md:pt-3">
+              <PubInfo
+                href={props.publication.href}
+                pubRecord={pubRecord}
+                uri={props.publication.uri}
+              />
+              <Separator classname="h-4 !min-h-0 md:block hidden" />
+              <PostInfo
+                author="NAME HERE"
+                publishedAt={postRecord.publishedAt}
+              />
+            </div>
 
-          <div className="flex gap-2 text-sm text-tertiary items-center pt-3">
-            <SpeedyLink
-              href={props.publication.href}
-              className="text-accent-contrast font-bold no-underline text-sm flex gap-[6px] items-center relative"
-            >
-              <PubIcon small record={pubRecord} uri={props.publication.uri} />
-              {pubRecord.name}
-            </SpeedyLink>
-            <Separator classname="h-4 !min-h-0" />
-            NAME HERE
-            <Separator classname="h-4 !min-h-0" />
-            {postRecord.publishedAt &&
-              new Date(postRecord.publishedAt).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              })}
+            <PostInterations
+              quotesCount={quotes}
+              commentsCount={comments}
+              showComments={pubRecord.preferences?.showComments}
+            />
           </div>
         </div>
       </div>
@@ -118,6 +152,65 @@ const Post = (props: {
   );
 };
 
+const PubInfo = (props: {
+  href: string;
+  pubRecord: PubLeafletPublication.Record;
+  uri: string;
+}) => {
+  return (
+    <SpeedyLink
+      href={props.href}
+      className="text-accent-contrast font-bold no-underline text-sm flex gap-1 items-center md:w-fit w-full relative shrink-0"
+    >
+      <PubIcon small record={props.pubRecord} uri={props.uri} />
+      {props.pubRecord.name}
+    </SpeedyLink>
+  );
+};
+
+const PostInfo = (props: {
+  author: string;
+  publishedAt: string | undefined;
+}) => {
+  return (
+    <div className="flex gap-2 items-center shrink-0">
+      NAME HERE
+      {props.publishedAt && (
+        <>
+          <Separator classname="h-4 !min-h-0" />
+          {new Date(props.publishedAt).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })}{" "}
+        </>
+      )}
+    </div>
+  );
+};
+
+const PostInterations = (props: {
+  quotesCount: number;
+  commentsCount: number;
+  showComments: boolean | undefined;
+}) => {
+  return (
+    <div className={`flex gap-2 text-tertiary text-sm  `}>
+      {props.quotesCount === 0 ? null : (
+        <div className={`flex gap-1 items-center `}>
+          <span className="sr-only">Post quotes</span>
+          <QuoteTiny aria-hidden /> {props.quotesCount}
+        </div>
+      )}
+      {props.showComments === false ? null : (
+        <div className={`flex gap-1 items-center`}>
+          <span className="sr-only">Post comments</span>
+          <CommentTiny aria-hidden /> {props.commentsCount}
+        </div>
+      )}
+    </div>
+  );
+};
 const ReaderEmpty = () => {
   return (
     <div className="flex flex-col gap-2 container bg-[rgba(var(--bg-page),.7)] sm:p-4 p-3 justify-between text-center font-bold text-tertiary">

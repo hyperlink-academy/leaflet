@@ -92,7 +92,13 @@ export default async function Reader(props: {}) {
   if (!auth_res?.atp_did) return;
   let { data: publications } = await supabaseServerClient
     .from("publication_subscriptions")
-    .select(`publications(*, documents_in_publications(documents(*)))`)
+    .select(
+      `publications(*, documents_in_publications(documents(
+      *,
+      comments_on_documents(count),
+      document_mentions_in_bsky(count)
+    )))`,
+    )
     .eq("identity", auth_res?.atp_did);
 
   // get publications to fit PublicationList type
@@ -127,6 +133,9 @@ export default async function Reader(props: {}) {
             data: postInPub.documents!.data,
             uri: postInPub.documents!.uri,
             indexed_at: postInPub.documents!.indexed_at,
+            comments_on_documents: postInPub.documents?.comments_on_documents,
+            document_mentions_in_bsky:
+              postInPub.documents?.document_mentions_in_bsky,
           },
         }));
     }) || [];
@@ -172,11 +181,6 @@ export default async function Reader(props: {}) {
                   content: (
                     <SubscriptionsContent publications={subbedPublications} />
                   ),
-                },
-                discover: {
-                  controls: null,
-                  content: <></>,
-                  href: "/discover",
                 },
               }}
             />

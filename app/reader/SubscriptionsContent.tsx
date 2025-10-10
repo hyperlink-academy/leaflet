@@ -1,5 +1,4 @@
 import { PubListing } from "app/discover/PubListing";
-import { PublicationsList } from "app/discover/page";
 import { ButtonPrimary } from "components/Buttons";
 import { DiscoverSmall } from "components/Icons/DiscoverSmall";
 import { Json } from "supabase/database.types";
