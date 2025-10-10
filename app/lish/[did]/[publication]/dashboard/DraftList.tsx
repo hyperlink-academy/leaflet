@@ -46,8 +46,9 @@ export function DraftList(props: {
         titles={{
           ...leaflets_in_publications.reduce(
             (acc, leaflet) => {
-              if (leaflet.title && leaflet.permission_tokens)
-                acc[leaflet.permission_tokens.root_entity] = leaflet.title;
+              if (leaflet.permission_tokens)
+                acc[leaflet.permission_tokens.root_entity] =
+                  leaflet.title || "Untitled";
               return acc;
             },
             {} as { [l: string]: string },
