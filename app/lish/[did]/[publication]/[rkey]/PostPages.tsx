@@ -9,7 +9,7 @@ import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/act
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
 import { EditTiny } from "components/Icons/EditTiny";
-import { Interactions, useInteractionState } from "./Interactions/Interactions";
+import { Interactions } from "./Interactions/Interactions";
 import { PostContent } from "./PostContent";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { useIdentityData } from "components/IdentityProvider";
@@ -25,20 +25,27 @@ import { PageOptionButton } from "components/Pages/PageOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { PageWrapper } from "components/Pages/Page";
 import { Fragment } from "react";
+import { flushSync } from "react-dom";
+import { scrollIntoView } from "src/utils/scrollIntoView";
 export const usePostPageUIState = create(() => ({
   pages: [] as string[],
 }));
 
-export const openPage = (parent: string | undefined, page: string) =>
-  usePostPageUIState.setState((state) => {
-    let parentPosition = state.pages.findIndex((s) => s == parent);
-    return {
-      pages:
-        parentPosition === -1
-          ? [page]
-          : [...state.pages.slice(0, parentPosition + 1), page],
-    };
+export const openPage = (parent: string | undefined, page: string) => {
+  flushSync(() => {
+    usePostPageUIState.setState((state) => {
+      let parentPosition = state.pages.findIndex((s) => s == parent);
+      return {
+        pages:
+          parentPosition === -1
+            ? [page]
+            : [...state.pages.slice(0, parentPosition + 1), page],
+      };
+    });
   });
+
+  scrollIntoView(`post-page-${page}`);
+};
 
 export const closePage = (page: string) =>
   usePostPageUIState.setState((state) => {
@@ -58,7 +65,9 @@ export function PostPages({
   pubRecord,
   prerenderedCodeBlocks,
   bskyPostData,
+  document_uri,
 }: {
+  document_uri: string;
   document: PostPageData;
   blocks: PubLeafletPagesLinearDocument.Block[];
   name: string;
@@ -70,7 +79,7 @@ export function PostPages({
   preferences: { showComments?: boolean };
 }) {
   let { identity } = useIdentityData();
-  let drawerOpen = useDrawerOpen();
+  let drawerOpen = useDrawerOpen(document_uri);
   let pages = usePostPageUIState((s) => s.pages);
   if (!document || !document.documents_in_publications[0].publications)
     return null;
@@ -154,7 +163,7 @@ export function PostPages({
             <SandwichSpacer />
             <PageWrapper
               cardBorderHidden={!hasPageBackground}
-              id={"post-page"}
+              id={`post-page-${p}`}
               fullPageScroll={false}
               pageOptions={
                 <PageOptions

@@ -13,7 +13,7 @@ export const InteractionDrawer = (props: {
   comments: Comment[];
   did: string;
 }) => {
-  let drawer = useDrawerOpen();
+  let drawer = useDrawerOpen(props.document_uri);
   if (!drawer) return null;
   return (
     <>
@@ -36,10 +36,10 @@ export const InteractionDrawer = (props: {
   );
 };
 
-export const useDrawerOpen = () => {
+export const useDrawerOpen = (uri: string) => {
   let params = useSearchParams();
   let interactionDrawerSearchParam = params.get("interactionDrawer");
-  let { drawerOpen: open, drawer } = useInteractionState();
+  let { drawerOpen: open, drawer } = useInteractionState(uri);
   if (open === false || (open === undefined && !interactionDrawerSearchParam))
     return null;
   return drawer || interactionDrawerSearchParam;

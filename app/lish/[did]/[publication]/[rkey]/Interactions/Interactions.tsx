@@ -8,6 +8,7 @@ import type { Comment } from "./Comments";
 import { QuotePosition } from "../quotePosition";
 import { useContext } from "react";
 import { PostPageContext } from "../PostPageContext";
+import { scrollIntoView } from "src/utils/scrollIntoView";
 
 type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -27,9 +28,9 @@ export let useInteractionStateStore = create<{
   [document_uri: string]: InteractionState;
 }>(() => ({}));
 
-export function useInteractionState(document_uri?: string) {
+export function useInteractionState(document_uri: string) {
   return useInteractionStateStore((state) => {
-    if (!document_uri || !state[document_uri]) {
+    if (!state[document_uri]) {
       return defaultInteractionState;
     }
     return state[document_uri];
@@ -87,21 +88,7 @@ export function openInteractionDrawer(
   flushSync(() => {
     setInteractionState(document_uri, { drawerOpen: true, drawer });
   });
-  let el = document.getElementById("interaction-drawer");
-  let isOffscreen = false;
-  if (el) {
-    const rect = el.getBoundingClientRect();
-    const windowWidth =
-      window.innerWidth || document.documentElement.clientWidth;
-    isOffscreen = rect.right > windowWidth - 64;
-  }
-
-  if (el && isOffscreen)
-    el.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-      inline: "center",
-    });
+  scrollIntoView("interaction-drawer");
 }
 
 export const Interactions = (props: {

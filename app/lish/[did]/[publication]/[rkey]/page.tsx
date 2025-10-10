@@ -154,6 +154,7 @@ export default async function Post(props: {
            */}
           <LeafletLayout>
             <PostPages
+              document_uri={document.uri}
               preferences={pubRecord.preferences || {}}
               pubRecord={pubRecord}
               profile={JSON.parse(JSON.stringify(profile.data))}
