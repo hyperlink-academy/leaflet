@@ -45,7 +45,7 @@ export const PubListing = (props: {
           hover:outline-accent-contrast hover:border-accent-contrast`}
       >
         <div
-          className={`flex w-full flex-col justify-center text-center max-h-48 pt-4 pb-3 px-3 rounded-lg ${props.resizeHeight ? "" : "sm:h-48 h-full"}${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""}`}
+          className={`flex w-full flex-col justify-center text-center max-h-48 pt-4 pb-3 px-3 rounded-lg ${props.resizeHeight ? "" : "sm:h-48 h-full"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""}`}
         >
           <div className="mx-auto pb-1">
             <PubIcon record={record} uri={props.uri} large />
