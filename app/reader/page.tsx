@@ -95,13 +95,18 @@ export default async function Reader(props: {}) {
     .select(`publications(*, documents_in_publications(documents(*)))`)
     .eq("identity", auth_res?.atp_did);
 
+  // get publications to fit PublicationList type
+  let subbedPublications =
+    publications
+      ?.map((subscription) => subscription.publications)
+      .filter((pub) => pub !== null) || [];
+
   // Flatten all posts from all publications into a single array
   let posts =
-    publications?.flatMap((publication) => {
-      const postsInPub =
-        publication.publications?.documents_in_publications.filter(
-          (d) => !!d?.documents,
-        );
+    subbedPublications?.flatMap((pub) => {
+      const postsInPub = pub.documents_in_publications.filter(
+        (d) => !!d?.documents,
+      );
 
       if (!postsInPub || postsInPub.length === 0) return [];
 
@@ -114,9 +119,9 @@ export default async function Reader(props: {}) {
         )
         .map((postInPub) => ({
           publication: {
-            href: getPublicationURL(publication.publications!),
-            pubRecord: publication.publications?.record || null,
-            uri: publication.publications?.uri || "",
+            href: getPublicationURL(pub!),
+            pubRecord: pub?.record || null,
+            uri: pub?.uri || "",
           },
           documents: {
             data: postInPub.documents!.data,
@@ -162,9 +167,11 @@ export default async function Reader(props: {}) {
                     />
                   ),
                 },
-                subs: {
+                subscriptions: {
                   controls: null,
-                  content: <SubscriptionsContent />,
+                  content: (
+                    <SubscriptionsContent publications={subbedPublications} />
+                  ),
                 },
                 discover: {
                   controls: null,
