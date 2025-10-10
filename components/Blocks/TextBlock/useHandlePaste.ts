@@ -389,7 +389,7 @@ const createBlockFromHTML = (
     let oldEntityID = child.getAttribute("data-entityid") as string;
     let factsData = child.getAttribute("data-facts");
     if (factsData) {
-      let facts = JSON.parse(atob(factsData)) as Fact<any>[];
+      let facts = JSON.parse(factsData) as Fact<any>[];
 
       let oldEntityIDToNewID = {} as { [k: string]: string };
       let oldEntities = facts.reduce((acc, f) => {

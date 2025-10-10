@@ -164,7 +164,7 @@ const BlockTypeToHTML: {
     return (
       <div
         data-type="card"
-        data-facts={btoa(JSON.stringify(facts))}
+        data-facts={JSON.stringify(facts)}
         data-entityid={card.data.value}
       />
     );
