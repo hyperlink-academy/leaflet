@@ -36,7 +36,6 @@ export function SelectionManager() {
   let isMobile = useIsMobile();
   useEffect(() => {
     if (!entity_set.permissions.write || !rep) return;
-    if (isMobile) return;
     const getSortedSelectionBound = getSortedSelection.bind(null, rep);
     let shortcuts: Shortcut[] = [
       {
@@ -555,7 +554,7 @@ export function SelectionManager() {
       removeListener();
       window.removeEventListener("keydown", listener);
     };
-  }, [moreThanOneSelected, rep, entity_set.permissions.write, isMobile]);
+  }, [moreThanOneSelected, rep, entity_set.permissions.write]);
 
   let [mouseDown, setMouseDown] = useState(false);
   let initialContentEditableParent = useRef<null | Node>(null);
