@@ -173,7 +173,7 @@ const PostInfo = (props: {
   publishedAt: string | undefined;
 }) => {
   return (
-    <div className="flex gap-2 items-center shrink-0">
+    <div className="flex gap-2 grow items-center shrink-0">
       NAME HERE
       {props.publishedAt && (
         <>
