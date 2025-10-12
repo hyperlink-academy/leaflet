@@ -18,6 +18,7 @@ import { keymap } from "prosemirror-keymap";
 import { history, undo, redo } from "prosemirror-history";
 import { inputRules, InputRule } from "prosemirror-inputrules";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
+import { IOSBS } from "app/lish/[did]/[publication]/[rkey]/Interactions/Comments/CommentBox";
 
 // Schema with only links, mentions, and hashtags marks
 const bskyPostSchema = new Schema({
@@ -258,7 +259,7 @@ export function BlueskyPostEditorProsemirror(props: {
   }, [handleMentionSelect]);
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full group">
       {editorState && (
         <MentionAutocomplete
           editorState={editorState}
@@ -270,7 +271,7 @@ export function BlueskyPostEditorProsemirror(props: {
         />
       )}
       {editorState?.doc.textContent.length === 0 && (
-        <div className="italic text-tertiary absolute top-0 left-0">
+        <div className="italic text-tertiary absolute top-0 left-0 pointer-events-none">
           Write a post to share your writing!
         </div>
       )}
@@ -282,6 +283,7 @@ export function BlueskyPostEditorProsemirror(props: {
           overflowWrap: "break-word",
         }}
       />
+      <IOSBS view={viewRef} />
     </div>
   );
 }
