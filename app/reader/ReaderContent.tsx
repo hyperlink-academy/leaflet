@@ -196,6 +196,10 @@ const PostInterations = (props: {
   showComments: boolean | undefined;
 }) => {
   let smoker = useSmoker();
+  let interactionsAvailable =
+    props.quotesCount > 0 ||
+    (props.showComments !== false && props.commentsCount > 0);
+
   return (
     <div className={`flex gap-2 text-tertiary text-sm  items-center`}>
       {props.quotesCount === 0 ? null : (
@@ -204,16 +208,16 @@ const PostInterations = (props: {
           <QuoteTiny aria-hidden /> {props.quotesCount}
         </div>
       )}
-      {props.showComments === false ? null : (
+      {props.showComments === false || props.commentsCount === 0 ? null : (
         <div className={`flex gap-1 items-center`}>
           <span className="sr-only">Post comments</span>
           <CommentTiny aria-hidden /> {props.commentsCount}
         </div>
       )}
-      <Separator classname="h-4 !min-h-0" />
+      {interactionsAvailable && <Separator classname="h-4 !min-h-0" />}
       <button
         id={`copy-post-link-${props.postUrl}`}
-        className="flex gap-1 items-center hover:font-bold px-1"
+        className="flex gap-1 items-center hover:font-bold"
         style={{ pointerEvents: "all" }}
         onClick={(e) => {
           e.stopPropagation();
