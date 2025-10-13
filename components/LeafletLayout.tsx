@@ -18,7 +18,7 @@ export const LeafletLayout = (props: {
           w-full h-full
           flex gap-0
           py-2 sm:py-6
-          overflow-x-scroll snap-x snap-mandatory no-scrollbar
+          overflow-y-hidden overflow-x-scroll snap-x snap-mandatory no-scrollbar
           ${props.className}`}
       >
         {props.children}
@@ -45,13 +45,14 @@ export const BookendSpacer = (props: {
 
 export const SandwichSpacer = (props: {
   onClick?: (e: React.MouseEvent) => void;
+  noWidth?: boolean;
   className?: string;
 }) => {
   // these spacers are used between pages so that the page carousel can fit two pages side by side by snapping in between pages
   return (
     <div
       onClick={props.onClick}
-      className={`spacer shrink-0 w-6 lg:snap-center ${props.className}`}
+      className={`spacer shrink-0 lg:snap-center ${props.noWidth ? "w-0" : "w-6"} ${props.className}`}
     />
   );
 };

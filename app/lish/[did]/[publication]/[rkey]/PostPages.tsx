@@ -94,6 +94,7 @@ export function PostPages({
         fullPageScroll={fullPageScroll}
         cardBorderHidden={!hasPageBackground}
         id={"post-page"}
+        drawerOpen={!!drawerOpen}
       >
         <PostHeader
           data={document}
@@ -161,10 +162,12 @@ export function PostPages({
         return (
           <Fragment key={p}>
             <SandwichSpacer />
+            {/*JARED TODO : drawerOpen here is checking whether the drawer is open on the first page, rather than if it's open on this page. Please rewire this when you add drawers per page!*/}
             <PageWrapper
               cardBorderHidden={!hasPageBackground}
               id={`post-page-${p}`}
               fullPageScroll={false}
+              drawerOpen={!!drawerOpen}
               pageOptions={
                 <PageOptions
                   onClick={() => closePage(page?.id!)}

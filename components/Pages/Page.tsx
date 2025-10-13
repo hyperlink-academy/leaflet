@@ -15,6 +15,7 @@ import { useCardBorderHidden } from "./useCardBorderHidden";
 import { focusPage } from ".";
 import { PageOptions } from "./PageOptions";
 import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { useDrawerOpen } from "app/lish/[did]/[publication]/[rkey]/Interactions/InteractionDrawer";
 
 export function Page(props: {
   entityID: string;
@@ -33,6 +34,7 @@ export function Page(props: {
   });
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
   let cardBorderHidden = useCardBorderHidden(props.entityID);
+  let drawerOpen = useDrawerOpen(props.entityID);
   return (
     <CardThemeProvider entityID={props.entityID}>
       <PageWrapper
@@ -44,6 +46,7 @@ export function Page(props: {
           }
         }}
         id={elementId.page(props.entityID).container}
+        drawerOpen={!!drawerOpen}
         cardBorderHidden={!!cardBorderHidden}
         isFocused={isFocused}
         fullPageScroll={props.fullPageScroll}
@@ -69,14 +72,16 @@ export function Page(props: {
 }
 
 export const PageWrapper = (props: {
+  id: string;
+
   children: React.ReactNode;
   pageOptions?: React.ReactNode;
-  id: string;
   cardBorderHidden: boolean;
   fullPageScroll: boolean;
   isFocused?: boolean;
   onClickAction?: (e: React.MouseEvent) => void;
   pageType?: "canvas" | "doc";
+  drawerOpen: boolean | undefined;
 }) => {
   return (
     // this div wraps the contents AND the page options.
@@ -100,8 +105,9 @@ export const PageWrapper = (props: {
       overflow-y-scroll
       ${
         !props.cardBorderHidden &&
-        `h-full rounded-lg border
+        `h-full border
           bg-[rgba(var(--bg-page),var(--bg-page-alpha))]
+          ${props.drawerOpen ? "rounded-l-lg " : ""}
           ${props.isFocused ? "shadow-md border-border" : "border-border-light"}`
       }
       ${props.cardBorderHidden && "sm:h-[calc(100%+48px)] h-[calc(100%+20px)] sm:-my-6 -my-3 sm:pt-6 pt-3"}
