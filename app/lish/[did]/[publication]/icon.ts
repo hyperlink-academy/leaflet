@@ -46,7 +46,6 @@ export default async function Icon({
 
     let identity = await idResolver.did.resolve(did);
     let service = identity?.service?.find((f) => f.id === "#atproto_pds");
-    console.log(identity);
     if (!service) return null;
     let cid = (record.icon.ref as unknown as { $link: string })["$link"];
     const response = await fetch(
@@ -56,7 +55,6 @@ export default async function Icon({
     let resizedImage = await sharp(await blob.arrayBuffer())
       .resize({ width: 32, height: 32 })
       .toBuffer();
-    console.log("fetched favicon!");
     return new Response(new Uint8Array(resizedImage), {
       headers: {
         "Content-Type": "image/png",

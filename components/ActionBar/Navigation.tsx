@@ -88,7 +88,6 @@ const NavigationOptions = (props: {
   let thisPublication = identity?.publications?.find(
     (pub) => pub.uri === props.publication,
   );
-  console.log(identity);
   return (
     <>
       <HomeButton current={props.currentPage === "home"} />
@@ -128,7 +127,8 @@ const ReaderButton = (props: { current?: boolean; subs: boolean }) => {
         icon={readerUnreads ? <ReaderUnreadSmall /> : <ReaderReadSmall />}
         label="Reader"
         className={`
-          ${readerUnreads ? "text-accent-contrast! border-accent-contrast" : props.current ? "bg-border-light! border-border" : ""}
+          ${readerUnreads && "text-accent-contrast!"}
+          ${props.current && "border-accent-contrast!"}
         `}
       />
     </Link>

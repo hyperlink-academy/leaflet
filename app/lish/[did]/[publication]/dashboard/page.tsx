@@ -75,7 +75,6 @@ export default async function Publication(props: {
       </PublicationSWRDataProvider>
     );
   } catch (e) {
-    console.log(e);
     return <pre>{JSON.stringify(e, undefined, 2)}</pre>;
   }
 }

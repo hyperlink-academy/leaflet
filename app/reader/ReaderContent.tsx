@@ -10,6 +10,7 @@ import { Separator } from "components/Layout";
 import { SpeedyLink } from "components/SpeedyLink";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { useSmoker } from "components/Toast";
 import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { Json } from "supabase/database.types";
@@ -141,6 +142,7 @@ const Post = (props: {
             </div>
 
             <PostInterations
+              postUrl={`props.publication.href}/${postUri.rkey}`}
               quotesCount={quotes}
               commentsCount={comments}
               showComments={pubRecord.preferences?.showComments}
@@ -192,10 +194,12 @@ const PostInfo = (props: {
 const PostInterations = (props: {
   quotesCount: number;
   commentsCount: number;
+  postUrl: string;
   showComments: boolean | undefined;
 }) => {
+  let smoker = useSmoker();
   return (
-    <div className={`flex gap-2 text-tertiary text-sm  `}>
+    <div className={`flex gap-2 text-tertiary text-sm  items-center`}>
       {props.quotesCount === 0 ? null : (
         <div className={`flex gap-1 items-center `}>
           <span className="sr-only">Post quotes</span>
@@ -208,6 +212,28 @@ const PostInterations = (props: {
           <CommentTiny aria-hidden /> {props.commentsCount}
         </div>
       )}
+      <Separator classname="h-4 !min-h-0" />
+      <button
+        id="copy-post-link"
+        className="flex gap-1 items-center hover:font-bold px-1"
+        onClick={() => {
+          let rect = document
+            .getElementById("copy-post-link")
+            ?.getBoundingClientRect();
+          if (!props.postUrl) return;
+          navigator.clipboard.writeText(props.postUrl);
+
+          smoker({
+            text: <strong>Copied Link</strong>,
+            position: {
+              y: rect ? rect.top : 0,
+              x: rect ? rect.right + 5 : 0,
+            },
+          });
+        }}
+      >
+        Share
+      </button>
     </div>
   );
 };

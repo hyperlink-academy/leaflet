@@ -163,7 +163,7 @@ export default async function Reader(props: {}) {
             <DashboardLayout
               id="reader"
               cardBorderHidden={false}
-              currentPage="discover"
+              currentPage="reader"
               defaultTab="reader"
               actions={null}
               tabs={{

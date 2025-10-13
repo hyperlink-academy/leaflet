@@ -74,7 +74,6 @@ export async function subscribeToPublication(
 }
 
 export async function unsubscribeToPublication(publication: string) {
-  console.log("calling unsubscribe!");
   const oauthClient = await createOauthClient();
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) return;
