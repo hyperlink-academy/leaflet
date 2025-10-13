@@ -110,20 +110,17 @@ const Post = (props: {
           `}
       >
         <SpeedyLink
-          className="h-full w-full absolute top-0 left-0"
+          className="h-full w-full absolute top-0 left-0 z-0"
           href={`${props.publication.href}/${postUri.rkey}`}
         />
         <div
-          className={`${showPageBackground ? "bg-bg-page " : "bg-transparent"}  rounded-md w-full  px-[10px] pt-2 pb-2`}
+          className={`${showPageBackground ? "bg-bg-page " : "bg-transparent"}  rounded-md w-full  px-[10px] pt-2 pb-2 z-1 pointer-events-none`}
           style={{
             backgroundColor: showPageBackground
               ? "rgba(var(--bg-page), var(--bg-page-alpha))"
               : "transparent",
           }}
         >
-          <div className="flex justify-between gap-2">
-            <button className="text-tertiary">{/*<ShareSmall />*/}</button>
-          </div>
           <h3 className="text-primary truncate">{postRecord.title}</h3>
 
           <p className="text-secondary">{postRecord.description}</p>
@@ -142,7 +139,7 @@ const Post = (props: {
             </div>
 
             <PostInterations
-              postUrl={`props.publication.href}/${postUri.rkey}`}
+              postUrl={`${props.publication.href}/${postUri.rkey}`}
               quotesCount={quotes}
               commentsCount={comments}
               showComments={pubRecord.preferences?.showComments}
@@ -163,6 +160,7 @@ const PubInfo = (props: {
     <SpeedyLink
       href={props.href}
       className="text-accent-contrast font-bold no-underline text-sm flex gap-1 items-center md:w-fit w-full relative shrink-0"
+      style={{ pointerEvents: "all" }}
     >
       <PubIcon small record={props.pubRecord} uri={props.uri} />
       {props.pubRecord.name}
@@ -214,20 +212,24 @@ const PostInterations = (props: {
       )}
       <Separator classname="h-4 !min-h-0" />
       <button
-        id="copy-post-link"
+        id={`copy-post-link-${props.postUrl}`}
         className="flex gap-1 items-center hover:font-bold px-1"
-        onClick={() => {
-          let rect = document
-            .getElementById("copy-post-link")
-            ?.getBoundingClientRect();
+        style={{ pointerEvents: "all" }}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          console.log("copied");
+          let mouseX = e.clientX;
+          let mouseY = e.clientY;
+
           if (!props.postUrl) return;
           navigator.clipboard.writeText(props.postUrl);
 
           smoker({
-            text: <strong>Copied Link</strong>,
+            text: <strong>Copied Link!</strong>,
             position: {
-              y: rect ? rect.top : 0,
-              x: rect ? rect.right + 5 : 0,
+              y: mouseY,
+              x: mouseX,
             },
           });
         }}

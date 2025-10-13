@@ -164,10 +164,10 @@ export default async function Reader(props: {}) {
               id="reader"
               cardBorderHidden={false}
               currentPage="reader"
-              defaultTab="reader"
+              defaultTab="Read"
               actions={null}
               tabs={{
-                reader: {
+                Read: {
                   controls: null,
                   content: (
                     <ReaderContent
@@ -176,7 +176,7 @@ export default async function Reader(props: {}) {
                     />
                   ),
                 },
-                subscriptions: {
+                Subscriptions: {
                   controls: null,
                   content: (
                     <SubscriptionsContent publications={subbedPublications} />

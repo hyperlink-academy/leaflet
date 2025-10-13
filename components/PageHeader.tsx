@@ -54,17 +54,19 @@ export const Header = (props: {
           style={
             scrollPos < 20
               ? {
-                  backgroundColor: `rgba(${headerBGColor}, ${scrollPos / 60 + 0.75})`,
+                  backgroundColor: props.cardBorderHidden
+                    ? `rgba(${headerBGColor}, ${scrollPos / 60 + 0.75})`
+                    : `rgba(${headerBGColor}, ${scrollPos / 20})`,
                   paddingLeft: props.cardBorderHidden
-                    ? `calc(${scrollPos / 20}*8px)`
-                    : "8px",
+                    ? "4px"
+                    : `calc(${scrollPos / 20}*4px)`,
                   paddingRight: props.cardBorderHidden
-                    ? `calc(${scrollPos / 20}*8px)`
-                    : "8px",
+                    ? "8px"
+                    : `calc(${scrollPos / 20}*8px)`,
                 }
               : {
                   backgroundColor: `rgb(${headerBGColor})`,
-                  paddingLeft: "8px",
+                  paddingLeft: "4px",
                   paddingRight: "8px",
                 }
           }
