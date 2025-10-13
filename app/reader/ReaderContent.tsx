@@ -110,11 +110,11 @@ const Post = (props: {
           `}
       >
         <SpeedyLink
-          className="h-full w-full absolute top-0 left-0 z-0"
+          className="h-full w-full absolute top-0 left-0 "
           href={`${props.publication.href}/${postUri.rkey}`}
         />
         <div
-          className={`${showPageBackground ? "bg-bg-page " : "bg-transparent"}  rounded-md w-full  px-[10px] pt-2 pb-2 z-1 pointer-events-none`}
+          className={`${showPageBackground ? "bg-bg-page " : "bg-transparent"}  rounded-md w-full  px-[10px] pt-2 pb-2 z-1 `}
           style={{
             backgroundColor: showPageBackground
               ? "rgba(var(--bg-page), var(--bg-page-alpha))"
@@ -160,7 +160,6 @@ const PubInfo = (props: {
     <SpeedyLink
       href={props.href}
       className="text-accent-contrast font-bold no-underline text-sm flex gap-1 items-center md:w-fit w-full relative shrink-0"
-      style={{ pointerEvents: "all" }}
     >
       <PubIcon small record={props.pubRecord} uri={props.uri} />
       {props.pubRecord.name}
@@ -217,17 +216,15 @@ const PostInterations = (props: {
       {interactionsAvailable && <Separator classname="h-4 !min-h-0" />}
       <button
         id={`copy-post-link-${props.postUrl}`}
-        className="flex gap-1 items-center hover:font-bold"
-        style={{ pointerEvents: "all" }}
+        className="flex gap-1 items-center hover:font-bold relative"
         onClick={(e) => {
           e.stopPropagation();
           e.preventDefault();
-          console.log("copied");
           let mouseX = e.clientX;
           let mouseY = e.clientY;
 
           if (!props.postUrl) return;
-          navigator.clipboard.writeText(props.postUrl);
+          navigator.clipboard.writeText(`leaflet.pub${props.postUrl}`);
 
           smoker({
             text: <strong>Copied Link!</strong>,
