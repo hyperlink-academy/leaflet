@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { identities, bsky_profiles, publications, documents, comments_on_documents, entities, facts, entity_sets, permission_tokens, email_subscriptions_to_entity, email_auth_tokens, custom_domains, phone_rsvps_to_entity, custom_domain_routes, poll_votes_on_entity, subscribers_to_publications, document_mentions_in_bsky, bsky_posts, permission_token_on_homepage, documents_in_publications, publication_domains, publication_subscriptions, leaflets_in_publications, permission_token_rights } from "./schema";
+import { identities, bsky_profiles, publications, documents, comments_on_documents, entities, facts, entity_sets, permission_tokens, email_subscriptions_to_entity, email_auth_tokens, custom_domains, phone_rsvps_to_entity, custom_domain_routes, poll_votes_on_entity, bsky_follows, subscribers_to_publications, document_mentions_in_bsky, bsky_posts, permission_token_on_homepage, documents_in_publications, publication_domains, publication_subscriptions, leaflets_in_publications, permission_token_rights } from "./schema";
 
 export const bsky_profilesRelations = relations(bsky_profiles, ({one, many}) => ({
 	identity: one(identities, {
@@ -22,6 +22,12 @@ export const identitiesRelations = relations(identities, ({one, many}) => ({
 	}),
 	custom_domains_identity_id: many(custom_domains, {
 		relationName: "custom_domains_identity_id_identities_id"
+	}),
+	bsky_follows_follows: many(bsky_follows, {
+		relationName: "bsky_follows_follows_identities_atp_did"
+	}),
+	bsky_follows_identity: many(bsky_follows, {
+		relationName: "bsky_follows_identity_identities_atp_did"
 	}),
 	subscribers_to_publications: many(subscribers_to_publications),
 	permission_token_on_homepages: many(permission_token_on_homepage),
@@ -173,6 +179,19 @@ export const poll_votes_on_entityRelations = relations(poll_votes_on_entity, ({o
 		fields: [poll_votes_on_entity.poll_entity],
 		references: [entities.id],
 		relationName: "poll_votes_on_entity_poll_entity_entities_id"
+	}),
+}));
+
+export const bsky_followsRelations = relations(bsky_follows, ({one}) => ({
+	identity_follows: one(identities, {
+		fields: [bsky_follows.follows],
+		references: [identities.atp_did],
+		relationName: "bsky_follows_follows_identities_atp_did"
+	}),
+	identity_identity: one(identities, {
+		fields: [bsky_follows.identity],
+		references: [identities.atp_did],
+		relationName: "bsky_follows_identity_identities_atp_did"
 	}),
 }));
 

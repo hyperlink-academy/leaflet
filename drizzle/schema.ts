@@ -184,6 +184,16 @@ export const poll_votes_on_entity = pgTable("poll_votes_on_entity", {
 	voter_token: uuid("voter_token").notNull(),
 });
 
+export const bsky_follows = pgTable("bsky_follows", {
+	identity: text("identity").default('').notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
+	follows: text("follows").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
+},
+(table) => {
+	return {
+		bsky_follows_pkey: primaryKey({ columns: [table.identity, table.follows], name: "bsky_follows_pkey"}),
+	}
+});
+
 export const subscribers_to_publications = pgTable("subscribers_to_publications", {
 	identity: text("identity").notNull().references(() => identities.email, { onUpdate: "cascade" } ),
 	publication: text("publication").notNull().references(() => publications.uri),
