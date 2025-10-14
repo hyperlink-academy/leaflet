@@ -79,6 +79,7 @@ export default async function Reader(props: {}) {
                   content: (
                     <ReaderContent
                       root_entity={root_entity}
+                      nextCursor={posts.nextCursor}
                       posts={posts.posts}
                     />
                   ),

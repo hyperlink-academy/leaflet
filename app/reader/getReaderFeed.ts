@@ -86,7 +86,7 @@ const idResolver = new IdResolver({
 });
 
 export async function getReaderFeed(
-  cursor?: string,
+  cursor?: string | null,
 ): Promise<{ posts: Post[]; nextCursor: string | null }> {
   let auth_res = await getIdentityData();
   if (!auth_res?.atp_did) return { posts: [], nextCursor: null };

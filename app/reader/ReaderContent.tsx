@@ -15,15 +15,82 @@ import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { Json } from "supabase/database.types";
 import type { Post } from "./getReaderFeed";
+import useSWRInfinite from "swr/infinite";
+import { getReaderFeed } from "./getReaderFeed";
+import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 export const ReaderContent = (props: {
   root_entity: string;
   posts: Post[];
+  nextCursor: string | null;
 }) => {
-  if (props.posts.length === 0) return <ReaderEmpty />;
+  const getKey = (
+    pageIndex: number,
+    previousPageData: { posts: Post[]; nextCursor: string | null } | null,
+  ) => {
+    // Reached the end
+    if (previousPageData && !previousPageData.nextCursor) return null;
+
+    // First page, we don't have previousPageData
+    if (pageIndex === 0) return ["reader-feed", null];
+
+    // Add the cursor to the key
+    return ["reader-feed", previousPageData?.nextCursor];
+  };
+
+  const { data, error, size, setSize, isValidating } = useSWRInfinite(
+    getKey,
+    ([_, cursor]) => getReaderFeed(cursor),
+    {
+      fallbackData: [{ posts: props.posts, nextCursor: props.nextCursor }],
+      revalidateFirstPage: false,
+    },
+  );
+
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Set up intersection observer to load more when trigger element is visible
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isValidating) {
+          const hasMore = data && data[data.length - 1]?.nextCursor;
+          if (hasMore) {
+            setSize(size + 1);
+          }
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [data, size, setSize, isValidating]);
+
+  const allPosts = data ? data.flatMap((page) => page.posts) : [];
+
+  if (allPosts.length === 0 && !isValidating) return <ReaderEmpty />;
+
   return (
-    <div className="flex flex-col gap-3">
-      {props.posts?.map((p) => <Post {...p} key={p.documents.uri} />)}
+    <div className="flex flex-col gap-3 relative">
+      {allPosts.map((p) => (
+        <Post {...p} key={p.documents.uri} />
+      ))}
+      {/* Trigger element for loading more posts */}
+      <div
+        ref={loadMoreRef}
+        className="absolute bottom-0 left-0 w-full h-px pointer-events-none"
+        aria-hidden="true"
+      />
+      {isValidating && (
+        <div className="text-center text-tertiary py-4">
+          Loading more posts...
+        </div>
+      )}
     </div>
   );
 };
@@ -69,11 +136,11 @@ const Post = (props: Post) => {
           `}
       >
         <SpeedyLink
-          className="h-full w-full absolute top-0 left-0 "
+          className="h-full w-full absolute top-0 left-0"
           href={`${props.publication.href}/${postUri.rkey}`}
         />
         <div
-          className={`${showPageBackground ? "bg-bg-page " : "bg-transparent"}  rounded-md w-full  px-[10px] pt-2 pb-2 z-1 `}
+          className={`${showPageBackground ? "bg-bg-page " : "bg-transparent"}  rounded-md w-full  px-[10px] pt-2 pb-2`}
           style={{
             backgroundColor: showPageBackground
               ? "rgba(var(--bg-page), var(--bg-page-alpha))"
