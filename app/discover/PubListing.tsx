@@ -65,11 +65,8 @@ export const PubListing = (props: {
             <p>
               Updated{" "}
               {timeAgo(
-                props.documents_in_publications.sort((a, b) => {
-                  let dateA = new Date(a.documents?.indexed_at || 0);
-                  let dateB = new Date(b.documents?.indexed_at || 0);
-                  return dateB.getTime() - dateA.getTime();
-                })[0].documents?.indexed_at || "",
+                props.documents_in_publications?.[0]?.documents?.indexed_at ||
+                  "",
               )}
             </p>
           </div>

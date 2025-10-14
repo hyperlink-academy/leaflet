@@ -1,6 +1,6 @@
 "use client";
 import { AtUri } from "@atproto/api";
-import { Interactions } from "app/lish/[did]/[publication]/[rkey]/Interactions/Interactions";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { PubIcon } from "components/ActionBar/Publications";
 import { ButtonPrimary } from "components/Buttons";
 import { CommentTiny } from "components/Icons/CommentTiny";
@@ -14,31 +14,11 @@ import { useSmoker } from "components/Toast";
 import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { Json } from "supabase/database.types";
+import type { Post } from "./getReaderFeed";
 
 export const ReaderContent = (props: {
   root_entity: string;
-  posts: {
-    publication: {
-      href: string;
-      pubRecord: Json;
-      uri: string;
-    };
-    documents: {
-      data: Json;
-      uri: string;
-      indexed_at: string;
-      comments_on_documents:
-        | {
-            count: number;
-          }[]
-        | undefined;
-      document_mentions_in_bsky:
-        | {
-            count: number;
-          }[]
-        | undefined;
-    };
-  }[];
+  posts: Post[];
 }) => {
   if (props.posts.length === 0) return <ReaderEmpty />;
   return (
@@ -48,28 +28,7 @@ export const ReaderContent = (props: {
   );
 };
 
-const Post = (props: {
-  publication: {
-    pubRecord: Json;
-    uri: string;
-    href: string;
-  };
-  documents: {
-    data: Json;
-    uri: string;
-    indexed_at: string;
-    comments_on_documents:
-      | {
-          count: number;
-        }[]
-      | undefined;
-    document_mentions_in_bsky:
-      | {
-          count: number;
-        }[]
-      | undefined;
-  };
-}) => {
+const Post = (props: Post) => {
   let pubRecord = props.publication.pubRecord as PubLeafletPublication.Record;
 
   let postRecord = props.documents.data as PubLeafletDocument.Record;
@@ -133,7 +92,7 @@ const Post = (props: {
               />
               <Separator classname="h-4 !min-h-0 md:block hidden" />
               <PostInfo
-                author="NAME HERE"
+                author={props.author?.alsoKnownAs?.[0]?.slice(5) || ""}
                 publishedAt={postRecord.publishedAt}
               />
             </div>
@@ -173,7 +132,7 @@ const PostInfo = (props: {
 }) => {
   return (
     <div className="flex gap-2 grow items-center shrink-0">
-      NAME HERE
+      {props.author}
       {props.publishedAt && (
         <>
           <Separator classname="h-4 !min-h-0" />
