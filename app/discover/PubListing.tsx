@@ -1,5 +1,6 @@
 "use client";
 import { AtUri } from "@atproto/syntax";
+import { PublicationSubscription } from "app/reader/getSubscriptions";
 import { PubIcon } from "components/ActionBar/Publications";
 import { Separator } from "components/Layout";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
@@ -9,14 +10,11 @@ import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { timeAgo } from "src/utils/timeAgo";
 import { Json } from "supabase/database.types";
 
-export const PubListing = (props: {
-  resizeHeight?: boolean;
-  record: Json;
-  uri: string;
-  documents_in_publications: {
-    documents: { data: Json; indexed_at: string } | null;
-  }[];
-}) => {
+export const PubListing = (
+  props: PublicationSubscription & {
+    resizeHeight?: boolean;
+  },
+) => {
   let record = props.record as PubLeafletPublication.Record;
   let theme = usePubTheme(record);
   let backgroundImage = record?.theme?.backgroundImage?.image?.ref
@@ -59,8 +57,7 @@ export const PubListing = (props: {
           )}
           <div className="flex flex-col items-center justify-center text-xs text-tertiary pt-2">
             <div className="flex flex-row gap-2 items-center">
-              <div className="h-[14px] w-[14px] rounded-full bg-test shrink-0" />
-              <p>Name Here</p>{" "}
+              {props.authorProfile?.handle}
             </div>
             <p>
               Updated{" "}

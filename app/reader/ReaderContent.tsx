@@ -83,7 +83,7 @@ export const ReaderContent = (props: {
       {/* Trigger element for loading more posts */}
       <div
         ref={loadMoreRef}
-        className="absolute bottom-0 left-0 w-full h-px pointer-events-none"
+        className="absolute bottom-96 left-0 w-full h-px pointer-events-none"
         aria-hidden="true"
       />
       {isValidating && (

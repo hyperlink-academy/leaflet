@@ -22,6 +22,7 @@ import { InterfaceState, useIdentityData } from "components/IdentityProvider";
 import { updateIdentityInterfaceState } from "actions/updateIdentityInterfaceState";
 import Link from "next/link";
 import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
+import { usePreserveScroll } from "src/hooks/usePreserveScroll";
 
 export type DashboardState = {
   display?: "grid" | "list";
@@ -135,6 +136,9 @@ export function DashboardLayout<
 }) {
   let [tab, setTab] = useState(props.defaultTab);
   let { content, controls } = props.tabs[tab];
+  let { ref } = usePreserveScroll<HTMLDivElement>(
+    `dashboard-${props.id}-${tab as string}`,
+  );
 
   let [headerState, setHeaderState] = useState<"default" | "controls">(
     "default",
@@ -155,6 +159,7 @@ export function DashboardLayout<
         </MediaContents>
         <div
           className={`w-full h-full flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-12 px-3 sm:pt-8 sm:pb-12 sm:pl-6 sm:pr-4 `}
+          ref={ref}
           id="home-content"
         >
           {Object.keys(props.tabs).length <= 1 && !controls ? null : (

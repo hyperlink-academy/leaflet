@@ -1,22 +1,90 @@
+"use client";
 import { PubListing } from "app/discover/PubListing";
 import { ButtonPrimary } from "components/Buttons";
 import { DiscoverSmall } from "components/Icons/DiscoverSmall";
 import { Json } from "supabase/database.types";
+import { PublicationSubscription, getSubscriptions } from "./getSubscriptions";
+import useSWRInfinite from "swr/infinite";
+import { useEffect, useRef } from "react";
 
 export const SubscriptionsContent = (props: {
-  publications: {
-    record: Json;
-    uri: string;
-    documents_in_publications: {
-      documents: { data: Json; indexed_at: string } | null;
-    }[];
-  }[];
+  publications: PublicationSubscription[];
+  nextCursor: string | null;
 }) => {
-  if (props.publications.length === 0) return <SubscriptionsEmpty />;
+  const getKey = (
+    pageIndex: number,
+    previousPageData: {
+      subscriptions: PublicationSubscription[];
+      nextCursor: string | null;
+    } | null,
+  ) => {
+    // Reached the end
+    if (previousPageData && !previousPageData.nextCursor) return null;
+
+    // First page, we don't have previousPageData
+    if (pageIndex === 0) return ["subscriptions", null];
+
+    // Add the cursor to the key
+    return ["subscriptions", previousPageData?.nextCursor];
+  };
+
+  const { data, error, size, setSize, isValidating } = useSWRInfinite(
+    getKey,
+    ([_, cursor]) => getSubscriptions(cursor),
+    {
+      fallbackData: [
+        { subscriptions: props.publications, nextCursor: props.nextCursor },
+      ],
+      revalidateFirstPage: false,
+    },
+  );
+
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Set up intersection observer to load more when trigger element is visible
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isValidating) {
+          const hasMore = data && data[data.length - 1]?.nextCursor;
+          if (hasMore) {
+            setSize(size + 1);
+          }
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [data, size, setSize, isValidating]);
+
+  const allPublications = data
+    ? data.flatMap((page) => page.subscriptions)
+    : [];
+
+  if (allPublications.length === 0 && !isValidating)
+    return <SubscriptionsEmpty />;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
-      {props.publications?.map((p) => <PubListing key={p.uri} {...p} />)}
+    <div className="relative">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {allPublications?.map((p) => <PubListing key={p.uri} {...p} />)}
+      </div>
+      {/* Trigger element for loading more subscriptions */}
+      <div
+        ref={loadMoreRef}
+        className="absolute bottom-96 left-0 w-full h-px pointer-events-none"
+        aria-hidden="true"
+      />
+      {isValidating && (
+        <div className="text-center text-tertiary py-4">
+          Loading more subscriptions...
+        </div>
+      )}
     </div>
   );
 };

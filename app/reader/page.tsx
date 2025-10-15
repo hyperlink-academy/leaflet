@@ -14,6 +14,7 @@ import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
 import { ReaderContent } from "./ReaderContent";
 import { SubscriptionsContent } from "./SubscriptionsContent";
 import { getReaderFeed } from "./getReaderFeed";
+import { getSubscriptions } from "./getSubscriptions";
 
 export default async function Reader(props: {}) {
   let cookieStore = await cookies();
@@ -41,20 +42,7 @@ export default async function Reader(props: {}) {
 
   if (!auth_res?.atp_did) return;
   let posts = await getReaderFeed();
-  let { data: pubs, error } = await supabaseServerClient
-    .from("publication_subscriptions")
-    .select(`publications(*, documents_in_publications(*, documents(*)))`)
-    .order(`created_at`, { ascending: false })
-    .order("indexed_at", {
-      referencedTable: "publications.documents_in_publications",
-    })
-    .limit(1, { referencedTable: "publications.documents_in_publications" })
-    .eq("identity", auth_res.atp_did);
-  console.log(error);
-  let publications =
-    pubs
-      ?.map((subscription) => subscription.publications)
-      .filter((pub) => pub !== null) || [];
+  let publications = await getSubscriptions();
   return (
     <ReplicacheProvider
       rootEntity={root_entity}
@@ -86,7 +74,12 @@ export default async function Reader(props: {}) {
                 },
                 Subscriptions: {
                   controls: null,
-                  content: <SubscriptionsContent publications={publications} />,
+                  content: (
+                    <SubscriptionsContent
+                      publications={publications.subscriptions}
+                      nextCursor={publications.nextCursor}
+                    />
+                  ),
                 },
               }}
             />
