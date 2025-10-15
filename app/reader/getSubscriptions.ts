@@ -28,16 +28,12 @@ export async function getSubscriptions(cursor?: Cursor | null): Promise<{
     .eq("identity", auth_res.atp_did);
 
   if (cursor) {
-    query = query.lt("created_at", cursor.timestamp).lte("uri", cursor.uri);
+    query = query.or(
+      `created_at.lt.${cursor.timestamp},and(created_at.eq.${cursor.timestamp},uri.lt.${cursor.uri})`,
+    );
   }
   let { data: pubs, error } = await query;
-  console.log(cursor);
 
-  const actors: string[] = [
-    ...new Set(
-      pubs?.map((pub) => pub.publications?.identity_did!).filter(Boolean) || [],
-    ),
-  ];
   const hydratedSubscriptions: PublicationSubscription[] = await Promise.all(
     pubs?.map(async (pub) => {
       let id = await idResolver.did.resolve(pub.publications?.identity_did!);

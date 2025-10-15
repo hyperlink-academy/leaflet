@@ -36,7 +36,9 @@ export async function getReaderFeed(
     .order("uri", { ascending: false })
     .limit(25);
   if (cursor) {
-    query = query.lt("indexed_at", cursor.timestamp).lte("uri", cursor.uri);
+    query = query.or(
+      `indexed_at.lt.${cursor.timestamp},and(indexed_at.eq.${cursor.timestamp},uri.lt.${cursor.uri})`,
+    );
   }
   let { data: feed, error } = await query;
 
