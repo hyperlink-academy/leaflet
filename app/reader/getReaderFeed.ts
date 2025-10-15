@@ -51,7 +51,9 @@ export async function getReaderFeed(
           pubRecord: pub?.record || null,
           uri: pub?.uri || "",
         },
-        author: handle,
+        author: handle?.alsoKnownAs?.[0]
+          ? `@${handle.alsoKnownAs[0].slice(5)}`
+          : null,
         documents: {
           comments_on_documents: post.comments_on_documents,
           document_mentions_in_bsky: post.document_mentions_in_bsky,
@@ -78,7 +80,7 @@ export async function getReaderFeed(
 }
 
 export type Post = {
-  author: DidDocument | null;
+  author: string | null;
   publication: {
     href: string;
     pubRecord: Json;

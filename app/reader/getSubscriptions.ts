@@ -44,7 +44,7 @@ export async function getSubscriptions(cursor?: Cursor | null): Promise<{
       return {
         ...pub.publications!,
         authorProfile: id?.alsoKnownAs?.[0]
-          ? { handle: id.alsoKnownAs[0] }
+          ? { handle: `@${id.alsoKnownAs[0].slice(5)}` }
           : undefined,
       };
     }) || [],

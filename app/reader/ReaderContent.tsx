@@ -159,7 +159,7 @@ const Post = (props: Post) => {
               />
               <Separator classname="h-4 !min-h-0 md:block hidden" />
               <PostInfo
-                author={props.author?.alsoKnownAs?.[0]?.slice(5) || ""}
+                author={props.author || ""}
                 publishedAt={postRecord.publishedAt}
               />
             </div>
