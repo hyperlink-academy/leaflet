@@ -1,5 +1,6 @@
 "use client";
-import { useState, createContext, useContext } from "react";
+import { useState, createContext, useContext, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Header } from "../PageHeader";
 import { Footer } from "components/ActionBar/Footer";
 import { Sidebar } from "components/ActionBar/Sidebar";
@@ -134,7 +135,22 @@ export function DashboardLayout<
   publication?: string;
   actions: React.ReactNode;
 }) {
-  let [tab, setTab] = useState(props.defaultTab);
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+
+  // Initialize tab from search param if valid, otherwise use default
+  const initialTab = tabParam && props.tabs[tabParam] ? tabParam : props.defaultTab;
+  let [tab, setTab] = useState<keyof T>(initialTab);
+
+  // Custom setter that updates both state and URL
+  const setTabWithUrl = (newTab: keyof T) => {
+    setTab(newTab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", newTab as string);
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState(null, "", newUrl);
+  };
+
   let { content, controls } = props.tabs[tab];
   let { ref } = usePreserveScroll<HTMLDivElement>(
     `dashboard-${props.id}-${tab as string}`,
@@ -175,7 +191,7 @@ export function DashboardLayout<
                               key={t}
                               name={t}
                               selected={t === tab}
-                              onSelect={() => setTab(t)}
+                              onSelect={() => setTabWithUrl(t)}
                             />
                           );
                         })}
