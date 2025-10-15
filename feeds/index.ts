@@ -4,6 +4,8 @@ import { DidResolver } from "@atproto/identity";
 import { parseReqNsid, verifyJwt } from "@atproto/xrpc-server";
 import { supabaseServerClient } from "supabase/serverClient";
 import { PubLeafletDocument } from "lexicons/api";
+import { inngest } from "app/api/inngest/client";
+import { AtUri } from "@atproto/api";
 
 const app = new Hono();
 
@@ -27,57 +29,79 @@ app.get("/.well-known/did.json", (c) => {
 
 app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
   let auth = await validateAuth(c.req, serviceDid);
-  if (!auth) return c.json({ feed: [] });
+  let feed = c.req.query("feed");
+  if (!auth || !feed) return c.json({ feed: [] });
   let cursor = c.req.query("cursor");
+  let date, uri;
+  if (cursor) {
+    date = cursor.split("::")[0];
+    uri = cursor.split("::")[1];
+  }
   let limit = parseInt(c.req.query("limit") || "10");
-
-  let { data: publications } = await supabaseServerClient
-    .from("publication_subscriptions")
-    .select(`publications(documents_in_publications(documents(*)))`)
-    .eq("identity", auth);
-
-  const allPosts = (publications || [])
-    .flatMap((pub) => {
-      let posts = pub.publications?.documents_in_publications || [];
-      return posts;
-    })
-    .sort((a, b) => {
-      let aRecord = a.documents?.data! as PubLeafletDocument.Record;
-      let bRecord = b.documents?.data! as PubLeafletDocument.Record;
-      const aDate = aRecord.publishedAt
-        ? new Date(aRecord.publishedAt)
-        : new Date(0);
-      const bDate = bRecord.publishedAt
-        ? new Date(bRecord.publishedAt)
-        : new Date(0);
-      return bDate.getTime() - aDate.getTime(); // Sort by most recent first
-    });
+  let feedAtURI = new AtUri(feed);
   let posts;
-  if (!cursor) {
-    posts = allPosts.slice(0, 25);
+  if (feedAtURI.rkey === "bsky-follows-leaflets") {
+    console.log(cursor);
+    if (!cursor) {
+      console.log("Sending event");
+      await inngest.send({ name: "feeds/index-follows", data: { did: auth } });
+    }
+    let query = supabaseServerClient
+      .from("documents")
+      .select(
+        `*,
+         documents_in_publications!inner(
+           publications!inner(*,
+             identities!publications_identity_did_fkey!inner(
+               bsky_follows!bsky_follows_follows_fkey!inner(*)
+              )
+            )
+          )`,
+      )
+      .eq(
+        "documents_in_publications.publications.identities.bsky_follows.identity",
+        auth,
+      )
+      .not("data -> postRef", "is", null)
+      .order("indexed_at", { ascending: false })
+      .limit(25);
+    if (date) query.lt("indexed_at", date);
+    if (uri) query.lt("uri", uri);
+
+    let { data, error } = await query;
+    console.log(error);
+    posts = data;
   } else {
-    let date = cursor.split("::")[0];
-    let uri = cursor.split("::")[1];
-    posts = allPosts
-      .filter((p) => {
-        if (!p.documents?.data) return false;
-        let record = p.documents.data as PubLeafletDocument.Record;
-        if (!record.publishedAt) return false;
-        return record.publishedAt <= date && uri !== p.documents?.uri;
-      })
-      .slice(0, 25);
+    let query = supabaseServerClient
+      .from("documents")
+      .select(
+        `*,
+          documents_in_publications!inner(publications!inner(*, publication_subscriptions!inner(*)))`,
+      )
+      .eq(
+        "documents_in_publications.publications.publication_subscriptions.identity",
+        auth,
+      )
+      .not("data -> postRef", "is", null)
+      .order("indexed_at", { ascending: false })
+      .order("uri", { ascending: false })
+      .limit(25);
+    if (date) query.lt("indexed_at", date);
+    if (uri) query.lt("uri", uri);
+
+    let { data } = await query;
+    posts = data;
   }
 
+  posts = posts || [];
+
   let lastPost = posts[posts.length - 1];
-  let lastRecord = lastPost?.documents?.data! as PubLeafletDocument.Record;
-  let newCursor = lastRecord
-    ? `${lastRecord.publishedAt}::${lastPost.documents?.uri}`
-    : null;
+  let newCursor = lastPost ? `${lastPost.indexed_at}::${lastPost.uri}` : null;
   return c.json({
     cursor: newCursor || cursor,
     feed: posts.flatMap((p) => {
-      if (!p.documents?.data) return [];
-      let record = p.documents.data as PubLeafletDocument.Record;
+      if (!p.data) return [];
+      let record = p.data as PubLeafletDocument.Record;
       if (!record.postRef) return [];
       return { post: record.postRef.uri };
     }),
