@@ -117,7 +117,7 @@ const HomeButton = (props: { current?: boolean }) => {
 };
 
 const ReaderButton = (props: { current?: boolean; subs: boolean }) => {
-  let readerUnreads = true;
+  let readerUnreads = false;
 
   if (!props.subs) return;
   return (
