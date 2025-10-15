@@ -20,6 +20,7 @@ export async function getSubscriptions(cursor?: Cursor | null): Promise<{
     .order(`created_at`, { ascending: false })
     .order(`uri`, { ascending: false })
     .order("indexed_at", {
+      ascending: false,
       referencedTable: "publications.documents_in_publications",
     })
     .limit(1, { referencedTable: "publications.documents_in_publications" })
