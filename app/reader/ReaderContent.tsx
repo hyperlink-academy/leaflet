@@ -14,7 +14,7 @@ import { useSmoker } from "components/Toast";
 import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { Json } from "supabase/database.types";
-import type { Post } from "./getReaderFeed";
+import type { Cursor, Post } from "./getReaderFeed";
 import useSWRInfinite from "swr/infinite";
 import { getReaderFeed } from "./getReaderFeed";
 import { useEffect, useRef } from "react";
@@ -23,20 +23,20 @@ import { useRouter } from "next/navigation";
 export const ReaderContent = (props: {
   root_entity: string;
   posts: Post[];
-  nextCursor: string | null;
+  nextCursor: Cursor | null;
 }) => {
   const getKey = (
     pageIndex: number,
-    previousPageData: { posts: Post[]; nextCursor: string | null } | null,
+    previousPageData: { posts: Post[]; nextCursor: Cursor | null } | null,
   ) => {
     // Reached the end
     if (previousPageData && !previousPageData.nextCursor) return null;
 
     // First page, we don't have previousPageData
-    if (pageIndex === 0) return ["reader-feed", null];
+    if (pageIndex === 0) return ["reader-feed", null] as const;
 
     // Add the cursor to the key
-    return ["reader-feed", previousPageData?.nextCursor];
+    return ["reader-feed", previousPageData?.nextCursor] as const;
   };
 
   const { data, error, size, setSize, isValidating } = useSWRInfinite(

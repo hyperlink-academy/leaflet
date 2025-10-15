@@ -10,9 +10,14 @@ import { AtUri } from "@atproto/api";
 import { Json } from "supabase/database.types";
 import { idResolver } from "./idResolver";
 
+export type Cursor = {
+  timestamp: string;
+  uri: string;
+};
+
 export async function getReaderFeed(
-  cursor?: string | null,
-): Promise<{ posts: Post[]; nextCursor: string | null }> {
+  cursor?: Cursor | null,
+): Promise<{ posts: Post[]; nextCursor: Cursor | null }> {
   let auth_res = await getIdentityData();
   if (!auth_res?.atp_did) return { posts: [], nextCursor: null };
   let query = supabaseServerClient
@@ -28,8 +33,11 @@ export async function getReaderFeed(
       auth_res.atp_did,
     )
     .order("indexed_at", { ascending: false })
+    .order("uri", { ascending: false })
     .limit(25);
-  if (cursor) query.lt("indexed_at", cursor);
+  if (cursor) {
+    query = query.lt("indexed_at", cursor.timestamp).lte("uri", cursor.uri);
+  }
   let { data: feed, error } = await query;
 
   let posts = await Promise.all(
@@ -55,9 +63,17 @@ export async function getReaderFeed(
       return p;
     }) || [],
   );
+  const nextCursor =
+    posts.length > 0
+      ? {
+          timestamp: posts[posts.length - 1].documents.indexed_at,
+          uri: posts[posts.length - 1].documents.uri,
+        }
+      : null;
+
   return {
     posts,
-    nextCursor: posts[posts.length - 1]?.documents.indexed_at || null,
+    nextCursor,
   };
 }
 

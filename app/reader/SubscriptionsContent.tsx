@@ -6,26 +6,27 @@ import { Json } from "supabase/database.types";
 import { PublicationSubscription, getSubscriptions } from "./getSubscriptions";
 import useSWRInfinite from "swr/infinite";
 import { useEffect, useRef } from "react";
+import { Cursor } from "./getReaderFeed";
 
 export const SubscriptionsContent = (props: {
   publications: PublicationSubscription[];
-  nextCursor: string | null;
+  nextCursor: Cursor | null;
 }) => {
   const getKey = (
     pageIndex: number,
     previousPageData: {
       subscriptions: PublicationSubscription[];
-      nextCursor: string | null;
+      nextCursor: Cursor | null;
     } | null,
   ) => {
     // Reached the end
     if (previousPageData && !previousPageData.nextCursor) return null;
 
     // First page, we don't have previousPageData
-    if (pageIndex === 0) return ["subscriptions", null];
+    if (pageIndex === 0) return ["subscriptions", null] as const;
 
     // Add the cursor to the key
-    return ["subscriptions", previousPageData?.nextCursor];
+    return ["subscriptions", previousPageData?.nextCursor] as const;
   };
 
   const { data, error, size, setSize, isValidating } = useSWRInfinite(
@@ -72,7 +73,7 @@ export const SubscriptionsContent = (props: {
   return (
     <div className="relative">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {allPublications?.map((p) => <PubListing key={p.uri} {...p} />)}
+        {allPublications?.map((p, index) => <PubListing key={p.uri} {...p} />)}
       </div>
       {/* Trigger element for loading more subscriptions */}
       <div
