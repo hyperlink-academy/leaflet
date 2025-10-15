@@ -135,7 +135,7 @@ const Post = (props: Post) => {
           hover:outline-accent-contrast hover:border-accent-contrast
           `}
       >
-        <SpeedyLink
+        <a
           className="h-full w-full absolute top-0 left-0"
           href={`${props.publication.href}/${postUri.rkey}`}
         />
@@ -183,13 +183,13 @@ const PubInfo = (props: {
   uri: string;
 }) => {
   return (
-    <SpeedyLink
+    <a
       href={props.href}
       className="text-accent-contrast font-bold no-underline text-sm flex gap-1 items-center md:w-fit w-full relative shrink-0"
     >
       <PubIcon small record={props.pubRecord} uri={props.uri} />
       {props.pubRecord.name}
-    </SpeedyLink>
+    </a>
   );
 };
 
