@@ -63,11 +63,20 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
       .eq(
         "documents_in_publications.publications.identities.bsky_follows.identity",
         auth,
+      );
+  } else if (feedAtURI.rkey === "all-leaflets") {
+    query = supabaseServerClient
+      .from("documents")
+      .select(
+        `*,
+          documents_in_publications!inner(publications!inner(*))`,
       )
-      .not("data -> postRef", "is", null)
-      .order("indexed_at", { ascending: false })
-      .limit(25);
+      .or(
+        "record->preferences->showInDiscover.is.null,record->preferences->>showInDiscover.eq.true",
+        { referencedTable: "documents_in_publications.publications" },
+      );
   } else {
+    //the default subscription feed
     query = supabaseServerClient
       .from("documents")
       .select(
@@ -77,18 +86,20 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
       .eq(
         "documents_in_publications.publications.publication_subscriptions.identity",
         auth,
-      )
-      .not("data -> postRef", "is", null)
-      .order("indexed_at", { ascending: false })
-      .order("uri", { ascending: false })
-      .limit(25);
+      );
   }
+  query = query
+    .not("data -> postRef", "is", null)
+    .order("indexed_at", { ascending: false })
+    .order("uri", { ascending: false })
+    .limit(25);
   if (parsedCursor)
-    query.or(
+    query = query.or(
       `indexed_at.lt.${parsedCursor.date},and(indexed_at.eq.${parsedCursor.date},uri.lt.${parsedCursor.uri})`,
     );
 
-  let { data } = await query;
+  let { data, error } = await query;
+  console.log(error);
   posts = data;
 
   posts = posts || [];
