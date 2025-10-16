@@ -159,7 +159,6 @@ export default async function Post(props: {
               bskyPostData={bskyPostData.data.posts}
               did={did}
               blocks={blocks}
-              name={decodeURIComponent((await props.params).publication)}
               prerenderedCodeBlocks={prerenderedCodeBlocks}
             />
             <InteractionDrawer

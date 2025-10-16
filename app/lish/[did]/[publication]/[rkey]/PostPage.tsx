@@ -17,7 +17,6 @@ import { AppBskyFeedDefs } from "@atproto/api";
 export function PostPage({
   document,
   blocks,
-  name,
   did,
   profile,
   preferences,
@@ -27,7 +26,6 @@ export function PostPage({
 }: {
   document: PostPageData;
   blocks: PubLeafletPagesLinearDocument.Block[];
-  name: string;
   profile: ProfileViewDetailed;
   pubRecord: PubLeafletPublication.Record;
   did: string;
@@ -68,7 +66,6 @@ export function PostPage({
           <PostHeader
             data={document}
             profile={profile}
-            name={name}
             preferences={preferences}
           />
           <PostContent
@@ -104,7 +101,7 @@ export function PostPage({
                 document.documents_in_publications[0].publications
                   .publication_subscriptions
               }
-              pubName={name}
+              pubName={pubRecord.name}
             />
           )}
         </div>

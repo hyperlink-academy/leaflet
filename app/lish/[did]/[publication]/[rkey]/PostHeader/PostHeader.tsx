@@ -10,7 +10,6 @@ import { SpeedyLink } from "components/SpeedyLink";
 
 export function PostHeader(props: {
   data: PostPageData;
-  name: string;
   profile: ProfileViewDetailed;
   preferences: { showComments?: boolean };
 }) {
@@ -47,7 +46,7 @@ export function PostHeader(props: {
                 )
               }
             >
-              {props.name}
+              {pub?.name}
             </SpeedyLink>
             {identity &&
               identity.atp_did ===
