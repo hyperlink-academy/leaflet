@@ -19,6 +19,7 @@ import useSWRInfinite from "swr/infinite";
 import { getReaderFeed } from "./getReaderFeed";
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export const ReaderContent = (props: {
   root_entity: string;
@@ -266,14 +267,16 @@ const PostInterations = (props: {
     </div>
   );
 };
-const ReaderEmpty = () => {
+export const ReaderEmpty = () => {
   return (
-    <div className="flex flex-col gap-2 container bg-[rgba(var(--bg-page),.7)] sm:p-4 p-3 justify-between text-center font-bold text-tertiary">
+    <div className="flex flex-col gap-2 container bg-[rgba(var(--bg-page),.7)] sm:p-4 p-3 justify-between text-center text-tertiary">
       Nothing to read yet… <br />
       Subscribe to publications and find their posts here!
-      <ButtonPrimary className="mx-auto place-self-center">
-        <DiscoverSmall /> Discover Publications
-      </ButtonPrimary>
+      <Link href={"/discover"}>
+        <ButtonPrimary className="mx-auto place-self-center">
+          <DiscoverSmall /> Discover Publications
+        </ButtonPrimary>
+      </Link>
     </div>
   );
 };

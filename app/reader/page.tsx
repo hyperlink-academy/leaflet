@@ -11,8 +11,11 @@ import { supabaseServerClient } from "supabase/serverClient";
 
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
-import { ReaderContent } from "./ReaderContent";
-import { SubscriptionsContent } from "./SubscriptionsContent";
+import { ReaderContent, ReaderEmpty } from "./ReaderContent";
+import {
+  SubscriptionsContent,
+  SubscriptionsEmpty,
+} from "./SubscriptionsContent";
 import { getReaderFeed } from "./getReaderFeed";
 import { getSubscriptions } from "./getSubscriptions";
 
@@ -23,13 +26,23 @@ export default async function Reader(props: {}) {
   let permission_token = auth_res?.home_leaflet;
   if (!permission_token)
     return (
-      <NotFoundLayout>
-        <p className="font-bold">Sorry, we can't find this page!</p>
-        <p>
-          This may be a glitch on our end. If the issue persists please{" "}
-          <a href="mailto:contact@leaflet.pub">send us a note</a>.
-        </p>
-      </NotFoundLayout>
+      <DashboardLayout
+        id="reader"
+        cardBorderHidden={false}
+        currentPage="reader"
+        defaultTab="Read"
+        actions={null}
+        tabs={{
+          Read: {
+            controls: null,
+            content: <ReaderEmpty />,
+          },
+          Subscriptions: {
+            controls: null,
+            content: <SubscriptionsEmpty />,
+          },
+        }}
+      />
     );
   let [homeLeafletFacts] = await Promise.all([
     supabaseServerClient.rpc("get_facts", {
