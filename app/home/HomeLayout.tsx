@@ -95,7 +95,7 @@ export const HomeLayout = (props: {
   return (
     <DashboardLayout
       id="home"
-      hasBackgroundImage={hasBackgroundImage}
+      cardBorderHidden={cardBorderHidden}
       currentPage="home"
       defaultTab="home"
       actions={<Actions />}
@@ -192,7 +192,6 @@ export function HomeLeafletList(props: {
       {leaflets.filter((l) => !!l.token.leaflets_in_publications).length ===
         0 && <PublicationBanner small />}
       <DiscoverBanner small />
-      <div className="spacer h-8 w-full bg-transparent shrink-0 " />
     </>
   );
 }

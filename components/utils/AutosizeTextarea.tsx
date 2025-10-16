@@ -19,7 +19,6 @@ export const AutosizeTextarea = forwardRef<
   let { noWrap, ...rest } = props;
   useImperativeHandle(ref, () => textarea.current as HTMLTextAreaElement);
 
-  console.log({ noWrap });
   return (
     <div
       className={`${styles["grow-wrap"]} ${props.className} ${noWrap ? styles["no-wrap"] : ""}`}

@@ -39,7 +39,7 @@ export function SortedPublicationList(props: {
             );
             return bDate.getTime() - aDate.getTime();
           })
-          .map((pub) => <PubListing key={pub.uri} {...pub} />)}
+          .map((pub) => <PubListing resizeHeight key={pub.uri} {...pub} />)}
       </div>
     </div>
   );

@@ -1,5 +1,8 @@
 "use client";
 import { AtUri } from "@atproto/syntax";
+import { PublicationSubscription } from "app/reader/getSubscriptions";
+import { PubIcon } from "components/ActionBar/Publications";
+import { Separator } from "components/Layout";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
@@ -7,14 +10,11 @@ import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { timeAgo } from "src/utils/timeAgo";
 import { Json } from "supabase/database.types";
 
-export const PubListing = (props: {
-  record: Json;
-  uri: string;
-  documents_in_publications: {
-    indexed_at: string;
-    documents: { data: Json } | null;
-  }[];
-}) => {
+export const PubListing = (
+  props: PublicationSubscription & {
+    resizeHeight?: boolean;
+  },
+) => {
   let record = props.record as PubLeafletPublication.Record;
   let theme = usePubTheme(record);
   let backgroundImage = record?.theme?.backgroundImage?.image?.ref
@@ -43,26 +43,28 @@ export const PubListing = (props: {
           hover:outline-accent-contrast hover:border-accent-contrast`}
       >
         <div
-          style={{
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-            backgroundSize: "cover",
-            backgroundImage: record?.icon
-              ? `url(${blobRefToSrc(record.icon?.ref, new AtUri(props.uri).host)})`
-              : undefined,
-          }}
-          className={`w-6 h-6 rounded-full bg-accent-1 text-accent-2 flex place-content-center leading-snug font-bold text-center shrink-0 ${record.theme?.showPageBackground ? "mt-[6px]" : "mt-0.5"}`}
+          className={`flex w-full flex-col justify-center text-center max-h-48 pt-4 pb-3 px-3 rounded-lg ${props.resizeHeight ? "" : "sm:h-48 h-full"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""}`}
         >
-          {!record?.icon ? record.name.slice(0, 1).toLocaleUpperCase() : null}
-        </div>
-        <div
-          className={`flex w-full flex-col ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] px-2 py-1 rounded-lg" : ""}`}
-        >
-          <h3>{record.name}</h3>
-          <p className="text-secondary">{record.description}</p>
-          <div className="flex gap-1 items-center text-sm text-tertiary pt-2 ">
+          <div className="mx-auto pb-1">
+            <PubIcon record={record} uri={props.uri} large />
+          </div>
+
+          <h4 className="truncate shrink-0 ">{record.name}</h4>
+          {record.description && (
+            <p className="text-secondary text-sm max-h-full overflow-hidden pb-1">
+              {record.description}
+            </p>
+          )}
+          <div className="flex flex-col items-center justify-center text-xs text-tertiary pt-2">
+            <div className="flex flex-row gap-2 items-center">
+              {props.authorProfile?.handle}
+            </div>
             <p>
-              Updated {timeAgo(props.documents_in_publications[0].indexed_at)}
+              Updated{" "}
+              {timeAgo(
+                props.documents_in_publications?.[0]?.documents?.indexed_at ||
+                  "",
+              )}
             </p>
           </div>
         </div>

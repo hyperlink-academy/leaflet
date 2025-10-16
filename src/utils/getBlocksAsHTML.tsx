@@ -187,6 +187,5 @@ async function renderBlock(b: Block, tx: ReadTransaction) {
   let [alignment] = await scanIndex(tx).eav(b.value, "block/text-alignment");
   let toHtml = BlockTypeToHTML[b.type];
   let element = await toHtml(b, tx, alignment?.data.value);
-  console.log(element);
   return renderToStaticMarkup(element);
 }

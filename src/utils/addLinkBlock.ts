@@ -59,7 +59,6 @@ export async function addLinkBlock(
   }
 
   if (data.data.links?.player?.[0]) {
-    console.log(data.data.links.player);
     let embed = data.data.links?.player?.[0];
     await rep.mutate.assertFact([
       {

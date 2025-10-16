@@ -121,7 +121,6 @@ const handleAction = async (
   else url = new URL(decodeURIComponent(redirectPath), "https://example.com");
   if (action?.action === "subscribe") {
     let result = await subscribeToPublication(action.publication);
-    console.log(result);
     if (result.hasFeed === false)
       url.searchParams.set("showSubscribeSuccess", "true");
   }

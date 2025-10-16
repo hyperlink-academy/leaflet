@@ -7,6 +7,10 @@ import { DiscoverSmall } from "components/Icons/DiscoverSmall";
 import { PublicationButtons } from "./Publications";
 import { Popover } from "components/Popover";
 import { MenuSmall } from "components/Icons/MenuSmall";
+import {
+  ReaderReadSmall,
+  ReaderUnreadSmall,
+} from "components/Icons/ReaderSmall";
 
 export type navPages = "home" | "reader" | "pub" | "discover";
 
@@ -14,8 +18,6 @@ export const DesktopNavigation = (props: {
   currentPage: navPages;
   publication?: string;
 }) => {
-  let unreadNotifications = true;
-
   return (
     <div className="flex flex-col gap-4">
       <Sidebar alwaysOpen>
@@ -89,7 +91,12 @@ const NavigationOptions = (props: {
   return (
     <>
       <HomeButton current={props.currentPage === "home"} />
-      <ReaderButton current={props.currentPage === "discover"} />
+      <ReaderButton
+        current={props.currentPage === "reader"}
+        subs={identity?.publication_subscriptions?.length !== 0}
+      />
+      <DiscoverButton current={props.currentPage === "discover"} />
+
       <hr className="border-border-light my-1" />
       <PublicationButtons currentPubUri={thisPublication?.uri} />
     </>
@@ -109,21 +116,26 @@ const HomeButton = (props: { current?: boolean }) => {
   );
 };
 
-const ReaderButton = (props: { current?: boolean }) => {
-  // let readerUnreads = true;
-  // let subs = false;
+const ReaderButton = (props: { current?: boolean; subs: boolean }) => {
+  let readerUnreads = false;
 
-  // if (subs)
-  //   return (
-  //     <ActionButton
-  //       nav
-  //       icon={readerUnreads ? <ReaderUnreadSmall /> : <ReaderReadSmall />}
-  //       label="Reader"
-  //       className={`
-  //         ${readerUnreads ? "text-accent-contrast! border-accent-contrast" : props.current ? "bg-border-light! border-border" : ""}
-  //       `}
-  //     />
-  //   );
+  if (!props.subs) return;
+  return (
+    <Link href={"/reader"} className="hover:no-underline!">
+      <ActionButton
+        nav
+        icon={readerUnreads ? <ReaderUnreadSmall /> : <ReaderReadSmall />}
+        label="Reader"
+        className={`
+          ${readerUnreads && "text-accent-contrast!"}
+          ${props.current && "border-accent-contrast!"}
+        `}
+      />
+    </Link>
+  );
+};
+
+const DiscoverButton = (props: { current?: boolean }) => {
   return (
     <Link href={"/discover"} className="hover:no-underline!">
       <ActionButton

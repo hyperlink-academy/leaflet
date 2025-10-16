@@ -1,5 +1,6 @@
 "use client";
-import { useState, createContext, useContext } from "react";
+import { useState, createContext, useContext, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Header } from "../PageHeader";
 import { Footer } from "components/ActionBar/Footer";
 import { Sidebar } from "components/ActionBar/Sidebar";
@@ -20,6 +21,9 @@ import { Input } from "components/Input";
 import { SearchTiny } from "components/Icons/SearchTiny";
 import { InterfaceState, useIdentityData } from "components/IdentityProvider";
 import { updateIdentityInterfaceState } from "actions/updateIdentityInterfaceState";
+import Link from "next/link";
+import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
+import { usePreserveScroll } from "src/hooks/usePreserveScroll";
 
 export type DashboardState = {
   display?: "grid" | "list";
@@ -117,19 +121,40 @@ export const useSetDashboardState = () => {
 
 export function DashboardLayout<
   T extends {
-    [name: string]: { content: React.ReactNode; controls: React.ReactNode };
+    [name: string]: {
+      content: React.ReactNode;
+      controls: React.ReactNode;
+    };
   },
 >(props: {
   id: string;
-  hasBackgroundImage: boolean;
+  cardBorderHidden: boolean;
   tabs: T;
   defaultTab: keyof T;
   currentPage: navPages;
   publication?: string;
   actions: React.ReactNode;
 }) {
-  let [tab, setTab] = useState(props.defaultTab);
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+
+  // Initialize tab from search param if valid, otherwise use default
+  const initialTab = tabParam && props.tabs[tabParam] ? tabParam : props.defaultTab;
+  let [tab, setTab] = useState<keyof T>(initialTab);
+
+  // Custom setter that updates both state and URL
+  const setTabWithUrl = (newTab: keyof T) => {
+    setTab(newTab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", newTab as string);
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState(null, "", newUrl);
+  };
+
   let { content, controls } = props.tabs[tab];
+  let { ref } = usePreserveScroll<HTMLDivElement>(
+    `dashboard-${props.id}-${tab as string}`,
+  );
 
   let [headerState, setHeaderState] = useState<"default" | "controls">(
     "default",
@@ -150,23 +175,26 @@ export function DashboardLayout<
         </MediaContents>
         <div
           className={`w-full h-full flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-12 px-3 sm:pt-8 sm:pb-12 sm:pl-6 sm:pr-4 `}
+          ref={ref}
           id="home-content"
         >
           {Object.keys(props.tabs).length <= 1 && !controls ? null : (
             <>
-              <Header hasBackgroundImage={props.hasBackgroundImage}>
+              <Header cardBorderHidden={props.cardBorderHidden}>
                 {headerState === "default" ? (
                   <>
                     {Object.keys(props.tabs).length > 1 && (
                       <div className="pubDashTabs flex flex-row gap-1">
-                        {Object.keys(props.tabs).map((t) => (
-                          <Tab
-                            key={t}
-                            name={t}
-                            selected={t === tab}
-                            onSelect={() => setTab(t)}
-                          />
-                        ))}
+                        {Object.keys(props.tabs).map((t) => {
+                          return (
+                            <Tab
+                              key={t}
+                              name={t}
+                              selected={t === tab}
+                              onSelect={() => setTabWithUrl(t)}
+                            />
+                          );
+                        })}
                       </div>
                     )}
                     {props.publication && (
@@ -326,13 +354,19 @@ const DisplayToggle = (props: {
   );
 };
 
-function Tab(props: { name: string; selected: boolean; onSelect: () => void }) {
+function Tab(props: {
+  name: string;
+  selected: boolean;
+  onSelect: () => void;
+  href?: string;
+}) {
   return (
     <div
-      className={`pubTabs px-1 py-0 rounded-md hover:cursor-pointer ${props.selected ? "text-accent-2 bg-accent-1 font-bold -mb-px" : "text-tertiary"}`}
+      className={`pubTabs px-1 py-0 flex gap-1 items-center rounded-md hover:cursor-pointer ${props.selected ? "text-accent-2 bg-accent-1 font-bold -mb-px" : "text-tertiary"}`}
       onClick={() => props.onSelect()}
     >
       {props.name}
+      {props.href && <ExternalLinkTiny />}
     </div>
   );
 }

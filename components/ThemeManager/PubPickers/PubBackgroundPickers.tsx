@@ -67,7 +67,6 @@ export const BackgroundPicker = (props: {
                     if (file) {
                       const reader = new FileReader();
                       reader.onload = (e) => {
-                        console.log("loaded!", props.bgImage);
                         props.setBgImage({
                           src: e.target?.result as string,
                           file,
