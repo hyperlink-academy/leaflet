@@ -27,13 +27,12 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
   let params = await props.params;
   let did = decodeURIComponent(params.did);
-  let publication = decodeURIComponent(params.publication);
   if (!did) return { title: "Publication 404" };
 
   let [{ data: document }] = await Promise.all([
     supabaseServerClient
       .from("documents")
-      .select("*")
+      .select("*, documents_in_publications(publications(*))")
       .eq("uri", AtUri.make(did, ids.PubLeafletDocument, params.rkey))
       .single(),
   ]);
@@ -42,7 +41,10 @@ export async function generateMetadata(props: {
   let docRecord = document.data as PubLeafletDocument.Record;
 
   return {
-    title: docRecord.title + " - " + publication,
+    title:
+      docRecord.title +
+      " - " +
+      document.documents_in_publications[0]?.publications?.name,
     description: docRecord?.description || "",
   };
 }
