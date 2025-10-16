@@ -142,7 +142,7 @@ const DiscoverButton = (props: { current?: boolean }) => {
         nav
         icon={<DiscoverSmall />}
         label="Discover"
-        subtext={"Explore publications!"}
+        subtext=""
         className={props.current ? "bg-bg-page! border-border-light!" : ""}
       />
     </Link>
