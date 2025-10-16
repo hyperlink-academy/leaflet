@@ -150,8 +150,8 @@ const Post = (props: Post) => {
           <h3 className="text-primary truncate">{postRecord.title}</h3>
 
           <p className="text-secondary">{postRecord.description}</p>
-          <div className="flex justify-between items-end">
-            <div className="flex flex-col-reverse md:flex-row md gap-3 md:gap-2 text-sm text-tertiary items-center justify-start pt-1 md:pt-3">
+          <div className="flex gap-2 justify-between items-end">
+            <div className="flex flex-col-reverse md:flex-row md gap-3 md:gap-2 text-sm text-tertiary items-start justify-start pt-1 md:pt-3">
               <PubInfo
                 href={props.publication.href}
                 pubRecord={pubRecord}
@@ -198,7 +198,7 @@ const PostInfo = (props: {
   publishedAt: string | undefined;
 }) => {
   return (
-    <div className="flex gap-2 grow items-center shrink-0">
+    <div className="flex flex-wrap gap-2 grow items-center shrink-0">
       {props.author}
       {props.publishedAt && (
         <>
