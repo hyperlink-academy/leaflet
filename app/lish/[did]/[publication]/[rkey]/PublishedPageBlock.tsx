@@ -14,7 +14,7 @@ import {
 import { AppBskyFeedDefs } from "@atproto/api";
 import { TextBlock } from "./TextBlock";
 import { PostPageContext } from "./PostPageContext";
-import { openPage, usePostPageUIState } from "./PostPages";
+import { openPage, useOpenPages } from "./PostPages";
 
 export function PublishedPageLinkBlock(props: {
   blocks: PubLeafletPagesLinearDocument.Block[];
@@ -27,7 +27,8 @@ export function PublishedPageLinkBlock(props: {
   bskyPostData: AppBskyFeedDefs.PostView[];
 }) {
   //switch to use actually state
-  let isOpen = usePostPageUIState((s) => s.pages.includes(props.pageId));
+  let openPages = useOpenPages();
+  let isOpen = openPages.includes(props.pageId);
   return (
     <div
       className={`w-full cursor-pointer

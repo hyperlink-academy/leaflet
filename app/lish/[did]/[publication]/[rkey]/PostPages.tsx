@@ -24,12 +24,52 @@ import { CSS } from "@react-spring/web";
 import { PageOptionButton } from "components/Pages/PageOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { PageWrapper } from "components/Pages/Page";
-import { Fragment } from "react";
+import { Fragment, useEffect } from "react";
 import { flushSync } from "react-dom";
 import { scrollIntoView } from "src/utils/scrollIntoView";
-export const usePostPageUIState = create(() => ({
+import { useParams } from "next/navigation";
+import { decodeQuotePosition } from "./quotePosition";
+
+const usePostPageUIState = create(() => ({
   pages: [] as string[],
+  initialized: false,
 }));
+
+export const useOpenPages = () => {
+  const { quote } = useParams();
+  const state = usePostPageUIState((s) => s);
+
+  if (!state.initialized && quote) {
+    const decodedQuote = decodeQuotePosition(quote as string);
+    if (decodedQuote?.pageId) {
+      return [decodedQuote.pageId];
+    }
+  }
+
+  return state.pages;
+};
+
+export const useInitializeOpenPages = () => {
+  const { quote } = useParams();
+
+  useEffect(() => {
+    const state = usePostPageUIState.getState();
+    if (!state.initialized) {
+      if (quote) {
+        const decodedQuote = decodeQuotePosition(quote as string);
+        if (decodedQuote?.pageId) {
+          usePostPageUIState.setState({
+            pages: [decodedQuote.pageId],
+            initialized: true,
+          });
+          return;
+        }
+      }
+      // Mark as initialized even if no pageId found
+      usePostPageUIState.setState({ initialized: true });
+    }
+  }, [quote]);
+};
 
 export const openPage = (parent: string | undefined, page: string) => {
   flushSync(() => {
@@ -40,6 +80,7 @@ export const openPage = (parent: string | undefined, page: string) => {
           parentPosition === -1
             ? [page]
             : [...state.pages.slice(0, parentPosition + 1), page],
+        initialized: true,
       };
     });
   });
@@ -52,6 +93,7 @@ export const closePage = (page: string) =>
     let parentPosition = state.pages.findIndex((s) => s == page);
     return {
       pages: state.pages.slice(0, parentPosition),
+      initialized: true,
     };
   });
 
@@ -78,7 +120,8 @@ export function PostPages({
 }) {
   let { identity } = useIdentityData();
   let drawerOpen = useDrawerOpen(document_uri);
-  let pages = usePostPageUIState((s) => s.pages);
+  useInitializeOpenPages();
+  let pages = useOpenPages();
   if (!document || !document.documents_in_publications[0].publications)
     return null;
 
