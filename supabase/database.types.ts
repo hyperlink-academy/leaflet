@@ -244,16 +244,19 @@ export type Database = {
       document_mentions_in_bsky: {
         Row: {
           document: string
+          indexed_at: string
           link: string
           uri: string
         }
         Insert: {
           document: string
+          indexed_at?: string
           link: string
           uri: string
         }
         Update: {
           document?: string
+          indexed_at?: string
           link?: string
           uri?: string
         }
