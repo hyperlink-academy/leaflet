@@ -19,6 +19,8 @@ import { decodeQuotePosition, QuotePosition } from "../quotePosition";
 import { useActiveHighlightState } from "../useHighlight";
 import { PostContent } from "../PostContent";
 import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { flushSync } from "react-dom";
+import { openPage } from "../PostPages";
 
 export const Quotes = (props: {
   quotes: { link: string; bsky_posts: { post_view: Json } | null }[];
@@ -90,7 +92,15 @@ export const QuoteContent = (props: {
   const data = useContext(PostPageContext);
 
   let record = data?.data as PubLeafletDocument.Record;
-  let page = record.pages[0] as PubLeafletPagesLinearDocument.Main;
+  let page: PubLeafletPagesLinearDocument.Main | undefined = (
+    props.position.pageId
+      ? record.pages.find(
+          (p) =>
+            (p as PubLeafletPagesLinearDocument.Main).id ===
+            props.position.pageId,
+        )
+      : record.pages[0]
+  ) as PubLeafletPagesLinearDocument.Main;
   // Extract blocks within the quote range
   const content = extractQuotedBlocks(page.blocks || [], props.position, []);
   return (
@@ -106,6 +116,8 @@ export const QuoteContent = (props: {
       <div
         className="quoteSectionQuote text-secondary text-sm text-left hover:cursor-pointer"
         onClick={(e) => {
+          if (props.position.pageId)
+            flushSync(() => openPage(undefined, props.position.pageId!));
           let scrollMargin = isMobile
             ? 16
             : e.currentTarget.getBoundingClientRect().top;
