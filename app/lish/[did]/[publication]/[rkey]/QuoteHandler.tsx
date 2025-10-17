@@ -14,6 +14,8 @@ import { CommentTiny } from "components/Icons/CommentTiny";
 import { setInteractionState } from "./Interactions/Interactions";
 import { PostPageContext } from "./PostPageContext";
 import { PubLeafletPublication } from "lexicons/api";
+import { flushSync } from "react-dom";
+import { scrollIntoView } from "src/utils/scrollIntoView";
 
 export function QuoteHandler() {
   let [position, setPosition] = useState<{
@@ -31,10 +33,11 @@ export function QuoteHandler() {
           ? (() => {
               const range = selection.getRangeAt(0);
               const ancestor = range.commonAncestorContainer;
-              const element = ancestor.nodeType === Node.ELEMENT_NODE
-                ? ancestor as Element
-                : ancestor.parentElement;
-              return element?.closest('.postContent') !== null;
+              const element =
+                ancestor.nodeType === Node.ELEMENT_NODE
+                  ? (ancestor as Element)
+                  : ancestor.parentElement;
+              return element?.closest(".postContent") !== null;
             })()
           : false;
 
@@ -205,11 +208,14 @@ export const QuoteOptionButtons = (props: { position: string }) => {
             className="flex gap-1 items-center hover:font-bold px-1"
             onClick={() => {
               if (!position) return;
-              setInteractionState(document_uri, {
-                drawer: "comments",
-                drawerOpen: true,
-                commentBox: { quote: position },
-              });
+              flushSync(() =>
+                setInteractionState(document_uri, {
+                  drawer: "comments",
+                  drawerOpen: true,
+                  commentBox: { quote: position },
+                }),
+              );
+              scrollIntoView("interaction-drawer");
             }}
           >
             <CommentTiny /> Comment
@@ -220,7 +226,9 @@ export const QuoteOptionButtons = (props: { position: string }) => {
   );
 };
 
-function findDataIndex(node: Node): { index: string; element: Element; pageId?: string } | null {
+function findDataIndex(
+  node: Node,
+): { index: string; element: Element; pageId?: string } | null {
   if (node.nodeType === Node.ELEMENT_NODE) {
     const element = node as Element;
     if (element.hasAttribute("data-index")) {
