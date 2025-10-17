@@ -34,6 +34,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      bsky_follows: {
+        Row: {
+          follows: string
+          identity: string
+        }
+        Insert: {
+          follows: string
+          identity?: string
+        }
+        Update: {
+          follows?: string
+          identity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsky_follows_follows_fkey"
+            columns: ["follows"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+          {
+            foreignKeyName: "bsky_follows_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+        ]
+      }
       bsky_posts: {
         Row: {
           cid: string
@@ -214,16 +244,19 @@ export type Database = {
       document_mentions_in_bsky: {
         Row: {
           document: string
+          indexed_at: string
           link: string
           uri: string
         }
         Insert: {
           document: string
+          indexed_at?: string
           link: string
           uri: string
         }
         Update: {
           document?: string
+          indexed_at?: string
           link?: string
           uri?: string
         }

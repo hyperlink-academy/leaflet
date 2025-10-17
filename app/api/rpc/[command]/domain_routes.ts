@@ -25,15 +25,23 @@ export const get_domain_status = makeRoute({
       let errorResponse = e as NextApiResponse;
       if (errorResponse.statusCode === 403) {
         try {
-          let verification = await vercel.projects.getProjectDomain({
-            idOrName: "prj_9jX4tmYCISnm176frFxk07fF74kG",
-            teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
-            domain,
-          });
-          if (!verification.verification) return {};
+          let [verification, config] = await Promise.all([
+            vercel.projects.getProjectDomain({
+              idOrName: "prj_9jX4tmYCISnm176frFxk07fF74kG",
+              teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
+              domain,
+            }),
+            vercel.domains.getDomainConfig({
+              domain,
+              teamId: "team_42xaJiZMTw9Sr7i0DcLTae9d",
+            }),
+          ]);
+          if (!verification.verification) {
+            return { config };
+          }
           return {
-            error: "Verification_needed",
             verification: verification.verification,
+            config,
           } as const;
         } catch (e) {
           return { error: true };

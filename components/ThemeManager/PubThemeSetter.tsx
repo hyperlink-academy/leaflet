@@ -62,7 +62,6 @@ export const PubThemeSetter = () => {
         onSubmit={async (e) => {
           e.preventDefault();
           if (!pub) return;
-          console.log(image);
           setLoading(true);
           let result = await updatePublicationTheme({
             uri: pub.uri,

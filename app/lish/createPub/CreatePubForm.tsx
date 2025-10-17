@@ -134,7 +134,7 @@ export const CreatePubForm = () => {
             </a>
           </p>
           <p className="text-sm text-tertiary font-normal">
-            This publication will appear on our public Discover page
+            You'll be able to change this later!
           </p>
         </div>
       </Checkbox>

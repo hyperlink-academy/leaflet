@@ -54,8 +54,7 @@ export async function GET(
     case "callback": {
       const params = new URLSearchParams(req.url.split("?")[1]);
 
-      //TODO remember to reset this to a better default!
-      let redirectPath = "/lish";
+      let redirectPath = "/";
       try {
         const { session, state } = await client.callback(params);
         let s: OauthRequestClientState = JSON.parse(state || "{}");
@@ -122,7 +121,6 @@ const handleAction = async (
   else url = new URL(decodeURIComponent(redirectPath), "https://example.com");
   if (action?.action === "subscribe") {
     let result = await subscribeToPublication(action.publication);
-    console.log(result);
     if (result.hasFeed === false)
       url.searchParams.set("showSubscribeSuccess", "true");
   }

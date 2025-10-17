@@ -39,7 +39,7 @@ export default function PublicationDashboard({
   return (
     <DashboardLayout
       id={publication.uri}
-      hasBackgroundImage={!!record?.theme?.backgroundImage}
+      cardBorderHidden={!!record.theme?.showPageBackground}
       defaultTab="Drafts"
       tabs={{
         Drafts: {

@@ -13,6 +13,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { setInteractionState } from "./Interactions/Interactions";
 import { PostPageContext } from "./PostPageContext";
+import { PubLeafletPublication } from "lexicons/api";
 
 export function QuoteHandler() {
   let [position, setPosition] = useState<{
@@ -131,7 +132,8 @@ export const QuoteOptionButtons = (props: { position: string }) => {
   let { identity } = useIdentityData();
   const data = useContext(PostPageContext);
   const document_uri = data?.uri;
-  if (!document_uri) throw new Error('document_uri not available in PostPageContext');
+  if (!document_uri)
+    throw new Error("document_uri not available in PostPageContext");
   let [url, position] = useMemo(() => {
     let currentUrl = new URL(window.location.href);
     let pos = decodeQuotePosition(props.position);
@@ -139,13 +141,16 @@ export const QuoteOptionButtons = (props: { position: string }) => {
       currentUrl.pathname = currentUrl.pathname.split("/l-quote/")[0];
     }
     currentUrl.pathname = currentUrl.pathname + `/l-quote/${props.position}`;
-    
+
     // Clear existing query parameters
     currentUrl.search = "";
 
     currentUrl.hash = `#${pos?.start.block.join(".")}_${pos?.start.offset}`;
     return [currentUrl.toString(), pos];
   }, [props.position]);
+  let pubRecord = data.documents_in_publications[0]?.publications?.record as
+    | PubLeafletPublication.Record
+    | undefined;
 
   return (
     <>
@@ -183,22 +188,23 @@ export const QuoteOptionButtons = (props: { position: string }) => {
         <CopyTiny className="shrink-0" />
         Link
       </button>
-      <Separator classname="h-4" />
-
-      {identity?.atp_did && (
-        <button
-          className="flex gap-1 items-center hover:font-bold px-1"
-          onClick={() => {
-            if (!position) return;
-            setInteractionState(document_uri, {
-              drawer: "comments",
-              drawerOpen: true,
-              commentBox: { quote: position },
-            });
-          }}
-        >
-          <CommentTiny /> Comment
-        </button>
+      {pubRecord?.preferences?.showComments !== false && identity?.atp_did && (
+        <>
+          <Separator classname="h-4" />
+          <button
+            className="flex gap-1 items-center hover:font-bold px-1"
+            onClick={() => {
+              if (!position) return;
+              setInteractionState(document_uri, {
+                drawer: "comments",
+                drawerOpen: true,
+                commentBox: { quote: position },
+              });
+            }}
+          >
+            <CommentTiny /> Comment
+          </button>
+        </>
       )}
     </>
   );

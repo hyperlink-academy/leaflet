@@ -30,6 +30,7 @@ import { MathBlock } from "./MathBlock";
 import { CodeBlock } from "./CodeBlock";
 import { HorizontalRule } from "./HorizontalRule";
 import { deepEquals } from "src/utils/deepEquals";
+import { isTextBlock } from "src/utils/isTextBlock";
 
 export type Block = {
   factID: string;
@@ -63,8 +64,8 @@ export const Block = memo(function Block(
 
   let mouseHandlers = useBlockMouseHandlers(props);
 
-  // focus block on longpress, shouldnt the type be based on the block type (?)
   let { isLongPress, handlers } = useLongPress(() => {
+    if (isTextBlock[props.type]) return;
     if (isLongPress.current) {
       focusBlock(
         { type: props.type, value: props.entityID, parent: props.parent },

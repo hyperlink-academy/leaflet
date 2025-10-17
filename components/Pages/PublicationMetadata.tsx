@@ -1,14 +1,8 @@
 import Link from "next/link";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
-import { AsyncValueInput, Input } from "components/Input";
-import { useEffect, useState } from "react";
-import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
-import { updateLeafletDraftMetadata } from "actions/publications/updateLeafletDraftMetadata";
+import { useRef } from "react";
 import { useReplicache } from "src/replicache";
-import {
-  AsyncValueAutosizeTextarea,
-  AutosizeTextarea,
-} from "components/utils/AutosizeTextarea";
+import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { Separator } from "components/Layout";
 import { AtUri } from "@atproto/syntax";
 import { PubLeafletDocument } from "lexicons/api";
@@ -30,8 +24,6 @@ export const PublicationMetadata = ({
   let description = useSubscribe(rep, (tx) =>
     tx.get<string>("publication_description"),
   );
-  let { permissions } = useEntitySetContext();
-
   let record = pub?.documents?.data as PubLeafletDocument.Record | null;
   let publishedAt = record?.publishedAt;
 
@@ -56,27 +48,25 @@ export const PublicationMetadata = ({
           Editor
         </div>
       </div>
-      <AsyncValueAutosizeTextarea
-        disabled={!permissions.write}
+      <TextField
         className="text-xl font-bold outline-hidden bg-transparent"
         value={title}
-        onChange={async (e) => {
+        onChange={async (newTitle) => {
           await rep?.mutate.updatePublicationDraft({
-            title: e.currentTarget.value,
+            title: newTitle,
             description,
           });
         }}
         placeholder="Untitled"
       />
-      <AsyncValueAutosizeTextarea
-        disabled={!permissions.write}
+      <TextField
         placeholder="add an optional description..."
         className="italic text-secondary outline-hidden bg-transparent"
         value={description}
-        onChange={async (e) => {
+        onChange={async (newDescription) => {
           await rep?.mutate.updatePublicationDraft({
-            description: e.currentTarget.value,
             title,
+            description: newDescription,
           });
         }}
       />
@@ -98,6 +88,77 @@ export const PublicationMetadata = ({
         <p className="text-sm text-tertiary pt-2">Draft</p>
       )}
     </div>
+  );
+};
+
+export const TextField = ({
+  value,
+  onChange,
+  className,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => Promise<void>;
+  className: string;
+  placeholder: string;
+}) => {
+  let { undoManager } = useReplicache();
+  let actionTimeout = useRef<number | null>(null);
+  let { permissions } = useEntitySetContext();
+  let previousSelection = useRef<null | { start: number; end: number }>(null);
+  let ref = useRef<HTMLTextAreaElement | null>(null);
+  return (
+    <AsyncValueAutosizeTextarea
+      ref={ref}
+      disabled={!permissions.write}
+      onSelect={(e) => {
+        let start = e.currentTarget.selectionStart,
+          end = e.currentTarget.selectionEnd;
+        previousSelection.current = { start, end };
+      }}
+      className={className}
+      value={value}
+      onBlur={async () => {
+        if (actionTimeout.current) {
+          undoManager.endGroup();
+          window.clearTimeout(actionTimeout.current);
+          actionTimeout.current = null;
+        }
+      }}
+      onChange={async (e) => {
+        let newValue = e.currentTarget.value;
+        let oldValue = value;
+        let start = e.currentTarget.selectionStart,
+          end = e.currentTarget.selectionEnd;
+        await onChange(e.currentTarget.value);
+
+        if (actionTimeout.current) {
+          window.clearTimeout(actionTimeout.current);
+        } else {
+          undoManager.startGroup();
+        }
+
+        actionTimeout.current = window.setTimeout(() => {
+          undoManager.endGroup();
+          actionTimeout.current = null;
+        }, 200);
+        let previousStart = previousSelection.current?.start || null,
+          previousEnd = previousSelection.current?.end || null;
+        undoManager.add({
+          redo: async () => {
+            await onChange(newValue);
+            ref.current?.setSelectionRange(start, end);
+            ref.current?.focus();
+          },
+          undo: async () => {
+            await onChange(oldValue);
+            ref.current?.setSelectionRange(previousStart, previousEnd);
+            ref.current?.focus();
+          },
+        });
+      }}
+      placeholder={placeholder}
+    />
   );
 };
 

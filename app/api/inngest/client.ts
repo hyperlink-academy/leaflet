@@ -3,6 +3,11 @@ import { Inngest } from "inngest";
 import { EventSchemas } from "inngest";
 
 export type Events = {
+  "feeds/index-follows": {
+    data: {
+      did: string;
+    };
+  };
   "appview/profile-update": {
     data: {
       record: any;

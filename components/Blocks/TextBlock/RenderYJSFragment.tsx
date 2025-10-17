@@ -32,7 +32,7 @@ export function RenderYJSFragment({
               node.toArray().map((node, index) => {
                 if (node.constructor === XmlText) {
                   let deltas = node.toDelta() as Delta[];
-                  if (deltas.length === 0) return <br />;
+                  if (deltas.length === 0) return <br key={index} />;
                   return (
                     <Fragment key={index}>
                       {deltas.map((d, index) => {

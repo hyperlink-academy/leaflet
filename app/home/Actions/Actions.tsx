@@ -16,6 +16,7 @@ export const Actions = () => {
       {identity ? <AccountSettings /> : <LoginActionButton />}
       {/*<HelpPopover noShortcuts />*/}
       <ThemePopover entityID={rootEntity} home />
+      <HelpPopover />
     </>
   );
 };

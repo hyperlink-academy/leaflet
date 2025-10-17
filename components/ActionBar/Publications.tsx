@@ -24,7 +24,6 @@ export const PublicationButtons = (props: {
       {identity.publications?.map((d) => {
         // console.log("thisURI : " + d.uri);
         // console.log("currentURI : " + props.currentPubUri);
-        console.log(d.uri === props.currentPubUri);
 
         return (
           <PublicationOption
@@ -37,7 +36,7 @@ export const PublicationButtons = (props: {
         );
       })}
       <Link
-        href={"./lish/createPub"}
+        href={"/lish/createPub"}
         className="pubListCreateNew  text-accent-contrast text-sm place-self-end hover:text-accent-contrast"
       >
         New
@@ -82,10 +81,10 @@ const PubListEmpty = () => {
   return (
     <SpeedyLink href={`lish/createPub`} className=" hover:no-underline!">
       <ActionButton
-        label="Publish on ATP"
+        label="Publish"
         icon={<PublishSmall />}
         nav
-        subtext="Start a blog in the Atmosphere"
+        subtext="Blog on ATProto!"
       />
     </SpeedyLink>
   );
@@ -94,8 +93,13 @@ const PubListEmpty = () => {
 export const PubIcon = (props: {
   record: PubLeafletPublication.Record;
   uri: string;
+  small?: boolean;
+  large?: boolean;
+  className?: string;
 }) => {
   if (!props.record) return;
+
+  let iconSizeClassName = `${props.small ? "w-4 h-4" : props.large ? "w-12 h-12" : "w-6 h-6"} rounded-full`;
 
   return props.record.icon ? (
     <div
@@ -105,11 +109,13 @@ export const PubIcon = (props: {
         backgroundSize: "cover",
         backgroundImage: `url(/api/atproto_images?did=${new AtUri(props.uri).host}&cid=${(props.record.icon?.ref as unknown as { $link: string })["$link"]})`,
       }}
-      className="w-6 h-6 rounded-full"
+      className={`${iconSizeClassName} ${props.className}`}
     />
   ) : (
-    <div className="w-6 h-6 rounded-full bg-accent-1 relative">
-      <div className="font-bold text-sm absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-2">
+    <div className={`${iconSizeClassName} bg-accent-1 relative`}>
+      <div
+        className={`${props.small ? "text-xs" : props.large ? "text-2xl" : "text-sm"} font-bold  absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-2`}
+      >
         {props.record?.name.slice(0, 1)}
       </div>
     </div>

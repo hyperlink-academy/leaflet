@@ -85,7 +85,6 @@ export function focusBlock(
         top: nextBlockViewClientRect.top + 12,
         left: Math.max(position.left, nextBlockViewClientRect.left),
       });
-      console.log(pos);
       break;
     }
     case "bottom": {

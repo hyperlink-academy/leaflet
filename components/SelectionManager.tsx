@@ -10,7 +10,7 @@ import { useEntitySetContext } from "./EntitySetProvider";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { v7 } from "uuid";
 import { indent, outdent, outdentFull } from "src/utils/list-operations";
-import { addShortcut } from "src/shortcuts";
+import { addShortcut, Shortcut } from "src/shortcuts";
 import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 import { elementId } from "src/utils/elementId";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
@@ -19,6 +19,9 @@ import { isTextBlock } from "src/utils/isTextBlock";
 import { useIsMobile } from "src/hooks/isMobile";
 import { deleteBlock } from "./Blocks/DeleteBlock";
 import { Replicache } from "replicache";
+import { schema } from "./Blocks/TextBlock/schema";
+import { TextSelection } from "prosemirror-state";
+import { MarkType } from "prosemirror-model";
 export const useSelectingMouse = create(() => ({
   start: null as null | string,
 }));
@@ -33,161 +36,221 @@ export function SelectionManager() {
   let isMobile = useIsMobile();
   useEffect(() => {
     if (!entity_set.permissions.write || !rep) return;
-    if (isMobile) return;
     const getSortedSelectionBound = getSortedSelection.bind(null, rep);
-    let removeListener = addShortcut(
-      [
-        {
-          metaKey: true,
-          key: "ArrowUp",
-          handler: async () => {
-            let [firstBlock] =
-              (await rep?.query((tx) =>
-                getBlocksWithType(
-                  tx,
-                  useUIState.getState().selectedBlocks[0].parent,
-                ),
-              )) || [];
-            if (firstBlock) focusBlock(firstBlock, { type: "start" });
-          },
+    let shortcuts: Shortcut[] = [
+      {
+        metaKey: true,
+        key: "ArrowUp",
+        handler: async () => {
+          let [firstBlock] =
+            (await rep?.query((tx) =>
+              getBlocksWithType(
+                tx,
+                useUIState.getState().selectedBlocks[0].parent,
+              ),
+            )) || [];
+          if (firstBlock) focusBlock(firstBlock, { type: "start" });
         },
-        {
-          metaKey: true,
-          key: "ArrowDown",
-          handler: async () => {
-            let blocks =
-              (await rep?.query((tx) =>
-                getBlocksWithType(
-                  tx,
-                  useUIState.getState().selectedBlocks[0].parent,
-                ),
-              )) || [];
-            let folded = useUIState.getState().foldedBlocks;
-            blocks = blocks.filter(
+      },
+      {
+        metaKey: true,
+        key: "ArrowDown",
+        handler: async () => {
+          let blocks =
+            (await rep?.query((tx) =>
+              getBlocksWithType(
+                tx,
+                useUIState.getState().selectedBlocks[0].parent,
+              ),
+            )) || [];
+          let folded = useUIState.getState().foldedBlocks;
+          blocks = blocks.filter(
+            (f) =>
+              !f.listData ||
+              !f.listData.path.find(
+                (path) =>
+                  folded.includes(path.entity) && f.value !== path.entity,
+              ),
+          );
+          let lastBlock = blocks[blocks.length - 1];
+          if (lastBlock) focusBlock(lastBlock, { type: "end" });
+        },
+      },
+      {
+        metaKey: true,
+        altKey: true,
+        key: ["l", "¬"],
+        handler: async () => {
+          let [sortedBlocks, siblings] = await getSortedSelectionBound();
+          for (let block of sortedBlocks) {
+            if (!block.listData) {
+              await rep?.mutate.assertFact({
+                entity: block.value,
+                attribute: "block/is-list",
+                data: { type: "boolean", value: true },
+              });
+            } else {
+              outdentFull(block, rep);
+            }
+          }
+        },
+      },
+      {
+        metaKey: true,
+        shift: true,
+        key: ["ArrowDown", "J"],
+        handler: async () => {
+          let [sortedBlocks, siblings] = await getSortedSelectionBound();
+          let block = sortedBlocks[0];
+          let nextBlock = siblings
+            .slice(siblings.findIndex((s) => s.value === block.value) + 1)
+            .find(
               (f) =>
-                !f.listData ||
-                !f.listData.path.find(
-                  (path) =>
-                    folded.includes(path.entity) && f.value !== path.entity,
-                ),
+                f.listData &&
+                block.listData &&
+                !f.listData.path.find((f) => f.entity === block.value),
             );
-            let lastBlock = blocks[blocks.length - 1];
-            if (lastBlock) focusBlock(lastBlock, { type: "end" });
-          },
+          if (
+            nextBlock?.listData &&
+            block.listData &&
+            nextBlock.listData.depth === block.listData.depth - 1
+          ) {
+            if (useUIState.getState().foldedBlocks.includes(nextBlock.value))
+              useUIState.getState().toggleFold(nextBlock.value);
+            await rep?.mutate.moveBlock({
+              block: block.value,
+              oldParent: block.listData?.parent,
+              newParent: nextBlock.value,
+              position: { type: "first" },
+            });
+          } else {
+            await rep?.mutate.moveBlockDown({
+              entityID: block.value,
+              parent: block.listData?.parent || block.parent,
+            });
+          }
         },
-        {
-          metaKey: true,
-          altKey: true,
-          key: ["l", "¬"],
-          handler: async () => {
-            let [sortedBlocks, siblings] = await getSortedSelectionBound();
-            for (let block of sortedBlocks) {
-              if (!block.listData) {
-                await rep?.mutate.assertFact({
-                  entity: block.value,
-                  attribute: "block/is-list",
-                  data: { type: "boolean", value: true },
-                });
-              } else {
-                outdentFull(block, rep);
-              }
-            }
-          },
-        },
-        {
-          metaKey: true,
-          shift: true,
-          key: ["ArrowDown", "J"],
-          handler: async () => {
-            let [sortedBlocks, siblings] = await getSortedSelectionBound();
-            let block = sortedBlocks[0];
-            let nextBlock = siblings
-              .slice(siblings.findIndex((s) => s.value === block.value) + 1)
-              .find(
-                (f) =>
-                  f.listData &&
-                  block.listData &&
-                  !f.listData.path.find((f) => f.entity === block.value),
-              );
-            if (
-              nextBlock?.listData &&
-              block.listData &&
-              nextBlock.listData.depth === block.listData.depth - 1
-            ) {
-              if (useUIState.getState().foldedBlocks.includes(nextBlock.value))
-                useUIState.getState().toggleFold(nextBlock.value);
-              rep?.mutate.moveBlock({
-                block: block.value,
-                oldParent: block.listData?.parent,
-                newParent: nextBlock.value,
-                position: { type: "first" },
-              });
-            } else {
-              rep?.mutate.moveBlockDown({
-                entityID: block.value,
-                parent: block.listData?.parent || block.parent,
-              });
-            }
-          },
-        },
-        {
-          metaKey: true,
-          shift: true,
-          key: ["ArrowUp", "K"],
-          handler: async () => {
-            let [sortedBlocks, siblings] = await getSortedSelectionBound();
-            let block = sortedBlocks[0];
-            let previousBlock =
+      },
+      {
+        metaKey: true,
+        shift: true,
+        key: ["ArrowUp", "K"],
+        handler: async () => {
+          let [sortedBlocks, siblings] = await getSortedSelectionBound();
+          let block = sortedBlocks[0];
+          let previousBlock =
+            siblings?.[siblings.findIndex((s) => s.value === block.value) - 1];
+          if (previousBlock.value === block.listData?.parent) {
+            previousBlock =
               siblings?.[
-                siblings.findIndex((s) => s.value === block.value) - 1
+                siblings.findIndex((s) => s.value === block.value) - 2
               ];
-            if (previousBlock.value === block.listData?.parent) {
-              previousBlock =
-                siblings?.[
-                  siblings.findIndex((s) => s.value === block.value) - 2
-                ];
-            }
+          }
 
-            if (
-              previousBlock?.listData &&
-              block.listData &&
-              block.listData.depth > 1 &&
-              !previousBlock.listData.path.find(
-                (f) => f.entity === block.listData?.parent,
-              )
-            ) {
-              let depth = block.listData.depth;
-              let newParent = previousBlock.listData.path.find(
-                (f) => f.depth === depth - 1,
-              );
-              if (!newParent) return;
-              if (useUIState.getState().foldedBlocks.includes(newParent.entity))
-                useUIState.getState().toggleFold(newParent.entity);
-              rep?.mutate.moveBlock({
-                block: block.value,
-                oldParent: block.listData?.parent,
-                newParent: newParent.entity,
-                position: { type: "end" },
-              });
-            } else {
-              rep?.mutate.moveBlockUp({
-                entityID: block.value,
-                parent: block.listData?.parent || block.parent,
-              });
-            }
+          if (
+            previousBlock?.listData &&
+            block.listData &&
+            block.listData.depth > 1 &&
+            !previousBlock.listData.path.find(
+              (f) => f.entity === block.listData?.parent,
+            )
+          ) {
+            let depth = block.listData.depth;
+            let newParent = previousBlock.listData.path.find(
+              (f) => f.depth === depth - 1,
+            );
+            if (!newParent) return;
+            if (useUIState.getState().foldedBlocks.includes(newParent.entity))
+              useUIState.getState().toggleFold(newParent.entity);
+            rep?.mutate.moveBlock({
+              block: block.value,
+              oldParent: block.listData?.parent,
+              newParent: newParent.entity,
+              position: { type: "end" },
+            });
+          } else {
+            rep?.mutate.moveBlockUp({
+              entityID: block.value,
+              parent: block.listData?.parent || block.parent,
+            });
+          }
+        },
+      },
+
+      {
+        metaKey: true,
+        shift: true,
+        key: "Enter",
+        handler: async () => {
+          let [sortedBlocks, siblings] = await getSortedSelectionBound();
+          if (!sortedBlocks[0].listData) return;
+          useUIState.getState().toggleFold(sortedBlocks[0].value);
+        },
+      },
+    ];
+    if (moreThanOneSelected)
+      shortcuts = shortcuts.concat([
+        {
+          metaKey: true,
+          key: "u",
+          handler: async () => {
+            let [sortedBlocks] = await getSortedSelectionBound();
+            toggleMarkInBlocks(
+              sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+              schema.marks.underline,
+            );
           },
         },
         {
           metaKey: true,
-          shift: true,
-          key: "Enter",
+          key: "i",
           handler: async () => {
-            let [sortedBlocks, siblings] = await getSortedSelectionBound();
-            if (!sortedBlocks[0].listData) return;
-            useUIState.getState().toggleFold(sortedBlocks[0].value);
+            let [sortedBlocks] = await getSortedSelectionBound();
+            toggleMarkInBlocks(
+              sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+              schema.marks.em,
+            );
           },
         },
-      ].map((shortcut) => ({
+        {
+          metaKey: true,
+          key: "b",
+          handler: async () => {
+            let [sortedBlocks] = await getSortedSelectionBound();
+            toggleMarkInBlocks(
+              sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+              schema.marks.strong,
+            );
+          },
+        },
+        {
+          metaAndCtrl: true,
+          key: "h",
+          handler: async () => {
+            let [sortedBlocks] = await getSortedSelectionBound();
+            toggleMarkInBlocks(
+              sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+              schema.marks.highlight,
+              {
+                color: useUIState.getState().lastUsedHighlight,
+              },
+            );
+          },
+        },
+        {
+          metaAndCtrl: true,
+          key: "x",
+          handler: async () => {
+            let [sortedBlocks] = await getSortedSelectionBound();
+            toggleMarkInBlocks(
+              sortedBlocks.filter((b) => b.type === "text").map((b) => b.value),
+              schema.marks.strikethrough,
+            );
+          },
+        },
+      ]);
+    let removeListener = addShortcut(
+      shortcuts.map((shortcut) => ({
         ...shortcut,
         handler: () => undoManager.withUndoGroup(() => shortcut.handler()),
       })),
@@ -463,6 +526,7 @@ export function SelectionManager() {
         }
         if ((e.key === "c" || e.key === "x") && (e.metaKey || e.ctrlKey)) {
           if (!rep) return;
+          if (e.shiftKey || (e.metaKey && e.ctrlKey)) return;
           let [, , selectionWithFoldedChildren] =
             await getSortedSelectionBound();
           if (!selectionWithFoldedChildren) return;
@@ -490,7 +554,7 @@ export function SelectionManager() {
       removeListener();
       window.removeEventListener("keydown", listener);
     };
-  }, [moreThanOneSelected, rep, entity_set.permissions.write, isMobile]);
+  }, [moreThanOneSelected, rep, entity_set.permissions.write]);
 
   let [mouseDown, setMouseDown] = useState(false);
   let initialContentEditableParent = useRef<null | Node>(null);
@@ -667,3 +731,33 @@ export const getSortedSelection = async (
     sortedBlocksWithChildren,
   ];
 };
+
+function toggleMarkInBlocks(blocks: string[], mark: MarkType, attrs?: any) {
+  let everyBlockHasMark = blocks.reduce((acc, block) => {
+    let editor = useEditorStates.getState().editorStates[block];
+    if (!editor) return acc;
+    let { view } = editor;
+    let from = 0;
+    let to = view.state.doc.content.size;
+    let hasMarkInRange = view.state.doc.rangeHasMark(from, to, mark);
+    return acc && hasMarkInRange;
+  }, true);
+  for (let block of blocks) {
+    let editor = useEditorStates.getState().editorStates[block];
+    if (!editor) return;
+    let { view } = editor;
+    let tr = view.state.tr;
+
+    let from = 0;
+    let to = view.state.doc.content.size;
+
+    tr.setMeta("bulkOp", true);
+    if (everyBlockHasMark) {
+      tr.removeMark(from, to, mark);
+    } else {
+      tr.addMark(from, to, mark.create(attrs));
+    }
+
+    view.dispatch(tr);
+  }
+}

@@ -44,12 +44,14 @@ export function CommentBox(props: {
   autoFocus?: boolean;
 }) {
   let mountRef = useRef<HTMLPreElement | null>(null);
-  let { commentBox: { quote } } = useInteractionState(props.doc_uri);
+  let {
+    commentBox: { quote },
+  } = useInteractionState(props.doc_uri);
   let [loading, setLoading] = useState(false);
-  
+
   const handleSubmit = async () => {
     if (loading || !view.current) return;
-    
+
     setLoading(true);
     let currentState = view.current.state;
     let [plaintext, facets] = docToFacetedText(currentState.doc);
@@ -108,8 +110,14 @@ export function CommentBox(props: {
           "Mod-z": undo,
           "Mod-y": redo,
           "Shift-Mod-z": redo,
-          "Ctrl-Enter": () => { handleSubmit(); return true; },
-          "Meta-Enter": () => { handleSubmit(); return true; },
+          "Ctrl-Enter": () => {
+            handleSubmit();
+            return true;
+          },
+          "Meta-Enter": () => {
+            handleSubmit();
+            return true;
+          },
         }),
         keymap(baseKeymap),
         autolink({
@@ -158,8 +166,6 @@ export function CommentBox(props: {
             let xml = new DOMParser().parseFromString(html, "text/html");
             text = xml.textContent || "";
           }
-          console.log("URL: " + window.location.toString());
-          console.log("TEXT: " + text, text?.includes(QUOTE_PARAM));
           if (
             text?.includes(QUOTE_PARAM) &&
             text.includes(window.location.toString())
@@ -190,7 +196,6 @@ export function CommentBox(props: {
           }
         },
         dispatchTransaction(tr) {
-          console.log("dispatching?");
           let newState = this.state.apply(tr);
           setEditorState(newState);
           view.current?.updateState(newState);
@@ -207,7 +212,7 @@ export function CommentBox(props: {
       view.current = null;
     };
   }, []);
-  
+
   return (
     <div className=" flex flex-col">
       {quote && (
@@ -216,7 +221,9 @@ export function CommentBox(props: {
           <button
             className="text-border absolute -top-3 right-1 bg-bg-page p-1 rounded-full"
             onClick={() =>
-              setInteractionState(props.doc_uri, { commentBox: { quote: null } })
+              setInteractionState(props.doc_uri, {
+                commentBox: { quote: null },
+              })
             }
           >
             <CloseFillTiny />
@@ -251,10 +258,7 @@ export function CommentBox(props: {
             view={view}
           />
         </div>
-        <ButtonPrimary
-          compact
-          onClick={handleSubmit}
-        >
+        <ButtonPrimary compact onClick={handleSubmit}>
           {loading ? <DotLoader /> : <ShareSmall />}
         </ButtonPrimary>
       </div>

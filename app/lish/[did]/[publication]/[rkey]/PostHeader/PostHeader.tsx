@@ -10,7 +10,6 @@ import { SpeedyLink } from "components/SpeedyLink";
 
 export function PostHeader(props: {
   data: PostPageData;
-  name: string;
   profile: ProfileViewDetailed;
   preferences: { showComments?: boolean };
 }) {
@@ -40,12 +39,13 @@ export function PostHeader(props: {
               )
             }
           >
-            {props.name}
+            {pub?.name}
           </SpeedyLink>
           {identity &&
             identity.atp_did ===
               document.documents_in_publications[0]?.publications
-                .identity_did && (
+                .identity_did &&
+            document.leaflets_in_publications[0] && (
               <a
                 className=" rounded-full  flex place-items-center"
                 href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}

@@ -191,6 +191,36 @@ export const PubLeafletBlocksImage: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksOrderedList: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.orderedList",
+  defs: {
+    main: {
+      type: "object",
+      required: ["children"],
+      properties: {
+        startIndex: { type: "integer" },
+        children: { type: "array", items: { type: "ref", ref: "#listItem" } },
+      },
+    },
+    listItem: {
+      type: "object",
+      required: ["content"],
+      properties: {
+        content: {
+          type: "union",
+          refs: [
+            PubLeafletBlocksText,
+            PubLeafletBlocksHeader,
+            PubLeafletBlocksImage,
+          ].map((l) => l.id),
+        },
+        children: { type: "array", items: { type: "ref", ref: "#listItem" } },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksUnorderedList: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.unorderedList",

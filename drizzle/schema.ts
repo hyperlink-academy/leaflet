@@ -1,34 +1,26 @@
-import { pgTable, pgEnum, text, jsonb, foreignKey, timestamp, uuid, bigint, boolean, unique, uniqueIndex, smallint, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, pgEnum, text, jsonb, index, foreignKey, timestamp, uuid, bigint, boolean, unique, uniqueIndex, smallint, primaryKey } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const aal_level = pgEnum("aal_level", ['aal1', 'aal2', 'aal3'])
 export const code_challenge_method = pgEnum("code_challenge_method", ['s256', 'plain'])
 export const factor_status = pgEnum("factor_status", ['unverified', 'verified'])
-export const factor_type = pgEnum("factor_type", ['totp', 'webauthn'])
+export const factor_type = pgEnum("factor_type", ['totp', 'webauthn', 'phone'])
+export const oauth_authorization_status = pgEnum("oauth_authorization_status", ['pending', 'approved', 'denied', 'expired'])
+export const oauth_client_type = pgEnum("oauth_client_type", ['public', 'confidential'])
+export const oauth_registration_type = pgEnum("oauth_registration_type", ['dynamic', 'manual'])
+export const oauth_response_type = pgEnum("oauth_response_type", ['code'])
 export const one_time_token_type = pgEnum("one_time_token_type", ['confirmation_token', 'reauthentication_token', 'recovery_token', 'email_change_token_new', 'email_change_token_current', 'phone_change_token'])
-export const request_status = pgEnum("request_status", ['PENDING', 'SUCCESS', 'ERROR'])
 export const key_status = pgEnum("key_status", ['default', 'valid', 'invalid', 'expired'])
 export const key_type = pgEnum("key_type", ['aead-ietf', 'aead-det', 'hmacsha512', 'hmacsha256', 'auth', 'shorthash', 'generichash', 'kdf', 'secretbox', 'secretstream', 'stream_xchacha20'])
 export const rsvp_status = pgEnum("rsvp_status", ['GOING', 'NOT_GOING', 'MAYBE'])
 export const action = pgEnum("action", ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'ERROR'])
 export const equality_op = pgEnum("equality_op", ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'in'])
+export const buckettype = pgEnum("buckettype", ['STANDARD', 'ANALYTICS'])
 
 
 export const oauth_state_store = pgTable("oauth_state_store", {
 	key: text("key").primaryKey().notNull(),
 	state: jsonb("state").notNull(),
-});
-
-export const oauth_session_store = pgTable("oauth_session_store", {
-	key: text("key").primaryKey().notNull(),
-	session: jsonb("session").notNull(),
-});
-
-export const bsky_profiles = pgTable("bsky_profiles", {
-	did: text("did").primaryKey().notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
-	record: jsonb("record").notNull(),
-	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	handle: text("handle"),
 });
 
 export const publications = pgTable("publications", {
@@ -37,13 +29,11 @@ export const publications = pgTable("publications", {
 	name: text("name").notNull(),
 	identity_did: text("identity_did").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
 	record: jsonb("record"),
-});
-
-export const bsky_posts = pgTable("bsky_posts", {
-	uri: text("uri").primaryKey().notNull(),
-	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	post_view: jsonb("post_view").notNull(),
-	cid: text("cid").notNull(),
+},
+(table) => {
+	return {
+		identity_did_idx: index("publications_identity_did_idx").on(table.identity_did),
+	}
 });
 
 export const comments_on_documents = pgTable("comments_on_documents", {
@@ -52,6 +42,17 @@ export const comments_on_documents = pgTable("comments_on_documents", {
 	document: text("document").references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	profile: text("profile").references(() => bsky_profiles.did, { onDelete: "set null", onUpdate: "cascade" } ),
+});
+
+export const entities = pgTable("entities", {
+	id: uuid("id").primaryKey().notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	set: uuid("set").notNull().references(() => entity_sets.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+},
+(table) => {
+	return {
+		set_idx: index("entities_set_idx").on(table.set),
+	}
 });
 
 export const facts = pgTable("facts", {
@@ -63,12 +64,11 @@ export const facts = pgTable("facts", {
 	updated_at: timestamp("updated_at", { mode: 'string' }),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	version: bigint("version", { mode: "number" }).default(0).notNull(),
-});
-
-export const documents = pgTable("documents", {
-	uri: text("uri").primaryKey().notNull(),
-	data: jsonb("data").notNull(),
-	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		entity_idx: index("facts_entity_idx").on(table.entity),
+	}
 });
 
 export const replicache_clients = pgTable("replicache_clients", {
@@ -76,17 +76,47 @@ export const replicache_clients = pgTable("replicache_clients", {
 	client_group: text("client_group").notNull(),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	last_mutation: bigint("last_mutation", { mode: "number" }).notNull(),
+},
+(table) => {
+	return {
+		client_group_idx: index("replicache_clients_client_group_idx").on(table.client_group),
+	}
 });
 
-export const entities = pgTable("entities", {
-	id: uuid("id").primaryKey().notNull(),
+export const email_auth_tokens = pgTable("email_auth_tokens", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	set: uuid("set").notNull().references(() => entity_sets.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	confirmed: boolean("confirmed").default(false).notNull(),
+	email: text("email"),
+	confirmation_code: text("confirmation_code").notNull(),
+	identity: uuid("identity").references(() => identities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+});
+
+export const bsky_posts = pgTable("bsky_posts", {
+	uri: text("uri").primaryKey().notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	post_view: jsonb("post_view").notNull(),
+	cid: text("cid").notNull(),
+});
+
+export const bsky_profiles = pgTable("bsky_profiles", {
+	did: text("did").primaryKey().notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
+	record: jsonb("record").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	handle: text("handle"),
 });
 
 export const entity_sets = pgTable("entity_sets", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+});
+
+export const poll_votes_on_entity = pgTable("poll_votes_on_entity", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	poll_entity: uuid("poll_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	option_entity: uuid("option_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	voter_token: uuid("voter_token").notNull(),
 });
 
 export const permission_tokens = pgTable("permission_tokens", {
@@ -110,25 +140,6 @@ export const identities = pgTable("identities", {
 	}
 });
 
-export const email_subscriptions_to_entity = pgTable("email_subscriptions_to_entity", {
-	id: uuid("id").defaultRandom().primaryKey().notNull(),
-	entity: uuid("entity").notNull().references(() => entities.id, { onDelete: "cascade" } ),
-	email: text("email").notNull(),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
-	confirmed: boolean("confirmed").default(false).notNull(),
-	confirmation_code: text("confirmation_code").notNull(),
-});
-
-export const email_auth_tokens = pgTable("email_auth_tokens", {
-	id: uuid("id").defaultRandom().primaryKey().notNull(),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	confirmed: boolean("confirmed").default(false).notNull(),
-	email: text("email"),
-	confirmation_code: text("confirmation_code").notNull(),
-	identity: uuid("identity").references(() => identities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
-});
-
 export const phone_number_auth_tokens = pgTable("phone_number_auth_tokens", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -136,14 +147,6 @@ export const phone_number_auth_tokens = pgTable("phone_number_auth_tokens", {
 	confirmation_code: text("confirmation_code").notNull(),
 	phone_number: text("phone_number").notNull(),
 	country_code: text("country_code").notNull(),
-});
-
-export const custom_domains = pgTable("custom_domains", {
-	domain: text("domain").primaryKey().notNull(),
-	identity: text("identity").default('').references(() => identities.email, { onDelete: "cascade", onUpdate: "cascade" } ),
-	confirmed: boolean("confirmed").notNull(),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	identity_id: uuid("identity_id").references(() => identities.id, { onDelete: "cascade" } ),
 });
 
 export const phone_rsvps_to_entity = pgTable("phone_rsvps_to_entity", {
@@ -172,16 +175,48 @@ export const custom_domain_routes = pgTable("custom_domain_routes", {
 },
 (table) => {
 	return {
+		edit_permission_token_idx: index("custom_domain_routes_edit_permission_token_idx").on(table.edit_permission_token),
 		custom_domain_routes_domain_route_key: unique("custom_domain_routes_domain_route_key").on(table.domain, table.route),
 	}
 });
 
-export const poll_votes_on_entity = pgTable("poll_votes_on_entity", {
-	id: uuid("id").defaultRandom().primaryKey().notNull(),
+export const custom_domains = pgTable("custom_domains", {
+	domain: text("domain").primaryKey().notNull(),
+	identity: text("identity").default('').references(() => identities.email, { onDelete: "cascade", onUpdate: "cascade" } ),
+	confirmed: boolean("confirmed").notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	poll_entity: uuid("poll_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
-	option_entity: uuid("option_entity").notNull().references(() => entities.id, { onDelete: "cascade", onUpdate: "cascade" } ),
-	voter_token: uuid("voter_token").notNull(),
+	identity_id: uuid("identity_id").references(() => identities.id, { onDelete: "cascade" } ),
+});
+
+export const email_subscriptions_to_entity = pgTable("email_subscriptions_to_entity", {
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
+	entity: uuid("entity").notNull().references(() => entities.id, { onDelete: "cascade" } ),
+	email: text("email").notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
+	confirmed: boolean("confirmed").default(false).notNull(),
+	confirmation_code: text("confirmation_code").notNull(),
+});
+
+export const documents = pgTable("documents", {
+	uri: text("uri").primaryKey().notNull(),
+	data: jsonb("data").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+});
+
+export const oauth_session_store = pgTable("oauth_session_store", {
+	key: text("key").primaryKey().notNull(),
+	session: jsonb("session").notNull(),
+});
+
+export const bsky_follows = pgTable("bsky_follows", {
+	identity: text("identity").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
+	follows: text("follows").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
+},
+(table) => {
+	return {
+		bsky_follows_pkey: primaryKey({ columns: [table.identity, table.follows], name: "bsky_follows_pkey"}),
+	}
 });
 
 export const subscribers_to_publications = pgTable("subscribers_to_publications", {
@@ -192,17 +227,6 @@ export const subscribers_to_publications = pgTable("subscribers_to_publications"
 (table) => {
 	return {
 		subscribers_to_publications_pkey: primaryKey({ columns: [table.identity, table.publication], name: "subscribers_to_publications_pkey"}),
-	}
-});
-
-export const document_mentions_in_bsky = pgTable("document_mentions_in_bsky", {
-	uri: text("uri").notNull().references(() => bsky_posts.uri, { onDelete: "cascade" } ),
-	link: text("link").notNull(),
-	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade" } ),
-},
-(table) => {
-	return {
-		document_mentions_in_bsky_pkey: primaryKey({ columns: [table.uri, table.document], name: "document_mentions_in_bsky_pkey"}),
 	}
 });
 
@@ -224,7 +248,20 @@ export const documents_in_publications = pgTable("documents_in_publications", {
 },
 (table) => {
 	return {
+		publication_idx: index("documents_in_publications_publication_idx").on(table.publication),
 		documents_in_publications_pkey: primaryKey({ columns: [table.publication, table.document], name: "documents_in_publications_pkey"}),
+	}
+});
+
+export const document_mentions_in_bsky = pgTable("document_mentions_in_bsky", {
+	uri: text("uri").notNull().references(() => bsky_posts.uri, { onDelete: "cascade" } ),
+	link: text("link").notNull(),
+	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade" } ),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		document_mentions_in_bsky_pkey: primaryKey({ columns: [table.uri, table.document], name: "document_mentions_in_bsky_pkey"}),
 	}
 });
 
@@ -236,21 +273,8 @@ export const publication_domains = pgTable("publication_domains", {
 },
 (table) => {
 	return {
+		publication_idx: index("publication_domains_publication_idx").on(table.publication),
 		publication_domains_pkey: primaryKey({ columns: [table.publication, table.domain], name: "publication_domains_pkey"}),
-	}
-});
-
-export const publication_subscriptions = pgTable("publication_subscriptions", {
-	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
-	identity: text("identity").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	record: jsonb("record").notNull(),
-	uri: text("uri").notNull(),
-},
-(table) => {
-	return {
-		publication_subscriptions_pkey: primaryKey({ columns: [table.publication, table.identity], name: "publication_subscriptions_pkey"}),
-		publication_subscriptions_uri_key: unique("publication_subscriptions_uri_key").on(table.uri),
 	}
 });
 
@@ -263,7 +287,24 @@ export const leaflets_in_publications = pgTable("leaflets_in_publications", {
 },
 (table) => {
 	return {
+		leaflet_idx: index("leaflets_in_publications_leaflet_idx").on(table.leaflet),
+		publication_idx: index("leaflets_in_publications_publication_idx").on(table.publication),
 		leaflets_in_publications_pkey: primaryKey({ columns: [table.publication, table.leaflet], name: "leaflets_in_publications_pkey"}),
+	}
+});
+
+export const publication_subscriptions = pgTable("publication_subscriptions", {
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	identity: text("identity").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	record: jsonb("record").notNull(),
+	uri: text("uri").notNull(),
+},
+(table) => {
+	return {
+		publication_idx: index("publication_subscriptions_publication_idx").on(table.publication),
+		publication_subscriptions_pkey: primaryKey({ columns: [table.publication, table.identity], name: "publication_subscriptions_pkey"}),
+		publication_subscriptions_uri_key: unique("publication_subscriptions_uri_key").on(table.uri),
 	}
 });
 
@@ -278,6 +319,8 @@ export const permission_token_rights = pgTable("permission_token_rights", {
 },
 (table) => {
 	return {
+		token_idx: index("permission_token_rights_token_idx").on(table.token),
+		entity_set_idx: index("permission_token_rights_entity_set_idx").on(table.entity_set),
 		permission_token_rights_pkey: primaryKey({ columns: [table.token, table.entity_set], name: "permission_token_rights_pkey"}),
 	}
 });

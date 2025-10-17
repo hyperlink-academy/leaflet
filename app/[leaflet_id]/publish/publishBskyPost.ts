@@ -1,6 +1,10 @@
 "use server";
 
-import { Agent as BskyAgent } from "@atproto/api";
+import {
+  AppBskyRichtextFacet,
+  Agent as BskyAgent,
+  UnicodeString,
+} from "@atproto/api";
 import sharp from "sharp";
 import { TID } from "@atproto/common";
 import { getIdentityData } from "actions/getIdentityData";
@@ -16,6 +20,7 @@ export async function publishPostToBsky(args: {
   description: string;
   document_record: PubLeafletDocument.Record;
   rkey: string;
+  facets: AppBskyRichtextFacet.Main[];
 }) {
   const oauthClient = await createOauthClient();
   let identity = await getIdentityData();
@@ -56,6 +61,7 @@ export async function publishPostToBsky(args: {
     {
       text: args.text,
       createdAt: new Date().toISOString(),
+      facets: args.facets,
       embed: {
         $type: "app.bsky.embed.external",
         external: {

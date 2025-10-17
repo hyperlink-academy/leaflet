@@ -7,8 +7,4 @@ if (Number.isNaN(cursor)) {
 } else {
   let newCursor = (cursor + 300 * 60 * 60 * 12).toString();
   writeFileSync(cursorFile, (cursor + 300 * 60 * 60 * 12).toString());
-  console.log(`
-  old cursor: ${cursor}
-  new cursor: ${newCursor}
-  `);
 }
