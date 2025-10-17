@@ -79,8 +79,11 @@ export const PubThemeSetter = () => {
             },
           });
           mutate((pub) => {
-            if (result?.publication && pub)
-              return { ...pub, record: result.publication.record };
+            if (result?.publication && pub?.publication)
+              return {
+                ...pub,
+                publication: { ...pub.publication, ...result.publication },
+              };
             return pub;
           }, false);
           setLoading(false);
