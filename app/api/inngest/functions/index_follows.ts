@@ -83,7 +83,7 @@ export const index_follows = inngest.createFunction(
 
     // Wait for all check batches to complete
     const batchResults = await Promise.all(checkBatches);
-    existingFollows = batchResults.flat();
+    existingFollows = batchResults.flat().filter(Boolean);
 
     // Filter follows to only include those that exist in identities table
     const insertBatchSize = 100;
