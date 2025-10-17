@@ -42,8 +42,31 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
   let feedAtURI = new AtUri(feed);
   let posts;
   let query;
+  if (feedAtURI.rkey == "bsky-leaflet-quotes") {
+    let query = supabaseServerClient
+      .from("document_mentions_in_bsky")
+      .select("*")
+      .order("indexed_at", { ascending: false })
+      .order("uri", { ascending: false })
+      .limit(25);
+    if (parsedCursor)
+      query = query.or(
+        `indexed_at.lt.${parsedCursor.date},and(indexed_at.eq.${parsedCursor.date},uri.lt.${parsedCursor.uri})`,
+      );
+
+    let { data, error } = await query;
+    let posts = data || [];
+
+    let lastPost = posts[posts.length - 1];
+    let newCursor = lastPost ? `${lastPost.indexed_at}::${lastPost.uri}` : null;
+    return c.json({
+      cursor: newCursor || cursor,
+      feed: posts.flatMap((p) => {
+        return { post: p.uri };
+      }),
+    });
+  }
   if (feedAtURI.rkey === "bsky-follows-leaflets") {
-    console.log(cursor);
     if (!cursor) {
       console.log("Sending event");
       await inngest.send({ name: "feeds/index-follows", data: { did: auth } });
