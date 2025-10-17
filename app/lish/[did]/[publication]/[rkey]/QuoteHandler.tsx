@@ -24,12 +24,18 @@ export function QuoteHandler() {
   useEffect(() => {
     const handleSelectionChange = (e: Event) => {
       const selection = document.getSelection();
-      const postContent = document.getElementById("post-content");
+
+      // Check if selection is within any element with postContent class
       const isWithinPostContent =
-        postContent && selection?.rangeCount && selection.rangeCount > 0
-          ? postContent.contains(
-              selection.getRangeAt(0).commonAncestorContainer,
-            )
+        selection?.rangeCount && selection.rangeCount > 0
+          ? (() => {
+              const range = selection.getRangeAt(0);
+              const ancestor = range.commonAncestorContainer;
+              const element = ancestor.nodeType === Node.ELEMENT_NODE
+                ? ancestor as Element
+                : ancestor.parentElement;
+              return element?.closest('.postContent') !== null;
+            })()
           : false;
 
       if (!selection || !isWithinPostContent || !selection?.toString())
@@ -88,6 +94,7 @@ export function QuoteHandler() {
         endIndex?.element,
       );
       let position: QuotePosition = {
+        ...(startIndex.pageId && { pageId: startIndex.pageId }),
         start: {
           block: startIndex?.index.split(".").map((i) => parseInt(i)),
           offset: startOffset,
@@ -145,7 +152,10 @@ export const QuoteOptionButtons = (props: { position: string }) => {
     // Clear existing query parameters
     currentUrl.search = "";
 
-    currentUrl.hash = `#${pos?.start.block.join(".")}_${pos?.start.offset}`;
+    const fragmentId = pos?.pageId
+      ? `${pos.pageId}~${pos.start.block.join(".")}_${pos.start.offset}`
+      : `${pos?.start.block.join(".")}_${pos?.start.offset}`;
+    currentUrl.hash = `#${fragmentId}`;
     return [currentUrl.toString(), pos];
   }, [props.position]);
   let pubRecord = data.documents_in_publications[0]?.publications?.record as
@@ -210,13 +220,14 @@ export const QuoteOptionButtons = (props: { position: string }) => {
   );
 };
 
-function findDataIndex(node: Node): { index: string; element: Element } | null {
+function findDataIndex(node: Node): { index: string; element: Element; pageId?: string } | null {
   if (node.nodeType === Node.ELEMENT_NODE) {
     const element = node as Element;
     if (element.hasAttribute("data-index")) {
       const index = element.getAttribute("data-index");
       if (index) {
-        return { index, element };
+        const pageId = element.getAttribute("data-page-id") || undefined;
+        return { index, element, pageId };
       }
     }
   }

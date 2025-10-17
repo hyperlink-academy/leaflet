@@ -50,7 +50,7 @@ export function PostContent({
 }) {
   return (
     <div
-      id="post-content"
+      //The postContent class is important for QuoteHandler
       className={`postContent flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-1 sm:pb-2 ${className}`}
     >
       {blocks.map((b, index) => {
@@ -103,8 +103,13 @@ let Block = ({
       scrollMarginBottom: "4rem",
       wordBreak: "break-word" as React.CSSProperties["wordBreak"],
     },
-    id: preview ? undefined : index.join("."),
+    id: preview
+      ? undefined
+      : pageId
+        ? `${pageId}~${index.join(".")}`
+        : index.join("."),
     "data-index": index.join("."),
+    "data-page-id": pageId,
   };
   let alignment =
     b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignRight"
@@ -175,6 +180,7 @@ let Block = ({
               did={did}
               key={i}
               className={className}
+              pageId={pageId}
             />
           ))}
         </ul>
@@ -277,6 +283,7 @@ let Block = ({
             plaintext={b.block.plaintext}
             index={index}
             preview={preview}
+            pageId={pageId}
           />
         </blockquote>
       );
@@ -289,6 +296,7 @@ let Block = ({
             plaintext={b.block.plaintext}
             index={index}
             preview={preview}
+            pageId={pageId}
           />
         </p>
       );
@@ -296,26 +304,46 @@ let Block = ({
       if (b.block.level === 1)
         return (
           <h2 className={`${className}`} {...blockProps}>
-            <TextBlock {...b.block} index={index} preview={preview} />
+            <TextBlock
+              {...b.block}
+              index={index}
+              preview={preview}
+              pageId={pageId}
+            />
           </h2>
         );
       if (b.block.level === 2)
         return (
           <h3 className={`${className}`} {...blockProps}>
-            <TextBlock {...b.block} index={index} preview={preview} />
+            <TextBlock
+              {...b.block}
+              index={index}
+              preview={preview}
+              pageId={pageId}
+            />
           </h3>
         );
       if (b.block.level === 3)
         return (
           <h4 className={`${className}`} {...blockProps}>
-            <TextBlock {...b.block} index={index} preview={preview} />
+            <TextBlock
+              {...b.block}
+              index={index}
+              preview={preview}
+              pageId={pageId}
+            />
           </h4>
         );
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
         <h6 className={`${className}`} {...blockProps}>
-          <TextBlock {...b.block} index={index} preview={preview} />
+          <TextBlock
+            {...b.block}
+            index={index}
+            preview={preview}
+            pageId={pageId}
+          />
         </h6>
       );
     }
@@ -331,6 +359,7 @@ function ListItem(props: {
   did: string;
   className?: string;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  pageId?: string;
 }) {
   let children = props.item.children?.length ? (
     <ul className="-ml-[7px] sm:ml-[7px]">
@@ -343,6 +372,7 @@ function ListItem(props: {
           did={props.did}
           key={index}
           className={props.className}
+          pageId={props.pageId}
         />
       ))}
     </ul>
@@ -361,6 +391,7 @@ function ListItem(props: {
           did={props.did}
           isList
           index={props.index}
+          pageId={props.pageId}
         />
         {children}{" "}
       </div>

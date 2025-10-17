@@ -58,7 +58,6 @@ export const closePage = (page: string) =>
 export function PostPages({
   document,
   blocks,
-  name,
   did,
   profile,
   preferences,
@@ -70,7 +69,6 @@ export function PostPages({
   document_uri: string;
   document: PostPageData;
   blocks: PubLeafletPagesLinearDocument.Block[];
-  name: string;
   profile: ProfileViewDetailed;
   pubRecord: PubLeafletPublication.Record;
   did: string;
@@ -99,7 +97,6 @@ export function PostPages({
         <PostHeader
           data={document}
           profile={profile}
-          name={name}
           preferences={preferences}
         />
         <PostContent
@@ -137,7 +134,7 @@ export function PostPages({
                 document.documents_in_publications[0].publications
                   .publication_subscriptions
               }
-              pubName={name}
+              pubName={document.documents_in_publications[0].publications.name}
             />
           )}
         </div>
