@@ -3,7 +3,7 @@ import { AtpAgent, AtUri } from "@atproto/api";
 import { createIdentity } from "actions/createIdentity";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { inngest } from "../client";
-import { Client } from "pg";
+import { pool } from "supabase/pool";
 
 export const index_follows = inngest.createFunction(
   {
@@ -45,24 +45,27 @@ export const index_follows = inngest.createFunction(
       cursor = page.cursor || null;
       if (!cursor) hasMore = false;
     }
-    await step.run("check-if-identity-exists", async () => {
-      let { data: exists } = await supabaseServerClient
-        .from("identities")
-        .select()
-        .eq("atp_did", event.data.did);
-      if (!exists) {
-        let client = new Client({ connectionString: process.env.DB_URL });
-        let db = drizzle(client);
-        await createIdentity(db, { atp_did: event.data.did });
-        client.end();
-      }
-    });
     let existingFollows: string[] = [];
     const batchSize = 100;
     let batchNumber = 0;
 
     // Create all check batches in parallel
-    const checkBatches = [];
+    const checkBatches: Promise<any>[] = [
+      step.run("check-if-identity-exists", async () => {
+        let { data: exists } = await supabaseServerClient
+          .from("identities")
+          .select()
+          .eq("atp_did", event.data.did)
+          .single();
+        if (!exists) {
+          const client = await pool.connect();
+          let db = drizzle(client);
+          let identity = await createIdentity(db, { atp_did: event.data.did });
+          client.release();
+          return identity;
+        }
+      }),
+    ];
     for (let i = 0; i < follows.length; i += batchSize) {
       const batch = follows.slice(i, i + batchSize);
       checkBatches.push(
@@ -104,7 +107,9 @@ export const index_follows = inngest.createFunction(
             follows: f,
           }));
 
-          await supabaseServerClient.from("bsky_follows").upsert(insertData);
+          return await supabaseServerClient
+            .from("bsky_follows")
+            .upsert(insertData);
         }),
       );
       insertBatchNumber++;
