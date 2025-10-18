@@ -14,7 +14,7 @@ import {
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { BaseTextBlock } from "./BaseTextBlock";
 import { StaticMathBlock } from "./StaticMathBlock";
-import { codeToHtml } from "shiki";
+import { codeToHtml, bundledLanguagesInfo, bundledThemesInfo } from "shiki";
 
 export function StaticPostContent({
   blocks,
@@ -62,10 +62,14 @@ let Block = async ({
       return <StaticMathBlock block={b.block} />;
     }
     case PubLeafletBlocksCode.isMain(b.block): {
-      let html = await codeToHtml(b.block.plaintext, {
-        lang: b.block.language || "plaintext",
-        theme: b.block.syntaxHighlightingTheme || "github-light",
-      });
+      let { language, syntaxHighlightingTheme } = b.block;
+      const lang =
+        bundledLanguagesInfo.find((l) => l.id === language)?.id || "plaintext";
+      const theme =
+        bundledThemesInfo.find((t) => t.id === syntaxHighlightingTheme)?.id ||
+        "github-light";
+
+      let html = await codeToHtml(b.block.plaintext, { lang, theme });
       return (
         <div
           className="w-full min-h-[42px] rounded-md border-border-light outline-border-light selected-outline"
