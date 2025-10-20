@@ -11,6 +11,7 @@ import { Json } from "supabase/database.types";
 
 export async function publishComment(args: {
   document: string;
+  pageId?: string;
   comment: {
     plaintext: string;
     facets: PubLeafletRichtextFacet.Main[];
@@ -28,6 +29,7 @@ export async function publishComment(args: {
   );
   let record: Un$Typed<PubLeafletComment.Record> = {
     subject: args.document,
+    onPage: args.pageId,
     createdAt: new Date().toISOString(),
     plaintext: args.comment.plaintext,
     facets: args.comment.facets,

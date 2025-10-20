@@ -106,7 +106,7 @@ export const Interactions = (props: {
   if (!document_uri)
     throw new Error("document_uri not available in PostPageContext");
 
-  let { drawerOpen, drawer } = useInteractionState(document_uri);
+  let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
 
   return (
     <div
@@ -132,7 +132,7 @@ export const Interactions = (props: {
         <button
           className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
           onClick={() => {
-            if (!drawerOpen || drawer !== "comments")
+            if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
               openInteractionDrawer("comments", document_uri, props.pageId);
             else setInteractionState(document_uri, { drawerOpen: false });
           }}
