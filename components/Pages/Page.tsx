@@ -115,7 +115,7 @@ export const PageWrapper = (props: {
           ${props.isFocused ? "shadow-md border-border" : "border-border-light"}`
       }
       ${props.cardBorderHidden && "sm:h-[calc(100%+48px)] h-[calc(100%+20px)] sm:-my-6 -my-3 sm:pt-6 pt-3"}
-    ${props.fullPageScroll && "max-w-full"}
+      ${props.fullPageScroll && "max-w-full "}
     ${props.pageType === "doc" && !props.fullPageScroll && "w-[10000px] sm:mx-0 max-w-[var(--page-width-units)]"}
     ${
       props.pageType === "canvas" &&
@@ -127,7 +127,13 @@ export const PageWrapper = (props: {
 
 `}
       >
-        {props.children}
+        <div
+          className={`postPageContent
+          ${props.fullPageScroll ? "sm:max-w-[var(--page-width-units)] mx-auto" : "w-full h-full"}
+        `}
+        >
+          {props.children}
+        </div>
       </div>
       {props.pageOptions}
     </div>
