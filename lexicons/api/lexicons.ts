@@ -1661,7 +1661,6 @@ export const schemaDict = {
         properties: {
           uri: {
             type: 'string',
-            format: 'uri',
           },
         },
       },
