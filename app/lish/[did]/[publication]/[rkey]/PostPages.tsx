@@ -72,7 +72,11 @@ export const useInitializeOpenPages = () => {
   }, [quote]);
 };
 
-export const openPage = (parent: string | undefined, page: string) => {
+export const openPage = (
+  parent: string | undefined,
+  page: string,
+  options?: { scrollIntoView?: boolean }
+) => {
   flushSync(() => {
     usePostPageUIState.setState((state) => {
       let parentPosition = state.pages.findIndex((s) => s == parent);
@@ -86,7 +90,9 @@ export const openPage = (parent: string | undefined, page: string) => {
     });
   });
 
-  scrollIntoView(`post-page-${page}`);
+  if (options?.scrollIntoView !== false) {
+    scrollIntoView(`post-page-${page}`);
+  }
 };
 
 export const closePage = (page: string) =>
