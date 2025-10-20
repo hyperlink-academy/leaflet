@@ -25,8 +25,9 @@ export function Pages(props: { rootPage: string }) {
   let queryRoot = params.get("page");
   let firstPage = queryRoot || rootPage?.data.value || props.rootPage;
   let cardBorderHidden = useCardBorderHidden(rootPage.id);
-
-  let fullPageScroll = !!cardBorderHidden && pages.length === 0;
+  let firstPageIsCanvas = useEntity(firstPage, "page/type");
+  let fullPageScroll =
+    !!cardBorderHidden && pages.length === 0 && !firstPageIsCanvas;
 
   return (
     <>

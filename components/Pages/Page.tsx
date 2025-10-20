@@ -33,6 +33,9 @@ export function Page(props: {
     return focusedPageID === props.entityID;
   });
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
+  let canvasNarrow =
+    pageType === "canvas" &&
+    useEntity(props.entityID, "canvas/narrow-width")?.data.value;
   let cardBorderHidden = useCardBorderHidden(props.entityID);
   let drawerOpen = useDrawerOpen(props.entityID);
   return (
@@ -51,6 +54,7 @@ export function Page(props: {
         isFocused={isFocused}
         fullPageScroll={props.fullPageScroll}
         pageType={pageType}
+        canvasNarrow={canvasNarrow}
         pageOptions={
           <PageOptions
             entityID={props.entityID}
@@ -73,7 +77,6 @@ export function Page(props: {
 
 export const PageWrapper = (props: {
   id: string;
-
   children: React.ReactNode;
   pageOptions?: React.ReactNode;
   cardBorderHidden: boolean;
@@ -81,6 +84,7 @@ export const PageWrapper = (props: {
   isFocused?: boolean;
   onClickAction?: (e: React.MouseEvent) => void;
   pageType?: "canvas" | "doc";
+  canvasNarrow?: boolean | undefined;
   drawerOpen: boolean | undefined;
 }) => {
   return (
@@ -100,35 +104,36 @@ export const PageWrapper = (props: {
         className={`
       pageScrollWrapper
       grow
-      w-[10000px] sm:mx-0
+
       shrink-0 snap-center
       overflow-y-scroll
       ${
         !props.cardBorderHidden &&
         `h-full border
           bg-[rgba(var(--bg-page),var(--bg-page-alpha))]
-          ${props.drawerOpen ? "rounded-l-lg " : ""}
+          ${props.drawerOpen ? "rounded-l-lg " : "rounded-lg"}
           ${props.isFocused ? "shadow-md border-border" : "border-border-light"}`
       }
       ${props.cardBorderHidden && "sm:h-[calc(100%+48px)] h-[calc(100%+20px)] sm:-my-6 -my-3 sm:pt-6 pt-3"}
-      }
-      ${props.fullPageScroll ? "max-w-full" : "max-w-[var(--page-width-units)]"}
-    `}
+    ${props.fullPageScroll && "max-w-full"}
+    ${props.pageType === "doc" && !props.fullPageScroll && "w-[10000px] sm:mx-0 max-w-[var(--page-width-units)]"}
+    ${
+      props.pageType === "canvas" &&
+      !props.fullPageScroll &&
+      (props.canvasNarrow
+        ? "w-[10000px] sm:mx-0 max-w-[var(--page-width-units)]"
+        : "sm:max-w-[calc(100vw-128px)] lg:max-w-fit lg:w-[calc(var(--page-width-units)*2 + 24px))]")
+    }
+
+`}
       >
-        {/* this div controls the width of the content*/}
-        <div
-          className={`postPageContent mx-auto h-fit w-full
-          ${props.pageType === "canvas" ? "!lg:max-w-[1152px]" : "sm:max-w-[var(--page-width-units)]"}
-        `}
-        >
-          {props.children}
-        </div>
+        {props.children}
       </div>
       {props.pageOptions}
     </div>
   );
 };
-
+// ${narrowWidth ?  " sm:max-w-(--page-width-units)" : }
 const PageContent = (props: { entityID: string }) => {
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
   if (pageType === "doc") return <DocContent entityID={props.entityID} />;
