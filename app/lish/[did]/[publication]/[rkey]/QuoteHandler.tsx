@@ -124,7 +124,7 @@ export function QuoteHandler() {
     return (
       <div
         id="quote-trigger"
-        className={`accent-container border border-border-light text-accent-contrast px-1 flex gap-1 text-sm justify-center text-center items-center`}
+        className={`z-20 accent-container border border-border-light text-accent-contrast px-1 flex gap-1 text-sm justify-center text-center items-center`}
         style={{
           position: "absolute",
           top: position.top,
