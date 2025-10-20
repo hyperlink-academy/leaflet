@@ -5,7 +5,7 @@ import { getIdentityData } from "actions/getIdentityData";
 import { PubLeafletRichtextFacet } from "lexicons/api";
 import { createOauthClient } from "src/atproto-oauth";
 import { TID } from "@atproto/common";
-import { AtUri, Un$Typed } from "@atproto/api";
+import { AtUri, lexToJson, Un$Typed } from "@atproto/api";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 
@@ -68,7 +68,7 @@ export async function publishComment(args: {
 
   return {
     record: data?.[0].record as Json,
-    profile: profile.value,
+    profile: lexToJson(profile.value),
     uri: uri.toString(),
   };
 }
