@@ -23,15 +23,13 @@ export const InteractionDrawer = (props: {
     (c) => (c.record as any)?.onPage === props.pageId,
   );
 
-  const filteredQuotes = props.pageId
-    ? props.quotes.filter((q) => q.link.includes(props.pageId!))
-    : props.quotes.filter((q) => {
-        const url = new URL(q.link);
-        const quoteParam = url.pathname.split("/l-quote/")[1];
-        if (!quoteParam) return null;
-        const quotePosition = decodeQuotePosition(quoteParam);
-        return !quotePosition?.pageId;
-      });
+  const filteredQuotes = props.quotes.filter((q) => {
+    const url = new URL(q.link);
+    const quoteParam = url.pathname.split("/l-quote/")[1];
+    if (!quoteParam) return null;
+    const quotePosition = decodeQuotePosition(quoteParam);
+    return quotePosition?.pageId === props.pageId;
+  });
 
   return (
     <>

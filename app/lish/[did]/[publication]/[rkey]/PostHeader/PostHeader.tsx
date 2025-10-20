@@ -1,5 +1,9 @@
 "use client";
-import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
+import {
+  PubLeafletComment,
+  PubLeafletDocument,
+  PubLeafletPublication,
+} from "lexicons/api";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { Interactions } from "../Interactions/Interactions";
 import { PostPageData } from "../getPostPageData";
@@ -7,6 +11,7 @@ import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/act
 import { useIdentityData } from "components/IdentityProvider";
 import { EditTiny } from "components/Icons/EditTiny";
 import { SpeedyLink } from "components/SpeedyLink";
+import { decodeQuotePosition } from "../quotePosition";
 
 export function PostHeader(props: {
   data: PostPageData;
@@ -86,8 +91,20 @@ export function PostHeader(props: {
           <Interactions
             showComments={props.preferences.showComments}
             compact
-            quotesCount={document.document_mentions_in_bsky.length}
-            commentsCount={document.comments_on_documents.length}
+            quotesCount={
+              document.document_mentions_in_bsky.filter((q) => {
+                const url = new URL(q.link);
+                const quoteParam = url.pathname.split("/l-quote/")[1];
+                if (!quoteParam) return null;
+                const quotePosition = decodeQuotePosition(quoteParam);
+                return !quotePosition?.pageId;
+              }).length
+            }
+            commentsCount={
+              document.comments_on_documents.filter(
+                (c) => !(c.record as PubLeafletComment.Record)?.onPage,
+              ).length
+            }
           />
         </div>
       </div>

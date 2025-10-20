@@ -75,7 +75,7 @@ export const useInitializeOpenPages = () => {
 export const openPage = (
   parent: string | undefined,
   page: string,
-  options?: { scrollIntoView?: boolean }
+  options?: { scrollIntoView?: boolean },
 ) => {
   flushSync(() => {
     usePostPageUIState.setState((state) => {
@@ -158,7 +158,15 @@ export function PostPages({
         />
         <Interactions
           showComments={preferences.showComments}
-          quotesCount={document.document_mentions_in_bsky.length}
+          quotesCount={
+            document.document_mentions_in_bsky.filter((q) => {
+              const url = new URL(q.link);
+              const quoteParam = url.pathname.split("/l-quote/")[1];
+              if (!quoteParam) return null;
+              const quotePosition = decodeQuotePosition(quoteParam);
+              return !quotePosition?.pageId;
+            }).length
+          }
           commentsCount={
             document.comments_on_documents.filter(
               (c) => !(c.record as PubLeafletComment.Record)?.onPage,
