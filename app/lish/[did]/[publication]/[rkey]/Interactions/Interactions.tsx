@@ -10,8 +10,9 @@ import { useContext } from "react";
 import { PostPageContext } from "../PostPageContext";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 
-type InteractionState = {
+export type InteractionState = {
   drawerOpen: undefined | boolean;
+  pageId?: string;
   drawer: undefined | "comments" | "quotes";
   localComments: Comment[];
   commentBox: { quote: QuotePosition | null };
@@ -84,9 +85,10 @@ export function setInteractionState(
 export function openInteractionDrawer(
   drawer: "comments" | "quotes",
   document_uri: string,
+  pageId?: string,
 ) {
   flushSync(() => {
-    setInteractionState(document_uri, { drawerOpen: true, drawer });
+    setInteractionState(document_uri, { drawerOpen: true, drawer, pageId });
   });
   scrollIntoView("interaction-drawer");
 }
@@ -97,6 +99,7 @@ export const Interactions = (props: {
   compact?: boolean;
   className?: string;
   showComments?: boolean;
+  pageId?: string;
 }) => {
   const data = useContext(PostPageContext);
   const document_uri = data?.uri;
@@ -113,7 +116,7 @@ export const Interactions = (props: {
         className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
         onClick={() => {
           if (!drawerOpen || drawer !== "quotes")
-            openInteractionDrawer("quotes", document_uri);
+            openInteractionDrawer("quotes", document_uri, props.pageId);
           else setInteractionState(document_uri, { drawerOpen: false });
         }}
       >
@@ -130,7 +133,7 @@ export const Interactions = (props: {
           className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
           onClick={() => {
             if (!drawerOpen || drawer !== "comments")
-              openInteractionDrawer("comments", document_uri);
+              openInteractionDrawer("comments", document_uri, props.pageId);
             else setInteractionState(document_uri, { drawerOpen: false });
           }}
         >

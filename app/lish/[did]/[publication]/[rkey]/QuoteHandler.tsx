@@ -212,6 +212,7 @@ export const QuoteOptionButtons = (props: { position: string }) => {
                 setInteractionState(document_uri, {
                   drawer: "comments",
                   drawerOpen: true,
+                  pageId: position.pageId,
                   commentBox: { quote: position },
                 }),
               );

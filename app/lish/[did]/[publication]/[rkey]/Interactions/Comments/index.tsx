@@ -23,11 +23,20 @@ export type Comment = {
   uri: string;
   bsky_profiles: { record: Json } | null;
 };
-export function Comments(props: { document_uri: string; comments: Comment[] }) {
+export function Comments(props: {
+  document_uri: string;
+  comments: Comment[];
+  pageId?: string;
+}) {
   let { identity } = useIdentityData();
   let { localComments } = useInteractionState(props.document_uri);
   let comments = useMemo(() => {
-    return [...localComments, ...props.comments];
+    return [
+      ...localComments.filter(
+        (c) => (c.record as any)?.onPage === props.pageId,
+      ),
+      ...props.comments,
+    ];
   }, [props.comments, localComments]);
   let pathname = usePathname();
   let redirectRoute = useMemo(() => {

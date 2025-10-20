@@ -1,5 +1,6 @@
 "use client";
 import {
+  PubLeafletComment,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
   PubLeafletPublication,
@@ -119,14 +120,14 @@ export function PostPages({
   preferences: { showComments?: boolean };
 }) {
   let { identity } = useIdentityData();
-  let drawerOpen = useDrawerOpen(document_uri);
+  let drawer = useDrawerOpen(document_uri);
   useInitializeOpenPages();
   let pages = useOpenPages();
   if (!document || !document.documents_in_publications[0].publications)
     return null;
 
   let hasPageBackground = !!pubRecord.theme?.showPageBackground;
-  let fullPageScroll = !hasPageBackground && !drawerOpen && pages.length === 0;
+  let fullPageScroll = !hasPageBackground && !drawer && pages.length === 0;
   let record = document.data as PubLeafletDocument.Record;
   return (
     <>
@@ -135,7 +136,7 @@ export function PostPages({
         fullPageScroll={fullPageScroll}
         cardBorderHidden={!hasPageBackground}
         id={"post-page"}
-        drawerOpen={!!drawerOpen}
+        drawerOpen={!!drawer && !drawer.pageId}
       >
         <PostHeader
           data={document}
@@ -152,7 +153,11 @@ export function PostPages({
         <Interactions
           showComments={preferences.showComments}
           quotesCount={document.document_mentions_in_bsky.length}
-          commentsCount={document.comments_on_documents.length}
+          commentsCount={
+            document.comments_on_documents.filter(
+              (c) => !(c.record as PubLeafletComment.Record)?.onPage,
+            ).length
+          }
         />
         <hr className="border-border-light mb-4 mt-4 sm:mx-4 mx-3" />
         <div className="pb-6 sm:px-4 px-3">
@@ -183,16 +188,18 @@ export function PostPages({
         </div>
       </PageWrapper>
 
-      <InteractionDrawer
-        document_uri={document.uri}
-        comments={
-          pubRecord.preferences?.showComments === false
-            ? []
-            : document.comments_on_documents
-        }
-        quotes={document.document_mentions_in_bsky}
-        did={did}
-      />
+      {drawer && !drawer.pageId && (
+        <InteractionDrawer
+          document_uri={document.uri}
+          comments={
+            pubRecord.preferences?.showComments === false
+              ? []
+              : document.comments_on_documents
+          }
+          quotes={document.document_mentions_in_bsky}
+          did={did}
+        />
+      )}
 
       {pages.map((p) => {
         let page = record.pages.find(
@@ -207,7 +214,7 @@ export function PostPages({
               cardBorderHidden={!hasPageBackground}
               id={`post-page-${p}`}
               fullPageScroll={false}
-              drawerOpen={!!drawerOpen}
+              drawerOpen={!!drawer && drawer.pageId === page.id}
               pageOptions={
                 <PageOptions
                   onClick={() => closePage(page?.id!)}
@@ -223,7 +230,36 @@ export function PostPages({
                 did={did}
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
               />
+              <Interactions
+                pageId={page.id}
+                showComments={preferences.showComments}
+                quotesCount={
+                  document.document_mentions_in_bsky.filter((q) =>
+                    q.link.includes(page.id!),
+                  ).length
+                }
+                commentsCount={
+                  document.comments_on_documents.filter(
+                    (c) =>
+                      (c.record as PubLeafletComment.Record)?.onPage ===
+                      page.id,
+                  ).length
+                }
+              />
             </PageWrapper>
+            {drawer && drawer.pageId === page.id && (
+              <InteractionDrawer
+                pageId={page.id}
+                document_uri={document.uri}
+                comments={
+                  pubRecord.preferences?.showComments === false
+                    ? []
+                    : document.comments_on_documents
+                }
+                quotes={document.document_mentions_in_bsky}
+                did={did}
+              />
+            )}
           </Fragment>
         );
       })}

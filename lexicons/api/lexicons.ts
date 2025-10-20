@@ -1325,6 +1325,9 @@ export const schemaDict = {
                 ref: 'lex:pub.leaflet.richtext.facet',
               },
             },
+            onPage: {
+              type: 'string',
+            },
             attachment: {
               type: 'union',
               refs: ['lex:pub.leaflet.comment#linearDocumentQuote'],
@@ -1541,7 +1544,6 @@ export const schemaDict = {
             },
             base_path: {
               type: 'string',
-              format: 'uri',
             },
             description: {
               type: 'string',

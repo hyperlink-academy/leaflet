@@ -17,8 +17,7 @@
             "maxLength": 2000
           },
           "base_path": {
-            "type": "string",
-            "format": "uri"
+            "type": "string"
           },
           "description": {
             "type": "string",
