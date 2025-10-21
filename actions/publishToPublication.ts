@@ -228,6 +228,7 @@ async function processBlocksToPages(
     if (b.type === "card") {
       let [page] = scan.eav(b.value, "block/card");
       if (!page) return;
+      let [pageType] = scan.eav(page.data.value, "page/type");
       let blocks = getBlocksWithTypeLocal(facts, page.data.value);
       pages.push({
         id: page.data.value,

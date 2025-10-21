@@ -369,7 +369,6 @@ export const blockCommands: Command[] = [
     name: "New Canvas",
     icon: <BlockCanvasPageSmall />,
     type: "page",
-    hiddenInPublication: true,
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "card");

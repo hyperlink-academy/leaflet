@@ -73,7 +73,7 @@ export function PostContent({
   );
 }
 
-let Block = ({
+export let Block = ({
   block,
   did,
   isList,
