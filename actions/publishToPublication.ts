@@ -12,6 +12,7 @@ import {
   PubLeafletBlocksUnorderedList,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
+  PubLeafletPagesCanvas,
   PubLeafletRichtextFacet,
   PubLeafletBlocksWebsite,
   PubLeafletBlocksCode,
@@ -95,11 +96,21 @@ export async function publishToPublication({
         $type: "pub.leaflet.pages.linearDocument",
         blocks: firstPageBlocks,
       },
-      ...pages.map((p) => ({
-        $type: "pub.leaflet.pages.linearDocument",
-        id: p.id,
-        blocks: p.blocks,
-      })),
+      ...pages.map((p) => {
+        if (p.type === "canvas") {
+          return {
+            $type: "pub.leaflet.pages.canvas" as const,
+            id: p.id,
+            blocks: p.blocks as PubLeafletPagesCanvas.Block[],
+          };
+        } else {
+          return {
+            $type: "pub.leaflet.pages.linearDocument" as const,
+            id: p.id,
+            blocks: p.blocks as PubLeafletPagesLinearDocument.Block[],
+          };
+        }
+      }),
     ],
   };
   let rkey = draft?.doc ? new AtUri(draft.doc).rkey : TID.nextStr();
@@ -139,8 +150,11 @@ async function processBlocksToPages(
   root_entity: string,
 ) {
   let scan = scanIndexLocal(facts);
-  let pages: { id: string; blocks: PubLeafletPagesLinearDocument.Block[] }[] =
-    [];
+  let pages: {
+    id: string;
+    blocks: PubLeafletPagesLinearDocument.Block[] | PubLeafletPagesCanvas.Block[];
+    type: "doc" | "canvas";
+  }[] = [];
 
   let firstEntity = scan.eav(root_entity, "root/page")?.[0];
   if (!firstEntity) throw new Error("No root page");
@@ -229,11 +243,23 @@ async function processBlocksToPages(
       let [page] = scan.eav(b.value, "block/card");
       if (!page) return;
       let [pageType] = scan.eav(page.data.value, "page/type");
-      let blocks = getBlocksWithTypeLocal(facts, page.data.value);
-      pages.push({
-        id: page.data.value,
-        blocks: await blocksToRecord(blocks),
-      });
+
+      if (pageType?.data.value === "canvas") {
+        let canvasBlocks = await canvasBlocksToRecord(page.data.value);
+        pages.push({
+          id: page.data.value,
+          blocks: canvasBlocks,
+          type: "canvas",
+        });
+      } else {
+        let blocks = getBlocksWithTypeLocal(facts, page.data.value);
+        pages.push({
+          id: page.data.value,
+          blocks: await blocksToRecord(blocks),
+          type: "doc",
+        });
+      }
+
       let block: $Typed<PubLeafletBlocksPage.Main> = {
         $type: "pub.leaflet.blocks.page",
         id: page.data.value,
@@ -359,6 +385,52 @@ async function processBlocksToPages(
       return block;
     }
     return;
+  }
+
+  async function canvasBlocksToRecord(
+    pageID: string,
+  ): Promise<PubLeafletPagesCanvas.Block[]> {
+    let canvasBlocks = scan.eav(pageID, "canvas/block");
+    return (
+      await Promise.all(
+        canvasBlocks.map(async (canvasBlock) => {
+          let blockEntity = canvasBlock.data.value;
+          let position = canvasBlock.data.position;
+
+          // Get the block content
+          let blockType = scan.eav(blockEntity, "block/type")?.[0];
+          if (!blockType) return null;
+
+          let block: Block = {
+            type: blockType.data.value,
+            value: blockEntity,
+            parent: pageID,
+            position: "",
+            factID: canvasBlock.id,
+          };
+
+          let content = await blockToRecord(block);
+          if (!content) return null;
+
+          // Get canvas-specific properties
+          let width =
+            scan.eav(blockEntity, "canvas/block/width")?.[0]?.data.value || 360;
+          let rotation =
+            scan.eav(blockEntity, "canvas/block/rotation")?.[0]?.data.value;
+
+          let canvasBlockRecord: PubLeafletPagesCanvas.Block = {
+            $type: "pub.leaflet.pages.canvas#block",
+            block: content,
+            x: position.x,
+            y: position.y,
+            width,
+            ...(rotation !== undefined && { rotation }),
+          };
+
+          return canvasBlockRecord;
+        }),
+      )
+    ).filter((b): b is PubLeafletPagesCanvas.Block => b !== null);
   }
 }
 

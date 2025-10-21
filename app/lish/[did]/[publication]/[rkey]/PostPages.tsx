@@ -2,6 +2,7 @@
 import {
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
+  PubLeafletPagesCanvas,
   PubLeafletPublication,
 } from "lexicons/api";
 import { PostPageData } from "./getPostPageData";
@@ -21,6 +22,7 @@ import { scrollIntoView } from "src/utils/scrollIntoView";
 import { useParams } from "next/navigation";
 import { decodeQuotePosition } from "./quotePosition";
 import { LinearDocumentPage } from "./LinearDocumentPage";
+import { CanvasPage } from "./CanvasPage";
 
 const usePostPageUIState = create(() => ({
   pages: [] as string[],
@@ -157,30 +159,56 @@ export function PostPages({
 
       {pages.map((p) => {
         let page = record.pages.find(
-          (page) => (page as PubLeafletPagesLinearDocument.Main).id === p,
-        ) as PubLeafletPagesLinearDocument.Main | undefined;
+          (page) =>
+            (page as PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main).id === p,
+        ) as PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main | undefined;
         if (!page) return null;
+
+        const isCanvas = PubLeafletPagesCanvas.isMain(page);
+
         return (
           <Fragment key={p}>
             <SandwichSpacer />
-            <LinearDocumentPage
-              fullPageScroll={false}
-              document={document}
-              blocks={page.blocks}
-              did={did}
-              preferences={preferences}
-              pubRecord={pubRecord}
-              prerenderedCodeBlocks={prerenderedCodeBlocks}
-              bskyPostData={bskyPostData}
-              document_uri={document_uri}
-              pageId={page.id}
-              pageOptions={
-                <PageOptions
-                  onClick={() => closePage(page?.id!)}
-                  hasPageBackground={hasPageBackground}
-                />
-              }
-            />
+            {isCanvas ? (
+              <CanvasPage
+                fullPageScroll={false}
+                document={document}
+                blocks={(page as PubLeafletPagesCanvas.Main).blocks}
+                did={did}
+                preferences={preferences}
+                pubRecord={pubRecord}
+                prerenderedCodeBlocks={prerenderedCodeBlocks}
+                bskyPostData={bskyPostData}
+                document_uri={document_uri}
+                pageId={page.id}
+                pages={record.pages as PubLeafletPagesLinearDocument.Main[]}
+                pageOptions={
+                  <PageOptions
+                    onClick={() => closePage(page?.id!)}
+                    hasPageBackground={hasPageBackground}
+                  />
+                }
+              />
+            ) : (
+              <LinearDocumentPage
+                fullPageScroll={false}
+                document={document}
+                blocks={(page as PubLeafletPagesLinearDocument.Main).blocks}
+                did={did}
+                preferences={preferences}
+                pubRecord={pubRecord}
+                prerenderedCodeBlocks={prerenderedCodeBlocks}
+                bskyPostData={bskyPostData}
+                document_uri={document_uri}
+                pageId={page.id}
+                pageOptions={
+                  <PageOptions
+                    onClick={() => closePage(page?.id!)}
+                    hasPageBackground={hasPageBackground}
+                  />
+                }
+              />
+            )}
             {drawer && drawer.pageId === page.id && (
               <InteractionDrawer
                 pageId={page.id}
