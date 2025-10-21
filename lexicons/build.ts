@@ -21,6 +21,7 @@ const lexicons = [
   PubLeafletComment,
   PubLeafletRichTextFacet,
   PageLexicons.PubLeafletPagesLinearDocument,
+  PageLexicons.PubLeafletPagesCanvasDocument,
   ...ThemeLexicons,
   ...BlockLexicons,
   ...Object.values(PublicationLexicons),

@@ -38,6 +38,7 @@ import * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
 import * as PubLeafletComment from './types/pub/leaflet/comment'
 import * as PubLeafletDocument from './types/pub/leaflet/document'
 import * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
+import * as PubLeafletPagesCanvas from './types/pub/leaflet/pages/canvas'
 import * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
 import * as PubLeafletPublication from './types/pub/leaflet/publication'
 import * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
@@ -73,6 +74,7 @@ export * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
 export * as PubLeafletComment from './types/pub/leaflet/comment'
 export * as PubLeafletDocument from './types/pub/leaflet/document'
 export * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
+export * as PubLeafletPagesCanvas from './types/pub/leaflet/pages/canvas'
 export * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
 export * as PubLeafletPublication from './types/pub/leaflet/publication'
 export * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
@@ -80,6 +82,9 @@ export * as PubLeafletThemeBackgroundImage from './types/pub/leaflet/theme/backg
 export * as PubLeafletThemeColor from './types/pub/leaflet/theme/color'
 
 export const PUB_LEAFLET_PAGES = {
+  CanvasTextAlignLeft: 'pub.leaflet.pages.canvas#textAlignLeft',
+  CanvasTextAlignCenter: 'pub.leaflet.pages.canvas#textAlignCenter',
+  CanvasTextAlignRight: 'pub.leaflet.pages.canvas#textAlignRight',
   LinearDocumentTextAlignLeft: 'pub.leaflet.pages.linearDocument#textAlignLeft',
   LinearDocumentTextAlignCenter:
     'pub.leaflet.pages.linearDocument#textAlignCenter',
