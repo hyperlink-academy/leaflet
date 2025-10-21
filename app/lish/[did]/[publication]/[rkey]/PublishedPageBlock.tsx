@@ -202,8 +202,8 @@ const Interactions = (props: { pageId: string; parentPageId?: string }) => {
               openInteractionDrawer("quotes", document_uri, props.pageId);
             else setInteractionState(document_uri, { drawerOpen: false });
           }}
+          aria-label="Page quotes"
         >
-          <span className="sr-only">Page quotes</span>
           <QuoteTiny aria-hidden /> {quotes}{" "}
         </button>
       )}
@@ -220,8 +220,8 @@ const Interactions = (props: { pageId: string; parentPageId?: string }) => {
               openInteractionDrawer("comments", document_uri, props.pageId);
             else setInteractionState(document_uri, { drawerOpen: false });
           }}
+          aria-label="Page comments"
         >
-          <span className="sr-only">Page comments</span>
           <CommentTiny aria-hidden /> {comments}{" "}
         </button>
       )}

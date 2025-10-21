@@ -217,8 +217,7 @@ export const SubscribeWithBluesky = (props: {
           pub_uri={props.pub_uri}
           setSuccessModalOpen={setSuccessModalOpen}
         />
-        <a href={`${props.base_url}/rss`} className="flex" target="_blank">
-          <span className="sr-only">Subscribe to RSS</span>
+        <a href={`${props.base_url}/rss`} className="flex" target="_blank" aria-label="Subscribe to RSS">
           <RSSSmall className="self-center" aria-hidden />
         </a>
       </div>
@@ -267,8 +266,7 @@ const ManageSubscription = (props: {
             </a>
           )}
 
-          <a href={`${props.base_url}/rss`} className="flex" target="_blank">
-            <span className="sr-only">Subscribe to RSS</span>
+          <a href={`${props.base_url}/rss`} className="flex" target="_blank" aria-label="Subscribe to RSS">
             <ButtonPrimary fullWidth compact>
               Get RSS
             </ButtonPrimary>
