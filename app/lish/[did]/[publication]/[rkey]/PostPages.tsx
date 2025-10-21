@@ -21,7 +21,6 @@ import {
   useDrawerOpen,
 } from "./Interactions/InteractionDrawer";
 import { BookendSpacer, SandwichSpacer } from "components/LeafletLayout";
-import { CSS } from "@react-spring/web";
 import { PageOptionButton } from "components/Pages/PageOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { PageWrapper } from "components/Pages/Page";
@@ -139,6 +138,7 @@ export function PostPages({
     <>
       {!fullPageScroll && <BookendSpacer />}
       <PageWrapper
+        pageType="doc"
         fullPageScroll={fullPageScroll}
         cardBorderHidden={!hasPageBackground}
         id={"post-page"}
@@ -225,6 +225,7 @@ export function PostPages({
             <SandwichSpacer />
             {/*JARED TODO : drawerOpen here is checking whether the drawer is open on the first page, rather than if it's open on this page. Please rewire this when you add drawers per page!*/}
             <PageWrapper
+              pageType="doc"
               cardBorderHidden={!hasPageBackground}
               id={`post-page-${p}`}
               fullPageScroll={false}
