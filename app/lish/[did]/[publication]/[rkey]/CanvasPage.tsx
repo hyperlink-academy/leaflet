@@ -25,6 +25,7 @@ export function CanvasPage({
   pageOptions,
   fullPageScroll,
   pages,
+  display,
 }: {
   document_uri: string;
   document: PostPageData;
@@ -39,6 +40,7 @@ export function CanvasPage({
   pageOptions?: React.ReactNode;
   fullPageScroll: boolean;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
+  display?: { narrowWidth?: boolean };
 }) {
   let hasPageBackground = !!pubRecord.theme?.showPageBackground;
 
@@ -50,6 +52,7 @@ export function CanvasPage({
       id={pageId ? `post-page-${pageId}` : "post-page"}
       drawerOpen={false}
       pageOptions={pageOptions}
+      canvasNarrow={display?.narrowWidth}
     >
       <CanvasContent
         blocks={blocks}
@@ -58,6 +61,7 @@ export function CanvasPage({
         bskyPostData={bskyPostData}
         pageId={pageId}
         pages={pages}
+        narrowWidth={display?.narrowWidth}
       />
     </PageWrapper>
   );
@@ -70,6 +74,7 @@ function CanvasContent({
   bskyPostData,
   pageId,
   pages,
+  narrowWidth,
 }: {
   blocks: PubLeafletPagesCanvas.Block[];
   did: string;
@@ -77,17 +82,27 @@ function CanvasContent({
   bskyPostData: AppBskyFeedDefs.PostView[];
   pageId?: string;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
+  narrowWidth?: boolean;
 }) {
   let height = blocks.length > 0 ? Math.max(...blocks.map((b) => b.y), 0) : 0;
 
+  // Calculate the required width based on the furthest positioned element
+  let width =
+    narrowWidth && blocks.length > 0
+      ? Math.max(...blocks.map((b) => b.x + b.width)) + 32 // Add padding
+      : 1272;
+
   return (
-    <div className="canvasWrapper h-full w-fit overflow-y-scroll">
+    <div
+      className={`canvasWrapper h-full ${narrowWidth ? "w-full overflow-auto" : "w-fit overflow-y-scroll"}`}
+    >
       <div
         style={{
           minHeight: height + 512,
           contain: "size layout paint",
+          width: narrowWidth ? width : undefined,
         }}
-        className="relative h-full w-[1272px]"
+        className={`relative h-full ${narrowWidth ? "min-w-full" : "w-[1272px]"}`}
       >
         <CanvasBackground />
         {blocks

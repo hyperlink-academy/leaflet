@@ -11,6 +11,13 @@ export const PubLeafletPagesCanvasDocument: LexiconDoc = {
       properties: {
         id: { type: "string" },
         blocks: { type: "array", items: { type: "ref", ref: "#block" } },
+        display: { type: "ref", ref: "#display" },
+      },
+    },
+    display: {
+      type: "object",
+      properties: {
+        narrowWidth: { type: "boolean" },
       },
     },
     block: {

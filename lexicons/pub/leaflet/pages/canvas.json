@@ -17,6 +17,18 @@
             "type": "ref",
             "ref": "#block"
           }
+        },
+        "display": {
+          "type": "ref",
+          "ref": "#display"
+        }
+      }
+    },
+    "display": {
+      "type": "object",
+      "properties": {
+        "narrowWidth": {
+          "type": "boolean"
         }
       }
     },
