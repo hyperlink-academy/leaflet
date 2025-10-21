@@ -83,7 +83,7 @@ export const PageWrapper = (props: {
   fullPageScroll: boolean;
   isFocused?: boolean;
   onClickAction?: (e: React.MouseEvent) => void;
-  pageType?: "canvas" | "doc";
+  pageType: "canvas" | "doc";
   canvasNarrow?: boolean | undefined;
   drawerOpen: boolean | undefined;
 }) => {

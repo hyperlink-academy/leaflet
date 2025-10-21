@@ -186,7 +186,9 @@ const Interactions = (props: { pageId: string; parentPageId?: string }) => {
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
 
   return (
-    <div className={`flex gap-2 text-tertiary text-sm`}>
+    <div
+      className={`flex gap-2 text-tertiary text-sm absolute bottom-2 bg-bg-page`}
+    >
       {quotes > 0 && (
         <button
           className={`flex gap-1 items-center`}
