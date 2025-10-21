@@ -38,6 +38,9 @@
               "ref": "pub.leaflet.richtext.facet"
             }
           },
+          "onPage": {
+            "type": "string"
+          },
           "attachment": {
             "type": "union",
             "refs": [

@@ -8,9 +8,11 @@ import type { Comment } from "./Comments";
 import { QuotePosition } from "../quotePosition";
 import { useContext } from "react";
 import { PostPageContext } from "../PostPageContext";
+import { scrollIntoView } from "src/utils/scrollIntoView";
 
-type InteractionState = {
+export type InteractionState = {
   drawerOpen: undefined | boolean;
+  pageId?: string;
   drawer: undefined | "comments" | "quotes";
   localComments: Comment[];
   commentBox: { quote: QuotePosition | null };
@@ -27,9 +29,9 @@ export let useInteractionStateStore = create<{
   [document_uri: string]: InteractionState;
 }>(() => ({}));
 
-export function useInteractionState(document_uri?: string) {
+export function useInteractionState(document_uri: string) {
   return useInteractionStateStore((state) => {
-    if (!document_uri || !state[document_uri]) {
+    if (!state[document_uri]) {
       return defaultInteractionState;
     }
     return state[document_uri];
@@ -83,25 +85,12 @@ export function setInteractionState(
 export function openInteractionDrawer(
   drawer: "comments" | "quotes",
   document_uri: string,
+  pageId?: string,
 ) {
   flushSync(() => {
-    setInteractionState(document_uri, { drawerOpen: true, drawer });
+    setInteractionState(document_uri, { drawerOpen: true, drawer, pageId });
   });
-  let el = document.getElementById("interaction-drawer");
-  let isOffscreen = false;
-  if (el) {
-    const rect = el.getBoundingClientRect();
-    const windowWidth =
-      window.innerWidth || document.documentElement.clientWidth;
-    isOffscreen = rect.right > windowWidth - 64;
-  }
-
-  if (el && isOffscreen)
-    el.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-      inline: "center",
-    });
+  scrollIntoView("interaction-drawer");
 }
 
 export const Interactions = (props: {
@@ -110,27 +99,28 @@ export const Interactions = (props: {
   compact?: boolean;
   className?: string;
   showComments?: boolean;
+  pageId?: string;
 }) => {
   const data = useContext(PostPageContext);
   const document_uri = data?.uri;
   if (!document_uri)
     throw new Error("document_uri not available in PostPageContext");
 
-  let { drawerOpen, drawer } = useInteractionState(document_uri);
+  let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
 
   return (
     <div
-      className={`flex gap-2 text-tertiary ${props.compact ? "text-sm" : ""} ${props.className}`}
+      className={`flex gap-2 text-tertiary ${props.compact ? "text-sm" : "px-3 sm:px-4"} ${props.className}`}
     >
       <button
         className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
         onClick={() => {
           if (!drawerOpen || drawer !== "quotes")
-            openInteractionDrawer("quotes", document_uri);
+            openInteractionDrawer("quotes", document_uri, props.pageId);
           else setInteractionState(document_uri, { drawerOpen: false });
         }}
+        aria-label="Post quotes"
       >
-        <span className="sr-only">Post quotes</span>
         <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
         {!props.compact && (
           <span
@@ -142,12 +132,12 @@ export const Interactions = (props: {
         <button
           className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
           onClick={() => {
-            if (!drawerOpen || drawer !== "comments")
-              openInteractionDrawer("comments", document_uri);
+            if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
+              openInteractionDrawer("comments", document_uri, props.pageId);
             else setInteractionState(document_uri, { drawerOpen: false });
           }}
+          aria-label="Post comments"
         >
-          <span className="sr-only">Post comments</span>
           <CommentTiny aria-hidden /> {props.commentsCount}{" "}
           {!props.compact && (
             <span

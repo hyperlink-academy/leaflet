@@ -17,10 +17,9 @@ import {
 } from "components/ThemeManager/PublicationThemeProvider";
 import { getPostPageData } from "./getPostPageData";
 import { PostPageContextProvider } from "./PostPageContext";
-import { PostPage } from "./PostPage";
-import { PageLayout } from "./PageLayout";
+import { PostPages } from "./PostPages";
 import { extractCodeBlocks } from "./extractCodeBlocks";
-import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
+import { LeafletLayout } from "components/LeafletLayout";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -54,13 +53,13 @@ export default async function Post(props: {
   let did = decodeURIComponent((await props.params).did);
   if (!did)
     return (
-      <NotFoundLayout>
-        <p className="font-bold">Sorry, can&apos;t resolve handle.</p>
+      <div className="p-4 text-lg text-center flex flex-col gap-4">
+        <p>Sorry, can&apos;t resolve handle.</p>
         <p>
           This may be a glitch on our end. If the issue persists please{" "}
           <a href="mailto:contact@leaflet.pub">send us a note</a>.
         </p>
-      </NotFoundLayout>
+      </div>
     );
   let agent = new AtpAgent({
     service: "https://public.api.bsky.app",
@@ -83,13 +82,17 @@ export default async function Post(props: {
   ]);
   if (!document?.data || !document.documents_in_publications[0].publications)
     return (
-      <NotFoundLayout>
-        <p className="font-bold">Sorry, we can't find this post!</p>
-        <p>
-          This may be a glitch on our end. If the issue persists please{" "}
-          <a href="mailto:contact@leaflet.pub">send us a note</a>.
-        </p>
-      </NotFoundLayout>
+      <div className="bg-bg-leaflet h-full p-3 text-center relative">
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-md w-full">
+          <div className=" px-3 py-4 opaque-container  flex flex-col gap-1 mx-2 ">
+            <h3>Sorry, post not found!</h3>
+            <p>
+              This may be a glitch on our end. If the issue persists please{" "}
+              <a href="mailto:contact@leaflet.pub">send us a note</a>.
+            </p>
+          </div>
+        </div>
+      </div>
     );
   let record = document.data as PubLeafletDocument.Record;
   let bskyPosts = record.pages.flatMap((p) => {
@@ -121,7 +124,6 @@ export default async function Post(props: {
   let pubRecord = document.documents_in_publications[0]?.publications
     .record as PubLeafletPublication.Record;
 
-  let hasPageBackground = !!pubRecord.theme?.showPageBackground;
   let prerenderedCodeBlocks = await extractCodeBlocks(blocks);
 
   return (
@@ -152,8 +154,9 @@ export default async function Post(props: {
           on chrome, if you scroll backward, things stop working
           seems like if you use an older browser, sel direction is not a thing yet
            */}
-          <PageLayout>
-            <PostPage
+          <LeafletLayout>
+            <PostPages
+              document_uri={document.uri}
               preferences={pubRecord.preferences || {}}
               pubRecord={pubRecord}
               profile={JSON.parse(JSON.stringify(profile.data))}
@@ -163,17 +166,7 @@ export default async function Post(props: {
               blocks={blocks}
               prerenderedCodeBlocks={prerenderedCodeBlocks}
             />
-            <InteractionDrawer
-              document_uri={document.uri}
-              comments={
-                pubRecord.preferences?.showComments === false
-                  ? []
-                  : document.comments_on_documents
-              }
-              quotes={document.document_mentions_in_bsky}
-              did={did}
-            />
-          </PageLayout>
+          </LeafletLayout>
 
           <QuoteHandler />
         </PublicationBackgroundProvider>

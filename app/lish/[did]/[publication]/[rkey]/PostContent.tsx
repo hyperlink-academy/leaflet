@@ -1,3 +1,4 @@
+"use client";
 import {
   PubLeafletBlocksMath,
   PubLeafletBlocksCode,
@@ -12,18 +13,21 @@ import {
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksIframe,
+  PubLeafletBlocksPage,
 } from "lexicons/api";
+
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { TextBlock } from "./TextBlock";
 import { Popover } from "components/Popover";
 import { theme } from "tailwind.config";
 import { ImageAltSmall } from "components/Icons/ImageAlt";
-import { codeToHtml } from "shiki";
-import Katex from "katex";
 import { StaticMathBlock } from "./StaticMathBlock";
 import { PubCodeBlock } from "./PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./PublishBskyPostBlock";
+import { openPage } from "./PostPages";
+import { PageLinkBlock } from "components/Blocks/PageLinkBlock";
+import { PublishedPageLinkBlock } from "./PublishedPageBlock";
 
 export function PostContent({
   blocks,
@@ -32,22 +36,28 @@ export function PostContent({
   className,
   prerenderedCodeBlocks,
   bskyPostData,
+  pageId,
+  pages,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
+  pageId?: string;
   did: string;
   preview?: boolean;
   className?: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  pages: PubLeafletPagesLinearDocument.Main[];
 }) {
   return (
     <div
-      id="post-content"
-      className={`postContent flex flex-col  pb-1 sm:pb-2 pt-1 sm:pt-2 ${className}`}
+      //The postContent class is important for QuoteHandler
+      className={`postContent flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-1 sm:pb-6 ${className}`}
     >
       {blocks.map((b, index) => {
         return (
           <Block
+            pageId={pageId}
+            pages={pages}
             bskyPostData={bskyPostData}
             block={b}
             did={did}
@@ -72,12 +82,16 @@ let Block = ({
   previousBlock,
   prerenderedCodeBlocks,
   bskyPostData,
+  pageId,
+  pages,
 }: {
+  pageId?: string;
   preview?: boolean;
   index: number[];
   block: PubLeafletPagesLinearDocument.Block;
   did: string;
   isList?: boolean;
+  pages: PubLeafletPagesLinearDocument.Main[];
   previousBlock?: PubLeafletPagesLinearDocument.Block;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
@@ -89,8 +103,13 @@ let Block = ({
       scrollMarginBottom: "4rem",
       wordBreak: "break-word" as React.CSSProperties["wordBreak"],
     },
-    id: preview ? undefined : index.join("."),
+    id: preview
+      ? undefined
+      : pageId
+        ? `${pageId}~${index.join(".")}`
+        : index.join("."),
     "data-index": index.join("."),
+    "data-page-id": pageId,
   };
   let alignment =
     b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignRight"
@@ -104,21 +123,35 @@ let Block = ({
   if (!alignment && PubLeafletBlocksImage.isMain(b.block))
     alignment = "text-center justify-center";
 
-  // non text blocks, they need this padding, pt-3 sm:pt-4, which is applied in each case
   let className = `
     postBlockWrapper
     min-h-7
-    pt-1 pb-2
-    ${isList && "isListItem pb-0! "}
+    mt-1 mb-2
+    ${isList && "isListItem mb-0! "}
     ${alignment}
     `;
 
   switch (true) {
+    case PubLeafletBlocksPage.isMain(b.block): {
+      let id = b.block.id;
+      let page = pages.find((p) => p.id === id);
+      if (!page) return;
+      return (
+        <PublishedPageLinkBlock
+          blocks={page.blocks}
+          pageId={id}
+          parentPageId={pageId}
+          did={did}
+          bskyPostData={bskyPostData}
+          className={className}
+        />
+      );
+    }
     case PubLeafletBlocksBskyPost.isMain(b.block): {
       let uri = b.block.postRef.uri;
       let post = bskyPostData.find((p) => p.uri === uri);
       if (!post) return <div>no prefetched post rip</div>;
-      return <PubBlueskyPostBlock post={post} />;
+      return <PubBlueskyPostBlock post={post} className={className} />;
     }
     case PubLeafletBlocksIframe.isMain(b.block): {
       return (
@@ -140,12 +173,14 @@ let Block = ({
         <ul className="-ml-px sm:ml-[9px] pb-2">
           {b.block.children.map((child, i) => (
             <ListItem
+              pages={pages}
               bskyPostData={bskyPostData}
               index={[...index, i]}
               item={child}
               did={did}
               key={i}
               className={className}
+              pageId={pageId}
             />
           ))}
         </ul>
@@ -165,7 +200,7 @@ let Block = ({
           href={b.block.src}
           target="_blank"
           className={`
-            my-2
+          ${className}
           externalLinkBlock flex relative group/linkBlock
           h-[104px] w-full bg-bg-page overflow-hidden text-primary hover:no-underline no-underline
           hover:border-accent-contrast  shadow-sm
@@ -217,7 +252,7 @@ let Block = ({
             alt={b.block.alt}
             height={b.block.aspectRatio?.height}
             width={b.block.aspectRatio?.width}
-            className={`pt-3! sm:pt-4! rounded-md ${className}`}
+            className={`rounded-lg border border-transparent ${className}`}
             src={blobRefToSrc(b.block.image.ref, did)}
           />
           {b.block.alt && (
@@ -238,7 +273,7 @@ let Block = ({
     }
     case PubLeafletBlocksBlockquote.isMain(b.block): {
       return (
-        // highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
+        // all this margin stuff is a highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
         <blockquote
           className={` blockquote py-0! mb-2! last:mb-3! sm:last:mb-4! first:mt-2! sm:first:pt-3 ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-2!" : "mt-1!"}`}
           {...blockProps}
@@ -248,6 +283,7 @@ let Block = ({
             plaintext={b.block.plaintext}
             index={index}
             preview={preview}
+            pageId={pageId}
           />
         </blockquote>
       );
@@ -260,6 +296,7 @@ let Block = ({
             plaintext={b.block.plaintext}
             index={index}
             preview={preview}
+            pageId={pageId}
           />
         </p>
       );
@@ -267,26 +304,46 @@ let Block = ({
       if (b.block.level === 1)
         return (
           <h2 className={`${className}`} {...blockProps}>
-            <TextBlock {...b.block} index={index} preview={preview} />
+            <TextBlock
+              {...b.block}
+              index={index}
+              preview={preview}
+              pageId={pageId}
+            />
           </h2>
         );
       if (b.block.level === 2)
         return (
           <h3 className={`${className}`} {...blockProps}>
-            <TextBlock {...b.block} index={index} preview={preview} />
+            <TextBlock
+              {...b.block}
+              index={index}
+              preview={preview}
+              pageId={pageId}
+            />
           </h3>
         );
       if (b.block.level === 3)
         return (
           <h4 className={`${className}`} {...blockProps}>
-            <TextBlock {...b.block} index={index} preview={preview} />
+            <TextBlock
+              {...b.block}
+              index={index}
+              preview={preview}
+              pageId={pageId}
+            />
           </h4>
         );
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
         <h6 className={`${className}`} {...blockProps}>
-          <TextBlock {...b.block} index={index} preview={preview} />
+          <TextBlock
+            {...b.block}
+            index={index}
+            preview={preview}
+            pageId={pageId}
+          />
         </h6>
       );
     }
@@ -297,26 +354,29 @@ let Block = ({
 
 function ListItem(props: {
   index: number[];
+  pages: PubLeafletPagesLinearDocument.Main[];
   item: PubLeafletBlocksUnorderedList.ListItem;
   did: string;
   className?: string;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  pageId?: string;
 }) {
   let children = props.item.children?.length ? (
     <ul className="-ml-[7px] sm:ml-[7px]">
       {props.item.children.map((child, index) => (
         <ListItem
+          pages={props.pages}
           bskyPostData={props.bskyPostData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
           key={index}
           className={props.className}
+          pageId={props.pageId}
         />
       ))}
     </ul>
   ) : null;
-
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       <div
@@ -324,11 +384,13 @@ function ListItem(props: {
       />
       <div className="flex flex-col w-full">
         <Block
+          pages={props.pages}
           bskyPostData={props.bskyPostData}
           block={{ block: props.item.content }}
           did={props.did}
           isList
           index={props.index}
+          pageId={props.pageId}
         />
         {children}{" "}
       </div>

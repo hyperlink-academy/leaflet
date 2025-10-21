@@ -23,14 +23,24 @@ export type Comment = {
   uri: string;
   bsky_profiles: { record: Json } | null;
 };
-export function Comments(props: { document_uri: string; comments: Comment[] }) {
+export function Comments(props: {
+  document_uri: string;
+  comments: Comment[];
+  pageId?: string;
+}) {
   let { identity } = useIdentityData();
   let { localComments } = useInteractionState(props.document_uri);
   let comments = useMemo(() => {
-    return [...localComments, ...props.comments];
+    return [
+      ...localComments.filter(
+        (c) => (c.record as any)?.onPage === props.pageId,
+      ),
+      ...props.comments,
+    ];
   }, [props.comments, localComments]);
   let pathname = usePathname();
   let redirectRoute = useMemo(() => {
+    if (typeof window === "undefined") return;
     let url = new URL(pathname, window.location.origin);
     url.searchParams.set("refreshAuth", "");
     url.searchParams.set("interactionDrawer", "comments");
@@ -52,7 +62,7 @@ export function Comments(props: { document_uri: string; comments: Comment[] }) {
         </button>
       </div>
       {identity?.atp_did ? (
-        <CommentBox doc_uri={props.document_uri} />
+        <CommentBox doc_uri={props.document_uri} pageId={props.pageId} />
       ) : (
         <div className="w-full accent-container text-tertiary text-center italic p-3 flex flex-col gap-2">
           Connect a Bluesky account to comment
@@ -79,6 +89,7 @@ export function Comments(props: { document_uri: string; comments: Comment[] }) {
               ?.record as AppBskyActorProfile.Record;
             return (
               <Comment
+                pageId={props.pageId}
                 profile={profile}
                 document={props.document_uri}
                 comment={comment}
@@ -99,6 +110,7 @@ const Comment = (props: {
   comments: Comment[];
   profile?: AppBskyActorProfile.Record;
   record: PubLeafletComment.Record;
+  pageId?: string;
 }) => {
   return (
     <div className="comment">
@@ -130,6 +142,7 @@ const Comment = (props: {
         />
       </pre>
       <Replies
+        pageId={props.pageId}
         comment_uri={props.comment.uri}
         comments={props.comments}
         document={props.document}
@@ -142,6 +155,7 @@ const Replies = (props: {
   comment_uri: string;
   comments: Comment[];
   document: string;
+  pageId?: string;
 }) => {
   let { identity } = useIdentityData();
 
@@ -191,6 +205,7 @@ const Replies = (props: {
       <div className="flex flex-col gap-2">
         {replyBoxOpen && (
           <CommentBox
+            pageId={props.pageId}
             doc_uri={props.document}
             replyTo={props.comment_uri}
             autoFocus={true}
@@ -214,6 +229,7 @@ const Replies = (props: {
               {replies.map((reply) => {
                 return (
                   <Comment
+                    pageId={props.pageId}
                     document={props.document}
                     key={reply.uri}
                     comment={reply}

@@ -140,7 +140,9 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       ) : (
         <Image
           alt={altText || ""}
-          src={new URL(image.data.src).pathname.split("/").slice(5).join("/")}
+          src={
+            "/" + new URL(image.data.src).pathname.split("/").slice(5).join("/")
+          }
           height={image?.data.height}
           width={image?.data.width}
           className={className}

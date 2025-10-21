@@ -11,7 +11,7 @@ export const useActiveHighlightState = create(() => ({
   activeHighlight: null as null | QuotePosition,
 }));
 
-export const useHighlight = (pos: number[]) => {
+export const useHighlight = (pos: number[], pageId?: string) => {
   let doc = useContext(PostPageContext);
   let { quote } = useParams();
   let activeHighlight = useActiveHighlightState(
@@ -23,6 +23,14 @@ export const useHighlight = (pos: number[]) => {
   return highlights
     .map((quotePosition) => {
       if (!quotePosition) return null;
+      // Filter by pageId if provided
+      if (pageId && quotePosition.pageId !== pageId) {
+        return null;
+      }
+      // If highlight has pageId but block doesn't, skip
+      if (quotePosition.pageId && !pageId) {
+        return null;
+      }
       let maxLength = Math.max(
         quotePosition.start.block.length,
         quotePosition.end.block.length,

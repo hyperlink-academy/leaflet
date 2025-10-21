@@ -39,6 +39,7 @@ import { betterIsUrl } from "src/utils/isURL";
 
 export function CommentBox(props: {
   doc_uri: string;
+  pageId?: string;
   replyTo?: string;
   onSubmit?: () => void;
   autoFocus?: boolean;
@@ -56,6 +57,7 @@ export function CommentBox(props: {
     let currentState = view.current.state;
     let [plaintext, facets] = docToFacetedText(currentState.doc);
     let comment = await publishComment({
+      pageId: props.pageId,
       document: props.doc_uri,
       comment: {
         plaintext,
