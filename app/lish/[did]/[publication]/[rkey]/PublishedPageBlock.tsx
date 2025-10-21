@@ -44,7 +44,6 @@ export function PublishedPageLinkBlock(props: {
         bg-bg-page shadow-sm
         flex overflow-clip
         block-border
-        mt-1 mb-2
         ${isOpen && "!border-tertiary"}
         ${props.className}
         `}
