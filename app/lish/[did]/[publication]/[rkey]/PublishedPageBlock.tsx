@@ -46,6 +46,7 @@ export function PublishedPageLinkBlock(props: {
         block-border
         mt-1 mb-2
         ${isOpen && "!border-tertiary"}
+        ${props.className}
         `}
       onClick={(e) => {
         if (e.isDefaultPrevented()) return;

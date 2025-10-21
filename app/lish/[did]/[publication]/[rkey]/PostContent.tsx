@@ -123,12 +123,11 @@ let Block = ({
   if (!alignment && PubLeafletBlocksImage.isMain(b.block))
     alignment = "text-center justify-center";
 
-  // non text blocks, they need this padding, pt-3 sm:pt-4, which is applied in each case
   let className = `
     postBlockWrapper
     min-h-7
-    pt-1 pb-2
-    ${isList && "isListItem pb-0! "}
+    mt-1 mb-2
+    ${isList && "isListItem mb-0! "}
     ${alignment}
     `;
 
@@ -144,6 +143,7 @@ let Block = ({
           parentPageId={pageId}
           did={did}
           bskyPostData={bskyPostData}
+          className={className}
         />
       );
     }
@@ -151,7 +151,7 @@ let Block = ({
       let uri = b.block.postRef.uri;
       let post = bskyPostData.find((p) => p.uri === uri);
       if (!post) return <div>no prefetched post rip</div>;
-      return <PubBlueskyPostBlock post={post} />;
+      return <PubBlueskyPostBlock post={post} className={className} />;
     }
     case PubLeafletBlocksIframe.isMain(b.block): {
       return (
@@ -200,7 +200,7 @@ let Block = ({
           href={b.block.src}
           target="_blank"
           className={`
-            my-2
+          ${className}
           externalLinkBlock flex relative group/linkBlock
           h-[104px] w-full bg-bg-page overflow-hidden text-primary hover:no-underline no-underline
           hover:border-accent-contrast  shadow-sm
@@ -252,7 +252,7 @@ let Block = ({
             alt={b.block.alt}
             height={b.block.aspectRatio?.height}
             width={b.block.aspectRatio?.width}
-            className={`pt-3! sm:pt-4! rounded-md ${className}`}
+            className={`rounded-lg border border-transparent ${className}`}
             src={blobRefToSrc(b.block.image.ref, did)}
           />
           {b.block.alt && (
@@ -273,7 +273,7 @@ let Block = ({
     }
     case PubLeafletBlocksBlockquote.isMain(b.block): {
       return (
-        // highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
+        // all this margin stuff is a highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
         <blockquote
           className={` blockquote py-0! mb-2! last:mb-3! sm:last:mb-4! first:mt-2! sm:first:pt-3 ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-2!" : "mt-1!"}`}
           {...blockProps}
@@ -377,7 +377,6 @@ function ListItem(props: {
       ))}
     </ul>
   ) : null;
-
   return (
     <li className={`pb-0! flex flex-row gap-2`}>
       <div

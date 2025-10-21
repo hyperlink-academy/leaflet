@@ -16,7 +16,11 @@ import {
 } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 import { BlueskyRichText } from "components/Blocks/BlueskyPostBlock/BlueskyRichText";
 
-export const PubBlueskyPostBlock = ({ post }: { post: PostView }) => {
+export const PubBlueskyPostBlock = (props: {
+  post: PostView;
+  className: string;
+}) => {
+  let post = props.post;
   switch (true) {
     case AppBskyFeedDefs.isBlockedPost(post) ||
       AppBskyFeedDefs.isBlockedAuthor(post) ||
@@ -46,6 +50,7 @@ export const PubBlueskyPostBlock = ({ post }: { post: PostView }) => {
       return (
         <div
           className={`
+            ${props.className}
             block-border
             mb-2
       flex flex-col gap-2 relative w-full overflow-hidden group/blueskyPostBlock sm:p-3 p-2 text-sm text-secondary bg-bg-page

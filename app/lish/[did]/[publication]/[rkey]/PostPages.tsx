@@ -174,7 +174,7 @@ export function PostPages({
           }
         />
         <hr className="border-border-light mb-4 mt-4 sm:mx-4 mx-3" />
-        <div className="pb-6 sm:px-4 px-3">
+        <div className="sm:px-4 px-3">
           {identity &&
           identity.atp_did ===
             document.documents_in_publications[0]?.publications
