@@ -152,7 +152,9 @@ async function processBlocksToPages(
   let scan = scanIndexLocal(facts);
   let pages: {
     id: string;
-    blocks: PubLeafletPagesLinearDocument.Block[] | PubLeafletPagesCanvas.Block[];
+    blocks:
+      | PubLeafletPagesLinearDocument.Block[]
+      | PubLeafletPagesCanvas.Block[];
     type: "doc" | "canvas";
   }[] = [];
 
@@ -415,8 +417,8 @@ async function processBlocksToPages(
           // Get canvas-specific properties
           let width =
             scan.eav(blockEntity, "canvas/block/width")?.[0]?.data.value || 360;
-          let rotation =
-            scan.eav(blockEntity, "canvas/block/rotation")?.[0]?.data.value;
+          let rotation = scan.eav(blockEntity, "canvas/block/rotation")?.[0]
+            ?.data.value;
 
           let canvasBlockRecord: PubLeafletPagesCanvas.Block = {
             $type: "pub.leaflet.pages.canvas#block",

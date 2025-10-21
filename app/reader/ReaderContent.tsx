@@ -229,14 +229,12 @@ const PostInterations = (props: {
   return (
     <div className={`flex gap-2 text-tertiary text-sm  items-center`}>
       {props.quotesCount === 0 ? null : (
-        <div className={`flex gap-1 items-center `}>
-          <span className="sr-only">Post quotes</span>
+        <div className={`flex gap-1 items-center `} aria-label="Post quotes">
           <QuoteTiny aria-hidden /> {props.quotesCount}
         </div>
       )}
       {props.showComments === false || props.commentsCount === 0 ? null : (
-        <div className={`flex gap-1 items-center`}>
-          <span className="sr-only">Post comments</span>
+        <div className={`flex gap-1 items-center`} aria-label="Post comments">
           <CommentTiny aria-hidden /> {props.commentsCount}
         </div>
       )}

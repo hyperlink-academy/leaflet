@@ -160,8 +160,15 @@ export function PostPages({
       {pages.map((p) => {
         let page = record.pages.find(
           (page) =>
-            (page as PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main).id === p,
-        ) as PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main | undefined;
+            (
+              page as
+                | PubLeafletPagesLinearDocument.Main
+                | PubLeafletPagesCanvas.Main
+            ).id === p,
+        ) as
+          | PubLeafletPagesLinearDocument.Main
+          | PubLeafletPagesCanvas.Main
+          | undefined;
         if (!page) return null;
 
         const isCanvas = PubLeafletPagesCanvas.isMain(page);

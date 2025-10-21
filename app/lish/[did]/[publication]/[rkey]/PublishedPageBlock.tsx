@@ -254,7 +254,8 @@ const CanvasLinkBlock = (props: {
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) => {
   let pageWidth = `var(--page-width-unitless)`;
-  let height = props.blocks.length > 0 ? Math.max(...props.blocks.map((b) => b.y), 0) : 0;
+  let height =
+    props.blocks.length > 0 ? Math.max(...props.blocks.map((b) => b.y), 0) : 0;
 
   return (
     <div

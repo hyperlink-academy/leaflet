@@ -69,7 +69,7 @@ export default async function Publication(props: {
         publication_rkey={uri.rkey}
         publication_data={publication_data}
       >
-        <PublicationThemeProviderDashboard record={record}>
+        <PublicationThemeProviderDashboard>
           <PublicationDashboard publication={publication} record={record} />
         </PublicationThemeProviderDashboard>
       </PublicationSWRDataProvider>

@@ -119,8 +119,8 @@ export const Interactions = (props: {
             openInteractionDrawer("quotes", document_uri, props.pageId);
           else setInteractionState(document_uri, { drawerOpen: false });
         }}
+        aria-label="Post quotes"
       >
-        <span className="sr-only">Post quotes</span>
         <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
         {!props.compact && (
           <span
@@ -136,8 +136,8 @@ export const Interactions = (props: {
               openInteractionDrawer("comments", document_uri, props.pageId);
             else setInteractionState(document_uri, { drawerOpen: false });
           }}
+          aria-label="Post comments"
         >
-          <span className="sr-only">Post comments</span>
           <CommentTiny aria-hidden /> {props.commentsCount}{" "}
           {!props.compact && (
             <span

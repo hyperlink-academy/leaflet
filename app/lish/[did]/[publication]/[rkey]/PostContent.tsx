@@ -52,7 +52,7 @@ export function PostContent({
   return (
     <div
       //The postContent class is important for QuoteHandler
-      className={`postContent flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-1 sm:pb-2 ${className}`}
+      className={`postContent flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-1 sm:pb-6 ${className}`}
     >
       {blocks.map((b, index) => {
         return (
