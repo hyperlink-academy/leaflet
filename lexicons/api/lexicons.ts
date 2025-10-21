@@ -1185,6 +1185,21 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksPage: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.page',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: {
+            type: 'string',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksText: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.text',
@@ -1310,6 +1325,9 @@ export const schemaDict = {
                 ref: 'lex:pub.leaflet.richtext.facet',
               },
             },
+            onPage: {
+              type: 'string',
+            },
             attachment: {
               type: 'union',
               refs: ['lex:pub.leaflet.comment#linearDocumentQuote'],
@@ -1422,7 +1440,11 @@ export const schemaDict = {
     defs: {
       main: {
         type: 'object',
+        required: ['blocks'],
         properties: {
+          id: {
+            type: 'string',
+          },
           blocks: {
             type: 'array',
             items: {
@@ -1450,6 +1472,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.code',
               'lex:pub.leaflet.blocks.horizontalRule',
               'lex:pub.leaflet.blocks.bskyPost',
+              'lex:pub.leaflet.blocks.page',
             ],
           },
           alignment: {
@@ -1521,7 +1544,6 @@ export const schemaDict = {
             },
             base_path: {
               type: 'string',
-              format: 'uri',
             },
             description: {
               type: 'string',
@@ -1661,7 +1683,6 @@ export const schemaDict = {
         properties: {
           uri: {
             type: 'string',
-            format: 'uri',
           },
         },
       },
@@ -1845,6 +1866,7 @@ export const ids = {
   PubLeafletBlocksIframe: 'pub.leaflet.blocks.iframe',
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksMath: 'pub.leaflet.blocks.math',
+  PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
   PubLeafletBlocksWebsite: 'pub.leaflet.blocks.website',

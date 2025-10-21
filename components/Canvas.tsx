@@ -53,10 +53,7 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
       id={elementId.page(props.entityID).canvasScrollArea}
       className={`
         canvasWrapper
-        h-full w-fit mx-auto
-        max-w-[calc(100vw-12px)]
-        ${!narrowWidth ? "sm:max-w-[calc(100vw-128px)] lg:max-w-[calc(var(--page-width-units)*2 + 24px))]" : " sm:max-w-(--page-width-units)"}
-        rounded-lg
+        h-full w-fit
         overflow-y-scroll
       `}
     >

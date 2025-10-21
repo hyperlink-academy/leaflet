@@ -20,7 +20,7 @@ export function LeafletFooter(props: { entityID: string }) {
   let { data: pub } = useLeafletPublicationData();
 
   return (
-    <Media mobile className="mobileFooter w-full z-10 touch-none -mt-4 ">
+    <Media mobile className="mobileFooter w-full z-10 touch-none -mt-[54px] ">
       {focusedBlock &&
       focusedBlock.entityType == "block" &&
       entity_set.permissions.write ? (

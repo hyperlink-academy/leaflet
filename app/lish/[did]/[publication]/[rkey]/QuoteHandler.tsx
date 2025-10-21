@@ -14,6 +14,8 @@ import { CommentTiny } from "components/Icons/CommentTiny";
 import { setInteractionState } from "./Interactions/Interactions";
 import { PostPageContext } from "./PostPageContext";
 import { PubLeafletPublication } from "lexicons/api";
+import { flushSync } from "react-dom";
+import { scrollIntoView } from "src/utils/scrollIntoView";
 
 export function QuoteHandler() {
   let [position, setPosition] = useState<{
@@ -24,12 +26,19 @@ export function QuoteHandler() {
   useEffect(() => {
     const handleSelectionChange = (e: Event) => {
       const selection = document.getSelection();
-      const postContent = document.getElementById("post-content");
+
+      // Check if selection is within any element with postContent class
       const isWithinPostContent =
-        postContent && selection?.rangeCount && selection.rangeCount > 0
-          ? postContent.contains(
-              selection.getRangeAt(0).commonAncestorContainer,
-            )
+        selection?.rangeCount && selection.rangeCount > 0
+          ? (() => {
+              const range = selection.getRangeAt(0);
+              const ancestor = range.commonAncestorContainer;
+              const element =
+                ancestor.nodeType === Node.ELEMENT_NODE
+                  ? (ancestor as Element)
+                  : ancestor.parentElement;
+              return element?.closest(".postContent") !== null;
+            })()
           : false;
 
       if (!selection || !isWithinPostContent || !selection?.toString())
@@ -88,6 +97,7 @@ export function QuoteHandler() {
         endIndex?.element,
       );
       let position: QuotePosition = {
+        ...(startIndex.pageId && { pageId: startIndex.pageId }),
         start: {
           block: startIndex?.index.split(".").map((i) => parseInt(i)),
           offset: startOffset,
@@ -114,7 +124,7 @@ export function QuoteHandler() {
     return (
       <div
         id="quote-trigger"
-        className={`accent-container border border-border-light text-accent-contrast px-1 flex gap-1 text-sm justify-center text-center items-center`}
+        className={`z-20 accent-container border border-border-light text-accent-contrast px-1 flex gap-1 text-sm justify-center text-center items-center`}
         style={{
           position: "absolute",
           top: position.top,
@@ -145,7 +155,10 @@ export const QuoteOptionButtons = (props: { position: string }) => {
     // Clear existing query parameters
     currentUrl.search = "";
 
-    currentUrl.hash = `#${pos?.start.block.join(".")}_${pos?.start.offset}`;
+    const fragmentId = pos?.pageId
+      ? `${pos.pageId}~${pos.start.block.join(".")}_${pos.start.offset}`
+      : `${pos?.start.block.join(".")}_${pos?.start.offset}`;
+    currentUrl.hash = `#${fragmentId}`;
     return [currentUrl.toString(), pos];
   }, [props.position]);
   let pubRecord = data.documents_in_publications[0]?.publications?.record as
@@ -195,11 +208,15 @@ export const QuoteOptionButtons = (props: { position: string }) => {
             className="flex gap-1 items-center hover:font-bold px-1"
             onClick={() => {
               if (!position) return;
-              setInteractionState(document_uri, {
-                drawer: "comments",
-                drawerOpen: true,
-                commentBox: { quote: position },
-              });
+              flushSync(() =>
+                setInteractionState(document_uri, {
+                  drawer: "comments",
+                  drawerOpen: true,
+                  pageId: position.pageId,
+                  commentBox: { quote: position },
+                }),
+              );
+              scrollIntoView("interaction-drawer");
             }}
           >
             <CommentTiny /> Comment
@@ -210,13 +227,16 @@ export const QuoteOptionButtons = (props: { position: string }) => {
   );
 };
 
-function findDataIndex(node: Node): { index: string; element: Element } | null {
+function findDataIndex(
+  node: Node,
+): { index: string; element: Element; pageId?: string } | null {
   if (node.nodeType === Node.ELEMENT_NODE) {
     const element = node as Element;
     if (element.hasAttribute("data-index")) {
       const index = element.getAttribute("data-index");
       if (index) {
-        return { index, element };
+        const pageId = element.getAttribute("data-page-id") || undefined;
+        return { index, element, pageId };
       }
     }
   }

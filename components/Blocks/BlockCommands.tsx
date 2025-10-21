@@ -330,7 +330,6 @@ export const blockCommands: Command[] = [
     name: "New Page",
     icon: <BlockDocPageSmall />,
     type: "page",
-    hiddenInPublication: true,
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "card");

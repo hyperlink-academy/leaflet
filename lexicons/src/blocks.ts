@@ -19,6 +19,20 @@ export const PubLeafletBlocksText: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksPage: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.page",
+  defs: {
+    main: {
+      type: "object",
+      required: ["id"],
+      properties: {
+        id: { type: "string" },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksBskyPost: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.bskyPost",
@@ -262,6 +276,7 @@ export const BlockLexicons = [
   PubLeafletBlocksCode,
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksBskyPost,
+  PubLeafletBlocksPage,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",

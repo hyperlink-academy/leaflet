@@ -19,6 +19,7 @@ export interface Record {
   reply?: ReplyRef
   plaintext: string
   facets?: PubLeafletRichtextFacet.Main[]
+  onPage?: string
   attachment?: $Typed<LinearDocumentQuote> | { $type: string }
   [k: string]: unknown
 }

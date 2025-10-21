@@ -4,7 +4,13 @@
   "defs": {
     "main": {
       "type": "object",
+      "required": [
+        "blocks"
+      ],
       "properties": {
+        "id": {
+          "type": "string"
+        },
         "blocks": {
           "type": "array",
           "items": {
@@ -33,7 +39,8 @@
             "pub.leaflet.blocks.math",
             "pub.leaflet.blocks.code",
             "pub.leaflet.blocks.horizontalRule",
-            "pub.leaflet.blocks.bskyPost"
+            "pub.leaflet.blocks.bskyPost",
+            "pub.leaflet.blocks.page"
           ]
         },
         "alignment": {

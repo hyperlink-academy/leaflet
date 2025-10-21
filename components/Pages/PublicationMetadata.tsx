@@ -36,13 +36,11 @@ export const PublicationMetadata = ({
     description = pub?.description || "";
   }
   return (
-    <div
-      className={`flex flex-col px-3 sm:px-4 pb-5 ${cardBorderHidden ? "sm:pt-6 pt-0" : "sm:pt-3 pt-2"}`}
-    >
+    <div className={`flex flex-col px-3 sm:px-4 pb-5 sm:pt-3 pt-2`}>
       <div className="flex gap-2">
         <Link
           href={`${getBasePublicationURL(pub.publications)}/dashboard`}
-          className="text-accent-contrast font-bold hover:no-underline"
+          className="leafletMetadata text-accent-contrast font-bold hover:no-underline"
         >
           {pub.publications?.name}
         </Link>

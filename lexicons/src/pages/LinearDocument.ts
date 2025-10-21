@@ -7,7 +7,9 @@ export const PubLeafletPagesLinearDocument: LexiconDoc = {
   defs: {
     main: {
       type: "object",
+      required: ["blocks"],
       properties: {
+        id: { type: "string" },
         blocks: { type: "array", items: { type: "ref", ref: "#block" } },
       },
     },

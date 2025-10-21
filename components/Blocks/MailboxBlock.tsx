@@ -372,67 +372,6 @@ const SubscribeForm = (props: {
   );
 };
 
-export const DraftPostOptions = (props: { mailboxEntity: string }) => {
-  let toaster = useToaster();
-  let draft = useEntity(props.mailboxEntity, "mailbox/draft");
-  let { rep, permission_token } = useReplicache();
-  let entity_set = useEntitySetContext();
-  let pagetitle = usePageTitle(permission_token.root_entity);
-  let subscriber_count = useEntity(
-    props.mailboxEntity,
-    "mailbox/subscriber-count",
-  );
-  if (!draft) return null;
-
-  // once the send button is clicked, close the page and show a toast.
-  return (
-    <div className="flex justify-between items-center text-sm">
-      <div className="flex gap-2">
-        <em>Draft</em>
-      </div>
-      <button
-        className="font-bold text-accent-2 bg-accent-1 border  hover:bg-accent-2 hover:text-accent-1 rounded-md px-2"
-        onClick={async () => {
-          if (!rep) return;
-          let blocks =
-            (await rep?.query((tx) =>
-              getBlocksWithType(tx, draft.data.value),
-            )) || [];
-          let html = (await getBlocksAsHTML(rep, blocks))?.join("\n");
-          await sendPostToSubscribers({
-            title: pagetitle,
-            permission_token,
-            mailboxEntity: props.mailboxEntity,
-            messageEntity: draft.data.value,
-            contents: {
-              html,
-              markdown: htmlToMarkdown(html),
-            },
-          });
-
-          rep?.mutate.archiveDraft({
-            entity_set: entity_set.set,
-            mailboxEntity: props.mailboxEntity,
-            newBlockEntity: v7(),
-            archiveEntity: v7(),
-          });
-
-          toaster({
-            content: <div className="font-bold">Sent Post to Readers!</div>,
-            type: "success",
-          });
-        }}
-      >
-        Send
-        {!subscriber_count ||
-          (subscriber_count.data.value !== 0 &&
-            ` to ${subscriber_count.data.value} Reader${subscriber_count.data.value === 1 ? "" : "s"}`)}
-        !
-      </button>
-    </div>
-  );
-};
-
 const GoToArchive = (props: {
   entityID: string;
   parent: string;
