@@ -45,6 +45,7 @@ export function PublishedPageLinkBlock(props: {
         flex overflow-clip
         block-border
         ${isOpen && "!border-tertiary"}
+        ${props.className}
         `}
       onClick={(e) => {
         if (e.isDefaultPrevented()) return;
