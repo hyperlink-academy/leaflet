@@ -33,9 +33,8 @@ export function Page(props: {
     return focusedPageID === props.entityID;
   });
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
-  let canvasNarrow =
-    pageType === "canvas" &&
-    useEntity(props.entityID, "canvas/narrow-width")?.data.value;
+  let canvasNarrow = useEntity(props.entityID, "canvas/narrow-width")?.data
+    .value;
   let cardBorderHidden = useCardBorderHidden(props.entityID);
   let drawerOpen = useDrawerOpen(props.entityID);
   return (
