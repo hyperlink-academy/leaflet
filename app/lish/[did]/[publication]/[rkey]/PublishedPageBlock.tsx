@@ -161,6 +161,7 @@ export function PagePreview(props: {
           />
         )}
         <PostContent
+          pollData={[]}
           pages={[]}
           did={props.did}
           blocks={props.blocks}
