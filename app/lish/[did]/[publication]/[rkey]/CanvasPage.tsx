@@ -10,6 +10,16 @@ import { AppBskyFeedDefs } from "@atproto/api";
 import { PageWrapper } from "components/Pages/Page";
 import { Block } from "./PostContent";
 import { CanvasBackgroundPattern } from "components/Canvas";
+import {
+  getCommentCount,
+  getQuoteCount,
+  Interactions,
+} from "./Interactions/Interactions";
+import { Separator } from "components/Layout";
+import { Popover } from "components/Popover";
+import { InfoSmall } from "components/Icons/InfoSmall";
+import { PostHeader } from "./PostHeader/PostHeader";
+import { useDrawerOpen } from "./Interactions/InteractionDrawer";
 
 export function CanvasPage({
   document,
@@ -29,7 +39,7 @@ export function CanvasPage({
   document_uri: string;
   document: PostPageData;
   blocks: PubLeafletPagesCanvas.Block[];
-  profile?: ProfileViewDetailed;
+  profile: ProfileViewDetailed;
   pubRecord: PubLeafletPublication.Record;
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;
@@ -41,6 +51,8 @@ export function CanvasPage({
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
   let hasPageBackground = !!pubRecord.theme?.showPageBackground;
+  let isSubpage = !!pageId;
+  let drawer = useDrawerOpen(document_uri);
 
   return (
     <PageWrapper
@@ -48,9 +60,20 @@ export function CanvasPage({
       fullPageScroll={fullPageScroll}
       cardBorderHidden={!hasPageBackground}
       id={pageId ? `post-page-${pageId}` : "post-page"}
-      drawerOpen={false}
+      drawerOpen={
+        !!drawer && (pageId ? drawer.pageId === pageId : !drawer.pageId)
+      }
       pageOptions={pageOptions}
     >
+      <CanvasMetadata
+        pageId={pageId}
+        isSubpage={isSubpage}
+        data={document}
+        profile={profile}
+        preferences={preferences}
+        commentsCount={getCommentCount(document, pageId)}
+        quotesCount={getQuoteCount(document, pageId)}
+      />
       <CanvasContent
         blocks={blocks}
         did={did}
@@ -90,6 +113,7 @@ function CanvasContent({
         className="relative h-full w-[1272px]"
       >
         <CanvasBackground />
+
         {blocks
           .sort((a, b) => {
             if (a.y === b.y) {
@@ -167,6 +191,45 @@ function CanvasBlock({
     </div>
   );
 }
+
+const CanvasMetadata = (props: {
+  pageId: string | undefined;
+  isSubpage: boolean | undefined;
+  data: PostPageData;
+  profile: ProfileViewDetailed;
+  preferences: { showComments?: boolean };
+  quotesCount: number | undefined;
+  commentsCount: number | undefined;
+}) => {
+  return (
+    <div className="flex flex-row gap-3 items-center absolute sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
+      <Interactions
+        quotesCount={props.quotesCount || 0}
+        commentsCount={props.commentsCount || 0}
+        compact
+        showComments={props.preferences.showComments}
+        pageId={props.pageId}
+      />
+      {!props.isSubpage && (
+        <>
+          <Separator classname="h-5" />
+          <Popover
+            side="left"
+            align="start"
+            className="flex flex-col gap-2 p-0! max-w-sm w-[1000px]"
+            trigger={<InfoSmall />}
+          >
+            <PostHeader
+              data={props.data}
+              profile={props.profile}
+              preferences={props.preferences}
+            />
+          </Popover>
+        </>
+      )}
+    </div>
+  );
+};
 
 const CanvasBackground = () => {
   return (

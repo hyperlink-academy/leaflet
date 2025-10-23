@@ -61,10 +61,10 @@ export function Page(props: {
       >
         {props.first && (
           <>
-            <PublicationMetadata cardBorderHidden={!!cardBorderHidden} />
+            <PublicationMetadata />
           </>
         )}
-        <PageContent entityID={props.entityID} />
+        <PageContent entityID={props.entityID} first={props.first} />
       </PageWrapper>
       <DesktopPageFooter pageID={props.entityID} />
     </CardThemeProvider>
@@ -134,10 +134,10 @@ export const PageWrapper = (props: {
   );
 };
 
-const PageContent = (props: { entityID: string }) => {
+const PageContent = (props: { entityID: string; first?: boolean }) => {
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
   if (pageType === "doc") return <DocContent entityID={props.entityID} />;
-  return <Canvas entityID={props.entityID} />;
+  return <Canvas entityID={props.entityID} first={props.first} />;
 };
 
 const DocContent = (props: { entityID: string }) => {

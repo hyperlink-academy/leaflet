@@ -10,7 +10,11 @@ import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/act
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
 import { EditTiny } from "components/Icons/EditTiny";
-import { Interactions } from "./Interactions/Interactions";
+import {
+  getCommentCount,
+  getQuoteCount,
+  Interactions,
+} from "./Interactions/Interactions";
 import { PostContent } from "./PostContent";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { useIdentityData } from "components/IdentityProvider";
@@ -87,29 +91,8 @@ export function LinearDocumentPage({
         <Interactions
           pageId={pageId}
           showComments={preferences.showComments}
-          quotesCount={
-            pageId
-              ? document.document_mentions_in_bsky.filter((q) =>
-                  q.link.includes(pageId),
-                ).length
-              : document.document_mentions_in_bsky.filter((q) => {
-                  const url = new URL(q.link);
-                  const quoteParam = url.pathname.split("/l-quote/")[1];
-                  if (!quoteParam) return null;
-                  const quotePosition = decodeQuotePosition(quoteParam);
-                  return !quotePosition?.pageId;
-                }).length
-          }
-          commentsCount={
-            pageId
-              ? document.comments_on_documents.filter(
-                  (c) =>
-                    (c.record as PubLeafletComment.Record)?.onPage === pageId,
-                ).length
-              : document.comments_on_documents.filter(
-                  (c) => !(c.record as PubLeafletComment.Record)?.onPage,
-                ).length
-          }
+          commentsCount={getCommentCount(document, pageId) || 0}
+          quotesCount={getQuoteCount(document, pageId) || 0}
         />
         {!isSubpage && (
           <>

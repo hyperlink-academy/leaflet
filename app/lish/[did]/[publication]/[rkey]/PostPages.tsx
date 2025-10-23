@@ -183,6 +183,7 @@ export function PostPages({
                 blocks={(page as PubLeafletPagesCanvas.Main).blocks}
                 did={did}
                 preferences={preferences}
+                profile={profile}
                 pubRecord={pubRecord}
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
                 bskyPostData={bskyPostData}
