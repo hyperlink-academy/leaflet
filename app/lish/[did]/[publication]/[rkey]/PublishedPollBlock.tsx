@@ -20,6 +20,10 @@ export const PublishedPollBlock = (props: {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isVoting, setIsVoting] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [optimisticVote, setOptimisticVote] = useState<{
+    option: string;
+    voter_did: string;
+  } | null>(null);
   let pollRecord = props.pollData.record as PubLeafletPollDefinition.Record;
   let [isClient, setIsClient] = useState(false);
   useEffect(() => {
@@ -27,9 +31,17 @@ export const PublishedPollBlock = (props: {
   }, []);
 
   const handleVote = async () => {
-    if (!selectedOption) return;
+    if (!selectedOption || !identity?.atp_did) return;
 
     setIsVoting(true);
+
+    // Optimistically add the vote
+    setOptimisticVote({
+      option: selectedOption,
+      voter_did: identity.atp_did,
+    });
+    setShowResults(true);
+
     try {
       const result = await voteOnPublishedPoll(
         props.block.pollRef.uri,
@@ -37,13 +49,17 @@ export const PublishedPollBlock = (props: {
         selectedOption,
       );
 
-      if (result.success) {
-        setShowResults(true);
-      } else {
+      if (!result.success) {
         console.error("Failed to vote:", result.error);
+        // Revert optimistic update on failure
+        setOptimisticVote(null);
+        setShowResults(false);
       }
     } catch (error) {
       console.error("Failed to vote:", error);
+      // Revert optimistic update on failure
+      setOptimisticVote(null);
+      setShowResults(false);
     } finally {
       setIsVoting(false);
     }
@@ -51,9 +67,10 @@ export const PublishedPollBlock = (props: {
 
   const hasVoted =
     !!identity?.atp_did &&
-    !!props.pollData?.atp_poll_votes.find(
+    (!!props.pollData?.atp_poll_votes.find(
       (v) => v.voter_did === identity?.atp_did,
-    );
+    ) ||
+      !!optimisticVote);
   const displayResults = showResults || hasVoted;
 
   return (
@@ -69,6 +86,7 @@ export const PublishedPollBlock = (props: {
           pollData={props.pollData}
           hasVoted={hasVoted}
           setShowResults={setShowResults}
+          optimisticVote={optimisticVote}
         />
       ) : (
         <>
@@ -79,6 +97,7 @@ export const PublishedPollBlock = (props: {
               optionIndex={index.toString()}
               selected={selectedOption === index.toString()}
               onSelect={() => setSelectedOption(index.toString())}
+              disabled={!identity?.atp_did}
             />
           ))}
           <div className="flex justify-between items-center">
@@ -130,6 +149,7 @@ const PollOptionButton = (props: {
   optionIndex: string;
   selected: boolean;
   onSelect: () => void;
+  disabled?: boolean;
 }) => {
   const ButtonComponent = props.selected ? ButtonPrimary : ButtonSecondary;
 
@@ -138,6 +158,7 @@ const PollOptionButton = (props: {
       <ButtonComponent
         className="pollOption grow max-w-full flex"
         onClick={props.onSelect}
+        disabled={props.disabled}
       >
         {props.option.text}
       </ButtonComponent>
@@ -149,21 +170,36 @@ const PollResults = (props: {
   pollData: PollData;
   hasVoted: boolean;
   setShowResults: (show: boolean) => void;
+  optimisticVote: { option: string; voter_did: string } | null;
 }) => {
-  const totalVotes = props.pollData.atp_poll_votes.length || 0;
+  // Merge optimistic vote with actual votes
+  const allVotes = props.optimisticVote
+    ? [
+        ...props.pollData.atp_poll_votes,
+        {
+          option: props.optimisticVote.option,
+          voter_did: props.optimisticVote.voter_did,
+          poll_uri: "",
+          poll_cid: "",
+          uri: "",
+          record: {},
+          indexed_at: "",
+        },
+      ]
+    : props.pollData.atp_poll_votes;
+
+  const totalVotes = allVotes.length || 0;
   let pollRecord = props.pollData.record as PubLeafletPollDefinition.Record;
   let optionsWithCount = pollRecord.options.map((o, index) => ({
     ...o,
-    votes: props.pollData.atp_poll_votes.filter(
-      (v) => v.option == index.toString(),
-    ),
+    votes: allVotes.filter((v) => v.option == index.toString()),
   }));
 
   const highestVotes = Math.max(...optionsWithCount.map((o) => o.votes.length));
   return (
     <>
       {pollRecord.options.map((option, index) => {
-        const votes = props.pollData?.atp_poll_votes.filter(
+        const votes = allVotes.filter(
           (v) => v.option === index.toString(),
         ).length;
         const isWinner = totalVotes > 0 && votes === highestVotes;
