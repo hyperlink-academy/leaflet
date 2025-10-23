@@ -277,7 +277,7 @@ export function BlueskyPostEditorProsemirror(props: {
       )}
       <div
         ref={mountRef}
-        className="border-none outline-none whitespace-pre-wrap min-h-[80px] max-h-[200px] overflow-y-auto prose-sm"
+        className="border-none outline-none whitespace-pre-wrap max-h-[240px] overflow-y-auto prose-sm"
         style={{
           wordWrap: "break-word",
           overflowWrap: "break-word",
