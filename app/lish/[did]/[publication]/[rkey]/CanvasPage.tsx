@@ -202,7 +202,7 @@ const CanvasMetadata = (props: {
   commentsCount: number | undefined;
 }) => {
   return (
-    <div className="flex flex-row gap-3 items-center absolute sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
+    <div className="flex flex-row gap-3 items-center absolute top-6 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
       <Interactions
         quotesCount={props.quotesCount || 0}
         commentsCount={props.commentsCount || 0}

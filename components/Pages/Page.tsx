@@ -99,7 +99,6 @@ export const PageWrapper = (props: {
         className={`
       pageScrollWrapper
       grow
-
       shrink-0 snap-center
       overflow-y-scroll
       ${
@@ -115,7 +114,7 @@ export const PageWrapper = (props: {
     ${
       props.pageType === "canvas" &&
       !props.fullPageScroll &&
-      "max-w-[100vw] sm:max-w-[calc(100vw-128px)] lg:max-w-fit lg:w-[calc(var(--page-width-units)*2 + 24px))]"
+      "max-w-[var(--page-width-units)] sm:max-w-[calc(100vw-128px)] lg:max-w-fit lg:w-[calc(var(--page-width-units)*2 + 24px))]"
     }
 
 `}
@@ -126,7 +125,6 @@ export const PageWrapper = (props: {
         `}
         >
           {props.children}
-          <div className="h-4 sm:h-6 w-full" />
         </div>
       </div>
       {props.pageOptions}
@@ -203,6 +201,7 @@ const DocContent = (props: { entityID: string }) => {
         />
       ) : null}
       <Blocks entityID={props.entityID} />
+      <div className="h-4 sm:h-6 w-full" />
       {/* we handle page bg in this sepate div so that
     we can apply an opacity the background image
     without affecting the opacity of the rest of the page */}

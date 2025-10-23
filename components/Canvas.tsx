@@ -25,6 +25,7 @@ import {
   PubLeafletPublication,
   PubLeafletPublicationRecord,
 } from "lexicons/api";
+import { getCommentCount } from "app/lish/[did]/[publication]/[rkey]/Interactions/Interactions";
 
 export function Canvas(props: {
   entityID: string;
@@ -71,7 +72,7 @@ export function Canvas(props: {
     >
       <AddCanvasBlockButton entityID={props.entityID} entity_set={entity_set} />
 
-      <CanvasMetadata isSubpage={props.first} />
+      <CanvasMetadata isSubpage={!props.first} />
 
       <CanvasContent {...props} />
     </div>
@@ -158,8 +159,7 @@ const CanvasMetadata = (props: { isSubpage: boolean | undefined }) => {
   let showComments = pubRecord.preferences?.showComments;
 
   return (
-    <div className="flex flex-row gap-3 items-center absolute sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
-      {/*ONLY IF SHOW COMMENTS PREF IS ON*/}
+    <div className="flex flex-row gap-3 items-center absolute top-6 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
       {showComments && (
         <div className="flex gap-1 text-tertiary items-center">
           <CommentTiny className="text-border" /> —
