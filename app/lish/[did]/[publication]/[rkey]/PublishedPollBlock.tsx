@@ -71,6 +71,8 @@ export const PublishedPollBlock = (props: {
       (v) => v.voter_did === identity?.atp_did,
     ) ||
       !!optimisticVote);
+  let isCreator =
+    identity?.atp_did && props.pollData.uri.includes(identity?.atp_did);
   const displayResults = showResults || hasVoted;
 
   return (
@@ -82,12 +84,24 @@ export const PublishedPollBlock = (props: {
       }}
     >
       {displayResults ? (
-        <PollResults
-          pollData={props.pollData}
-          hasVoted={hasVoted}
-          setShowResults={setShowResults}
-          optimisticVote={optimisticVote}
-        />
+        <>
+          <PollResults
+            pollData={props.pollData}
+            hasVoted={hasVoted}
+            setShowResults={setShowResults}
+            optimisticVote={optimisticVote}
+          />
+          {isCreator && !hasVoted && (
+            <div className="flex justify-start">
+              <button
+                className="w-fit flex gap-2 items-center justify-start text-sm text-accent-contrast"
+                onClick={() => setShowResults(false)}
+              >
+                Back to Voting
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <>
           {pollRecord.options.map((option, index) => (
@@ -102,7 +116,7 @@ export const PublishedPollBlock = (props: {
           ))}
           <div className="flex justify-between items-center">
             <div className="flex justify-end gap-2">
-              {identity?.atp_did && (
+              {isCreator && (
                 <button
                   className="w-fit flex gap-2 items-center justify-start text-sm text-accent-contrast"
                   onClick={() => setShowResults(!showResults)}
