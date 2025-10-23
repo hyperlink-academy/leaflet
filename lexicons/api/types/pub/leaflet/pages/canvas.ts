@@ -30,7 +30,6 @@ export interface Main {
   $type?: 'pub.leaflet.pages.canvas'
   id?: string
   blocks: Block[]
-  display?: Display
 }
 
 const hashMain = 'main'
@@ -41,21 +40,6 @@ export function isMain<V>(v: V) {
 
 export function validateMain<V>(v: V) {
   return validate<Main & V>(v, id, hashMain)
-}
-
-export interface Display {
-  $type?: 'pub.leaflet.pages.canvas#display'
-  narrowWidth?: boolean
-}
-
-const hashDisplay = 'display'
-
-export function isDisplay<V>(v: V) {
-  return is$typed(v, id, hashDisplay)
-}
-
-export function validateDisplay<V>(v: V) {
-  return validate<Display & V>(v, id, hashDisplay)
 }
 
 export interface Block {

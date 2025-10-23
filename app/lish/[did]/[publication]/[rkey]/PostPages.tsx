@@ -189,7 +189,6 @@ export function PostPages({
                 document_uri={document_uri}
                 pageId={page.id}
                 pages={record.pages as PubLeafletPagesLinearDocument.Main[]}
-                display={(page as PubLeafletPagesCanvas.Main).display}
                 pageOptions={
                   <PageOptions
                     onClick={() => closePage(page?.id!)}

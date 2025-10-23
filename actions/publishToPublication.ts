@@ -102,7 +102,6 @@ export async function publishToPublication({
             $type: "pub.leaflet.pages.canvas" as const,
             id: p.id,
             blocks: p.blocks as PubLeafletPagesCanvas.Block[],
-            display: p.display,
           };
         } else {
           return {
@@ -157,7 +156,6 @@ async function processBlocksToPages(
       | PubLeafletPagesLinearDocument.Block[]
       | PubLeafletPagesCanvas.Block[];
     type: "doc" | "canvas";
-    display?: { narrowWidth?: boolean };
   }[] = [];
 
   let firstEntity = scan.eav(root_entity, "root/page")?.[0];
@@ -250,13 +248,10 @@ async function processBlocksToPages(
 
       if (pageType?.data.value === "canvas") {
         let canvasBlocks = await canvasBlocksToRecord(page.data.value);
-        let narrowWidth = scan.eav(page.data.value, "canvas/narrow-width")?.[0]
-          ?.data.value;
         pages.push({
           id: page.data.value,
           blocks: canvasBlocks,
           type: "canvas",
-          display: narrowWidth ? { narrowWidth: true } : undefined,
         });
       } else {
         let blocks = getBlocksWithTypeLocal(facts, page.data.value);

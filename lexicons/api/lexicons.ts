@@ -1455,18 +1455,6 @@ export const schemaDict = {
               ref: 'lex:pub.leaflet.pages.canvas#block',
             },
           },
-          display: {
-            type: 'ref',
-            ref: 'lex:pub.leaflet.pages.canvas#display',
-          },
-        },
-      },
-      display: {
-        type: 'object',
-        properties: {
-          narrowWidth: {
-            type: 'boolean',
-          },
         },
       },
       block: {
