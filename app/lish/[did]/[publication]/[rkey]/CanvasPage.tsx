@@ -104,7 +104,7 @@ function CanvasContent({
   let height = blocks.length > 0 ? Math.max(...blocks.map((b) => b.y), 0) : 0;
 
   return (
-    <div className="canvasWrapper h-full w-fit overflow-y-scroll">
+    <div className="canvasWrapper h-full w-fit overflow-y-scroll postContent">
       <div
         style={{
           minHeight: height + 512,
