@@ -16,7 +16,7 @@ export function DesktopPageFooter(props: { pageID: string }) {
   return (
     <Media
       mobile={false}
-      className="absolute bottom-4 w-full z-10 pointer-events-none"
+      className="absolute bottom-[40px] w-full z-10 pointer-events-none"
     >
       {focusedEntity &&
         focusedEntity.entityType === "block" &&
