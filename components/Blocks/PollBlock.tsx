@@ -8,12 +8,16 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { theme } from "tailwind.config";
 import { useEntity, useReplicache } from "src/replicache";
 import { v7 } from "uuid";
-import { usePollData } from "components/PageSWRDataProvider";
+import {
+  useLeafletPublicationData,
+  usePollData,
+} from "components/PageSWRDataProvider";
 import { voteOnPoll } from "actions/pollActions";
 import { create } from "zustand";
 import { elementId } from "src/utils/elementId";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { CloseTiny } from "components/Icons/CloseTiny";
+import { PublicationPollBlock } from "./PublicationPollBlock";
 
 export let usePollBlockUIState = create(
   () =>
@@ -21,7 +25,14 @@ export let usePollBlockUIState = create(
       [entity: string]: { state: "editing" | "voting" | "results" } | undefined;
     },
 );
+
 export const PollBlock = (props: BlockProps) => {
+  let { data: pub } = useLeafletPublicationData();
+  if (!pub) return <LeafletPollBlock {...props} />;
+  return <PublicationPollBlock {...props} />;
+};
+
+export const LeafletPollBlock = (props: BlockProps) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );

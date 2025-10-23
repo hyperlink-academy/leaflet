@@ -1200,6 +1200,22 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksPoll: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.poll',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['pollRef'],
+        properties: {
+          pollRef: {
+            type: 'ref',
+            ref: 'lex:com.atproto.repo.strongRef',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksText: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.text',
@@ -1473,6 +1489,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.horizontalRule',
               'lex:pub.leaflet.blocks.bskyPost',
               'lex:pub.leaflet.blocks.page',
+              'lex:pub.leaflet.blocks.poll',
             ],
           },
           alignment: {
@@ -1521,6 +1538,73 @@ export const schemaDict = {
           },
           offset: {
             type: 'integer',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletPollDefinition: {
+    lexicon: 1,
+    id: 'pub.leaflet.poll.definition',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description: 'Record declaring a poll',
+        record: {
+          type: 'object',
+          required: ['name', 'options'],
+          properties: {
+            name: {
+              type: 'string',
+              maxLength: 500,
+              maxGraphemes: 100,
+            },
+            options: {
+              type: 'array',
+              items: {
+                type: 'ref',
+                ref: 'lex:pub.leaflet.poll.definition#option',
+              },
+            },
+            endDate: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+      option: {
+        type: 'object',
+        properties: {
+          text: {
+            type: 'string',
+            maxLength: 500,
+            maxGraphemes: 50,
+          },
+        },
+      },
+    },
+  },
+  PubLeafletPollVote: {
+    lexicon: 1,
+    id: 'pub.leaflet.poll.vote',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description: 'Record declaring a vote on a poll',
+        record: {
+          type: 'object',
+          required: ['poll', 'option'],
+          properties: {
+            poll: {
+              type: 'ref',
+              ref: 'lex:com.atproto.repo.strongRef',
+            },
+            option: {
+              type: 'string',
+            },
           },
         },
       },
@@ -1867,6 +1951,7 @@ export const ids = {
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksMath: 'pub.leaflet.blocks.math',
   PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
+  PubLeafletBlocksPoll: 'pub.leaflet.blocks.poll',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
   PubLeafletBlocksWebsite: 'pub.leaflet.blocks.website',
@@ -1874,6 +1959,8 @@ export const ids = {
   PubLeafletDocument: 'pub.leaflet.document',
   PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
   PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
+  PubLeafletPollDefinition: 'pub.leaflet.poll.definition',
+  PubLeafletPollVote: 'pub.leaflet.poll.vote',
   PubLeafletPublication: 'pub.leaflet.publication',
   PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
   PubLeafletThemeBackgroundImage: 'pub.leaflet.theme.backgroundImage',

@@ -21,6 +21,8 @@ import {
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksIframe,
   PubLeafletBlocksPage,
+  PubLeafletBlocksPoll,
+  PubLeafletPollDefinition,
 } from "lexicons/api";
 import { Block } from "components/Blocks/Block";
 import { TID } from "@atproto/common";
@@ -78,6 +80,7 @@ export async function publishToPublication({
     facts,
     agent,
     root_entity,
+    credentialSession.did!,
   );
 
   let existingRecord =
@@ -137,6 +140,7 @@ async function processBlocksToPages(
   facts: Fact<any>[],
   agent: AtpBaseClient,
   root_entity: string,
+  did: string,
 ) {
   let scan = scanIndexLocal(facts);
   let pages: { id: string; blocks: PubLeafletPagesLinearDocument.Block[] }[] =
@@ -145,7 +149,7 @@ async function processBlocksToPages(
   let firstEntity = scan.eav(root_entity, "root/page")?.[0];
   if (!firstEntity) throw new Error("No root page");
   let blocks = getBlocksWithTypeLocal(facts, firstEntity?.data.value);
-  let b = await blocksToRecord(blocks);
+  let b = await blocksToRecord(blocks, did);
   return { firstPageBlocks: b, pages };
 
   async function uploadImage(src: string) {
@@ -159,6 +163,7 @@ async function processBlocksToPages(
   }
   async function blocksToRecord(
     blocks: Block[],
+    did: string,
   ): Promise<PubLeafletPagesLinearDocument.Block[]> {
     let parsedBlocks = parseBlocksToList(blocks);
     return (
@@ -174,7 +179,7 @@ async function processBlocksToPages(
                 : alignmentValue === "right"
                   ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
                   : undefined;
-            let b = await blockToRecord(blockOrList.block);
+            let b = await blockToRecord(blockOrList.block, did);
             if (!b) return [];
             let block: PubLeafletPagesLinearDocument.Block = {
               $type: "pub.leaflet.pages.linearDocument#block",
@@ -187,7 +192,7 @@ async function processBlocksToPages(
               $type: "pub.leaflet.pages.linearDocument#block",
               block: {
                 $type: "pub.leaflet.blocks.unorderedList",
-                children: await childrenToRecord(blockOrList.children),
+                children: await childrenToRecord(blockOrList.children, did),
               },
             };
             return [block];
@@ -197,23 +202,23 @@ async function processBlocksToPages(
     ).flat();
   }
 
-  async function childrenToRecord(children: List[]) {
+  async function childrenToRecord(children: List[], did: string) {
     return (
       await Promise.all(
         children.map(async (child) => {
-          let content = await blockToRecord(child.block);
+          let content = await blockToRecord(child.block, did);
           if (!content) return [];
           let record: PubLeafletBlocksUnorderedList.ListItem = {
             $type: "pub.leaflet.blocks.unorderedList#listItem",
             content,
-            children: await childrenToRecord(child.children),
+            children: await childrenToRecord(child.children, did),
           };
           return record;
         }),
       )
     ).flat();
   }
-  async function blockToRecord(b: Block) {
+  async function blockToRecord(b: Block, did: string) {
     const getBlockContent = (b: string) => {
       let [content] = scan.eav(b, "block/text");
       if (!content) return ["", [] as PubLeafletRichtextFacet.Main[]] as const;
@@ -231,7 +236,7 @@ async function processBlocksToPages(
       let blocks = getBlocksWithTypeLocal(facts, page.data.value);
       pages.push({
         id: page.data.value,
-        blocks: await blocksToRecord(blocks),
+        blocks: await blocksToRecord(blocks, did),
       });
       let block: $Typed<PubLeafletBlocksPage.Main> = {
         $type: "pub.leaflet.blocks.page",
@@ -354,6 +359,55 @@ async function processBlocksToPages(
       let block: $Typed<PubLeafletBlocksMath.Main> = {
         $type: "pub.leaflet.blocks.math",
         tex: math?.data.value || "",
+      };
+      return block;
+    }
+    if (b.type === "poll") {
+      // Get poll options from the entity
+      let pollOptions = scan.eav(b.value, "poll/options");
+      let options: PubLeafletPollDefinition.Option[] = pollOptions.map(
+        (opt) => {
+          let optionName = scan.eav(opt.data.value, "poll-option/name")?.[0];
+          return {
+            $type: "pub.leaflet.poll.definition#option",
+            text: optionName?.data.value || "",
+          };
+        },
+      );
+
+      // Create the poll definition record
+      let pollRecord: PubLeafletPollDefinition.Record = {
+        $type: "pub.leaflet.poll.definition",
+        name: "Poll", // Default name, can be customized
+        options,
+      };
+
+      // Upload the poll record
+      let { data: pollResult } = await agent.com.atproto.repo.putRecord({
+        //use the entity id as the rkey so we can associate it in the editor
+        rkey: b.value,
+        repo: did,
+        collection: pollRecord.$type,
+        record: pollRecord,
+        validate: false,
+      });
+
+      // Optimistically write poll definition to database
+      console.log(
+        await supabaseServerClient.from("atp_poll_records").upsert({
+          uri: pollResult.uri,
+          cid: pollResult.cid,
+          record: pollRecord as Json,
+        }),
+      );
+
+      // Return a poll block with reference to the poll record
+      let block: $Typed<PubLeafletBlocksPoll.Main> = {
+        $type: "pub.leaflet.blocks.poll",
+        pollRef: {
+          uri: pollResult.uri,
+          cid: pollResult.cid,
+        },
       };
       return block;
     }

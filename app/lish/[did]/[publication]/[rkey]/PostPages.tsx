@@ -29,6 +29,7 @@ import { flushSync } from "react-dom";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 import { useParams } from "next/navigation";
 import { decodeQuotePosition } from "./quotePosition";
+import { PollData } from "./fetchPollData";
 
 const usePostPageUIState = create(() => ({
   pages: [] as string[],
@@ -113,6 +114,7 @@ export function PostPages({
   prerenderedCodeBlocks,
   bskyPostData,
   document_uri,
+  pollData,
 }: {
   document_uri: string;
   document: PostPageData;
@@ -123,6 +125,7 @@ export function PostPages({
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   preferences: { showComments?: boolean };
+  pollData: PollData[];
 }) {
   let { identity } = useIdentityData();
   let drawer = useDrawerOpen(document_uri);
@@ -155,6 +158,7 @@ export function PostPages({
           blocks={blocks}
           did={did}
           prerenderedCodeBlocks={prerenderedCodeBlocks}
+          pollData={pollData}
         />
         <Interactions
           showComments={preferences.showComments}
@@ -244,6 +248,7 @@ export function PostPages({
                 blocks={page.blocks}
                 did={did}
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
+                pollData={pollData}
               />
               <Interactions
                 pageId={page.id}

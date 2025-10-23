@@ -14,6 +14,7 @@ import {
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksIframe,
   PubLeafletBlocksPage,
+  PubLeafletBlocksPoll,
 } from "lexicons/api";
 
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
@@ -28,6 +29,8 @@ import { PubBlueskyPostBlock } from "./PublishBskyPostBlock";
 import { openPage } from "./PostPages";
 import { PageLinkBlock } from "components/Blocks/PageLinkBlock";
 import { PublishedPageLinkBlock } from "./PublishedPageBlock";
+import { PublishedPollBlock } from "./PublishedPollBlock";
+import { PollData } from "./fetchPollData";
 
 export function PostContent({
   blocks,
@@ -38,6 +41,7 @@ export function PostContent({
   bskyPostData,
   pageId,
   pages,
+  pollData,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
   pageId?: string;
@@ -47,6 +51,7 @@ export function PostContent({
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   pages: PubLeafletPagesLinearDocument.Main[];
+  pollData: PollData[];
 }) {
   return (
     <div
@@ -66,6 +71,7 @@ export function PostContent({
             index={[index]}
             preview={preview}
             prerenderedCodeBlocks={prerenderedCodeBlocks}
+            pollData={pollData}
           />
         );
       })}
@@ -84,6 +90,7 @@ let Block = ({
   bskyPostData,
   pageId,
   pages,
+  pollData,
 }: {
   pageId?: string;
   preview?: boolean;
@@ -95,6 +102,7 @@ let Block = ({
   previousBlock?: PubLeafletPagesLinearDocument.Block;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  pollData: PollData[];
 }) => {
   let b = block;
   let blockProps = {
@@ -168,11 +176,24 @@ let Block = ({
     case PubLeafletBlocksHorizontalRule.isMain(b.block): {
       return <hr className="my-2 w-full border-border-light" />;
     }
+    case PubLeafletBlocksPoll.isMain(b.block): {
+      let { cid, uri } = b.block.pollRef;
+      const pollVoteData = pollData.find((p) => p.uri === uri && p.cid === cid);
+      if (!pollVoteData) return null;
+      return (
+        <PublishedPollBlock
+          block={b.block}
+          className={className}
+          pollData={pollVoteData}
+        />
+      );
+    }
     case PubLeafletBlocksUnorderedList.isMain(b.block): {
       return (
         <ul className="-ml-px sm:ml-[9px] pb-2">
           {b.block.children.map((child, i) => (
             <ListItem
+              pollData={pollData}
               pages={pages}
               bskyPostData={bskyPostData}
               index={[...index, i]}
@@ -359,6 +380,7 @@ function ListItem(props: {
   did: string;
   className?: string;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  pollData: PollData[];
   pageId?: string;
 }) {
   let children = props.item.children?.length ? (
@@ -366,6 +388,7 @@ function ListItem(props: {
       {props.item.children.map((child, index) => (
         <ListItem
           pages={props.pages}
+          pollData={props.pollData}
           bskyPostData={props.bskyPostData}
           index={[...props.index, index]}
           item={child}
@@ -384,6 +407,7 @@ function ListItem(props: {
       />
       <div className="flex flex-col w-full">
         <Block
+          pollData={props.pollData}
           pages={props.pages}
           bskyPostData={props.bskyPostData}
           block={{ block: props.item.content }}

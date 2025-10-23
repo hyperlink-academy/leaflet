@@ -12,6 +12,7 @@ export const PubLeafletPollDefinition: LexiconDoc = {
         type: "object",
         required: ["name", "options"],
         properties: {
+          name: { type: "string", maxLength: 500, maxGraphemes: 100 },
           options: { type: "array", items: { type: "ref", ref: "#option" } },
           endDate: { type: "string", format: "datetime" },
         },
@@ -36,7 +37,7 @@ export const PubLeafletPollVote: LexiconDoc = {
       description: "Record declaring a vote on a poll",
       record: {
         type: "object",
-        required: ["poll"],
+        required: ["poll", "option"],
         properties: {
           poll: { type: "ref", ref: "com.atproto.repo.strongRef" },
           option: { type: "string" },
