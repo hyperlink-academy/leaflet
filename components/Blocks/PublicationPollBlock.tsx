@@ -102,7 +102,7 @@ const EditPollForPublication = (props: {
         />
       ))}
 
-      {!props.isPublished && (
+      {!props.isPublished && permission_set.permissions.write && (
         <button
           className="pollAddOption w-fit flex gap-2 items-center justify-start text-sm text-accent-contrast"
           onClick={async () => {
@@ -136,6 +136,7 @@ const EditPollOptionForPublication = (props: {
   canDelete: boolean;
 }) => {
   let { rep } = useReplicache();
+  let { permissions } = useEntitySetContext();
   let optionName = useEntity(props.entityID, "poll-option/name")?.data.value;
 
   return (
@@ -145,7 +146,7 @@ const EditPollOptionForPublication = (props: {
         type="text"
         className="pollOptionInput w-full input-with-border"
         placeholder="Option here..."
-        disabled={props.disabled}
+        disabled={props.disabled || !permissions.write}
         value={optionName || ""}
         onChange={async (e) => {
           await rep?.mutate.assertFact([
@@ -168,7 +169,7 @@ const EditPollOptionForPublication = (props: {
         }}
       />
 
-      {props.canDelete && (
+      {permissions.write && props.canDelete && (
         <button
           tabIndex={-1}
           className="text-accent-contrast"
