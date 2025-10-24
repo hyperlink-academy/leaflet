@@ -23,6 +23,7 @@ import { addFeed } from "./addFeed";
 import { useSearchParams } from "next/navigation";
 import LoginForm from "app/login/LoginForm";
 import { RSSSmall } from "components/Icons/RSSSmall";
+import { SpeedyLink } from "components/SpeedyLink";
 
 type State =
   | { state: "email" }
@@ -217,7 +218,12 @@ export const SubscribeWithBluesky = (props: {
           pub_uri={props.pub_uri}
           setSuccessModalOpen={setSuccessModalOpen}
         />
-        <a href={`${props.base_url}/rss`} className="flex" target="_blank" aria-label="Subscribe to RSS">
+        <a
+          href={`${props.base_url}/rss`}
+          className="flex"
+          target="_blank"
+          aria-label="Subscribe to RSS"
+        >
           <RSSSmall className="self-center" aria-hidden />
         </a>
       </div>
@@ -246,7 +252,12 @@ const ManageSubscription = (props: {
       className={`flex ${props.isPost ? "flex-col " : "gap-2"}  justify-center text-center`}
     >
       <div className="font-bold text-tertiary text-sm">
-        You&apos;re Subscribed{props.isPost ? ` to ${props.pubName}` : "!"}
+        You&apos;re Subscribed{props.isPost ? ` to ` : "!"}
+        {props.isPost && (
+          <SpeedyLink href={props.base_url} className="text-accent-contrast">
+            {props.pubName}
+          </SpeedyLink>
+        )}
       </div>
       <Popover
         trigger={<div className="text-accent-contrast text-sm">Manage</div>}
@@ -266,7 +277,12 @@ const ManageSubscription = (props: {
             </a>
           )}
 
-          <a href={`${props.base_url}/rss`} className="flex" target="_blank" aria-label="Subscribe to RSS">
+          <a
+            href={`${props.base_url}/rss`}
+            className="flex"
+            target="_blank"
+            aria-label="Subscribe to RSS"
+          >
             <ButtonPrimary fullWidth compact>
               Get RSS
             </ButtonPrimary>
