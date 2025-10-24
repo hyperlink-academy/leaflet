@@ -33,9 +33,8 @@ export function Page(props: {
     return focusedPageID === props.entityID;
   });
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
-  let canvasNarrow = useEntity(props.entityID, "canvas/narrow-width")?.data
-    .value;
   let cardBorderHidden = useCardBorderHidden(props.entityID);
+
   let drawerOpen = useDrawerOpen(props.entityID);
   return (
     <CardThemeProvider entityID={props.entityID}>
@@ -53,7 +52,6 @@ export function Page(props: {
         isFocused={isFocused}
         fullPageScroll={props.fullPageScroll}
         pageType={pageType}
-        canvasNarrow={canvasNarrow}
         pageOptions={
           <PageOptions
             entityID={props.entityID}
@@ -64,10 +62,10 @@ export function Page(props: {
       >
         {props.first && (
           <>
-            <PublicationMetadata cardBorderHidden={!!cardBorderHidden} />
+            <PublicationMetadata />
           </>
         )}
-        <PageContent entityID={props.entityID} />
+        <PageContent entityID={props.entityID} first={props.first} />
       </PageWrapper>
       <DesktopPageFooter pageID={props.entityID} />
     </CardThemeProvider>
@@ -83,7 +81,6 @@ export const PageWrapper = (props: {
   isFocused?: boolean;
   onClickAction?: (e: React.MouseEvent) => void;
   pageType: "canvas" | "doc";
-  canvasNarrow?: boolean | undefined;
   drawerOpen: boolean | undefined;
 }) => {
   return (
@@ -103,7 +100,6 @@ export const PageWrapper = (props: {
         className={`
       pageScrollWrapper
       grow
-
       shrink-0 snap-center
       overflow-y-scroll
       ${
@@ -119,9 +115,7 @@ export const PageWrapper = (props: {
     ${
       props.pageType === "canvas" &&
       !props.fullPageScroll &&
-      (props.canvasNarrow
-        ? "w-[10000px] sm:mx-0 max-w-[var(--page-width-units)]"
-        : "sm:max-w-[calc(100vw-128px)] lg:max-w-fit lg:w-[calc(var(--page-width-units)*2 + 24px))]")
+      "max-w-[var(--page-width-units)] sm:max-w-[calc(100vw-128px)] lg:max-w-fit lg:w-[calc(var(--page-width-units)*2 + 24px))]"
     }
 
 `}
@@ -139,11 +133,11 @@ export const PageWrapper = (props: {
     </div>
   );
 };
-// ${narrowWidth ?  " sm:max-w-(--page-width-units)" : }
-const PageContent = (props: { entityID: string }) => {
+
+const PageContent = (props: { entityID: string; first?: boolean }) => {
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
   if (pageType === "doc") return <DocContent entityID={props.entityID} />;
-  return <Canvas entityID={props.entityID} />;
+  return <Canvas entityID={props.entityID} first={props.first} />;
 };
 
 const DocContent = (props: { entityID: string }) => {
@@ -209,6 +203,7 @@ const DocContent = (props: { entityID: string }) => {
         />
       ) : null}
       <Blocks entityID={props.entityID} />
+      <div className="h-4 sm:h-6 w-full" />
       {/* we handle page bg in this sepate div so that
     we can apply an opacity the background image
     without affecting the opacity of the rest of the page */}

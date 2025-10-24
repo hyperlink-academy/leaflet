@@ -13,11 +13,7 @@ import {
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { timeAgo } from "src/utils/timeAgo";
-export const PublicationMetadata = ({
-  cardBorderHidden,
-}: {
-  cardBorderHidden: boolean;
-}) => {
+export const PublicationMetadata = () => {
   let { rep } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
   let title = useSubscribe(rep, (tx) => tx.get<string>("publication_title"));

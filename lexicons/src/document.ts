@@ -1,5 +1,6 @@
 import { LexiconDoc } from "@atproto/lexicon";
 import { PubLeafletPagesLinearDocument } from "./pages/LinearDocument";
+import { PubLeafletPagesCanvasDocument } from "./pages";
 
 export const PubLeafletDocument: LexiconDoc = {
   lexicon: 1,
@@ -25,7 +26,10 @@ export const PubLeafletDocument: LexiconDoc = {
             type: "array",
             items: {
               type: "union",
-              refs: [PubLeafletPagesLinearDocument.id],
+              refs: [
+                PubLeafletPagesLinearDocument.id,
+                PubLeafletPagesCanvasDocument.id,
+              ],
             },
           },
         },
