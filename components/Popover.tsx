@@ -12,6 +12,7 @@ export const Popover = (props: {
   children: React.ReactNode;
   align?: "start" | "end" | "center";
   side?: "top" | "bottom" | "left" | "right";
+  sideOffset?: number;
   background?: string;
   border?: string;
   className?: string;
@@ -20,6 +21,7 @@ export const Popover = (props: {
   onOpenAutoFocus?: (e: Event) => void;
   asChild?: boolean;
   arrowFill?: string;
+  noArrow?: boolean;
 }) => {
   let [open, setOpen] = useState(props.open || false);
   return (
@@ -48,30 +50,32 @@ export const Popover = (props: {
             `}
               side={props.side}
               align={props.align ? props.align : "center"}
-              sideOffset={4}
+              sideOffset={props.sideOffset ? props.sideOffset : 4}
               collisionPadding={16}
               onOpenAutoFocus={props.onOpenAutoFocus}
             >
               {props.children}
-              <RadixPopover.Arrow
-                asChild
-                width={16}
-                height={8}
-                viewBox="0 0 16 8"
-              >
-                <PopoverArrow
-                  arrowFill={
-                    props.arrowFill
-                      ? props.arrowFill
-                      : props.background
-                        ? props.background
-                        : theme.colors["bg-page"]
-                  }
-                  arrowStroke={
-                    props.border ? props.border : theme.colors["border"]
-                  }
-                />
-              </RadixPopover.Arrow>
+              {!props.noArrow && (
+                <RadixPopover.Arrow
+                  asChild
+                  width={16}
+                  height={8}
+                  viewBox="0 0 16 8"
+                >
+                  <PopoverArrow
+                    arrowFill={
+                      props.arrowFill
+                        ? props.arrowFill
+                        : props.background
+                          ? props.background
+                          : theme.colors["bg-page"]
+                    }
+                    arrowStroke={
+                      props.border ? props.border : theme.colors["border"]
+                    }
+                  />
+                </RadixPopover.Arrow>
+              )}
             </RadixPopover.Content>
           </NestedCardThemeProvider>
         </RadixPopover.Portal>

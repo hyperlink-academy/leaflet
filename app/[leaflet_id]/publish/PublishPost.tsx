@@ -18,7 +18,7 @@ import {
   editorStateToFacetedText,
 } from "./BskyPostEditorProsemirror";
 import { EditorState } from "prosemirror-state";
-import { PublishTags } from "./publishTags";
+import { TagSelector } from "./TagSelector";
 
 type Props = {
   title: string;
@@ -102,7 +102,7 @@ const PublishPostForm = (
       }}
     >
       <div className="container flex flex-col gap-6 sm:p-3 p-4 max-w-screen sm:max-w-xl w-[1000px]">
-        <PublishTags />
+        <TagSelector />
         <ShareOptions
           setShareOption={setShareOption}
           shareOption={shareOption}
