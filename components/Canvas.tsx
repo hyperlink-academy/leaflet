@@ -25,7 +25,7 @@ import {
   PubLeafletPublication,
   PubLeafletPublicationRecord,
 } from "lexicons/api";
-import { getCommentCount } from "app/lish/[did]/[publication]/[rkey]/Interactions/Interactions";
+import { useHandleCanvasDrop } from "./Blocks/useHandleCanvasDrop";
 
 export function Canvas(props: {
   entityID: string;
@@ -84,6 +84,8 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
   let height = Math.max(...blocks.map((f) => f.data.position.y), 0);
+  let handleDrop = useHandleCanvasDrop(props.entityID);
+
   return (
     <div
       onClick={async (e) => {
@@ -121,6 +123,17 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
           );
         }
       }}
+      onDragOver={
+        !props.preview && entity_set.permissions.write
+          ? (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          : undefined
+      }
+      onDrop={
+        !props.preview && entity_set.permissions.write ? handleDrop : undefined
+      }
       style={{
         minHeight: height + 512,
         contain: "size layout paint",

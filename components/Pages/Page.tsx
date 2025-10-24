@@ -34,6 +34,7 @@ export function Page(props: {
   });
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
   let cardBorderHidden = useCardBorderHidden(props.entityID);
+
   let drawerOpen = useDrawerOpen(props.entityID);
   return (
     <CardThemeProvider entityID={props.entityID}>
@@ -125,6 +126,7 @@ export const PageWrapper = (props: {
         `}
         >
           {props.children}
+          {props.pageType === "doc" && <div className="h-4 sm:h-6 w-full" />}
         </div>
       </div>
       {props.pageOptions}

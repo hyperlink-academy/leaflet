@@ -51,6 +51,34 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     }
   }, [isSelected, props.preview, props.entityID]);
 
+  const handleImageUpload = async (file: File) => {
+    if (!rep) return;
+    let entity = props.entityID;
+    if (!entity) {
+      entity = v7();
+      await rep?.mutate.addBlock({
+        parent: props.parent,
+        factID: v7(),
+        permission_set: entity_set.set,
+        type: "text",
+        position: generateKeyBetween(
+          props.position,
+          props.nextPosition,
+        ),
+        newEntityID: entity,
+      });
+    }
+    await rep.mutate.assertFact({
+      entity,
+      attribute: "block/type",
+      data: { type: "block-type-union", value: "image" },
+    });
+    await addImage(file, rep, {
+      entityID: entity,
+      attribute: "block/image",
+    });
+  };
+
   if (!image) {
     if (!entity_set.permissions.write) return null;
     return (
@@ -65,6 +93,22 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             ${isSelected && !isLocked ? "border-2 border-tertiary font-bold" : "border border-border"}
             ${props.pageType === "canvas" && "bg-bg-page"}`}
           onMouseDown={(e) => e.preventDefault()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onDrop={async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (isLocked) return;
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) {
+              const file = files[0];
+              if (file.type.startsWith('image/')) {
+                await handleImageUpload(file);
+              }
+            }
+          }}
         >
           <div className="flex gap-2">
             <BlockImageSmall
@@ -79,31 +123,8 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             accept="image/*"
             onChange={async (e) => {
               let file = e.currentTarget.files?.[0];
-              if (!file || !rep) return;
-              let entity = props.entityID;
-              if (!entity) {
-                entity = v7();
-                await rep?.mutate.addBlock({
-                  parent: props.parent,
-                  factID: v7(),
-                  permission_set: entity_set.set,
-                  type: "text",
-                  position: generateKeyBetween(
-                    props.position,
-                    props.nextPosition,
-                  ),
-                  newEntityID: entity,
-                });
-              }
-              await rep.mutate.assertFact({
-                entity,
-                attribute: "block/type",
-                data: { type: "block-type-union", value: "image" },
-              });
-              await addImage(file, rep, {
-                entityID: entity,
-                attribute: "block/image",
-              });
+              if (!file) return;
+              await handleImageUpload(file);
             }}
           />
         </label>
