@@ -6,5 +6,5 @@ export function scrollIntoView(
   threshold: number = 0.9,
 ) {
   const element = document.getElementById(elementId);
-  scrollIntoViewIfNeeded(element, false);
+  scrollIntoViewIfNeeded(element, false, "smooth");
 }
