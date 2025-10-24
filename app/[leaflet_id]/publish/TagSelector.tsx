@@ -121,7 +121,13 @@ const TagSearchInput = (props: {
       setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      selectTag(filteredTags[highlightedIndex + 1].name);
+      selectTag(
+        userInputResult
+          ? highlightedIndex === 0
+            ? tagInputValue
+            : filteredTags[highlightedIndex - 1].name
+          : filteredTags[highlightedIndex].name,
+      );
       clearTagInput();
     } else if (e.key === "Escape") {
       setIsOpen(false);
@@ -195,12 +201,12 @@ const TagSearchInput = (props: {
               <hr className="mt-[6px] mb-[2px] border-border-light" />
             </>
           )}
-          {userInputResult && (
+          {userInputResult && ( 
             <TagResult
               key={"userInput"}
               index={0}
               name={tagInputValue}
-              tagged={10}
+              tagged={0}
               highlighted={0 === highlightedIndex}
               setHighlightedIndex={setHighlightedIndex}
               onSelect={() => {
