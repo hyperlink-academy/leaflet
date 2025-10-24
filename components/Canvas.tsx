@@ -14,6 +14,7 @@ import { Media } from "./Media";
 import { TooltipButton } from "./Buttons";
 import { useBlockKeyboardHandlers } from "./Blocks/useBlockKeyboardHandlers";
 import { AddSmall } from "./Icons/AddSmall";
+import { useHandleCanvasDrop } from "./Blocks/useHandleCanvasDrop";
 
 export function Canvas(props: { entityID: string; preview?: boolean }) {
   let entity_set = useEntitySetContext();
@@ -69,6 +70,8 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
   let height = Math.max(...blocks.map((f) => f.data.position.y), 0);
+  let handleDrop = useHandleCanvasDrop(props.entityID);
+
   return (
     <div
       onClick={async (e) => {
@@ -106,6 +109,17 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
           );
         }
       }}
+      onDragOver={
+        !props.preview && entity_set.permissions.write
+          ? (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          : undefined
+      }
+      onDrop={
+        !props.preview && entity_set.permissions.write ? handleDrop : undefined
+      }
       style={{
         minHeight: height + 512,
         contain: "size layout paint",
