@@ -7,6 +7,7 @@ import { validate as _validate } from '../../../lexicons'
 import { type $Typed, is$typed as _is$typed, type OmitKey } from '../../../util'
 import type * as ComAtprotoRepoStrongRef from '../../com/atproto/repo/strongRef'
 import type * as PubLeafletPagesLinearDocument from './pages/linearDocument'
+import type * as PubLeafletPagesCanvas from './pages/canvas'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -20,7 +21,11 @@ export interface Record {
   publishedAt?: string
   publication: string
   author: string
-  pages: ($Typed<PubLeafletPagesLinearDocument.Main> | { $type: string })[]
+  pages: (
+    | $Typed<PubLeafletPagesLinearDocument.Main>
+    | $Typed<PubLeafletPagesCanvas.Main>
+    | { $type: string }
+  )[]
   [k: string]: unknown
 }
 

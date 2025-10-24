@@ -39,6 +39,7 @@ import * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
 import * as PubLeafletComment from './types/pub/leaflet/comment'
 import * as PubLeafletDocument from './types/pub/leaflet/document'
 import * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
+import * as PubLeafletPagesCanvas from './types/pub/leaflet/pages/canvas'
 import * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
 import * as PubLeafletPollDefinition from './types/pub/leaflet/poll/definition'
 import * as PubLeafletPollVote from './types/pub/leaflet/poll/vote'
@@ -77,6 +78,7 @@ export * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
 export * as PubLeafletComment from './types/pub/leaflet/comment'
 export * as PubLeafletDocument from './types/pub/leaflet/document'
 export * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
+export * as PubLeafletPagesCanvas from './types/pub/leaflet/pages/canvas'
 export * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
 export * as PubLeafletPollDefinition from './types/pub/leaflet/poll/definition'
 export * as PubLeafletPollVote from './types/pub/leaflet/poll/vote'
@@ -86,6 +88,9 @@ export * as PubLeafletThemeBackgroundImage from './types/pub/leaflet/theme/backg
 export * as PubLeafletThemeColor from './types/pub/leaflet/theme/color'
 
 export const PUB_LEAFLET_PAGES = {
+  CanvasTextAlignLeft: 'pub.leaflet.pages.canvas#textAlignLeft',
+  CanvasTextAlignCenter: 'pub.leaflet.pages.canvas#textAlignCenter',
+  CanvasTextAlignRight: 'pub.leaflet.pages.canvas#textAlignRight',
   LinearDocumentTextAlignLeft: 'pub.leaflet.pages.linearDocument#textAlignLeft',
   LinearDocumentTextAlignCenter:
     'pub.leaflet.pages.linearDocument#textAlignCenter',

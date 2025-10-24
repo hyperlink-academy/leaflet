@@ -7,6 +7,8 @@ import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
 import { useBlockKeyboardHandlers } from "./useBlockKeyboardHandlers";
 import { useLongPress } from "src/hooks/useLongPress";
 import { focusBlock } from "src/utils/focusBlock";
+import { useHandleDrop } from "./useHandleDrop";
+import { useEntitySetContext } from "components/EntitySetProvider";
 
 import { TextBlock } from "components/Blocks/TextBlock";
 import { ImageBlock } from "./ImageBlock";
@@ -15,7 +17,6 @@ import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { EmbedBlock } from "./EmbedBlock";
 import { MailboxBlock } from "./MailboxBlock";
 import { AreYouSure } from "./DeleteBlock";
-import { useEntitySetContext } from "components/EntitySetProvider";
 import { useIsMobile } from "src/hooks/isMobile";
 import { DateTimeBlock } from "./DateTimeBlock";
 import { RSVPBlock } from "./RSVPBlock";
@@ -63,6 +64,12 @@ export const Block = memo(function Block(
   // and shared styling like padding and flex for list layouting
 
   let mouseHandlers = useBlockMouseHandlers(props);
+  let handleDrop = useHandleDrop({
+    parent: props.parent,
+    position: props.position,
+    nextPosition: props.nextPosition,
+  });
+  let entity_set = useEntitySetContext();
 
   let { isLongPress, handlers } = useLongPress(() => {
     if (isTextBlock[props.type]) return;
@@ -93,6 +100,17 @@ export const Block = memo(function Block(
       {...(!props.preview ? { ...mouseHandlers, ...handlers } : {})}
       id={
         !props.preview ? elementId.block(props.entityID).container : undefined
+      }
+      onDragOver={
+        !props.preview && entity_set.permissions.write
+          ? (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          : undefined
+      }
+      onDrop={
+        !props.preview && entity_set.permissions.write ? handleDrop : undefined
       }
       className={`
         blockWrapper relative

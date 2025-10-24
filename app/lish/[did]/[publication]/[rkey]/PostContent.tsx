@@ -9,6 +9,7 @@ import {
   PubLeafletBlocksWebsite,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
+  PubLeafletPagesCanvas,
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksBskyPost,
@@ -50,8 +51,8 @@ export function PostContent({
   className?: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
-  pages: PubLeafletPagesLinearDocument.Main[];
   pollData: PollData[];
+  pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
   return (
     <div
@@ -79,7 +80,7 @@ export function PostContent({
   );
 }
 
-let Block = ({
+export let Block = ({
   block,
   did,
   isList,
@@ -98,7 +99,7 @@ let Block = ({
   block: PubLeafletPagesLinearDocument.Block;
   did: string;
   isList?: boolean;
-  pages: PubLeafletPagesLinearDocument.Main[];
+  pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   previousBlock?: PubLeafletPagesLinearDocument.Block;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
@@ -144,6 +145,9 @@ let Block = ({
       let id = b.block.id;
       let page = pages.find((p) => p.id === id);
       if (!page) return;
+
+      const isCanvas = PubLeafletPagesCanvas.isMain(page);
+
       return (
         <PublishedPageLinkBlock
           blocks={page.blocks}
@@ -151,6 +155,8 @@ let Block = ({
           parentPageId={pageId}
           did={did}
           bskyPostData={bskyPostData}
+          isCanvas={isCanvas}
+          pages={pages}
           className={className}
         />
       );
@@ -375,7 +381,7 @@ let Block = ({
 
 function ListItem(props: {
   index: number[];
-  pages: PubLeafletPagesLinearDocument.Main[];
+  pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   item: PubLeafletBlocksUnorderedList.ListItem;
   did: string;
   className?: string;

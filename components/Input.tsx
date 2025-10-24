@@ -100,7 +100,7 @@ export const InputWithLabel = (
     JSX.IntrinsicElements["textarea"],
 ) => {
   let { label, textarea, ...inputProps } = props;
-  let style = `appearance-none w-full font-normal bg-transparent text-base text-primary focus:outline-0 ${props.className} outline-hidden resize-none`;
+  let style = `appearance-none w-full font-normal not-italic bg-transparent text-base text-primary focus:outline-0 ${props.className} outline-hidden resize-none`;
   return (
     <label className=" input-with-border flex flex-col gap-px text-sm text-tertiary font-bold italic leading-tight py-1! px-[6px]!">
       {props.label}

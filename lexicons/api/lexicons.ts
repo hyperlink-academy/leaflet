@@ -1421,7 +1421,10 @@ export const schemaDict = {
               type: 'array',
               items: {
                 type: 'union',
-                refs: ['lex:pub.leaflet.pages.linearDocument'],
+                refs: [
+                  'lex:pub.leaflet.pages.linearDocument',
+                  'lex:pub.leaflet.pages.canvas',
+                ],
               },
             },
           },
@@ -1445,6 +1448,104 @@ export const schemaDict = {
               type: 'string',
               format: 'at-uri',
             },
+          },
+        },
+      },
+    },
+  },
+  PubLeafletPagesCanvas: {
+    lexicon: 1,
+    id: 'pub.leaflet.pages.canvas',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['blocks'],
+        properties: {
+          id: {
+            type: 'string',
+          },
+          blocks: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.pages.canvas#block',
+            },
+          },
+        },
+      },
+      block: {
+        type: 'object',
+        required: ['block', 'x', 'y', 'width'],
+        properties: {
+          block: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.blocks.iframe',
+              'lex:pub.leaflet.blocks.text',
+              'lex:pub.leaflet.blocks.blockquote',
+              'lex:pub.leaflet.blocks.header',
+              'lex:pub.leaflet.blocks.image',
+              'lex:pub.leaflet.blocks.unorderedList',
+              'lex:pub.leaflet.blocks.website',
+              'lex:pub.leaflet.blocks.math',
+              'lex:pub.leaflet.blocks.code',
+              'lex:pub.leaflet.blocks.horizontalRule',
+              'lex:pub.leaflet.blocks.bskyPost',
+              'lex:pub.leaflet.blocks.page',
+            ],
+          },
+          x: {
+            type: 'integer',
+          },
+          y: {
+            type: 'integer',
+          },
+          width: {
+            type: 'integer',
+          },
+          height: {
+            type: 'integer',
+          },
+          rotation: {
+            type: 'integer',
+          },
+        },
+      },
+      textAlignLeft: {
+        type: 'token',
+      },
+      textAlignCenter: {
+        type: 'token',
+      },
+      textAlignRight: {
+        type: 'token',
+      },
+      quote: {
+        type: 'object',
+        required: ['start', 'end'],
+        properties: {
+          start: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.pages.canvas#position',
+          },
+          end: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.pages.canvas#position',
+          },
+        },
+      },
+      position: {
+        type: 'object',
+        required: ['block', 'offset'],
+        properties: {
+          block: {
+            type: 'array',
+            items: {
+              type: 'integer',
+            },
+          },
+          offset: {
+            type: 'integer',
           },
         },
       },
@@ -1961,6 +2062,7 @@ export const ids = {
   PubLeafletComment: 'pub.leaflet.comment',
   PubLeafletDocument: 'pub.leaflet.document',
   PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
+  PubLeafletPagesCanvas: 'pub.leaflet.pages.canvas',
   PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
   PubLeafletPollDefinition: 'pub.leaflet.poll.definition',
   PubLeafletPollVote: 'pub.leaflet.poll.vote',

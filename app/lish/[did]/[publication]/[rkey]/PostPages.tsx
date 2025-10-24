@@ -1,19 +1,12 @@
 "use client";
 import {
-  PubLeafletComment,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
+  PubLeafletPagesCanvas,
   PubLeafletPublication,
 } from "lexicons/api";
 import { PostPageData } from "./getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import { SubscribeWithBluesky } from "app/lish/Subscribe";
-import { EditTiny } from "components/Icons/EditTiny";
-import { Interactions } from "./Interactions/Interactions";
-import { PostContent } from "./PostContent";
-import { PostHeader } from "./PostHeader/PostHeader";
-import { useIdentityData } from "components/IdentityProvider";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { create } from "zustand/react";
 import {
@@ -23,13 +16,14 @@ import {
 import { BookendSpacer, SandwichSpacer } from "components/LeafletLayout";
 import { PageOptionButton } from "components/Pages/PageOptions";
 import { CloseTiny } from "components/Icons/CloseTiny";
-import { PageWrapper } from "components/Pages/Page";
 import { Fragment, useEffect } from "react";
 import { flushSync } from "react-dom";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 import { useParams } from "next/navigation";
 import { decodeQuotePosition } from "./quotePosition";
 import { PollData } from "./fetchPollData";
+import { LinearDocumentPage } from "./LinearDocumentPage";
+import { CanvasPage } from "./CanvasPage";
 
 const usePostPageUIState = create(() => ({
   pages: [] as string[],
@@ -127,7 +121,6 @@ export function PostPages({
   preferences: { showComments?: boolean };
   pollData: PollData[];
 }) {
-  let { identity } = useIdentityData();
   let drawer = useDrawerOpen(document_uri);
   useInitializeOpenPages();
   let pages = useOpenPages();
@@ -135,76 +128,25 @@ export function PostPages({
     return null;
 
   let hasPageBackground = !!pubRecord.theme?.showPageBackground;
-  let fullPageScroll = !hasPageBackground && !drawer && pages.length === 0;
   let record = document.data as PubLeafletDocument.Record;
+
+  let fullPageScroll = !hasPageBackground && !drawer && pages.length === 0;
   return (
     <>
       {!fullPageScroll && <BookendSpacer />}
-      <PageWrapper
-        pageType="doc"
+      <LinearDocumentPage
+        document={document}
+        blocks={blocks}
+        did={did}
+        profile={profile}
         fullPageScroll={fullPageScroll}
-        cardBorderHidden={!hasPageBackground}
-        id={"post-page"}
-        drawerOpen={!!drawer && !drawer.pageId}
-      >
-        <PostHeader
-          data={document}
-          profile={profile}
-          preferences={preferences}
-        />
-        <PostContent
-          pages={record.pages as PubLeafletPagesLinearDocument.Main[]}
-          bskyPostData={bskyPostData}
-          blocks={blocks}
-          did={did}
-          prerenderedCodeBlocks={prerenderedCodeBlocks}
-          pollData={pollData}
-        />
-        <Interactions
-          showComments={preferences.showComments}
-          quotesCount={
-            document.document_mentions_in_bsky.filter((q) => {
-              const url = new URL(q.link);
-              const quoteParam = url.pathname.split("/l-quote/")[1];
-              if (!quoteParam) return null;
-              const quotePosition = decodeQuotePosition(quoteParam);
-              return !quotePosition?.pageId;
-            }).length
-          }
-          commentsCount={
-            document.comments_on_documents.filter(
-              (c) => !(c.record as PubLeafletComment.Record)?.onPage,
-            ).length
-          }
-        />
-        <hr className="border-border-light mb-4 mt-4 sm:mx-4 mx-3" />
-        <div className="sm:px-4 px-3">
-          {identity &&
-          identity.atp_did ===
-            document.documents_in_publications[0]?.publications
-              ?.identity_did ? (
-            <a
-              href={`https://leaflet.pub/${document.leaflets_in_publications[0]?.leaflet}`}
-              className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1 mx-auto"
-            >
-              <EditTiny /> Edit Post
-            </a>
-          ) : (
-            <SubscribeWithBluesky
-              isPost
-              base_url={getPublicationURL(
-                document.documents_in_publications[0].publications,
-              )}
-              pub_uri={document.documents_in_publications[0].publications.uri}
-              subscribers={
-                document.documents_in_publications[0].publications
-                  .publication_subscriptions
-              }
-              pubName={document.documents_in_publications[0].publications.name}
-            />
-          )}
-        </div>
-      </PageWrapper>
+        pollData={pollData}
+        preferences={preferences}
+        pubRecord={pubRecord}
+        prerenderedCodeBlocks={prerenderedCodeBlocks}
+        bskyPostData={bskyPostData}
+        document_uri={document_uri}
+      />
 
       {drawer && !drawer.pageId && (
         <InteractionDrawer
@@ -221,52 +163,66 @@ export function PostPages({
 
       {pages.map((p) => {
         let page = record.pages.find(
-          (page) => (page as PubLeafletPagesLinearDocument.Main).id === p,
-        ) as PubLeafletPagesLinearDocument.Main | undefined;
+          (page) =>
+            (
+              page as
+                | PubLeafletPagesLinearDocument.Main
+                | PubLeafletPagesCanvas.Main
+            ).id === p,
+        ) as
+          | PubLeafletPagesLinearDocument.Main
+          | PubLeafletPagesCanvas.Main
+          | undefined;
         if (!page) return null;
+
+        const isCanvas = PubLeafletPagesCanvas.isMain(page);
+
         return (
           <Fragment key={p}>
             <SandwichSpacer />
-            {/*JARED TODO : drawerOpen here is checking whether the drawer is open on the first page, rather than if it's open on this page. Please rewire this when you add drawers per page!*/}
-            <PageWrapper
-              pageType="doc"
-              cardBorderHidden={!hasPageBackground}
-              id={`post-page-${p}`}
-              fullPageScroll={false}
-              drawerOpen={!!drawer && drawer.pageId === page.id}
-              pageOptions={
-                <PageOptions
-                  onClick={() => closePage(page?.id!)}
-                  hasPageBackground={hasPageBackground}
-                />
-              }
-            >
-              <PostContent
-                pages={record.pages as PubLeafletPagesLinearDocument.Main[]}
-                pageId={page.id}
-                bskyPostData={bskyPostData}
-                blocks={page.blocks}
+            {isCanvas ? (
+              <CanvasPage
+                fullPageScroll={false}
+                document={document}
+                blocks={(page as PubLeafletPagesCanvas.Main).blocks}
                 did={did}
+                preferences={preferences}
+                profile={profile}
+                pubRecord={pubRecord}
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
                 pollData={pollData}
-              />
-              <Interactions
+                bskyPostData={bskyPostData}
+                document_uri={document_uri}
                 pageId={page.id}
-                showComments={preferences.showComments}
-                quotesCount={
-                  document.document_mentions_in_bsky.filter((q) =>
-                    q.link.includes(page.id!),
-                  ).length
-                }
-                commentsCount={
-                  document.comments_on_documents.filter(
-                    (c) =>
-                      (c.record as PubLeafletComment.Record)?.onPage ===
-                      page.id,
-                  ).length
+                pages={record.pages as PubLeafletPagesLinearDocument.Main[]}
+                pageOptions={
+                  <PageOptions
+                    onClick={() => closePage(page?.id!)}
+                    hasPageBackground={hasPageBackground}
+                  />
                 }
               />
-            </PageWrapper>
+            ) : (
+              <LinearDocumentPage
+                fullPageScroll={false}
+                document={document}
+                blocks={(page as PubLeafletPagesLinearDocument.Main).blocks}
+                did={did}
+                preferences={preferences}
+                pubRecord={pubRecord}
+                pollData={pollData}
+                prerenderedCodeBlocks={prerenderedCodeBlocks}
+                bskyPostData={bskyPostData}
+                document_uri={document_uri}
+                pageId={page.id}
+                pageOptions={
+                  <PageOptions
+                    onClick={() => closePage(page?.id!)}
+                    hasPageBackground={hasPageBackground}
+                  />
+                }
+              />
+            )}
             {drawer && drawer.pageId === page.id && (
               <InteractionDrawer
                 pageId={page.id}
