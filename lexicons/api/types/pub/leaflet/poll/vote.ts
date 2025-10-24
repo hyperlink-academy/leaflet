@@ -18,7 +18,7 @@ const id = 'pub.leaflet.poll.vote'
 export interface Record {
   $type: 'pub.leaflet.poll.vote'
   poll: ComAtprotoRepoStrongRef.Main
-  option: string
+  option: string[]
   [k: string]: unknown
 }
 

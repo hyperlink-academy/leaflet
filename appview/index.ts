@@ -182,7 +182,6 @@ async function handleEvent(evt: Event) {
         voter_did: evt.did,
         poll_uri: record.value.poll.uri,
         poll_cid: record.value.poll.cid,
-        option: record.value.option,
         record: record.value as Json,
       });
     }

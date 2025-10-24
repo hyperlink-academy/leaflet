@@ -40,7 +40,7 @@ export const PubLeafletPollVote: LexiconDoc = {
         required: ["poll", "option"],
         properties: {
           poll: { type: "ref", ref: "com.atproto.repo.strongRef" },
-          option: { type: "string" },
+          option: { type: "array", items: { type: "string" } },
         },
       },
     },

@@ -58,7 +58,6 @@ export type Database = {
       atp_poll_votes: {
         Row: {
           indexed_at: string
-          option: string
           poll_cid: string
           poll_uri: string
           record: Json
@@ -67,7 +66,6 @@ export type Database = {
         }
         Insert: {
           indexed_at?: string
-          option: string
           poll_cid: string
           poll_uri: string
           record: Json
@@ -76,7 +74,6 @@ export type Database = {
         }
         Update: {
           indexed_at?: string
-          option?: string
           poll_cid?: string
           poll_uri?: string
           record?: Json
@@ -90,13 +87,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "atp_poll_records"
             referencedColumns: ["uri"]
-          },
-          {
-            foreignKeyName: "atp_poll_votes_voter_did_fkey"
-            columns: ["voter_did"]
-            isOneToOne: false
-            referencedRelation: "bsky_profiles"
-            referencedColumns: ["did"]
           },
         ]
       }

@@ -1,6 +1,6 @@
 "use client";
 
-import { PubLeafletBlocksPoll, PubLeafletPollDefinition } from "lexicons/api";
+import { PubLeafletBlocksPoll, PubLeafletPollDefinition, PubLeafletPollVote } from "lexicons/api";
 import { useState, useEffect } from "react";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useIdentityData } from "components/IdentityProvider";
@@ -10,6 +10,16 @@ import { PollData } from "./fetchPollData";
 import { Popover } from "components/Popover";
 import LoginForm from "app/login/LoginForm";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
+
+// Helper function to extract the first option from a vote record
+const getVoteOption = (voteRecord: any): string | null => {
+  try {
+    const record = voteRecord as PubLeafletPollVote.Record;
+    return record.option && record.option.length > 0 ? record.option[0] : null;
+  } catch {
+    return null;
+  }
+};
 
 export const PublishedPollBlock = (props: {
   block: PubLeafletBlocksPoll.Main;
@@ -191,13 +201,11 @@ const PollResults = (props: {
     ? [
         ...props.pollData.atp_poll_votes,
         {
-          option: props.optimisticVote.option,
           voter_did: props.optimisticVote.voter_did,
-          poll_uri: "",
-          poll_cid: "",
-          uri: "",
-          record: {},
-          indexed_at: "",
+          record: {
+            $type: "pub.leaflet.poll.vote",
+            option: [props.optimisticVote.option],
+          },
         },
       ]
     : props.pollData.atp_poll_votes;
@@ -206,7 +214,7 @@ const PollResults = (props: {
   let pollRecord = props.pollData.record as PubLeafletPollDefinition.Record;
   let optionsWithCount = pollRecord.options.map((o, index) => ({
     ...o,
-    votes: allVotes.filter((v) => v.option == index.toString()),
+    votes: allVotes.filter((v) => getVoteOption(v.record) == index.toString()),
   }));
 
   const highestVotes = Math.max(...optionsWithCount.map((o) => o.votes.length));
@@ -214,7 +222,7 @@ const PollResults = (props: {
     <>
       {pollRecord.options.map((option, index) => {
         const votes = allVotes.filter(
-          (v) => v.option === index.toString(),
+          (v) => getVoteOption(v.record) === index.toString(),
         ).length;
         const isWinner = totalVotes > 0 && votes === highestVotes;
 

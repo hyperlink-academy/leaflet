@@ -8,7 +8,7 @@ export type PollData = {
   uri: string;
   cid: string;
   record: Json;
-  atp_poll_votes: { option: string; voter_did: string }[];
+  atp_poll_votes: { record: Json; voter_did: string }[];
 };
 
 export async function fetchPollData(pollUris: string[]): Promise<PollData[]> {

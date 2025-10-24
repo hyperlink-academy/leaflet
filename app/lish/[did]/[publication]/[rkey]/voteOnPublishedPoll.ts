@@ -30,7 +30,7 @@ export async function voteOnPublishedPoll(
         uri: pollUri,
         cid: pollCid,
       },
-      option: selectedOption,
+      option: [selectedOption],
     };
 
     const rkey = TID.nextStr();
@@ -42,7 +42,6 @@ export async function voteOnPublishedPoll(
       voter_did: identity.atp_did,
       poll_uri: pollUri,
       poll_cid: pollCid,
-      option: selectedOption,
       record: voteRecord as unknown as Json,
     });
 

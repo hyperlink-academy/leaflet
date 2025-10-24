@@ -1603,7 +1603,10 @@ export const schemaDict = {
               ref: 'lex:com.atproto.repo.strongRef',
             },
             option: {
-              type: 'string',
+              type: 'array',
+              items: {
+                type: 'string',
+              },
             },
           },
         },
