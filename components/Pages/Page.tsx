@@ -132,7 +132,7 @@ export const PageWrapper = (props: {
         `}
         >
           {props.children}
-          <div className="h-4 sm:h-6 w-full" />
+          {props.pageType === "doc" && <div className="h-4 sm:h-6 w-full" />}
         </div>
       </div>
       {props.pageOptions}
