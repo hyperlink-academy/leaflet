@@ -21,6 +21,7 @@ import { flushSync } from "react-dom";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 import { useParams } from "next/navigation";
 import { decodeQuotePosition } from "./quotePosition";
+import { PollData } from "./fetchPollData";
 import { LinearDocumentPage } from "./LinearDocumentPage";
 import { CanvasPage } from "./CanvasPage";
 
@@ -107,6 +108,7 @@ export function PostPages({
   prerenderedCodeBlocks,
   bskyPostData,
   document_uri,
+  pollData,
 }: {
   document_uri: string;
   document: PostPageData;
@@ -117,6 +119,7 @@ export function PostPages({
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
   preferences: { showComments?: boolean };
+  pollData: PollData[];
 }) {
   let drawer = useDrawerOpen(document_uri);
   useInitializeOpenPages();
@@ -137,6 +140,7 @@ export function PostPages({
         did={did}
         profile={profile}
         fullPageScroll={fullPageScroll}
+        pollData={pollData}
         preferences={preferences}
         pubRecord={pubRecord}
         prerenderedCodeBlocks={prerenderedCodeBlocks}
@@ -186,6 +190,7 @@ export function PostPages({
                 profile={profile}
                 pubRecord={pubRecord}
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
+                pollData={pollData}
                 bskyPostData={bskyPostData}
                 document_uri={document_uri}
                 pageId={page.id}
@@ -205,6 +210,7 @@ export function PostPages({
                 did={did}
                 preferences={preferences}
                 pubRecord={pubRecord}
+                pollData={pollData}
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
                 bskyPostData={bskyPostData}
                 document_uri={document_uri}

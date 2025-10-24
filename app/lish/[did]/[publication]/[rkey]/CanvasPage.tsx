@@ -20,6 +20,7 @@ import { Popover } from "components/Popover";
 import { InfoSmall } from "components/Icons/InfoSmall";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { useDrawerOpen } from "./Interactions/InteractionDrawer";
+import { PollData } from "./fetchPollData";
 
 export function CanvasPage({
   document,
@@ -30,6 +31,7 @@ export function CanvasPage({
   pubRecord,
   prerenderedCodeBlocks,
   bskyPostData,
+  pollData,
   document_uri,
   pageId,
   pageOptions,
@@ -44,6 +46,7 @@ export function CanvasPage({
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  pollData: PollData[];
   preferences: { showComments?: boolean };
   pageId?: string;
   pageOptions?: React.ReactNode;
@@ -79,6 +82,7 @@ export function CanvasPage({
         did={did}
         prerenderedCodeBlocks={prerenderedCodeBlocks}
         bskyPostData={bskyPostData}
+        pollData={pollData}
         pageId={pageId}
         pages={pages}
       />
@@ -92,11 +96,13 @@ function CanvasContent({
   prerenderedCodeBlocks,
   bskyPostData,
   pageId,
+  pollData,
   pages,
 }: {
   blocks: PubLeafletPagesCanvas.Block[];
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;
+  pollData: PollData[];
   bskyPostData: AppBskyFeedDefs.PostView[];
   pageId?: string;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
@@ -127,6 +133,7 @@ function CanvasContent({
                 key={index}
                 canvasBlock={canvasBlock}
                 did={did}
+                pollData={pollData}
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
                 bskyPostData={bskyPostData}
                 pageId={pageId}
@@ -145,6 +152,7 @@ function CanvasBlock({
   did,
   prerenderedCodeBlocks,
   bskyPostData,
+  pollData,
   pageId,
   pages,
   index,
@@ -153,6 +161,7 @@ function CanvasBlock({
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  pollData: PollData[];
   pageId?: string;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   index: number;
@@ -178,6 +187,7 @@ function CanvasBlock({
     >
       <div className="contents">
         <Block
+          pollData={pollData}
           pageId={pageId}
           pages={pages}
           bskyPostData={bskyPostData}

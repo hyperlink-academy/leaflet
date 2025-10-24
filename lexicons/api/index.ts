@@ -32,6 +32,7 @@ import * as PubLeafletBlocksIframe from './types/pub/leaflet/blocks/iframe'
 import * as PubLeafletBlocksImage from './types/pub/leaflet/blocks/image'
 import * as PubLeafletBlocksMath from './types/pub/leaflet/blocks/math'
 import * as PubLeafletBlocksPage from './types/pub/leaflet/blocks/page'
+import * as PubLeafletBlocksPoll from './types/pub/leaflet/blocks/poll'
 import * as PubLeafletBlocksText from './types/pub/leaflet/blocks/text'
 import * as PubLeafletBlocksUnorderedList from './types/pub/leaflet/blocks/unorderedList'
 import * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
@@ -40,6 +41,8 @@ import * as PubLeafletDocument from './types/pub/leaflet/document'
 import * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
 import * as PubLeafletPagesCanvas from './types/pub/leaflet/pages/canvas'
 import * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
+import * as PubLeafletPollDefinition from './types/pub/leaflet/poll/definition'
+import * as PubLeafletPollVote from './types/pub/leaflet/poll/vote'
 import * as PubLeafletPublication from './types/pub/leaflet/publication'
 import * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
 import * as PubLeafletThemeBackgroundImage from './types/pub/leaflet/theme/backgroundImage'
@@ -68,6 +71,7 @@ export * as PubLeafletBlocksIframe from './types/pub/leaflet/blocks/iframe'
 export * as PubLeafletBlocksImage from './types/pub/leaflet/blocks/image'
 export * as PubLeafletBlocksMath from './types/pub/leaflet/blocks/math'
 export * as PubLeafletBlocksPage from './types/pub/leaflet/blocks/page'
+export * as PubLeafletBlocksPoll from './types/pub/leaflet/blocks/poll'
 export * as PubLeafletBlocksText from './types/pub/leaflet/blocks/text'
 export * as PubLeafletBlocksUnorderedList from './types/pub/leaflet/blocks/unorderedList'
 export * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
@@ -76,6 +80,8 @@ export * as PubLeafletDocument from './types/pub/leaflet/document'
 export * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
 export * as PubLeafletPagesCanvas from './types/pub/leaflet/pages/canvas'
 export * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
+export * as PubLeafletPollDefinition from './types/pub/leaflet/poll/definition'
+export * as PubLeafletPollVote from './types/pub/leaflet/poll/vote'
 export * as PubLeafletPublication from './types/pub/leaflet/publication'
 export * as PubLeafletRichtextFacet from './types/pub/leaflet/richtext/facet'
 export * as PubLeafletThemeBackgroundImage from './types/pub/leaflet/theme/backgroundImage'
@@ -385,6 +391,7 @@ export class PubLeafletNS {
   blocks: PubLeafletBlocksNS
   graph: PubLeafletGraphNS
   pages: PubLeafletPagesNS
+  poll: PubLeafletPollNS
   richtext: PubLeafletRichtextNS
   theme: PubLeafletThemeNS
 
@@ -393,6 +400,7 @@ export class PubLeafletNS {
     this.blocks = new PubLeafletBlocksNS(client)
     this.graph = new PubLeafletGraphNS(client)
     this.pages = new PubLeafletPagesNS(client)
+    this.poll = new PubLeafletPollNS(client)
     this.richtext = new PubLeafletRichtextNS(client)
     this.theme = new PubLeafletThemeNS(client)
     this.comment = new PubLeafletCommentRecord(client)
@@ -507,6 +515,180 @@ export class PubLeafletPagesNS {
 
   constructor(client: XrpcClient) {
     this._client = client
+  }
+}
+
+export class PubLeafletPollNS {
+  _client: XrpcClient
+  definition: PubLeafletPollDefinitionRecord
+  vote: PubLeafletPollVoteRecord
+
+  constructor(client: XrpcClient) {
+    this._client = client
+    this.definition = new PubLeafletPollDefinitionRecord(client)
+    this.vote = new PubLeafletPollVoteRecord(client)
+  }
+}
+
+export class PubLeafletPollDefinitionRecord {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+
+  async list(
+    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
+  ): Promise<{
+    cursor?: string
+    records: { uri: string; value: PubLeafletPollDefinition.Record }[]
+  }> {
+    const res = await this._client.call('com.atproto.repo.listRecords', {
+      collection: 'pub.leaflet.poll.definition',
+      ...params,
+    })
+    return res.data
+  }
+
+  async get(
+    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
+  ): Promise<{
+    uri: string
+    cid: string
+    value: PubLeafletPollDefinition.Record
+  }> {
+    const res = await this._client.call('com.atproto.repo.getRecord', {
+      collection: 'pub.leaflet.poll.definition',
+      ...params,
+    })
+    return res.data
+  }
+
+  async create(
+    params: OmitKey<
+      ComAtprotoRepoCreateRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletPollDefinition.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.poll.definition'
+    const res = await this._client.call(
+      'com.atproto.repo.createRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async put(
+    params: OmitKey<
+      ComAtprotoRepoPutRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletPollDefinition.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.poll.definition'
+    const res = await this._client.call(
+      'com.atproto.repo.putRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async delete(
+    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
+    headers?: Record<string, string>,
+  ): Promise<void> {
+    await this._client.call(
+      'com.atproto.repo.deleteRecord',
+      undefined,
+      { collection: 'pub.leaflet.poll.definition', ...params },
+      { headers },
+    )
+  }
+}
+
+export class PubLeafletPollVoteRecord {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+
+  async list(
+    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
+  ): Promise<{
+    cursor?: string
+    records: { uri: string; value: PubLeafletPollVote.Record }[]
+  }> {
+    const res = await this._client.call('com.atproto.repo.listRecords', {
+      collection: 'pub.leaflet.poll.vote',
+      ...params,
+    })
+    return res.data
+  }
+
+  async get(
+    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
+  ): Promise<{ uri: string; cid: string; value: PubLeafletPollVote.Record }> {
+    const res = await this._client.call('com.atproto.repo.getRecord', {
+      collection: 'pub.leaflet.poll.vote',
+      ...params,
+    })
+    return res.data
+  }
+
+  async create(
+    params: OmitKey<
+      ComAtprotoRepoCreateRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletPollVote.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.poll.vote'
+    const res = await this._client.call(
+      'com.atproto.repo.createRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async put(
+    params: OmitKey<
+      ComAtprotoRepoPutRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletPollVote.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.poll.vote'
+    const res = await this._client.call(
+      'com.atproto.repo.putRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async delete(
+    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
+    headers?: Record<string, string>,
+  ): Promise<void> {
+    await this._client.call(
+      'com.atproto.repo.deleteRecord',
+      undefined,
+      { collection: 'pub.leaflet.poll.vote', ...params },
+      { headers },
+    )
   }
 }
 

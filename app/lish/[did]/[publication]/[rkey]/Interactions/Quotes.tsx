@@ -140,6 +140,7 @@ export const QuoteContent = (props: {
       >
         <div className="italic border border-border-light rounded-md px-2 pt-1">
           <PostContent
+            pollData={[]}
             pages={[]}
             bskyPostData={[]}
             blocks={content}

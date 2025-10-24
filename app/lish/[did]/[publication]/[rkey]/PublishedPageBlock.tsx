@@ -178,6 +178,7 @@ export function PagePreview(props: {
           />
         )}
         <PostContent
+          pollData={[]}
           pages={[]}
           did={props.did}
           blocks={props.blocks}
@@ -311,6 +312,7 @@ const CanvasLinkBlock = (props: {
                 >
                   <div className="contents">
                     <Block
+                      pollData={[]}
                       pageId={props.pageId}
                       pages={props.pages}
                       bskyPostData={props.bskyPostData}

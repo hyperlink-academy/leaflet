@@ -235,7 +235,6 @@ export const blockCommands: Command[] = [
     name: "Poll",
     icon: <BlockPollSmall />,
     type: "block",
-    hiddenInPublication: true,
     onSelect: async (rep, props, um) => {
       let entity = await createBlockWithType(rep, props, "poll");
       let pollOptionEntity = v7();

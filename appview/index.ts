@@ -9,6 +9,8 @@ import {
   PubLeafletGraphSubscription,
   PubLeafletPublication,
   PubLeafletComment,
+  PubLeafletPollVote,
+  PubLeafletPollDefinition,
 } from "lexicons/api";
 import {
   AppBskyEmbedExternal,
@@ -44,6 +46,8 @@ async function main() {
       ids.PubLeafletPublication,
       ids.PubLeafletGraphSubscription,
       ids.PubLeafletComment,
+      ids.PubLeafletPollVote,
+      ids.PubLeafletPollDefinition,
       // ids.AppBskyActorProfile,
       "app.bsky.feed.post",
     ],
@@ -165,6 +169,43 @@ async function handleEvent(evt: Event) {
     if (evt.event === "delete") {
       await supabase
         .from("comments_on_documents")
+        .delete()
+        .eq("uri", evt.uri.toString());
+    }
+  }
+  if (evt.collection === ids.PubLeafletPollVote) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletPollVote.validateRecord(evt.record);
+      if (!record.success) return;
+      let { error } = await supabase.from("atp_poll_votes").upsert({
+        uri: evt.uri.toString(),
+        voter_did: evt.did,
+        poll_uri: record.value.poll.uri,
+        poll_cid: record.value.poll.cid,
+        record: record.value as Json,
+      });
+    }
+    if (evt.event === "delete") {
+      await supabase
+        .from("atp_poll_votes")
+        .delete()
+        .eq("uri", evt.uri.toString());
+    }
+  }
+  if (evt.collection === ids.PubLeafletPollDefinition) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletPollDefinition.validateRecord(evt.record);
+      if (!record.success) return;
+      let { error } = await supabase.from("atp_poll_records").upsert({
+        uri: evt.uri.toString(),
+        cid: evt.cid.toString(),
+        record: record.value as Json,
+      });
+      if (error) console.log("Error upserting poll definition:", error);
+    }
+    if (evt.event === "delete") {
+      await supabase
+        .from("atp_poll_records")
         .delete()
         .eq("uri", evt.uri.toString());
     }

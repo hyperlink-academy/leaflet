@@ -264,6 +264,21 @@ export const PubLeafletBlocksIFrame: LexiconDoc = {
     },
   },
 };
+
+export const PubLeafletBlocksPoll: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.poll",
+  defs: {
+    main: {
+      type: "object",
+      required: ["pollRef"],
+      properties: {
+        pollRef: { type: "ref", ref: "com.atproto.repo.strongRef" },
+      },
+    },
+  },
+};
+
 export const BlockLexicons = [
   PubLeafletBlocksIFrame,
   PubLeafletBlocksText,
@@ -277,6 +292,7 @@ export const BlockLexicons = [
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksPage,
+  PubLeafletBlocksPoll,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",

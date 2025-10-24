@@ -22,6 +22,7 @@ import { AppBskyFeedDefs } from "@atproto/api";
 import { useDrawerOpen } from "./Interactions/InteractionDrawer";
 import { PageWrapper } from "components/Pages/Page";
 import { decodeQuotePosition } from "./quotePosition";
+import { PollData } from "./fetchPollData";
 
 export function LinearDocumentPage({
   document,
@@ -35,6 +36,7 @@ export function LinearDocumentPage({
   document_uri,
   pageId,
   pageOptions,
+  pollData,
   fullPageScroll,
 }: {
   document_uri: string;
@@ -45,6 +47,7 @@ export function LinearDocumentPage({
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  pollData: PollData[];
   preferences: { showComments?: boolean };
   pageId?: string;
   pageOptions?: React.ReactNode;
@@ -81,6 +84,7 @@ export function LinearDocumentPage({
           />
         )}
         <PostContent
+          pollData={pollData}
           pages={record.pages as PubLeafletPagesLinearDocument.Main[]}
           pageId={pageId}
           bskyPostData={bskyPostData}
