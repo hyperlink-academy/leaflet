@@ -42,6 +42,7 @@ import { Json } from "supabase/database.types";
 import { $Typed, UnicodeString } from "@atproto/api";
 import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
 import { getBlocksWithTypeLocal } from "src/hooks/queries/useBlocks";
+import { Lock } from "src/utils/lock";
 
 export async function publishToPublication({
   root_entity,
@@ -162,6 +163,9 @@ async function processBlocksToPages(
     type: "doc" | "canvas";
   }[] = [];
 
+  // Create a lock to serialize image uploads
+  const uploadLock = new Lock();
+
   let firstEntity = scan.eav(root_entity, "root/page")?.[0];
   if (!firstEntity) throw new Error("No root page");
   let blocks = getBlocksWithTypeLocal(facts, firstEntity?.data.value);
@@ -172,10 +176,12 @@ async function processBlocksToPages(
     let data = await fetch(src);
     if (data.status !== 200) return;
     let binary = await data.blob();
-    let blob = await agent.com.atproto.repo.uploadBlob(binary, {
-      headers: { "Content-Type": binary.type },
+    return uploadLock.withLock(async () => {
+      let blob = await agent.com.atproto.repo.uploadBlob(binary, {
+        headers: { "Content-Type": binary.type },
+      });
+      return blob.data.blob;
     });
-    return blob.data.blob;
   }
   async function blocksToRecord(
     blocks: Block[],
