@@ -37,7 +37,6 @@ export function MathBlock(props: BlockProps) {
       block={props}
       spellCheck={false}
       autoCapitalize="none"
-      autoComplete="off"
       autoCorrect="off"
       className="bg-border-light rounded-md p-2 w-full min-h-[48px] whitespace-nowrap overflow-auto! border-border-light outline-border-light selected-outline"
       placeholder="write some Tex here..."

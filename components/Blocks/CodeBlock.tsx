@@ -125,7 +125,6 @@ export function CodeBlock(props: BlockProps) {
             block={props}
             spellCheck={false}
             autoCapitalize="none"
-            autoComplete="off"
             autoCorrect="off"
             className="codeBlockEditor whitespace-nowrap! overflow-auto! font-mono p-2"
             value={content?.data.value}
