@@ -152,7 +152,7 @@ export const Interactions = (props: {
   );
 };
 
-export function getCommentCount(document: PostPageData, pageId?: string) {
+export function getQuoteCount(document: PostPageData, pageId?: string) {
   if (!document) return;
 
   if (pageId)
@@ -169,7 +169,7 @@ export function getCommentCount(document: PostPageData, pageId?: string) {
     }).length;
 }
 
-export function getQuoteCount(document: PostPageData, pageId?: string) {
+export function getCommentCount(document: PostPageData, pageId?: string) {
   if (!document) return;
   if (pageId)
     return document.comments_on_documents.filter(
