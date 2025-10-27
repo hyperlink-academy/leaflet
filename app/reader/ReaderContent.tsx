@@ -20,6 +20,7 @@ import { getReaderFeed } from "./getReaderFeed";
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 export const ReaderContent = (props: {
   root_entity: string;
@@ -198,17 +199,22 @@ const PostInfo = (props: {
   author: string;
   publishedAt: string | undefined;
 }) => {
+  const formattedDate = useLocalizedDate(
+    props.publishedAt || new Date().toISOString(),
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }
+  );
+
   return (
     <div className="flex flex-wrap gap-2 grow items-center shrink-0">
       {props.author}
       {props.publishedAt && (
         <>
           <Separator classname="h-4 !min-h-0" />
-          {new Date(props.publishedAt).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          })}{" "}
+          {formattedDate}{" "}
         </>
       )}
     </div>

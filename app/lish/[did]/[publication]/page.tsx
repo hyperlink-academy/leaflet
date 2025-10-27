@@ -14,6 +14,7 @@ import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { SpeedyLink } from "components/SpeedyLink";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
+import { LocalizedDate } from "./LocalizedDate";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -152,14 +153,16 @@ export default async function Publication(props: {
 
                           <div className="text-sm text-tertiary flex gap-1 flex-wrap pt-2">
                             <p className="text-sm text-tertiary ">
-                              {doc_record.publishedAt &&
-                                new Date(
-                                  doc_record.publishedAt,
-                                ).toLocaleDateString(undefined, {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "2-digit",
-                                })}{" "}
+                              {doc_record.publishedAt && (
+                                <LocalizedDate
+                                  dateString={doc_record.publishedAt}
+                                  options={{
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "2-digit",
+                                  }}
+                                />
+                              )}{" "}
                             </p>
                             {comments > 0 || quotes > 0 ? "| " : ""}
                             {quotes > 0 && (
