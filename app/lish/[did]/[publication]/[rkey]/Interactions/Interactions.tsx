@@ -9,6 +9,8 @@ import { QuotePosition } from "../quotePosition";
 import { useContext } from "react";
 import { PostPageContext } from "../PostPageContext";
 import { scrollIntoView } from "src/utils/scrollIntoView";
+import { TagTiny } from "components/Icons/TagTiny";
+import { Tag } from "components/Tags";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -109,43 +111,103 @@ export const Interactions = (props: {
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
 
   return (
-    <div
-      className={`flex gap-2 text-tertiary ${props.compact ? "text-sm" : "px-3 sm:px-4"} ${props.className}`}
-    >
-      <button
-        className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
-        onClick={() => {
-          if (!drawerOpen || drawer !== "quotes")
-            openInteractionDrawer("quotes", document_uri, props.pageId);
-          else setInteractionState(document_uri, { drawerOpen: false });
-        }}
-        aria-label="Post quotes"
+    <div className="flex flex-col">
+      <div
+        className={`flex gap-2 items-center not-only:text-tertiary ${props.compact ? "text-sm" : "px-3 sm:px-4"} ${props.className}`}
       >
-        <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
-        {!props.compact && (
-          <span
-            aria-hidden
-          >{`Quote${props.quotesCount === 1 ? "" : "s"}`}</span>
+        {props.compact && (
+          <button
+            className="flex gap-1 items-center "
+            onClick={() => {
+              if (!drawerOpen || drawer !== "quotes")
+                openInteractionDrawer("quotes", document_uri, props.pageId);
+              else setInteractionState(document_uri, { drawerOpen: false });
+            }}
+          >
+            <TagTiny /> XX
+          </button>
         )}
-      </button>
-      {props.showComments === false ? null : (
         <button
           className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
           onClick={() => {
-            if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
-              openInteractionDrawer("comments", document_uri, props.pageId);
+            if (!drawerOpen || drawer !== "quotes")
+              openInteractionDrawer("quotes", document_uri, props.pageId);
             else setInteractionState(document_uri, { drawerOpen: false });
           }}
-          aria-label="Post comments"
+          aria-label="Post quotes"
         >
-          <CommentTiny aria-hidden /> {props.commentsCount}{" "}
+          <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
           {!props.compact && (
             <span
               aria-hidden
-            >{`Comment${props.commentsCount === 1 ? "" : "s"}`}</span>
+            >{`Quote${props.quotesCount === 1 ? "" : "s"}`}</span>
           )}
         </button>
+        {props.showComments === false ? null : (
+          <button
+            className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
+            onClick={() => {
+              if (
+                !drawerOpen ||
+                drawer !== "comments" ||
+                pageId !== props.pageId
+              )
+                openInteractionDrawer("comments", document_uri, props.pageId);
+              else setInteractionState(document_uri, { drawerOpen: false });
+            }}
+            aria-label="Post comments"
+          >
+            <CommentTiny aria-hidden /> {props.commentsCount}{" "}
+            {!props.compact && (
+              <span
+                aria-hidden
+              >{`Comment${props.commentsCount === 1 ? "" : "s"}`}</span>
+            )}
+          </button>
+        )}
+      </div>
+
+      {!props.compact && (
+        <TagList
+          drawerOpen={drawerOpen}
+          drawer={drawer}
+          document_uri={document_uri}
+          pageId={props.pageId}
+        />
       )}
     </div>
   );
 };
+
+const TagList = (props: {
+  drawerOpen: boolean | undefined;
+  drawer: string | undefined;
+  document_uri: string;
+  pageId: string | undefined;
+}) => {
+  return (
+    <div className="flex flex-col gap-3 px-3 sm:px-4 pt-2">
+      <hr className="border-border-light" />
+      <div className="flex gap-1 flex-wrap">
+        {Tags.map((tag, index) => (
+          <Tag
+            name={tag}
+            key={index}
+            onClick={() => {
+              if (!props.drawerOpen || props.drawer !== "quotes")
+                openInteractionDrawer(
+                  "quotes",
+                  props.document_uri,
+                  props.pageId,
+                );
+              else
+                setInteractionState(props.document_uri, { drawerOpen: false });
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const Tags = ["Hello", "these are", "some tags"];

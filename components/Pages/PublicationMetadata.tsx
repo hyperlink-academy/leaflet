@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useReplicache } from "src/replicache";
 import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { Separator } from "components/Layout";
 import { AtUri } from "@atproto/syntax";
-import { PubLeafletDocument } from "lexicons/api";
+import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import {
   getBasePublicationURL,
   getPublicationURL,
@@ -13,11 +13,12 @@ import {
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { timeAgo } from "src/utils/timeAgo";
-export const PublicationMetadata = ({
-  cardBorderHidden,
-}: {
-  cardBorderHidden: boolean;
-}) => {
+import { CommentTiny } from "components/Icons/CommentTiny";
+import { QuoteTiny } from "components/Icons/QuoteTiny";
+import { TagTiny } from "components/Icons/TagTiny";
+import { Popover } from "components/Popover";
+import { TagSearchInput, TagSelector } from "components/Tags";
+export const PublicationMetadata = () => {
   let { rep } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
   let title = useSubscribe(rep, (tx) => tx.get<string>("publication_title"));
@@ -25,6 +26,7 @@ export const PublicationMetadata = ({
     tx.get<string>("publication_description"),
   );
   let record = pub?.documents?.data as PubLeafletDocument.Record | null;
+  let pubRecord = pub?.publications?.record as PubLeafletPublication.Record;
   let publishedAt = record?.publishedAt;
 
   if (!pub || !pub.publications) return null;
@@ -37,15 +39,27 @@ export const PublicationMetadata = ({
   }
   return (
     <div className={`flex flex-col px-3 sm:px-4 pb-5 sm:pt-3 pt-2`}>
-      <div className="flex gap-2">
+      <div className="w-full flex gap-2 justify-between">
         <Link
           href={`${getBasePublicationURL(pub.publications)}/dashboard`}
           className="leafletMetadata text-accent-contrast font-bold hover:no-underline"
         >
           {pub.publications?.name}
         </Link>
-        <div className="font-bold text-tertiary px-1 text-sm flex place-items-center bg-border-light rounded-md ">
-          Editor
+
+        <div className="flex gap-2 items-center">
+          {pub.doc && (
+            <Link
+              target="_blank"
+              className="text-sm"
+              href={`${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`}
+            >
+              View Post
+            </Link>
+          )}
+          <div className="font-bold text-tertiary px-1 text-sm flex place-items-center bg-border rounded-md ">
+            Editor
+          </div>
         </div>
       </div>
       <TextField
@@ -72,17 +86,23 @@ export const PublicationMetadata = ({
       />
       {pub.doc ? (
         <div className="flex flex-row items-center gap-2 pt-3">
+          <p className="text-sm text-tertiary"> celine</p>
+          <Separator classname="h-4" />
           <p className="text-sm text-tertiary">
             Published {publishedAt && timeAgo(publishedAt)}
           </p>
           <Separator classname="h-4" />
-          <Link
-            target="_blank"
-            className="text-sm"
-            href={`${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`}
-          >
-            View Post
-          </Link>
+          <div className="flex gap-2 text-border">
+            <AddTags />
+            <div className="flex gap-1 items-center">
+              <QuoteTiny />—
+            </div>
+            {pubRecord.preferences?.showComments && (
+              <div className="flex gap-1 items-center">
+                <CommentTiny />—
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <p className="text-sm text-tertiary pt-2">Draft</p>
@@ -194,5 +214,21 @@ export const PublicationMetadataPreview = () => {
         <p className="text-sm text-tertiary pt-2">Draft</p>
       )}
     </div>
+  );
+};
+
+const AddTags = () => {
+  // Just update the database with tags as the user adds them, no explicit submit button
+  return (
+    <Popover
+      className="p-2! w-[1000px] max-w-sm"
+      trigger={
+        <div className="flex gap-1 hover:underline text-sm items-center">
+          <TagTiny /> Add Tags
+        </div>
+      }
+    >
+      <TagSelector />
+    </Popover>
   );
 };

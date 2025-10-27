@@ -65,7 +65,7 @@ export function Page(props: {
       >
         {props.first && (
           <>
-            <PublicationMetadata cardBorderHidden={!!cardBorderHidden} />
+            <PublicationMetadata />
           </>
         )}
         <PageContent entityID={props.entityID} />

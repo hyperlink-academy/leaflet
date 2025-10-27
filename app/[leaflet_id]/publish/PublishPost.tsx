@@ -6,7 +6,7 @@ import { ButtonPrimary } from "components/Buttons";
 import { Radio } from "components/Checkbox";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { AutosizeTextarea } from "components/utils/AutosizeTextarea";
+
 import { PubLeafletPublication } from "lexicons/api";
 import { publishPostToBsky } from "./publishBskyPost";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
@@ -18,7 +18,7 @@ import {
   editorStateToFacetedText,
 } from "./BskyPostEditorProsemirror";
 import { EditorState } from "prosemirror-state";
-import { TagSelector } from "./TagSelector";
+import { TagSelector } from "../../../components/Tags";
 
 type Props = {
   title: string;
@@ -102,7 +102,12 @@ const PublishPostForm = (
       }}
     >
       <div className="container flex flex-col gap-6 sm:p-3 p-4 max-w-screen sm:max-w-xl w-[1000px]">
-        <TagSelector />
+        <div className="flex flex-col gap-2">
+          <h4>Add Global Tags</h4>
+          <div>
+            <TagSelector />
+          </div>
+        </div>
         <ShareOptions
           setShareOption={setShareOption}
           shareOption={shareOption}

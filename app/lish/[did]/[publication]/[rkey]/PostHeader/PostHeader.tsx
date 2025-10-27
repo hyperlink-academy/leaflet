@@ -12,6 +12,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import { EditTiny } from "components/Icons/EditTiny";
 import { SpeedyLink } from "components/SpeedyLink";
 import { decodeQuotePosition } from "../quotePosition";
+import { Separator } from "components/Layout";
 
 export function PostHeader(props: {
   data: PostPageData;
@@ -64,20 +65,21 @@ export function PostHeader(props: {
           <p className="italic text-secondary">{record.description}</p>
         ) : null}
 
-        <div className="text-sm text-tertiary pt-3 flex gap-1 flex-wrap">
+        <div className="text-sm text-tertiary pt-3 flex gap-2 items-center flex-wrap">
           {profile ? (
             <>
               <a
                 className="text-tertiary"
                 href={`https://bsky.app/profile/${profile.handle}`}
               >
-                by {profile.displayName || profile.handle}
+                {profile.displayName || profile.handle}
               </a>
             </>
           ) : null}
           {record.publishedAt ? (
             <>
-              |
+              <Separator classname="h-4" />
+
               <p>
                 {new Date(record.publishedAt).toLocaleDateString(undefined, {
                   year: "numeric",
@@ -87,7 +89,8 @@ export function PostHeader(props: {
               </p>
             </>
           ) : null}
-          |{" "}
+          <Separator classname="h-4" />
+
           <Interactions
             showComments={props.preferences.showComments}
             compact

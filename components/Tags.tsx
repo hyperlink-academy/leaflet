@@ -19,35 +19,30 @@ export const TagSelector = (props: {}) => {
   let [selectedTags, setSelectedTags] = useState<string[]>([]);
   return (
     <div className="flex flex-col gap-2">
-      <h4>Add Global Tags</h4>
-      <div className="relative flex flex-col gap-1 opaque-container p-2 ">
-        <TagSearchInput
-          selectedTags={selectedTags}
-          setSelectedTags={setSelectedTags}
-        />
-        {selectedTags.length > 0 ? (
-          <div className="flex flex-wrap gap-2 ">
-            {selectedTags.map((tag) => (
-              <Tag
-                name={tag}
-                selected
-                onDelete={() => {
-                  setSelectedTags(selectedTags.filter((t) => t !== tag));
-                }}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-tertiary italic text-sm h-6">
-            no tags selected
-          </div>
-        )}
-      </div>
+      <TagSearchInput
+        selectedTags={selectedTags}
+        setSelectedTags={setSelectedTags}
+      />
+      {selectedTags.length > 0 ? (
+        <div className="flex flex-wrap gap-2 ">
+          {selectedTags.map((tag) => (
+            <Tag
+              name={tag}
+              selected
+              onDelete={() => {
+                setSelectedTags(selectedTags.filter((t) => t !== tag));
+              }}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-tertiary italic text-sm h-6">no tags selected</div>
+      )}
     </div>
   );
 };
 
-const Tag = (props: {
+export const Tag = (props: {
   name: string;
   selected?: boolean;
   onDelete?: (tag: string) => void;
@@ -78,16 +73,17 @@ const Tag = (props: {
   );
 };
 
-const TagSearchInput = (props: {
+export const TagSearchInput = (props: {
   selectedTags: string[];
   setSelectedTags: (tags: string[]) => void;
 }) => {
   let [tagInputValue, setTagInputValue] = useState("");
   let [isOpen, setIsOpen] = useState(false);
   let [highlightedIndex, setHighlightedIndex] = useState(0);
-  let inputWidth = document.getElementById(
-    "placeholder-tag-search-input",
-  )?.clientWidth;
+
+  const placeholderInputRef = useRef<HTMLButtonElement | null>(null);
+
+  let inputWidth = placeholderInputRef.current?.clientWidth;
 
   const filteredTags = Tags.filter(
     (tag) =>
@@ -142,7 +138,7 @@ const TagSearchInput = (props: {
     setUserInputResult(isTopResultShowing);
   }, [tagInputValue, filteredTags]);
   return (
-    <>
+    <div className="relative">
       <Input
         className="input-with-border grow w-full"
         id="placeholder-tag-search-input"
@@ -161,14 +157,26 @@ const TagSearchInput = (props: {
       />
       <Popover
         open={isOpen}
-        onOpenChange={setIsOpen}
+        onOpenChange={() => {
+          setIsOpen(!isOpen);
+          if (!isOpen)
+            setTimeout(() => {
+              document.getElementById("tag-search-input")?.focus();
+            }, 100);
+        }}
         className="!w-full px-[8px] py-2!"
-        sideOffset={-43}
+        sideOffset={-39}
         onOpenAutoFocus={(e) => e.preventDefault()}
-        trigger={<div className="absolute left-0 right-0"></div>}
+        asChild
+        trigger={
+          <button
+            ref={placeholderInputRef}
+            className="hello absolute left-0 top-0 right-0 h-[30px]"
+          ></button>
+        }
         noArrow
       >
-        <div className="" style={{ width: `calc(${inputWidth}px + 2px)` }}>
+        <div className="" style={{ width: `${inputWidth}px` }}>
           <Input
             className="input-with-border grow w-full mb-2"
             id="tag-search-input"
@@ -201,7 +209,7 @@ const TagSearchInput = (props: {
               <hr className="mt-[6px] mb-[2px] border-border-light" />
             </>
           )}
-          {userInputResult && ( 
+          {userInputResult && (
             <TagResult
               key={"userInput"}
               index={0}
@@ -229,7 +237,7 @@ const TagSearchInput = (props: {
           ))}
         </div>
       </Popover>
-    </>
+    </div>
   );
 };
 
