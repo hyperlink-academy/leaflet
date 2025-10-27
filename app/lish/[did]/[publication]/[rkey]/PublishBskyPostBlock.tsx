@@ -10,6 +10,7 @@ import { Separator } from "components/Layout";
 import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import {
   BlueskyEmbed,
   PostNotAvailable,
@@ -121,19 +122,16 @@ export const PubBlueskyPostBlock = (props: {
 
 const ClientDate = (props: { date?: string }) => {
   let pageLoaded = useInitialPageLoad();
+  const formattedDate = useLocalizedDate(props.date || new Date().toISOString(), {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: true,
+  });
+
   if (!pageLoaded) return null;
 
-  let datetimeFormatted = new Date(props.date ? props.date : "").toLocaleString(
-    "en-US",
-    {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "numeric",
-      hour12: true,
-    },
-  );
-
-  return <div className="text-xs text-tertiary">{datetimeFormatted}</div>;
+  return <div className="text-xs text-tertiary">{formattedDate}</div>;
 };
