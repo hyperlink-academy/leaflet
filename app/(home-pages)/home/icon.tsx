@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
-import { Database } from "../../supabase/database.types";
+import { Database } from "supabase/database.types";
 import { createServerClient } from "@supabase/ssr";
 import { parseHSBToRGB } from "src/utils/parseHSB";
 import { cookies } from "next/headers";

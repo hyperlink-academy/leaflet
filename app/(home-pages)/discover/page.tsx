@@ -37,21 +37,19 @@ export default async function Discover(props: {
   let publications = await getPublications();
 
   return (
-    <div className="w-full h-full mx-auto bg-[#FDFCFA]">
-      <DashboardLayout
-        id="discover"
-        cardBorderHidden={false}
-        currentPage="discover"
-        defaultTab="default"
-        actions={null}
-        tabs={{
-          default: {
-            controls: null,
-            content: <DiscoverContent order={order} />,
-          },
-        }}
-      />
-    </div>
+    <DashboardLayout
+      id="discover"
+      cardBorderHidden={false}
+      currentPage="discover"
+      defaultTab="default"
+      actions={null}
+      tabs={{
+        default: {
+          controls: null,
+          content: <DiscoverContent order={order} />,
+        },
+      }}
+    />
   );
 }
 

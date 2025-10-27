@@ -38,7 +38,7 @@ type CSSVariables = {
 
 // define the color defaults for everything
 export const ThemeDefaults = {
-  "theme/page-background": "#F0F7FA",
+  "theme/page-background": "#FDFCFA",
   "theme/card-background": "#FFFFFF",
   "theme/primary": "#272727",
   "theme/highlight-1": "#FFFFFF",

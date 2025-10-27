@@ -23,7 +23,6 @@ import Link from "next/link";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 export const ReaderContent = (props: {
-  root_entity: string;
   posts: Post[];
   nextCursor: Cursor | null;
 }) => {
@@ -205,7 +204,7 @@ const PostInfo = (props: {
       year: "numeric",
       month: "short",
       day: "numeric",
-    }
+    },
   );
 
   return (
