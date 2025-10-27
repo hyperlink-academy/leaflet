@@ -2,9 +2,11 @@
 import { useContext, useMemo } from "react";
 import { DateTime } from "luxon";
 import { RequestHeadersContext } from "components/Providers/RequestHeadersProvider";
+import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 
 /**
  * Hook that formats a date string using Luxon with timezone and locale from request headers.
+ * On initial page load, uses the timezone from request headers. After hydration, uses the system timezone.
  *
  * @param dateString - ISO date string to format
  * @param options - Intl.DateTimeFormatOptions for formatting
@@ -18,14 +20,20 @@ export function useLocalizedDate(
   options?: Intl.DateTimeFormatOptions,
 ): string {
   const { timezone, language } = useContext(RequestHeadersContext);
+  const isInitialPageLoad = useInitialPageLoad();
 
   return useMemo(() => {
     // Parse the date string to Luxon DateTime
     let dateTime = DateTime.fromISO(dateString);
 
+    // On initial page load, use header timezone. After hydration, use system timezone
+    const effectiveTimezone = isInitialPageLoad
+      ? timezone
+      : Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     // Apply timezone if available
-    if (timezone) {
-      dateTime = dateTime.setZone(timezone);
+    if (effectiveTimezone) {
+      dateTime = dateTime.setZone(effectiveTimezone);
     }
 
     // Parse locale from accept-language header (take first locale)
@@ -33,5 +41,5 @@ export function useLocalizedDate(
     const locale = language?.split(",")[0]?.split(";")[0]?.trim() || "en-US";
 
     return dateTime.toLocaleString(options, { locale });
-  }, [dateString, options, timezone, language]);
+  }, [dateString, options, timezone, language, isInitialPageLoad]);
 }
