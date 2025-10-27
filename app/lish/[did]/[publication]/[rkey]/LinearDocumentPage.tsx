@@ -105,7 +105,8 @@ export function LinearDocumentPage({
               {identity &&
               identity.atp_did ===
                 document.documents_in_publications[0]?.publications
-                  ?.identity_did ? (
+                  ?.identity_did &&
+              document.leaflets_in_publications[0] ? (
                 <a
                   href={`https://leaflet.pub/${document.leaflets_in_publications[0]?.leaflet}`}
                   className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1 mx-auto"
