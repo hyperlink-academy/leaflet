@@ -116,6 +116,11 @@ async function handleEvent(evt: Event) {
           publication: record.value.publication,
           document: evt.uri.toString(),
         });
+      await supabase
+        .from("documents_in_publications")
+        .delete()
+        .neq("publication", record.value.publication)
+        .eq("document", evt.uri.toString());
       if (docInPublicationResult.error)
         console.log(docInPublicationResult.error);
     }
