@@ -1,6 +1,6 @@
 "use client";
 import { AtUri } from "@atproto/syntax";
-import { PubLeafletDocument } from "lexicons/api";
+import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import { EditTiny } from "components/Icons/EditTiny";
 
 import { usePublicationData } from "./PublicationSWRProvider";
@@ -17,6 +17,7 @@ import { ShareButton } from "components/ShareOptions";
 import { SpeedyLink } from "components/SpeedyLink";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
+import { InteractionPreview } from "components/InteractionsPreview";
 
 export function PublishedPostsList(props: {
   searchValue: string;
@@ -25,6 +26,8 @@ export function PublishedPostsList(props: {
   let { data } = usePublicationData();
   let params = useParams();
   let { publication } = data!;
+  let pubRecord = publication?.record as PubLeafletPublication.Record;
+
   if (!publication) return null;
   if (publication.documents_in_publications.length === 0)
     return (
@@ -52,7 +55,7 @@ export function PublishedPostsList(props: {
             (l) => doc.documents && l.doc === doc.documents.uri,
           );
           let uri = new AtUri(doc.documents.uri);
-          let record = doc.documents.data as PubLeafletDocument.Record;
+          let postRecord = doc.documents.data as PubLeafletDocument.Record;
           let quotes = doc.documents.document_mentions_in_bsky[0]?.count || 0;
           let comments = doc.documents.comments_on_documents[0]?.count || 0;
 
@@ -74,7 +77,7 @@ export function PublishedPostsList(props: {
                       href={`${getPublicationURL(publication)}/${uri.rkey}`}
                     >
                       <h3 className="text-primary grow leading-snug">
-                        {record.title}
+                        {postRecord.title}
                       </h3>
                     </a>
                     <div className="flex justify-start align-top flex-row gap-1">
@@ -90,16 +93,16 @@ export function PublishedPostsList(props: {
                     </div>
                   </div>
 
-                  {record.description ? (
+                  {postRecord.description ? (
                     <p className="italic text-secondary">
-                      {record.description}
+                      {postRecord.description}
                     </p>
                   ) : null}
-                  <div className="text-sm text-tertiary flex gap-1 flex-wrap pt-3">
-                    {record.publishedAt ? (
+                  <div className="text-sm text-tertiary flex gap-3 justify-between sm:justify-start items-center pt-3">
+                    {postRecord.publishedAt ? (
                       <p className="text-sm text-tertiary">
                         Published{" "}
-                        {new Date(record.publishedAt).toLocaleDateString(
+                        {new Date(postRecord.publishedAt).toLocaleDateString(
                           undefined,
                           {
                             year: "numeric",
@@ -109,26 +112,13 @@ export function PublishedPostsList(props: {
                         )}
                       </p>
                     ) : null}
-                    {(comments > 0 || quotes > 0) && record.publishedAt
-                      ? " | "
-                      : ""}
-                    {quotes > 0 && (
-                      <SpeedyLink
-                        href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=quotes`}
-                        className="flex flex-row gap-1 text-sm text-tertiary items-center"
-                      >
-                        <QuoteTiny /> {quotes}
-                      </SpeedyLink>
-                    )}
-                    {comments > 0 && quotes > 0 ? " " : ""}
-                    {comments > 0 && (
-                      <SpeedyLink
-                        href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=comments`}
-                        className="flex flex-row gap-1 text-sm text-tertiary items-center"
-                      >
-                        <CommentTiny /> {comments}
-                      </SpeedyLink>
-                    )}
+                    <InteractionPreview
+                      quotesCount={quotes}
+                      commentsCount={comments}
+                      tagsCount={6}
+                      showComments={pubRecord?.preferences?.showComments}
+                      postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
+                    />
                   </div>
                 </div>
               </div>

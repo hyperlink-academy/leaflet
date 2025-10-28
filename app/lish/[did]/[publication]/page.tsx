@@ -14,6 +14,7 @@ import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { SpeedyLink } from "components/SpeedyLink";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
+import { InteractionPreview } from "components/InteractionsPreview";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -150,7 +151,7 @@ export default async function Publication(props: {
                             </p>
                           </SpeedyLink>
 
-                          <div className="text-sm text-tertiary flex gap-1 flex-wrap pt-2">
+                          <div className="text-sm text-tertiary flex gap-3 items-center justify-between pt-2">
                             <p className="text-sm text-tertiary ">
                               {doc_record.publishedAt &&
                                 new Date(
@@ -161,24 +162,14 @@ export default async function Publication(props: {
                                   day: "2-digit",
                                 })}{" "}
                             </p>
-                            {comments > 0 || quotes > 0 ? "| " : ""}
-                            {quotes > 0 && (
-                              <SpeedyLink
-                                href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=quotes`}
-                                className="flex flex-row gap-0 text-sm text-tertiary items-center flex-wrap"
-                              >
-                                <QuoteTiny /> {quotes}
-                              </SpeedyLink>
-                            )}
-                            {comments > 0 &&
-                              record?.preferences?.showComments !== false && (
-                                <SpeedyLink
-                                  href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=comments`}
-                                  className="flex flex-row gap-0 text-sm text-tertiary items-center flex-wrap"
-                                >
-                                  <CommentTiny /> {comments}
-                                </SpeedyLink>
-                              )}
+
+                            <InteractionPreview
+                              quotesCount={quotes}
+                              commentsCount={comments}
+                              tagsCount={6}
+                              showComments={record?.preferences?.showComments}
+                              postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
+                            />
                           </div>
                         </div>
                         <hr className="last:hidden border-border-light" />
