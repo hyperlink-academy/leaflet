@@ -2,7 +2,7 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { PubLeafletPublication } from "lexicons/api";
 import { useEntity, useReplicache } from "src/replicache";
 
-export function useCardBorderHidden(entityID: string) {
+export function useCardBorderHidden(entityID: string | null) {
   let { rootEntity } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
   let rootCardBorderHidden = useEntity(rootEntity, "theme/card-border-hidden");

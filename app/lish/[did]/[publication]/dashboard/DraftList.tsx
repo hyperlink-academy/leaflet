@@ -3,7 +3,7 @@
 import { NewDraftSecondaryButton } from "./NewDraftButton";
 import React from "react";
 import { usePublicationData } from "./PublicationSWRProvider";
-import { LeafletList } from "app/home/HomeLayout";
+import { LeafletList } from "app/(home-pages)/home/HomeLayout";
 
 export function DraftList(props: {
   searchValue: string;

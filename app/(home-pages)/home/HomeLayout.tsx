@@ -63,7 +63,7 @@ type Leaflet = {
 };
 
 export const HomeLayout = (props: {
-  entityID: string;
+  entityID: string | null;
   titles: { [root_entity: string]: string };
   initialFacts: {
     [root_entity: string]: Fact<Attribute>[];

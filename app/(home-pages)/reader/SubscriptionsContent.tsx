@@ -1,5 +1,5 @@
 "use client";
-import { PubListing } from "app/discover/PubListing";
+import { PubListing } from "app/(home-pages)/discover/PubListing";
 import { ButtonPrimary } from "components/Buttons";
 import { DiscoverSmall } from "components/Icons/DiscoverSmall";
 import { Json } from "supabase/database.types";
