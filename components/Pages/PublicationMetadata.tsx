@@ -223,7 +223,7 @@ const AddTags = () => {
     <Popover
       className="p-2! w-[1000px] max-w-sm"
       trigger={
-        <div className="flex gap-1 hover:underline text-sm items-center">
+        <div className="flex gap-1 hover:underline text-sm items-center text-tertiary">
           <TagTiny /> Add Tags
         </div>
       }

@@ -15,33 +15,6 @@ const Tags: { name: string; tagged: number }[] = [
   { name: "pokemon", tagged: 81 },
 ];
 
-export const TagSelector = (props: {}) => {
-  let [selectedTags, setSelectedTags] = useState<string[]>([]);
-  return (
-    <div className="flex flex-col gap-2">
-      <TagSearchInput
-        selectedTags={selectedTags}
-        setSelectedTags={setSelectedTags}
-      />
-      {selectedTags.length > 0 ? (
-        <div className="flex flex-wrap gap-2 ">
-          {selectedTags.map((tag) => (
-            <Tag
-              name={tag}
-              selected
-              onDelete={() => {
-                setSelectedTags(selectedTags.filter((t) => t !== tag));
-              }}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-tertiary italic text-sm h-6">no tags selected</div>
-      )}
-    </div>
-  );
-};
-
 export const Tag = (props: {
   name: string;
   selected?: boolean;
@@ -69,6 +42,33 @@ export const Tag = (props: {
           <CloseTiny className="scale-75 pr-1" />
         </button>
       ) : null}
+    </div>
+  );
+};
+
+export const TagSelector = (props: {}) => {
+  let [selectedTags, setSelectedTags] = useState<string[]>([]);
+  return (
+    <div className="flex flex-col gap-2">
+      <TagSearchInput
+        selectedTags={selectedTags}
+        setSelectedTags={setSelectedTags}
+      />
+      {selectedTags.length > 0 ? (
+        <div className="flex flex-wrap gap-2 ">
+          {selectedTags.map((tag) => (
+            <Tag
+              name={tag}
+              selected
+              onDelete={() => {
+                setSelectedTags(selectedTags.filter((t) => t !== tag));
+              }}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-tertiary italic text-sm h-6">no tags selected</div>
+      )}
     </div>
   );
 };

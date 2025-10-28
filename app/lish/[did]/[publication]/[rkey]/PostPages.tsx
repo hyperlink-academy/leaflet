@@ -29,6 +29,7 @@ import { flushSync } from "react-dom";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 import { useParams } from "next/navigation";
 import { decodeQuotePosition } from "./quotePosition";
+import { PostFooter } from "./PostFooter";
 
 const usePostPageUIState = create(() => ({
   pages: [] as string[],
@@ -124,7 +125,6 @@ export function PostPages({
   bskyPostData: AppBskyFeedDefs.PostView[];
   preferences: { showComments?: boolean };
 }) {
-  let { identity } = useIdentityData();
   let drawer = useDrawerOpen(document_uri);
   useInitializeOpenPages();
   let pages = useOpenPages();
@@ -156,50 +156,11 @@ export function PostPages({
           did={did}
           prerenderedCodeBlocks={prerenderedCodeBlocks}
         />
-        <Interactions
-          showComments={preferences.showComments}
-          quotesCount={
-            document.document_mentions_in_bsky.filter((q) => {
-              const url = new URL(q.link);
-              const quoteParam = url.pathname.split("/l-quote/")[1];
-              if (!quoteParam) return null;
-              const quotePosition = decodeQuotePosition(quoteParam);
-              return !quotePosition?.pageId;
-            }).length
-          }
-          commentsCount={
-            document.comments_on_documents.filter(
-              (c) => !(c.record as PubLeafletComment.Record)?.onPage,
-            ).length
-          }
+        <PostFooter
+          data={document}
+          profile={profile}
+          preferences={preferences}
         />
-        <hr className="border-border-light mb-4 mt-4 sm:mx-4 mx-3" />
-        <div className="sm:px-4 px-3">
-          {identity &&
-          identity.atp_did ===
-            document.documents_in_publications[0]?.publications
-              ?.identity_did ? (
-            <a
-              href={`https://leaflet.pub/${document.leaflets_in_publications[0]?.leaflet}`}
-              className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1 mx-auto"
-            >
-              <EditTiny /> Edit Post
-            </a>
-          ) : (
-            <SubscribeWithBluesky
-              isPost
-              base_url={getPublicationURL(
-                document.documents_in_publications[0].publications,
-              )}
-              pub_uri={document.documents_in_publications[0].publications.uri}
-              subscribers={
-                document.documents_in_publications[0].publications
-                  .publication_subscriptions
-              }
-              pubName={document.documents_in_publications[0].publications.name}
-            />
-          )}
-        </div>
       </PageWrapper>
 
       {drawer && !drawer.pageId && (
@@ -223,7 +184,7 @@ export function PostPages({
         return (
           <Fragment key={p}>
             <SandwichSpacer />
-            {/*JARED TODO : drawerOpen here is checking whether the drawer is open on the first page, rather than if it's open on this page. Please rewire this when you add drawers per page!*/}
+
             <PageWrapper
               pageType="doc"
               cardBorderHidden={!hasPageBackground}

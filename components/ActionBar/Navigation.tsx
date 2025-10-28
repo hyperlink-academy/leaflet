@@ -117,19 +117,14 @@ const HomeButton = (props: { current?: boolean }) => {
 };
 
 const ReaderButton = (props: { current?: boolean; subs: boolean }) => {
-  let readerUnreads = false;
-
   if (!props.subs) return;
   return (
     <Link href={"/reader"} className="hover:no-underline!">
       <ActionButton
         nav
-        icon={readerUnreads ? <ReaderUnreadSmall /> : <ReaderReadSmall />}
+        icon={<ReaderUnreadSmall />}
         label="Reader"
-        className={`
-          ${readerUnreads && "text-accent-contrast!"}
-          ${props.current && "border-accent-contrast!"}
-        `}
+        className={props.current ? "bg-bg-page! border-border-light!" : ""}
       />
     </Link>
   );
