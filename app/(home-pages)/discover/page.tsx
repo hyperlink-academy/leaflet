@@ -34,7 +34,6 @@ export default async function Discover(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   let order = ((await props.searchParams).order as string) || "recentlyUpdated";
-  let publications = await getPublications();
 
   return (
     <DashboardLayout
