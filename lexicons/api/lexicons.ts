@@ -1492,6 +1492,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.horizontalRule',
               'lex:pub.leaflet.blocks.bskyPost',
               'lex:pub.leaflet.blocks.page',
+              'lex:pub.leaflet.blocks.poll',
             ],
           },
           x: {
