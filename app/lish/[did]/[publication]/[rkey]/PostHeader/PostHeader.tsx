@@ -64,22 +64,25 @@ export function PostHeader(props: {
         {record.description ? (
           <p className="italic text-secondary">{record.description}</p>
         ) : null}
-
-        <div className="text-sm text-tertiary pt-3 flex gap-2 items-center flex-wrap">
-          {profile ? (
-            <>
-              <a
-                className="text-tertiary"
-                href={`https://bsky.app/profile/${profile.handle}`}
-              >
-                {profile.displayName || profile.handle}
-              </a>
-            </>
-          ) : null}
-          {record.publishedAt ? (
-            <>
-              <Separator classname="h-4" />
-
+        <div className="flex flex-row gap-0 sm:gap-2 pt-3 justify-between">
+          <div className="text-sm text-tertiary flex gap-2 items-center ">
+            {profile ? (
+              <>
+                <a
+                  className="text-tertiary text-left"
+                  href={`https://bsky.app/profile/${profile.handle}`}
+                >
+                  {props.profile.avatar && (
+                    <img
+                      className="rounded-full w-4 h-4"
+                      src={props.profile.avatar}
+                      alt={props.profile.displayName}
+                    />
+                  )}
+                </a>
+              </>
+            ) : null}
+            {record.publishedAt ? (
               <p>
                 {new Date(record.publishedAt).toLocaleDateString(undefined, {
                   year: "numeric",
@@ -87,9 +90,10 @@ export function PostHeader(props: {
                   day: "2-digit",
                 })}
               </p>
-            </>
-          ) : null}
-          <Separator classname="h-4" />
+            ) : null}
+          </div>
+
+          <Separator classname="h-4 sm:block hidden" />
 
           <Interactions
             showComments={props.preferences.showComments}

@@ -11,11 +11,12 @@ import { PostPageContext } from "../PostPageContext";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 import { TagTiny } from "components/Icons/TagTiny";
 import { Tag } from "components/Tags";
+import { Popover } from "components/Popover";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
   pageId?: string;
-  drawer: undefined | "comments" | "quotes" | "tags";
+  drawer: undefined | "comments" | "quotes";
   localComments: Comment[];
   commentBox: { quote: QuotePosition | null };
 };
@@ -85,7 +86,7 @@ export function setInteractionState(
   });
 }
 export function openInteractionDrawer(
-  drawer: "comments" | "quotes" | "tags",
+  drawer: "comments" | "quotes",
   document_uri: string,
   pageId?: string,
 ) {
@@ -113,20 +114,9 @@ export const Interactions = (props: {
   return (
     <div className="flex flex-col">
       <div
-        className={`flex gap-2 items-center text-tertiary ${props.compact ? "text-sm" : ""} ${props.className}`}
+        className={`flex gap-2 items-center text-tertiary ${props.compact ? "text-sm" : "pb-2"} ${props.className}`}
       >
-        {props.compact && (
-          <button
-            className="flex gap-1 items-center "
-            onClick={() => {
-              if (!drawerOpen || drawer !== "tags")
-                openInteractionDrawer("tags", document_uri, props.pageId);
-              else setInteractionState(document_uri, { drawerOpen: false });
-            }}
-          >
-            <TagTiny /> XX
-          </button>
-        )}
+        {props.compact && <TagPopover />}
 
         {props.quotesCount > 0 && (
           <button
@@ -174,39 +164,47 @@ export const Interactions = (props: {
         )}
       </div>
 
-      {!props.compact && (
-        <TagList
-          drawerOpen={drawerOpen}
-          drawer={drawer}
-          document_uri={document_uri}
-          pageId={props.pageId}
-        />
-      )}
+      {!props.compact && <TagList />}
     </div>
   );
 };
 
-const TagList = (props: {
-  drawerOpen: boolean | undefined;
-  drawer: string | undefined;
-  document_uri: string;
-  pageId: string | undefined;
-}) => {
+const TagPopover = () => {
   return (
-    <div className="flex gap-1 flex-wrap pt-2">
+    <Popover
+      className="p-2! max-w-xs"
+      trigger={
+        <div className="flex gap-1 items-center ">
+          <TagTiny /> XX
+        </div>
+      }
+    >
+      <TagList className="text-secondary!" />
+    </Popover>
+  );
+};
+
+const TagList = (props: { className?: string }) => {
+  return (
+    <div className="flex gap-1 flex-wrap">
       {Tags.map((tag, index) => (
         <Tag
           name={tag}
           key={index}
-          onClick={() => {
-            if (!props.drawerOpen || props.drawer !== "tags")
-              openInteractionDrawer("tags", props.document_uri, props.pageId);
-            else setInteractionState(props.document_uri, { drawerOpen: false });
-          }}
+          onClick={() => {}}
+          className={props.className}
         />
       ))}
     </div>
   );
 };
 
-const Tags = ["Hello", "these are", "some tags"];
+const Tags = [
+  "Hello",
+  "these are",
+  "some tags",
+  "and I'm gonna",
+  "make",
+  "them super",
+  "long",
+];

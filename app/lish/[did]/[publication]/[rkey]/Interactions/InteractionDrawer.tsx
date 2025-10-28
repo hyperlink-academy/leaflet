@@ -7,7 +7,7 @@ import { Comment, Comments } from "./Comments";
 import { useSearchParams } from "next/navigation";
 import { SandwichSpacer } from "components/LeafletLayout";
 import { decodeQuotePosition } from "../quotePosition";
-import { Tags } from "./Tags";
+
 import { Post } from "app/reader/getReaderFeed";
 
 export const InteractionDrawer = (props: {
@@ -49,8 +49,6 @@ export const InteractionDrawer = (props: {
               comments={filteredComments}
               pageId={props.pageId}
             />
-          ) : drawer.drawer === "tags" ? (
-            <Tags document_uri={props.document_uri} pageId={props.pageId} />
           ) : null}
         </div>
       </div>

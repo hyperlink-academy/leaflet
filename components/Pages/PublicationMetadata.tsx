@@ -17,7 +17,7 @@ import { CommentTiny } from "components/Icons/CommentTiny";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { TagTiny } from "components/Icons/TagTiny";
 import { Popover } from "components/Popover";
-import { TagSearchInput, TagSelector } from "components/Tags";
+import { TagSelector } from "components/Tags";
 export const PublicationMetadata = () => {
   let { rep } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
@@ -37,21 +37,23 @@ export const PublicationMetadata = () => {
   if (typeof description !== "string") {
     description = pub?.description || "";
   }
+  let tags = true;
+
   return (
-    <div className={`flex flex-col px-3 sm:px-4 pb-5 sm:pt-3 pt-2`}>
-      <div className="w-full flex gap-2 justify-between">
+    <div className={`flex flex-col px-3 sm:px-4 pb-5 pt-3`}>
+      <div className="w-full flex gap-3 justify-between items-center">
         <Link
           href={`${getBasePublicationURL(pub.publications)}/dashboard`}
-          className="leafletMetadata text-accent-contrast font-bold hover:no-underline"
+          className="leafletMetadata text-accent-contrast font-bold hover:no-underline truncate"
         >
           {pub.publications?.name}
         </Link>
 
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center shrink-0">
           {pub.doc && (
             <Link
               target="_blank"
-              className="text-sm"
+              className="text-sm shink-0"
               href={`${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`}
             >
               View Post
@@ -84,29 +86,35 @@ export const PublicationMetadata = () => {
           });
         }}
       />
-      {pub.doc ? (
-        <div className="flex flex-row items-center gap-2 pt-3">
-          <p className="text-sm text-tertiary"> celine</p>
-          <Separator classname="h-4" />
-          <p className="text-sm text-tertiary">
-            Published {publishedAt && timeAgo(publishedAt)}
-          </p>
-          <Separator classname="h-4" />
-          <div className="flex gap-2 text-border">
-            <AddTags />
-            <div className="flex gap-1 items-center">
-              <QuoteTiny />—
-            </div>
-            {pubRecord.preferences?.showComments && (
-              <div className="flex gap-1 items-center">
-                <CommentTiny />—
-              </div>
-            )}
-          </div>
+      <div className="flex justify-between gap-3 sm:gap-2 pt-3 items-center">
+        <div className="flex flex-row gap-2 items-center">
+          <div className="w-4 h-4 rounded-full bg-test" />
+
+          {pub.doc ? (
+            <p className="text-sm text-tertiary">
+              {publishedAt && timeAgo(publishedAt)}
+            </p>
+          ) : (
+            <p className="text-sm text-tertiary pt-2">Draft</p>
+          )}
         </div>
-      ) : (
-        <p className="text-sm text-tertiary pt-2">Draft</p>
-      )}
+        <div className="flex gap-2 text-border items-center">
+          {tags && (
+            <>
+              <AddTags />
+              <Separator classname="h-4" />
+            </>
+          )}
+          <div className="flex gap-1 items-center">
+            <QuoteTiny />—
+          </div>
+          {pubRecord.preferences?.showComments && (
+            <div className="flex gap-1 items-center">
+              <CommentTiny />—
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

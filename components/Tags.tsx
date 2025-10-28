@@ -20,17 +20,18 @@ export const Tag = (props: {
   selected?: boolean;
   onDelete?: (tag: string) => void;
   onClick?: (tag: string) => void;
+  className?: string;
 }) => {
   return (
     <div
-      className={`tag flex items-center text-xs  rounded-md border ${props.selected ? "bg-accent-1 text-accent-2 border-accent-1 font-bold" : "bg-bg-page text-tertiary border-border"}`}
+      className={`tag flex items-center text-xs  rounded-md border ${props.selected ? "bg-accent-1 text-accent-2 border-accent-1 font-bold" : "bg-bg-page text-tertiary border-border"} ${props.className}`}
     >
       <button
         type="button"
         onClick={() => {
           props.onClick ? props.onClick(props.name) : null;
         }}
-        className={`tagName px-1 py-0.5`}
+        className={`px-1 py-0.5`}
       >
         {props.name}{" "}
       </button>
