@@ -1508,6 +1508,7 @@ export const schemaDict = {
           },
           rotation: {
             type: 'integer',
+            description: 'The rotation of the block in degrees',
           },
         },
       },

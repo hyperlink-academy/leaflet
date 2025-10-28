@@ -22,7 +22,10 @@ export const PubLeafletPagesCanvasDocument: LexiconDoc = {
         y: { type: "integer" },
         width: { type: "integer" },
         height: { type: "integer" },
-        rotation: { type: "integer" },
+        rotation: {
+          type: "integer",
+          description: "The rotation of the block in degrees",
+        },
       },
     },
     textAlignLeft: { type: "token" },

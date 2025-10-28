@@ -59,7 +59,8 @@
           "type": "integer"
         },
         "rotation": {
-          "type": "integer"
+          "type": "integer",
+          "description": "The rotation of the block in degrees"
         }
       }
     },

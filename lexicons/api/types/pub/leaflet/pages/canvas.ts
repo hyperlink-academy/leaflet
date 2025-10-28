@@ -62,6 +62,7 @@ export interface Block {
   y: number
   width: number
   height?: number
+  /** The rotation of the block in degrees */
   rotation?: number
 }
 

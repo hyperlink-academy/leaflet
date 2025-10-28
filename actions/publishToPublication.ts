@@ -484,10 +484,10 @@ async function processBlocksToPages(
           let canvasBlockRecord: PubLeafletPagesCanvas.Block = {
             $type: "pub.leaflet.pages.canvas#block",
             block: content,
-            x: position.x,
-            y: position.y,
-            width,
-            ...(rotation !== undefined && { rotation }),
+            x: Math.floor(position.x),
+            y: Math.floor(position.y),
+            width: Math.floor(width),
+            ...(rotation !== undefined && { rotation: Math.floor(rotation) }),
           };
 
           return canvasBlockRecord;
