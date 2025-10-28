@@ -16,7 +16,6 @@ import { v7 } from "uuid";
 import { Block } from "./Block";
 import { useEffect } from "react";
 import { addShortcut } from "src/shortcuts";
-import { QuoteEmbedBlock } from "./QuoteEmbedBlock";
 import { useHandleDrop } from "./useHandleDrop";
 
 export function Blocks(props: { entityID: string }) {

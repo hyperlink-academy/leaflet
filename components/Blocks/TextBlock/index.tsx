@@ -67,6 +67,7 @@ export function TextBlock(
           className={props.className}
           first={first}
           pageType={props.pageType}
+          previousBlock={props.previousBlock}
         />
       )}
       {permission && !props.preview && !isLocked?.data.value && (
@@ -124,6 +125,7 @@ export function RenderedTextBlock(props: {
   first?: boolean;
   pageType?: "canvas" | "doc";
   type: BlockProps["type"];
+  previousBlock?: BlockProps["previousBlock"];
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
   let headingLevel = useEntity(props.entityID, "block/heading-level");
@@ -165,7 +167,7 @@ export function RenderedTextBlock(props: {
       style={{ wordBreak: "break-word" }} // better than tailwind break-all!
       className={`
         ${alignmentClass}
-        ${props.type === "blockquote" ? " blockquote " : ""}
+        ${props.type === "blockquote" ? (props.previousBlock?.type === "blockquote" ? `blockquote pt-3 ` : "blockquote") : ""}
         ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
       w-full whitespace-pre-wrap outline-hidden ${props.className} `}
     >
@@ -338,7 +340,14 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
       <div
         className={`flex items-center justify-between w-full
           ${selected && props.pageType === "canvas" && "bg-bg-page rounded-md"}
-          ${props.type === "blockquote" ? " blockquote  " : ""}
+          ${
+            props.type === "blockquote"
+              ? props.previousBlock?.type === "blockquote" && !props.listData
+                ? "blockquote pt-3"
+                : "blockquote"
+              : ""
+          }
+
           `}
       >
         <pre
