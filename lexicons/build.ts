@@ -2,6 +2,7 @@ import * as PageLexicons from "./src/pages";
 import { BlockLexicons } from "./src/blocks";
 import { PubLeafletDocument } from "./src/document";
 import * as PublicationLexicons from "./src/publication";
+import * as PollLexicons from "./src/polls";
 import { ThemeLexicons } from "./src/theme";
 
 import * as fs from "fs";
@@ -21,9 +22,11 @@ const lexicons = [
   PubLeafletComment,
   PubLeafletRichTextFacet,
   PageLexicons.PubLeafletPagesLinearDocument,
+  PageLexicons.PubLeafletPagesCanvasDocument,
   ...ThemeLexicons,
   ...BlockLexicons,
   ...Object.values(PublicationLexicons),
+  ...Object.values(PollLexicons),
 ];
 
 // Write each lexicon to a file

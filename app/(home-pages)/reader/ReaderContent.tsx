@@ -7,9 +7,9 @@ import { getReaderFeed } from "./getReaderFeed";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { PostLink } from "components/PostLink";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 export const ReaderContent = (props: {
-  root_entity: string;
   posts: Post[];
   nextCursor: Cursor | null;
 }) => {

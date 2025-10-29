@@ -8,6 +8,7 @@ import { Menu, MenuItem, Separator } from "components/Layout";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 import { Checkbox } from "components/Checkbox";
 import { useEffect, useState } from "react";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 type subscriber = { email: string | undefined; did: string | undefined };
 
@@ -198,13 +199,7 @@ const SubscriberListItem = (props: {
             @{props.handle}
           </a>
         )}
-        <div className="px-1 py-0 h-max rounded-md text-sm italic text-tertiary">
-          {new Date(props.createdAt).toLocaleString(undefined, {
-            year: "2-digit",
-            month: "2-digit",
-            day: "2-digit",
-          })}
-        </div>
+        <SubscriberDate createdAt={props.createdAt} />
       </div>
     </>
     // </Checkbox>
@@ -235,3 +230,16 @@ const SubscriberOptions = (props: {
     </Menu>
   );
 };
+
+function SubscriberDate(props: { createdAt: string }) {
+  const formattedDate = useLocalizedDate(props.createdAt, {
+    year: "2-digit",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return (
+    <div className="px-1 py-0 h-max rounded-md text-sm italic text-tertiary">
+      {formattedDate}
+    </div>
+  );
+}

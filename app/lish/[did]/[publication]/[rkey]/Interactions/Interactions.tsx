@@ -5,13 +5,15 @@ import { flushSync } from "react-dom";
 import type { Json } from "supabase/database.types";
 import { create } from "zustand";
 import type { Comment } from "./Comments";
-import { QuotePosition } from "../quotePosition";
+import { decodeQuotePosition, QuotePosition } from "../quotePosition";
 import { useContext } from "react";
 import { PostPageContext } from "../PostPageContext";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 import { TagTiny } from "components/Icons/TagTiny";
 import { Tag } from "components/Tags";
 import { Popover } from "components/Popover";
+import { PostPageData } from "../getPostPageData";
+import { PubLeafletComment } from "lexicons/api";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -203,3 +205,31 @@ const Tags = [
   "them super",
   "long",
 ];
+export function getQuoteCount(document: PostPageData, pageId?: string) {
+  if (!document) return;
+
+  if (pageId)
+    return document.document_mentions_in_bsky.filter((q) =>
+      q.link.includes(pageId),
+    ).length;
+  else
+    return document.document_mentions_in_bsky.filter((q) => {
+      const url = new URL(q.link);
+      const quoteParam = url.pathname.split("/l-quote/")[1];
+      if (!quoteParam) return null;
+      const quotePosition = decodeQuotePosition(quoteParam);
+      return !quotePosition?.pageId;
+    }).length;
+}
+
+export function getCommentCount(document: PostPageData, pageId?: string) {
+  if (!document) return;
+  if (pageId)
+    return document.comments_on_documents.filter(
+      (c) => (c.record as PubLeafletComment.Record)?.onPage === pageId,
+    ).length;
+  else
+    return document.comments_on_documents.filter(
+      (c) => !(c.record as PubLeafletComment.Record)?.onPage,
+    ).length;
+}

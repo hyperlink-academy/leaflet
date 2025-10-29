@@ -12,7 +12,7 @@ import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { Separator } from "components/Layout";
 import { createPhoneAuthToken } from "actions/phone_auth/request_phone_auth_token";
 import { Input, InputWithLabel } from "components/Input";
-import { IPLocationContext } from "components/Providers/IPLocationProvider";
+import { RequestHeadersContext } from "components/Providers/RequestHeadersProvider";
 import { Popover } from "components/Popover";
 import { theme } from "tailwind.config";
 import { InfoSmall } from "components/Icons/InfoSmall";
@@ -41,10 +41,10 @@ export function ContactDetailsForm(props: {
         data.authToken.phone_number === rsvp.phone_number,
     )?.plus_ones || 0,
   );
-  let ipLocation = useContext(IPLocationContext) || "US";
+  let requestHeaders = useContext(RequestHeadersContext);
   const [formState, setFormState] = useState({
     country_code:
-      countryCodes.find((c) => c[1].toUpperCase() === ipLocation)?.[2] || "1",
+      countryCodes.find((c) => c[1].toUpperCase() === (requestHeaders.country || "US"))?.[2] || "1",
     phone_number: "",
     confirmationCode: "",
   });

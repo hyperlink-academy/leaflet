@@ -18,6 +18,7 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { InteractionPreview } from "components/InteractionsPreview";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 export function PublishedPostsList(props: {
   searchValue: string;
@@ -100,17 +101,7 @@ export function PublishedPostsList(props: {
                   ) : null}
                   <div className="text-sm text-tertiary flex gap-3 justify-between sm:justify-start items-center pt-3">
                     {postRecord.publishedAt ? (
-                      <p className="text-sm text-tertiary">
-                        Published{" "}
-                        {new Date(postRecord.publishedAt).toLocaleDateString(
-                          undefined,
-                          {
-                            year: "numeric",
-                            month: "long",
-                            day: "2-digit",
-                          },
-                        )}
-                      </p>
+                      <PublishedDate dateString={postRecord.publishedAt} />
                     ) : null}
                     <InteractionPreview
                       quotesCount={quotes}
@@ -227,4 +218,14 @@ function OptionsMenu(props: { document_uri: string }) {
       </div>
     );
   }
+}
+
+function PublishedDate(props: { dateString: string }) {
+  const formattedDate = useLocalizedDate(props.dateString, {
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+  });
+
+  return <p className="text-sm text-tertiary">Published {formattedDate}</p>;
 }

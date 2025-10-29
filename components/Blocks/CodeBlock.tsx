@@ -123,6 +123,9 @@ export function CodeBlock(props: BlockProps) {
             data-entityid={props.entityID}
             id={elementId.block(props.entityID).input}
             block={props}
+            spellCheck={false}
+            autoCapitalize="none"
+            autoCorrect="off"
             className="codeBlockEditor whitespace-nowrap! overflow-auto! font-mono p-2"
             value={content?.data.value}
             onChange={async (e) => {

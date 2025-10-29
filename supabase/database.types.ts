@@ -34,6 +34,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      atp_poll_records: {
+        Row: {
+          cid: string
+          created_at: string
+          record: Json
+          uri: string
+        }
+        Insert: {
+          cid: string
+          created_at?: string
+          record: Json
+          uri: string
+        }
+        Update: {
+          cid?: string
+          created_at?: string
+          record?: Json
+          uri?: string
+        }
+        Relationships: []
+      }
+      atp_poll_votes: {
+        Row: {
+          indexed_at: string
+          poll_cid: string
+          poll_uri: string
+          record: Json
+          uri: string
+          voter_did: string
+        }
+        Insert: {
+          indexed_at?: string
+          poll_cid: string
+          poll_uri: string
+          record: Json
+          uri: string
+          voter_did: string
+        }
+        Update: {
+          indexed_at?: string
+          poll_cid?: string
+          poll_uri?: string
+          record?: Json
+          uri?: string
+          voter_did?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atp_poll_votes_poll_uri_fkey"
+            columns: ["poll_uri"]
+            isOneToOne: false
+            referencedRelation: "atp_poll_records"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
       bsky_follows: {
         Row: {
           follows: string

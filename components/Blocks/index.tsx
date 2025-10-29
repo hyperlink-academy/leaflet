@@ -16,7 +16,7 @@ import { v7 } from "uuid";
 import { Block } from "./Block";
 import { useEffect } from "react";
 import { addShortcut } from "src/shortcuts";
-import { QuoteEmbedBlock } from "./QuoteEmbedBlock";
+import { useHandleDrop } from "./useHandleDrop";
 
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
@@ -231,6 +231,11 @@ const BlockListBottom = (props: {
 }) => {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
+  let handleDrop = useHandleDrop({
+    parent: props.entityID,
+    position: props.lastRootBlock?.position || null,
+    nextPosition: null,
+  });
 
   if (!entity_set.permissions.write) return;
   return (
@@ -267,6 +272,11 @@ const BlockListBottom = (props: {
           }, 10);
         }
       }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onDrop={handleDrop}
     />
   );
 };

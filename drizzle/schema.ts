@@ -204,13 +204,36 @@ export const documents = pgTable("documents", {
 	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 });
 
+export const atp_poll_votes = pgTable("atp_poll_votes", {
+	uri: text("uri").primaryKey().notNull(),
+	record: jsonb("record").notNull(),
+	voter_did: text("voter_did").notNull(),
+	poll_uri: text("poll_uri").notNull().references(() => atp_poll_records.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	poll_cid: text("poll_cid").notNull(),
+	option: text("option").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		poll_uri_idx: index("atp_poll_votes_poll_uri_idx").on(table.poll_uri),
+		voter_did_idx: index("atp_poll_votes_voter_did_idx").on(table.voter_did),
+	}
+});
+
+export const atp_poll_records = pgTable("atp_poll_records", {
+	uri: text("uri").primaryKey().notNull(),
+	cid: text("cid").notNull(),
+	record: jsonb("record").notNull(),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+});
+
 export const oauth_session_store = pgTable("oauth_session_store", {
 	key: text("key").primaryKey().notNull(),
 	session: jsonb("session").notNull(),
 });
 
 export const bsky_follows = pgTable("bsky_follows", {
-	identity: text("identity").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
+	identity: text("identity").default('').notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
 	follows: text("follows").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
 },
 (table) => {

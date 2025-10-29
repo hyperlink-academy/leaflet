@@ -9,7 +9,7 @@ import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { useSmoker } from "components/Toast";
 import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import type { Post } from "app/reader/getReaderFeed";
+import type { Post } from "app/(home-pages)/reader/getReaderFeed";
 
 import Link from "next/link";
 import { InteractionPreview } from "./InteractionsPreview";

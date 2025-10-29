@@ -19,6 +19,7 @@ export async function GET(
   return new Response(feed.rss2(), {
     headers: {
       "Content-Type": "application/rss+xml",
+      "Cache-Control": "s-maxage=300, stale-while-revalidate=3600",
       "CDN-Cache-Control": "s-maxage=300, stale-while-revalidate=3600",
     },
   });

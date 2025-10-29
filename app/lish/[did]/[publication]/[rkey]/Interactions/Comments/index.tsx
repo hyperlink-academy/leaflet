@@ -17,6 +17,7 @@ import { BlueskyLogin } from "app/login/LoginForm";
 import { usePathname } from "next/navigation";
 import { QuoteContent } from "../Quotes";
 import { timeAgo } from "src/utils/timeAgo";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 export type Comment = {
   record: Json;
@@ -250,25 +251,22 @@ const Replies = (props: {
 };
 
 const DatePopover = (props: { date: string }) => {
-  let [t, full] = useMemo(() => {
-    return [
-      timeAgo(props.date),
-      new Date(props.date).toLocaleTimeString(undefined, {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    ];
-  }, [props.date]);
+  const timeAgoText = useMemo(() => timeAgo(props.date), [props.date]);
+  const fullDate = useLocalizedDate(props.date, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
   return (
     <Popover
       trigger={
-        <div className="italic text-sm text-tertiary hover:underline">{t}</div>
+        <div className="italic text-sm text-tertiary hover:underline">{timeAgoText}</div>
       }
     >
-      <div className="text-sm text-secondary">{full}</div>
+      <div className="text-sm text-secondary">{fullDate}</div>
     </Popover>
   );
 };

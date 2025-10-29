@@ -1,0 +1,113 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.pages.canvas",
+  "defs": {
+    "main": {
+      "type": "object",
+      "required": [
+        "blocks"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "type": "ref",
+            "ref": "#block"
+          }
+        }
+      }
+    },
+    "block": {
+      "type": "object",
+      "required": [
+        "block",
+        "x",
+        "y",
+        "width"
+      ],
+      "properties": {
+        "block": {
+          "type": "union",
+          "refs": [
+            "pub.leaflet.blocks.iframe",
+            "pub.leaflet.blocks.text",
+            "pub.leaflet.blocks.blockquote",
+            "pub.leaflet.blocks.header",
+            "pub.leaflet.blocks.image",
+            "pub.leaflet.blocks.unorderedList",
+            "pub.leaflet.blocks.website",
+            "pub.leaflet.blocks.math",
+            "pub.leaflet.blocks.code",
+            "pub.leaflet.blocks.horizontalRule",
+            "pub.leaflet.blocks.bskyPost",
+            "pub.leaflet.blocks.page",
+            "pub.leaflet.blocks.poll"
+          ]
+        },
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "rotation": {
+          "type": "integer",
+          "description": "The rotation of the block in degrees"
+        }
+      }
+    },
+    "textAlignLeft": {
+      "type": "token"
+    },
+    "textAlignCenter": {
+      "type": "token"
+    },
+    "textAlignRight": {
+      "type": "token"
+    },
+    "quote": {
+      "type": "object",
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "type": "ref",
+          "ref": "#position"
+        },
+        "end": {
+          "type": "ref",
+          "ref": "#position"
+        }
+      }
+    },
+    "position": {
+      "type": "object",
+      "required": [
+        "block",
+        "offset"
+      ],
+      "properties": {
+        "block": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "offset": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

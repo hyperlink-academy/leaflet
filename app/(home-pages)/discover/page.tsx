@@ -4,9 +4,6 @@ import { SortedPublicationList } from "./SortedPublicationList";
 import { Metadata } from "next";
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
 
-export const dynamic = "force-static";
-export const revalidate = 60;
-
 export type PublicationsList = Awaited<ReturnType<typeof getPublications>>;
 async function getPublications() {
   let { data: publications, error } = await supabaseServerClient
@@ -34,24 +31,21 @@ export default async function Discover(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   let order = ((await props.searchParams).order as string) || "recentlyUpdated";
-  let publications = await getPublications();
 
   return (
-    <div className="w-full h-full mx-auto bg-[#FDFCFA]">
-      <DashboardLayout
-        id="discover"
-        cardBorderHidden={false}
-        currentPage="discover"
-        defaultTab="default"
-        actions={null}
-        tabs={{
-          default: {
-            controls: null,
-            content: <DiscoverContent order={order} />,
-          },
-        }}
-      />
-    </div>
+    <DashboardLayout
+      id="discover"
+      cardBorderHidden={false}
+      currentPage="discover"
+      defaultTab="default"
+      actions={null}
+      tabs={{
+        default: {
+          controls: null,
+          content: <DiscoverContent order={order} />,
+        },
+      }}
+    />
   );
 }
 

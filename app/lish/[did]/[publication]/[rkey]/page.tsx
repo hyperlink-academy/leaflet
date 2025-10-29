@@ -20,6 +20,7 @@ import { PostPageContextProvider } from "./PostPageContext";
 import { PostPages } from "./PostPages";
 import { extractCodeBlocks } from "./extractCodeBlocks";
 import { LeafletLayout } from "components/LeafletLayout";
+import { fetchPollData } from "./fetchPollData";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -115,6 +116,16 @@ export default async function Post(props: {
           { headers: {} },
         )
       : { data: { posts: [] } };
+
+  // Extract poll blocks and fetch vote data
+  let pollBlocks = record.pages.flatMap((p) => {
+    let page = p as PubLeafletPagesLinearDocument.Main;
+    return page.blocks?.filter(
+      (b) => b.block.$type === ids.PubLeafletBlocksPoll,
+    ) || [];
+  });
+  let pollData = await fetchPollData(pollBlocks.map(b => (b.block as any).pollRef.uri));
+
   let firstPage = record.pages[0];
   let blocks: PubLeafletPagesLinearDocument.Block[] = [];
   if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
@@ -165,6 +176,7 @@ export default async function Post(props: {
               did={did}
               blocks={blocks}
               prerenderedCodeBlocks={prerenderedCodeBlocks}
+              pollData={pollData}
             />
           </LeafletLayout>
 

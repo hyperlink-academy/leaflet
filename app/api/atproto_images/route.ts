@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   // Set cache-control header to cache indefinitely
   cachedResponse.headers.set(
     "Cache-Control",
-    "public, max-age=31536000, immutable",
+    "public, max-age=31536000, immutable, s-maxage=86400, stale-while-revalidate=604800",
   );
   cachedResponse.headers.set(
     "CDN-Cache-Control",

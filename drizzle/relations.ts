@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { identities, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, poll_votes_on_entity, permission_tokens, phone_rsvps_to_entity, custom_domains, custom_domain_routes, email_subscriptions_to_entity, bsky_follows, subscribers_to_publications, permission_token_on_homepage, documents_in_publications, document_mentions_in_bsky, bsky_posts, publication_domains, leaflets_in_publications, publication_subscriptions, permission_token_rights } from "./schema";
+import { identities, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, poll_votes_on_entity, permission_tokens, phone_rsvps_to_entity, custom_domains, custom_domain_routes, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, bsky_follows, subscribers_to_publications, permission_token_on_homepage, documents_in_publications, document_mentions_in_bsky, bsky_posts, publication_domains, leaflets_in_publications, publication_subscriptions, permission_token_rights } from "./schema";
 
 export const publicationsRelations = relations(publications, ({one, many}) => ({
 	identity: one(identities, {
@@ -180,6 +180,17 @@ export const email_subscriptions_to_entityRelations = relations(email_subscripti
 		fields: [email_subscriptions_to_entity.token],
 		references: [permission_tokens.id]
 	}),
+}));
+
+export const atp_poll_votesRelations = relations(atp_poll_votes, ({one}) => ({
+	atp_poll_record: one(atp_poll_records, {
+		fields: [atp_poll_votes.poll_uri],
+		references: [atp_poll_records.uri]
+	}),
+}));
+
+export const atp_poll_recordsRelations = relations(atp_poll_records, ({many}) => ({
+	atp_poll_votes: many(atp_poll_votes),
 }));
 
 export const bsky_followsRelations = relations(bsky_follows, ({one}) => ({

@@ -1,6 +1,6 @@
 "use client";
 
-import { addDocToHome } from "app/home/storage";
+import { addDocToHome } from "app/(home-pages)/home/storage";
 import { useIdentityData } from "components/IdentityProvider";
 import { useEffect } from "react";
 import { useReplicache } from "src/replicache";

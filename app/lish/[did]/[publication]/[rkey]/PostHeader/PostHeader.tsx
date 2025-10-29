@@ -13,6 +13,7 @@ import { EditTiny } from "components/Icons/EditTiny";
 import { SpeedyLink } from "components/SpeedyLink";
 import { decodeQuotePosition } from "../quotePosition";
 import { Separator } from "components/Layout";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 export function PostHeader(props: {
   data: PostPageData;
@@ -26,6 +27,15 @@ export function PostHeader(props: {
   let profile = props.profile;
   let pub = props.data?.documents_in_publications[0].publications;
   let pubRecord = pub?.record as PubLeafletPublication.Record;
+
+  const formattedDate = useLocalizedDate(
+    record.publishedAt || new Date().toISOString(),
+    {
+      year: "numeric",
+      month: "long",
+      day: "2-digit",
+    },
+  );
 
   if (!document?.data || !document.documents_in_publications[0].publications)
     return;
@@ -82,18 +92,8 @@ export function PostHeader(props: {
                 </a>
               </>
             ) : null}
-            {record.publishedAt ? (
-              <p>
-                {new Date(record.publishedAt).toLocaleDateString(undefined, {
-                  year: "numeric",
-                  month: "long",
-                  day: "2-digit",
-                })}
-              </p>
-            ) : null}
+            {record.publishedAt ? <p>{formattedDate}</p> : null}
           </div>
-
-          <Separator classname="h-4 sm:block hidden" />
 
           <Interactions
             showComments={props.preferences.showComments}

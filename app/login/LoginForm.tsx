@@ -5,7 +5,7 @@ import {
 } from "actions/emailAuth";
 import { loginWithEmailToken } from "actions/login";
 import { ActionAfterSignIn } from "app/api/oauth/[route]/afterSignInActions";
-import { getHomeDocs } from "app/home/storage";
+import { getHomeDocs } from "app/(home-pages)/home/storage";
 import { ButtonPrimary } from "components/Buttons";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { BlueskySmall } from "components/Icons/BlueskySmall";

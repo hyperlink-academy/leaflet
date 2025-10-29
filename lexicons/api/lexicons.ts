@@ -1200,6 +1200,22 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksPoll: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.poll',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['pollRef'],
+        properties: {
+          pollRef: {
+            type: 'ref',
+            ref: 'lex:com.atproto.repo.strongRef',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksText: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.text',
@@ -1405,7 +1421,10 @@ export const schemaDict = {
               type: 'array',
               items: {
                 type: 'union',
-                refs: ['lex:pub.leaflet.pages.linearDocument'],
+                refs: [
+                  'lex:pub.leaflet.pages.linearDocument',
+                  'lex:pub.leaflet.pages.canvas',
+                ],
               },
             },
           },
@@ -1429,6 +1448,106 @@ export const schemaDict = {
               type: 'string',
               format: 'at-uri',
             },
+          },
+        },
+      },
+    },
+  },
+  PubLeafletPagesCanvas: {
+    lexicon: 1,
+    id: 'pub.leaflet.pages.canvas',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['blocks'],
+        properties: {
+          id: {
+            type: 'string',
+          },
+          blocks: {
+            type: 'array',
+            items: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.pages.canvas#block',
+            },
+          },
+        },
+      },
+      block: {
+        type: 'object',
+        required: ['block', 'x', 'y', 'width'],
+        properties: {
+          block: {
+            type: 'union',
+            refs: [
+              'lex:pub.leaflet.blocks.iframe',
+              'lex:pub.leaflet.blocks.text',
+              'lex:pub.leaflet.blocks.blockquote',
+              'lex:pub.leaflet.blocks.header',
+              'lex:pub.leaflet.blocks.image',
+              'lex:pub.leaflet.blocks.unorderedList',
+              'lex:pub.leaflet.blocks.website',
+              'lex:pub.leaflet.blocks.math',
+              'lex:pub.leaflet.blocks.code',
+              'lex:pub.leaflet.blocks.horizontalRule',
+              'lex:pub.leaflet.blocks.bskyPost',
+              'lex:pub.leaflet.blocks.page',
+              'lex:pub.leaflet.blocks.poll',
+            ],
+          },
+          x: {
+            type: 'integer',
+          },
+          y: {
+            type: 'integer',
+          },
+          width: {
+            type: 'integer',
+          },
+          height: {
+            type: 'integer',
+          },
+          rotation: {
+            type: 'integer',
+            description: 'The rotation of the block in degrees',
+          },
+        },
+      },
+      textAlignLeft: {
+        type: 'token',
+      },
+      textAlignCenter: {
+        type: 'token',
+      },
+      textAlignRight: {
+        type: 'token',
+      },
+      quote: {
+        type: 'object',
+        required: ['start', 'end'],
+        properties: {
+          start: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.pages.canvas#position',
+          },
+          end: {
+            type: 'ref',
+            ref: 'lex:pub.leaflet.pages.canvas#position',
+          },
+        },
+      },
+      position: {
+        type: 'object',
+        required: ['block', 'offset'],
+        properties: {
+          block: {
+            type: 'array',
+            items: {
+              type: 'integer',
+            },
+          },
+          offset: {
+            type: 'integer',
           },
         },
       },
@@ -1473,6 +1592,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.horizontalRule',
               'lex:pub.leaflet.blocks.bskyPost',
               'lex:pub.leaflet.blocks.page',
+              'lex:pub.leaflet.blocks.poll',
             ],
           },
           alignment: {
@@ -1521,6 +1641,76 @@ export const schemaDict = {
           },
           offset: {
             type: 'integer',
+          },
+        },
+      },
+    },
+  },
+  PubLeafletPollDefinition: {
+    lexicon: 1,
+    id: 'pub.leaflet.poll.definition',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description: 'Record declaring a poll',
+        record: {
+          type: 'object',
+          required: ['name', 'options'],
+          properties: {
+            name: {
+              type: 'string',
+              maxLength: 500,
+              maxGraphemes: 100,
+            },
+            options: {
+              type: 'array',
+              items: {
+                type: 'ref',
+                ref: 'lex:pub.leaflet.poll.definition#option',
+              },
+            },
+            endDate: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+      option: {
+        type: 'object',
+        properties: {
+          text: {
+            type: 'string',
+            maxLength: 500,
+            maxGraphemes: 50,
+          },
+        },
+      },
+    },
+  },
+  PubLeafletPollVote: {
+    lexicon: 1,
+    id: 'pub.leaflet.poll.vote',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description: 'Record declaring a vote on a poll',
+        record: {
+          type: 'object',
+          required: ['poll', 'option'],
+          properties: {
+            poll: {
+              type: 'ref',
+              ref: 'lex:com.atproto.repo.strongRef',
+            },
+            option: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+            },
           },
         },
       },
@@ -1867,13 +2057,17 @@ export const ids = {
   PubLeafletBlocksImage: 'pub.leaflet.blocks.image',
   PubLeafletBlocksMath: 'pub.leaflet.blocks.math',
   PubLeafletBlocksPage: 'pub.leaflet.blocks.page',
+  PubLeafletBlocksPoll: 'pub.leaflet.blocks.poll',
   PubLeafletBlocksText: 'pub.leaflet.blocks.text',
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
   PubLeafletBlocksWebsite: 'pub.leaflet.blocks.website',
   PubLeafletComment: 'pub.leaflet.comment',
   PubLeafletDocument: 'pub.leaflet.document',
   PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
+  PubLeafletPagesCanvas: 'pub.leaflet.pages.canvas',
   PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
+  PubLeafletPollDefinition: 'pub.leaflet.poll.definition',
+  PubLeafletPollVote: 'pub.leaflet.poll.vote',
   PubLeafletPublication: 'pub.leaflet.publication',
   PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
   PubLeafletThemeBackgroundImage: 'pub.leaflet.theme.backgroundImage',

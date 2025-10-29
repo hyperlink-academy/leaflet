@@ -19,6 +19,7 @@ export async function GET(
   return new Response(feed.atom1(), {
     headers: {
       "Content-Type": "application/atom+xml",
+      "Cache-Control": "s-maxage=300, stale-while-revalidate=3600",
       "CDN-Cache-Control": "s-maxage=300, stale-while-revalidate=3600",
     },
   });

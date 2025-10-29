@@ -8,8 +8,6 @@ import { useSearchParams } from "next/navigation";
 import { SandwichSpacer } from "components/LeafletLayout";
 import { decodeQuotePosition } from "../quotePosition";
 
-import { Post } from "app/reader/getReaderFeed";
-
 export const InteractionDrawer = (props: {
   document_uri: string;
   quotes: { link: string; bsky_posts: { post_view: Json } | null }[];
