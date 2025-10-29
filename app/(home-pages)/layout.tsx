@@ -10,7 +10,12 @@ export default async function HomePagesLayout(props: {
   children: React.ReactNode;
 }) {
   let identityData = await getIdentityData();
-  if (!identityData?.home_leaflet) return <>{props.children}</>;
+  if (!identityData?.home_leaflet)
+    return (
+      <>
+        <ThemeProvider entityID={""}>{props.children}</ThemeProvider>
+      </>
+    );
   let facts =
     (identityData?.home_leaflet?.permission_token_rights[0].entity_sets?.entities.flatMap(
       (e) => e.facts,
