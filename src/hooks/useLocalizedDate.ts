@@ -36,10 +36,18 @@ export function useLocalizedDate(
       dateTime = dateTime.setZone(effectiveTimezone);
     }
 
+    // On initial page load, use header locale. After hydration, use system locale
     // Parse locale from accept-language header (take first locale)
     // accept-language format: "en-US,en;q=0.9,es;q=0.8"
-    const locale = language?.split(",")[0]?.split(";")[0]?.trim() || "en-US";
+    const effectiveLocale = isInitialPageLoad
+      ? language?.split(",")[0]?.split(";")[0]?.trim() || "en-US"
+      : Intl.DateTimeFormat().resolvedOptions().locale;
 
-    return dateTime.toLocaleString(options, { locale });
+    try {
+      return dateTime.toLocaleString(options, { locale: effectiveLocale });
+    } catch (error) {
+      // Fallback to en-US if locale is invalid
+      return dateTime.toLocaleString(options, { locale: "en-US" });
+    }
   }, [dateString, options, timezone, language, isInitialPageLoad]);
 }
