@@ -109,12 +109,7 @@ const TagList = (props: { className?: string }) => {
   return (
     <div className="flex gap-1 flex-wrap">
       {Tags.map((tag, index) => (
-        <Tag
-          name={tag}
-          key={index}
-          onClick={() => {}}
-          className={props.className}
-        />
+        <Tag name={tag} key={index} className={props.className} />
       ))}
     </div>
   );

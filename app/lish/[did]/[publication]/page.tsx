@@ -151,7 +151,7 @@ export default async function Publication(props: {
                             </p>
                           </SpeedyLink>
 
-                          <div className="text-sm text-tertiary flex gap-3 items-center justify-between pt-2">
+                          <div className="text-sm text-tertiary flex gap-3 items-center justify-start pt-2">
                             <p className="text-sm text-tertiary ">
                               {doc_record.publishedAt &&
                                 new Date(
