@@ -37,22 +37,12 @@ export const PubListing = (
           px-3 py-3 selected-outline
           hover:outline-accent-contrast hover:border-accent-contrast
           relative overflow-hidden`}
+        style={{
+          backgroundImage: `url(${backgroundImage})`,
+          backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
+          backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
+        }}
       >
-        {backgroundImage && (
-          <img
-            src={backgroundImage}
-            alt=""
-            loading="lazy"
-            fetchPriority="low"
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              width: backgroundImageRepeat ? `${backgroundImageSize}px` : "100%",
-              height: backgroundImageRepeat ? "auto" : "100%",
-              objectFit: backgroundImageRepeat ? "none" : "cover",
-              objectPosition: "center",
-            }}
-          />
-        )}
         <div
           className={`flex w-full flex-col justify-center text-center max-h-48 pt-4 pb-3 px-3 rounded-lg relative z-10 ${props.resizeHeight ? "" : "sm:h-48 h-full"} ${record.theme?.showPageBackground ? "bg-[rgba(var(--bg-page),var(--bg-page-alpha))] " : ""}`}
         >

@@ -102,7 +102,9 @@ export const PubIcon = (props: {
   let iconSizeClassName = `${props.small ? "w-4 h-4" : props.large ? "w-12 h-12" : "w-6 h-6"} rounded-full`;
 
   return props.record.icon ? (
-    <div className={`${iconSizeClassName} ${props.className} relative overflow-hidden`}>
+    <div
+      className={`${iconSizeClassName} ${props.className} relative overflow-hidden`}
+    >
       <img
         src={`/api/atproto_images?did=${new AtUri(props.uri).host}&cid=${(props.record.icon?.ref as unknown as { $link: string })["$link"]}`}
         alt={`${props.record.name} icon`}
@@ -116,7 +118,7 @@ export const PubIcon = (props: {
       <div
         className={`${props.small ? "text-xs" : props.large ? "text-2xl" : "text-sm"} font-bold  absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-2`}
       >
-        {props.record?.name.slice(0, 1)}
+        {props.record?.name.slice(0, 1).toUpperCase()}
       </div>
     </div>
   );

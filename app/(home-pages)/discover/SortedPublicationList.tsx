@@ -81,7 +81,7 @@ const SortButton = (props: {
     <div className="relative">
       <button
         onClick={props.onClick}
-        className={`text-sm bg-accent-1 text-accent-2 rounded-md px-[8px] py-0.5 border ${props.selected ? "border-accent-contrast  font-bold" : "border-border-light"}`}
+        className={`text-sm  rounded-md px-[8px] font-bold py-0.5 border ${props.selected ? "border-accent-contrast bg-accent-1 text-accent-2 " : "bg-bg-page text-accent-contrast border-accent-contrast"}`}
       >
         {props.children}
       </button>
