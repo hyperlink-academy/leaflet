@@ -43,7 +43,7 @@ export const Popover = (props: {
               max-w-(--radix-popover-content-available-width)
               max-h-(--radix-popover-content-available-height)
               border border-border rounded-md shadow-md
-              overflow-y-scroll no-scrollbar
+              overflow-y-scroll
               ${props.className}
             `}
               side={props.side}
