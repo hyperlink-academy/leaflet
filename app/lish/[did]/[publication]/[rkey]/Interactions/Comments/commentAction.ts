@@ -65,21 +65,21 @@ export async function publishComment(args: {
       } as unknown as Json,
     })
     .select();
-  let notifications = [
-    {
-      comment: uri.toString(),
-      identity: new AtUri(args.document).host,
-      reason: "reply-on-post",
-    },
-  ];
-  if (args.comment.replyTo)
-    notifications.push({
-      comment: uri.toString(),
-      identity: new AtUri(args.comment.replyTo).host,
-      reason: "reply-to-comment",
-    });
-  // SOMEDAY: move this out the action with inngest or workflows
-  await supabaseServerClient.from("notif_comments").insert(notifications);
+  // let notifications = [
+  //   {
+  //     comment: uri.toString(),
+  //     identity: new AtUri(args.document).host,
+  //     reason: "reply-on-post",
+  //   },
+  // ];
+  // if (args.comment.replyTo)
+  //   notifications.push({
+  //     comment: uri.toString(),
+  //     identity: new AtUri(args.comment.replyTo).host,
+  //     reason: "reply-to-comment",
+  //   });
+  // // SOMEDAY: move this out the action with inngest or workflows
+  // await supabaseServerClient.from("notif_comments").insert(notifications);
 
   return {
     record: data?.[0].record as Json,
