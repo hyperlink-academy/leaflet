@@ -204,7 +204,6 @@ export const blockCommands: Command[] = [
     name: "Button",
     icon: <BlockButtonSmall />,
     type: "block",
-    hiddenInPublication: true,
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       await createBlockWithType(rep, props, "button");

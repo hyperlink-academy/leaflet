@@ -23,6 +23,7 @@ import {
   PubLeafletBlocksIframe,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
+  PubLeafletBlocksButton,
   PubLeafletPollDefinition,
 } from "lexicons/api";
 import { Block } from "components/Blocks/Block";
@@ -192,9 +193,10 @@ async function processBlocksToPages(
       await Promise.all(
         parsedBlocks.map(async (blockOrList) => {
           if (blockOrList.type === "block") {
-            let alignmentValue =
-              scan.eav(blockOrList.block.value, "block/text-alignment")[0]?.data
-                .value || "left";
+            let alignmentValue = scan.eav(
+              blockOrList.block.value,
+              "block/text-alignment",
+            )[0]?.data.value;
             let alignment: ExcludeString<
               PubLeafletPagesLinearDocument.Block["alignment"]
             > =
@@ -204,7 +206,9 @@ async function processBlocksToPages(
                   ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
                   : alignmentValue === "justify"
                     ? "lex:pub.leaflet.pages.linearDocument#textAlignJustify"
-                    : undefined;
+                    : alignmentValue === "left"
+                      ? "lex:pub.leaflet.pages.linearDocument#textAlignLeft"
+                      : undefined;
             let b = await blockToRecord(blockOrList.block, did);
             if (!b) return [];
             let block: PubLeafletPagesLinearDocument.Block = {
@@ -447,6 +451,17 @@ async function processBlocksToPages(
           uri: pollResult.uri,
           cid: pollResult.cid,
         },
+      };
+      return block;
+    }
+    if (b.type === "button") {
+      let [text] = scan.eav(b.value, "button/text");
+      let [url] = scan.eav(b.value, "button/url");
+      if (!text || !url) return;
+      let block: $Typed<PubLeafletBlocksButton.Main> = {
+        $type: "pub.leaflet.blocks.button",
+        text: text.data.value,
+        url: url.data.value,
       };
       return block;
     }

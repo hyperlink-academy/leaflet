@@ -44,7 +44,8 @@
             "pub.leaflet.blocks.horizontalRule",
             "pub.leaflet.blocks.bskyPost",
             "pub.leaflet.blocks.page",
-            "pub.leaflet.blocks.poll"
+            "pub.leaflet.blocks.poll",
+            "pub.leaflet.blocks.button"
           ]
         },
         "x": {
