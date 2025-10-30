@@ -624,6 +624,35 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json
+          read: boolean
+          recipient: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          read?: boolean
+          recipient: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          read?: boolean
+          recipient?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_recipient_fkey"
+            columns: ["recipient"]
+            isOneToOne: true
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+        ]
+      }
       oauth_session_store: {
         Row: {
           key: string

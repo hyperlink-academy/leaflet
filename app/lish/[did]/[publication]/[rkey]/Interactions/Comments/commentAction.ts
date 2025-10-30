@@ -8,6 +8,7 @@ import { TID } from "@atproto/common";
 import { AtUri, lexToJson, Un$Typed } from "@atproto/api";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
+import { Notification } from "src/notifications";
 
 export async function publishComment(args: {
   document: string;
@@ -65,21 +66,19 @@ export async function publishComment(args: {
       } as unknown as Json,
     })
     .select();
-  // let notifications = [
-  //   {
-  //     comment: uri.toString(),
-  //     identity: new AtUri(args.document).host,
-  //     reason: "reply-on-post",
-  //   },
-  // ];
-  // if (args.comment.replyTo)
-  //   notifications.push({
-  //     comment: uri.toString(),
-  //     identity: new AtUri(args.comment.replyTo).host,
-  //     reason: "reply-to-comment",
-  //   });
-  // // SOMEDAY: move this out the action with inngest or workflows
-  // await supabaseServerClient.from("notif_comments").insert(notifications);
+  let notifications: Notification[] = [
+    {
+      recipient: new AtUri(args.document).host,
+      data: { type: "comment", comment_uri: uri.toString() },
+    },
+  ];
+  if (args.comment.replyTo)
+    notifications.push({
+      recipient: new AtUri(args.comment.replyTo).host,
+      data: { type: "comment", comment_uri: uri.toString() },
+    });
+  // SOMEDAY: move this out the action with inngest or workflows
+  await supabaseServerClient.from("notifications").insert(notifications);
 
   return {
     record: data?.[0].record as Json,
