@@ -9,6 +9,7 @@ import { AtUri, lexToJson, Un$Typed } from "@atproto/api";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { Notification } from "src/notifications";
+import { v7 } from "uuid";
 
 export async function publishComment(args: {
   document: string;
@@ -68,12 +69,14 @@ export async function publishComment(args: {
     .select();
   let notifications: Notification[] = [
     {
+      id: v7(),
       recipient: new AtUri(args.document).host,
       data: { type: "comment", comment_uri: uri.toString() },
     },
   ];
   if (args.comment.replyTo)
     notifications.push({
+      id: v7(),
       recipient: new AtUri(args.comment.replyTo).host,
       data: { type: "comment", comment_uri: uri.toString() },
     });

@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { identities, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, poll_votes_on_entity, permission_tokens, phone_rsvps_to_entity, custom_domains, custom_domain_routes, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, notifications, bsky_follows, subscribers_to_publications, permission_token_on_homepage, documents_in_publications, document_mentions_in_bsky, bsky_posts, publication_domains, leaflets_in_publications, publication_subscriptions, permission_token_rights } from "./schema";
+import { identities, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, poll_votes_on_entity, permission_tokens, phone_rsvps_to_entity, custom_domains, custom_domain_routes, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, bsky_follows, subscribers_to_publications, permission_token_on_homepage, documents_in_publications, document_mentions_in_bsky, bsky_posts, publication_domains, leaflets_in_publications, publication_subscriptions, permission_token_rights } from "./schema";
 
 export const publicationsRelations = relations(publications, ({one, many}) => ({
 	identity: one(identities, {
@@ -27,7 +27,6 @@ export const identitiesRelations = relations(identities, ({one, many}) => ({
 	custom_domains_identity_id: many(custom_domains, {
 		relationName: "custom_domains_identity_id_identities_id"
 	}),
-	notifications: many(notifications),
 	bsky_follows_follows: many(bsky_follows, {
 		relationName: "bsky_follows_follows_identities_atp_did"
 	}),
@@ -192,13 +191,6 @@ export const atp_poll_votesRelations = relations(atp_poll_votes, ({one}) => ({
 
 export const atp_poll_recordsRelations = relations(atp_poll_records, ({many}) => ({
 	atp_poll_votes: many(atp_poll_votes),
-}));
-
-export const notificationsRelations = relations(notifications, ({one}) => ({
-	identity: one(identities, {
-		fields: [notifications.recipient],
-		references: [identities.atp_did]
-	}),
 }));
 
 export const bsky_followsRelations = relations(bsky_follows, ({one}) => ({

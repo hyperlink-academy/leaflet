@@ -2,13 +2,14 @@ create table "public"."notifications" (
     "recipient" text not null,
     "created_at" timestamp with time zone not null default now(),
     "read" boolean not null default false,
-    "data" jsonb not null
+    "data" jsonb not null,
+    "id" uuid not null
 );
 
 
 alter table "public"."notifications" enable row level security;
 
-CREATE UNIQUE INDEX notifications_pkey ON public.notifications USING btree (recipient);
+CREATE UNIQUE INDEX notifications_pkey ON public.notifications USING btree (id);
 
 alter table "public"."notifications" add constraint "notifications_pkey" PRIMARY KEY using index "notifications_pkey";
 

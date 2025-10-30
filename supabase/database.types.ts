@@ -628,18 +628,21 @@ export type Database = {
         Row: {
           created_at: string
           data: Json
+          id: string
           read: boolean
           recipient: string
         }
         Insert: {
           created_at?: string
           data: Json
+          id: string
           read?: boolean
           recipient: string
         }
         Update: {
           created_at?: string
           data?: Json
+          id?: string
           read?: boolean
           recipient?: string
         }
@@ -647,7 +650,7 @@ export type Database = {
           {
             foreignKeyName: "notifications_recipient_fkey"
             columns: ["recipient"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "identities"
             referencedColumns: ["atp_did"]
           },

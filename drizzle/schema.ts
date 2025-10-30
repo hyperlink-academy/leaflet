@@ -165,13 +165,6 @@ export const phone_rsvps_to_entity = pgTable("phone_rsvps_to_entity", {
 	}
 });
 
-export const notification = pgTable("notification", {
-	recipient: text("recipient").primaryKey().notNull(),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	read: boolean("read").default(false).notNull(),
-	data: jsonb("data").notNull(),
-});
-
 export const custom_domain_routes = pgTable("custom_domain_routes", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	domain: text("domain").notNull().references(() => custom_domains.domain),
@@ -236,13 +229,6 @@ export const atp_poll_records = pgTable("atp_poll_records", {
 export const oauth_session_store = pgTable("oauth_session_store", {
 	key: text("key").primaryKey().notNull(),
 	session: jsonb("session").notNull(),
-});
-
-export const notifications = pgTable("notifications", {
-	recipient: text("recipient").primaryKey().notNull().references(() => identities.atp_did, { onDelete: "cascade", onUpdate: "cascade" } ),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	read: boolean("read").default(false).notNull(),
-	data: jsonb("data").notNull(),
 });
 
 export const bsky_follows = pgTable("bsky_follows", {
