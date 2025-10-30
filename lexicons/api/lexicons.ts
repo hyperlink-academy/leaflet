@@ -1615,6 +1615,9 @@ export const schemaDict = {
       textAlignRight: {
         type: 'token',
       },
+      textAlignJustify: {
+        type: 'token',
+      },
       quote: {
         type: 'object',
         required: ['start', 'end'],

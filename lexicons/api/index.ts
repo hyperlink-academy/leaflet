@@ -96,6 +96,8 @@ export const PUB_LEAFLET_PAGES = {
     'pub.leaflet.pages.linearDocument#textAlignCenter',
   LinearDocumentTextAlignRight:
     'pub.leaflet.pages.linearDocument#textAlignRight',
+  LinearDocumentTextAlignJustify:
+    'pub.leaflet.pages.linearDocument#textAlignJustify',
 }
 
 export class AtpBaseClient extends XrpcClient {

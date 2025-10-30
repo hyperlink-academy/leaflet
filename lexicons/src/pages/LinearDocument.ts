@@ -32,6 +32,7 @@ export const PubLeafletPagesLinearDocument: LexiconDoc = {
     textAlignLeft: { type: "token" },
     textAlignCenter: { type: "token" },
     textAlignRight: { type: "token" },
+    textAlignJustify: { type: "token" },
     quote: {
       type: "object",
       required: ["start", "end"],

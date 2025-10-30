@@ -64,6 +64,9 @@
     "textAlignRight": {
       "type": "token"
     },
+    "textAlignJustify": {
+      "type": "token"
+    },
     "quote": {
       "type": "object",
       "required": [

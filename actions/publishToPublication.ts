@@ -195,12 +195,16 @@ async function processBlocksToPages(
             let alignmentValue =
               scan.eav(blockOrList.block.value, "block/text-alignment")[0]?.data
                 .value || "left";
-            let alignment =
+            let alignment: ExcludeString<
+              PubLeafletPagesLinearDocument.Block["alignment"]
+            > =
               alignmentValue === "center"
                 ? "lex:pub.leaflet.pages.linearDocument#textAlignCenter"
                 : alignmentValue === "right"
                   ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
-                  : undefined;
+                  : alignmentValue === "justify"
+                    ? "lex:pub.leaflet.pages.linearDocument#textAlignJustify"
+                    : undefined;
             let b = await blockToRecord(blockOrList.block, did);
             if (!b) return [];
             let block: PubLeafletPagesLinearDocument.Block = {
@@ -547,3 +551,9 @@ function YJSFragmentToFacets(
   }
   return [];
 }
+
+type ExcludeString<T> = T extends string
+  ? string extends T
+    ? never
+    : T /* maybe literal, not the whole `string` */
+  : T; /* not a string */

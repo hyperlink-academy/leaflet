@@ -81,6 +81,7 @@ export function validateBlock<V>(v: V) {
 export const TEXTALIGNLEFT = `${id}#textAlignLeft`
 export const TEXTALIGNCENTER = `${id}#textAlignCenter`
 export const TEXTALIGNRIGHT = `${id}#textAlignRight`
+export const TEXTALIGNJUSTIFY = `${id}#textAlignJustify`
 
 export interface Quote {
   $type?: 'pub.leaflet.pages.linearDocument#quote'
