@@ -96,26 +96,38 @@ export default async function Post(props: {
       </div>
     );
   let record = document.data as PubLeafletDocument.Record;
-  let bskyPosts = record.pages.flatMap((p) => {
-    let page = p as PubLeafletPagesLinearDocument.Main;
-    return page.blocks?.filter(
-      (b) => b.block.$type === ids.PubLeafletBlocksBskyPost,
-    );
-  });
+  let bskyPosts =
+    record.pages.flatMap((p) => {
+      let page = p as PubLeafletPagesLinearDocument.Main;
+      return page.blocks?.filter(
+        (b) => b.block.$type === ids.PubLeafletBlocksBskyPost,
+      );
+    }) || [];
+
+  // Batch bsky posts into groups of 25 and fetch in parallel
+  let bskyPostBatches = [];
+  for (let i = 0; i < bskyPosts.length; i += 25) {
+    bskyPostBatches.push(bskyPosts.slice(i, i + 25));
+  }
+
+  let bskyPostResponses = await Promise.all(
+    bskyPostBatches.map((batch) =>
+      agent.getPosts(
+        {
+          uris: batch.map((p) => {
+            let block = p?.block as PubLeafletBlocksBskyPost.Main;
+            return block.postRef.uri;
+          }),
+        },
+        { headers: {} },
+      ),
+    ),
+  );
+
   let bskyPostData =
-    bskyPosts.length > 0
-      ? await agent.getPosts(
-          {
-            uris: bskyPosts
-              .map((p) => {
-                let block = p?.block as PubLeafletBlocksBskyPost.Main;
-                return block.postRef.uri;
-              })
-              .slice(0, 24),
-          },
-          { headers: {} },
-        )
-      : { data: { posts: [] } };
+    bskyPostResponses.length > 0
+      ? bskyPostResponses.flatMap((response) => response.data.posts)
+      : [];
 
   // Extract poll blocks and fetch vote data
   let pollBlocks = record.pages.flatMap((p) => {
@@ -172,7 +184,7 @@ export default async function Post(props: {
               pubRecord={pubRecord}
               profile={JSON.parse(JSON.stringify(profile.data))}
               document={document}
-              bskyPostData={bskyPostData.data.posts}
+              bskyPostData={bskyPostData}
               did={did}
               blocks={blocks}
               prerenderedCodeBlocks={prerenderedCodeBlocks}
