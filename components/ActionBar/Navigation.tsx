@@ -11,8 +11,10 @@ import {
   ReaderReadSmall,
   ReaderUnreadSmall,
 } from "components/Icons/ReaderSmall";
+import { NotificationsUnreadSmall } from "components/Icons/NotificationSmall";
+import { SpeedyLink } from "components/SpeedyLink";
 
-export type navPages = "home" | "reader" | "pub" | "discover";
+export type navPages = "home" | "reader" | "pub" | "discover" | "notifications";
 
 export const DesktopNavigation = (props: {
   currentPage: navPages;
@@ -27,16 +29,6 @@ export const DesktopNavigation = (props: {
         />
       </Sidebar>
       {/*<Sidebar alwaysOpen>
-        <ActionButton
-          icon={
-            unreadNotifications ? (
-              <NotificationsUnreadSmall />
-            ) : (
-              <NotificationsReadSmall />
-            )
-          }
-          label="Notifications"
-        />
       </Sidebar>*/}
     </div>
   );
@@ -97,6 +89,21 @@ const NavigationOptions = (props: {
       />
       <DiscoverButton current={props.currentPage === "discover"} />
 
+      {identity && (
+        <SpeedyLink href={"/notifications"}>
+          <ActionButton
+            nav
+            icon={<NotificationsUnreadSmall />}
+            label="Notifications"
+            className={
+              props.currentPage === "notifications"
+                ? "bg-bg-page! border-border-light!"
+                : ""
+            }
+          />
+        </SpeedyLink>
+      )}
+
       <hr className="border-border-light my-1" />
       <PublicationButtons currentPubUri={thisPublication?.uri} />
     </>
@@ -105,14 +112,14 @@ const NavigationOptions = (props: {
 
 const HomeButton = (props: { current?: boolean }) => {
   return (
-    <Link href={"/home"} className="hover:!no-underline">
+    <SpeedyLink href={"/home"} className="hover:!no-underline">
       <ActionButton
         nav
         icon={<HomeSmall />}
         label="Home"
         className={props.current ? "bg-bg-page! border-border-light!" : ""}
       />
-    </Link>
+    </SpeedyLink>
   );
 };
 
@@ -121,7 +128,7 @@ const ReaderButton = (props: { current?: boolean; subs: boolean }) => {
 
   if (!props.subs) return;
   return (
-    <Link href={"/reader"} className="hover:no-underline!">
+    <SpeedyLink href={"/reader"} className="hover:no-underline!">
       <ActionButton
         nav
         icon={readerUnreads ? <ReaderUnreadSmall /> : <ReaderReadSmall />}
@@ -131,7 +138,7 @@ const ReaderButton = (props: { current?: boolean; subs: boolean }) => {
           ${props.current && "border-accent-contrast!"}
         `}
       />
-    </Link>
+    </SpeedyLink>
   );
 };
 
