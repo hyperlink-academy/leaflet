@@ -1,6 +1,5 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
-import { getConstellationBacklinks } from "./Interactions/getBlueskyMentions";
 import { PubLeafletPublication } from "lexicons/api";
 
 export async function getPostPageData(uri: string) {
@@ -46,3 +45,40 @@ export async function getPostPageData(uri: string) {
 }
 
 export type PostPageData = Awaited<ReturnType<typeof getPostPageData>>;
+
+const headers = {
+  "Content-type": "application/json",
+  "user-agent": "leaflet.pub",
+};
+
+// Fetch constellation backlinks without hydrating with Bluesky post data
+export async function getConstellationBacklinks(
+  url: string,
+): Promise<{ uri: string }[]> {
+  let baseURL = `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${encodeURIComponent(url)}`;
+  let externalEmbeds = new URL(
+    `${baseURL}&source=${encodeURIComponent("app.bsky.feed.post:embed.external.uri")}`,
+  );
+  let linkFacets = new URL(
+    `${baseURL}&source=${encodeURIComponent("app.bsky.feed.post:facets[].features[app.bsky.richtext.facet#link].uri")}`,
+  );
+
+  let [links, embeds] = (await Promise.all([
+    fetch(linkFacets, { headers, next: { revalidate: 3600 } }).then((req) =>
+      req.json(),
+    ),
+    fetch(externalEmbeds, { headers, next: { revalidate: 3600 } }).then((req) =>
+      req.json(),
+    ),
+  ])) as ConstellationResponse[];
+
+  let uris = [...links.records, ...embeds.records].map((i) =>
+    AtUri.make(i.did, i.collection, i.rkey).toString(),
+  );
+
+  return uris.map((uri) => ({ uri }));
+}
+
+type ConstellationResponse = {
+  records: { did: string; collection: string; rkey: string }[];
+};

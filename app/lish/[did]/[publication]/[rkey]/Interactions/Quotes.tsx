@@ -20,9 +20,42 @@ import { PostContent } from "../PostContent";
 import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { flushSync } from "react-dom";
 import { openPage } from "../PostPages";
-import useSWR from "swr";
-import { hydrateBlueskyPosts } from "./getBlueskyMentions";
+import useSWR, { mutate } from "swr";
 import { DotLoader } from "components/utils/DotLoader";
+
+// Helper to get SWR key for quotes
+export function getQuotesSWRKey(uris: string[]) {
+  if (uris.length === 0) return null;
+  const params = new URLSearchParams({
+    uris: JSON.stringify(uris),
+  });
+  return `/api/bsky/hydrate?${params.toString()}`;
+}
+
+// Fetch posts from API route
+async function fetchBskyPosts(uris: string[]): Promise<PostView[]> {
+  const params = new URLSearchParams({
+    uris: JSON.stringify(uris),
+  });
+
+  const response = await fetch(`/api/bsky/hydrate?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch Bluesky posts");
+  }
+
+  return response.json();
+}
+
+// Prefetch quotes data
+export function prefetchQuotesData(quotesAndMentions: { uri: string; link?: string }[]) {
+  const uris = quotesAndMentions.map((q) => q.uri);
+  const key = getQuotesSWRKey(uris);
+  if (key) {
+    // Start fetching without blocking
+    mutate(key, fetchBskyPosts(uris), { revalidate: false });
+  }
+}
 
 export const Quotes = (props: {
   quotesAndMentions: { uri: string; link?: string }[];
@@ -35,9 +68,10 @@ export const Quotes = (props: {
 
   // Fetch Bluesky post data for all URIs
   const uris = props.quotesAndMentions.map((q) => q.uri);
+  const key = getQuotesSWRKey(uris);
   const { data: bskyPosts, isLoading } = useSWR(
-    uris.length > 0 ? JSON.stringify(uris) : null,
-    () => hydrateBlueskyPosts(uris),
+    key,
+    () => fetchBskyPosts(uris),
   );
 
   // Separate quotes with links (quoted content) from direct mentions

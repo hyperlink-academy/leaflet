@@ -11,6 +11,7 @@ import { PostPageContext } from "../PostPageContext";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 import { PostPageData } from "../getPostPageData";
 import { PubLeafletComment } from "lexicons/api";
+import { prefetchQuotesData } from "./Quotes";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -110,6 +111,12 @@ export const Interactions = (props: {
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
 
+  const handleQuotePrefetch = () => {
+    if (data?.quotesAndMentions) {
+      prefetchQuotesData(data.quotesAndMentions);
+    }
+  };
+
   return (
     <div
       className={`flex gap-2 text-tertiary ${props.compact ? "text-sm" : "px-3 sm:px-4"} ${props.className}`}
@@ -121,6 +128,8 @@ export const Interactions = (props: {
             openInteractionDrawer("quotes", document_uri, props.pageId);
           else setInteractionState(document_uri, { drawerOpen: false });
         }}
+        onMouseEnter={handleQuotePrefetch}
+        onTouchStart={handleQuotePrefetch}
         aria-label="Post quotes"
       >
         <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
