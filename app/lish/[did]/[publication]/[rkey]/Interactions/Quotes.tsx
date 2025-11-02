@@ -48,7 +48,9 @@ async function fetchBskyPosts(uris: string[]): Promise<PostView[]> {
 }
 
 // Prefetch quotes data
-export function prefetchQuotesData(quotesAndMentions: { uri: string; link?: string }[]) {
+export function prefetchQuotesData(
+  quotesAndMentions: { uri: string; link?: string }[],
+) {
   const uris = quotesAndMentions.map((q) => q.uri);
   const key = getQuotesSWRKey(uris);
   if (key) {
@@ -69,9 +71,8 @@ export const Quotes = (props: {
   // Fetch Bluesky post data for all URIs
   const uris = props.quotesAndMentions.map((q) => q.uri);
   const key = getQuotesSWRKey(uris);
-  const { data: bskyPosts, isLoading } = useSWR(
-    key,
-    () => fetchBskyPosts(uris),
+  const { data: bskyPosts, isLoading } = useSWR(key, () =>
+    fetchBskyPosts(uris),
   );
 
   // Separate quotes with links (quoted content) from direct mentions
@@ -141,7 +142,7 @@ export const Quotes = (props: {
           {/* Direct post mentions (without quoted content) */}
           {directMentions.length > 0 && (
             <div className="flex flex-col gap-4">
-              <h3>Post Mentions</h3>
+              <div className="text-secondary font-bold">Post Mentions</div>
               <div className="flex flex-col gap-8">
                 {directMentions.map((q, index) => {
                   const pv = postViewMap.get(q.uri);
