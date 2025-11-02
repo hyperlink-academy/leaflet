@@ -27,7 +27,12 @@ export async function getPostPageData(uri: string) {
   const postUrl = `https://${pubRecord?.base_path}/${rkey}`;
   const constellationBacklinks = await getConstellationBacklinks(postUrl);
 
-  // Combine database mentions and constellation backlinks
+  // Deduplicate constellation backlinks (same post could appear in both links and embeds)
+  const uniqueBacklinks = Array.from(
+    new Map(constellationBacklinks.map((b) => [b.uri, b])).values(),
+  );
+
+  // Combine database mentions (already deduplicated by DB constraint) and constellation backlinks
   const quotesAndMentions: { uri: string; link?: string }[] = [
     // Database mentions (quotes with link to quoted content)
     ...document.document_mentions_in_bsky.map((m) => ({
@@ -35,7 +40,7 @@ export async function getPostPageData(uri: string) {
       link: m.link,
     })),
     // Constellation backlinks (direct post mentions without quote context)
-    ...constellationBacklinks,
+    ...uniqueBacklinks,
   ];
 
   return {
