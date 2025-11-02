@@ -53,6 +53,8 @@ export function CanvasPage({
   fullPageScroll: boolean;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
+  if (!document) return null;
+
   let hasPageBackground = !!pubRecord.theme?.showPageBackground;
   let isSubpage = !!pageId;
   let drawer = useDrawerOpen(document_uri);

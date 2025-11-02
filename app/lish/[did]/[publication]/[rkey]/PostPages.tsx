@@ -129,6 +129,7 @@ export function PostPages({
 
   let hasPageBackground = !!pubRecord.theme?.showPageBackground;
   let record = document.data as PubLeafletDocument.Record;
+  let quotesAndMentions = document.quotesAndMentions;
 
   let fullPageScroll = !hasPageBackground && !drawer && pages.length === 0;
   return (
@@ -156,7 +157,7 @@ export function PostPages({
               ? []
               : document.comments_on_documents
           }
-          quotes={document.document_mentions_in_bsky}
+          quotesAndMentions={quotesAndMentions}
           did={did}
         />
       )}
@@ -232,7 +233,7 @@ export function PostPages({
                     ? []
                     : document.comments_on_documents
                 }
-                quotes={document.document_mentions_in_bsky}
+                quotesAndMentions={quotesAndMentions}
                 did={did}
               />
             )}

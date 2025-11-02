@@ -10,7 +10,7 @@ import { decodeQuotePosition } from "../quotePosition";
 
 export const InteractionDrawer = (props: {
   document_uri: string;
-  quotes: { link: string; bsky_posts: { post_view: Json } | null }[];
+  quotesAndMentions: { uri: string; link?: string }[];
   comments: Comment[];
   did: string;
   pageId?: string;
@@ -23,10 +23,11 @@ export const InteractionDrawer = (props: {
     (c) => (c.record as any)?.onPage === props.pageId,
   );
 
-  const filteredQuotes = props.quotes.filter((q) => {
+  const filteredQuotesAndMentions = props.quotesAndMentions.filter((q) => {
+    if (!q.link) return !props.pageId; // Direct mentions without quote context go to main page
     const url = new URL(q.link);
     const quoteParam = url.pathname.split("/l-quote/")[1];
-    if (!quoteParam) return null;
+    if (!quoteParam) return !props.pageId;
     const quotePosition = decodeQuotePosition(quoteParam);
     return quotePosition?.pageId === props.pageId;
   });
@@ -40,7 +41,7 @@ export const InteractionDrawer = (props: {
           className="opaque-container rounded-l-none! rounded-r-lg! h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll -ml-[1px] "
         >
           {drawer.drawer === "quotes" ? (
-            <Quotes {...props} quotes={filteredQuotes} />
+            <Quotes {...props} quotesAndMentions={filteredQuotesAndMentions} />
           ) : (
             <Comments
               document_uri={props.document_uri}

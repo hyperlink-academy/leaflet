@@ -67,7 +67,6 @@ export default async function Post(props: {
     fetch: (...args) =>
       fetch(args[0], {
         ...args[1],
-        cache: "no-store",
         next: { revalidate: 3600 },
       }),
   });
@@ -132,20 +131,23 @@ export default async function Post(props: {
   // Extract poll blocks and fetch vote data
   let pollBlocks = record.pages.flatMap((p) => {
     let page = p as PubLeafletPagesLinearDocument.Main;
-    return page.blocks?.filter(
-      (b) => b.block.$type === ids.PubLeafletBlocksPoll,
-    ) || [];
+    return (
+      page.blocks?.filter((b) => b.block.$type === ids.PubLeafletBlocksPoll) ||
+      []
+    );
   });
-  let pollData = await fetchPollData(pollBlocks.map(b => (b.block as any).pollRef.uri));
+  let pollData = await fetchPollData(
+    pollBlocks.map((b) => (b.block as any).pollRef.uri),
+  );
+
+  let pubRecord = document.documents_in_publications[0]?.publications
+    .record as PubLeafletPublication.Record;
 
   let firstPage = record.pages[0];
   let blocks: PubLeafletPagesLinearDocument.Block[] = [];
   if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
     blocks = firstPage.blocks || [];
   }
-
-  let pubRecord = document.documents_in_publications[0]?.publications
-    .record as PubLeafletPublication.Record;
 
   let prerenderedCodeBlocks = await extractCodeBlocks(blocks);
 

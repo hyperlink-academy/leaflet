@@ -154,19 +154,28 @@ export const Interactions = (props: {
 
 export function getQuoteCount(document: PostPageData, pageId?: string) {
   if (!document) return;
+  return getQuoteCountFromArray(document.quotesAndMentions, pageId);
+}
 
-  if (pageId)
-    return document.document_mentions_in_bsky.filter((q) =>
-      q.link.includes(pageId),
-    ).length;
-  else
-    return document.document_mentions_in_bsky.filter((q) => {
+export function getQuoteCountFromArray(
+  quotesAndMentions: { uri: string; link?: string }[],
+  pageId?: string,
+) {
+  if (pageId) {
+    return quotesAndMentions.filter((q) => {
+      if (!q.link) return false;
+      return q.link.includes(pageId);
+    }).length;
+  } else {
+    return quotesAndMentions.filter((q) => {
+      if (!q.link) return true; // Direct mentions go to main page
       const url = new URL(q.link);
       const quoteParam = url.pathname.split("/l-quote/")[1];
-      if (!quoteParam) return null;
+      if (!quoteParam) return true;
       const quotePosition = decodeQuotePosition(quoteParam);
       return !quotePosition?.pageId;
     }).length;
+  }
 }
 
 export function getCommentCount(document: PostPageData, pageId?: string) {

@@ -5,13 +5,16 @@ import {
   PubLeafletPublication,
 } from "lexicons/api";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import { Interactions } from "../Interactions/Interactions";
+import {
+  Interactions,
+  getQuoteCount,
+  getCommentCount,
+} from "../Interactions/Interactions";
 import { PostPageData } from "../getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { useIdentityData } from "components/IdentityProvider";
 import { EditTiny } from "components/Icons/EditTiny";
 import { SpeedyLink } from "components/SpeedyLink";
-import { decodeQuotePosition } from "../quotePosition";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 export function PostHeader(props: {
@@ -95,20 +98,8 @@ export function PostHeader(props: {
           <Interactions
             showComments={props.preferences.showComments}
             compact
-            quotesCount={
-              document.document_mentions_in_bsky.filter((q) => {
-                const url = new URL(q.link);
-                const quoteParam = url.pathname.split("/l-quote/")[1];
-                if (!quoteParam) return null;
-                const quotePosition = decodeQuotePosition(quoteParam);
-                return !quotePosition?.pageId;
-              }).length
-            }
-            commentsCount={
-              document.comments_on_documents.filter(
-                (c) => !(c.record as PubLeafletComment.Record)?.onPage,
-              ).length
-            }
+            quotesCount={getQuoteCount(document) || 0}
+            commentsCount={getCommentCount(document) || 0}
           />
         </div>
       </div>
