@@ -14,7 +14,7 @@ import type { Post } from "app/(home-pages)/reader/getReaderFeed";
 import Link from "next/link";
 import { InteractionPreview } from "./InteractionsPreview";
 
-export const PostLink = (props: Post) => {
+export const PostListing = (props: Post) => {
   let pubRecord = props.publication.pubRecord as PubLeafletPublication.Record;
 
   let postRecord = props.documents.data as PubLeafletDocument.Record;

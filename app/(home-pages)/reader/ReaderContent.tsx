@@ -6,8 +6,7 @@ import useSWRInfinite from "swr/infinite";
 import { getReaderFeed } from "./getReaderFeed";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { PostLink } from "components/PostLink";
-import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { PostListing } from "components/PostListing";
 
 export const ReaderContent = (props: {
   posts: Post[];
@@ -69,7 +68,7 @@ export const ReaderContent = (props: {
   return (
     <div className="flex flex-col gap-3 relative">
       {allPosts.map((p) => (
-        <PostLink {...p} key={p.documents.uri} />
+        <PostListing {...p} key={p.documents.uri} />
       ))}
       {/* Trigger element for loading more posts */}
       <div

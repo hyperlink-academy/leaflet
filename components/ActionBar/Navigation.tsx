@@ -12,7 +12,7 @@ import {
   ReaderUnreadSmall,
 } from "components/Icons/ReaderSmall";
 
-export type navPages = "home" | "reader" | "pub" | "discover";
+export type navPages = "home" | "reader" | "pub" | "discover" | "tag";
 
 export const DesktopNavigation = (props: {
   currentPage: navPages;
