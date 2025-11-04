@@ -11,7 +11,10 @@ import {
   ReaderReadSmall,
   ReaderUnreadSmall,
 } from "components/Icons/ReaderSmall";
-import { NotificationsUnreadSmall } from "components/Icons/NotificationSmall";
+import {
+  NotificationsReadSmall,
+  NotificationsUnreadSmall,
+} from "components/Icons/NotificationSmall";
 import { SpeedyLink } from "components/SpeedyLink";
 import { NotificationInstance } from "twilio/lib/rest/api/v2010/account/notification";
 import { getIdentityData } from "actions/getIdentityData";
@@ -51,7 +54,7 @@ export const MobileNavigation = (props: {
     (pub) => pub.uri === props.publication,
   );
   return (
-    <div className="flex gap-1 pr-2">
+    <div className="flex gap-1 ">
       <Popover
         onOpenAutoFocus={(e) => e.preventDefault()}
         asChild
@@ -59,7 +62,7 @@ export const MobileNavigation = (props: {
         trigger={
           <div className="shrink-0 p-1 text-accent-contrast h-full flex gap-2 font-bold items-center">
             <MenuSmall />
-            {props.currentPage !== "notifications" && (
+            {/*{props.currentPage !== "notifications" && (
               <div className="truncate max-w-[72px]">
                 {props.currentPage === "home" ? (
                   <>Home</>
@@ -71,7 +74,7 @@ export const MobileNavigation = (props: {
                   thisPublication && <>{thisPublication.name}</>
                 ) : null}
               </div>
-            )}
+            )}*/}
           </div>
         }
       >
@@ -81,6 +84,7 @@ export const MobileNavigation = (props: {
           isMobile
         />
       </Popover>
+      <Separator />
       <NotificationButton />
     </div>
   );
@@ -103,12 +107,6 @@ const NavigationOptions = (props: {
         subs={identity?.publication_subscriptions?.length !== 0}
       />
       <DiscoverButton current={props.currentPage === "discover"} />
-      {/*{identity && (
-        <>
-          <hr className="border-dashed border-border-light" />
-          <NotificationButton current={props.currentPage === "notifications"} />
-        </>
-      )}*/}
 
       <hr className="border-border-light my-1" />
       <PublicationButtons currentPubUri={thisPublication?.uri} />
@@ -162,7 +160,8 @@ const DiscoverButton = (props: { current?: boolean }) => {
   );
 };
 
-function NotificationButton(props: { current?: boolean }) {
+export function NotificationButton(props: { current?: boolean }) {
+  let unreads = true;
   // let identity = await getIdentityData();
   // if (!identity?.atp_did) return;
   // let { data } = await supabaseServerClient
@@ -176,20 +175,21 @@ function NotificationButton(props: { current?: boolean }) {
       asChild
       trigger={
         <ActionButton
-          icon={<NotificationsUnreadSmall />}
+          nav
+          labelOnMobile={false}
+          icon={
+            unreads ? (
+              <NotificationsUnreadSmall className="text-accent-contrast" />
+            ) : (
+              <NotificationsReadSmall />
+            )
+          }
           label="Notifications"
           className={props.current ? "bg-bg-page! border-border-light!" : ""}
         />
       }
     >
-      <div className="flex flex-col gap-6 pt-3">
-        {/*{notifications.map((n) => {
-          if (n.type === "comment") {
-            n;
-            return <CommentNotification key={n.id} {...n} />;
-          }
-        })}*/}
-      </div>
+      <div className="flex flex-col gap-6 pt-3"></div>
       <SpeedyLink href={"/notifications"}>See All</SpeedyLink>
     </Popover>
   );

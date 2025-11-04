@@ -8,6 +8,7 @@ import {
   DesktopNavigation,
   MobileNavigation,
   navPages,
+  NotificationButton,
 } from "components/ActionBar/Navigation";
 import { create } from "zustand";
 import { Popover } from "components/Popover";
@@ -139,7 +140,8 @@ export function DashboardLayout<
   const tabParam = searchParams.get("tab");
 
   // Initialize tab from search param if valid, otherwise use default
-  const initialTab = tabParam && props.tabs[tabParam] ? tabParam : props.defaultTab;
+  const initialTab =
+    tabParam && props.tabs[tabParam] ? tabParam : props.defaultTab;
   let [tab, setTab] = useState<keyof T>(initialTab);
 
   // Custom setter that updates both state and URL
