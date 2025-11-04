@@ -19,6 +19,7 @@ import { redirect } from "next/navigation";
 import { hydrateNotifications } from "src/notifications";
 import { supabaseServerClient } from "supabase/serverClient";
 import { CommentNotification } from "app/(home-pages)/notifications/CommentNotication";
+import { Separator } from "components/Layout";
 
 export type navPages = "home" | "reader" | "pub" | "discover" | "notifications";
 
@@ -51,8 +52,6 @@ export const MobileNavigation = (props: {
   );
   return (
     <div className="flex gap-1 pr-2">
-      <NotificationButton />
-
       <Popover
         onOpenAutoFocus={(e) => e.preventDefault()}
         asChild
@@ -82,6 +81,7 @@ export const MobileNavigation = (props: {
           isMobile
         />
       </Popover>
+      <NotificationButton />
     </div>
   );
 };

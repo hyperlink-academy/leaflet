@@ -18,13 +18,19 @@ import { PaintSmall } from "components/Icons/PaintSmall";
 import { PubThemeSetter } from "components/ThemeManager/PubThemeSetter";
 import { useIsMobile } from "src/hooks/isMobile";
 import { SpeedyLink } from "components/SpeedyLink";
+import { FormEvent, useState } from "react";
+import { GoBackSmall } from "components/Icons/GoBackSmall";
+import { theme } from "tailwind.config";
+import { ButtonPrimary } from "components/Buttons";
+import { DotLoader } from "components/utils/DotLoader";
+import { GoToArrow } from "components/Icons/GoToArrow";
+import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 
 export const Actions = (props: { publication: string }) => {
   return (
     <>
       <NewDraftActionButton publication={props.publication} />
       <PublicationShareButton />
-      <PublicationThemeButton />
       <PublicationSettingsButton publication={props.publication} />
     </>
   );
@@ -88,12 +94,16 @@ function PublicationShareButton() {
 
 function PublicationSettingsButton(props: { publication: string }) {
   let isMobile = useIsMobile();
+  let [state, setState] = useState<"menu" | "general" | "theme">("menu");
+  let [loading, setLoading] = useState(false);
+
   return (
     <Popover
       asChild
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className="max-w-xs"
+      className={`max-w-xs w-[1000px] ${state === "theme" && "bg-white!"}`}
+      arrowFill={theme.colors["border-light"]}
       trigger={
         <ActionButton
           id="pub-settings-button"
@@ -102,25 +112,107 @@ function PublicationSettingsButton(props: { publication: string }) {
         />
       }
     >
-      <EditPubForm />
+      {state === "general" ? (
+        <EditPubForm
+          goBack={() => setState("menu")}
+          loading={loading}
+          setLoading={setLoading}
+        />
+      ) : state === "theme" ? (
+        <PubThemeSetter
+          goBack={() => setState("menu")}
+          loading={loading}
+          setLoading={setLoading}
+        />
+      ) : (
+        <SettingsMenu
+          state={state}
+          setState={setState}
+          loading={loading}
+          setLoading={setLoading}
+        />
+      )}
     </Popover>
   );
 }
 
-function PublicationThemeButton() {
-  let isMobile = useIsMobile();
+const SettingsMenu = (props: {
+  state: "menu" | "general" | "theme";
+  setState: (s: typeof props.state) => void;
+  loading: boolean;
+  setLoading: (l: boolean) => void;
+}) => {
+  let menuItemClassName =
+    "hover:bg-[var(--accent-light)] text-secondary hover:no-underline! rounded-md px-2 py-0.5 -mx-[8px] font-bold text-left flex items-center justify-between";
 
   return (
-    <Popover
-      asChild
-      className="max-w-xs pb-0 bg-white!"
-      side={isMobile ? "top" : "right"}
-      align={isMobile ? "center" : "start"}
-      trigger={
-        <ActionButton id="pub-theme-button" icon=<PaintSmall /> label="Theme" />
-      }
-    >
-      <PubThemeSetter />
-    </Popover>
+    <div className="flex flex-col gap-0.5">
+      <PubSettingsHeader
+        loading={props.loading}
+        setLoadingAction={props.setLoading}
+        state={"menu"}
+      />
+      <button
+        className={menuItemClassName}
+        type="button"
+        onClick={() => {
+          props.setState("general");
+        }}
+      >
+        Settings
+        <ArrowRightTiny />
+      </button>
+      <button
+        className={menuItemClassName}
+        type="button"
+        onClick={() => props.setState("theme")}
+      >
+        Publication Theme
+        <ArrowRightTiny />
+      </button>
+      <SpeedyLink
+        className={menuItemClassName}
+        href="https://about.leaflet.pub/
+        "
+      >
+        About Leaflet
+        <ArrowRightTiny />
+      </SpeedyLink>
+    </div>
   );
-}
+};
+
+export const PubSettingsHeader = (props: {
+  state: "menu" | "general" | "theme";
+  goBackAction?: () => void;
+  loading: boolean;
+  setLoadingAction: (l: boolean) => void;
+}) => {
+  return (
+    <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 pt-2 pb-1 mb-1">
+      {props.state === "menu"
+        ? "Settings"
+        : props.state === "general"
+          ? "General"
+          : props.state === "theme"
+            ? "Publication Theme"
+            : ""}
+      {props.state !== "menu" && (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              props.goBackAction && props.goBackAction();
+            }}
+          >
+            <GoBackSmall className="text-accent-contrast" />
+          </button>
+
+          <ButtonPrimary compact type="submit">
+            {props.loading ? <DotLoader /> : "Update"}
+          </ButtonPrimary>
+        </div>
+      )}
+    </div>
+  );
+};

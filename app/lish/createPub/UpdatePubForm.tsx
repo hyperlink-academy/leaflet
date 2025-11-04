@@ -20,8 +20,13 @@ import { Verification } from "@vercel/sdk/esm/models/getprojectdomainop";
 import Link from "next/link";
 import { Checkbox } from "components/Checkbox";
 import type { GetDomainConfigResponseBody } from "@vercel/sdk/esm/models/getdomainconfigop";
+import { PubSettingsHeader } from "../[did]/[publication]/dashboard/Actions";
 
-export const EditPubForm = () => {
+export const EditPubForm = (props: {
+  goBack: () => void;
+  loading: boolean;
+  setLoading: (l: boolean) => void;
+}) => {
   let { data } = usePublicationData();
   let { publication: pubData } = data || {};
   let record = pubData?.record as PubLeafletPublication.Record;
@@ -57,11 +62,11 @@ export const EditPubForm = () => {
 
   return (
     <form
-      className="flex flex-col gap-3 w-[1000px] max-w-full py-1"
       onSubmit={async (e) => {
         if (!pubData) return;
         e.preventDefault();
-        setFormState("loading");
+        props.setLoading(true);
+        console.log("step 1:update");
         let data = await updatePublication({
           uri: pubData.uri,
           name: nameValue,
@@ -73,110 +78,113 @@ export const EditPubForm = () => {
           },
         });
         toast({ type: "success", content: "Updated!" });
-        setFormState("normal");
+        props.setLoading(false);
         mutate("publication-data");
       }}
     >
-      <div className="flex items-center justify-between gap-2 ">
-        <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
-          Logo <span className="font-normal">(optional)</span>
-        </p>
-        <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer  ${iconPreview ? "border border-border-light hover:outline-border" : "border border-dotted border-accent-contrast hover:outline-accent-contrast"} selected-outline`}
-          onClick={() => fileInputRef.current?.click()}
+      <PubSettingsHeader
+        loading={props.loading}
+        setLoadingAction={props.setLoading}
+        goBackAction={props.goBack}
+        state={"theme"}
+      />
+      <div className="flex flex-col gap-3 w-[1000px] max-w-full pb-2">
+        <div className="flex items-center justify-between gap-2 ">
+          <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
+            Logo <span className="font-normal">(optional)</span>
+          </p>
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer  ${iconPreview ? "border border-border-light hover:outline-border" : "border border-dotted border-accent-contrast hover:outline-accent-contrast"} selected-outline`}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {iconPreview ? (
+              <img
+                src={iconPreview}
+                alt="Logo preview"
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              <AddTiny className="text-accent-1" />
+            )}
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            ref={fileInputRef}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                setIconFile(file);
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                  setIconPreview(e.target?.result as string);
+                };
+                reader.readAsDataURL(file);
+              }
+            }}
+          />
+        </div>
+
+        <label>
+          <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
+            Publication Name
+          </p>
+          <Input
+            className="input-with-border w-full text-primary"
+            type="text"
+            id="pubName"
+            value={nameValue}
+            onChange={(e) => {
+              setNameValue(e.currentTarget.value);
+            }}
+          />
+        </label>
+        <label>
+          <p className="text-tertiary italic text-sm font-bold pl-0.5 pb-0.5">
+            Description <span className="font-normal">(optional)</span>
+          </p>
+          <Input
+            textarea
+            className="input-with-border w-full text-primary"
+            rows={3}
+            id="pubDescription"
+            value={descriptionValue}
+            onChange={(e) => {
+              setDescriptionValue(e.currentTarget.value);
+            }}
+          />
+        </label>
+
+        <CustomDomainForm />
+        <hr className="border-border-light" />
+
+        <Checkbox
+          checked={showInDiscover}
+          onChange={(e) => setShowInDiscover(e.target.checked)}
         >
-          {iconPreview ? (
-            <img
-              src={iconPreview}
-              alt="Logo preview"
-              className="w-full h-full rounded-full object-cover"
-            />
-          ) : (
-            <AddTiny className="text-accent-1" />
-          )}
-        </div>
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          ref={fileInputRef}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              setIconFile(file);
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                setIconPreview(e.target?.result as string);
-              };
-              reader.readAsDataURL(file);
-            }
-          }}
-        />
+          <div className=" pt-0.5 flex flex-col  text-sm italic text-tertiary ">
+            <p className="font-bold">
+              Show In{" "}
+              <a href="/discover" target="_blank">
+                Discover
+              </a>
+            </p>
+            <p className="text-xs text-tertiary font-normal">
+              This publication will appear on our public Discover page
+            </p>
+          </div>
+        </Checkbox>
+
+        <Checkbox
+          checked={showComments}
+          onChange={(e) => setShowComments(e.target.checked)}
+        >
+          <div className=" pt-0.5 flex flex-col  text-sm italic text-tertiary ">
+            <p className="font-bold">Show comments on posts</p>
+          </div>
+        </Checkbox>
       </div>
-
-      <label>
-        <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">
-          Publication Name
-        </p>
-        <Input
-          className="input-with-border w-full text-primary"
-          type="text"
-          id="pubName"
-          value={nameValue}
-          onChange={(e) => {
-            setNameValue(e.currentTarget.value);
-          }}
-        />
-      </label>
-      <label>
-        <p className="text-tertiary italic text-sm font-bold pl-0.5 pb-0.5">
-          Description <span className="font-normal">(optional)</span>
-        </p>
-        <Input
-          textarea
-          className="input-with-border w-full text-primary"
-          rows={3}
-          id="pubDescription"
-          value={descriptionValue}
-          onChange={(e) => {
-            setDescriptionValue(e.currentTarget.value);
-          }}
-        />
-      </label>
-
-      <CustomDomainForm />
-      <hr className="border-border-light" />
-
-      <Checkbox
-        checked={showInDiscover}
-        onChange={(e) => setShowInDiscover(e.target.checked)}
-      >
-        <div className=" pt-0.5 flex flex-col  text-sm italic text-tertiary ">
-          <p className="font-bold">
-            Show In{" "}
-            <a href="/discover" target="_blank">
-              Discover
-            </a>
-          </p>
-          <p className="text-xs text-tertiary font-normal">
-            This publication will appear on our public Discover page
-          </p>
-        </div>
-      </Checkbox>
-
-      <Checkbox
-        checked={showComments}
-        onChange={(e) => setShowComments(e.target.checked)}
-      >
-        <div className=" pt-0.5 flex flex-col  text-sm italic text-tertiary ">
-          <p className="font-bold">Show comments on posts</p>
-        </div>
-      </Checkbox>
-      <hr className="border-border-light" />
-
-      <ButtonPrimary className="place-self-end" type="submit">
-        {formState === "loading" ? <DotLoader /> : "Update!"}
-      </ButtonPrimary>
     </form>
   );
 };
