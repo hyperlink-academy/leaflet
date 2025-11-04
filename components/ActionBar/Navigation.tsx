@@ -13,6 +13,12 @@ import {
 } from "components/Icons/ReaderSmall";
 import { NotificationsUnreadSmall } from "components/Icons/NotificationSmall";
 import { SpeedyLink } from "components/SpeedyLink";
+import { NotificationInstance } from "twilio/lib/rest/api/v2010/account/notification";
+import { getIdentityData } from "actions/getIdentityData";
+import { redirect } from "next/navigation";
+import { hydrateNotifications } from "src/notifications";
+import { supabaseServerClient } from "supabase/serverClient";
+import { CommentNotification } from "app/(home-pages)/notifications/CommentNotication";
 
 export type navPages = "home" | "reader" | "pub" | "discover" | "notifications";
 
@@ -21,15 +27,16 @@ export const DesktopNavigation = (props: {
   publication?: string;
 }) => {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
+      <Sidebar alwaysOpen>
+        <NotificationButton />
+      </Sidebar>
       <Sidebar alwaysOpen>
         <NavigationOptions
           currentPage={props.currentPage}
           publication={props.publication}
         />
       </Sidebar>
-      {/*<Sidebar alwaysOpen>
-      </Sidebar>*/}
     </div>
   );
 };
@@ -43,38 +50,46 @@ export const MobileNavigation = (props: {
     (pub) => pub.uri === props.publication,
   );
   return (
-    <Popover
-      onOpenAutoFocus={(e) => e.preventDefault()}
-      asChild
-      className="px-2! !max-w-[256px]"
-      trigger={
-        <div className="shrink-0 p-1 pr-2 text-accent-contrast h-full flex gap-2 font-bold items-center">
-          <MenuSmall />
-          <div className="truncate max-w-[72px]">
-            {props.currentPage === "home" ? (
-              <>Home</>
-            ) : props.currentPage === "reader" ? (
-              <>Reader</>
-            ) : props.currentPage === "discover" ? (
-              <>Discover</>
-            ) : props.currentPage === "pub" ? (
-              thisPublication && <>{thisPublication.name}</>
-            ) : null}
+    <div className="flex gap-1 pr-2">
+      <NotificationButton />
+
+      <Popover
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        asChild
+        className="px-2! !max-w-[256px]"
+        trigger={
+          <div className="shrink-0 p-1 text-accent-contrast h-full flex gap-2 font-bold items-center">
+            <MenuSmall />
+            {props.currentPage !== "notifications" && (
+              <div className="truncate max-w-[72px]">
+                {props.currentPage === "home" ? (
+                  <>Home</>
+                ) : props.currentPage === "reader" ? (
+                  <>Reader</>
+                ) : props.currentPage === "discover" ? (
+                  <>Discover</>
+                ) : props.currentPage === "pub" ? (
+                  thisPublication && <>{thisPublication.name}</>
+                ) : null}
+              </div>
+            )}
           </div>
-        </div>
-      }
-    >
-      <NavigationOptions
-        currentPage={props.currentPage}
-        publication={props.publication}
-      />
-    </Popover>
+        }
+      >
+        <NavigationOptions
+          currentPage={props.currentPage}
+          publication={props.publication}
+          isMobile
+        />
+      </Popover>
+    </div>
   );
 };
 
 const NavigationOptions = (props: {
   currentPage: navPages;
   publication?: string;
+  isMobile?: boolean;
 }) => {
   let { identity } = useIdentityData();
   let thisPublication = identity?.publications?.find(
@@ -88,21 +103,12 @@ const NavigationOptions = (props: {
         subs={identity?.publication_subscriptions?.length !== 0}
       />
       <DiscoverButton current={props.currentPage === "discover"} />
-
-      {identity && (
-        <SpeedyLink href={"/notifications"}>
-          <ActionButton
-            nav
-            icon={<NotificationsUnreadSmall />}
-            label="Notifications"
-            className={
-              props.currentPage === "notifications"
-                ? "bg-bg-page! border-border-light!"
-                : ""
-            }
-          />
-        </SpeedyLink>
-      )}
+      {/*{identity && (
+        <>
+          <hr className="border-dashed border-border-light" />
+          <NotificationButton current={props.currentPage === "notifications"} />
+        </>
+      )}*/}
 
       <hr className="border-border-light my-1" />
       <PublicationButtons currentPubUri={thisPublication?.uri} />
@@ -155,3 +161,36 @@ const DiscoverButton = (props: { current?: boolean }) => {
     </Link>
   );
 };
+
+function NotificationButton(props: { current?: boolean }) {
+  // let identity = await getIdentityData();
+  // if (!identity?.atp_did) return;
+  // let { data } = await supabaseServerClient
+  //   .from("notifications")
+  //   .select("*")
+  //   .eq("recipient", identity.atp_did);
+  // let notifications = await hydrateNotifications(data || []);
+
+  return (
+    <Popover
+      asChild
+      trigger={
+        <ActionButton
+          icon={<NotificationsUnreadSmall />}
+          label="Notifications"
+          className={props.current ? "bg-bg-page! border-border-light!" : ""}
+        />
+      }
+    >
+      <div className="flex flex-col gap-6 pt-3">
+        {/*{notifications.map((n) => {
+          if (n.type === "comment") {
+            n;
+            return <CommentNotification key={n.id} {...n} />;
+          }
+        })}*/}
+      </div>
+      <SpeedyLink href={"/notifications"}>See All</SpeedyLink>
+    </Popover>
+  );
+}

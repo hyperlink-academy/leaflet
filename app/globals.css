@@ -96,6 +96,11 @@
     --accent-2: 255, 255, 255;
     --accent-contrast: 0, 0, 225;
     --accent-1-is-contrast: "true";
+    --accent-light: color-mix(
+      in oklab,
+      rgb(var(--accent-contrast)),
+      rgb(var(--bg-page)) 85%
+    );
 
     --highlight-1: 255, 177, 177;
     --highlight-2: 253, 245, 203;
@@ -365,6 +370,7 @@ pre.shiki {
   @apply pl-3;
   @apply ml-2;
 }
+
 .transparent-container {
   @apply border;
   @apply border-border-light;
