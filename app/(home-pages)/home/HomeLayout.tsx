@@ -1,6 +1,6 @@
 "use client";
 
-import { getHomeDocs, HomeDoc } from "./storage";
+import { getHomeDocs } from "./storage";
 import useSWR from "swr";
 import {
   Fact,
@@ -13,7 +13,6 @@ import { useIdentityData } from "components/IdentityProvider";
 import type { Attribute } from "src/replicache/attributes";
 import { callRPC } from "app/api/rpc/client";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
-import { HomeSmall } from "components/Icons/HomeSmall";
 import {
   HomeDashboardControls,
   DashboardLayout,
@@ -22,30 +21,10 @@ import {
 } from "components/PageLayouts/DashboardLayout";
 import { Actions } from "./Actions/Actions";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
-import { Json } from "supabase/database.types";
 import { useTemplateState } from "./Actions/CreateNewButton";
-import { CreateNewLeafletButton } from "./Actions/CreateNewButton";
-import { ActionButton } from "components/ActionBar/ActionButton";
-import { AddTiny } from "components/Icons/AddTiny";
-import {
-  get_leaflet_data,
-  GetLeafletDataReturnType,
-} from "app/api/rpc/[command]/get_leaflet_data";
-import { useEffect, useRef, useState } from "react";
-import { Input } from "components/Input";
+import { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
+import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
-import {
-  ButtonPrimary,
-  ButtonSecondary,
-  ButtonTertiary,
-} from "components/Buttons";
-import { AddSmall } from "components/Icons/AddSmall";
-import { PublishIllustration } from "app/[leaflet_id]/publish/PublishIllustration/PublishIllustration";
-import { PubListEmptyIllo } from "components/ActionBar/Publications";
-import { theme } from "tailwind.config";
-import Link from "next/link";
-import { DiscoverIllo } from "./HomeEmpty/DiscoverIllo";
-import { WelcomeToLeafletIllo } from "./HomeEmpty/WelcomeToLeafletIllo";
 import {
   DiscoverBanner,
   HomeEmptyState,

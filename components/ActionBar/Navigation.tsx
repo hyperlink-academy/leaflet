@@ -93,7 +93,10 @@ const NavigationOptions = (props: {
       <HomeButton current={props.currentPage === "home"} />
       <ReaderButton
         current={props.currentPage === "reader"}
-        subs={identity?.publication_subscriptions?.length !== 0}
+        subs={
+          identity?.publication_subscriptions?.length !== 0 &&
+          identity?.publication_subscriptions?.length !== undefined
+        }
       />
       <DiscoverButton current={props.currentPage === "discover"} />
 
