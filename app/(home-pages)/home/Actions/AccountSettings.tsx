@@ -10,16 +10,18 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { GoBackSmall } from "components/Icons/GoBackSmall";
 import { useState } from "react";
 import { ThemeSetterContent } from "components/ThemeManager/ThemeSetter";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export const AccountSettings = (props: { entityID: string }) => {
   let [state, setState] = useState<"menu" | "general" | "theme">("menu");
+  let isMobile = useIsMobile();
 
   return (
     <Popover
       asChild
       onOpenChange={() => setState("menu")}
-      side="right"
-      align="start"
+      side={isMobile ? "top" : "right"}
+      align={isMobile ? "center" : "start"}
       className={`max-w-xs w-[1000px] ${state === "theme" && "bg-white!"}`}
       trigger={<ActionButton icon=<AccountSmall /> label="Settings" />}
     >

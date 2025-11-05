@@ -23,6 +23,7 @@ import { hydrateNotifications } from "src/notifications";
 import { supabaseServerClient } from "supabase/serverClient";
 import { CommentNotification } from "app/(home-pages)/notifications/CommentNotication";
 import { Separator } from "components/Layout";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export type navPages = "home" | "reader" | "pub" | "discover" | "notifications";
 
@@ -165,6 +166,7 @@ const DiscoverButton = (props: { current?: boolean }) => {
 
 export function NotificationButton(props: { current?: boolean }) {
   let unreads = true;
+  let isMobile = useIsMobile();
   // let identity = await getIdentityData();
   // if (!identity?.atp_did) return;
   // let { data } = await supabaseServerClient
@@ -176,6 +178,8 @@ export function NotificationButton(props: { current?: boolean }) {
   return (
     <Popover
       asChild
+      side={isMobile ? "top" : "right"}
+      align={isMobile ? "center" : "start"}
       trigger={
         <ActionButton
           nav
