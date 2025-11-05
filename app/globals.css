@@ -400,6 +400,26 @@ pre.shiki {
   @apply rounded-md;
 }
 
+.menuItem {
+  @apply text-secondary;
+  @apply hover:text-secondary;
+  @apply data-highlighted:bg-[var(--accent-light)];
+  @apply data-highlighted:outline-none;
+  @apply hover:bg-[var(--accent-light)];
+  text-align: left;
+  font-weight: 800;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  outline: none !important;
+  cursor: pointer;
+  background-color: transparent;
+
+  :hover {
+    text-decoration: none !important;
+    background-color: rgb(var(--accent-light));
+  }
+}
+
 .pwa-padding {
   padding-top: max(calc(env(safe-area-inset-top) - 8px)) !important;
 }

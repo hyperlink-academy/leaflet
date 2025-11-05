@@ -25,7 +25,7 @@ export type ImageState = {
   repeat: number | null;
 };
 export const PubThemeSetter = (props: {
-  goBack: () => void;
+  backToMenu: () => void;
   loading: boolean;
   setLoading: (l: boolean) => void;
 }) => {
@@ -95,7 +95,7 @@ export const PubThemeSetter = (props: {
         <PubSettingsHeader
           loading={props.loading}
           setLoadingAction={props.setLoading}
-          goBackAction={props.goBack}
+          backToMenu={props.backToMenu}
           state={"theme"}
         />
       </form>

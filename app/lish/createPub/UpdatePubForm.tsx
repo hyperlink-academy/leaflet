@@ -23,7 +23,7 @@ import type { GetDomainConfigResponseBody } from "@vercel/sdk/esm/models/getdoma
 import { PubSettingsHeader } from "../[did]/[publication]/dashboard/Actions";
 
 export const EditPubForm = (props: {
-  goBack: () => void;
+  backToMenu: () => void;
   loading: boolean;
   setLoading: (l: boolean) => void;
 }) => {
@@ -85,7 +85,7 @@ export const EditPubForm = (props: {
       <PubSettingsHeader
         loading={props.loading}
         setLoadingAction={props.setLoading}
-        goBackAction={props.goBack}
+        backToMenu={props.backToMenu}
         state={"theme"}
       />
       <div className="flex flex-col gap-3 w-[1000px] max-w-full pb-2">

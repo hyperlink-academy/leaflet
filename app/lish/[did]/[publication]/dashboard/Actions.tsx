@@ -100,6 +100,7 @@ function PublicationSettingsButton(props: { publication: string }) {
   return (
     <Popover
       asChild
+      onOpenChange={() => setState("menu")}
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
       className={`max-w-xs w-[1000px] ${state === "theme" && "bg-white!"}`}
@@ -114,13 +115,13 @@ function PublicationSettingsButton(props: { publication: string }) {
     >
       {state === "general" ? (
         <EditPubForm
-          goBack={() => setState("menu")}
+          backToMenu={() => setState("menu")}
           loading={loading}
           setLoading={setLoading}
         />
       ) : state === "theme" ? (
         <PubThemeSetter
-          goBack={() => setState("menu")}
+          backToMenu={() => setState("menu")}
           loading={loading}
           setLoading={setLoading}
         />
@@ -143,7 +144,7 @@ const SettingsMenu = (props: {
   setLoading: (l: boolean) => void;
 }) => {
   let menuItemClassName =
-    "hover:bg-[var(--accent-light)] text-secondary hover:no-underline! rounded-md px-2 py-0.5 -mx-[8px] font-bold text-left flex items-center justify-between";
+    "menuItem -mx-[8px] text-left flex items-center justify-between";
 
   return (
     <div className="flex flex-col gap-0.5">
@@ -184,7 +185,7 @@ const SettingsMenu = (props: {
 
 export const PubSettingsHeader = (props: {
   state: "menu" | "general" | "theme";
-  goBackAction?: () => void;
+  backToMenu?: () => void;
   loading: boolean;
   setLoadingAction: (l: boolean) => void;
 }) => {
@@ -202,7 +203,7 @@ export const PubSettingsHeader = (props: {
           <button
             type="button"
             onClick={() => {
-              props.goBackAction && props.goBackAction();
+              props.backToMenu && props.backToMenu();
             }}
           >
             <GoBackSmall className="text-accent-contrast" />
