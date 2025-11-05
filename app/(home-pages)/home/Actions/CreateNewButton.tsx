@@ -51,6 +51,8 @@ export const CreateNewLeafletButton = (props: {}) => {
   return (
     <Menu
       asChild
+      side="right"
+      align="start"
       trigger={
         <ActionButton
           id="new-leaflet-button"

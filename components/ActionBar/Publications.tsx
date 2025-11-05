@@ -10,6 +10,11 @@ import { AtUri } from "@atproto/syntax";
 import { ActionButton } from "./ActionButton";
 import { SpeedyLink } from "components/SpeedyLink";
 import { PublishSmall } from "components/Icons/PublishSmall";
+import { Popover } from "components/Popover";
+import { BlueskyLogin } from "app/login/LoginForm";
+import { ButtonPrimary } from "components/Buttons";
+import { useIsMobile } from "src/hooks/isMobile";
+import { useState } from "react";
 
 export const PublicationButtons = (props: {
   currentPubUri: string | undefined;
@@ -18,13 +23,11 @@ export const PublicationButtons = (props: {
 
   // don't show pub list button if not logged in or no pub list
   // we show a "start a pub" banner instead
-  if (!identity || !identity.atp_did) return <PubListEmpty />;
+  if (!identity || !identity.atp_did || identity.publications.length === 0)
+    return <PubListEmpty />;
   return (
     <div className="pubListWrapper w-full  flex flex-col gap-1 sm:bg-transparent sm:border-0">
       {identity.publications?.map((d) => {
-        // console.log("thisURI : " + d.uri);
-        // console.log("currentURI : " + props.currentPubUri);
-
         return (
           <PublicationOption
             {...d}
@@ -78,15 +81,77 @@ export const PublicationOption = (props: {
 };
 
 const PubListEmpty = () => {
-  return (
-    <SpeedyLink href={`lish/createPub`} className=" hover:no-underline!">
+  let { identity } = useIdentityData();
+  let isMobile = useIsMobile();
+
+  let [state, setState] = useState<"default" | "info">("default");
+  if (isMobile && state == "default")
+    return (
       <ActionButton
         label="Publish"
         icon={<PublishSmall />}
         nav
-        subtext="Blog on ATProto!"
+        subtext="Start a blog on ATProto!"
+        onClick={() => {
+          setState("info");
+        }}
       />
-    </SpeedyLink>
+    );
+
+  if (isMobile && state === "info") return <PublishPopoverContent />;
+  else
+    return (
+      <Popover
+        side="right"
+        align="start"
+        className="p-1! max-w-56"
+        trigger={
+          <ActionButton
+            label="Publish"
+            icon={<PublishSmall />}
+            nav
+            subtext="Start a blog on ATProto!"
+          />
+        }
+      >
+        <PublishPopoverContent />
+      </Popover>
+    );
+};
+
+const PublishPopoverContent = () => {
+  let { identity } = useIdentityData();
+
+  return (
+    <div className="bg-[var(--accent-light)] w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4 text-sm">
+      <div className="mx-auto pt-2 scale-90">
+        <PubListEmptyIllo />
+      </div>
+      <div className="pt-1 font-bold">Publish on AT Proto</div>
+      {identity && identity.atp_did ? (
+        //  has ATProto account and no pubs
+        <>
+          <div className="pb-2 text-secondary text-xs">
+            Start a new publication <br />
+            on AT Proto
+          </div>
+          <SpeedyLink href={`lish/createPub`} className=" hover:no-underline!">
+            <ButtonPrimary className="text-sm mx-auto" compact>
+              Start a Publication!
+            </ButtonPrimary>
+          </SpeedyLink>
+        </>
+      ) : (
+        // no ATProto account and no pubs
+        <>
+          <div className="pb-2 text-secondary text-xs">
+            Link a Bluesky account to start a new publication on AT Proto
+          </div>
+
+          <BlueskyLogin compact />
+        </>
+      )}
+    </div>
   );
 };
 
