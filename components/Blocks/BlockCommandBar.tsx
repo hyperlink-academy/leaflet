@@ -6,7 +6,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { NestedCardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { UndoManager } from "src/undoManager";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
-import { useEditorStates } from "src/state/useEditorState";
+import { setEditorState, useEditorStates } from "src/state/useEditorState";
 
 type Props = {
   parent: string;
@@ -36,24 +36,14 @@ export const BlockCommandBar = ({
   // This clears '/' AND anything typed after it
   const clearCommandSearchText = () => {
     if (!props.entityID) return;
-    useEditorStates.setState((s) => {
-      let existingState = s.editorStates[props.entityID!];
-      if (!existingState) {
-        return s;
-      }
+    const entityID = props.entityID;
+    
+    const existingState = useEditorStates.getState().editorStates[entityID];
+    if (!existingState) return;
 
-      let tr = existingState.editor.tr;
-      tr.deleteRange(1, tr.doc.content.size - 1);
-      return {
-        editorStates: {
-          ...s.editorStates,
-          [props.entityID!]: {
-            ...existingState,
-            editor: existingState.editor.apply(tr),
-          },
-        },
-      };
-    });
+    const tr = existingState.editor.tr;
+    tr.deleteRange(1, tr.doc.content.size - 1);
+    setEditorState(entityID, { editor: existingState.editor.apply(tr) });
   };
 
   let commandResults = blockCommands.filter((command) => {
