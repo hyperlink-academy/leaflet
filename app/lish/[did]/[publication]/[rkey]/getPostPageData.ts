@@ -60,28 +60,32 @@ const headers = {
 export async function getConstellationBacklinks(
   url: string,
 ): Promise<{ uri: string }[]> {
-  let baseURL = `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${encodeURIComponent(url)}`;
-  let externalEmbeds = new URL(
-    `${baseURL}&source=${encodeURIComponent("app.bsky.feed.post:embed.external.uri")}`,
-  );
-  let linkFacets = new URL(
-    `${baseURL}&source=${encodeURIComponent("app.bsky.feed.post:facets[].features[app.bsky.richtext.facet#link].uri")}`,
-  );
+  try {
+    let baseURL = `https://constellation.microcosm.blue/xrpc/blue.microcosm.links.getBacklinks?subject=${encodeURIComponent(url)}`;
+    let externalEmbeds = new URL(
+      `${baseURL}&source=${encodeURIComponent("app.bsky.feed.post:embed.external.uri")}`,
+    );
+    let linkFacets = new URL(
+      `${baseURL}&source=${encodeURIComponent("app.bsky.feed.post:facets[].features[app.bsky.richtext.facet#link].uri")}`,
+    );
 
-  let [links, embeds] = (await Promise.all([
-    fetch(linkFacets, { headers, next: { revalidate: 3600 } }).then((req) =>
-      req.json(),
-    ),
-    fetch(externalEmbeds, { headers, next: { revalidate: 3600 } }).then((req) =>
-      req.json(),
-    ),
-  ])) as ConstellationResponse[];
+    let [links, embeds] = (await Promise.all([
+      fetch(linkFacets, { headers, next: { revalidate: 3600 } }).then((req) =>
+        req.json(),
+      ),
+      fetch(externalEmbeds, { headers, next: { revalidate: 3600 } }).then(
+        (req) => req.json(),
+      ),
+    ])) as ConstellationResponse[];
 
-  let uris = [...links.records, ...embeds.records].map((i) =>
-    AtUri.make(i.did, i.collection, i.rkey).toString(),
-  );
+    let uris = [...links.records, ...embeds.records].map((i) =>
+      AtUri.make(i.did, i.collection, i.rkey).toString(),
+    );
 
-  return uris.map((uri) => ({ uri }));
+    return uris.map((uri) => ({ uri }));
+  } catch (e) {
+    return [];
+  }
 }
 
 type ConstellationResponse = {
