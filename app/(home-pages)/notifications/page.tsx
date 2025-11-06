@@ -33,7 +33,7 @@ const NotificationContent = async () => {
   let notifications = await hydrateNotifications(data || []);
   return (
     <div className="max-w-prose mx-auto w-full">
-      <div className="flex flex-col gap-6 pt-3">
+      <div className="flex flex-col gap-6 pt-1">
         {notifications.map((n) => {
           if (n.type === "comment") {
             n;
