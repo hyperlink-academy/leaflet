@@ -36,7 +36,7 @@ export const LegalContent = () => {
         </button>
       </div>
       <div
-        className={`no-scrollbar border border-border rounded-md bg-bg-page sm:px-4 px-3 pt-2 pb-6  -mt-[1px] h-full overflow-y-scroll rounded-tl-none `}
+        className={`no-scrollbar border border-border rounded-md bg-bg-page sm:px-4 px-3 pt-2 pb-6  -mt-px h-full overflow-y-scroll rounded-tl-none `}
       >
         {state === "terms" ? <Terms /> : <Privacy />}
       </div>

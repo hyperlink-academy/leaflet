@@ -27,7 +27,8 @@ export const PubThemeSetter = () => {
   let [loading, setLoading] = useState(false);
   let [sample, setSample] = useState<"pub" | "post">("pub");
   let [openPicker, setOpenPicker] = useState<pickers>("null");
-  let { data: pub, mutate } = usePublicationData();
+  let { data, mutate } = usePublicationData();
+  let { publication: pub } = data || {};
   let record = pub?.record as PubLeafletPublication.Record | undefined;
   let [showPageBackground, setShowPageBackground] = useState(
     !!record?.theme?.showPageBackground,
@@ -61,7 +62,6 @@ export const PubThemeSetter = () => {
         onSubmit={async (e) => {
           e.preventDefault();
           if (!pub) return;
-          console.log(image);
           setLoading(true);
           let result = await updatePublicationTheme({
             uri: pub.uri,
@@ -79,25 +79,18 @@ export const PubThemeSetter = () => {
             },
           });
           mutate((pub) => {
-            if (result?.publication && pub)
-              return { ...pub, record: result.publication.record };
+            if (result?.publication && pub?.publication)
+              return {
+                ...pub,
+                publication: { ...pub.publication, ...result.publication },
+              };
             return pub;
           }, false);
           setLoading(false);
         }}
       >
         <h4 className="text-accent-2">Publication Theme</h4>
-        <ButtonSecondary
-          compact
-          disabled={
-            !(
-              showPageBackground !== !!record?.theme?.showPageBackground ||
-              changes ||
-              !!image?.file ||
-              record?.theme?.backgroundImage?.width !== image?.repeat
-            )
-          }
-        >
+        <ButtonSecondary compact>
           {loading ? <DotLoader /> : "Update"}
         </ButtonSecondary>
       </form>
@@ -130,7 +123,7 @@ export const PubThemeSetter = () => {
               <SectionArrow
                 fill="white"
                 stroke="#CCCCCC"
-                className="ml-2 -mt-[1px]"
+                className="ml-2 -mt-px"
               />
             </div>
           </div>
@@ -177,7 +170,7 @@ export const PubThemeSetter = () => {
           <div className="flex flex-col mt-4 ">
             <div className="flex gap-2 items-center text-sm  text-[#8C8C8C]">
               <div className="text-sm">Preview</div>
-              <Separator classname="!h-4" />{" "}
+              <Separator classname="h-4!" />{" "}
               <button
                 className={`${sample === "pub" ? "font-bold  text-[#595959]" : ""}`}
                 onClick={() => setSample("pub")}
@@ -216,7 +209,8 @@ const SamplePub = (props: {
   pubBGRepeat: number | null;
   showPageBackground: boolean;
 }) => {
-  let { data: publication } = usePublicationData();
+  let { data } = usePublicationData();
+  let { publication } = data || {};
   let record = publication?.record as PubLeafletPublication.Record | null;
 
   return (
@@ -260,7 +254,7 @@ const SamplePub = (props: {
           <div className="text-[7px] font-normal text-tertiary">
             {record?.description}
           </div>
-          <div className=" flex gap-1 items-center mt-[6px] bg-accent-1 text-accent-2 py-[1px] px-[4px] text-[7px] w-fit font-bold rounded-[2px] mx-auto">
+          <div className=" flex gap-1 items-center mt-[6px] bg-accent-1 text-accent-2 py-px px-[4px] text-[7px] w-fit font-bold rounded-[2px] mx-auto">
             <div className="h-[7px] w-[7px] rounded-full bg-accent-2" />
             Subscribe with Bluesky
           </div>
@@ -283,7 +277,8 @@ const SamplePost = (props: {
   pubBGRepeat: number | null;
   showPageBackground: boolean;
 }) => {
-  let { data: publication } = usePublicationData();
+  let { data } = usePublicationData();
+  let { publication } = data || {};
   let record = publication?.record as PubLeafletPublication.Record | null;
   return (
     <div

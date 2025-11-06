@@ -12,6 +12,7 @@ import {
   PubLeafletBlocksUnorderedList,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
+  PubLeafletPagesCanvas,
   PubLeafletRichtextFacet,
   PubLeafletBlocksWebsite,
   PubLeafletBlocksCode,
@@ -19,6 +20,11 @@ import {
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksBskyPost,
   PubLeafletBlocksBlockquote,
+  PubLeafletBlocksIframe,
+  PubLeafletBlocksPage,
+  PubLeafletBlocksPoll,
+  PubLeafletBlocksButton,
+  PubLeafletPollDefinition,
 } from "lexicons/api";
 import { Block } from "components/Blocks/Block";
 import { TID } from "@atproto/common";
@@ -37,6 +43,7 @@ import { Json } from "supabase/database.types";
 import { $Typed, UnicodeString } from "@atproto/api";
 import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
 import { getBlocksWithTypeLocal } from "src/hooks/queries/useBlocks";
+import { Lock } from "src/utils/lock";
 
 export async function publishToPublication({
   root_entity,
@@ -71,36 +78,12 @@ export async function publishToPublication({
     root: root_entity,
   });
   let facts = (data as unknown as Fact<Attribute>[]) || [];
-  let scan = scanIndexLocal(facts);
-  let firstEntity = scan.eav(root_entity, "root/page")?.[0];
-  if (!firstEntity) throw new Error("No root page");
-  let blocks = getBlocksWithTypeLocal(facts, firstEntity?.data.value);
 
-  let images = blocks
-    .filter((b) => b.type === "image")
-    .map((b) => scan.eav(b.value, "block/image")[0]);
-  let links = blocks
-    .filter((b) => b.type == "link")
-    .map((b) => scan.eav(b.value, "link/preview")[0]);
-  let imageMap = new Map<string, BlobRef>();
-  await Promise.all(
-    [...links, ...images].map(async (b) => {
-      if (!b) return;
-      let data = await fetch(b.data.src);
-      if (data.status !== 200) return;
-      let binary = await data.blob();
-      let blob = await agent.com.atproto.repo.uploadBlob(binary, {
-        headers: { "Content-Type": binary.type },
-      });
-      imageMap.set(b.data.src, blob.data.blob);
-    }),
-  );
-
-  let b: PubLeafletPagesLinearDocument.Block[] = blocksToRecord(
-    blocks,
-    imageMap,
-    scan,
+  let { firstPageBlocks, pages } = await processBlocksToPages(
+    facts,
+    agent,
     root_entity,
+    credentialSession.did!,
   );
 
   let existingRecord =
@@ -116,8 +99,23 @@ export async function publishToPublication({
     pages: [
       {
         $type: "pub.leaflet.pages.linearDocument",
-        blocks: b,
+        blocks: firstPageBlocks,
       },
+      ...pages.map((p) => {
+        if (p.type === "canvas") {
+          return {
+            $type: "pub.leaflet.pages.canvas" as const,
+            id: p.id,
+            blocks: p.blocks as PubLeafletPagesCanvas.Block[],
+          };
+        } else {
+          return {
+            $type: "pub.leaflet.pages.linearDocument" as const,
+            id: p.id,
+            blocks: p.blocks as PubLeafletPagesLinearDocument.Block[],
+          };
+        }
+      }),
     ],
   };
   let rkey = draft?.doc ? new AtUri(draft.doc).rkey : TID.nextStr();
@@ -151,237 +149,371 @@ export async function publishToPublication({
   return { rkey, record: JSON.parse(JSON.stringify(record)) };
 }
 
-function blocksToRecord(
-  blocks: Block[],
-  imageMap: Map<string, BlobRef>,
-  scan: ReturnType<typeof scanIndexLocal>,
+async function processBlocksToPages(
+  facts: Fact<any>[],
+  agent: AtpBaseClient,
   root_entity: string,
-): PubLeafletPagesLinearDocument.Block[] {
-  let parsedBlocks = parseBlocksToList(blocks);
-  return parsedBlocks.flatMap((blockOrList) => {
-    if (blockOrList.type === "block") {
-      let alignmentValue =
-        scan.eav(blockOrList.block.value, "block/text-alignment")[0]?.data
-          .value || "left";
-      let alignment =
-        alignmentValue === "center"
-          ? "lex:pub.leaflet.pages.linearDocument#textAlignCenter"
-          : alignmentValue === "right"
-            ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
-            : undefined;
-      let b = blockToRecord(blockOrList.block, imageMap, scan, root_entity);
-      if (!b) return [];
-      let block: PubLeafletPagesLinearDocument.Block = {
-        $type: "pub.leaflet.pages.linearDocument#block",
-        alignment,
-        block: b,
+  did: string,
+) {
+  let scan = scanIndexLocal(facts);
+  let pages: {
+    id: string;
+    blocks:
+      | PubLeafletPagesLinearDocument.Block[]
+      | PubLeafletPagesCanvas.Block[];
+    type: "doc" | "canvas";
+  }[] = [];
+
+  // Create a lock to serialize image uploads
+  const uploadLock = new Lock();
+
+  let firstEntity = scan.eav(root_entity, "root/page")?.[0];
+  if (!firstEntity) throw new Error("No root page");
+  let blocks = getBlocksWithTypeLocal(facts, firstEntity?.data.value);
+  let b = await blocksToRecord(blocks, did);
+  return { firstPageBlocks: b, pages };
+
+  async function uploadImage(src: string) {
+    let data = await fetch(src);
+    if (data.status !== 200) return;
+    let binary = await data.blob();
+    return uploadLock.withLock(async () => {
+      let blob = await agent.com.atproto.repo.uploadBlob(binary, {
+        headers: { "Content-Type": binary.type },
+      });
+      return blob.data.blob;
+    });
+  }
+  async function blocksToRecord(
+    blocks: Block[],
+    did: string,
+  ): Promise<PubLeafletPagesLinearDocument.Block[]> {
+    let parsedBlocks = parseBlocksToList(blocks);
+    return (
+      await Promise.all(
+        parsedBlocks.map(async (blockOrList) => {
+          if (blockOrList.type === "block") {
+            let alignmentValue = scan.eav(
+              blockOrList.block.value,
+              "block/text-alignment",
+            )[0]?.data.value;
+            let alignment: ExcludeString<
+              PubLeafletPagesLinearDocument.Block["alignment"]
+            > =
+              alignmentValue === "center"
+                ? "lex:pub.leaflet.pages.linearDocument#textAlignCenter"
+                : alignmentValue === "right"
+                  ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
+                  : alignmentValue === "justify"
+                    ? "lex:pub.leaflet.pages.linearDocument#textAlignJustify"
+                    : alignmentValue === "left"
+                      ? "lex:pub.leaflet.pages.linearDocument#textAlignLeft"
+                      : undefined;
+            let b = await blockToRecord(blockOrList.block, did);
+            if (!b) return [];
+            let block: PubLeafletPagesLinearDocument.Block = {
+              $type: "pub.leaflet.pages.linearDocument#block",
+              alignment,
+              block: b,
+            };
+            return [block];
+          } else {
+            let block: PubLeafletPagesLinearDocument.Block = {
+              $type: "pub.leaflet.pages.linearDocument#block",
+              block: {
+                $type: "pub.leaflet.blocks.unorderedList",
+                children: await childrenToRecord(blockOrList.children, did),
+              },
+            };
+            return [block];
+          }
+        }),
+      )
+    ).flat();
+  }
+
+  async function childrenToRecord(children: List[], did: string) {
+    return (
+      await Promise.all(
+        children.map(async (child) => {
+          let content = await blockToRecord(child.block, did);
+          if (!content) return [];
+          let record: PubLeafletBlocksUnorderedList.ListItem = {
+            $type: "pub.leaflet.blocks.unorderedList#listItem",
+            content,
+            children: await childrenToRecord(child.children, did),
+          };
+          return record;
+        }),
+      )
+    ).flat();
+  }
+  async function blockToRecord(b: Block, did: string) {
+    const getBlockContent = (b: string) => {
+      let [content] = scan.eav(b, "block/text");
+      if (!content) return ["", [] as PubLeafletRichtextFacet.Main[]] as const;
+      let doc = new Y.Doc();
+      const update = base64.toByteArray(content.data.value);
+      Y.applyUpdate(doc, update);
+      let nodes = doc.getXmlElement("prosemirror").toArray();
+      let stringValue = YJSFragmentToString(nodes[0]);
+      let facets = YJSFragmentToFacets(nodes[0]);
+      return [stringValue, facets] as const;
+    };
+    if (b.type === "card") {
+      let [page] = scan.eav(b.value, "block/card");
+      if (!page) return;
+      let [pageType] = scan.eav(page.data.value, "page/type");
+
+      if (pageType?.data.value === "canvas") {
+        let canvasBlocks = await canvasBlocksToRecord(page.data.value, did);
+        pages.push({
+          id: page.data.value,
+          blocks: canvasBlocks,
+          type: "canvas",
+        });
+      } else {
+        let blocks = getBlocksWithTypeLocal(facts, page.data.value);
+        pages.push({
+          id: page.data.value,
+          blocks: await blocksToRecord(blocks, did),
+          type: "doc",
+        });
+      }
+
+      let block: $Typed<PubLeafletBlocksPage.Main> = {
+        $type: "pub.leaflet.blocks.page",
+        id: page.data.value,
       };
-      return [block];
-    } else {
-      let block: PubLeafletPagesLinearDocument.Block = {
-        $type: "pub.leaflet.pages.linearDocument#block",
-        block: {
-          $type: "pub.leaflet.blocks.unorderedList",
-          children: childrenToRecord(
-            blockOrList.children,
-            imageMap,
-            scan,
-            root_entity,
-          ),
+      return block;
+    }
+
+    if (b.type === "bluesky-post") {
+      let [post] = scan.eav(b.value, "block/bluesky-post");
+      if (!post || !post.data.value.post) return;
+      let block: $Typed<PubLeafletBlocksBskyPost.Main> = {
+        $type: ids.PubLeafletBlocksBskyPost,
+        postRef: {
+          uri: post.data.value.post.uri,
+          cid: post.data.value.post.cid,
         },
       };
-      return [block];
+      return block;
     }
-  });
-}
+    if (b.type === "horizontal-rule") {
+      let block: $Typed<PubLeafletBlocksHorizontalRule.Main> = {
+        $type: ids.PubLeafletBlocksHorizontalRule,
+      };
+      return block;
+    }
 
-function childrenToRecord(
-  children: List[],
-  imageMap: Map<string, BlobRef>,
-  scan: ReturnType<typeof scanIndexLocal>,
-  root_entity: string,
-) {
-  return children.flatMap((child) => {
-    let content = blockToRecord(child.block, imageMap, scan, root_entity);
-    if (!content) return [];
-    let record: PubLeafletBlocksUnorderedList.ListItem = {
-      $type: "pub.leaflet.blocks.unorderedList#listItem",
-      content,
-      children: childrenToRecord(child.children, imageMap, scan, root_entity),
-    };
-    return record;
-  });
-}
-function blockToRecord(
-  b: Block,
-  imageMap: Map<string, BlobRef>,
-  scan: ReturnType<typeof scanIndexLocal>,
-  root_entity: string,
-) {
-  const getBlockContent = (b: string) => {
-    let [content] = scan.eav(b, "block/text");
-    if (!content) return ["", [] as PubLeafletRichtextFacet.Main[]] as const;
-    let doc = new Y.Doc();
-    const update = base64.toByteArray(content.data.value);
-    Y.applyUpdate(doc, update);
-    let nodes = doc.getXmlElement("prosemirror").toArray();
-    let stringValue = YJSFragmentToString(nodes[0]);
-    let facets = YJSFragmentToFacets(nodes[0]);
-    return [stringValue, facets] as const;
-  };
+    if (b.type === "heading") {
+      let [headingLevel] = scan.eav(b.value, "block/heading-level");
 
-  if (b.type === "bluesky-post") {
-    let [post] = scan.eav(b.value, "block/bluesky-post");
-    if (!post || !post.data.value.post) return;
-    let block: $Typed<PubLeafletBlocksBskyPost.Main> = {
-      $type: ids.PubLeafletBlocksBskyPost,
-      postRef: {
-        uri: post.data.value.post.uri,
-        cid: post.data.value.post.cid,
-      },
-    };
-    return block;
-  }
-  if (b.type === "horizontal-rule") {
-    let block: $Typed<PubLeafletBlocksHorizontalRule.Main> = {
-      $type: ids.PubLeafletBlocksHorizontalRule,
-    };
-    return block;
+      let [stringValue, facets] = getBlockContent(b.value);
+      let block: $Typed<PubLeafletBlocksHeader.Main> = {
+        $type: "pub.leaflet.blocks.header",
+        level: headingLevel?.data.value || 1,
+        plaintext: stringValue,
+        facets,
+      };
+      return block;
+    }
+
+    if (b.type === "blockquote") {
+      let [stringValue, facets] = getBlockContent(b.value);
+      let block: $Typed<PubLeafletBlocksBlockquote.Main> = {
+        $type: ids.PubLeafletBlocksBlockquote,
+        plaintext: stringValue,
+        facets,
+      };
+      return block;
+    }
+
+    if (b.type == "text") {
+      let [stringValue, facets] = getBlockContent(b.value);
+      let block: $Typed<PubLeafletBlocksText.Main> = {
+        $type: ids.PubLeafletBlocksText,
+        plaintext: stringValue,
+        facets,
+      };
+      return block;
+    }
+    if (b.type === "embed") {
+      let [url] = scan.eav(b.value, "embed/url");
+      let [height] = scan.eav(b.value, "embed/height");
+      if (!url) return;
+      let block: $Typed<PubLeafletBlocksIframe.Main> = {
+        $type: "pub.leaflet.blocks.iframe",
+        url: url.data.value,
+        height: height?.data.value || 600,
+      };
+      return block;
+    }
+    if (b.type == "image") {
+      let [image] = scan.eav(b.value, "block/image");
+      if (!image) return;
+      let [altText] = scan.eav(b.value, "image/alt");
+      let blobref = await uploadImage(image.data.src);
+      if (!blobref) return;
+      let block: $Typed<PubLeafletBlocksImage.Main> = {
+        $type: "pub.leaflet.blocks.image",
+        image: blobref,
+        aspectRatio: {
+          height: image.data.height,
+          width: image.data.width,
+        },
+        alt: altText ? altText.data.value : undefined,
+      };
+      return block;
+    }
+    if (b.type === "link") {
+      let [previewImage] = scan.eav(b.value, "link/preview");
+      let [description] = scan.eav(b.value, "link/description");
+      let [src] = scan.eav(b.value, "link/url");
+      if (!src) return;
+      let blobref = previewImage
+        ? await uploadImage(previewImage?.data.src)
+        : undefined;
+      let [title] = scan.eav(b.value, "link/title");
+      let block: $Typed<PubLeafletBlocksWebsite.Main> = {
+        $type: "pub.leaflet.blocks.website",
+        previewImage: blobref,
+        src: src.data.value,
+        description: description?.data.value,
+        title: title?.data.value,
+      };
+      return block;
+    }
+    if (b.type === "code") {
+      let [language] = scan.eav(b.value, "block/code-language");
+      let [code] = scan.eav(b.value, "block/code");
+      let [theme] = scan.eav(root_entity, "theme/code-theme");
+      let block: $Typed<PubLeafletBlocksCode.Main> = {
+        $type: "pub.leaflet.blocks.code",
+        language: language?.data.value,
+        plaintext: code?.data.value || "",
+        syntaxHighlightingTheme: theme?.data.value,
+      };
+      return block;
+    }
+    if (b.type === "math") {
+      let [math] = scan.eav(b.value, "block/math");
+      let block: $Typed<PubLeafletBlocksMath.Main> = {
+        $type: "pub.leaflet.blocks.math",
+        tex: math?.data.value || "",
+      };
+      return block;
+    }
+    if (b.type === "poll") {
+      // Get poll options from the entity
+      let pollOptions = scan.eav(b.value, "poll/options");
+      let options: PubLeafletPollDefinition.Option[] = pollOptions.map(
+        (opt) => {
+          let optionName = scan.eav(opt.data.value, "poll-option/name")?.[0];
+          return {
+            $type: "pub.leaflet.poll.definition#option",
+            text: optionName?.data.value || "",
+          };
+        },
+      );
+
+      // Create the poll definition record
+      let pollRecord: PubLeafletPollDefinition.Record = {
+        $type: "pub.leaflet.poll.definition",
+        name: "Poll", // Default name, can be customized
+        options,
+      };
+
+      // Upload the poll record
+      let { data: pollResult } = await agent.com.atproto.repo.putRecord({
+        //use the entity id as the rkey so we can associate it in the editor
+        rkey: b.value,
+        repo: did,
+        collection: pollRecord.$type,
+        record: pollRecord,
+        validate: false,
+      });
+
+      // Optimistically write poll definition to database
+      console.log(
+        await supabaseServerClient.from("atp_poll_records").upsert({
+          uri: pollResult.uri,
+          cid: pollResult.cid,
+          record: pollRecord as Json,
+        }),
+      );
+
+      // Return a poll block with reference to the poll record
+      let block: $Typed<PubLeafletBlocksPoll.Main> = {
+        $type: "pub.leaflet.blocks.poll",
+        pollRef: {
+          uri: pollResult.uri,
+          cid: pollResult.cid,
+        },
+      };
+      return block;
+    }
+    if (b.type === "button") {
+      let [text] = scan.eav(b.value, "button/text");
+      let [url] = scan.eav(b.value, "button/url");
+      if (!text || !url) return;
+      let block: $Typed<PubLeafletBlocksButton.Main> = {
+        $type: "pub.leaflet.blocks.button",
+        text: text.data.value,
+        url: url.data.value,
+      };
+      return block;
+    }
+    return;
   }
 
-  if (b.type === "heading") {
-    let [headingLevel] = scan.eav(b.value, "block/heading-level");
+  async function canvasBlocksToRecord(
+    pageID: string,
+    did: string,
+  ): Promise<PubLeafletPagesCanvas.Block[]> {
+    let canvasBlocks = scan.eav(pageID, "canvas/block");
+    return (
+      await Promise.all(
+        canvasBlocks.map(async (canvasBlock) => {
+          let blockEntity = canvasBlock.data.value;
+          let position = canvasBlock.data.position;
 
-    let [stringValue, facets] = getBlockContent(b.value);
-    let block: $Typed<PubLeafletBlocksHeader.Main> = {
-      $type: "pub.leaflet.blocks.header",
-      level: headingLevel?.data.value || 1,
-      plaintext: stringValue,
-      facets,
-    };
-    return block;
-  }
+          // Get the block content
+          let blockType = scan.eav(blockEntity, "block/type")?.[0];
+          if (!blockType) return null;
 
-  if (b.type === "blockquote") {
-    let [stringValue, facets] = getBlockContent(b.value);
-    let block: $Typed<PubLeafletBlocksBlockquote.Main> = {
-      $type: ids.PubLeafletBlocksBlockquote,
-      plaintext: stringValue,
-      facets,
-    };
-    return block;
-  }
+          let block: Block = {
+            type: blockType.data.value,
+            value: blockEntity,
+            parent: pageID,
+            position: "",
+            factID: canvasBlock.id,
+          };
 
-  if (b.type == "text") {
-    let [stringValue, facets] = getBlockContent(b.value);
-    let block: $Typed<PubLeafletBlocksText.Main> = {
-      $type: ids.PubLeafletBlocksText,
-      plaintext: stringValue,
-      facets,
-    };
-    return block;
-  }
-  if (b.type == "image") {
-    let [image] = scan.eav(b.value, "block/image");
-    if (!image) return;
-    let [altText] = scan.eav(b.value, "image/alt");
-    let blobref = imageMap.get(image.data.src);
-    if (!blobref) return;
-    let block: $Typed<PubLeafletBlocksImage.Main> = {
-      $type: "pub.leaflet.blocks.image",
-      image: blobref,
-      aspectRatio: {
-        height: image.data.height,
-        width: image.data.width,
-      },
-      alt: altText ? altText.data.value : undefined,
-    };
-    return block;
-  }
-  if (b.type === "link") {
-    let [previewImage] = scan.eav(b.value, "link/preview");
-    let [description] = scan.eav(b.value, "link/description");
-    let [src] = scan.eav(b.value, "link/url");
-    if (!src) return;
-    let blobref = previewImage
-      ? imageMap.get(previewImage?.data.src)
-      : undefined;
-    let [title] = scan.eav(b.value, "link/title");
-    let block: $Typed<PubLeafletBlocksWebsite.Main> = {
-      $type: "pub.leaflet.blocks.website",
-      previewImage: blobref,
-      src: src.data.value,
-      description: description.data.value,
-      title: title.data.value,
-    };
-    return block;
-  }
-  if (b.type === "code") {
-    let [language] = scan.eav(b.value, "block/code-language");
-    let [code] = scan.eav(b.value, "block/code");
-    let [theme] = scan.eav(root_entity, "theme/code-theme");
-    let block: $Typed<PubLeafletBlocksCode.Main> = {
-      $type: "pub.leaflet.blocks.code",
-      language: language?.data.value,
-      plaintext: code?.data.value || "",
-      syntaxHighlightingTheme: theme?.data.value,
-    };
-    return block;
-  }
-  if (b.type === "math") {
-    let [math] = scan.eav(b.value, "block/math");
-    let block: $Typed<PubLeafletBlocksMath.Main> = {
-      $type: "pub.leaflet.blocks.math",
-      tex: math?.data.value || "",
-    };
-    return block;
-  }
-  return;
-}
+          let content = await blockToRecord(block, did);
+          if (!content) return null;
 
-async function sendPostToEmailSubscribers(
-  publication_uri: string,
-  post: { content: string; title: string },
-) {
-  let { data: publication } = await supabaseServerClient
-    .from("publications")
-    .select("*, subscribers_to_publications(*)")
-    .eq("uri", publication_uri)
-    .single();
+          // Get canvas-specific properties
+          let width =
+            scan.eav(blockEntity, "canvas/block/width")?.[0]?.data.value || 360;
+          let rotation = scan.eav(blockEntity, "canvas/block/rotation")?.[0]
+            ?.data.value;
 
-  let res = await fetch("https://api.postmarkapp.com/email/batch", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Postmark-Server-Token": process.env.POSTMARK_API_KEY!,
-    },
-    body: JSON.stringify(
-      publication?.subscribers_to_publications.map((sub) => ({
-        Headers: [
-          {
-            Name: "List-Unsubscribe-Post",
-            Value: "List-Unsubscribe=One-Click",
-          },
-          {
-            Name: "List-Unsubscribe",
-            Value: `<${"TODO"}/mail/unsubscribe?sub_id=${sub.identity}>`,
-          },
-        ],
-        MessageStream: "broadcast",
-        From: `${publication.name} <mailbox@leaflet.pub>`,
-        Subject: post.title,
-        To: sub.identity,
-        HtmlBody: `
-        <h1>${publication.name}</h1>
-        <hr style="margin-top: 1em; margin-bottom: 1em;">
-        ${post.content}
-        <hr style="margin-top: 1em; margin-bottom: 1em;">
-        This is a super alpha release! Ask Jared if you want to unsubscribe (sorry)
-        `,
-        TextBody: post.content,
-      })),
-    ),
-  });
+          let canvasBlockRecord: PubLeafletPagesCanvas.Block = {
+            $type: "pub.leaflet.pages.canvas#block",
+            block: content,
+            x: Math.floor(position.x),
+            y: Math.floor(position.y),
+            width: Math.floor(width),
+            ...(rotation !== undefined && { rotation: Math.floor(rotation) }),
+          };
+
+          return canvasBlockRecord;
+        }),
+      )
+    ).filter((b): b is PubLeafletPagesCanvas.Block => b !== null);
+  }
 }
 
 function YJSFragmentToFacets(
@@ -434,3 +566,9 @@ function YJSFragmentToFacets(
   }
   return [];
 }
+
+type ExcludeString<T> = T extends string
+  ? string extends T
+    ? never
+    : T /* maybe literal, not the whole `string` */
+  : T; /* not a string */

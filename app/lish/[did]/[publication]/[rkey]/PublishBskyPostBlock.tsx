@@ -10,13 +10,18 @@ import { Separator } from "components/Layout";
 import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import {
   BlueskyEmbed,
   PostNotAvailable,
 } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 import { BlueskyRichText } from "components/Blocks/BlueskyPostBlock/BlueskyRichText";
 
-export const PubBlueskyPostBlock = ({ post }: { post: PostView }) => {
+export const PubBlueskyPostBlock = (props: {
+  post: PostView;
+  className: string;
+}) => {
+  let post = props.post;
   switch (true) {
     case AppBskyFeedDefs.isBlockedPost(post) ||
       AppBskyFeedDefs.isBlockedAuthor(post) ||
@@ -43,19 +48,10 @@ export const PubBlueskyPostBlock = ({ post }: { post: PostView }) => {
       let postId = post.uri.split("/")[4];
       let url = `https://bsky.app/profile/${post.author.handle}/post/${postId}`;
 
-      let datetimeFormatted = new Date(
-        timestamp ? timestamp : "",
-      ).toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "numeric",
-        hour12: true,
-      });
       return (
         <div
           className={`
+            ${props.className}
             block-border
             mb-2
       flex flex-col gap-2 relative w-full overflow-hidden group/blueskyPostBlock sm:p-3 p-2 text-sm text-secondary bg-bg-page
@@ -98,7 +94,7 @@ export const PubBlueskyPostBlock = ({ post }: { post: PostView }) => {
             </>
           )}
           <div className="w-full flex gap-2 items-center justify-between">
-            <div className="text-xs text-tertiary">{datetimeFormatted}</div>
+            <ClientDate date={timestamp} />
             <div className="flex gap-2 items-center">
               {post.replyCount && post.replyCount > 0 && (
                 <>
@@ -122,4 +118,20 @@ export const PubBlueskyPostBlock = ({ post }: { post: PostView }) => {
         </div>
       );
   }
+};
+
+const ClientDate = (props: { date?: string }) => {
+  let pageLoaded = useInitialPageLoad();
+  const formattedDate = useLocalizedDate(props.date || new Date().toISOString(), {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: true,
+  });
+
+  if (!pageLoaded) return null;
+
+  return <div className="text-xs text-tertiary">{formattedDate}</div>;
 };

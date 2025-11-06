@@ -1,14 +1,6 @@
 import { supabaseServerClient } from "supabase/serverClient";
-import { Metadata } from "next";
-
-import { ThemeProvider } from "components/ThemeManager/ThemeProvider";
-import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { AtUri } from "@atproto/syntax";
-import {
-  PubLeafletDocument,
-  PubLeafletPublication,
-  PubLeafletThemeColor,
-} from "lexicons/api";
+import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import Link from "next/link";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
@@ -18,29 +10,11 @@ import {
   PublicationBackgroundProvider,
   PublicationThemeProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
-
-export async function generateMetadata(props: {
-  params: Promise<{ publication: string; did: string }>;
-}): Promise<Metadata> {
-  let params = await props.params;
-  let did = decodeURIComponent(params.did);
-  if (!did) return { title: "Publication 404" };
-
-  let { result: publication } = await get_publication_data.handler(
-    {
-      did,
-      publication_name: decodeURIComponent(params.publication),
-    },
-    { supabase: supabaseServerClient },
-  );
-  if (!publication) return { title: "404 Publication" };
-
-  let record = publication.record as PubLeafletPublication.Record | null;
-  return {
-    title: record?.name || "Untitled Publication",
-    description: record?.description || "",
-  };
-}
+import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
+import { SpeedyLink } from "components/SpeedyLink";
+import { QuoteTiny } from "components/Icons/QuoteTiny";
+import { CommentTiny } from "components/Icons/CommentTiny";
+import { LocalizedDate } from "./LocalizedDate";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -64,7 +38,11 @@ export default async function Publication(props: {
       .select(
         `*,
         publication_subscriptions(*),
-      documents_in_publications(documents(*))
+        documents_in_publications(documents(
+          *,
+          comments_on_documents(count),
+          document_mentions_in_bsky(count)
+        ))
       `,
       )
       .eq("identity_did", did)
@@ -92,7 +70,7 @@ export default async function Publication(props: {
             className={`pubWrapper flex flex-col sm:py-6 h-full   ${showPageBackground ? "max-w-prose mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
           >
             <div
-              className={`pub sm:max-w-prose max-w-[var(--page-width-units)] w-[1000px] mx-auto px-3 sm:px-4 py-5  ${showPageBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg" : "h-fit"}`}
+              className={`pub sm:max-w-prose max-w-(--page-width-units) w-[1000px] mx-auto px-3 sm:px-4 py-5  ${showPageBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg" : "h-fit"}`}
             >
               <div className="pubHeader flex flex-col pb-8 w-full text-center justify-center ">
                 {record?.icon && (
@@ -151,31 +129,60 @@ export default async function Publication(props: {
                   .map((doc) => {
                     if (!doc.documents) return null;
                     let uri = new AtUri(doc.documents.uri);
-                    let record = doc.documents
+                    let doc_record = doc.documents
                       .data as PubLeafletDocument.Record;
+                    let quotes =
+                      doc.documents.document_mentions_in_bsky[0].count || 0;
+                    let comments =
+                      record?.preferences?.showComments === false
+                        ? 0
+                        : doc.documents.comments_on_documents[0].count || 0;
+
                     return (
                       <React.Fragment key={doc.documents?.uri}>
-                        <div className="flex w-full ">
-                          <Link
+                        <div className="flex w-full grow flex-col ">
+                          <SpeedyLink
                             href={`${getPublicationURL(publication)}/${uri.rkey}`}
-                            className="publishedPost grow flex flex-col hover:!no-underline"
+                            className="publishedPost hover:no-underline! flex flex-col"
                           >
-                            <h3 className="text-primary">{record.title}</h3>
+                            <h3 className="text-primary">{doc_record.title}</h3>
                             <p className="italic text-secondary">
-                              {record.description}
+                              {doc_record.description}
                             </p>
-                            <p className="text-sm text-tertiary pt-2">
-                              {record.publishedAt &&
-                                new Date(record.publishedAt).toLocaleDateString(
-                                  undefined,
-                                  {
+                          </SpeedyLink>
+
+                          <div className="text-sm text-tertiary flex gap-1 flex-wrap pt-2">
+                            <p className="text-sm text-tertiary ">
+                              {doc_record.publishedAt && (
+                                <LocalizedDate
+                                  dateString={doc_record.publishedAt}
+                                  options={{
                                     year: "numeric",
                                     month: "long",
                                     day: "2-digit",
-                                  },
-                                )}{" "}
+                                  }}
+                                />
+                              )}{" "}
                             </p>
-                          </Link>
+                            {comments > 0 || quotes > 0 ? "| " : ""}
+                            {quotes > 0 && (
+                              <SpeedyLink
+                                href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=quotes`}
+                                className="flex flex-row gap-0 text-sm text-tertiary items-center flex-wrap"
+                              >
+                                <QuoteTiny /> {quotes}
+                              </SpeedyLink>
+                            )}
+                            {comments > 0 &&
+                              record?.preferences?.showComments !== false && (
+                                <SpeedyLink
+                                  href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=comments`}
+                                  className="flex flex-row gap-0 text-sm text-tertiary items-center flex-wrap"
+                                >
+                                  <CommentTiny /> {comments}
+                                </SpeedyLink>
+                              )}
+                          </div>
                         </div>
                         <hr className="last:hidden border-border-light" />
                       </React.Fragment>
@@ -195,12 +202,12 @@ export default async function Publication(props: {
 
 const PubNotFound = () => {
   return (
-    <div className="p-4 text-lg text-center flex flex-col gap-4">
-      <p>Sorry, publication not found!</p>
+    <NotFoundLayout>
+      <p className="font-bold">Sorry, we can't find this publication!</p>
       <p>
         This may be a glitch on our end. If the issue persists please{" "}
         <a href="mailto:contact@leaflet.pub">send us a note</a>.
       </p>
-    </div>
+    </NotFoundLayout>
   );
 };

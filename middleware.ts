@@ -19,6 +19,19 @@ export const config = {
 let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+  {
+    global: {
+      fetch: async (...args) => {
+        const response = await fetch(args[0], {
+          ...args[1],
+          next: {
+            revalidate: 60,
+          },
+        });
+        return response;
+      },
+    },
+  },
 );
 
 const auth_callback_route = "/auth_callback";
@@ -41,17 +54,36 @@ export default async function middleware(req: NextRequest) {
 
   let pub = routes?.publication_domains[0]?.publications;
   if (pub) {
+    if (req.nextUrl.pathname.startsWith("/lish")) return;
     let cookie = req.cookies.get("external_auth_token");
+    let isStaticReq =
+      req.nextUrl.pathname.includes("/rss") ||
+      req.nextUrl.pathname.includes("/atom") ||
+      req.nextUrl.pathname.includes("/json");
+
+    // Check if we've already completed auth (prevents redirect loop when cookies are disabled)
+    let authCompleted = req.nextUrl.searchParams.has("auth_completed");
+
     if (
+      !isStaticReq &&
       (!cookie || req.nextUrl.searchParams.has("refreshAuth")) &&
+      !authCompleted &&
       !hostname.includes("leaflet.pub")
     ) {
       return initiateAuthCallback(req);
     }
+
+    // If auth was completed but we still don't have a cookie, cookies might be disabled
+    // Continue without auth rather than looping
+    if (authCompleted && !cookie) {
+      console.warn(
+        "Auth completed but no cookie set - cookies may be disabled",
+      );
+    }
     let aturi = new AtUri(pub?.uri);
     return NextResponse.rewrite(
       new URL(
-        `/lish/${aturi.host}/${encodeURIComponent(pub.name)}${req.nextUrl.pathname}`,
+        `/lish/${aturi.host}/${aturi.rkey}${req.nextUrl.pathname}`,
         req.url,
       ),
     );
@@ -134,7 +166,9 @@ async function receiveAuthCallback(req: NextRequest) {
 
   let token: CROSS_SITE_AUTH_RESPONSE = JSON.parse(atob(payload));
 
-  let response = NextResponse.redirect(token.redirect);
+  let url = new URL(token.redirect);
+  url.searchParams.set("auth_completed", "true");
+  let response = NextResponse.redirect(url.toString());
   response.cookies.set("external_auth_token", token.auth_token || "null");
   return response;
 }

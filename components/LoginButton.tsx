@@ -29,6 +29,8 @@ export function LoginActionButton() {
   return (
     <Popover
       asChild
+      align="start"
+      side="right"
       trigger={
         <ActionButton secondary icon={<AccountSmall />} label="Sign In" />
       }

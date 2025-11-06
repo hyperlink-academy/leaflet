@@ -17,6 +17,7 @@ export const Popover = (props: {
   className?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onOpenAutoFocus?: (e: Event) => void;
   asChild?: boolean;
   arrowFill?: string;
 }) => {
@@ -39,16 +40,17 @@ export const Popover = (props: {
               className={`
               z-20 bg-bg-page
               px-3 py-2
-              max-w-[var(--radix-popover-content-available-width)]
-              max-h-[var(--radix-popover-content-available-height)]
+              max-w-(--radix-popover-content-available-width)
+              max-h-(--radix-popover-content-available-height)
               border border-border rounded-md shadow-md
-              overflow-y-scroll no-scrollbar
+              overflow-y-scroll
               ${props.className}
             `}
               side={props.side}
               align={props.align ? props.align : "center"}
               sideOffset={4}
               collisionPadding={16}
+              onOpenAutoFocus={props.onOpenAutoFocus}
             >
               {props.children}
               <RadixPopover.Arrow

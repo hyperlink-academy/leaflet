@@ -11,13 +11,17 @@ export function TextBlock(props: {
   facets?: Facet[];
   index: number[];
   preview?: boolean;
+  pageId?: string;
 }) {
   let children = [];
-  let highlights = useHighlight(props.index);
+  let highlights = useHighlight(props.index, props.pageId);
   let facets = useMemo(() => {
     if (props.preview) return props.facets;
     let facets = [...(props.facets || [])];
     for (let highlight of highlights) {
+      const fragmentId = props.pageId
+        ? `${props.pageId}~${props.index.join(".")}_${highlight.startOffset || 0}`
+        : `${props.index.join(".")}_${highlight.startOffset || 0}`;
       facets = addFacet(
         facets,
         {
@@ -35,7 +39,7 @@ export function TextBlock(props: {
             { $type: "pub.leaflet.richtext.facet#highlight" },
             {
               $type: "pub.leaflet.richtext.facet#id",
-              id: `${props.index.join(".")}_${highlight.startOffset || 0}`,
+              id: fragmentId,
             },
           ],
         },
@@ -43,7 +47,7 @@ export function TextBlock(props: {
       );
     }
     return facets;
-  }, [props.plaintext, props.facets, highlights, props.preview]);
+  }, [props.plaintext, props.facets, highlights, props.preview, props.pageId]);
   return <BaseTextBlock {...props} facets={facets} />;
 }
 

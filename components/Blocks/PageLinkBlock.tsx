@@ -35,7 +35,7 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
         bg-bg-page shadow-sm
         flex overflow-clip
         ${isSelected ? "block-border-selected " : "block-border"}
-        ${isOpen && "!border-tertiary"}
+        ${isOpen && "border-tertiary!"}
         `}
         onClick={(e) => {
           if (!page) return;
@@ -84,15 +84,15 @@ export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
           <div className="my-2 ml-3 grow min-w-0 text-sm bg-transparent overflow-clip ">
             {leafletMetadata[0] && (
               <div
-                className={`pageBlockOne outline-none resize-none align-top flex gap-2 ${leafletMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
+                className={`pageBlockOne outline-hidden resize-none align-top flex gap-2 ${leafletMetadata[0].type === "heading" ? "font-bold text-base" : ""}`}
               >
                 {leafletMetadata[0].listData && (
                   <ListMarker
                     {...leafletMetadata[0]}
                     className={
                       leafletMetadata[0].type === "heading"
-                        ? "!pt-[12px]"
-                        : "!pt-[8px]"
+                        ? "pt-[12px]!"
+                        : "pt-[8px]!"
                     }
                   />
                 )}
@@ -104,10 +104,10 @@ export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
             )}
             {leafletMetadata[1] && (
               <div
-                className={`pageBlockLineTwo outline-none resize-none align-top flex  gap-2 ${leafletMetadata[1].type === "heading" ? "font-bold" : ""}`}
+                className={`pageBlockLineTwo outline-hidden resize-none align-top flex  gap-2 ${leafletMetadata[1].type === "heading" ? "font-bold" : ""}`}
               >
                 {leafletMetadata[1].listData && (
-                  <ListMarker {...leafletMetadata[1]} className="!pt-[8px]" />
+                  <ListMarker {...leafletMetadata[1]} className="pt-[8px]!" />
                 )}
                 <RenderedTextBlock
                   entityID={leafletMetadata[1].value}
@@ -117,10 +117,10 @@ export function DocLinkBlock(props: BlockProps & { preview?: boolean }) {
             )}
             {leafletMetadata[2] && (
               <div
-                className={`pageBlockLineThree outline-none resize-none align-top flex  gap-2 ${leafletMetadata[2].type === "heading" ? "font-bold" : ""}`}
+                className={`pageBlockLineThree outline-hidden resize-none align-top flex  gap-2 ${leafletMetadata[2].type === "heading" ? "font-bold" : ""}`}
               >
                 {leafletMetadata[2].listData && (
-                  <ListMarker {...leafletMetadata[2]} className="!pt-[8px]" />
+                  <ListMarker {...leafletMetadata[2]} className="pt-[8px]!" />
                 )}
                 <RenderedTextBlock
                   entityID={leafletMetadata[2].value}
@@ -182,6 +182,7 @@ export function PagePreview(props: { entityID: string }) {
   return (
     <div
       ref={previewRef}
+      inert
       className={`pageLinkBlockPreview w-[120px] overflow-clip  mx-3 mt-3 -mb-2  border rounded-md shrink-0 border-border-light flex flex-col gap-0.5 rotate-[4deg] origin-center ${cardBorderHidden ? "" : "bg-bg-page"}`}
     >
       <div

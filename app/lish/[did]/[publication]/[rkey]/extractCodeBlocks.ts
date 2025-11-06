@@ -3,7 +3,7 @@ import {
   PubLeafletPagesLinearDocument,
   PubLeafletBlocksCode,
 } from "lexicons/api";
-import { codeToHtml } from "shiki";
+import { codeToHtml, bundledLanguagesInfo, bundledThemesInfo } from "shiki";
 
 export async function extractCodeBlocks(
   blocks: PubLeafletPagesLinearDocument.Block[],
@@ -17,10 +17,14 @@ export async function extractCodeBlocks(
     const indexKey = currentIndex.join(".");
 
     if (PubLeafletBlocksCode.isMain(block.block)) {
-      const html = await codeToHtml(block.block.plaintext, {
-        lang: block.block.language || "plaintext",
-        theme: block.block.syntaxHighlightingTheme || "github-light",
-      });
+      let { language, syntaxHighlightingTheme } = block.block;
+      const lang =
+        bundledLanguagesInfo.find((l) => l.id === language)?.id || "plaintext";
+      let theme =
+        bundledThemesInfo.find((t) => t.id === syntaxHighlightingTheme)?.id ||
+        "github-light";
+
+      const html = await codeToHtml(block.block.plaintext, { lang, theme });
       codeBlocks.set(indexKey, html);
     }
   }

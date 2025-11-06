@@ -2,6 +2,7 @@ import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { AtUri } from "@atproto/syntax";
+import { getFactsFromHomeLeaflets } from "./getFactsFromHomeLeaflets";
 
 export type GetPublicationDataReturnType = Awaited<
   ReturnType<(typeof get_publication_data)["handler"]>
@@ -28,10 +29,15 @@ export const get_publication_data = makeRoute({
       .from("publications")
       .select(
         `*,
-        documents_in_publications(documents(*)),
+        documents_in_publications(documents(
+          *,
+          comments_on_documents(count),
+          document_mentions_in_bsky(count)
+        )),
         publication_subscriptions(*, identities(bsky_profiles(*))),
         publication_domains(*),
         leaflets_in_publications(*,
+          documents(*),
           permission_tokens(*,
             permission_token_rights(*),
             custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*)
@@ -42,6 +48,16 @@ export const get_publication_data = makeRoute({
       .eq("identity_did", did)
       .single();
 
-    return { result: publication };
+    let leaflet_data = await getFactsFromHomeLeaflets.handler(
+      {
+        tokens:
+          publication?.leaflets_in_publications.map(
+            (l) => l.permission_tokens?.root_entity!,
+          ) || [],
+      },
+      { supabase },
+    );
+
+    return { result: { publication, leaflet_data: leaflet_data.result } };
   },
 });

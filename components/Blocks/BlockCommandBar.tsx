@@ -6,6 +6,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { NestedCardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { UndoManager } from "src/undoManager";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { setEditorState, useEditorStates } from "src/state/useEditorState";
 
 type Props = {
   parent: string;
@@ -31,6 +32,19 @@ export const BlockCommandBar = ({
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
   let { data: pub } = useLeafletPublicationData();
+
+  // This clears '/' AND anything typed after it
+  const clearCommandSearchText = () => {
+    if (!props.entityID) return;
+    const entityID = props.entityID;
+    
+    const existingState = useEditorStates.getState().editorStates[entityID];
+    if (!existingState) return;
+
+    const tr = existingState.editor.tr;
+    tr.deleteRange(1, tr.doc.content.size - 1);
+    setEditorState(entityID, { editor: existingState.editor.apply(tr) });
+  };
 
   let commandResults = blockCommands.filter((command) => {
     const matchesSearch = command.name
@@ -98,9 +112,6 @@ export const BlockCommandBar = ({
         undoManager.endGroup();
         return;
       }
-
-      // radix menu component handles esc
-      if (e.key === "Escape") return;
     };
     window.addEventListener("keydown", listener);
 
@@ -108,7 +119,14 @@ export const BlockCommandBar = ({
   }, [highlighted, setHighlighted, commandResults, rep, entity_set.set, props]);
 
   return (
-    <Popover.Root open>
+    <Popover.Root
+      open
+      onOpenChange={(open) => {
+        if (!open) {
+          clearCommandSearchText();
+        }
+      }}
+    >
       <Popover.Trigger className="absolute left-0"></Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
@@ -124,7 +142,7 @@ export const BlockCommandBar = ({
             `}
         >
           <NestedCardThemeProvider>
-            <div className="commandMenuResults w-full max-h-[var(--radix-popover-content-available-height)] overflow-auto flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page py-1 gap-0.5 border border-border rounded-md shadow-md">
+            <div className="commandMenuResults w-full max-h-(--radix-popover-content-available-height) overflow-auto flex flex-col group-data-[side=top]/cmd-menu:flex-col-reverse bg-bg-page py-1 gap-0.5 border border-border rounded-md shadow-md">
               {commandResults.length === 0 ? (
                 <div className="w-full text-tertiary text-center italic py-2 px-2 ">
                   No blocks found

@@ -35,7 +35,10 @@ export function MathBlock(props: BlockProps) {
     <BaseTextareaBlock
       id={elementId.block(props.entityID).input}
       block={props}
-      className="bg-border-light rounded-md p-2 w-full min-h-[48px] whitespace-nowrap !overflow-auto border-border-light outline-border-light selected-outline"
+      spellCheck={false}
+      autoCapitalize="none"
+      autoCorrect="off"
+      className="bg-border-light rounded-md p-2 w-full min-h-[48px] whitespace-nowrap overflow-auto! border-border-light outline-border-light selected-outline"
       placeholder="write some Tex here..."
       value={content?.data.value}
       onChange={async (e) => {

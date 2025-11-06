@@ -1,6 +1,6 @@
 "use server";
 
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import {
   entities,
   identities,
@@ -16,6 +16,7 @@ import postgres from "postgres";
 import { v7 } from "uuid";
 import { sql, eq, and } from "drizzle-orm";
 import { cookies } from "next/headers";
+import { pool } from "supabase/pool";
 
 export async function createNewLeaflet({
   pageType,
@@ -26,8 +27,8 @@ export async function createNewLeaflet({
   redirectUser: boolean;
   firstBlockType?: "h1" | "text";
 }) {
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   let auth_token = (await cookies()).get("auth_token")?.value;
+  const client = await pool.connect();
   const db = drizzle(client);
   let { permissionToken } = await db.transaction(async (tx) => {
     // Create a new entity set
@@ -156,7 +157,7 @@ export async function createNewLeaflet({
     return { permissionToken, rights, root_entity, entity_set };
   });
 
-  client.end();
+  client.release();
   if (redirectUser) redirect(`/${permissionToken.id}?focusFirstBlock`);
   return permissionToken.id;
 }

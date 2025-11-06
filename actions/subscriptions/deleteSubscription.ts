@@ -1,14 +1,15 @@
 "use server";
 
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { email_subscriptions_to_entity, facts } from "drizzle/schema";
 import postgres from "postgres";
 import { eq, and, sql } from "drizzle-orm";
 import type { Fact } from "src/replicache";
 import { v7 } from "uuid";
+import { pool } from "supabase/pool";
 
 export async function deleteSubscription(subscriptionID: string) {
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const client = await pool.connect();
   const db = drizzle(client);
 
   try {
@@ -41,11 +42,11 @@ export async function deleteSubscription(subscriptionID: string) {
         .where(eq(email_subscriptions_to_entity.id, subscriptionID));
     });
 
-    client.end();
+    client.release();
     return { success: true };
   } catch (error) {
     console.error("Error unsubscribing:", error);
-    client.end();
+    client.release();
     return { success: false, error: "Failed to unsubscribe" };
   }
 }

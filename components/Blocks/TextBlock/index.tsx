@@ -36,6 +36,7 @@ import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
 import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { isIOS } from "src/utils/isDevice";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { DotLoader } from "components/utils/DotLoader";
 
 const HeadingStyle = {
   1: "text-xl font-bold",
@@ -66,6 +67,7 @@ export function TextBlock(
           className={props.className}
           first={first}
           pageType={props.pageType}
+          previousBlock={props.previousBlock}
         />
       )}
       {permission && !props.preview && !isLocked?.data.value && (
@@ -123,6 +125,7 @@ export function RenderedTextBlock(props: {
   first?: boolean;
   pageType?: "canvas" | "doc";
   type: BlockProps["type"];
+  previousBlock?: BlockProps["previousBlock"];
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
   let headingLevel = useEntity(props.entityID, "block/heading-level");
@@ -132,6 +135,7 @@ export function RenderedTextBlock(props: {
     left: "text-left",
     right: "text-right",
     center: "text-center",
+    justify: "text-justify",
   }[alignment];
   let { permissions } = useEntitySetContext();
 
@@ -156,27 +160,16 @@ export function RenderedTextBlock(props: {
         </div>
       );
   } else {
-    let doc = new Y.Doc();
-    const update = base64.toByteArray(initialFact.data.value);
-    Y.applyUpdate(doc, update);
-    let nodes = doc.getXmlElement("prosemirror").toArray();
-    content = (
-      <>
-        {nodes.length === 0 && <br />}
-        {nodes.map((node, index) => (
-          <RenderYJSFragment key={index} node={node} />
-        ))}
-      </>
-    );
+    content = <RenderYJSFragment value={initialFact.data.value} wrapper="p" />;
   }
   return (
     <div
       style={{ wordBreak: "break-word" }} // better than tailwind break-all!
       className={`
         ${alignmentClass}
-        ${props.type === "blockquote" ? "border-l-2 border-border pl-2 " : ""}
+        ${props.type === "blockquote" ? (props.previousBlock?.type === "blockquote" ? `blockquote pt-3 ` : "blockquote") : ""}
         ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
-      w-full whitespace-pre-wrap outline-none ${props.className} `}
+      w-full whitespace-pre-wrap outline-hidden ${props.className} `}
     >
       {content}
     </div>
@@ -189,10 +182,12 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
   let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
   let headingLevel = useEntity(props.entityID, "block/heading-level");
   let entity_set = useEntitySetContext();
-  let propsRef = useRef({ ...props, entity_set });
+  let alignment =
+    useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
+  let propsRef = useRef({ ...props, entity_set, alignment });
   useEffect(() => {
-    propsRef.current = { ...props, entity_set };
-  }, [props, entity_set]);
+    propsRef.current = { ...props, entity_set, alignment };
+  }, [props, entity_set, alignment]);
   let rep = useReplicache();
   useEffect(() => {
     repRef.current = rep.rep;
@@ -202,12 +197,11 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
     (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   let focused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
-  let alignment =
-    useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
   let alignmentClass = {
     left: "text-left",
     right: "text-right",
     center: "text-center",
+    justify: "text-justify",
   }[alignment];
 
   let value = useYJSValue(props.entityID);
@@ -265,23 +259,25 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
             let oldEditorState = this.state;
             let newState = this.state.apply(tr);
             let addToHistory = tr.getMeta("addToHistory");
+            let isBulkOp = tr.getMeta("bulkOp");
             let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
             if (addToHistory !== false && docHasChanges) {
               if (actionTimeout.current) {
                 window.clearTimeout(actionTimeout.current);
               } else {
-                rep.undoManager.startGroup();
+                if (!isBulkOp) rep.undoManager.startGroup();
               }
 
-              actionTimeout.current = window.setTimeout(() => {
-                rep.undoManager.endGroup();
-                actionTimeout.current = null;
-              }, 200);
+              if (!isBulkOp)
+                actionTimeout.current = window.setTimeout(() => {
+                  rep.undoManager.endGroup();
+                  actionTimeout.current = null;
+                }, 200);
               rep.undoManager.add({
                 redo: () => {
                   useEditorStates.setState((oldState) => {
                     let view = oldState.editorStates[props.entityID]?.view;
-                    if (!view?.hasFocus()) view?.focus();
+                    if (!view?.hasFocus() && !isBulkOp) view?.focus();
                     return {
                       editorStates: {
                         ...oldState.editorStates,
@@ -296,7 +292,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
                 undo: () => {
                   useEditorStates.setState((oldState) => {
                     let view = oldState.editorStates[props.entityID]?.view;
-                    if (!view?.hasFocus()) view?.focus();
+                    if (!view?.hasFocus() && !isBulkOp) view?.focus();
                     return {
                       editorStates: {
                         ...oldState.editorStates,
@@ -344,7 +340,14 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
       <div
         className={`flex items-center justify-between w-full
           ${selected && props.pageType === "canvas" && "bg-bg-page rounded-md"}
-          ${props.type === "blockquote" ? "border-l-2 border-border pl-2 " : ""}
+          ${
+            props.type === "blockquote"
+              ? props.previousBlock?.type === "blockquote" && !props.listData
+                ? "blockquote pt-3"
+                : "blockquote"
+              : ""
+          }
+
           `}
       >
         <pre
@@ -387,7 +390,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           className={`
             ${alignmentClass}
           grow resize-none align-top whitespace-pre-wrap bg-transparent
-          outline-none
+          outline-hidden
 
           ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
           ${props.className}`}
@@ -434,6 +437,7 @@ const BlockifyLink = (props: {
   entityID: string;
   editorState: EditorState | undefined;
 }) => {
+  let [loading, setLoading] = useState(false);
   let { editorState } = props;
   let rep = useReplicache();
   let smoker = useSmoker();
@@ -445,6 +449,7 @@ const BlockifyLink = (props: {
     editorState?.doc.textContent.includes("post");
   // only if the line stats with http or https and doesn't have other content
   // if its bluesky, change text to embed post
+
   if (
     !isLocked &&
     focused &&
@@ -455,8 +460,9 @@ const BlockifyLink = (props: {
     return (
       <button
         onClick={async (e) => {
+          if (!rep.rep) return;
           rep.undoManager.startGroup();
-          if (isBlueskyPost && rep.rep) {
+          if (isBlueskyPost) {
             let success = await addBlueskyPostBlock(
               editorState.doc.textContent,
               props.entityID,
@@ -472,17 +478,19 @@ const BlockifyLink = (props: {
                 },
               });
           } else {
+            setLoading(true);
             await addLinkBlock(
               editorState.doc.textContent,
               props.entityID,
               rep.rep,
             );
+            setLoading(false);
           }
           rep.undoManager.endGroup();
         }}
         className="absolute right-0 top-0 px-1 py-0.5 text-xs text-tertiary sm:hover:text-accent-contrast border border-border-light sm:hover:border-accent-contrast sm:outline-accent-tertiary rounded-md bg-bg-page selected-outline "
       >
-        embed
+        {loading ? <DotLoader /> : "embed"}
       </button>
     );
   } else return null;
@@ -592,25 +600,25 @@ function useYJSValue(entityID: string) {
   useEffect(() => {
     if (!rep.rep) return;
     let timeout = null as null | number;
-    const f = async () => {
-      const updateReplicache = async () => {
-        const update = Y.encodeStateAsUpdate(ydoc);
-        await rep.rep?.mutate.assertFact({
-          //These undos are handled above in the Prosemirror context
-          ignoreUndo: true,
-          entity: entityID,
-          attribute: "block/text",
-          data: {
-            value: base64.fromByteArray(update),
-            type: "text",
-          },
-        });
-      };
+    const updateReplicache = async () => {
+      const update = Y.encodeStateAsUpdate(ydoc);
+      await rep.rep?.mutate.assertFact({
+        //These undos are handled above in the Prosemirror context
+        ignoreUndo: true,
+        entity: entityID,
+        attribute: "block/text",
+        data: {
+          value: base64.fromByteArray(update),
+          type: "text",
+        },
+      });
+    };
+    const f = async (events: Y.YEvent<any>[], transaction: Y.Transaction) => {
+      if (!transaction.origin) return;
       if (timeout) clearTimeout(timeout);
-      updateReplicache();
       timeout = window.setTimeout(async () => {
         updateReplicache();
-      }, 20);
+      }, 300);
     };
 
     yText.observeDeep(f);

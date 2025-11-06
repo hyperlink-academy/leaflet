@@ -1,5 +1,4 @@
 import { supabaseServerClient } from "supabase/serverClient";
-import { get_leaflet_data } from "app/api/rpc/[command]/get_leaflet_data";
 import { PublishPost } from "./PublishPost";
 import { PubLeafletPublication } from "lexicons/api";
 import { getIdentityData } from "actions/getIdentityData";
@@ -13,6 +12,7 @@ import {
   PublicationThemeProvider,
   PublicationThemeProviderDashboard,
 } from "components/ThemeManager/PublicationThemeProvider";
+import { ReplicacheProvider } from "src/replicache";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -22,52 +22,55 @@ type Props = {
   // this is now a token id not leaflet! Should probs rename
   params: Promise<{ leaflet_id: string }>;
 };
-export default async function LeafletPage(props: Props) {
+export default async function PublishLeafletPage(props: Props) {
   let leaflet_id = (await props.params).leaflet_id;
-  let { result: res } = await get_leaflet_data.handler(
-    { token_id: leaflet_id },
-    { supabase: supabaseServerClient },
-  );
-  let rootEntity = res.data?.root_entity;
-  if (
-    !rootEntity ||
-    !res.data ||
-    res.data.blocked_by_admin ||
-    !res.data.leaflets_in_publications[0]
-  )
+  let { data } = await supabaseServerClient
+    .from("permission_tokens")
+    .select(
+      `*,
+      permission_token_rights(*),
+       leaflets_in_publications(
+         *,
+         publications(
+           *,
+           documents_in_publications(count)
+         ),
+       documents(*))`,
+    )
+    .eq("id", leaflet_id)
+    .single();
+  let rootEntity = data?.root_entity;
+  if (!data || !rootEntity || !data.leaflets_in_publications[0])
     return (
       <div>
         missin something
-        <pre>{JSON.stringify(res.data, undefined, 2)}</pre>
+        <pre>{JSON.stringify(data, undefined, 2)}</pre>
       </div>
     );
 
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) return null;
-  let pub = res.data.leaflets_in_publications[0];
+  let pub = data.leaflets_in_publications[0];
   let agent = new AtpAgent({ service: "https://public.api.bsky.app" });
 
   let profile = await agent.getProfile({ actor: identity.atp_did });
   return (
-    <PublicationThemeProvider
-      pub_creator={pub?.publications?.identity_did || ""}
-      record={pub?.publications?.record as PubLeafletPublication.Record}
+    <ReplicacheProvider
+      rootEntity={rootEntity}
+      token={data}
+      name={rootEntity}
+      initialFacts={[]}
     >
-      <PublicationBackgroundProvider
-        record={pub?.publications?.record as PubLeafletPublication.Record}
-        pub_creator={pub?.publications?.identity_did || ""}
-      >
-        <PublishPost
-          leaflet_id={leaflet_id}
-          root_entity={rootEntity}
-          profile={profile.data}
-          title={pub.title}
-          publication_uri={pub.publication}
-          description={pub.description}
-          record={pub.publications?.record as PubLeafletPublication.Record}
-          posts_in_pub={pub.publications?.documents_in_publications[0].count}
-        />
-      </PublicationBackgroundProvider>
-    </PublicationThemeProvider>
+      <PublishPost
+        leaflet_id={leaflet_id}
+        root_entity={rootEntity}
+        profile={profile.data}
+        title={pub.title}
+        publication_uri={pub.publication}
+        description={pub.description}
+        record={pub.publications?.record as PubLeafletPublication.Record}
+        posts_in_pub={pub.publications?.documents_in_publications[0].count}
+      />
+    </ReplicacheProvider>
   );
 }

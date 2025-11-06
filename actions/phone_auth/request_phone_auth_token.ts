@@ -1,10 +1,11 @@
 "use server";
 
 import { randomBytes } from "crypto";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import postgres from "postgres";
 import { phone_number_auth_tokens } from "drizzle/schema";
 import twilio from "twilio";
+import { pool } from "supabase/pool";
 
 async function sendAuthCode({
   country_code,
@@ -46,7 +47,7 @@ export async function createPhoneAuthToken({
   phone_number: string;
   country_code: string;
 }) {
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const client = await pool.connect();
   const db = drizzle(client);
 
   const code = randomBytes(3).toString("hex").toUpperCase();
@@ -65,6 +66,6 @@ export async function createPhoneAuthToken({
 
   await sendAuthCode({ country_code, phone_number, code });
 
-  client.end();
+  client.release();
   return token.id;
 }

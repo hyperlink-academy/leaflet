@@ -7,20 +7,13 @@ import localFont from "next/font/local";
 import { PopUpProvider } from "components/Toast";
 import { IdentityProviderServer } from "components/IdentityProviderServer";
 import { headers } from "next/headers";
-import { IPLocationProvider } from "components/Providers/IPLocationProvider";
+import { RequestHeadersProvider } from "components/Providers/RequestHeadersProvider";
 import { RouteUIStateManager } from "components/RouteUIStateManger";
 
 export const metadata = {
   title: "Leaflet",
   description: "tiny interconnected social documents",
   metadataBase: new URL(`https://leaflet.pub`),
-  icons: [
-    {
-      type: "apple-touch-icon",
-      sizes: "180x180",
-      url: "/apple-touch-icon.png",
-    },
-  ],
   appleWebApp: {
     title: "Leaflet",
     statusBarStyle: "black-translucent",
@@ -62,7 +55,10 @@ export default async function RootLayout(
     children: React.ReactNode;
   }
 ) {
-  let ipLocation = (await headers()).get("X-Vercel-IP-Country");
+  let headersList = await headers();
+  let ipLocation = headersList.get("X-Vercel-IP-Country");
+  let acceptLanguage = headersList.get("accept-language");
+  let ipTimezone = headersList.get("X-Vercel-IP-Timezone");
   return (
     <html suppressHydrationWarning lang="en" className={`${quattro.variable}`}>
       <body>
@@ -84,10 +80,10 @@ export default async function RootLayout(
         <InitialPageLoad>
           <PopUpProvider>
             <IdentityProviderServer>
-              <IPLocationProvider country={ipLocation}>
+              <RequestHeadersProvider country={ipLocation} language={acceptLanguage} timezone={ipTimezone}>
                 <ViewportSizeLayout>{children}</ViewportSizeLayout>
                 <RouteUIStateManager />
-              </IPLocationProvider>
+              </RequestHeadersProvider>
             </IdentityProviderServer>
           </PopUpProvider>
         </InitialPageLoad>

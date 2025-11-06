@@ -13,6 +13,7 @@ import { Separator } from "components/Layout";
 import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
@@ -28,8 +29,6 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
       input?.focus();
     } else input?.blur();
   }, [isSelected, props.entityID, props.preview]);
-
-  let initialPageLoad = useInitialPageLoad();
 
   switch (true) {
     case !post:
@@ -82,17 +81,6 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
       let postId = post.post.uri.split("/")[4];
       let url = `https://bsky.app/profile/${post.post.author.handle}/post/${postId}`;
 
-      let datetimeFormatted = initialPageLoad
-        ? new Date(timestamp ? timestamp : "").toLocaleString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-            hour: "numeric",
-            minute: "numeric",
-            hour12: true,
-          })
-        : "";
-
       return (
         <div
           className={`
@@ -103,11 +91,15 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
           {post.post.author && record && (
             <>
               <div className="bskyAuthor w-full flex items-center gap-2">
-                <img
-                  src={post.post.author?.avatar}
-                  alt={`${post.post.author?.displayName}'s avatar`}
-                  className="shink-0 w-8 h-8 rounded-full border border-border-light"
-                />
+                {post.post.author?.avatar ? (
+                  <img
+                    src={post.post.author?.avatar}
+                    alt={`${post.post.author?.displayName}'s avatar`}
+                    className="shrink-0 w-8 h-8 rounded-full border border-border-light"
+                  />
+                ) : (
+                  <div className="shrink-0 w-8 h-8 rounded-full border border-border-light bg-border"></div>
+                )}
                 <div className="grow flex flex-col gap-0.5 leading-tight">
                   <div className=" font-bold text-secondary">
                     {post.post.author?.displayName}
@@ -137,7 +129,7 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
             </>
           )}
           <div className="w-full flex gap-2 items-center justify-between">
-            <div className="text-xs text-tertiary">{datetimeFormatted}</div>
+            {timestamp && <PostDate timestamp={timestamp} />}
             <div className="flex gap-2 items-center">
               {post.post.replyCount && post.post.replyCount > 0 && (
                 <>
@@ -162,3 +154,15 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
       );
   }
 };
+
+function PostDate(props: { timestamp: string }) {
+  const formattedDate = useLocalizedDate(props.timestamp, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: true,
+  });
+  return <div className="text-xs text-tertiary">{formattedDate}</div>;
+}

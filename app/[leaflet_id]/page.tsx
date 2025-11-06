@@ -12,6 +12,7 @@ import { PageSWRDataProvider } from "components/PageSWRDataProvider";
 import { getPollData } from "actions/pollActions";
 import { supabaseServerClient } from "supabase/serverClient";
 import { get_leaflet_data } from "app/api/rpc/[command]/get_leaflet_data";
+import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -29,20 +30,13 @@ export default async function LeafletPage(props: Props) {
   let rootEntity = res.data?.root_entity;
   if (!rootEntity || !res.data || res.data.blocked_by_admin)
     return (
-      <div className="w-screen h-full flex place-items-center bg-bg-leaflet">
-        <div className="bg-bg-page mx-auto p-4 border border-border rounded-md flex flex-col text-center justify-center gap-1 w-fit">
-          <div className="font-bold">
-            Hmmm…we couldn&apos;t find that Leaflet.
-          </div>
-          <div>
-            You can{" "}
-            <a href="mailto:contact@leaflet.pub" target="blank">
-              email us
-            </a>{" "}
-            for help!
-          </div>
-        </div>
-      </div>
+      <NotFoundLayout>
+        <p className="font-bold">Sorry, we can't find this leaflet!</p>
+        <p>
+          This may be a glitch on our end. If the issue persists please{" "}
+          <a href="mailto:contact@leaflet.pub">send us a note</a>.
+        </p>
+      </NotFoundLayout>
     );
 
   let [{ data }, rsvp_data, poll_data] = await Promise.all([
@@ -76,10 +70,15 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   );
   let rootEntity = res.data?.root_entity;
   if (!rootEntity || !res.data) return { title: "Leaflet not found" };
-  if (res.data.leaflets_in_publications[0]) {
+  let publication_data =
+    res.data?.leaflets_in_publications?.[0] ||
+    res.data?.permission_token_rights[0].entity_sets?.permission_tokens?.find(
+      (p) => p.leaflets_in_publications.length,
+    )?.leaflets_in_publications?.[0];
+  if (publication_data) {
     return {
-      title: res.data.leaflets_in_publications[0].title || "Untitled",
-      description: res.data.leaflets_in_publications[0].description,
+      title: publication_data.title || "Untitled",
+      description: publication_data.description,
     };
   }
   let { data } = await supabaseServerClient.rpc("get_facts", {

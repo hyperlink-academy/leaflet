@@ -1,13 +1,14 @@
 "use server";
 
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { and, eq } from "drizzle-orm";
 import postgres from "postgres";
 import { phone_number_auth_tokens } from "drizzle/schema";
 import { cookies } from "next/headers";
+import { pool } from "supabase/pool";
 
 export async function confirmPhoneAuthToken(tokenId: string, code: string) {
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const client = await pool.connect();
   const db = drizzle(client);
 
   const [token] = await db
@@ -16,17 +17,17 @@ export async function confirmPhoneAuthToken(tokenId: string, code: string) {
     .where(eq(phone_number_auth_tokens.id, tokenId));
 
   if (!token) {
-    client.end();
+    client.release();
     throw new Error("Invalid token");
   }
 
   if (token.confirmation_code !== code) {
-    client.end();
+    client.release();
     throw new Error("Invalid confirmation code");
   }
 
   if (token.confirmed) {
-    client.end();
+    client.release();
     throw new Error("Token already confirmed");
   }
 
@@ -50,6 +51,6 @@ export async function confirmPhoneAuthToken(tokenId: string, code: string) {
     sameSite: "strict",
   });
 
-  client.end();
+  client.release();
   return confirmedToken;
 }

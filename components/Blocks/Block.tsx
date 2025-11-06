@@ -7,6 +7,8 @@ import { useBlockMouseHandlers } from "./useBlockMouseHandlers";
 import { useBlockKeyboardHandlers } from "./useBlockKeyboardHandlers";
 import { useLongPress } from "src/hooks/useLongPress";
 import { focusBlock } from "src/utils/focusBlock";
+import { useHandleDrop } from "./useHandleDrop";
+import { useEntitySetContext } from "components/EntitySetProvider";
 
 import { TextBlock } from "components/Blocks/TextBlock";
 import { ImageBlock } from "./ImageBlock";
@@ -15,7 +17,6 @@ import { ExternalLinkBlock } from "./ExternalLinkBlock";
 import { EmbedBlock } from "./EmbedBlock";
 import { MailboxBlock } from "./MailboxBlock";
 import { AreYouSure } from "./DeleteBlock";
-import { useEntitySetContext } from "components/EntitySetProvider";
 import { useIsMobile } from "src/hooks/isMobile";
 import { DateTimeBlock } from "./DateTimeBlock";
 import { RSVPBlock } from "./RSVPBlock";
@@ -29,6 +30,8 @@ import { LockTiny } from "components/Icons/LockTiny";
 import { MathBlock } from "./MathBlock";
 import { CodeBlock } from "./CodeBlock";
 import { HorizontalRule } from "./HorizontalRule";
+import { deepEquals } from "src/utils/deepEquals";
+import { isTextBlock } from "src/utils/isTextBlock";
 
 export type Block = {
   factID: string;
@@ -61,9 +64,15 @@ export const Block = memo(function Block(
   // and shared styling like padding and flex for list layouting
 
   let mouseHandlers = useBlockMouseHandlers(props);
+  let handleDrop = useHandleDrop({
+    parent: props.parent,
+    position: props.position,
+    nextPosition: props.nextPosition,
+  });
+  let entity_set = useEntitySetContext();
 
-  // focus block on longpress, shouldnt the type be based on the block type (?)
   let { isLongPress, handlers } = useLongPress(() => {
+    if (isTextBlock[props.type]) return;
     if (isLongPress.current) {
       focusBlock(
         { type: props.type, value: props.entityID, parent: props.parent },
@@ -92,6 +101,17 @@ export const Block = memo(function Block(
       id={
         !props.preview ? elementId.block(props.entityID).container : undefined
       }
+      onDragOver={
+        !props.preview && entity_set.permissions.write
+          ? (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          : undefined
+      }
+      onDrop={
+        !props.preview && entity_set.permissions.write ? handleDrop : undefined
+      }
       className={`
         blockWrapper relative
         flex flex-row gap-2
@@ -104,7 +124,7 @@ export const Block = memo(function Block(
             ? "pb-0"
             : "pb-2"
       }
-      ${props.type === "blockquote" && props.previousBlock?.type === "blockquote" ? "-mt-3" : ""}
+      ${props.type === "blockquote" && props.previousBlock?.type === "blockquote" ? (!props.listData ? "-mt-3" : "-mt-1") : ""}
       ${
         !props.previousBlock
           ? props.type === "heading" || props.type === "text"
@@ -121,7 +141,109 @@ export const Block = memo(function Block(
       />
     </div>
   );
-});
+}, deepEqualsBlockProps);
+
+function deepEqualsBlockProps(
+  prevProps: BlockProps & { preview?: boolean },
+  nextProps: BlockProps & { preview?: boolean },
+): boolean {
+  // Compare primitive fields
+  if (
+    prevProps.pageType !== nextProps.pageType ||
+    prevProps.entityID !== nextProps.entityID ||
+    prevProps.parent !== nextProps.parent ||
+    prevProps.position !== nextProps.position ||
+    prevProps.factID !== nextProps.factID ||
+    prevProps.value !== nextProps.value ||
+    prevProps.type !== nextProps.type ||
+    prevProps.nextPosition !== nextProps.nextPosition ||
+    prevProps.preview !== nextProps.preview
+  ) {
+    return false;
+  }
+
+  // Compare listData if present
+  if (prevProps.listData !== nextProps.listData) {
+    if (!prevProps.listData || !nextProps.listData) {
+      return false; // One is undefined, the other isn't
+    }
+
+    if (
+      prevProps.listData.checklist !== nextProps.listData.checklist ||
+      prevProps.listData.parent !== nextProps.listData.parent ||
+      prevProps.listData.depth !== nextProps.listData.depth
+    ) {
+      return false;
+    }
+
+    // Compare path array
+    if (prevProps.listData.path.length !== nextProps.listData.path.length) {
+      return false;
+    }
+
+    for (let i = 0; i < prevProps.listData.path.length; i++) {
+      if (
+        prevProps.listData.path[i].depth !== nextProps.listData.path[i].depth ||
+        prevProps.listData.path[i].entity !== nextProps.listData.path[i].entity
+      ) {
+        return false;
+      }
+    }
+  }
+
+  // Compare nextBlock
+  if (prevProps.nextBlock !== nextProps.nextBlock) {
+    if (!prevProps.nextBlock || !nextProps.nextBlock) {
+      return false; // One is null, the other isn't
+    }
+
+    if (
+      prevProps.nextBlock.factID !== nextProps.nextBlock.factID ||
+      prevProps.nextBlock.parent !== nextProps.nextBlock.parent ||
+      prevProps.nextBlock.position !== nextProps.nextBlock.position ||
+      prevProps.nextBlock.value !== nextProps.nextBlock.value ||
+      prevProps.nextBlock.type !== nextProps.nextBlock.type
+    ) {
+      return false;
+    }
+
+    // Compare nextBlock's listData (using deepEquals for simplicity)
+    if (
+      !deepEquals(prevProps.nextBlock.listData, nextProps.nextBlock.listData)
+    ) {
+      return false;
+    }
+  }
+
+  // Compare previousBlock
+  if (prevProps.previousBlock !== nextProps.previousBlock) {
+    if (!prevProps.previousBlock || !nextProps.previousBlock) {
+      return false; // One is null, the other isn't
+    }
+
+    if (
+      prevProps.previousBlock.factID !== nextProps.previousBlock.factID ||
+      prevProps.previousBlock.parent !== nextProps.previousBlock.parent ||
+      prevProps.previousBlock.position !== nextProps.previousBlock.position ||
+      prevProps.previousBlock.value !== nextProps.previousBlock.value ||
+      prevProps.previousBlock.type !== nextProps.previousBlock.type
+    ) {
+      return false;
+    }
+
+    // Compare previousBlock's listData (using deepEquals for simplicity)
+    if (
+      !deepEquals(
+        prevProps.previousBlock.listData,
+        nextProps.previousBlock.listData,
+      )
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 export const BaseBlock = (
   props: BlockProps & {
@@ -144,12 +266,13 @@ export const BaseBlock = (
       left: "justify-start",
       right: "justify-end",
       center: "justify-center",
+      justify: "justify-start",
     }[alignment];
 
   if (!BlockTypeComponent) return <div>unknown block</div>;
   return (
     <div
-      className={`blockContentWrapper w-full grow flex gap-2 z-[1] ${alignmentStyle}`}
+      className={`blockContentWrapper w-full grow flex gap-2 z-1 ${alignmentStyle}`}
     >
       {props.listData && <ListMarker {...props} />}
       {props.areYouSure ? (
@@ -281,7 +404,7 @@ export const ListMarker = (
   let { rep } = useReplicache();
   return (
     <div
-      className={`shrink-0  flex justify-end items-center h-3 z-[1]
+      className={`shrink-0  flex justify-end items-center h-3 z-1
                   ${props.className}
                   ${
                     props.type === "heading"

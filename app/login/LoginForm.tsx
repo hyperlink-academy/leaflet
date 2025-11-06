@@ -5,7 +5,7 @@ import {
 } from "actions/emailAuth";
 import { loginWithEmailToken } from "actions/login";
 import { ActionAfterSignIn } from "app/api/oauth/[route]/afterSignInActions";
-import { getHomeDocs } from "app/home/storage";
+import { getHomeDocs } from "app/(home-pages)/home/storage";
 import { ButtonPrimary } from "components/Buttons";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { BlueskySmall } from "components/Icons/BlueskySmall";
@@ -13,6 +13,7 @@ import { Input } from "components/Input";
 import { useSmoker, useToaster } from "components/Toast";
 import React, { useState } from "react";
 import { mutate } from "swr";
+import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 
 export default function LoginForm(props: {
   noEmail?: boolean;
@@ -153,7 +154,7 @@ export default function LoginForm(props: {
 
             <ButtonPrimary
               type="submit"
-              className="place-self-end !px-[2px] absolute right-1 bottom-1"
+              className="place-self-end px-[2px]! absolute right-1 bottom-1"
             >
               <ArrowRightTiny />{" "}
             </ButtonPrimary>
@@ -167,6 +168,7 @@ export default function LoginForm(props: {
 export function BlueskyLogin(props: {
   redirectRoute?: string;
   action?: ActionAfterSignIn;
+  compact?: boolean;
 }) {
   const [signingWithHandle, setSigningWithHandle] = useState(false);
   const [handle, setHandle] = useState("");
@@ -186,7 +188,7 @@ export function BlueskyLogin(props: {
         />
       )}
       {signingWithHandle ? (
-        <div className="w-full flex flex-col gap-2">
+        <div className="w-full flex gap-1">
           <Input
             type="text"
             name="handle"
@@ -197,23 +199,24 @@ export function BlueskyLogin(props: {
             onChange={(e) => setHandle(e.target.value)}
             required
           />
-          <ButtonPrimary type="submit" fullWidth className="py-2">
-            <BlueskySmall />
-            Sign In
-          </ButtonPrimary>
+          <ButtonPrimary type="submit">Sign In</ButtonPrimary>
         </div>
       ) : (
-        <div className="flex flex-col">
-          <ButtonPrimary fullWidth className="py-2">
-            <BlueskySmall />
-            Log In/Sign Up with Bluesky
+        <div className="flex flex-col justify-center">
+          <ButtonPrimary
+            fullWidth={!props.compact}
+            compact={props.compact}
+            className={`${props.compact ? "mx-auto text-sm" : "py-2"}`}
+          >
+            {props.compact ? <BlueskyTiny /> : <BlueskySmall />}
+            {props.compact ? "Link" : "Log In/Sign Up with"} Bluesky
           </ButtonPrimary>
           <button
             type="button"
-            className="text-sm text-accent-contrast place-self-center mt-[6px]"
+            className={`${props.compact ? "text-xs" : "text-sm"} text-accent-contrast place-self-center mt-[6px]`}
             onClick={() => setSigningWithHandle(true)}
           >
-            or use an ATProto handle
+            use an ATProto handle
           </button>
         </div>
       )}

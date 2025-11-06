@@ -19,6 +19,20 @@ export const PubLeafletBlocksText: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksPage: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.page",
+  defs: {
+    main: {
+      type: "object",
+      required: ["id"],
+      properties: {
+        id: { type: "string" },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksBskyPost: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.bskyPost",
@@ -177,6 +191,36 @@ export const PubLeafletBlocksImage: LexiconDoc = {
   },
 };
 
+export const PubLeafletBlocksOrderedList: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.orderedList",
+  defs: {
+    main: {
+      type: "object",
+      required: ["children"],
+      properties: {
+        startIndex: { type: "integer" },
+        children: { type: "array", items: { type: "ref", ref: "#listItem" } },
+      },
+    },
+    listItem: {
+      type: "object",
+      required: ["content"],
+      properties: {
+        content: {
+          type: "union",
+          refs: [
+            PubLeafletBlocksText,
+            PubLeafletBlocksHeader,
+            PubLeafletBlocksImage,
+          ].map((l) => l.id),
+        },
+        children: { type: "array", items: { type: "ref", ref: "#listItem" } },
+      },
+    },
+  },
+};
+
 export const PubLeafletBlocksUnorderedList: LexiconDoc = {
   lexicon: 1,
   id: "pub.leaflet.blocks.unorderedList",
@@ -205,7 +249,53 @@ export const PubLeafletBlocksUnorderedList: LexiconDoc = {
     },
   },
 };
+
+export const PubLeafletBlocksIFrame: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.iframe",
+  defs: {
+    main: {
+      type: "object",
+      required: ["url"],
+      properties: {
+        url: { type: "string", format: "uri" },
+        height: { type: "integer", minimum: 16, maximum: 1600 },
+      },
+    },
+  },
+};
+
+export const PubLeafletBlocksPoll: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.poll",
+  defs: {
+    main: {
+      type: "object",
+      required: ["pollRef"],
+      properties: {
+        pollRef: { type: "ref", ref: "com.atproto.repo.strongRef" },
+      },
+    },
+  },
+};
+
+export const PubLeafletBlocksButton: LexiconDoc = {
+  lexicon: 1,
+  id: "pub.leaflet.blocks.button",
+  defs: {
+    main: {
+      type: "object",
+      required: ["text", "url"],
+      properties: {
+        text: { type: "string" },
+        url: { type: "string", format: "uri" },
+      },
+    },
+  },
+};
+
 export const BlockLexicons = [
+  PubLeafletBlocksIFrame,
   PubLeafletBlocksText,
   PubLeafletBlocksBlockQuote,
   PubLeafletBlocksHeader,
@@ -216,6 +306,9 @@ export const BlockLexicons = [
   PubLeafletBlocksCode,
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksBskyPost,
+  PubLeafletBlocksPage,
+  PubLeafletBlocksPoll,
+  PubLeafletBlocksButton,
 ];
 export const BlockUnion: LexRefUnion = {
   type: "union",

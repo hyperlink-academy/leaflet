@@ -16,7 +16,7 @@ import { v7 } from "uuid";
 import { Block } from "./Block";
 import { useEffect } from "react";
 import { addShortcut } from "src/shortcuts";
-import { QuoteEmbedBlock } from "./QuoteEmbedBlock";
+import { useHandleDrop } from "./useHandleDrop";
 
 export function Blocks(props: { entityID: string }) {
   let rep = useReplicache();
@@ -95,7 +95,7 @@ export function Blocks(props: { entityID: string }) {
 
   return (
     <div
-      className={`blocks w-full flex flex-col outline-none h-fit min-h-full`}
+      className={`blocks w-full flex flex-col outline-hidden h-fit min-h-full`}
       onClick={async (e) => {
         if (!permissions.write) return;
         if (useUIState.getState().selectedBlocks.length > 1) return;
@@ -229,15 +229,20 @@ const BlockListBottom = (props: {
   lastVisibleBlock: Block | undefined;
   entityID: string;
 }) => {
-  let newEntityID = v7();
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
+  let handleDrop = useHandleDrop({
+    parent: props.entityID,
+    position: props.lastRootBlock?.position || null,
+    nextPosition: null,
+  });
 
   if (!entity_set.permissions.write) return;
   return (
     <div
       className="blockListClickableBottomArea shrink-0 h-[50vh]"
       onClick={() => {
+        let newEntityID = v7();
         if (
           // if the last visible(not-folded) block is a text block, focus it
           props.lastRootBlock &&
@@ -267,6 +272,11 @@ const BlockListBottom = (props: {
           }, 10);
         }
       }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onDrop={handleDrop}
     />
   );
 };

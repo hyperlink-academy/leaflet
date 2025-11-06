@@ -14,7 +14,7 @@ export const PubLeafletPublication: LexiconDoc = {
         required: ["name"],
         properties: {
           name: { type: "string", maxLength: 2000 },
-          base_path: { type: "string", format: "uri" },
+          base_path: { type: "string" },
           description: { type: "string", maxLength: 2000 },
           icon: { type: "blob", accept: ["image/*"], maxSize: 1000000 },
           theme: { type: "ref", ref: "#theme" },
@@ -26,6 +26,7 @@ export const PubLeafletPublication: LexiconDoc = {
       type: "object",
       properties: {
         showInDiscover: { type: "boolean", default: true },
+        showComments: { type: "boolean", default: true },
       },
     },
     theme: {

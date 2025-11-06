@@ -19,9 +19,11 @@ import { PinTiny } from "components/Icons/PinTiny";
 import { Verification } from "@vercel/sdk/esm/models/getprojectdomainop";
 import Link from "next/link";
 import { Checkbox } from "components/Checkbox";
+import type { GetDomainConfigResponseBody } from "@vercel/sdk/esm/models/getdomainconfigop";
 
 export const EditPubForm = () => {
-  let { data: pubData } = usePublicationData();
+  let { data } = usePublicationData();
+  let { publication: pubData } = data || {};
   let record = pubData?.record as PubLeafletPublication.Record;
   let [formState, setFormState] = useState<"normal" | "loading">("normal");
 
@@ -30,6 +32,11 @@ export const EditPubForm = () => {
     record?.preferences?.showInDiscover === undefined
       ? true
       : record.preferences.showInDiscover,
+  );
+  let [showComments, setShowComments] = useState(
+    record?.preferences?.showComments === undefined
+      ? true
+      : record.preferences.showComments,
   );
   let [descriptionValue, setDescriptionValue] = useState(
     record?.description || "",
@@ -62,6 +69,7 @@ export const EditPubForm = () => {
           iconFile: iconFile,
           preferences: {
             showInDiscover: showInDiscover,
+            showComments: showComments,
           },
         });
         toast({ type: "success", content: "Updated!" });
@@ -155,6 +163,15 @@ export const EditPubForm = () => {
           </p>
         </div>
       </Checkbox>
+
+      <Checkbox
+        checked={showComments}
+        onChange={(e) => setShowComments(e.target.checked)}
+      >
+        <div className=" pt-0.5 flex flex-col  text-sm italic text-tertiary ">
+          <p className="font-bold">Show comments on posts</p>
+        </div>
+      </Checkbox>
       <hr className="border-border-light" />
 
       <ButtonPrimary className="place-self-end" type="submit">
@@ -165,13 +182,19 @@ export const EditPubForm = () => {
 };
 
 export function CustomDomainForm() {
-  let { data: pubData } = usePublicationData();
+  let { data } = usePublicationData();
+  let { publication: pubData } = data || {};
   if (!pubData) return null;
   let record = pubData?.record as PubLeafletPublication.Record;
   let [state, setState] = useState<
     | { type: "default" }
     | { type: "addDomain" }
-    | { type: "domainSettings"; domain: string; verification?: Verification[] }
+    | {
+        type: "domainSettings";
+        domain: string;
+        verification?: Verification[];
+        config?: GetDomainConfigResponseBody;
+      }
   >({ type: "default" });
   let domains = pubData?.publication_domains || [];
 
@@ -191,6 +214,7 @@ export function CustomDomainForm() {
         ) : state.type === "domainSettings" ? (
           <DomainSettings
             verification={state.verification}
+            config={state.config}
             domain={state.domain}
             goBack={() => setState({ type: "default" })}
           />
@@ -206,7 +230,8 @@ export function CustomDomainForm() {
                     setState({
                       type: "domainSettings",
                       domain: d.domain,
-                      verification: v,
+                      verification: v?.verification,
+                      config: v?.config,
                     });
                   }}
                 />
@@ -295,14 +320,16 @@ function Domain(props: {
   domain: string;
   base_path: string;
   publication_uri: string;
-  setDomain: (v?: Verification[]) => void;
+  setDomain: (domain?: {
+    verification?: Verification[];
+    config?: GetDomainConfigResponseBody;
+  }) => void;
 }) {
   let { data } = useSWR(props.domain, async (domain) => {
     return await callRPC("get_domain_status", { domain });
   });
 
-  let pending = data?.config?.misconfigured || data?.error;
-  console.log(props.domain, data);
+  let pending = data?.config?.misconfigured || data?.verification;
 
   return (
     <div className="text-sm text-secondary relative w-full ">
@@ -310,13 +337,9 @@ function Domain(props: {
       <div className="absolute right-0 top-0 bottom-0 flex justify-end items-center w-4 ">
         {pending ? (
           <button
-            className="group/pending px-1 py-0.5 flex gap-1 items-center rounded-full  hover:bg-accent-1  hover:text-accent-2 hover:outline-accent-1 border-transparent outline outline-transparent selected-outline"
+            className="group/pending px-1 py-0.5 flex gap-1 items-center rounded-full  hover:bg-accent-1  hover:text-accent-2 hover:outline-accent-1 border-transparent outline-solid outline-transparent selected-outline"
             onClick={() => {
-              if (data?.error === "Verification_needed") {
-                props.setDomain(data.verification);
-              } else {
-                props.setDomain();
-              }
+              props.setDomain(data);
             }}
           >
             <p className="group-hover/pending:block hidden w-max pl-1 font-bold">
@@ -341,7 +364,7 @@ function Domain(props: {
               });
               mutate("publication-data");
             }}
-            className="group/domain flex gap-1 items-center rounded-full bg-none w-max font-bold px-1 py-0.5 hover:bg-accent-1 hover:text-accent-2 border-transparent outline outline-transparent hover:outline-accent-1  selected-outline"
+            className="group/domain flex gap-1 items-center rounded-full bg-none w-max font-bold px-1 py-0.5 hover:bg-accent-1 hover:text-accent-2 border-transparent outline-solid outline-transparent hover:outline-accent-1  selected-outline"
           >
             <p className="group-hover/domain:block hidden w-max pl-1">
               set as default
@@ -356,90 +379,120 @@ function Domain(props: {
 
 const DomainSettings = (props: {
   domain: string;
+  config?: GetDomainConfigResponseBody;
   goBack: () => void;
   verification?: Verification[];
 }) => {
+  let { data, mutate } = useSWR(props.domain, async (domain) => {
+    return await callRPC("get_domain_status", { domain });
+  });
   let isSubdomain = props.domain.split(".").length > 2;
-  if (props.verification)
-    return (
-      <div className="flex flex-col gap-[6px] text-sm">
-        <div>{props.domain} is in use on a Vercel account.</div>
-        <div className="flex gap-3 p-1 border border-border-light rounded-md py-1">
-          <div className="flex flex-col ">
-            <div className="text-tertiary">Type</div>
-            <div>{props.verification[0].type}</div>
-          </div>
-          <div className="flex flex-col">
-            <div className="text-tertiary">Name</div>
-            <div style={{ wordBreak: "break-word" }}>
-              {props.verification[0].domain}
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <div className="text-tertiary">Value</div>
-            <div style={{ wordBreak: "break-word" }}>
-              {props.verification?.[0].value}
-            </div>
-          </div>
-        </div>
-        <div>
-          <button
-            className="text-accent-contrast w-fit"
-            onClick={() => props.goBack()}
-          >
-            Back
-          </button>
-        </div>
-        <button className="text-accent-contrast w-fit">verify</button>
-      </div>
-    );
-
+  if (!data) return;
+  let { config, verification } = data;
+  if (!config?.misconfigured && !verification)
+    return <div>This domain is verified!</div>;
   return (
-    <div className="flex flex-col gap-[6px] text-sm">
+    <div className="flex flex-col gap-[6px] text-sm text-primary">
       <div>
         To verify this domain, add the following record to your DNS provider for{" "}
         <strong>{props.domain}</strong>.
       </div>
-
-      {isSubdomain ? (
-        <div className="flex gap-3 p-1 border border-border-light rounded-md py-1">
-          <div className="flex flex-col ">
-            <div className="text-tertiary">Type</div>
-            <div>CNAME</div>
-          </div>
-          <div className="flex flex-col">
-            <div className="text-tertiary">Name</div>
-            <div style={{ wordBreak: "break-word" }}>
-              {props.domain.split(".").slice(0, -2).join(".")}
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <div className="text-tertiary">Value</div>
-            <div style={{ wordBreak: "break-word" }}>cname.vercel-dns.com</div>
-          </div>
-        </div>
-      ) : (
-        <div className="flex gap-3 px-2 py-1 border border-border-light rounded-md ">
-          <div className="flex flex-col ">
-            <div className="text-tertiary">Type</div>
-            <div>A</div>
-          </div>
-          <div className="flex flex-col">
-            <div className="text-tertiary">Name</div>
-            <div>@</div>
-          </div>
-          <div className="flex flex-col">
-            <div className="text-tertiary">Value</div>
-            <div>76.76.21.21</div>
-          </div>
-        </div>
-      )}
-      <button
-        className="text-accent-contrast w-fit"
-        onClick={() => props.goBack()}
-      >
-        Back
-      </button>
+      <table className="border border-border-light rounded-md">
+        <thead>
+          <tr>
+            <th className="p-1 py-1 text-tertiary">Type</th>
+            <th className="p-1 py-1 text-tertiary">Name</th>
+            <th className="p-1 py-1 text-tertiary">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {verification && (
+            <tr>
+              <td className="p-1 py-1">
+                <div>{verification[0].type}</div>
+              </td>
+              <td className="p-1 py-1">
+                <div style={{ wordBreak: "break-word" }}>
+                  {verification[0].domain}
+                </div>
+              </td>
+              <td className="p-1 py-1">
+                <div style={{ wordBreak: "break-word" }}>
+                  {verification?.[0].value}
+                </div>
+              </td>
+            </tr>
+          )}
+          {config &&
+            (isSubdomain ? (
+              <tr>
+                <td className="p-1 py-1">
+                  <div>CNAME</div>
+                </td>
+                <td className="p-1 py-1">
+                  <div style={{ wordBreak: "break-word" }}>
+                    {props.domain.split(".").slice(0, -2).join(".")}
+                  </div>
+                </td>
+                <td className="p-1 py-1">
+                  <div style={{ wordBreak: "break-word" }}>
+                    {
+                      config?.recommendedCNAME.sort(
+                        (a, b) => a.rank - b.rank,
+                      )[0].value
+                    }
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              <tr>
+                <td className="p-1 py-1">
+                  <div>A</div>
+                </td>
+                <td className="p-1 py-1">
+                  <div style={{ wordBreak: "break-word" }}>@</div>
+                </td>
+                <td className="p-1 py-1">
+                  <div style={{ wordBreak: "break-word" }}>
+                    {
+                      config?.recommendedIPv4.sort((a, b) => a.rank - b.rank)[0]
+                        .value[0]
+                    }
+                  </div>
+                </td>
+              </tr>
+            ))}
+          {config?.configuredBy === "CNAME" && config.recommendedCNAME[0] && (
+            <tr></tr>
+          )}
+        </tbody>
+      </table>
+      <div className="flex flex-row justify-between">
+        <button
+          className="text-accent-contrast w-fit"
+          onClick={() => props.goBack()}
+        >
+          Back
+        </button>
+        <VerifyButton verify={() => mutate()} />
+      </div>
     </div>
+  );
+};
+
+const VerifyButton = (props: { verify: () => Promise<any> }) => {
+  let [loading, setLoading] = useState(false);
+  return (
+    <button
+      className="text-accent-contrast w-fit"
+      onClick={async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        await props.verify();
+        setLoading(false);
+      }}
+    >
+      {loading ? <DotLoader /> : "verify"}
+    </button>
   );
 };

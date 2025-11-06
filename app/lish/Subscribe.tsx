@@ -18,6 +18,8 @@ import {
 } from "./subscribeToPublication";
 import { DotLoader } from "components/utils/DotLoader";
 import { RSSSmall } from "components/Icons/RSSSmall";
+import { SpeedyLink } from "components/SpeedyLink";
+import { PgBooleanBuilderInitial } from "drizzle-orm/pg-core";
 
 type State =
   | { state: "default" }
@@ -27,7 +29,7 @@ type State =
 
 let email = "thisiscelinepark@gmail.com";
 
-export const Subscribe = (props: {
+export const SubscribeWithBluesky = (props: {
   isPost?: boolean;
   pubName: string;
   pub_uri: string;
@@ -68,23 +70,48 @@ let SubscribeButton = (props: {
       window.location.href + "?refreshAuth",
     );
   }, null);
+  let { identity } = useIdentityData();
+  let searchParams = useSearchParams();
+  let [successModalOpen, setSuccessModalOpen] = useState(
+    !!searchParams.has("showSubscribeSuccess"),
+  );
+  let subscribed =
+    identity?.atp_did &&
+    props.subscribers.find((s) => s.identity === identity.atp_did);
 
+  if (successModalOpen)
+    return (
+      <SubscribeSuccessModal
+        open={successModalOpen}
+        setOpen={setSuccessModalOpen}
+      />
+    );
+  if (subscribed) {
+    return <ManageSubscriptionButton {...props} />;
+  }
   return (
-    <div className="flex flex-row gap-2 place-self-center">
-      <Popover
-        asChild
-        className="max-w-xs w-[1000px]"
-        trigger={
-          <ButtonPrimary>
-            {subscribePending ? <DotLoader /> : <>Subscribe for Updates</>}
-          </ButtonPrimary>
-        }
-      >
-        <SubscribeForm pub_uri={props.pub_uri} base_url={props.base_url} />
-      </Popover>
-      <a href={`${props.base_url}/rss`} className="flex" target="_blank">
-        <RSSSmall className="self-center" />
-      </a>
+    <div className="flex flex-col gap-2 text-center justify-center">
+      {props.isPost && (
+        <div className="text-sm text-tertiary font-bold">
+          Get updates from {props.pubName}!
+        </div>
+      )}
+      <div className="flex flex-row gap-2 place-self-center">
+        <Popover
+          asChild
+          className="max-w-xs w-[1000px]"
+          trigger={
+            <ButtonPrimary>
+              {subscribePending ? <DotLoader /> : <>Subscribe for Updates</>}
+            </ButtonPrimary>
+          }
+        >
+          <SubscribeForm pub_uri={props.pub_uri} base_url={props.base_url} />
+        </Popover>
+        <a href={`${props.base_url}/rss`} className="flex" target="_blank">
+          <RSSSmall className="self-center" />
+        </a>
+      </div>
     </div>
   );
 };
@@ -111,17 +138,15 @@ const ManageSubscriptionButton = (props: {
           </div>
         }
       >
-        <SubscribeForm
-          pub_uri={props.pub_uri}
-          base_url={props.base_url}
-          subscribed
-        />
+        <SubscribeForm {...props} />
       </Popover>
     </div>
   );
 };
 
 export const SubscribeForm = (props: {
+  isPost: boolean;
+  pubName: string;
   pub_uri: string;
   subscribed?: boolean;
   base_url: string;
@@ -134,10 +159,12 @@ export const SubscribeForm = (props: {
   if (state.state === "default")
     return props.subscribed ? (
       <ManageSubscriptionOptions
+        isPost={props.isPost}
         state={state}
         setState={setState}
         pub_uri={props.pub_uri}
         base_url={props.base_url}
+        pubName={props.pubName}
       />
     ) : (
       <LoginToSubscribe
@@ -228,6 +255,8 @@ const ManageSubscriptionOptions = (props: {
   setState: (s: State) => void;
   pub_uri: string;
   base_url: string;
+  isPost: boolean;
+  pubName: string;
 }) => {
   let toaster = useToaster();
   let { identity } = useIdentityData();
@@ -241,60 +270,68 @@ const ManageSubscriptionOptions = (props: {
   }, null);
 
   return (
-    <div className="manageSubContent flex flex-col gap-3">
-      <div className="flex flex-col w-full">
-        <div className="flex justify-between text-accent-contrast">
-          <div className="text-secondary font-bold">Email</div>
-          <button
-            className=" place-self-center font-bold"
-            onClick={() => props.setState({ state: "email" })}
-          >
-            Change
-          </button>
-        </div>
-        <div className="text-sm text-tertiary">
-          Receiving updates to <span className="italic">{email}</span>
-        </div>
+    <div
+      className={`flex ${props.isPost ? "flex-col " : "gap-2"}  justify-center text-center`}
+    >
+      <div className="font-bold text-tertiary text-sm">
+        You&apos;re Subscribed{props.isPost ? ` to ` : "!"}
+        {props.isPost && (
+          <SpeedyLink href={props.base_url} className="text-accent-contrast">
+            {props.pubName}
+          </SpeedyLink>
+        )}
       </div>
-      {identity?.atp_did && !hasFeed && (
-        <>
-          <div className="flex flex-col  w-full">
-            <div className="flex justify-between">
-              <div className="text-secondary font-bold">
-                Bluesky Custom Feed
-              </div>
-              <a
-                href="https://bsky.app/profile/leaflet.pub/feed/subscribedPublications"
-                target="_blank"
-                className=" place-self-center hover:!no-underline font-bold"
+      <Popover
+        trigger={<div className="text-accent-contrast text-sm">Manage</div>}
+      >
+        <div className="max-w-sm flex flex-col gap-1">
+          <h4>Update Options</h4>
+          <div className="flex flex-col w-full">
+            <div className="flex justify-between text-accent-contrast">
+              <div className="text-secondary font-bold">Email</div>
+              <button
+                className=" place-self-center font-bold"
+                onClick={() => props.setState({ state: "email" })}
               >
-                Get Feed
-              </a>
+                Change
+              </button>
             </div>
             <div className="text-sm text-tertiary">
-              A Bluesky feed with updates from all your Leaflet subscriptions!
+              Receiving updates to <span className="italic">{email}</span>
             </div>
           </div>
-        </>
-      )}
-      <div className="flex justify-between">
-        <div className="text-secondary font-bold">RSS</div>
-        <a
-          href={`${props.base_url}/rss`}
-          className="font-bold hover:!no-underline"
-          target="_blank"
-        >
-          Get Link
-        </a>
-      </div>
+          {!hasFeed && (
+            <a
+              href="https://bsky.app/profile/leaflet.pub/feed/subscribedPublications"
+              target="_blank"
+              className=" place-self-center"
+            >
+              <ButtonPrimary fullWidth compact className="!px-4">
+                View Bluesky Custom Feed
+              </ButtonPrimary>
+            </a>
+          )}
 
-      <hr className="border-border-light -my-1" />
+          <a
+            href={`${props.base_url}/rss`}
+            className="flex"
+            target="_blank"
+            aria-label="Subscribe to RSS"
+          >
+            <ButtonPrimary fullWidth compact>
+              Get RSS
+            </ButtonPrimary>
+          </a>
 
-      <form action={unsubscribe}>
-        <button className="font-bold text-accent-contrast w-max ">
-          {unsubscribePending ? <DotLoader /> : "Unsubscribe"}
-        </button>
-      </form>
+          <hr className="border-border-light my-1" />
+
+          <form action={unsubscribe}>
+            <button className="font-bold text-accent-contrast w-max place-self-center">
+              {unsubscribePending ? <DotLoader /> : "Unsubscribe"}
+            </button>
+          </form>
+        </div>{" "}
+      </Popover>
     </div>
   );
 };
@@ -332,7 +369,7 @@ const EmailInput = (props: {
       <div className="subscribeEmailInput flex gap-1 relative">
         <Input
           type="email"
-          className="input-with-border !w-full !pr-[36px]"
+          className="input-with-border w-full! pr-[36px]!"
           placeholder="me@email.com"
           value={props.emailInputValue}
           onChange={(e) => props.setEmailInputValue(e.target.value)}
@@ -340,7 +377,7 @@ const EmailInput = (props: {
         <ButtonPrimary
           compact
           disabled={props.emailInputValue === "" || !props.emailInputValue}
-          className="absolute right-1 top-1 !h-[22px] !w-[22px] !outline-0 "
+          className="absolute right-1 top-1 h-[22px]! w-[22px]! outline-0!"
           style={{ height: "22px", width: "22px" }}
           type="submit"
         >
@@ -383,7 +420,7 @@ const ConfirmCode = (props: {
       <div className="subscribeEmailCodeInput flex gap-1 mx-auto relative">
         <Input
           type="number"
-          className="input-with-border !pr-[88px] !py-1 max-w-[156px]"
+          className="input-with-border pr-[88px]! py-1! max-w-[156px]"
           placeholder="000000"
           value={codeInputValue}
           onChange={(e) => setCodeInputValue(e.target.value)}
@@ -392,7 +429,7 @@ const ConfirmCode = (props: {
           compact
           type="submit"
           disabled={codeInputValue === "" || !codeInputValue}
-          className="absolute right-1 top-1 !outline-0"
+          className="absolute right-1 top-1 outline-0!"
         >
           Confirm
         </ButtonPrimary>

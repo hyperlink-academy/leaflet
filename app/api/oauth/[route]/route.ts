@@ -1,10 +1,9 @@
 import { createIdentity } from "actions/createIdentity";
 import { subscribeToPublication } from "app/lish/subscribeToPublication";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextRequest, NextResponse } from "next/server";
-import postgres from "postgres";
 import { createOauthClient } from "src/atproto-oauth";
 import { setAuthToken } from "src/auth";
 
@@ -14,6 +13,7 @@ import {
   ActionAfterSignIn,
   parseActionFromSearchParam,
 } from "./afterSignInActions";
+import { pool } from "supabase/pool";
 
 type OauthRequestClientState = {
   redirect: string | null;
@@ -36,6 +36,7 @@ export async function GET(
       const handle = searchParams.get("handle") as string;
       // Put originating page here!
       let redirect = searchParams.get("redirect_url");
+      if (redirect) redirect = decodeURIComponent(redirect);
       let action = parseActionFromSearchParam(searchParams.get("action"));
       let state: OauthRequestClientState = { redirect, action };
 
@@ -53,12 +54,11 @@ export async function GET(
     case "callback": {
       const params = new URLSearchParams(req.url.split("?")[1]);
 
-      //TODO remember to reset this to a better default!
-      let redirectPath = "/lish";
+      let redirectPath = "/";
       try {
         const { session, state } = await client.callback(params);
         let s: OauthRequestClientState = JSON.parse(state || "{}");
-        redirectPath = s.redirect || "/";
+        redirectPath = decodeURIComponent(s.redirect || "/");
         let { data: identity } = await supabaseServerClient
           .from("identities")
           .select()
@@ -80,11 +80,10 @@ export async function GET(
 
             return handleAction(s.action, redirectPath);
           }
-          const client = postgres(process.env.DB_URL as string, {
-            idle_timeout: 5,
-          });
+          const client = await pool.connect();
           const db = drizzle(client);
           identity = await createIdentity(db, { atp_did: session.did });
+          client.release();
         }
         let { data: token } = await supabaseServerClient
           .from("email_auth_tokens")
@@ -116,14 +115,18 @@ const handleAction = async (
   action: ActionAfterSignIn | null,
   redirectPath: string,
 ) => {
-  let [base, pathparams] = redirectPath.split("?");
-  let searchParams = new URLSearchParams(pathparams);
+  let parsePath = decodeURIComponent(redirectPath);
+  let url;
+  if (parsePath.includes("://")) url = new URL(parsePath);
+  else url = new URL(decodeURIComponent(redirectPath), "https://example.com");
   if (action?.action === "subscribe") {
     let result = await subscribeToPublication(action.publication);
-    console.log(result);
     if (result.hasFeed === false)
-      searchParams.set("showSubscribeSuccess", "true");
+      url.searchParams.set("showSubscribeSuccess", "true");
   }
 
-  return redirect(base + "?" + searchParams.toString());
+  let path = url.pathname;
+  if (url.search) path += url.search;
+  if (url.hash) path += url.hash;
+  return parsePath.includes("://") ? redirect(url.toString()) : redirect(path);
 };

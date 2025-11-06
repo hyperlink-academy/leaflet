@@ -3,11 +3,12 @@
 import { getCurrentDeploymentDomain } from "src/utils/getCurrentDeploymentDomain";
 import { createServerClient } from "@supabase/ssr";
 import { and, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { email_subscriptions_to_entity, entities } from "drizzle/schema";
 import postgres from "postgres";
 import type { PermissionToken } from "src/replicache";
 import { Database } from "supabase/database.types";
+import { pool } from "supabase/pool";
 
 let supabase = createServerClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -41,7 +42,7 @@ export async function sendPostToSubscribers({
     root: rootEntity,
   });
 
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const client = await pool.connect();
   const db = drizzle(client);
   let subscribers = await db
     .select()
@@ -95,6 +96,6 @@ export async function sendPostToSubscribers({
       })),
     ),
   });
-  client.end();
+  client.release();
   return;
 }

@@ -1,3 +1,4 @@
+"use client";
 import {
   PubLeafletBlocksMath,
   PubLeafletBlocksCode,
@@ -8,40 +9,63 @@ import {
   PubLeafletBlocksWebsite,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
+  PubLeafletPagesCanvas,
   PubLeafletBlocksHorizontalRule,
   PubLeafletBlocksBlockquote,
   PubLeafletBlocksBskyPost,
+  PubLeafletBlocksIframe,
+  PubLeafletBlocksPage,
+  PubLeafletBlocksPoll,
+  PubLeafletBlocksButton,
 } from "lexicons/api";
+
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { TextBlock } from "./TextBlock";
 import { Popover } from "components/Popover";
 import { theme } from "tailwind.config";
 import { ImageAltSmall } from "components/Icons/ImageAlt";
-import { codeToHtml } from "shiki";
-import Katex from "katex";
 import { StaticMathBlock } from "./StaticMathBlock";
 import { PubCodeBlock } from "./PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { PubBlueskyPostBlock } from "./PublishBskyPostBlock";
+import { openPage } from "./PostPages";
+import { PageLinkBlock } from "components/Blocks/PageLinkBlock";
+import { PublishedPageLinkBlock } from "./PublishedPageBlock";
+import { PublishedPollBlock } from "./PublishedPollBlock";
+import { PollData } from "./fetchPollData";
+import { ButtonPrimary } from "components/Buttons";
 
 export function PostContent({
   blocks,
   did,
   preview,
+  className,
   prerenderedCodeBlocks,
   bskyPostData,
+  pageId,
+  pages,
+  pollData,
 }: {
   blocks: PubLeafletPagesLinearDocument.Block[];
+  pageId?: string;
   did: string;
   preview?: boolean;
+  className?: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  pollData: PollData[];
+  pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
   return (
-    <div id="post-content" className="postContent flex flex-col">
+    <div
+      //The postContent class is important for QuoteHandler
+      className={`postContent flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-1 sm:pb-6 ${className}`}
+    >
       {blocks.map((b, index) => {
         return (
           <Block
+            pageId={pageId}
+            pages={pages}
             bskyPostData={bskyPostData}
             block={b}
             did={did}
@@ -50,6 +74,7 @@ export function PostContent({
             index={[index]}
             preview={preview}
             prerenderedCodeBlocks={prerenderedCodeBlocks}
+            pollData={pollData}
           />
         );
       })}
@@ -57,7 +82,7 @@ export function PostContent({
   );
 }
 
-let Block = ({
+export let Block = ({
   block,
   did,
   isList,
@@ -66,15 +91,21 @@ let Block = ({
   previousBlock,
   prerenderedCodeBlocks,
   bskyPostData,
+  pageId,
+  pages,
+  pollData,
 }: {
+  pageId?: string;
   preview?: boolean;
   index: number[];
   block: PubLeafletPagesLinearDocument.Block;
   did: string;
   isList?: boolean;
+  pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   previousBlock?: PubLeafletPagesLinearDocument.Block;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  pollData: PollData[];
 }) => {
   let b = block;
   let blockProps = {
@@ -83,48 +114,119 @@ let Block = ({
       scrollMarginBottom: "4rem",
       wordBreak: "break-word" as React.CSSProperties["wordBreak"],
     },
-    id: preview ? undefined : index.join("."),
+    id: preview
+      ? undefined
+      : pageId
+        ? `${pageId}~${index.join(".")}`
+        : index.join("."),
     "data-index": index.join("."),
+    "data-page-id": pageId,
   };
   let alignment =
     b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignRight"
       ? "text-right justify-end"
       : b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignCenter"
         ? "text-center justify-center"
-        : "";
-  if (!alignment && PubLeafletBlocksImage.isMain(b.block))
+        : b.alignment ===
+            "lex:pub.leaflet.pages.linearDocument#textAlignJustify"
+          ? "text-justify justify-start"
+          : b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignLeft"
+            ? "text-left justify-start"
+            : undefined;
+  if (
+    !alignment &&
+    (PubLeafletBlocksImage.isMain(b.block) ||
+      PubLeafletBlocksButton.isMain(b.block))
+  )
     alignment = "text-center justify-center";
 
-  // non text blocks, they need this padding, pt-3 sm:pt-4, which is applied in each case
   let className = `
     postBlockWrapper
-    pt-1
     min-h-7
-    ${isList ? "isListItem pb-0 " : "pb-2 last:pb-3 last:sm:pb-4 first:pt-2 sm:first:pt-3"}
+    mt-1 mb-2
+    ${isList && "isListItem mb-0! "}
     ${alignment}
     `;
 
   switch (true) {
+    case PubLeafletBlocksPage.isMain(b.block): {
+      let id = b.block.id;
+      let page = pages.find((p) => p.id === id);
+      if (!page) return;
+
+      const isCanvas = PubLeafletPagesCanvas.isMain(page);
+
+      return (
+        <PublishedPageLinkBlock
+          blocks={page.blocks}
+          pageId={id}
+          parentPageId={pageId}
+          did={did}
+          bskyPostData={bskyPostData}
+          isCanvas={isCanvas}
+          pages={pages}
+          className={className}
+        />
+      );
+    }
     case PubLeafletBlocksBskyPost.isMain(b.block): {
       let uri = b.block.postRef.uri;
       let post = bskyPostData.find((p) => p.uri === uri);
       if (!post) return <div>no prefetched post rip</div>;
-      return <PubBlueskyPostBlock post={post} />;
+      return <PubBlueskyPostBlock post={post} className={className} />;
+    }
+    case PubLeafletBlocksIframe.isMain(b.block): {
+      return (
+        <iframe
+          className={`flex flex-col relative w-full overflow-hidden group/embedBlock block-border my-2`}
+          width="100%"
+          height={b.block.height}
+          src={b.block.url}
+          allow="fullscreen"
+          loading="lazy"
+        />
+      );
     }
     case PubLeafletBlocksHorizontalRule.isMain(b.block): {
       return <hr className="my-2 w-full border-border-light" />;
     }
+    case PubLeafletBlocksPoll.isMain(b.block): {
+      let { cid, uri } = b.block.pollRef;
+      const pollVoteData = pollData.find((p) => p.uri === uri && p.cid === cid);
+      if (!pollVoteData) return null;
+      return (
+        <PublishedPollBlock
+          block={b.block}
+          className={className}
+          pollData={pollVoteData}
+        />
+      );
+    }
+    case PubLeafletBlocksButton.isMain(b.block): {
+      return (
+        <div className={`flex ${alignment} ${className}`} {...blockProps}>
+          <a href={b.block.url} target="_blank" rel="noopener noreferrer">
+            <ButtonPrimary role="link" type="submit">
+              {b.block.text}
+            </ButtonPrimary>
+          </a>
+        </div>
+      );
+    }
     case PubLeafletBlocksUnorderedList.isMain(b.block): {
       return (
-        <ul className="-ml-[1px] sm:ml-[9px] pb-2">
+        <ul className="-ml-px sm:ml-[9px] pb-2">
           {b.block.children.map((child, i) => (
             <ListItem
+              pollData={pollData}
+              pages={pages}
               bskyPostData={bskyPostData}
               index={[...index, i]}
               item={child}
               did={did}
               key={i}
               className={className}
+              pageId={pageId}
             />
           ))}
         </ul>
@@ -144,7 +246,7 @@ let Block = ({
           href={b.block.src}
           target="_blank"
           className={`
-            my-2
+          ${className}
           externalLinkBlock flex relative group/linkBlock
           h-[104px] w-full bg-bg-page overflow-hidden text-primary hover:no-underline no-underline
           hover:border-accent-contrast  shadow-sm
@@ -154,7 +256,7 @@ let Block = ({
           <div className="pt-2 pb-2 px-3 grow min-w-0">
             <div className="flex flex-col w-full min-w-0 h-full grow ">
               <div
-                className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-none resize-none align-top border h-[24px] line-clamp-1`}
+                className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-hidden resize-none align-top border h-[24px] line-clamp-1`}
                 style={{
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -165,7 +267,7 @@ let Block = ({
               </div>
 
               <div
-                className={`linkBlockDescription text-sm bg-transparent border-none outline-none resize-none align-top  grow line-clamp-2`}
+                className={`linkBlockDescription text-sm bg-transparent border-none outline-hidden resize-none align-top  grow line-clamp-2`}
               >
                 {b.block.description}
               </div>
@@ -196,7 +298,7 @@ let Block = ({
             alt={b.block.alt}
             height={b.block.aspectRatio?.height}
             width={b.block.aspectRatio?.width}
-            className={`!pt-3 sm:!pt-4 rounded-md ${className}`}
+            className={`rounded-lg border border-transparent ${className}`}
             src={blobRefToSrc(b.block.image.ref, did)}
           />
           {b.block.alt && (
@@ -217,8 +319,9 @@ let Block = ({
     }
     case PubLeafletBlocksBlockquote.isMain(b.block): {
       return (
+        // all this margin stuff is a highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
         <blockquote
-          className={`border-l-2 border-border pl-2 ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-2" : ""}`}
+          className={` blockquote py-0! mb-2! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-2! pt-3!" : "mt-1!"}`}
           {...blockProps}
         >
           <TextBlock
@@ -226,6 +329,7 @@ let Block = ({
             plaintext={b.block.plaintext}
             index={index}
             preview={preview}
+            pageId={pageId}
           />
         </blockquote>
       );
@@ -238,6 +342,7 @@ let Block = ({
             plaintext={b.block.plaintext}
             index={index}
             preview={preview}
+            pageId={pageId}
           />
         </p>
       );
@@ -245,26 +350,46 @@ let Block = ({
       if (b.block.level === 1)
         return (
           <h2 className={`${className}`} {...blockProps}>
-            <TextBlock {...b.block} index={index} preview={preview} />
+            <TextBlock
+              {...b.block}
+              index={index}
+              preview={preview}
+              pageId={pageId}
+            />
           </h2>
         );
       if (b.block.level === 2)
         return (
           <h3 className={`${className}`} {...blockProps}>
-            <TextBlock {...b.block} index={index} preview={preview} />
+            <TextBlock
+              {...b.block}
+              index={index}
+              preview={preview}
+              pageId={pageId}
+            />
           </h3>
         );
       if (b.block.level === 3)
         return (
           <h4 className={`${className}`} {...blockProps}>
-            <TextBlock {...b.block} index={index} preview={preview} />
+            <TextBlock
+              {...b.block}
+              index={index}
+              preview={preview}
+              pageId={pageId}
+            />
           </h4>
         );
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
         <h6 className={`${className}`} {...blockProps}>
-          <TextBlock {...b.block} index={index} preview={preview} />
+          <TextBlock
+            {...b.block}
+            index={index}
+            preview={preview}
+            pageId={pageId}
+          />
         </h6>
       );
     }
@@ -275,38 +400,46 @@ let Block = ({
 
 function ListItem(props: {
   index: number[];
+  pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
   item: PubLeafletBlocksUnorderedList.ListItem;
   did: string;
   className?: string;
   bskyPostData: AppBskyFeedDefs.PostView[];
+  pollData: PollData[];
+  pageId?: string;
 }) {
   let children = props.item.children?.length ? (
     <ul className="-ml-[7px] sm:ml-[7px]">
       {props.item.children.map((child, index) => (
         <ListItem
+          pages={props.pages}
+          pollData={props.pollData}
           bskyPostData={props.bskyPostData}
           index={[...props.index, index]}
           item={child}
           did={props.did}
           key={index}
           className={props.className}
+          pageId={props.pageId}
         />
       ))}
     </ul>
   ) : null;
-
   return (
-    <li className={`!pb-0 flex flex-row gap-2`}>
+    <li className={`pb-0! flex flex-row gap-2`}>
       <div
-        className={`listMarker shrink-0 mx-2 z-[1] mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
+        className={`listMarker shrink-0 mx-2 z-1 mt-[14px] h-[5px] w-[5px] ${props.item.content?.$type !== "null" ? "rounded-full bg-secondary" : ""}`}
       />
       <div className="flex flex-col w-full">
         <Block
+          pollData={props.pollData}
+          pages={props.pages}
           bskyPostData={props.bskyPostData}
           block={{ block: props.item.content }}
           did={props.did}
           isList
           index={props.index}
+          pageId={props.pageId}
         />
         {children}{" "}
       </div>

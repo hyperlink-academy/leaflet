@@ -6,7 +6,7 @@ export type GetLeafletDataReturnType = Awaited<
   ReturnType<(typeof get_leaflet_data)["handler"]>
 >;
 
-const leaflets_in_publications_query = `leaflets_in_publications(*, publications(*, documents_in_publications(count)), documents(*))`;
+const leaflets_in_publications_query = `leaflets_in_publications(*, publications(*), documents(*))`;
 export const get_leaflet_data = makeRoute({
   route: "get_leaflet_data",
   input: z.object({

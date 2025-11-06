@@ -1,14 +1,14 @@
 "use server";
 
 import { eq, and } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { permission_token_rights, permission_tokens } from "drizzle/schema";
-import postgres from "postgres";
+import { pool } from "supabase/pool";
 export async function getShareLink(
   token: { id: string; entity_set: string },
   rootEntity: string,
 ) {
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const client = await pool.connect();
   const db = drizzle(client);
   let link = await db.transaction(async (tx) => {
     // This will likely error out when if we have multiple permission
@@ -65,6 +65,6 @@ export async function getShareLink(
     return newToken;
   });
 
-  client.end();
+  client.release();
   return link;
 }

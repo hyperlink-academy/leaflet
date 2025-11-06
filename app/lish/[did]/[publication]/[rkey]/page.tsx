@@ -17,35 +17,35 @@ import {
 } from "components/ThemeManager/PublicationThemeProvider";
 import { getPostPageData } from "./getPostPageData";
 import { PostPageContextProvider } from "./PostPageContext";
-import { PostPage } from "./PostPage";
-import { PageLayout } from "./PageLayout";
+import { PostPages } from "./PostPages";
 import { extractCodeBlocks } from "./extractCodeBlocks";
+import { LeafletLayout } from "components/LeafletLayout";
+import { fetchPollData } from "./fetchPollData";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
 }): Promise<Metadata> {
-  let did = decodeURIComponent((await props.params).did);
+  let params = await props.params;
+  let did = decodeURIComponent(params.did);
   if (!did) return { title: "Publication 404" };
 
   let [{ data: document }] = await Promise.all([
     supabaseServerClient
       .from("documents")
-      .select("*")
-      .eq(
-        "uri",
-        AtUri.make(did, ids.PubLeafletDocument, (await props.params).rkey),
-      )
+      .select("*, documents_in_publications(publications(*))")
+      .eq("uri", AtUri.make(did, ids.PubLeafletDocument, params.rkey))
       .single(),
   ]);
-
   if (!document) return { title: "404" };
-  let record = document.data as PubLeafletDocument.Record;
+
+  let docRecord = document.data as PubLeafletDocument.Record;
+
   return {
     title:
-      record.title +
+      docRecord.title +
       " - " +
-      decodeURIComponent((await props.params).publication),
-    description: record?.description || "",
+      document.documents_in_publications[0]?.publications?.name,
+    description: docRecord?.description || "",
   };
 }
 export default async function Post(props: {
@@ -67,7 +67,6 @@ export default async function Post(props: {
     fetch: (...args) =>
       fetch(args[0], {
         ...args[1],
-        cache: "no-store",
         next: { revalidate: 3600 },
       }),
   });
@@ -83,45 +82,73 @@ export default async function Post(props: {
   ]);
   if (!document?.data || !document.documents_in_publications[0].publications)
     return (
-      <div className="p-4 text-lg text-center flex flex-col gap-4">
-        <p>Sorry, post not found!</p>
-        <p>
-          This may be a glitch on our end. If the issue persists please{" "}
-          <a href="mailto:contact@leaflet.pub">send us a note</a>.
-        </p>
+      <div className="bg-bg-leaflet h-full p-3 text-center relative">
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-md w-full">
+          <div className=" px-3 py-4 opaque-container  flex flex-col gap-1 mx-2 ">
+            <h3>Sorry, post not found!</h3>
+            <p>
+              This may be a glitch on our end. If the issue persists please{" "}
+              <a href="mailto:contact@leaflet.pub">send us a note</a>.
+            </p>
+          </div>
+        </div>
       </div>
     );
   let record = document.data as PubLeafletDocument.Record;
-  let bskyPosts = record.pages.flatMap((p) => {
+  let bskyPosts =
+    record.pages.flatMap((p) => {
+      let page = p as PubLeafletPagesLinearDocument.Main;
+      return page.blocks?.filter(
+        (b) => b.block.$type === ids.PubLeafletBlocksBskyPost,
+      );
+    }) || [];
+
+  // Batch bsky posts into groups of 25 and fetch in parallel
+  let bskyPostBatches = [];
+  for (let i = 0; i < bskyPosts.length; i += 25) {
+    bskyPostBatches.push(bskyPosts.slice(i, i + 25));
+  }
+
+  let bskyPostResponses = await Promise.all(
+    bskyPostBatches.map((batch) =>
+      agent.getPosts(
+        {
+          uris: batch.map((p) => {
+            let block = p?.block as PubLeafletBlocksBskyPost.Main;
+            return block.postRef.uri;
+          }),
+        },
+        { headers: {} },
+      ),
+    ),
+  );
+
+  let bskyPostData =
+    bskyPostResponses.length > 0
+      ? bskyPostResponses.flatMap((response) => response.data.posts)
+      : [];
+
+  // Extract poll blocks and fetch vote data
+  let pollBlocks = record.pages.flatMap((p) => {
     let page = p as PubLeafletPagesLinearDocument.Main;
-    return page.blocks?.filter(
-      (b) => b.block.$type === ids.PubLeafletBlocksBskyPost,
+    return (
+      page.blocks?.filter((b) => b.block.$type === ids.PubLeafletBlocksPoll) ||
+      []
     );
   });
-  let bskyPostData =
-    bskyPosts.length > 0
-      ? await agent.getPosts(
-          {
-            uris: bskyPosts
-              .map((p) => {
-                let block = p?.block as PubLeafletBlocksBskyPost.Main;
-                return block.postRef.uri;
-              })
-              .slice(0, 24),
-          },
-          { headers: {} },
-        )
-      : { data: { posts: [] } };
+  let pollData = await fetchPollData(
+    pollBlocks.map((b) => (b.block as any).pollRef.uri),
+  );
+
+  let pubRecord = document.documents_in_publications[0]?.publications
+    .record as PubLeafletPublication.Record;
+
   let firstPage = record.pages[0];
   let blocks: PubLeafletPagesLinearDocument.Block[] = [];
   if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
     blocks = firstPage.blocks || [];
   }
 
-  let pubRecord = document.documents_in_publications[0]?.publications
-    .record as PubLeafletPublication.Record;
-
-  let hasPageBackground = !!pubRecord.theme?.showPageBackground;
   let prerenderedCodeBlocks = await extractCodeBlocks(blocks);
 
   return (
@@ -152,22 +179,20 @@ export default async function Post(props: {
           on chrome, if you scroll backward, things stop working
           seems like if you use an older browser, sel direction is not a thing yet
            */}
-          <PageLayout>
-            <PostPage
+          <LeafletLayout>
+            <PostPages
+              document_uri={document.uri}
+              preferences={pubRecord.preferences || {}}
               pubRecord={pubRecord}
-              profile={profile.data}
+              profile={JSON.parse(JSON.stringify(profile.data))}
               document={document}
-              bskyPostData={bskyPostData.data.posts}
+              bskyPostData={bskyPostData}
               did={did}
               blocks={blocks}
-              name={decodeURIComponent((await props.params).publication)}
               prerenderedCodeBlocks={prerenderedCodeBlocks}
+              pollData={pollData}
             />
-            <InteractionDrawer
-              quotes={document.document_mentions_in_bsky}
-              did={did}
-            />
-          </PageLayout>
+          </LeafletLayout>
 
           <QuoteHandler />
         </PublicationBackgroundProvider>

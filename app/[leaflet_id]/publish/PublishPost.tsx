@@ -1,13 +1,9 @@
 "use client";
 import { publishToPublication } from "actions/publishToPublication";
 import { DotLoader } from "components/utils/DotLoader";
-import { useState } from "react";
-import {
-  ButtonPrimary,
-  ButtonSecondary,
-  ButtonTertiary,
-} from "components/Buttons";
-import { Checkbox, Radio } from "components/Checkbox";
+import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
+import { Checkbox } from "components/Checkbox";
+import { useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { AutosizeTextarea } from "components/utils/AutosizeTextarea";
@@ -18,6 +14,9 @@ import { AtUri } from "@atproto/syntax";
 import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 import { Popover } from "components/Popover";
 import { Input } from "components/Input";
+import { useReplicache } from "src/replicache";
+import { editorStateToFacetedText } from "./BskyPostEditorProsemirror";
+import { EditorState } from "prosemirror-state";
 
 type Props = {
   title: string;
@@ -63,12 +62,15 @@ const PublishPostForm = (
     bluesky: true,
   });
 
-  let [postContent, setPostContent] = useState("");
+  let editorStateRef = useRef<EditorState | null>(null);
   let [isLoading, setIsLoading] = useState(false);
   let params = useParams();
+  let { rep } = useReplicache();
 
   async function submit() {
+    if (isLoading) return;
     setIsLoading(true);
+    await rep?.push();
     let doc = await publishToPublication({
       root_entity: props.root_entity,
       publication_uri: props.publication_uri,
@@ -79,9 +81,13 @@ const PublishPostForm = (
     if (!doc) return;
 
     let post_url = `https://${props.record?.base_path}/${doc.rkey}`;
+    let [text, facets] = editorStateRef.current
+      ? editorStateToFacetedText(editorStateRef.current)
+      : [];
     if (shareOption.bluesky === true)
       await publishPostToBsky({
-        text: postContent,
+        facets: facets || [],
+        text: text || "",
         title: props.title,
         url: post_url,
         description: props.description,
@@ -95,7 +101,7 @@ const PublishPostForm = (
   let subscribers = 12;
 
   return (
-    <div className="flex flex-col gap-[6px] w-[640px] max-w-full sm:px-4 px-3">
+    <div className="flex flex-col gap-1.5 w-[640px] max-w-full sm:px-4 px-3">
       <h3>Publish This Post!</h3>
       <form
         onSubmit={(e) => {
@@ -154,7 +160,7 @@ const PublishPostForm = (
 
           <div className="flex justify-between">
             <Link
-              className="hover:!no-underline font-bold"
+              className="hover:no-underline! font-bold"
               href={`/${params.leaflet_id}`}
             >
               Back
@@ -167,9 +173,9 @@ const PublishPostForm = (
                   shareOption.bluesky === false ? (
                   "Post Quietly"
                 ) : shareOption.email === true ? (
-                  `Send to ${subscribers} Subscriber${subscribers === 1 ? "" : "s"}`
+                  `Publish to ${subscribers} Subscriber${subscribers === 1 ? "!" : "s!"}`
                 ) : (
-                  "Post"
+                  "Publish this Post!"
                 )}
               </ButtonPrimary>
             </div>
@@ -192,8 +198,8 @@ const PublishPostSuccess = (props: {
       <PublishIllustration posts_in_pub={props.posts_in_pub} />
       <h2 className="pt-2">Published!</h2>
       <Link
-        className="hover:!no-underline font-bold place-self-center pt-2"
-        href={`/lish/${uri.host}/${props.record?.name}/dashboard`}
+        className="hover:no-underline! font-bold place-self-center pt-2"
+        href={`/lish/${uri.host}/${encodeURIComponent(props.record?.name || "")}/dashboard`}
       >
         <ButtonPrimary>Back to Dashboard</ButtonPrimary>
       </Link>
@@ -219,7 +225,7 @@ const SendTest = (props: { checked: boolean }) => {
         <div className="subscribeEmailInput relative my-1">
           <Input
             type="email"
-            className="input-with-border !w-full !pr-[36px]"
+            className="input-with-border w-full! pr-9!"
             placeholder="me@email.com"
             value={emailInputValue}
             onChange={(e) => setEmailInputValue(e.target.value)}
@@ -227,7 +233,7 @@ const SendTest = (props: { checked: boolean }) => {
           <ButtonPrimary
             compact
             disabled={emailInputValue === "" || !emailInputValue}
-            className="absolute right-1 top-1 !h-[22px] !w-fit !outline-0 "
+            className="absolute right-1 top-1 h-[22px]! w-fit! outline-0!"
             style={{ height: "22px", width: "22px" }}
             type="submit"
           >

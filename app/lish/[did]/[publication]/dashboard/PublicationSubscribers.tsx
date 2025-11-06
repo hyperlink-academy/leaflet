@@ -8,37 +8,54 @@ import { Menu, MenuItem, Separator } from "components/Layout";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 import { Checkbox } from "components/Checkbox";
 import { useEffect, useState } from "react";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 type subscriber = { email: string | undefined; did: string | undefined };
 
-export function PublicationSubscribers() {
+// HELLO! THIS FILE HAS CHECKBOXES AND A HEADER COMMENTED OUT
+// the checkboxes would let you select users and and the eader provided a count and let you select all and do actions
+// I also removed some props from SubscriberListItem around emails since we dont have them yet.
+// WHen we get emails in, we can uncomment some of this stuff
+
+export function PublicationSubscribers(props: {
+  showPageBackground?: boolean;
+}) {
   let smoker = useSmoker();
   let { data: publication } = usePublicationData();
-  let [checkedSubscribers, setCheckedSubscribers] = useState<subscriber[]>([]);
-  let [checkAll, setCheckAll] = useState(false);
+  // let [checkedSubscribers, setCheckedSubscribers] = useState<subscriber[]>([]);
+  // let [checkAll, setCheckAll] = useState(false);
 
   if (!publication) return <div>null</div>;
-  let subscribers = publication.publication_subscriptions;
+  let subscribers = publication.publication?.publication_subscriptions || [];
 
-  useEffect(() => {
-    const allSubscribersSelected = subscribers.every((subscriber) =>
-      checkedSubscribers.some(
-        (checked) =>
-          checked.email === "dummyemail@email.com" &&
-          checked.did === subscriber.identities?.bsky_profiles?.did,
-      ),
-    );
+  // useEffect(() => {
+  //   const allSubscribersSelected = subscribers.every((subscriber) =>
+  //     checkedSubscribers.some(
+  //       (checked) =>
+  //         checked.email === "dummyemail@email.com" &&
+  //         checked.did === subscriber.identities?.bsky_profiles?.did,
+  //     ),
+  //   );
 
-    if (allSubscribersSelected && subscribers.length > 0) {
-      setCheckAll(true);
-    } else {
-      setCheckAll(false);
-    }
-  }, [checkedSubscribers]);
+  //   if (allSubscribersSelected && subscribers.length > 0) {
+  //     setCheckAll(true);
+  //   } else {
+  //     setCheckAll(false);
+  //   }
+  // }, [checkedSubscribers]);
 
   if (subscribers.length === 0)
     return (
-      <div className="italic text-tertiary  flex flex-col gap-0 text-center justify-center pt-4">
+      <div
+        className={`italic text-tertiary  flex flex-col gap-0 text-center justify-center mt-4 border rounded-md ${props.showPageBackground ? "border-border-light p-2" : "border-transparent"}`}
+        style={
+          props.showPageBackground
+            ? {
+                backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha)) ",
+              }
+            : { backgroundColor: "transparent" }
+        }
+      >
         <p className="font-bold"> No subscribers yet </p>
         <p>Start sharing your publication!</p>
         <ButtonPrimary
@@ -46,7 +63,9 @@ export function PublicationSubscribers() {
           onClick={(e) => {
             e.preventDefault();
             let rect = (e.currentTarget as Element)?.getBoundingClientRect();
-            navigator.clipboard.writeText(getPublicationURL(publication!));
+            navigator.clipboard.writeText(
+              getPublicationURL(publication.publication!),
+            );
             smoker({
               position: {
                 x: rect ? rect.left + (rect.right - rect.left) / 2 : 0,
@@ -62,8 +81,17 @@ export function PublicationSubscribers() {
     );
 
   return (
-    <div>
-      <div className="subscriberListHeader flex gap-2 ">
+    <div
+      className={`rounded-md ${props.showPageBackground ? "border-border-light p-2" : "border-transparent"}`}
+      style={
+        props.showPageBackground
+          ? {
+              backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha)) ",
+            }
+          : { backgroundColor: "transparent" }
+      }
+    >
+      {/*<div className="subscriberListHeader flex gap-2 ">
         <Checkbox
           checked={checkAll}
           onChange={() => {
@@ -90,6 +118,12 @@ export function PublicationSubscribers() {
       </div>
       <hr className="mb-2 border-border" />
       <div className="subscriberListContent flex gap-3 flex-col">
+      </div>*/}
+      <div className="font-bold! text-secondary mb-1">
+        {subscribers.length} Subscriber{subscribers.length !== 1 && "s"}
+      </div>
+      <hr className="mb-2 border-border " />
+      <div className="subscriberListContent flex gap-3 flex-col ">
         {subscribers
           .sort((a, b) => {
             return b.created_at.localeCompare(a.created_at);
@@ -102,18 +136,18 @@ export function PublicationSubscribers() {
               ?.record as AppBskyActorProfile.Record | null;
             if (!profile) return null;
             return (
-              // replace the dummy email with the subscriber email! i don't know how to get that data D:
+              // the following props have been commented out for now
+              // checkedSubscribers={checkedSubscribers}
+              // setCheckedSubscribers={setCheckedSubscribers}
+              // checked={checkedSubscribers.some(
+              //   (s) => s.email === "dummyemail@email.com" && s.did === did,
+              // )}
               <SubscriberListItem
                 key={`${subscriber.identities.bsky_profiles?.did}`}
                 handle={handle ? handle : undefined}
-                email={"dummyemail@email.com"}
                 did={`${subscriber.identities.bsky_profiles?.did}`}
                 createdAt={subscriber.created_at}
-                checkedSubscribers={checkedSubscribers}
-                setCheckedSubscribers={setCheckedSubscribers}
-                checked={checkedSubscribers.some(
-                  (s) => s.email === "dummyemail@email.com" && s.did === did,
-                )}
+                email={"dummyemail@email.com"}
               />
             );
           })}
@@ -124,42 +158,39 @@ export function PublicationSubscribers() {
 
 const SubscriberListItem = (props: {
   handle: string | undefined;
-  email: string | undefined;
   did: string | undefined;
   createdAt: string;
-  checkedSubscribers: subscriber[];
-  setCheckedSubscribers: (subscribers: subscriber[]) => void;
-  checked: boolean;
+  email: string | undefined;
 }) => {
   return (
-    <Checkbox
-      className="!font-normal"
-      checked={props.checked}
-      onChange={() => {
-        if (props.checked === false) {
-          const newCheckedSubscribers = [
-            ...props.checkedSubscribers,
-            {
-              email: props.email,
-              did: props.did,
-            },
-          ];
-          props.setCheckedSubscribers(newCheckedSubscribers);
-        } else {
-          const newCheckedSubscribers = props.checkedSubscribers.filter(
-            (subscriber) =>
-              !(
-                subscriber.email === props.email && subscriber.did === props.did
-              ),
-          );
-          props.setCheckedSubscribers(newCheckedSubscribers);
-        }
-        console.log(props.checkedSubscribers);
-      }}
-    >
-      <div className=" flex justify-between w-full">
-        <div className="flex flex-col gap-0 sm:flex-row sm:gap-2">
-          <a
+    // <Checkbox
+    //   className="!font-normal"
+    //   checked={props.checked}
+    //   onChange={() => {
+    //     if (props.checked === false) {
+    //       const newCheckedSubscribers = [
+    //         ...props.checkedSubscribers,
+    //         {
+    //           email: props.email,
+    //           did: props.did,
+    //         },
+    //       ];
+    //       props.setCheckedSubscribers(newCheckedSubscribers);
+    //     } else {
+    //       const newCheckedSubscribers = props.checkedSubscribers.filter(
+    //         (subscriber) =>
+    //           !(
+    //             subscriber.email === props.email && subscriber.did === props.did
+    //           ),
+    //       );
+    //       props.setCheckedSubscribers(newCheckedSubscribers);
+    //     }
+    //     console.log(props.checkedSubscribers);
+    //   }}
+    // >
+    <>
+      <div className="flex items-end flex-row gap-2 w-full">
+        {/*<a
             target="_blank"
             href={`mailto:${props.email}`}
             className="font-bold  text-primary"
@@ -169,26 +200,20 @@ const SubscriberListItem = (props: {
 
           {props.handle && props.email && (
             <Separator classname="sm:block hidden" />
-          )}
-          {props.handle && (
-            <a
-              target="_blank"
-              href={`https://bsky.app/profile/${props.did}`}
-              className={` ${!props.email ? "font-bold text-primary" : "text-tertiary"}`}
-            >
-              @{props.handle}
-            </a>
-          )}
-        </div>
+          )}*/}
+        {props.handle && (
+          <a
+            target="_blank"
+            href={`https://bsky.app/profile/${props.did}`}
+            className={` ${!props.email ? "font-bold text-primary" : "text-tertiary"}`}
+          >
+            @{props.handle}
+          </a>
+        )}
+        <SubscriberDate createdAt={props.createdAt} />
       </div>
-      <div className="px-1 py-0 h-max rounded-md accent-container border border-border text-tertiary">
-        {new Date(props.createdAt).toLocaleString(undefined, {
-          year: "2-digit",
-          month: "2-digit",
-          day: "2-digit",
-        })}
-      </div>
-    </Checkbox>
+    </>
+    // </Checkbox>
   );
 };
 
@@ -201,7 +226,7 @@ const SubscriberOptions = (props: {
       asChild
       className=""
       trigger={
-        <ButtonPrimary compact className="-mt-[1px]">
+        <ButtonPrimary compact className="-mt-px">
           {props.allSelected ? "All" : props.checkedSubscribers.length} Selected{" "}
           <MoreOptionsVerticalTiny />
         </ButtonPrimary>
@@ -216,3 +241,16 @@ const SubscriberOptions = (props: {
     </Menu>
   );
 };
+
+function SubscriberDate(props: { createdAt: string }) {
+  const formattedDate = useLocalizedDate(props.createdAt, {
+    year: "2-digit",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return (
+    <div className="px-1 py-0 h-max rounded-md text-sm italic text-tertiary">
+      {formattedDate}
+    </div>
+  );
+}

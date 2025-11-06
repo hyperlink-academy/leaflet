@@ -1,19 +1,17 @@
-import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import {
   entities,
   permission_tokens,
   permission_token_rights,
   entity_sets,
-  facts,
   identities,
 } from "drizzle/schema";
-import { redirect } from "next/navigation";
-import postgres from "postgres";
 import { v7 } from "uuid";
-import { sql } from "drizzle-orm";
-import { cookies } from "next/headers";
+import { PgTransaction } from "drizzle-orm/pg-core";
+import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { Json } from "supabase/database.types";
+
 export async function createIdentity(
-  db: PostgresJsDatabase,
+  db: NodePgDatabase,
   data?: { email?: string; atp_did?: string },
 ) {
   return db.transaction(async (tx) => {
@@ -46,6 +44,8 @@ export async function createIdentity(
       .insert(identities)
       .values({ home_page: permissionToken.id, ...data })
       .returning();
-    return identity;
+    return identity as Omit<typeof identity, "interface_state"> & {
+      interface_state: Json;
+    };
   });
 }

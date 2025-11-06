@@ -312,18 +312,18 @@ const removeBlock: Mutation<
       "block/is-locked",
     );
     if (isLocked?.data.value) continue;
-    let images = await ctx.scanIndex.eav(block.blockEntity, "block/image");
-    ctx.runOnServer(async ({ supabase }) => {
-      for (let image of images) {
+    let [image] = await ctx.scanIndex.eav(block.blockEntity, "block/image");
+    await ctx.runOnServer(async ({ supabase }) => {
+      if (image) {
         let paths = image.data.src.split("/");
         await supabase.storage
           .from("minilink-user-assets")
           .remove([paths[paths.length - 1]]);
       }
     });
-    ctx.runOnClient(async () => {
+    await ctx.runOnClient(async () => {
       let cache = await caches.open("minilink-user-assets");
-      for (let image of images) {
+      if (image) {
         await cache.delete(image.data.src + "?local");
       }
     });

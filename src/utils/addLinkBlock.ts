@@ -15,6 +15,76 @@ export async function addLinkBlock(
 ) {
   if (!rep) return;
 
+  let res = await fetch("/api/link_previews", {
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+    body: JSON.stringify({ url, type: "meta" } as LinkPreviewBody),
+  });
+  if (res.status !== 200) {
+    await rep?.mutate.assertFact([
+      {
+        entity: entityID,
+        attribute: "link/url",
+        data: {
+          type: "string",
+          value: url,
+        },
+      },
+      {
+        entity: entityID,
+        attribute: "block/type",
+        data: { type: "block-type-union", value: "link" },
+      },
+    ]);
+    return;
+  }
+  let data = await (res.json() as LinkPreviewMetadataResult);
+  if (!data.success) {
+    await rep?.mutate.assertFact([
+      {
+        entity: entityID,
+        attribute: "link/url",
+        data: {
+          type: "string",
+          value: url,
+        },
+      },
+      {
+        entity: entityID,
+        attribute: "block/type",
+        data: { type: "block-type-union", value: "link" },
+      },
+    ]);
+    return;
+  }
+
+  if (data.data.links?.player?.[0]) {
+    let embed = data.data.links?.player?.[0];
+    await rep.mutate.assertFact([
+      {
+        entity: entityID,
+        attribute: "block/type",
+        data: { type: "block-type-union", value: "embed" },
+      },
+      {
+        entity: entityID,
+        attribute: "embed/url",
+        data: {
+          type: "string",
+          value: embed.href,
+        },
+      },
+      {
+        entity: entityID,
+        attribute: "embed/height",
+        data: {
+          type: "number",
+          value: embed.media?.height || 300,
+        },
+      },
+    ]);
+    return;
+  }
   await rep?.mutate.assertFact([
     {
       entity: entityID,
@@ -29,51 +99,41 @@ export async function addLinkBlock(
       attribute: "block/type",
       data: { type: "block-type-union", value: "link" },
     },
+    {
+      entity: entityID,
+      attribute: "link/title",
+      data: {
+        type: "string",
+        value: data.data.meta?.title || "",
+      },
+    },
+    {
+      entity: entityID,
+      attribute: "link/description",
+      data: {
+        type: "string",
+        value: data.data.meta?.description || "",
+      },
+    },
   ]);
-  fetch("/api/link_previews", {
-    headers: { "Content-Type": "application/json" },
-    method: "POST",
-    body: JSON.stringify({ url, type: "meta" } as LinkPreviewBody),
-  }).then(async (res) => {
-    let data = await (res.json() as LinkPreviewMetadataResult);
-    if (data.success) {
-      await rep?.mutate.assertFact({
-        entity: entityID,
-        attribute: "link/title",
-        data: {
-          type: "string",
-          value: data.data.data.title || "",
-        },
-      });
-      await rep?.mutate.assertFact({
-        entity: entityID,
-        attribute: "link/description",
-        data: {
-          type: "string",
-          value: data.data.data.description || "",
-        },
-      });
-    }
-  });
-
-  fetch("/api/link_previews", {
+  let imageRes = await fetch("/api/link_previews", {
     headers: { "Content-Type": "application/json" },
     method: "POST",
     body: JSON.stringify({ url, type: "image" } as LinkPreviewBody),
-  }).then(async (res) => {
-    let data = await (res.json() as LinkPreviewImageResult);
+  });
 
-    await rep?.mutate.assertFact({
-      entity: entityID,
-      attribute: "link/preview",
-      data: {
-        fallback: "",
-        type: "image",
-        src: data.url,
-        width: data.width,
-        height: data.height,
-      },
-    });
+  let image_data = await (imageRes.json() as LinkPreviewImageResult);
+
+  await rep?.mutate.assertFact({
+    entity: entityID,
+    attribute: "link/preview",
+    data: {
+      fallback: "",
+      type: "image",
+      src: image_data.url,
+      width: image_data.width,
+      height: image_data.height,
+    },
   });
 }
 

@@ -14,8 +14,24 @@ import { Media } from "./Media";
 import { TooltipButton } from "./Buttons";
 import { useBlockKeyboardHandlers } from "./Blocks/useBlockKeyboardHandlers";
 import { AddSmall } from "./Icons/AddSmall";
+import { InfoSmall } from "./Icons/InfoSmall";
+import { Popover } from "./Popover";
+import { Separator } from "./Layout";
+import { CommentTiny } from "./Icons/CommentTiny";
+import { QuoteTiny } from "./Icons/QuoteTiny";
+import { PublicationMetadata } from "./Pages/PublicationMetadata";
+import { useLeafletPublicationData } from "./PageSWRDataProvider";
+import {
+  PubLeafletPublication,
+  PubLeafletPublicationRecord,
+} from "lexicons/api";
+import { useHandleCanvasDrop } from "./Blocks/useHandleCanvasDrop";
 
-export function Canvas(props: { entityID: string; preview?: boolean }) {
+export function Canvas(props: {
+  entityID: string;
+  preview?: boolean;
+  first?: boolean;
+}) {
   let entity_set = useEntitySetContext();
   let ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -44,25 +60,21 @@ export function Canvas(props: { entityID: string; preview?: boolean }) {
     return () => abort.abort();
   });
 
-  let narrowWidth = useEntity(props.entityID, "canvas/narrow-width")?.data
-    .value;
-
   return (
     <div
       ref={ref}
       id={elementId.page(props.entityID).canvasScrollArea}
       className={`
         canvasWrapper
-        h-full w-fit mx-auto
-        max-w-[calc(100vw-12px)]
-        ${!narrowWidth ? "sm:max-w-[calc(100vw-128px)] lg:max-w-[calc(var(--page-width-units)*2 + 24px))]" : " sm:max-w-[var(--page-width-units)]"}
-        rounded-lg
+        h-full w-fit
         overflow-y-scroll
       `}
     >
       <AddCanvasBlockButton entityID={props.entityID} entity_set={entity_set} />
+
+      <CanvasMetadata isSubpage={!props.first} />
+
       <CanvasContent {...props} />
-      <CanvasWidthHandle entityID={props.entityID} />
     </div>
   );
 }
@@ -72,6 +84,8 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
   let height = Math.max(...blocks.map((f) => f.data.position.y), 0);
+  let handleDrop = useHandleCanvasDrop(props.entityID);
+
   return (
     <div
       onClick={async (e) => {
@@ -109,6 +123,17 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
           );
         }
       }}
+      onDragOver={
+        !props.preview && entity_set.permissions.write
+          ? (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          : undefined
+      }
+      onDrop={
+        !props.preview && entity_set.permissions.write ? handleDrop : undefined
+      }
       style={{
         minHeight: height + 512,
         contain: "size layout paint",
@@ -139,32 +164,40 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
   );
 }
 
-function CanvasWidthHandle(props: { entityID: string }) {
-  let canvasFocused = useUIState((s) => s.focusedEntity?.entityType === "page");
-  let { rep } = useReplicache();
-  let narrowWidth = useEntity(props.entityID, "canvas/narrow-width")?.data
-    .value;
+const CanvasMetadata = (props: { isSubpage: boolean | undefined }) => {
+  let { data: pub } = useLeafletPublicationData();
+  if (!pub || !pub.publications) return null;
+
+  let pubRecord = pub.publications.record as PubLeafletPublication.Record;
+  let showComments = pubRecord.preferences?.showComments;
+
   return (
-    <button
-      onClick={() => {
-        rep?.mutate.assertFact({
-          entity: props.entityID,
-          attribute: "canvas/narrow-width",
-          data: {
-            type: "boolean",
-            value: !narrowWidth,
-          },
-        });
-      }}
-      className={`resizeHandle
-        ${narrowWidth ? "cursor-e-resize" : "cursor-w-resize"} shrink-0 z-10
-         ${canvasFocused ? "sm:block hidden" : "hidden"}
-        w-[8px] h-12
-        absolute top-1/2 right-0 -translate-y-1/2 translate-x-[3px]
-        rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
-    />
+    <div className="flex flex-row gap-3 items-center absolute top-6 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
+      {showComments && (
+        <div className="flex gap-1 text-tertiary items-center">
+          <CommentTiny className="text-border" /> —
+        </div>
+      )}
+      <div className="flex gap-1 text-tertiary items-center">
+        <QuoteTiny className="text-border" /> —
+      </div>
+
+      {!props.isSubpage && (
+        <>
+          <Separator classname="h-5" />
+          <Popover
+            side="left"
+            align="start"
+            className="flex flex-col gap-2 p-0! max-w-sm w-[1000px]"
+            trigger={<InfoSmall />}
+          >
+            <PublicationMetadata />
+          </Popover>
+        </>
+      )}
+    </div>
   );
-}
+};
 
 const AddCanvasBlockButton = (props: {
   entityID: string;
@@ -176,7 +209,7 @@ const AddCanvasBlockButton = (props: {
 
   if (!permissions.write) return null;
   return (
-    <div className="absolute right-2 sm:top-4 sm:right-4 bottom-2 sm:bottom-auto z-10 flex flex-col gap-1 justify-center">
+    <div className="absolute right-2 sm:bottom-4 sm:right-4 bottom-2 sm:top-auto z-10 flex flex-col gap-1 justify-center">
       <TooltipButton
         side="left"
         open={blocks.length === 0 ? true : undefined}
@@ -186,7 +219,7 @@ const AddCanvasBlockButton = (props: {
             <div className="font-normal">or double click anywhere</div>
           </div>
         }
-        className="w-fit p-2 rounded-full bg-accent-1 border-2 outline outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-2"
+        className="w-fit p-2 rounded-full bg-accent-1 border-2 outline-solid outline-transparent hover:outline-1 hover:outline-accent-1 border-accent-1 text-accent-2"
         onMouseDown={() => {
           let page = document.getElementById(
             elementId.page(props.entityID).canvasScrollArea,
@@ -395,7 +428,7 @@ function CanvasBlock(props: {
           hidden group-hover/canvas-block:block
           w-[5px] h-6 -ml-[3px]
           absolute top-1/2 right-3 -translate-y-1/2 translate-x-[2px]
-          rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
+          rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,inset_0_0_0_1px_white]`}
           {...widthHandle.handlers}
         />
       )}
@@ -408,7 +441,7 @@ function CanvasBlock(props: {
             w-[8px] h-[8px]
             absolute bottom-0 -right-0
             -translate-y-1/2 -translate-x-1/2
-            rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]`}
+            rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,inset_0_0_0_1px_white]`}
           {...rotateHandle.handlers}
         />
       )}

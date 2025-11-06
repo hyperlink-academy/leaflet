@@ -34,6 +34,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      atp_poll_records: {
+        Row: {
+          cid: string
+          created_at: string
+          record: Json
+          uri: string
+        }
+        Insert: {
+          cid: string
+          created_at?: string
+          record: Json
+          uri: string
+        }
+        Update: {
+          cid?: string
+          created_at?: string
+          record?: Json
+          uri?: string
+        }
+        Relationships: []
+      }
+      atp_poll_votes: {
+        Row: {
+          indexed_at: string
+          poll_cid: string
+          poll_uri: string
+          record: Json
+          uri: string
+          voter_did: string
+        }
+        Insert: {
+          indexed_at?: string
+          poll_cid: string
+          poll_uri: string
+          record: Json
+          uri: string
+          voter_did: string
+        }
+        Update: {
+          indexed_at?: string
+          poll_cid?: string
+          poll_uri?: string
+          record?: Json
+          uri?: string
+          voter_did?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atp_poll_votes_poll_uri_fkey"
+            columns: ["poll_uri"]
+            isOneToOne: false
+            referencedRelation: "atp_poll_records"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      bsky_follows: {
+        Row: {
+          follows: string
+          identity: string
+        }
+        Insert: {
+          follows: string
+          identity?: string
+        }
+        Update: {
+          follows?: string
+          identity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsky_follows_follows_fkey"
+            columns: ["follows"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+          {
+            foreignKeyName: "bsky_follows_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+        ]
+      }
       bsky_posts: {
         Row: {
           cid: string
@@ -81,6 +167,45 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "identities"
             referencedColumns: ["atp_did"]
+          },
+        ]
+      }
+      comments_on_documents: {
+        Row: {
+          document: string | null
+          indexed_at: string
+          profile: string | null
+          record: Json
+          uri: string
+        }
+        Insert: {
+          document?: string | null
+          indexed_at?: string
+          profile?: string | null
+          record: Json
+          uri: string
+        }
+        Update: {
+          document?: string | null
+          indexed_at?: string
+          profile?: string | null
+          record?: Json
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_on_documents_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "comments_on_documents_profile_fkey"
+            columns: ["profile"]
+            isOneToOne: false
+            referencedRelation: "bsky_profiles"
+            referencedColumns: ["did"]
           },
         ]
       }
@@ -175,16 +300,19 @@ export type Database = {
       document_mentions_in_bsky: {
         Row: {
           document: string
+          indexed_at: string
           link: string
           uri: string
         }
         Insert: {
           document: string
+          indexed_at?: string
           link: string
           uri: string
         }
         Update: {
           document?: string
+          indexed_at?: string
           link?: string
           uri?: string
         }
@@ -422,6 +550,7 @@ export type Database = {
           email: string | null
           home_page: string
           id: string
+          interface_state: Json | null
         }
         Insert: {
           atp_did?: string | null
@@ -429,6 +558,7 @@ export type Database = {
           email?: string | null
           home_page: string
           id?: string
+          interface_state?: Json | null
         }
         Update: {
           atp_did?: string | null
@@ -436,6 +566,7 @@ export type Database = {
           email?: string | null
           home_page?: string
           id?: string
+          interface_state?: Json | null
         }
         Relationships: [
           {
@@ -490,6 +621,38 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "publications"
             referencedColumns: ["uri"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          read: boolean
+          recipient: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          id: string
+          read?: boolean
+          recipient: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          read?: boolean
+          recipient?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_recipient_fkey"
+            columns: ["recipient"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
           },
         ]
       }
@@ -838,7 +1001,15 @@ export type Database = {
           record?: Json | null
           uri?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "publications_identity_did_fkey"
+            columns: ["identity_did"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+        ]
       }
       replicache_clients: {
         Row: {

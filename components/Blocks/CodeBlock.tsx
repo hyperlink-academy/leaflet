@@ -123,7 +123,10 @@ export function CodeBlock(props: BlockProps) {
             data-entityid={props.entityID}
             id={elementId.block(props.entityID).input}
             block={props}
-            className="codeBlockEditor !whitespace-nowrap !overflow-auto font-mono p-2"
+            spellCheck={false}
+            autoCapitalize="none"
+            autoCorrect="off"
+            className="codeBlockEditor whitespace-nowrap! overflow-auto! font-mono p-2"
             value={content?.data.value}
             onChange={async (e) => {
               // Update the entity with the new value
@@ -138,7 +141,7 @@ export function CodeBlock(props: BlockProps) {
           <pre
             onClick={onClick}
             onMouseDown={(e) => e.stopPropagation()}
-            className="codeBlockRendered !overflow-auto font-mono p-2 w-full h-full"
+            className="codeBlockRendered overflow-auto! font-mono p-2 w-full h-full"
           >
             {content?.data.value}
           </pre>

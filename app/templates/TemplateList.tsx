@@ -43,12 +43,12 @@ export function LeafletTemplate(props: {
             target="_blank"
             className="no-underline hover:no-underline"
           >
-            <ButtonPrimary className="bg-primary hover:!outline-none hover:scale-105 hover:rotate-3 transition-all">
+            <ButtonPrimary className="bg-primary hover:outline-hidden! hover:scale-105 hover:rotate-3 transition-all">
               Preview
             </ButtonPrimary>
           </Link>
           <ButtonPrimary
-            className=" hover:!outline-none hover:scale-105 hover:-rotate-2 transition-all"
+            className=" hover:outline-hidden! hover:scale-105 hover:-rotate-2 transition-all"
             onClick={async () => {
               let id = await createNewLeafletFromTemplate(
                 props.templateID,

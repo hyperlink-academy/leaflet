@@ -2,7 +2,7 @@
 
 import { PubLeafletBlocksCode } from "lexicons/api";
 import { useLayoutEffect, useState } from "react";
-import { codeToHtml } from "shiki";
+import { codeToHtml, bundledLanguagesInfo, bundledThemesInfo } from "shiki";
 
 export function PubCodeBlock({
   block,
@@ -14,10 +14,10 @@ export function PubCodeBlock({
   const [html, setHTML] = useState<string | null>(prerenderedCode || null);
 
   useLayoutEffect(() => {
-    codeToHtml(block.plaintext, {
-      lang: block.language || "plaintext",
-      theme: block.syntaxHighlightingTheme || "github-light",
-    }).then(setHTML);
+    const lang = bundledLanguagesInfo.find((l) => l.id === block.language)?.id || "plaintext";
+    const theme = bundledThemesInfo.find((t) => t.id === block.syntaxHighlightingTheme)?.id || "github-light";
+
+    codeToHtml(block.plaintext, { lang, theme }).then(setHTML);
   }, [block]);
   return (
     <div

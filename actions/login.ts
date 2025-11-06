@@ -1,5 +1,5 @@
 "use server";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import postgres from "postgres";
 import {
   email_auth_tokens,
@@ -16,11 +16,12 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { v7 } from "uuid";
 import { createIdentity } from "./createIdentity";
+import { pool } from "supabase/pool";
 
 export async function loginWithEmailToken(
   localLeaflets: { token: { id: string }; added_at: string }[],
 ) {
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
+  const client = await pool.connect();
   const db = drizzle(client);
   let token_id = (await cookies()).get("auth_token")?.value;
   let voter_token = (await cookies()).get("poll_voter_token")?.value;
@@ -115,5 +116,5 @@ export async function loginWithEmailToken(
       });
     }
   }
-  client.end();
+  client.release();
 }

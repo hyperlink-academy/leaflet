@@ -14,7 +14,7 @@ import {
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { BaseTextBlock } from "./BaseTextBlock";
 import { StaticMathBlock } from "./StaticMathBlock";
-import { codeToHtml } from "shiki";
+import { codeToHtml, bundledLanguagesInfo, bundledThemesInfo } from "shiki";
 
 export function StaticPostContent({
   blocks,
@@ -46,7 +46,7 @@ let Block = async ({
   switch (true) {
     case PubLeafletBlocksBlockquote.isMain(b.block): {
       return (
-        <blockquote className={`border-l-2 border-border pl-2`}>
+        <blockquote className={` blockquote `}>
           <BaseTextBlock
             facets={b.block.facets}
             plaintext={b.block.plaintext}
@@ -62,10 +62,14 @@ let Block = async ({
       return <StaticMathBlock block={b.block} />;
     }
     case PubLeafletBlocksCode.isMain(b.block): {
-      let html = await codeToHtml(b.block.plaintext, {
-        lang: b.block.language || "plaintext",
-        theme: b.block.syntaxHighlightingTheme || "github-light",
-      });
+      let { language, syntaxHighlightingTheme } = b.block;
+      const lang =
+        bundledLanguagesInfo.find((l) => l.id === language)?.id || "plaintext";
+      const theme =
+        bundledThemesInfo.find((t) => t.id === syntaxHighlightingTheme)?.id ||
+        "github-light";
+
+      let html = await codeToHtml(b.block.plaintext, { lang, theme });
       return (
         <div
           className="w-full min-h-[42px] rounded-md border-border-light outline-border-light selected-outline"
@@ -157,9 +161,9 @@ function ListItem(props: {
   className?: string;
 }) {
   return (
-    <li className={`!pb-0 flex flex-row gap-2`}>
+    <li className={`pb-0! flex flex-row gap-2`}>
       <div
-        className={`listMarker shrink-0 mx-2 z-[1] mt-[14px] h-[5px] w-[5px] rounded-full bg-secondary`}
+        className={`listMarker shrink-0 mx-2 z-1 mt-[14px] h-[5px] w-[5px] rounded-full bg-secondary`}
       />
       <div className="flex flex-col">
         <Block block={{ block: props.item.content }} did={props.did} isList />

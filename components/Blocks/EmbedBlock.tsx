@@ -74,6 +74,7 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
       </label>
     );
   }
+  if (props.preview) return null;
 
   return (
     <div
@@ -111,7 +112,7 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
             className={`resizeHandle
           cursor-ns-resize shrink-0 z-10 w-6 h-[5px]
           absolute bottom-2 right-1/2 translate-x-1/2 translate-y-[2px]
-          rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,_inset_0_0_0_1px_white]
+          rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,inset_0_0_0_1px_white]
           ${isCanvasBlock ? "hidden group-hover/canvas-block:block" : ""}`}
             {...heightHandle.handlers}
           />
@@ -202,7 +203,7 @@ const BlockLinkInput = (props: BlockProps) => {
         <Separator />
         <Input
           type="text"
-          className="w-full grow border-none outline-none bg-transparent "
+          className="w-full grow border-none outline-hidden bg-transparent "
           placeholder="www.example.com"
           value={linkValue}
           disabled={isLocked}

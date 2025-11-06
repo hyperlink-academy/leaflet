@@ -1,0 +1,285 @@
+"use client";
+import { AtUri } from "@atproto/api";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { PubIcon } from "components/ActionBar/Publications";
+import { ButtonPrimary } from "components/Buttons";
+import { CommentTiny } from "components/Icons/CommentTiny";
+import { DiscoverSmall } from "components/Icons/DiscoverSmall";
+import { QuoteTiny } from "components/Icons/QuoteTiny";
+import { Separator } from "components/Layout";
+import { SpeedyLink } from "components/SpeedyLink";
+import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
+import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
+import { useSmoker } from "components/Toast";
+import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { Json } from "supabase/database.types";
+import type { Cursor, Post } from "./getReaderFeed";
+import useSWRInfinite from "swr/infinite";
+import { getReaderFeed } from "./getReaderFeed";
+import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+
+export const ReaderContent = (props: {
+  posts: Post[];
+  nextCursor: Cursor | null;
+}) => {
+  const getKey = (
+    pageIndex: number,
+    previousPageData: { posts: Post[]; nextCursor: Cursor | null } | null,
+  ) => {
+    // Reached the end
+    if (previousPageData && !previousPageData.nextCursor) return null;
+
+    // First page, we don't have previousPageData
+    if (pageIndex === 0) return ["reader-feed", null] as const;
+
+    // Add the cursor to the key
+    return ["reader-feed", previousPageData?.nextCursor] as const;
+  };
+
+  const { data, error, size, setSize, isValidating } = useSWRInfinite(
+    getKey,
+    ([_, cursor]) => getReaderFeed(cursor),
+    {
+      fallbackData: [{ posts: props.posts, nextCursor: props.nextCursor }],
+      revalidateFirstPage: false,
+    },
+  );
+
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Set up intersection observer to load more when trigger element is visible
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isValidating) {
+          const hasMore = data && data[data.length - 1]?.nextCursor;
+          if (hasMore) {
+            setSize(size + 1);
+          }
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [data, size, setSize, isValidating]);
+
+  const allPosts = data ? data.flatMap((page) => page.posts) : [];
+
+  if (allPosts.length === 0 && !isValidating) return <ReaderEmpty />;
+
+  return (
+    <div className="flex flex-col gap-3 relative">
+      {allPosts.map((p) => (
+        <Post {...p} key={p.documents.uri} />
+      ))}
+      {/* Trigger element for loading more posts */}
+      <div
+        ref={loadMoreRef}
+        className="absolute bottom-96 left-0 w-full h-px pointer-events-none"
+        aria-hidden="true"
+      />
+      {isValidating && (
+        <div className="text-center text-tertiary py-4">
+          Loading more posts...
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Post = (props: Post) => {
+  let pubRecord = props.publication.pubRecord as PubLeafletPublication.Record;
+
+  let postRecord = props.documents.data as PubLeafletDocument.Record;
+  let postUri = new AtUri(props.documents.uri);
+
+  let theme = usePubTheme(pubRecord);
+  let backgroundImage = pubRecord?.theme?.backgroundImage?.image?.ref
+    ? blobRefToSrc(
+        pubRecord?.theme?.backgroundImage?.image?.ref,
+        new AtUri(props.publication.uri).host,
+      )
+    : null;
+
+  let backgroundImageRepeat = pubRecord?.theme?.backgroundImage?.repeat;
+  let backgroundImageSize = pubRecord?.theme?.backgroundImage?.width || 500;
+
+  let showPageBackground = pubRecord.theme?.showPageBackground;
+
+  let quotes = props.documents.document_mentions_in_bsky?.[0]?.count || 0;
+  let comments =
+    pubRecord.preferences?.showComments === false
+      ? 0
+      : props.documents.comments_on_documents?.[0]?.count || 0;
+
+  return (
+    <BaseThemeProvider {...theme} local>
+      <div
+        style={{
+          backgroundImage: `url(${backgroundImage})`,
+          backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
+          backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
+        }}
+        className={`no-underline! flex flex-row gap-2 w-full relative
+          bg-bg-leaflet
+          border border-border-light rounded-lg
+          sm:p-2 p-2 selected-outline
+          hover:outline-accent-contrast hover:border-accent-contrast
+          `}
+      >
+        <a
+          className="h-full w-full absolute top-0 left-0"
+          href={`${props.publication.href}/${postUri.rkey}`}
+        />
+        <div
+          className={`${showPageBackground ? "bg-bg-page " : "bg-transparent"}  rounded-md w-full  px-[10px] pt-2 pb-2`}
+          style={{
+            backgroundColor: showPageBackground
+              ? "rgba(var(--bg-page), var(--bg-page-alpha))"
+              : "transparent",
+          }}
+        >
+          <h3 className="text-primary truncate">{postRecord.title}</h3>
+
+          <p className="text-secondary">{postRecord.description}</p>
+          <div className="flex gap-2 justify-between items-end">
+            <div className="flex flex-col-reverse md:flex-row md gap-3 md:gap-2 text-sm text-tertiary items-start justify-start pt-1 md:pt-3">
+              <PubInfo
+                href={props.publication.href}
+                pubRecord={pubRecord}
+                uri={props.publication.uri}
+              />
+              <Separator classname="h-4 !min-h-0 md:block hidden" />
+              <PostInfo
+                author={props.author || ""}
+                publishedAt={postRecord.publishedAt}
+              />
+            </div>
+
+            <PostInterations
+              postUrl={`${props.publication.href}/${postUri.rkey}`}
+              quotesCount={quotes}
+              commentsCount={comments}
+              showComments={pubRecord.preferences?.showComments}
+            />
+          </div>
+        </div>
+      </div>
+    </BaseThemeProvider>
+  );
+};
+
+const PubInfo = (props: {
+  href: string;
+  pubRecord: PubLeafletPublication.Record;
+  uri: string;
+}) => {
+  return (
+    <a
+      href={props.href}
+      className="text-accent-contrast font-bold no-underline text-sm flex gap-1 items-center md:w-fit w-full relative shrink-0"
+    >
+      <PubIcon small record={props.pubRecord} uri={props.uri} />
+      {props.pubRecord.name}
+    </a>
+  );
+};
+
+const PostInfo = (props: {
+  author: string;
+  publishedAt: string | undefined;
+}) => {
+  const formattedDate = useLocalizedDate(
+    props.publishedAt || new Date().toISOString(),
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    },
+  );
+
+  return (
+    <div className="flex flex-wrap gap-2 grow items-center shrink-0">
+      {props.author}
+      {props.publishedAt && (
+        <>
+          <Separator classname="h-4 !min-h-0" />
+          {formattedDate}{" "}
+        </>
+      )}
+    </div>
+  );
+};
+
+const PostInterations = (props: {
+  quotesCount: number;
+  commentsCount: number;
+  postUrl: string;
+  showComments: boolean | undefined;
+}) => {
+  let smoker = useSmoker();
+  let interactionsAvailable =
+    props.quotesCount > 0 ||
+    (props.showComments !== false && props.commentsCount > 0);
+
+  return (
+    <div className={`flex gap-2 text-tertiary text-sm  items-center`}>
+      {props.quotesCount === 0 ? null : (
+        <div className={`flex gap-1 items-center `} aria-label="Post quotes">
+          <QuoteTiny aria-hidden /> {props.quotesCount}
+        </div>
+      )}
+      {props.showComments === false || props.commentsCount === 0 ? null : (
+        <div className={`flex gap-1 items-center`} aria-label="Post comments">
+          <CommentTiny aria-hidden /> {props.commentsCount}
+        </div>
+      )}
+      {interactionsAvailable && <Separator classname="h-4 !min-h-0" />}
+      <button
+        id={`copy-post-link-${props.postUrl}`}
+        className="flex gap-1 items-center hover:font-bold relative"
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          let mouseX = e.clientX;
+          let mouseY = e.clientY;
+
+          if (!props.postUrl) return;
+          navigator.clipboard.writeText(`leaflet.pub${props.postUrl}`);
+
+          smoker({
+            text: <strong>Copied Link!</strong>,
+            position: {
+              y: mouseY,
+              x: mouseX,
+            },
+          });
+        }}
+      >
+        Share
+      </button>
+    </div>
+  );
+};
+export const ReaderEmpty = () => {
+  return (
+    <div className="flex flex-col gap-2 container bg-[rgba(var(--bg-page),.7)] sm:p-4 p-3 justify-between text-center text-tertiary">
+      Nothing to read yet… <br />
+      Subscribe to publications and find their posts here!
+      <Link href={"/discover"}>
+        <ButtonPrimary className="mx-auto place-self-center">
+          <DiscoverSmall /> Discover Publications
+        </ButtonPrimary>
+      </Link>
+    </div>
+  );
+};

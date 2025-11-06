@@ -1,25 +1,13 @@
 "use server";
 
-import { drizzle } from "drizzle-orm/postgres-js";
-import {
-  entities,
-  identities,
-  permission_tokens,
-  permission_token_rights,
-  entity_sets,
-  facts,
-  permission_token_on_homepage,
-  email_auth_tokens,
-} from "drizzle/schema";
-import { redirect } from "next/navigation";
-import postgres from "postgres";
-import { v7 } from "uuid";
-import { sql, eq, and } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { sql } from "drizzle-orm";
 import { cookies } from "next/headers";
+import { pool } from "supabase/pool";
 
 export async function addLeafletToHome(leaflet: string) {
-  const client = postgres(process.env.DB_URL as string, { idle_timeout: 5 });
   let auth_token = (await cookies()).get("auth_token")?.value;
+  const client = await pool.connect();
   const db = drizzle(client);
   await db.transaction(async (tx) => {
     if (auth_token) {
@@ -40,7 +28,6 @@ export async function addLeafletToHome(leaflet: string) {
 
     return;
   });
-
-  client.end();
+  client.release();
   return;
 }

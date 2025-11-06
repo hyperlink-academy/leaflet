@@ -204,7 +204,6 @@ export const blockCommands: Command[] = [
     name: "Button",
     icon: <BlockButtonSmall />,
     type: "block",
-    hiddenInPublication: true,
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       await createBlockWithType(rep, props, "button");
@@ -235,7 +234,6 @@ export const blockCommands: Command[] = [
     name: "Poll",
     icon: <BlockPollSmall />,
     type: "block",
-    hiddenInPublication: true,
     onSelect: async (rep, props, um) => {
       let entity = await createBlockWithType(rep, props, "poll");
       let pollOptionEntity = v7();
@@ -281,7 +279,6 @@ export const blockCommands: Command[] = [
     name: "Embed Website",
     icon: <BlockEmbedSmall />,
     type: "block",
-    hiddenInPublication: true,
     onSelect: async (rep, props) => {
       createBlockWithType(rep, props, "embed");
     },
@@ -290,7 +287,6 @@ export const blockCommands: Command[] = [
     name: "Bluesky Post",
     icon: <BlockBlueskySmall />,
     type: "block",
-    hiddenInPublication: true,
     onSelect: async (rep, props) => {
       createBlockWithType(rep, props, "bluesky-post");
     },
@@ -332,7 +328,6 @@ export const blockCommands: Command[] = [
     name: "New Page",
     icon: <BlockDocPageSmall />,
     type: "page",
-    hiddenInPublication: true,
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "card");
@@ -372,7 +367,6 @@ export const blockCommands: Command[] = [
     name: "New Canvas",
     icon: <BlockCanvasPageSmall />,
     type: "page",
-    hiddenInPublication: true,
     onSelect: async (rep, props, um) => {
       props.entityID && clearCommandSearchText(props.entityID);
       let entity = await createBlockWithType(rep, props, "card");

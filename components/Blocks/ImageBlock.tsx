@@ -51,6 +51,34 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     }
   }, [isSelected, props.preview, props.entityID]);
 
+  const handleImageUpload = async (file: File) => {
+    if (!rep) return;
+    let entity = props.entityID;
+    if (!entity) {
+      entity = v7();
+      await rep?.mutate.addBlock({
+        parent: props.parent,
+        factID: v7(),
+        permission_set: entity_set.set,
+        type: "text",
+        position: generateKeyBetween(
+          props.position,
+          props.nextPosition,
+        ),
+        newEntityID: entity,
+      });
+    }
+    await rep.mutate.assertFact({
+      entity,
+      attribute: "block/type",
+      data: { type: "block-type-union", value: "image" },
+    });
+    await addImage(file, rep, {
+      entityID: entity,
+      attribute: "block/image",
+    });
+  };
+
   if (!image) {
     if (!entity_set.permissions.write) return null;
     return (
@@ -65,6 +93,22 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             ${isSelected && !isLocked ? "border-2 border-tertiary font-bold" : "border border-border"}
             ${props.pageType === "canvas" && "bg-bg-page"}`}
           onMouseDown={(e) => e.preventDefault()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onDrop={async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (isLocked) return;
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) {
+              const file = files[0];
+              if (file.type.startsWith('image/')) {
+                await handleImageUpload(file);
+              }
+            }
+          }}
         >
           <div className="flex gap-2">
             <BlockImageSmall
@@ -79,31 +123,8 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             accept="image/*"
             onChange={async (e) => {
               let file = e.currentTarget.files?.[0];
-              if (!file || !rep) return;
-              let entity = props.entityID;
-              if (!entity) {
-                entity = v7();
-                await rep?.mutate.addBlock({
-                  parent: props.parent,
-                  factID: v7(),
-                  permission_set: entity_set.set,
-                  type: "text",
-                  position: generateKeyBetween(
-                    props.position,
-                    props.nextPosition,
-                  ),
-                  newEntityID: entity,
-                });
-              }
-              await rep.mutate.assertFact({
-                entity,
-                attribute: "block/type",
-                data: { type: "block-type-union", value: "image" },
-              });
-              await addImage(file, rep, {
-                entityID: entity,
-                attribute: "block/image",
-              });
+              if (!file) return;
+              await handleImageUpload(file);
             }}
           />
         </label>
@@ -114,8 +135,8 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let className = isFullBleed
     ? ""
     : isSelected
-      ? "block-border-selected !border-transparent "
-      : "block-border !border-transparent";
+      ? "block-border-selected border-transparent! "
+      : "block-border border-transparent!";
 
   let isLocalUpload = localImages.get(image.data.src);
 
@@ -140,13 +161,17 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       ) : (
         <Image
           alt={altText || ""}
-          src={new URL(image.data.src).pathname.split("/").slice(5).join("/")}
+          src={
+            "/" + new URL(image.data.src).pathname.split("/").slice(5).join("/")
+          }
           height={image?.data.height}
           width={image?.data.width}
           className={className}
         />
       )}
-      {altText !== undefined ? <ImageAlt entityID={props.value} /> : null}
+      {altText !== undefined && !props.preview ? (
+        <ImageAlt entityID={props.value} />
+      ) : null}
     </div>
   );
 }
@@ -154,7 +179,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
 export const FullBleedSelectionIndicator = () => {
   return (
     <div
-      className={`absolute top-3 sm:top-4 bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 border-2 border-bg-page rounded-lg outline-offset-1 outline outline-2 outline-tertiary`}
+      className={`absolute top-3 sm:top-4 bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 border-2 border-bg-page rounded-lg outline-offset-1 outline-solid outline-2 outline-tertiary`}
     />
   );
 };
@@ -186,15 +211,13 @@ const ImageAlt = (props: { entityID: string }) => {
               setAltEditorOpen(altEditorOpen ? null : props.entityID)
             }
           >
-            <ImageAltSmall
-              fillColor={theme.colors["bg-page"]}
-            />
+            <ImageAltSmall fillColor={theme.colors["bg-page"]} />
           </button>
         }
       >
         {entity_set.permissions.write ? (
           <AsyncValueAutosizeTextarea
-            className="text-sm text-secondary outline-none bg-transparent min-w-0"
+            className="text-sm text-secondary outline-hidden bg-transparent min-w-0"
             value={altText}
             onFocus={(e) => {
               e.currentTarget.setSelectionRange(

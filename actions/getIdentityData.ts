@@ -2,8 +2,9 @@
 
 import { cookies } from "next/headers";
 import { supabaseServerClient } from "supabase/serverClient";
-
-export async function getIdentityData() {
+import { cache } from "react";
+export const getIdentityData = cache(uncachedGetIdentityData);
+export async function uncachedGetIdentityData() {
   let cookieStore = await cookies();
   let auth_token =
     cookieStore.get("auth_token")?.value ||
@@ -16,16 +17,18 @@ export async function getIdentityData() {
           identities(
             *,
             bsky_profiles(*),
-            subscribers_to_publications(*),
+            publication_subscriptions(*),
             custom_domains!custom_domains_identity_id_fkey(publication_domains(*), *),
-            home_leaflet:permission_tokens!identities_home_page_fkey(*, permission_token_rights(*)),
+            home_leaflet:permission_tokens!identities_home_page_fkey(*, permission_token_rights(*,
+                              entity_sets(entities(facts(*)))
+            )),
             permission_token_on_homepage(
               created_at,
               permission_tokens!inner(
                 id,
                 root_entity,
                 permission_token_rights(*),
-                leaflets_in_publications(*, publications(*))
+                leaflets_in_publications(*, publications(*), documents(*))
               )
             )
           )`,

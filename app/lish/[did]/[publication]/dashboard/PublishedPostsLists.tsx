@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import { AtUri } from "@atproto/syntax";
 import { PubLeafletDocument } from "lexicons/api";
 import { EditTiny } from "components/Icons/EditTiny";
@@ -10,17 +9,23 @@ import { useParams } from "next/navigation";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { Menu, MenuItem } from "components/Layout";
 import { deletePost } from "./deletePost";
-import { mutate } from "swr";
-import { Button } from "react-aria-components";
 import { ButtonPrimary } from "components/Buttons";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 import { DeleteSmall } from "components/Icons/DeleteSmall";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { ShareButton } from "components/ShareOptions";
+import { SpeedyLink } from "components/SpeedyLink";
+import { QuoteTiny } from "components/Icons/QuoteTiny";
+import { CommentTiny } from "components/Icons/CommentTiny";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
-export function PublishedPostsList() {
-  let { data: publication } = usePublicationData();
+export function PublishedPostsList(props: {
+  searchValue: string;
+  showPageBackground: boolean;
+}) {
+  let { data } = usePublicationData();
   let params = useParams();
+  let { publication } = data!;
   if (!publication) return null;
   if (publication.documents_in_publications.length === 0)
     return (
@@ -29,7 +34,7 @@ export function PublishedPostsList() {
       </div>
     );
   return (
-    <div className="publishedList w-full flex flex-col gap-4 pb-4">
+    <div className="publishedList w-full flex flex-col gap-2 pb-4">
       {publication.documents_in_publications
         .sort((a, b) => {
           let aRecord = a.documents?.data! as PubLeafletDocument.Record;
@@ -49,14 +54,23 @@ export function PublishedPostsList() {
           );
           let uri = new AtUri(doc.documents.uri);
           let record = doc.documents.data as PubLeafletDocument.Record;
+          let quotes = doc.documents.document_mentions_in_bsky[0]?.count || 0;
+          let comments = doc.documents.comments_on_documents[0]?.count || 0;
 
           return (
             <Fragment key={doc.documents?.uri}>
               <div className="flex gap-2 w-full ">
-                <div className="publishedPost grow flex flex-col hover:!no-underline">
+                <div
+                  className={`publishedPost grow flex flex-col  hover:no-underline! rounded-lg border ${props.showPageBackground ? "border-border-light py-1 px-2" : "border-transparent px-1"}`}
+                  style={{
+                    backgroundColor: props.showPageBackground
+                      ? "rgba(var(--bg-page), var(--bg-page-alpha))"
+                      : "transparent",
+                  }}
+                >
                   <div className="flex justify-between gap-2">
                     <a
-                      className="hover:!no-underline"
+                      className="hover:no-underline!"
                       target="_blank"
                       href={`${getPublicationURL(publication)}/${uri.rkey}`}
                     >
@@ -66,9 +80,12 @@ export function PublishedPostsList() {
                     </a>
                     <div className="flex justify-start align-top flex-row gap-1">
                       {leaflet && (
-                        <Link className="pt-[6px]" href={`/${leaflet.leaflet}`}>
+                        <SpeedyLink
+                          className="pt-[6px]"
+                          href={`/${leaflet.leaflet}`}
+                        >
                           <EditTiny />
-                        </Link>
+                        </SpeedyLink>
                       )}
                       <Options document_uri={doc.documents.uri} />
                     </div>
@@ -79,22 +96,36 @@ export function PublishedPostsList() {
                       {record.description}
                     </p>
                   ) : null}
-                  {record.publishedAt ? (
-                    <p className="text-sm text-tertiary pt-3">
-                      Published{" "}
-                      {new Date(record.publishedAt).toLocaleDateString(
-                        undefined,
-                        {
-                          year: "numeric",
-                          month: "long",
-                          day: "2-digit",
-                        },
-                      )}
-                    </p>
-                  ) : null}
+                  <div className="text-sm text-tertiary flex gap-1 flex-wrap pt-3">
+                    {record.publishedAt ? (
+                      <PublishedDate dateString={record.publishedAt} />
+                    ) : null}
+                    {(comments > 0 || quotes > 0) && record.publishedAt
+                      ? " | "
+                      : ""}
+                    {quotes > 0 && (
+                      <SpeedyLink
+                        href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=quotes`}
+                        className="flex flex-row gap-1 text-sm text-tertiary items-center"
+                      >
+                        <QuoteTiny /> {quotes}
+                      </SpeedyLink>
+                    )}
+                    {comments > 0 && quotes > 0 ? " " : ""}
+                    {comments > 0 && (
+                      <SpeedyLink
+                        href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=comments`}
+                        className="flex flex-row gap-1 text-sm text-tertiary items-center"
+                      >
+                        <CommentTiny /> {comments}
+                      </SpeedyLink>
+                    )}
+                  </div>
                 </div>
               </div>
-              <hr className="last:hidden border-border-light" />
+              {!props.showPageBackground && (
+                <hr className="last:hidden border-border-light" />
+              )}
             </Fragment>
           );
         })}
@@ -109,7 +140,7 @@ let Options = (props: { document_uri: string }) => {
       alignOffset={20}
       asChild
       trigger={
-        <button className="text-secondary rounded-md selected-outline !border-transparent hover:!border-border h-min">
+        <button className="text-secondary rounded-md selected-outline border-transparent! hover:border-border! h-min">
           <MoreOptionsVerticalTiny />
         </button>
       }
@@ -122,11 +153,11 @@ let Options = (props: { document_uri: string }) => {
 };
 
 function OptionsMenu(props: { document_uri: string }) {
-  let { mutate, data: publication } = usePublicationData();
+  let { mutate, data } = usePublicationData();
   let [state, setState] = useState<"normal" | "confirm">("normal");
 
-  let postLink = publication
-    ? `${getPublicationURL(publication)}/${new AtUri(props.document_uri).rkey}`
+  let postLink = data?.publication
+    ? `${getPublicationURL(data?.publication)}/${new AtUri(props.document_uri).rkey}`
     : null;
 
   if (state === "normal") {
@@ -176,13 +207,17 @@ function OptionsMenu(props: { document_uri: string }) {
               if (!data) return data;
               return {
                 ...data,
-                leaflets_in_publications: data.leaflets_in_publications.filter(
-                  (l) => l.doc !== props.document_uri,
-                ),
-                documents_in_publications:
-                  data.documents_in_publications.filter(
-                    (d) => d.documents?.uri !== props.document_uri,
-                  ),
+                publication: {
+                  ...data.publication!,
+                  leaflets_in_publications:
+                    data.publication?.leaflets_in_publications.filter(
+                      (l) => l.doc !== props.document_uri,
+                    ) || [],
+                  documents_in_publications:
+                    data.publication?.documents_in_publications.filter(
+                      (d) => d.documents?.uri !== props.document_uri,
+                    ) || [],
+                },
               };
             }, false);
             await deletePost(props.document_uri);
@@ -193,4 +228,18 @@ function OptionsMenu(props: { document_uri: string }) {
       </div>
     );
   }
+}
+
+function PublishedDate(props: { dateString: string }) {
+  const formattedDate = useLocalizedDate(props.dateString, {
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+  });
+
+  return (
+    <p className="text-sm text-tertiary">
+      Published {formattedDate}
+    </p>
+  );
 }

@@ -1,19 +1,26 @@
 "use client";
-import Link from "next/link";
-import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
+import {
+  PubLeafletComment,
+  PubLeafletDocument,
+  PubLeafletPublication,
+} from "lexicons/api";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import { CollapsedPostHeader } from "./CollapsedPostHeader";
-import { Interactions } from "../Interactions/Interactions";
+import {
+  Interactions,
+  getQuoteCount,
+  getCommentCount,
+} from "../Interactions/Interactions";
 import { PostPageData } from "../getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { useIdentityData } from "components/IdentityProvider";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { AtUri } from "@atproto/syntax";
+import { EditTiny } from "components/Icons/EditTiny";
+import { SpeedyLink } from "components/SpeedyLink";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 export function PostHeader(props: {
   data: PostPageData;
-  name: string;
   profile: ProfileViewDetailed;
+  preferences: { showComments?: boolean };
 }) {
   let { identity } = useIdentityData();
   let document = props.data;
@@ -23,22 +30,25 @@ export function PostHeader(props: {
   let pub = props.data?.documents_in_publications[0].publications;
   let pubRecord = pub?.record as PubLeafletPublication.Record;
 
+  const formattedDate = useLocalizedDate(
+    record.publishedAt || new Date().toISOString(),
+    {
+      year: "numeric",
+      month: "long",
+      day: "2-digit",
+    }
+  );
+
   if (!document?.data || !document.documents_in_publications[0].publications)
     return;
   return (
-    <>
-      {/* <CollapsedPostHeader
-        pubIcon={
-          pubRecord?.icon && pub
-            ? blobRefToSrc(pubRecord.icon.ref, new AtUri(pub.uri).host)
-            : undefined
-        }
-        title={record.title}
-        quotes={document.document_mentions_in_bsky}
-      /> */}
-      <div className="max-w-prose w-full mx-auto" id="post-header">
-        <div className="pubHeader flex flex-col pb-5">
-          <Link
+    <div
+      className="max-w-prose w-full mx-auto px-3 sm:px-4 sm:pt-3 pt-2"
+      id="post-header"
+    >
+      <div className="pubHeader flex flex-col pb-5">
+        <div className="flex justify-between w-full">
+          <SpeedyLink
             className="font-bold hover:no-underline text-accent-contrast"
             href={
               document &&
@@ -47,55 +57,52 @@ export function PostHeader(props: {
               )
             }
           >
-            {props.name}
-          </Link>
-          <h2 className="">{record.title}</h2>
-          {record.description ? (
-            <p className="italic text-secondary">{record.description}</p>
-          ) : null}
+            {pub?.name}
+          </SpeedyLink>
+          {identity &&
+            identity.atp_did ===
+              document.documents_in_publications[0]?.publications
+                .identity_did &&
+            document.leaflets_in_publications[0] && (
+              <a
+                className=" rounded-full  flex place-items-center"
+                href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
+              >
+                <EditTiny className="shrink-0" />
+              </a>
+            )}
+        </div>
+        <h2 className="">{record.title}</h2>
+        {record.description ? (
+          <p className="italic text-secondary">{record.description}</p>
+        ) : null}
 
-          <div className="text-sm text-tertiary pt-3 flex gap-1 flex-wrap">
-            {profile ? (
-              <>
-                <a
-                  className="text-tertiary"
-                  href={`https://bsky.app/profile/${profile.handle}`}
-                >
-                  by {profile.displayName || profile.handle}
-                </a>
-              </>
-            ) : null}
-            {record.publishedAt ? (
-              <>
-                |
-                <p>
-                  {new Date(record.publishedAt).toLocaleDateString(undefined, {
-                    year: "numeric",
-                    month: "long",
-                    day: "2-digit",
-                  })}
-                </p>
-              </>
-            ) : null}
-            |{" "}
-            <Interactions compact quotes={document.document_mentions_in_bsky} />
-            {identity &&
-              identity.atp_did ===
-                document.documents_in_publications[0]?.publications
-                  .identity_did && (
-                <>
-                  {" "}
-                  |
-                  <a
-                    href={`https://leaflet.pub/${document.leaflets_in_publications[0].leaflet}`}
-                  >
-                    Edit Post
-                  </a>
-                </>
-              )}
-          </div>
+        <div className="text-sm text-tertiary pt-3 flex gap-1 flex-wrap">
+          {profile ? (
+            <>
+              <a
+                className="text-tertiary"
+                href={`https://bsky.app/profile/${profile.handle}`}
+              >
+                by {profile.displayName || profile.handle}
+              </a>
+            </>
+          ) : null}
+          {record.publishedAt ? (
+            <>
+              |
+              <p>{formattedDate}</p>
+            </>
+          ) : null}
+          |{" "}
+          <Interactions
+            showComments={props.preferences.showComments}
+            compact
+            quotesCount={getQuoteCount(document) || 0}
+            commentsCount={getCommentCount(document) || 0}
+          />
         </div>
       </div>
-    </>
+    </div>
   );
 }
