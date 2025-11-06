@@ -3,11 +3,11 @@ import { publishToPublication } from "actions/publishToPublication";
 import { DotLoader } from "components/utils/DotLoader";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { Checkbox } from "components/Checkbox";
-import { useState, useRef } from "react";
+import { useState, useRef, RefObject } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { AutosizeTextarea } from "components/utils/AutosizeTextarea";
-import { PubLeafletPublication } from "lexicons/api";
+import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import { publishPostToBsky } from "./publishBskyPost";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AtUri } from "@atproto/syntax";
@@ -67,7 +67,6 @@ const PublishPostForm = (
 
   let editorStateRef = useRef<EditorState | null>(null);
   let [isLoading, setIsLoading] = useState(false);
-  let [charCount, setCharCount] = useState(0);
   let params = useParams();
   let { rep } = useReplicache();
 
@@ -115,7 +114,7 @@ const PublishPostForm = (
       >
         <div className="container flex flex-col gap-3 p-3 pt-2 sm:pt-3 sm:p-4">
           <div className="flex flex-col ">
-            <div className=" flex justify-between items-center">
+            <div className=" flex justify-between items-start">
               <Checkbox
                 checked={shareOption.email === true}
                 onChange={(e) => {
@@ -126,9 +125,14 @@ const PublishPostForm = (
                   }
                 }}
               >
-                <div className="font-bold">
-                  Email {subscribers} Subscriber
-                  {subscribers === 1 ? "" : "s"}
+                <div>
+                  <div className="font-bold">
+                    Send to {subscribers} Subscriber
+                    {subscribers === 1 ? "" : "s"}
+                  </div>
+                  <div className="text-sm text-tertiary font-normal">
+                    3 Email Updates | 8 Bluesky DMs
+                  </div>
                 </div>
               </Checkbox>
               <SendTest checked={shareOption.email} />
@@ -147,47 +151,15 @@ const PublishPostForm = (
             <div className="flex flex-col">
               <div className="font-bold">Share on Bluesky</div>
               <div className="text-sm text-tertiary font-normal">
-                Pub subscribers will be updated via a custom Bluesky feed
-              </div>
-
-              <div
-                className={`publishBskyPostEditor opaque-container p-3  rounded-lg! w-full ml-5 mb-4 ${shareOption.bluesky === false ? "opacity-50" : ""}`}
-              >
-                <div className="flex gap-2">
-                  <img
-                    className="bg-test rounded-full w-[42px] h-[42px] shrink-0"
-                    src={props.profile.avatar}
-                  />
-                  <div className="flex flex-col w-full">
-                    <div className="flex gap-2 pb-1">
-                      <p className="font-bold">{props.profile.displayName}</p>
-                      <p className="text-tertiary">@{props.profile.handle}</p>
-                    </div>
-                    <div className="flex flex-col">
-                      <BlueskyPostEditorProsemirror
-                        editorStateRef={editorStateRef}
-                        onCharCountChange={setCharCount}
-                      />
-                    </div>
-                    <div className="opaque-container overflow-hidden flex flex-col mt-4 w-full">
-                      {/* <div className="h-[260px] w-full bg-test" /> */}
-                      <div className="flex flex-col p-2">
-                        <div className="font-bold">{props.title}</div>
-                        <div className="text-tertiary">{props.description}</div>
-                        <hr className="border-border-light mt-2 mb-1" />
-                        <p className="text-xs text-tertiary">
-                          {props.record?.base_path}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-xs text-secondary italic place-self-end pt-2">
-                      {charCount}/300
-                    </div>
-                  </div>
-                </div>
+                Share to add your post to our Discover and Reader custom feeds!
               </div>
             </div>
           </Checkbox>
+          <BlueskyPostEditor
+            {...props}
+            editorStateRef={editorStateRef}
+            disabled={shareOption.bluesky === false}
+          />
           <hr className="border-border-light mt-1" />
 
           <div className="flex justify-between">
@@ -204,8 +176,6 @@ const PublishPostForm = (
                 ) : shareOption.email === false &&
                   shareOption.bluesky === false ? (
                   "Post Quietly"
-                ) : shareOption.email === true ? (
-                  `Publish to ${subscribers} Subscriber${subscribers === 1 ? "!" : "s!"}`
                 ) : (
                   "Publish this Post!"
                 )}
@@ -214,6 +184,53 @@ const PublishPostForm = (
           </div>
         </div>
       </form>
+    </div>
+  );
+};
+
+const BlueskyPostEditor = (props: {
+  record?: PubLeafletPublication.Record;
+  profile: ProfileViewDetailed;
+  title: string;
+  description: string;
+  editorStateRef: RefObject<EditorState | null>;
+  disabled: boolean;
+}) => {
+  let [charCount, setCharCount] = useState(0);
+
+  return (
+    <div
+      className={`publishBskyPostEditor  w-full pl-5 pb-4 ${props.disabled ? "opacity-50" : ""}`}
+    >
+      <div className="flex gap-2 opaque-container p-3  rounded-lg! w-full">
+        <img
+          className="rounded-full w-[42px] h-[42px] shrink-0"
+          src={props.profile.avatar}
+        />
+        <div className="flex flex-col w-full text-sm">
+          <div className="flex gap-2 pb-1">
+            <p className="font-bold">{props.profile.displayName}</p>
+            <p className="text-tertiary">@{props.profile.handle}</p>
+          </div>
+          <div className="flex flex-col">
+            <BlueskyPostEditorProsemirror
+              editorStateRef={props.editorStateRef}
+              onCharCountChange={setCharCount}
+            />
+          </div>
+          <div className="opaque-container overflow-hidden flex flex-col mt-4 w-full">
+            <div className="flex flex-col p-2">
+              <div className="font-bold">{props.title}</div>
+              <div className="text-tertiary">{props.description}</div>
+              <hr className="border-border-light mt-2 mb-1" />
+              <p className="text-xs text-tertiary">{props.record?.base_path}</p>
+            </div>
+          </div>
+          <div className="text-xs text-secondary italic place-self-end pt-2">
+            {charCount}/300
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
