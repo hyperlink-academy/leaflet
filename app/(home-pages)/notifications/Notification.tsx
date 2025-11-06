@@ -98,7 +98,7 @@ export const CommentInNotification = (props: {
       <Avatar src={props.avatar} displayName={props.displayName} />
       <pre
         style={{ wordBreak: "break-word" }}
-        className={`whitespace-pre-wrap text-secondary line-clamp-6 ${props.className}`}
+        className={`whitespace-pre-wrap text-secondary line-clamp-3 sm:line-clamp-6 ${props.className}`}
       >
         <BaseTextBlock
           preview

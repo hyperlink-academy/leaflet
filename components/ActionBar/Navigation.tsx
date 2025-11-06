@@ -176,7 +176,7 @@ export function NotificationButton(props: { current?: boolean }) {
       asChild
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className="max-w-sm pt-3! pb-3!"
+      className="sm:max-w-sm w-full pt-3! pb-3!"
       trigger={
         <ActionButton
           nav
@@ -189,7 +189,7 @@ export function NotificationButton(props: { current?: boolean }) {
             )
           }
           label="Notifications"
-          className={`${props.current ? "bg-bg-page! border-border-light!" : ""} ${props.unreads ? "text-accent-contrast" : ""}`}
+          className={`${props.current ? "bg-bg-page! border-border-light!" : ""} ${unreads ? "text-accent-contrast!" : ""}`}
         />
       }
     >
