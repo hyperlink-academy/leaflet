@@ -21,9 +21,18 @@ import { getIdentityData } from "actions/getIdentityData";
 import { redirect } from "next/navigation";
 import { hydrateNotifications } from "src/notifications";
 import { supabaseServerClient } from "supabase/serverClient";
-import { CommentNotification } from "app/(home-pages)/notifications/CommentNotication";
+import {
+  CommentNotification,
+  DummyCommentNotification,
+} from "app/(home-pages)/notifications/CommentNotication";
 import { Separator } from "components/Layout";
 import { useIsMobile } from "src/hooks/isMobile";
+import { DummyReplyNotification } from "app/(home-pages)/notifications/ReplyNotification";
+import { DummyFollowNotification } from "app/(home-pages)/notifications/FollowNotification";
+import {
+  DummyPostMentionNotification,
+  DummyUserMentionNotification,
+} from "app/(home-pages)/notifications/MentionNotification";
 
 export type navPages = "home" | "reader" | "pub" | "discover" | "notifications";
 
@@ -63,19 +72,6 @@ export const MobileNavigation = (props: {
         trigger={
           <div className="shrink-0 p-1 text-accent-contrast h-full flex gap-2 font-bold items-center">
             <MenuSmall />
-            {/*{props.currentPage !== "notifications" && (
-              <div className="truncate max-w-[72px]">
-                {props.currentPage === "home" ? (
-                  <>Home</>
-                ) : props.currentPage === "reader" ? (
-                  <>Reader</>
-                ) : props.currentPage === "discover" ? (
-                  <>Discover</>
-                ) : props.currentPage === "pub" ? (
-                  thisPublication && <>{thisPublication.name}</>
-                ) : null}
-              </div>
-            )}*/}
           </div>
         }
       >
@@ -180,6 +176,7 @@ export function NotificationButton(props: { current?: boolean }) {
       asChild
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
+      className="max-w-sm pt-3! pb-3!"
       trigger={
         <ActionButton
           nav
@@ -192,12 +189,23 @@ export function NotificationButton(props: { current?: boolean }) {
             )
           }
           label="Notifications"
-          className={props.current ? "bg-bg-page! border-border-light!" : ""}
+          className={`${props.current ? "bg-bg-page! border-border-light!" : ""} ${props.unreads ? "text-accent-contrast" : ""}`}
         />
       }
     >
-      <div className="flex flex-col gap-6 pt-3"></div>
-      <SpeedyLink href={"/notifications"}>See All</SpeedyLink>
+      <div className="flex flex-col gap-5 text-sm">
+        <DummyCommentNotification />
+        <DummyReplyNotification />
+        <DummyFollowNotification />
+        <DummyPostMentionNotification />
+        <DummyUserMentionNotification />
+      </div>
+      <SpeedyLink
+        className="flex justify-end pt-2 text-sm"
+        href={"/notifications"}
+      >
+        See All
+      </SpeedyLink>
     </Popover>
   );
 }

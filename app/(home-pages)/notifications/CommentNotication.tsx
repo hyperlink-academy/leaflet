@@ -7,7 +7,11 @@ import {
 import { HydratedCommentNotification } from "src/notifications";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { Avatar } from "components/Avatar";
-import { Notification } from "./Notification";
+import {
+  CommentInNotification,
+  ContentLayout,
+  Notification,
+} from "./Notification";
 
 export const CommentNotification = (props: HydratedCommentNotification) => {
   let docRecord = props.commentData.documents
@@ -18,35 +22,51 @@ export const CommentNotification = (props: HydratedCommentNotification) => {
   return (
     <Notification
       identity={profileRecord.displayName || "Someone"}
-      action="comment"
+      action={{ type: "comment" }}
       content={
-        <div className="flex flex-col gap-0.5 mt-2">
-          <div className="text-tertiary text-sm italic font-bold">
-            {docRecord.title}
-          </div>
-          <div className="flex gap-2 border border-border rounded-lg! p-2 text-sm w-full ">
-            <Avatar
-              src={
-                profileRecord?.avatar?.ref &&
-                blobRefToSrc(
-                  profileRecord?.avatar?.ref,
-                  props.commentData.bsky_profiles?.did || "",
-                )
-              }
-              displayName={profileRecord?.displayName}
-            />{" "}
-            <pre
-              style={{ wordBreak: "break-word" }}
-              className="whitespace-pre-wrap text-secondary pt-0.5 line-clamp-6"
-            >
-              <BaseTextBlock
-                index={[]}
-                plaintext={commentRecord.plaintext}
-                facets={commentRecord.facets}
-              />
-            </pre>
-          </div>
-        </div>
+        <ContentLayout postTitle={docRecord.title}>
+          <CommentInNotification
+            className=""
+            avatar={
+              profileRecord?.avatar?.ref &&
+              blobRefToSrc(
+                profileRecord?.avatar?.ref,
+                props.commentData.bsky_profiles?.did || "",
+              )
+            }
+            displayName={
+              profileRecord?.displayName ||
+              props.commentData.bsky_profiles?.handle ||
+              "Someone"
+            }
+            index={[]}
+            plaintext={commentRecord.plaintext}
+            facets={commentRecord.facets}
+          />
+        </ContentLayout>
+      }
+    />
+  );
+};
+
+export const DummyCommentNotification = () => {
+  return (
+    <Notification
+      identity={"celine"}
+      action={{ type: "comment" }}
+      content={
+        <ContentLayout postTitle="This is the Post Title">
+          <CommentInNotification
+            className=""
+            avatar={undefined}
+            displayName="celine"
+            index={[]}
+            plaintext={
+              "heyyyyy this is a dummt comment! I'm just gonna put this here so I know what I'm about but it really oughta be wired up at some point..."
+            }
+            facets={[]}
+          />
+        </ContentLayout>
       }
     />
   );
