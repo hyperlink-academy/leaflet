@@ -204,7 +204,7 @@ export function CustomDomainForm() {
         Publication Domain{domains.length > 1 && "s"}
       </p>
 
-      <div className="opaque-container px-[6px] py-1">
+      <div className="opaque-container px-1.5 py-1">
         {state.type === "addDomain" ? (
           <AddDomain
             publication_uri={pubData.uri}
@@ -392,7 +392,7 @@ const DomainSettings = (props: {
   if (!config?.misconfigured && !verification)
     return <div>This domain is verified!</div>;
   return (
-    <div className="flex flex-col gap-[6px] text-sm text-primary">
+    <div className="flex flex-col gap-1.5 text-sm text-primary">
       <div>
         To verify this domain, add the following record to your DNS provider for{" "}
         <strong>{props.domain}</strong>.

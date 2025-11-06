@@ -30,16 +30,17 @@ type State =
 let email = "thisiscelinepark@gmail.com";
 
 export const SubscribeWithBluesky = (props: {
-  isPost?: boolean;
+  isPost: boolean;
   pubName: string;
   pub_uri: string;
   base_url: string;
   subscribers: { identity: string }[];
 }) => {
   let { identity } = useIdentityData();
-  let subscribed = false;
-  // identity?.atp_did &&
-  // props.subscribers.find((s) => s.identity === identity.atp_did);
+
+  let subscribed =
+    identity?.atp_did &&
+    props.subscribers.find((s) => s.identity === identity.atp_did);
 
   if (subscribed) {
     return <ManageSubscriptionButton {...props} />;
@@ -58,7 +59,7 @@ export const SubscribeWithBluesky = (props: {
 
 let SubscribeButton = (props: {
   pub_uri: string;
-  isPost?: boolean;
+  isPost: boolean;
   pubName: string;
   base_url: string;
   subscribers: { identity: string }[];
@@ -70,22 +71,10 @@ let SubscribeButton = (props: {
       window.location.href + "?refreshAuth",
     );
   }, null);
-  let { identity } = useIdentityData();
-  let searchParams = useSearchParams();
-  let [successModalOpen, setSuccessModalOpen] = useState(
-    !!searchParams.has("showSubscribeSuccess"),
-  );
   let subscribed =
     identity?.atp_did &&
     props.subscribers.find((s) => s.identity === identity.atp_did);
 
-  if (successModalOpen)
-    return (
-      <SubscribeSuccessModal
-        open={successModalOpen}
-        setOpen={setSuccessModalOpen}
-      />
-    );
   if (subscribed) {
     return <ManageSubscriptionButton {...props} />;
   }
@@ -106,7 +95,7 @@ let SubscribeButton = (props: {
             </ButtonPrimary>
           }
         >
-          <SubscribeForm pub_uri={props.pub_uri} base_url={props.base_url} />
+          <SubscribeForm {...props} />
         </Popover>
         <a href={`${props.base_url}/rss`} className="flex" target="_blank">
           <RSSSmall className="self-center" />
@@ -117,7 +106,7 @@ let SubscribeButton = (props: {
 };
 
 const ManageSubscriptionButton = (props: {
-  isPost?: boolean;
+  isPost: boolean;
   pubName: string;
   pub_uri: string;
   base_url: string;
@@ -306,7 +295,7 @@ const ManageSubscriptionOptions = (props: {
               target="_blank"
               className=" place-self-center"
             >
-              <ButtonPrimary fullWidth compact className="!px-4">
+              <ButtonPrimary fullWidth compact className="px-4!">
                 View Bluesky Custom Feed
               </ButtonPrimary>
             </a>
@@ -369,7 +358,7 @@ const EmailInput = (props: {
       <div className="subscribeEmailInput flex gap-1 relative">
         <Input
           type="email"
-          className="input-with-border w-full! pr-[36px]!"
+          className="input-with-border w-full! pr-9!"
           placeholder="me@email.com"
           value={props.emailInputValue}
           onChange={(e) => props.setEmailInputValue(e.target.value)}

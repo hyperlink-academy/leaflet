@@ -4,7 +4,6 @@ import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import Link from "next/link";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
-import { Subscribe } from "app/lish/Subscribe";
 import React from "react";
 import {
   PublicationBackgroundProvider,
@@ -15,6 +14,7 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { LocalizedDate } from "./LocalizedDate";
+import { SubscribeWithBluesky } from "app/lish/Subscribe";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -67,7 +67,7 @@ export default async function Publication(props: {
           pub_creator={publication.identity_did}
         >
           <div
-            className={`pubWrapper flex flex-col sm:py-6 h-full   ${showPageBackground ? "max-w-prose mx-auto sm:px-0 px-[6px] py-2" : "w-full overflow-y-scroll"}`}
+            className={`pubWrapper flex flex-col sm:py-6 h-full   ${showPageBackground ? "max-w-prose mx-auto sm:px-0 px-1.5 py-2" : "w-full overflow-y-scroll"}`}
           >
             <div
               className={`pub sm:max-w-prose max-w-(--page-width-units) w-[1000px] mx-auto px-3 sm:px-4 py-5  ${showPageBackground ? "overflow-auto h-full bg-[rgba(var(--bg-page),var(--bg-page-alpha))] border border-border rounded-lg" : "h-fit"}`}
@@ -102,7 +102,8 @@ export default async function Publication(props: {
                   </p>
                 )}
                 <div className="sm:pt-4 pt-4">
-                  <Subscribe
+                  <SubscribeWithBluesky
+                    isPost={false}
                     base_url={getPublicationURL(publication)}
                     pubName={publication.name}
                     pub_uri={publication.uri}

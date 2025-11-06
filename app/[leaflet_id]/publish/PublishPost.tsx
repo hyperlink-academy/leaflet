@@ -15,8 +15,11 @@ import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 import { Popover } from "components/Popover";
 import { Input } from "components/Input";
 import { useReplicache } from "src/replicache";
-import { editorStateToFacetedText } from "./BskyPostEditorProsemirror";
 import { EditorState } from "prosemirror-state";
+import {
+  BlueskyPostEditorProsemirror,
+  editorStateToFacetedText,
+} from "./BskyPostEditorProsemirror";
 
 type Props = {
   title: string;
@@ -64,6 +67,7 @@ const PublishPostForm = (
 
   let editorStateRef = useRef<EditorState | null>(null);
   let [isLoading, setIsLoading] = useState(false);
+  let [charCount, setCharCount] = useState(0);
   let params = useParams();
   let { rep } = useReplicache();
 
@@ -140,19 +144,47 @@ const PublishPostForm = (
               }
             }}
           >
-            <div className="flex flex-col font-normal w-full gap-0.5">
+            <div className="flex flex-col">
               <div className="font-bold">Share on Bluesky</div>
+              <div className="text-sm text-tertiary font-normal">
+                Pub subscribers will be updated via a custom Bluesky feed
+              </div>
+
               <div
-                className={`w-full ${shareOption.bluesky === false ? "opacity-50" : ""}`}
+                className={`publishBskyPostEditor opaque-container p-3  rounded-lg! w-full ml-5 mb-4 ${shareOption.bluesky === false ? "opacity-50" : ""}`}
               >
-                <BskyPostComposer
-                  profile={props.profile}
-                  title={props.title}
-                  description={props.description}
-                  base_path={props.record?.base_path}
-                  postContent={postContent}
-                  setPostContent={setPostContent}
-                />
+                <div className="flex gap-2">
+                  <img
+                    className="bg-test rounded-full w-[42px] h-[42px] shrink-0"
+                    src={props.profile.avatar}
+                  />
+                  <div className="flex flex-col w-full">
+                    <div className="flex gap-2 pb-1">
+                      <p className="font-bold">{props.profile.displayName}</p>
+                      <p className="text-tertiary">@{props.profile.handle}</p>
+                    </div>
+                    <div className="flex flex-col">
+                      <BlueskyPostEditorProsemirror
+                        editorStateRef={editorStateRef}
+                        onCharCountChange={setCharCount}
+                      />
+                    </div>
+                    <div className="opaque-container overflow-hidden flex flex-col mt-4 w-full">
+                      {/* <div className="h-[260px] w-full bg-test" /> */}
+                      <div className="flex flex-col p-2">
+                        <div className="font-bold">{props.title}</div>
+                        <div className="text-tertiary">{props.description}</div>
+                        <hr className="border-border-light mt-2 mb-1" />
+                        <p className="text-xs text-tertiary">
+                          {props.record?.base_path}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-xs text-secondary italic place-self-end pt-2">
+                      {charCount}/300
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </Checkbox>
@@ -254,7 +286,7 @@ const BskyPostComposer = (props: {
   setPostContent: (p: string) => void;
 }) => {
   return (
-    <div className="opaque-container p-2  pr-3 !rounded-lg">
+    <div className="opaque-container p-2  pr-3 rounded-lg!">
       <div className="flex gap-2">
         <img
           className="rounded-full w-6 h-6 sm:w-8 sm:h-8 shrink-0"
@@ -273,8 +305,8 @@ const BskyPostComposer = (props: {
             }
             placeholder="Write a post to share your writing!"
           />
-          <div className="opaque-container overflow-hidden flex flex-col mt-[10px] w-full text-sm">
-            <div className="flex flex-col px-2 py-[6px]">
+          <div className="opaque-container overflow-hidden flex flex-col mt-2.5 w-full text-sm">
+            <div className="flex flex-col px-2 py-1.5">
               <div className="font-bold">{props.title}</div>
               <div className="text-tertiary">{props.description}</div>
               <hr className="border-border-light mt-2 mb-0.5" />

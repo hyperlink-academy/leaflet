@@ -38,7 +38,7 @@ export const InteractionDrawer = (props: {
       <div className="snap-center h-full  flex z-10 shrink-0  w-[calc(var(--page-width-units)-6px)] sm:w-[calc(var(--page-width-units))]">
         <div
           id="interaction-drawer"
-          className="opaque-container rounded-l-none! rounded-r-lg! h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll -ml-[1px] "
+          className="opaque-container rounded-l-none! rounded-r-lg! h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll -ml-px "
         >
           {drawer.drawer === "quotes" ? (
             <Quotes {...props} quotesAndMentions={filteredQuotesAndMentions} />
