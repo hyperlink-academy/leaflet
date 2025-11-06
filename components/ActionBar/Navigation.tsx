@@ -176,7 +176,7 @@ export function NotificationButton(props: { current?: boolean }) {
       asChild
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className="sm:max-w-sm w-full pt-3! pb-3!"
+      className="sm:max-w-sm sm:w-max w-full pt-3! pb-3!"
       trigger={
         <ActionButton
           nav
