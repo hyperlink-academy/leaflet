@@ -7,6 +7,7 @@ import {
 import { HydratedCommentNotification } from "src/notifications";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { Avatar } from "components/Avatar";
+import { CommentTiny } from "components/Icons/CommentTiny";
 import {
   CommentInNotification,
   ContentLayout,
@@ -19,10 +20,15 @@ export const CommentNotification = (props: HydratedCommentNotification) => {
   let commentRecord = props.commentData.record as PubLeafletComment.Record;
   let profileRecord = props.commentData.bsky_profiles
     ?.record as AppBskyActorProfile.Record;
+  const displayName = profileRecord.displayName || "Someone";
   return (
     <Notification
-      identity={profileRecord.displayName || "Someone"}
-      action={{ type: "comment" }}
+      icon={<CommentTiny />}
+      actionText={
+        <>
+          {displayName} commented on your post
+        </>
+      }
       content={
         <ContentLayout postTitle={docRecord.title}>
           <CommentInNotification
@@ -52,8 +58,8 @@ export const CommentNotification = (props: HydratedCommentNotification) => {
 export const DummyCommentNotification = () => {
   return (
     <Notification
-      identity={"celine"}
-      action={{ type: "comment" }}
+      icon={<CommentTiny />}
+      actionText={<>celine commented on your post</>}
       content={
         <ContentLayout postTitle="This is the Post Title">
           <CommentInNotification

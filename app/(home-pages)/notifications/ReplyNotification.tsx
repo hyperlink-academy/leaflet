@@ -1,5 +1,6 @@
 import { Avatar } from "components/Avatar";
 import { BaseTextBlock } from "app/lish/[did]/[publication]/[rkey]/BaseTextBlock";
+import { ReplyTiny } from "components/Icons/ReplyTiny";
 import {
   CommentInNotification,
   ContentLayout,
@@ -9,8 +10,8 @@ import {
 export const DummyReplyNotification = () => {
   return (
     <Notification
-      identity={"jared"}
-      action={{ type: "reply" }}
+      icon={<ReplyTiny />}
+      actionText={<>jared replied to your comment</>}
       content={
         <ContentLayout postTitle="This is the Post Title">
           <CommentInNotification

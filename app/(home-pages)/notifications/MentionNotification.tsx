@@ -1,10 +1,11 @@
+import { MentionTiny } from "components/Icons/MentionTiny";
 import { ContentLayout, Notification } from "./Notification";
 
 export const DummyPostMentionNotification = () => {
   return (
     <Notification
-      identity={"celine"}
-      action={{ type: "post-mention" }}
+      icon={<MentionTiny />}
+      actionText={<>celine mentioned your post</>}
       content={
         <ContentLayout postTitle={"Post Title Here"}>
           I'm just gonna put the description here. The surrounding context is
@@ -24,8 +25,8 @@ export const DummyPostMentionNotification = () => {
 export const DummyUserMentionNotification = () => {
   return (
     <Notification
-      identity={"celine"}
-      action={{ type: "user-mention" }}
+      icon={<MentionTiny />}
+      actionText={<>celine mentioned you</>}
       content={
         <ContentLayout postTitle={"Post Title Here"}>
           <div>

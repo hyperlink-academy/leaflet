@@ -1,58 +1,17 @@
 import { Avatar } from "components/Avatar";
 import { BaseTextBlock } from "app/lish/[did]/[publication]/[rkey]/BaseTextBlock";
-import { CommentTiny } from "components/Icons/CommentTiny";
-import { ReplyTiny } from "components/Icons/ReplyTiny";
 import { PubLeafletRichtextFacet } from "lexicons/api";
-import { MentionTiny } from "components/Icons/MentionTiny";
-import { PubIcon } from "components/ActionBar/Publications";
 
 export const Notification = (props: {
-  identity: string;
-  action:
-    | { type: "comment" }
-    | { type: "reply" }
-    | { type: "follow"; avatar: string | undefined; pubName: string }
-    | { type: "post-mention" }
-    | { type: "user-mention" };
-
+  icon: React.ReactNode;
+  actionText: React.ReactNode;
   content?: React.ReactNode;
 }) => {
   return (
     <div className="flex flex-col  w-full">
       <div className="flex flex-row gap-2 items-center">
-        <div className="text-secondary shrink-0">
-          {props.action.type === "comment" ? (
-            <CommentTiny />
-          ) : props.action.type === "reply" ? (
-            <ReplyTiny />
-          ) : props.action.type === "follow" ? (
-            <Avatar
-              src={props.action.avatar}
-              displayName={props.identity}
-              tiny
-            />
-          ) : props.action.type === "post-mention" ? (
-            <MentionTiny />
-          ) : props.action.type === "user-mention" ? (
-            <MentionTiny />
-          ) : (
-            ""
-          )}
-        </div>
-        <div className="text-secondary font-bold">
-          {props.identity}{" "}
-          {props.action.type === "comment"
-            ? "commented on your post"
-            : props.action.type === "reply"
-              ? "replied to your comment"
-              : props.action.type === "follow"
-                ? `followed  ${props.action.pubName}!`
-                : props.action.type === "post-mention"
-                  ? `mentioned your post`
-                  : props.action.type === "user-mention"
-                    ? "mentioned you"
-                    : "did something!"}
-        </div>
+        <div className="text-secondary shrink-0">{props.icon}</div>
+        <div className="text-secondary font-bold">{props.actionText}</div>
       </div>
       {props.content && (
         <div className="flex flex-row gap-2 mt-1 w-full">
