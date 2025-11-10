@@ -3,6 +3,7 @@ import {
   AppBskyActorProfile,
   PubLeafletComment,
   PubLeafletDocument,
+  PubLeafletPublication,
 } from "lexicons/api";
 import { HydratedCommentNotification } from "src/notifications";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
@@ -20,17 +21,18 @@ export const CommentNotification = (props: HydratedCommentNotification) => {
   let commentRecord = props.commentData.record as PubLeafletComment.Record;
   let profileRecord = props.commentData.bsky_profiles
     ?.record as AppBskyActorProfile.Record;
-  const displayName = profileRecord.displayName || "Someone";
+  const displayName =
+    profileRecord.displayName ||
+    props.commentData.bsky_profiles?.handle ||
+    "Someone";
+  const publication = props.commentData.documents?.documents_in_publications[0]
+    ?.publications?.record as PubLeafletPublication.Record;
   return (
     <Notification
       icon={<CommentTiny />}
-      actionText={
-        <>
-          {displayName} commented on your post
-        </>
-      }
+      actionText={<>{displayName} commented on your post</>}
       content={
-        <ContentLayout postTitle={docRecord.title}>
+        <ContentLayout postTitle={docRecord.title} publication={publication}>
           <CommentInNotification
             className=""
             avatar={
@@ -40,11 +42,7 @@ export const CommentNotification = (props: HydratedCommentNotification) => {
                 props.commentData.bsky_profiles?.did || "",
               )
             }
-            displayName={
-              profileRecord?.displayName ||
-              props.commentData.bsky_profiles?.handle ||
-              "Someone"
-            }
+            displayName={displayName}
             index={[]}
             plaintext={commentRecord.plaintext}
             facets={commentRecord.facets}
@@ -61,7 +59,10 @@ export const DummyCommentNotification = () => {
       icon={<CommentTiny />}
       actionText={<>celine commented on your post</>}
       content={
-        <ContentLayout postTitle="This is the Post Title">
+        <ContentLayout
+          postTitle="This is the Post Title"
+          publication={{ name: "My Publication" } as PubLeafletPublication.Record}
+        >
           <CommentInNotification
             className=""
             avatar={undefined}

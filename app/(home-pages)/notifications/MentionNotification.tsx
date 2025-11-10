@@ -7,7 +7,10 @@ export const DummyPostMentionNotification = () => {
       icon={<MentionTiny />}
       actionText={<>celine mentioned your post</>}
       content={
-        <ContentLayout postTitle={"Post Title Here"}>
+        <ContentLayout
+          postTitle={"Post Title Here"}
+          publication={{ name: "My Publication" } as any}
+        >
           I'm just gonna put the description here. The surrounding context is
           just sort of a pain to figure out
           <div className="border border-border-light rounded-md p-1 my-1 text-xs text-secondary">
@@ -28,7 +31,10 @@ export const DummyUserMentionNotification = () => {
       icon={<MentionTiny />}
       actionText={<>celine mentioned you</>}
       content={
-        <ContentLayout postTitle={"Post Title Here"}>
+        <ContentLayout
+          postTitle={"Post Title Here"}
+          publication={{ name: "My Publication" } as any}
+        >
           <div>
             ...llo this is the content of a post or whatever here it comes{" "}
             <span className="text-accent-contrast">@celine </span> and here it

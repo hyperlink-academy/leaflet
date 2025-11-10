@@ -17,6 +17,7 @@ export async function uncachedGetIdentityData() {
           identities(
             *,
             bsky_profiles(*),
+            notifications(count),
             publication_subscriptions(*),
             custom_domains!custom_domains_identity_id_fkey(publication_domains(*), *),
             home_leaflet:permission_tokens!identities_home_page_fkey(*, permission_token_rights(*,
@@ -33,6 +34,7 @@ export async function uncachedGetIdentityData() {
             )
           )`,
         )
+        .eq("identities.notifications.read", false)
         .eq("id", auth_token)
         .eq("confirmed", true)
         .single()

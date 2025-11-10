@@ -33,6 +33,12 @@ import {
   DummyPostMentionNotification,
   DummyUserMentionNotification,
 } from "app/(home-pages)/notifications/MentionNotification";
+import useSWR from "swr";
+import {
+  getNotifications,
+  markAsRead,
+} from "app/(home-pages)/notifications/getNotifications";
+import { DotLoader } from "components/utils/DotLoader";
 
 export type navPages = "home" | "reader" | "pub" | "discover" | "notifications";
 
@@ -40,11 +46,14 @@ export const DesktopNavigation = (props: {
   currentPage: navPages;
   publication?: string;
 }) => {
+  let { identity } = useIdentityData();
   return (
     <div className="flex flex-col gap-2">
-      <Sidebar alwaysOpen>
-        <NotificationButton />
-      </Sidebar>
+      {identity?.atp_did && (
+        <Sidebar alwaysOpen>
+          <NotificationButton />
+        </Sidebar>
+      )}
       <Sidebar alwaysOpen>
         <NavigationOptions
           currentPage={props.currentPage}
@@ -81,8 +90,12 @@ export const MobileNavigation = (props: {
           isMobile
         />
       </Popover>
-      <Separator />
-      <NotificationButton />
+      {identity?.atp_did && (
+        <>
+          <Separator />
+          <NotificationButton />
+        </>
+      )}
     </div>
   );
 };
@@ -161,8 +174,12 @@ const DiscoverButton = (props: { current?: boolean }) => {
 };
 
 export function NotificationButton(props: { current?: boolean }) {
-  let unreads = true;
+  let { identity, mutate } = useIdentityData();
+  let unreads = identity?.notifications[0]?.count;
   let isMobile = useIsMobile();
+  let { data: notifications, isLoading } = useSWR("notifications", () =>
+    getNotifications(3),
+  );
   // let identity = await getIdentityData();
   // if (!identity?.atp_did) return;
   // let { data } = await supabaseServerClient
@@ -173,6 +190,13 @@ export function NotificationButton(props: { current?: boolean }) {
 
   return (
     <Popover
+      onOpenChange={async (open) => {
+        if (open) {
+          console.log(open);
+          await markAsRead();
+          mutate();
+        }
+      }}
       asChild
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
@@ -194,11 +218,19 @@ export function NotificationButton(props: { current?: boolean }) {
       }
     >
       <div className="flex flex-col gap-5 text-sm">
-        <DummyCommentNotification />
-        <DummyReplyNotification />
-        <DummyFollowNotification />
-        <DummyPostMentionNotification />
-        <DummyUserMentionNotification />
+        {isLoading ? (
+          <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm mt-8">
+            <span>loading</span>
+            <DotLoader />
+          </div>
+        ) : (
+          notifications?.map((n) => {
+            if (n.type === "comment") {
+              n;
+              return <CommentNotification key={n.id} {...n} />;
+            }
+          })
+        )}
       </div>
       <SpeedyLink
         className="flex justify-end pt-2 text-sm"

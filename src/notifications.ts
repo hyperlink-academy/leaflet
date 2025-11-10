@@ -13,7 +13,12 @@ export type NotificationData =
   | { type: "comment"; comment_uri: string }
   | { type: "subscribe"; subscription_uri: string };
 
-export async function hydrateNotifications(notifications: NotificationRow[]) {
+export type HydratedNotification =
+  | HydratedCommentNotification
+  | HydratedSubscribeNotification;
+export async function hydrateNotifications(
+  notifications: NotificationRow[],
+): Promise<Array<HydratedNotification>> {
   // Call all hydrators in parallel
   const [commentNotifications, subscribeNotifications] = await Promise.all([
     hydrateCommentNotifications(notifications),
@@ -56,7 +61,9 @@ async function hydrateCommentNotifications(notifications: NotificationRow[]) {
   const commentUris = commentNotifications.map((n) => n.data.comment_uri);
   const { data: comments } = await supabaseServerClient
     .from("comments_on_documents")
-    .select("*,bsky_profiles(*), documents(*)")
+    .select(
+      "*,bsky_profiles(*), documents(*, documents_in_publications(publications(*)))",
+    )
     .in("uri", commentUris);
 
   return commentNotifications.map((notification) => ({

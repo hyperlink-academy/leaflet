@@ -1,6 +1,10 @@
 import { Avatar } from "components/Avatar";
 import { BaseTextBlock } from "app/lish/[did]/[publication]/[rkey]/BaseTextBlock";
-import { PubLeafletRichtextFacet } from "lexicons/api";
+import {
+  PubLeafletDocument,
+  PubLeafletPublication,
+  PubLeafletRichtextFacet,
+} from "lexicons/api";
 
 export const Notification = (props: {
   icon: React.ReactNode;
@@ -26,6 +30,7 @@ export const Notification = (props: {
 export const ContentLayout = (props: {
   children: React.ReactNode;
   postTitle: string;
+  publication: PubLeafletPublication.Record;
 }) => {
   return (
     <div className="border border-border-light rounded-md px-2 py-[6px] w-full">
@@ -36,8 +41,7 @@ export const ContentLayout = (props: {
       <hr className="mt-2 mb-1 border-border-light" />
 
       <div className="text-xs text-tertiary flex gap-[6px] items-center">
-        <div className="bg-test rounded-full w-[12px] h-[12px] " />
-        Pub Name Here
+        {props.publication.name}
       </div>
     </div>
   );

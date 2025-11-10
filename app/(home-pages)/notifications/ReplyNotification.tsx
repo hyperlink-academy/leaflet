@@ -13,7 +13,10 @@ export const DummyReplyNotification = () => {
       icon={<ReplyTiny />}
       actionText={<>jared replied to your comment</>}
       content={
-        <ContentLayout postTitle="This is the Post Title">
+        <ContentLayout
+          postTitle="This is the Post Title"
+          publication={{ name: "My Publication" } as any}
+        >
           <CommentInNotification
             className="text-tertiary italic line-clamp-1!"
             avatar={undefined}
