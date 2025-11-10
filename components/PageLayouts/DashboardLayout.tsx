@@ -51,7 +51,6 @@ const defaultDashboardState: DashboardState = {
 export const useDashboardStore = create<DashboardStore>((set, get) => ({
   dashboards: {},
   setDashboard: (id: string, partial: Partial<DashboardState>) => {
-    console.log(partial);
     set((state) => ({
       dashboards: {
         ...state.dashboards,
@@ -259,12 +258,10 @@ export const HomeDashboardControls = (props: {
   hasTemplates: boolean;
 }) => {
   let { display, sort } = useDashboardState();
-  console.log({ display, props });
   display = display || props.defaultDisplay;
   let setState = useSetDashboardState();
 
   let { identity } = useIdentityData();
-  console.log(props);
 
   return (
     <div className="dashboardControls w-full flex gap-4">
@@ -303,7 +300,6 @@ export const PublicationDashboardControls = (props: {
   defaultDisplay: Exclude<DashboardState["display"], undefined>;
 }) => {
   let { display, sort } = useDashboardState();
-  console.log({ display, props });
   display = display || props.defaultDisplay;
   let setState = useSetDashboardState();
   return (

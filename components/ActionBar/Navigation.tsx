@@ -192,7 +192,6 @@ export function NotificationButton(props: { current?: boolean }) {
     <Popover
       onOpenChange={async (open) => {
         if (open) {
-          console.log(open);
           await markAsRead();
           mutate();
         }
