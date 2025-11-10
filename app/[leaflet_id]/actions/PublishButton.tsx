@@ -1,46 +1,28 @@
 import { publishToPublication } from "actions/publishToPublication";
-import {
-  getBasePublicationURL,
-  getPublicationURL,
-} from "app/lish/createPub/getPublicationURL";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { ActionButton } from "components/ActionBar/ActionButton";
-import { GoBackSmall } from "components/Icons/GoBackSmall";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useRouter } from "next/router";
 import { useState } from "react";
 import { useReplicache } from "src/replicache";
-import { Json } from "supabase/database.types";
-
-export const BackToPubButton = (props: {
-  publication: {
-    identity_did: string;
-    indexed_at: string;
-    name: string;
-    record: Json;
-    uri: string;
-  };
-}) => {
-  return (
-    <SpeedyLink
-      href={`${getBasePublicationURL(props.publication)}/dashboard`}
-      className="hover:no-underline!"
-    >
-      <ActionButton
-        icon={<GoBackSmall className="shrink-0" />}
-        label="To Pub"
-      />
-    </SpeedyLink>
-  );
-};
 
 export const PublishButton = () => {
   let { data: pub } = useLeafletPublicationData();
   let params = useParams();
   let router = useRouter();
+  if (!pub)
+    return (
+      <ActionButton
+        primary
+        icon={<PublishSmall className="shrink-0" />}
+        label={"Publish on ATP"}
+      />
+    );
   if (!pub?.doc)
     return (
       <ActionButton

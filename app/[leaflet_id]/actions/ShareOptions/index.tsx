@@ -22,7 +22,7 @@ import { useIsMobile } from "src/hooks/isMobile";
 
 export type ShareMenuStates = "default" | "login" | "domain";
 
-export let usePublishLink = () => {
+export let useReadOnlyShareLink = () => {
   let { permission_token, rootEntity } = useReplicache();
   let entity_set = useEntitySetContext();
   let { data: publishLink } = useSWR(
@@ -98,7 +98,7 @@ const ShareMenu = (props: {
     pub?.publications && pub.documents
       ? `${getPublicationURL(pub.publications)}/${new AtUri(pub?.documents.uri).rkey}`
       : null;
-  let publishLink = usePublishLink();
+  let publishLink = useReadOnlyShareLink();
   let [collabLink, setCollabLink] = useState<null | string>(null);
   useEffect(() => {
     // strip leading '/' character from pathname

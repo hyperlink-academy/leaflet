@@ -1,15 +1,14 @@
 "use client";
 import Link from "next/link";
-import { useEntitySetContext } from "./EntitySetProvider";
+import { useEntitySetContext } from "../../../components/EntitySetProvider";
 import { ActionButton } from "components/ActionBar/ActionButton";
-import { useParams, useSearchParams } from "next/navigation";
-import { useIdentityData } from "./IdentityProvider";
+import { useSearchParams } from "next/navigation";
+import { useIdentityData } from "../../../components/IdentityProvider";
 import { useReplicache } from "src/replicache";
 import { addLeafletToHome } from "actions/addLeafletToHome";
-import { useSmoker } from "./Toast";
-import { AddToHomeSmall } from "./Icons/AddToHomeSmall";
-import { HomeSmall } from "./Icons/HomeSmall";
-import { permission } from "process";
+import { useSmoker } from "../../../components/Toast";
+import { AddToHomeSmall } from "../../../components/Icons/AddToHomeSmall";
+import { HomeSmall } from "../../../components/Icons/HomeSmall";
 
 export function HomeButton() {
   let { permissions } = useEntitySetContext();

@@ -4,12 +4,13 @@ import { Footer as ActionFooter } from "components/ActionBar/Footer";
 import { Media } from "components/Media";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { Toolbar } from "components/Toolbar";
-import { ShareOptions } from "components/ShareOptions";
-import { HomeButton } from "components/HomeButton";
+import { ShareOptions } from "app/[leaflet_id]/actions/ShareOptions";
+import { HomeButton } from "app/[leaflet_id]/actions/HomeButton";
+import { PublishButton } from "./actions/PublishButton";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { HelpPopover } from "components/HelpPopover";
+import { HelpButton } from "app/[leaflet_id]/actions/HelpButton";
 import { Watermark } from "components/Watermark";
-import { BackToPubButton, PublishButton } from "./Actions";
+import { BackToPubButton } from "./actions/BackToPubButton";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useIdentityData } from "components/IdentityProvider";
 
@@ -43,14 +44,14 @@ export function LeafletFooter(props: { entityID: string }) {
             <BackToPubButton publication={pub.publications} />
             <PublishButton />
             <ShareOptions />
-            <HelpPopover />
+            <HelpButton />
             <ThemePopover entityID={props.entityID} />
           </ActionFooter>
         ) : (
           <ActionFooter>
             <HomeButton />
             <ShareOptions />
-            <HelpPopover />
+            <HelpButton />
             <ThemePopover entityID={props.entityID} />
           </ActionFooter>
         )
