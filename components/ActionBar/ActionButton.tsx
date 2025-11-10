@@ -8,7 +8,7 @@ import { PopoverOpenContext } from "components/Popover";
 type ButtonProps = Omit<JSX.IntrinsicElements["button"], "content">;
 
 export const ActionButton = (
-  props: ButtonProps & {
+  _props: ButtonProps & {
     id?: string;
     icon: React.ReactNode;
     label: React.ReactNode;
@@ -20,7 +20,18 @@ export const ActionButton = (
     labelOnMobile?: boolean;
   },
 ) => {
-  let { id, icon, label, primary, secondary, nav, ...buttonProps } = props;
+  let {
+    id,
+    icon,
+    label,
+    primary,
+    secondary,
+    nav,
+    labelOnMobile,
+    subtext,
+    className,
+    ...buttonProps
+  } = _props;
   let sidebar = useContext(SidebarContext);
   let inOpenPopover = useContext(PopoverOpenContext);
   useEffect(() => {
@@ -31,10 +42,9 @@ export const ActionButton = (
       };
     }
   }, [sidebar, inOpenPopover]);
-  
+
   let showLabelOnMobile =
-    props.labelOnMobile !== false &&
-    (props.primary || props.secondary || props.nav);
+    labelOnMobile !== false && (primary || secondary || nav);
 
   return (
     <button
@@ -54,7 +64,7 @@ export const ActionButton = (
               ? "border-transparent text-secondary sm:hover:border-border justify-start!"
               : "border-transparent text-accent-contrast sm:hover:border-accent-contrast"
       }
-      ${props.className}
+      ${className}
       `}
     >
       <div className="shrink-0">{icon}</div>
@@ -62,9 +72,9 @@ export const ActionButton = (
         className={`flex flex-col pr-1 leading-snug max-w-full min-w-0  ${sidebar.open ? "block" : showLabelOnMobile ? "sm:hidden block" : "hidden"}`}
       >
         <div className="truncate text-left pt-[1px]">{label}</div>
-        {props.subtext && (
+        {subtext && (
           <div className="text-xs text-tertiary font-normal text-left">
-            {props.subtext}
+            {subtext}
           </div>
         )}
       </div>
