@@ -83,6 +83,12 @@ let baseSchema = {
         ];
       },
     } as MarkSpec,
+    test: {
+      parseDom: [{ tag: "span" }],
+      toDOM() {
+        return ["span", { class: "bg-test" }, 0];
+      },
+    } as MarkSpec,
     link: {
       attrs: {
         href: {},
