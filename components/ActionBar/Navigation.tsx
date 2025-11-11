@@ -26,6 +26,7 @@ import {
   markAsRead,
 } from "app/(home-pages)/notifications/getNotifications";
 import { DotLoader } from "components/utils/DotLoader";
+import { NotificationList } from "app/(home-pages)/notifications/NotificationList";
 
 export type navPages = "home" | "reader" | "pub" | "discover" | "notifications";
 
@@ -203,33 +204,24 @@ export function NotificationButton(props: { current?: boolean }) {
         />
       }
     >
-      <div className="flex flex-col gap-5 text-sm">
-        {isLoading ? (
-          <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm mt-8">
-            <span>loading</span>
-            <DotLoader />
-          </div>
-        ) : (
-          notifications?.map((n) => {
-            if (n.type === "comment") {
-              n;
-              return (
-                <CommentNotification
-                  cardBorderHidden={true}
-                  key={n.id}
-                  {...n}
-                />
-              );
-            }
-          })
-        )}
-      </div>
-      <SpeedyLink
-        className="flex justify-end pt-2 text-sm"
-        href={"/notifications"}
-      >
-        See All
-      </SpeedyLink>
+      {isLoading ? (
+        <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm p-3 sm:p-4">
+          <span>loading</span>
+          <DotLoader />
+        </div>
+      ) : (
+        <>
+          <NotificationList notifications={notifications!} />
+          {notifications && notifications.length > 0 && (
+            <SpeedyLink
+              className="flex justify-end pt-2 text-sm"
+              href={"/notifications"}
+            >
+              See All
+            </SpeedyLink>
+          )}
+        </>
+      )}
     </Popover>
   );
 }

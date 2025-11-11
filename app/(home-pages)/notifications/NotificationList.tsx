@@ -19,6 +19,13 @@ export function NotificationList({
   let { rootEntity } = useReplicache();
   let cardBorderHidden = useEntity(rootEntity, "theme/card-border-hidden")?.data
     .value;
+
+  if (notifications.length === 0)
+    return (
+      <div className="w-full container italic text-tertiary text-center sm:p-4 p-3">
+        no notifications yet...
+      </div>
+    );
   return (
     <div className="max-w-prose mx-auto w-full">
       <div className={`flex flex-col ${cardBorderHidden ? "gap-6" : "gap-2"}`}>
