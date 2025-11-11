@@ -84,7 +84,7 @@ const GeneralSettings = (props: { backToMenu: () => void }) => {
     <div className="flex flex-col gap-0.5">
       <AccountSettingsHeader
         state={"general"}
-        backToMenu={() => props.backToMenu()}
+        backToMenuAction={() => props.backToMenu()}
       />
 
       <button
@@ -108,7 +108,7 @@ const AccountThemeSettings = (props: {
     <div className="flex flex-col gap-0.5">
       <AccountSettingsHeader
         state={"theme"}
-        backToMenu={() => props.backToMenu()}
+        backToMenuAction={() => props.backToMenu()}
       />
       <ThemeSetterContent entityID={props.entityID} home />
     </div>
@@ -116,7 +116,7 @@ const AccountThemeSettings = (props: {
 };
 export const AccountSettingsHeader = (props: {
   state: "menu" | "general" | "theme";
-  backToMenu?: () => void;
+  backToMenuAction?: () => void;
 }) => {
   return (
     <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 pt-2 pb-1 mb-1">
@@ -127,11 +127,11 @@ export const AccountSettingsHeader = (props: {
           : props.state === "theme"
             ? "Publication Theme"
             : ""}
-      {props.backToMenu && (
+      {props.backToMenuAction && (
         <button
           type="button"
           onClick={() => {
-            props.backToMenu && props.backToMenu();
+            props.backToMenuAction && props.backToMenuAction();
           }}
         >
           <GoBackSmall className="text-accent-contrast" />

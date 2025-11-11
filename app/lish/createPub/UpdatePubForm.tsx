@@ -23,9 +23,9 @@ import type { GetDomainConfigResponseBody } from "@vercel/sdk/esm/models/getdoma
 import { PubSettingsHeader } from "../[did]/[publication]/dashboard/Actions";
 
 export const EditPubForm = (props: {
-  backToMenu: () => void;
+  backToMenuAction: () => void;
   loading: boolean;
-  setLoading: (l: boolean) => void;
+  setLoadingAction: (l: boolean) => void;
 }) => {
   let { data } = usePublicationData();
   let { publication: pubData } = data || {};
@@ -65,7 +65,7 @@ export const EditPubForm = (props: {
       onSubmit={async (e) => {
         if (!pubData) return;
         e.preventDefault();
-        props.setLoading(true);
+        props.setLoadingAction(true);
         console.log("step 1:update");
         let data = await updatePublication({
           uri: pubData.uri,
@@ -78,14 +78,14 @@ export const EditPubForm = (props: {
           },
         });
         toast({ type: "success", content: "Updated!" });
-        props.setLoading(false);
+        props.setLoadingAction(false);
         mutate("publication-data");
       }}
     >
       <PubSettingsHeader
         loading={props.loading}
-        setLoadingAction={props.setLoading}
-        backToMenuAction={props.backToMenu}
+        setLoadingAction={props.setLoadingAction}
+        backToMenuAction={props.backToMenuAction}
         state={"theme"}
       />
       <div className="flex flex-col gap-3 w-[1000px] max-w-full pb-2">

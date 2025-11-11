@@ -115,9 +115,9 @@ function PublicationSettingsButton(props: { publication: string }) {
     >
       {state === "general" ? (
         <EditPubForm
-          backToMenu={() => setState("menu")}
+          backToMenuAction={() => setState("menu")}
           loading={loading}
-          setLoading={setLoading}
+          setLoadingAction={setLoading}
         />
       ) : state === "theme" ? (
         <PubThemeSetter
