@@ -15,9 +15,7 @@ import {
 import { AppBskyActorProfile, AtUri } from "@atproto/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
-export const ReplyNotification = (
-  props: { cardBorderHidden: boolean } & HydratedCommentNotification,
-) => {
+export const ReplyNotification = (props: HydratedCommentNotification) => {
   let docRecord = props.commentData.documents
     ?.data as PubLeafletDocument.Record;
   let commentRecord = props.commentData.record as PubLeafletComment.Record;
@@ -42,16 +40,12 @@ export const ReplyNotification = (
 
   return (
     <Notification
+      timestamp={commentRecord.createdAt}
       href={`https://${pubRecord.base_path}/${rkey}?interactionDrawer=comments`}
       icon={<ReplyTiny />}
       actionText={`${displayName} replied to your comment`}
-      cardBorderHidden={props.cardBorderHidden}
       content={
-        <ContentLayout
-          cardBorderHidden={props.cardBorderHidden}
-          postTitle={docRecord.title}
-          pubRecord={pubRecord}
-        >
+        <ContentLayout postTitle={docRecord.title} pubRecord={pubRecord}>
           <CommentInNotification
             className=""
             avatar={

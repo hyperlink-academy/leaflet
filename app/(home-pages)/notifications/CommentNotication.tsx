@@ -16,9 +16,7 @@ import {
 } from "./Notification";
 import { AtUri } from "@atproto/api";
 
-export const CommentNotification = (
-  props: { cardBorderHidden: boolean } & HydratedCommentNotification,
-) => {
+export const CommentNotification = (props: HydratedCommentNotification) => {
   let docRecord = props.commentData.documents
     ?.data as PubLeafletDocument.Record;
   let commentRecord = props.commentData.record as PubLeafletComment.Record;
@@ -34,16 +32,12 @@ export const CommentNotification = (
 
   return (
     <Notification
+      timestamp=""
       href={`https://${pubRecord.base_path}/${rkey}?interactionDrawer=comments`}
-      cardBorderHidden={props.cardBorderHidden}
       icon={<CommentTiny />}
       actionText={<>{displayName} commented on your post</>}
       content={
-        <ContentLayout
-          cardBorderHidden={props.cardBorderHidden}
-          postTitle={docRecord.title}
-          pubRecord={pubRecord}
-        >
+        <ContentLayout postTitle={docRecord.title} pubRecord={pubRecord}>
           <CommentInNotification
             className=""
             avatar={

@@ -1,23 +1,30 @@
+"use client";
 import { Avatar } from "components/Avatar";
 import { BaseTextBlock } from "app/lish/[did]/[publication]/[rkey]/BaseTextBlock";
 import { PubLeafletPublication, PubLeafletRichtextFacet } from "lexicons/api";
+import { timeAgo } from "src/utils/timeAgo";
+import { useReplicache, useEntity } from "src/replicache";
 
 export const Notification = (props: {
   icon: React.ReactNode;
   actionText: React.ReactNode;
   content?: React.ReactNode;
-  cardBorderHidden?: boolean;
+  timestamp: string;
   href: string;
 }) => {
+  let { rootEntity } = useReplicache();
+  let cardBorderHidden = useEntity(rootEntity, "theme/card-border-hidden")?.data
+    .value;
+
   return (
     <div
-      className={`relative flex flex-col w-full  ${
-        props.cardBorderHidden
-          ? ""
-          : " block-border border-border! hover:outline-border sm:p-4 px-3 pl-2 sm:pl-3 pt-2 sm:pt-3!"
+      className={`relative flex flex-col w-full py-3 sm:py-4 pt-2 sm:pt-3! ${
+        cardBorderHidden
+          ? " first:pt-0! "
+          : " block-border border-border! hover:outline-border sm:px-4 px-3 pl-2 sm:pl-3 "
       }`}
       style={{
-        backgroundColor: props.cardBorderHidden
+        backgroundColor: cardBorderHidden
           ? "transparent"
           : "rgba(var(--bg-page), var(--bg-page-alpha))",
       }}
@@ -26,9 +33,16 @@ export const Notification = (props: {
         href={props.href}
         className=" absolute top-0 bottom-0 left-0 right-0"
       />
-      <div className={`flex flex-row gap-2 items-center`}>
-        <div className="text-secondary shrink-0">{props.icon}</div>
-        <div className="text-secondary font-bold">{props.actionText}</div>
+      <div className="flex justify-between items-center gap-3 w-full ">
+        <div className={`flex flex-row gap-2 items-center grow w-full min-w-0`}>
+          <div className="text-secondary shrink-0">{props.icon}</div>
+          <div className="text-secondary font-bold grow truncate min-w-0">
+            {props.actionText}
+          </div>
+        </div>
+        <div className="text-sm text-tertiary shrink-0 min-w-8">
+          {timeAgo(props.timestamp)}
+        </div>
       </div>
       {props.content && (
         <div className="flex flex-row gap-2 mt-1 w-full">
@@ -44,11 +58,14 @@ export const ContentLayout = (props: {
   children: React.ReactNode;
   postTitle: string;
   pubRecord?: PubLeafletPublication.Record;
-  cardBorderHidden: boolean;
 }) => {
+  let { rootEntity } = useReplicache();
+  let cardBorderHidden = useEntity(rootEntity, "theme/card-border-hidden")?.data
+    .value;
+
   return (
     <div
-      className={`border border-border-light rounded-md px-2 py-[6px] w-full ${props.cardBorderHidden ? "transparent" : "bg-bg-page"}`}
+      className={`border border-border-light rounded-md px-2 py-[6px] w-full ${cardBorderHidden ? "transparent" : "bg-bg-page"}`}
     >
       <div className="text-tertiary text-sm italic font-bold pb-1">
         {props.postTitle}
