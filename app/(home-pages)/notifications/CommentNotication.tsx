@@ -52,29 +52,3 @@ export const CommentNotification = (props: HydratedCommentNotification) => {
     />
   );
 };
-
-export const DummyCommentNotification = () => {
-  return (
-    <Notification
-      icon={<CommentTiny />}
-      actionText={<>celine commented on your post</>}
-      content={
-        <ContentLayout
-          postTitle="This is the Post Title"
-          publication={{ name: "My Publication" } as PubLeafletPublication.Record}
-        >
-          <CommentInNotification
-            className=""
-            avatar={undefined}
-            displayName="celine"
-            index={[]}
-            plaintext={
-              "heyyyyy this is a dummt comment! I'm just gonna put this here so I know what I'm about but it really oughta be wired up at some point..."
-            }
-            facets={[]}
-          />
-        </ContentLayout>
-      }
-    />
-  );
-};

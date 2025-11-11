@@ -1,19 +1,32 @@
 import { Avatar } from "components/Avatar";
 import { BaseTextBlock } from "app/lish/[did]/[publication]/[rkey]/BaseTextBlock";
-import {
-  PubLeafletDocument,
-  PubLeafletPublication,
-  PubLeafletRichtextFacet,
-} from "lexicons/api";
+import { PubLeafletPublication, PubLeafletRichtextFacet } from "lexicons/api";
+import { useEntity, useReplicache } from "src/replicache";
 
 export const Notification = (props: {
   icon: React.ReactNode;
   actionText: React.ReactNode;
   content?: React.ReactNode;
+  cardBorderHidden?: boolean;
 }) => {
+  let { rootEntity } = useReplicache();
+  let cardBorderHidden = useEntity(rootEntity, "theme/card-border-hidden")?.data
+    .value;
+
   return (
-    <div className="flex flex-col  w-full">
-      <div className="flex flex-row gap-2 items-center">
+    <div
+      className={`flex flex-col w-full sm:p-4 px-3 pl-2 sm:pl-3 pt-2 sm:pt-3! ${
+        cardBorderHidden
+          ? ""
+          : " block-border border-border! hover:outline-border "
+      }`}
+      style={{
+        backgroundColor: cardBorderHidden
+          ? "transparent"
+          : "rgba(var(--bg-page), var(--bg-page-alpha))",
+      }}
+    >
+      <div className={`flex flex-row gap-2 items-center`}>
         <div className="text-secondary shrink-0">{props.icon}</div>
         <div className="text-secondary font-bold">{props.actionText}</div>
       </div>
@@ -32,8 +45,14 @@ export const ContentLayout = (props: {
   postTitle: string;
   publication: PubLeafletPublication.Record;
 }) => {
+  let { rootEntity } = useReplicache();
+  let cardBorderHidden = useEntity(rootEntity, "theme/card-border-hidden")?.data
+    .value;
+
   return (
-    <div className="border border-border-light rounded-md px-2 py-[6px] w-full">
+    <div
+      className={`border border-border-light rounded-md px-2 py-[6px] w-full ${cardBorderHidden ? "transparent" : "bg-bg-page"}`}
+    >
       <div className="text-tertiary text-sm italic font-bold pb-1">
         {props.postTitle}
       </div>

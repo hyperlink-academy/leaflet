@@ -16,14 +16,10 @@ export function NotificationList({
       markAsRead();
     }, 500);
   }, []);
-  let { rootEntity } = useReplicache();
-
-  let showPageBackground = !useEntity(rootEntity, "theme/card-border-hidden")
-    ?.data.value;
 
   return (
     <div className="max-w-prose mx-auto w-full">
-      <div className="flex flex-col gap-6 pt-1">
+      <div className="flex flex-col gap-2">
         {notifications.map((n) => {
           if (n.type === "comment") {
             n;

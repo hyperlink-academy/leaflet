@@ -18,6 +18,7 @@ export const ActionButton = (
     className?: string;
     subtext?: string;
     labelOnMobile?: boolean;
+    z?: boolean;
   },
 ) => {
   let {
