@@ -14,6 +14,7 @@ import {
   ContentLayout,
   Notification,
 } from "./Notification";
+import { AtUri } from "@atproto/api";
 
 export const CommentNotification = (
   props: { cardBorderHidden: boolean } & HydratedCommentNotification,
@@ -27,11 +28,13 @@ export const CommentNotification = (
     profileRecord.displayName ||
     props.commentData.bsky_profiles?.handle ||
     "Someone";
-  const publication =
-    props.commentData.documents?.documents_in_publications[0]?.publications ||
-    undefined;
+  const pubRecord = props.commentData.documents?.documents_in_publications[0]
+    ?.publications?.record as PubLeafletPublication.Record;
+  let rkey = new AtUri(props.commentData.documents?.uri!).rkey;
+
   return (
     <Notification
+      href={`https://${pubRecord.base_path}/${rkey}?interactionDrawer=comments`}
       cardBorderHidden={props.cardBorderHidden}
       icon={<CommentTiny />}
       actionText={<>{displayName} commented on your post</>}
@@ -39,7 +42,7 @@ export const CommentNotification = (
         <ContentLayout
           cardBorderHidden={props.cardBorderHidden}
           postTitle={docRecord.title}
-          publication={publication}
+          pubRecord={pubRecord}
         >
           <CommentInNotification
             className=""

@@ -44,7 +44,7 @@ const SettingsMenu = (props: {
   setState: (s: typeof props.state) => void;
 }) => {
   let menuItemClassName =
-    "menuItem -mx-[8px] text-left flex items-center justify-between";
+    "menuItem -mx-[8px] text-left flex items-center justify-between hover:no-underline!";
 
   return (
     <div className="flex flex-col gap-0.5">

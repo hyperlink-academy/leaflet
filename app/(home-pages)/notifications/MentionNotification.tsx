@@ -13,7 +13,7 @@ export const DummyPostMentionNotification = (props: {
         <ContentLayout
           postTitle={"Post Title Here"}
           cardBorderHidden={props.cardBorderHidden}
-          publication={{ name: "My Publication" } as any}
+          pubRecord={{ name: "My Publication" } as any}
         >
           I'm just gonna put the description here. The surrounding context is
           just sort of a pain to figure out
@@ -39,7 +39,7 @@ export const DummyUserMentionNotification = (props: {
       content={
         <ContentLayout
           postTitle={"Post Title Here"}
-          publication={{ name: "My Publication" } as any}
+          pubRecord={{ name: "My Publication" } as any}
           cardBorderHidden={props.cardBorderHidden}
         >
           <div>

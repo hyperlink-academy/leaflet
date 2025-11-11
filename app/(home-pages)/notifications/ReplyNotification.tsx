@@ -19,7 +19,7 @@ export const DummyReplyNotification = (props: {
         <ContentLayout
           cardBorderHidden={props.cardBorderHidden}
           postTitle="This is the Post Title"
-          publication={{ name: "My Publication" } as any}
+          pubRecord={{ name: "My Publication" } as any}
         >
           <CommentInNotification
             className="text-tertiary italic line-clamp-1!"

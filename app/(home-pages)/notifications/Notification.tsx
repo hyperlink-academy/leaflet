@@ -1,19 +1,17 @@
 import { Avatar } from "components/Avatar";
 import { BaseTextBlock } from "app/lish/[did]/[publication]/[rkey]/BaseTextBlock";
 import { PubLeafletPublication, PubLeafletRichtextFacet } from "lexicons/api";
-import { useEntity, useReplicache } from "src/replicache";
-import { PubIcon } from "components/ActionBar/Publications";
-import { Json } from "supabase/database.types";
 
 export const Notification = (props: {
   icon: React.ReactNode;
   actionText: React.ReactNode;
   content?: React.ReactNode;
   cardBorderHidden?: boolean;
+  href: string;
 }) => {
   return (
     <div
-      className={`flex flex-col w-full  ${
+      className={`relative flex flex-col w-full  ${
         props.cardBorderHidden
           ? ""
           : " block-border border-border! hover:outline-border sm:p-4 px-3 pl-2 sm:pl-3 pt-2 sm:pt-3!"
@@ -24,6 +22,10 @@ export const Notification = (props: {
           : "rgba(var(--bg-page), var(--bg-page-alpha))",
       }}
     >
+      <a
+        href={props.href}
+        className=" absolute top-0 bottom-0 left-0 right-0"
+      />
       <div className={`flex flex-row gap-2 items-center`}>
         <div className="text-secondary shrink-0">{props.icon}</div>
         <div className="text-secondary font-bold">{props.actionText}</div>
@@ -41,11 +43,9 @@ export const Notification = (props: {
 export const ContentLayout = (props: {
   children: React.ReactNode;
   postTitle: string;
-  publication?: { record: Json; uri: string };
+  pubRecord?: PubLeafletPublication.Record;
   cardBorderHidden: boolean;
 }) => {
-  let pubRecord = props.publication?.record as PubLeafletPublication.Record;
-
   return (
     <div
       className={`border border-border-light rounded-md px-2 py-[6px] w-full ${props.cardBorderHidden ? "transparent" : "bg-bg-page"}`}
@@ -54,13 +54,15 @@ export const ContentLayout = (props: {
         {props.postTitle}
       </div>
       {props.children}
-      {props.publication && (
+      {props.pubRecord && (
         <>
-          <hr className="mt-3 mb-2 border-border-light" />
-          <div className="text-xs text-tertiary flex gap-[6px] items-center">
-            <PubIcon small record={pubRecord} uri={props.publication.uri} />
-            {pubRecord.name}
-          </div>
+          <hr className="mt-3 mb-1 border-border-light" />
+          <a
+            href={`https://${props.pubRecord.base_path}`}
+            className="relative text-xs text-tertiary flex gap-[6px] items-center font-bold hover:no-underline!"
+          >
+            {props.pubRecord.name}
+          </a>
         </>
       )}
     </div>
