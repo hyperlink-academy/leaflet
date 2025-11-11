@@ -12,7 +12,7 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { Popover } from "components/Popover";
 import { BlueskyLogin } from "app/login/LoginForm";
-import { ButtonPrimary } from "components/Buttons";
+import { ButtonSecondary } from "components/Buttons";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useState } from "react";
 
@@ -81,7 +81,6 @@ export const PublicationOption = (props: {
 };
 
 const PubListEmpty = () => {
-  let { identity } = useIdentityData();
   let isMobile = useIsMobile();
 
   let [state, setState] = useState<"default" | "info">("default");
@@ -98,7 +97,7 @@ const PubListEmpty = () => {
       />
     );
 
-  if (isMobile && state === "info") return <PublishPopoverContent />;
+  if (isMobile && state === "info") return <PubListEmptyContent />;
   else
     return (
       <Popover
@@ -114,12 +113,12 @@ const PubListEmpty = () => {
           />
         }
       >
-        <PublishPopoverContent />
+        <PubListEmptyContent />
       </Popover>
     );
 };
 
-const PublishPopoverContent = () => {
+export const PubListEmptyContent = () => {
   let { identity } = useIdentityData();
 
   return (
@@ -136,9 +135,9 @@ const PublishPopoverContent = () => {
             on AT Proto
           </div>
           <SpeedyLink href={`lish/createPub`} className=" hover:no-underline!">
-            <ButtonPrimary className="text-sm mx-auto" compact>
+            <ButtonSecondary className="text-sm mx-auto" compact>
               Start a Publication!
-            </ButtonPrimary>
+            </ButtonSecondary>
           </SpeedyLink>
         </>
       ) : (
