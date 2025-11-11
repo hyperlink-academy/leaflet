@@ -10,7 +10,7 @@ export type Notification = Omit<TablesInsert<"notifications">, "data"> & {
 };
 
 export type NotificationData =
-  | { type: "comment"; comment_uri: string }
+  | { type: "comment"; comment_uri: string; parent_uri?: string }
   | { type: "subscribe"; subscription_uri: string };
 
 export type HydratedNotification =
@@ -58,7 +58,11 @@ async function hydrateCommentNotifications(notifications: NotificationRow[]) {
   }
 
   // Fetch comment data from the database
-  const commentUris = commentNotifications.map((n) => n.data.comment_uri);
+  const commentUris = commentNotifications.flatMap((n) =>
+    n.data.parent_uri
+      ? [n.data.comment_uri, n.data.parent_uri]
+      : [n.data.comment_uri],
+  );
   const { data: comments } = await supabaseServerClient
     .from("comments_on_documents")
     .select(
@@ -72,6 +76,9 @@ async function hydrateCommentNotifications(notifications: NotificationRow[]) {
     created_at: notification.created_at,
     type: "comment" as const,
     comment_uri: notification.data.comment_uri,
+    parentData: notification.data.parent_uri
+      ? comments?.find((c) => c.uri === notification.data.parent_uri)!
+      : undefined,
     commentData: comments?.find(
       (c) => c.uri === notification.data.comment_uri,
     )!,

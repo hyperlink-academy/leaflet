@@ -6,42 +6,80 @@ import {
   ContentLayout,
   Notification,
 } from "./Notification";
+import { HydratedCommentNotification } from "src/notifications";
+import {
+  PubLeafletComment,
+  PubLeafletDocument,
+  PubLeafletPublication,
+} from "lexicons/api";
+import { AppBskyActorProfile, AtUri } from "@atproto/api";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
-export const DummyReplyNotification = (props: {
-  cardBorderHidden: boolean;
-}) => {
+export const ReplyNotification = (
+  props: { cardBorderHidden: boolean } & HydratedCommentNotification,
+) => {
+  let docRecord = props.commentData.documents
+    ?.data as PubLeafletDocument.Record;
+  let commentRecord = props.commentData.record as PubLeafletComment.Record;
+  let profileRecord = props.commentData.bsky_profiles
+    ?.record as AppBskyActorProfile.Record;
+  const displayName =
+    profileRecord.displayName ||
+    props.commentData.bsky_profiles?.handle ||
+    "Someone";
+
+  let parentRecord = props.parentData?.record as PubLeafletComment.Record;
+  let parentProfile = props.parentData?.bsky_profiles
+    ?.record as AppBskyActorProfile.Record;
+  const parentDisplayName =
+    parentProfile.displayName ||
+    props.parentData?.bsky_profiles?.handle ||
+    "Someone";
+
+  let rkey = new AtUri(props.commentData.documents?.uri!).rkey;
+  const pubRecord = props.commentData.documents?.documents_in_publications[0]
+    ?.publications?.record as PubLeafletPublication.Record;
+
   return (
     <Notification
-      href="/"
+      href={`https://${pubRecord.base_path}/${rkey}?interactionDrawer=comments`}
       icon={<ReplyTiny />}
-      actionText={<>jared replied to your comment</>}
+      actionText={`${displayName} replied to your comment`}
       cardBorderHidden={props.cardBorderHidden}
       content={
         <ContentLayout
           cardBorderHidden={props.cardBorderHidden}
-          postTitle="This is the Post Title"
-          pubRecord={{ name: "My Publication" } as any}
+          postTitle={docRecord.title}
+          pubRecord={pubRecord}
         >
           <CommentInNotification
-            className="text-tertiary italic line-clamp-1!"
-            avatar={undefined}
-            displayName="celine"
-            index={[]}
-            plaintext={
-              "This the original comment. To make a point I'm gonna make the comment really pretty long so you can see for youself how it truncates"
+            className=""
+            avatar={
+              parentProfile?.avatar?.ref &&
+              blobRefToSrc(
+                parentProfile?.avatar?.ref,
+                props.parentData?.bsky_profiles?.did || "",
+              )
             }
-            facets={[]}
+            displayName={parentDisplayName}
+            index={[]}
+            plaintext={parentRecord.plaintext}
+            facets={parentRecord.facets}
           />
           <div className="h-3 -mt-[1px] ml-[10px] border-l border-border" />
           <CommentInNotification
             className=""
-            avatar={undefined}
-            displayName="celine"
-            index={[]}
-            plaintext={
-              "This is a thoughful and very respectful reply. Violating the code of conduct for me is literally like water for the wicked witch of the west. EeEeEEeeK IT BURNSssSs!!!"
+            avatar={
+              profileRecord?.avatar?.ref &&
+              blobRefToSrc(
+                profileRecord?.avatar?.ref,
+                props.commentData.bsky_profiles?.did || "",
+              )
             }
-            facets={[]}
+            displayName={displayName}
+            index={[]}
+            plaintext={commentRecord.plaintext}
+            facets={commentRecord.facets}
           />
         </ContentLayout>
       }

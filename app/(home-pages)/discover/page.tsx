@@ -1,26 +1,8 @@
-import { supabaseServerClient } from "supabase/serverClient";
 import Link from "next/link";
 import { SortedPublicationList } from "./SortedPublicationList";
 import { Metadata } from "next";
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
-
-export type PublicationsList = Awaited<ReturnType<typeof getPublications>>;
-async function getPublications() {
-  let { data: publications, error } = await supabaseServerClient
-    .from("publications")
-    .select(
-      "*, documents_in_publications(*, documents(*)), publication_subscriptions(count)",
-    )
-    .or(
-      "record->preferences->showInDiscover.is.null,record->preferences->>showInDiscover.eq.true",
-    )
-    .order("indexed_at", {
-      referencedTable: "documents_in_publications",
-      ascending: false,
-    })
-    .limit(1, { referencedTable: "documents_in_publications" });
-  return publications;
-}
+import { getPublications } from "./getPublications";
 
 export const metadata: Metadata = {
   title: "Leaflet Discover",
@@ -50,7 +32,9 @@ export default async function Discover(props: {
 }
 
 const DiscoverContent = async (props: { order: string }) => {
-  let publications = await getPublications();
+  const orderValue =
+    props.order === "popular" ? "popular" : "recentlyUpdated";
+  let { publications, nextCursor } = await getPublications(orderValue);
 
   return (
     <div className="max-w-prose mx-auto w-full">
@@ -61,7 +45,11 @@ const DiscoverContent = async (props: { order: string }) => {
           <Link href="/lish/createPub">make your own</Link>!
         </p>
       </div>
-      <SortedPublicationList publications={publications} order={props.order} />
+      <SortedPublicationList
+        publications={publications}
+        order={props.order}
+        nextCursor={nextCursor}
+      />
     </div>
   );
 };

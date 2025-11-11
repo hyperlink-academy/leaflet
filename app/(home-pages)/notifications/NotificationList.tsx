@@ -5,6 +5,7 @@ import { CommentNotification } from "./CommentNotication";
 import { useEntity, useReplicache } from "src/replicache";
 import { useEffect } from "react";
 import { markAsRead } from "./getNotifications";
+import { ReplyNotification } from "./ReplyNotification";
 
 export function NotificationList({
   notifications,
@@ -31,7 +32,14 @@ export function NotificationList({
       <div className={`flex flex-col ${cardBorderHidden ? "gap-6" : "gap-2"}`}>
         {notifications.map((n) => {
           if (n.type === "comment") {
-            n;
+            if (n.parentData)
+              return (
+                <ReplyNotification
+                  cardBorderHidden={!!cardBorderHidden}
+                  key={n.id}
+                  {...n}
+                />
+              );
             return (
               <CommentNotification
                 cardBorderHidden={!!cardBorderHidden}
