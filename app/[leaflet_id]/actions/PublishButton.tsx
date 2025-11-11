@@ -5,7 +5,7 @@ import {
   PubIcon,
   PubListEmptyContent,
 } from "components/ActionBar/Publications";
-import { ArchiveSmall } from "components/Icons/ArchiveSmall";
+import { LooseLeafSmall } from "components/Icons/ArchiveSmall";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { useIdentityData } from "components/IdentityProvider";
 import { Menu, MenuItem } from "components/Layout";
@@ -130,7 +130,7 @@ const PublishToPublication = () => {
             // send to one-off /publish page
           }}
         >
-          <ArchiveSmall />
+          <LooseLeafSmall />
           <div className="font-bold pb-1">Publish as One-Off</div>
         </MenuItem>
       </Menu>
