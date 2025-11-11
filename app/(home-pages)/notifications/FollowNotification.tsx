@@ -8,6 +8,7 @@ export const DummyFollowNotification = (props: {
   const pubName = "Pub Name Here";
   return (
     <Notification
+      href="/"
       icon={<Avatar src={undefined} displayName={identity} tiny />}
       cardBorderHidden={props.cardBorderHidden}
       actionText={
