@@ -32,7 +32,7 @@ export const CommentNotification = (props: HydratedCommentNotification) => {
 
   return (
     <Notification
-      timestamp=""
+      timestamp={props.commentData.indexed_at}
       href={`https://${pubRecord.base_path}/${rkey}?interactionDrawer=comments`}
       icon={<CommentTiny />}
       actionText={<>{displayName} commented on your post</>}

@@ -211,7 +211,7 @@ export function NotificationButton(props: { current?: boolean }) {
         </div>
       ) : (
         <>
-          <NotificationList notifications={notifications!} />
+          <NotificationList compact notifications={notifications!} />
           {notifications && notifications.length > 0 && (
             <SpeedyLink
               className="flex justify-end pt-2 text-sm"

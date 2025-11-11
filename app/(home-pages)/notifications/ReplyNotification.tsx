@@ -40,7 +40,7 @@ export const ReplyNotification = (props: HydratedCommentNotification) => {
 
   return (
     <Notification
-      timestamp={commentRecord.createdAt}
+      timestamp={props.commentData.indexed_at}
       href={`https://${pubRecord.base_path}/${rkey}?interactionDrawer=comments`}
       icon={<ReplyTiny />}
       actionText={`${displayName} replied to your comment`}
