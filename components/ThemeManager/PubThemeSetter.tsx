@@ -95,7 +95,7 @@ export const PubThemeSetter = (props: {
         <PubSettingsHeader
           loading={props.loading}
           setLoadingAction={props.setLoading}
-          backToMenu={props.backToMenu}
+          backToMenuAction={props.backToMenu}
           state={"theme"}
         />
       </form>

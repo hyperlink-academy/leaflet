@@ -430,7 +430,7 @@ export const ListMarker = (
         className={`listMarker group/list-marker p-2 ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >
         <div
-          className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline outline-1  outline-offset-1
+          className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline  outline-offset-1
                       ${
                         folded
                           ? "outline-secondary"

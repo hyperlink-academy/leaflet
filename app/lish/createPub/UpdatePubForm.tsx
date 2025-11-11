@@ -85,7 +85,7 @@ export const EditPubForm = (props: {
       <PubSettingsHeader
         loading={props.loading}
         setLoadingAction={props.setLoading}
-        backToMenu={props.backToMenu}
+        backToMenuAction={props.backToMenu}
         state={"theme"}
       />
       <div className="flex flex-col gap-3 w-[1000px] max-w-full pb-2">

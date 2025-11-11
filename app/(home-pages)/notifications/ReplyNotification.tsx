@@ -12,6 +12,7 @@ export const DummyReplyNotification = (props: {
 }) => {
   return (
     <Notification
+      href="/"
       icon={<ReplyTiny />}
       actionText={<>jared replied to your comment</>}
       cardBorderHidden={props.cardBorderHidden}

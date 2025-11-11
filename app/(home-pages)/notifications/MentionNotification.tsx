@@ -6,6 +6,7 @@ export const DummyPostMentionNotification = (props: {
 }) => {
   return (
     <Notification
+      href="/"
       icon={<MentionTiny />}
       cardBorderHidden={props.cardBorderHidden}
       actionText={<>celine mentioned your post</>}
@@ -34,6 +35,7 @@ export const DummyUserMentionNotification = (props: {
 }) => {
   return (
     <Notification
+      href="/"
       icon={<MentionTiny />}
       actionText={<>celine mentioned you</>}
       content={

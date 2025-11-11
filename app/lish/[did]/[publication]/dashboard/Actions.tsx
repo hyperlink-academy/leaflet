@@ -185,7 +185,7 @@ const SettingsMenu = (props: {
 
 export const PubSettingsHeader = (props: {
   state: "menu" | "general" | "theme";
-  backToMenu?: () => void;
+  backToMenuAction?: () => void;
   loading: boolean;
   setLoadingAction: (l: boolean) => void;
 }) => {
@@ -203,7 +203,7 @@ export const PubSettingsHeader = (props: {
           <button
             type="button"
             onClick={() => {
-              props.backToMenu && props.backToMenu();
+              props.backToMenuAction && props.backToMenuAction();
             }}
           >
             <GoBackSmall className="text-accent-contrast" />
