@@ -1,14 +1,18 @@
 import { MentionTiny } from "components/Icons/MentionTiny";
 import { ContentLayout, Notification } from "./Notification";
 
-export const DummyPostMentionNotification = () => {
+export const DummyPostMentionNotification = (props: {
+  cardBorderHidden: boolean;
+}) => {
   return (
     <Notification
       icon={<MentionTiny />}
+      cardBorderHidden={props.cardBorderHidden}
       actionText={<>celine mentioned your post</>}
       content={
         <ContentLayout
           postTitle={"Post Title Here"}
+          cardBorderHidden={props.cardBorderHidden}
           publication={{ name: "My Publication" } as any}
         >
           I'm just gonna put the description here. The surrounding context is
@@ -25,7 +29,9 @@ export const DummyPostMentionNotification = () => {
   );
 };
 
-export const DummyUserMentionNotification = () => {
+export const DummyUserMentionNotification = (props: {
+  cardBorderHidden: boolean;
+}) => {
   return (
     <Notification
       icon={<MentionTiny />}
@@ -34,6 +40,7 @@ export const DummyUserMentionNotification = () => {
         <ContentLayout
           postTitle={"Post Title Here"}
           publication={{ name: "My Publication" } as any}
+          cardBorderHidden={props.cardBorderHidden}
         >
           <div>
             ...llo this is the content of a post or whatever here it comes{" "}

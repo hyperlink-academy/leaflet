@@ -16,23 +16,10 @@ import {
   NotificationsUnreadSmall,
 } from "components/Icons/NotificationSmall";
 import { SpeedyLink } from "components/SpeedyLink";
-import { NotificationInstance } from "twilio/lib/rest/api/v2010/account/notification";
-import { getIdentityData } from "actions/getIdentityData";
-import { redirect } from "next/navigation";
-import { hydrateNotifications } from "src/notifications";
-import { supabaseServerClient } from "supabase/serverClient";
-import {
-  CommentNotification,
-  DummyCommentNotification,
-} from "app/(home-pages)/notifications/CommentNotication";
+
+import { CommentNotification } from "app/(home-pages)/notifications/CommentNotication";
 import { Separator } from "components/Layout";
 import { useIsMobile } from "src/hooks/isMobile";
-import { DummyReplyNotification } from "app/(home-pages)/notifications/ReplyNotification";
-import { DummyFollowNotification } from "app/(home-pages)/notifications/FollowNotification";
-import {
-  DummyPostMentionNotification,
-  DummyUserMentionNotification,
-} from "app/(home-pages)/notifications/MentionNotification";
 import useSWR from "swr";
 import {
   getNotifications,
@@ -226,7 +213,13 @@ export function NotificationButton(props: { current?: boolean }) {
           notifications?.map((n) => {
             if (n.type === "comment") {
               n;
-              return <CommentNotification key={n.id} {...n} />;
+              return (
+                <CommentNotification
+                  cardBorderHidden={true}
+                  key={n.id}
+                  {...n}
+                />
+              );
             }
           })
         )}

@@ -15,7 +15,9 @@ import {
   Notification,
 } from "./Notification";
 
-export const CommentNotification = (props: HydratedCommentNotification) => {
+export const CommentNotification = (
+  props: { cardBorderHidden: boolean } & HydratedCommentNotification,
+) => {
   let docRecord = props.commentData.documents
     ?.data as PubLeafletDocument.Record;
   let commentRecord = props.commentData.record as PubLeafletComment.Record;
@@ -25,14 +27,20 @@ export const CommentNotification = (props: HydratedCommentNotification) => {
     profileRecord.displayName ||
     props.commentData.bsky_profiles?.handle ||
     "Someone";
-  const publication = props.commentData.documents?.documents_in_publications[0]
-    ?.publications?.record as PubLeafletPublication.Record;
+  const publication =
+    props.commentData.documents?.documents_in_publications[0]?.publications ||
+    undefined;
   return (
     <Notification
+      cardBorderHidden={props.cardBorderHidden}
       icon={<CommentTiny />}
       actionText={<>{displayName} commented on your post</>}
       content={
-        <ContentLayout postTitle={docRecord.title} publication={publication}>
+        <ContentLayout
+          cardBorderHidden={props.cardBorderHidden}
+          postTitle={docRecord.title}
+          publication={publication}
+        >
           <CommentInNotification
             className=""
             avatar={

@@ -7,13 +7,17 @@ import {
   Notification,
 } from "./Notification";
 
-export const DummyReplyNotification = () => {
+export const DummyReplyNotification = (props: {
+  cardBorderHidden: boolean;
+}) => {
   return (
     <Notification
       icon={<ReplyTiny />}
       actionText={<>jared replied to your comment</>}
+      cardBorderHidden={props.cardBorderHidden}
       content={
         <ContentLayout
+          cardBorderHidden={props.cardBorderHidden}
           postTitle="This is the Post Title"
           publication={{ name: "My Publication" } as any}
         >

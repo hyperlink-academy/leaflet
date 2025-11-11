@@ -16,14 +16,22 @@ export function NotificationList({
       markAsRead();
     }, 500);
   }, []);
-
+  let { rootEntity } = useReplicache();
+  let cardBorderHidden = useEntity(rootEntity, "theme/card-border-hidden")?.data
+    .value;
   return (
     <div className="max-w-prose mx-auto w-full">
-      <div className="flex flex-col gap-2">
+      <div className={`flex flex-col ${cardBorderHidden ? "gap-6" : "gap-2"}`}>
         {notifications.map((n) => {
           if (n.type === "comment") {
             n;
-            return <CommentNotification key={n.id} {...n} />;
+            return (
+              <CommentNotification
+                cardBorderHidden={!!cardBorderHidden}
+                key={n.id}
+                {...n}
+              />
+            );
           }
         })}
       </div>
