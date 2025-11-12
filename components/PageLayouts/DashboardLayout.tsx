@@ -8,6 +8,7 @@ import {
   DesktopNavigation,
   MobileNavigation,
   navPages,
+  NotificationButton,
 } from "components/ActionBar/Navigation";
 import { create } from "zustand";
 import { Popover } from "components/Popover";
@@ -50,7 +51,6 @@ const defaultDashboardState: DashboardState = {
 export const useDashboardStore = create<DashboardStore>((set, get) => ({
   dashboards: {},
   setDashboard: (id: string, partial: Partial<DashboardState>) => {
-    console.log(partial);
     set((state) => ({
       dashboards: {
         ...state.dashboards,
@@ -139,7 +139,8 @@ export function DashboardLayout<
   const tabParam = searchParams.get("tab");
 
   // Initialize tab from search param if valid, otherwise use default
-  const initialTab = tabParam && props.tabs[tabParam] ? tabParam : props.defaultTab;
+  const initialTab =
+    tabParam && props.tabs[tabParam] ? tabParam : props.defaultTab;
   let [tab, setTab] = useState<keyof T>(initialTab);
 
   // Custom setter that updates both state and URL
@@ -165,7 +166,7 @@ export function DashboardLayout<
         className={`dashboard pwa-padding relative max-w-(--breakpoint-lg) w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6`}
       >
         <MediaContents mobile={false}>
-          <div className="flex flex-col gap-4 my-6">
+          <div className="flex flex-col gap-3 my-6">
             <DesktopNavigation
               currentPage={props.currentPage}
               publication={props.publication}
@@ -257,12 +258,10 @@ export const HomeDashboardControls = (props: {
   hasTemplates: boolean;
 }) => {
   let { display, sort } = useDashboardState();
-  console.log({ display, props });
   display = display || props.defaultDisplay;
   let setState = useSetDashboardState();
 
   let { identity } = useIdentityData();
-  console.log(props);
 
   return (
     <div className="dashboardControls w-full flex gap-4">
@@ -301,7 +300,6 @@ export const PublicationDashboardControls = (props: {
   defaultDisplay: Exclude<DashboardState["display"], undefined>;
 }) => {
   let { display, sort } = useDashboardState();
-  console.log({ display, props });
   display = display || props.defaultDisplay;
   let setState = useSetDashboardState();
   return (

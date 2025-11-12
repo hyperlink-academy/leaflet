@@ -8,33 +8,34 @@ type NotificationRow = Tables<"notifications">;
 export type Notification = Omit<TablesInsert<"notifications">, "data"> & {
   data: NotificationData;
 };
-// Notification data types (for writing to the notifications table)
+
 export type NotificationData =
-  | { type: "comment"; comment_uri: string }
+  | { type: "comment"; comment_uri: string; parent_uri?: string }
   | { type: "subscribe"; subscription_uri: string };
-
-// Hydrated notification types
-export type HydratedCommentNotification = {
-  id: string;
-  recipient: string;
-  created_at: string;
-  type: "comment";
-  comment_uri: string;
-  commentData?: Tables<"comments_on_documents">;
-};
-
-export type HydratedSubscribeNotification = {
-  id: string;
-  recipient: string;
-  created_at: string;
-  type: "subscribe";
-  subscription_uri: string;
-  subscriptionData?: Tables<"publication_subscriptions">;
-};
 
 export type HydratedNotification =
   | HydratedCommentNotification
   | HydratedSubscribeNotification;
+export async function hydrateNotifications(
+  notifications: NotificationRow[],
+): Promise<Array<HydratedNotification>> {
+  // Call all hydrators in parallel
+  const [commentNotifications, subscribeNotifications] = await Promise.all([
+    hydrateCommentNotifications(notifications),
+    hydrateSubscribeNotifications(notifications),
+  ]);
+
+  // Combine all hydrated notifications
+  const allHydrated = [...commentNotifications, ...subscribeNotifications];
+
+  // Sort by created_at to maintain order
+  allHydrated.sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
+
+  return allHydrated;
+}
 
 // Type guard to extract notification type
 type ExtractNotificationType<T extends NotificationData["type"]> = Extract<
@@ -42,17 +43,11 @@ type ExtractNotificationType<T extends NotificationData["type"]> = Extract<
   { type: T }
 >;
 
-// Hydrator function type
-type NotificationHydrator<T extends NotificationData["type"]> = (
-  notifications: NotificationRow[],
-) => Promise<Array<HydratedNotification & { type: T }>>;
+export type HydratedCommentNotification = Awaited<
+  ReturnType<typeof hydrateCommentNotifications>
+>[0];
 
-/**
- * Hydrates comment notifications
- */
-async function hydrateCommentNotifications(
-  notifications: NotificationRow[],
-): Promise<HydratedCommentNotification[]> {
+async function hydrateCommentNotifications(notifications: NotificationRow[]) {
   const commentNotifications = notifications.filter(
     (n): n is NotificationRow & { data: ExtractNotificationType<"comment"> } =>
       (n.data as NotificationData)?.type === "comment",
@@ -63,10 +58,16 @@ async function hydrateCommentNotifications(
   }
 
   // Fetch comment data from the database
-  const commentUris = commentNotifications.map((n) => n.data.comment_uri);
+  const commentUris = commentNotifications.flatMap((n) =>
+    n.data.parent_uri
+      ? [n.data.comment_uri, n.data.parent_uri]
+      : [n.data.comment_uri],
+  );
   const { data: comments } = await supabaseServerClient
     .from("comments_on_documents")
-    .select("*")
+    .select(
+      "*,bsky_profiles(*), documents(*, documents_in_publications(publications(*)))",
+    )
     .in("uri", commentUris);
 
   return commentNotifications.map((notification) => ({
@@ -75,13 +76,23 @@ async function hydrateCommentNotifications(
     created_at: notification.created_at,
     type: "comment" as const,
     comment_uri: notification.data.comment_uri,
-    commentData: comments?.find((c) => c.uri === notification.data.comment_uri),
+    parentData: notification.data.parent_uri
+      ? comments?.find((c) => c.uri === notification.data.parent_uri)!
+      : undefined,
+    commentData: comments?.find(
+      (c) => c.uri === notification.data.comment_uri,
+    )!,
   }));
 }
 
-/**
- * Hydrates subscribe notifications
- */
+export type HydratedSubscribeNotification = {
+  id: string;
+  recipient: string;
+  created_at: string;
+  type: "subscribe";
+  subscription_uri: string;
+  subscriptionData?: Tables<"publication_subscriptions">;
+};
 async function hydrateSubscribeNotifications(
   notifications: NotificationRow[],
 ): Promise<HydratedSubscribeNotification[]> {
@@ -117,26 +128,12 @@ async function hydrateSubscribeNotifications(
   }));
 }
 
-/**
- * Main hydration function that processes all notifications
- */
-export async function hydrateNotifications(
-  notifications: NotificationRow[],
-): Promise<HydratedNotification[]> {
-  // Call all hydrators in parallel
-  const [commentNotifications, subscribeNotifications] = await Promise.all([
-    hydrateCommentNotifications(notifications),
-    hydrateSubscribeNotifications(notifications),
-  ]);
-
-  // Combine all hydrated notifications
-  const allHydrated = [...commentNotifications, ...subscribeNotifications];
-
-  // Sort by created_at to maintain order
-  allHydrated.sort(
-    (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-  );
-
-  return allHydrated;
+export async function pingIdentityToUpdateNotification(did: string) {
+  let channel = supabaseServerClient.channel(`identity.atp_did:${did}`);
+  await channel.send({
+    type: "broadcast",
+    event: "notification",
+    payload: { message: "poke" },
+  });
+  await supabaseServerClient.removeChannel(channel);
 }
