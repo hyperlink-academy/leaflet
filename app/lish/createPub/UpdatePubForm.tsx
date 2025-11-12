@@ -20,7 +20,7 @@ import { Verification } from "@vercel/sdk/esm/models/getprojectdomainop";
 import Link from "next/link";
 import { Checkbox } from "components/Checkbox";
 import type { GetDomainConfigResponseBody } from "@vercel/sdk/esm/models/getdomainconfigop";
-import { PubSettingsHeader } from "../[did]/[publication]/dashboard/Actions";
+import { PubSettingsHeader } from "../[did]/[publication]/dashboard/PublicationSettings";
 
 export const EditPubForm = (props: {
   backToMenuAction: () => void;

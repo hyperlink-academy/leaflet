@@ -2,12 +2,9 @@
 
 import { HydratedNotification } from "src/notifications";
 import { CommentNotification } from "./CommentNotication";
-import { useEntity, useReplicache } from "src/replicache";
 import { useEffect, createContext } from "react";
 import { markAsRead } from "./getNotifications";
 import { ReplyNotification } from "./ReplyNotification";
-
-export const NotificationContext = createContext({ compact: false });
 
 export function NotificationList({
   notifications,
@@ -29,17 +26,15 @@ export function NotificationList({
       </div>
     );
   return (
-    <NotificationContext.Provider value={{ compact: compact ?? false }}>
-      <div className="max-w-prose mx-auto w-full">
-        <div className={`flex flex-col gap-2`}>
-          {notifications.map((n) => {
-            if (n.type === "comment") {
-              if (n.parentData) return <ReplyNotification key={n.id} {...n} />;
-              return <CommentNotification key={n.id} {...n} />;
-            }
-          })}
-        </div>
+    <div className="max-w-prose mx-auto w-full">
+      <div className={`flex flex-col gap-2`}>
+        {notifications.map((n) => {
+          if (n.type === "comment") {
+            if (n.parentData) return <ReplyNotification key={n.id} {...n} />;
+            return <CommentNotification key={n.id} {...n} />;
+          }
+        })}
       </div>
-    </NotificationContext.Provider>
+    </div>
   );
 }

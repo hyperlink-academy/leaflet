@@ -4,8 +4,6 @@ import { BaseTextBlock } from "app/lish/[did]/[publication]/[rkey]/BaseTextBlock
 import { PubLeafletPublication, PubLeafletRichtextFacet } from "lexicons/api";
 import { timeAgo } from "src/utils/timeAgo";
 import { useReplicache, useEntity } from "src/replicache";
-import { useContext } from "react";
-import { NotificationContext } from "./NotificationList";
 
 export const Notification = (props: {
   icon: React.ReactNode;
@@ -15,18 +13,14 @@ export const Notification = (props: {
   href: string;
 }) => {
   let { rootEntity } = useReplicache();
-  let { compact } = useContext(NotificationContext);
   let cardBorderHidden = useEntity(rootEntity, "theme/card-border-hidden")?.data
     .value;
 
   // If compact mode, always hide border
-  if (compact) {
-    cardBorderHidden = true;
-  }
 
   return (
     <div
-      className={`relative flex flex-col w-full py-3 sm:py-4 pt-2 sm:pt-3! ${
+      className={`relative flex flex-col w-full pb-3 sm:pb-4 pt-2 ${
         cardBorderHidden
           ? " first:pt-0! "
           : " block-border border-border! hover:outline-border sm:px-4 px-3 pl-2 sm:pl-3 "
@@ -44,15 +38,11 @@ export const Notification = (props: {
       <div className="flex justify-between items-center gap-3 w-full ">
         <div className={`flex flex-row gap-2 items-center grow w-full min-w-0`}>
           <div className="text-secondary shrink-0">{props.icon}</div>
-          <div
-            className={`text-secondary font-bold grow truncate min-w-0 ${compact ? "text-sm" : ""}`}
-          >
+          <div className={`text-secondary font-bold grow truncate min-w-0 }`}>
             {props.actionText}
           </div>
         </div>
-        <div
-          className={`text-tertiary shrink-0 min-w-8 ${compact ? "text-xs" : "text-sm"}`}
-        >
+        <div className={`text-tertiary shrink-0 min-w-8 text-sm`}>
           {timeAgo(props.timestamp)}
         </div>
       </div>

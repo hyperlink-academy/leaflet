@@ -16,17 +16,7 @@ import {
   NotificationsUnreadSmall,
 } from "components/Icons/NotificationSmall";
 import { SpeedyLink } from "components/SpeedyLink";
-
-import { CommentNotification } from "app/(home-pages)/notifications/CommentNotication";
 import { Separator } from "components/Layout";
-import { useIsMobile } from "src/hooks/isMobile";
-import useSWR from "swr";
-import {
-  getNotifications,
-  markAsRead,
-} from "app/(home-pages)/notifications/getNotifications";
-import { DotLoader } from "components/utils/DotLoader";
-import { NotificationList } from "app/(home-pages)/notifications/NotificationList";
 
 export type navPages = "home" | "reader" | "pub" | "discover" | "notifications";
 
@@ -162,66 +152,24 @@ const DiscoverButton = (props: { current?: boolean }) => {
 };
 
 export function NotificationButton(props: { current?: boolean }) {
-  let { identity, mutate } = useIdentityData();
+  let { identity } = useIdentityData();
   let unreads = identity?.notifications[0]?.count;
-  let isMobile = useIsMobile();
-  let { data: notifications, isLoading } = useSWR("notifications", () =>
-    getNotifications(3),
-  );
-  // let identity = await getIdentityData();
-  // if (!identity?.atp_did) return;
-  // let { data } = await supabaseServerClient
-  //   .from("notifications")
-  //   .select("*")
-  //   .eq("recipient", identity.atp_did);
-  // let notifications = await hydrateNotifications(data || []);
 
   return (
-    <Popover
-      onOpenChange={async (open) => {
-        if (open) {
-          await markAsRead();
-          mutate();
+    <SpeedyLink href={"/notifications"} className="hover:no-underline!">
+      <ActionButton
+        nav
+        labelOnMobile={false}
+        icon={
+          unreads ? (
+            <NotificationsUnreadSmall className="text-accent-contrast" />
+          ) : (
+            <NotificationsReadSmall />
+          )
         }
-      }}
-      asChild
-      side={isMobile ? "top" : "right"}
-      align={isMobile ? "center" : "start"}
-      className="sm:max-w-sm sm:w-max w-full pt-3! pb-3!"
-      trigger={
-        <ActionButton
-          nav
-          labelOnMobile={false}
-          icon={
-            unreads ? (
-              <NotificationsUnreadSmall className="text-accent-contrast" />
-            ) : (
-              <NotificationsReadSmall />
-            )
-          }
-          label="Notifications"
-          className={`${props.current ? "bg-bg-page! border-border-light!" : ""} ${unreads ? "text-accent-contrast!" : ""}`}
-        />
-      }
-    >
-      {isLoading ? (
-        <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm p-3 sm:p-4">
-          <span>loading</span>
-          <DotLoader />
-        </div>
-      ) : (
-        <>
-          <NotificationList compact notifications={notifications!} />
-          {notifications && notifications.length > 0 && (
-            <SpeedyLink
-              className="flex justify-end pt-2 text-sm"
-              href={"/notifications"}
-            >
-              See All
-            </SpeedyLink>
-          )}
-        </>
-      )}
-    </Popover>
+        label="Notifications"
+        className={`${props.current ? "bg-bg-page! border-border-light!" : ""} ${unreads ? "text-accent-contrast!" : ""}`}
+      />
+    </SpeedyLink>
   );
 }

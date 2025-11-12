@@ -111,7 +111,7 @@ export const AccountSettingsHeader = (props: {
   backToMenuAction?: () => void;
 }) => {
   return (
-    <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-1 mb-1">
+    <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-2 mb-1">
       {props.state === "menu"
         ? "Settings"
         : props.state === "general"

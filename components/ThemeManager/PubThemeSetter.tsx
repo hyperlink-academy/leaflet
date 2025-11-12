@@ -10,14 +10,12 @@ import { AtUri } from "@atproto/syntax";
 import { useLocalPubTheme } from "./PublicationThemeProvider";
 import { BaseThemeProvider } from "./ThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { ButtonSecondary } from "components/Buttons";
 import { updatePublicationTheme } from "app/lish/createPub/updatePublication";
-import { DotLoader } from "components/utils/DotLoader";
 import { PagePickers } from "./PubPickers/PubTextPickers";
 import { BackgroundPicker } from "./PubPickers/PubBackgroundPickers";
 import { PubAccentPickers } from "./PubPickers/PubAcccentPickers";
 import { Separator } from "components/Layout";
-import { PubSettingsHeader } from "app/lish/[did]/[publication]/dashboard/Actions";
+import { PubSettingsHeader } from "app/lish/[did]/[publication]/dashboard/PublicationSettings";
 
 export type ImageState = {
   src: string;
