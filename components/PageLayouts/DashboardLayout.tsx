@@ -166,7 +166,7 @@ export function DashboardLayout<
         className={`dashboard pwa-padding relative max-w-(--breakpoint-lg) w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6`}
       >
         <MediaContents mobile={false}>
-          <div className="flex flex-col gap-4 my-6">
+          <div className="flex flex-col gap-3 my-6">
             <DesktopNavigation
               currentPage={props.currentPage}
               publication={props.publication}

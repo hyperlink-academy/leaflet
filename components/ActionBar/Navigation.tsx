@@ -26,18 +26,18 @@ export const DesktopNavigation = (props: {
 }) => {
   let { identity } = useIdentityData();
   return (
-    <div className="flex flex-col gap-2">
-      {identity?.atp_did && (
-        <Sidebar alwaysOpen>
-          <NotificationButton />
-        </Sidebar>
-      )}
+    <div className="flex flex-col gap-3">
       <Sidebar alwaysOpen>
         <NavigationOptions
           currentPage={props.currentPage}
           publication={props.publication}
         />
       </Sidebar>
+      {identity?.atp_did && (
+        <Sidebar alwaysOpen>
+          <NotificationButton current={props.currentPage === "notifications"} />
+        </Sidebar>
+      )}
     </div>
   );
 };
