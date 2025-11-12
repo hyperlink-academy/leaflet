@@ -118,16 +118,18 @@ const PubListEmpty = () => {
     );
 };
 
-export const PubListEmptyContent = () => {
+export const PubListEmptyContent = (props: { compact?: boolean }) => {
   let { identity } = useIdentityData();
 
   return (
-    <div className="bg-[var(--accent-light)] w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4 text-sm">
+    <div
+      className={`bg-[var(--accent-light)] w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4 text-sm`}
+    >
       <div className="mx-auto pt-2 scale-90">
         <PubListEmptyIllo />
       </div>
       <div className="pt-1 font-bold">Publish on AT Proto</div>
-      {identity && identity.atp_did ? (
+      {identity && !identity.atp_did ? (
         //  has ATProto account and no pubs
         <>
           <div className="pb-2 text-secondary text-xs">
@@ -144,7 +146,7 @@ export const PubListEmptyContent = () => {
         // no ATProto account and no pubs
         <>
           <div className="pb-2 text-secondary text-xs">
-            Link a Bluesky account to start a new publication on AT Proto
+            Link a Bluesky account to start <br /> a new publication on AT Proto
           </div>
 
           <BlueskyLogin compact />

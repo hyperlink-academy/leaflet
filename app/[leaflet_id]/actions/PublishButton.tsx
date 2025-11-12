@@ -5,9 +5,12 @@ import {
   PubIcon,
   PubListEmptyContent,
 } from "components/ActionBar/Publications";
+import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
+import { AddSmall } from "components/Icons/AddSmall";
 import { LooseLeafSmall } from "components/Icons/ArchiveSmall";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { useIdentityData } from "components/IdentityProvider";
+import { InputWithLabel } from "components/Input";
 import { Menu, MenuItem } from "components/Layout";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { Popover } from "components/Popover";
@@ -19,6 +22,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useReplicache } from "src/replicache";
+import { Json } from "supabase/database.types";
 
 export const PublishButton = () => {
   let { data: pub } = useLeafletPublicationData();
@@ -90,70 +94,155 @@ const PublishToPublication = () => {
   let hasPubs =
     identity && identity.atp_did && identity.publications.length > 0;
 
-  if (!hasPubs)
-    return (
-      <Menu
-        asChild
-        side={isMobile ? "top" : "right"}
-        align={isMobile ? "center" : "start"}
-        className="flex flex-col max-w-xs text-secondary"
-        trigger={
-          <ActionButton
-            primary
-            icon={<PublishSmall className="shrink-0" />}
-            label={"Publish on ATP"}
-          />
-        }
-      >
-        <div className="text-sm text-tertiary">Publish to…</div>
-        {identity?.publications?.map((d) => {
-          return (
-            <MenuItem
-              onSelect={async () => {
-                // TODO
-                // make this a draft of the selected Publication
-                // redirect to the publication publish page
-              }}
-            >
-              <PubIcon
-                record={d.record as PubLeafletPublication.Record}
-                uri={d.uri}
-              />
-              <div className=" w-full truncate font-bold">{d.name}</div>
-            </MenuItem>
-          );
-        })}
-        <hr className="border-border-light my-1" />
-        <MenuItem
-          onSelect={() => {
-            // TODO
-            // send to one-off /publish page
-          }}
-        >
-          <LooseLeafSmall />
-          <div className="font-bold pb-1">Publish as One-Off</div>
-        </MenuItem>
-      </Menu>
-    );
-  else
-    return (
-      <Popover
-        asChild
-        side={isMobile ? "top" : "right"}
-        align={isMobile ? "center" : "start"}
-        className="p-1!"
-        trigger={
-          <ActionButton
-            primary
-            icon={<PublishSmall className="shrink-0" />}
-            label={"Publish on ATP"}
-          />
-        }
-      >
-        {/* this component is also used on Home to populate the sidebar when PubList is empty */}
-        {/* however, this component needs to redirect to sign in, pub creation, AND publish so we might need to just make a new component */}
+  return (
+    <Popover
+      asChild
+      side={isMobile ? "top" : "right"}
+      align={isMobile ? "center" : "start"}
+      className="max-w-xs w-[1000px]"
+      trigger={
+        <ActionButton
+          primary
+          icon={<PublishSmall className="shrink-0" />}
+          label={"Publish on ATP"}
+        />
+      }
+    >
+      {!identity || !identity.atp_did ? (
+        // this component is also used on Home to populate the sidebar when PubList is empty
+        // when user doesn't have an AT Proto account, and redirects back to the doc (hopefully with publish open?
+        <div className="-mx-2 -my-1">
+          <PubListEmptyContent compact />
+        </div>
+      ) : (
+        <div className="flex flex-col">
+          <PostDetailsForm />
+          <hr className="border-border-light my-3" />
+          <div>
+            <PubSelector publications={identity.publications} />
+          </div>
+          <hr className="border-border-light mt-3 mb-2" />
 
-        <PubListEmptyContent />
-      </Popover>
-    );
+          <div className="flex gap-2 items-center place-self-end">
+            <ButtonTertiary>Save as Draft</ButtonTertiary>
+            <ButtonPrimary>Next</ButtonPrimary>
+          </div>
+        </div>
+      )}
+    </Popover>
+  );
+};
+
+const PostDetailsForm = () => {
+  let [description, setDescription] = useState("");
+
+  return (
+    <div className=" flex flex-col gap-1">
+      <div className="text-sm text-tertiary">Post Details</div>
+      <div className="flex flex-col gap-2">
+        <InputWithLabel label="Title" value={"Title goes here"} disabled />
+        <InputWithLabel
+          label="Description (optional)"
+          textarea
+          value={description}
+          className="h-[4lh]"
+          onChange={(e) => setDescription(e.currentTarget.value)}
+        />
+      </div>
+    </div>
+  );
+};
+
+const PubSelector = (props: {
+  publications: {
+    identity_did: string;
+    indexed_at: string;
+    name: string;
+    record: Json | null;
+    uri: string;
+  }[];
+}) => {
+  let [selectedPub, setSelectedPub] = useState<string | undefined>(undefined);
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="text-sm text-tertiary">Publish to…</div>
+      {props.publications.length === 0 || props.publications === undefined ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-2 menuItem">
+            <LooseLeafSmall className="shrink-0" />
+            <div className="flex flex-col leading-snug">
+              <div className="text-secondary font-bold">
+                Publish as LooseLeaf
+              </div>
+              <div className="text-tertiary text-sm">
+                Publish this as a one off doc <br />
+                to AT Proto
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2 menuItem">
+            <PublishSmall className="shrink-0" />
+            <div className="flex flex-col leading-snug">
+              <div className="text-secondary font-bold">
+                Start a Publication!
+              </div>
+              <div className="text-tertiary text-sm">
+                Publish your writing to a blog or newsletter on AT Proto
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <PubOption
+            selected={selectedPub === "looseleaf"}
+            onSelect={() => setSelectedPub("looseleaf")}
+          >
+            <LooseLeafSmall />
+            Publish as Looseleaf
+          </PubOption>
+          <hr className="border-border-light border-dashed " />
+          {props.publications.map((p) => {
+            let pubRecord = p.record as PubLeafletPublication.Record;
+            return (
+              <PubOption
+                selected={selectedPub === p.uri}
+                onSelect={() => setSelectedPub(p.uri)}
+              >
+                <>
+                  <PubIcon record={pubRecord} uri={p.uri} />
+                  {p.name}
+                </>
+              </PubOption>
+            );
+          })}
+          <PubOption
+            selected={selectedPub === "create"}
+            onSelect={() => setSelectedPub("create")}
+          >
+            <>
+              <AddSmall /> Create New Publication
+            </>
+          </PubOption>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PubOption = (props: {
+  selected: boolean;
+  onSelect: () => void;
+  children: React.ReactNode;
+}) => {
+  return (
+    <button
+      className={`flex gap-2 menuItem font-bold text-secondary ${props.selected && "bg-test"}`}
+      onClick={() => {
+        props.onSelect();
+      }}
+    >
+      {props.children}
+    </button>
+  );
 };

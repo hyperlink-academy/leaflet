@@ -10,6 +10,7 @@ import { useReplicache } from "src/replicache";
 import { PopoverArrow } from "./Icons/PopoverArrow";
 
 type ButtonProps = Omit<JSX.IntrinsicElements["button"], "content">;
+
 export const ButtonPrimary = forwardRef<
   HTMLButtonElement,
   ButtonProps & {
@@ -35,11 +36,11 @@ export const ButtonPrimary = forwardRef<
         m-0 h-max
         ${fullWidth ? "w-full" : fullWidthOnMobile ? "w-full sm:w-max" : "w-max"}
         ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
-        bg-accent-1  outline-transparent border border-accent-1
-        rounded-md text-base font-bold text-accent-2
+        bg-accent-1 disabled:bg-border-light
+        border border-accent-1 rounded-md disabled:border-border-light
+        outline outline-transparent outline-offset-1 focus:outline-accent-1 hover:outline-accent-1
+        text-base font-bold text-accent-2 disabled:text-border disabled:hover:text-border
         flex gap-2 items-center justify-center shrink-0
-        transparent-outline focus:outline-accent-1 hover:outline-accent-1 outline-offset-1
-        disabled:bg-border-light disabled:border-border-light disabled:text-border disabled:hover:text-border
         ${className}
       `}
     >
@@ -70,17 +71,17 @@ export const ButtonSecondary = forwardRef<
     <button
       {...buttonProps}
       ref={ref}
-      className={`m-0 h-max
+      className={`
+        m-0 h-max
         ${fullWidth ? "w-full" : fullWidthOnMobile ? "w-full sm:w-max" : "w-max"}
-        ${props.compact ? "py-0 px-1" : "px-2 py-0.5 "}
-  bg-bg-page outline-transparent
-  rounded-md text-base font-bold text-accent-contrast
-  flex gap-2 items-center justify-center shrink-0
-  transparent-outline focus:outline-accent-contrast hover:outline-accent-contrast outline-offset-1
-  border border-accent-contrast
-  disabled:bg-border-light disabled:text-border disabled:hover:text-border
-  ${props.className}
-`}
+        ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
+        bg-bg-page disabled:bg-border-light
+        border border-accent-contrast rounded-md
+        outline outline-transparent focus:outline-accent-contrast hover:outline-accent-contrast outline-offset-1
+        text-base font-bold text-accent-contrast disabled:text-border disabled:hover:text-border
+        flex gap-2 items-center justify-center shrink-0
+        ${props.className}
+        `}
     >
       {props.children}
     </button>
@@ -92,21 +93,34 @@ export const ButtonTertiary = forwardRef<
   HTMLButtonElement,
   {
     fullWidth?: boolean;
+    fullWidthOnMobile?: boolean;
     children: React.ReactNode;
     compact?: boolean;
   } & ButtonProps
 >((props, ref) => {
-  let { fullWidth, children, compact, ...buttonProps } = props;
+  let {
+    className,
+    fullWidth,
+    fullWidthOnMobile,
+    compact,
+    children,
+    ...buttonProps
+  } = props;
   return (
     <button
       {...buttonProps}
       ref={ref}
-      className={`m-0 h-max ${fullWidth ? "w-full" : "w-max"}  ${compact ? "px-0" : "px-1"}
-  bg-transparent text-base font-bold text-accent-contrast
-  flex gap-2 items-center justify-center shrink-0
-  hover:underline disabled:text-border
-  ${props.className}
-`}
+      className={`
+        m-0 h-max
+        ${fullWidth ? "w-full" : fullWidthOnMobile ? "w-full sm:w-max" : "w-max"}
+        ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
+         bg-transparent hover:bg-[var(--accent-light)]
+         border border-transparent rounded-md hover:border-[var(--accent-light)]
+         outline outline-transparent focus:outline-[var(--accent-light)] hover:outline-[var(--accent-light)] outline-offset-1
+         text-base font-bold text-accent-contrast disabled:text-border
+         flex gap-2 items-center justify-center shrink-0
+         ${props.className}
+         `}
     >
       {children}
     </button>
