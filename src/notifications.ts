@@ -127,3 +127,13 @@ async function hydrateSubscribeNotifications(
     ),
   }));
 }
+
+export async function pingIdentityToUpdateNotification(did: string) {
+  let channel = supabaseServerClient.channel(`identity.atp_did:${did}`);
+  await channel.send({
+    type: "broadcast",
+    event: "notification",
+    payload: { message: "poke" },
+  });
+  await supabaseServerClient.removeChannel(channel);
+}

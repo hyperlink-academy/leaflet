@@ -5,6 +5,7 @@ import { CommentNotification } from "./CommentNotication";
 import { useEffect, createContext } from "react";
 import { markAsRead } from "./getNotifications";
 import { ReplyNotification } from "./ReplyNotification";
+import { useIdentityData } from "components/IdentityProvider";
 
 export function NotificationList({
   notifications,
@@ -13,9 +14,11 @@ export function NotificationList({
   notifications: HydratedNotification[];
   compact?: boolean;
 }) {
+  let { mutate } = useIdentityData();
   useEffect(() => {
-    setTimeout(() => {
-      markAsRead();
+    setTimeout(async () => {
+      await markAsRead();
+      mutate();
     }, 500);
   }, []);
 
