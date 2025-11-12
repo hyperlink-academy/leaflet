@@ -126,7 +126,7 @@ function PublicationSettingsButton(props: { publication: string }) {
           setLoading={setLoading}
         />
       ) : (
-        <SettingsMenu
+        <PubSettingsMenu
           state={state}
           setState={setState}
           loading={loading}
@@ -137,7 +137,7 @@ function PublicationSettingsButton(props: { publication: string }) {
   );
 }
 
-const SettingsMenu = (props: {
+const PubSettingsMenu = (props: {
   state: "menu" | "general" | "theme";
   setState: (s: typeof props.state) => void;
   loading: boolean;
@@ -160,7 +160,7 @@ const SettingsMenu = (props: {
           props.setState("general");
         }}
       >
-        Settings
+        Publication Settings
         <ArrowRightTiny />
       </button>
       <button
@@ -171,14 +171,6 @@ const SettingsMenu = (props: {
         Publication Theme
         <ArrowRightTiny />
       </button>
-      <SpeedyLink
-        className={menuItemClassName}
-        href="https://about.leaflet.pub/
-        "
-      >
-        About Leaflet
-        <ArrowRightTiny />
-      </SpeedyLink>
     </div>
   );
 };
@@ -190,7 +182,7 @@ export const PubSettingsHeader = (props: {
   setLoadingAction: (l: boolean) => void;
 }) => {
   return (
-    <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 pt-2 pb-1 mb-1">
+    <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-2 mb-1">
       {props.state === "menu"
         ? "Settings"
         : props.state === "general"

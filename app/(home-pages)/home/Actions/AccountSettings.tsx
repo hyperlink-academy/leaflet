@@ -56,7 +56,7 @@ const SettingsMenu = (props: {
           props.setState("general");
         }}
       >
-        Settings
+        General
         <ArrowRightTiny />
       </button>
       <button
@@ -64,17 +64,9 @@ const SettingsMenu = (props: {
         type="button"
         onClick={() => props.setState("theme")}
       >
-        Theme
+        Account Theme
         <ArrowRightTiny />
       </button>
-      <SpeedyLink
-        className={menuItemClassName}
-        href="https://about.leaflet.pub/
-        "
-      >
-        About Leaflet
-        <ArrowRightTiny />
-      </SpeedyLink>
     </div>
   );
 };
@@ -119,13 +111,13 @@ export const AccountSettingsHeader = (props: {
   backToMenuAction?: () => void;
 }) => {
   return (
-    <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 pt-2 pb-1 mb-1">
+    <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-1 mb-1">
       {props.state === "menu"
         ? "Settings"
         : props.state === "general"
           ? "General"
           : props.state === "theme"
-            ? "Publication Theme"
+            ? "Account Theme"
             : ""}
       {props.backToMenuAction && (
         <button
