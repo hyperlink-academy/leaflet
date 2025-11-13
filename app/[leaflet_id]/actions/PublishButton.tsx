@@ -29,7 +29,7 @@ export const PublishButton = () => {
   let params = useParams();
   let router = useRouter();
 
-  if (!pub) return <PublishToPublication />;
+  if (!pub) return <PublishToPublicationButton />;
   if (!pub?.doc)
     return (
       <ActionButton
@@ -86,20 +86,19 @@ const UpdateButton = () => {
   );
 };
 
-const PublishToPublication = () => {
+const PublishToPublicationButton = () => {
   let { identity } = useIdentityData();
-  let params = useParams();
-  let router = useRouter();
+
   let isMobile = useIsMobile();
-  let hasPubs =
-    identity && identity.atp_did && identity.publications.length > 0;
+  identity && identity.atp_did && identity.publications.length > 0;
+  let [selectedPub, setSelectedPub] = useState<string | undefined>(undefined);
 
   return (
     <Popover
       asChild
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className="max-w-xs w-[1000px]"
+      className="sm:max-w-sm w-[1000px]"
       trigger={
         <ActionButton
           primary
@@ -119,13 +118,19 @@ const PublishToPublication = () => {
           <PostDetailsForm />
           <hr className="border-border-light my-3" />
           <div>
-            <PubSelector publications={identity.publications} />
+            <PubSelector
+              publications={identity.publications}
+              selectedPub={selectedPub}
+              setSelectedPub={setSelectedPub}
+            />
           </div>
           <hr className="border-border-light mt-3 mb-2" />
 
           <div className="flex gap-2 items-center place-self-end">
             <ButtonTertiary>Save as Draft</ButtonTertiary>
-            <ButtonPrimary>Next</ButtonPrimary>
+            <ButtonPrimary disabled={selectedPub === undefined}>
+              Next{selectedPub === "create" && ": Create Pub!"}
+            </ButtonPrimary>
           </div>
         </div>
       )}
@@ -154,6 +159,8 @@ const PostDetailsForm = () => {
 };
 
 const PubSelector = (props: {
+  selectedPub: string | undefined;
+  setSelectedPub: (s: string) => void;
   publications: {
     identity_did: string;
     indexed_at: string;
@@ -163,15 +170,13 @@ const PubSelector = (props: {
   }[];
 }) => {
   // HEY STILL TO DO
-  // copy over the menuItem styles and apply them if the option has been selected
   // test out logged out, logged in but no pubs, and pubbed up flows
 
-  let [selectedPub, setSelectedPub] = useState<string | undefined>(undefined);
   return (
     <div className="flex flex-col gap-1">
       <div className="text-sm text-tertiary">Publish to…</div>
       {props.publications.length === 0 || props.publications === undefined ? (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
           <div className="flex gap-2 menuItem">
             <LooseLeafSmall className="shrink-0" />
             <div className="flex flex-col leading-snug">
@@ -197,10 +202,10 @@ const PubSelector = (props: {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
           <PubOption
-            selected={selectedPub === "looseleaf"}
-            onSelect={() => setSelectedPub("looseleaf")}
+            selected={props.selectedPub === "looseleaf"}
+            onSelect={() => props.setSelectedPub("looseleaf")}
           >
             <LooseLeafSmall />
             Publish as Looseleaf
@@ -210,8 +215,8 @@ const PubSelector = (props: {
             let pubRecord = p.record as PubLeafletPublication.Record;
             return (
               <PubOption
-                selected={selectedPub === p.uri}
-                onSelect={() => setSelectedPub(p.uri)}
+                selected={props.selectedPub === p.uri}
+                onSelect={() => props.setSelectedPub(p.uri)}
               >
                 <>
                   <PubIcon record={pubRecord} uri={p.uri} />
@@ -221,8 +226,8 @@ const PubSelector = (props: {
             );
           })}
           <PubOption
-            selected={selectedPub === "create"}
-            onSelect={() => setSelectedPub("create")}
+            selected={props.selectedPub === "create"}
+            onSelect={() => props.setSelectedPub("create")}
           >
             <>
               <AddSmall /> Create New Publication
@@ -241,7 +246,7 @@ const PubOption = (props: {
 }) => {
   return (
     <button
-      className={`flex gap-2 menuItem font-bold text-secondary ${props.selected && "bg-test"}`}
+      className={`flex gap-2 menuItem font-bold text-secondary ${props.selected && "bg-[var(--accent-light)]! outline! outline-offset-1! outline-accent-contrast!"}`}
       onClick={() => {
         props.onSelect();
       }}

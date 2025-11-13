@@ -61,8 +61,7 @@ export function ShareOptions() {
       trigger={
         <ActionButton
           icon=<ShareSmall />
-          primary={!!!pub}
-          secondary={!!pub}
+          secondary
           label={`Share ${pub ? "Draft" : ""}`}
         />
       }

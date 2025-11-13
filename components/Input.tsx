@@ -100,10 +100,16 @@ export const InputWithLabel = (
     JSX.IntrinsicElements["textarea"],
 ) => {
   let { label, textarea, ...inputProps } = props;
-  let style = `appearance-none w-full font-normal not-italic bg-transparent text-base text-primary focus:outline-0 ${props.className} outline-hidden resize-none disabled:text-tertiary disabled:cursor-not-allowed`;
+  let style = `
+    appearance-none resize-none  w-full
+    bg-transparent
+    outline-hidden focus:outline-0
+    font-normal not-italic  text-base text-primary disabled:text-tertiary
+    disabled:cursor-not-allowed
+    ${props.className}`;
   return (
     <label
-      className={`input-with-border flex flex-col gap-px text-sm text-tertiary font-bold italic leading-tight py-1! px-[6px]! ${props.disabled && "bg-border-light! cursor-not-allowed!"}`}
+      className={`input-with-border flex flex-col gap-px text-sm text-tertiary font-bold italic leading-tight py-1! px-[6px]! ${props.disabled && "bg-border-light! cursor-not-allowed! hover:border-border!"}`}
     >
       {props.label}
       {textarea ? (

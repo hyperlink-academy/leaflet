@@ -37,24 +37,19 @@ export function LeafletFooter(props: { entityID: string }) {
           />
         </div>
       ) : entity_set.permissions.write ? (
-        pub?.publications &&
-        identity?.atp_did &&
-        pub.publications.identity_did === identity.atp_did ? (
-          <ActionFooter>
+        <ActionFooter>
+          {pub?.publications &&
+          identity?.atp_did &&
+          pub.publications.identity_did === identity.atp_did ? (
             <BackToPubButton publication={pub.publications} />
-            <PublishButton />
-            <ShareOptions />
-            <HelpButton />
-            <ThemePopover entityID={props.entityID} />
-          </ActionFooter>
-        ) : (
-          <ActionFooter>
+          ) : (
             <HomeButton />
-            <ShareOptions />
-            <HelpButton />
-            <ThemePopover entityID={props.entityID} />
-          </ActionFooter>
-        )
+          )}
+
+          <PublishButton />
+          <ShareOptions />
+          <ThemePopover entityID={props.entityID} />
+        </ActionFooter>
       ) : (
         <div className="pb-2 px-2 z-10 flex justify-end">
           <Watermark mobile />
