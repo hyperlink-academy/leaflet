@@ -85,17 +85,11 @@ async function hydrateCommentNotifications(notifications: NotificationRow[]) {
   }));
 }
 
-export type HydratedSubscribeNotification = {
-  id: string;
-  recipient: string;
-  created_at: string;
-  type: "subscribe";
-  subscription_uri: string;
-  subscriptionData?: Tables<"publication_subscriptions">;
-};
-async function hydrateSubscribeNotifications(
-  notifications: NotificationRow[],
-): Promise<HydratedSubscribeNotification[]> {
+export type HydratedSubscribeNotification = Awaited<
+  ReturnType<typeof hydrateSubscribeNotifications>
+>[0];
+
+async function hydrateSubscribeNotifications(notifications: NotificationRow[]) {
   const subscribeNotifications = notifications.filter(
     (
       n,
@@ -107,13 +101,13 @@ async function hydrateSubscribeNotifications(
     return [];
   }
 
-  // Fetch subscription data from the database
+  // Fetch subscription data from the database with related data
   const subscriptionUris = subscribeNotifications.map(
     (n) => n.data.subscription_uri,
   );
   const { data: subscriptions } = await supabaseServerClient
     .from("publication_subscriptions")
-    .select("*")
+    .select("*, identities(bsky_profiles(*)), publications(*)")
     .in("uri", subscriptionUris);
 
   return subscribeNotifications.map((notification) => ({
@@ -124,7 +118,7 @@ async function hydrateSubscribeNotifications(
     subscription_uri: notification.data.subscription_uri,
     subscriptionData: subscriptions?.find(
       (s) => s.uri === notification.data.subscription_uri,
-    ),
+    )!,
   }));
 }
 

@@ -6,6 +6,7 @@ import { useEffect, createContext } from "react";
 import { markAsRead } from "./getNotifications";
 import { ReplyNotification } from "./ReplyNotification";
 import { useIdentityData } from "components/IdentityProvider";
+import { FollowNotification } from "./FollowNotification";
 
 export function NotificationList({
   notifications,
@@ -35,6 +36,9 @@ export function NotificationList({
           if (n.type === "comment") {
             if (n.parentData) return <ReplyNotification key={n.id} {...n} />;
             return <CommentNotification key={n.id} {...n} />;
+          }
+          if (n.type === "subscribe") {
+            return <FollowNotification key={n.id} {...n} />;
           }
         })}
       </div>
