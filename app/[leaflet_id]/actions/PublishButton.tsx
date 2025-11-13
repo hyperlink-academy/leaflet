@@ -19,17 +19,21 @@ import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
 import { PubLeafletPublication } from "lexicons/api";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
-import { useReplicache } from "src/replicache";
+import { useReplicache, useEntity } from "src/replicache";
 import { Json } from "supabase/database.types";
+import { useBlocks } from "src/hooks/queries/useBlocks";
+import * as Y from "yjs";
+import * as base64 from "base64-js";
+import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
 
-export const PublishButton = () => {
+export const PublishButton = (props: { entityID: string }) => {
   let { data: pub } = useLeafletPublicationData();
   let params = useParams();
   let router = useRouter();
 
-  if (!pub) return <PublishToPublicationButton />;
+  if (!pub) return <PublishToPublicationButton entityID={props.entityID} />;
   if (!pub?.doc)
     return (
       <ActionButton
@@ -86,7 +90,7 @@ const UpdateButton = () => {
   );
 };
 
-const PublishToPublicationButton = () => {
+const PublishToPublicationButton = (props: { entityID: string }) => {
   let { identity } = useIdentityData();
 
   let isMobile = useIsMobile();
@@ -115,7 +119,7 @@ const PublishToPublicationButton = () => {
         </div>
       ) : (
         <div className="flex flex-col">
-          <PostDetailsForm />
+          <PostDetailsForm entityID={props.entityID} />
           <hr className="border-border-light my-3" />
           <div>
             <PubSelector
@@ -138,14 +142,27 @@ const PublishToPublicationButton = () => {
   );
 };
 
-const PostDetailsForm = () => {
+const PostDetailsForm = (props: { entityID: string }) => {
   let [description, setDescription] = useState("");
+
+  let rootPage = useEntity(props.entityID, "root/page")[0].data.value;
+  let firstBlock = useBlocks(rootPage)[0];
+  let firstBlockText = useEntity(firstBlock?.value, "block/text")?.data.value;
+
+  const leafletTitle = useMemo(() => {
+    if (!firstBlockText) return "Untitled";
+    let doc = new Y.Doc();
+    const update = base64.toByteArray(firstBlockText);
+    Y.applyUpdate(doc, update);
+    let nodes = doc.getXmlElement("prosemirror").toArray();
+    return YJSFragmentToString(nodes[0]) || "Untitled";
+  }, [firstBlockText]);
 
   return (
     <div className=" flex flex-col gap-1">
       <div className="text-sm text-tertiary">Post Details</div>
       <div className="flex flex-col gap-2">
-        <InputWithLabel label="Title" value={"Title goes here"} disabled />
+        <InputWithLabel label="Title" value={leafletTitle} disabled />
         <InputWithLabel
           label="Description (optional)"
           textarea

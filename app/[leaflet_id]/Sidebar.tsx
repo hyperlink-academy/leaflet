@@ -28,7 +28,7 @@ export function LeafletSidebar() {
         <div className="sidebarContainer flex flex-col justify-end h-full w-16 relative">
           {entity_set.permissions.write && (
             <Sidebar>
-              <PublishButton />
+              <PublishButton entityID={rootEntity} />
               <ShareOptions />
               <ThemePopover entityID={rootEntity} />
               <HelpButton />
