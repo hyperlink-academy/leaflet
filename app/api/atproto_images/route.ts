@@ -16,6 +16,11 @@ export async function GET(req: NextRequest) {
   if (!service) return new NextResponse(null, { status: 404 });
   const response = await fetch(
     `${service.serviceEndpoint}/xrpc/com.atproto.sync.getBlob?did=${params.did}&cid=${params.cid}`,
+    {
+      headers: {
+        "Accept-Encoding": "gzip, deflate, br, zstd",
+      },
+    },
   );
 
   // Clone the response to modify headers
