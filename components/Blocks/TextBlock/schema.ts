@@ -103,6 +103,33 @@ let baseSchema = {
         return ["a", { href, target: "_blank" }, 0];
       },
     } as MarkSpec,
+
+    didMention: {
+      attrs: {
+        did: {},
+      },
+      inclusive: false,
+      parseDOM: [
+        {
+          tag: "span.didMention",
+          getAttrs(dom: HTMLElement) {
+            return {
+              did: dom.getAttribute("data-did"),
+            };
+          },
+        },
+      ],
+      toDOM(node) {
+        return [
+          "span",
+          {
+            class: "didMention text-accent-contrast",
+            "data-did": node.attrs.did,
+          },
+          0,
+        ];
+      },
+    } as MarkSpec,
   },
   nodes: {
     doc: { content: "block" },

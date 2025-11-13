@@ -544,6 +544,11 @@ function YJSFragmentToFacets(
           $type: "pub.leaflet.richtext.facet#strikethrough",
         });
 
+      if (d.attributes?.didMention)
+        facet.features.push({
+          $type: "pub.leaflet.richtext.facet#didMention",
+          did: d.attributes.didMention.did,
+        });
       if (d.attributes?.code)
         facet.features.push({ $type: "pub.leaflet.richtext.facet#code" });
       if (d.attributes?.highlight)

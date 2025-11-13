@@ -1,8 +1,9 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { elementId } from "src/utils/elementId";
 import { useReplicache, useEntity } from "src/replicache";
 import { isVisible } from "src/utils/isVisible";
 import { EditorState, TextSelection } from "prosemirror-state";
+import { EditorView } from "prosemirror-view";
 import { RenderYJSFragment } from "./RenderYJSFragment";
 import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 import { BlockProps } from "../Block";
@@ -23,6 +24,8 @@ import { isIOS } from "src/utils/isDevice";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useMountProsemirror } from "./mountProsemirror";
+import { schema } from "./schema";
+import { MentionAutocomplete } from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
 
 const HeadingStyle = {
   1: "text-xl font-bold",
@@ -183,10 +186,11 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
   let editorState = useEditorStates(
     (s) => s.editorStates[props.entityID],
   )?.editor;
+  let { viewRef, handleMentionSelect, setMentionState } = useMentionState(
+    props.entityID,
+  );
 
-  let { mountRef, actionTimeout } = useMountProsemirror({
-    props,
-  });
+  let { mountRef, actionTimeout } = useMountProsemirror({ props });
 
   return (
     <>
@@ -199,9 +203,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
                 ? "blockquote pt-3"
                 : "blockquote"
               : ""
-          }
-
-          `}
+          }`}
       >
         <pre
           data-entityid={props.entityID}
@@ -249,6 +251,16 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           ${props.className}`}
           ref={mountRef}
         />
+        {editorState && focused && (
+          <MentionAutocomplete
+            editorState={editorState}
+            view={viewRef}
+            onSelect={handleMentionSelect}
+            onMentionStateChange={(active, range, selectedMention) => {
+              setMentionState({ active, range, selectedMention });
+            }}
+          />
+        )}
         {editorState?.doc.textContent.length === 0 &&
         props.previousBlock === null &&
         props.nextBlock === null ? (
@@ -439,8 +451,10 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
   );
 };
 
-const useMentionState = () => {
-  const [editorState, setEditorState] = useState<EditorState | null>(null);
+const useMentionState = (entityID: string) => {
+  let view = useEditorStates((s) => s.editorStates[entityID])?.view;
+  let viewRef = useRef(view || null);
+  viewRef.current = view || null;
   const [mentionState, setMentionState] = useState<{
     active: boolean;
     range: { from: number; to: number } | null;
@@ -448,5 +462,38 @@ const useMentionState = () => {
   }>({ active: false, range: null, selectedMention: null });
   const mentionStateRef = useRef(mentionState);
   mentionStateRef.current = mentionState;
-  return { mentionStateRef };
+
+  const handleMentionSelect = useCallback(
+    (
+      mention: { handle: string; did: string },
+      range: { from: number; to: number },
+    ) => {
+      let view = useEditorStates.getState().editorStates[entityID]?.view;
+      if (!view) return;
+      const { from, to } = range;
+      const tr = view.state.tr;
+
+      // Delete the query text (keep the @)
+      tr.delete(from + 1, to);
+
+      // Insert the mention text after the @
+      const mentionText = mention.handle;
+      tr.insertText(mentionText, from + 1);
+
+      // Apply mention mark to @ and handle
+      tr.addMark(
+        from,
+        from + 1 + mentionText.length,
+        schema.marks.didMention.create({ did: mention.did }),
+      );
+
+      // Add a space after the mention
+      tr.insertText(" ", from + 1 + mentionText.length);
+
+      view.dispatch(tr);
+      view.focus();
+    },
+    [],
+  );
+  return { mentionStateRef, handleMentionSelect, viewRef, setMentionState };
 };

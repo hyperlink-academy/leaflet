@@ -9,6 +9,12 @@ const FacetItems: LexiconDoc["defs"] = {
       uri: { type: "string" },
     },
   },
+  didMention: {
+    type: "object",
+    description: "Facet feature for mentioning a did.",
+    required: ["did"],
+    properties: { did: { type: "string", format: "did" } },
+  },
   code: {
     type: "object",
     description: "Facet feature for inline code.",

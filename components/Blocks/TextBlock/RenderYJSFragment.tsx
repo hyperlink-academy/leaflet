@@ -27,7 +27,7 @@ export function RenderYJSFragment({
         return (
           <BlockWrapper wrapper={wrapper} attrs={attrs}>
             {children.length === 0 ? (
-              <div />
+              <br />
             ) : (
               node.toArray().map((node, index) => {
                 if (node.constructor === XmlText) {
@@ -103,6 +103,7 @@ export type Delta = {
     strong?: {};
     code?: {};
     em?: {};
+    didMention?: { did: string };
     underline?: {};
     strikethrough?: {};
     highlight?: { color: string };
