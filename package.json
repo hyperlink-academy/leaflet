@@ -54,6 +54,7 @@
     "feed": "^5.1.0",
     "fractional-indexing": "^3.2.0",
     "hono": "^4.7.11",
+    "immer": "^10.2.0",
     "inngest": "^3.40.1",
     "ioredis": "^5.6.1",
     "katex": "^0.16.22",
