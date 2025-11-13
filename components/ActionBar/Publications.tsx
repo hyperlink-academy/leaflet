@@ -15,25 +15,52 @@ import { BlueskyLogin } from "app/login/LoginForm";
 import { ButtonSecondary } from "components/Buttons";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useState } from "react";
+import { LooseLeafSmall } from "components/Icons/ArchiveSmall";
+import { navPages } from "./Navigation";
 
 export const PublicationButtons = (props: {
+  currentPage: navPages;
   currentPubUri: string | undefined;
 }) => {
   let { identity } = useIdentityData();
+  let looseleaves = ["placeholder"];
 
   // don't show pub list button if not logged in or no pub list
   // we show a "start a pub" banner instead
   if (!identity || !identity.atp_did || identity.publications.length === 0)
     return <PubListEmpty />;
+
   return (
     <div className="pubListWrapper w-full  flex flex-col gap-1 sm:bg-transparent sm:border-0">
+      {looseleaves.length > 0 && (
+        <>
+          <SpeedyLink
+            href={`/lish/looseleaf`}
+            className="flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full"
+          >
+            {/*TODO How should i get if this is the current page or not?
+              theres not "pub" to check the uri for. Do i need to add it as an option to NavPages? thats kinda annoying*/}
+            <ActionButton
+              label="Looseleaves"
+              icon={<LooseLeafSmall />}
+              nav
+              className={
+                props.currentPage === "looseleaf"
+                  ? "bg-bg-page! border-border!"
+                  : ""
+              }
+            />
+          </SpeedyLink>
+          <hr className="border-border-light border-dashed mx-1" />
+        </>
+      )}
+
       {identity.publications?.map((d) => {
         return (
           <PublicationOption
             {...d}
             key={d.uri}
             record={d.record}
-            asActionButton
             current={d.uri === props.currentPubUri}
           />
         );
@@ -52,7 +79,6 @@ export const PublicationOption = (props: {
   uri: string;
   name: string;
   record: Json;
-  asActionButton?: boolean;
   current?: boolean;
 }) => {
   let record = props.record as PubLeafletPublication.Record | null;
@@ -63,19 +89,12 @@ export const PublicationOption = (props: {
       href={`${getBasePublicationURL(props)}/dashboard`}
       className="flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full"
     >
-      {props.asActionButton ? (
-        <ActionButton
-          label={record.name}
-          icon={<PubIcon record={record} uri={props.uri} />}
-          nav
-          className={props.current ? "bg-bg-page! border-border!" : ""}
-        />
-      ) : (
-        <>
-          <PubIcon record={record} uri={props.uri} />
-          <div className="truncate">{record.name}</div>
-        </>
-      )}
+      <ActionButton
+        label={record.name}
+        icon={<PubIcon record={record} uri={props.uri} />}
+        nav
+        className={props.current ? "bg-bg-page! border-border!" : ""}
+      />
     </SpeedyLink>
   );
 };

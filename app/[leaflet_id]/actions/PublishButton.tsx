@@ -200,9 +200,8 @@ const PubSelector = (props: {
               <div className="text-secondary font-bold">
                 Publish as LooseLeaf
               </div>
-              <div className="text-tertiary text-sm">
-                Publish this as a one off doc <br />
-                to AT Proto
+              <div className="text-tertiary text-sm font-normal">
+                Publish this as a one off doc to AT Proto
               </div>
             </div>
           </div>
@@ -212,7 +211,7 @@ const PubSelector = (props: {
               <div className="text-secondary font-bold">
                 Start a Publication!
               </div>
-              <div className="text-tertiary text-sm">
+              <div className="text-tertiary text-sm font-normal">
                 Publish your writing to a blog or newsletter on AT Proto
               </div>
             </div>
