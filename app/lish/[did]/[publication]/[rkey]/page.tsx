@@ -41,6 +41,12 @@ export async function generateMetadata(props: {
   let docRecord = document.data as PubLeafletDocument.Record;
 
   return {
+    icons: {
+      other: {
+        rel: "alternate",
+        url: document.uri,
+      },
+    },
     title:
       docRecord.title +
       " - " +
