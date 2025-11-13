@@ -13,9 +13,11 @@ import {
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { timeAgo } from "src/utils/timeAgo";
+import { useIdentityData } from "components/IdentityProvider";
 export const PublicationMetadata = () => {
   let { rep } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
+  let { identity } = useIdentityData();
   let title = useSubscribe(rep, (tx) => tx.get<string>("publication_title"));
   let description = useSubscribe(rep, (tx) =>
     tx.get<string>("publication_description"),
@@ -35,7 +37,11 @@ export const PublicationMetadata = () => {
     <div className={`flex flex-col px-3 sm:px-4 pb-5 sm:pt-3 pt-2`}>
       <div className="flex gap-2">
         <Link
-          href={`${getBasePublicationURL(pub.publications)}/dashboard`}
+          href={
+            identity?.atp_did === pub.publications?.identity_did
+              ? `${getBasePublicationURL(pub.publications)}/dashboard`
+              : getPublicationURL(pub.publications)
+          }
           className="leafletMetadata text-accent-contrast font-bold hover:no-underline"
         >
           {pub.publications?.name}
