@@ -31,7 +31,6 @@ export const PublicationPollBlock = (props: BlockProps) => {
 
     const docRecord = publicationData.documents
       .data as PubLeafletDocument.Record;
-    console.log(docRecord);
 
     // Search through all pages and blocks to find if this poll entity has been published
     for (const page of docRecord.pages || []) {
@@ -40,7 +39,6 @@ export const PublicationPollBlock = (props: BlockProps) => {
         for (const blockWrapper of linearPage.blocks || []) {
           if (blockWrapper.block?.$type === ids.PubLeafletBlocksPoll) {
             const pollBlock = blockWrapper.block as PubLeafletBlocksPoll.Main;
-            console.log(pollBlock);
             // Check if this poll's rkey matches our entity ID
             const rkey = pollBlock.pollRef.uri.split("/").pop();
             if (rkey === props.entityID) {

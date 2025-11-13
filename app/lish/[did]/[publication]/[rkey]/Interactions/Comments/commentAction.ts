@@ -8,7 +8,10 @@ import { TID } from "@atproto/common";
 import { AtUri, lexToJson, Un$Typed } from "@atproto/api";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
-import { Notification } from "src/notifications";
+import {
+  Notification,
+  pingIdentityToUpdateNotification,
+} from "src/notifications";
 import { v7 } from "uuid";
 
 export async function publishComment(args: {
@@ -67,21 +70,24 @@ export async function publishComment(args: {
       } as unknown as Json,
     })
     .select();
-  let notifications: Notification[] = [
-    {
-      id: v7(),
-      recipient: new AtUri(args.document).host,
-      data: { type: "comment", comment_uri: uri.toString() },
-    },
-  ];
-  if (args.comment.replyTo)
+  let notifications: Notification[] = [];
+  let recipient = args.comment.replyTo
+    ? new AtUri(args.comment.replyTo).host
+    : new AtUri(args.document).host;
+  if (recipient !== credentialSession.did) {
     notifications.push({
       id: v7(),
-      recipient: new AtUri(args.comment.replyTo).host,
-      data: { type: "comment", comment_uri: uri.toString() },
+      recipient,
+      data: {
+        type: "comment",
+        comment_uri: uri.toString(),
+        parent_uri: args.comment.replyTo,
+      },
     });
-  // SOMEDAY: move this out the action with inngest or workflows
-  await supabaseServerClient.from("notifications").insert(notifications);
+    // SOMEDAY: move this out the action with inngest or workflows
+    await supabaseServerClient.from("notifications").insert(notifications);
+    await pingIdentityToUpdateNotification(recipient);
+  }
 
   return {
     record: data?.[0].record as Json,

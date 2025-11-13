@@ -162,6 +162,10 @@ const PubSelector = (props: {
     uri: string;
   }[];
 }) => {
+  // HEY STILL TO DO
+  // copy over the menuItem styles and apply them if the option has been selected
+  // test out logged out, logged in but no pubs, and pubbed up flows
+
   let [selectedPub, setSelectedPub] = useState<string | undefined>(undefined);
   return (
     <div className="flex flex-col gap-1">

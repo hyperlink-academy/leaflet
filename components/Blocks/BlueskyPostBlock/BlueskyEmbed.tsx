@@ -125,11 +125,13 @@ export const BlueskyEmbed = (props: {
             className={`flex flex-col gap-1 relative w-full overflow-hidden sm:p-3 p-2 text-xs  block-border`}
           >
             <div className="bskyAuthor w-full flex items-center gap-1">
-              <img
-                src={record.author?.avatar}
-                alt={`${record.author?.displayName}'s avatar`}
-                className="shink-0 w-6 h-6 rounded-full border border-border-light"
-              />
+              {record.author.avatar && (
+                <img
+                  src={record.author?.avatar}
+                  alt={`${record.author?.displayName}'s avatar`}
+                  className="shink-0 w-6 h-6 rounded-full border border-border-light"
+                />
+              )}
               <div className=" font-bold text-secondary">
                 {record.author?.displayName}
               </div>
