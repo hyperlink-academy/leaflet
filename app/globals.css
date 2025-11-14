@@ -126,20 +126,20 @@
   @media (min-width: 640px) {
     :root {
       --page-width-unitless: min(
-        624,
+        720,
         calc(var(--leaflet-width-unitless) - 128)
       );
-      --page-width-units: min(624px, calc(100vw - 128px));
+      --page-width-units: min(720px, calc(100vw - 128px));
     }
   }
 
   @media (min-width: 1280px) {
     :root {
       --page-width-unitless: min(
-        624,
+        720,
         calc((var(--leaflet-width-unitless) / 2) - 32)
       );
-      --page-width-units: min(624px, calc((100vw / 2) - 32px));
+      --page-width-units: min(720px, calc((100vw / 2) - 32px));
     }
   }
 
