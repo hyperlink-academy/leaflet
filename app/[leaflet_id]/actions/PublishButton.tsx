@@ -7,7 +7,7 @@ import {
 } from "components/ActionBar/Publications";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { AddSmall } from "components/Icons/AddSmall";
-import { LooseLeafSmall } from "components/Icons/ArchiveSmall";
+import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { useIdentityData } from "components/IdentityProvider";
 import { InputWithLabel } from "components/Input";

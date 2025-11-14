@@ -15,7 +15,7 @@ import { BlueskyLogin } from "app/login/LoginForm";
 import { ButtonSecondary } from "components/Buttons";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useState } from "react";
-import { LooseLeafSmall } from "components/Icons/ArchiveSmall";
+import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { navPages } from "./Navigation";
 
 export const PublicationButtons = (props: {
@@ -41,7 +41,7 @@ export const PublicationButtons = (props: {
             {/*TODO How should i get if this is the current page or not?
               theres not "pub" to check the uri for. Do i need to add it as an option to NavPages? thats kinda annoying*/}
             <ActionButton
-              label="Looseleaves"
+              label="LooseLeafs"
               icon={<LooseLeafSmall />}
               nav
               className={
