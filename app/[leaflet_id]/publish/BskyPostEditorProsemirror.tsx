@@ -384,11 +384,15 @@ export function MentionAutocomplete(props: {
 
       if (e.key === "ArrowUp") {
         e.preventDefault();
+        e.stopPropagation();
+
         if (suggestionIndex > 0) {
           setSuggestionIndex((i) => i - 1);
         }
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
+        e.stopPropagation();
+
         if (suggestionIndex < suggestions.length - 1) {
           setSuggestionIndex((i) => i + 1);
         }
@@ -396,10 +400,10 @@ export function MentionAutocomplete(props: {
     };
 
     const dom = props.view.current.dom;
-    dom.addEventListener("keydown", handleKeyDown);
+    dom.addEventListener("keydown", handleKeyDown, true);
 
     return () => {
-      dom.removeEventListener("keydown", handleKeyDown);
+      dom.removeEventListener("keydown", handleKeyDown, true);
     };
   }, [
     mentionQuery,
@@ -412,6 +416,12 @@ export function MentionAutocomplete(props: {
   if (!mentionCoords || suggestions.length === 0) return null;
 
   // The styles in this component should match the Menu styles in components/Layout.tsx
+
+  let menuItemStyle = `menuItem py-0.5! text-secondary flex-col! gap-0! leading-tight text-sm truncate`;
+  let menuItemSubtextStyle = `text-tertiary italic text-xs font-normal min-w-0  truncate`;
+
+  let menuItemSelectedStyle = `bg-[var(--accent-light)]`;
+
   return (
     <Popover.Root open>
       {createPortal(
@@ -431,7 +441,7 @@ export function MentionAutocomplete(props: {
           sideOffset={4}
           collisionPadding={20}
           onOpenAutoFocus={(e) => e.preventDefault()}
-          className={`dropdownMenu z-20 bg-bg-page flex flex-col py-1 gap-0.5 border border-border rounded-md shadow-md`}
+          className={`dropdownMenu z-20 bg-bg-page flex flex-col p-1 gap-1 border border-border rounded-md shadow-md sm:max-w-xs w-[1000px]`}
         >
           <ul className="list-none p-0 text-sm">
             {suggestions.map((result, index) => {
@@ -439,13 +449,9 @@ export function MentionAutocomplete(props: {
                 return (
                   <div
                     className={`
-                    MenuItem
-                    font-bold z-10 py-1 px-3
-                    text-left text-secondary
-                    flex gap-2
-                    ${index === suggestionIndex ? "bg-border-light data-[highlighted]:text-secondary" : ""}
-                    hover:bg-border-light hover:text-secondary
-                    outline-none
+                    ${menuItemStyle}
+                    ${index === suggestionIndex ? menuItemSelectedStyle : ""}
+
                     `}
                     key={result.did}
                     onClick={() => {
@@ -458,21 +464,22 @@ export function MentionAutocomplete(props: {
                     }}
                     onMouseDown={(e) => e.preventDefault()}
                   >
-                    @{result.handle}
+                    {result.displayName
+                      ? result.displayName
+                      : `@${result.handle}`}
+                    {result.displayName && (
+                      <div className={menuItemSubtextStyle}>
+                        @{result.handle}
+                      </div>
+                    )}
                   </div>
                 );
               if (result.type == "publication") {
                 return (
                   <div
                     className={`
-                      text-test
-                  MenuItem
-                  font-bold z-10 py-1 px-3
-                  text-left
-                  flex gap-2
-                  ${index === suggestionIndex ? "bg-border-light data-[highlighted]:text-secondary" : ""}
-                  hover:bg-border-light hover:text-secondary
-                  outline-none
+                      ${menuItemStyle}
+                      ${index === suggestionIndex ? menuItemSelectedStyle : ""}
                   `}
                     key={result.uri}
                     onClick={() => {
@@ -486,6 +493,9 @@ export function MentionAutocomplete(props: {
                     onMouseDown={(e) => e.preventDefault()}
                   >
                     {result.name}
+                    <div className={menuItemSubtextStyle}>
+                      Leaflet Publication
+                    </div>
                   </div>
                 );
               }
@@ -498,7 +508,7 @@ export function MentionAutocomplete(props: {
 }
 
 export type Mention =
-  | { type: "did"; handle: string; did: string }
+  | { type: "did"; handle: string; did: string; displayName?: string }
   | { type: "publication"; uri: string; name: string };
 function useMentionSuggestions(query: string | null) {
   const [suggestionIndex, setSuggestionIndex] = useState(0);
@@ -524,6 +534,7 @@ function useMentionSuggestions(query: string | null) {
           type: "did" as const,
           handle: actor.handle,
           did: actor.did,
+          displayName: actor.displayName,
         })),
         ...publications.result.publications.map((p) => ({
           type: "publication" as const,

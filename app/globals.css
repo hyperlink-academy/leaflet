@@ -413,6 +413,8 @@ pre.shiki {
   outline: none !important;
   cursor: pointer;
   background-color: transparent;
+  display: flex;
+  gap: 0.5rem;
 
   :hover {
     text-decoration: none !important;
