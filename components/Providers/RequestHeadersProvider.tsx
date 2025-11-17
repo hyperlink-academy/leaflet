@@ -21,7 +21,11 @@ export const RequestHeadersProvider = (props: {
 }) => {
   return (
     <RequestHeadersContext.Provider
-      value={{ country: props.country, language: props.language, timezone: props.timezone }}
+      value={{
+        country: props.country,
+        language: props.language,
+        timezone: props.timezone,
+      }}
     >
       {props.children}
     </RequestHeadersContext.Provider>
