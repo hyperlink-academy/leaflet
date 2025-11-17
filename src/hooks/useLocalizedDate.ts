@@ -2,7 +2,7 @@
 import { useContext, useMemo } from "react";
 import { DateTime } from "luxon";
 import { RequestHeadersContext } from "components/Providers/RequestHeadersProvider";
-import { useInitialPageLoad } from "components/InitialPageLoadProvider";
+import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 
 /**
  * Hook that formats a date string using Luxon with timezone and locale from request headers.
@@ -20,14 +20,14 @@ export function useLocalizedDate(
   options?: Intl.DateTimeFormatOptions,
 ): string {
   const { timezone, language } = useContext(RequestHeadersContext);
-  const isInitialPageLoad = useInitialPageLoad();
+  const hasPageLoaded = useHasPageLoaded();
 
   return useMemo(() => {
     // Parse the date string to Luxon DateTime
     let dateTime = DateTime.fromISO(dateString);
 
     // On initial page load, use header timezone. After hydration, use system timezone
-    const effectiveTimezone = isInitialPageLoad
+    const effectiveTimezone = !hasPageLoaded
       ? timezone
       : Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -39,7 +39,7 @@ export function useLocalizedDate(
     // On initial page load, use header locale. After hydration, use system locale
     // Parse locale from accept-language header (take first locale)
     // accept-language format: "en-US,en;q=0.9,es;q=0.8"
-    const effectiveLocale = isInitialPageLoad
+    const effectiveLocale = !hasPageLoaded
       ? language?.split(",")[0]?.split(";")[0]?.trim() || "en-US"
       : Intl.DateTimeFormat().resolvedOptions().locale;
 
@@ -50,5 +50,5 @@ export function useLocalizedDate(
       // Fallback to en-US if locale is invalid
       return dateTime.toLocaleString(options, { locale: "en-US" });
     }
-  }, [dateString, options, timezone, language, isInitialPageLoad]);
+  }, [dateString, options, timezone, language, hasPageLoaded]);
 }
