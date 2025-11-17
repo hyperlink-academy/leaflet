@@ -27,7 +27,7 @@ export function RenderYJSFragment({
         return (
           <BlockWrapper wrapper={wrapper} attrs={attrs}>
             {children.length === 0 ? (
-              <br />
+              <div />
             ) : (
               node.toArray().map((node, index) => {
                 if (node.constructor === XmlText) {
