@@ -35,6 +35,7 @@ export async function getWebpageImage(
       },
       body: JSON.stringify({
         url,
+        scrollPage: true,
         addStyleTag: [
           {
             content: `* {overflow: hidden !important; }`,
