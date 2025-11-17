@@ -21,6 +21,7 @@
             "refs": [
               "#link",
               "#didMention",
+              "#atMention",
               "#code",
               "#highlight",
               "#underline",
@@ -73,6 +74,19 @@
         "did": {
           "type": "string",
           "format": "did"
+        }
+      }
+    },
+    "atMention": {
+      "type": "object",
+      "description": "Facet feature for mentioning an AT URI.",
+      "required": [
+        "atURI"
+      ],
+      "properties": {
+        "atURI": {
+          "type": "string",
+          "format": "uri"
         }
       }
     },

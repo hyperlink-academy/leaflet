@@ -104,6 +104,7 @@ export type Delta = {
     code?: {};
     em?: {};
     didMention?: { did: string };
+    atMention?: { atURI: string };
     underline?: {};
     strikethrough?: {};
     highlight?: { color: string };

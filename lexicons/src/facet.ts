@@ -15,6 +15,12 @@ const FacetItems: LexiconDoc["defs"] = {
     required: ["did"],
     properties: { did: { type: "string", format: "did" } },
   },
+  atMention: {
+    type: "object",
+    description: "Facet feature for mentioning an AT URI.",
+    required: ["atURI"],
+    properties: { atURI: { type: "string", format: "uri" } },
+  },
   code: {
     type: "object",
     description: "Facet feature for inline code.",

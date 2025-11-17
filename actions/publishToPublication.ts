@@ -549,6 +549,11 @@ function YJSFragmentToFacets(
           $type: "pub.leaflet.richtext.facet#didMention",
           did: d.attributes.didMention.did,
         });
+      if (d.attributes?.atMention)
+        facet.features.push({
+          $type: "pub.leaflet.richtext.facet#atMention",
+          atURI: d.attributes.atMention.atURI,
+        });
       if (d.attributes?.code)
         facet.features.push({ $type: "pub.leaflet.richtext.facet#code" });
       if (d.attributes?.highlight)
