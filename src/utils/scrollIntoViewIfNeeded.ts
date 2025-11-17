@@ -4,8 +4,6 @@ export function scrollIntoViewIfNeeded(
   behavior?: ScrollBehavior,
   rootBottomMargin?: number,
 ) {
-  console.log("this should scroll up now!");
-
   if (!el) {
     return;
   }
@@ -31,10 +29,6 @@ export function scrollIntoViewIfNeeded(
             let scrollContainer = getScrollParent(el);
             let scrollContainerHeight = scrollContainer.clientHeight;
             let distanceFromBottom = scrollContainerHeight - rect.bottom;
-
-            console.log("containerHeight: " + scrollContainerHeight);
-            console.log("el bottom: " + rect.bottom);
-
             scrollContainer.scrollBy({
               top: Math.abs(rootBottomMargin + distanceFromBottom),
               behavior: behavior ? behavior : "auto",
