@@ -43,6 +43,7 @@ export function useLocalizedDate(
       ? language?.split(",")[0]?.split(";")[0]?.trim() || "en-US"
       : Intl.DateTimeFormat().resolvedOptions().locale;
 
+    console.log({ effectiveLocale, effectiveTimezone });
     try {
       return dateTime.toLocaleString(options, { locale: effectiveLocale });
     } catch (error) {
