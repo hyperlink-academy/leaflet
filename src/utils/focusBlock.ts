@@ -24,6 +24,8 @@ export function focusBlock(
   scrollIntoViewIfNeeded(
     document.getElementById(elementId.block(block.value).container),
     false,
+    undefined,
+    -80,
   );
   if (block.type === "math" || block.type === "code") {
     let el = document.getElementById(
