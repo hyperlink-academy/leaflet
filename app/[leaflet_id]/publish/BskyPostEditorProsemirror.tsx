@@ -19,6 +19,8 @@ import { history, undo, redo } from "prosemirror-history";
 import { inputRules, InputRule } from "prosemirror-inputrules";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
 import { IOSBS } from "app/lish/[did]/[publication]/[rkey]/Interactions/Comments/CommentBox";
+import { callRPC } from "app/api/rpc/client";
+import { schema } from "components/Blocks/TextBlock/schema";
 
 // Schema with only links, mentions, and hashtags marks
 const bskyPostSchema = new Schema({
@@ -134,26 +136,28 @@ function createHashtagInputRule() {
     return tr;
   });
 }
-
+export type MentionState = {
+  active: boolean;
+  range: { from: number; to: number } | null;
+  selectedMention: Mention | null;
+};
 export function BlueskyPostEditorProsemirror(props: {
-  editorStateRef: React.MutableRefObject<EditorState | null>;
+  editorStateRef: React.RefObject<EditorState | null>;
   initialContent?: string;
   onCharCountChange?: (count: number) => void;
 }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [editorState, setEditorState] = useState<EditorState | null>(null);
-  const [mentionState, setMentionState] = useState<{
-    active: boolean;
-    range: { from: number; to: number } | null;
-    selectedMention: { handle: string; did: string } | null;
-  }>({ active: false, range: null, selectedMention: null });
+  const [mentionState, setMentionState] = useState<MentionState>({
+    active: false,
+    range: null,
+    selectedMention: null,
+  });
 
   const handleMentionSelect = useCallback(
-    (
-      mention: { handle: string; did: string },
-      range: { from: number; to: number },
-    ) => {
+    (mention: Mention, range: { from: number; to: number }) => {
+      if (mention.type !== "did") return;
       if (!viewRef.current) return;
       const view = viewRef.current;
       const { from, to } = range;
@@ -288,17 +292,14 @@ export function BlueskyPostEditorProsemirror(props: {
   );
 }
 
-function MentionAutocomplete(props: {
+export function MentionAutocomplete(props: {
   editorState: EditorState;
   view: React.RefObject<EditorView | null>;
-  onSelect: (
-    mention: { handle: string; did: string },
-    range: { from: number; to: number },
-  ) => void;
+  onSelect: (mention: Mention, range: { from: number; to: number }) => void;
   onMentionStateChange: (
     active: boolean,
     range: { from: number; to: number } | null,
-    selectedMention: { handle: string; did: string } | null,
+    selectedMention: Mention | null,
   ) => void;
 }) {
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -325,7 +326,7 @@ function MentionAutocomplete(props: {
     );
 
     // Look for @ followed by word characters before cursor
-    const match = textBefore.match(/@([\w.]*)$/);
+    const match = textBefore.match(/(?:^|\s)@([\w.]*)$/);
 
     if (match && props.view.current) {
       const queryBefore = match[1];
@@ -434,9 +435,10 @@ function MentionAutocomplete(props: {
         >
           <ul className="list-none p-0 text-sm">
             {suggestions.map((result, index) => {
-              return (
-                <div
-                  className={`
+              if (result.type === "did")
+                return (
+                  <div
+                    className={`
                     MenuItem
                     font-bold z-10 py-1 px-3
                     text-left text-secondary
@@ -445,20 +447,48 @@ function MentionAutocomplete(props: {
                     hover:bg-border-light hover:text-secondary
                     outline-none
                     `}
-                  key={result.did}
-                  onClick={() => {
-                    if (mentionRange) {
-                      props.onSelect(result, mentionRange);
-                      setMentionQuery(null);
-                      setMentionRange(null);
-                      setMentionCoords(null);
-                    }
-                  }}
-                  onMouseDown={(e) => e.preventDefault()}
-                >
-                  @{result.handle}
-                </div>
-              );
+                    key={result.did}
+                    onClick={() => {
+                      if (mentionRange) {
+                        props.onSelect(result, mentionRange);
+                        setMentionQuery(null);
+                        setMentionRange(null);
+                        setMentionCoords(null);
+                      }
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                  >
+                    @{result.handle}
+                  </div>
+                );
+              if (result.type == "publication") {
+                return (
+                  <div
+                    className={`
+                      text-test
+                  MenuItem
+                  font-bold z-10 py-1 px-3
+                  text-left
+                  flex gap-2
+                  ${index === suggestionIndex ? "bg-border-light data-[highlighted]:text-secondary" : ""}
+                  hover:bg-border-light hover:text-secondary
+                  outline-none
+                  `}
+                    key={result.uri}
+                    onClick={() => {
+                      if (mentionRange) {
+                        props.onSelect(result, mentionRange);
+                        setMentionQuery(null);
+                        setMentionRange(null);
+                        setMentionCoords(null);
+                      }
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                  >
+                    {result.name}
+                  </div>
+                );
+              }
             })}
           </ul>
         </Popover.Content>
@@ -467,11 +497,12 @@ function MentionAutocomplete(props: {
   );
 }
 
+export type Mention =
+  | { type: "did"; handle: string; did: string }
+  | { type: "publication"; uri: string; name: string };
 function useMentionSuggestions(query: string | null) {
   const [suggestionIndex, setSuggestionIndex] = useState(0);
-  const [suggestions, setSuggestions] = useState<
-    { handle: string; did: string }[]
-  >([]);
+  const [suggestions, setSuggestions] = useState<Array<Mention>>([]);
 
   useDebouncedEffect(
     async () => {
@@ -481,16 +512,25 @@ function useMentionSuggestions(query: string | null) {
       }
 
       const agent = new Agent("https://public.api.bsky.app");
-      const result = await agent.searchActorsTypeahead({
-        q: query,
-        limit: 8,
-      });
-      setSuggestions(
-        result.data.actors.map((actor) => ({
+      const [result, publications] = await Promise.all([
+        agent.searchActorsTypeahead({
+          q: query,
+          limit: 8,
+        }),
+        callRPC(`search_publication_names`, { query, limit: 8 }),
+      ]);
+      setSuggestions([
+        ...result.data.actors.map((actor) => ({
+          type: "did" as const,
           handle: actor.handle,
           did: actor.did,
         })),
-      );
+        ...publications.result.publications.map((p) => ({
+          type: "publication" as const,
+          uri: p.uri,
+          name: p.name,
+        })),
+      ]);
     },
     300,
     [query],
@@ -593,3 +633,39 @@ function marksToFeatures(marks: readonly Mark[]) {
 
   return features;
 }
+
+export const addMentionToEditor = (
+  mention: Mention,
+  range: { from: number; to: number },
+  view: EditorView,
+) => {
+  if (!view) return;
+  const { from, to } = range;
+  const tr = view.state.tr;
+  // Delete the query text (keep the @)
+  tr.delete(from + 1, to);
+
+  if (mention.type == "did") {
+    tr.insertText(mention.handle, from + 1);
+    tr.addMark(
+      from,
+      from + 1 + mention.handle.length,
+      schema.marks.didMention.create({ did: mention.did }),
+    );
+    tr.insertText(" ", from + 1 + mention.handle.length);
+  }
+  if (mention.type === "publication") {
+    tr.insertText(mention.name, from + 1);
+    tr.addMark(
+      from,
+      from + 1 + mention.name.length,
+      schema.marks.atMention.create({ atURI: mention.uri }),
+    );
+    tr.insertText(" ", from + 1 + mention.name.length);
+  }
+
+  // Insert the mention text after the @
+
+  view.dispatch(tr);
+  view.focus();
+};

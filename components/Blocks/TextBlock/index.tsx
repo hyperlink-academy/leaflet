@@ -25,7 +25,11 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useMountProsemirror } from "./mountProsemirror";
 import { schema } from "./schema";
-import { MentionAutocomplete } from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
+import {
+  addMentionToEditor,
+  Mention,
+  MentionAutocomplete,
+} from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
 
 const HeadingStyle = {
   1: "text-xl font-bold",
@@ -186,11 +190,13 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
   let editorState = useEditorStates(
     (s) => s.editorStates[props.entityID],
   )?.editor;
-  let { viewRef, handleMentionSelect, setMentionState } = useMentionState(
-    props.entityID,
-  );
+  let { viewRef, handleMentionSelect, setMentionState, mentionStateRef } =
+    useMentionState(props.entityID);
 
-  let { mountRef, actionTimeout } = useMountProsemirror({ props });
+  let { mountRef, actionTimeout } = useMountProsemirror({
+    props,
+    mentionStateRef,
+  });
 
   return (
     <>
@@ -458,40 +464,16 @@ const useMentionState = (entityID: string) => {
   const [mentionState, setMentionState] = useState<{
     active: boolean;
     range: { from: number; to: number } | null;
-    selectedMention: { handle: string; did: string } | null;
+    selectedMention: Mention | null;
   }>({ active: false, range: null, selectedMention: null });
   const mentionStateRef = useRef(mentionState);
   mentionStateRef.current = mentionState;
 
   const handleMentionSelect = useCallback(
-    (
-      mention: { handle: string; did: string },
-      range: { from: number; to: number },
-    ) => {
+    (mention: Mention, range: { from: number; to: number }) => {
       let view = useEditorStates.getState().editorStates[entityID]?.view;
       if (!view) return;
-      const { from, to } = range;
-      const tr = view.state.tr;
-
-      // Delete the query text (keep the @)
-      tr.delete(from + 1, to);
-
-      // Insert the mention text after the @
-      const mentionText = mention.handle;
-      tr.insertText(mentionText, from + 1);
-
-      // Apply mention mark to @ and handle
-      tr.addMark(
-        from,
-        from + 1 + mentionText.length,
-        schema.marks.didMention.create({ did: mention.did }),
-      );
-
-      // Add a space after the mention
-      tr.insertText(" ", from + 1 + mentionText.length);
-
-      view.dispatch(tr);
-      view.focus();
+      addMentionToEditor(mention, range, view);
     },
     [],
   );

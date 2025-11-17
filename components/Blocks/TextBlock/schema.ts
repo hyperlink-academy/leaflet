@@ -103,7 +103,32 @@ let baseSchema = {
         return ["a", { href, target: "_blank" }, 0];
       },
     } as MarkSpec,
-
+    atMention: {
+      attrs: {
+        atURI: {},
+      },
+      inclusive: false,
+      parseDOM: [
+        {
+          tag: "span.atMention",
+          getAttrs(dom: HTMLElement) {
+            return {
+              atURI: dom.getAttribute("data-at-uri"),
+            };
+          },
+        },
+      ],
+      toDOM(node) {
+        return [
+          "span",
+          {
+            class: "atMention text-accent-contrast",
+            "data-at-uri": node.attrs.atURI,
+          },
+          0,
+        ];
+      },
+    } as MarkSpec,
     didMention: {
       attrs: {
         did: {},

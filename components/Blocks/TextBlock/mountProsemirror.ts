@@ -23,8 +23,15 @@ import {
 import { useHandlePaste } from "./useHandlePaste";
 import { BlockProps } from "../Block";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { MentionState } from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
 
-export function useMountProsemirror({ props }: { props: BlockProps }) {
+export function useMountProsemirror({
+  props,
+  mentionStateRef,
+}: {
+  props: BlockProps;
+  mentionStateRef: React.RefObject<MentionState>;
+}) {
   let { entityID, parent } = props;
   let rep = useReplicache();
   let mountRef = useRef<HTMLPreElement | null>(null);
@@ -44,7 +51,12 @@ export function useMountProsemirror({ props }: { props: BlockProps }) {
   useLayoutEffect(() => {
     if (!mountRef.current) return;
 
-    const km = TextBlockKeymap(propsRef, repRef, rep.undoManager);
+    const km = TextBlockKeymap(
+      propsRef,
+      repRef,
+      rep.undoManager,
+      mentionStateRef,
+    );
     const editor = EditorState.create({
       schema: schema,
       plugins: [

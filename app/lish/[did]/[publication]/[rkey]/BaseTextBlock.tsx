@@ -22,6 +22,9 @@ export function BaseTextBlock(props: {
     let isStrikethrough = segment.facet?.find(
       PubLeafletRichtextFacet.isStrikethrough,
     );
+    let isDidMention = segment.facet?.find(
+      PubLeafletRichtextFacet.isDidMention,
+    );
     let isUnderline = segment.facet?.find(PubLeafletRichtextFacet.isUnderline);
     let isItalic = segment.facet?.find(PubLeafletRichtextFacet.isItalic);
     let isHighlighted = segment.facet?.find(
