@@ -25,11 +25,9 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useMountProsemirror } from "./mountProsemirror";
 import { schema } from "./schema";
-import {
-  addMentionToEditor,
-  Mention,
-  MentionAutocomplete,
-} from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
+
+import { Mention, MentionAutocomplete } from "components/Mention";
+import { addMentionToEditor } from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
 
 const HeadingStyle = {
   1: "text-xl font-bold",
