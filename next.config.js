@@ -21,6 +21,7 @@ const nextConfig = {
       },
     ];
   },
+  serverExternalPackages: ["yjs"],
   pageExtensions: ["js", "jsx", "ts", "tsx", "md", "mdx"],
   images: {
     loader: "custom",
