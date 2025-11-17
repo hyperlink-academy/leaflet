@@ -10,8 +10,12 @@ export async function getMicroLinkOgImage(
   },
 ) {
   const headersList = await headers();
-  const hostname = headersList.get("x-forwarded-host");
+  let hostname = headersList.get("x-forwarded-host");
   let protocol = headersList.get("x-forwarded-proto");
+  if (process.env.NODE_ENV === "development") {
+    protocol === "https";
+    hostname = "leaflet.pub";
+  }
   let full_path = `${protocol}://${hostname}${path}`;
   return getWebpageImage(full_path, options);
 }
@@ -38,7 +42,7 @@ export async function getWebpageImage(
         scrollPage: true,
         addStyleTag: [
           {
-            content: `* {overflow: hidden !important; }`,
+            content: `* {scrollbar-width:none; }`,
           },
         ],
         gotoOptions: {
