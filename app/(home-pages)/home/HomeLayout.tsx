@@ -231,10 +231,15 @@ export function LeafletList(props: {
               title={props?.titles?.[leaflet.root_entity] || "Untitled"}
               token={leaflet}
               draft={!!leaflet.leaflets_in_publications?.length}
-              published={!!leaflet.leaflets_in_publications?.find((l) => l.doc)}
+              published={
+                !!leaflet.leaflets_in_publications?.find((l) => l.doc) ||
+                !!leaflet.leaflets_to_documents?.find((l) => !!l.documents)
+              }
               publishedAt={
                 leaflet.leaflets_in_publications?.find((l) => l.doc)?.documents
-                  ?.indexed_at
+                  ?.indexed_at ||
+                leaflet.leaflets_to_documents?.find((l) => !!l.documents)
+                  ?.documents?.indexed_at
               }
               leaflet_id={leaflet.root_entity}
               loggedIn={!!identity}
@@ -286,7 +291,9 @@ function useSearchedLeaflets(
 
   let allTemplates = useTemplateState((s) => s.templates);
   let filteredLeaflets = sortedLeaflets.filter(({ token: leaflet }) => {
-    let published = !!leaflet.leaflets_in_publications?.find((l) => l.doc);
+    let published =
+      !!leaflet.leaflets_in_publications?.find((l) => l.doc) ||
+      !!leaflet.leaflets_to_documents?.find((l) => l.document);
     let drafts = !!leaflet.leaflets_in_publications?.length && !published;
     let docs = !leaflet.leaflets_in_publications?.length;
     let templates = !!allTemplates.find((t) => t.id === leaflet.id);

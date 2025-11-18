@@ -175,7 +175,7 @@ export const PublicationMetadataPreview = () => {
   let record = pub?.documents?.data as PubLeafletDocument.Record | null;
   let publishedAt = record?.publishedAt;
 
-  if (!pub || !pub.publications) return null;
+  if (!pub) return null;
 
   return (
     <div className={`flex flex-col px-3 sm:px-4 pb-5 sm:pt-3 pt-2`}>
