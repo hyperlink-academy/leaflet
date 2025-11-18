@@ -23,7 +23,7 @@ export function NotificationList({
     }, 500);
   }, []);
 
-  if (notifications.length !== 0)
+  if (notifications.length === 0)
     return (
       <div className="w-full text-sm flex flex-col gap-1 container italic text-tertiary text-center sm:p-4 p-3">
         <div className="text-base font-bold">no notifications yet...</div>
