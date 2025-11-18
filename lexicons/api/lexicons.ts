@@ -1408,7 +1408,7 @@ export const schemaDict = {
         description: 'Record containing a document',
         record: {
           type: 'object',
-          required: ['pages', 'author', 'title', 'publication'],
+          required: ['pages', 'author', 'title'],
           properties: {
             title: {
               type: 'string',

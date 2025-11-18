@@ -13,8 +13,7 @@
         "required": [
           "pages",
           "author",
-          "title",
-          "publication"
+          "title"
         ],
         "properties": {
           "title": {

@@ -19,7 +19,7 @@ export interface Record {
   postRef?: ComAtprotoRepoStrongRef.Main
   description?: string
   publishedAt?: string
-  publication: string
+  publication?: string
   author: string
   pages: (
     | $Typed<PubLeafletPagesLinearDocument.Main>

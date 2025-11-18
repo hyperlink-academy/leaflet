@@ -14,7 +14,7 @@ export const PubLeafletDocument: LexiconDoc = {
       description: "Record containing a document",
       record: {
         type: "object",
-        required: ["pages", "author", "title", "publication"],
+        required: ["pages", "author", "title"],
         properties: {
           title: { type: "string", maxLength: 1280, maxGraphemes: 128 },
           postRef: { type: "ref", ref: "com.atproto.repo.strongRef" },
