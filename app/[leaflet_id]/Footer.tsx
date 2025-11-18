@@ -46,7 +46,7 @@ export function LeafletFooter(props: { entityID: string }) {
             <HomeButton />
           )}
 
-          <PublishButton />
+          <PublishButton entityID={props.entityID} />
           <ShareOptions />
           <ThemePopover entityID={props.entityID} />
         </ActionFooter>

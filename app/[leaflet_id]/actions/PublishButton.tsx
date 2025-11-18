@@ -1,9 +1,11 @@
+"use client";
 import { publishToPublication } from "actions/publishToPublication";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import {
   PubIcon,
   PubListEmptyContent,
+  PubListEmptyIllo,
 } from "components/ActionBar/Publications";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { AddSmall } from "components/Icons/AddSmall";
@@ -12,13 +14,16 @@ import { PublishSmall } from "components/Icons/PublishSmall";
 import { useIdentityData } from "components/IdentityProvider";
 import { InputWithLabel } from "components/Input";
 import { Menu, MenuItem } from "components/Layout";
-import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import {
+  useLeafletDomains,
+  useLeafletPublicationData,
+} from "components/PageSWRDataProvider";
 import { Popover } from "components/Popover";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
 import { PubLeafletPublication } from "lexicons/api";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState, useMemo } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useReplicache, useEntity } from "src/replicache";
@@ -27,6 +32,8 @@ import { useBlocks } from "src/hooks/queries/useBlocks";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
+import { BlueskyLogin } from "app/login/LoginForm";
+import { moveLeafletToPublication } from "actions/publications/moveLeafletToPublication";
 
 export const PublishButton = (props: { entityID: string }) => {
   let { data: pub } = useLeafletPublicationData();
@@ -92,14 +99,23 @@ const UpdateButton = () => {
 
 const PublishToPublicationButton = (props: { entityID: string }) => {
   let { identity } = useIdentityData();
+  let { permission_token } = useReplicache();
+  let query = useSearchParams();
+  console.log(query.get("publish"));
+  let [open, setOpen] = useState(query.get("publish") !== null);
 
   let isMobile = useIsMobile();
   identity && identity.atp_did && identity.publications.length > 0;
   let [selectedPub, setSelectedPub] = useState<string | undefined>(undefined);
+  let router = useRouter();
+  let { title, entitiesToDelete } = useTitle(props.entityID);
+  let [description, setDescription] = useState("");
 
   return (
     <Popover
       asChild
+      open={open}
+      onOpenChange={(o) => setOpen(o)}
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
       className="sm:max-w-sm w-[1000px]"
@@ -112,14 +128,36 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
       }
     >
       {!identity || !identity.atp_did ? (
-        // this component is also used on Home to populate the sidebar when PubList is empty
-        // when user doesn't have an AT Proto account, and redirects back to the doc (hopefully with publish open?
         <div className="-mx-2 -my-1">
-          <PubListEmptyContent compact />
+          <div
+            className={`bg-[var(--accent-light)] w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4 text-sm`}
+          >
+            <div className="mx-auto pt-2 scale-90">
+              <PubListEmptyIllo />
+            </div>
+            <div className="pt-1 font-bold">Publish on AT Proto</div>
+            {
+              <>
+                <div className="pb-2 text-secondary text-xs">
+                  Link a Bluesky account to start <br /> a publishing on AT
+                  Proto
+                </div>
+
+                <BlueskyLogin
+                  compact
+                  redirectRoute={`/${permission_token.id}?publish`}
+                />
+              </>
+            }
+          </div>
         </div>
       ) : (
         <div className="flex flex-col">
-          <PostDetailsForm entityID={props.entityID} />
+          <PostDetailsForm
+            title={title}
+            description={description}
+            setDescription={setDescription}
+          />
           <hr className="border-border-light my-3" />
           <div>
             <PubSelector
@@ -131,8 +169,23 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
           <hr className="border-border-light mt-3 mb-2" />
 
           <div className="flex gap-2 items-center place-self-end">
-            <ButtonTertiary>Save as Draft</ButtonTertiary>
-            <ButtonPrimary disabled={selectedPub === undefined}>
+            <SaveAsDraftButton
+              selectedPub={selectedPub}
+              leafletId={permission_token.id}
+              metadata={{ title: title, description }}
+              entitiesToDelete={entitiesToDelete}
+            />
+            <ButtonPrimary
+              disabled={selectedPub === undefined}
+              onClick={async (e) => {
+                if (!selectedPub) return;
+                e.preventDefault();
+                if (selectedPub === "create") return;
+                router.push(
+                  `${permission_token.id}/publish?publication_uri=${encodeURIComponent(selectedPub)}&title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}`,
+                );
+              }}
+            >
               Next{selectedPub === "create" && ": Create Pub!"}
             </ButtonPrimary>
           </div>
@@ -142,33 +195,54 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
   );
 };
 
-const PostDetailsForm = (props: { entityID: string }) => {
-  let [description, setDescription] = useState("");
+const SaveAsDraftButton = (props: {
+  selectedPub: string | undefined;
+  leafletId: string;
+  metadata: { title: string; description: string };
+  entitiesToDelete: string[];
+}) => {
+  let { mutate } = useLeafletPublicationData();
+  let { rep } = useReplicache();
+  let [isLoading, setIsLoading] = useState(false);
 
-  let rootPage = useEntity(props.entityID, "root/page")[0].data.value;
-  let firstBlock = useBlocks(rootPage)[0];
-  let firstBlockText = useEntity(firstBlock?.value, "block/text")?.data.value;
+  return (
+    <ButtonTertiary
+      onClick={async (e) => {
+        if (!props.selectedPub) return;
+        if (props.selectedPub === "create") return;
+        e.preventDefault();
+        setIsLoading(true);
+        await moveLeafletToPublication(
+          props.leafletId,
+          props.selectedPub,
+          props.metadata,
+          props.entitiesToDelete,
+        );
+        await Promise.all([rep?.pull(), mutate()]);
+        setIsLoading(false);
+      }}
+    >
+      {isLoading ? <DotLoader /> : "Save as Draft"}
+    </ButtonTertiary>
+  );
+};
 
-  const leafletTitle = useMemo(() => {
-    if (!firstBlockText) return "Untitled";
-    let doc = new Y.Doc();
-    const update = base64.toByteArray(firstBlockText);
-    Y.applyUpdate(doc, update);
-    let nodes = doc.getXmlElement("prosemirror").toArray();
-    return YJSFragmentToString(nodes[0]) || "Untitled";
-  }, [firstBlockText]);
-
+const PostDetailsForm = (props: {
+  title: string;
+  description: string;
+  setDescription: (d: string) => void;
+}) => {
   return (
     <div className=" flex flex-col gap-1">
       <div className="text-sm text-tertiary">Post Details</div>
       <div className="flex flex-col gap-2">
-        <InputWithLabel label="Title" value={leafletTitle} disabled />
+        <InputWithLabel label="Title" value={props.title} disabled />
         <InputWithLabel
           label="Description (optional)"
           textarea
-          value={description}
+          value={props.description}
           className="h-[4lh]"
-          onChange={(e) => setDescription(e.currentTarget.value)}
+          onChange={(e) => props.setDescription(e.currentTarget.value)}
         />
       </div>
     </div>
@@ -270,4 +344,41 @@ const PubOption = (props: {
       {props.children}
     </button>
   );
+};
+
+let useTitle = (entityID: string) => {
+  let rootPage = useEntity(entityID, "root/page")[0].data.value;
+  let firstBlock = useBlocks(rootPage)[0]?.value;
+
+  let firstBlockText = useEntity(firstBlock, "block/text")?.data.value;
+
+  const leafletTitle = useMemo(() => {
+    if (!firstBlockText) return "Untitled";
+    let doc = new Y.Doc();
+    const update = base64.toByteArray(firstBlockText);
+    Y.applyUpdate(doc, update);
+    let nodes = doc.getXmlElement("prosemirror").toArray();
+    return YJSFragmentToString(nodes[0]) || "Untitled";
+  }, [firstBlockText]);
+
+  let secondBlock = useBlocks(rootPage)[1];
+  let secondBlockTextValue = useEntity(secondBlock.value, "block/text")?.data
+    .value;
+  const secondBlockText = useMemo(() => {
+    if (!secondBlockTextValue) return "";
+    let doc = new Y.Doc();
+    const update = base64.toByteArray(secondBlockTextValue);
+    Y.applyUpdate(doc, update);
+    let nodes = doc.getXmlElement("prosemirror").toArray();
+    return YJSFragmentToString(nodes[0]) || "";
+  }, [firstBlockText]);
+
+  let entitiesToDelete = useMemo(() => {
+    let etod = [firstBlock];
+    if (secondBlockText.trim() === "" && secondBlock.type === "text")
+      etod.push(secondBlock.value);
+    return etod;
+  }, [firstBlock, secondBlockText, secondBlock]);
+
+  return { title: leafletTitle, entitiesToDelete };
 };

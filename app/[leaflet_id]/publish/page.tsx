@@ -13,6 +13,11 @@ export const fetchCache = "force-no-store";
 type Props = {
   // this is now a token id not leaflet! Should probs rename
   params: Promise<{ leaflet_id: string }>;
+  searchParams: Promise<{
+    publication_uri: string;
+    title: string;
+    description: string;
+  }>;
 };
 export default async function PublishLeafletPage(props: Props) {
   let leaflet_id = (await props.params).leaflet_id;
@@ -32,7 +37,20 @@ export default async function PublishLeafletPage(props: Props) {
     .eq("id", leaflet_id)
     .single();
   let rootEntity = data?.root_entity;
-  if (!data || !rootEntity || !data.leaflets_in_publications[0])
+  let publication = data?.leaflets_in_publications[0]?.publications;
+  if (!publication) {
+    let pub_uri = (await props.searchParams).publication_uri;
+    if (!pub_uri) return;
+    console.log(decodeURIComponent(pub_uri));
+    let { data, error } = await supabaseServerClient
+      .from("publications")
+      .select("*, documents_in_publications(count)")
+      .eq("uri", decodeURIComponent(pub_uri))
+      .single();
+    console.log(error);
+    publication = data;
+  }
+  if (!data || !rootEntity || !publication)
     return (
       <div>
         missin something
@@ -42,7 +60,12 @@ export default async function PublishLeafletPage(props: Props) {
 
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) return null;
-  let pub = data.leaflets_in_publications[0];
+  let title =
+    data.leaflets_in_publications[0]?.title ||
+    decodeURIComponent((await props.searchParams).title);
+  let description =
+    data.leaflets_in_publications[0]?.description ||
+    decodeURIComponent((await props.searchParams).description);
   let agent = new AtpAgent({ service: "https://public.api.bsky.app" });
 
   let profile = await agent.getProfile({ actor: identity.atp_did });
@@ -57,11 +80,11 @@ export default async function PublishLeafletPage(props: Props) {
         leaflet_id={leaflet_id}
         root_entity={rootEntity}
         profile={profile.data}
-        title={pub.title}
-        publication_uri={pub.publication}
-        description={pub.description}
-        record={pub.publications?.record as PubLeafletPublication.Record}
-        posts_in_pub={pub.publications?.documents_in_publications[0].count}
+        title={title}
+        description={description}
+        publication_uri={publication.uri}
+        record={publication.record as PubLeafletPublication.Record}
+        posts_in_pub={publication.documents_in_publications[0].count}
       />
     </ReplicacheProvider>
   );
