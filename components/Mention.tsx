@@ -132,7 +132,49 @@ export function MentionAutocomplete(props: {
   ]);
 
   if (!mentionCoords || suggestions.length === 0) return null;
-  let headerStyle = "text-xs text-tertiary font-bold italic pt-1 px-2";
+
+  const headerStyle = "text-xs text-tertiary font-bold pt-1 px-2";
+
+  const getHeader = (type: Mention["type"]) => {
+    switch (type) {
+      case "did":
+        return "People";
+      case "publication":
+        return "Publications";
+    }
+  };
+
+  const getKey = (mention: Mention) => {
+    switch (mention.type) {
+      case "did":
+        return mention.did;
+      case "publication":
+        return mention.uri;
+    }
+  };
+
+  const getResultText = (mention: Mention) => {
+    switch (mention.type) {
+      case "did":
+        return mention.displayName || `@${mention.handle}`;
+      case "publication":
+        return mention.name;
+    }
+  };
+
+  const getSubtext = (mention: Mention) => {
+    switch (mention.type) {
+      case "did":
+        return mention.displayName ? `@${mention.handle}` : undefined;
+      case "publication":
+        return undefined;
+    }
+  };
+
+  const sortedSuggestions = [...suggestions].sort((a, b) => {
+    const order: Mention["type"][] = ["did", "publication"];
+    return order.indexOf(a.type) - order.indexOf(b.type);
+  });
 
   return (
     <Popover.Root open>
@@ -158,13 +200,24 @@ export function MentionAutocomplete(props: {
           overflow-y-scroll`}
         >
           <ul className="list-none p-0 text-sm">
-            <div className={headerStyle}>People</div>
-            {suggestions
-              .filter((result) => result.type === "did")
-              .map((result, index) => {
-                return (
+            {sortedSuggestions.map((result, index) => {
+              const prevResult = sortedSuggestions[index - 1];
+              const showHeader = !prevResult || prevResult.type !== result.type;
+
+              return (
+                <>
+                  {showHeader && (
+                    <>
+                      {index > 0 && (
+                        <hr className="border-border-light mx-1 my-1" />
+                      )}
+                      <div className={headerStyle}>
+                        {getHeader(result.type)}
+                      </div>
+                    </>
+                  )}
                   <Result
-                    key={result.did}
+                    key={getKey(result)}
                     onClick={() => {
                       if (mentionRange) {
                         props.onSelect(result, mentionRange);
@@ -174,40 +227,13 @@ export function MentionAutocomplete(props: {
                       }
                     }}
                     onMouseDown={(e) => e.preventDefault()}
-                    result={
-                      result.displayName
-                        ? result.displayName
-                        : `@${result.handle}`
-                    }
-                    subtext={
-                      result.displayName ? `@${result.handle}` : undefined
-                    }
+                    result={getResultText(result)}
+                    subtext={getSubtext(result)}
                     selected={index === suggestionIndex}
                   />
-                );
-              })}
-            <hr className="border-border-light mx-1 my-1" />
-            <div className={headerStyle}>Publications</div>
-            {suggestions
-              .filter((result) => result.type === "publication")
-              .map((result, index) => {
-                return (
-                  <Result
-                    key={result.uri}
-                    onClick={() => {
-                      if (mentionRange) {
-                        props.onSelect(result, mentionRange);
-                        setMentionQuery(null);
-                        setMentionRange(null);
-                        setMentionCoords(null);
-                      }
-                    }}
-                    onMouseDown={(e) => e.preventDefault()}
-                    result={result.name}
-                    selected={index === suggestionIndex}
-                  />
-                );
-              })}
+                </>
+              );
+            })}
           </ul>
         </Popover.Content>
       </Popover.Portal>
@@ -236,7 +262,7 @@ const Result = (props: {
         <div className="truncate w-full grow min-w-0 ">{props.result}</div>
       </div>
       {props.subtext && (
-        <div className="text-tertiary italic text-xs font-normal min-w-0 truncate pb-0.5">
+        <div className="text-tertiary italic text-xs font-normal min-w-0 truncate pb-[1px]">
           {props.subtext}
         </div>
       )}
