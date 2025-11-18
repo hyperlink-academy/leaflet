@@ -102,7 +102,7 @@ const Post = (props: Post) => {
   let postRecord = props.documents.data as PubLeafletDocument.Record;
   let postUri = new AtUri(props.documents.uri);
 
-  let theme = usePubTheme(pubRecord);
+  let theme = usePubTheme(pubRecord?.theme);
   let backgroundImage = pubRecord?.theme?.backgroundImage?.image?.ref
     ? blobRefToSrc(
         pubRecord?.theme?.backgroundImage?.image?.ref,

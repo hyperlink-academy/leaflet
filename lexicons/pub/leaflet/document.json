@@ -42,6 +42,10 @@
             "type": "string",
             "format": "at-identifier"
           },
+          "theme": {
+            "type": "ref",
+            "ref": "pub.leaflet.publication#theme"
+          },
           "pages": {
             "type": "array",
             "items": {

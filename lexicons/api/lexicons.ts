@@ -1436,6 +1436,10 @@ export const schemaDict = {
               type: 'string',
               format: 'at-identifier',
             },
+            theme: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.publication#theme',
+            },
             pages: {
               type: 'array',
               items: {

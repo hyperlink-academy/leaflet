@@ -160,13 +160,13 @@ export default async function Post(props: {
   return (
     <PostPageContextProvider value={document}>
       <PublicationThemeProvider
-        record={pubRecord}
+        theme={pubRecord?.theme || record.theme || null}
         pub_creator={
           document.documents_in_publications[0].publications.identity_did
         }
       >
         <PublicationBackgroundProvider
-          record={pubRecord}
+          theme={pubRecord?.theme || record.theme || null}
           pub_creator={
             document.documents_in_publications[0].publications.identity_did
           }
