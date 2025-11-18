@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, text, jsonb, index, foreignKey, timestamp, uuid, bigint, boolean, unique, uniqueIndex, smallint, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, pgEnum, text, jsonb, foreignKey, timestamp, boolean, uuid, index, bigint, unique, uniqueIndex, smallint, primaryKey } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const aal_level = pgEnum("aal_level", ['aal1', 'aal2', 'aal3'])
@@ -15,12 +15,20 @@ export const key_type = pgEnum("key_type", ['aead-ietf', 'aead-det', 'hmacsha512
 export const rsvp_status = pgEnum("rsvp_status", ['GOING', 'NOT_GOING', 'MAYBE'])
 export const action = pgEnum("action", ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'ERROR'])
 export const equality_op = pgEnum("equality_op", ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'in'])
-export const buckettype = pgEnum("buckettype", ['STANDARD', 'ANALYTICS'])
+export const buckettype = pgEnum("buckettype", ['STANDARD', 'ANALYTICS', 'VECTOR'])
 
 
 export const oauth_state_store = pgTable("oauth_state_store", {
 	key: text("key").primaryKey().notNull(),
 	state: jsonb("state").notNull(),
+});
+
+export const notifications = pgTable("notifications", {
+	recipient: text("recipient").notNull().references(() => identities.atp_did, { onDelete: "cascade", onUpdate: "cascade" } ),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	read: boolean("read").default(false).notNull(),
+	data: jsonb("data").notNull(),
+	id: uuid("id").primaryKey().notNull(),
 });
 
 export const publications = pgTable("publications", {

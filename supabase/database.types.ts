@@ -624,6 +624,45 @@ export type Database = {
           },
         ]
       }
+      leaflets_to_documents: {
+        Row: {
+          created_at: string
+          description: string
+          document: string
+          leaflet: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          document: string
+          leaflet: string
+          title?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          document?: string
+          leaflet?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaflets_to_documents_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "leaflets_to_documents_leaflet_fkey"
+            columns: ["leaflet"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
