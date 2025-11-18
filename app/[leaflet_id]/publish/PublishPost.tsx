@@ -18,6 +18,8 @@ import {
   editorStateToFacetedText,
 } from "./BskyPostEditorProsemirror";
 import { EditorState } from "prosemirror-state";
+import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
+import { PubIcon } from "components/ActionBar/Publications";
 
 type Props = {
   title: string;
@@ -25,7 +27,7 @@ type Props = {
   root_entity: string;
   profile: ProfileViewDetailed;
   description: string;
-  publication_uri: string;
+  publication_uri?: string;
   record?: PubLeafletPublication.Record;
   posts_in_pub?: number;
 };
@@ -75,7 +77,11 @@ const PublishPostForm = (
     });
     if (!doc) return;
 
-    let post_url = `https://${props.record?.base_path}/${doc.rkey}`;
+    // Generate post URL based on whether it's in a publication or standalone
+    let post_url = props.record?.base_path
+      ? `https://${props.record.base_path}/${doc.rkey}`
+      : `https://leaflet.pub/p/${props.profile.did}/${doc.rkey}`;
+
     let [text, facets] = editorStateRef.current
       ? editorStateToFacetedText(editorStateRef.current)
       : [];
@@ -103,6 +109,11 @@ const PublishPostForm = (
         }}
       >
         <div className="container flex flex-col gap-2 sm:p-3 p-4">
+          <PublishingTo
+            publication_uri={props.publication_uri}
+            record={props.record}
+          />
+          <hr className="border-border-light my-1" />
           <Radio
             checked={shareOption === "quiet"}
             onChange={(e) => {
@@ -199,23 +210,59 @@ const PublishPostForm = (
   );
 };
 
+const PublishingTo = (props: {
+  publication_uri?: string;
+  record?: PubLeafletPublication.Record;
+}) => {
+  if (props.publication_uri && props.record) {
+    return (
+      <div className="flex flex-col gap-1">
+        <div className="text-sm text-tertiary">Publishing to…</div>
+        <div className="flex gap-2 items-center p-2 rounded-md bg-[var(--accent-light)]">
+          <PubIcon record={props.record} uri={props.publication_uri} />
+          <div className="font-bold text-secondary">{props.record.name}</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="text-sm text-tertiary">Publishing as…</div>
+      <div className="flex gap-2 items-center p-2 rounded-md bg-[var(--accent-light)]">
+        <LooseLeafSmall className="shrink-0" />
+        <div className="font-bold text-secondary">Looseleaf</div>
+      </div>
+    </div>
+  );
+};
+
 const PublishPostSuccess = (props: {
   post_url: string;
-  publication_uri: string;
+  publication_uri?: string;
   record: Props["record"];
   posts_in_pub: number;
 }) => {
-  let uri = new AtUri(props.publication_uri);
+  let uri = props.publication_uri ? new AtUri(props.publication_uri) : null;
   return (
     <div className="container p-4 m-3 sm:m-4 flex flex-col gap-1 justify-center text-center w-fit h-fit mx-auto">
       <PublishIllustration posts_in_pub={props.posts_in_pub} />
       <h2 className="pt-2">Published!</h2>
-      <Link
-        className="hover:no-underline! font-bold place-self-center pt-2"
-        href={`/lish/${uri.host}/${encodeURIComponent(props.record?.name || "")}/dashboard`}
-      >
-        <ButtonPrimary>Back to Dashboard</ButtonPrimary>
-      </Link>
+      {uri && props.record ? (
+        <Link
+          className="hover:no-underline! font-bold place-self-center pt-2"
+          href={`/lish/${uri.host}/${encodeURIComponent(props.record.name || "")}/dashboard`}
+        >
+          <ButtonPrimary>Back to Dashboard</ButtonPrimary>
+        </Link>
+      ) : (
+        <Link
+          className="hover:no-underline! font-bold place-self-center pt-2"
+          href="/"
+        >
+          <ButtonPrimary>Back to Home</ButtonPrimary>
+        </Link>
+      )}
       <a href={props.post_url}>See published post</a>
     </div>
   );

@@ -53,7 +53,7 @@ export async function publishToPublication({
   description,
 }: {
   root_entity: string;
-  publication_uri: string;
+  publication_uri?: string;
   leaflet_id: string;
   title?: string;
   description?: string;
@@ -66,14 +66,34 @@ export async function publishToPublication({
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
-  let { data: draft } = await supabaseServerClient
-    .from("leaflets_in_publications")
-    .select("*, publications(*), documents(*)")
-    .eq("publication", publication_uri)
-    .eq("leaflet", leaflet_id)
-    .single();
-  if (!draft || identity.atp_did !== draft?.publications?.identity_did)
-    throw new Error("No draft or not publisher");
+
+  // Check if we're publishing to a publication or standalone
+  let draft: any = null;
+  let existingDocUri: string | null = null;
+
+  if (publication_uri) {
+    // Publishing to a publication - use leaflets_in_publications
+    let { data } = await supabaseServerClient
+      .from("leaflets_in_publications")
+      .select("*, publications(*), documents(*)")
+      .eq("publication", publication_uri)
+      .eq("leaflet", leaflet_id)
+      .single();
+    if (!data || identity.atp_did !== data?.publications?.identity_did)
+      throw new Error("No draft or not publisher");
+    draft = data;
+    existingDocUri = draft?.doc;
+  } else {
+    // Publishing standalone - use leaflets_to_documents
+    let { data } = await supabaseServerClient
+      .from("leaflets_to_documents")
+      .select("*, documents(*)")
+      .eq("leaflet", leaflet_id)
+      .single();
+    draft = data;
+    existingDocUri = draft?.document;
+  }
+
   let { data } = await supabaseServerClient.rpc("get_facts", {
     root: root_entity,
   });
@@ -91,7 +111,7 @@ export async function publishToPublication({
   let record: PubLeafletDocument.Record = {
     $type: "pub.leaflet.document",
     author: credentialSession.did!,
-    publication: publication_uri,
+    ...(publication_uri && { publication: publication_uri }),
     publishedAt: new Date().toISOString(),
     ...existingRecord,
     title: title || "Untitled",
@@ -118,7 +138,9 @@ export async function publishToPublication({
       }),
     ],
   };
-  let rkey = draft?.doc ? new AtUri(draft.doc).rkey : TID.nextStr();
+
+  // Keep the same rkey if updating an existing document
+  let rkey = existingDocUri ? new AtUri(existingDocUri).rkey : TID.nextStr();
   let { data: result } = await agent.com.atproto.repo.putRecord({
     rkey,
     repo: credentialSession.did!,
@@ -127,24 +149,36 @@ export async function publishToPublication({
     validate: false, //TODO publish the lexicon so we can validate!
   });
 
+  // Optimistically create database entries
   await supabaseServerClient.from("documents").upsert({
     uri: result.uri,
     data: record as Json,
   });
-  await Promise.all([
-    //Optimistically put these in!
-    supabaseServerClient.from("documents_in_publications").upsert({
-      publication: record.publication,
+
+  if (publication_uri) {
+    // Publishing to a publication - update both tables
+    await Promise.all([
+      supabaseServerClient.from("documents_in_publications").upsert({
+        publication: publication_uri,
+        document: result.uri,
+      }),
+      supabaseServerClient
+        .from("leaflets_in_publications")
+        .update({
+          doc: result.uri,
+        })
+        .eq("leaflet", leaflet_id)
+        .eq("publication", publication_uri),
+    ]);
+  } else {
+    // Publishing standalone - update leaflets_to_documents
+    await supabaseServerClient.from("leaflets_to_documents").upsert({
+      leaflet: leaflet_id,
       document: result.uri,
-    }),
-    supabaseServerClient
-      .from("leaflets_in_publications")
-      .update({
-        doc: result.uri,
-      })
-      .eq("leaflet", leaflet_id)
-      .eq("publication", publication_uri),
-  ]);
+      title: title || "Untitled",
+      description: description || "",
+    });
+  }
 
   return { rkey, record: JSON.parse(JSON.stringify(record)) };
 }

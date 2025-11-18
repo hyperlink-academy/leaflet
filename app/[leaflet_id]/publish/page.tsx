@@ -32,25 +32,36 @@ export default async function PublishLeafletPage(props: Props) {
            *,
            documents_in_publications(count)
          ),
-       documents(*))`,
+       documents(*)),
+       leaflets_to_documents(
+         *,
+         documents(*)
+       )`,
     )
     .eq("id", leaflet_id)
     .single();
   let rootEntity = data?.root_entity;
+
+  // Try to find publication from leaflets_in_publications first
   let publication = data?.leaflets_in_publications[0]?.publications;
+
+  // If not found, check if publication_uri is in searchParams
   if (!publication) {
     let pub_uri = (await props.searchParams).publication_uri;
-    if (!pub_uri) return;
-    console.log(decodeURIComponent(pub_uri));
-    let { data, error } = await supabaseServerClient
-      .from("publications")
-      .select("*, documents_in_publications(count)")
-      .eq("uri", decodeURIComponent(pub_uri))
-      .single();
-    console.log(error);
-    publication = data;
+    if (pub_uri) {
+      console.log(decodeURIComponent(pub_uri));
+      let { data: pubData, error } = await supabaseServerClient
+        .from("publications")
+        .select("*, documents_in_publications(count)")
+        .eq("uri", decodeURIComponent(pub_uri))
+        .single();
+      console.log(error);
+      publication = pubData;
+    }
   }
-  if (!data || !rootEntity || !publication)
+
+  // Check basic data requirements
+  if (!data || !rootEntity)
     return (
       <div>
         missin something
@@ -60,15 +71,20 @@ export default async function PublishLeafletPage(props: Props) {
 
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) return null;
+
+  // Get title and description from either source
   let title =
     data.leaflets_in_publications[0]?.title ||
-    decodeURIComponent((await props.searchParams).title);
+    data.leaflets_to_documents[0]?.title ||
+    decodeURIComponent((await props.searchParams).title || "");
   let description =
     data.leaflets_in_publications[0]?.description ||
-    decodeURIComponent((await props.searchParams).description);
-  let agent = new AtpAgent({ service: "https://public.api.bsky.app" });
+    data.leaflets_to_documents[0]?.description ||
+    decodeURIComponent((await props.searchParams).description || "");
 
+  let agent = new AtpAgent({ service: "https://public.api.bsky.app" });
   let profile = await agent.getProfile({ actor: identity.atp_did });
+
   return (
     <ReplicacheProvider
       rootEntity={rootEntity}
@@ -82,9 +98,9 @@ export default async function PublishLeafletPage(props: Props) {
         profile={profile.data}
         title={title}
         description={description}
-        publication_uri={publication.uri}
-        record={publication.record as PubLeafletPublication.Record}
-        posts_in_pub={publication.documents_in_publications[0].count}
+        publication_uri={publication?.uri}
+        record={publication?.record as PubLeafletPublication.Record | undefined}
+        posts_in_pub={publication?.documents_in_publications[0]?.count}
       />
     </ReplicacheProvider>
   );

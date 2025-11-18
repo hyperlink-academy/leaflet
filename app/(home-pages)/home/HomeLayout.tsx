@@ -38,6 +38,10 @@ type Leaflet = {
       GetLeafletDataReturnType["result"]["data"],
       null
     >["leaflets_in_publications"];
+    leaflets_to_documents?: Exclude<
+      GetLeafletDataReturnType["result"]["data"],
+      null
+    >["leaflets_to_documents"];
   };
 };
 
@@ -218,6 +222,7 @@ export function LeafletList(props: {
             value={{
               ...leaflet,
               leaflets_in_publications: leaflet.leaflets_in_publications || [],
+              leaflets_to_documents: leaflet.leaflets_to_documents || [],
               blocked_by_admin: null,
               custom_domain_routes: [],
             }}

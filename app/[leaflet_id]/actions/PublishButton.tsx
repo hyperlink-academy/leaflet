@@ -60,6 +60,7 @@ const UpdateButton = () => {
   let [isLoading, setIsLoading] = useState(false);
   let { data: pub, mutate } = useLeafletPublicationData();
   let { permission_token, rootEntity } = useReplicache();
+  let { identity } = useIdentityData();
   let toaster = useToaster();
 
   return (
@@ -68,26 +69,28 @@ const UpdateButton = () => {
       icon={<PublishSmall className="shrink-0" />}
       label={isLoading ? <DotLoader /> : "Update!"}
       onClick={async () => {
-        if (!pub || !pub.publications) return;
+        if (!pub) return;
         setIsLoading(true);
         let doc = await publishToPublication({
           root_entity: rootEntity,
-          publication_uri: pub.publications.uri,
+          publication_uri: pub.publications?.uri,
           leaflet_id: permission_token.id,
           title: pub.title,
           description: pub.description,
         });
         setIsLoading(false);
         mutate();
+
+        // Generate URL based on whether it's in a publication or standalone
+        let docUrl = pub.publications
+          ? `${getPublicationURL(pub.publications)}/${doc?.rkey}`
+          : `https://leaflet.pub/p/${identity?.atp_did}/${doc?.rkey}`;
+
         toaster({
           content: (
             <div>
               {pub.doc ? "Updated! " : "Published! "}
-              <SpeedyLink
-                href={`${getPublicationURL(pub.publications)}/${doc?.rkey}`}
-              >
-                link
-              </SpeedyLink>
+              <SpeedyLink href={docUrl}>link</SpeedyLink>
             </div>
           ),
           type: "success",
@@ -169,21 +172,31 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
           <hr className="border-border-light mt-3 mb-2" />
 
           <div className="flex gap-2 items-center place-self-end">
-            <SaveAsDraftButton
-              selectedPub={selectedPub}
-              leafletId={permission_token.id}
-              metadata={{ title: title, description }}
-              entitiesToDelete={entitiesToDelete}
-            />
+            {selectedPub !== "looseleaf" && (
+              <SaveAsDraftButton
+                selectedPub={selectedPub}
+                leafletId={permission_token.id}
+                metadata={{ title: title, description }}
+                entitiesToDelete={entitiesToDelete}
+              />
+            )}
             <ButtonPrimary
               disabled={selectedPub === undefined}
               onClick={async (e) => {
                 if (!selectedPub) return;
                 e.preventDefault();
                 if (selectedPub === "create") return;
-                router.push(
-                  `${permission_token.id}/publish?publication_uri=${encodeURIComponent(selectedPub)}&title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}`,
-                );
+
+                // For looseleaf, navigate without publication_uri
+                if (selectedPub === "looseleaf") {
+                  router.push(
+                    `${permission_token.id}/publish?title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}`,
+                  );
+                } else {
+                  router.push(
+                    `${permission_token.id}/publish?publication_uri=${encodeURIComponent(selectedPub)}&title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}`,
+                  );
+                }
               }}
             >
               Next{selectedPub === "create" && ": Create Pub!"}
@@ -305,6 +318,7 @@ const PubSelector = (props: {
             let pubRecord = p.record as PubLeafletPublication.Record;
             return (
               <PubOption
+                key={p.uri}
                 selected={props.selectedPub === p.uri}
                 onSelect={() => props.setSelectedPub(p.uri)}
               >
