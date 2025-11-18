@@ -162,6 +162,7 @@ const Replies = (props: {
 
   let [replyBoxOpen, setReplyBoxOpen] = useState(false);
   let [repliesOpen, setRepliesOpen] = useState(true);
+
   let replies = props.comments
     .filter(
       (comment) =>
@@ -176,6 +177,9 @@ const Replies = (props: {
         new Date(aRecord.createdAt).getTime()
       );
     });
+
+  let repliesOrReplyBoxOpen =
+    replyBoxOpen || (repliesOpen && replies.length > 0);
   return (
     <>
       <div className="flex gap-2 items-center">
@@ -203,49 +207,64 @@ const Replies = (props: {
           </>
         )}
       </div>
-      <div className="flex flex-col gap-2">
-        {replyBoxOpen && (
-          <CommentBox
-            pageId={props.pageId}
-            doc_uri={props.document}
-            replyTo={props.comment_uri}
-            autoFocus={true}
-            onSubmit={() => {
-              setReplyBoxOpen(false);
-            }}
-          />
-        )}
-        {repliesOpen && replies.length > 0 && (
-          <div className="repliesWrapper flex">
-            <button
-              className="repliesCollapse pr-[14px] ml-[7px] pt-0.5"
-              onClick={() => {
-                setReplyBoxOpen(false);
-                setRepliesOpen(false);
-              }}
-            >
-              <div className="bg-border-light w-[2px] h-full" />
-            </button>
-            <div className="repliesContent flex flex-col gap-3 pt-2 w-full">
-              {replies.map((reply) => {
-                return (
-                  <Comment
-                    pageId={props.pageId}
-                    document={props.document}
-                    key={reply.uri}
-                    comment={reply}
-                    profile={
-                      reply.bsky_profiles?.record as AppBskyActorProfile.Record
-                    }
-                    record={reply.record as PubLeafletComment.Record}
-                    comments={props.comments}
-                  />
-                );
-              })}
+      {repliesOrReplyBoxOpen && (
+        <div className="flex flex-col pt-1">
+          {replyBoxOpen && (
+            <div className="repliesWrapper flex w-full">
+              <button
+                className="repliesCollapse pr-[14px] ml-[7px]"
+                onClick={() => {
+                  setReplyBoxOpen(false);
+                  setRepliesOpen(false);
+                }}
+              >
+                <div className="bg-border-light w-[2px] h-full" />
+              </button>
+              <CommentBox
+                className="pt-3"
+                pageId={props.pageId}
+                doc_uri={props.document}
+                replyTo={props.comment_uri}
+                autoFocus={true}
+                onSubmit={() => {
+                  setReplyBoxOpen(false);
+                }}
+              />
             </div>
-          </div>
-        )}
-      </div>
+          )}
+          {repliesOpen && replies.length > 0 && (
+            <div className="repliesWrapper flex">
+              <button
+                className="repliesCollapse pr-[14px] ml-[7px]"
+                onClick={() => {
+                  setReplyBoxOpen(false);
+                  setRepliesOpen(false);
+                }}
+              >
+                <div className="bg-border-light w-[2px] h-full" />
+              </button>
+              <div className="repliesContent flex flex-col gap-3 pt-2 w-full">
+                {replies.map((reply) => {
+                  return (
+                    <Comment
+                      pageId={props.pageId}
+                      document={props.document}
+                      key={reply.uri}
+                      comment={reply}
+                      profile={
+                        reply.bsky_profiles
+                          ?.record as AppBskyActorProfile.Record
+                      }
+                      record={reply.record as PubLeafletComment.Record}
+                      comments={props.comments}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 };
@@ -263,7 +282,9 @@ const DatePopover = (props: { date: string }) => {
   return (
     <Popover
       trigger={
-        <div className="italic text-sm text-tertiary hover:underline">{timeAgoText}</div>
+        <div className="italic text-sm text-tertiary hover:underline">
+          {timeAgoText}
+        </div>
       }
     >
       <div className="text-sm text-secondary">{fullDate}</div>

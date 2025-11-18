@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "TZ=UTC next dev --turbo",
     "publish-lexicons": "tsx lexicons/publish.ts",
     "generate-db-types": "supabase gen types --local > supabase/database.types.ts && drizzle-kit introspect && rm -rf ./drizzle/*.sql ./drizzle/meta",
     "lexgen": "tsx ./lexicons/build.ts && lex gen-api ./lexicons/api ./lexicons/pub/leaflet/* ./lexicons/pub/leaflet/*/* ./lexicons/com/atproto/*/* ./lexicons/app/bsky/*/* --yes && find './lexicons/api' -type f -exec sed -i 's/\\.js'/'/g' {} \\;",
@@ -54,6 +54,7 @@
     "feed": "^5.1.0",
     "fractional-indexing": "^3.2.0",
     "hono": "^4.7.11",
+    "immer": "^10.2.0",
     "inngest": "^3.40.1",
     "ioredis": "^5.6.1",
     "katex": "^0.16.22",

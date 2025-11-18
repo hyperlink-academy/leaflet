@@ -102,6 +102,7 @@ type Command = {
   name: string;
   icon: React.ReactNode;
   type: string;
+  alternateNames?: string[];
   hiddenInPublication?: boolean;
   onSelect: (
     rep: Replicache<ReplicacheMutators>,
@@ -125,6 +126,7 @@ export const blockCommands: Command[] = [
     name: "Title",
     icon: <Header1Small />,
     type: "text",
+    alternateNames: ["h1"],
     onSelect: async (rep, props, um) => {
       await setHeaderCommand(1, rep, props);
     },
@@ -133,6 +135,7 @@ export const blockCommands: Command[] = [
     name: "Header",
     icon: <Header2Small />,
     type: "text",
+    alternateNames: ["h2"],
     onSelect: async (rep, props, um) => {
       await setHeaderCommand(2, rep, props);
     },
@@ -141,6 +144,7 @@ export const blockCommands: Command[] = [
     name: "Subheader",
     icon: <Header3Small />,
     type: "text",
+    alternateNames: ["h3"],
     onSelect: async (rep, props, um) => {
       await setHeaderCommand(3, rep, props);
     },

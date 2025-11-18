@@ -1,19 +1,15 @@
 import { relations } from "drizzle-orm/relations";
-import { identities, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, poll_votes_on_entity, permission_tokens, phone_rsvps_to_entity, custom_domains, custom_domain_routes, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, bsky_follows, subscribers_to_publications, permission_token_on_homepage, documents_in_publications, document_mentions_in_bsky, bsky_posts, publication_domains, leaflets_in_publications, publication_subscriptions, permission_token_rights } from "./schema";
+import { identities, notifications, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, poll_votes_on_entity, permission_tokens, phone_rsvps_to_entity, custom_domains, custom_domain_routes, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, bsky_follows, subscribers_to_publications, permission_token_on_homepage, documents_in_publications, document_mentions_in_bsky, bsky_posts, publication_domains, leaflets_in_publications, publication_subscriptions, permission_token_rights } from "./schema";
 
-export const publicationsRelations = relations(publications, ({one, many}) => ({
+export const notificationsRelations = relations(notifications, ({one}) => ({
 	identity: one(identities, {
-		fields: [publications.identity_did],
+		fields: [notifications.recipient],
 		references: [identities.atp_did]
 	}),
-	subscribers_to_publications: many(subscribers_to_publications),
-	documents_in_publications: many(documents_in_publications),
-	publication_domains: many(publication_domains),
-	leaflets_in_publications: many(leaflets_in_publications),
-	publication_subscriptions: many(publication_subscriptions),
 }));
 
 export const identitiesRelations = relations(identities, ({one, many}) => ({
+	notifications: many(notifications),
 	publications: many(publications),
 	email_auth_tokens: many(email_auth_tokens),
 	bsky_profiles: many(bsky_profiles),
@@ -36,6 +32,18 @@ export const identitiesRelations = relations(identities, ({one, many}) => ({
 	subscribers_to_publications: many(subscribers_to_publications),
 	permission_token_on_homepages: many(permission_token_on_homepage),
 	publication_domains: many(publication_domains),
+	publication_subscriptions: many(publication_subscriptions),
+}));
+
+export const publicationsRelations = relations(publications, ({one, many}) => ({
+	identity: one(identities, {
+		fields: [publications.identity_did],
+		references: [identities.atp_did]
+	}),
+	subscribers_to_publications: many(subscribers_to_publications),
+	documents_in_publications: many(documents_in_publications),
+	publication_domains: many(publication_domains),
+	leaflets_in_publications: many(leaflets_in_publications),
 	publication_subscriptions: many(publication_subscriptions),
 }));
 

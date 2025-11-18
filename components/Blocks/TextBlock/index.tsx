@@ -1,32 +1,17 @@
-import { useRef, useEffect, useState, useLayoutEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { elementId } from "src/utils/elementId";
-import { baseKeymap } from "prosemirror-commands";
-import { keymap } from "prosemirror-keymap";
-import * as Y from "yjs";
-import * as base64 from "base64-js";
-import { useReplicache, useEntity, ReplicacheMutators } from "src/replicache";
+import { useReplicache, useEntity } from "src/replicache";
 import { isVisible } from "src/utils/isVisible";
-
 import { EditorState, TextSelection } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
-
-import { ySyncPlugin } from "y-prosemirror";
-import { Replicache } from "replicache";
 import { RenderYJSFragment } from "./RenderYJSFragment";
-import { useInitialPageLoad } from "components/InitialPageLoadProvider";
+import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
-import { TextBlockKeymap } from "./keymap";
-import { multiBlockSchema, schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { addBlueskyPostBlock, addLinkBlock } from "src/utils/addLinkBlock";
 import { BlockCommandBar } from "components/Blocks/BlockCommandBar";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { useHandlePaste } from "./useHandlePaste";
-import { highlightSelectionPlugin } from "./plugins";
-import { inputrules } from "./inputRules";
-import { autolink } from "./autolink-plugin";
 import { TooltipButton } from "components/Buttons";
 import { blockCommands } from "../BlockCommands";
 import { betterIsUrl } from "src/utils/isURL";
@@ -37,6 +22,7 @@ import { BlockImageSmall } from "components/Icons/BlockImageSmall";
 import { isIOS } from "src/utils/isDevice";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { DotLoader } from "components/utils/DotLoader";
+import { useMountProsemirror } from "./mountProsemirror";
 
 const HeadingStyle = {
   1: "text-xl font-bold",
@@ -51,7 +37,7 @@ export function TextBlock(
   },
 ) {
   let isLocked = useEntity(props.entityID, "block/is-locked");
-  let initialized = useInitialPageLoad();
+  let initialized = useHasPageLoaded();
   let first = props.previousBlock === null;
   let permission = useEntitySetContext().permissions.write;
 
@@ -177,21 +163,11 @@ export function RenderedTextBlock(props: {
 }
 
 export function BaseTextBlock(props: BlockProps & { className?: string }) {
-  let mountRef = useRef<HTMLPreElement | null>(null);
-  let actionTimeout = useRef<number | null>(null);
-  let repRef = useRef<null | Replicache<ReplicacheMutators>>(null);
   let headingLevel = useEntity(props.entityID, "block/heading-level");
-  let entity_set = useEntitySetContext();
   let alignment =
     useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
-  let propsRef = useRef({ ...props, entity_set, alignment });
-  useEffect(() => {
-    propsRef.current = { ...props, entity_set, alignment };
-  }, [props, entity_set, alignment]);
+
   let rep = useReplicache();
-  useEffect(() => {
-    repRef.current = rep.rep;
-  }, [rep?.rep]);
 
   let selected = useUIState(
     (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
@@ -204,136 +180,13 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
     justify: "text-justify",
   }[alignment];
 
-  let value = useYJSValue(props.entityID);
-
   let editorState = useEditorStates(
     (s) => s.editorStates[props.entityID],
   )?.editor;
-  let handlePaste = useHandlePaste(props.entityID, propsRef);
-  useLayoutEffect(() => {
-    if (!mountRef.current) return;
-    let km = TextBlockKeymap(propsRef, repRef, rep.undoManager);
-    let editor = EditorState.create({
-      schema: schema,
-      plugins: [
-        ySyncPlugin(value),
-        keymap(km),
-        inputrules(propsRef, repRef),
-        keymap(baseKeymap),
-        highlightSelectionPlugin,
-        autolink({
-          type: schema.marks.link,
-          shouldAutoLink: () => true,
-          defaultProtocol: "https",
-        }),
-      ],
-    });
 
-    let unsubscribe = useEditorStates.subscribe((s) => {
-      let editorState = s.editorStates[props.entityID];
-      if (editorState?.initial) return;
-      if (editorState?.editor)
-        editorState.view?.updateState(editorState.editor);
-    });
-    let view = new EditorView(
-      { mount: mountRef.current },
-      {
-        state: editor,
-        handlePaste,
-        handleClickOn: (view, _pos, node, _nodePos, _event, direct) => {
-          if (!direct) return;
-          if (node.nodeSize - 2 <= _pos) return;
-          let mark =
-            node
-              .nodeAt(_pos - 1)
-              ?.marks.find((f) => f.type === schema.marks.link) ||
-            node
-              .nodeAt(Math.max(_pos - 2, 0))
-              ?.marks.find((f) => f.type === schema.marks.link);
-          if (mark) {
-            window.open(mark.attrs.href, "_blank");
-          }
-        },
-        dispatchTransaction(tr) {
-          useEditorStates.setState((s) => {
-            let oldEditorState = this.state;
-            let newState = this.state.apply(tr);
-            let addToHistory = tr.getMeta("addToHistory");
-            let isBulkOp = tr.getMeta("bulkOp");
-            let docHasChanges = tr.steps.length !== 0 || tr.docChanged;
-            if (addToHistory !== false && docHasChanges) {
-              if (actionTimeout.current) {
-                window.clearTimeout(actionTimeout.current);
-              } else {
-                if (!isBulkOp) rep.undoManager.startGroup();
-              }
-
-              if (!isBulkOp)
-                actionTimeout.current = window.setTimeout(() => {
-                  rep.undoManager.endGroup();
-                  actionTimeout.current = null;
-                }, 200);
-              rep.undoManager.add({
-                redo: () => {
-                  useEditorStates.setState((oldState) => {
-                    let view = oldState.editorStates[props.entityID]?.view;
-                    if (!view?.hasFocus() && !isBulkOp) view?.focus();
-                    return {
-                      editorStates: {
-                        ...oldState.editorStates,
-                        [props.entityID]: {
-                          ...oldState.editorStates[props.entityID]!,
-                          editor: newState,
-                        },
-                      },
-                    };
-                  });
-                },
-                undo: () => {
-                  useEditorStates.setState((oldState) => {
-                    let view = oldState.editorStates[props.entityID]?.view;
-                    if (!view?.hasFocus() && !isBulkOp) view?.focus();
-                    return {
-                      editorStates: {
-                        ...oldState.editorStates,
-                        [props.entityID]: {
-                          ...oldState.editorStates[props.entityID]!,
-                          editor: oldEditorState,
-                        },
-                      },
-                    };
-                  });
-                },
-              });
-            }
-
-            return {
-              editorStates: {
-                ...s.editorStates,
-                [props.entityID]: {
-                  editor: newState,
-                  view: this as unknown as EditorView,
-                  initial: false,
-                  keymap: km,
-                },
-              },
-            };
-          });
-        },
-      },
-    );
-    return () => {
-      unsubscribe();
-      view.destroy();
-      useEditorStates.setState((s) => ({
-        ...s,
-        editorStates: {
-          ...s.editorStates,
-          [props.entityID]: undefined,
-        },
-      }));
-    };
-  }, [props.entityID, props.parent, value, handlePaste, rep]);
+  let { mountRef, actionTimeout } = useMountProsemirror({
+    props,
+  });
 
   return (
     <>
@@ -586,45 +439,14 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
   );
 };
 
-function useYJSValue(entityID: string) {
-  const [ydoc] = useState(new Y.Doc());
-  const docStateFromReplicache = useEntity(entityID, "block/text");
-  let rep = useReplicache();
-  const [yText] = useState(ydoc.getXmlFragment("prosemirror"));
-
-  if (docStateFromReplicache) {
-    const update = base64.toByteArray(docStateFromReplicache.data.value);
-    Y.applyUpdate(ydoc, update);
-  }
-
-  useEffect(() => {
-    if (!rep.rep) return;
-    let timeout = null as null | number;
-    const updateReplicache = async () => {
-      const update = Y.encodeStateAsUpdate(ydoc);
-      await rep.rep?.mutate.assertFact({
-        //These undos are handled above in the Prosemirror context
-        ignoreUndo: true,
-        entity: entityID,
-        attribute: "block/text",
-        data: {
-          value: base64.fromByteArray(update),
-          type: "text",
-        },
-      });
-    };
-    const f = async (events: Y.YEvent<any>[], transaction: Y.Transaction) => {
-      if (!transaction.origin) return;
-      if (timeout) clearTimeout(timeout);
-      timeout = window.setTimeout(async () => {
-        updateReplicache();
-      }, 300);
-    };
-
-    yText.observeDeep(f);
-    return () => {
-      yText.unobserveDeep(f);
-    };
-  }, [yText, entityID, rep, ydoc]);
-  return yText;
-}
+const useMentionState = () => {
+  const [editorState, setEditorState] = useState<EditorState | null>(null);
+  const [mentionState, setMentionState] = useState<{
+    active: boolean;
+    range: { from: number; to: number } | null;
+    selectedMention: { handle: string; did: string } | null;
+  }>({ active: false, range: null, selectedMention: null });
+  const mentionStateRef = useRef(mentionState);
+  mentionStateRef.current = mentionState;
+  return { mentionStateRef };
+};
