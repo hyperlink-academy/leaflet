@@ -1,0 +1,139 @@
+import { AtpAgent } from "@atproto/api";
+import { AtUri } from "@atproto/syntax";
+import { ids } from "lexicons/api/lexicons";
+import {
+  PubLeafletBlocksBskyPost,
+  PubLeafletDocument,
+  PubLeafletPagesLinearDocument,
+  PubLeafletPublication,
+} from "lexicons/api";
+import { QuoteHandler } from "./QuoteHandler";
+import {
+  PublicationBackgroundProvider,
+  PublicationThemeProvider,
+} from "components/ThemeManager/PublicationThemeProvider";
+import { getPostPageData } from "./getPostPageData";
+import { PostPageContextProvider } from "./PostPageContext";
+import { PostPages } from "./PostPages";
+import { extractCodeBlocks } from "./extractCodeBlocks";
+import { LeafletLayout } from "components/LeafletLayout";
+import { fetchPollData } from "./fetchPollData";
+
+export async function DocumentPageRenderer({ did, rkey }: { did: string; rkey: string }) {
+  let agent = new AtpAgent({
+    service: "https://public.api.bsky.app",
+    fetch: (...args) =>
+      fetch(args[0], {
+        ...args[1],
+        next: { revalidate: 3600 },
+      }),
+  });
+
+  let [document, profile] = await Promise.all([
+    getPostPageData(
+      AtUri.make(did, ids.PubLeafletDocument, rkey).toString(),
+    ),
+    agent.getProfile({ actor: did }),
+  ]);
+
+  if (!document?.data)
+    return (
+      <div className="bg-bg-leaflet h-full p-3 text-center relative">
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-md w-full">
+          <div className=" px-3 py-4 opaque-container  flex flex-col gap-1 mx-2 ">
+            <h3>Sorry, post not found!</h3>
+            <p>
+              This may be a glitch on our end. If the issue persists please{" "}
+              <a href="mailto:contact@leaflet.pub">send us a note</a>.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+
+  let record = document.data as PubLeafletDocument.Record;
+  let bskyPosts =
+    record.pages.flatMap((p) => {
+      let page = p as PubLeafletPagesLinearDocument.Main;
+      return page.blocks?.filter(
+        (b) => b.block.$type === ids.PubLeafletBlocksBskyPost,
+      );
+    }) || [];
+
+  // Batch bsky posts into groups of 25 and fetch in parallel
+  let bskyPostBatches = [];
+  for (let i = 0; i < bskyPosts.length; i += 25) {
+    bskyPostBatches.push(bskyPosts.slice(i, i + 25));
+  }
+
+  let bskyPostResponses = await Promise.all(
+    bskyPostBatches.map((batch) =>
+      agent.getPosts(
+        {
+          uris: batch.map((p) => {
+            let block = p?.block as PubLeafletBlocksBskyPost.Main;
+            return block.postRef.uri;
+          }),
+        },
+        { headers: {} },
+      ),
+    ),
+  );
+
+  let bskyPostData =
+    bskyPostResponses.length > 0
+      ? bskyPostResponses.flatMap((response) => response.data.posts)
+      : [];
+
+  // Extract poll blocks and fetch vote data
+  let pollBlocks = record.pages.flatMap((p) => {
+    let page = p as PubLeafletPagesLinearDocument.Main;
+    return (
+      page.blocks?.filter((b) => b.block.$type === ids.PubLeafletBlocksPoll) ||
+      []
+    );
+  });
+  let pollData = await fetchPollData(
+    pollBlocks.map((b) => (b.block as any).pollRef.uri),
+  );
+
+  // Get theme from publication or document (for standalone docs)
+  let pubRecord = document.documents_in_publications[0]?.publications
+    ?.record as PubLeafletPublication.Record | undefined;
+  let theme = pubRecord?.theme || record.theme || null;
+  let pub_creator = document.documents_in_publications[0]?.publications
+    ?.identity_did || did;
+
+  let firstPage = record.pages[0];
+  let blocks: PubLeafletPagesLinearDocument.Block[] = [];
+  if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
+    blocks = firstPage.blocks || [];
+  }
+
+  let prerenderedCodeBlocks = await extractCodeBlocks(blocks);
+
+  return (
+    <PostPageContextProvider value={document}>
+      <PublicationThemeProvider theme={theme} pub_creator={pub_creator}>
+        <PublicationBackgroundProvider theme={theme} pub_creator={pub_creator}>
+          <LeafletLayout>
+            <PostPages
+              document_uri={document.uri}
+              preferences={pubRecord?.preferences || {}}
+              pubRecord={pubRecord}
+              profile={JSON.parse(JSON.stringify(profile.data))}
+              document={document}
+              bskyPostData={bskyPostData}
+              did={did}
+              blocks={blocks}
+              prerenderedCodeBlocks={prerenderedCodeBlocks}
+              pollData={pollData}
+            />
+          </LeafletLayout>
+
+          <QuoteHandler />
+        </PublicationBackgroundProvider>
+      </PublicationThemeProvider>
+    </PostPageContextProvider>
+  );
+}

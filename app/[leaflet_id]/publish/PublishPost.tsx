@@ -30,6 +30,7 @@ type Props = {
   publication_uri?: string;
   record?: PubLeafletPublication.Record;
   posts_in_pub?: number;
+  entitiesToDelete?: string[];
 };
 
 export function PublishPost(props: Props) {
@@ -74,6 +75,7 @@ const PublishPostForm = (
       leaflet_id: props.leaflet_id,
       title: props.title,
       description: props.description,
+      entitiesToDelete: props.entitiesToDelete,
     });
     if (!doc) return;
 

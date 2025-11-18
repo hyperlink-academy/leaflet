@@ -114,7 +114,7 @@ export function PostPages({
   document: PostPageData;
   blocks: PubLeafletPagesLinearDocument.Block[];
   profile: ProfileViewDetailed;
-  pubRecord: PubLeafletPublication.Record;
+  pubRecord?: PubLeafletPublication.Record;
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
@@ -124,11 +124,14 @@ export function PostPages({
   let drawer = useDrawerOpen(document_uri);
   useInitializeOpenPages();
   let pages = useOpenPages();
-  if (!document || !document.documents_in_publications[0].publications)
-    return null;
+  if (!document) return null;
 
-  let hasPageBackground = !!pubRecord.theme?.showPageBackground;
   let record = document.data as PubLeafletDocument.Record;
+
+  // Get theme from publication or document (for standalone docs)
+  let theme = pubRecord?.theme || record.theme || null;
+  let hasPageBackground = !!theme?.showPageBackground;
+
   let quotesAndMentions = document.quotesAndMentions;
 
   let fullPageScroll = !hasPageBackground && !drawer && pages.length === 0;
@@ -144,6 +147,7 @@ export function PostPages({
         pollData={pollData}
         preferences={preferences}
         pubRecord={pubRecord}
+        theme={theme}
         prerenderedCodeBlocks={prerenderedCodeBlocks}
         bskyPostData={bskyPostData}
         document_uri={document_uri}
@@ -153,7 +157,7 @@ export function PostPages({
         <InteractionDrawer
           document_uri={document.uri}
           comments={
-            pubRecord.preferences?.showComments === false
+            pubRecord?.preferences?.showComments === false
               ? []
               : document.comments_on_documents
           }
@@ -190,6 +194,7 @@ export function PostPages({
                 preferences={preferences}
                 profile={profile}
                 pubRecord={pubRecord}
+                theme={theme}
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
                 pollData={pollData}
                 bskyPostData={bskyPostData}
@@ -211,6 +216,7 @@ export function PostPages({
                 did={did}
                 preferences={preferences}
                 pubRecord={pubRecord}
+                theme={theme}
                 pollData={pollData}
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
                 bskyPostData={bskyPostData}
@@ -229,7 +235,7 @@ export function PostPages({
                 pageId={page.id}
                 document_uri={document.uri}
                 comments={
-                  pubRecord.preferences?.showComments === false
+                  pubRecord?.preferences?.showComments === false
                     ? []
                     : document.comments_on_documents
                 }

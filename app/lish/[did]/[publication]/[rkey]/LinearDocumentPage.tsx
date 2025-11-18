@@ -31,6 +31,7 @@ export function LinearDocumentPage({
   profile,
   preferences,
   pubRecord,
+  theme,
   prerenderedCodeBlocks,
   bskyPostData,
   document_uri,
@@ -43,7 +44,8 @@ export function LinearDocumentPage({
   document: PostPageData;
   blocks: PubLeafletPagesLinearDocument.Block[];
   profile?: ProfileViewDetailed;
-  pubRecord: PubLeafletPublication.Record;
+  pubRecord?: PubLeafletPublication.Record;
+  theme?: PubLeafletPublication.Theme | null;
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
@@ -56,10 +58,9 @@ export function LinearDocumentPage({
   let { identity } = useIdentityData();
   let drawer = useDrawerOpen(document_uri);
 
-  if (!document || !document.documents_in_publications[0].publications)
-    return null;
+  if (!document) return null;
 
-  let hasPageBackground = !!pubRecord.theme?.showPageBackground;
+  let hasPageBackground = !!theme?.showPageBackground;
   let record = document.data as PubLeafletDocument.Record;
 
   const isSubpage = !!pageId;
@@ -114,22 +115,24 @@ export function LinearDocumentPage({
                   <EditTiny /> Edit Post
                 </a>
               ) : (
-                <SubscribeWithBluesky
-                  isPost
-                  base_url={getPublicationURL(
-                    document.documents_in_publications[0].publications,
-                  )}
-                  pub_uri={
-                    document.documents_in_publications[0].publications.uri
-                  }
-                  subscribers={
-                    document.documents_in_publications[0].publications
-                      .publication_subscriptions
-                  }
-                  pubName={
-                    document.documents_in_publications[0].publications.name
-                  }
-                />
+                document.documents_in_publications[0]?.publications && (
+                  <SubscribeWithBluesky
+                    isPost
+                    base_url={getPublicationURL(
+                      document.documents_in_publications[0].publications,
+                    )}
+                    pub_uri={
+                      document.documents_in_publications[0].publications.uri
+                    }
+                    subscribers={
+                      document.documents_in_publications[0].publications
+                        .publication_subscriptions
+                    }
+                    pubName={
+                      document.documents_in_publications[0].publications.name
+                    }
+                  />
+                )
               )}
             </div>
           </>

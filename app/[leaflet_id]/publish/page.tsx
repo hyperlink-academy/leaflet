@@ -17,6 +17,7 @@ type Props = {
     publication_uri: string;
     title: string;
     description: string;
+    entitiesToDelete: string;
   }>;
 };
 export default async function PublishLeafletPage(props: Props) {
@@ -85,6 +86,19 @@ export default async function PublishLeafletPage(props: Props) {
   let agent = new AtpAgent({ service: "https://public.api.bsky.app" });
   let profile = await agent.getProfile({ actor: identity.atp_did });
 
+  // Parse entitiesToDelete from URL params
+  let searchParams = await props.searchParams;
+  let entitiesToDelete: string[] = [];
+  try {
+    if (searchParams.entitiesToDelete) {
+      entitiesToDelete = JSON.parse(
+        decodeURIComponent(searchParams.entitiesToDelete),
+      );
+    }
+  } catch (e) {
+    // If parsing fails, just use empty array
+  }
+
   return (
     <ReplicacheProvider
       rootEntity={rootEntity}
@@ -101,6 +115,7 @@ export default async function PublishLeafletPage(props: Props) {
         publication_uri={publication?.uri}
         record={publication?.record as PubLeafletPublication.Record | undefined}
         posts_in_pub={publication?.documents_in_publications[0]?.count}
+        entitiesToDelete={entitiesToDelete}
       />
     </ReplicacheProvider>
   );

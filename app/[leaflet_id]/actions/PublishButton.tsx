@@ -190,11 +190,11 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
                 // For looseleaf, navigate without publication_uri
                 if (selectedPub === "looseleaf") {
                   router.push(
-                    `${permission_token.id}/publish?title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}`,
+                    `${permission_token.id}/publish?title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}&entitiesToDelete=${encodeURIComponent(JSON.stringify(entitiesToDelete))}`,
                   );
                 } else {
                   router.push(
-                    `${permission_token.id}/publish?publication_uri=${encodeURIComponent(selectedPub)}&title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}`,
+                    `${permission_token.id}/publish?publication_uri=${encodeURIComponent(selectedPub)}&title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}&entitiesToDelete=${encodeURIComponent(JSON.stringify(entitiesToDelete))}`,
                   );
                 }
               }}
@@ -362,9 +362,10 @@ const PubOption = (props: {
 
 let useTitle = (entityID: string) => {
   let rootPage = useEntity(entityID, "root/page")[0].data.value;
-  let firstBlock = useBlocks(rootPage)[0]?.value;
+  let blocks = useBlocks(rootPage);
+  let firstBlock = blocks[0];
 
-  let firstBlockText = useEntity(firstBlock, "block/text")?.data.value;
+  let firstBlockText = useEntity(firstBlock?.value, "block/text")?.data.value;
 
   const leafletTitle = useMemo(() => {
     if (!firstBlockText) return "Untitled";
@@ -375,8 +376,8 @@ let useTitle = (entityID: string) => {
     return YJSFragmentToString(nodes[0]) || "Untitled";
   }, [firstBlockText]);
 
-  let secondBlock = useBlocks(rootPage)[1];
-  let secondBlockTextValue = useEntity(secondBlock.value, "block/text")?.data
+  let secondBlock = blocks[1];
+  let secondBlockTextValue = useEntity(secondBlock?.value, "block/text")?.data
     .value;
   const secondBlockText = useMemo(() => {
     if (!secondBlockTextValue) return "";
@@ -388,9 +389,15 @@ let useTitle = (entityID: string) => {
   }, [firstBlockText]);
 
   let entitiesToDelete = useMemo(() => {
-    let etod = [firstBlock];
-    if (secondBlockText.trim() === "" && secondBlock.type === "text")
+    let etod: string[] = [];
+    // Only delete first block if it's a heading type
+    if (firstBlock?.type === "heading") {
+      etod.push(firstBlock.value);
+    }
+    // Delete second block if it's empty text
+    if (secondBlockText.trim() === "" && secondBlock?.type === "text") {
       etod.push(secondBlock.value);
+    }
     return etod;
   }, [firstBlock, secondBlockText, secondBlock]);
 

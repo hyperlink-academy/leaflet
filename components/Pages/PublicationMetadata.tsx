@@ -25,7 +25,7 @@ export const PublicationMetadata = () => {
   let record = pub?.documents?.data as PubLeafletDocument.Record | null;
   let publishedAt = record?.publishedAt;
 
-  if (!pub || !pub.publications) return null;
+  if (!pub) return null;
 
   if (typeof title !== "string") {
     title = pub?.title || "";
@@ -36,16 +36,18 @@ export const PublicationMetadata = () => {
   return (
     <div className={`flex flex-col px-3 sm:px-4 pb-5 sm:pt-3 pt-2`}>
       <div className="flex gap-2">
-        <Link
-          href={
-            identity?.atp_did === pub.publications?.identity_did
-              ? `${getBasePublicationURL(pub.publications)}/dashboard`
-              : getPublicationURL(pub.publications)
-          }
-          className="leafletMetadata text-accent-contrast font-bold hover:no-underline"
-        >
-          {pub.publications?.name}
-        </Link>
+        {pub.publications && (
+          <Link
+            href={
+              identity?.atp_did === pub.publications?.identity_did
+                ? `${getBasePublicationURL(pub.publications)}/dashboard`
+                : getPublicationURL(pub.publications)
+            }
+            className="leafletMetadata text-accent-contrast font-bold hover:no-underline"
+          >
+            {pub.publications?.name}
+          </Link>
+        )}
         <div className="font-bold text-tertiary px-1 text-sm flex place-items-center bg-border-light rounded-md ">
           Editor
         </div>
@@ -81,7 +83,11 @@ export const PublicationMetadata = () => {
           <Link
             target="_blank"
             className="text-sm"
-            href={`${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`}
+            href={
+              pub.publications
+                ? `${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`
+                : `/p/${identity?.atp_did}/${new AtUri(pub.doc).rkey}`
+            }
           >
             View Post
           </Link>
