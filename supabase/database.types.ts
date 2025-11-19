@@ -727,16 +727,19 @@ export type Database = {
       }
       permission_token_on_homepage: {
         Row: {
+          archived: boolean | null
           created_at: string
           identity: string
           token: string
         }
         Insert: {
+          archived?: boolean | null
           created_at?: string
           identity: string
           token: string
         }
         Update: {
+          archived?: boolean | null
           created_at?: string
           identity?: string
           token?: string
