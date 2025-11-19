@@ -93,10 +93,12 @@ const ShareMenu = (props: {
 
   let record = pub?.documents?.data as PubLeafletDocument.Record | null;
 
-  let postLink =
-    pub?.publications && pub.documents
-      ? `${getPublicationURL(pub.publications)}/${new AtUri(pub?.documents.uri).rkey}`
-      : null;
+  let docURI = pub?.documents ? new AtUri(pub?.documents.uri) : null;
+  let postLink = !docURI
+    ? null
+    : pub?.publications
+      ? `${getPublicationURL(pub.publications)}/${docURI.rkey}`
+      : `p/${docURI.host}/${docURI.rkey}`;
   let publishLink = useReadOnlyShareLink();
   let [collabLink, setCollabLink] = useState<null | string>(null);
   useEffect(() => {
