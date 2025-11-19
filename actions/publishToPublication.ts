@@ -103,6 +103,15 @@ export async function publishToPublication({
     existingDocUri = draft?.document;
   }
 
+  // Heuristic: Remove title entities if this is the first time publishing
+  // (when coming from a standalone leaflet with entitiesToDelete passed in)
+  if (entitiesToDelete && entitiesToDelete.length > 0 && !existingDocUri) {
+    await supabaseServerClient
+      .from("entities")
+      .delete()
+      .in("id", entitiesToDelete);
+  }
+
   let { data } = await supabaseServerClient.rpc("get_facts", {
     root: root_entity,
   });
@@ -187,15 +196,6 @@ export async function publishToPublication({
         .eq("leaflet", leaflet_id)
         .eq("publication", publication_uri),
     ]);
-
-    // Heuristic: Remove title entities if this is the first time publishing
-    // (when coming from a standalone leaflet with entitiesToDelete passed in)
-    if (entitiesToDelete && entitiesToDelete.length > 0 && !existingDocUri) {
-      await supabaseServerClient
-        .from("entities")
-        .delete()
-        .in("id", entitiesToDelete);
-    }
   } else {
     // Publishing standalone - update leaflets_to_documents
     await supabaseServerClient.from("leaflets_to_documents").upsert({
