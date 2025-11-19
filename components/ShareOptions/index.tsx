@@ -182,8 +182,7 @@ const ShareMenu = (props: {
 
 export const ShareButton = (props: {
   text: React.ReactNode;
-  subtext: React.ReactNode;
-  helptext?: string;
+  subtext?: React.ReactNode;
   smokerText: string;
   id: string;
   link: null | string;
@@ -214,21 +213,12 @@ export const ShareButton = (props: {
         }
       }}
     >
-      <div className={`group/${props.id} ${props.className}`}>
-        <div className={`group-hover/${props.id}:text-accent-contrast`}>
-          {props.text}
-        </div>
-        <div
-          className={`text-sm font-normal text-tertiary group-hover/${props.id}:text-accent-contrast`}
-        >
-          {props.subtext}
-        </div>
-        {/* optional help text */}
-        {props.helptext && (
-          <div
-            className={`text-sm italic font-normal text-tertiary group-hover/${props.id}:text-accent-contrast`}
-          >
-            {props.helptext}
+      <div className={`group/${props.id} ${props.className} leading-snug`}>
+        {props.text}
+
+        {props.subtext && (
+          <div className={`text-sm  font-normal text-tertiary`}>
+            {props.subtext}
           </div>
         )}
       </div>

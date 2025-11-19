@@ -24,6 +24,7 @@ export async function uncachedGetIdentityData() {
                               entity_sets(entities(facts(*)))
             )),
             permission_token_on_homepage(
+              archived,
               created_at,
               permission_tokens!inner(
                 id,

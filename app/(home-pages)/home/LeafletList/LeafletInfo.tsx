@@ -21,14 +21,13 @@ export const LeafletInfo = (props: {
   added_at: string;
   publishedAt?: string;
   document_uri?: string;
+  archived?: boolean | null;
 }) => {
   let [prefetch, setPrefetch] = useState(false);
   let prettyCreatedAt = props.added_at ? timeAgo(props.added_at) : "";
 
   let prettyPublishedAt = props.publishedAt ? timeAgo(props.publishedAt) : "";
 
-  let shareLink = usePublishLink();
-  console.log(shareLink);
   return (
     <div
       className={`leafletInfo w-full min-w-0 flex flex-col ${props.className}`}
@@ -57,7 +56,8 @@ export const LeafletInfo = (props: {
             isTemplate={props.isTemplate}
             draft={props.draft}
             document_uri={props.document_uri}
-            shareLink={shareLink}
+            shareLink={`/${props.token.id}`}
+            archived={props.archived}
           />
         </div>
       </div>

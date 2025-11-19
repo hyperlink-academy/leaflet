@@ -60,7 +60,7 @@ export function PublishedPostsList(props: {
 
           let postLink = data?.publication
             ? `${getPublicationURL(data?.publication)}/${new AtUri(doc.documents.uri).rkey}`
-            : null;
+            : "";
 
           return (
             <Fragment key={doc.documents?.uri}>

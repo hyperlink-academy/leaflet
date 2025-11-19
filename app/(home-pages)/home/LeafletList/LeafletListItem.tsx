@@ -7,6 +7,7 @@ import { useState, useRef, useEffect } from "react";
 
 export const LeafletListItem = (props: {
   token: PermissionToken;
+  archived?: boolean | null;
   leaflet_id: string;
   loggedIn: boolean;
   display: "list" | "grid";

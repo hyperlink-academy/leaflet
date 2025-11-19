@@ -31,15 +31,13 @@ export const LeafletOptions = (props: {
   isTemplate?: boolean;
   draft?: boolean;
   document_uri?: string;
-  shareLink: string | undefined | null;
+  shareLink: string;
+  archived?: boolean | null;
 }) => {
-  console.log("sharelink: " + props.shareLink);
-  let { mutate: mutateIdentity } = useIdentityData();
   let [state, setState] = useState<"normal" | "template" | "areYouSure">(
     "normal",
   );
   let [open, setOpen] = useState(false);
-  let smoker = useSmoker();
   return (
     <>
       <Menu
@@ -62,68 +60,26 @@ export const LeafletOptions = (props: {
         }
       >
         {state === "normal" ? (
-          <>
-            <ShareButton
-              className=""
-              text={
-                <div className="flex gap-2">
-                  <ShareSmall />
-                  Copy {props.document_uri ? "Post" : "Edit"} Link
-                </div>
-              }
-              subtext=""
-              smokerText="Link copied!"
-              id="get-link"
-              link={`/${props.leaflet.id}`}
+          props.document_uri ? (
+            <PublishedPostOptions
+              setState={setState}
+              document_uri={props.document_uri}
+              {...props}
             />
-
-            {!props.isTemplate ? (
-              <MenuItem
-                onSelect={(e) => {
-                  e.preventDefault();
-                  setState("template");
-                }}
-              >
-                <TemplateSmall /> Use as Template
-              </MenuItem>
-            ) : (
-              <MenuItem
-                onSelect={(e) => {
-                  useTemplateState.getState().removeTemplate(props.leaflet);
-                  let newLeafletButton =
-                    document.getElementById("new-leaflet-button");
-                  if (!newLeafletButton) return;
-                  let rect = newLeafletButton.getBoundingClientRect();
-                  smoker({
-                    static: true,
-                    text: <strong>Removed template!</strong>,
-                    position: {
-                      y: rect.top,
-                      x: rect.right + 5,
-                    },
-                  });
-                }}
-              >
-                <TemplateRemoveSmall /> Remove from Templates
-              </MenuItem>
-            )}
-            <hr className="border-border-light" />
-            {props.document_uri ? (
-              <PublishedPostOptions
-                setState={setState}
-                document_uri={props.document_uri}
-              />
-            ) : (
-              <DefaultOptions setState={setState} draft={props.draft} />
-            )}
-          </>
+          ) : (
+            <DefaultOptions
+              isTemplate={props.isTemplate}
+              setState={setState}
+              {...props}
+            />
+          )
         ) : state === "template" ? (
           <AddTemplateForm
             leaflet={props.leaflet}
             close={() => setOpen(false)}
           />
         ) : state === "areYouSure" ? (
-          <DeleteAreYouSure
+          <DeleteAreYouSureForm
             backToMenu={() => setState("normal")}
             leaflet={props.leaflet}
             document_uri={props.document_uri}
@@ -136,14 +92,35 @@ export const LeafletOptions = (props: {
 };
 
 const DefaultOptions = (props: {
-  setState: (s: "areYouSure") => void;
+  setState: (s: "areYouSure" | "template") => void;
   draft?: boolean;
+  leaflet: PermissionToken;
+  isTemplate: boolean | undefined;
+  shareLink: string;
 }) => {
   return (
     <>
+      <ShareButton
+        text={
+          <div className="flex gap-2">
+            <ShareSmall />
+            Copy Edit Link
+          </div>
+        }
+        smokerText="Link copied!"
+        id="get-link"
+        link={`/${props.shareLink}`}
+      />
+      <TemplateOptions
+        leaflet={props.leaflet}
+        setState={props.setState}
+        isTemplate={props.isTemplate}
+      />
+
+      <hr className="border-border-light" />
       <MenuItem onSelect={() => {}}>
         <ArchiveSmall />
-        Archive{props.draft && " Draft"}
+        Archive{props.draft ? " Draft" : " Leaflet"}
       </MenuItem>
       <MenuItem
         onSelect={(e) => {
@@ -161,11 +138,25 @@ const DefaultOptions = (props: {
 const PublishedPostOptions = (props: {
   setState: (s: "areYouSure") => void;
   document_uri: string;
+  leaflet: PermissionToken;
+  shareLink: string;
 }) => {
   let toaster = useToaster();
-  let { mutate, data } = usePublicationData();
   return (
     <>
+      <ShareButton
+        text={
+          <div className="flex gap-2">
+            <ShareSmall />
+            Copy Post Link
+          </div>
+        }
+        smokerText="Link copied!"
+        id="get-link"
+        link={`/${props.shareLink}}`}
+      />
+
+      <hr className="border-border-light" />
       <MenuItem
         onSelect={async () => {
           if (props.document_uri) {
@@ -203,7 +194,7 @@ const PublishedPostOptions = (props: {
   );
 };
 
-const DeleteAreYouSure = (props: {
+const DeleteAreYouSureForm = (props: {
   backToMenu: () => void;
   document_uri?: string;
   leaflet: PermissionToken;
@@ -295,5 +286,44 @@ const AddTemplateForm = (props: {
         Add Template
       </ButtonPrimary>
     </div>
+  );
+};
+
+const TemplateOptions = (props: {
+  leaflet: PermissionToken;
+  isTemplate: boolean | undefined;
+  setState: (s: "template") => void;
+}) => {
+  let smoker = useSmoker();
+  if (props.isTemplate)
+    return (
+      <MenuItem
+        onSelect={(e) => {
+          useTemplateState.getState().removeTemplate(props.leaflet);
+          let newLeafletButton = document.getElementById("new-leaflet-button");
+          if (!newLeafletButton) return;
+          let rect = newLeafletButton.getBoundingClientRect();
+          smoker({
+            static: true,
+            text: <strong>Removed template!</strong>,
+            position: {
+              y: rect.top,
+              x: rect.right + 5,
+            },
+          });
+        }}
+      >
+        <TemplateRemoveSmall /> Remove from Templates
+      </MenuItem>
+    );
+  return (
+    <MenuItem
+      onSelect={(e) => {
+        e.preventDefault();
+        props.setState("template");
+      }}
+    >
+      <TemplateSmall /> Use as Template
+    </MenuItem>
   );
 };

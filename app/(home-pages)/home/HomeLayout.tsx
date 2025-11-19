@@ -33,6 +33,7 @@ import {
 
 type Leaflet = {
   added_at: string;
+  archived?: boolean | null;
   token: PermissionToken & {
     leaflets_in_publications?: Exclude<
       GetLeafletDataReturnType["result"]["data"],
@@ -147,6 +148,7 @@ export function HomeLeafletList(props: {
     ? identity.permission_token_on_homepage.map((ptoh) => ({
         added_at: ptoh.created_at,
         token: ptoh.permission_tokens as PermissionToken,
+        archived: ptoh.archived,
       }))
     : localLeaflets
         .sort((a, b) => (a.added_at > b.added_at ? -1 : 1))
@@ -204,7 +206,7 @@ export function LeafletList(props: {
         w-full
         ${display === "grid" ? "grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-6 sm:gap-y-5 grow" : "flex flex-col gap-2 pt-2"} `}
     >
-      {props.leaflets.map(({ token: leaflet, added_at }, index) => (
+      {props.leaflets.map(({ token: leaflet, added_at, archived }, index) => (
         <ReplicacheProvider
           disablePull
           initialFactsOnly={!!identity}
@@ -224,6 +226,7 @@ export function LeafletList(props: {
           >
             <LeafletListItem
               title={props?.titles?.[leaflet.root_entity] || "Untitled"}
+              archived={archived}
               token={leaflet}
               draft={!!leaflet.leaflets_in_publications?.length}
               published={!!leaflet.leaflets_in_publications?.find((l) => l.doc)}
