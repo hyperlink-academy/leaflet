@@ -19,7 +19,13 @@ import { extractCodeBlocks } from "./extractCodeBlocks";
 import { LeafletLayout } from "components/LeafletLayout";
 import { fetchPollData } from "./fetchPollData";
 
-export async function DocumentPageRenderer({ did, rkey }: { did: string; rkey: string }) {
+export async function DocumentPageRenderer({
+  did,
+  rkey,
+}: {
+  did: string;
+  rkey: string;
+}) {
   let agent = new AtpAgent({
     service: "https://public.api.bsky.app",
     fetch: (...args) =>
@@ -30,9 +36,7 @@ export async function DocumentPageRenderer({ did, rkey }: { did: string; rkey: s
   });
 
   let [document, profile] = await Promise.all([
-    getPostPageData(
-      AtUri.make(did, ids.PubLeafletDocument, rkey).toString(),
-    ),
+    getPostPageData(AtUri.make(did, ids.PubLeafletDocument, rkey).toString()),
     agent.getProfile({ actor: did }),
   ]);
 
@@ -101,8 +105,8 @@ export async function DocumentPageRenderer({ did, rkey }: { did: string; rkey: s
   let pubRecord = document.documents_in_publications[0]?.publications
     ?.record as PubLeafletPublication.Record | undefined;
   let theme = pubRecord?.theme || record.theme || null;
-  let pub_creator = document.documents_in_publications[0]?.publications
-    ?.identity_did || did;
+  let pub_creator =
+    document.documents_in_publications[0]?.publications?.identity_did || did;
 
   let firstPage = record.pages[0];
   let blocks: PubLeafletPagesLinearDocument.Block[] = [];

@@ -45,6 +45,12 @@ import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
 import { getBlocksWithTypeLocal } from "src/hooks/queries/useBlocks";
 import { Lock } from "src/utils/lock";
 import type { PubLeafletPublication } from "lexicons/api";
+import {
+  ColorToRGB,
+  ColorToRGBA,
+} from "components/ThemeManager/colorToLexicons";
+import Color from "colorjs.io/types";
+import { parseColor } from "react-aria-components";
 
 export async function publishToPublication({
   root_entity,
@@ -119,12 +125,12 @@ export async function publishToPublication({
   }
 
   let record: PubLeafletDocument.Record = {
+    publishedAt: new Date().toISOString(),
+    ...existingRecord,
     $type: "pub.leaflet.document",
     author: credentialSession.did!,
     ...(publication_uri && { publication: publication_uri }),
     ...(theme && { theme }),
-    publishedAt: new Date().toISOString(),
-    ...existingRecord,
     title: title || "Untitled",
     description: description || "",
     pages: [
@@ -642,7 +648,6 @@ async function extractThemeFromFacts(
   agent: AtpBaseClient,
 ): Promise<PubLeafletPublication.Theme | undefined> {
   let scan = scanIndexLocal(facts);
-
   let pageBackground = scan.eav(root_entity, "theme/page-background")?.[0]?.data
     .value;
   let cardBackground = scan.eav(root_entity, "theme/card-background")?.[0]?.data
@@ -661,95 +666,21 @@ async function extractThemeFromFacts(
     "theme/background-image-repeat",
   )?.[0];
 
-  // Helper to convert hex/hsba color string to RGB/RGBA object
-  const parseColorToRGB = (
-    colorStr: string,
-  ):
-    | { $type: "pub.leaflet.theme.color#rgb"; r: number; g: number; b: number }
-    | {
-        $type: "pub.leaflet.theme.color#rgba";
-        r: number;
-        g: number;
-        b: number;
-        a: number;
-      }
-    | undefined => {
-    // Try hex format first: #RRGGBB
-    const hexMatch = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(colorStr);
-    if (hexMatch) {
-      return {
-        $type: "pub.leaflet.theme.color#rgb" as const,
-        r: parseInt(hexMatch[1], 16),
-        g: parseInt(hexMatch[2], 16),
-        b: parseInt(hexMatch[3], 16),
-      };
-    }
-
-    // Try hsba format: hsba(h, s%, b%, a)
-    const hsbaMatch =
-      /^hsba\((\d+),\s*(\d+)%,\s*(\d+)%,\s*(\d+(?:\.\d+)?)\)$/i.exec(colorStr);
-    if (hsbaMatch) {
-      const h = parseInt(hsbaMatch[1]);
-      const s = parseInt(hsbaMatch[2]) / 100;
-      const b = parseInt(hsbaMatch[3]) / 100;
-      const a = Math.round(parseFloat(hsbaMatch[4]) * 100);
-
-      // Convert HSB to RGB
-      const c = b * s;
-      const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-      const m = b - c;
-
-      let r = 0,
-        g = 0,
-        bl = 0;
-      if (h >= 0 && h < 60) {
-        r = c;
-        g = x;
-        bl = 0;
-      } else if (h >= 60 && h < 120) {
-        r = x;
-        g = c;
-        bl = 0;
-      } else if (h >= 120 && h < 180) {
-        r = 0;
-        g = c;
-        bl = x;
-      } else if (h >= 180 && h < 240) {
-        r = 0;
-        g = x;
-        bl = c;
-      } else if (h >= 240 && h < 300) {
-        r = x;
-        g = 0;
-        bl = c;
-      } else {
-        r = c;
-        g = 0;
-        bl = x;
-      }
-
-      return {
-        $type: "pub.leaflet.theme.color#rgba" as const,
-        r: Math.round((r + m) * 255),
-        g: Math.round((g + m) * 255),
-        b: Math.round((bl + m) * 255),
-        a,
-      };
-    }
-
-    return undefined;
-  };
-
   let theme: PubLeafletPublication.Theme = {
     showPageBackground: showPageBackground ?? true,
   };
 
-  if (pageBackground) theme.backgroundColor = parseColorToRGB(pageBackground);
-  if (cardBackground) theme.pageBackground = parseColorToRGB(cardBackground);
-  if (primary) theme.primary = parseColorToRGB(primary);
+  if (pageBackground)
+    theme.backgroundColor = ColorToRGBA(parseColor(`hsba(${pageBackground})`));
+  if (cardBackground)
+    theme.pageBackground = ColorToRGBA(parseColor(`hsba(${cardBackground})`));
+  if (primary) theme.primary = ColorToRGB(parseColor(`hsba(${primary})`));
   if (accentBackground)
-    theme.accentBackground = parseColorToRGB(accentBackground);
-  if (accentText) theme.accentText = parseColorToRGB(accentText);
+    theme.accentBackground = ColorToRGB(
+      parseColor(`hsba(${accentBackground})`),
+    );
+  if (accentText)
+    theme.accentText = ColorToRGB(parseColor(`hsba(${accentText})`));
 
   // Upload background image if present
   if (backgroundImage?.data) {

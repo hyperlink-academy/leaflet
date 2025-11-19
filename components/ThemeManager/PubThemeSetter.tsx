@@ -16,6 +16,7 @@ import { BackgroundPicker } from "./PubPickers/PubBackgroundPickers";
 import { PubAccentPickers } from "./PubPickers/PubAcccentPickers";
 import { Separator } from "components/Layout";
 import { PubSettingsHeader } from "app/lish/[did]/[publication]/dashboard/PublicationSettings";
+import { ColorToRGB, ColorToRGBA } from "./colorToLexicons";
 
 export type ImageState = {
   src: string;
@@ -343,45 +344,3 @@ const SamplePost = (props: {
     </div>
   );
 };
-
-export function ColorToRGBA(color: Color) {
-  if (!color)
-    return {
-      $type: "pub.leaflet.theme.color#rgba" as const,
-      r: 0,
-      g: 0,
-      b: 0,
-      a: 1,
-    };
-  let c = color.toFormat("rgba");
-  const r = c.getChannelValue("red");
-  const g = c.getChannelValue("green");
-  const b = c.getChannelValue("blue");
-  const a = c.getChannelValue("alpha");
-  return {
-    $type: "pub.leaflet.theme.color#rgba" as const,
-    r: Math.round(r),
-    g: Math.round(g),
-    b: Math.round(b),
-    a: Math.round(a * 100),
-  };
-}
-function ColorToRGB(color: Color) {
-  if (!color)
-    return {
-      $type: "pub.leaflet.theme.color#rgb" as const,
-      r: 0,
-      g: 0,
-      b: 0,
-    };
-  let c = color.toFormat("rgb");
-  const r = c.getChannelValue("red");
-  const g = c.getChannelValue("green");
-  const b = c.getChannelValue("blue");
-  return {
-    $type: "pub.leaflet.theme.color#rgb" as const,
-    r: Math.round(r),
-    g: Math.round(g),
-    b: Math.round(b),
-  };
-}
