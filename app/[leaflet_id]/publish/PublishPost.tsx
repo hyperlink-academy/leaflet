@@ -103,7 +103,6 @@ const PublishPostForm = (
 
   return (
     <div className="flex flex-col gap-4 w-[640px] max-w-full sm:px-4 px-3">
-      <h3>Publish Options</h3>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -219,7 +218,7 @@ const PublishingTo = (props: {
   if (props.publication_uri && props.record) {
     return (
       <div className="flex flex-col gap-1">
-        <div className="text-sm text-tertiary">Publishing to…</div>
+        <h3>Publishing to</h3>
         <div className="flex gap-2 items-center p-2 rounded-md bg-[var(--accent-light)]">
           <PubIcon record={props.record} uri={props.publication_uri} />
           <div className="font-bold text-secondary">{props.record.name}</div>
@@ -230,7 +229,7 @@ const PublishingTo = (props: {
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="text-sm text-tertiary">Publishing as…</div>
+      <h3>Publishing as</h3>
       <div className="flex gap-2 items-center p-2 rounded-md bg-[var(--accent-light)]">
         <LooseLeafSmall className="shrink-0" />
         <div className="font-bold text-secondary">Looseleaf</div>
