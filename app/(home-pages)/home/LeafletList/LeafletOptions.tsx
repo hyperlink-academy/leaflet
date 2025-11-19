@@ -4,7 +4,7 @@ import { Menu, MenuItem } from "components/Layout";
 import { useReplicache, type PermissionToken } from "src/replicache";
 import { hideDoc } from "../storage";
 import { useState } from "react";
-import { ButtonPrimary } from "components/Buttons";
+import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { useTemplateState } from "../Actions/CreateNewButton";
 import { useSmoker, useToaster } from "components/Toast";
 import { removeLeafletFromHome } from "actions/removeLeafletFromHome";
@@ -14,19 +14,32 @@ import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { TemplateRemoveSmall } from "components/Icons/TemplateRemoveSmall";
 import { TemplateSmall } from "components/Icons/TemplateSmall";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
-import { addLeafletToHome } from "actions/addLeafletToHome";
+import { DeleteSmall } from "components/Icons/DeleteSmall";
+import { deleteLeaflet } from "actions/deleteLeaflet";
+import { ArchiveSmall } from "components/Icons/ArchiveSmall";
+import { UnpublishSmall } from "components/Icons/UnpublishSmall";
+import {
+  deletePost,
+  unpublishPost,
+} from "app/lish/[did]/[publication]/dashboard/deletePost";
+import { usePublicationData } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+import { ShareButton } from "components/ShareOptions";
+import { ShareSmall } from "components/Icons/ShareSmall";
 
 export const LeafletOptions = (props: {
   leaflet: PermissionToken;
-  isTemplate: boolean;
-  loggedIn: boolean;
-  added_at: string;
+  isTemplate?: boolean;
+  draft?: boolean;
+  document_uri?: string;
+  shareLink: string | undefined | null;
 }) => {
+  console.log("sharelink: " + props.shareLink);
   let { mutate: mutateIdentity } = useIdentityData();
-  let [state, setState] = useState<"normal" | "template">("normal");
+  let [state, setState] = useState<"normal" | "template" | "areYouSure">(
+    "normal",
+  );
   let [open, setOpen] = useState(false);
   let smoker = useSmoker();
-  let toaster = useToaster();
   return (
     <>
       <Menu
@@ -50,6 +63,20 @@ export const LeafletOptions = (props: {
       >
         {state === "normal" ? (
           <>
+            <ShareButton
+              className=""
+              text={
+                <div className="flex gap-2">
+                  <ShareSmall />
+                  Copy {props.document_uri ? "Post" : "Edit"} Link
+                </div>
+              }
+              subtext=""
+              smokerText="Link copied!"
+              id="get-link"
+              link={`/${props.leaflet.id}`}
+            />
+
             {!props.isTemplate ? (
               <MenuItem
                 onSelect={(e) => {
@@ -57,7 +84,7 @@ export const LeafletOptions = (props: {
                   setState("template");
                 }}
               >
-                <TemplateSmall /> Add as Template
+                <TemplateSmall /> Use as Template
               </MenuItem>
             ) : (
               <MenuItem
@@ -80,50 +107,27 @@ export const LeafletOptions = (props: {
                 <TemplateRemoveSmall /> Remove from Templates
               </MenuItem>
             )}
-            <MenuItem
-              onSelect={async () => {
-                if (props.loggedIn) {
-                  mutateIdentity(
-                    (s) => {
-                      if (!s) return s;
-                      return {
-                        ...s,
-                        permission_token_on_homepage:
-                          s.permission_token_on_homepage.filter(
-                            (ptrh) =>
-                              ptrh.permission_tokens.id !== props.leaflet.id,
-                          ),
-                      };
-                    },
-                    { revalidate: false },
-                  );
-                  await removeLeafletFromHome([props.leaflet.id]);
-                  mutateIdentity();
-                } else {
-                  hideDoc(props.leaflet);
-                }
-                toaster({
-                  content: (
-                    <div className="font-bold">
-                      Doc removed!{" "}
-                      <UndoRemoveFromHomeButton
-                        leaflet={props.leaflet}
-                        added_at={props.added_at}
-                      />
-                    </div>
-                  ),
-                  type: "success",
-                });
-              }}
-            >
-              <HideSmall />
-              Remove from Home
-            </MenuItem>
+            <hr className="border-border-light" />
+            {props.document_uri ? (
+              <PublishedPostOptions
+                setState={setState}
+                document_uri={props.document_uri}
+              />
+            ) : (
+              <DefaultOptions setState={setState} draft={props.draft} />
+            )}
           </>
         ) : state === "template" ? (
           <AddTemplateForm
             leaflet={props.leaflet}
             close={() => setOpen(false)}
+          />
+        ) : state === "areYouSure" ? (
+          <DeleteAreYouSure
+            backToMenu={() => setState("normal")}
+            leaflet={props.leaflet}
+            document_uri={props.document_uri}
+            draft={props.draft}
           />
         ) : null}
       </Menu>
@@ -131,46 +135,121 @@ export const LeafletOptions = (props: {
   );
 };
 
-const UndoRemoveFromHomeButton = (props: {
-  leaflet: PermissionToken;
-  added_at: string | undefined;
+const DefaultOptions = (props: {
+  setState: (s: "areYouSure") => void;
+  draft?: boolean;
+}) => {
+  return (
+    <>
+      <MenuItem onSelect={() => {}}>
+        <ArchiveSmall />
+        Archive{props.draft && " Draft"}
+      </MenuItem>
+      <MenuItem
+        onSelect={(e) => {
+          e.preventDefault();
+          props.setState("areYouSure");
+        }}
+      >
+        <DeleteSmall />
+        Delete Forever
+      </MenuItem>
+    </>
+  );
+};
+
+const PublishedPostOptions = (props: {
+  setState: (s: "areYouSure") => void;
+  document_uri: string;
 }) => {
   let toaster = useToaster();
-  let { mutate } = useIdentityData();
+  let { mutate, data } = usePublicationData();
   return (
-    <button
-      onClick={async (e) => {
-        await mutate(
-          (identity) => {
-            if (!identity) return;
-            return {
-              ...identity,
-              permission_token_on_homepage: [
-                ...identity.permission_token_on_homepage,
-                {
-                  created_at: props.added_at || new Date().toISOString(),
-                  permission_tokens: {
-                    ...props.leaflet,
-                    leaflets_in_publications: [],
-                  },
-                },
-              ],
-            };
-          },
-          { revalidate: false },
-        );
-        await addLeafletToHome(props.leaflet.id);
-        await mutate();
+    <>
+      <MenuItem
+        onSelect={async () => {
+          if (props.document_uri) {
+            await unpublishPost(props.document_uri);
+          }
+          toaster({
+            content: <div className="font-bold">Unpublished Post!</div>,
+            type: "success",
+          });
+        }}
+      >
+        <UnpublishSmall />
+        <div className="flex flex-col">
+          Unpublish Post
+          <div className="text-tertiary text-sm font-normal!">
+            Move this post back into drafts
+          </div>
+        </div>
+      </MenuItem>
+      <MenuItem
+        onSelect={(e) => {
+          e.preventDefault();
+          props.setState("areYouSure");
+        }}
+      >
+        <DeleteSmall />
+        <div className="flex flex-col">
+          Delete Post
+          <div className="text-tertiary text-sm font-normal!">
+            Unpublish AND delete
+          </div>
+        </div>
+      </MenuItem>
+    </>
+  );
+};
 
-        toaster({
-          content: <div className="font-bold">Recovered Doc!</div>,
-          type: "success",
-        });
-      }}
-      className="underline"
-    >
-      Undo?
-    </button>
+const DeleteAreYouSure = (props: {
+  backToMenu: () => void;
+  document_uri?: string;
+  leaflet: PermissionToken;
+  draft?: boolean;
+}) => {
+  let toaster = useToaster();
+
+  return (
+    <div className="flex flex-col justify-center p-2 text-center">
+      <div className="text-primary font-bold"> Are you sure?</div>
+      <div className="text-sm text-secondary">
+        This will delete it forever for everyone!
+      </div>
+      <div className="flex gap-2 mx-auto items-center mt-2">
+        <ButtonTertiary onClick={() => props.backToMenu()}>
+          Nevermind
+        </ButtonTertiary>
+        <ButtonPrimary
+          onClick={async () => {
+            //TODO refresh local data
+            if (props.document_uri) {
+              await deletePost(props.document_uri);
+            }
+            deleteLeaflet(props.leaflet);
+            console.log("deleting leaflet");
+
+            toaster({
+              content: (
+                <div className="font-bold">
+                  Deleted{" "}
+                  {props.document_uri
+                    ? "Post!"
+                    : props.draft
+                      ? "Draft"
+                      : "Leaflet!"}
+                </div>
+              ),
+              type: "success",
+            });
+            console.log("toasting");
+          }}
+        >
+          Delete it!
+        </ButtonPrimary>
+      </div>
+    </div>
   );
 };
 

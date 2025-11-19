@@ -231,6 +231,10 @@ export function LeafletList(props: {
                 leaflet.leaflets_in_publications?.find((l) => l.doc)?.documents
                   ?.indexed_at
               }
+              document_uri={
+                leaflet.leaflets_in_publications?.find((l) => l.doc)?.documents
+                  ?.uri
+              }
               leaflet_id={leaflet.root_entity}
               loggedIn={!!identity}
               display={display}

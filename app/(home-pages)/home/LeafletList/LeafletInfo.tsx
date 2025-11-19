@@ -2,10 +2,11 @@
 import { PermissionToken } from "src/replicache";
 import { LeafletOptions } from "./LeafletOptions";
 import Link from "next/link";
-import { useState } from "react";
+import { use, useState } from "react";
 import { theme } from "tailwind.config";
 import { TemplateSmall } from "components/Icons/TemplateSmall";
 import { timeAgo } from "src/utils/timeAgo";
+import { usePublishLink } from "components/ShareOptions";
 
 export const LeafletInfo = (props: {
   title?: string;
@@ -19,12 +20,15 @@ export const LeafletInfo = (props: {
   display: "grid" | "list";
   added_at: string;
   publishedAt?: string;
+  document_uri?: string;
 }) => {
   let [prefetch, setPrefetch] = useState(false);
   let prettyCreatedAt = props.added_at ? timeAgo(props.added_at) : "";
 
   let prettyPublishedAt = props.publishedAt ? timeAgo(props.publishedAt) : "";
 
+  let shareLink = usePublishLink();
+  console.log(shareLink);
   return (
     <div
       className={`leafletInfo w-full min-w-0 flex flex-col ${props.className}`}
@@ -51,8 +55,9 @@ export const LeafletInfo = (props: {
           <LeafletOptions
             leaflet={props.token}
             isTemplate={props.isTemplate}
-            loggedIn={props.loggedIn}
-            added_at={props.added_at}
+            draft={props.draft}
+            document_uri={props.document_uri}
+            shareLink={shareLink}
           />
         </div>
       </div>

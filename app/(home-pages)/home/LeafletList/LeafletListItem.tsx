@@ -16,6 +16,7 @@ export const LeafletListItem = (props: {
   draft?: boolean;
   published?: boolean;
   publishedAt?: string;
+  document_uri?: string;
   index: number;
   isHidden: boolean;
   showPreview?: boolean;
