@@ -8,13 +8,9 @@ import {
   useEntity,
   useReferenceToEntity,
 } from "src/replicache";
-import { useTemplateState } from "../Actions/CreateNewButton";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { LeafletContent } from "./LeafletContent";
 import { Tooltip } from "components/Tooltip";
-import { useState } from "react";
-import Link from "next/link";
-import { SpeedyLink } from "components/SpeedyLink";
 
 export const LeafletListPreview = (props: {
   draft?: boolean;
@@ -174,17 +170,7 @@ export const LeafletGridPreview = (props: {
             </div>
           </ThemeBackgroundProvider>
         </div>
-        <LeafletPreviewLink id={props.token.id} />
       </div>
     </ThemeProvider>
-  );
-};
-
-const LeafletPreviewLink = (props: { id: string }) => {
-  return (
-    <SpeedyLink
-      href={`/${props.id}`}
-      className={`hello no-underline sm:hover:no-underline text-primary absolute inset-0 w-full h-full bg-bg-test`}
-    />
   );
 };

@@ -4,6 +4,7 @@ import { useTemplateState } from "../Actions/CreateNewButton";
 import { LeafletListPreview, LeafletGridPreview } from "./LeafletPreview";
 import { LeafletInfo } from "./LeafletInfo";
 import { useState, useRef, useEffect } from "react";
+import { SpeedyLink } from "components/SpeedyLink";
 
 export const LeafletListItem = (props: {
   token: PermissionToken;
@@ -50,22 +51,24 @@ export const LeafletListItem = (props: {
   if (props.display === "list")
     return (
       <>
-        <div
-          ref={previewRef}
-          className={`gap-3 w-full ${props.cardBorderHidden ? "" : "px-2 py-1 block-border hover:outline-border"}`}
-          style={{
-            backgroundColor: props.cardBorderHidden
-              ? "transparent"
-              : "rgba(var(--bg-page), var(--bg-page-alpha))",
+        <LeafletLink id={props.token.id}>
+          <div
+            ref={previewRef}
+            className={`gap-3 w-full ${props.cardBorderHidden ? "" : "px-2 py-1 block-border hover:outline-border relative"}`}
+            style={{
+              backgroundColor: props.cardBorderHidden
+                ? "transparent"
+                : "rgba(var(--bg-page), var(--bg-page-alpha))",
 
-            display: props.isHidden ? "none" : "flex",
-          }}
-        >
-          {props.showPreview && (
-            <LeafletListPreview isVisible={isOnScreen} {...props} />
-          )}
-          <LeafletInfo isTemplate={isTemplate} {...props} />
-        </div>
+              display: props.isHidden ? "none" : "flex",
+            }}
+          >
+            {props.showPreview && (
+              <LeafletListPreview isVisible={isOnScreen} {...props} />
+            )}
+            <LeafletInfo isTemplate={isTemplate} {...props} />
+          </div>
+        </LeafletLink>
         {props.cardBorderHidden && (
           <hr
             className="last:hidden border-border-light"
@@ -77,28 +80,41 @@ export const LeafletListItem = (props: {
       </>
     );
   return (
-    <div
-      ref={previewRef}
-      className={`leafletGridListItem relative
+    <LeafletLink id={props.token.id}>
+      <div
+        ref={previewRef}
+        className={`leafletGridListItem relative
         flex flex-col gap-1 p-1 h-52
        block-border border-border! hover:outline-border
         `}
-      style={{
-        backgroundColor: props.cardBorderHidden
-          ? "transparent"
-          : "rgba(var(--bg-page), var(--bg-page-alpha))",
+        style={{
+          backgroundColor: props.cardBorderHidden
+            ? "transparent"
+            : "rgba(var(--bg-page), var(--bg-page-alpha))",
 
-        display: props.isHidden ? "none" : "flex",
-      }}
-    >
-      <div className="grow">
-        <LeafletGridPreview {...props} isVisible={isOnScreen} />
+          display: props.isHidden ? "none" : "flex",
+        }}
+      >
+        <div className="grow">
+          <LeafletGridPreview {...props} isVisible={isOnScreen} />
+        </div>
+        <LeafletInfo
+          isTemplate={isTemplate}
+          className="px-1 pb-0.5 shrink-0"
+          {...props}
+        />
       </div>
-      <LeafletInfo
-        isTemplate={isTemplate}
-        className="px-1 pb-0.5 shrink-0"
-        {...props}
-      />
-    </div>
+    </LeafletLink>
+  );
+};
+
+const LeafletLink = (props: { id: string; children: React.ReactNode }) => {
+  return (
+    <SpeedyLink
+      href={`/${props.id}`}
+      className={`no-underline hover:no-underline! text-primary`}
+    >
+      {props.children}
+    </SpeedyLink>
   );
 };

@@ -48,7 +48,7 @@ export const LeafletOptions = (props: {
         }}
         trigger={
           <div
-            className="text-secondary shrink-0"
+            className="text-secondary shrink-0 relative"
             onClick={(e) => {
               e.preventDefault;
               e.stopPropagation;

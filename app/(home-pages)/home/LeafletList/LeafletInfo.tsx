@@ -32,17 +32,9 @@ export const LeafletInfo = (props: {
       className={`leafletInfo w-full min-w-0 flex flex-col ${props.className}`}
     >
       <div className="flex justify-between items-center shrink-0 max-w-full gap-2 leading-tight overflow-hidden">
-        <Link
-          onMouseEnter={() => setPrefetch(true)}
-          onPointerDown={() => setPrefetch(true)}
-          prefetch={prefetch}
-          href={`/${props.token.id}`}
-          className="no-underline sm:hover:no-underline text-primary grow min-w-0"
-        >
-          <h3 className="sm:text-lg text-base truncate w-full min-w-0">
-            {props.title}
-          </h3>
-        </Link>
+        <h3 className="sm:text-lg text-base truncate w-full min-w-0">
+          {props.title}
+        </h3>
         <div className="flex gap-1 shrink-0">
           {props.isTemplate && props.display === "list" ? (
             <TemplateSmall
@@ -60,28 +52,18 @@ export const LeafletInfo = (props: {
           />
         </div>
       </div>
-      <Link
-        onMouseEnter={() => setPrefetch(true)}
-        onPointerDown={() => setPrefetch(true)}
-        prefetch={prefetch}
-        href={`/${props.token.id}`}
-        className="no-underline sm:hover:no-underline text-primary w-full"
-      >
-        {props.draft || props.published ? (
-          <div
-            className={`text-xs ${props.published ? "font-bold text-tertiary" : "text-tertiary"}`}
-          >
-            {props.published
-              ? `Published ${prettyPublishedAt}`
-              : `Draft ${prettyCreatedAt}`}
-          </div>
-        ) : (
-          <div className="text-xs text-tertiary">{prettyCreatedAt}</div>
-        )}
-        {props.archived && (
-          <div className="text-xs text-tertiary">archived</div>
-        )}
-      </Link>
+      {props.draft || props.published ? (
+        <div
+          className={`text-xs ${props.published ? "font-bold text-tertiary" : "text-tertiary"}`}
+        >
+          {props.published
+            ? `Published ${prettyPublishedAt}`
+            : `Draft ${prettyCreatedAt}`}
+        </div>
+      ) : (
+        <div className="text-xs text-tertiary">{prettyCreatedAt}</div>
+      )}
+      {props.archived && <div className="text-xs text-tertiary">archived</div>}
       {props.isTemplate && props.display === "grid" ? (
         <div className="absolute -top-2 right-1">
           <TemplateSmall
