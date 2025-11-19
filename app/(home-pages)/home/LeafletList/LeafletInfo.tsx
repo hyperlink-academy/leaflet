@@ -25,7 +25,6 @@ export const LeafletInfo = (props: {
 }) => {
   let [prefetch, setPrefetch] = useState(false);
   let prettyCreatedAt = props.added_at ? timeAgo(props.added_at) : "";
-
   let prettyPublishedAt = props.publishedAt ? timeAgo(props.publishedAt) : "";
 
   return (
@@ -78,6 +77,9 @@ export const LeafletInfo = (props: {
           </div>
         ) : (
           <div className="text-xs text-tertiary">{prettyCreatedAt}</div>
+        )}
+        {props.archived && (
+          <div className="text-xs text-tertiary">archived</div>
         )}
       </Link>
       {props.isTemplate && props.display === "grid" ? (

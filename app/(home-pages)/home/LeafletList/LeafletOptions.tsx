@@ -1,30 +1,29 @@
 "use client";
 
 import { Menu, MenuItem } from "components/Layout";
-import { useReplicache, type PermissionToken } from "src/replicache";
-import { hideDoc } from "../storage";
 import { useState } from "react";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { useTemplateState } from "../Actions/CreateNewButton";
 import { useSmoker, useToaster } from "components/Toast";
-import { removeLeafletFromHome } from "actions/removeLeafletFromHome";
-import { useIdentityData } from "components/IdentityProvider";
-import { HideSmall } from "components/Icons/HideSmall";
-import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
 import { TemplateRemoveSmall } from "components/Icons/TemplateRemoveSmall";
 import { TemplateSmall } from "components/Icons/TemplateSmall";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 import { DeleteSmall } from "components/Icons/DeleteSmall";
-import { deleteLeaflet } from "actions/deleteLeaflet";
+import {
+  archivePost,
+  deleteLeaflet,
+  unarchivePost,
+} from "actions/deleteLeaflet";
 import { ArchiveSmall } from "components/Icons/ArchiveSmall";
 import { UnpublishSmall } from "components/Icons/UnpublishSmall";
 import {
   deletePost,
   unpublishPost,
 } from "app/lish/[did]/[publication]/dashboard/deletePost";
-import { usePublicationData } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { ShareButton } from "components/ShareOptions";
 import { ShareSmall } from "components/Icons/ShareSmall";
+
+import { PermissionToken } from "src/replicache";
 
 export const LeafletOptions = (props: {
   leaflet: PermissionToken;
@@ -97,7 +96,9 @@ const DefaultOptions = (props: {
   leaflet: PermissionToken;
   isTemplate: boolean | undefined;
   shareLink: string;
+  archived?: boolean | null;
 }) => {
+  let toaster = useToaster();
   return (
     <>
       <ShareButton
@@ -118,9 +119,46 @@ const DefaultOptions = (props: {
       />
 
       <hr className="border-border-light" />
-      <MenuItem onSelect={() => {}}>
+      <MenuItem
+        onSelect={() => {
+          if (!props.archived) {
+            archivePost(props.leaflet.id);
+            toaster({
+              content: (
+                <div className="font-bold flex gap-2">
+                  Archived{props.draft ? " Draft" : " Leaflet"}!
+                  <ButtonTertiary
+                    className="underline text-accent-2!"
+                    onClick={() => {
+                      unarchivePost(props.leaflet.id);
+                      toaster({
+                        content: (
+                          <div className="font-bold flex gap-2">
+                            Unarchived!
+                          </div>
+                        ),
+                        type: "success",
+                      });
+                    }}
+                  >
+                    Undo?
+                  </ButtonTertiary>
+                </div>
+              ),
+              type: "success",
+            });
+          } else {
+            unarchivePost(props.leaflet.id);
+            toaster({
+              content: <div className="font-bold">Unarchived!</div>,
+              type: "success",
+            });
+          }
+        }}
+      >
         <ArchiveSmall />
-        Archive{props.draft ? " Draft" : " Leaflet"}
+        {!props.archived ? " Archive" : "Unarchive"}
+        {props.draft ? " Draft" : " Leaflet"}
       </MenuItem>
       <MenuItem
         onSelect={(e) => {
@@ -214,12 +252,10 @@ const DeleteAreYouSureForm = (props: {
         </ButtonTertiary>
         <ButtonPrimary
           onClick={async () => {
-            //TODO refresh local data
             if (props.document_uri) {
               await deletePost(props.document_uri);
             }
             deleteLeaflet(props.leaflet);
-            console.log("deleting leaflet");
 
             toaster({
               content: (
@@ -234,7 +270,6 @@ const DeleteAreYouSureForm = (props: {
               ),
               type: "success",
             });
-            console.log("toasting");
           }}
         >
           Delete it!

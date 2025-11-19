@@ -30,7 +30,6 @@ export async function deletePost(document_uri: string) {
       .delete()
       .eq("doc", document_uri),
   ]);
-  console.log("called delete");
 
   return revalidatePath("/lish/[did]/[publication]/dashboard", "layout");
 }
