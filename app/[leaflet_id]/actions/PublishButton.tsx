@@ -34,6 +34,7 @@ import * as base64 from "base64-js";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { BlueskyLogin } from "app/login/LoginForm";
 import { moveLeafletToPublication } from "actions/publications/moveLeafletToPublication";
+import { AddTiny } from "components/Icons/AddTiny";
 
 export const PublishButton = (props: { entityID: string }) => {
   let { data: pub } = useLeafletPublicationData();
@@ -292,14 +293,22 @@ const PubSelector = (props: {
               </div>
             </div>
           </div>
-          <div className="flex gap-2 menuItem">
-            <PublishSmall className="shrink-0" />
+          <div className="flex gap-2 px-2 py-1 ">
+            <PublishSmall className="shrink-0 text-border" />
             <div className="flex flex-col leading-snug">
-              <div className="text-secondary font-bold">
-                Start a Publication!
+              <div className="text-border font-bold">
+                Publish to Publication
               </div>
-              <div className="text-tertiary text-sm font-normal">
-                Publish your writing to a blog or newsletter on AT Proto
+              <div className="text-border text-sm font-normal">
+                Publish your writing to a blog on AT Proto
+              </div>
+              <hr className="my-2 drashed border-border-light border-dashed" />
+              <div className="text-tertiary text-sm font-normal ">
+                You don't have any Publications yet.{" "}
+                <a target="_blank" href="/lish/createPub">
+                  Create one
+                </a>{" "}
+                to get started!
               </div>
             </div>
           </div>
@@ -329,14 +338,13 @@ const PubSelector = (props: {
               </PubOption>
             );
           })}
-          <PubOption
-            selected={props.selectedPub === "create"}
-            onSelect={() => props.setSelectedPub("create")}
-          >
-            <>
-              <AddSmall /> Create New Publication
-            </>
-          </PubOption>
+          <div className="flex items-center px-2 py-1 text-accent-contrast gap-2">
+            <AddTiny className="m-1 shrink-0" />
+
+            <a target="_blank" href="/lish/createPub">
+              Start a new Publication
+            </a>
+          </div>
         </div>
       )}
     </div>
