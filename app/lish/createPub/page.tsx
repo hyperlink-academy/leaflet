@@ -26,7 +26,7 @@ export default async function CreatePub() {
         <div className="createPubContent h-full flex items-center max-w-sm w-full mx-auto">
           <div className="createPubFormWrapper h-fit w-full flex flex-col gap-4">
             <h2 className="text-center">Create Your Publication!</h2>
-            <div className="container w-full p-3">
+            <div className="opaque-container w-full sm:py-4 p-3">
               <CreatePubForm />
             </div>
           </div>
