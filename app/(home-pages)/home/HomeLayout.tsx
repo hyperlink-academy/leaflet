@@ -71,6 +71,11 @@ export const HomeLayout = (props: {
   let hasPubs = !identity || identity.publications.length === 0 ? false : true;
   let hasTemplates =
     useTemplateState((s) => s.templates).length === 0 ? false : true;
+  let hasArchived =
+    identity &&
+    identity.permission_token_on_homepage.filter(
+      (leaflet) => leaflet.archived === true,
+    ).length > 0;
 
   return (
     <DashboardLayout
@@ -89,6 +94,7 @@ export const HomeLayout = (props: {
               hasBackgroundImage={hasBackgroundImage}
               hasPubs={hasPubs}
               hasTemplates={hasTemplates}
+              hasArchived={!!hasArchived}
             />
           ),
           content: (
@@ -287,27 +293,31 @@ function useSearchedLeaflets(
   });
 
   let allTemplates = useTemplateState((s) => s.templates);
-  let filteredLeaflets = sortedLeaflets.filter(({ token: leaflet }) => {
-    let published = !!leaflet.leaflets_in_publications?.find((l) => l.doc);
-    let drafts = !!leaflet.leaflets_in_publications?.length && !published;
-    let docs = !leaflet.leaflets_in_publications?.length;
-    let templates = !!allTemplates.find((t) => t.id === leaflet.id);
-    // If no filters are active, show all
-    if (
-      !filter.drafts &&
-      !filter.published &&
-      !filter.docs &&
-      !filter.templates
-    )
-      return true;
+  let filteredLeaflets = sortedLeaflets.filter(
+    ({ token: leaflet, archived: archived }) => {
+      let published = !!leaflet.leaflets_in_publications?.find((l) => l.doc);
+      let drafts = !!leaflet.leaflets_in_publications?.length && !published;
+      let docs = !leaflet.leaflets_in_publications?.length;
+      let templates = !!allTemplates.find((t) => t.id === leaflet.id);
+      // If no filters are active, show all
+      if (
+        !filter.drafts &&
+        !filter.published &&
+        !filter.docs &&
+        !filter.templates &&
+        !filter.archived
+      )
+        return archived === false || archived === null;
 
-    return (
-      (filter.drafts && drafts) ||
-      (filter.published && published) ||
-      (filter.docs && docs) ||
-      (filter.templates && templates)
-    );
-  });
+      return (
+        (filter.drafts && drafts) ||
+        (filter.published && published) ||
+        (filter.docs && docs) ||
+        (filter.templates && templates) ||
+        (filter.archived && archived)
+      );
+    },
+  );
   if (searchValue === "") return filteredLeaflets;
   let searchedLeaflets = filteredLeaflets.filter(({ token: leaflet }) => {
     return titles[leaflet.root_entity]

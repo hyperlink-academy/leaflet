@@ -7,6 +7,7 @@ import { theme } from "tailwind.config";
 import { TemplateSmall } from "components/Icons/TemplateSmall";
 import { timeAgo } from "src/utils/timeAgo";
 import { usePublishLink } from "components/ShareOptions";
+import { Separator } from "components/Layout";
 
 export const LeafletInfo = (props: {
   title?: string;
@@ -52,18 +53,23 @@ export const LeafletInfo = (props: {
           />
         </div>
       </div>
-      {props.draft || props.published ? (
-        <div
-          className={`text-xs ${props.published ? "font-bold text-tertiary" : "text-tertiary"}`}
-        >
-          {props.published
-            ? `Published ${prettyPublishedAt}`
-            : `Draft ${prettyCreatedAt}`}
-        </div>
-      ) : (
-        <div className="text-xs text-tertiary">{prettyCreatedAt}</div>
-      )}
-      {props.archived && <div className="text-xs text-tertiary">archived</div>}
+      <div className="flex gap-2 items-center">
+        {props.archived ? (
+          <div className="text-xs text-tertiary truncate">Archived</div>
+        ) : props.draft || props.published ? (
+          <div
+            className={`text-xs w-max grow truncate ${props.published ? "font-bold text-tertiary" : "text-tertiary"}`}
+          >
+            {props.published
+              ? `Published ${prettyPublishedAt}`
+              : `Draft ${prettyCreatedAt}`}
+          </div>
+        ) : (
+          <div className="text-xs text-tertiary grow w-max truncate">
+            {prettyCreatedAt}
+          </div>
+        )}
+      </div>
       {props.isTemplate && props.display === "grid" ? (
         <div className="absolute -top-2 right-1">
           <TemplateSmall

@@ -51,16 +51,17 @@ export const LeafletListItem = (props: {
   if (props.display === "list")
     return (
       <>
-        <LeafletLink id={props.token.id}>
+        <LeafletLink
+          id={props.token.id}
+          className={`w-full ${props.isHidden ? "hidden" : "block"}`}
+        >
           <div
             ref={previewRef}
-            className={`gap-3 w-full ${props.cardBorderHidden ? "" : "px-2 py-1 block-border hover:outline-border relative"}`}
+            className={`flex gap-3 w-full ${props.cardBorderHidden ? "" : "px-2 py-1 block-border hover:outline-border relative"}`}
             style={{
               backgroundColor: props.cardBorderHidden
                 ? "transparent"
                 : "rgba(var(--bg-page), var(--bg-page-alpha))",
-
-              display: props.isHidden ? "none" : "flex",
             }}
           >
             {props.showPreview && (
@@ -80,19 +81,20 @@ export const LeafletListItem = (props: {
       </>
     );
   return (
-    <LeafletLink id={props.token.id}>
+    <LeafletLink
+      id={props.token.id}
+      className={`leafletGridListItem relative w-full ${props.isHidden ? "hidden" : "flex"}`}
+    >
       <div
         ref={previewRef}
-        className={`leafletGridListItem relative
-        flex flex-col gap-1 p-1 h-52
+        className={`
+        flex flex-col gap-1 p-1 h-52 w-full
        block-border border-border! hover:outline-border
         `}
         style={{
           backgroundColor: props.cardBorderHidden
             ? "transparent"
             : "rgba(var(--bg-page), var(--bg-page-alpha))",
-
-          display: props.isHidden ? "none" : "flex",
         }}
       >
         <div className="grow">
@@ -108,11 +110,15 @@ export const LeafletListItem = (props: {
   );
 };
 
-const LeafletLink = (props: { id: string; children: React.ReactNode }) => {
+const LeafletLink = (props: {
+  id: string;
+  children: React.ReactNode;
+  className: string;
+}) => {
   return (
     <SpeedyLink
       href={`/${props.id}`}
-      className={`no-underline hover:no-underline! text-primary`}
+      className={`no-underline hover:no-underline! text-primary ${props.className}`}
     >
       {props.children}
     </SpeedyLink>
