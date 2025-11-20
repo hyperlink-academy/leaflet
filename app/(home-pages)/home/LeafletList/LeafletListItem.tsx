@@ -15,7 +15,7 @@ export const LeafletListItem = (props: {
   cardBorderHidden: boolean;
   added_at: string;
   title: string;
-  draft?: boolean;
+  draftInPublication?: string;
   published?: boolean;
   publishedAt?: string;
   document_uri?: string;

@@ -1,4 +1,5 @@
 "use server";
+import { refresh } from "next/cache";
 
 import { drizzle } from "drizzle-orm/node-postgres";
 import {
@@ -46,6 +47,32 @@ export async function archivePost(token: string) {
     .update({ archived: true })
     .eq("token", token)
     .eq("identity", identity.id);
+  refresh();
+  return;
+}
+export async function archivePublicationDraft(
+  token: string,
+  publication: string,
+) {
+  console.log("ARCHIVING", token, publication);
+  let identity = await getIdentityData();
+  if (!identity) throw new Error("No Identity");
+  let { data: pub } = await supabaseServerClient
+    .from("publications")
+    .select("*")
+    .eq("uri", publication)
+    .single();
+
+  if (!pub || pub.identity_did !== identity.atp_did) return;
+
+  console.log(
+    await supabaseServerClient
+      .from("leaflets_in_publications")
+      .update({ archived: true })
+      .eq("leaflet", token)
+      .eq("publication", publication),
+  );
+  refresh();
   return;
 }
 
@@ -58,5 +85,6 @@ export async function unarchivePost(token: string) {
     .update({ archived: false })
     .eq("token", token)
     .eq("identity", identity.id);
+  refresh();
   return;
 }

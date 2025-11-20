@@ -11,7 +11,7 @@ import { Separator } from "components/Layout";
 
 export const LeafletInfo = (props: {
   title?: string;
-  draft?: boolean;
+  draftInPublication?: string;
   published?: boolean;
   token: PermissionToken;
   leaflet_id: string;
@@ -46,7 +46,7 @@ export const LeafletInfo = (props: {
           <LeafletOptions
             leaflet={props.token}
             isTemplate={props.isTemplate}
-            draft={props.draft}
+            draftInPublication={props.draftInPublication}
             document_uri={props.document_uri}
             shareLink={`/${props.token.id}`}
             archived={props.archived}
@@ -56,7 +56,7 @@ export const LeafletInfo = (props: {
       <div className="flex gap-2 items-center">
         {props.archived ? (
           <div className="text-xs text-tertiary truncate">Archived</div>
-        ) : props.draft || props.published ? (
+        ) : props.draftInPublication || props.published ? (
           <div
             className={`text-xs w-max grow truncate ${props.published ? "font-bold text-tertiary" : "text-tertiary"}`}
           >

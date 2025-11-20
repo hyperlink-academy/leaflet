@@ -11,6 +11,7 @@ import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTin
 import { DeleteSmall } from "components/Icons/DeleteSmall";
 import {
   archivePost,
+  archivePublicationDraft,
   deleteLeaflet,
   unarchivePost,
 } from "actions/deleteLeaflet";
@@ -28,7 +29,7 @@ import { PermissionToken } from "src/replicache";
 export const LeafletOptions = (props: {
   leaflet: PermissionToken;
   isTemplate?: boolean;
-  draft?: boolean;
+  draftInPublication?: string;
   document_uri?: string;
   shareLink: string;
   archived?: boolean | null;
@@ -82,7 +83,7 @@ export const LeafletOptions = (props: {
             backToMenu={() => setState("normal")}
             leaflet={props.leaflet}
             document_uri={props.document_uri}
-            draft={props.draft}
+            draft={!!props.draftInPublication}
           />
         ) : null}
       </Menu>
@@ -92,7 +93,7 @@ export const LeafletOptions = (props: {
 
 const DefaultOptions = (props: {
   setState: (s: "areYouSure" | "template") => void;
-  draft?: boolean;
+  draftInPublication?: string;
   leaflet: PermissionToken;
   isTemplate: boolean | undefined;
   shareLink: string;
@@ -108,6 +109,7 @@ const DefaultOptions = (props: {
             Copy Edit Link
           </div>
         }
+        subtext=""
         smokerText="Link copied!"
         id="get-link"
         link={`/${props.shareLink}`}
@@ -120,17 +122,21 @@ const DefaultOptions = (props: {
 
       <hr className="border-border-light" />
       <MenuItem
-        onSelect={() => {
+        onSelect={async () => {
           if (!props.archived) {
-            archivePost(props.leaflet.id);
+            if (props.draftInPublication)
+              await archivePublicationDraft(
+                props.leaflet.id,
+                props.draftInPublication,
+              );
             toaster({
               content: (
                 <div className="font-bold flex gap-2">
-                  Archived{props.draft ? " Draft" : " Leaflet"}!
+                  Archived{props.draftInPublication ? " Draft" : " Leaflet"}!
                   <ButtonTertiary
                     className="underline text-accent-2!"
-                    onClick={() => {
-                      unarchivePost(props.leaflet.id);
+                    onClick={async () => {
+                      await unarchivePost(props.leaflet.id);
                       toaster({
                         content: (
                           <div className="font-bold flex gap-2">
@@ -148,7 +154,7 @@ const DefaultOptions = (props: {
               type: "success",
             });
           } else {
-            unarchivePost(props.leaflet.id);
+            await unarchivePost(props.leaflet.id);
             toaster({
               content: <div className="font-bold">Unarchived!</div>,
               type: "success",
@@ -158,7 +164,7 @@ const DefaultOptions = (props: {
       >
         <ArchiveSmall />
         {!props.archived ? " Archive" : "Unarchive"}
-        {props.draft ? " Draft" : " Leaflet"}
+        {props.draftInPublication ? " Draft" : " Leaflet"}
       </MenuItem>
       <MenuItem
         onSelect={(e) => {
