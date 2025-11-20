@@ -580,6 +580,7 @@ export type Database = {
       }
       leaflets_in_publications: {
         Row: {
+          archived: boolean | null
           description: string
           doc: string | null
           leaflet: string
@@ -587,6 +588,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          archived?: boolean | null
           description?: string
           doc?: string | null
           leaflet: string
@@ -594,6 +596,7 @@ export type Database = {
           title?: string
         }
         Update: {
+          archived?: boolean | null
           description?: string
           doc?: string | null
           leaflet?: string
