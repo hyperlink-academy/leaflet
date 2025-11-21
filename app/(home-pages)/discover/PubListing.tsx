@@ -16,7 +16,7 @@ export const PubListing = (
   },
 ) => {
   let record = props.record as PubLeafletPublication.Record;
-  let theme = usePubTheme(record);
+  let theme = usePubTheme(record.theme);
   let backgroundImage = record?.theme?.backgroundImage?.image?.ref
     ? blobRefToSrc(
         record?.theme?.backgroundImage?.image?.ref,

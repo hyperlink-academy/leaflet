@@ -7,6 +7,7 @@ export type GetLeafletDataReturnType = Awaited<
 >;
 
 const leaflets_in_publications_query = `leaflets_in_publications(*, publications(*), documents(*))`;
+const leaflets_to_documents_query = `leaflets_to_documents(*, documents(*))`;
 export const get_leaflet_data = makeRoute({
   route: "get_leaflet_data",
   input: z.object({
@@ -20,7 +21,8 @@ export const get_leaflet_data = makeRoute({
         `*,
         permission_token_rights(*, entity_sets(permission_tokens(${leaflets_in_publications_query}))),
         custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*),
-        ${leaflets_in_publications_query}`,
+        ${leaflets_in_publications_query},
+        ${leaflets_to_documents_query}`,
       )
       .eq("id", token_id)
       .single();

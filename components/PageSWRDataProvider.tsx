@@ -66,13 +66,27 @@ let useLeafletData = () => {
 };
 export function useLeafletPublicationData() {
   let { data, mutate } = useLeafletData();
+
+  // First check for leaflets in publications
+  let pubData =
+    data?.leaflets_in_publications?.[0] ||
+    data?.permission_token_rights[0].entity_sets?.permission_tokens?.find(
+      (p) => p.leaflets_in_publications.length,
+    )?.leaflets_in_publications?.[0];
+
+  // If not found, check for standalone documents
+  if (!pubData && data?.leaflets_to_documents?.[0]) {
+    // Transform standalone document data to match the expected format
+    let standaloneDoc = data.leaflets_to_documents[0];
+    pubData = {
+      ...standaloneDoc,
+      publications: null, // No publication for standalone docs
+      doc: standaloneDoc.document,
+    } as any;
+  }
+
   return {
-    data:
-      data?.leaflets_in_publications?.[0] ||
-      data?.permission_token_rights[0].entity_sets?.permission_tokens?.find(
-        (p) => p.leaflets_in_publications.length,
-      )?.leaflets_in_publications?.[0] ||
-      null,
+    data: pubData || null,
     mutate,
   };
 }

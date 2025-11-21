@@ -73,7 +73,7 @@ export function ThemeProvider(props: {
   return (
     <PublicationThemeProvider
       {...props}
-      record={pub.publications?.record as PubLeafletPublication.Record}
+      theme={(pub.publications?.record as PubLeafletPublication.Record)?.theme}
       pub_creator={pub.publications?.identity_did}
     />
   );
@@ -339,7 +339,9 @@ export const ThemeBackgroundProvider = (props: {
     return (
       <PublicationBackgroundProvider
         pub_creator={pub?.publications.identity_did || ""}
-        record={pub?.publications.record as PubLeafletPublication.Record}
+        theme={
+          (pub.publications?.record as PubLeafletPublication.Record)?.theme
+        }
       >
         {props.children}
       </PublicationBackgroundProvider>

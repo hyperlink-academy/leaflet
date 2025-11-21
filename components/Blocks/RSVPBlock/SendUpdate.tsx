@@ -9,10 +9,10 @@ import { useToaster } from "components/Toast";
 import { sendUpdateToRSVPS } from "actions/sendUpdateToRSVPS";
 import { useReplicache } from "src/replicache";
 import { Checkbox } from "components/Checkbox";
-import { usePublishLink } from "components/ShareOptions";
+import { useReadOnlyShareLink } from "app/[leaflet_id]/actions/ShareOptions";
 
 export function SendUpdateButton(props: { entityID: string }) {
-  let publishLink = usePublishLink();
+  let publishLink = useReadOnlyShareLink();
   let { permissions } = useEntitySetContext();
   let { permission_token } = useReplicache();
   let [input, setInput] = useState("");

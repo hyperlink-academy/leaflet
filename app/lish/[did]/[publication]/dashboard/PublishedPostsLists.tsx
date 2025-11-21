@@ -13,7 +13,7 @@ import { ButtonPrimary } from "components/Buttons";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 import { DeleteSmall } from "components/Icons/DeleteSmall";
 import { ShareSmall } from "components/Icons/ShareSmall";
-import { ShareButton } from "components/ShareOptions";
+import { ShareButton } from "app/[leaflet_id]/actions/ShareOptions";
 import { SpeedyLink } from "components/SpeedyLink";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
@@ -237,9 +237,5 @@ function PublishedDate(props: { dateString: string }) {
     day: "2-digit",
   });
 
-  return (
-    <p className="text-sm text-tertiary">
-      Published {formattedDate}
-    </p>
-  );
+  return <p className="text-sm text-tertiary">Published {formattedDate}</p>;
 }

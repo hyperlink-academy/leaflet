@@ -1,9 +1,12 @@
 import { useLeafletDomains } from "components/PageSWRDataProvider";
-import { ShareButton, usePublishLink } from "components/ShareOptions";
+import {
+  ShareButton,
+  useReadOnlyShareLink,
+} from "app/[leaflet_id]/actions/ShareOptions";
 import { useEffect, useState } from "react";
 
 export const PageShareMenu = (props: { entityID: string }) => {
-  let publishLink = usePublishLink();
+  let publishLink = useReadOnlyShareLink();
   let { data: domains } = useLeafletDomains();
   let [collabLink, setCollabLink] = useState<null | string>(null);
   useEffect(() => {

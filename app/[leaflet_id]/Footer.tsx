@@ -4,12 +4,13 @@ import { Footer as ActionFooter } from "components/ActionBar/Footer";
 import { Media } from "components/Media";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { Toolbar } from "components/Toolbar";
-import { ShareOptions } from "components/ShareOptions";
-import { HomeButton } from "components/HomeButton";
+import { ShareOptions } from "app/[leaflet_id]/actions/ShareOptions";
+import { HomeButton } from "app/[leaflet_id]/actions/HomeButton";
+import { PublishButton } from "./actions/PublishButton";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { HelpPopover } from "components/HelpPopover";
+import { HelpButton } from "app/[leaflet_id]/actions/HelpButton";
 import { Watermark } from "components/Watermark";
-import { BackToPubButton, PublishButton } from "./Actions";
+import { BackToPubButton } from "./actions/BackToPubButton";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useIdentityData } from "components/IdentityProvider";
 
@@ -36,24 +37,19 @@ export function LeafletFooter(props: { entityID: string }) {
           />
         </div>
       ) : entity_set.permissions.write ? (
-        pub?.publications &&
-        identity?.atp_did &&
-        pub.publications.identity_did === identity.atp_did ? (
-          <ActionFooter>
+        <ActionFooter>
+          {pub?.publications &&
+          identity?.atp_did &&
+          pub.publications.identity_did === identity.atp_did ? (
             <BackToPubButton publication={pub.publications} />
-            <PublishButton />
-            <ShareOptions />
-            <HelpPopover />
-            <ThemePopover entityID={props.entityID} />
-          </ActionFooter>
-        ) : (
-          <ActionFooter>
+          ) : (
             <HomeButton />
-            <ShareOptions />
-            <HelpPopover />
-            <ThemePopover entityID={props.entityID} />
-          </ActionFooter>
-        )
+          )}
+
+          <PublishButton entityID={props.entityID} />
+          <ShareOptions />
+          <ThemePopover entityID={props.entityID} />
+        </ActionFooter>
       ) : (
         <div className="pb-2 px-2 z-10 flex justify-end">
           <Watermark mobile />

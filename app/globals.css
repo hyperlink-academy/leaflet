@@ -339,6 +339,7 @@ pre.shiki {
   @apply focus-within:outline-offset-1;
 
   @apply disabled:border-border-light;
+  @apply disabled:hover:border-border-light;
   @apply disabled:bg-border-light;
   @apply disabled:text-tertiary;
 }

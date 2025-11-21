@@ -29,6 +29,7 @@ export function CanvasPage({
   profile,
   preferences,
   pubRecord,
+  theme,
   prerenderedCodeBlocks,
   bskyPostData,
   pollData,
@@ -42,7 +43,8 @@ export function CanvasPage({
   document: PostPageData;
   blocks: PubLeafletPagesCanvas.Block[];
   profile: ProfileViewDetailed;
-  pubRecord: PubLeafletPublication.Record;
+  pubRecord?: PubLeafletPublication.Record;
+  theme?: PubLeafletPublication.Theme | null;
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
@@ -55,7 +57,7 @@ export function CanvasPage({
 }) {
   if (!document) return null;
 
-  let hasPageBackground = !!pubRecord.theme?.showPageBackground;
+  let hasPageBackground = !!theme?.showPageBackground;
   let isSubpage = !!pageId;
   let drawer = useDrawerOpen(document_uri);
 

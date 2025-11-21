@@ -59,11 +59,11 @@ export default async function Publication(props: {
   try {
     return (
       <PublicationThemeProvider
-        record={record}
+        theme={record?.theme}
         pub_creator={publication.identity_did}
       >
         <PublicationBackgroundProvider
-          record={record}
+          theme={record?.theme}
           pub_creator={publication.identity_did}
         >
           <div

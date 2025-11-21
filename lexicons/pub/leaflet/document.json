@@ -13,8 +13,7 @@
         "required": [
           "pages",
           "author",
-          "title",
-          "publication"
+          "title"
         ],
         "properties": {
           "title": {
@@ -42,6 +41,10 @@
           "author": {
             "type": "string",
             "format": "at-identifier"
+          },
+          "theme": {
+            "type": "ref",
+            "ref": "pub.leaflet.publication#theme"
           },
           "pages": {
             "type": "array",

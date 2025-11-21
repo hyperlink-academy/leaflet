@@ -11,6 +11,12 @@ export async function createPublicationDraft(publication_uri: string) {
     redirectUser: false,
     firstBlockType: "text",
   });
+  let { data: publication } = await supabaseServerClient
+    .from("publications")
+    .select("*")
+    .eq("uri", publication_uri)
+    .single();
+  if (publication?.identity_did !== identity.atp_did) return;
 
   await supabaseServerClient
     .from("leaflets_in_publications")
