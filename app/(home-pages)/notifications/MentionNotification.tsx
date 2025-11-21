@@ -1,4 +1,4 @@
-import { MentionTiny } from "components/Icons/MentionTiny";
+import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { ContentLayout, Notification } from "./Notification";
 import { HydratedQuoteNotification } from "src/notifications";
 import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
@@ -19,7 +19,7 @@ export const QuoteNotification = (props: HydratedQuoteNotification) => {
     <Notification
       timestamp={props.created_at}
       href={`https://${pubRecord.base_path}/${rkey}`}
-      icon={<MentionTiny />}
+      icon={<QuoteTiny />}
       actionText={<>{displayName} quoted your post</>}
       content={
         <ContentLayout postTitle={docRecord.title} pubRecord={pubRecord}>
