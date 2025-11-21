@@ -49,8 +49,7 @@ import {
   ColorToRGB,
   ColorToRGBA,
 } from "components/ThemeManager/colorToLexicons";
-import Color from "colorjs.io/types";
-import { parseColor } from "react-aria-components";
+import { parseColor } from "@react-stately/color";
 
 export async function publishToPublication({
   root_entity,

@@ -9,6 +9,7 @@ import { addLeafletToHome } from "actions/addLeafletToHome";
 import { useSmoker } from "../../../components/Toast";
 import { AddToHomeSmall } from "../../../components/Icons/AddToHomeSmall";
 import { HomeSmall } from "../../../components/Icons/HomeSmall";
+import { produce } from "immer";
 
 export function HomeButton() {
   let { permissions } = useEntitySetContext();
@@ -46,19 +47,16 @@ const AddToHomeButton = (props: {}) => {
         await addLeafletToHome(permission_token.id);
         mutate((identity) => {
           if (!identity) return;
-          return {
-            ...identity,
-            permission_token_on_homepage: [
-              ...identity.permission_token_on_homepage,
-              {
-                created_at: new Date().toISOString(),
-                permission_tokens: {
-                  ...permission_token,
-                  leaflets_in_publications: [],
-                },
+          return produce<typeof identity>((draft) => {
+            draft.permission_token_on_homepage.push({
+              created_at: new Date().toISOString(),
+              permission_tokens: {
+                ...permission_token,
+                leaflets_to_documents: [],
+                leaflets_in_publications: [],
               },
-            ],
-          };
+            });
+          })(identity);
         });
         smoker({
           position: {

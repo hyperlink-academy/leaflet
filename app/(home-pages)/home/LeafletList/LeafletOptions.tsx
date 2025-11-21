@@ -15,6 +15,7 @@ import { TemplateRemoveSmall } from "components/Icons/TemplateRemoveSmall";
 import { TemplateSmall } from "components/Icons/TemplateSmall";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 import { addLeafletToHome } from "actions/addLeafletToHome";
+import { produce } from "immer";
 
 export const LeafletOptions = (props: {
   leaflet: PermissionToken;
@@ -143,19 +144,16 @@ const UndoRemoveFromHomeButton = (props: {
         await mutate(
           (identity) => {
             if (!identity) return;
-            return {
-              ...identity,
-              permission_token_on_homepage: [
-                ...identity.permission_token_on_homepage,
-                {
-                  created_at: props.added_at || new Date().toISOString(),
-                  permission_tokens: {
-                    ...props.leaflet,
-                    leaflets_in_publications: [],
-                  },
+            return produce<typeof identity>((draft) => {
+              draft.permission_token_on_homepage.push({
+                created_at: props.added_at || new Date().toISOString(),
+                permission_tokens: {
+                  ...props.leaflet,
+                  leaflets_to_documents: [],
+                  leaflets_in_publications: [],
                 },
-              ],
-            };
+              });
+            })(identity);
           },
           { revalidate: false },
         );
