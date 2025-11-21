@@ -57,7 +57,7 @@ export async function sendPostToSubscribers({
   ) {
     return;
   }
-  let domain = getCurrentDeploymentDomain();
+  let domain = await getCurrentDeploymentDomain();
   let res = await fetch("https://api.postmarkapp.com/email/batch", {
     method: "POST",
     headers: {

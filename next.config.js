@@ -31,8 +31,8 @@ const nextConfig = {
       { protocol: "https", hostname: "bdefzwcumgzjwllsnaej.supabase.co" },
     ],
   },
+  reactCompiler: true,
   experimental: {
-    reactCompiler: true,
     serverActions: {
       bodySizeLimit: "5mb",
     },

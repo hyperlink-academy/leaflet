@@ -28,7 +28,6 @@
     "@atproto/syntax": "^0.3.3",
     "@atproto/xrpc": "^0.7.5",
     "@atproto/xrpc-server": "^0.9.5",
-    "@esbuild/darwin-arm64": "^0.27.0",
     "@hono/node-server": "^1.14.3",
     "@mdx-js/loader": "^3.1.0",
     "@mdx-js/react": "^3.1.0",
