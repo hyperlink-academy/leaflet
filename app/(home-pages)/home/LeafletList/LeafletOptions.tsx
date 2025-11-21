@@ -11,7 +11,6 @@ import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTin
 import { DeleteSmall } from "components/Icons/DeleteSmall";
 import {
   archivePost,
-  archivePublicationDraft,
   deleteLeaflet,
   unarchivePost,
 } from "actions/deleteLeaflet";
@@ -124,11 +123,7 @@ const DefaultOptions = (props: {
       <MenuItem
         onSelect={async () => {
           if (!props.archived) {
-            if (props.draftInPublication)
-              await archivePublicationDraft(
-                props.leaflet.id,
-                props.draftInPublication,
-              );
+            await archivePost(props.leaflet.id);
             toaster({
               content: (
                 <div className="font-bold flex gap-2">

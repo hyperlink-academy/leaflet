@@ -133,12 +133,12 @@ export const LeafletGridPreview = (props: {
   );
   return (
     <ThemeProvider local entityID={root} className="w-full!">
-      <div className="border border-border-light rounded-md w-full h-full overflow-hidden relative">
-        <div className="relative w-full h-full">
+      <div className="border border-border-light rounded-md w-full h-full overflow-hidden ">
+        <div className="w-full h-full">
           <ThemeBackgroundProvider entityID={root}>
             <div
               inert
-              className="leafletPreview relative grow shrink-0 h-full w-full px-2 pt-2 sm:px-3 sm:pt-3 flex items-end pointer-events-none"
+              className="leafletPreview grow shrink-0 h-full w-full px-2 pt-2 sm:px-3 sm:pt-3 flex items-end pointer-events-none"
             >
               <div
                 className={`leafletContentWrapper h-full sm:w-48 w-40 mx-auto overflow-clip ${!cardBorderHidden && "border border-border-light border-b-0 rounded-t-md"}`}
