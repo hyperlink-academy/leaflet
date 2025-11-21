@@ -24,7 +24,7 @@ export type navPages =
   | "pub"
   | "discover"
   | "notifications"
-  | "looseleaf";
+  | "looseleafs";
 
 export const DesktopNavigation = (props: {
   currentPage: navPages;

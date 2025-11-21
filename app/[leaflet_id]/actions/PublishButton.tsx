@@ -286,7 +286,7 @@ const PubSelector = (props: {
             <LooseLeafSmall className="shrink-0" />
             <div className="flex flex-col leading-snug">
               <div className="text-secondary font-bold">
-                Publish as LooseLeaf
+                Publish as Looseleaf
               </div>
               <div className="text-tertiary text-sm font-normal">
                 Publish this as a one off doc to AT Proto

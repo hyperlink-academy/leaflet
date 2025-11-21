@@ -35,17 +35,17 @@ export const PublicationButtons = (props: {
       {looseleaves.length > 0 && (
         <>
           <SpeedyLink
-            href={`/lish/looseleaf`}
+            href={`/looseleafs`}
             className="flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full"
           >
             {/*TODO How should i get if this is the current page or not?
               theres not "pub" to check the uri for. Do i need to add it as an option to NavPages? thats kinda annoying*/}
             <ActionButton
-              label="LooseLeafs"
+              label="Looseleafs"
               icon={<LooseLeafSmall />}
               nav
               className={
-                props.currentPage === "looseleaf"
+                props.currentPage === "looseleafs"
                   ? "bg-bg-page! border-border!"
                   : ""
               }
