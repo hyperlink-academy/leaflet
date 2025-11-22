@@ -84,7 +84,7 @@ export const PageWrapper = (props: {
   pageType: "canvas" | "doc";
   drawerOpen: boolean | undefined;
 }) => {
-  let { ref } = usePreserveScroll(props.id);
+  let { ref } = usePreserveScroll<HTMLDivElement>(props.id);
   return (
     // this div wraps the contents AND the page options.
     // it needs to be its own div because this container does NOT scroll, and therefore doesn't clip the absolutely positioned pageOptions

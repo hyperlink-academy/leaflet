@@ -69,7 +69,7 @@ export default async function Publication(props: {
         >
           <PublicationHomeLayout
             uri={publication.uri}
-            showPageBackground={showPageBackground}
+            showPageBackground={!!showPageBackground}
           >
             <div className="pubHeader flex flex-col pb-8 w-full text-center justify-center ">
               {record?.icon && (
