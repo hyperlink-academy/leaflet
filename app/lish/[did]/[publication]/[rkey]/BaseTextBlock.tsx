@@ -36,10 +36,16 @@ export function BaseTextBlock(props: {
       ${isStrikethrough ? "line-through decoration-tertiary" : ""}
       ${isHighlighted ? "highlight bg-highlight-1" : ""}`.replaceAll("\n", " ");
 
+    // Split text by newlines and insert <br> tags
+    const textParts = segment.text.split('\n');
+    const renderedText = textParts.flatMap((part, i) =>
+      i < textParts.length - 1 ? [part, <br key={`br-${counter}-${i}`} />] : [part]
+    );
+
     if (isCode) {
       children.push(
         <code key={counter} className={className} id={id?.id}>
-          {segment.text}
+          {renderedText}
         </code>,
       );
     } else if (link) {
@@ -50,13 +56,13 @@ export function BaseTextBlock(props: {
           className={`text-accent-contrast hover:underline ${className}`}
           target="_blank"
         >
-          {segment.text}
+          {renderedText}
         </a>,
       );
     } else {
       children.push(
         <span key={counter} className={className} id={id?.id}>
-          {segment.text}
+          {renderedText}
         </span>,
       );
     }
