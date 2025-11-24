@@ -135,42 +135,6 @@ export function MentionAutocomplete(props: {
 
   const headerStyle = "text-xs text-tertiary font-bold pt-1 px-2";
 
-  const getHeader = (type: Mention["type"]) => {
-    switch (type) {
-      case "did":
-        return "People";
-      case "publication":
-        return "Publications";
-    }
-  };
-
-  const getKey = (mention: Mention) => {
-    switch (mention.type) {
-      case "did":
-        return mention.did;
-      case "publication":
-        return mention.uri;
-    }
-  };
-
-  const getResultText = (mention: Mention) => {
-    switch (mention.type) {
-      case "did":
-        return mention.displayName || `@${mention.handle}`;
-      case "publication":
-        return mention.name;
-    }
-  };
-
-  const getSubtext = (mention: Mention) => {
-    switch (mention.type) {
-      case "did":
-        return mention.displayName ? `@${mention.handle}` : undefined;
-      case "publication":
-        return undefined;
-    }
-  };
-
   const sortedSuggestions = [...suggestions].sort((a, b) => {
     const order: Mention["type"][] = ["did", "publication"];
     return order.indexOf(a.type) - order.indexOf(b.type);
@@ -202,22 +166,28 @@ export function MentionAutocomplete(props: {
           <ul className="list-none p-0 text-sm">
             {sortedSuggestions.map((result, index) => {
               const prevResult = sortedSuggestions[index - 1];
-              const showHeader = !prevResult || prevResult.type !== result.type;
+              const showHeader =
+                prevResult && prevResult.type !== result.type;
+
+              const [key, resultText, subtext] =
+                result.type === "did"
+                  ? [
+                      result.did,
+                      result.displayName || `@${result.handle}`,
+                      result.displayName ? `@${result.handle}` : undefined,
+                    ]
+                  : [result.uri, result.name, undefined];
 
               return (
                 <>
                   {showHeader && (
                     <>
-                      {index > 0 && (
-                        <hr className="border-border-light mx-1 my-1" />
-                      )}
-                      <div className={headerStyle}>
-                        {getHeader(result.type)}
-                      </div>
+                      <hr className="border-border-light mx-1 my-1" />
+                      <div className={headerStyle}>Publications</div>
                     </>
                   )}
                   <Result
-                    key={getKey(result)}
+                    key={key}
                     onClick={() => {
                       if (mentionRange) {
                         props.onSelect(result, mentionRange);
@@ -227,8 +197,8 @@ export function MentionAutocomplete(props: {
                       }
                     }}
                     onMouseDown={(e) => e.preventDefault()}
-                    result={getResultText(result)}
-                    subtext={getSubtext(result)}
+                    result={resultText}
+                    subtext={subtext}
                     selected={index === suggestionIndex}
                   />
                 </>
