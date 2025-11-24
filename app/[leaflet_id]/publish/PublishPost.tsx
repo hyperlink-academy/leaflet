@@ -94,7 +94,7 @@ const PublishPostForm = (
   }
 
   return (
-    <div className="flex flex-col gap-4 w-[640px] max-w-full sm:px-4 px-3">
+    <div className="flex flex-col gap-4 w-[640px] max-w-full sm:px-4 px-3 text-primary">
       <h3>Publish Options</h3>
       <form
         onSubmit={(e) => {
@@ -161,7 +161,6 @@ const PublishPostForm = (
                     />
                   </div>
                   <div className="opaque-container overflow-hidden flex flex-col mt-4 w-full">
-                    {/* <div className="h-[260px] w-full bg-test" /> */}
                     <div className="flex flex-col p-2">
                       <div className="font-bold">{props.title}</div>
                       <div className="text-tertiary">{props.description}</div>
@@ -209,7 +208,7 @@ const PublishPostSuccess = (props: {
   return (
     <div className="container p-4 m-3 sm:m-4 flex flex-col gap-1 justify-center text-center w-fit h-fit mx-auto">
       <PublishIllustration posts_in_pub={props.posts_in_pub} />
-      <h2 className="pt-2">Published!</h2>
+      <h2 className="pt-2 text-primary">Published!</h2>
       <Link
         className="hover:no-underline! font-bold place-self-center pt-2"
         href={`/lish/${uri.host}/${encodeURIComponent(props.record?.name || "")}/dashboard`}
