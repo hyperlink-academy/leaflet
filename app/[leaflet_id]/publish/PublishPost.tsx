@@ -177,10 +177,14 @@ const PublishPostForm = (
                     <div className="flex flex-col p-2">
                       <div className="font-bold">{props.title}</div>
                       <div className="text-tertiary">{props.description}</div>
-                      <hr className="border-border-light mt-2 mb-1" />
-                      <p className="text-xs text-tertiary">
-                        {props.record?.base_path}
-                      </p>
+                      {props.record && (
+                        <>
+                          <hr className="border-border-light mt-2 mb-1" />
+                          <p className="text-xs text-tertiary">
+                            {props.record?.base_path}
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="text-xs text-secondary italic place-self-end pt-2">

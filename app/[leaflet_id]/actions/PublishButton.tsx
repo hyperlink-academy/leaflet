@@ -176,7 +176,7 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
           <hr className="border-border-light mt-3 mb-2" />
 
           <div className="flex gap-2 items-center place-self-end">
-            {selectedPub !== "looseleaf" && (
+            {selectedPub !== "looseleaf" && selectedPub && (
               <SaveAsDraftButton
                 selectedPub={selectedPub}
                 leafletId={permission_token.id}
