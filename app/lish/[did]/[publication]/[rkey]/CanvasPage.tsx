@@ -21,40 +21,31 @@ import { InfoSmall } from "components/Icons/InfoSmall";
 import { PostHeader } from "./PostHeader/PostHeader";
 import { useDrawerOpen } from "./Interactions/InteractionDrawer";
 import { PollData } from "./fetchPollData";
+import { SharedPageProps } from "./PostPages";
 
 export function CanvasPage({
-  document,
   blocks,
-  did,
-  profile,
-  preferences,
-  pubRecord,
-  theme,
-  prerenderedCodeBlocks,
-  bskyPostData,
-  pollData,
-  document_uri,
-  pageId,
-  pageOptions,
-  fullPageScroll,
   pages,
-}: {
-  document_uri: string;
-  document: PostPageData;
+  ...props
+}: Omit<SharedPageProps, "allPages"> & {
   blocks: PubLeafletPagesCanvas.Block[];
-  profile: ProfileViewDetailed;
-  pubRecord?: PubLeafletPublication.Record;
-  theme?: PubLeafletPublication.Theme | null;
-  did: string;
-  prerenderedCodeBlocks?: Map<string, string>;
-  bskyPostData: AppBskyFeedDefs.PostView[];
-  pollData: PollData[];
-  preferences: { showComments?: boolean };
-  pageId?: string;
-  pageOptions?: React.ReactNode;
-  fullPageScroll: boolean;
   pages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
 }) {
+  const {
+    document,
+    did,
+    profile,
+    preferences,
+    pubRecord,
+    theme,
+    prerenderedCodeBlocks,
+    bskyPostData,
+    pollData,
+    document_uri,
+    pageId,
+    pageOptions,
+    fullPageScroll,
+  } = props;
   if (!document) return null;
 
   let hasPageBackground = !!theme?.showPageBackground;

@@ -23,38 +23,29 @@ import { useDrawerOpen } from "./Interactions/InteractionDrawer";
 import { PageWrapper } from "components/Pages/Page";
 import { decodeQuotePosition } from "./quotePosition";
 import { PollData } from "./fetchPollData";
+import { SharedPageProps } from "./PostPages";
 
 export function LinearDocumentPage({
-  document,
   blocks,
-  did,
-  profile,
-  preferences,
-  pubRecord,
-  theme,
-  prerenderedCodeBlocks,
-  bskyPostData,
-  document_uri,
-  pageId,
-  pageOptions,
-  pollData,
-  fullPageScroll,
-}: {
-  document_uri: string;
-  document: PostPageData;
+  ...props
+}: Omit<SharedPageProps, "allPages"> & {
   blocks: PubLeafletPagesLinearDocument.Block[];
-  profile?: ProfileViewDetailed;
-  pubRecord?: PubLeafletPublication.Record;
-  theme?: PubLeafletPublication.Theme | null;
-  did: string;
-  prerenderedCodeBlocks?: Map<string, string>;
-  bskyPostData: AppBskyFeedDefs.PostView[];
-  pollData: PollData[];
-  preferences: { showComments?: boolean };
-  pageId?: string;
-  pageOptions?: React.ReactNode;
-  fullPageScroll: boolean;
 }) {
+  const {
+    document,
+    did,
+    profile,
+    preferences,
+    pubRecord,
+    theme,
+    prerenderedCodeBlocks,
+    bskyPostData,
+    pollData,
+    document_uri,
+    pageId,
+    pageOptions,
+    fullPageScroll,
+  } = props;
   let { identity } = useIdentityData();
   let drawer = useDrawerOpen(document_uri);
 

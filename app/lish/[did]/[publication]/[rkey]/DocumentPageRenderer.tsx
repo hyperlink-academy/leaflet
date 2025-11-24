@@ -5,6 +5,7 @@ import {
   PubLeafletBlocksBskyPost,
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
+  PubLeafletPagesCanvas,
   PubLeafletPublication,
 } from "lexicons/api";
 import { QuoteHandler } from "./QuoteHandler";
@@ -109,12 +110,14 @@ export async function DocumentPageRenderer({
     document.documents_in_publications[0]?.publications?.identity_did || did;
 
   let firstPage = record.pages[0];
-  let blocks: PubLeafletPagesLinearDocument.Block[] = [];
-  if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
-    blocks = firstPage.blocks || [];
-  }
 
-  let prerenderedCodeBlocks = await extractCodeBlocks(blocks);
+  let firstPageBlocks =
+    (
+      firstPage as
+        | PubLeafletPagesLinearDocument.Main
+        | PubLeafletPagesCanvas.Main
+    ).blocks || [];
+  let prerenderedCodeBlocks = await extractCodeBlocks(firstPageBlocks);
 
   return (
     <PostPageContextProvider value={document}>
@@ -129,7 +132,6 @@ export async function DocumentPageRenderer({
               document={document}
               bskyPostData={bskyPostData}
               did={did}
-              blocks={blocks}
               prerenderedCodeBlocks={prerenderedCodeBlocks}
               pollData={pollData}
             />

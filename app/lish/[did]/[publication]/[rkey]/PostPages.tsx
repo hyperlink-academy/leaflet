@@ -98,9 +98,53 @@ export const closePage = (page: string) =>
     };
   });
 
+// Shared props type for both page components
+export type SharedPageProps = {
+  document: PostPageData;
+  did: string;
+  profile: ProfileViewDetailed;
+  preferences: { showComments?: boolean };
+  pubRecord?: PubLeafletPublication.Record;
+  theme?: PubLeafletPublication.Theme | null;
+  prerenderedCodeBlocks?: Map<string, string>;
+  bskyPostData: AppBskyFeedDefs.PostView[];
+  pollData: PollData[];
+  document_uri: string;
+  fullPageScroll: boolean;
+  pageId?: string;
+  pageOptions?: React.ReactNode;
+  allPages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
+};
+
+// Component that renders either Canvas or Linear page based on page type
+function PageRenderer({
+  page,
+  ...sharedProps
+}: {
+  page: PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main;
+} & SharedPageProps) {
+  const isCanvas = PubLeafletPagesCanvas.isMain(page);
+
+  if (isCanvas) {
+    return (
+      <CanvasPage
+        {...sharedProps}
+        blocks={(page as PubLeafletPagesCanvas.Main).blocks || []}
+        pages={sharedProps.allPages}
+      />
+    );
+  }
+
+  return (
+    <LinearDocumentPage
+      {...sharedProps}
+      blocks={(page as PubLeafletPagesLinearDocument.Main).blocks || []}
+    />
+  );
+}
+
 export function PostPages({
   document,
-  blocks,
   did,
   profile,
   preferences,
@@ -112,7 +156,6 @@ export function PostPages({
 }: {
   document_uri: string;
   document: PostPageData;
-  blocks: PubLeafletPagesLinearDocument.Block[];
   profile: ProfileViewDetailed;
   pubRecord?: PubLeafletPublication.Record;
   did: string;
@@ -123,35 +166,42 @@ export function PostPages({
 }) {
   let drawer = useDrawerOpen(document_uri);
   useInitializeOpenPages();
-  let pages = useOpenPages();
+  let openPageIds = useOpenPages();
   if (!document) return null;
 
   let record = document.data as PubLeafletDocument.Record;
-
-  // Get theme from publication or document (for standalone docs)
   let theme = pubRecord?.theme || record.theme || null;
   let hasPageBackground = !!theme?.showPageBackground;
-
   let quotesAndMentions = document.quotesAndMentions;
 
-  let fullPageScroll = !hasPageBackground && !drawer && pages.length === 0;
+  let firstPage = record.pages[0] as
+    | PubLeafletPagesLinearDocument.Main
+    | PubLeafletPagesCanvas.Main;
+
+  // Shared props used for all pages
+  const sharedProps: SharedPageProps = {
+    document,
+    did,
+    profile,
+    preferences,
+    pubRecord,
+    theme,
+    prerenderedCodeBlocks,
+    bskyPostData,
+    pollData,
+    document_uri,
+    allPages: record.pages as (
+      | PubLeafletPagesLinearDocument.Main
+      | PubLeafletPagesCanvas.Main
+    )[],
+    fullPageScroll: !hasPageBackground && !drawer && openPageIds.length === 0,
+  };
+
   return (
     <>
-      {!fullPageScroll && <BookendSpacer />}
-      <LinearDocumentPage
-        document={document}
-        blocks={blocks}
-        did={did}
-        profile={profile}
-        fullPageScroll={fullPageScroll}
-        pollData={pollData}
-        preferences={preferences}
-        pubRecord={pubRecord}
-        theme={theme}
-        prerenderedCodeBlocks={prerenderedCodeBlocks}
-        bskyPostData={bskyPostData}
-        document_uri={document_uri}
-      />
+      {!sharedProps.fullPageScroll && <BookendSpacer />}
+
+      <PageRenderer page={firstPage} {...sharedProps} />
 
       {drawer && !drawer.pageId && (
         <InteractionDrawer
@@ -166,70 +216,33 @@ export function PostPages({
         />
       )}
 
-      {pages.map((p) => {
+      {openPageIds.map((pageId) => {
         let page = record.pages.find(
-          (page) =>
-            (
-              page as
-                | PubLeafletPagesLinearDocument.Main
-                | PubLeafletPagesCanvas.Main
-            ).id === p,
+          (p) =>
+            (p as PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)
+              .id === pageId,
         ) as
           | PubLeafletPagesLinearDocument.Main
           | PubLeafletPagesCanvas.Main
           | undefined;
+
         if (!page) return null;
 
-        const isCanvas = PubLeafletPagesCanvas.isMain(page);
-
         return (
-          <Fragment key={p}>
+          <Fragment key={pageId}>
             <SandwichSpacer />
-            {isCanvas ? (
-              <CanvasPage
-                fullPageScroll={false}
-                document={document}
-                blocks={(page as PubLeafletPagesCanvas.Main).blocks}
-                did={did}
-                preferences={preferences}
-                profile={profile}
-                pubRecord={pubRecord}
-                theme={theme}
-                prerenderedCodeBlocks={prerenderedCodeBlocks}
-                pollData={pollData}
-                bskyPostData={bskyPostData}
-                document_uri={document_uri}
-                pageId={page.id}
-                pages={record.pages as PubLeafletPagesLinearDocument.Main[]}
-                pageOptions={
-                  <PageOptions
-                    onClick={() => closePage(page?.id!)}
-                    hasPageBackground={hasPageBackground}
-                  />
-                }
-              />
-            ) : (
-              <LinearDocumentPage
-                fullPageScroll={false}
-                document={document}
-                blocks={(page as PubLeafletPagesLinearDocument.Main).blocks}
-                did={did}
-                preferences={preferences}
-                pubRecord={pubRecord}
-                theme={theme}
-                pollData={pollData}
-                prerenderedCodeBlocks={prerenderedCodeBlocks}
-                bskyPostData={bskyPostData}
-                document_uri={document_uri}
-                pageId={page.id}
-                pageOptions={
-                  <PageOptions
-                    onClick={() => closePage(page?.id!)}
-                    hasPageBackground={hasPageBackground}
-                  />
-                }
-              />
-            )}
+            <PageRenderer
+              page={page}
+              {...sharedProps}
+              fullPageScroll={false}
+              pageId={page.id}
+              pageOptions={
+                <PageOptions
+                  onClick={() => closePage(page.id!)}
+                  hasPageBackground={hasPageBackground}
+                />
+              }
+            />
             {drawer && drawer.pageId === page.id && (
               <InteractionDrawer
                 pageId={page.id}
@@ -246,7 +259,8 @@ export function PostPages({
           </Fragment>
         );
       })}
-      {!fullPageScroll && <BookendSpacer />}
+
+      {!sharedProps.fullPageScroll && <BookendSpacer />}
     </>
   );
 }
