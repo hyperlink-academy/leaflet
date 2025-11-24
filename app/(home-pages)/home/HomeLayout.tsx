@@ -314,7 +314,7 @@ function useSearchedLeaflets(
       return (
         (filter.drafts && drafts) ||
         (filter.published && published) ||
-        (filter.docs && docs) ||
+        (filter.docs && docs && (archived === false || archived === null)) ||
         (filter.templates && templates) ||
         (filter.archived && archived)
       );
