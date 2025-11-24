@@ -22,6 +22,9 @@ export function IdentityContextProvider(props: {
     fallbackData: props.initialValue,
   });
   useEffect(() => {
+    mutate(props.initialValue);
+  }, [props.initialValue]);
+  useEffect(() => {
     if (!identity?.atp_did) return;
     let supabase = supabaseBrowserClient();
     let channel = supabase.channel(`identity.atp_did:${identity.atp_did}`);
