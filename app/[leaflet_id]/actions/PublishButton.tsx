@@ -28,7 +28,10 @@ import { useState, useMemo } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useReplicache, useEntity } from "src/replicache";
 import { Json } from "supabase/database.types";
-import { useBlocks } from "src/hooks/queries/useBlocks";
+import {
+  useBlocks,
+  useCanvasBlocksWithType,
+} from "src/hooks/queries/useBlocks";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
@@ -370,8 +373,13 @@ const PubOption = (props: {
 
 let useTitle = (entityID: string) => {
   let rootPage = useEntity(entityID, "root/page")[0].data.value;
-  let blocks = useBlocks(rootPage);
-  let firstBlock = blocks[0];
+  let canvasBlocks = useCanvasBlocksWithType(rootPage).filter(
+    (b) => b.type === "text" || b.type === "heading",
+  );
+  let blocks = useBlocks(rootPage).filter(
+    (b) => b.type === "text" || b.type === "heading",
+  );
+  let firstBlock = canvasBlocks[0] || blocks[0];
 
   let firstBlockText = useEntity(firstBlock?.value, "block/text")?.data.value;
 
@@ -384,9 +392,11 @@ let useTitle = (entityID: string) => {
     return YJSFragmentToString(nodes[0]) || "Untitled";
   }, [firstBlockText]);
 
-  let secondBlock = blocks[1];
-  let secondBlockTextValue = useEntity(secondBlock?.value, "block/text")?.data
-    .value;
+  // Only handle second block logic for linear documents, not canvas
+  let isCanvas = canvasBlocks.length > 0;
+  let secondBlock = !isCanvas ? blocks[1] : undefined;
+  let secondBlockTextValue = useEntity(secondBlock?.value || null, "block/text")
+    ?.data.value;
   const secondBlockText = useMemo(() => {
     if (!secondBlockTextValue) return "";
     let doc = new Y.Doc();
@@ -394,7 +404,7 @@ let useTitle = (entityID: string) => {
     Y.applyUpdate(doc, update);
     let nodes = doc.getXmlElement("prosemirror").toArray();
     return YJSFragmentToString(nodes[0]) || "";
-  }, [firstBlockText]);
+  }, [secondBlockTextValue]);
 
   let entitiesToDelete = useMemo(() => {
     let etod: string[] = [];
@@ -402,12 +412,16 @@ let useTitle = (entityID: string) => {
     if (firstBlock?.type === "heading") {
       etod.push(firstBlock.value);
     }
-    // Delete second block if it's empty text
-    if (secondBlockText.trim() === "" && secondBlock?.type === "text") {
+    // Delete second block if it's empty text (only for linear documents)
+    if (
+      !isCanvas &&
+      secondBlockText.trim() === "" &&
+      secondBlock?.type === "text"
+    ) {
       etod.push(secondBlock.value);
     }
     return etod;
-  }, [firstBlock, secondBlockText, secondBlock]);
+  }, [firstBlock, secondBlockText, secondBlock, isCanvas]);
 
   return { title: leafletTitle, entitiesToDelete };
 };
