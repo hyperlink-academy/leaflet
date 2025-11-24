@@ -3,7 +3,10 @@
 import type { GetPublicationDataReturnType } from "app/api/rpc/[command]/get_publication_data";
 import { callRPC } from "app/api/rpc/client";
 import { createContext, useContext, useEffect } from "react";
-import useSWR, { SWRConfig, mutate } from "swr";
+import useSWR, { SWRConfig, KeyedMutator, mutate } from "swr";
+import { produce, Draft } from "immer";
+
+export type PublicationData = GetPublicationDataReturnType["result"];
 
 const PublicationContext = createContext({ name: "", did: "" });
 export function PublicationSWRDataProvider(props: {
@@ -44,4 +47,17 @@ export function usePublicationData() {
         ?.result,
   );
   return { data, mutate };
+}
+
+export function mutatePublicationData(
+  mutate: KeyedMutator<PublicationData>,
+  recipe: (draft: Draft<NonNullable<PublicationData>>) => void,
+) {
+  mutate(
+    (data) => {
+      if (!data) return data;
+      return produce(data, recipe);
+    },
+    { revalidate: false },
+  );
 }

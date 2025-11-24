@@ -24,6 +24,14 @@ import { ShareButton } from "components/ShareOptions";
 import { ShareSmall } from "components/Icons/ShareSmall";
 
 import { PermissionToken } from "src/replicache";
+import {
+  useIdentityData,
+  mutateIdentityData,
+} from "components/IdentityProvider";
+import {
+  usePublicationData,
+  mutatePublicationData,
+} from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 
 export const LeafletOptions = (props: {
   leaflet: PermissionToken;
@@ -99,6 +107,8 @@ const DefaultOptions = (props: {
   archived?: boolean | null;
 }) => {
   let toaster = useToaster();
+  let { mutate: mutatePub } = usePublicationData();
+  let { mutate: mutateIdentity } = useIdentityData();
   return (
     <>
       <ShareButton
@@ -123,6 +133,18 @@ const DefaultOptions = (props: {
       <MenuItem
         onSelect={async () => {
           if (!props.archived) {
+            mutateIdentityData(mutateIdentity, (data) => {
+              let item = data.permission_token_on_homepage.find(
+                (p) => p.permission_tokens?.id === props.leaflet.id,
+              );
+              if (item) item.archived = true;
+            });
+            mutatePublicationData(mutatePub, (data) => {
+              let item = data.publication?.leaflets_in_publications.find(
+                (l) => l.permission_tokens?.id === props.leaflet.id,
+              );
+              if (item) item.archived = true;
+            });
             await archivePost(props.leaflet.id);
             toaster({
               content: (
@@ -131,6 +153,18 @@ const DefaultOptions = (props: {
                   <ButtonTertiary
                     className="underline text-accent-2!"
                     onClick={async () => {
+                      mutateIdentityData(mutateIdentity, (data) => {
+                        let item = data.permission_token_on_homepage.find(
+                          (p) => p.permission_tokens?.id === props.leaflet.id,
+                        );
+                        if (item) item.archived = false;
+                      });
+                      mutatePublicationData(mutatePub, (data) => {
+                        let item = data.publication?.leaflets_in_publications.find(
+                          (l) => l.permission_tokens?.id === props.leaflet.id,
+                        );
+                        if (item) item.archived = false;
+                      });
                       await unarchivePost(props.leaflet.id);
                       toaster({
                         content: (
@@ -149,6 +183,18 @@ const DefaultOptions = (props: {
               type: "success",
             });
           } else {
+            mutateIdentityData(mutateIdentity, (data) => {
+              let item = data.permission_token_on_homepage.find(
+                (p) => p.permission_tokens?.id === props.leaflet.id,
+              );
+              if (item) item.archived = false;
+            });
+            mutatePublicationData(mutatePub, (data) => {
+              let item = data.publication?.leaflets_in_publications.find(
+                (l) => l.permission_tokens?.id === props.leaflet.id,
+              );
+              if (item) item.archived = false;
+            });
             await unarchivePost(props.leaflet.id);
             toaster({
               content: <div className="font-bold">Unarchived!</div>,
@@ -240,6 +286,8 @@ const DeleteAreYouSureForm = (props: {
   draft?: boolean;
 }) => {
   let toaster = useToaster();
+  let { mutate: mutatePub } = usePublicationData();
+  let { mutate: mutateIdentity } = useIdentityData();
 
   return (
     <div className="flex flex-col justify-center p-2 text-center">
@@ -253,6 +301,19 @@ const DeleteAreYouSureForm = (props: {
         </ButtonTertiary>
         <ButtonPrimary
           onClick={async () => {
+            mutateIdentityData(mutateIdentity, (data) => {
+              data.permission_token_on_homepage =
+                data.permission_token_on_homepage.filter(
+                  (p) => p.permission_tokens?.id !== props.leaflet.id,
+                );
+            });
+            mutatePublicationData(mutatePub, (data) => {
+              if (!data.publication) return;
+              data.publication.leaflets_in_publications =
+                data.publication.leaflets_in_publications.filter(
+                  (l) => l.permission_tokens?.id !== props.leaflet.id,
+                );
+            });
             if (props.document_uri) {
               await deletePost(props.document_uri);
             }
