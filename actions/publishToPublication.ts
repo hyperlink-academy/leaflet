@@ -116,7 +116,7 @@ export async function publishToPublication({
   });
   let facts = (data as unknown as Fact<Attribute>[]) || [];
 
-  let { firstPageBlocks, pages } = await processBlocksToPages(
+  let { pages } = await processBlocksToPages(
     facts,
     agent,
     root_entity,
@@ -141,27 +141,21 @@ export async function publishToPublication({
     ...(theme && { theme }),
     title: title || "Untitled",
     description: description || "",
-    pages: [
-      {
-        $type: "pub.leaflet.pages.linearDocument",
-        blocks: firstPageBlocks,
-      },
-      ...pages.map((p) => {
-        if (p.type === "canvas") {
-          return {
-            $type: "pub.leaflet.pages.canvas" as const,
-            id: p.id,
-            blocks: p.blocks as PubLeafletPagesCanvas.Block[],
-          };
-        } else {
-          return {
-            $type: "pub.leaflet.pages.linearDocument" as const,
-            id: p.id,
-            blocks: p.blocks as PubLeafletPagesLinearDocument.Block[],
-          };
-        }
-      }),
-    ],
+    pages: pages.map((p) => {
+      if (p.type === "canvas") {
+        return {
+          $type: "pub.leaflet.pages.canvas" as const,
+          id: p.id,
+          blocks: p.blocks as PubLeafletPagesCanvas.Block[],
+        };
+      } else {
+        return {
+          $type: "pub.leaflet.pages.linearDocument" as const,
+          id: p.id,
+          blocks: p.blocks as PubLeafletPagesLinearDocument.Block[],
+        };
+      }
+    }),
   };
 
   // Keep the same rkey if updating an existing document
@@ -237,9 +231,30 @@ async function processBlocksToPages(
 
   let firstEntity = scan.eav(root_entity, "root/page")?.[0];
   if (!firstEntity) throw new Error("No root page");
-  let blocks = getBlocksWithTypeLocal(facts, firstEntity?.data.value);
-  let b = await blocksToRecord(blocks, did);
-  return { firstPageBlocks: b, pages };
+
+  // Check if the first page is a canvas or linear document
+  let [pageType] = scan.eav(firstEntity.data.value, "page/type");
+
+  if (pageType?.data.value === "canvas") {
+    // First page is a canvas
+    let canvasBlocks = await canvasBlocksToRecord(firstEntity.data.value, did);
+    pages.push({
+      id: firstEntity.data.value,
+      blocks: canvasBlocks,
+      type: "canvas",
+    });
+  } else {
+    // First page is a linear document
+    let blocks = getBlocksWithTypeLocal(facts, firstEntity?.data.value);
+    let b = await blocksToRecord(blocks, did);
+    pages.push({
+      id: firstEntity.data.value,
+      blocks: b,
+      type: "doc",
+    });
+  }
+
+  return { pages };
 
   async function uploadImage(src: string) {
     let data = await fetch(src);
