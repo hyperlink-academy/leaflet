@@ -31,7 +31,7 @@ import {
   PublicationBanner,
 } from "./HomeEmpty/HomeEmpty";
 
-type Leaflet = {
+export type Leaflet = {
   added_at: string;
   token: PermissionToken & {
     leaflets_in_publications?: Exclude<
