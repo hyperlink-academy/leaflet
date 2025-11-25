@@ -7,6 +7,8 @@ import { DeleteSmall } from "components/Icons/DeleteSmall";
 import { useState } from "react";
 import { Input } from "components/Input";
 import { ButtonPrimary } from "components/Buttons";
+import { PopoverArrow } from "components/Icons/PopoverArrow";
+import { useSmoker } from "components/Toast";
 
 export const PubContributorManager = (props: {
   backToMenuAction: () => void;
@@ -54,17 +56,8 @@ const PubContributorsContent = (props: {
 }) => {
   let [inputValue, setInputValue] = useState("");
   return (
-    <div className="flex flex-col gap-1 ">
-      <div className="flex flex-col gap-1 py-2">
-        <div className="flex flex-col gap-0.5 text-sm text-tertiary ">
-          <ButtonPrimary fullWidth compact className=" ">
-            Get Contributor Invite Link
-          </ButtonPrimary>
-          Only added contributors can access
-        </div>
-      </div>
-      <hr className="border-border-light" />
-      <div className="flex flex-col gap-0.5 my-2">
+    <div className="flex flex-col gap-1 pt-2">
+      <div className="flex flex-col gap-0.5">
         <div className="font-bold text-tertiary text-sm">
           Add a New Contributor
         </div>
@@ -72,23 +65,40 @@ const PubContributorsContent = (props: {
           <div className="text-tertiary">@</div>
           <Input
             placeholder="search bluesky handles"
-            className="w-full outline-none!"
+            className="w-full outline-none! text-primary"
             value={inputValue}
             onChange={(e) => setInputValue(e.currentTarget.value)}
           />
         </div>
       </div>
+
+      <div className="flex flex-col gap-1 text-sm text-secondary text-center mb-2 mt-1 p-2 accent-container">
+        <ButtonPrimary fullWidth compact onClick={(e) => getContributorLink(e)}>
+          Copy Accept Invite Link
+        </ButtonPrimary>
+        Send this link to contributors so they can access this publication
+      </div>
+      <hr className="border-border-light" />
+
       {props.contributors.map((contributor) => {
         return (
           <div className="flex justify-between items-center">
-            <div className="flex gap-2 items-baseline">
-              <div className="font-bold text-secondary">{contributor.name}</div>
-              {contributor.status === "pending" && (
-                <div className="text-sm text-tertiary italic">Invited</div>
-              )}
+            <div className="font-bold text-secondary truncate grow">
+              {contributor.name}
             </div>
 
-            <PubContributorOptions />
+            <div className="flex gap-2 items-center">
+              {contributor.status === "pending" && (
+                <button
+                  className="text-sm text-accent-contrast italic w-max shrink-0"
+                  onClick={(e) => getContributorLink(e)}
+                >
+                  Resend Invite
+                </button>
+              )}
+
+              <PubContributorOptions />
+            </div>
           </div>
         );
       })}
@@ -96,9 +106,17 @@ const PubContributorsContent = (props: {
   );
 };
 
-const PubContibutor = () => {
-  return <div></div>;
-};
+function getContributorLink(e: React.MouseEvent) {
+  let smoker = useSmoker();
+
+  smoker({
+    text: "Copied Invite Link!",
+    position: {
+      y: e.clientY,
+      x: e.clientX,
+    },
+  });
+}
 
 const PubContributorOptions = () => {
   return (

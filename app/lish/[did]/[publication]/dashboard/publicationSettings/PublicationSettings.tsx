@@ -1,5 +1,4 @@
 "use client";
-
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { Popover } from "components/Popover";
 import { SettingsSmall } from "components/Icons/SettingsSmall";
@@ -27,7 +26,7 @@ export function PublicationSettingsButton(props: { publication: string }) {
       onOpenChange={() => setState("menu")}
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
-      className={`max-w-xs w-[1000px] ${state === "theme" && "bg-white!"}`}
+      className={`text-secondary max-w-xs w-[1000px] ${state === "theme" && "bg-white!"}`}
       arrowFill={theme.colors["border-light"]}
       trigger={
         <ActionButton

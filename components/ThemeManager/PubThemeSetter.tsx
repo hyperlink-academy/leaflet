@@ -15,7 +15,7 @@ import { PagePickers } from "./PubPickers/PubTextPickers";
 import { BackgroundPicker } from "./PubPickers/PubBackgroundPickers";
 import { PubAccentPickers } from "./PubPickers/PubAcccentPickers";
 import { Separator } from "components/Layout";
-import { PubSettingsHeader } from "app/lish/[did]/[publication]/dashboard/PublicationSettings";
+import { PubSettingsHeader } from "app/lish/[did]/[publication]/dashboard/publicationSettings/PublicationSettings";
 
 export type ImageState = {
   src: string;
@@ -92,10 +92,11 @@ export const PubThemeSetter = (props: {
       >
         <PubSettingsHeader
           loading={props.loading}
-          setLoadingAction={props.setLoading}
           backToMenuAction={props.backToMenu}
           state={"theme"}
-        />
+        >
+          Publication Theme
+        </PubSettingsHeader>
       </form>
 
       <div className="themeSetterContent flex flex-col w-full overflow-y-scroll -mb-2 ">
