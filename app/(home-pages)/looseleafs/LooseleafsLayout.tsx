@@ -78,7 +78,8 @@ export const LooseleafList = (props: {
           ...identity.permission_token_on_homepage.reduce(
             (acc, tok) => {
               let title =
-                tok.permission_tokens.leaflets_in_publications[0]?.title;
+                tok.permission_tokens.leaflets_in_publications[0]?.title ||
+                tok.permission_tokens.leaflets_to_documents[0]?.title;
               if (title) acc[tok.permission_tokens.root_entity] = title;
               return acc;
             },
