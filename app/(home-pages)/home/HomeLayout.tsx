@@ -21,7 +21,6 @@ import {
 } from "components/PageLayouts/DashboardLayout";
 import { Actions } from "./Actions/Actions";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
-import { useTemplateState } from "./Actions/CreateNewButton";
 import { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
@@ -69,8 +68,6 @@ export const HomeLayout = (props: {
   let { identity } = useIdentityData();
 
   let hasPubs = !identity || identity.publications.length === 0 ? false : true;
-  let hasTemplates =
-    useTemplateState((s) => s.templates).length === 0 ? false : true;
   let hasArchived =
     identity &&
     identity.permission_token_on_homepage.filter(
@@ -93,7 +90,6 @@ export const HomeLayout = (props: {
               setSearchValueAction={setSearchValue}
               hasBackgroundImage={hasBackgroundImage}
               hasPubs={hasPubs}
-              hasTemplates={hasTemplates}
               hasArchived={!!hasArchived}
             />
           ),
@@ -294,19 +290,16 @@ function useSearchedLeaflets(
     }
   });
 
-  let allTemplates = useTemplateState((s) => s.templates);
   let filteredLeaflets = sortedLeaflets.filter(
     ({ token: leaflet, archived: archived }) => {
       let published = !!leaflet.leaflets_in_publications?.find((l) => l.doc);
       let drafts = !!leaflet.leaflets_in_publications?.length && !published;
       let docs = !leaflet.leaflets_in_publications?.length && !archived;
-      let templates = !!allTemplates.find((t) => t.id === leaflet.id);
       // If no filters are active, show all
       if (
         !filter.drafts &&
         !filter.published &&
         !filter.docs &&
-        !filter.templates &&
         !filter.archived
       )
         return archived === false || archived === null || archived == undefined;
@@ -315,7 +308,6 @@ function useSearchedLeaflets(
         (filter.drafts && drafts) ||
         (filter.published && published) ||
         (filter.docs && docs) ||
-        (filter.templates && templates) ||
         (filter.archived && archived)
       );
     },

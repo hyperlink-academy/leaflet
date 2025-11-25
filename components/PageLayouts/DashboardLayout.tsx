@@ -33,7 +33,6 @@ export type DashboardState = {
     drafts: boolean;
     published: boolean;
     docs: boolean;
-    templates: boolean;
     archived: boolean;
   };
 };
@@ -50,7 +49,6 @@ const defaultDashboardState: DashboardState = {
     drafts: false,
     published: false,
     docs: false,
-    templates: false,
     archived: false,
   },
 };
@@ -262,7 +260,6 @@ export const HomeDashboardControls = (props: {
   hasBackgroundImage: boolean;
   defaultDisplay: Exclude<DashboardState["display"], undefined>;
   hasPubs: boolean;
-  hasTemplates: boolean;
   hasArchived: boolean;
 }) => {
   let { display, sort } = useDashboardState();
@@ -284,13 +281,10 @@ export const HomeDashboardControls = (props: {
         <DisplayToggle setState={setState} display={display} />
         <Separator classname="h-4 min-h-4!" />
 
-        {props.hasPubs || props.hasTemplates ? (
+        {props.hasPubs ? (
           <>
-            {props.hasPubs}
-            {props.hasTemplates}
             <FilterOptions
               hasPubs={props.hasPubs}
-              hasTemplates={props.hasTemplates}
               hasArchived={props.hasArchived}
             />
             <Separator classname="h-4 min-h-4!" />{" "}
@@ -380,7 +374,6 @@ function Tab(props: {
 
 const FilterOptions = (props: {
   hasPubs: boolean;
-  hasTemplates: boolean;
   hasArchived: boolean;
 }) => {
   let { filter } = useDashboardState();
@@ -419,22 +412,6 @@ const FilterOptions = (props: {
         </>
       )}
 
-      {props.hasTemplates && (
-        <>
-          <Checkbox
-            small
-            checked={filter.templates}
-            onChange={(e) =>
-              setState({
-                filter: { ...filter, templates: !!e.target.checked },
-              })
-            }
-          >
-            Templates
-          </Checkbox>
-        </>
-      )}
-
       {props.hasArchived && (
         <Checkbox
           small
@@ -468,7 +445,6 @@ const FilterOptions = (props: {
               docs: false,
               published: false,
               drafts: false,
-              templates: false,
               archived: false,
             },
           });

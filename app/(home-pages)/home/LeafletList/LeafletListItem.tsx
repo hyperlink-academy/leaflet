@@ -1,6 +1,5 @@
 "use client";
 import { PermissionToken } from "src/replicache";
-import { useTemplateState } from "../Actions/CreateNewButton";
 import { LeafletListPreview, LeafletGridPreview } from "./LeafletPreview";
 import { LeafletInfo } from "./LeafletInfo";
 import { useState, useRef, useEffect } from "react";
@@ -23,10 +22,6 @@ export const LeafletListItem = (props: {
   isHidden: boolean;
   showPreview?: boolean;
 }) => {
-  let isTemplate = useTemplateState(
-    (s) => !!s.templates.find((t) => t.id === props.token.id),
-  );
-
   let [isOnScreen, setIsOnScreen] = useState(props.index < 16 ? true : false);
   let previewRef = useRef<HTMLDivElement | null>(null);
 
@@ -69,7 +64,7 @@ export const LeafletListItem = (props: {
           {props.showPreview && (
             <LeafletListPreview isVisible={isOnScreen} {...props} />
           )}
-          <LeafletInfo isTemplate={isTemplate} {...props} />
+          <LeafletInfo {...props} />
         </div>
         {props.cardBorderHidden && (
           <hr
@@ -104,7 +99,6 @@ export const LeafletListItem = (props: {
         <LeafletGridPreview {...props} isVisible={isOnScreen} />
       </div>
       <LeafletInfo
-        isTemplate={isTemplate}
         className="px-1 pb-0.5 shrink-0"
         {...props}
       />

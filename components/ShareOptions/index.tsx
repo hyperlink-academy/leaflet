@@ -6,7 +6,6 @@ import { useSmoker } from "components/Toast";
 import { Menu, MenuItem } from "components/Layout";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import useSWR from "swr";
-import { useTemplateState } from "app/(home-pages)/home/Actions/CreateNewButton";
 import LoginForm from "app/login/LoginForm";
 import { CustomDomainMenu } from "./DomainOptions";
 import { useIdentityData } from "components/IdentityProvider";
@@ -106,25 +105,8 @@ const ShareMenu = (props: {
   }, []);
   let { data: domains } = useLeafletDomains();
 
-  let isTemplate = useTemplateState(
-    (s) => !!s.templates.find((t) => t.id === permission_token.id),
-  );
-
   return (
     <>
-      {isTemplate && (
-        <>
-          <ShareButton
-            text="Share Template"
-            subtext="Let others make new Leaflets as copies of this template"
-            smokerText="Template link copied!"
-            id="get-template-link"
-            link={`template/${publishLink}` || ""}
-          />
-          <hr className="border-border my-1" />
-        </>
-      )}
-
       <ShareButton
         text={`Share ${postLink ? "Draft" : ""} Edit Link`}
         subtext=""

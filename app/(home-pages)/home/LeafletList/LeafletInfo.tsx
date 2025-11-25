@@ -3,8 +3,6 @@ import { PermissionToken, useEntity } from "src/replicache";
 import { LeafletOptions } from "./LeafletOptions";
 import Link from "next/link";
 import { use, useState } from "react";
-import { theme } from "tailwind.config";
-import { TemplateSmall } from "components/Icons/TemplateSmall";
 import { timeAgo } from "src/utils/timeAgo";
 import { usePublishLink } from "components/ShareOptions";
 import { Separator } from "components/Layout";
@@ -17,7 +15,6 @@ export const LeafletInfo = (props: {
   token: PermissionToken;
   leaflet_id: string;
   loggedIn: boolean;
-  isTemplate: boolean;
   className?: string;
   display: "grid" | "list";
   added_at: string;
@@ -45,15 +42,8 @@ export const LeafletInfo = (props: {
           {title}
         </h3>
         <div className="flex gap-1 shrink-0">
-          {props.isTemplate && props.display === "list" ? (
-            <TemplateSmall
-              fill={theme.colors["bg-page"]}
-              className="text-tertiary"
-            />
-          ) : null}
           <LeafletOptions
             leaflet={props.token}
-            isTemplate={props.isTemplate}
             draftInPublication={props.draftInPublication}
             document_uri={props.document_uri}
             shareLink={`/${props.token.id}`}
@@ -79,14 +69,6 @@ export const LeafletInfo = (props: {
           </div>
         )}
       </div>
-      {props.isTemplate && props.display === "grid" ? (
-        <div className="absolute -top-2 right-1">
-          <TemplateSmall
-            className="text-tertiary"
-            fill={theme.colors["bg-page"]}
-          />
-        </div>
-      ) : null}
     </div>
   );
 };

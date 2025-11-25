@@ -3,10 +3,7 @@
 import { Menu, MenuItem } from "components/Layout";
 import { useState } from "react";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
-import { useTemplateState } from "../Actions/CreateNewButton";
-import { useSmoker, useToaster } from "components/Toast";
-import { TemplateRemoveSmall } from "components/Icons/TemplateRemoveSmall";
-import { TemplateSmall } from "components/Icons/TemplateSmall";
+import { useToaster } from "components/Toast";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 import { DeleteSmall } from "components/Icons/DeleteSmall";
 import {
@@ -37,14 +34,13 @@ import {
 
 export const LeafletOptions = (props: {
   leaflet: PermissionToken;
-  isTemplate?: boolean;
   draftInPublication?: string;
   document_uri?: string;
   shareLink: string;
   archived?: boolean | null;
   loggedIn?: boolean;
 }) => {
-  let [state, setState] = useState<"normal" | "template" | "areYouSure">(
+  let [state, setState] = useState<"normal" | "areYouSure">(
     "normal",
   );
   let [open, setOpen] = useState(false);
@@ -76,7 +72,6 @@ export const LeafletOptions = (props: {
           !props.loggedIn ? (
             <LoggedOutOptions
               leaflet={props.leaflet}
-              isTemplate={props.isTemplate}
               setState={setState}
               shareLink={props.shareLink}
             />
@@ -88,16 +83,10 @@ export const LeafletOptions = (props: {
             />
           ) : (
             <DefaultOptions
-              isTemplate={props.isTemplate}
               setState={setState}
               {...props}
             />
           )
-        ) : state === "template" ? (
-          <AddTemplateForm
-            leaflet={props.leaflet}
-            close={() => setOpen(false)}
-          />
         ) : state === "areYouSure" ? (
           <DeleteAreYouSureForm
             backToMenu={() => setState("normal")}
@@ -112,10 +101,9 @@ export const LeafletOptions = (props: {
 };
 
 const DefaultOptions = (props: {
-  setState: (s: "areYouSure" | "template") => void;
+  setState: (s: "areYouSure") => void;
   draftInPublication?: string;
   leaflet: PermissionToken;
-  isTemplate: boolean | undefined;
   shareLink: string;
   archived?: boolean | null;
 }) => {
@@ -136,12 +124,6 @@ const DefaultOptions = (props: {
         id="get-link"
         link={`/${props.shareLink}`}
       />
-      <TemplateOptions
-        leaflet={props.leaflet}
-        setState={props.setState}
-        isTemplate={props.isTemplate}
-      />
-
       <hr className="border-border-light" />
       <MenuItem
         onSelect={async () => {
@@ -236,8 +218,7 @@ const DefaultOptions = (props: {
 
 const LoggedOutOptions = (props: {
   leaflet: PermissionToken;
-  isTemplate?: boolean;
-  setState: (s: "template" | "areYouSure") => void;
+  setState: (s: "areYouSure") => void;
   shareLink: string;
 }) => {
   let toaster = useToaster();
@@ -254,11 +235,6 @@ const LoggedOutOptions = (props: {
         smokerText="Link copied!"
         id="get-link"
         link={`/${props.shareLink}`}
-      />
-      <TemplateOptions
-        leaflet={props.leaflet}
-        setState={props.setState}
-        isTemplate={props.isTemplate}
       />
       <hr className="border-border-light" />
       <MenuItem
@@ -407,86 +383,3 @@ const DeleteAreYouSureForm = (props: {
   );
 };
 
-const AddTemplateForm = (props: {
-  leaflet: PermissionToken;
-  close: () => void;
-}) => {
-  let [name, setName] = useState("");
-  let smoker = useSmoker();
-  return (
-    <div className="flex flex-col gap-2 px-3 py-1">
-      <label className="font-bold flex flex-col gap-1 text-secondary">
-        Template Name
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          type="text"
-          className=" text-primary font-normal border border-border rounded-md outline-hidden px-2 py-1 w-64"
-        />
-      </label>
-
-      <ButtonPrimary
-        onClick={() => {
-          useTemplateState.getState().addTemplate({
-            name,
-            id: props.leaflet.id,
-          });
-          let newLeafletButton = document.getElementById("new-leaflet-button");
-          if (!newLeafletButton) return;
-          let rect = newLeafletButton.getBoundingClientRect();
-          smoker({
-            static: true,
-            text: <strong>Added {name}!</strong>,
-            position: {
-              y: rect.top,
-              x: rect.right + 5,
-            },
-          });
-          props.close();
-        }}
-        className="place-self-end"
-      >
-        Add Template
-      </ButtonPrimary>
-    </div>
-  );
-};
-
-const TemplateOptions = (props: {
-  leaflet: PermissionToken;
-  isTemplate: boolean | undefined;
-  setState: (s: "template") => void;
-}) => {
-  let smoker = useSmoker();
-  if (props.isTemplate)
-    return (
-      <MenuItem
-        onSelect={(e) => {
-          useTemplateState.getState().removeTemplate(props.leaflet);
-          let newLeafletButton = document.getElementById("new-leaflet-button");
-          if (!newLeafletButton) return;
-          let rect = newLeafletButton.getBoundingClientRect();
-          smoker({
-            static: true,
-            text: <strong>Removed template!</strong>,
-            position: {
-              y: rect.top,
-              x: rect.right + 5,
-            },
-          });
-        }}
-      >
-        <TemplateRemoveSmall /> Remove from Templates
-      </MenuItem>
-    );
-  return (
-    <MenuItem
-      onSelect={(e) => {
-        e.preventDefault();
-        props.setState("template");
-      }}
-    >
-      <TemplateSmall /> Use as Template
-    </MenuItem>
-  );
-};
