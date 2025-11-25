@@ -1408,7 +1408,7 @@ export const schemaDict = {
         description: 'Record containing a document',
         record: {
           type: 'object',
-          required: ['pages', 'author', 'title', 'publication'],
+          required: ['pages', 'author', 'title'],
           properties: {
             title: {
               type: 'string',
@@ -1435,6 +1435,10 @@ export const schemaDict = {
             author: {
               type: 'string',
               format: 'at-identifier',
+            },
+            theme: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.publication#theme',
             },
             pages: {
               type: 'array',

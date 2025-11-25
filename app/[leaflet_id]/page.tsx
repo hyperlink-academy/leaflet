@@ -13,6 +13,7 @@ import { getPollData } from "actions/pollActions";
 import { supabaseServerClient } from "supabase/serverClient";
 import { get_leaflet_data } from "app/api/rpc/[command]/get_leaflet_data";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
+import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -70,11 +71,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   );
   let rootEntity = res.data?.root_entity;
   if (!rootEntity || !res.data) return { title: "Leaflet not found" };
-  let publication_data =
-    res.data?.leaflets_in_publications?.[0] ||
-    res.data?.permission_token_rights[0].entity_sets?.permission_tokens?.find(
-      (p) => p.leaflets_in_publications.length,
-    )?.leaflets_in_publications?.[0];
+  let publication_data = getPublicationMetadataFromLeafletData(res.data);
   if (publication_data) {
     return {
       title: publication_data.title || "Untitled",

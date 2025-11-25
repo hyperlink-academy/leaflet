@@ -7,6 +7,7 @@ import { callRPC } from "app/api/rpc/client";
 import { getPollData } from "actions/pollActions";
 import type { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { createContext, useContext } from "react";
+import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
 
 export const StaticLeafletDataContext = createContext<
   null | GetLeafletDataReturnType["result"]["data"]
@@ -66,13 +67,12 @@ let useLeafletData = () => {
 };
 export function useLeafletPublicationData() {
   let { data, mutate } = useLeafletData();
+
+  // First check for leaflets in publications
+  let pubData = getPublicationMetadataFromLeafletData(data);
+
   return {
-    data:
-      data?.leaflets_in_publications?.[0] ||
-      data?.permission_token_rights[0].entity_sets?.permission_tokens?.find(
-        (p) => p.leaflets_in_publications.length,
-      )?.leaflets_in_publications?.[0] ||
-      null,
+    data: pubData || null,
     mutate,
   };
 }

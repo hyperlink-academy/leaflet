@@ -1,8 +1,11 @@
 import { getIdentityData } from "actions/getIdentityData";
+import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
+import { Actions } from "../home/Actions/Actions";
+import { Fact } from "src/replicache";
+import { Attribute } from "src/replicache/attributes";
 import { getFactsFromHomeLeaflets } from "app/api/rpc/[command]/getFactsFromHomeLeaflets";
 import { supabaseServerClient } from "supabase/serverClient";
-
-import { HomeLayout } from "./HomeLayout";
+import { LooseleafsLayout } from "./LooseleafsLayout";
 
 export default async function Home() {
   let auth_res = await getIdentityData();
@@ -23,7 +26,8 @@ export default async function Home() {
   let home_docs_initialFacts = allLeafletFacts?.result || {};
 
   return (
-    <HomeLayout
+    <LooseleafsLayout
+      entityID={auth_res?.home_leaflet?.root_entity || null}
       titles={{
         ...home_docs_initialFacts.titles,
         ...auth_res?.permission_token_on_homepage.reduce(
@@ -37,7 +41,6 @@ export default async function Home() {
           {} as { [k: string]: string },
         ),
       }}
-      entityID={auth_res?.home_leaflet?.root_entity || null}
       initialFacts={home_docs_initialFacts.facts || {}}
     />
   );

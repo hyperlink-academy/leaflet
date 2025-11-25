@@ -106,7 +106,7 @@ export function DocLinkBlock(props: {
             <div className="grow">
               {title && (
                 <div
-                  className={`pageBlockOne outline-none resize-none align-top flex gap-2 ${title.$type === "pub.leaflet.blocks.header" ? "font-bold text-base" : ""}`}
+                  className={`pageBlockOne outline-none resize-none align-top gap-2 ${title.$type === "pub.leaflet.blocks.header" ? "font-bold text-base" : ""}`}
                 >
                   <TextBlock
                     facets={title.facets}
@@ -118,7 +118,7 @@ export function DocLinkBlock(props: {
               )}
               {description && (
                 <div
-                  className={`pageBlockLineTwo outline-none resize-none align-top flex  gap-2 ${description.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
+                  className={`pageBlockLineTwo outline-none resize-none align-top gap-2 ${description.$type === "pub.leaflet.blocks.header" ? "font-bold" : ""}`}
                 >
                   <TextBlock
                     facets={description.facets}
@@ -151,10 +151,9 @@ export function PagePreview(props: {
   let previewRef = useRef<HTMLDivElement | null>(null);
   let { rootEntity } = useReplicache();
   let data = useContext(PostPageContext);
-  let theme = data?.documents_in_publications[0]?.publications
-    ?.record as PubLeafletPublication.Record;
+  let theme = data?.theme;
   let pageWidth = `var(--page-width-unitless)`;
-  let cardBorderHidden = !theme.theme?.showPageBackground;
+  let cardBorderHidden = !theme?.showPageBackground;
   return (
     <div
       ref={previewRef}

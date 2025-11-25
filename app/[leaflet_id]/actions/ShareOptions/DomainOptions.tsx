@@ -8,7 +8,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import { addDomain } from "actions/domains/addDomain";
 import { callRPC } from "app/api/rpc/client";
 import { useLeafletDomains } from "components/PageSWRDataProvider";
-import { usePublishLink } from ".";
+import { useReadOnlyShareLink } from ".";
 import { addDomainPath } from "actions/domains/addDomainPath";
 import { useReplicache } from "src/replicache";
 import { deleteDomain } from "actions/domains/deleteDomain";
@@ -74,7 +74,7 @@ export const DomainOptions = (props: {
 
   let toaster = useToaster();
   let smoker = useSmoker();
-  let publishLink = usePublishLink();
+  let publishLink = useReadOnlyShareLink();
 
   return (
     <div className="px-3 py-1 flex flex-col gap-3 max-w-full w-[600px]">

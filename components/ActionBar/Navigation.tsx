@@ -18,7 +18,13 @@ import {
 import { SpeedyLink } from "components/SpeedyLink";
 import { Separator } from "components/Layout";
 
-export type navPages = "home" | "reader" | "pub" | "discover" | "notifications";
+export type navPages =
+  | "home"
+  | "reader"
+  | "pub"
+  | "discover"
+  | "notifications"
+  | "looseleafs";
 
 export const DesktopNavigation = (props: {
   currentPage: navPages;
@@ -47,9 +53,7 @@ export const MobileNavigation = (props: {
   publication?: string;
 }) => {
   let { identity } = useIdentityData();
-  let thisPublication = identity?.publications?.find(
-    (pub) => pub.uri === props.publication,
-  );
+
   return (
     <div className="flex gap-1 ">
       <Popover
@@ -100,7 +104,10 @@ const NavigationOptions = (props: {
       <DiscoverButton current={props.currentPage === "discover"} />
 
       <hr className="border-border-light my-1" />
-      <PublicationButtons currentPubUri={thisPublication?.uri} />
+      <PublicationButtons
+        currentPage={props.currentPage}
+        currentPubUri={thisPublication?.uri}
+      />
     </>
   );
 };

@@ -127,20 +127,19 @@ export const CreatePubForm = () => {
         onChange={(e) => setShowInDiscover(e.target.checked)}
       >
         <div className=" pt-0.5 flex flex-col text-sm text-tertiary  ">
-          <p className="font-bold italic">
-            Show In{" "}
+          <p className="font-bold italic">Show In Discover</p>
+          <p className="text-sm text-tertiary font-normal">
+            Your posts will appear on our{" "}
             <a href="/discover" target="_blank">
               Discover
-            </a>
-          </p>
-          <p className="text-sm text-tertiary font-normal">
-            You'll be able to change this later!
+            </a>{" "}
+            page. You can change this at any time!
           </p>
         </div>
       </Checkbox>
       <hr className="border-border-light" />
 
-      <div className="flex w-full justify-center">
+      <div className="flex w-full justify-end">
         <ButtonPrimary
           type="submit"
           disabled={

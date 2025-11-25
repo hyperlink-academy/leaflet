@@ -12,28 +12,57 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { Popover } from "components/Popover";
 import { BlueskyLogin } from "app/login/LoginForm";
-import { ButtonPrimary } from "components/Buttons";
+import { ButtonSecondary } from "components/Buttons";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useState } from "react";
+import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
+import { navPages } from "./Navigation";
 
 export const PublicationButtons = (props: {
+  currentPage: navPages;
   currentPubUri: string | undefined;
 }) => {
   let { identity } = useIdentityData();
+  let looseleaves = identity?.permission_token_on_homepage.find(
+    (f) => f.permission_tokens.leaflets_to_documents,
+  );
 
   // don't show pub list button if not logged in or no pub list
   // we show a "start a pub" banner instead
   if (!identity || !identity.atp_did || identity.publications.length === 0)
     return <PubListEmpty />;
+
   return (
     <div className="pubListWrapper w-full  flex flex-col gap-1 sm:bg-transparent sm:border-0">
+      {looseleaves && (
+        <>
+          <SpeedyLink
+            href={`/looseleafs`}
+            className="flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full"
+          >
+            {/*TODO How should i get if this is the current page or not?
+              theres not "pub" to check the uri for. Do i need to add it as an option to NavPages? thats kinda annoying*/}
+            <ActionButton
+              label="Looseleafs"
+              icon={<LooseLeafSmall />}
+              nav
+              className={
+                props.currentPage === "looseleafs"
+                  ? "bg-bg-page! border-border!"
+                  : ""
+              }
+            />
+          </SpeedyLink>
+          <hr className="border-border-light border-dashed mx-1" />
+        </>
+      )}
+
       {identity.publications?.map((d) => {
         return (
           <PublicationOption
             {...d}
             key={d.uri}
             record={d.record}
-            asActionButton
             current={d.uri === props.currentPubUri}
           />
         );
@@ -52,7 +81,6 @@ export const PublicationOption = (props: {
   uri: string;
   name: string;
   record: Json;
-  asActionButton?: boolean;
   current?: boolean;
 }) => {
   let record = props.record as PubLeafletPublication.Record | null;
@@ -63,25 +91,17 @@ export const PublicationOption = (props: {
       href={`${getBasePublicationURL(props)}/dashboard`}
       className="flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full"
     >
-      {props.asActionButton ? (
-        <ActionButton
-          label={record.name}
-          icon={<PubIcon record={record} uri={props.uri} />}
-          nav
-          className={props.current ? "bg-bg-page! border-border!" : ""}
-        />
-      ) : (
-        <>
-          <PubIcon record={record} uri={props.uri} />
-          <div className="truncate">{record.name}</div>
-        </>
-      )}
+      <ActionButton
+        label={record.name}
+        icon={<PubIcon record={record} uri={props.uri} />}
+        nav
+        className={props.current ? "bg-bg-page! border-border!" : ""}
+      />
     </SpeedyLink>
   );
 };
 
 const PubListEmpty = () => {
-  let { identity } = useIdentityData();
   let isMobile = useIsMobile();
 
   let [state, setState] = useState<"default" | "info">("default");
@@ -98,7 +118,7 @@ const PubListEmpty = () => {
       />
     );
 
-  if (isMobile && state === "info") return <PublishPopoverContent />;
+  if (isMobile && state === "info") return <PubListEmptyContent />;
   else
     return (
       <Popover
@@ -115,21 +135,23 @@ const PubListEmpty = () => {
           />
         }
       >
-        <PublishPopoverContent />
+        <PubListEmptyContent />
       </Popover>
     );
 };
 
-const PublishPopoverContent = () => {
+export const PubListEmptyContent = (props: { compact?: boolean }) => {
   let { identity } = useIdentityData();
 
   return (
-    <div className="bg-[var(--accent-light)] w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4 text-sm">
+    <div
+      className={`bg-[var(--accent-light)] w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4 text-sm`}
+    >
       <div className="mx-auto pt-2 scale-90">
         <PubListEmptyIllo />
       </div>
       <div className="pt-1 font-bold">Publish on AT Proto</div>
-      {identity && identity.atp_did ? (
+      {identity && !identity.atp_did ? (
         //  has ATProto account and no pubs
         <>
           <div className="pb-2 text-secondary text-xs">
@@ -137,16 +159,16 @@ const PublishPopoverContent = () => {
             on AT Proto
           </div>
           <SpeedyLink href={`lish/createPub`} className=" hover:no-underline!">
-            <ButtonPrimary className="text-sm mx-auto" compact>
+            <ButtonSecondary className="text-sm mx-auto" compact>
               Start a Publication!
-            </ButtonPrimary>
+            </ButtonSecondary>
           </SpeedyLink>
         </>
       ) : (
         // no ATProto account and no pubs
         <>
           <div className="pb-2 text-secondary text-xs">
-            Link a Bluesky account to start a new publication on AT Proto
+            Link a Bluesky account to start <br /> a new publication on AT Proto
           </div>
 
           <BlueskyLogin compact />

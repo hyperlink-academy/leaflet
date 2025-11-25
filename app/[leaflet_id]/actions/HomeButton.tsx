@@ -1,15 +1,15 @@
 "use client";
 import Link from "next/link";
-import { useEntitySetContext } from "./EntitySetProvider";
+import { useEntitySetContext } from "../../../components/EntitySetProvider";
 import { ActionButton } from "components/ActionBar/ActionButton";
-import { useParams, useSearchParams } from "next/navigation";
-import { useIdentityData } from "./IdentityProvider";
+import { useSearchParams } from "next/navigation";
+import { useIdentityData } from "../../../components/IdentityProvider";
 import { useReplicache } from "src/replicache";
 import { addLeafletToHome } from "actions/addLeafletToHome";
-import { useSmoker } from "./Toast";
-import { AddToHomeSmall } from "./Icons/AddToHomeSmall";
-import { HomeSmall } from "./Icons/HomeSmall";
-import { permission } from "process";
+import { useSmoker } from "../../../components/Toast";
+import { AddToHomeSmall } from "../../../components/Icons/AddToHomeSmall";
+import { HomeSmall } from "../../../components/Icons/HomeSmall";
+import { produce } from "immer";
 
 export function HomeButton() {
   let { permissions } = useEntitySetContext();
@@ -47,20 +47,17 @@ const AddToHomeButton = (props: {}) => {
         await addLeafletToHome(permission_token.id);
         mutate((identity) => {
           if (!identity) return;
-          return {
-            ...identity,
-            permission_token_on_homepage: [
-              ...identity.permission_token_on_homepage,
-              {
-                archived: null,
-                created_at: new Date().toISOString(),
-                permission_tokens: {
-                  ...permission_token,
-                  leaflets_in_publications: [],
-                },
+          return produce<typeof identity>((draft) => {
+            draft.permission_token_on_homepage.push({
+              created_at: new Date().toISOString(),
+              archived: null,
+              permission_tokens: {
+                ...permission_token,
+                leaflets_to_documents: [],
+                leaflets_in_publications: [],
               },
-            ],
-          };
+            });
+          })(identity);
         });
         smoker({
           position: {

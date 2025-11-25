@@ -27,8 +27,7 @@ export function PostHeader(props: {
 
   let record = document?.data as PubLeafletDocument.Record;
   let profile = props.profile;
-  let pub = props.data?.documents_in_publications[0].publications;
-  let pubRecord = pub?.record as PubLeafletPublication.Record;
+  let pub = props.data?.documents_in_publications[0]?.publications;
 
   const formattedDate = useLocalizedDate(
     record.publishedAt || new Date().toISOString(),
@@ -36,11 +35,10 @@ export function PostHeader(props: {
       year: "numeric",
       month: "long",
       day: "2-digit",
-    }
+    },
   );
 
-  if (!document?.data || !document.documents_in_publications[0].publications)
-    return;
+  if (!document?.data) return;
   return (
     <div
       className="max-w-prose w-full mx-auto px-3 sm:px-4 sm:pt-3 pt-2"
@@ -48,21 +46,17 @@ export function PostHeader(props: {
     >
       <div className="pubHeader flex flex-col pb-5">
         <div className="flex justify-between w-full">
-          <SpeedyLink
-            className="font-bold hover:no-underline text-accent-contrast"
-            href={
-              document &&
-              getPublicationURL(
-                document.documents_in_publications[0].publications,
-              )
-            }
-          >
-            {pub?.name}
-          </SpeedyLink>
+          {pub && (
+            <SpeedyLink
+              className="font-bold hover:no-underline text-accent-contrast"
+              href={document && getPublicationURL(pub)}
+            >
+              {pub?.name}
+            </SpeedyLink>
+          )}
           {identity &&
-            identity.atp_did ===
-              document.documents_in_publications[0]?.publications
-                .identity_did &&
+            pub &&
+            identity.atp_did === pub.identity_did &&
             document.leaflets_in_publications[0] && (
               <a
                 className=" rounded-full  flex place-items-center"
@@ -90,8 +84,7 @@ export function PostHeader(props: {
           ) : null}
           {record.publishedAt ? (
             <>
-              |
-              <p>{formattedDate}</p>
+              |<p>{formattedDate}</p>
             </>
           ) : null}
           |{" "}

@@ -1,16 +1,16 @@
 "use client";
-import { ShortcutKey } from "./Layout";
-import { Media } from "./Media";
-import { Popover } from "./Popover";
+import { ShortcutKey } from "../../../components/Layout";
+import { Media } from "../../../components/Media";
+import { Popover } from "../../../components/Popover";
 import { metaKey } from "src/utils/metaKey";
-import { useEntitySetContext } from "./EntitySetProvider";
+import { useEntitySetContext } from "../../../components/EntitySetProvider";
 import { useState } from "react";
 import { ActionButton } from "components/ActionBar/ActionButton";
-import { HelpSmall } from "./Icons/HelpSmall";
+import { HelpSmall } from "../../../components/Icons/HelpSmall";
 import { isMac } from "src/utils/isDevice";
 import { useIsMobile } from "src/hooks/isMobile";
 
-export const HelpPopover = (props: { noShortcuts?: boolean }) => {
+export const HelpButton = (props: { noShortcuts?: boolean }) => {
   let entity_set = useEntitySetContext();
   let isMobile = useIsMobile();
 

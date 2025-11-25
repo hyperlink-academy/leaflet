@@ -21,7 +21,7 @@ import { useIsMobile } from "src/hooks/isMobile";
 
 export type ShareMenuStates = "default" | "login" | "domain";
 
-export let usePublishLink = () => {
+export let useReadOnlyShareLink = () => {
   let { permission_token, rootEntity } = useReplicache();
   let entity_set = useEntitySetContext();
   let { data: publishLink } = useSWR(
@@ -60,8 +60,7 @@ export function ShareOptions() {
       trigger={
         <ActionButton
           icon=<ShareSmall />
-          primary={!!!pub}
-          secondary={!!pub}
+          secondary
           label={`Share ${pub ? "Draft" : ""}`}
         />
       }
@@ -93,11 +92,13 @@ const ShareMenu = (props: {
 
   let record = pub?.documents?.data as PubLeafletDocument.Record | null;
 
-  let postLink =
-    pub?.publications && pub.documents
-      ? `${getPublicationURL(pub.publications)}/${new AtUri(pub?.documents.uri).rkey}`
-      : null;
-  let publishLink = usePublishLink();
+  let docURI = pub?.documents ? new AtUri(pub?.documents.uri) : null;
+  let postLink = !docURI
+    ? null
+    : pub?.publications
+      ? `${getPublicationURL(pub.publications)}/${docURI.rkey}`
+      : `p/${docURI.host}/${docURI.rkey}`;
+  let publishLink = useReadOnlyShareLink();
   let [collabLink, setCollabLink] = useState<null | string>(null);
   useEffect(() => {
     // strip leading '/' character from pathname

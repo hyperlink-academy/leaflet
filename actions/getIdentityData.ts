@@ -30,6 +30,7 @@ export async function uncachedGetIdentityData() {
                 id,
                 root_entity,
                 permission_token_rights(*),
+                leaflets_to_documents(*, documents(*)),
                 leaflets_in_publications(*, publications(*), documents(*))
               )
             )

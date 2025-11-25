@@ -170,7 +170,11 @@ export const EditPubForm = (props: {
               </a>
             </p>
             <p className="text-xs text-tertiary font-normal">
-              This publication will appear on our public Discover page
+              Your posts will appear on our{" "}
+              <a href="/discover" target="_blank">
+                Discover
+              </a>{" "}
+              page. You can change this at any time!
             </p>
           </div>
         </Checkbox>

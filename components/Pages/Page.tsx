@@ -61,7 +61,7 @@ export function Page(props: {
           />
         }
       >
-        {props.first && (
+        {props.first && pageType === "doc" && (
           <>
             <PublicationMetadata />
           </>

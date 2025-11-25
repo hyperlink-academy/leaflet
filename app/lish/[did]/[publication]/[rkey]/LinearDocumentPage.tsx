@@ -23,43 +23,35 @@ import { useDrawerOpen } from "./Interactions/InteractionDrawer";
 import { PageWrapper } from "components/Pages/Page";
 import { decodeQuotePosition } from "./quotePosition";
 import { PollData } from "./fetchPollData";
+import { SharedPageProps } from "./PostPages";
 
 export function LinearDocumentPage({
-  document,
   blocks,
-  did,
-  profile,
-  preferences,
-  pubRecord,
-  prerenderedCodeBlocks,
-  bskyPostData,
-  document_uri,
-  pageId,
-  pageOptions,
-  pollData,
-  fullPageScroll,
-}: {
-  document_uri: string;
-  document: PostPageData;
+  ...props
+}: Omit<SharedPageProps, "allPages"> & {
   blocks: PubLeafletPagesLinearDocument.Block[];
-  profile?: ProfileViewDetailed;
-  pubRecord: PubLeafletPublication.Record;
-  did: string;
-  prerenderedCodeBlocks?: Map<string, string>;
-  bskyPostData: AppBskyFeedDefs.PostView[];
-  pollData: PollData[];
-  preferences: { showComments?: boolean };
-  pageId?: string;
-  pageOptions?: React.ReactNode;
-  fullPageScroll: boolean;
 }) {
+  const {
+    document,
+    did,
+    profile,
+    preferences,
+    pubRecord,
+    theme,
+    prerenderedCodeBlocks,
+    bskyPostData,
+    pollData,
+    document_uri,
+    pageId,
+    pageOptions,
+    fullPageScroll,
+  } = props;
   let { identity } = useIdentityData();
   let drawer = useDrawerOpen(document_uri);
 
-  if (!document || !document.documents_in_publications[0].publications)
-    return null;
+  if (!document) return null;
 
-  let hasPageBackground = !!pubRecord.theme?.showPageBackground;
+  let hasPageBackground = !!theme?.showPageBackground;
   let record = document.data as PubLeafletDocument.Record;
 
   const isSubpage = !!pageId;
@@ -114,22 +106,24 @@ export function LinearDocumentPage({
                   <EditTiny /> Edit Post
                 </a>
               ) : (
-                <SubscribeWithBluesky
-                  isPost
-                  base_url={getPublicationURL(
-                    document.documents_in_publications[0].publications,
-                  )}
-                  pub_uri={
-                    document.documents_in_publications[0].publications.uri
-                  }
-                  subscribers={
-                    document.documents_in_publications[0].publications
-                      .publication_subscriptions
-                  }
-                  pubName={
-                    document.documents_in_publications[0].publications.name
-                  }
-                />
+                document.documents_in_publications[0]?.publications && (
+                  <SubscribeWithBluesky
+                    isPost
+                    base_url={getPublicationURL(
+                      document.documents_in_publications[0].publications,
+                    )}
+                    pub_uri={
+                      document.documents_in_publications[0].publications.uri
+                    }
+                    subscribers={
+                      document.documents_in_publications[0].publications
+                        .publication_subscriptions
+                    }
+                    pubName={
+                      document.documents_in_publications[0].publications.name
+                    }
+                  />
+                )
               )}
             </div>
           </>
