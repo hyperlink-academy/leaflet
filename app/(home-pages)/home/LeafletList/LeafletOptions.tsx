@@ -40,9 +40,7 @@ export const LeafletOptions = (props: {
   archived?: boolean | null;
   loggedIn?: boolean;
 }) => {
-  let [state, setState] = useState<"normal" | "areYouSure">(
-    "normal",
-  );
+  let [state, setState] = useState<"normal" | "areYouSure">("normal");
   let [open, setOpen] = useState(false);
   let { identity } = useIdentityData();
   let isPublicationOwner =
@@ -82,10 +80,7 @@ export const LeafletOptions = (props: {
               {...props}
             />
           ) : (
-            <DefaultOptions
-              setState={setState}
-              {...props}
-            />
+            <DefaultOptions setState={setState} {...props} />
           )
         ) : state === "areYouSure" ? (
           <DeleteAreYouSureForm
@@ -122,7 +117,7 @@ const DefaultOptions = (props: {
         subtext=""
         smokerText="Link copied!"
         id="get-link"
-        link={`/${props.shareLink}`}
+        link={props.shareLink}
       />
       <hr className="border-border-light" />
       <MenuItem
@@ -280,7 +275,7 @@ const PublishedPostOptions = (props: {
         }
         smokerText="Link copied!"
         id="get-link"
-        link={`${props.shareLink}`}
+        fullLink={props.shareLink}
       />
 
       <hr className="border-border-light" />
@@ -382,4 +377,3 @@ const DeleteAreYouSureForm = (props: {
     </div>
   );
 };
-
