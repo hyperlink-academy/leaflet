@@ -9,6 +9,8 @@ import { Input } from "components/Input";
 import { ButtonPrimary } from "components/Buttons";
 import { PopoverArrow } from "components/Icons/PopoverArrow";
 import { useSmoker } from "components/Toast";
+import { usePublicationData } from "../PublicationSWRProvider";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 
 export const PubContributorManager = (props: {
   backToMenuAction: () => void;
@@ -55,6 +57,22 @@ const PubContributorsContent = (props: {
   contributors: { name: string; status: string }[];
 }) => {
   let [inputValue, setInputValue] = useState("");
+  let smoker = useSmoker();
+  let { data: pub } = usePublicationData();
+
+  function getContributorLink(e: React.MouseEvent) {
+    let pubUrl = getPublicationURL(pub?.publication!);
+    navigator.clipboard.writeText(`${pubUrl}/invite-contributor`);
+
+    smoker({
+      text: "Copied Invite Link!",
+      position: {
+        y: e.clientY,
+        x: e.clientX,
+      },
+    });
+  }
+
   return (
     <div className="flex flex-col gap-1 pt-2">
       <div className="flex flex-col gap-0.5">
@@ -72,11 +90,12 @@ const PubContributorsContent = (props: {
         </div>
       </div>
 
+      {/*ONLY SHOW ON ADD*/}
       <div className="flex flex-col gap-1 text-sm text-secondary text-center mb-2 mt-1 p-2 accent-container">
         <ButtonPrimary fullWidth compact onClick={(e) => getContributorLink(e)}>
           Copy Accept Invite Link
         </ButtonPrimary>
-        Send this link to contributors so they can access this publication
+        Send this link to invited contributors to access this publication
       </div>
       <hr className="border-border-light" />
 
@@ -93,7 +112,7 @@ const PubContributorsContent = (props: {
                   className="text-sm text-accent-contrast italic w-max shrink-0"
                   onClick={(e) => getContributorLink(e)}
                 >
-                  Resend Invite
+                  Copy Invite
                 </button>
               )}
 
@@ -105,18 +124,6 @@ const PubContributorsContent = (props: {
     </div>
   );
 };
-
-function getContributorLink(e: React.MouseEvent) {
-  let smoker = useSmoker();
-
-  smoker({
-    text: "Copied Invite Link!",
-    position: {
-      y: e.clientY,
-      x: e.clientX,
-    },
-  });
-}
 
 const PubContributorOptions = () => {
   return (
