@@ -238,7 +238,7 @@ async function processBlocksToPages(
   if (pageType?.data.value === "canvas") {
     // First page is a canvas
     let canvasBlocks = await canvasBlocksToRecord(firstEntity.data.value, did);
-    pages.push({
+    pages.unshift({
       id: firstEntity.data.value,
       blocks: canvasBlocks,
       type: "canvas",
@@ -247,7 +247,7 @@ async function processBlocksToPages(
     // First page is a linear document
     let blocks = getBlocksWithTypeLocal(facts, firstEntity?.data.value);
     let b = await blocksToRecord(blocks, did);
-    pages.push({
+    pages.unshift({
       id: firstEntity.data.value,
       blocks: b,
       type: "doc",
