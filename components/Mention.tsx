@@ -1,6 +1,6 @@
 "use client";
 import { Agent } from "@atproto/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import * as Popover from "@radix-ui/react-popover";
@@ -166,8 +166,7 @@ export function MentionAutocomplete(props: {
           <ul className="list-none p-0 text-sm">
             {sortedSuggestions.map((result, index) => {
               const prevResult = sortedSuggestions[index - 1];
-              const showHeader =
-                prevResult && prevResult.type !== result.type;
+              const showHeader = prevResult && prevResult.type !== result.type;
 
               const [key, resultText, subtext] =
                 result.type === "did"
@@ -181,10 +180,10 @@ export function MentionAutocomplete(props: {
               return (
                 <>
                   {showHeader && (
-                    <>
+                    <Fragment key={`header-publications`}>
                       <hr className="border-border-light mx-1 my-1" />
                       <div className={headerStyle}>Publications</div>
-                    </>
+                    </Fragment>
                   )}
                   <Result
                     key={key}
@@ -224,7 +223,7 @@ const Result = (props: {
         menuItem  flex-col! gap-0!
         text-secondary leading-tight text-sm truncate
       ${props.subtext ? "py-1!" : "py-2!"}
-        ${props.selected ? "bg-[var(--accent-light)]" : ""}`}
+        ${props.selected ? "bg-[var(--accent-light)]!" : ""}`}
       onClick={() => props.onClick()}
       onMouseDown={(e) => props.onMouseDown(e)}
     >
