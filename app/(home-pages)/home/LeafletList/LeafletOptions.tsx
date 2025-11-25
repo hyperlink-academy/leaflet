@@ -275,6 +275,7 @@ const PublishedPostOptions = (props: {
         }
         smokerText="Link copied!"
         id="get-link"
+        link=""
         fullLink={props.shareLink}
       />
 
