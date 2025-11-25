@@ -24,7 +24,7 @@ export const FollowNotification = (props: HydratedSubscribeNotification) => {
     <Notification
       timestamp={props.created_at}
       href={`https://${pubRecord?.base_path}`}
-      icon={<Avatar src={avatarSrc} displayName={displayName} tiny />}
+      icon={<Avatar src={avatarSrc} displayName={displayName} small />}
       actionText={
         <>
           {displayName} subscribed to {pubRecord?.name}!

@@ -33,7 +33,7 @@ export function NotificationList({
       </div>
     );
   return (
-    <div className="max-w-prose mx-auto w-full">
+    <div className="max-w-prose mx-auto w-full pt-1 sm:pt-2">
       <div className={`flex flex-col gap-2`}>
         {notifications.map((n) => {
           if (n.type === "comment") {

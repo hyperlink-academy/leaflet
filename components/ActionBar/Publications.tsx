@@ -157,7 +157,7 @@ const PublishPopoverContent = () => {
 
 export const PubIcon = (props: {
   record: PubLeafletPublication.Record;
-  uri: string;
+  uri: string | undefined;
   small?: boolean;
   large?: boolean;
   className?: string;
@@ -166,7 +166,7 @@ export const PubIcon = (props: {
 
   let iconSizeClassName = `${props.small ? "w-4 h-4" : props.large ? "w-12 h-12" : "w-6 h-6"} rounded-full`;
 
-  return props.record.icon ? (
+  return props.record.icon && props.uri ? (
     <div
       className={`${iconSizeClassName} ${props.className} relative overflow-hidden`}
     >
