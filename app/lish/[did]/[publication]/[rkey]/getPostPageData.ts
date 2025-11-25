@@ -1,6 +1,6 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
-import { PubLeafletPublication } from "lexicons/api";
+import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 
 export async function getPostPageData(uri: string) {
   let { data: document } = await supabaseServerClient
@@ -43,9 +43,16 @@ export async function getPostPageData(uri: string) {
     ...uniqueBacklinks,
   ];
 
+  let theme =
+    (
+      document?.documents_in_publications[0]?.publications
+        ?.record as PubLeafletPublication.Record
+    )?.theme || (document?.data as PubLeafletDocument.Record)?.theme;
+
   return {
     ...document,
     quotesAndMentions,
+    theme,
   };
 }
 

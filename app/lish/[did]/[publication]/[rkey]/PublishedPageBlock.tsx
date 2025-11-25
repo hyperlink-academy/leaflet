@@ -151,10 +151,9 @@ export function PagePreview(props: {
   let previewRef = useRef<HTMLDivElement | null>(null);
   let { rootEntity } = useReplicache();
   let data = useContext(PostPageContext);
-  let theme = data?.documents_in_publications[0]?.publications
-    ?.record as PubLeafletPublication.Record;
+  let theme = data?.theme;
   let pageWidth = `var(--page-width-unitless)`;
-  let cardBorderHidden = !theme.theme?.showPageBackground;
+  let cardBorderHidden = !theme?.showPageBackground;
   return (
     <div
       ref={previewRef}
