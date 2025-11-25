@@ -1,5 +1,5 @@
 "use client";
-import { PermissionToken } from "src/replicache";
+import { PermissionToken, useEntity } from "src/replicache";
 import { LeafletOptions } from "./LeafletOptions";
 import Link from "next/link";
 import { use, useState } from "react";
@@ -8,6 +8,7 @@ import { TemplateSmall } from "components/Icons/TemplateSmall";
 import { timeAgo } from "src/utils/timeAgo";
 import { usePublishLink } from "components/ShareOptions";
 import { Separator } from "components/Layout";
+import { usePageTitle } from "components/utils/UpdateLeafletTitle";
 
 export const LeafletInfo = (props: {
   title?: string;
@@ -28,13 +29,20 @@ export const LeafletInfo = (props: {
   let prettyCreatedAt = props.added_at ? timeAgo(props.added_at) : "";
   let prettyPublishedAt = props.publishedAt ? timeAgo(props.publishedAt) : "";
 
+  // Look up root page first, like UpdateLeafletTitle does
+  let firstPage = useEntity(props.leaflet_id, "root/page")[0];
+  let entityID = firstPage?.data.value || props.leaflet_id;
+  let titleFromDb = usePageTitle(entityID);
+
+  let title = props.title ?? titleFromDb ?? "Untitled";
+
   return (
     <div
       className={`leafletInfo w-full min-w-0 flex flex-col ${props.className}`}
     >
       <div className="flex justify-between items-center shrink-0 max-w-full gap-2 leading-tight overflow-hidden">
         <h3 className="sm:text-lg text-base truncate w-full min-w-0">
-          {props.title}
+          {title}
         </h3>
         <div className="flex gap-1 shrink-0">
           {props.isTemplate && props.display === "list" ? (

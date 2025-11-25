@@ -14,7 +14,7 @@ export const LeafletListItem = (props: {
   display: "list" | "grid";
   cardBorderHidden: boolean;
   added_at: string;
-  title: string;
+  title?: string;
   draftInPublication?: string;
   published?: boolean;
   publishedAt?: string;

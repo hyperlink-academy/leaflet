@@ -231,7 +231,7 @@ export function LeafletList(props: {
             }}
           >
             <LeafletListItem
-              title={props?.titles?.[leaflet.root_entity] || "Untitled"}
+              title={props?.titles?.[leaflet.root_entity]}
               archived={archived}
               token={leaflet}
               draftInPublication={
@@ -275,13 +275,13 @@ function useSearchedLeaflets(
 
   let sortedLeaflets = leaflets.sort((a, b) => {
     if (sort === "alphabetical") {
-      if (titles[a.token.root_entity] === titles[b.token.root_entity]) {
+      let titleA = titles[a.token.root_entity] ?? "Untitled";
+      let titleB = titles[b.token.root_entity] ?? "Untitled";
+
+      if (titleA === titleB) {
         return a.added_at > b.added_at ? -1 : 1;
       } else {
-        return titles[a.token.root_entity].toLocaleLowerCase() >
-          titles[b.token.root_entity].toLocaleLowerCase()
-          ? 1
-          : -1;
+        return titleA.toLocaleLowerCase() > titleB.toLocaleLowerCase() ? 1 : -1;
       }
     } else {
       return a.added_at === b.added_at
