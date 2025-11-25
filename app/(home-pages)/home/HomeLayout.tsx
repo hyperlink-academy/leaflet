@@ -309,12 +309,14 @@ function useSearchedLeaflets(
         !filter.templates &&
         !filter.archived
       )
-        return archived === false || archived === null;
+        return archived === false || archived === null || archived == undefined;
 
       return (
         (filter.drafts && drafts) ||
         (filter.published && published) ||
-        (filter.docs && docs && (archived === false || archived === null)) ||
+        (filter.docs &&
+          docs &&
+          (archived === false || archived === null || archived || undefined)) ||
         (filter.templates && templates) ||
         (filter.archived && archived)
       );
