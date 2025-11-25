@@ -17,7 +17,6 @@ import {
   deletePost,
   unpublishPost,
 } from "app/lish/[did]/[publication]/dashboard/deletePost";
-import { ShareButton } from "components/ShareOptions";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { HideSmall } from "components/Icons/HideSmall";
 import { hideDoc } from "../storage";
@@ -31,6 +30,7 @@ import {
   usePublicationData,
   mutatePublicationData,
 } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+import { ShareButton } from "app/[leaflet_id]/actions/ShareOptions";
 
 export const LeafletOptions = (props: {
   leaflet: PermissionToken;

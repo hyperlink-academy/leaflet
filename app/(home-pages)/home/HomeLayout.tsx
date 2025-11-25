@@ -235,7 +235,9 @@ export function LeafletList(props: {
               title={props?.titles?.[leaflet.root_entity]}
               archived={archived}
               token={leaflet}
-              draftInPublication={!!leaflet.leaflets_in_publications?.length}
+              draftInPublication={
+                leaflet.leaflets_in_publications?.[0]?.publication
+              }
               published={
                 !!leaflet.leaflets_in_publications?.find((l) => l.doc) ||
                 !!leaflet.leaflets_to_documents?.find((l) => !!l.documents)

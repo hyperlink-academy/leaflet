@@ -1,11 +1,8 @@
 "use client";
 import { PermissionToken, useEntity } from "src/replicache";
 import { LeafletOptions } from "./LeafletOptions";
-import Link from "next/link";
-import { use, useState } from "react";
+import { useState } from "react";
 import { timeAgo } from "src/utils/timeAgo";
-import { usePublishLink } from "components/ShareOptions";
-import { Separator } from "components/Layout";
 import { usePageTitle } from "components/utils/UpdateLeafletTitle";
 
 export const LeafletInfo = (props: {
