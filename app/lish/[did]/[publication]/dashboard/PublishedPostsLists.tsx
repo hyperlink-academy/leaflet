@@ -97,6 +97,7 @@ export function PublishedPostsList(props: {
                             leaflet={leaflet?.permission_tokens!}
                             document_uri={doc.documents.uri}
                             shareLink={postLink}
+                            loggedIn={true}
                           />
                         </>
                       )}

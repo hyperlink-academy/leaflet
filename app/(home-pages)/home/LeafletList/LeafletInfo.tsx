@@ -50,6 +50,7 @@ export const LeafletInfo = (props: {
             document_uri={props.document_uri}
             shareLink={`/${props.token.id}`}
             archived={props.archived}
+            loggedIn={props.loggedIn}
           />
         </div>
       </div>

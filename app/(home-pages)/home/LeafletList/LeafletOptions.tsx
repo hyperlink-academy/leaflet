@@ -22,6 +22,8 @@ import {
 } from "app/lish/[did]/[publication]/dashboard/deletePost";
 import { ShareButton } from "components/ShareOptions";
 import { ShareSmall } from "components/Icons/ShareSmall";
+import { HideSmall } from "components/Icons/HideSmall";
+import { hideDoc } from "../storage";
 
 import { PermissionToken } from "src/replicache";
 import {
@@ -40,11 +42,15 @@ export const LeafletOptions = (props: {
   document_uri?: string;
   shareLink: string;
   archived?: boolean | null;
+  loggedIn?: boolean;
 }) => {
   let [state, setState] = useState<"normal" | "template" | "areYouSure">(
     "normal",
   );
   let [open, setOpen] = useState(false);
+  let { identity } = useIdentityData();
+  let isPublicationOwner =
+    !!identity?.atp_did && !!props.document_uri?.includes(identity.atp_did);
   return (
     <>
       <Menu
@@ -67,7 +73,14 @@ export const LeafletOptions = (props: {
         }
       >
         {state === "normal" ? (
-          props.document_uri ? (
+          !props.loggedIn ? (
+            <LoggedOutOptions
+              leaflet={props.leaflet}
+              isTemplate={props.isTemplate}
+              setState={setState}
+              shareLink={props.shareLink}
+            />
+          ) : props.document_uri && isPublicationOwner ? (
             <PublishedPostOptions
               setState={setState}
               document_uri={props.document_uri}
@@ -160,9 +173,10 @@ const DefaultOptions = (props: {
                         if (item) item.archived = false;
                       });
                       mutatePublicationData(mutatePub, (data) => {
-                        let item = data.publication?.leaflets_in_publications.find(
-                          (l) => l.permission_tokens?.id === props.leaflet.id,
-                        );
+                        let item =
+                          data.publication?.leaflets_in_publications.find(
+                            (l) => l.permission_tokens?.id === props.leaflet.id,
+                          );
                         if (item) item.archived = false;
                       });
                       await unarchivePost(props.leaflet.id);
@@ -220,6 +234,58 @@ const DefaultOptions = (props: {
   );
 };
 
+const LoggedOutOptions = (props: {
+  leaflet: PermissionToken;
+  isTemplate?: boolean;
+  setState: (s: "template" | "areYouSure") => void;
+  shareLink: string;
+}) => {
+  let toaster = useToaster();
+  return (
+    <>
+      <ShareButton
+        text={
+          <div className="flex gap-2">
+            <ShareSmall />
+            Copy Edit Link
+          </div>
+        }
+        subtext=""
+        smokerText="Link copied!"
+        id="get-link"
+        link={`/${props.shareLink}`}
+      />
+      <TemplateOptions
+        leaflet={props.leaflet}
+        setState={props.setState}
+        isTemplate={props.isTemplate}
+      />
+      <hr className="border-border-light" />
+      <MenuItem
+        onSelect={() => {
+          hideDoc(props.leaflet);
+          toaster({
+            content: <div className="font-bold">Removed from Home!</div>,
+            type: "success",
+          });
+        }}
+      >
+        <HideSmall />
+        Remove from Home
+      </MenuItem>
+      <MenuItem
+        onSelect={(e) => {
+          e.preventDefault();
+          props.setState("areYouSure");
+        }}
+      >
+        <DeleteSmall />
+        Delete Forever
+      </MenuItem>
+    </>
+  );
+};
+
 const PublishedPostOptions = (props: {
   setState: (s: "areYouSure") => void;
   document_uri: string;
@@ -238,7 +304,7 @@ const PublishedPostOptions = (props: {
         }
         smokerText="Link copied!"
         id="get-link"
-        link={`/${props.shareLink}}`}
+        link={`${props.shareLink}`}
       />
 
       <hr className="border-border-light" />
