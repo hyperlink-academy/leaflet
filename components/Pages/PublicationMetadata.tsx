@@ -86,7 +86,7 @@ export const PublicationMetadata = () => {
             href={
               pub.publications
                 ? `${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`
-                : `/p/${identity?.atp_did}/${new AtUri(pub.doc).rkey}`
+                : `/p/${new AtUri(pub.doc).host}/${new AtUri(pub.doc).rkey}`
             }
           >
             View Post

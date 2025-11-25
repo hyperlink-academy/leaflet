@@ -19,7 +19,7 @@ export const get_leaflet_data = makeRoute({
       .from("permission_tokens")
       .select(
         `*,
-        permission_token_rights(*, entity_sets(permission_tokens(${leaflets_in_publications_query}))),
+        permission_token_rights(*, entity_sets(permission_tokens(${leaflets_in_publications_query}, ${leaflets_to_documents_query}))),
         custom_domain_routes!custom_domain_routes_edit_permission_token_fkey(*),
         ${leaflets_in_publications_query},
         ${leaflets_to_documents_query}`,

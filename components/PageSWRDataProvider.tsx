@@ -75,9 +75,13 @@ export function useLeafletPublicationData() {
     )?.leaflets_in_publications?.[0];
 
   // If not found, check for standalone documents
-  if (!pubData && data?.leaflets_to_documents?.[0]) {
+  let standaloneDoc =
+    data?.leaflets_to_documents?.[0] ||
+    data?.permission_token_rights[0].entity_sets?.permission_tokens.find(
+      (p) => p.leaflets_to_documents.length,
+    )?.leaflets_to_documents?.[0];
+  if (!pubData && standaloneDoc) {
     // Transform standalone document data to match the expected format
-    let standaloneDoc = data.leaflets_to_documents[0];
     pubData = {
       ...standaloneDoc,
       publications: null, // No publication for standalone docs
