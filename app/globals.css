@@ -377,6 +377,13 @@ pre.shiki {
   @apply rounded-md;
 }
 
+.page-container {
+  background: rgba(var(--bg-page), var(--bg-page-alpha));
+  @apply border;
+  @apply border-bg-page;
+  @apply rounded-md;
+}
+
 .container {
   background: rgba(var(--bg-page), 0.75);
   @apply border;

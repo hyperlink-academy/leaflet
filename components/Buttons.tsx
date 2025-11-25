@@ -35,10 +35,10 @@ export const ButtonPrimary = forwardRef<
         m-0 h-max
         ${fullWidth ? "w-full" : fullWidthOnMobile ? "w-full sm:w-max" : "w-max"}
         ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
-        bg-accent-1  outline-transparent border border-accent-1
+        bg-accent-1 border border-accent-1
         rounded-md text-base font-bold text-accent-2
         flex gap-2 items-center justify-center shrink-0
-        transparent-outline focus:outline-accent-1 hover:outline-accent-1 outline-offset-1
+        transparent-outline focus:outline-accent-1! hover:outline-accent-1! outline-offset-1
         disabled:bg-border-light disabled:border-border-light disabled:text-border disabled:hover:text-border
         ${className}
       `}
@@ -73,13 +73,13 @@ export const ButtonSecondary = forwardRef<
       className={`m-0 h-max
         ${fullWidth ? "w-full" : fullWidthOnMobile ? "w-full sm:w-max" : "w-max"}
         ${props.compact ? "py-0 px-1" : "px-2 py-0.5 "}
-  bg-bg-page outline-transparent
-  rounded-md text-base font-bold text-accent-contrast
-  flex gap-2 items-center justify-center shrink-0
-  transparent-outline focus:outline-accent-contrast hover:outline-accent-contrast outline-offset-1
-  border border-accent-contrast
-  disabled:bg-border-light disabled:text-border disabled:hover:text-border
-  ${props.className}
+        bg-bg-page
+        rounded-md text-base font-bold text-accent-contrast
+        flex gap-2 items-center justify-center shrink-0
+        transparent-outline focus:outline-accent-contrast! hover:outline-accent-contrast! outline-offset-1
+        border border-accent-contrast
+        disabled:bg-border-light disabled:text-border disabled:hover:text-border
+        ${props.className}
 `}
     >
       {props.children}

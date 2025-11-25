@@ -40,7 +40,7 @@ export const PubContributorManager = (props: {
 const PubContributorsEmpty = () => {
   return (
     <div className="flex flex-col gap-2 justify-center accent-container text-sm text-center sm:p-4 p-3 mb-1 mt-3">
-      <PubContibutorEmptyIllo />
+      <PubContributorEmptyIllo />
       <div className="font-bold">
         Contributors can make drafts and publish in this publication!{" "}
       </div>
@@ -135,7 +135,7 @@ const PubContributorOptions = () => {
   );
 };
 
-const PubContibutorEmptyIllo = () => {
+export const PubContributorEmptyIllo = () => {
   return (
     <svg
       width="52"

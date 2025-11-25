@@ -16,6 +16,7 @@ import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { LocalizedDate } from "./LocalizedDate";
 import { PublicationHomeLayout } from "./PublicationHomeLayout";
+import { PubNotFound } from "./PubNotFound";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -195,15 +196,3 @@ export default async function Publication(props: {
     return <pre>{JSON.stringify(e, undefined, 2)}</pre>;
   }
 }
-
-const PubNotFound = () => {
-  return (
-    <NotFoundLayout>
-      <p className="font-bold">Sorry, we can't find this publication!</p>
-      <p>
-        This may be a glitch on our end. If the issue persists please{" "}
-        <a href="mailto:contact@leaflet.pub">send us a note</a>.
-      </p>
-    </NotFoundLayout>
-  );
-};
