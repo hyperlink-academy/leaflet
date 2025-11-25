@@ -50,6 +50,7 @@ const AddToHomeButton = (props: {}) => {
           return produce<typeof identity>((draft) => {
             draft.permission_token_on_homepage.push({
               created_at: new Date().toISOString(),
+              archived: null,
               permission_tokens: {
                 ...permission_token,
                 leaflets_to_documents: [],

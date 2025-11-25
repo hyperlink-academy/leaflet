@@ -1,50 +1,39 @@
-import { MentionTiny } from "components/Icons/MentionTiny";
+import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { ContentLayout, Notification } from "./Notification";
+import { HydratedQuoteNotification } from "src/notifications";
+import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
+import { AtUri } from "@atproto/api";
+import { Avatar } from "components/Avatar";
 
-export const DummyPostMentionNotification = (props: {}) => {
+export const QuoteNotification = (props: HydratedQuoteNotification) => {
+  const postView = props.bskyPost.post_view as any;
+  const author = postView.author;
+  const displayName = author.displayName || author.handle || "Someone";
+  const docRecord = props.document.data as PubLeafletDocument.Record;
+  const pubRecord = props.document.documents_in_publications[0]?.publications
+    ?.record as PubLeafletPublication.Record;
+  const rkey = new AtUri(props.document.uri).rkey;
+  const postText = postView.record?.text || "";
+
   return (
     <Notification
-      timestamp={""}
-      href="/"
-      icon={<MentionTiny />}
-      actionText={<>celine mentioned your post</>}
+      timestamp={props.created_at}
+      href={`https://${pubRecord.base_path}/${rkey}`}
+      icon={<QuoteTiny />}
+      actionText={<>{displayName} quoted your post</>}
       content={
-        <ContentLayout
-          postTitle={"Post Title Here"}
-          pubRecord={{ name: "My Publication" } as any}
-        >
-          I'm just gonna put the description here. The surrounding context is
-          just sort of a pain to figure out
-          <div className="border border-border-light rounded-md p-1 my-1 text-xs text-secondary">
-            <div className="font-bold">Title of the Mentioned Post</div>
-            <div className="text-tertiary">
-              And here is the description that follows it
-            </div>
-          </div>
-        </ContentLayout>
-      }
-    />
-  );
-};
-
-export const DummyUserMentionNotification = (props: {
-  cardBorderHidden: boolean;
-}) => {
-  return (
-    <Notification
-      timestamp={""}
-      href="/"
-      icon={<MentionTiny />}
-      actionText={<>celine mentioned you</>}
-      content={
-        <ContentLayout
-          postTitle={"Post Title Here"}
-          pubRecord={{ name: "My Publication" } as any}
-        >
-          <div>
-            ...llo this is the content of a post or whatever here it comes{" "}
-            <span className="text-accent-contrast">@celine </span> and here it
-            was! ooooh heck yeah the high is unre...
+        <ContentLayout postTitle={docRecord.title} pubRecord={pubRecord}>
+          <div className="flex gap-2 text-sm w-full">
+            <Avatar
+              src={author.avatar}
+              displayName={displayName}
+            />
+            <pre
+              style={{ wordBreak: "break-word" }}
+              className="whitespace-pre-wrap text-secondary line-clamp-3 sm:line-clamp-6"
+            >
+              {postText}
+            </pre>
           </div>
         </ContentLayout>
       }

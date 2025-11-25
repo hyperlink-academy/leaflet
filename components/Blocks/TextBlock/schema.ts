@@ -115,6 +115,13 @@ let baseSchema = {
     text: {
       group: "inline",
     },
+    hard_break: {
+      group: "inline",
+      inline: true,
+      selectable: false,
+      parseDOM: [{ tag: "br" }],
+      toDOM: () => ["br"] as const,
+    },
   },
 };
 export const schema = new Schema(baseSchema);

@@ -10,11 +10,15 @@ import { Separator } from "components/Layout";
 import { Input } from "components/Input";
 import { isUrl } from "src/utils/isURL";
 import { elementId } from "src/utils/elementId";
-import { deleteBlock } from "./DeleteBlock";
 import { focusBlock } from "src/utils/focusBlock";
 import { useDrag } from "src/hooks/useDrag";
 import { BlockEmbedSmall } from "components/Icons/BlockEmbedSmall";
 import { CheckTiny } from "components/Icons/CheckTiny";
+import { DotLoader } from "components/utils/DotLoader";
+import {
+  LinkPreviewBody,
+  LinkPreviewMetadataResult,
+} from "app/api/link_previews/route";
 
 export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
@@ -132,6 +136,7 @@ const BlockLinkInput = (props: BlockProps) => {
 
   let entity_set = useEntitySetContext();
   let [linkValue, setLinkValue] = useState("");
+  let [loading, setLoading] = useState(false);
   let { rep } = useReplicache();
   let submit = async () => {
     let entity = props.entityID;
@@ -149,21 +154,62 @@ const BlockLinkInput = (props: BlockProps) => {
     }
     let link = linkValue;
     if (!linkValue.startsWith("http")) link = `https://${linkValue}`;
-    // these mutations = simpler subset of addLinkBlock
     if (!rep) return;
-    await rep.mutate.assertFact({
-      entity: entity,
-      attribute: "block/type",
-      data: { type: "block-type-union", value: "embed" },
-    });
-    await rep?.mutate.assertFact({
-      entity: entity,
-      attribute: "embed/url",
-      data: {
-        type: "string",
-        value: link,
-      },
-    });
+
+    // Try to get embed URL from iframely, fallback to direct URL
+    setLoading(true);
+    try {
+      let res = await fetch("/api/link_previews", {
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+        body: JSON.stringify({ url: link, type: "meta" } as LinkPreviewBody),
+      });
+
+      let embedUrl = link;
+      let embedHeight = 360;
+
+      if (res.status === 200) {
+        let data = await (res.json() as LinkPreviewMetadataResult);
+        if (data.success && data.data.links?.player?.[0]) {
+          let embed = data.data.links.player[0];
+          embedUrl = embed.href;
+          embedHeight = embed.media?.height || 300;
+        }
+      }
+
+      await rep.mutate.assertFact([
+        {
+          entity: entity,
+          attribute: "embed/url",
+          data: {
+            type: "string",
+            value: embedUrl,
+          },
+        },
+        {
+          entity: entity,
+          attribute: "embed/height",
+          data: {
+            type: "number",
+            value: embedHeight,
+          },
+        },
+      ]);
+    } catch {
+      // On any error, fallback to using the URL directly
+      await rep.mutate.assertFact([
+        {
+          entity: entity,
+          attribute: "embed/url",
+          data: {
+            type: "string",
+            value: link,
+          },
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
   let smoker = useSmoker();
 
@@ -171,6 +217,7 @@ const BlockLinkInput = (props: BlockProps) => {
     <form
       onSubmit={(e) => {
         e.preventDefault();
+        if (loading) return;
         let rect = document
           .getElementById("embed-block-submit")
           ?.getBoundingClientRect();
@@ -212,9 +259,11 @@ const BlockLinkInput = (props: BlockProps) => {
         <button
           type="submit"
           id="embed-block-submit"
+          disabled={loading}
           className={`p-1 ${isSelected && !isLocked ? "text-accent-contrast" : "text-border"}`}
           onMouseDown={(e) => {
             e.preventDefault();
+            if (loading) return;
             if (!linkValue || linkValue === "") {
               smoker({
                 error: true,
@@ -234,7 +283,7 @@ const BlockLinkInput = (props: BlockProps) => {
             submit();
           }}
         >
-          <CheckTiny />
+          {loading ? <DotLoader /> : <CheckTiny />}
         </button>
       </div>
     </form>

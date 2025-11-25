@@ -101,6 +101,7 @@ export async function createPublication({
   await supabaseServerClient
     .from("custom_domains")
     .insert({ domain, confirmed: true, identity: null });
+
   await supabaseServerClient
     .from("publication_domains")
     .insert({ domain, publication: result.uri, identity: identity.atp_did });

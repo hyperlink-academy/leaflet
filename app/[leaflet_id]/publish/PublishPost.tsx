@@ -102,7 +102,7 @@ const PublishPostForm = (
   }
 
   return (
-    <div className="flex flex-col gap-4 w-[640px] max-w-full sm:px-4 px-3">
+    <div className="flex flex-col gap-4 w-[640px] max-w-full sm:px-4 px-3 text-primary">
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -173,7 +173,6 @@ const PublishPostForm = (
                     />
                   </div>
                   <div className="opaque-container overflow-hidden flex flex-col mt-4 w-full">
-                    {/* <div className="h-[260px] w-full bg-test" /> */}
                     <div className="flex flex-col p-2">
                       <div className="font-bold">{props.title}</div>
                       <div className="text-tertiary">{props.description}</div>

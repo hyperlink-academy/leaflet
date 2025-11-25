@@ -66,7 +66,6 @@ export const EditPubForm = (props: {
         if (!pubData) return;
         e.preventDefault();
         props.setLoadingAction(true);
-        console.log("step 1:update");
         let data = await updatePublication({
           uri: pubData.uri,
           name: nameValue,

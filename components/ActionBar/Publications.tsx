@@ -125,6 +125,7 @@ const PubListEmpty = () => {
         side="right"
         align="start"
         className="p-1! max-w-56"
+        asChild
         trigger={
           <ActionButton
             label="Publish"
