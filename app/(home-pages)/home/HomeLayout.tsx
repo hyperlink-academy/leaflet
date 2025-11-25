@@ -299,7 +299,7 @@ function useSearchedLeaflets(
     ({ token: leaflet, archived: archived }) => {
       let published = !!leaflet.leaflets_in_publications?.find((l) => l.doc);
       let drafts = !!leaflet.leaflets_in_publications?.length && !published;
-      let docs = !leaflet.leaflets_in_publications?.length;
+      let docs = !leaflet.leaflets_in_publications?.length && !archived;
       let templates = !!allTemplates.find((t) => t.id === leaflet.id);
       // If no filters are active, show all
       if (
@@ -314,9 +314,7 @@ function useSearchedLeaflets(
       return (
         (filter.drafts && drafts) ||
         (filter.published && published) ||
-        (filter.docs &&
-          docs &&
-          (archived === false || archived === null || archived || undefined)) ||
+        (filter.docs && docs) ||
         (filter.templates && templates) ||
         (filter.archived && archived)
       );
