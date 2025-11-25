@@ -1,7 +1,13 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "types": ["@cloudflare/workers-types"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "types": [
+      "@cloudflare/workers-types"
+    ],
     "baseUrl": ".",
     "allowJs": true,
     "skipLibCheck": true,
@@ -30,7 +36,10 @@
     "**/*.js",
     "**/*.ts",
     "**/*.tsx",
-    "**/*.mdx"
+    "**/*.mdx",
+    ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

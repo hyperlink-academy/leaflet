@@ -52,6 +52,7 @@ const AddToHomeButton = (props: {}) => {
             permission_token_on_homepage: [
               ...identity.permission_token_on_homepage,
               {
+                archived: null,
                 created_at: new Date().toISOString(),
                 permission_tokens: {
                   ...permission_token,

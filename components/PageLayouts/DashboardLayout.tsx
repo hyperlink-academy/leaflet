@@ -33,7 +33,7 @@ export type DashboardState = {
     drafts: boolean;
     published: boolean;
     docs: boolean;
-    templates: boolean;
+    archived: boolean;
   };
 };
 
@@ -45,7 +45,12 @@ type DashboardStore = {
 const defaultDashboardState: DashboardState = {
   display: undefined,
   sort: undefined,
-  filter: { drafts: false, published: false, docs: false, templates: false },
+  filter: {
+    drafts: false,
+    published: false,
+    docs: false,
+    archived: false,
+  },
 };
 
 export const useDashboardStore = create<DashboardStore>((set, get) => ({
@@ -255,7 +260,7 @@ export const HomeDashboardControls = (props: {
   hasBackgroundImage: boolean;
   defaultDisplay: Exclude<DashboardState["display"], undefined>;
   hasPubs: boolean;
-  hasTemplates: boolean;
+  hasArchived: boolean;
 }) => {
   let { display, sort } = useDashboardState();
   display = display || props.defaultDisplay;
@@ -276,13 +281,11 @@ export const HomeDashboardControls = (props: {
         <DisplayToggle setState={setState} display={display} />
         <Separator classname="h-4 min-h-4!" />
 
-        {props.hasPubs || props.hasTemplates ? (
+        {props.hasPubs ? (
           <>
-            {props.hasPubs}
-            {props.hasTemplates}
             <FilterOptions
               hasPubs={props.hasPubs}
-              hasTemplates={props.hasTemplates}
+              hasArchived={props.hasArchived}
             />
             <Separator classname="h-4 min-h-4!" />{" "}
           </>
@@ -369,7 +372,10 @@ function Tab(props: {
   );
 }
 
-const FilterOptions = (props: { hasPubs: boolean; hasTemplates: boolean }) => {
+const FilterOptions = (props: {
+  hasPubs: boolean;
+  hasArchived: boolean;
+}) => {
   let { filter } = useDashboardState();
   let setState = useSetDashboardState();
   let filterCount = Object.values(filter).filter(Boolean).length;
@@ -406,20 +412,18 @@ const FilterOptions = (props: { hasPubs: boolean; hasTemplates: boolean }) => {
         </>
       )}
 
-      {props.hasTemplates && (
-        <>
-          <Checkbox
-            small
-            checked={filter.templates}
-            onChange={(e) =>
-              setState({
-                filter: { ...filter, templates: !!e.target.checked },
-              })
-            }
-          >
-            Templates
-          </Checkbox>
-        </>
+      {props.hasArchived && (
+        <Checkbox
+          small
+          checked={filter.archived}
+          onChange={(e) =>
+            setState({
+              filter: { ...filter, archived: !!e.target.checked },
+            })
+          }
+        >
+          Archived
+        </Checkbox>
       )}
       <Checkbox
         small
@@ -441,7 +445,7 @@ const FilterOptions = (props: { hasPubs: boolean; hasTemplates: boolean }) => {
               docs: false,
               published: false,
               drafts: false,
-              templates: false,
+              archived: false,
             },
           });
         }}

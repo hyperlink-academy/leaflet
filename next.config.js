@@ -21,7 +21,7 @@ const nextConfig = {
       },
     ];
   },
-  serverExternalPackages: ["yjs"],
+  serverExternalPackages: ["yjs", "pino"],
   pageExtensions: ["js", "jsx", "ts", "tsx", "md", "mdx"],
   images: {
     loader: "custom",
@@ -31,8 +31,8 @@ const nextConfig = {
       { protocol: "https", hostname: "bdefzwcumgzjwllsnaej.supabase.co" },
     ],
   },
+  reactCompiler: true,
   experimental: {
-    reactCompiler: true,
     serverActions: {
       bodySizeLimit: "5mb",
     },
