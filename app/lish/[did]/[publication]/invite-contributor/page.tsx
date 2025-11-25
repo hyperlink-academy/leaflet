@@ -1,4 +1,3 @@
-import { BskyAgent } from "@atproto/api";
 import { AtUri } from "@atproto/syntax";
 import {
   PublicationThemeProvider,
@@ -7,10 +6,8 @@ import {
 import { PubLeafletPublication } from "lexicons/api";
 import { supabaseServerClient } from "supabase/serverClient";
 import { ButtonPrimary } from "components/Buttons";
-import { PubContributorEmptyIllo } from "../dashboard/publicationSettings/PublicationContributors";
 import { PubNotFound } from "../PubNotFound";
 import { PubIcon } from "components/ActionBar/Publications";
-import { PubListing } from "app/(home-pages)/discover/PubListing";
 import { SpeedyLink } from "components/SpeedyLink";
 import { BlueskyLogin } from "app/login/LoginForm";
 import { getIdentityData } from "actions/getIdentityData";

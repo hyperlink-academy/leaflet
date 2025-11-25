@@ -4,14 +4,22 @@ import { NewDraftSecondaryButton } from "./NewDraftButton";
 import React from "react";
 import { usePublicationData } from "./PublicationSWRProvider";
 import { LeafletList } from "app/(home-pages)/home/HomeLayout";
+import { useIdentityData } from "components/IdentityProvider";
 
 export function DraftList(props: {
   searchValue: string;
   showPageBackground: boolean;
+  isOwner: boolean;
 }) {
+  let identity = useIdentityData();
+  let userLeaflets = identity.identity?.permission_token_on_homepage
+    .flatMap((leaflet) => leaflet.permission_tokens.leaflets_in_publications)
+    .map((leaflet) => leaflet.doc);
+
   let { data: pub_data } = usePublicationData();
   if (!pub_data?.publication) return null;
   let { leaflets_in_publications, ...publication } = pub_data.publication;
+
   return (
     <div className="flex flex-col gap-4">
       <NewDraftSecondaryButton
@@ -25,7 +33,13 @@ export function DraftList(props: {
         defaultDisplay="list"
         cardBorderHidden={!props.showPageBackground}
         leaflets={leaflets_in_publications
-          .filter((l) => !l.documents)
+          .filter((l) => {
+            if (l.documents) return false;
+            if (!props.isOwner) {
+              return !!userLeaflets?.includes(l.doc);
+            }
+            return true;
+          })
           .map((l) => {
             return {
               token: {

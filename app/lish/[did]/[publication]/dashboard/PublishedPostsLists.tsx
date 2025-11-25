@@ -18,13 +18,15 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { useIdentityData } from "components/IdentityProvider";
 
 export function PublishedPostsList(props: {
   searchValue: string;
   showPageBackground: boolean;
+  isOwner: boolean;
 }) {
   let { data } = usePublicationData();
-  let params = useParams();
+  let identity = useIdentityData();
   let { publication } = data!;
   if (!publication) return null;
   if (publication.documents_in_publications.length === 0)
@@ -56,7 +58,7 @@ export function PublishedPostsList(props: {
           let record = doc.documents.data as PubLeafletDocument.Record;
           let quotes = doc.documents.document_mentions_in_bsky[0]?.count || 0;
           let comments = doc.documents.comments_on_documents[0]?.count || 0;
-
+          let isAuthor = record.author === identity.identity?.atp_did;
           return (
             <Fragment key={doc.documents?.uri}>
               <div className="flex gap-2 w-full ">
@@ -78,17 +80,18 @@ export function PublishedPostsList(props: {
                         {record.title}
                       </h3>
                     </a>
-                    <div className="flex justify-start align-top flex-row gap-1">
-                      {leaflet && (
+                    {leaflet && (isAuthor || props.isOwner) && (
+                      <div className="flex justify-start align-top flex-row gap-1">
                         <SpeedyLink
                           className="pt-[6px]"
                           href={`/${leaflet.leaflet}`}
                         >
                           <EditTiny />
                         </SpeedyLink>
-                      )}
-                      <Options document_uri={doc.documents.uri} />
-                    </div>
+
+                        <Options document_uri={doc.documents.uri} />
+                      </div>
+                    )}
                   </div>
 
                   {record.description ? (
@@ -237,9 +240,5 @@ function PublishedDate(props: { dateString: string }) {
     day: "2-digit",
   });
 
-  return (
-    <p className="text-sm text-tertiary">
-      Published {formattedDate}
-    </p>
-  );
+  return <p className="text-sm text-tertiary">Published {formattedDate}</p>;
 }

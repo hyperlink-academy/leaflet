@@ -14,6 +14,7 @@ import {
   PublicationDashboardControls,
 } from "components/PageLayouts/DashboardLayout";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
+import { getIdentityData } from "actions/getIdentityData";
 
 export default function PublicationDashboard({
   publication,
@@ -36,6 +37,8 @@ export default function PublicationDashboard({
     [searchValue],
   );
 
+  let isOwner = false;
+
   return (
     <DashboardLayout
       id={publication.uri}
@@ -47,6 +50,7 @@ export default function PublicationDashboard({
             <DraftList
               searchValue={debouncedSearchValue}
               showPageBackground={!!record.theme?.showPageBackground}
+              isOwner={isOwner}
             />
           ),
           controls: (
@@ -63,20 +67,25 @@ export default function PublicationDashboard({
             <PublishedPostsList
               searchValue={debouncedSearchValue}
               showPageBackground={!!record.theme?.showPageBackground}
+              isOwner={isOwner}
             />
           ),
           controls: null,
         },
-        Subscribers: {
-          content: (
-            <PublicationSubscribers
-              showPageBackground={!!record.theme?.showPageBackground}
-            />
-          ),
-          controls: null,
-        },
+        ...(isOwner
+          ? {
+              Subscribers: {
+                content: (
+                  <PublicationSubscribers
+                    showPageBackground={!!record.theme?.showPageBackground}
+                  />
+                ),
+                controls: null,
+              },
+            }
+          : {}),
       }}
-      actions={<Actions publication={publication.uri} />}
+      actions={<Actions publication={publication.uri} isOwner={isOwner} />}
       currentPage="pub"
       publication={publication.uri}
     />

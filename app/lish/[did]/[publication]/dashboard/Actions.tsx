@@ -12,12 +12,14 @@ import { useSmoker } from "components/Toast";
 import { useIsMobile } from "src/hooks/isMobile";
 import { SpeedyLink } from "components/SpeedyLink";
 
-export const Actions = (props: { publication: string }) => {
+export const Actions = (props: { publication: string; isOwner: boolean }) => {
   return (
     <>
       <NewDraftActionButton publication={props.publication} />
       <PublicationShareButton />
-      <PublicationSettingsButton publication={props.publication} />
+      {props.isOwner && (
+        <PublicationSettingsButton publication={props.publication} />
+      )}
     </>
   );
 };
