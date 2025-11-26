@@ -23,8 +23,10 @@ export async function getPostPageData(uri: string) {
   // Fetch constellation backlinks for mentions
   const pubRecord = document.documents_in_publications[0]?.publications
     ?.record as PubLeafletPublication.Record;
-  const rkey = new AtUri(uri).rkey;
-  const postUrl = `https://${pubRecord?.base_path}/${rkey}`;
+  let aturi = new AtUri(uri);
+  const postUrl = pubRecord
+    ? `https://${pubRecord?.base_path}/${aturi.rkey}`
+    : `https://leaflet.pub/p/${aturi.host}/${aturi.rkey}`;
   const constellationBacklinks = await getConstellationBacklinks(postUrl);
 
   // Deduplicate constellation backlinks (same post could appear in both links and embeds)
