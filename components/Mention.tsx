@@ -133,7 +133,6 @@ export function MentionAutocomplete(props: {
 
   if (!mentionCoords || suggestions.length === 0) return null;
 
-
   const getHeader = (type: Mention["type"]) => {
     switch (type) {
       case "did":
@@ -277,16 +276,20 @@ const ScopeButton = (props: {
   children: React.ReactNode;
 }) => {
   return (
-    <button
-      className="flex flex-row shrink-0 text-xs font-normal text-tertiary hover:text-accent-contrast"
+    <span
+      className="flex flex-row shrink-0 text-xs font-normal text-tertiary hover:text-accent-contrast cursor-pointer"
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
         props.onClick();
       }}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
     >
       {props.children} <ArrowRightTiny className="scale-80" />
-    </button>
+    </span>
   );
 };
 
