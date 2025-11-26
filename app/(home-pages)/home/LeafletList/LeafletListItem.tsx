@@ -1,27 +1,22 @@
 "use client";
-import { PermissionToken } from "src/replicache";
 import { LeafletListPreview, LeafletGridPreview } from "./LeafletPreview";
 import { LeafletInfo } from "./LeafletInfo";
 import { useState, useRef, useEffect } from "react";
 import { SpeedyLink } from "components/SpeedyLink";
+import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
 
 export const LeafletListItem = (props: {
-  token: PermissionToken;
   archived?: boolean | null;
-  leaflet_id: string;
   loggedIn: boolean;
   display: "list" | "grid";
   cardBorderHidden: boolean;
   added_at: string;
   title?: string;
-  draftInPublication?: string;
-  published?: boolean;
-  publishedAt?: string;
-  document_uri?: string;
   index: number;
   isHidden: boolean;
   showPreview?: boolean;
 }) => {
+  const pubStatus = useLeafletPublicationStatus();
   let [isOnScreen, setIsOnScreen] = useState(props.index < 16 ? true : false);
   let previewRef = useRef<HTMLDivElement | null>(null);
 
@@ -43,6 +38,8 @@ export const LeafletListItem = (props: {
     return () => observer.disconnect();
   }, [previewRef]);
 
+  const tokenId = pubStatus?.shareLink ?? "";
+
   if (props.display === "list")
     return (
       <>
@@ -58,13 +55,17 @@ export const LeafletListItem = (props: {
           }}
         >
           <SpeedyLink
-            href={`/${props.token.id}`}
+            href={`/${tokenId}`}
             className={`absolute w-full h-full top-0 left-0 no-underline hover:no-underline! text-primary`}
           />
-          {props.showPreview && (
-            <LeafletListPreview isVisible={isOnScreen} {...props} />
-          )}
-          <LeafletInfo {...props} />
+          {props.showPreview && <LeafletListPreview isVisible={isOnScreen} />}
+          <LeafletInfo
+            title={props.title}
+            display={props.display}
+            added_at={props.added_at}
+            archived={props.archived}
+            loggedIn={props.loggedIn}
+          />
         </div>
         {props.cardBorderHidden && (
           <hr
@@ -92,15 +93,19 @@ export const LeafletListItem = (props: {
       }}
     >
       <SpeedyLink
-        href={`/${props.token.id}`}
+        href={`/${tokenId}`}
         className={`absolute w-full h-full top-0 left-0 no-underline hover:no-underline! text-primary`}
       />
       <div className="grow">
-        <LeafletGridPreview {...props} isVisible={isOnScreen} />
+        <LeafletGridPreview isVisible={isOnScreen} />
       </div>
       <LeafletInfo
         className="px-1 pb-0.5 shrink-0"
-        {...props}
+        title={props.title}
+        display={props.display}
+        added_at={props.added_at}
+        archived={props.archived}
+        loggedIn={props.loggedIn}
       />
     </div>
   );

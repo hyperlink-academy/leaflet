@@ -3,39 +3,58 @@ import {
   ThemeBackgroundProvider,
   ThemeProvider,
 } from "components/ThemeManager/ThemeProvider";
-import {
-  PermissionToken,
-  useEntity,
-  useReferenceToEntity,
-} from "src/replicache";
+import { useEntity, useReferenceToEntity } from "src/replicache";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { LeafletContent } from "./LeafletContent";
 import { Tooltip } from "components/Tooltip";
+import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
+import { CSSProperties } from "react";
 
-export const LeafletListPreview = (props: {
-  draft?: boolean;
-  published?: boolean;
-  isVisible: boolean;
-  token: PermissionToken;
-  leaflet_id: string;
-  loggedIn: boolean;
-}) => {
-  let root =
-    useReferenceToEntity("root/page", props.leaflet_id)[0]?.entity ||
-    props.leaflet_id;
-  let firstPage = useEntity(root, "root/page")[0];
-  let page = firstPage?.data.value || root;
+function useLeafletPreviewData() {
+  const pubStatus = useLeafletPublicationStatus();
+  const leafletId = pubStatus?.leafletId ?? "";
+  const root =
+    useReferenceToEntity("root/page", leafletId)[0]?.entity || leafletId;
+  const firstPage = useEntity(root, "root/page")[0];
+  const page = firstPage?.data.value || root;
 
-  let cardBorderHidden = useCardBorderHidden(root);
-  let rootBackgroundImage = useEntity(root, "theme/card-background-image");
-  let rootBackgroundRepeat = useEntity(
+  const cardBorderHidden = useCardBorderHidden(root);
+  const rootBackgroundImage = useEntity(root, "theme/card-background-image");
+  const rootBackgroundRepeat = useEntity(
     root,
     "theme/card-background-image-repeat",
   );
-  let rootBackgroundOpacity = useEntity(
+  const rootBackgroundOpacity = useEntity(
     root,
     "theme/card-background-image-opacity",
   );
+
+  const contentWrapperStyle: CSSProperties = cardBorderHidden
+    ? {}
+    : {
+        backgroundImage: rootBackgroundImage
+          ? `url(${rootBackgroundImage.data.src}), url(${rootBackgroundImage.data.fallback})`
+          : undefined,
+        backgroundRepeat: rootBackgroundRepeat ? "repeat" : "no-repeat",
+        backgroundPosition: "center",
+        backgroundSize: !rootBackgroundRepeat
+          ? "cover"
+          : rootBackgroundRepeat?.data.value / 3,
+        opacity:
+          rootBackgroundImage?.data.src && rootBackgroundOpacity
+            ? rootBackgroundOpacity.data.value
+            : 1,
+        backgroundColor: "rgba(var(--bg-page), var(--bg-page-alpha))",
+      };
+
+  const contentWrapperClass = `leafletContentWrapper h-full sm:w-48 w-40 mx-auto overflow-clip ${!cardBorderHidden && "border border-border-light border-b-0 rounded-t-md"}`;
+
+  return { root, page, cardBorderHidden, contentWrapperStyle, contentWrapperClass };
+}
+
+export const LeafletListPreview = (props: { isVisible: boolean }) => {
+  const { root, page, cardBorderHidden, contentWrapperStyle, contentWrapperClass } =
+    useLeafletPreviewData();
 
   return (
     <Tooltip
@@ -73,31 +92,7 @@ export const LeafletListPreview = (props: {
       <ThemeProvider local entityID={root} className="rounded-sm">
         <ThemeBackgroundProvider entityID={root}>
           <div className="leafletPreview grow shrink-0 h-44 w-64 px-2 pt-2 sm:px-3 sm:pt-3 flex items-end pointer-events-none rounded-[2px] ">
-            <div
-              className={`leafletContentWrapper h-full sm:w-48 w-40 mx-auto overflow-clip ${!cardBorderHidden && "border border-border-light border-b-0 rounded-t-md"}`}
-              style={
-                cardBorderHidden
-                  ? {}
-                  : {
-                      backgroundImage: rootBackgroundImage
-                        ? `url(${rootBackgroundImage.data.src}), url(${rootBackgroundImage.data.fallback})`
-                        : undefined,
-                      backgroundRepeat: rootBackgroundRepeat
-                        ? "repeat"
-                        : "no-repeat",
-                      backgroundPosition: "center",
-                      backgroundSize: !rootBackgroundRepeat
-                        ? "cover"
-                        : rootBackgroundRepeat?.data.value / 3,
-                      opacity:
-                        rootBackgroundImage?.data.src && rootBackgroundOpacity
-                          ? rootBackgroundOpacity.data.value
-                          : 1,
-                      backgroundColor:
-                        "rgba(var(--bg-page), var(--bg-page-alpha))",
-                    }
-              }
-            >
+            <div className={contentWrapperClass} style={contentWrapperStyle}>
               <LeafletContent entityID={page} isOnScreen={props.isVisible} />
             </div>
           </div>
@@ -107,30 +102,10 @@ export const LeafletListPreview = (props: {
   );
 };
 
-export const LeafletGridPreview = (props: {
-  draft?: boolean;
-  published?: boolean;
-  token: PermissionToken;
-  leaflet_id: string;
-  loggedIn: boolean;
-  isVisible: boolean;
-}) => {
-  let root =
-    useReferenceToEntity("root/page", props.leaflet_id)[0]?.entity ||
-    props.leaflet_id;
-  let firstPage = useEntity(root, "root/page")[0];
-  let page = firstPage?.data.value || root;
+export const LeafletGridPreview = (props: { isVisible: boolean }) => {
+  const { root, page, contentWrapperStyle, contentWrapperClass } =
+    useLeafletPreviewData();
 
-  let cardBorderHidden = useCardBorderHidden(root);
-  let rootBackgroundImage = useEntity(root, "theme/card-background-image");
-  let rootBackgroundRepeat = useEntity(
-    root,
-    "theme/card-background-image-repeat",
-  );
-  let rootBackgroundOpacity = useEntity(
-    root,
-    "theme/card-background-image-opacity",
-  );
   return (
     <ThemeProvider local entityID={root} className="w-full!">
       <div className="border border-border-light rounded-md w-full h-full overflow-hidden ">
@@ -140,31 +115,7 @@ export const LeafletGridPreview = (props: {
               inert
               className="leafletPreview grow shrink-0 h-full w-full px-2 pt-2 sm:px-3 sm:pt-3 flex items-end pointer-events-none"
             >
-              <div
-                className={`leafletContentWrapper h-full sm:w-48 w-40 mx-auto overflow-clip ${!cardBorderHidden && "border border-border-light border-b-0 rounded-t-md"}`}
-                style={
-                  cardBorderHidden
-                    ? {}
-                    : {
-                        backgroundImage: rootBackgroundImage
-                          ? `url(${rootBackgroundImage.data.src}), url(${rootBackgroundImage.data.fallback})`
-                          : undefined,
-                        backgroundRepeat: rootBackgroundRepeat
-                          ? "repeat"
-                          : "no-repeat",
-                        backgroundPosition: "center",
-                        backgroundSize: !rootBackgroundRepeat
-                          ? "cover"
-                          : rootBackgroundRepeat?.data.value / 3,
-                        opacity:
-                          rootBackgroundImage?.data.src && rootBackgroundOpacity
-                            ? rootBackgroundOpacity.data.value
-                            : 1,
-                        backgroundColor:
-                          "rgba(var(--bg-page), var(--bg-page-alpha))",
-                      }
-                }
-              >
+              <div className={contentWrapperClass} style={contentWrapperStyle}>
                 <LeafletContent entityID={page} isOnScreen={props.isVisible} />
               </div>
             </div>

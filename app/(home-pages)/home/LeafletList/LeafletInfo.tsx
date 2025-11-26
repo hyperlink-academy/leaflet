@@ -1,31 +1,27 @@
 "use client";
-import { PermissionToken, useEntity } from "src/replicache";
+import { useEntity } from "src/replicache";
 import { LeafletOptions } from "./LeafletOptions";
-import { useState } from "react";
 import { timeAgo } from "src/utils/timeAgo";
 import { usePageTitle } from "components/utils/UpdateLeafletTitle";
+import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
 
 export const LeafletInfo = (props: {
   title?: string;
-  draftInPublication?: string;
-  published?: boolean;
-  token: PermissionToken;
-  leaflet_id: string;
-  loggedIn: boolean;
   className?: string;
   display: "grid" | "list";
   added_at: string;
-  publishedAt?: string;
-  document_uri?: string;
   archived?: boolean | null;
+  loggedIn: boolean;
 }) => {
-  let [prefetch, setPrefetch] = useState(false);
+  const pubStatus = useLeafletPublicationStatus();
   let prettyCreatedAt = props.added_at ? timeAgo(props.added_at) : "";
-  let prettyPublishedAt = props.publishedAt ? timeAgo(props.publishedAt) : "";
+  let prettyPublishedAt = pubStatus?.publishedAt
+    ? timeAgo(pubStatus.publishedAt)
+    : "";
 
   // Look up root page first, like UpdateLeafletTitle does
-  let firstPage = useEntity(props.leaflet_id, "root/page")[0];
-  let entityID = firstPage?.data.value || props.leaflet_id;
+  let firstPage = useEntity(pubStatus?.leafletId ?? "", "root/page")[0];
+  let entityID = firstPage?.data.value || pubStatus?.leafletId || "";
   let titleFromDb = usePageTitle(entityID);
 
   let title = props.title ?? titleFromDb ?? "Untitled";
@@ -39,24 +35,17 @@ export const LeafletInfo = (props: {
           {title}
         </h3>
         <div className="flex gap-1 shrink-0">
-          <LeafletOptions
-            leaflet={props.token}
-            draftInPublication={props.draftInPublication}
-            document_uri={props.document_uri}
-            shareLink={`${props.token.id}`}
-            archived={props.archived}
-            loggedIn={props.loggedIn}
-          />
+          <LeafletOptions archived={props.archived} loggedIn={props.loggedIn} />
         </div>
       </div>
       <div className="flex gap-2 items-center">
         {props.archived ? (
           <div className="text-xs text-tertiary truncate">Archived</div>
-        ) : props.draftInPublication || props.published ? (
+        ) : pubStatus?.draftInPublication || pubStatus?.isPublished ? (
           <div
-            className={`text-xs w-max grow truncate ${props.published ? "font-bold text-tertiary" : "text-tertiary"}`}
+            className={`text-xs w-max grow truncate ${pubStatus?.isPublished ? "font-bold text-tertiary" : "text-tertiary"}`}
           >
-            {props.published
+            {pubStatus?.isPublished
               ? `Published ${prettyPublishedAt}`
               : `Draft ${prettyCreatedAt}`}
           </div>

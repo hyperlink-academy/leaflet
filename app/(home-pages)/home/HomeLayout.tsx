@@ -235,25 +235,6 @@ export function LeafletList(props: {
             <LeafletListItem
               title={props?.titles?.[leaflet.root_entity]}
               archived={archived}
-              token={leaflet}
-              draftInPublication={
-                leaflet.leaflets_in_publications?.[0]?.publication
-              }
-              published={
-                !!leaflet.leaflets_in_publications?.find((l) => l.doc) ||
-                !!leaflet.leaflets_to_documents?.find((l) => !!l.documents)
-              }
-              publishedAt={
-                leaflet.leaflets_in_publications?.find((l) => l.doc)?.documents
-                  ?.indexed_at ||
-                leaflet.leaflets_to_documents?.find((l) => !!l.documents)
-                  ?.documents?.indexed_at
-              }
-              document_uri={
-                leaflet.leaflets_in_publications?.find((l) => l.doc)?.documents
-                  ?.uri
-              }
-              leaflet_id={leaflet.root_entity}
               loggedIn={!!identity}
               display={display}
               added_at={added_at}

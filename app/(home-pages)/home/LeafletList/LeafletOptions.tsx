@@ -21,7 +21,6 @@ import { ShareSmall } from "components/Icons/ShareSmall";
 import { HideSmall } from "components/Icons/HideSmall";
 import { hideDoc } from "../storage";
 
-import { PermissionToken } from "src/replicache";
 import {
   useIdentityData,
   mutateIdentityData,
@@ -31,20 +30,18 @@ import {
   mutatePublicationData,
 } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { ShareButton } from "app/[leaflet_id]/actions/ShareOptions";
+import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
 
 export const LeafletOptions = (props: {
-  leaflet: PermissionToken;
-  draftInPublication?: string;
-  document_uri?: string;
-  shareLink: string;
   archived?: boolean | null;
   loggedIn?: boolean;
 }) => {
+  const pubStatus = useLeafletPublicationStatus();
   let [state, setState] = useState<"normal" | "areYouSure">("normal");
   let [open, setOpen] = useState(false);
   let { identity } = useIdentityData();
   let isPublicationOwner =
-    !!identity?.atp_did && !!props.document_uri?.includes(identity.atp_did);
+    !!identity?.atp_did && !!pubStatus?.documentUri?.includes(identity.atp_did);
   return (
     <>
       <Menu
@@ -68,27 +65,14 @@ export const LeafletOptions = (props: {
       >
         {state === "normal" ? (
           !props.loggedIn ? (
-            <LoggedOutOptions
-              leaflet={props.leaflet}
-              setState={setState}
-              shareLink={props.shareLink}
-            />
-          ) : props.document_uri && isPublicationOwner ? (
-            <PublishedPostOptions
-              setState={setState}
-              document_uri={props.document_uri}
-              {...props}
-            />
+            <LoggedOutOptions setState={setState} />
+          ) : pubStatus?.documentUri && isPublicationOwner ? (
+            <PublishedPostOptions setState={setState} />
           ) : (
-            <DefaultOptions setState={setState} {...props} />
+            <DefaultOptions setState={setState} archived={props.archived} />
           )
         ) : state === "areYouSure" ? (
-          <DeleteAreYouSureForm
-            backToMenu={() => setState("normal")}
-            leaflet={props.leaflet}
-            document_uri={props.document_uri}
-            draft={!!props.draftInPublication}
-          />
+          <DeleteAreYouSureForm backToMenu={() => setState("normal")} />
         ) : null}
       </Menu>
     </>
@@ -97,72 +81,36 @@ export const LeafletOptions = (props: {
 
 const DefaultOptions = (props: {
   setState: (s: "areYouSure") => void;
-  draftInPublication?: string;
-  leaflet: PermissionToken;
-  shareLink: string;
   archived?: boolean | null;
 }) => {
-  let toaster = useToaster();
-  let { mutate: mutatePub } = usePublicationData();
-  let { mutate: mutateIdentity } = useIdentityData();
+  const pubStatus = useLeafletPublicationStatus();
+  const toaster = useToaster();
+  const { setArchived } = useArchiveMutations();
+  const tokenId = pubStatus?.token.id;
+  const itemType = pubStatus?.draftInPublication ? "Draft" : "Leaflet";
+
   return (
     <>
-      <ShareButton
-        text={
-          <div className="flex gap-2">
-            <ShareSmall />
-            Copy Edit Link
-          </div>
-        }
-        subtext=""
-        smokerText="Link copied!"
-        id="get-link"
-        link={props.shareLink}
-      />
+      <EditLinkShareButton link={pubStatus?.shareLink ?? ""} />
       <hr className="border-border-light" />
       <MenuItem
         onSelect={async () => {
+          if (!tokenId) return;
+          setArchived(tokenId, !props.archived);
+
           if (!props.archived) {
-            mutateIdentityData(mutateIdentity, (data) => {
-              let item = data.permission_token_on_homepage.find(
-                (p) => p.permission_tokens?.id === props.leaflet.id,
-              );
-              if (item) item.archived = true;
-            });
-            mutatePublicationData(mutatePub, (data) => {
-              let item = data.publication?.leaflets_in_publications.find(
-                (l) => l.permission_tokens?.id === props.leaflet.id,
-              );
-              if (item) item.archived = true;
-            });
-            await archivePost(props.leaflet.id);
+            await archivePost(tokenId);
             toaster({
               content: (
                 <div className="font-bold flex gap-2">
-                  Archived{props.draftInPublication ? " Draft" : " Leaflet"}!
+                  Archived {itemType}!
                   <ButtonTertiary
                     className="underline text-accent-2!"
                     onClick={async () => {
-                      mutateIdentityData(mutateIdentity, (data) => {
-                        let item = data.permission_token_on_homepage.find(
-                          (p) => p.permission_tokens?.id === props.leaflet.id,
-                        );
-                        if (item) item.archived = false;
-                      });
-                      mutatePublicationData(mutatePub, (data) => {
-                        let item =
-                          data.publication?.leaflets_in_publications.find(
-                            (l) => l.permission_tokens?.id === props.leaflet.id,
-                          );
-                        if (item) item.archived = false;
-                      });
-                      await unarchivePost(props.leaflet.id);
+                      setArchived(tokenId, false);
+                      await unarchivePost(tokenId);
                       toaster({
-                        content: (
-                          <div className="font-bold flex gap-2">
-                            Unarchived!
-                          </div>
-                        ),
+                        content: <div className="font-bold">Unarchived!</div>,
                         type: "success",
                       });
                     }}
@@ -174,19 +122,7 @@ const DefaultOptions = (props: {
               type: "success",
             });
           } else {
-            mutateIdentityData(mutateIdentity, (data) => {
-              let item = data.permission_token_on_homepage.find(
-                (p) => p.permission_tokens?.id === props.leaflet.id,
-              );
-              if (item) item.archived = false;
-            });
-            mutatePublicationData(mutatePub, (data) => {
-              let item = data.publication?.leaflets_in_publications.find(
-                (l) => l.permission_tokens?.id === props.leaflet.id,
-              );
-              if (item) item.archived = false;
-            });
-            await unarchivePost(props.leaflet.id);
+            await unarchivePost(tokenId);
             toaster({
               content: <div className="font-bold">Unarchived!</div>,
               type: "success",
@@ -195,46 +131,29 @@ const DefaultOptions = (props: {
         }}
       >
         <ArchiveSmall />
-        {!props.archived ? " Archive" : "Unarchive"}
-        {props.draftInPublication ? " Draft" : " Leaflet"}
+        {!props.archived ? " Archive" : "Unarchive"} {itemType}
       </MenuItem>
-      <MenuItem
+      <DeleteForeverMenuItem
         onSelect={(e) => {
           e.preventDefault();
           props.setState("areYouSure");
         }}
-      >
-        <DeleteSmall />
-        Delete Forever
-      </MenuItem>
+      />
     </>
   );
 };
 
-const LoggedOutOptions = (props: {
-  leaflet: PermissionToken;
-  setState: (s: "areYouSure") => void;
-  shareLink: string;
-}) => {
-  let toaster = useToaster();
+const LoggedOutOptions = (props: { setState: (s: "areYouSure") => void }) => {
+  const pubStatus = useLeafletPublicationStatus();
+  const toaster = useToaster();
+
   return (
     <>
-      <ShareButton
-        text={
-          <div className="flex gap-2">
-            <ShareSmall />
-            Copy Edit Link
-          </div>
-        }
-        subtext=""
-        smokerText="Link copied!"
-        id="get-link"
-        link={`/${props.shareLink}`}
-      />
+      <EditLinkShareButton link={`/${pubStatus?.shareLink ?? ""}`} />
       <hr className="border-border-light" />
       <MenuItem
         onSelect={() => {
-          hideDoc(props.leaflet);
+          if (pubStatus?.token) hideDoc(pubStatus.token);
           toaster({
             content: <div className="font-bold">Removed from Home!</div>,
             type: "success",
@@ -244,26 +163,24 @@ const LoggedOutOptions = (props: {
         <HideSmall />
         Remove from Home
       </MenuItem>
-      <MenuItem
+      <DeleteForeverMenuItem
         onSelect={(e) => {
           e.preventDefault();
           props.setState("areYouSure");
         }}
-      >
-        <DeleteSmall />
-        Delete Forever
-      </MenuItem>
+      />
     </>
   );
 };
 
 const PublishedPostOptions = (props: {
   setState: (s: "areYouSure") => void;
-  document_uri: string;
-  leaflet: PermissionToken;
-  shareLink: string;
 }) => {
-  let toaster = useToaster();
+  const pubStatus = useLeafletPublicationStatus();
+  const toaster = useToaster();
+  const postLink = pubStatus?.postShareLink ?? "";
+  const isFullUrl = postLink.includes("http");
+
   return (
     <>
       <ShareButton
@@ -275,15 +192,14 @@ const PublishedPostOptions = (props: {
         }
         smokerText="Link copied!"
         id="get-link"
-        link=""
-        fullLink={props.shareLink}
+        link={postLink}
+        fullLink={isFullUrl ? postLink : undefined}
       />
-
       <hr className="border-border-light" />
       <MenuItem
         onSelect={async () => {
-          if (props.document_uri) {
-            await unpublishPost(props.document_uri);
+          if (pubStatus?.documentUri) {
+            await unpublishPost(pubStatus.documentUri);
           }
           toaster({
             content: <div className="font-bold">Unpublished Post!</div>,
@@ -299,33 +215,28 @@ const PublishedPostOptions = (props: {
           </div>
         </div>
       </MenuItem>
-      <MenuItem
+      <DeleteForeverMenuItem
         onSelect={(e) => {
           e.preventDefault();
           props.setState("areYouSure");
         }}
-      >
-        <DeleteSmall />
-        <div className="flex flex-col">
-          Delete Post
-          <div className="text-tertiary text-sm font-normal!">
-            Unpublish AND delete
-          </div>
-        </div>
-      </MenuItem>
+        subtext="Post"
+      />
     </>
   );
 };
 
-const DeleteAreYouSureForm = (props: {
-  backToMenu: () => void;
-  document_uri?: string;
-  leaflet: PermissionToken;
-  draft?: boolean;
-}) => {
-  let toaster = useToaster();
-  let { mutate: mutatePub } = usePublicationData();
-  let { mutate: mutateIdentity } = useIdentityData();
+const DeleteAreYouSureForm = (props: { backToMenu: () => void }) => {
+  const pubStatus = useLeafletPublicationStatus();
+  const toaster = useToaster();
+  const { removeFromLists } = useArchiveMutations();
+  const tokenId = pubStatus?.token.id;
+
+  const itemType = pubStatus?.documentUri
+    ? "Post"
+    : pubStatus?.draftInPublication
+      ? "Draft"
+      : "Leaflet";
 
   return (
     <div className="flex flex-col justify-center p-2 text-center">
@@ -339,35 +250,14 @@ const DeleteAreYouSureForm = (props: {
         </ButtonTertiary>
         <ButtonPrimary
           onClick={async () => {
-            mutateIdentityData(mutateIdentity, (data) => {
-              data.permission_token_on_homepage =
-                data.permission_token_on_homepage.filter(
-                  (p) => p.permission_tokens?.id !== props.leaflet.id,
-                );
-            });
-            mutatePublicationData(mutatePub, (data) => {
-              if (!data.publication) return;
-              data.publication.leaflets_in_publications =
-                data.publication.leaflets_in_publications.filter(
-                  (l) => l.permission_tokens?.id !== props.leaflet.id,
-                );
-            });
-            if (props.document_uri) {
-              await deletePost(props.document_uri);
+            if (tokenId) removeFromLists(tokenId);
+            if (pubStatus?.documentUri) {
+              await deletePost(pubStatus.documentUri);
             }
-            deleteLeaflet(props.leaflet);
+            if (pubStatus?.token) deleteLeaflet(pubStatus.token);
 
             toaster({
-              content: (
-                <div className="font-bold">
-                  Deleted{" "}
-                  {props.document_uri
-                    ? "Post!"
-                    : props.draft
-                      ? "Draft"
-                      : "Leaflet!"}
-                </div>
-              ),
+              content: <div className="font-bold">Deleted {itemType}!</div>,
               type: "success",
             });
           }}
@@ -378,3 +268,76 @@ const DeleteAreYouSureForm = (props: {
     </div>
   );
 };
+
+// Shared menu items
+const EditLinkShareButton = (props: { link: string }) => (
+  <ShareButton
+    text={
+      <div className="flex gap-2">
+        <ShareSmall />
+        Copy Edit Link
+      </div>
+    }
+    subtext=""
+    smokerText="Link copied!"
+    id="get-link"
+    link={props.link}
+  />
+);
+
+const DeleteForeverMenuItem = (props: {
+  onSelect: (e: Event) => void;
+  subtext?: string;
+}) => (
+  <MenuItem onSelect={props.onSelect}>
+    <DeleteSmall />
+    {props.subtext ? (
+      <div className="flex flex-col">
+        Delete {props.subtext}
+        <div className="text-tertiary text-sm font-normal!">
+          Unpublish AND delete
+        </div>
+      </div>
+    ) : (
+      "Delete Forever"
+    )}
+  </MenuItem>
+);
+
+// Helper to update archived state in both identity and publication data
+function useArchiveMutations() {
+  const { mutate: mutatePub } = usePublicationData();
+  const { mutate: mutateIdentity } = useIdentityData();
+
+  return {
+    setArchived: (tokenId: string, archived: boolean) => {
+      mutateIdentityData(mutateIdentity, (data) => {
+        const item = data.permission_token_on_homepage.find(
+          (p) => p.permission_tokens?.id === tokenId,
+        );
+        if (item) item.archived = archived;
+      });
+      mutatePublicationData(mutatePub, (data) => {
+        const item = data.publication?.leaflets_in_publications.find(
+          (l) => l.permission_tokens?.id === tokenId,
+        );
+        if (item) item.archived = archived;
+      });
+    },
+    removeFromLists: (tokenId: string) => {
+      mutateIdentityData(mutateIdentity, (data) => {
+        data.permission_token_on_homepage =
+          data.permission_token_on_homepage.filter(
+            (p) => p.permission_tokens?.id !== tokenId,
+          );
+      });
+      mutatePublicationData(mutatePub, (data) => {
+        if (!data.publication) return;
+        data.publication.leaflets_in_publications =
+          data.publication.leaflets_in_publications.filter(
+            (l) => l.permission_tokens?.id !== tokenId,
+          );
+      });
+    },
+  };
+}

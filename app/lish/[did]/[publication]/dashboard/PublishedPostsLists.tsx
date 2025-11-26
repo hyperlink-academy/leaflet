@@ -19,6 +19,7 @@ import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { LeafletOptions } from "app/(home-pages)/home/LeafletList/LeafletOptions";
+import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 
 export function PublishedPostsList(props: {
   searchValue: string;
@@ -84,7 +85,7 @@ export function PublishedPostsList(props: {
                       </h3>
                     </a>
                     <div className="flex justify-start align-top flex-row gap-1">
-                      {leaflet && (
+                      {leaflet && leaflet.permission_tokens && (
                         <>
                           <SpeedyLink
                             className="pt-[6px]"
@@ -93,12 +94,29 @@ export function PublishedPostsList(props: {
                             <EditTiny />
                           </SpeedyLink>
 
-                          <LeafletOptions
-                            leaflet={leaflet?.permission_tokens!}
-                            document_uri={doc.documents.uri}
-                            shareLink={postLink}
-                            loggedIn={true}
-                          />
+                          <StaticLeafletDataContext
+                            value={{
+                              ...leaflet.permission_tokens,
+                              leaflets_in_publications: [
+                                {
+                                  ...leaflet,
+                                  publications: publication,
+                                  documents: doc.documents
+                                    ? {
+                                        uri: doc.documents.uri,
+                                        indexed_at: doc.documents.indexed_at,
+                                        data: doc.documents.data,
+                                      }
+                                    : null,
+                                },
+                              ],
+                              leaflets_to_documents: [],
+                              blocked_by_admin: null,
+                              custom_domain_routes: [],
+                            }}
+                          >
+                            <LeafletOptions loggedIn={true} />
+                          </StaticLeafletDataContext>
                         </>
                       )}
                     </div>
