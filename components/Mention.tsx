@@ -133,7 +133,15 @@ export function MentionAutocomplete(props: {
 
   if (!mentionCoords || suggestions.length === 0) return null;
 
-  const headerStyle = "text-xs text-tertiary font-bold pt-1 px-2";
+
+  const getHeader = (type: Mention["type"]) => {
+    switch (type) {
+      case "did":
+        return "People";
+      case "publication":
+        return "Publications";
+    }
+  };
 
   const sortedSuggestions = [...suggestions].sort((a, b) => {
     const order: Mention["type"][] = ["did", "publication"];
@@ -180,26 +188,47 @@ export function MentionAutocomplete(props: {
               return (
                 <>
                   {showHeader && (
-                    <Fragment key={`header-publications`}>
-                      <hr className="border-border-light mx-1 my-1" />
-                      <div className={headerStyle}>Publications</div>
-                    </Fragment>
+                    <>
+                      {index > 0 && (
+                        <hr className="border-border-light mx-1 my-1" />
+                      )}
+                      <div className="text-xs text-tertiary font-bold pt-1 px-2">
+                        {getHeader(result.type)}
+                      </div>
+                    </>
                   )}
-                  <Result
-                    key={key}
-                    onClick={() => {
-                      if (mentionRange) {
-                        props.onSelect(result, mentionRange);
-                        setMentionQuery(null);
-                        setMentionRange(null);
-                        setMentionCoords(null);
-                      }
-                    }}
-                    onMouseDown={(e) => e.preventDefault()}
-                    result={resultText}
-                    subtext={subtext}
-                    selected={index === suggestionIndex}
-                  />
+                  {result.type === "did" ? (
+                    <DidResult
+                      key={result.did}
+                      onClick={() => {
+                        if (mentionRange) {
+                          props.onSelect(result, mentionRange);
+                          setMentionQuery(null);
+                          setMentionRange(null);
+                          setMentionCoords(null);
+                        }
+                      }}
+                      onMouseDown={(e) => e.preventDefault()}
+                      displayName={result.displayName}
+                      handle={result.handle}
+                      selected={index === suggestionIndex}
+                    />
+                  ) : (
+                    <PublicationResult
+                      key={result.uri}
+                      onClick={() => {
+                        if (mentionRange) {
+                          props.onSelect(result, mentionRange);
+                          setMentionQuery(null);
+                          setMentionRange(null);
+                          setMentionCoords(null);
+                        }
+                      }}
+                      onMouseDown={(e) => e.preventDefault()}
+                      pubName={result.name}
+                      selected={index === suggestionIndex}
+                    />
+                  )}
                 </>
               );
             })}
@@ -218,24 +247,81 @@ const Result = (props: {
   selected?: boolean;
 }) => {
   return (
-    <div
+    <button
       className={`
-        menuItem  flex-col! gap-0!
-        text-secondary leading-tight text-sm truncate
+        menuItem  w-full flex-col! gap-0!
+        text-secondary leading-snug text-sm
       ${props.subtext ? "py-1!" : "py-2!"}
-        ${props.selected ? "bg-[var(--accent-light)]!" : ""}`}
-      onClick={() => props.onClick()}
+        ${props.selected ? "bg-[var(--accent-light)]" : ""}`}
+      onClick={() => {
+        props.onClick();
+      }}
       onMouseDown={(e) => props.onMouseDown(e)}
     >
-      <div className={`flex gap-2 items-center `}>
-        <div className="truncate w-full grow min-w-0 ">{props.result}</div>
+      <div
+        className={`flex gap-2 items-center w-full truncate justify-between`}
+      >
+        {props.result}
       </div>
       {props.subtext && (
         <div className="text-tertiary italic text-xs font-normal min-w-0 truncate pb-[1px]">
           {props.subtext}
         </div>
       )}
-    </div>
+    </button>
+  );
+};
+
+const ScopeButton = (props: {
+  onClick: () => void;
+  children: React.ReactNode;
+}) => {
+  return (
+    <button
+      className="flex flex-row shrink-0 text-xs font-normal text-tertiary hover:text-accent-contrast"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        props.onClick();
+      }}
+    >
+      {props.children} <ArrowRightTiny className="scale-80" />
+    </button>
+  );
+};
+
+const DidResult = (props: {
+  displayName?: string;
+  handle: string;
+  onClick: () => void;
+  onMouseDown: (e: React.MouseEvent) => void;
+  selected?: boolean;
+}) => {
+  return (
+    <Result
+      result={props.displayName ? props.displayName : props.handle}
+      subtext={props.displayName && `@${props.handle}`}
+      {...props}
+    />
+  );
+};
+
+const PublicationResult = (props: {
+  pubName: string;
+  onClick: () => void;
+  onMouseDown: (e: React.MouseEvent) => void;
+  selected?: boolean;
+}) => {
+  return (
+    <Result
+      result={
+        <>
+          <div className="truncate w-full grow min-w-0">{props.pubName}</div>
+          <ScopeButton onClick={() => {}}>Posts</ScopeButton>
+        </>
+      }
+      {...props}
+    />
   );
 };
 
