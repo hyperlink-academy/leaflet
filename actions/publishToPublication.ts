@@ -81,15 +81,17 @@ export async function publishToPublication({
 
   if (publication_uri) {
     // Publishing to a publication - use leaflets_in_publications
-    let { data } = await supabaseServerClient
-      .from("leaflets_in_publications")
-      .select("*, publications(*), documents(*)")
-      .eq("publication", publication_uri)
-      .eq("leaflet", leaflet_id)
+    let { data, error } = await supabaseServerClient
+      .from("publications")
+      .select("*, leaflets_in_publications(*, documents(*))")
+      .eq("uri", publication_uri)
+      .eq("leaflets_in_publications.leaflet", leaflet_id)
       .single();
-    if (!data || identity.atp_did !== data?.publications?.identity_did)
+    console.log(error);
+
+    if (!data || identity.atp_did !== data?.identity_did)
       throw new Error("No draft or not publisher");
-    draft = data;
+    draft = data.leaflets_in_publications[0];
     existingDocUri = draft?.doc;
   } else {
     // Publishing standalone - use leaflets_to_documents
