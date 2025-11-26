@@ -27,13 +27,19 @@ export const CommentNotification = (props: HydratedCommentNotification) => {
     props.commentData.bsky_profiles?.handle ||
     "Someone";
   const pubRecord = props.commentData.documents?.documents_in_publications[0]
-    ?.publications?.record as PubLeafletPublication.Record;
-  let rkey = new AtUri(props.commentData.documents?.uri!).rkey;
+    ?.publications?.record as PubLeafletPublication.Record | undefined;
+  let docUri = new AtUri(props.commentData.documents?.uri!);
+  let rkey = docUri.rkey;
+  let did = docUri.host;
+
+  const href = pubRecord
+    ? `https://${pubRecord.base_path}/${rkey}?interactionDrawer=comments`
+    : `/p/${did}/${rkey}?interactionDrawer=comments`;
 
   return (
     <Notification
       timestamp={props.commentData.indexed_at}
-      href={`https://${pubRecord.base_path}/${rkey}?interactionDrawer=comments`}
+      href={href}
       icon={<CommentTiny />}
       actionText={<>{displayName} commented on your post</>}
       content={

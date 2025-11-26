@@ -34,14 +34,20 @@ export const ReplyNotification = (props: HydratedCommentNotification) => {
     props.parentData?.bsky_profiles?.handle ||
     "Someone";
 
-  let rkey = new AtUri(props.commentData.documents?.uri!).rkey;
+  let docUri = new AtUri(props.commentData.documents?.uri!);
+  let rkey = docUri.rkey;
+  let did = docUri.host;
   const pubRecord = props.commentData.documents?.documents_in_publications[0]
-    ?.publications?.record as PubLeafletPublication.Record;
+    ?.publications?.record as PubLeafletPublication.Record | undefined;
+
+  const href = pubRecord
+    ? `https://${pubRecord.base_path}/${rkey}?interactionDrawer=comments`
+    : `/p/${did}/${rkey}?interactionDrawer=comments`;
 
   return (
     <Notification
       timestamp={props.commentData.indexed_at}
-      href={`https://${pubRecord.base_path}/${rkey}?interactionDrawer=comments`}
+      href={href}
       icon={<ReplyTiny />}
       actionText={`${displayName} replied to your comment`}
       content={

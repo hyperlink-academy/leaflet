@@ -11,14 +11,20 @@ export const QuoteNotification = (props: HydratedQuoteNotification) => {
   const displayName = author.displayName || author.handle || "Someone";
   const docRecord = props.document.data as PubLeafletDocument.Record;
   const pubRecord = props.document.documents_in_publications[0]?.publications
-    ?.record as PubLeafletPublication.Record;
-  const rkey = new AtUri(props.document.uri).rkey;
+    ?.record as PubLeafletPublication.Record | undefined;
+  const docUri = new AtUri(props.document.uri);
+  const rkey = docUri.rkey;
+  const did = docUri.host;
   const postText = postView.record?.text || "";
+
+  const href = pubRecord
+    ? `https://${pubRecord.base_path}/${rkey}`
+    : `/p/${did}/${rkey}`;
 
   return (
     <Notification
       timestamp={props.created_at}
-      href={`https://${pubRecord.base_path}/${rkey}`}
+      href={href}
       icon={<QuoteTiny />}
       actionText={<>{displayName} quoted your post</>}
       content={
