@@ -111,6 +111,7 @@ export type SharedPageProps = {
   pollData: PollData[];
   document_uri: string;
   fullPageScroll: boolean;
+  hasPageBackground: boolean;
   pageId?: string;
   pageOptions?: React.ReactNode;
   allPages: (PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)[];
@@ -171,12 +172,18 @@ export function PostPages({
 
   let record = document.data as PubLeafletDocument.Record;
   let theme = pubRecord?.theme || record.theme || null;
-  let hasPageBackground = !!theme?.showPageBackground;
+  // For publication posts, respect the publication's showPageBackground setting
+  // For standalone documents, default to showing page background
+  let isInPublication = !!pubRecord;
+  let hasPageBackground = isInPublication ? !!theme?.showPageBackground : true;
   let quotesAndMentions = document.quotesAndMentions;
 
   let firstPage = record.pages[0] as
     | PubLeafletPagesLinearDocument.Main
     | PubLeafletPagesCanvas.Main;
+
+  // Canvas pages don't support fullPageScroll well due to fixed 1272px width
+  let firstPageIsCanvas = PubLeafletPagesCanvas.isMain(firstPage);
 
   // Shared props used for all pages
   const sharedProps: SharedPageProps = {
@@ -190,11 +197,16 @@ export function PostPages({
     bskyPostData,
     pollData,
     document_uri,
+    hasPageBackground,
     allPages: record.pages as (
       | PubLeafletPagesLinearDocument.Main
       | PubLeafletPagesCanvas.Main
     )[],
-    fullPageScroll: !hasPageBackground && !drawer && openPageIds.length === 0,
+    fullPageScroll:
+      !hasPageBackground &&
+      !drawer &&
+      openPageIds.length === 0 &&
+      !firstPageIsCanvas,
   };
 
   return (
@@ -219,8 +231,11 @@ export function PostPages({
       {openPageIds.map((pageId) => {
         let page = record.pages.find(
           (p) =>
-            (p as PubLeafletPagesLinearDocument.Main | PubLeafletPagesCanvas.Main)
-              .id === pageId,
+            (
+              p as
+                | PubLeafletPagesLinearDocument.Main
+                | PubLeafletPagesCanvas.Main
+            ).id === pageId,
         ) as
           | PubLeafletPagesLinearDocument.Main
           | PubLeafletPagesCanvas.Main

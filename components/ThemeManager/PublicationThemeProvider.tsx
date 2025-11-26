@@ -16,6 +16,9 @@ const PubThemeDefaults = {
   accentText: "#FFFFFF",
   accentBackground: "#0000FF",
 };
+
+// Default page background for standalone leaflets (matches editor default)
+const StandalonePageBackground = "#FFFFFF";
 function parseThemeColor(
   c: PubLeafletThemeColor.Rgb | PubLeafletThemeColor.Rgba,
 ) {
@@ -95,8 +98,9 @@ export function PublicationThemeProvider(props: {
   children: React.ReactNode;
   theme?: PubLeafletPublication.Record["theme"] | null;
   pub_creator: string;
+  isStandalone?: boolean;
 }) {
-  let colors = usePubTheme(props.theme);
+  let colors = usePubTheme(props.theme, props.isStandalone);
   return (
     <BaseThemeProvider local={props.local} {...colors}>
       {props.children}
@@ -106,10 +110,17 @@ export function PublicationThemeProvider(props: {
 
 export const usePubTheme = (
   theme?: PubLeafletPublication.Record["theme"] | null,
+  isStandalone?: boolean,
 ) => {
   let bgLeaflet = useColor(theme, "backgroundColor");
   let bgPage = useColor(theme, "pageBackground");
-  bgPage = theme?.pageBackground ? bgPage : bgLeaflet;
+  // For standalone documents, use the editor default page background (#FFFFFF)
+  // For publications without explicit pageBackground, use bgLeaflet
+  if (isStandalone && !theme?.pageBackground) {
+    bgPage = parseColor(StandalonePageBackground);
+  } else if (theme && !theme.pageBackground) {
+    bgPage = bgLeaflet;
+  }
   let showPageBackground = theme?.showPageBackground;
 
   let primary = useColor(theme, "primary");

@@ -108,6 +108,7 @@ export async function DocumentPageRenderer({
   let theme = pubRecord?.theme || record.theme || null;
   let pub_creator =
     document.documents_in_publications[0]?.publications?.identity_did || did;
+  let isStandalone = !pubRecord;
 
   let firstPage = record.pages[0];
 
@@ -121,7 +122,7 @@ export async function DocumentPageRenderer({
 
   return (
     <PostPageContextProvider value={document}>
-      <PublicationThemeProvider theme={theme} pub_creator={pub_creator}>
+      <PublicationThemeProvider theme={theme} pub_creator={pub_creator} isStandalone={isStandalone}>
         <PublicationBackgroundProvider theme={theme} pub_creator={pub_creator}>
           <LeafletLayout>
             <PostPages

@@ -45,13 +45,13 @@ export function LinearDocumentPage({
     pageId,
     pageOptions,
     fullPageScroll,
+    hasPageBackground,
   } = props;
   let { identity } = useIdentityData();
   let drawer = useDrawerOpen(document_uri);
 
   if (!document) return null;
 
-  let hasPageBackground = !!theme?.showPageBackground;
   let record = document.data as PubLeafletDocument.Record;
 
   const isSubpage = !!pageId;

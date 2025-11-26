@@ -45,10 +45,10 @@ export function CanvasPage({
     pageId,
     pageOptions,
     fullPageScroll,
+    hasPageBackground,
   } = props;
   if (!document) return null;
 
-  let hasPageBackground = !!theme?.showPageBackground;
   let isSubpage = !!pageId;
   let drawer = useDrawerOpen(document_uri);
 
