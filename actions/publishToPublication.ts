@@ -183,13 +183,13 @@ export async function publishToPublication({
         publication: publication_uri,
         document: result.uri,
       }),
-      supabaseServerClient
-        .from("leaflets_in_publications")
-        .update({
-          doc: result.uri,
-        })
-        .eq("leaflet", leaflet_id)
-        .eq("publication", publication_uri),
+      supabaseServerClient.from("leaflets_in_publications").upsert({
+        doc: result.uri,
+        leaflet: leaflet_id,
+        publication: publication_uri,
+        title: title,
+        description: description,
+      }),
     ]);
   } else {
     // Publishing standalone - update leaflets_to_documents
