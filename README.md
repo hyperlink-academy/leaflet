@@ -25,6 +25,58 @@ Use Publications on Leaflet for blogs, newsletters, project logs — anything yo
 
 Read ours here: [Leaflet Lab Notes](https://lab.leaflet.pub/).
 
+### Local Development (Linux, WSL)
+
+#### Prerequisites
+
+- [NodeJS](https://nodejs.org/en)
+- [Supabase](https://supabase.com)
+- [Docker](https://docker.com)
+ 
+#### App setup
+
+1. Clone the repository `git clone https://tangled.org/leaflet.pub/leaflet.git`
+   1. If using WSL, it's recommended to install in the native file structure vs in a mounted Windows file structure (i.e, prefer installing at `~/code/leaflet` vs `/mnt/c/code/leaflet`)
+2. Install the dependencies: `npm install`
+3. Create a new Supabase project via the Supabase web dashboard.
+   1. Your `API URL`, `ANON KEY`, and `SERVICE ROLE KEY` are found in the `Project Settings --> API Keys` menu. This project uses legacy keys not the publishable/secret API key system.
+   2. The Database URL is found by pressing the `Connect` button at the top of the screen. The direct connection string by default uses the IPv6 systems which can cause issues in default local setups. If that is the case, the Shared Pool connection string will work for IPv4 local development.
+4. Create an `.env.local` file in the root folder with the following configuration:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_API_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+
+# Database
+DB_URL=postgresql://postgres:your-password@db.your-project.supabase.co:5432/postgres
+
+# Leaflet specific
+LEAFLET_APP_PASSWORD=any-password-you-want
+
+# Feed Service (for publication features)
+FEED_SERVICE_URL=https://localhost:3001
+```
+5. `npm run dev` to run the project
+
+#### Database Migrations
+
+1. Install the supabase CLI `npm install supabase`
+   1. You can install it globally with the -g flag, in which case you can omit the `npx` from the following commands
+2. Login to the CLI `npx supabase login`
+3. Link to your database project `npx supabase link --project-ref <project-id>`
+4. Run migrations `npx supabase db push`
+
+#### Feed service setup (optional)
+
+Setup instructions to run a local feed service from a docker container. This step isn't necessary if you're not working on publication or BlueSky integration features.
+
+1. Clone the repo `git clone https://github.com/hyperlink-academy/leaflet-feeds.git`
+2. Update your `.env.local` to include the FEED_SERVICE_URL (if not already set): `git clone https://github.com/hyperlink-academy/leaflet-feeds.git`
+3. Change to the directory and build the docker container `docker build -t leaflet-feeds .`
+4. Run the docker container on port 3001 (to avoid conflicts with the main app): `docker run -p 3001:3000 leaflet-feeds`
+
 ## Technical details
 
 The stack:
