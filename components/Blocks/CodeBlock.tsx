@@ -26,7 +26,8 @@ export function CodeBlock(props: BlockProps) {
   let focusedBlock = useUIState(
     (s) => s.focusedEntity?.entityID === props.entityID,
   );
-  let { permissions } = useEntitySetContext();
+  let entity_set = useEntitySetContext();
+  let { permissions } = entity_set;
   const [html, setHTML] = useState<string | null>(null);
 
   useLayoutEffect(() => {
@@ -125,6 +126,8 @@ export function CodeBlock(props: BlockProps) {
             data-entityid={props.entityID}
             id={elementId.block(props.entityID).input}
             block={props}
+            rep={rep}
+            permissionSet={entity_set.set}
             spellCheck={false}
             autoCapitalize="none"
             autoCorrect="off"
