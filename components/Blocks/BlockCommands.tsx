@@ -32,6 +32,7 @@ import { ListUnorderedSmall } from "components/Toolbar/ListToolbar";
 import { BlockMathSmall } from "components/Icons/BlockMathSmall";
 import { BlockCodeSmall } from "components/Icons/BlockCodeSmall";
 import { QuoteSmall } from "components/Icons/QuoteSmall";
+import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
 
 type Props = {
   parent: string;
@@ -310,7 +311,15 @@ export const blockCommands: Command[] = [
     type: "block",
     hiddenInPublication: false,
     onSelect: async (rep, props) => {
-      createBlockWithType(rep, props, "code");
+      let entity = await createBlockWithType(rep, props, "code");
+      let lastLang = localStorage.getItem(LAST_USED_CODE_LANGUAGE_KEY);
+      if (lastLang) {
+        await rep.mutate.assertFact({
+          entity,
+          attribute: "block/code-language",
+          data: { type: "string", value: lastLang },
+        });
+      }
     },
   },
 

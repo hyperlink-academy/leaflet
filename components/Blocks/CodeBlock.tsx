@@ -13,6 +13,7 @@ import { BaseTextareaBlock } from "./BaseTextareaBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { flushSync } from "react-dom";
 import { elementId } from "src/utils/elementId";
+import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
 
 export function CodeBlock(props: BlockProps) {
   let { rep, rootEntity } = useReplicache();
@@ -100,6 +101,7 @@ export function CodeBlock(props: BlockProps) {
             }}
             value={lang}
             onChange={async (e) => {
+              localStorage.setItem(LAST_USED_CODE_LANGUAGE_KEY, e.target.value);
               await rep?.mutate.assertFact({
                 attribute: "block/code-language",
                 entity: props.entityID,
