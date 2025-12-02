@@ -6,7 +6,6 @@ import { useSmoker } from "components/Toast";
 import { Menu, MenuItem } from "components/Layout";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import useSWR from "swr";
-import { useTemplateState } from "app/(home-pages)/home/Actions/CreateNewButton";
 import LoginForm from "app/login/LoginForm";
 import { CustomDomainMenu } from "./DomainOptions";
 import { useIdentityData } from "components/IdentityProvider";
@@ -22,7 +21,7 @@ import { useIsMobile } from "src/hooks/isMobile";
 
 export type ShareMenuStates = "default" | "login" | "domain";
 
-export let usePublishLink = () => {
+export let useReadOnlyShareLink = () => {
   let { permission_token, rootEntity } = useReplicache();
   let entity_set = useEntitySetContext();
   let { data: publishLink } = useSWR(
@@ -61,8 +60,7 @@ export function ShareOptions() {
       trigger={
         <ActionButton
           icon=<ShareSmall />
-          primary={!!!pub}
-          secondary={!!pub}
+          secondary
           label={`Share ${pub ? "Draft" : ""}`}
         />
       }
@@ -94,11 +92,13 @@ const ShareMenu = (props: {
 
   let record = pub?.documents?.data as PubLeafletDocument.Record | null;
 
-  let postLink =
-    pub?.publications && pub.documents
-      ? `${getPublicationURL(pub.publications)}/${new AtUri(pub?.documents.uri).rkey}`
-      : null;
-  let publishLink = usePublishLink();
+  let docURI = pub?.documents ? new AtUri(pub?.documents.uri) : null;
+  let postLink = !docURI
+    ? null
+    : pub?.publications
+      ? `${getPublicationURL(pub.publications)}/${docURI.rkey}`
+      : `p/${docURI.host}/${docURI.rkey}`;
+  let publishLink = useReadOnlyShareLink();
   let [collabLink, setCollabLink] = useState<null | string>(null);
   useEffect(() => {
     // strip leading '/' character from pathname
@@ -106,25 +106,8 @@ const ShareMenu = (props: {
   }, []);
   let { data: domains } = useLeafletDomains();
 
-  let isTemplate = useTemplateState(
-    (s) => !!s.templates.find((t) => t.id === permission_token.id),
-  );
-
   return (
     <>
-      {isTemplate && (
-        <>
-          <ShareButton
-            text="Share Template"
-            subtext="Let others make new Leaflets as copies of this template"
-            smokerText="Template link copied!"
-            id="get-template-link"
-            link={`template/${publishLink}` || ""}
-          />
-          <hr className="border-border my-1" />
-        </>
-      )}
-
       <ShareButton
         text={`Share ${postLink ? "Draft" : ""} Edit Link`}
         subtext=""
@@ -182,8 +165,7 @@ const ShareMenu = (props: {
 
 export const ShareButton = (props: {
   text: React.ReactNode;
-  subtext: React.ReactNode;
-  helptext?: string;
+  subtext?: React.ReactNode;
   smokerText: string;
   id: string;
   link: null | string;
@@ -214,21 +196,12 @@ export const ShareButton = (props: {
         }
       }}
     >
-      <div className={`group/${props.id} ${props.className}`}>
-        <div className={`group-hover/${props.id}:text-accent-contrast`}>
-          {props.text}
-        </div>
-        <div
-          className={`text-sm font-normal text-tertiary group-hover/${props.id}:text-accent-contrast`}
-        >
-          {props.subtext}
-        </div>
-        {/* optional help text */}
-        {props.helptext && (
-          <div
-            className={`text-sm italic font-normal text-tertiary group-hover/${props.id}:text-accent-contrast`}
-          >
-            {props.helptext}
+      <div className={`group/${props.id} ${props.className} leading-snug`}>
+        {props.text}
+
+        {props.subtext && (
+          <div className={`text-sm  font-normal text-tertiary`}>
+            {props.subtext}
           </div>
         )}
       </div>

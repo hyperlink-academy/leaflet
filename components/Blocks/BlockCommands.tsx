@@ -32,6 +32,7 @@ import { ListUnorderedSmall } from "components/Toolbar/ListToolbar";
 import { BlockMathSmall } from "components/Icons/BlockMathSmall";
 import { BlockCodeSmall } from "components/Icons/BlockCodeSmall";
 import { QuoteSmall } from "components/Icons/QuoteSmall";
+import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
 
 type Props = {
   parent: string;
@@ -102,6 +103,7 @@ type Command = {
   name: string;
   icon: React.ReactNode;
   type: string;
+  alternateNames?: string[];
   hiddenInPublication?: boolean;
   onSelect: (
     rep: Replicache<ReplicacheMutators>,
@@ -125,6 +127,7 @@ export const blockCommands: Command[] = [
     name: "Title",
     icon: <Header1Small />,
     type: "text",
+    alternateNames: ["h1"],
     onSelect: async (rep, props, um) => {
       await setHeaderCommand(1, rep, props);
     },
@@ -133,6 +136,7 @@ export const blockCommands: Command[] = [
     name: "Header",
     icon: <Header2Small />,
     type: "text",
+    alternateNames: ["h2"],
     onSelect: async (rep, props, um) => {
       await setHeaderCommand(2, rep, props);
     },
@@ -141,6 +145,7 @@ export const blockCommands: Command[] = [
     name: "Subheader",
     icon: <Header3Small />,
     type: "text",
+    alternateNames: ["h3"],
     onSelect: async (rep, props, um) => {
       await setHeaderCommand(3, rep, props);
     },
@@ -306,7 +311,15 @@ export const blockCommands: Command[] = [
     type: "block",
     hiddenInPublication: false,
     onSelect: async (rep, props) => {
-      createBlockWithType(rep, props, "code");
+      let entity = await createBlockWithType(rep, props, "code");
+      let lastLang = localStorage.getItem(LAST_USED_CODE_LANGUAGE_KEY);
+      if (lastLang) {
+        await rep.mutate.assertFact({
+          entity,
+          attribute: "block/code-language",
+          data: { type: "string", value: lastLang },
+        });
+      }
     },
   },
 

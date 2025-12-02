@@ -5,7 +5,7 @@ import { isVisible } from "src/utils/isVisible";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { RenderYJSFragment } from "./RenderYJSFragment";
-import { useInitialPageLoad } from "components/InitialPageLoadProvider";
+import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { BlockProps } from "../Block";
 import { focusBlock } from "src/utils/focusBlock";
 import { useUIState } from "src/useUIState";
@@ -42,7 +42,7 @@ export function TextBlock(
   },
 ) {
   let isLocked = useEntity(props.entityID, "block/is-locked");
-  let initialized = useInitialPageLoad();
+  let initialized = useHasPageLoaded();
   let first = props.previousBlock === null;
   let permission = useEntitySetContext().permissions.write;
 

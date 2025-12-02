@@ -1,16 +1,15 @@
 "use client";
-import { ActionButton } from "components/ActionBar/ActionButton";
 import { Sidebar } from "components/ActionBar/Sidebar";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { HelpPopover } from "components/HelpPopover";
-import { HomeButton } from "components/HomeButton";
+import { HelpButton } from "app/[leaflet_id]/actions/HelpButton";
+import { HomeButton } from "app/[leaflet_id]/actions/HomeButton";
 import { Media } from "components/Media";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
-import { ShareOptions } from "components/ShareOptions";
+import { ShareOptions } from "app/[leaflet_id]/actions/ShareOptions";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
+import { PublishButton } from "./actions/PublishButton";
 import { Watermark } from "components/Watermark";
-import { useUIState } from "src/useUIState";
-import { BackToPubButton, PublishButton } from "./Actions";
+import { BackToPubButton } from "./actions/BackToPubButton";
 import { useIdentityData } from "components/IdentityProvider";
 import { useReplicache } from "src/replicache";
 
@@ -29,25 +28,17 @@ export function LeafletSidebar() {
         <div className="sidebarContainer flex flex-col justify-end h-full w-16 relative">
           {entity_set.permissions.write && (
             <Sidebar>
+              <PublishButton entityID={rootEntity} />
+              <ShareOptions />
+              <ThemePopover entityID={rootEntity} />
+              <HelpButton />
+              <hr className="text-border" />
               {pub?.publications &&
               identity?.atp_did &&
               pub.publications.identity_did === identity.atp_did ? (
-                <>
-                  <PublishButton />
-                  <ShareOptions />
-                  <ThemePopover entityID={rootEntity} />
-                  <HelpPopover />
-                  <hr className="text-border" />
-                  <BackToPubButton publication={pub.publications} />
-                </>
+                <BackToPubButton publication={pub.publications} />
               ) : (
-                <>
-                  <ShareOptions />
-                  <ThemePopover entityID={rootEntity} />
-                  <HelpPopover />
-                  <hr className="text-border" />
-                  <HomeButton />
-                </>
+                <HomeButton />
               )}
             </Sidebar>
           )}
@@ -59,10 +50,3 @@ export function LeafletSidebar() {
     </Media>
   );
 }
-
-const blurPage = () => {
-  useUIState.setState(() => ({
-    focusedEntity: null,
-    selectedBlocks: [],
-  }));
-};

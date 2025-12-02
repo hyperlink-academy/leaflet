@@ -2,34 +2,65 @@ import { headers } from "next/headers";
 
 export async function getMicroLinkOgImage(
   path: string,
-  options?: { width?: number; height?: number; deviceScaleFactor?: number },
+  options?: {
+    width?: number;
+    height?: number;
+    deviceScaleFactor?: number;
+    noCache?: boolean;
+  },
 ) {
   const headersList = await headers();
-  const hostname = headersList.get("x-forwarded-host");
+  let hostname = headersList.get("x-forwarded-host");
   let protocol = headersList.get("x-forwarded-proto");
+  if (process.env.NODE_ENV === "development") {
+    protocol === "https";
+    hostname = "leaflet.pub";
+  }
   let full_path = `${protocol}://${hostname}${path}`;
+  return getWebpageImage(full_path, options);
+}
+
+export async function getWebpageImage(
+  url: string,
+  options?: {
+    width?: number;
+    height?: number;
+    deviceScaleFactor?: number;
+    noCache?: boolean;
+  },
+) {
   let response = await fetch(
-    `https://pro.microlink.io/?url=${encodeURIComponent(full_path)}&screenshot=true&viewport.width=${options?.width || 1400}&viewport.height=${options?.height || 733}&viewport.deviceScaleFactor=${options?.deviceScaleFactor || 1}&meta=false&embed=screenshot.url&force=true`,
+    `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT}/browser-rendering/screenshot`,
     {
+      method: "POST",
       headers: {
-        "x-api-key": process.env.MICROLINK_API_KEY!,
+        "Content-type": "application/json",
+        Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
       },
-      next: {
-        revalidate: 600,
-      },
+      body: JSON.stringify({
+        url,
+        scrollPage: true,
+        addStyleTag: [
+          {
+            content: `* {scrollbar-width:none; }`,
+          },
+        ],
+        gotoOptions: {
+          waitUntil: "load",
+        },
+        viewport: {
+          width: options?.width || 1400,
+          height: options?.height || 733,
+          deviceScaleFactor: options?.deviceScaleFactor,
+        },
+      }),
+      next: !options?.noCache
+        ? undefined
+        : {
+            revalidate: 600,
+          },
     },
   );
-  const clonedResponse = response.clone();
-  if (clonedResponse.status == 200) {
-    clonedResponse.headers.set(
-      "CDN-Cache-Control",
-      "s-maxage=600, stale-while-revalidate=3600",
-    );
-    clonedResponse.headers.set(
-      "Cache-Control",
-      "s-maxage=600, stale-while-revalidate=3600",
-    );
-  }
 
-  return clonedResponse;
+  return response;
 }

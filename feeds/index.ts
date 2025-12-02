@@ -92,7 +92,7 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
       .from("documents")
       .select(
         `*,
-          documents_in_publications!inner(publications!inner(*))`,
+          documents_in_publications(publications(*))`,
       )
       .or(
         "record->preferences->showInDiscover.is.null,record->preferences->>showInDiscover.eq.true",

@@ -11,22 +11,25 @@ export type Notification = Omit<TablesInsert<"notifications">, "data"> & {
 
 export type NotificationData =
   | { type: "comment"; comment_uri: string; parent_uri?: string }
-  | { type: "subscribe"; subscription_uri: string };
+  | { type: "subscribe"; subscription_uri: string }
+  | { type: "quote"; bsky_post_uri: string; document_uri: string };
 
 export type HydratedNotification =
   | HydratedCommentNotification
-  | HydratedSubscribeNotification;
+  | HydratedSubscribeNotification
+  | HydratedQuoteNotification;
 export async function hydrateNotifications(
   notifications: NotificationRow[],
 ): Promise<Array<HydratedNotification>> {
   // Call all hydrators in parallel
-  const [commentNotifications, subscribeNotifications] = await Promise.all([
+  const [commentNotifications, subscribeNotifications, quoteNotifications] = await Promise.all([
     hydrateCommentNotifications(notifications),
     hydrateSubscribeNotifications(notifications),
+    hydrateQuoteNotifications(notifications),
   ]);
 
   // Combine all hydrated notifications
-  const allHydrated = [...commentNotifications, ...subscribeNotifications];
+  const allHydrated = [...commentNotifications, ...subscribeNotifications, ...quoteNotifications];
 
   // Sort by created_at to maintain order
   allHydrated.sort(
@@ -119,6 +122,46 @@ async function hydrateSubscribeNotifications(notifications: NotificationRow[]) {
     subscriptionData: subscriptions?.find(
       (s) => s.uri === notification.data.subscription_uri,
     )!,
+  }));
+}
+
+export type HydratedQuoteNotification = Awaited<
+  ReturnType<typeof hydrateQuoteNotifications>
+>[0];
+
+async function hydrateQuoteNotifications(notifications: NotificationRow[]) {
+  const quoteNotifications = notifications.filter(
+    (n): n is NotificationRow & { data: ExtractNotificationType<"quote"> } =>
+      (n.data as NotificationData)?.type === "quote",
+  );
+
+  if (quoteNotifications.length === 0) {
+    return [];
+  }
+
+  // Fetch bsky post data and document data
+  const bskyPostUris = quoteNotifications.map((n) => n.data.bsky_post_uri);
+  const documentUris = quoteNotifications.map((n) => n.data.document_uri);
+
+  const { data: bskyPosts } = await supabaseServerClient
+    .from("bsky_posts")
+    .select("*")
+    .in("uri", bskyPostUris);
+
+  const { data: documents } = await supabaseServerClient
+    .from("documents")
+    .select("*, documents_in_publications(publications(*))")
+    .in("uri", documentUris);
+
+  return quoteNotifications.map((notification) => ({
+    id: notification.id,
+    recipient: notification.recipient,
+    created_at: notification.created_at,
+    type: "quote" as const,
+    bsky_post_uri: notification.data.bsky_post_uri,
+    document_uri: notification.data.document_uri,
+    bskyPost: bskyPosts?.find((p) => p.uri === notification.data.bsky_post_uri)!,
+    document: documents?.find((d) => d.uri === notification.data.document_uri)!,
   }));
 }
 

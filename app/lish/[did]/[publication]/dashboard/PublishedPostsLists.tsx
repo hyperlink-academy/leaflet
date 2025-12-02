@@ -13,11 +13,13 @@ import { ButtonPrimary } from "components/Buttons";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
 import { DeleteSmall } from "components/Icons/DeleteSmall";
 import { ShareSmall } from "components/Icons/ShareSmall";
-import { ShareButton } from "components/ShareOptions";
+import { ShareButton } from "app/[leaflet_id]/actions/ShareOptions";
 import { SpeedyLink } from "components/SpeedyLink";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { LeafletOptions } from "app/(home-pages)/home/LeafletList/LeafletOptions";
+import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
 
 export function PublishedPostsList(props: {
   searchValue: string;
@@ -57,6 +59,10 @@ export function PublishedPostsList(props: {
           let quotes = doc.documents.document_mentions_in_bsky[0]?.count || 0;
           let comments = doc.documents.comments_on_documents[0]?.count || 0;
 
+          let postLink = data?.publication
+            ? `${getPublicationURL(data?.publication)}/${new AtUri(doc.documents.uri).rkey}`
+            : "";
+
           return (
             <Fragment key={doc.documents?.uri}>
               <div className="flex gap-2 w-full ">
@@ -79,15 +85,40 @@ export function PublishedPostsList(props: {
                       </h3>
                     </a>
                     <div className="flex justify-start align-top flex-row gap-1">
-                      {leaflet && (
-                        <SpeedyLink
-                          className="pt-[6px]"
-                          href={`/${leaflet.leaflet}`}
-                        >
-                          <EditTiny />
-                        </SpeedyLink>
+                      {leaflet && leaflet.permission_tokens && (
+                        <>
+                          <SpeedyLink
+                            className="pt-[6px]"
+                            href={`/${leaflet.leaflet}`}
+                          >
+                            <EditTiny />
+                          </SpeedyLink>
+
+                          <StaticLeafletDataContext
+                            value={{
+                              ...leaflet.permission_tokens,
+                              leaflets_in_publications: [
+                                {
+                                  ...leaflet,
+                                  publications: publication,
+                                  documents: doc.documents
+                                    ? {
+                                        uri: doc.documents.uri,
+                                        indexed_at: doc.documents.indexed_at,
+                                        data: doc.documents.data,
+                                      }
+                                    : null,
+                                },
+                              ],
+                              leaflets_to_documents: [],
+                              blocked_by_admin: null,
+                              custom_domain_routes: [],
+                            }}
+                          >
+                            <LeafletOptions loggedIn={true} />
+                          </StaticLeafletDataContext>
+                        </>
                       )}
-                      <Options document_uri={doc.documents.uri} />
                     </div>
                   </div>
 
@@ -133,102 +164,79 @@ export function PublishedPostsList(props: {
   );
 }
 
-let Options = (props: { document_uri: string }) => {
-  return (
-    <Menu
-      align="end"
-      alignOffset={20}
-      asChild
-      trigger={
-        <button className="text-secondary rounded-md selected-outline border-transparent! hover:border-border! h-min">
-          <MoreOptionsVerticalTiny />
-        </button>
-      }
-    >
-      <>
-        <OptionsMenu document_uri={props.document_uri} />
-      </>
-    </Menu>
-  );
-};
+// function OptionsMenu(props: { document_uri: string }) {
+//   let { mutate, data } = usePublicationData();
+//   let [state, setState] = useState<"normal" | "confirm">("normal");
 
-function OptionsMenu(props: { document_uri: string }) {
-  let { mutate, data } = usePublicationData();
-  let [state, setState] = useState<"normal" | "confirm">("normal");
+//   if (state === "normal") {
+//     return (
+//       <>
+//         <ShareButton
+//           className="justify-end"
+//           text={
+//             <div className="flex gap-2">
+//               Share Post Link
+//               <ShareSmall />
+//             </div>
+//           }
+//           subtext=""
+//           smokerText="Post link copied!"
+//           id="get-post-link"
+//           fullLink={postLink?.includes("https") ? postLink : undefined}
+//           link={postLink}
+//         />
 
-  let postLink = data?.publication
-    ? `${getPublicationURL(data?.publication)}/${new AtUri(props.document_uri).rkey}`
-    : null;
-
-  if (state === "normal") {
-    return (
-      <>
-        <ShareButton
-          className="justify-end"
-          text={
-            <div className="flex gap-2">
-              Share Post Link
-              <ShareSmall />
-            </div>
-          }
-          subtext=""
-          smokerText="Post link copied!"
-          id="get-post-link"
-          fullLink={postLink?.includes("https") ? postLink : undefined}
-          link={postLink}
-        />
-
-        <hr className="border-border-light" />
-        <MenuItem
-          className="justify-end"
-          onSelect={async (e) => {
-            e.preventDefault();
-            setState("confirm");
-            return;
-          }}
-        >
-          Delete Post
-          <DeleteSmall />
-        </MenuItem>
-      </>
-    );
-  }
-  if (state === "confirm") {
-    return (
-      <div className="flex flex-col items-center font-bold text-secondary px-2 py-1">
-        Are you sure?
-        <div className="text-sm text-tertiary font-normal">
-          This action cannot be undone!
-        </div>
-        <ButtonPrimary
-          className="mt-2"
-          onClick={async () => {
-            await mutate((data) => {
-              if (!data) return data;
-              return {
-                ...data,
-                publication: {
-                  ...data.publication!,
-                  leaflets_in_publications:
-                    data.publication?.leaflets_in_publications.filter(
-                      (l) => l.doc !== props.document_uri,
-                    ) || [],
-                  documents_in_publications:
-                    data.publication?.documents_in_publications.filter(
-                      (d) => d.documents?.uri !== props.document_uri,
-                    ) || [],
-                },
-              };
-            }, false);
-            await deletePost(props.document_uri);
-          }}
-        >
-          Delete
-        </ButtonPrimary>
-      </div>
-    );
-  }
-}
+//         <hr className="border-border-light" />
+//         <MenuItem
+//           className="justify-end"
+//           onSelect={async (e) => {
+//             e.preventDefault();
+//             setState("confirm");
+//             return;
+//           }}
+//         >
+//           Delete Post
+//           <DeleteSmall />
+//         </MenuItem>
+//       </>
+//     );
+//   }
+//   if (state === "confirm") {
+//     return (
+//       <div className="flex flex-col items-center font-bold text-secondary px-2 py-1">
+//         Are you sure?
+//         <div className="text-sm text-tertiary font-normal">
+//           This action cannot be undone!
+//         </div>
+//         <ButtonPrimary
+//           className="mt-2"
+//           onClick={async () => {
+//             await mutate((data) => {
+//               if (!data) return data;
+//               return {
+//                 ...data,
+//                 publication: {
+//                   ...data.publication!,
+//                   leaflets_in_publications:
+//                     data.publication?.leaflets_in_publications.filter(
+//                       (l) => l.doc !== props.document_uri,
+//                     ) || [],
+//                   documents_in_publications:
+//                     data.publication?.documents_in_publications.filter(
+//                       (d) => d.documents?.uri !== props.document_uri,
+//                     ) || [],
+//                 },
+//               };
+//             }, false);
+//             await deletePost(props.document_uri);
+//           }}
+//         >
+//           Delete
+//         </ButtonPrimary>
+//       </div>
+//     );
+//   }
+//}
 
 function PublishedDate(props: { dateString: string }) {
   const formattedDate = useLocalizedDate(props.dateString, {
@@ -237,9 +245,5 @@ function PublishedDate(props: { dateString: string }) {
     day: "2-digit",
   });
 
-  return (
-    <p className="text-sm text-tertiary">
-      Published {formattedDate}
-    </p>
-  );
+  return <p className="text-sm text-tertiary">Published {formattedDate}</p>;
 }

@@ -16,6 +16,7 @@ import { focusPage } from ".";
 import { PageOptions } from "./PageOptions";
 import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { useDrawerOpen } from "app/lish/[did]/[publication]/[rkey]/Interactions/InteractionDrawer";
+import { usePreserveScroll } from "src/hooks/usePreserveScroll";
 
 export function Page(props: {
   entityID: string;
@@ -60,7 +61,7 @@ export function Page(props: {
           />
         }
       >
-        {props.first && (
+        {props.first && pageType === "doc" && (
           <>
             <PublicationMetadata />
           </>
@@ -83,6 +84,7 @@ export const PageWrapper = (props: {
   pageType: "canvas" | "doc";
   drawerOpen: boolean | undefined;
 }) => {
+  let { ref } = usePreserveScroll<HTMLDivElement>(props.id);
   return (
     // this div wraps the contents AND the page options.
     // it needs to be its own div because this container does NOT scroll, and therefore doesn't clip the absolutely positioned pageOptions
@@ -95,6 +97,7 @@ export const PageWrapper = (props: {
         it needs to be a separate div so that the user can scroll from anywhere on the page if there isn't a card border
         */}
       <div
+        ref={ref}
         onClick={props.onClickAction}
         id={props.id}
         className={`

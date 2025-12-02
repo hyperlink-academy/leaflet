@@ -7,6 +7,7 @@ import { markAsRead } from "./getNotifications";
 import { ReplyNotification } from "./ReplyNotification";
 import { useIdentityData } from "components/IdentityProvider";
 import { FollowNotification } from "./FollowNotification";
+import { QuoteNotification } from "./MentionNotification";
 
 export function NotificationList({
   notifications,
@@ -25,8 +26,10 @@ export function NotificationList({
 
   if (notifications.length === 0)
     return (
-      <div className="w-full container italic text-tertiary text-center sm:p-4 p-3">
-        no notifications yet...
+      <div className="w-full text-sm flex flex-col gap-1 container italic text-tertiary text-center sm:p-4 p-3">
+        <div className="text-base font-bold">no notifications yet...</div>
+        Here, you&apos;ll find notifications about new follows, comments,
+        mentions, and replies!
       </div>
     );
   return (
@@ -39,6 +42,9 @@ export function NotificationList({
           }
           if (n.type === "subscribe") {
             return <FollowNotification key={n.id} {...n} />;
+          }
+          if (n.type === "quote") {
+            return <QuoteNotification key={n.id} {...n} />;
           }
         })}
       </div>

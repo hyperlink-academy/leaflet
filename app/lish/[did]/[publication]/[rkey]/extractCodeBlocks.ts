@@ -1,16 +1,17 @@
 import {
   PubLeafletDocument,
   PubLeafletPagesLinearDocument,
+  PubLeafletPagesCanvas,
   PubLeafletBlocksCode,
 } from "lexicons/api";
 import { codeToHtml, bundledLanguagesInfo, bundledThemesInfo } from "shiki";
 
 export async function extractCodeBlocks(
-  blocks: PubLeafletPagesLinearDocument.Block[],
+  blocks: PubLeafletPagesLinearDocument.Block[] | PubLeafletPagesCanvas.Block[],
 ): Promise<Map<string, string>> {
   const codeBlocks = new Map<string, string>();
 
-  // Process all pages in the document
+  // Process all blocks (works for both linear and canvas)
   for (let i = 0; i < blocks.length; i++) {
     const block = blocks[i];
     const currentIndex = [i];

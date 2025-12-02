@@ -70,7 +70,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   }, [rep, props.entityID]);
 
   if (!permission) return null;
-  if (pub) return null;
+  if (pub?.publications) return null;
 
   return (
     <>
@@ -111,7 +111,7 @@ export const ThemeSetterContent = (props: {
   }, [rep, props.entityID]);
 
   if (!permission) return null;
-  if (pub) return null;
+  if (pub?.publications) return null;
   return (
     <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
       <div className="themeBGLeaflet flex">

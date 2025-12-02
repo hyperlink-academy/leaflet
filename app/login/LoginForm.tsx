@@ -213,7 +213,7 @@ export function BlueskyLogin(props: {
           </ButtonPrimary>
           <button
             type="button"
-            className={`${props.compact ? "text-xs" : "text-sm"} text-accent-contrast place-self-center mt-[6px]`}
+            className={`${props.compact ? "text-xs mt-0.5" : "text-sm  mt-[6px]"} text-accent-contrast place-self-center`}
             onClick={() => setSigningWithHandle(true)}
           >
             use an ATProto handle

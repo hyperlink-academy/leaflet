@@ -7,7 +7,7 @@ import { elementId } from "src/utils/elementId";
 import { focusBlock } from "src/utils/focusBlock";
 import { AppBskyFeedDefs, AppBskyFeedPost, RichText } from "@atproto/api";
 import { Separator } from "components/Layout";
-import { useInitialPageLoad } from "components/InitialPageLoadProvider";
+import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
@@ -123,7 +123,7 @@ export const PubBlueskyPostBlock = (props: {
 };
 
 const ClientDate = (props: { date?: string }) => {
-  let pageLoaded = useInitialPageLoad();
+  let pageLoaded = useHasPageLoaded();
   const formattedDate = useLocalizedDate(
     props.date || new Date().toISOString(),
     {

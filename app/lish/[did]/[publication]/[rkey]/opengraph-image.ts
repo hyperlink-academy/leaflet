@@ -4,9 +4,10 @@ export const runtime = "edge";
 export const revalidate = 60;
 
 export default async function OpenGraphImage(props: {
-  params: { publication: string; did: string; rkey: string };
+  params: Promise<{ publication: string; did: string; rkey: string }>;
 }) {
+  let params = await props.params;
   return getMicroLinkOgImage(
-    `/lish/${decodeURIComponent(props.params.did)}/${decodeURIComponent(props.params.publication)}/${props.params.rkey}/`,
+    `/lish/${decodeURIComponent(params.did)}/${decodeURIComponent(params.publication)}/${params.rkey}/`,
   );
 }

@@ -10,7 +10,6 @@ import { BlueskyEmbed, PostNotAvailable } from "./BlueskyEmbed";
 import { BlueskyPostEmpty } from "./BlueskyEmpty";
 import { BlueskyRichText } from "./BlueskyRichText";
 import { Separator } from "components/Layout";
-import { useInitialPageLoad } from "components/InitialPageLoadProvider";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";

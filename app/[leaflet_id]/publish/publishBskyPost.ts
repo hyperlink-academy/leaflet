@@ -12,6 +12,10 @@ import { AtpBaseClient, PubLeafletDocument } from "lexicons/api";
 import { createOauthClient } from "src/atproto-oauth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
+import {
+  getMicroLinkOgImage,
+  getWebpageImage,
+} from "src/utils/getMicroLinkOgImage";
 
 export async function publishPostToBsky(args: {
   text: string;
@@ -31,14 +35,11 @@ export async function publishPostToBsky(args: {
     credentialSession.fetchHandler.bind(credentialSession),
   );
   let newPostUrl = args.url;
-  let preview_image = await fetch(
-    `https://pro.microlink.io/?url=${newPostUrl}&screenshot=true&viewport.width=1400&viewport.height=733&meta=false&embed=screenshot.url&force=true`,
-    {
-      headers: {
-        "x-api-key": process.env.MICROLINK_API_KEY!,
-      },
-    },
-  );
+  let preview_image = await getWebpageImage(newPostUrl, {
+    width: 1400,
+    height: 733,
+    noCache: true,
+  });
 
   let binary = await preview_image.blob();
   let resized_preview_image = await sharp(await binary.arrayBuffer())

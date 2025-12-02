@@ -47,9 +47,14 @@ export const BlockCommandBar = ({
   };
 
   let commandResults = blockCommands.filter((command) => {
-    const matchesSearch = command.name
+    const lowerSearchValue = searchValue.toLocaleLowerCase();
+    const matchesName = command.name
       .toLocaleLowerCase()
-      .includes(searchValue.toLocaleLowerCase());
+      .includes(lowerSearchValue);
+    const matchesAlternate = command.alternateNames?.some((altName) =>
+      altName.toLocaleLowerCase().includes(lowerSearchValue)
+    ) ?? false;
+    const matchesSearch = matchesName || matchesAlternate;
     const isVisible = !pub || !command.hiddenInPublication;
     return matchesSearch && isVisible;
   });

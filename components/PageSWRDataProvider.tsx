@@ -7,6 +7,9 @@ import { callRPC } from "app/api/rpc/client";
 import { getPollData } from "actions/pollActions";
 import type { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { createContext, useContext } from "react";
+import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { AtUri } from "@atproto/syntax";
 
 export const StaticLeafletDataContext = createContext<
   null | GetLeafletDataReturnType["result"]["data"]
@@ -66,17 +69,60 @@ let useLeafletData = () => {
 };
 export function useLeafletPublicationData() {
   let { data, mutate } = useLeafletData();
+
+  // First check for leaflets in publications
+  let pubData = getPublicationMetadataFromLeafletData(data);
+
   return {
-    data:
-      data?.leaflets_in_publications?.[0] ||
-      data?.permission_token_rights[0].entity_sets?.permission_tokens?.find(
-        (p) => p.leaflets_in_publications.length,
-      )?.leaflets_in_publications?.[0] ||
-      null,
+    data: pubData || null,
     mutate,
   };
 }
 export function useLeafletDomains() {
   let { data, mutate } = useLeafletData();
   return { data: data?.custom_domain_routes, mutate: mutate };
+}
+
+export function useLeafletPublicationStatus() {
+  const data = useContext(StaticLeafletDataContext);
+  if (!data) return null;
+
+  const publishedInPublication = data.leaflets_in_publications?.find(
+    (l) => l.doc,
+  );
+  const publishedStandalone = data.leaflets_to_documents?.find(
+    (l) => !!l.documents,
+  );
+
+  const documentUri =
+    publishedInPublication?.documents?.uri ?? publishedStandalone?.document;
+
+  // Compute the full post URL for sharing
+  let postShareLink: string | undefined;
+  if (publishedInPublication?.publications && publishedInPublication.documents) {
+    // Published in a publication - use publication URL + document rkey
+    const docUri = new AtUri(publishedInPublication.documents.uri);
+    postShareLink = `${getPublicationURL(publishedInPublication.publications)}/${docUri.rkey}`;
+  } else if (publishedStandalone?.document) {
+    // Standalone published post - use /p/{did}/{rkey} format
+    const docUri = new AtUri(publishedStandalone.document);
+    postShareLink = `/p/${docUri.host}/${docUri.rkey}`;
+  }
+
+  return {
+    token: data,
+    leafletId: data.root_entity,
+    shareLink: data.id,
+    // Draft state - in a publication but not yet published
+    draftInPublication:
+      data.leaflets_in_publications?.[0]?.publication ?? undefined,
+    // Published state
+    isPublished: !!(publishedInPublication || publishedStandalone),
+    publishedAt:
+      publishedInPublication?.documents?.indexed_at ??
+      publishedStandalone?.documents?.indexed_at,
+    documentUri,
+    // Full URL for sharing published posts
+    postShareLink,
+  };
 }

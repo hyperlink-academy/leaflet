@@ -247,7 +247,9 @@ export function BlueskyPostEditorProsemirror(props: {
           view.updateState(newState);
           setEditorState(newState);
           props.editorStateRef.current = newState;
-          props.onCharCountChange?.(newState.doc.textContent.length);
+          props.onCharCountChange?.(
+            newState.doc.textContent.length + newState.doc.children.length - 1,
+          );
         },
       },
     );

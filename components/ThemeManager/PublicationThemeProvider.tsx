@@ -16,6 +16,9 @@ const PubThemeDefaults = {
   accentText: "#FFFFFF",
   accentBackground: "#0000FF",
 };
+
+// Default page background for standalone leaflets (matches editor default)
+const StandalonePageBackground = "#FFFFFF";
 function parseThemeColor(
   c: PubLeafletThemeColor.Rgb | PubLeafletThemeColor.Rgba,
 ) {
@@ -26,15 +29,15 @@ function parseThemeColor(
 }
 
 let useColor = (
-  record: PubLeafletPublication.Record | null | undefined,
+  theme: PubLeafletPublication.Record["theme"] | null | undefined,
   c: keyof typeof PubThemeDefaults,
 ) => {
   return useMemo(() => {
-    let v = record?.theme?.[c];
+    let v = theme?.[c];
     if (isColor(v)) {
       return parseThemeColor(v);
     } else return parseColor(PubThemeDefaults[c]);
-  }, [record?.theme?.[c]]);
+  }, [theme?.[c]]);
 };
 let isColor = (
   c: any,
@@ -53,10 +56,10 @@ export function PublicationThemeProviderDashboard(props: {
   return (
     <PublicationThemeProvider
       pub_creator={pub?.identity_did || ""}
-      record={pub?.record as PubLeafletPublication.Record}
+      theme={(pub?.record as PubLeafletPublication.Record)?.theme}
     >
       <PublicationBackgroundProvider
-        record={pub?.record as PubLeafletPublication.Record}
+        theme={(pub?.record as PubLeafletPublication.Record)?.theme}
         pub_creator={pub?.identity_did || ""}
       >
         {props.children}
@@ -66,20 +69,17 @@ export function PublicationThemeProviderDashboard(props: {
 }
 
 export function PublicationBackgroundProvider(props: {
-  record?: PubLeafletPublication.Record | null;
+  theme?: PubLeafletPublication.Record["theme"] | null;
   pub_creator: string;
   className?: string;
   children: React.ReactNode;
 }) {
-  let backgroundImage = props.record?.theme?.backgroundImage?.image?.ref
-    ? blobRefToSrc(
-        props.record?.theme?.backgroundImage?.image?.ref,
-        props.pub_creator,
-      )
+  let backgroundImage = props.theme?.backgroundImage?.image?.ref
+    ? blobRefToSrc(props.theme?.backgroundImage?.image?.ref, props.pub_creator)
     : null;
 
-  let backgroundImageRepeat = props.record?.theme?.backgroundImage?.repeat;
-  let backgroundImageSize = props.record?.theme?.backgroundImage?.width || 500;
+  let backgroundImageRepeat = props.theme?.backgroundImage?.repeat;
+  let backgroundImageSize = props.theme?.backgroundImage?.width || 500;
   return (
     <div
       className="PubBackgroundWrapper w-full bg-bg-leaflet text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
@@ -96,10 +96,11 @@ export function PublicationBackgroundProvider(props: {
 export function PublicationThemeProvider(props: {
   local?: boolean;
   children: React.ReactNode;
-  record?: PubLeafletPublication.Record | null;
+  theme?: PubLeafletPublication.Record["theme"] | null;
   pub_creator: string;
+  isStandalone?: boolean;
 }) {
-  let colors = usePubTheme(props.record);
+  let colors = usePubTheme(props.theme, props.isStandalone);
   return (
     <BaseThemeProvider local={props.local} {...colors}>
       {props.children}
@@ -107,16 +108,25 @@ export function PublicationThemeProvider(props: {
   );
 }
 
-export const usePubTheme = (record?: PubLeafletPublication.Record | null) => {
-  let bgLeaflet = useColor(record, "backgroundColor");
-  let bgPage = useColor(record, "pageBackground");
-  bgPage = record?.theme?.pageBackground ? bgPage : bgLeaflet;
-  let showPageBackground = record?.theme?.showPageBackground;
+export const usePubTheme = (
+  theme?: PubLeafletPublication.Record["theme"] | null,
+  isStandalone?: boolean,
+) => {
+  let bgLeaflet = useColor(theme, "backgroundColor");
+  let bgPage = useColor(theme, "pageBackground");
+  // For standalone documents, use the editor default page background (#FFFFFF)
+  // For publications without explicit pageBackground, use bgLeaflet
+  if (isStandalone && !theme?.pageBackground) {
+    bgPage = parseColor(StandalonePageBackground);
+  } else if (theme && !theme.pageBackground) {
+    bgPage = bgLeaflet;
+  }
+  let showPageBackground = theme?.showPageBackground;
 
-  let primary = useColor(record, "primary");
+  let primary = useColor(theme, "primary");
 
-  let accent1 = useColor(record, "accentBackground");
-  let accent2 = useColor(record, "accentText");
+  let accent1 = useColor(theme, "accentBackground");
+  let accent2 = useColor(theme, "accentText");
 
   let highlight1 = useEntity(null, "theme/highlight-1")?.data.value;
   let highlight2 = useColorAttribute(null, "theme/highlight-2");
@@ -136,10 +146,10 @@ export const usePubTheme = (record?: PubLeafletPublication.Record | null) => {
 };
 
 export const useLocalPubTheme = (
-  record: PubLeafletPublication.Record | undefined,
+  theme: PubLeafletPublication.Record["theme"] | undefined,
   showPageBackground?: boolean,
 ) => {
-  const pubTheme = usePubTheme(record);
+  const pubTheme = usePubTheme(theme);
   const [localOverrides, setTheme] = useState<Partial<typeof pubTheme>>({});
 
   const mergedTheme = useMemo(() => {

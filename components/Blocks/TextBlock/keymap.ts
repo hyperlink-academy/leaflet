@@ -142,9 +142,12 @@ export const TextBlockKeymap = (
       });
     },
     "Shift-Enter": (state, dispatch, view) => {
-      return um.withUndoGroup(() =>
-        enter(propsRef, repRef)(state, dispatch, view),
-      );
+      // Insert a hard break
+      let hardBreak = schema.nodes.hard_break.create();
+      if (dispatch) {
+        dispatch(state.tr.replaceSelectionWith(hardBreak).scrollIntoView());
+      }
+      return true;
     },
     "Ctrl-Enter": CtrlEnter(propsRef, repRef),
     "Meta-Enter": CtrlEnter(propsRef, repRef),

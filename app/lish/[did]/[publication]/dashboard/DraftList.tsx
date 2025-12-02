@@ -26,8 +26,11 @@ export function DraftList(props: {
         cardBorderHidden={!props.showPageBackground}
         leaflets={leaflets_in_publications
           .filter((l) => !l.documents)
+          .filter((l) => !l.archived)
           .map((l) => {
             return {
+              archived: l.archived,
+              added_at: "",
               token: {
                 ...l.permission_tokens!,
                 leaflets_in_publications: [
@@ -39,7 +42,6 @@ export function DraftList(props: {
                   },
                 ],
               },
-              added_at: "",
             };
           })}
         initialFacts={pub_data.leaflet_data.facts || {}}

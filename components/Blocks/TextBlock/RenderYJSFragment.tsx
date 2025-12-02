@@ -60,6 +60,10 @@ export function RenderYJSFragment({
                   );
                 }
 
+                if (node.constructor === XmlElement && node.nodeName === "hard_break") {
+                  return <br key={index} />;
+                }
+
                 return null;
               })
             )}
@@ -146,6 +150,10 @@ export function YJSFragmentToString(
   node: XmlElement | XmlText | XmlHook,
 ): string {
   if (node.constructor === XmlElement) {
+    // Handle hard_break nodes specially
+    if (node.nodeName === "hard_break") {
+      return "\n";
+    }
     return node
       .toArray()
       .map((f) => YJSFragmentToString(f))

@@ -104,25 +104,28 @@ async function handleEvent(evt: Event) {
         data: record.value as Json,
       });
       if (docResult.error) console.log(docResult.error);
-      let publicationURI = new AtUri(record.value.publication);
+      if (record.value.publication) {
+        let publicationURI = new AtUri(record.value.publication);
 
-      if (publicationURI.host !== evt.uri.host) {
-        console.log("Unauthorized to create post!");
-        return;
+        if (publicationURI.host !== evt.uri.host) {
+          console.log("Unauthorized to create post!");
+          return;
+        }
+        let docInPublicationResult = await supabase
+          .from("documents_in_publications")
+          .upsert({
+            publication: record.value.publication,
+            document: evt.uri.toString(),
+          });
+        await supabase
+          .from("documents_in_publications")
+          .delete()
+          .neq("publication", record.value.publication)
+          .eq("document", evt.uri.toString());
+
+        if (docInPublicationResult.error)
+          console.log(docInPublicationResult.error);
       }
-      let docInPublicationResult = await supabase
-        .from("documents_in_publications")
-        .upsert({
-          publication: record.value.publication,
-          document: evt.uri.toString(),
-        });
-      await supabase
-        .from("documents_in_publications")
-        .delete()
-        .neq("publication", record.value.publication)
-        .eq("document", evt.uri.toString());
-      if (docInPublicationResult.error)
-        console.log(docInPublicationResult.error);
     }
     if (evt.event === "delete") {
       await supabase.from("documents").delete().eq("uri", evt.uri.toString());

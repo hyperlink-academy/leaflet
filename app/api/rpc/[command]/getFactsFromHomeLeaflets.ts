@@ -4,7 +4,6 @@ import type { Attribute } from "src/replicache/attributes";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { scanIndexLocal } from "src/replicache/utils";
-import { getBlocksWithTypeLocal } from "src/hooks/queries/useBlocks";
 import * as base64 from "base64-js";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { applyUpdate, Doc } from "yjs";
@@ -35,9 +34,39 @@ export const getFactsFromHomeLeaflets = makeRoute({
         let scan = scanIndexLocal(facts[token]);
         let [root] = scan.eav(token, "root/page");
         let rootEntity = root?.data.value || token;
-        let [title] = getBlocksWithTypeLocal(facts[token], rootEntity).filter(
-          (b) => b.type === "text" || b.type === "heading",
-        );
+
+        // Check page type to determine which blocks to look up
+        let [pageType] = scan.eav(rootEntity, "page/type");
+        let isCanvas = pageType?.data.value === "canvas";
+
+        // Get blocks and sort by position
+        let rawBlocks = isCanvas
+          ? scan.eav(rootEntity, "canvas/block").sort((a, b) => {
+              if (a.data.position.y === b.data.position.y)
+                return a.data.position.x - b.data.position.x;
+              return a.data.position.y - b.data.position.y;
+            })
+          : scan.eav(rootEntity, "card/block").sort((a, b) => {
+              if (a.data.position === b.data.position)
+                return a.id > b.id ? 1 : -1;
+              return a.data.position > b.data.position ? 1 : -1;
+            });
+
+        // Map to get type and filter for text/heading
+        let blocks = rawBlocks
+          .map((b) => {
+            let type = scan.eav(b.data.value, "block/type")[0];
+            if (
+              !type ||
+              (type.data.value !== "text" && type.data.value !== "heading")
+            )
+              return null;
+            return b.data;
+          })
+          .filter((b): b is NonNullable<typeof b> => b !== null);
+
+        let title = blocks[0];
+
         if (!title) titles[token] = "Untitled";
         else {
           let [content] = scan.eav(title.value, "block/text");

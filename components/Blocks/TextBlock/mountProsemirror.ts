@@ -102,6 +102,10 @@ export function useMountProsemirror({
         editorState.view?.updateState(editorState.editor);
     });
 
+    let editorState = useEditorStates.getState().editorStates[entityID];
+    if (editorState?.editor && !editorState.initial)
+      editorState.view?.updateState(editorState.editor);
+
     return () => {
       unsubscribe();
       view.destroy();
