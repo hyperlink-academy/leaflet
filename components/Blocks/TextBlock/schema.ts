@@ -1,3 +1,4 @@
+import { AtUri } from "@atproto/api";
 import { Schema, Node, MarkSpec } from "prosemirror-model";
 import { marks } from "prosemirror-schema-basic";
 import { theme } from "tailwind.config";
@@ -119,10 +120,41 @@ let baseSchema = {
         },
       ],
       toDOM(node) {
+        let className = "atMention text-accent-contrast";
+        let aturi = new AtUri(node.attrs.atURI);
+        if (aturi.collection === "pub.leaflet.publication")
+          className += " font-bold";
+        if (aturi.collection === "pub.leaflet.document") className += " italic";
+
+        // For publications and documents, show icon
+        if (
+          aturi.collection === "pub.leaflet.publication" ||
+          aturi.collection === "pub.leaflet.document"
+        ) {
+          return [
+            "span",
+            {
+              class: className,
+              "data-at-uri": node.attrs.atURI,
+            },
+            [
+              "img",
+              {
+                src: `/api/pub_icon?at_uri=${encodeURIComponent(node.attrs.atURI)}`,
+                class:
+                  "inline-block w-4 h-4 rounded-full ml-1 align-text-bottom",
+                alt: "Publication icon",
+                loading: "lazy",
+              },
+            ],
+            ["span", 0],
+          ];
+        }
+
         return [
           "span",
           {
-            class: "atMention text-accent-contrast",
+            class: className,
             "data-at-uri": node.attrs.atURI,
           },
           0,
