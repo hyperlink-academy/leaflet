@@ -14,11 +14,10 @@ export const size = {
 };
 
 export const contentType = "image/png";
-export default async function Icon({
-  params,
-}: {
-  params: { did: string; publication: string };
+export default async function Icon(props: {
+  params: Promise<{ did: string; publication: string }>;
 }) {
+  const params = await props.params;
   try {
     let did = decodeURIComponent(params.did);
     let uri;
