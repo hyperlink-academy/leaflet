@@ -197,7 +197,7 @@ const CommandResult = (props: {
 
   return (
     <button
-      className={`commandResult menuItem text-secondary font-normal! py-0.5! mx-1 pl-0! ${isHighlighted && "bg-[var(--accent-light)]"}`}
+      className={`commandResult menuItem text-secondary font-normal! py-0.5! mx-1 pl-0! ${isHighlighted && "bg-[var(--accent-light)]!"}`}
       onMouseOver={() => {
         props.setHighlighted(props.name);
       }}

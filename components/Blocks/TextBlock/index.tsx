@@ -188,12 +188,18 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
   let editorState = useEditorStates(
     (s) => s.editorStates[props.entityID],
   )?.editor;
-  let { viewRef, handleMentionSelect, setMentionState, mentionStateRef } =
-    useMentionState(props.entityID);
+  const {
+    viewRef,
+    mentionOpen,
+    mentionCoords,
+    openMentionAutocomplete,
+    handleMentionSelect,
+    handleMentionOpenChange,
+  } = useMentionState(props.entityID);
 
   let { mountRef, actionTimeout } = useMountProsemirror({
     props,
-    mentionStateRef,
+    openMentionAutocomplete,
   });
 
   return (
@@ -230,6 +236,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
             }
           }}
           onFocus={() => {
+            handleMentionOpenChange(false);
             setTimeout(() => {
               useUIState.getState().setSelectedBlock(props);
               useUIState.setState(() => ({
@@ -255,14 +262,13 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           ${props.className}`}
           ref={mountRef}
         />
-        {editorState && focused && (
+        {focused && (
           <MentionAutocomplete
-            editorState={editorState}
+            open={mentionOpen}
+            onOpenChange={handleMentionOpenChange}
             view={viewRef}
             onSelect={handleMentionSelect}
-            onMentionStateChange={(active, range, selectedMention) => {
-              setMentionState({ active, range, selectedMention });
-            }}
+            coords={mentionCoords}
           />
         )}
         {editorState?.doc.textContent.length === 0 &&
@@ -459,21 +465,70 @@ const useMentionState = (entityID: string) => {
   let view = useEditorStates((s) => s.editorStates[entityID])?.view;
   let viewRef = useRef(view || null);
   viewRef.current = view || null;
-  const [mentionState, setMentionState] = useState<{
-    active: boolean;
-    range: { from: number; to: number } | null;
-    selectedMention: Mention | null;
-  }>({ active: false, range: null, selectedMention: null });
-  const mentionStateRef = useRef(mentionState);
-  mentionStateRef.current = mentionState;
+
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionCoords, setMentionCoords] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [mentionInsertPos, setMentionInsertPos] = useState<number | null>(null);
+
+  // Close autocomplete when this block is no longer focused
+  const isFocused = useUIState((s) => s.focusedEntity?.entityID === entityID);
+  useEffect(() => {
+    if (!isFocused) {
+      setMentionOpen(false);
+      setMentionCoords(null);
+      setMentionInsertPos(null);
+    }
+  }, [isFocused]);
+
+  const openMentionAutocomplete = useCallback(() => {
+    const view = useEditorStates.getState().editorStates[entityID]?.view;
+    if (!view) return;
+
+    // Get the position right after the @ we just inserted
+    const pos = view.state.selection.from;
+    setMentionInsertPos(pos);
+
+    // Get coordinates for the popup
+    const coords = view.coordsAtPos(pos - 1); // Position of the @
+    setMentionCoords({
+      top: coords.bottom + window.scrollY,
+      left: coords.left + window.scrollX,
+    });
+    setMentionOpen(true);
+  }, [entityID]);
 
   const handleMentionSelect = useCallback(
-    (mention: Mention, range: { from: number; to: number }) => {
-      let view = useEditorStates.getState().editorStates[entityID]?.view;
-      if (!view) return;
-      addMentionToEditor(mention, range, view);
+    (mention: Mention) => {
+      const view = useEditorStates.getState().editorStates[entityID]?.view;
+      if (!view || mentionInsertPos === null) return;
+
+      // The @ is at mentionInsertPos - 1, we need to replace it with the mention
+      const from = mentionInsertPos - 1;
+      const to = mentionInsertPos;
+
+      addMentionToEditor(mention, { from, to }, view);
+      view.focus();
     },
-    [],
+    [entityID, mentionInsertPos],
   );
-  return { mentionStateRef, handleMentionSelect, viewRef, setMentionState };
+
+  const handleMentionOpenChange = useCallback((open: boolean) => {
+    setMentionOpen(open);
+    if (!open) {
+      setMentionCoords(null);
+      setMentionInsertPos(null);
+    }
+  }, []);
+
+  return {
+    viewRef,
+    mentionOpen,
+    mentionCoords,
+    openMentionAutocomplete,
+    handleMentionSelect,
+    handleMentionOpenChange,
+  };
 };

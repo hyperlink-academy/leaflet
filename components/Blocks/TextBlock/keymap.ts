@@ -24,11 +24,6 @@ import { indent, outdent } from "src/utils/list-operations";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { UndoManager } from "src/undoManager";
-import {
-  addMentionToEditor,
-  MentionState,
-} from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
-
 type PropsRef = RefObject<
   BlockProps & {
     entity_set: { set: string };
@@ -39,7 +34,7 @@ export const TextBlockKeymap = (
   propsRef: PropsRef,
   repRef: RefObject<Replicache<ReplicacheMutators> | null>,
   um: UndoManager,
-  mentionStateRef: RefObject<MentionState>,
+  openMentionAutocomplete: () => void,
 ) =>
   ({
     "Meta-b": toggleMark(schema.marks.strong),
@@ -143,20 +138,6 @@ export const TextBlockKeymap = (
     "Shift-Backspace": backspace(propsRef, repRef),
     Enter: (state, dispatch, view) => {
       return um.withUndoGroup(() => {
-        const currentMentionState = mentionStateRef.current;
-        if (
-          currentMentionState.active &&
-          currentMentionState.selectedMention &&
-          currentMentionState.range
-        ) {
-          if (view)
-            addMentionToEditor(
-              currentMentionState.selectedMention,
-              currentMentionState.range,
-              view,
-            );
-          return true;
-        }
         return enter(propsRef, repRef)(state, dispatch, view);
       });
     },

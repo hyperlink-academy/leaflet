@@ -14,6 +14,7 @@ import { flushSync } from "react-dom";
 export const inputrules = (
   propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
   repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
+  openMentionAutocomplete?: () => void,
 ) =>
   inputRules({
     //Strikethrough
@@ -180,6 +181,14 @@ export const inputrules = (
           data: { type: "number", value: headingLevel },
         });
         return tr;
+      }),
+
+      // Mention - @ at start of line or after space
+      new InputRule(/(?:^|\s)@$/, (state, match, start, end) => {
+        if (!openMentionAutocomplete) return null;
+        // Schedule opening the autocomplete after the transaction is applied
+        setTimeout(() => openMentionAutocomplete(), 0);
+        return null; // Let the @ be inserted normally
       }),
     ],
   });

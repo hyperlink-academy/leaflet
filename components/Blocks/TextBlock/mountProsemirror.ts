@@ -23,14 +23,13 @@ import {
 import { useHandlePaste } from "./useHandlePaste";
 import { BlockProps } from "../Block";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { MentionState } from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
 
 export function useMountProsemirror({
   props,
-  mentionStateRef,
+  openMentionAutocomplete,
 }: {
   props: BlockProps;
-  mentionStateRef: React.RefObject<MentionState>;
+  openMentionAutocomplete: () => void;
 }) {
   let { entityID, parent } = props;
   let rep = useReplicache();
@@ -55,14 +54,14 @@ export function useMountProsemirror({
       propsRef,
       repRef,
       rep.undoManager,
-      mentionStateRef,
+      openMentionAutocomplete,
     );
     const editor = EditorState.create({
       schema: schema,
       plugins: [
         ySyncPlugin(value),
         keymap(km),
-        inputrules(propsRef, repRef),
+        inputrules(propsRef, repRef, openMentionAutocomplete),
         keymap(baseKeymap),
         highlightSelectionPlugin,
         autolink({

@@ -127,11 +127,6 @@ function createHashtagInputRule() {
     return tr;
   });
 }
-export type MentionState = {
-  active: boolean;
-  range: { from: number; to: number } | null;
-  selectedMention: Mention | null;
-};
 export function BlueskyPostEditorProsemirror(props: {
   editorStateRef: React.RefObject<EditorState | null>;
   initialContent?: string;
@@ -140,48 +135,77 @@ export function BlueskyPostEditorProsemirror(props: {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [editorState, setEditorState] = useState<EditorState | null>(null);
-  const [mentionState, setMentionState] = useState<MentionState>({
-    active: false,
-    range: null,
-    selectedMention: null,
-  });
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionCoords, setMentionCoords] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [mentionInsertPos, setMentionInsertPos] = useState<number | null>(null);
+
+  const openMentionAutocomplete = useCallback(() => {
+    if (!viewRef.current) return;
+    const view = viewRef.current;
+    const pos = view.state.selection.from;
+    setMentionInsertPos(pos);
+    const coords = view.coordsAtPos(pos - 1);
+    setMentionCoords({
+      top: coords.bottom + window.scrollY,
+      left: coords.left + window.scrollX,
+    });
+    setMentionOpen(true);
+  }, []);
 
   const handleMentionSelect = useCallback(
-    (mention: Mention, range: { from: number; to: number }) => {
+    (mention: Mention) => {
       if (mention.type !== "did") return;
-      if (!viewRef.current) return;
+      if (!viewRef.current || mentionInsertPos === null) return;
       const view = viewRef.current;
-      const { from, to } = range;
+      const from = mentionInsertPos - 1;
+      const to = mentionInsertPos;
       const tr = view.state.tr;
 
-      // Delete the query text (keep the @)
-      tr.delete(from + 1, to);
+      // Delete the @ symbol
+      tr.delete(from, to);
 
-      // Insert the mention text after the @
-      const mentionText = mention.handle;
-      tr.insertText(mentionText, from + 1);
+      // Insert @handle
+      const mentionText = "@" + mention.handle;
+      tr.insertText(mentionText, from);
 
-      // Apply mention mark to @ and handle
+      // Apply mention mark
       tr.addMark(
         from,
-        from + 1 + mentionText.length,
+        from + mentionText.length,
         bskyPostSchema.marks.mention.create({ did: mention.did }),
       );
 
       // Add a space after the mention
-      tr.insertText(" ", from + 1 + mentionText.length);
+      tr.insertText(" ", from + mentionText.length);
 
       view.dispatch(tr);
       view.focus();
     },
-    [],
+    [mentionInsertPos],
   );
 
-  const mentionStateRef = useRef(mentionState);
-  mentionStateRef.current = mentionState;
+  const handleMentionOpenChange = useCallback((open: boolean) => {
+    setMentionOpen(open);
+    if (!open) {
+      setMentionCoords(null);
+      setMentionInsertPos(null);
+    }
+  }, []);
 
   useLayoutEffect(() => {
     if (!mountRef.current) return;
+
+    // Input rule to trigger mention autocomplete when @ is typed
+    const mentionInputRule = new InputRule(
+      /(?:^|\s)@$/,
+      (state, match, start, end) => {
+        setTimeout(() => openMentionAutocomplete(), 0);
+        return null;
+      },
+    );
 
     const initialState = EditorState.create({
       schema: bskyPostSchema,
@@ -195,28 +219,11 @@ export function BlueskyPostEditorProsemirror(props: {
           })
         : undefined,
       plugins: [
-        inputRules({ rules: [createHashtagInputRule()] }),
+        inputRules({ rules: [createHashtagInputRule(), mentionInputRule] }),
         keymap({
           "Mod-z": undo,
           "Mod-y": redo,
           "Shift-Mod-z": redo,
-          Enter: (state, dispatch) => {
-            // Check if mention autocomplete is active
-            const currentMentionState = mentionStateRef.current;
-            if (
-              currentMentionState.active &&
-              currentMentionState.selectedMention &&
-              currentMentionState.range
-            ) {
-              handleMentionSelect(
-                currentMentionState.selectedMention,
-                currentMentionState.range,
-              );
-              return true;
-            }
-            // Otherwise let the default Enter behavior happen (new paragraph)
-            return false;
-          },
         }),
         keymap(baseKeymap),
         autolink({
@@ -251,20 +258,17 @@ export function BlueskyPostEditorProsemirror(props: {
       view.destroy();
       viewRef.current = null;
     };
-  }, [handleMentionSelect]);
+  }, [openMentionAutocomplete]);
 
   return (
     <div className="relative w-full h-full group">
-      {editorState && (
-        <MentionAutocomplete
-          editorState={editorState}
-          view={viewRef}
-          onSelect={handleMentionSelect}
-          onMentionStateChange={(active, range, selectedMention) => {
-            setMentionState({ active, range, selectedMention });
-          }}
-        />
-      )}
+      <MentionAutocomplete
+        open={mentionOpen}
+        onOpenChange={handleMentionOpenChange}
+        view={viewRef}
+        onSelect={handleMentionSelect}
+        coords={mentionCoords}
+      />
       {editorState?.doc.textContent.length === 0 && (
         <div className="italic text-tertiary absolute top-0 left-0 pointer-events-none">
           Write a post to share your writing!
@@ -388,14 +392,15 @@ export const addMentionToEditor = (
     );
     tr.insertText(" ", from + 1 + mention.handle.length);
   }
-  if (mention.type === "publication") {
-    tr.insertText(mention.name, from + 1);
+  if (mention.type === "publication" || mention.type === "post") {
+    let name = mention.type == "post" ? mention.title : mention.name;
+    tr.insertText(name, from + 1);
     tr.addMark(
       from,
-      from + 1 + mention.name.length,
+      from + 1 + name.length,
       schema.marks.atMention.create({ atURI: mention.uri }),
     );
-    tr.insertText(" ", from + 1 + mention.name.length);
+    tr.insertText(" ", from + 1 + name.length);
   }
 
   // Insert the mention text after the @

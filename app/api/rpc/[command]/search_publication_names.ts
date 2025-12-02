@@ -16,17 +16,22 @@ export const search_publication_names = makeRoute({
     { query, limit },
     { supabase }: Pick<Env, "supabase">,
   ) => {
-    // Search publications by name (case-insensitive partial match)
+    // Search publications by name in record (case-insensitive partial match)
     const { data: publications, error } = await supabase
       .from("publications")
-      .select("uri, name, identity_did, record")
-      .ilike("name", `%${query}%`)
+      .select("uri, record")
+      .ilike("record->>name", `%${query}%`)
       .limit(limit);
 
     if (error) {
       throw new Error(`Failed to search publications: ${error.message}`);
     }
 
-    return { result: { publications } };
+    const result = publications.map((p) => ({
+      uri: p.uri,
+      name: (p.record as { name?: string })?.name || "Untitled",
+    }));
+
+    return { result: { publications: result } };
   },
 });
