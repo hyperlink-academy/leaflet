@@ -23,11 +23,13 @@ export async function deleteLeaflet(permission_token: PermissionToken) {
   // Check publication and document ownership in one query
   let { data: tokenData } = await supabaseServerClient
     .from("permission_tokens")
-    .select(`
+    .select(
+      `
       id,
       leaflets_in_publications(publication, publications!inner(identity_did)),
       leaflets_to_documents(document, documents!inner(uri))
-    `)
+    `,
+    )
     .eq("id", permission_token.id)
     .single();
 
@@ -36,13 +38,17 @@ export async function deleteLeaflet(permission_token: PermissionToken) {
     const leafletInPubs = tokenData.leaflets_in_publications || [];
     if (leafletInPubs.length > 0) {
       if (!identity) {
-        throw new Error("Unauthorized: You must be logged in to delete a leaflet in a publication");
+        throw new Error(
+          "Unauthorized: You must be logged in to delete a leaflet in a publication",
+        );
       }
       const isOwner = leafletInPubs.some(
-        (pub: any) => pub.publications.identity_did === identity.atp_did
+        (pub: any) => pub.publications.identity_did === identity.atp_did,
       );
       if (!isOwner) {
-        throw new Error("Unauthorized: You must own the publication to delete this leaflet");
+        throw new Error(
+          "Unauthorized: You must own the publication to delete this leaflet",
+        );
       }
     }
 
@@ -50,13 +56,17 @@ export async function deleteLeaflet(permission_token: PermissionToken) {
     const leafletDocs = tokenData.leaflets_to_documents || [];
     if (leafletDocs.length > 0) {
       if (!identity) {
-        throw new Error("Unauthorized: You must be logged in to delete a published leaflet");
+        throw new Error(
+          "Unauthorized: You must be logged in to delete a published leaflet",
+        );
       }
       for (let leafletDoc of leafletDocs) {
         const docUri = leafletDoc.documents?.uri;
         // Extract the DID from the document URI (format: at://did:plc:xxx/...)
-        if (docUri && !docUri.includes(identity.atp_did)) {
-          throw new Error("Unauthorized: You must own the published document to delete this leaflet");
+        if (docUri && identity.atp_did && !docUri.includes(identity.atp_did)) {
+          throw new Error(
+            "Unauthorized: You must own the published document to delete this leaflet",
+          );
         }
       }
     }
