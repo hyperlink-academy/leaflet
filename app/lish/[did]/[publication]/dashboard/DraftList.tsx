@@ -4,6 +4,7 @@ import { NewDraftSecondaryButton } from "./NewDraftButton";
 import React from "react";
 import { usePublicationData } from "./PublicationSWRProvider";
 import { LeafletList } from "app/(home-pages)/home/HomeLayout";
+import { EmptyState } from "components/EmptyState";
 
 export function DraftList(props: {
   searchValue: string;
@@ -12,6 +13,37 @@ export function DraftList(props: {
   let { data: pub_data } = usePublicationData();
   if (!pub_data?.publication) return null;
   let { leaflets_in_publications, ...publication } = pub_data.publication;
+  let filteredLeaflets = leaflets_in_publications
+    .filter((l) => !l.documents)
+    .filter((l) => !l.archived)
+    .map((l) => {
+      return {
+        archived: l.archived,
+        added_at: "",
+        token: {
+          ...l.permission_tokens!,
+          leaflets_in_publications: [
+            {
+              ...l,
+              publications: {
+                ...publication,
+              },
+            },
+          ],
+        },
+      };
+    });
+  
+  
+
+  if (!filteredLeaflets || filteredLeaflets.length === 0)
+    return (
+      <EmptyState>
+        No drafts yet!
+        <NewDraftSecondaryButton publication={pub_data?.publication?.uri} />
+      </EmptyState>
+    );
+
   return (
     <div className="flex flex-col gap-4">
       <NewDraftSecondaryButton
@@ -24,26 +56,7 @@ export function DraftList(props: {
         showPreview={false}
         defaultDisplay="list"
         cardBorderHidden={!props.showPageBackground}
-        leaflets={leaflets_in_publications
-          .filter((l) => !l.documents)
-          .filter((l) => !l.archived)
-          .map((l) => {
-            return {
-              archived: l.archived,
-              added_at: "",
-              token: {
-                ...l.permission_tokens!,
-                leaflets_in_publications: [
-                  {
-                    ...l,
-                    publications: {
-                      ...publication,
-                    },
-                  },
-                ],
-              },
-            };
-          })}
+        leaflets={filteredLeaflets}
         initialFacts={pub_data.leaflet_data.facts || {}}
         titles={{
           ...leaflets_in_publications.reduce(

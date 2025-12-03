@@ -8,6 +8,7 @@ import useSWRInfinite from "swr/infinite";
 import { useEffect, useRef } from "react";
 import { Cursor } from "./getReaderFeed";
 import Link from "next/link";
+import { EmptyState } from "components/EmptyState";
 
 export const SubscriptionsContent = (props: {
   publications: PublicationSubscription[];
@@ -93,13 +94,13 @@ export const SubscriptionsContent = (props: {
 
 export const SubscriptionsEmpty = () => {
   return (
-    <div className="flex flex-col gap-2 container bg-[rgba(var(--bg-page),.7)] sm:p-4 p-3 justify-between text-center text-tertiary">
+    <EmptyState>
       You haven't subscribed to any publications yet!
       <Link href={"/discover"}>
         <ButtonPrimary className="mx-auto place-self-center">
           <DiscoverSmall /> Discover Publications
         </ButtonPrimary>
       </Link>
-    </div>
+    </EmptyState>
   );
 };

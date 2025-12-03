@@ -20,6 +20,7 @@ import { CommentTiny } from "components/Icons/CommentTiny";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { LeafletOptions } from "app/(home-pages)/home/LeafletList/LeafletOptions";
 import { StaticLeafletDataContext } from "components/PageSWRDataProvider";
+import { EmptyState } from "components/EmptyState";
 
 export function PublishedPostsList(props: {
   searchValue: string;
@@ -30,11 +31,7 @@ export function PublishedPostsList(props: {
   let { publication } = data!;
   if (!publication) return null;
   if (publication.documents_in_publications.length === 0)
-    return (
-      <div className="italic text-tertiary w-full container text-center place-items-center flex flex-col gap-3 p-3">
-        Nothing's been published yet...
-      </div>
-    );
+    return <EmptyState>Nothing's been published yet...</EmptyState>;
   return (
     <div className="publishedList w-full flex flex-col gap-2 pb-4">
       {publication.documents_in_publications

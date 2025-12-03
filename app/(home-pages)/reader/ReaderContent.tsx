@@ -21,6 +21,7 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { EmptyState } from "components/EmptyState";
 
 export const ReaderContent = (props: {
   posts: Post[];
@@ -272,7 +273,7 @@ const PostInterations = (props: {
 };
 export const ReaderEmpty = () => {
   return (
-    <div className="flex flex-col gap-2 container bg-[rgba(var(--bg-page),.7)] sm:p-4 p-3 justify-between text-center text-tertiary">
+    <EmptyState>
       Nothing to read yet… <br />
       Subscribe to publications and find their posts here!
       <Link href={"/discover"}>
@@ -280,6 +281,6 @@ export const ReaderEmpty = () => {
           <DiscoverSmall /> Discover Publications
         </ButtonPrimary>
       </Link>
-    </div>
+    </EmptyState>
   );
 };

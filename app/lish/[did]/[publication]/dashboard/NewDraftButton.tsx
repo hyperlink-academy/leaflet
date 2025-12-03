@@ -32,6 +32,7 @@ export function NewDraftSecondaryButton(props: {
     <ButtonSecondary
       fullWidth={props.fullWidth}
       id="new-leaflet-button"
+      className="mx-auto"
       onClick={async () => {
         let newLeaflet = await createPublicationDraft(props.publication);
         router.push(`/${newLeaflet}`);

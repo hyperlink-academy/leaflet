@@ -29,6 +29,7 @@ import {
   HomeEmptyState,
   PublicationBanner,
 } from "./HomeEmpty/HomeEmpty";
+import { EmptyState } from "components/EmptyState";
 
 export type Leaflet = {
   added_at: string;
@@ -213,6 +214,11 @@ export function LeafletList(props: {
         w-full
         ${display === "grid" ? "grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-6 sm:gap-y-5 grow" : "flex flex-col gap-2 "} `}
     >
+      {searchedLeaflets.length === 0 && (
+        <EmptyState>
+          <div className="italic">Oh no! No results!</div>
+        </EmptyState>
+      )}
       {props.leaflets.map(({ token: leaflet, added_at, archived }, index) => (
         <ReplicacheProvider
           disablePull
