@@ -34,6 +34,13 @@ export const CreateNewLeafletButton = (props: {}) => {
         icon=<AddTiny className="m-1 shrink-0" />
         label="New"
         className="grow rounded-r-none sm:ml-0! sm:mr-0! ml-1! mr-0!"
+        onClick={async () => {
+          let id = await createNewLeaflet({
+            pageType: "doc",
+            redirectUser: false,
+          });
+          openNewLeaflet(id);
+        }}
       />
       <Separator />
       <CreateNewMoreOptionsButton />
