@@ -75,9 +75,8 @@ export const CreateNewMoreOptionsButton = (props: {}) => {
         />
       }
     >
-      <div className="mx-2 text-sm text-tertiary font-bold ">New Leaflet</div>
       <MenuItem
-        className="leading-tight"
+        className="leading-snug"
         onSelect={async () => {
           let id = await createNewLeaflet({
             pageType: "doc",
@@ -95,7 +94,7 @@ export const CreateNewMoreOptionsButton = (props: {}) => {
         </div>
       </MenuItem>
       <MenuItem
-        className="leading-tight"
+        className="leading-snug"
         onSelect={async () => {
           let id = await createNewLeaflet({
             pageType: "canvas",
@@ -112,35 +111,45 @@ export const CreateNewMoreOptionsButton = (props: {}) => {
           </div>
         </div>
       </MenuItem>
-      <hr className="border-border-light mt-2 mb-1 -mx-1" />
-      <div className="mx-2 text-sm text-tertiary  font-bold">New Draft</div>
-      <MenuItem className="leading-tight" onSelect={async () => {}}>
-        <LooseLeafSmall />
-        <div className="flex flex-col">
-          Looseleaf
-          <div className="text-tertiary text-sm font-normal">
-            A one off post on AT Proto
+      {identity && identity.atp_did && (
+        <>
+          <hr className="border-border-light mt-2 mb-1 -mx-1" />
+          <div className="mx-2 text-sm text-tertiary font-bold">
+            AT Proto Draft
           </div>
-        </div>
-      </MenuItem>
-      <hr className="border-border-light border-dashed mx-2 my-0.5" />
-      {identity?.publications.map((pub) => {
-        let router = useRouter();
-        return (
-          <MenuItem
-            onSelect={async () => {
-              let newLeaflet = await createPublicationDraft(pub.uri);
-              router.push(`/${newLeaflet}`);
-            }}
-          >
-            <PubIcon
-              record={pub.record as PubLeafletPublication.Record}
-              uri={pub.uri}
-            />
-            {pub.name}
+          <MenuItem className="leading-snug" onSelect={async () => {}}>
+            <LooseLeafSmall />
+            <div className="flex flex-col">
+              Looseleaf
+              <div className="text-tertiary text-sm font-normal">
+                A one off post on AT Proto
+              </div>
+            </div>
           </MenuItem>
-        );
-      })}
+          {identity?.publications && identity.publications.length > 0 && (
+            <>
+              <hr className="border-border-light border-dashed mx-2 my-0.5" />
+              {identity?.publications.map((pub) => {
+                let router = useRouter();
+                return (
+                  <MenuItem
+                    onSelect={async () => {
+                      let newLeaflet = await createPublicationDraft(pub.uri);
+                      router.push(`/${newLeaflet}`);
+                    }}
+                  >
+                    <PubIcon
+                      record={pub.record as PubLeafletPublication.Record}
+                      uri={pub.uri}
+                    />
+                    {pub.name}
+                  </MenuItem>
+                );
+              })}
+            </>
+          )}
+        </>
+      )}
     </Menu>
   );
 };
