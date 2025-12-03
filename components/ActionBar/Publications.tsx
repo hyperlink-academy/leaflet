@@ -152,7 +152,7 @@ export const PubListEmptyContent = (props: { compact?: boolean }) => {
         <PubListEmptyIllo />
       </div>
       <div className="pt-1 font-bold">Publish on AT Proto</div>
-      {identity && !identity.atp_did ? (
+      {identity && identity.atp_did ? (
         //  has ATProto account and no pubs
         <>
           <div className="pb-2 text-secondary text-xs">
