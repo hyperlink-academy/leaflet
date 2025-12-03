@@ -104,14 +104,14 @@ export async function GET(req: NextRequest) {
       .webp({ quality: 90 })
       .toBuffer();
 
-    // Return with aggressive caching headers
+    // Return with caching headers
     return new NextResponse(resizedImage, {
       headers: {
         "Content-Type": "image/webp",
-        // Cache indefinitely on CDN, icons don't change
+        // Cache for 1 hour, but serve stale for much longer while revalidating
         "Cache-Control":
-          "public, max-age=31536000, immutable, s-maxage=31536000, stale-while-revalidate=604800",
-        "CDN-Cache-Control": "s-maxage=31536000, stale-while-revalidate=604800",
+          "public, max-age=3600, s-maxage=3600, stale-while-revalidate=2592000",
+        "CDN-Cache-Control": "s-maxage=3600, stale-while-revalidate=2592000",
       },
     });
   } catch (error) {

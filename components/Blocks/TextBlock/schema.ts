@@ -143,7 +143,9 @@ let baseSchema = {
                 src: `/api/pub_icon?at_uri=${encodeURIComponent(node.attrs.atURI)}`,
                 class:
                   "inline-block w-4 h-4 rounded-full ml-1 align-text-bottom",
-                alt: "Publication icon",
+                alt: "",
+                width: "16",
+                height: "16",
                 loading: "lazy",
               },
             ],
