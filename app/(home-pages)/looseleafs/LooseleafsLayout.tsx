@@ -1,5 +1,8 @@
 "use client";
-import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
+import {
+  DashboardLayout,
+  PublicationDashboardControls,
+} from "components/PageLayouts/DashboardLayout";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
@@ -11,6 +14,8 @@ import { useIdentityData } from "components/IdentityProvider";
 import useSWR from "swr";
 import { getHomeDocs } from "../home/storage";
 import { Leaflet, LeafletList } from "../home/HomeLayout";
+import { EmptyState } from "components/EmptyState";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 
 export const LooseleafsLayout = (props: {
   entityID: string | null;
@@ -36,10 +41,21 @@ export const LooseleafsLayout = (props: {
       id="looseleafs"
       cardBorderHidden={cardBorderHidden}
       currentPage="looseleafs"
-      defaultTab="home"
+      defaultTab="Drafts"
       actions={<Actions />}
       tabs={{
-        home: {
+        Drafts: {
+          controls: (
+            <PublicationDashboardControls
+              defaultDisplay={"list"}
+              hasBackgroundImage={cardBorderHidden}
+              searchValue={searchValue}
+              setSearchValueAction={setSearchValue}
+            />
+          ),
+          content: <LooseleafDraftList empty={true} />,
+        },
+        Published: {
           controls: null,
           content: (
             <LooseleafList
@@ -52,6 +68,26 @@ export const LooseleafsLayout = (props: {
         },
       }}
     />
+  );
+};
+
+const LooseleafDraftList = (props: { empty: boolean }) => {
+  if (props.empty)
+    return (
+      <EmptyState className="pt-2">
+        <div className="italic">
+          You haven't written any looseleaf drafts yet.
+        </div>
+        <ButtonPrimary className="mx-auto">
+          Start a Looseleaf Draft
+        </ButtonPrimary>
+      </EmptyState>
+    );
+  return (
+    <div className="flex flex-col">
+      <ButtonSecondary fullWidth>New Looseleaf Draft</ButtonSecondary>
+      This is where the draft would go if we had them lol
+    </div>
   );
 };
 
@@ -102,6 +138,17 @@ export const LooseleafList = (props: {
           token: ptoh.permission_tokens as PermissionToken,
         }))
     : [];
+
+  if (!leaflets || leaflets.length === 0)
+    return (
+      <EmptyState>
+        <div className="italic">You haven't published any looseleafs yet.</div>
+        <ButtonPrimary className="mx-auto">
+          Start a Looseleaf Draft
+        </ButtonPrimary>
+      </EmptyState>
+    );
+
   return (
     <LeafletList
       defaultDisplay="list"

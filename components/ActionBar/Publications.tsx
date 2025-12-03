@@ -23,7 +23,7 @@ export const PublicationButtons = (props: {
   currentPubUri: string | undefined;
 }) => {
   let { identity } = useIdentityData();
-  let looseleaves = identity?.permission_token_on_homepage.find(
+  let hasLooseleafs = !!identity?.permission_token_on_homepage.find(
     (f) => f.permission_tokens.leaflets_to_documents,
   );
 
@@ -34,7 +34,7 @@ export const PublicationButtons = (props: {
 
   return (
     <div className="pubListWrapper w-full  flex flex-col gap-1 sm:bg-transparent sm:border-0">
-      {looseleaves && (
+      {hasLooseleafs && (
         <>
           <SpeedyLink
             href={`/looseleafs`}

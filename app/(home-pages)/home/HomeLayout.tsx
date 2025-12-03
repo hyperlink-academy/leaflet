@@ -211,7 +211,7 @@ export function LeafletList(props: {
       className={`
         leafletList
         w-full
-        ${display === "grid" ? "grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-6 sm:gap-y-5 grow" : "flex flex-col gap-2 pt-2"} `}
+        ${display === "grid" ? "grid auto-rows-max md:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-6 sm:gap-y-5 grow" : "flex flex-col gap-2 "} `}
     >
       {props.leaflets.map(({ token: leaflet, added_at, archived }, index) => (
         <ReplicacheProvider
