@@ -75,12 +75,8 @@ const LooseleafDraftList = (props: { empty: boolean }) => {
   if (props.empty)
     return (
       <EmptyState className="pt-2">
-        <div className="italic">
-          You haven't written any looseleaf drafts yet.
-        </div>
-        <ButtonPrimary className="mx-auto">
-          Start a Looseleaf Draft
-        </ButtonPrimary>
+        <div className="italic">You don't have any looseleaf drafts yet…</div>
+        <ButtonPrimary className="mx-auto">New Draft</ButtonPrimary>
       </EmptyState>
     );
   return (

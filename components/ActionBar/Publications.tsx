@@ -26,6 +26,7 @@ export const PublicationButtons = (props: {
   let hasLooseleafs = !!identity?.permission_token_on_homepage.find(
     (f) => f.permission_tokens.leaflets_to_documents,
   );
+  console.log(hasLooseleafs);
 
   // don't show pub list button if not logged in or no pub list
   // we show a "start a pub" banner instead

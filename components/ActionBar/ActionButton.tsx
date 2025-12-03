@@ -11,7 +11,7 @@ export const ActionButton = (
   _props: ButtonProps & {
     id?: string;
     icon: React.ReactNode;
-    label: React.ReactNode;
+    label?: React.ReactNode;
     primary?: boolean;
     secondary?: boolean;
     nav?: boolean;
@@ -69,16 +69,18 @@ export const ActionButton = (
       `}
     >
       <div className="shrink-0">{icon}</div>
-      <div
-        className={`flex flex-col pr-1 leading-snug max-w-full min-w-0  ${sidebar.open ? "block" : showLabelOnMobile ? "sm:hidden block" : "hidden"}`}
-      >
-        <div className="truncate text-left pt-[1px]">{label}</div>
-        {subtext && (
-          <div className="text-xs text-tertiary font-normal text-left">
-            {subtext}
-          </div>
-        )}
-      </div>
+      {label && (
+        <div
+          className={`flex flex-col pr-1 leading-snug max-w-full min-w-0  ${sidebar.open ? "block" : showLabelOnMobile ? "sm:hidden block" : "hidden"}`}
+        >
+          <div className="truncate text-left pt-[1px]">{label}</div>
+          {subtext && (
+            <div className="text-xs text-tertiary font-normal text-left">
+              {subtext}
+            </div>
+          )}
+        </div>
+      )}
     </button>
   );
 };

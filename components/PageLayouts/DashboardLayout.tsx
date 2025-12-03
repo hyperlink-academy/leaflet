@@ -372,10 +372,7 @@ function Tab(props: {
   );
 }
 
-const FilterOptions = (props: {
-  hasPubs: boolean;
-  hasArchived: boolean;
-}) => {
+const FilterOptions = (props: { hasPubs: boolean; hasArchived: boolean }) => {
   let { filter } = useDashboardState();
   let setState = useSetDashboardState();
   let filterCount = Object.values(filter).filter(Boolean).length;
@@ -472,7 +469,7 @@ const SearchInput = (props: {
         type="text"
         id="pubName"
         size={1}
-        placeholder="search..."
+        placeholder="search…"
         value={props.searchValue}
         onChange={(e) => {
           props.setSearchValue(e.currentTarget.value);
