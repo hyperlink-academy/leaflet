@@ -86,8 +86,14 @@ const DefaultOptions = (props: {
   const pubStatus = useLeafletPublicationStatus();
   const toaster = useToaster();
   const { setArchived } = useArchiveMutations();
+  const { identity } = useIdentityData();
   const tokenId = pubStatus?.token.id;
   const itemType = pubStatus?.draftInPublication ? "Draft" : "Leaflet";
+
+  // Check if this is a published post/document and if user is the owner
+  const isPublishedPostOwner =
+    !!identity?.atp_did && !!pubStatus?.documentUri?.includes(identity.atp_did);
+  const canDelete = !pubStatus?.documentUri || isPublishedPostOwner;
 
   return (
     <>
@@ -133,12 +139,14 @@ const DefaultOptions = (props: {
         <ArchiveSmall />
         {!props.archived ? " Archive" : "Unarchive"} {itemType}
       </MenuItem>
-      <DeleteForeverMenuItem
-        onSelect={(e) => {
-          e.preventDefault();
-          props.setState("areYouSure");
-        }}
-      />
+      {canDelete && (
+        <DeleteForeverMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            props.setState("areYouSure");
+          }}
+        />
+      )}
     </>
   );
 };
