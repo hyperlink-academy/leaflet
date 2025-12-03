@@ -68,9 +68,9 @@ export const CreateNewMoreOptionsButton = (props: {}) => {
         />
       }
     >
-      <div className="mx-2 text-sm text-tertiary ">New Leaflet</div>
+      <div className="mx-2 text-sm text-tertiary font-bold ">New Leaflet</div>
       <MenuItem
-        className="pt-0.5!"
+        className="leading-tight"
         onSelect={async () => {
           let id = await createNewLeaflet({
             pageType: "doc",
@@ -88,7 +88,7 @@ export const CreateNewMoreOptionsButton = (props: {}) => {
         </div>
       </MenuItem>
       <MenuItem
-        className="pt-0.5!"
+        className="leading-tight"
         onSelect={async () => {
           let id = await createNewLeaflet({
             pageType: "canvas",
@@ -105,8 +105,18 @@ export const CreateNewMoreOptionsButton = (props: {}) => {
           </div>
         </div>
       </MenuItem>
-      <div className="mx-2 text-sm text-tertiary mt-2">New Draft</div>
-
+      <hr className="border-border-light mt-2 mb-1 -mx-1" />
+      <div className="mx-2 text-sm text-tertiary  font-bold">New Draft</div>
+      <MenuItem className="leading-tight" onSelect={async () => {}}>
+        <LooseLeafSmall />
+        <div className="flex flex-col">
+          Looseleaf
+          <div className="text-tertiary text-sm font-normal">
+            A one off post on AT Proto
+          </div>
+        </div>
+      </MenuItem>
+      <hr className="border-border-light border-dashed mx-2 my-0.5" />
       {identity?.publications.map((pub) => {
         let router = useRouter();
         return (
@@ -124,12 +134,6 @@ export const CreateNewMoreOptionsButton = (props: {}) => {
           </MenuItem>
         );
       })}
-
-      <hr className="border-border-light border-dashed mx-2 my-0.5" />
-      <MenuItem onSelect={async () => {}}>
-        <LooseLeafSmall />
-        Looseleaf
-      </MenuItem>
     </Menu>
   );
 };
