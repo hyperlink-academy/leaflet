@@ -69,7 +69,7 @@ export const ContentLayout = (props: {
     <div
       className={`border border-border-light rounded-md px-2 py-[6px] w-full ${cardBorderHidden ? "transparent" : "bg-bg-page"}`}
     >
-      <div className="text-tertiary text-sm italic font-bold pb-1">
+      <div className="text-tertiary text-sm italic font-bold ">
         {props.postTitle}
       </div>
       {props.children}

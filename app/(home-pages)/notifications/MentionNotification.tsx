@@ -2,7 +2,7 @@ import { MentionTiny } from "components/Icons/MentionTiny";
 import { ContentLayout, Notification } from "./Notification";
 import { HydratedMentionNotification } from "src/notifications";
 import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
-import { AtUri } from "@atproto/api";
+import { Agent, AtUri } from "@atproto/api";
 
 export const MentionNotification = (props: HydratedMentionNotification) => {
   const docRecord = props.document.data as PubLeafletDocument.Record;
@@ -18,19 +18,36 @@ export const MentionNotification = (props: HydratedMentionNotification) => {
 
   let actionText: React.ReactNode;
   let mentionedItemName: string | undefined;
+  let mentionedDocRecord = props.mentionedDocument
+    ?.data as PubLeafletDocument.Record;
+
+  let mentioner = "placeholder";
 
   if (props.mention_type === "did") {
-    actionText = <>mentioned you</>;
-  } else if (props.mention_type === "publication" && props.mentionedPublication) {
-    const mentionedPubRecord = props.mentionedPublication.record as PubLeafletPublication.Record;
+    actionText = <>{mentioner} mentioned you</>;
+  } else if (
+    props.mention_type === "publication" &&
+    props.mentionedPublication
+  ) {
+    const mentionedPubRecord = props.mentionedPublication
+      .record as PubLeafletPublication.Record;
     mentionedItemName = mentionedPubRecord.name;
-    actionText = <>mentioned your publication <span className="italic">{mentionedItemName}</span></>;
+    actionText = (
+      <>
+        {mentioner} mentioned your publication{" "}
+        <span className="italic">{mentionedItemName}</span>
+      </>
+    );
   } else if (props.mention_type === "document" && props.mentionedDocument) {
-    const mentionedDocRecord = props.mentionedDocument.data as PubLeafletDocument.Record;
     mentionedItemName = mentionedDocRecord.title;
-    actionText = <>mentioned your post <span className="italic">{mentionedItemName}</span></>;
+    actionText = (
+      <>
+        {mentioner} mentioned your post{" "}
+        <span className="italic">{mentionedItemName}</span>
+      </>
+    );
   } else {
-    actionText = <>mentioned you</>;
+    actionText = <>{mentioner} mentioned you</>;
   }
 
   return (
@@ -42,7 +59,19 @@ export const MentionNotification = (props: HydratedMentionNotification) => {
       content={
         <ContentLayout postTitle={docRecord.title} pubRecord={pubRecord}>
           <div className="text-sm text-secondary">
-            in <span className="italic">{docRecord.title}</span>
+            ... this should be some characters in front of{" "}
+            <span
+              className={
+                props.mention_type === "document"
+                  ? "italic"
+                  : props.mention_type === "publication"
+                    ? "font-bold"
+                    : ""
+              }
+            >
+              {mentionedItemName ? mentionedItemName : "@handleplaceholder"}
+            </span>{" "}
+            and some at the end...
           </div>
         </ContentLayout>
       }
