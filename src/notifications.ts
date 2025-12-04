@@ -12,24 +12,29 @@ export type Notification = Omit<TablesInsert<"notifications">, "data"> & {
 export type NotificationData =
   | { type: "comment"; comment_uri: string; parent_uri?: string }
   | { type: "subscribe"; subscription_uri: string }
-  | { type: "quote"; bsky_post_uri: string; document_uri: string };
+  | { type: "quote"; bsky_post_uri: string; document_uri: string }
+  | { type: "mention"; document_uri: string; mention_type: "did" }
+  | { type: "mention"; document_uri: string; mention_type: "publication"; mentioned_uri: string }
+  | { type: "mention"; document_uri: string; mention_type: "document"; mentioned_uri: string };
 
 export type HydratedNotification =
   | HydratedCommentNotification
   | HydratedSubscribeNotification
-  | HydratedQuoteNotification;
+  | HydratedQuoteNotification
+  | HydratedMentionNotification;
 export async function hydrateNotifications(
   notifications: NotificationRow[],
 ): Promise<Array<HydratedNotification>> {
   // Call all hydrators in parallel
-  const [commentNotifications, subscribeNotifications, quoteNotifications] = await Promise.all([
+  const [commentNotifications, subscribeNotifications, quoteNotifications, mentionNotifications] = await Promise.all([
     hydrateCommentNotifications(notifications),
     hydrateSubscribeNotifications(notifications),
     hydrateQuoteNotifications(notifications),
+    hydrateMentionNotifications(notifications),
   ]);
 
   // Combine all hydrated notifications
-  const allHydrated = [...commentNotifications, ...subscribeNotifications, ...quoteNotifications];
+  const allHydrated = [...commentNotifications, ...subscribeNotifications, ...quoteNotifications, ...mentionNotifications];
 
   // Sort by created_at to maintain order
   allHydrated.sort(
@@ -163,6 +168,71 @@ async function hydrateQuoteNotifications(notifications: NotificationRow[]) {
     bskyPost: bskyPosts?.find((p) => p.uri === notification.data.bsky_post_uri)!,
     document: documents?.find((d) => d.uri === notification.data.document_uri)!,
   }));
+}
+
+export type HydratedMentionNotification = Awaited<
+  ReturnType<typeof hydrateMentionNotifications>
+>[0];
+
+async function hydrateMentionNotifications(notifications: NotificationRow[]) {
+  const mentionNotifications = notifications.filter(
+    (n): n is NotificationRow & { data: ExtractNotificationType<"mention"> } =>
+      (n.data as NotificationData)?.type === "mention",
+  );
+
+  if (mentionNotifications.length === 0) {
+    return [];
+  }
+
+  // Fetch document data from the database
+  const documentUris = mentionNotifications.map((n) => n.data.document_uri);
+  const { data: documents } = await supabaseServerClient
+    .from("documents")
+    .select("*, documents_in_publications(publications(*))")
+    .in("uri", documentUris);
+
+  // Fetch mentioned publications and documents
+  const mentionedPublicationUris = mentionNotifications
+    .filter((n) => n.data.mention_type === "publication")
+    .map((n) => (n.data as Extract<ExtractNotificationType<"mention">, { mention_type: "publication" }>).mentioned_uri);
+
+  const mentionedDocumentUris = mentionNotifications
+    .filter((n) => n.data.mention_type === "document")
+    .map((n) => (n.data as Extract<ExtractNotificationType<"mention">, { mention_type: "document" }>).mentioned_uri);
+
+  const [{ data: mentionedPublications }, { data: mentionedDocuments }] = await Promise.all([
+    mentionedPublicationUris.length > 0
+      ? supabaseServerClient
+          .from("publications")
+          .select("*")
+          .in("uri", mentionedPublicationUris)
+      : Promise.resolve({ data: [] }),
+    mentionedDocumentUris.length > 0
+      ? supabaseServerClient
+          .from("documents")
+          .select("*, documents_in_publications(publications(*))")
+          .in("uri", mentionedDocumentUris)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  return mentionNotifications.map((notification) => {
+    const mentionedUri = notification.data.mention_type !== "did"
+      ? (notification.data as Extract<ExtractNotificationType<"mention">, { mentioned_uri: string }>).mentioned_uri
+      : undefined;
+
+    return {
+      id: notification.id,
+      recipient: notification.recipient,
+      created_at: notification.created_at,
+      type: "mention" as const,
+      document_uri: notification.data.document_uri,
+      mention_type: notification.data.mention_type,
+      mentioned_uri: mentionedUri,
+      document: documents?.find((d) => d.uri === notification.data.document_uri)!,
+      mentionedPublication: mentionedUri ? mentionedPublications?.find((p) => p.uri === mentionedUri) : undefined,
+      mentionedDocument: mentionedUri ? mentionedDocuments?.find((d) => d.uri === mentionedUri) : undefined,
+    };
+  });
 }
 
 export async function pingIdentityToUpdateNotification(did: string) {

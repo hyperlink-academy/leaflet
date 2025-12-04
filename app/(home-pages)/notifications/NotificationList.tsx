@@ -7,7 +7,8 @@ import { markAsRead } from "./getNotifications";
 import { ReplyNotification } from "./ReplyNotification";
 import { useIdentityData } from "components/IdentityProvider";
 import { FollowNotification } from "./FollowNotification";
-import { QuoteNotification } from "./MentionNotification";
+import { QuoteNotification } from "./QuoteNotification";
+import { MentionNotification } from "./MentionNotification";
 
 export function NotificationList({
   notifications,
@@ -45,6 +46,9 @@ export function NotificationList({
           }
           if (n.type === "quote") {
             return <QuoteNotification key={n.id} {...n} />;
+          }
+          if (n.type === "mention") {
+            return <MentionNotification key={n.id} {...n} />;
           }
         })}
       </div>

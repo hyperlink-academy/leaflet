@@ -50,6 +50,8 @@ import {
   ColorToRGBA,
 } from "components/ThemeManager/colorToLexicons";
 import { parseColor } from "@react-stately/color";
+import { Notification, pingIdentityToUpdateNotification } from "src/notifications";
+import { v7 } from "uuid";
 
 export async function publishToPublication({
   root_entity,
@@ -208,6 +210,11 @@ export async function publishToPublication({
         .delete()
         .in("id", entitiesToDelete);
     }
+  }
+
+  // Create notifications for mentions (only on first publish)
+  if (!existingDocUri) {
+    await createMentionNotifications(result.uri, record, credentialSession.did!);
   }
 
   return { rkey, record: JSON.parse(JSON.stringify(record)) };
@@ -734,4 +741,120 @@ async function extractThemeFromFacts(
   }
 
   return undefined;
+}
+
+/**
+ * Extract mentions from a published document and create notifications
+ */
+async function createMentionNotifications(
+  documentUri: string,
+  record: PubLeafletDocument.Record,
+  authorDid: string,
+) {
+  const mentionedDids = new Set<string>();
+  const mentionedPublications = new Map<string, string>(); // Map of DID -> publication URI
+  const mentionedDocuments = new Map<string, string>(); // Map of DID -> document URI
+
+  // Extract mentions from all text blocks in all pages
+  for (const page of record.pages) {
+    if (page.$type === "pub.leaflet.pages.linearDocument") {
+      const linearPage = page as PubLeafletPagesLinearDocument.Main;
+      for (const blockWrapper of linearPage.blocks) {
+        const block = blockWrapper.block;
+        if (block.$type === "pub.leaflet.blocks.text") {
+          const textBlock = block as PubLeafletBlocksText.Main;
+          if (textBlock.facets) {
+            for (const facet of textBlock.facets) {
+              for (const feature of facet.features) {
+                // Check for DID mentions
+                if (PubLeafletRichtextFacet.isDidMention(feature)) {
+                  if (feature.did !== authorDid) {
+                    mentionedDids.add(feature.did);
+                  }
+                }
+                // Check for AT URI mentions (publications and documents)
+                if (PubLeafletRichtextFacet.isAtMention(feature)) {
+                  const uri = new AtUri(feature.atURI);
+
+                  if (uri.collection === "pub.leaflet.publication") {
+                    // Get the publication owner's DID
+                    const { data: publication } = await supabaseServerClient
+                      .from("publications")
+                      .select("identity_did")
+                      .eq("uri", feature.atURI)
+                      .single();
+
+                    if (publication && publication.identity_did !== authorDid) {
+                      mentionedPublications.set(publication.identity_did, feature.atURI);
+                    }
+                  } else if (uri.collection === "pub.leaflet.document") {
+                    // Get the document owner's DID
+                    const { data: document } = await supabaseServerClient
+                      .from("documents")
+                      .select("uri, data")
+                      .eq("uri", feature.atURI)
+                      .single();
+
+                    if (document) {
+                      const docRecord = document.data as PubLeafletDocument.Record;
+                      if (docRecord.author !== authorDid) {
+                        mentionedDocuments.set(docRecord.author, feature.atURI);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Create notifications for DID mentions
+  for (const did of mentionedDids) {
+    const notification: Notification = {
+      id: v7(),
+      recipient: did,
+      data: {
+        type: "mention",
+        document_uri: documentUri,
+        mention_type: "did",
+      },
+    };
+    await supabaseServerClient.from("notifications").insert(notification);
+    await pingIdentityToUpdateNotification(did);
+  }
+
+  // Create notifications for publication mentions
+  for (const [recipientDid, publicationUri] of mentionedPublications) {
+    const notification: Notification = {
+      id: v7(),
+      recipient: recipientDid,
+      data: {
+        type: "mention",
+        document_uri: documentUri,
+        mention_type: "publication",
+        mentioned_uri: publicationUri,
+      },
+    };
+    await supabaseServerClient.from("notifications").insert(notification);
+    await pingIdentityToUpdateNotification(recipientDid);
+  }
+
+  // Create notifications for document mentions
+  for (const [recipientDid, mentionedDocUri] of mentionedDocuments) {
+    const notification: Notification = {
+      id: v7(),
+      recipient: recipientDid,
+      data: {
+        type: "mention",
+        document_uri: documentUri,
+        mention_type: "document",
+        mentioned_uri: mentionedDocUri,
+      },
+    };
+    await supabaseServerClient.from("notifications").insert(notification);
+    await pingIdentityToUpdateNotification(recipientDid);
+  }
 }
