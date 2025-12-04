@@ -3,6 +3,8 @@ import { nodes, marks } from "prosemirror-schema-basic";
 import { CSSProperties, Fragment } from "react";
 import { theme } from "tailwind.config";
 import * as base64 from "base64-js";
+import { didToBlueskyUrl } from "src/utils/mentionUtils";
+import { AtMentionLink } from "components/AtMentionLink";
 
 type BlockElements = "h1" | "h2" | "h3" | null | "blockquote" | "p";
 export function RenderYJSFragment({
@@ -46,6 +48,30 @@ export function RenderYJSFragment({
                               {d.insert}
                             </a>
                           );
+                        if (d.attributes?.didMention)
+                          return (
+                            <a
+                              href={didToBlueskyUrl(d.attributes.didMention.did)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              key={index}
+                              {...attributesToStyle(d)}
+                              className={`${attributesToStyle(d).className} text-accent-contrast hover:underline cursor-pointer`}
+                            >
+                              {d.insert}
+                            </a>
+                          );
+                        if (d.attributes?.atMention) {
+                          return (
+                            <AtMentionLink
+                              key={index}
+                              atURI={d.attributes.atMention.atURI}
+                              className={attributesToStyle(d).className}
+                            >
+                              {d.insert}
+                            </AtMentionLink>
+                          );
+                        }
                         return (
                           <span
                             key={index}

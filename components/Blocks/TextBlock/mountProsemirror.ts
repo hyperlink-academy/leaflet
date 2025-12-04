@@ -23,6 +23,7 @@ import {
 import { useHandlePaste } from "./useHandlePaste";
 import { BlockProps } from "../Block";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
 
 export function useMountProsemirror({
   props,
@@ -80,15 +81,34 @@ export function useMountProsemirror({
         handleClickOn: (_view, _pos, node, _nodePos, _event, direct) => {
           if (!direct) return;
           if (node.nodeSize - 2 <= _pos) return;
-          let mark =
-            node
-              .nodeAt(_pos - 1)
-              ?.marks.find((f) => f.type === schema.marks.link) ||
-            node
-              .nodeAt(Math.max(_pos - 2, 0))
-              ?.marks.find((f) => f.type === schema.marks.link);
-          if (mark) {
-            window.open(mark.attrs.href, "_blank");
+
+          // Check for marks at the clicked position
+          const nodeAt1 = node.nodeAt(_pos - 1);
+          const nodeAt2 = node.nodeAt(Math.max(_pos - 2, 0));
+
+          // Check for link marks
+          let linkMark = nodeAt1?.marks.find((f) => f.type === schema.marks.link) ||
+            nodeAt2?.marks.find((f) => f.type === schema.marks.link);
+          if (linkMark) {
+            window.open(linkMark.attrs.href, "_blank");
+            return;
+          }
+
+          // Check for didMention marks
+          let didMentionMark = nodeAt1?.marks.find((f) => f.type === schema.marks.didMention) ||
+            nodeAt2?.marks.find((f) => f.type === schema.marks.didMention);
+          if (didMentionMark) {
+            window.open(didToBlueskyUrl(didMentionMark.attrs.did), "_blank", "noopener,noreferrer");
+            return;
+          }
+
+          // Check for atMention marks
+          let atMentionMark = nodeAt1?.marks.find((f) => f.type === schema.marks.atMention) ||
+            nodeAt2?.marks.find((f) => f.type === schema.marks.atMention);
+          if (atMentionMark) {
+            const url = atUriToUrl(atMentionMark.attrs.atURI);
+            window.open(url, "_blank", "noopener,noreferrer");
+            return;
           }
         },
         dispatchTransaction,

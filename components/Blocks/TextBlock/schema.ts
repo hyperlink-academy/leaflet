@@ -120,6 +120,9 @@ let baseSchema = {
         },
       ],
       toDOM(node) {
+        // NOTE: This rendering should match the AtMentionLink component in
+        // components/AtMentionLink.tsx. If you update one, update the other.
+        // We can't use the React component here because ProseMirror expects DOM specs.
         let className = "atMention text-accent-contrast";
         let aturi = new AtUri(node.attrs.atURI);
         if (aturi.collection === "pub.leaflet.publication")

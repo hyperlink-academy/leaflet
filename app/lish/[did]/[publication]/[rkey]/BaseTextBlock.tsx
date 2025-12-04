@@ -1,5 +1,7 @@
 import { UnicodeString } from "@atproto/api";
 import { PubLeafletRichtextFacet } from "lexicons/api";
+import { didToBlueskyUrl } from "src/utils/mentionUtils";
+import { AtMentionLink } from "components/AtMentionLink";
 
 type Facet = PubLeafletRichtextFacet.Main;
 export function BaseTextBlock(props: {
@@ -24,6 +26,9 @@ export function BaseTextBlock(props: {
     );
     let isDidMention = segment.facet?.find(
       PubLeafletRichtextFacet.isDidMention,
+    );
+    let isAtMention = segment.facet?.find(
+      PubLeafletRichtextFacet.isAtMention,
     );
     let isUnderline = segment.facet?.find(PubLeafletRichtextFacet.isUnderline);
     let isItalic = segment.facet?.find(PubLeafletRichtextFacet.isItalic);
@@ -50,6 +55,28 @@ export function BaseTextBlock(props: {
         <code key={counter} className={className} id={id?.id}>
           {renderedText}
         </code>,
+      );
+    } else if (isDidMention) {
+      children.push(
+        <a
+          key={counter}
+          href={didToBlueskyUrl(isDidMention.did)}
+          className={`text-accent-contrast hover:underline cursor-pointer ${className}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {renderedText}
+        </a>,
+      );
+    } else if (isAtMention) {
+      children.push(
+        <AtMentionLink
+          key={counter}
+          atURI={isAtMention.atURI}
+          className={className}
+        >
+          {renderedText}
+        </AtMentionLink>,
       );
     } else if (link) {
       children.push(
