@@ -580,6 +580,7 @@ export type Database = {
       }
       leaflets_in_publications: {
         Row: {
+          archived: boolean | null
           description: string
           doc: string | null
           leaflet: string
@@ -587,6 +588,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          archived?: boolean | null
           description?: string
           doc?: string | null
           leaflet: string
@@ -594,6 +596,7 @@ export type Database = {
           title?: string
         }
         Update: {
+          archived?: boolean | null
           description?: string
           doc?: string | null
           leaflet?: string
@@ -621,6 +624,77 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "publications"
             referencedColumns: ["uri"]
+          },
+        ]
+      }
+      leaflets_to_documents: {
+        Row: {
+          created_at: string
+          description: string
+          document: string
+          leaflet: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          document: string
+          leaflet: string
+          title?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          document?: string
+          leaflet?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaflets_to_documents_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "leaflets_to_documents_leaflet_fkey"
+            columns: ["leaflet"]
+            isOneToOne: false
+            referencedRelation: "permission_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          read: boolean
+          recipient: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          id: string
+          read?: boolean
+          recipient: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          read?: boolean
+          recipient?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_recipient_fkey"
+            columns: ["recipient"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
           },
         ]
       }
@@ -656,16 +730,19 @@ export type Database = {
       }
       permission_token_on_homepage: {
         Row: {
+          archived: boolean | null
           created_at: string
           identity: string
           token: string
         }
         Insert: {
+          archived?: boolean | null
           created_at?: string
           identity: string
           token: string
         }
         Update: {
+          archived?: boolean | null
           created_at?: string
           identity?: string
           token?: string

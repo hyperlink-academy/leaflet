@@ -25,6 +25,7 @@ import * as ComAtprotoRepoStrongRef from './types/com/atproto/repo/strongRef'
 import * as ComAtprotoRepoUploadBlob from './types/com/atproto/repo/uploadBlob'
 import * as PubLeafletBlocksBlockquote from './types/pub/leaflet/blocks/blockquote'
 import * as PubLeafletBlocksBskyPost from './types/pub/leaflet/blocks/bskyPost'
+import * as PubLeafletBlocksButton from './types/pub/leaflet/blocks/button'
 import * as PubLeafletBlocksCode from './types/pub/leaflet/blocks/code'
 import * as PubLeafletBlocksHeader from './types/pub/leaflet/blocks/header'
 import * as PubLeafletBlocksHorizontalRule from './types/pub/leaflet/blocks/horizontalRule'
@@ -64,6 +65,7 @@ export * as ComAtprotoRepoStrongRef from './types/com/atproto/repo/strongRef'
 export * as ComAtprotoRepoUploadBlob from './types/com/atproto/repo/uploadBlob'
 export * as PubLeafletBlocksBlockquote from './types/pub/leaflet/blocks/blockquote'
 export * as PubLeafletBlocksBskyPost from './types/pub/leaflet/blocks/bskyPost'
+export * as PubLeafletBlocksButton from './types/pub/leaflet/blocks/button'
 export * as PubLeafletBlocksCode from './types/pub/leaflet/blocks/code'
 export * as PubLeafletBlocksHeader from './types/pub/leaflet/blocks/header'
 export * as PubLeafletBlocksHorizontalRule from './types/pub/leaflet/blocks/horizontalRule'
@@ -96,6 +98,8 @@ export const PUB_LEAFLET_PAGES = {
     'pub.leaflet.pages.linearDocument#textAlignCenter',
   LinearDocumentTextAlignRight:
     'pub.leaflet.pages.linearDocument#textAlignRight',
+  LinearDocumentTextAlignJustify:
+    'pub.leaflet.pages.linearDocument#textAlignJustify',
 }
 
 export class AtpBaseClient extends XrpcClient {

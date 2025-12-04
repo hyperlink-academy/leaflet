@@ -46,6 +46,12 @@ export async function generateMetadata(props: {
   return {
     title: pubRecord?.name || "Untitled Publication",
     description: pubRecord?.description || "",
+    icons: {
+      other: {
+        rel: "alternate",
+        url: publication.uri,
+      },
+    },
     alternates: pubRecord?.base_path
       ? {
           types: {

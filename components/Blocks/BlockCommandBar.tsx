@@ -6,6 +6,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { NestedCardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { UndoManager } from "src/undoManager";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { setEditorState, useEditorStates } from "src/state/useEditorState";
 
 type Props = {
   parent: string;
@@ -32,10 +33,28 @@ export const BlockCommandBar = ({
   let entity_set = useEntitySetContext();
   let { data: pub } = useLeafletPublicationData();
 
+  // This clears '/' AND anything typed after it
+  const clearCommandSearchText = () => {
+    if (!props.entityID) return;
+    const entityID = props.entityID;
+    
+    const existingState = useEditorStates.getState().editorStates[entityID];
+    if (!existingState) return;
+
+    const tr = existingState.editor.tr;
+    tr.deleteRange(1, tr.doc.content.size - 1);
+    setEditorState(entityID, { editor: existingState.editor.apply(tr) });
+  };
+
   let commandResults = blockCommands.filter((command) => {
-    const matchesSearch = command.name
+    const lowerSearchValue = searchValue.toLocaleLowerCase();
+    const matchesName = command.name
       .toLocaleLowerCase()
-      .includes(searchValue.toLocaleLowerCase());
+      .includes(lowerSearchValue);
+    const matchesAlternate = command.alternateNames?.some((altName) =>
+      altName.toLocaleLowerCase().includes(lowerSearchValue)
+    ) ?? false;
+    const matchesSearch = matchesName || matchesAlternate;
     const isVisible = !pub || !command.hiddenInPublication;
     return matchesSearch && isVisible;
   });
@@ -98,9 +117,6 @@ export const BlockCommandBar = ({
         undoManager.endGroup();
         return;
       }
-
-      // radix menu component handles esc
-      if (e.key === "Escape") return;
     };
     window.addEventListener("keydown", listener);
 
@@ -108,7 +124,14 @@ export const BlockCommandBar = ({
   }, [highlighted, setHighlighted, commandResults, rep, entity_set.set, props]);
 
   return (
-    <Popover.Root open>
+    <Popover.Root
+      open
+      onOpenChange={(open) => {
+        if (!open) {
+          clearCommandSearchText();
+        }
+      }}
+    >
       <Popover.Trigger className="absolute left-0"></Popover.Trigger>
       <Popover.Portal>
         <Popover.Content

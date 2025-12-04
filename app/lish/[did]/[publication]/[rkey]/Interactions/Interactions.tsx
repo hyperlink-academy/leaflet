@@ -14,6 +14,7 @@ import { Tag } from "components/Tags";
 import { Popover } from "components/Popover";
 import { PostPageData } from "../getPostPageData";
 import { PubLeafletComment } from "lexicons/api";
+import { prefetchQuotesData } from "./Quotes";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -113,59 +114,61 @@ export const Interactions = (props: {
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
 
+  const handleQuotePrefetch = () => {
+    if (data?.quotesAndMentions) {
+      prefetchQuotesData(data.quotesAndMentions);
+    }
+  };
+
   return (
-    <div className="flex flex-col">
-      <div
-        className={`flex gap-2 items-center text-tertiary ${props.compact ? "text-sm" : "pb-2"} ${props.className}`}
+    <div
+      className={`flex gap-2 text-tertiary ${props.compact ? "text-sm" : "px-3 sm:px-4"} ${props.className}`}
+    >
+      {props.compact && <TagPopover />}
+      <button
+        className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
+        onClick={() => {
+          if (!drawerOpen || drawer !== "quotes")
+            openInteractionDrawer("quotes", document_uri, props.pageId);
+          else setInteractionState(document_uri, { drawerOpen: false });
+        }}
+        onMouseEnter={handleQuotePrefetch}
+        onTouchStart={handleQuotePrefetch}
+        aria-label="Post quotes"
       >
-        {props.compact && <TagPopover />}
-
-        {props.quotesCount > 0 && (
-          <button
-            className={`flex  items-center ${!props.compact ? " gap-2 px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline" : "gap-1"}`}
-            onClick={() => {
-              if (!drawerOpen || drawer !== "quotes")
-                openInteractionDrawer("quotes", document_uri, props.pageId);
-              else setInteractionState(document_uri, { drawerOpen: false });
-            }}
-            aria-label="Post quotes"
-          >
-            <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
-            {!props.compact && (
-              <span
-                aria-hidden
-              >{`Quote${props.quotesCount === 1 ? "" : "s"}`}</span>
-            )}
-          </button>
+        <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
+        {!props.compact && (
+          <span
+            aria-hidden
+          >{`Quote${props.quotesCount === 1 ? "" : "s"}`}</span>
         )}
-        {props.showComments === false ? null : (
-          <button
-            className={`flex items-center ${!props.compact ? "gap-2 px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline" : "gap-1"}`}
-            onClick={() => {
-              if (
-                !drawerOpen ||
-                drawer !== "comments" ||
-                pageId !== props.pageId
-              )
-                openInteractionDrawer("comments", document_uri, props.pageId);
-              else setInteractionState(document_uri, { drawerOpen: false });
-            }}
-            aria-label="Post comments"
-          >
-            <CommentTiny aria-hidden />{" "}
-            {props.compact ? (
-              props.commentsCount
-            ) : props.commentsCount > 0 ? (
-              <span aria-hidden>
-                {`${props.commentsCount} Comment${props.commentsCount === 1 ? "" : "s"}`}
-              </span>
-            ) : (
-              "Comment"
-            )}
-          </button>
-        )}
-      </div>
-
+      </button>
+      {props.showComments === false ? null : (
+        <button
+          className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
+          onClick={() => {
+            if (
+              !drawerOpen ||
+              drawer !== "comments" ||
+              pageId !== props.pageId
+            )
+              openInteractionDrawer("comments", document_uri, props.pageId);
+            else setInteractionState(document_uri, { drawerOpen: false });
+          }}
+          aria-label="Post comments"
+        >
+          <CommentTiny aria-hidden />{" "}
+          {props.compact ? (
+            props.commentsCount
+          ) : props.commentsCount > 0 ? (
+            <span aria-hidden>
+              {`${props.commentsCount} Comment${props.commentsCount === 1 ? "" : "s"}`}
+            </span>
+          ) : (
+            "Comment"
+          )}
+        </button>
+      )}
       {!props.compact && <TagList />}
     </div>
   );
@@ -207,19 +210,28 @@ const Tags = [
 ];
 export function getQuoteCount(document: PostPageData, pageId?: string) {
   if (!document) return;
+  return getQuoteCountFromArray(document.quotesAndMentions, pageId);
+}
 
-  if (pageId)
-    return document.document_mentions_in_bsky.filter((q) =>
-      q.link.includes(pageId),
-    ).length;
-  else
-    return document.document_mentions_in_bsky.filter((q) => {
+export function getQuoteCountFromArray(
+  quotesAndMentions: { uri: string; link?: string }[],
+  pageId?: string,
+) {
+  if (pageId) {
+    return quotesAndMentions.filter((q) => {
+      if (!q.link) return false;
+      return q.link.includes(pageId);
+    }).length;
+  } else {
+    return quotesAndMentions.filter((q) => {
+      if (!q.link) return true; // Direct mentions go to main page
       const url = new URL(q.link);
       const quoteParam = url.pathname.split("/l-quote/")[1];
-      if (!quoteParam) return null;
+      if (!quoteParam) return true;
       const quotePosition = decodeQuotePosition(quoteParam);
       return !quotePosition?.pageId;
     }).length;
+  }
 }
 
 export function getCommentCount(document: PostPageData, pageId?: string) {

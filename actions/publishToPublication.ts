@@ -23,6 +23,7 @@ import {
   PubLeafletBlocksIframe,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
+  PubLeafletBlocksButton,
   PubLeafletPollDefinition,
 } from "lexicons/api";
 import { Block } from "components/Blocks/Block";
@@ -43,6 +44,12 @@ import { $Typed, UnicodeString } from "@atproto/api";
 import { List, parseBlocksToList } from "src/utils/parseBlocksToList";
 import { getBlocksWithTypeLocal } from "src/hooks/queries/useBlocks";
 import { Lock } from "src/utils/lock";
+import type { PubLeafletPublication } from "lexicons/api";
+import {
+  ColorToRGB,
+  ColorToRGBA,
+} from "components/ThemeManager/colorToLexicons";
+import { parseColor } from "@react-stately/color";
 
 export async function publishToPublication({
   root_entity,
@@ -50,12 +57,14 @@ export async function publishToPublication({
   leaflet_id,
   title,
   description,
+  entitiesToDelete,
 }: {
   root_entity: string;
-  publication_uri: string;
+  publication_uri?: string;
   leaflet_id: string;
   title?: string;
   description?: string;
+  entitiesToDelete?: string[];
 }) {
   const oauthClient = await createOauthClient();
   let identity = await getIdentityData();
@@ -65,20 +74,51 @@ export async function publishToPublication({
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
-  let { data: draft } = await supabaseServerClient
-    .from("leaflets_in_publications")
-    .select("*, publications(*), documents(*)")
-    .eq("publication", publication_uri)
-    .eq("leaflet", leaflet_id)
-    .single();
-  if (!draft || identity.atp_did !== draft?.publications?.identity_did)
-    throw new Error("No draft or not publisher");
+
+  // Check if we're publishing to a publication or standalone
+  let draft: any = null;
+  let existingDocUri: string | null = null;
+
+  if (publication_uri) {
+    // Publishing to a publication - use leaflets_in_publications
+    let { data, error } = await supabaseServerClient
+      .from("publications")
+      .select("*, leaflets_in_publications(*, documents(*))")
+      .eq("uri", publication_uri)
+      .eq("leaflets_in_publications.leaflet", leaflet_id)
+      .single();
+    console.log(error);
+
+    if (!data || identity.atp_did !== data?.identity_did)
+      throw new Error("No draft or not publisher");
+    draft = data.leaflets_in_publications[0];
+    existingDocUri = draft?.doc;
+  } else {
+    // Publishing standalone - use leaflets_to_documents
+    let { data } = await supabaseServerClient
+      .from("leaflets_to_documents")
+      .select("*, documents(*)")
+      .eq("leaflet", leaflet_id)
+      .single();
+    draft = data;
+    existingDocUri = draft?.document;
+  }
+
+  // Heuristic: Remove title entities if this is the first time publishing
+  // (when coming from a standalone leaflet with entitiesToDelete passed in)
+  if (entitiesToDelete && entitiesToDelete.length > 0 && !existingDocUri) {
+    await supabaseServerClient
+      .from("entities")
+      .delete()
+      .in("id", entitiesToDelete);
+  }
+
   let { data } = await supabaseServerClient.rpc("get_facts", {
     root: root_entity,
   });
   let facts = (data as unknown as Fact<Attribute>[]) || [];
 
-  let { firstPageBlocks, pages } = await processBlocksToPages(
+  let { pages } = await processBlocksToPages(
     facts,
     agent,
     root_entity,
@@ -87,37 +127,41 @@ export async function publishToPublication({
 
   let existingRecord =
     (draft?.documents?.data as PubLeafletDocument.Record | undefined) || {};
+
+  // Extract theme for standalone documents (not for publications)
+  let theme: PubLeafletPublication.Theme | undefined;
+  if (!publication_uri) {
+    theme = await extractThemeFromFacts(facts, root_entity, agent);
+  }
+
   let record: PubLeafletDocument.Record = {
-    $type: "pub.leaflet.document",
-    author: credentialSession.did!,
-    publication: publication_uri,
     publishedAt: new Date().toISOString(),
     ...existingRecord,
+    $type: "pub.leaflet.document",
+    author: credentialSession.did!,
+    ...(publication_uri && { publication: publication_uri }),
+    ...(theme && { theme }),
     title: title || "Untitled",
     description: description || "",
-    pages: [
-      {
-        $type: "pub.leaflet.pages.linearDocument",
-        blocks: firstPageBlocks,
-      },
-      ...pages.map((p) => {
-        if (p.type === "canvas") {
-          return {
-            $type: "pub.leaflet.pages.canvas" as const,
-            id: p.id,
-            blocks: p.blocks as PubLeafletPagesCanvas.Block[],
-          };
-        } else {
-          return {
-            $type: "pub.leaflet.pages.linearDocument" as const,
-            id: p.id,
-            blocks: p.blocks as PubLeafletPagesLinearDocument.Block[],
-          };
-        }
-      }),
-    ],
+    pages: pages.map((p) => {
+      if (p.type === "canvas") {
+        return {
+          $type: "pub.leaflet.pages.canvas" as const,
+          id: p.id,
+          blocks: p.blocks as PubLeafletPagesCanvas.Block[],
+        };
+      } else {
+        return {
+          $type: "pub.leaflet.pages.linearDocument" as const,
+          id: p.id,
+          blocks: p.blocks as PubLeafletPagesLinearDocument.Block[],
+        };
+      }
+    }),
   };
-  let rkey = draft?.doc ? new AtUri(draft.doc).rkey : TID.nextStr();
+
+  // Keep the same rkey if updating an existing document
+  let rkey = existingDocUri ? new AtUri(existingDocUri).rkey : TID.nextStr();
   let { data: result } = await agent.com.atproto.repo.putRecord({
     rkey,
     repo: credentialSession.did!,
@@ -126,24 +170,45 @@ export async function publishToPublication({
     validate: false, //TODO publish the lexicon so we can validate!
   });
 
+  // Optimistically create database entries
   await supabaseServerClient.from("documents").upsert({
     uri: result.uri,
     data: record as Json,
   });
-  await Promise.all([
-    //Optimistically put these in!
-    supabaseServerClient.from("documents_in_publications").upsert({
-      publication: record.publication,
-      document: result.uri,
-    }),
-    supabaseServerClient
-      .from("leaflets_in_publications")
-      .update({
+
+  if (publication_uri) {
+    // Publishing to a publication - update both tables
+    await Promise.all([
+      supabaseServerClient.from("documents_in_publications").upsert({
+        publication: publication_uri,
+        document: result.uri,
+      }),
+      supabaseServerClient.from("leaflets_in_publications").upsert({
         doc: result.uri,
-      })
-      .eq("leaflet", leaflet_id)
-      .eq("publication", publication_uri),
-  ]);
+        leaflet: leaflet_id,
+        publication: publication_uri,
+        title: title,
+        description: description,
+      }),
+    ]);
+  } else {
+    // Publishing standalone - update leaflets_to_documents
+    await supabaseServerClient.from("leaflets_to_documents").upsert({
+      leaflet: leaflet_id,
+      document: result.uri,
+      title: title || "Untitled",
+      description: description || "",
+    });
+
+    // Heuristic: Remove title entities if this is the first time publishing standalone
+    // (when entitiesToDelete is provided and there's no existing document)
+    if (entitiesToDelete && entitiesToDelete.length > 0 && !existingDocUri) {
+      await supabaseServerClient
+        .from("entities")
+        .delete()
+        .in("id", entitiesToDelete);
+    }
+  }
 
   return { rkey, record: JSON.parse(JSON.stringify(record)) };
 }
@@ -168,9 +233,30 @@ async function processBlocksToPages(
 
   let firstEntity = scan.eav(root_entity, "root/page")?.[0];
   if (!firstEntity) throw new Error("No root page");
-  let blocks = getBlocksWithTypeLocal(facts, firstEntity?.data.value);
-  let b = await blocksToRecord(blocks, did);
-  return { firstPageBlocks: b, pages };
+
+  // Check if the first page is a canvas or linear document
+  let [pageType] = scan.eav(firstEntity.data.value, "page/type");
+
+  if (pageType?.data.value === "canvas") {
+    // First page is a canvas
+    let canvasBlocks = await canvasBlocksToRecord(firstEntity.data.value, did);
+    pages.unshift({
+      id: firstEntity.data.value,
+      blocks: canvasBlocks,
+      type: "canvas",
+    });
+  } else {
+    // First page is a linear document
+    let blocks = getBlocksWithTypeLocal(facts, firstEntity?.data.value);
+    let b = await blocksToRecord(blocks, did);
+    pages.unshift({
+      id: firstEntity.data.value,
+      blocks: b,
+      type: "doc",
+    });
+  }
+
+  return { pages };
 
   async function uploadImage(src: string) {
     let data = await fetch(src);
@@ -192,15 +278,22 @@ async function processBlocksToPages(
       await Promise.all(
         parsedBlocks.map(async (blockOrList) => {
           if (blockOrList.type === "block") {
-            let alignmentValue =
-              scan.eav(blockOrList.block.value, "block/text-alignment")[0]?.data
-                .value || "left";
-            let alignment =
+            let alignmentValue = scan.eav(
+              blockOrList.block.value,
+              "block/text-alignment",
+            )[0]?.data.value;
+            let alignment: ExcludeString<
+              PubLeafletPagesLinearDocument.Block["alignment"]
+            > =
               alignmentValue === "center"
                 ? "lex:pub.leaflet.pages.linearDocument#textAlignCenter"
                 : alignmentValue === "right"
                   ? "lex:pub.leaflet.pages.linearDocument#textAlignRight"
-                  : undefined;
+                  : alignmentValue === "justify"
+                    ? "lex:pub.leaflet.pages.linearDocument#textAlignJustify"
+                    : alignmentValue === "left"
+                      ? "lex:pub.leaflet.pages.linearDocument#textAlignLeft"
+                      : undefined;
             let b = await blockToRecord(blockOrList.block, did);
             if (!b) return [];
             let block: PubLeafletPagesLinearDocument.Block = {
@@ -446,6 +539,17 @@ async function processBlocksToPages(
       };
       return block;
     }
+    if (b.type === "button") {
+      let [text] = scan.eav(b.value, "button/text");
+      let [url] = scan.eav(b.value, "button/url");
+      if (!text || !url) return;
+      let block: $Typed<PubLeafletBlocksButton.Main> = {
+        $type: "pub.leaflet.blocks.button",
+        text: text.data.value,
+        url: url.data.value,
+      };
+      return block;
+    }
     return;
   }
 
@@ -546,4 +650,78 @@ function YJSFragmentToFacets(
     return facets;
   }
   return [];
+}
+
+type ExcludeString<T> = T extends string
+  ? string extends T
+    ? never
+    : T /* maybe literal, not the whole `string` */
+  : T; /* not a string */
+
+async function extractThemeFromFacts(
+  facts: Fact<any>[],
+  root_entity: string,
+  agent: AtpBaseClient,
+): Promise<PubLeafletPublication.Theme | undefined> {
+  let scan = scanIndexLocal(facts);
+  let pageBackground = scan.eav(root_entity, "theme/page-background")?.[0]?.data
+    .value;
+  let cardBackground = scan.eav(root_entity, "theme/card-background")?.[0]?.data
+    .value;
+  let primary = scan.eav(root_entity, "theme/primary")?.[0]?.data.value;
+  let accentBackground = scan.eav(root_entity, "theme/accent-background")?.[0]
+    ?.data.value;
+  let accentText = scan.eav(root_entity, "theme/accent-text")?.[0]?.data.value;
+  let showPageBackground = !scan.eav(
+    root_entity,
+    "theme/card-border-hidden",
+  )?.[0]?.data.value;
+  let backgroundImage = scan.eav(root_entity, "theme/background-image")?.[0];
+  let backgroundImageRepeat = scan.eav(
+    root_entity,
+    "theme/background-image-repeat",
+  )?.[0];
+
+  let theme: PubLeafletPublication.Theme = {
+    showPageBackground: showPageBackground ?? true,
+  };
+
+  if (pageBackground)
+    theme.backgroundColor = ColorToRGBA(parseColor(`hsba(${pageBackground})`));
+  if (cardBackground)
+    theme.pageBackground = ColorToRGBA(parseColor(`hsba(${cardBackground})`));
+  if (primary) theme.primary = ColorToRGB(parseColor(`hsba(${primary})`));
+  if (accentBackground)
+    theme.accentBackground = ColorToRGB(
+      parseColor(`hsba(${accentBackground})`),
+    );
+  if (accentText)
+    theme.accentText = ColorToRGB(parseColor(`hsba(${accentText})`));
+
+  // Upload background image if present
+  if (backgroundImage?.data) {
+    let imageData = await fetch(backgroundImage.data.src);
+    if (imageData.status === 200) {
+      let binary = await imageData.blob();
+      let blob = await agent.com.atproto.repo.uploadBlob(binary, {
+        headers: { "Content-Type": binary.type },
+      });
+
+      theme.backgroundImage = {
+        $type: "pub.leaflet.theme.backgroundImage",
+        image: blob.data.blob,
+        repeat: backgroundImageRepeat?.data.value ? true : false,
+        ...(backgroundImageRepeat?.data.value && {
+          width: backgroundImageRepeat.data.value,
+        }),
+      };
+    }
+  }
+
+  // Only return theme if at least one property is set
+  if (Object.keys(theme).length > 1 || theme.showPageBackground !== true) {
+    return theme;
+  }
+
+  return undefined;
 }

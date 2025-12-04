@@ -18,9 +18,11 @@ import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { TagTiny } from "components/Icons/TagTiny";
 import { Popover } from "components/Popover";
 import { TagSelector } from "components/Tags";
+import { useIdentityData } from "components/IdentityProvider";
 export const PublicationMetadata = () => {
   let { rep } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
+  let { identity } = useIdentityData();
   let title = useSubscribe(rep, (tx) => tx.get<string>("publication_title"));
   let description = useSubscribe(rep, (tx) =>
     tx.get<string>("publication_description"),
@@ -29,7 +31,7 @@ export const PublicationMetadata = () => {
   let pubRecord = pub?.publications?.record as PubLeafletPublication.Record;
   let publishedAt = record?.publishedAt;
 
-  if (!pub || !pub.publications) return null;
+  if (!pub) return null;
 
   if (typeof title !== "string") {
     title = pub?.title || "";
@@ -40,28 +42,22 @@ export const PublicationMetadata = () => {
   let tags = true;
 
   return (
-    <div className={`flex flex-col px-3 sm:px-4 pb-5 pt-3`}>
-      <div className="w-full flex gap-3 justify-between items-center">
-        <Link
-          href={`${getBasePublicationURL(pub.publications)}/dashboard`}
-          className="leafletMetadata text-accent-contrast font-bold hover:no-underline truncate"
-        >
-          {pub.publications?.name}
-        </Link>
-
-        <div className="flex gap-2 items-center shrink-0">
-          {pub.doc && (
-            <Link
-              target="_blank"
-              className="text-sm shink-0"
-              href={`${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`}
-            >
-              View Post
-            </Link>
-          )}
-          <div className="font-bold text-tertiary px-1 text-sm flex place-items-center bg-border rounded-md ">
-            Editor
-          </div>
+    <div className={`flex flex-col px-3 sm:px-4 pb-5 sm:pt-3 pt-2`}>
+      <div className="flex gap-2">
+        {pub.publications && (
+          <Link
+            href={
+              identity?.atp_did === pub.publications?.identity_did
+                ? `${getBasePublicationURL(pub.publications)}/dashboard`
+                : getPublicationURL(pub.publications)
+            }
+            className="leafletMetadata text-accent-contrast font-bold hover:no-underline"
+          >
+            {pub.publications?.name}
+          </Link>
+        )}
+        <div className="font-bold text-tertiary px-1 text-sm flex place-items-center bg-border-light rounded-md ">
+          Editor
         </div>
       </div>
       <TextField
@@ -86,35 +82,45 @@ export const PublicationMetadata = () => {
           });
         }}
       />
-      <div className="flex justify-between gap-3 sm:gap-2 pt-3 items-center">
-        <div className="flex flex-row gap-2 items-center">
-          <div className="w-4 h-4 rounded-full bg-test" />
-
-          {pub.doc ? (
+      {pub.doc ? (
+        <div className="flex flex-row items-center justify-between gap-2 pt-3">
+          <div className="flex gap-2 items-center">
             <p className="text-sm text-tertiary">
-              {publishedAt && timeAgo(publishedAt)}
+              Published {publishedAt && timeAgo(publishedAt)}
             </p>
-          ) : (
-            <p className="text-sm text-tertiary pt-2">Draft</p>
-          )}
-        </div>
-        <div className="flex gap-2 text-border items-center">
-          {tags && (
-            <>
-              <AddTags />
-              <Separator classname="h-4" />
-            </>
-          )}
-          <div className="flex gap-1 items-center">
-            <QuoteTiny />—
+            <Separator classname="h-4" />
+            <Link
+              target="_blank"
+              className="text-sm"
+              href={
+                pub.publications
+                  ? `${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`
+                  : `/p/${new AtUri(pub.doc).host}/${new AtUri(pub.doc).rkey}`
+              }
+            >
+              View Post
+            </Link>
           </div>
-          {pubRecord.preferences?.showComments && (
+          <div className="flex gap-2 text-border items-center">
+            {tags && (
+              <>
+                <AddTags />
+                <Separator classname="h-4" />
+              </>
+            )}
             <div className="flex gap-1 items-center">
-              <CommentTiny />—
+              <QuoteTiny />—
             </div>
-          )}
+            {pubRecord.preferences?.showComments && (
+              <div className="flex gap-1 items-center">
+                <CommentTiny />—
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <p className="text-sm text-tertiary pt-2">Draft</p>
+      )}
     </div>
   );
 };
@@ -195,7 +201,7 @@ export const PublicationMetadataPreview = () => {
   let record = pub?.documents?.data as PubLeafletDocument.Record | null;
   let publishedAt = record?.publishedAt;
 
-  if (!pub || !pub.publications) return null;
+  if (!pub) return null;
 
   return (
     <div className={`flex flex-col px-3 sm:px-4 pb-5 sm:pt-3 pt-2`}>

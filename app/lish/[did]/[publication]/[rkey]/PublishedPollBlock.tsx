@@ -1,6 +1,10 @@
 "use client";
 
-import { PubLeafletBlocksPoll, PubLeafletPollDefinition, PubLeafletPollVote } from "lexicons/api";
+import {
+  PubLeafletBlocksPoll,
+  PubLeafletPollDefinition,
+  PubLeafletPollVote,
+} from "lexicons/api";
 import { useState, useEffect } from "react";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useIdentityData } from "components/IdentityProvider";
@@ -10,6 +14,9 @@ import { PollData } from "./fetchPollData";
 import { Popover } from "components/Popover";
 import LoginForm from "app/login/LoginForm";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
+import { getVoterIdentities, VoterIdentity } from "./getVoterIdentities";
+import { Json } from "supabase/database.types";
+import { InfoSmall } from "components/Icons/InfoSmall";
 
 // Helper function to extract the first option from a vote record
 const getVoteOption = (voteRecord: any): string | null => {
@@ -101,7 +108,7 @@ export const PublishedPollBlock = (props: {
             setShowResults={setShowResults}
             optimisticVote={optimisticVote}
           />
-          {isCreator && !hasVoted && (
+          {!hasVoted && (
             <div className="flex justify-start">
               <button
                 className="w-fit flex gap-2 items-center justify-start text-sm text-accent-contrast"
@@ -124,43 +131,42 @@ export const PublishedPollBlock = (props: {
               disabled={!identity?.atp_did}
             />
           ))}
-          <div className="flex justify-between items-center">
-            <div className="flex justify-end gap-2">
-              {isCreator && (
-                <button
-                  className="w-fit flex gap-2 items-center justify-start text-sm text-accent-contrast"
-                  onClick={() => setShowResults(!showResults)}
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2 items-center pt-2">
+            <div className="text-sm text-tertiary">All votes are public</div>
+            <div className="flex sm:gap-3 sm:flex-row flex-col-reverse sm:justify-end justify-center gap-1 items-center">
+              <button
+                className="w-fit font-bold text-accent-contrast"
+                onClick={() => setShowResults(!showResults)}
+              >
+                See Results
+              </button>
+              {identity?.atp_did ? (
+                <ButtonPrimary
+                  className="place-self-end"
+                  onClick={handleVote}
+                  disabled={!selectedOption || isVoting}
                 >
-                  See Results
-                </button>
+                  {isVoting ? "Voting..." : "Vote!"}
+                </ButtonPrimary>
+              ) : (
+                <Popover
+                  asChild
+                  trigger={
+                    <ButtonPrimary className="place-self-center">
+                      <BlueskyTiny /> Login to vote
+                    </ButtonPrimary>
+                  }
+                >
+                  {isClient && (
+                    <LoginForm
+                      text="Log in to vote on this poll!"
+                      noEmail
+                      redirectRoute={window?.location.href + "?refreshAuth"}
+                    />
+                  )}
+                </Popover>
               )}
             </div>
-            {identity?.atp_did ? (
-              <ButtonPrimary
-                className="place-self-end"
-                onClick={handleVote}
-                disabled={!selectedOption || isVoting}
-              >
-                {isVoting ? "Voting..." : "Vote!"}
-              </ButtonPrimary>
-            ) : (
-              <Popover
-                asChild
-                trigger={
-                  <ButtonPrimary className="place-self-center">
-                    <BlueskyTiny /> Login to vote
-                  </ButtonPrimary>
-                }
-              >
-                {isClient && (
-                  <LoginForm
-                    text="Log in to vote on this poll!"
-                    noEmail
-                    redirectRoute={window?.location.href + "?refreshAuth"}
-                  />
-                )}
-              </Popover>
-            )}
           </div>
         </>
       )}
@@ -221,16 +227,17 @@ const PollResults = (props: {
   return (
     <>
       {pollRecord.options.map((option, index) => {
-        const votes = allVotes.filter(
+        const voteRecords = allVotes.filter(
           (v) => getVoteOption(v.record) === index.toString(),
-        ).length;
-        const isWinner = totalVotes > 0 && votes === highestVotes;
+        );
+        const isWinner = totalVotes > 0 && voteRecords.length === highestVotes;
 
         return (
           <PollResult
             key={index}
             option={option}
-            votes={votes}
+            votes={voteRecords.length}
+            voteRecords={voteRecords}
             totalVotes={totalVotes}
             winner={isWinner}
           />
@@ -240,9 +247,70 @@ const PollResults = (props: {
   );
 };
 
+const VoterListPopover = (props: {
+  votes: number;
+  voteRecords: { voter_did: string; record: Json }[];
+}) => {
+  const [voterIdentities, setVoterIdentities] = useState<VoterIdentity[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
+
+  const handleOpenChange = async () => {
+    if (!hasFetched && props.voteRecords.length > 0) {
+      setIsLoading(true);
+      setHasFetched(true);
+      try {
+        const dids = props.voteRecords.map((v) => v.voter_did);
+        const identities = await getVoterIdentities(dids);
+        setVoterIdentities(identities);
+      } catch (error) {
+        console.error("Failed to fetch voter identities:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  return (
+    <Popover
+      trigger={
+        <button
+          className="hover:underline cursor-pointer"
+          disabled={props.votes === 0}
+        >
+          {props.votes}
+        </button>
+      }
+      onOpenChange={handleOpenChange}
+      className="w-64 max-h-80"
+    >
+      {isLoading ? (
+        <div className="flex justify-center py-4">
+          <div className="text-sm text-secondary">Loading...</div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1 text-sm py-0.5">
+          {voterIdentities.map((voter) => (
+            <a
+              key={voter.did}
+              href={`https://bsky.app/profile/${voter.handle || voter.did}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className=""
+            >
+              @{voter.handle || voter.did}
+            </a>
+          ))}
+        </div>
+      )}
+    </Popover>
+  );
+};
+
 const PollResult = (props: {
   option: PubLeafletPollDefinition.Option;
   votes: number;
+  voteRecords: { voter_did: string; record: Json }[];
   totalVotes: number;
   winner: boolean;
 }) => {
@@ -258,7 +326,7 @@ const PollResult = (props: {
         className="pollResultContent text-accent-contrast relative flex gap-2 justify-between z-10"
       >
         <div className="grow max-w-full truncate">{props.option.text}</div>
-        <div>{props.votes}</div>
+        <VoterListPopover votes={props.votes} voteRecords={props.voteRecords} />
       </div>
       <div className="pollResultBG absolute bg-bg-page w-full top-0 bottom-0 left-0 right-0 flex flex-row z-0">
         <div

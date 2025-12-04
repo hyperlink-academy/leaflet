@@ -1,3 +1,4 @@
+"use client";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { theme } from "tailwind.config";
 import { NestedCardThemeProvider } from "./ThemeManager/ThemeProvider";
@@ -6,9 +7,7 @@ import { PopoverOpenContext } from "./Popover";
 import { useState } from "react";
 
 export const Separator = (props: { classname?: string }) => {
-  return (
-    <div className={`min-h-full border-r border-border ${props.classname}`} />
-  );
+  return <div className={`h-full border-r border-border ${props.classname}`} />;
 };
 
 export const Menu = (props: {
@@ -45,7 +44,7 @@ export const Menu = (props: {
               alignOffset={props.alignOffset ? props.alignOffset : undefined}
               sideOffset={4}
               collisionPadding={16}
-              className={`dropdownMenu z-20 bg-bg-page flex flex-col py-1 gap-0.5 border border-border rounded-md shadow-md ${props.className}`}
+              className={`dropdownMenu z-20 bg-bg-page flex flex-col p-1 gap-0.5 border border-border rounded-md shadow-md ${props.className}`}
             >
               {props.children}
               <DropdownMenu.Arrow
@@ -86,14 +85,9 @@ export const MenuItem = (props: {
         props.onSelect(event);
       }}
       className={`
-        MenuItem
-        font-bold z-10 py-1 px-3
-        text-left text-secondary
+        menuItem
+        z-10 py-1! px-2!
         flex gap-2
-        data-highlighted:bg-border-light data-highlighted:text-secondary
-        hover:bg-border-light hover:text-secondary
-        outline-hidden
-        cursor-pointer
         ${props.className}
         `}
     >

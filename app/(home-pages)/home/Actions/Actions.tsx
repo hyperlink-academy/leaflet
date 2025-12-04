@@ -1,7 +1,7 @@
 "use client";
 import { ThemePopover } from "components/ThemeManager/ThemeSetter";
 import { CreateNewLeafletButton } from "./CreateNewButton";
-import { HelpPopover } from "components/HelpPopover";
+import { HelpButton } from "app/[leaflet_id]/actions/HelpButton";
 import { AccountSettings } from "./AccountSettings";
 import { useIdentityData } from "components/IdentityProvider";
 import { useReplicache } from "src/replicache";
@@ -13,10 +13,11 @@ export const Actions = () => {
   return (
     <>
       <CreateNewLeafletButton />
-      {identity ? <AccountSettings /> : <LoginActionButton />}
-      {/*<HelpPopover noShortcuts />*/}
-      <ThemePopover entityID={rootEntity} home />
-      <HelpPopover />
+      {identity ? (
+        <AccountSettings entityID={rootEntity} />
+      ) : (
+        <LoginActionButton />
+      )}
     </>
   );
 };

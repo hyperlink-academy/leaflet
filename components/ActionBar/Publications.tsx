@@ -10,27 +10,59 @@ import { AtUri } from "@atproto/syntax";
 import { ActionButton } from "./ActionButton";
 import { SpeedyLink } from "components/SpeedyLink";
 import { PublishSmall } from "components/Icons/PublishSmall";
+import { Popover } from "components/Popover";
+import { BlueskyLogin } from "app/login/LoginForm";
+import { ButtonSecondary } from "components/Buttons";
+import { useIsMobile } from "src/hooks/isMobile";
+import { useState } from "react";
+import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
+import { navPages } from "./Navigation";
 
 export const PublicationButtons = (props: {
+  currentPage: navPages;
   currentPubUri: string | undefined;
 }) => {
   let { identity } = useIdentityData();
+  let looseleaves = identity?.permission_token_on_homepage.find(
+    (f) => f.permission_tokens.leaflets_to_documents,
+  );
 
   // don't show pub list button if not logged in or no pub list
   // we show a "start a pub" banner instead
-  if (!identity || !identity.atp_did) return <PubListEmpty />;
+  if (!identity || !identity.atp_did || identity.publications.length === 0)
+    return <PubListEmpty />;
+
   return (
     <div className="pubListWrapper w-full  flex flex-col gap-1 sm:bg-transparent sm:border-0">
-      {identity.publications?.map((d) => {
-        // console.log("thisURI : " + d.uri);
-        // console.log("currentURI : " + props.currentPubUri);
+      {looseleaves && (
+        <>
+          <SpeedyLink
+            href={`/looseleafs`}
+            className="flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full"
+          >
+            {/*TODO How should i get if this is the current page or not?
+              theres not "pub" to check the uri for. Do i need to add it as an option to NavPages? thats kinda annoying*/}
+            <ActionButton
+              label="Looseleafs"
+              icon={<LooseLeafSmall />}
+              nav
+              className={
+                props.currentPage === "looseleafs"
+                  ? "bg-bg-page! border-border!"
+                  : ""
+              }
+            />
+          </SpeedyLink>
+          <hr className="border-border-light border-dashed mx-1" />
+        </>
+      )}
 
+      {identity.publications?.map((d) => {
         return (
           <PublicationOption
             {...d}
             key={d.uri}
             record={d.record}
-            asActionButton
             current={d.uri === props.currentPubUri}
           />
         );
@@ -49,7 +81,6 @@ export const PublicationOption = (props: {
   uri: string;
   name: string;
   record: Json;
-  asActionButton?: boolean;
   current?: boolean;
 }) => {
   let record = props.record as PubLeafletPublication.Record | null;
@@ -60,33 +91,90 @@ export const PublicationOption = (props: {
       href={`${getBasePublicationURL(props)}/dashboard`}
       className="flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full"
     >
-      {props.asActionButton ? (
-        <ActionButton
-          label={record.name}
-          icon={<PubIcon record={record} uri={props.uri} />}
-          nav
-          className={props.current ? "bg-bg-page! border-border!" : ""}
-        />
-      ) : (
-        <>
-          <PubIcon record={record} uri={props.uri} />
-          <div className="truncate">{record.name}</div>
-        </>
-      )}
+      <ActionButton
+        label={record.name}
+        icon={<PubIcon record={record} uri={props.uri} />}
+        nav
+        className={props.current ? "bg-bg-page! border-border!" : ""}
+      />
     </SpeedyLink>
   );
 };
 
 const PubListEmpty = () => {
-  return (
-    <SpeedyLink href={`lish/createPub`} className=" hover:no-underline!">
+  let isMobile = useIsMobile();
+
+  let [state, setState] = useState<"default" | "info">("default");
+  if (isMobile && state == "default")
+    return (
       <ActionButton
         label="Publish"
         icon={<PublishSmall />}
         nav
-        subtext="Blog on ATProto!"
+        subtext="Start a blog on ATProto!"
+        onClick={() => {
+          setState("info");
+        }}
       />
-    </SpeedyLink>
+    );
+
+  if (isMobile && state === "info") return <PubListEmptyContent />;
+  else
+    return (
+      <Popover
+        side="right"
+        align="start"
+        className="p-1! max-w-56"
+        asChild
+        trigger={
+          <ActionButton
+            label="Publish"
+            icon={<PublishSmall />}
+            nav
+            subtext="Start a blog on ATProto!"
+          />
+        }
+      >
+        <PubListEmptyContent />
+      </Popover>
+    );
+};
+
+export const PubListEmptyContent = (props: { compact?: boolean }) => {
+  let { identity } = useIdentityData();
+
+  return (
+    <div
+      className={`bg-[var(--accent-light)] w-full rounded-md flex flex-col  text-center justify-center p-2 pb-4 text-sm`}
+    >
+      <div className="mx-auto pt-2 scale-90">
+        <PubListEmptyIllo />
+      </div>
+      <div className="pt-1 font-bold">Publish on AT Proto</div>
+      {identity && identity.atp_did ? (
+        //  has ATProto account and no pubs
+        <>
+          <div className="pb-2 text-secondary text-xs">
+            Start a new publication <br />
+            on AT Proto
+          </div>
+          <SpeedyLink href={`lish/createPub`} className=" hover:no-underline!">
+            <ButtonSecondary className="text-sm mx-auto" compact>
+              Start a Publication!
+            </ButtonSecondary>
+          </SpeedyLink>
+        </>
+      ) : (
+        // no ATProto account and no pubs
+        <>
+          <div className="pb-2 text-secondary text-xs">
+            Link a Bluesky account to start <br /> a new publication on AT Proto
+          </div>
+
+          <BlueskyLogin compact />
+        </>
+      )}
+    </div>
   );
 };
 
@@ -102,7 +190,9 @@ export const PubIcon = (props: {
   let iconSizeClassName = `${props.small ? "w-4 h-4" : props.large ? "w-12 h-12" : "w-6 h-6"} rounded-full`;
 
   return props.record.icon ? (
-    <div className={`${iconSizeClassName} ${props.className} relative overflow-hidden`}>
+    <div
+      className={`${iconSizeClassName} ${props.className} relative overflow-hidden`}
+    >
       <img
         src={`/api/atproto_images?did=${new AtUri(props.uri).host}&cid=${(props.record.icon?.ref as unknown as { $link: string })["$link"]}`}
         alt={`${props.record.name} icon`}
@@ -116,7 +206,7 @@ export const PubIcon = (props: {
       <div
         className={`${props.small ? "text-xs" : props.large ? "text-2xl" : "text-sm"} font-bold  absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-accent-2`}
       >
-        {props.record?.name.slice(0, 1)}
+        {props.record?.name.slice(0, 1).toUpperCase()}
       </div>
     </div>
   );

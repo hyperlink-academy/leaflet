@@ -2,7 +2,7 @@
 import * as RadixPopover from "@radix-ui/react-popover";
 import { theme } from "tailwind.config";
 import { NestedCardThemeProvider } from "./ThemeManager/ThemeProvider";
-import { createContext, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import { PopoverArrow } from "./Icons/PopoverArrow";
 
 export const PopoverOpenContext = createContext(false);
@@ -24,12 +24,15 @@ export const Popover = (props: {
   noArrow?: boolean;
 }) => {
   let [open, setOpen] = useState(props.open || false);
+  useEffect(() => {
+    if (props.open !== undefined) setOpen(props.open);
+  }, [props.open]);
   return (
     <RadixPopover.Root
       open={props.open}
       onOpenChange={(o) => {
         setOpen(o);
-        props.onOpenChange?.(open);
+        props.onOpenChange?.(o);
       }}
     >
       <PopoverOpenContext value={open}>
@@ -45,7 +48,7 @@ export const Popover = (props: {
               max-w-(--radix-popover-content-available-width)
               max-h-(--radix-popover-content-available-height)
               border border-border rounded-md shadow-md
-              overflow-y-scroll no-scrollbar
+              overflow-y-scroll
               ${props.className}
             `}
               side={props.side}

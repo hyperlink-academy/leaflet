@@ -1,15 +1,71 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { theme } from "tailwind.config";
-import { PublicationsList } from "./page";
 import { PubListing } from "./PubListing";
+import useSWRInfinite from "swr/infinite";
+import { getPublications, type Cursor, type Publication } from "./getPublications";
 
 export function SortedPublicationList(props: {
-  publications: PublicationsList;
+  publications: Publication[];
   order: string;
+  nextCursor: Cursor | null;
 }) {
   let [order, setOrder] = useState(props.order);
+
+  const getKey = (
+    pageIndex: number,
+    previousPageData: { publications: Publication[]; nextCursor: Cursor | null } | null,
+  ) => {
+    // Reached the end
+    if (previousPageData && !previousPageData.nextCursor) return null;
+
+    // First page, we don't have previousPageData
+    if (pageIndex === 0) return ["discover-publications", order, null] as const;
+
+    // Add the cursor to the key
+    return ["discover-publications", order, previousPageData?.nextCursor] as const;
+  };
+
+  const { data, error, size, setSize, isValidating } = useSWRInfinite(
+    getKey,
+    ([_, orderValue, cursor]) => {
+      const orderParam = orderValue === "popular" ? "popular" : "recentlyUpdated";
+      return getPublications(orderParam, cursor);
+    },
+    {
+      fallbackData: order === props.order
+        ? [{ publications: props.publications, nextCursor: props.nextCursor }]
+        : undefined,
+      revalidateFirstPage: false,
+    },
+  );
+
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Set up intersection observer to load more when trigger element is visible
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isValidating) {
+          const hasMore = data && data[data.length - 1]?.nextCursor;
+          if (hasMore) {
+            setSize(size + 1);
+          }
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [data, size, setSize, isValidating]);
+
+  const allPublications = data ? data.flatMap((page) => page.publications) : [];
+
   return (
     <div className="discoverHeader flex flex-col items-center ">
       <SortButtons
@@ -21,25 +77,21 @@ export function SortedPublicationList(props: {
           setOrder(o);
         }}
       />
-      <div className="discoverPubList flex flex-col gap-3 pt-6 w-full">
-        {props.publications
-          ?.filter((pub) => pub.documents_in_publications.length > 0)
-          ?.sort((a, b) => {
-            if (order === "popular") {
-              return (
-                b.publication_subscriptions[0].count -
-                a.publication_subscriptions[0].count
-              );
-            }
-            const aDate = new Date(
-              a.documents_in_publications[0]?.indexed_at || 0,
-            );
-            const bDate = new Date(
-              b.documents_in_publications[0]?.indexed_at || 0,
-            );
-            return bDate.getTime() - aDate.getTime();
-          })
-          .map((pub) => <PubListing resizeHeight key={pub.uri} {...pub} />)}
+      <div className="discoverPubList flex flex-col gap-3 pt-6 w-full relative">
+        {allPublications.map((pub) => (
+          <PubListing resizeHeight key={pub.uri} {...pub} />
+        ))}
+        {/* Trigger element for loading more publications */}
+        <div
+          ref={loadMoreRef}
+          className="absolute bottom-96 left-0 w-full h-px pointer-events-none"
+          aria-hidden="true"
+        />
+        {isValidating && (
+          <div className="text-center text-tertiary py-4">
+            Loading more publications...
+          </div>
+        )}
       </div>
     </div>
   );
@@ -81,7 +133,7 @@ const SortButton = (props: {
     <div className="relative">
       <button
         onClick={props.onClick}
-        className={`text-sm bg-accent-1 text-accent-2 rounded-md px-[8px] py-0.5 border ${props.selected ? "border-accent-contrast  font-bold" : "border-border-light"}`}
+        className={`text-sm  rounded-md px-[8px] font-bold py-0.5 border ${props.selected ? "border-accent-contrast bg-accent-1 text-accent-2 " : "bg-bg-page text-accent-contrast border-accent-contrast"}`}
       >
         {props.children}
       </button>

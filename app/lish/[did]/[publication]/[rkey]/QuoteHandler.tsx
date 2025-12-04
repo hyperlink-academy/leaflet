@@ -83,6 +83,14 @@ export function QuoteHandler() {
         selectionTop += quoteRect.height + 8;
       }
 
+      // Ensure tooltip stays within viewport bounds (330px wide + 8px padding)
+      const TOOLTIP_WIDTH = 338;
+      const viewportWidth = window.innerWidth;
+      const maxLeft = viewportWidth - TOOLTIP_WIDTH;
+
+      // Clamp selectionLeft to stay within bounds
+      selectionLeft = Math.max(8, Math.min(selectionLeft, maxLeft));
+
       let startIndex = findDataIndex(range.startContainer);
       let endIndex = findDataIndex(range.endContainer);
       if (!startIndex || !endIndex) return;

@@ -10,9 +10,7 @@ import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
-import { redirect } from "next/navigation";
 import { $Typed } from "@atproto/api";
-import { ids } from "lexicons/api/lexicons";
 
 export async function updatePublication({
   uri,
@@ -87,11 +85,6 @@ export async function updatePublication({
     .eq("uri", uri)
     .select()
     .single();
-  if (name !== existingPub.name)
-    return redirect(
-      `/lish/${aturi.host}/${encodeURIComponent(name)}/dashboard`,
-    );
-
   return { success: true, publication };
 }
 

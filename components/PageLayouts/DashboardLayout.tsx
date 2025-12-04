@@ -8,6 +8,7 @@ import {
   DesktopNavigation,
   MobileNavigation,
   navPages,
+  NotificationButton,
 } from "components/ActionBar/Navigation";
 import { create } from "zustand";
 import { Popover } from "components/Popover";
@@ -32,7 +33,7 @@ export type DashboardState = {
     drafts: boolean;
     published: boolean;
     docs: boolean;
-    templates: boolean;
+    archived: boolean;
   };
 };
 
@@ -44,13 +45,17 @@ type DashboardStore = {
 const defaultDashboardState: DashboardState = {
   display: undefined,
   sort: undefined,
-  filter: { drafts: false, published: false, docs: false, templates: false },
+  filter: {
+    drafts: false,
+    published: false,
+    docs: false,
+    archived: false,
+  },
 };
 
 export const useDashboardStore = create<DashboardStore>((set, get) => ({
   dashboards: {},
   setDashboard: (id: string, partial: Partial<DashboardState>) => {
-    console.log(partial);
     set((state) => ({
       dashboards: {
         ...state.dashboards,
@@ -139,7 +144,8 @@ export function DashboardLayout<
   const tabParam = searchParams.get("tab");
 
   // Initialize tab from search param if valid, otherwise use default
-  const initialTab = tabParam && props.tabs[tabParam] ? tabParam : props.defaultTab;
+  const initialTab =
+    tabParam && props.tabs[tabParam] ? tabParam : props.defaultTab;
   let [tab, setTab] = useState<keyof T>(initialTab);
 
   // Custom setter that updates both state and URL
@@ -165,7 +171,7 @@ export function DashboardLayout<
         className={`dashboard pwa-padding relative max-w-(--breakpoint-lg) w-full h-full mx-auto flex sm:flex-row flex-col sm:items-stretch sm:px-6`}
       >
         <MediaContents mobile={false}>
-          <div className="flex flex-col gap-4 my-6">
+          <div className="flex flex-col gap-3 my-6">
             <DesktopNavigation
               currentPage={props.currentPage}
               publication={props.publication}
@@ -254,15 +260,13 @@ export const HomeDashboardControls = (props: {
   hasBackgroundImage: boolean;
   defaultDisplay: Exclude<DashboardState["display"], undefined>;
   hasPubs: boolean;
-  hasTemplates: boolean;
+  hasArchived: boolean;
 }) => {
   let { display, sort } = useDashboardState();
-  console.log({ display, props });
   display = display || props.defaultDisplay;
   let setState = useSetDashboardState();
 
   let { identity } = useIdentityData();
-  console.log(props);
 
   return (
     <div className="dashboardControls w-full flex gap-4">
@@ -277,13 +281,11 @@ export const HomeDashboardControls = (props: {
         <DisplayToggle setState={setState} display={display} />
         <Separator classname="h-4 min-h-4!" />
 
-        {props.hasPubs || props.hasTemplates ? (
+        {props.hasPubs ? (
           <>
-            {props.hasPubs}
-            {props.hasTemplates}
             <FilterOptions
               hasPubs={props.hasPubs}
-              hasTemplates={props.hasTemplates}
+              hasArchived={props.hasArchived}
             />
             <Separator classname="h-4 min-h-4!" />{" "}
           </>
@@ -301,7 +303,6 @@ export const PublicationDashboardControls = (props: {
   defaultDisplay: Exclude<DashboardState["display"], undefined>;
 }) => {
   let { display, sort } = useDashboardState();
-  console.log({ display, props });
   display = display || props.defaultDisplay;
   let setState = useSetDashboardState();
   return (
@@ -371,7 +372,10 @@ function Tab(props: {
   );
 }
 
-const FilterOptions = (props: { hasPubs: boolean; hasTemplates: boolean }) => {
+const FilterOptions = (props: {
+  hasPubs: boolean;
+  hasArchived: boolean;
+}) => {
   let { filter } = useDashboardState();
   let setState = useSetDashboardState();
   let filterCount = Object.values(filter).filter(Boolean).length;
@@ -408,20 +412,18 @@ const FilterOptions = (props: { hasPubs: boolean; hasTemplates: boolean }) => {
         </>
       )}
 
-      {props.hasTemplates && (
-        <>
-          <Checkbox
-            small
-            checked={filter.templates}
-            onChange={(e) =>
-              setState({
-                filter: { ...filter, templates: !!e.target.checked },
-              })
-            }
-          >
-            Templates
-          </Checkbox>
-        </>
+      {props.hasArchived && (
+        <Checkbox
+          small
+          checked={filter.archived}
+          onChange={(e) =>
+            setState({
+              filter: { ...filter, archived: !!e.target.checked },
+            })
+          }
+        >
+          Archived
+        </Checkbox>
       )}
       <Checkbox
         small
@@ -443,7 +445,7 @@ const FilterOptions = (props: { hasPubs: boolean; hasTemplates: boolean }) => {
               docs: false,
               published: false,
               drafts: false,
-              templates: false,
+              archived: false,
             },
           });
         }}

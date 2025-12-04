@@ -22,6 +22,7 @@ import type * as PubLeafletBlocksHorizontalRule from '../blocks/horizontalRule'
 import type * as PubLeafletBlocksBskyPost from '../blocks/bskyPost'
 import type * as PubLeafletBlocksPage from '../blocks/page'
 import type * as PubLeafletBlocksPoll from '../blocks/poll'
+import type * as PubLeafletBlocksButton from '../blocks/button'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -59,6 +60,7 @@ export interface Block {
     | $Typed<PubLeafletBlocksBskyPost.Main>
     | $Typed<PubLeafletBlocksPage.Main>
     | $Typed<PubLeafletBlocksPoll.Main>
+    | $Typed<PubLeafletBlocksButton.Main>
     | { $type: string }
   x: number
   y: number

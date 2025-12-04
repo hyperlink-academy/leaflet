@@ -5,7 +5,6 @@ import { useIsMobile } from "src/hooks/isMobile";
 import { setInteractionState } from "./Interactions";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { AtUri } from "@atproto/api";
-import { Json } from "supabase/database.types";
 import { PostPageContext } from "../PostPageContext";
 import {
   PubLeafletBlocksText,
@@ -21,15 +20,70 @@ import { PostContent } from "../PostContent";
 import { ProfileViewBasic } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { flushSync } from "react-dom";
 import { openPage } from "../PostPages";
+import useSWR, { mutate } from "swr";
+import { DotLoader } from "components/utils/DotLoader";
+
+// Helper to get SWR key for quotes
+export function getQuotesSWRKey(uris: string[]) {
+  if (uris.length === 0) return null;
+  const params = new URLSearchParams({
+    uris: JSON.stringify(uris),
+  });
+  return `/api/bsky/hydrate?${params.toString()}`;
+}
+
+// Fetch posts from API route
+async function fetchBskyPosts(uris: string[]): Promise<PostView[]> {
+  const params = new URLSearchParams({
+    uris: JSON.stringify(uris),
+  });
+
+  const response = await fetch(`/api/bsky/hydrate?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch Bluesky posts");
+  }
+
+  return response.json();
+}
+
+// Prefetch quotes data
+export function prefetchQuotesData(
+  quotesAndMentions: { uri: string; link?: string }[],
+) {
+  const uris = quotesAndMentions.map((q) => q.uri);
+  const key = getQuotesSWRKey(uris);
+  if (key) {
+    // Start fetching without blocking
+    mutate(key, fetchBskyPosts(uris), { revalidate: false });
+  }
+}
 
 export const Quotes = (props: {
-  quotes: { link: string; bsky_posts: { post_view: Json } | null }[];
+  quotesAndMentions: { uri: string; link?: string }[];
   did: string;
 }) => {
   let data = useContext(PostPageContext);
   const document_uri = data?.uri;
   if (!document_uri)
     throw new Error("document_uri not available in PostPageContext");
+
+  // Fetch Bluesky post data for all URIs
+  const uris = props.quotesAndMentions.map((q) => q.uri);
+  const key = getQuotesSWRKey(uris);
+  const { data: bskyPosts, isLoading } = useSWR(key, () =>
+    fetchBskyPosts(uris),
+  );
+
+  // Separate quotes with links (quoted content) from direct mentions
+  const quotesWithLinks = props.quotesAndMentions.filter((q) => q.link);
+  const directMentions = props.quotesAndMentions.filter((q) => !q.link);
+
+  // Create a map of URIs to post views for easy lookup
+  const postViewMap = new Map<string, PostView>();
+  bskyPosts?.forEach((pv) => {
+    postViewMap.set(pv.uri, pv);
+  });
 
   return (
     <div className="flex flex-col gap-2">
@@ -44,22 +98,29 @@ export const Quotes = (props: {
           <CloseTiny />
         </button>
       </div>
-      {props.quotes.length === 0 ? (
+      {props.quotesAndMentions.length === 0 ? (
         <div className="opaque-container flex flex-col gap-0.5 p-[6px] text-tertiary italic text-sm text-center">
           <div className="font-bold">no quotes yet!</div>
           <div>highlight any part of this post to quote it</div>
         </div>
+      ) : isLoading ? (
+        <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm mt-8">
+          <span>loading</span>
+          <DotLoader />
+        </div>
       ) : (
         <div className="quotes flex flex-col gap-8">
-          {props.quotes.map((q, index) => {
-            let pv = q.bsky_posts?.post_view as unknown as PostView;
+          {/* Quotes with links (quoted content) */}
+          {quotesWithLinks.map((q, index) => {
+            const pv = postViewMap.get(q.uri);
+            if (!pv || !q.link) return null;
             const url = new URL(q.link);
             const quoteParam = url.pathname.split("/l-quote/")[1];
             if (!quoteParam) return null;
             const quotePosition = decodeQuotePosition(quoteParam);
             if (!quotePosition) return null;
             return (
-              <div key={index} className="flex flex-col ">
+              <div key={`quote-${index}`} className="flex flex-col ">
                 <QuoteContent
                   index={index}
                   did={props.did}
@@ -77,6 +138,29 @@ export const Quotes = (props: {
               </div>
             );
           })}
+
+          {/* Direct post mentions (without quoted content) */}
+          {directMentions.length > 0 && (
+            <div className="flex flex-col gap-4">
+              <div className="text-secondary font-bold">Post Mentions</div>
+              <div className="flex flex-col gap-8">
+                {directMentions.map((q, index) => {
+                  const pv = postViewMap.get(q.uri);
+                  if (!pv) return null;
+                  return (
+                    <BskyPost
+                      key={`mention-${index}`}
+                      rkey={new AtUri(pv.uri).rkey}
+                      content={pv.record.text as string}
+                      user={pv.author.displayName || pv.author.handle}
+                      profile={pv.author}
+                      handle={pv.author.handle}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -154,7 +238,7 @@ export const QuoteContent = (props: {
   );
 };
 
-const BskyPost = (props: {
+export const BskyPost = (props: {
   rkey: string;
   content: string;
   user: string;

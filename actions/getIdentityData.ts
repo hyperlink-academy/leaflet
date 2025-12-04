@@ -17,22 +17,26 @@ export async function uncachedGetIdentityData() {
           identities(
             *,
             bsky_profiles(*),
+            notifications(count),
             publication_subscriptions(*),
             custom_domains!custom_domains_identity_id_fkey(publication_domains(*), *),
             home_leaflet:permission_tokens!identities_home_page_fkey(*, permission_token_rights(*,
                               entity_sets(entities(facts(*)))
             )),
             permission_token_on_homepage(
+              archived,
               created_at,
               permission_tokens!inner(
                 id,
                 root_entity,
                 permission_token_rights(*),
+                leaflets_to_documents(*, documents(*)),
                 leaflets_in_publications(*, publications(*), documents(*))
               )
             )
           )`,
         )
+        .eq("identities.notifications.read", false)
         .eq("id", auth_token)
         .eq("confirmed", true)
         .single()

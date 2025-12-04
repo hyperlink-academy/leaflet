@@ -5,6 +5,10 @@ import { NextRequest } from "next/server";
 import * as z from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
+import {
+  getMicroLinkOgImage,
+  getWebpageImage,
+} from "src/utils/getMicroLinkOgImage";
 let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string,
@@ -27,17 +31,7 @@ export type LinkPreviewMetadataResult = ReturnType<typeof get_link_metadata>;
 export type LinkPreviewImageResult = ReturnType<typeof get_link_image_preview>;
 
 async function get_link_image_preview(url: string) {
-  let image = await fetch(
-    `https://pro.microlink.io/?url=${url}&screenshot&viewport.width=1400&viewport.height=1213&embed=screenshot.url&meta=false&force=true`,
-    {
-      headers: {
-        "x-api-key": process.env.MICROLINK_API_KEY!,
-      },
-      next: {
-        revalidate: 600,
-      },
-    },
-  );
+  let image = await getWebpageImage(url, { width: 1400, height: 1213 });
   let key = await hash(url);
   if (image.status === 200) {
     await supabase.storage

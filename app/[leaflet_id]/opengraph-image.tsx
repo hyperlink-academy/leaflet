@@ -4,7 +4,8 @@ export const runtime = "edge";
 export const revalidate = 60;
 
 export default async function OpenGraphImage(props: {
-  params: { leaflet_id: string };
+  params: Promise<{ leaflet_id: string }>;
 }) {
-  return getMicroLinkOgImage(`/${props.params.leaflet_id}`);
+  let params = await props.params;
+  return getMicroLinkOgImage(`/${params.leaflet_id}`);
 }

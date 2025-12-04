@@ -12,6 +12,11 @@ import { redirect } from "next/navigation";
 import { encodeActionToSearchParam } from "app/api/oauth/[route]/afterSignInActions";
 import { Json } from "supabase/database.types";
 import { IdResolver } from "@atproto/identity";
+import {
+  Notification,
+  pingIdentityToUpdateNotification,
+} from "src/notifications";
+import { v7 } from "uuid";
 
 let leafletFeedURI =
   "at://did:plc:btxrwcaeyodrap5mnjw2fvmz/app.bsky.feed.generator/subscribedPublications";
@@ -46,6 +51,22 @@ export async function subscribeToPublication(
       publication,
       identity: credentialSession.did!,
     });
+
+  // Create notification for the publication owner
+  let publicationOwner = new AtUri(publication).host;
+  if (publicationOwner !== credentialSession.did) {
+    let notification: Notification = {
+      id: v7(),
+      recipient: publicationOwner,
+      data: {
+        type: "subscribe",
+        subscription_uri: record.uri,
+      },
+    };
+    await supabaseServerClient.from("notifications").insert(notification);
+    await pingIdentityToUpdateNotification(publicationOwner);
+  }
+
   let bsky = new BskyAgent(credentialSession);
   let [prefs, profile, resolveDid] = await Promise.all([
     bsky.app.bsky.actor.getPreferences(),

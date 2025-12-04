@@ -10,21 +10,24 @@ import { AtUri } from "@atproto/syntax";
 import { useLocalPubTheme } from "./PublicationThemeProvider";
 import { BaseThemeProvider } from "./ThemeProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { ButtonSecondary } from "components/Buttons";
 import { updatePublicationTheme } from "app/lish/createPub/updatePublication";
-import { DotLoader } from "components/utils/DotLoader";
 import { PagePickers } from "./PubPickers/PubTextPickers";
 import { BackgroundPicker } from "./PubPickers/PubBackgroundPickers";
 import { PubAccentPickers } from "./PubPickers/PubAcccentPickers";
 import { Separator } from "components/Layout";
+import { PubSettingsHeader } from "app/lish/[did]/[publication]/dashboard/PublicationSettings";
+import { ColorToRGB, ColorToRGBA } from "./colorToLexicons";
 
 export type ImageState = {
   src: string;
   file?: File;
   repeat: number | null;
 };
-export const PubThemeSetter = () => {
-  let [loading, setLoading] = useState(false);
+export const PubThemeSetter = (props: {
+  backToMenu: () => void;
+  loading: boolean;
+  setLoading: (l: boolean) => void;
+}) => {
   let [sample, setSample] = useState<"pub" | "post">("pub");
   let [openPicker, setOpenPicker] = useState<pickers>("null");
   let { data, mutate } = usePublicationData();
@@ -37,7 +40,7 @@ export const PubThemeSetter = () => {
     theme: localPubTheme,
     setTheme,
     changes,
-  } = useLocalPubTheme(record, showPageBackground);
+  } = useLocalPubTheme(record?.theme, showPageBackground);
   let [image, setImage] = useState<ImageState | null>(
     PubLeafletThemeBackgroundImage.isMain(record?.theme?.backgroundImage)
       ? {
@@ -58,11 +61,10 @@ export const PubThemeSetter = () => {
   return (
     <BaseThemeProvider local {...localPubTheme}>
       <form
-        className="bg-accent-1 -mx-3 -mt-2  px-3 py-1 mb-1 flex justify-between items-center"
         onSubmit={async (e) => {
           e.preventDefault();
           if (!pub) return;
-          setLoading(true);
+          props.setLoading(true);
           let result = await updatePublicationTheme({
             uri: pub.uri,
             theme: {
@@ -86,118 +88,118 @@ export const PubThemeSetter = () => {
               };
             return pub;
           }, false);
-          setLoading(false);
+          props.setLoading(false);
         }}
       >
-        <h4 className="text-accent-2">Publication Theme</h4>
-        <ButtonSecondary compact>
-          {loading ? <DotLoader /> : "Update"}
-        </ButtonSecondary>
+        <PubSettingsHeader
+          loading={props.loading}
+          setLoadingAction={props.setLoading}
+          backToMenuAction={props.backToMenu}
+          state={"theme"}
+        />
       </form>
 
-      <div>
-        <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
-          <div className="themeBGLeaflet flex">
-            <div
-              className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
-            >
-              <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md text-[#595959] bg-white">
-                <BackgroundPicker
-                  bgImage={image}
-                  setBgImage={setImage}
-                  backgroundColor={localPubTheme.bgLeaflet}
-                  pageBackground={localPubTheme.bgPage}
-                  setPageBackground={(color) => {
-                    setTheme((t) => ({ ...t, bgPage: color }));
-                  }}
-                  setBackgroundColor={(color) => {
-                    setTheme((t) => ({ ...t, bgLeaflet: color }));
-                  }}
-                  openPicker={openPicker}
-                  setOpenPicker={setOpenPicker}
-                  hasPageBackground={!!showPageBackground}
-                  setHasPageBackground={setShowPageBackground}
-                />
-              </div>
-
-              <SectionArrow
-                fill="white"
-                stroke="#CCCCCC"
-                className="ml-2 -mt-px"
-              />
-            </div>
-          </div>
-
+      <div className="themeSetterContent flex flex-col w-full overflow-y-scroll -mb-2 ">
+        <div className="themeBGLeaflet flex">
           <div
-            style={{
-              backgroundImage: pubBGImage ? `url(${pubBGImage})` : undefined,
-              backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
-              backgroundPosition: "center",
-              backgroundSize: !leafletBGRepeat
-                ? "cover"
-                : `calc(${leafletBGRepeat}px / 2 )`,
-            }}
-            className={` relative bg-bg-leaflet px-3 py-4 flex flex-col rounded-md  border border-border `}
+            className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
           >
-            <div className={`flex flex-col  gap-3 z-10`}>
-              <PagePickers
+            <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md text-[#595959] bg-white">
+              <BackgroundPicker
+                bgImage={image}
+                setBgImage={setImage}
+                backgroundColor={localPubTheme.bgLeaflet}
                 pageBackground={localPubTheme.bgPage}
-                primary={localPubTheme.primary}
                 setPageBackground={(color) => {
                   setTheme((t) => ({ ...t, bgPage: color }));
                 }}
-                setPrimary={(color) => {
-                  setTheme((t) => ({ ...t, primary: color }));
+                setBackgroundColor={(color) => {
+                  setTheme((t) => ({ ...t, bgLeaflet: color }));
                 }}
                 openPicker={openPicker}
-                setOpenPicker={(pickers) => setOpenPicker(pickers)}
-                hasPageBackground={showPageBackground}
-              />
-              <PubAccentPickers
-                accent1={localPubTheme.accent1}
-                setAccent1={(color) => {
-                  setTheme((t) => ({ ...t, accent1: color }));
-                }}
-                accent2={localPubTheme.accent2}
-                setAccent2={(color) => {
-                  setTheme((t) => ({ ...t, accent2: color }));
-                }}
-                openPicker={openPicker}
-                setOpenPicker={(pickers) => setOpenPicker(pickers)}
+                setOpenPicker={setOpenPicker}
+                hasPageBackground={!!showPageBackground}
+                setHasPageBackground={setShowPageBackground}
               />
             </div>
+
+            <SectionArrow
+              fill="white"
+              stroke="#CCCCCC"
+              className="ml-2 -mt-[1px]"
+            />
           </div>
-          <div className="flex flex-col mt-4 ">
-            <div className="flex gap-2 items-center text-sm  text-[#8C8C8C]">
-              <div className="text-sm">Preview</div>
-              <Separator classname="h-4!" />{" "}
-              <button
-                className={`${sample === "pub" ? "font-bold  text-[#595959]" : ""}`}
-                onClick={() => setSample("pub")}
-              >
-                Pub
-              </button>
-              <button
-                className={`${sample === "post" ? "font-bold  text-[#595959]" : ""}`}
-                onClick={() => setSample("post")}
-              >
-                Post
-              </button>
-            </div>
-            {sample === "pub" ? (
-              <SamplePub
-                pubBGImage={pubBGImage}
-                pubBGRepeat={leafletBGRepeat}
-                showPageBackground={showPageBackground}
-              />
-            ) : (
-              <SamplePost
-                pubBGImage={pubBGImage}
-                pubBGRepeat={leafletBGRepeat}
-                showPageBackground={showPageBackground}
-              />
-            )}
+        </div>
+
+        <div
+          style={{
+            backgroundImage: pubBGImage ? `url(${pubBGImage})` : undefined,
+            backgroundRepeat: leafletBGRepeat ? "repeat" : "no-repeat",
+            backgroundPosition: "center",
+            backgroundSize: !leafletBGRepeat
+              ? "cover"
+              : `calc(${leafletBGRepeat}px / 2 )`,
+          }}
+          className={` relative bg-bg-leaflet px-3 py-4 flex flex-col rounded-md  border border-border `}
+        >
+          <div className={`flex flex-col  gap-3 z-10`}>
+            <PagePickers
+              pageBackground={localPubTheme.bgPage}
+              primary={localPubTheme.primary}
+              setPageBackground={(color) => {
+                setTheme((t) => ({ ...t, bgPage: color }));
+              }}
+              setPrimary={(color) => {
+                setTheme((t) => ({ ...t, primary: color }));
+              }}
+              openPicker={openPicker}
+              setOpenPicker={(pickers) => setOpenPicker(pickers)}
+              hasPageBackground={showPageBackground}
+            />
+            <PubAccentPickers
+              accent1={localPubTheme.accent1}
+              setAccent1={(color) => {
+                setTheme((t) => ({ ...t, accent1: color }));
+              }}
+              accent2={localPubTheme.accent2}
+              setAccent2={(color) => {
+                setTheme((t) => ({ ...t, accent2: color }));
+              }}
+              openPicker={openPicker}
+              setOpenPicker={(pickers) => setOpenPicker(pickers)}
+            />
           </div>
+        </div>
+        <div className="flex flex-col mt-4 ">
+          <div className="flex gap-2 items-center text-sm  text-[#8C8C8C]">
+            <div className="text-sm">Preview</div>
+            <Separator classname="h-4!" />{" "}
+            <button
+              className={`${sample === "pub" ? "font-bold  text-[#595959]" : ""}`}
+              onClick={() => setSample("pub")}
+            >
+              Pub
+            </button>
+            <button
+              className={`${sample === "post" ? "font-bold  text-[#595959]" : ""}`}
+              onClick={() => setSample("post")}
+            >
+              Post
+            </button>
+          </div>
+          {sample === "pub" ? (
+            <SamplePub
+              pubBGImage={pubBGImage}
+              pubBGRepeat={leafletBGRepeat}
+              showPageBackground={showPageBackground}
+            />
+          ) : (
+            <SamplePost
+              pubBGImage={pubBGImage}
+              pubBGRepeat={leafletBGRepeat}
+              showPageBackground={showPageBackground}
+            />
+          )}
         </div>
       </div>
     </BaseThemeProvider>
@@ -342,45 +344,3 @@ const SamplePost = (props: {
     </div>
   );
 };
-
-export function ColorToRGBA(color: Color) {
-  if (!color)
-    return {
-      $type: "pub.leaflet.theme.color#rgba" as const,
-      r: 0,
-      g: 0,
-      b: 0,
-      a: 1,
-    };
-  let c = color.toFormat("rgba");
-  const r = c.getChannelValue("red");
-  const g = c.getChannelValue("green");
-  const b = c.getChannelValue("blue");
-  const a = c.getChannelValue("alpha");
-  return {
-    $type: "pub.leaflet.theme.color#rgba" as const,
-    r: Math.round(r),
-    g: Math.round(g),
-    b: Math.round(b),
-    a: Math.round(a * 100),
-  };
-}
-function ColorToRGB(color: Color) {
-  if (!color)
-    return {
-      $type: "pub.leaflet.theme.color#rgb" as const,
-      r: 0,
-      g: 0,
-      b: 0,
-    };
-  let c = color.toFormat("rgb");
-  const r = c.getChannelValue("red");
-  const g = c.getChannelValue("green");
-  const b = c.getChannelValue("blue");
-  return {
-    $type: "pub.leaflet.theme.color#rgb" as const,
-    r: Math.round(r),
-    g: Math.round(g),
-    b: Math.round(b),
-  };
-}

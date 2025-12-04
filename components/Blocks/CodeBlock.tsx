@@ -13,6 +13,7 @@ import { BaseTextareaBlock } from "./BaseTextareaBlock";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { flushSync } from "react-dom";
 import { elementId } from "src/utils/elementId";
+import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
 
 export function CodeBlock(props: BlockProps) {
   let { rep, rootEntity } = useReplicache();
@@ -25,7 +26,8 @@ export function CodeBlock(props: BlockProps) {
   let focusedBlock = useUIState(
     (s) => s.focusedEntity?.entityID === props.entityID,
   );
-  let { permissions } = useEntitySetContext();
+  let entity_set = useEntitySetContext();
+  let { permissions } = entity_set;
   const [html, setHTML] = useState<string | null>(null);
 
   useLayoutEffect(() => {
@@ -100,6 +102,7 @@ export function CodeBlock(props: BlockProps) {
             }}
             value={lang}
             onChange={async (e) => {
+              localStorage.setItem(LAST_USED_CODE_LANGUAGE_KEY, e.target.value);
               await rep?.mutate.assertFact({
                 attribute: "block/code-language",
                 entity: props.entityID,
@@ -123,6 +126,8 @@ export function CodeBlock(props: BlockProps) {
             data-entityid={props.entityID}
             id={elementId.block(props.entityID).input}
             block={props}
+            rep={rep}
+            permissionSet={entity_set.set}
             spellCheck={false}
             autoCapitalize="none"
             autoCorrect="off"

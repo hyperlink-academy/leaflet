@@ -1052,6 +1052,25 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletBlocksButton: {
+    lexicon: 1,
+    id: 'pub.leaflet.blocks.button',
+    defs: {
+      main: {
+        type: 'object',
+        required: ['text', 'url'],
+        properties: {
+          text: {
+            type: 'string',
+          },
+          url: {
+            type: 'string',
+            format: 'uri',
+          },
+        },
+      },
+    },
+  },
   PubLeafletBlocksCode: {
     lexicon: 1,
     id: 'pub.leaflet.blocks.code',
@@ -1389,7 +1408,7 @@ export const schemaDict = {
         description: 'Record containing a document',
         record: {
           type: 'object',
-          required: ['pages', 'author', 'title', 'publication'],
+          required: ['pages', 'author', 'title'],
           properties: {
             title: {
               type: 'string',
@@ -1416,6 +1435,10 @@ export const schemaDict = {
             author: {
               type: 'string',
               format: 'at-identifier',
+            },
+            theme: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.publication#theme',
             },
             pages: {
               type: 'array',
@@ -1493,6 +1516,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.bskyPost',
               'lex:pub.leaflet.blocks.page',
               'lex:pub.leaflet.blocks.poll',
+              'lex:pub.leaflet.blocks.button',
             ],
           },
           x: {
@@ -1593,6 +1617,7 @@ export const schemaDict = {
               'lex:pub.leaflet.blocks.bskyPost',
               'lex:pub.leaflet.blocks.page',
               'lex:pub.leaflet.blocks.poll',
+              'lex:pub.leaflet.blocks.button',
             ],
           },
           alignment: {
@@ -1613,6 +1638,9 @@ export const schemaDict = {
         type: 'token',
       },
       textAlignRight: {
+        type: 'token',
+      },
+      textAlignJustify: {
         type: 'token',
       },
       quote: {
@@ -2050,6 +2078,7 @@ export const ids = {
   ComAtprotoRepoUploadBlob: 'com.atproto.repo.uploadBlob',
   PubLeafletBlocksBlockquote: 'pub.leaflet.blocks.blockquote',
   PubLeafletBlocksBskyPost: 'pub.leaflet.blocks.bskyPost',
+  PubLeafletBlocksButton: 'pub.leaflet.blocks.button',
   PubLeafletBlocksCode: 'pub.leaflet.blocks.code',
   PubLeafletBlocksHeader: 'pub.leaflet.blocks.header',
   PubLeafletBlocksHorizontalRule: 'pub.leaflet.blocks.horizontalRule',

@@ -7,7 +7,7 @@ import { elementId } from "src/utils/elementId";
 import { focusBlock } from "src/utils/focusBlock";
 import { AppBskyFeedDefs, AppBskyFeedPost, RichText } from "@atproto/api";
 import { Separator } from "components/Layout";
-import { useInitialPageLoad } from "components/InitialPageLoadProvider";
+import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
@@ -60,11 +60,13 @@ export const PubBlueskyPostBlock = (props: {
           {post.author && record && (
             <>
               <div className="bskyAuthor w-full flex items-center gap-2">
-                <img
-                  src={post.author?.avatar}
-                  alt={`${post.author?.displayName}'s avatar`}
-                  className="shink-0 w-8 h-8 rounded-full border border-border-light"
-                />
+                {post.author.avatar && (
+                  <img
+                    src={post.author?.avatar}
+                    alt={`${post.author?.displayName}'s avatar`}
+                    className="shink-0 w-8 h-8 rounded-full border border-border-light"
+                  />
+                )}
                 <div className="grow flex flex-col gap-0.5 leading-tight">
                   <div className=" font-bold text-secondary">
                     {post.author?.displayName}
@@ -121,15 +123,18 @@ export const PubBlueskyPostBlock = (props: {
 };
 
 const ClientDate = (props: { date?: string }) => {
-  let pageLoaded = useInitialPageLoad();
-  const formattedDate = useLocalizedDate(props.date || new Date().toISOString(), {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  });
+  let pageLoaded = useHasPageLoaded();
+  const formattedDate = useLocalizedDate(
+    props.date || new Date().toISOString(),
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true,
+    },
+  );
 
   if (!pageLoaded) return null;
 

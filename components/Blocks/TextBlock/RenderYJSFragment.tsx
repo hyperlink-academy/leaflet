@@ -27,7 +27,7 @@ export function RenderYJSFragment({
         return (
           <BlockWrapper wrapper={wrapper} attrs={attrs}>
             {children.length === 0 ? (
-              <div />
+              <br />
             ) : (
               node.toArray().map((node, index) => {
                 if (node.constructor === XmlText) {
@@ -58,6 +58,10 @@ export function RenderYJSFragment({
                       })}
                     </Fragment>
                   );
+                }
+
+                if (node.constructor === XmlElement && node.nodeName === "hard_break") {
+                  return <br key={index} />;
                 }
 
                 return null;
@@ -144,6 +148,10 @@ export function YJSFragmentToString(
   node: XmlElement | XmlText | XmlHook,
 ): string {
   if (node.constructor === XmlElement) {
+    // Handle hard_break nodes specially
+    if (node.nodeName === "hard_break") {
+      return "\n";
+    }
     return node
       .toArray()
       .map((f) => YJSFragmentToString(f))

@@ -11,6 +11,7 @@ import { focusBlock } from "src/utils/focusBlock";
 import { schema } from "./schema";
 import { useUIState } from "src/useUIState";
 import { flushSync } from "react-dom";
+import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
 export const inputrules = (
   propsRef: MutableRefObject<BlockProps & { entity_set: { set: string } }>,
   repRef: MutableRefObject<Replicache<ReplicacheMutators> | null>,
@@ -108,13 +109,21 @@ export const inputrules = (
 
       // Code Block
       new InputRule(/^```\s$/, (state, match) => {
-        flushSync(() =>
+        flushSync(() => {
           repRef.current?.mutate.assertFact({
             entity: propsRef.current.entityID,
             attribute: "block/type",
             data: { type: "block-type-union", value: "code" },
-          }),
-        );
+          });
+          let lastLang = localStorage.getItem(LAST_USED_CODE_LANGUAGE_KEY);
+          if (lastLang) {
+            repRef.current?.mutate.assertFact({
+              entity: propsRef.current.entityID,
+              attribute: "block/code-language",
+              data: { type: "string", value: lastLang },
+            });
+          }
+        });
         setTimeout(() => {
           focusBlock({ ...propsRef.current, type: "code" }, { type: "start" });
         }, 20);

@@ -43,6 +43,7 @@ export function CommentBox(props: {
   replyTo?: string;
   onSubmit?: () => void;
   autoFocus?: boolean;
+  className?: string;
 }) {
   let mountRef = useRef<HTMLPreElement | null>(null);
   let {
@@ -216,7 +217,7 @@ export function CommentBox(props: {
   }, []);
 
   return (
-    <div className=" flex flex-col">
+    <div className={`flex flex-col grow ${props.className}`}>
       {quote && (
         <div className="relative mt-2 mb-2">
           <QuoteContent position={quote} did="" index={-1} />

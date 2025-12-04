@@ -1,26 +1,9 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
 import { ids } from "lexicons/api/lexicons";
-import {
-  PubLeafletBlocksBskyPost,
-  PubLeafletDocument,
-  PubLeafletPagesLinearDocument,
-  PubLeafletPublication,
-} from "lexicons/api";
+import { PubLeafletDocument } from "lexicons/api";
 import { Metadata } from "next";
-import { AtpAgent } from "@atproto/api";
-import { QuoteHandler } from "./QuoteHandler";
-import { InteractionDrawer } from "./Interactions/InteractionDrawer";
-import {
-  PublicationBackgroundProvider,
-  PublicationThemeProvider,
-} from "components/ThemeManager/PublicationThemeProvider";
-import { getPostPageData } from "./getPostPageData";
-import { PostPageContextProvider } from "./PostPageContext";
-import { PostPages } from "./PostPages";
-import { extractCodeBlocks } from "./extractCodeBlocks";
-import { LeafletLayout } from "components/LeafletLayout";
-import { fetchPollData } from "./fetchPollData";
+import { DocumentPageRenderer } from "./DocumentPageRenderer";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -41,6 +24,12 @@ export async function generateMetadata(props: {
   let docRecord = document.data as PubLeafletDocument.Record;
 
   return {
+    icons: {
+      other: {
+        rel: "alternate",
+        url: document.uri,
+      },
+    },
     title:
       docRecord.title +
       " - " +
@@ -51,7 +40,9 @@ export async function generateMetadata(props: {
 export default async function Post(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
 }) {
-  let did = decodeURIComponent((await props.params).did);
+  let params = await props.params;
+  let did = decodeURIComponent(params.did);
+
   if (!did)
     return (
       <div className="p-4 text-lg text-center flex flex-col gap-4">
@@ -62,127 +53,6 @@ export default async function Post(props: {
         </p>
       </div>
     );
-  let agent = new AtpAgent({
-    service: "https://public.api.bsky.app",
-    fetch: (...args) =>
-      fetch(args[0], {
-        ...args[1],
-        cache: "no-store",
-        next: { revalidate: 3600 },
-      }),
-  });
-  let [document, profile] = await Promise.all([
-    getPostPageData(
-      AtUri.make(
-        did,
-        ids.PubLeafletDocument,
-        (await props.params).rkey,
-      ).toString(),
-    ),
-    agent.getProfile({ actor: did }),
-  ]);
-  if (!document?.data || !document.documents_in_publications[0].publications)
-    return (
-      <div className="bg-bg-leaflet h-full p-3 text-center relative">
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-md w-full">
-          <div className=" px-3 py-4 opaque-container  flex flex-col gap-1 mx-2 ">
-            <h3>Sorry, post not found!</h3>
-            <p>
-              This may be a glitch on our end. If the issue persists please{" "}
-              <a href="mailto:contact@leaflet.pub">send us a note</a>.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  let record = document.data as PubLeafletDocument.Record;
-  let bskyPosts = record.pages.flatMap((p) => {
-    let page = p as PubLeafletPagesLinearDocument.Main;
-    return page.blocks?.filter(
-      (b) => b.block.$type === ids.PubLeafletBlocksBskyPost,
-    );
-  });
-  let bskyPostData =
-    bskyPosts.length > 0
-      ? await agent.getPosts(
-          {
-            uris: bskyPosts
-              .map((p) => {
-                let block = p?.block as PubLeafletBlocksBskyPost.Main;
-                return block.postRef.uri;
-              })
-              .slice(0, 24),
-          },
-          { headers: {} },
-        )
-      : { data: { posts: [] } };
 
-  // Extract poll blocks and fetch vote data
-  let pollBlocks = record.pages.flatMap((p) => {
-    let page = p as PubLeafletPagesLinearDocument.Main;
-    return page.blocks?.filter(
-      (b) => b.block.$type === ids.PubLeafletBlocksPoll,
-    ) || [];
-  });
-  let pollData = await fetchPollData(pollBlocks.map(b => (b.block as any).pollRef.uri));
-
-  let firstPage = record.pages[0];
-  let blocks: PubLeafletPagesLinearDocument.Block[] = [];
-  if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
-    blocks = firstPage.blocks || [];
-  }
-
-  let pubRecord = document.documents_in_publications[0]?.publications
-    .record as PubLeafletPublication.Record;
-
-  let prerenderedCodeBlocks = await extractCodeBlocks(blocks);
-
-  return (
-    <PostPageContextProvider value={document}>
-      <PublicationThemeProvider
-        record={pubRecord}
-        pub_creator={
-          document.documents_in_publications[0].publications.identity_did
-        }
-      >
-        <PublicationBackgroundProvider
-          record={pubRecord}
-          pub_creator={
-            document.documents_in_publications[0].publications.identity_did
-          }
-        >
-          {/*
-          TODO: SCROLL PAGE TO FIT DRAWER
-          If the drawer fits without scrolling, dont scroll
-          If both drawer and page fit if you scrolled it, scroll it all into the center
-          If the drawer and pafe doesn't all fit, scroll to drawer
-
-          TODO: SROLL BAR
-          If there is no drawer && there is no page bg, scroll the entire page
-          If there is either a drawer open OR a page background, scroll just the post content
-
-          TODO: HIGHLIGHTING BORKED
-          on chrome, if you scroll backward, things stop working
-          seems like if you use an older browser, sel direction is not a thing yet
-           */}
-          <LeafletLayout>
-            <PostPages
-              document_uri={document.uri}
-              preferences={pubRecord.preferences || {}}
-              pubRecord={pubRecord}
-              profile={JSON.parse(JSON.stringify(profile.data))}
-              document={document}
-              bskyPostData={bskyPostData.data.posts}
-              did={did}
-              blocks={blocks}
-              prerenderedCodeBlocks={prerenderedCodeBlocks}
-              pollData={pollData}
-            />
-          </LeafletLayout>
-
-          <QuoteHandler />
-        </PublicationBackgroundProvider>
-      </PublicationThemeProvider>
-    </PostPageContextProvider>
-  );
+  return <DocumentPageRenderer did={did} rkey={params.rkey} />;
 }

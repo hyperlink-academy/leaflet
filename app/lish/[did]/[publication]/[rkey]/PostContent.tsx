@@ -16,6 +16,7 @@ import {
   PubLeafletBlocksIframe,
   PubLeafletBlocksPage,
   PubLeafletBlocksPoll,
+  PubLeafletBlocksButton,
 } from "lexicons/api";
 
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
@@ -32,6 +33,7 @@ import { PageLinkBlock } from "components/Blocks/PageLinkBlock";
 import { PublishedPageLinkBlock } from "./PublishedPageBlock";
 import { PublishedPollBlock } from "./PublishedPollBlock";
 import { PollData } from "./fetchPollData";
+import { ButtonPrimary } from "components/Buttons";
 
 export function PostContent({
   blocks,
@@ -128,8 +130,14 @@ export let Block = ({
         : b.alignment ===
             "lex:pub.leaflet.pages.linearDocument#textAlignJustify"
           ? "text-justify justify-start"
-          : "";
-  if (!alignment && PubLeafletBlocksImage.isMain(b.block))
+          : b.alignment === "lex:pub.leaflet.pages.linearDocument#textAlignLeft"
+            ? "text-left justify-start"
+            : undefined;
+  if (
+    !alignment &&
+    (PubLeafletBlocksImage.isMain(b.block) ||
+      PubLeafletBlocksButton.isMain(b.block))
+  )
     alignment = "text-center justify-center";
 
   let className = `
@@ -192,6 +200,17 @@ export let Block = ({
           className={className}
           pollData={pollVoteData}
         />
+      );
+    }
+    case PubLeafletBlocksButton.isMain(b.block): {
+      return (
+        <div className={`flex ${alignment} ${className}`} {...blockProps}>
+          <a href={b.block.url} target="_blank" rel="noopener noreferrer">
+            <ButtonPrimary role="link" type="submit">
+              {b.block.text}
+            </ButtonPrimary>
+          </a>
+        </div>
       );
     }
     case PubLeafletBlocksUnorderedList.isMain(b.block): {

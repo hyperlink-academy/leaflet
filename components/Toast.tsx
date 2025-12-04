@@ -95,18 +95,14 @@ const Toast = (props: {
     from: { top: -40 },
     enter: { top: 8 },
     leave: { top: -40 },
-    config: {
-      mass: 8,
-      friction: 150,
-      tension: 2000,
-    },
+    config: {},
   });
 
   return transitions((style, item) => {
     return item ? (
       <animated.div
         style={style}
-        className={`toastAnimationWrapper fixed bottom-0 right-0 left-0 z-50 h-fit`}
+        className={`toastAnimationWrapper fixed top-0 bottom-0 right-0 left-0 z-50 h-fit`}
       >
         <div
           className={`toast absolute right-2 w-max  shadow-md px-3 py-1 flex flex-row gap-2 rounded-full border text-center ${

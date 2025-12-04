@@ -1,32 +1,47 @@
 "use client";
 
 import { Menu, MenuItem } from "components/Layout";
-import { useReplicache, type PermissionToken } from "src/replicache";
-import { hideDoc } from "../storage";
 import { useState } from "react";
-import { ButtonPrimary } from "components/Buttons";
-import { useTemplateState } from "../Actions/CreateNewButton";
-import { useSmoker, useToaster } from "components/Toast";
-import { removeLeafletFromHome } from "actions/removeLeafletFromHome";
-import { useIdentityData } from "components/IdentityProvider";
-import { HideSmall } from "components/Icons/HideSmall";
-import { MoreOptionsTiny } from "components/Icons/MoreOptionsTiny";
-import { TemplateRemoveSmall } from "components/Icons/TemplateRemoveSmall";
-import { TemplateSmall } from "components/Icons/TemplateSmall";
+import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
+import { useToaster } from "components/Toast";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
-import { addLeafletToHome } from "actions/addLeafletToHome";
+import { DeleteSmall } from "components/Icons/DeleteSmall";
+import {
+  archivePost,
+  deleteLeaflet,
+  unarchivePost,
+} from "actions/deleteLeaflet";
+import { ArchiveSmall } from "components/Icons/ArchiveSmall";
+import { UnpublishSmall } from "components/Icons/UnpublishSmall";
+import {
+  deletePost,
+  unpublishPost,
+} from "app/lish/[did]/[publication]/dashboard/deletePost";
+import { ShareSmall } from "components/Icons/ShareSmall";
+import { HideSmall } from "components/Icons/HideSmall";
+import { hideDoc } from "../storage";
+
+import {
+  useIdentityData,
+  mutateIdentityData,
+} from "components/IdentityProvider";
+import {
+  usePublicationData,
+  mutatePublicationData,
+} from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+import { ShareButton } from "app/[leaflet_id]/actions/ShareOptions";
+import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
 
 export const LeafletOptions = (props: {
-  leaflet: PermissionToken;
-  isTemplate: boolean;
-  loggedIn: boolean;
-  added_at: string;
+  archived?: boolean | null;
+  loggedIn?: boolean;
 }) => {
-  let { mutate: mutateIdentity } = useIdentityData();
-  let [state, setState] = useState<"normal" | "template">("normal");
+  const pubStatus = useLeafletPublicationStatus();
+  let [state, setState] = useState<"normal" | "areYouSure">("normal");
   let [open, setOpen] = useState(false);
-  let smoker = useSmoker();
-  let toaster = useToaster();
+  let { identity } = useIdentityData();
+  let isPublicationOwner =
+    !!identity?.atp_did && !!pubStatus?.documentUri?.includes(identity.atp_did);
   return (
     <>
       <Menu
@@ -38,7 +53,7 @@ export const LeafletOptions = (props: {
         }}
         trigger={
           <div
-            className="text-secondary shrink-0"
+            className="text-secondary shrink-0 relative"
             onClick={(e) => {
               e.preventDefault;
               e.stopPropagation;
@@ -49,172 +64,288 @@ export const LeafletOptions = (props: {
         }
       >
         {state === "normal" ? (
-          <>
-            {!props.isTemplate ? (
-              <MenuItem
-                onSelect={(e) => {
-                  e.preventDefault();
-                  setState("template");
-                }}
-              >
-                <TemplateSmall /> Add as Template
-              </MenuItem>
-            ) : (
-              <MenuItem
-                onSelect={(e) => {
-                  useTemplateState.getState().removeTemplate(props.leaflet);
-                  let newLeafletButton =
-                    document.getElementById("new-leaflet-button");
-                  if (!newLeafletButton) return;
-                  let rect = newLeafletButton.getBoundingClientRect();
-                  smoker({
-                    static: true,
-                    text: <strong>Removed template!</strong>,
-                    position: {
-                      y: rect.top,
-                      x: rect.right + 5,
-                    },
-                  });
-                }}
-              >
-                <TemplateRemoveSmall /> Remove from Templates
-              </MenuItem>
-            )}
-            <MenuItem
-              onSelect={async () => {
-                if (props.loggedIn) {
-                  mutateIdentity(
-                    (s) => {
-                      if (!s) return s;
-                      return {
-                        ...s,
-                        permission_token_on_homepage:
-                          s.permission_token_on_homepage.filter(
-                            (ptrh) =>
-                              ptrh.permission_tokens.id !== props.leaflet.id,
-                          ),
-                      };
-                    },
-                    { revalidate: false },
-                  );
-                  await removeLeafletFromHome([props.leaflet.id]);
-                  mutateIdentity();
-                } else {
-                  hideDoc(props.leaflet);
-                }
-                toaster({
-                  content: (
-                    <div className="font-bold">
-                      Doc removed!{" "}
-                      <UndoRemoveFromHomeButton
-                        leaflet={props.leaflet}
-                        added_at={props.added_at}
-                      />
-                    </div>
-                  ),
-                  type: "success",
-                });
-              }}
-            >
-              <HideSmall />
-              Remove from Home
-            </MenuItem>
-          </>
-        ) : state === "template" ? (
-          <AddTemplateForm
-            leaflet={props.leaflet}
-            close={() => setOpen(false)}
-          />
+          !props.loggedIn ? (
+            <LoggedOutOptions setState={setState} />
+          ) : pubStatus?.documentUri && isPublicationOwner ? (
+            <PublishedPostOptions setState={setState} />
+          ) : (
+            <DefaultOptions setState={setState} archived={props.archived} />
+          )
+        ) : state === "areYouSure" ? (
+          <DeleteAreYouSureForm backToMenu={() => setState("normal")} />
         ) : null}
       </Menu>
     </>
   );
 };
 
-const UndoRemoveFromHomeButton = (props: {
-  leaflet: PermissionToken;
-  added_at: string | undefined;
+const DefaultOptions = (props: {
+  setState: (s: "areYouSure") => void;
+  archived?: boolean | null;
 }) => {
-  let toaster = useToaster();
-  let { mutate } = useIdentityData();
-  return (
-    <button
-      onClick={async (e) => {
-        await mutate(
-          (identity) => {
-            if (!identity) return;
-            return {
-              ...identity,
-              permission_token_on_homepage: [
-                ...identity.permission_token_on_homepage,
-                {
-                  created_at: props.added_at || new Date().toISOString(),
-                  permission_tokens: {
-                    ...props.leaflet,
-                    leaflets_in_publications: [],
-                  },
-                },
-              ],
-            };
-          },
-          { revalidate: false },
-        );
-        await addLeafletToHome(props.leaflet.id);
-        await mutate();
+  const pubStatus = useLeafletPublicationStatus();
+  const toaster = useToaster();
+  const { setArchived } = useArchiveMutations();
+  const { identity } = useIdentityData();
+  const tokenId = pubStatus?.token.id;
+  const itemType = pubStatus?.draftInPublication ? "Draft" : "Leaflet";
 
-        toaster({
-          content: <div className="font-bold">Recovered Doc!</div>,
-          type: "success",
-        });
-      }}
-      className="underline"
-    >
-      Undo?
-    </button>
+  // Check if this is a published post/document and if user is the owner
+  const isPublishedPostOwner =
+    !!identity?.atp_did && !!pubStatus?.documentUri?.includes(identity.atp_did);
+  const canDelete = !pubStatus?.documentUri || isPublishedPostOwner;
+
+  return (
+    <>
+      <EditLinkShareButton link={pubStatus?.shareLink ?? ""} />
+      <hr className="border-border-light" />
+      <MenuItem
+        onSelect={async () => {
+          if (!tokenId) return;
+          setArchived(tokenId, !props.archived);
+
+          if (!props.archived) {
+            await archivePost(tokenId);
+            toaster({
+              content: (
+                <div className="font-bold flex gap-2">
+                  Archived {itemType}!
+                  <ButtonTertiary
+                    className="underline text-accent-2!"
+                    onClick={async () => {
+                      setArchived(tokenId, false);
+                      await unarchivePost(tokenId);
+                      toaster({
+                        content: <div className="font-bold">Unarchived!</div>,
+                        type: "success",
+                      });
+                    }}
+                  >
+                    Undo?
+                  </ButtonTertiary>
+                </div>
+              ),
+              type: "success",
+            });
+          } else {
+            await unarchivePost(tokenId);
+            toaster({
+              content: <div className="font-bold">Unarchived!</div>,
+              type: "success",
+            });
+          }
+        }}
+      >
+        <ArchiveSmall />
+        {!props.archived ? " Archive" : "Unarchive"} {itemType}
+      </MenuItem>
+      {canDelete && (
+        <DeleteForeverMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            props.setState("areYouSure");
+          }}
+        />
+      )}
+    </>
   );
 };
 
-const AddTemplateForm = (props: {
-  leaflet: PermissionToken;
-  close: () => void;
-}) => {
-  let [name, setName] = useState("");
-  let smoker = useSmoker();
-  return (
-    <div className="flex flex-col gap-2 px-3 py-1">
-      <label className="font-bold flex flex-col gap-1 text-secondary">
-        Template Name
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          type="text"
-          className=" text-primary font-normal border border-border rounded-md outline-hidden px-2 py-1 w-64"
-        />
-      </label>
+const LoggedOutOptions = (props: { setState: (s: "areYouSure") => void }) => {
+  const pubStatus = useLeafletPublicationStatus();
+  const toaster = useToaster();
 
-      <ButtonPrimary
-        onClick={() => {
-          useTemplateState.getState().addTemplate({
-            name,
-            id: props.leaflet.id,
+  return (
+    <>
+      <EditLinkShareButton link={`/${pubStatus?.shareLink ?? ""}`} />
+      <hr className="border-border-light" />
+      <MenuItem
+        onSelect={() => {
+          if (pubStatus?.token) hideDoc(pubStatus.token);
+          toaster({
+            content: <div className="font-bold">Removed from Home!</div>,
+            type: "success",
           });
-          let newLeafletButton = document.getElementById("new-leaflet-button");
-          if (!newLeafletButton) return;
-          let rect = newLeafletButton.getBoundingClientRect();
-          smoker({
-            static: true,
-            text: <strong>Added {name}!</strong>,
-            position: {
-              y: rect.top,
-              x: rect.right + 5,
-            },
-          });
-          props.close();
         }}
-        className="place-self-end"
       >
-        Add Template
-      </ButtonPrimary>
+        <HideSmall />
+        Remove from Home
+      </MenuItem>
+      <DeleteForeverMenuItem
+        onSelect={(e) => {
+          e.preventDefault();
+          props.setState("areYouSure");
+        }}
+      />
+    </>
+  );
+};
+
+const PublishedPostOptions = (props: {
+  setState: (s: "areYouSure") => void;
+}) => {
+  const pubStatus = useLeafletPublicationStatus();
+  const toaster = useToaster();
+  const postLink = pubStatus?.postShareLink ?? "";
+  const isFullUrl = postLink.includes("http");
+
+  return (
+    <>
+      <ShareButton
+        text={
+          <div className="flex gap-2">
+            <ShareSmall />
+            Copy Post Link
+          </div>
+        }
+        smokerText="Link copied!"
+        id="get-link"
+        link={postLink}
+        fullLink={isFullUrl ? postLink : undefined}
+      />
+      <hr className="border-border-light" />
+      <MenuItem
+        onSelect={async () => {
+          if (pubStatus?.documentUri) {
+            await unpublishPost(pubStatus.documentUri);
+          }
+          toaster({
+            content: <div className="font-bold">Unpublished Post!</div>,
+            type: "success",
+          });
+        }}
+      >
+        <UnpublishSmall />
+        <div className="flex flex-col">
+          Unpublish Post
+          <div className="text-tertiary text-sm font-normal!">
+            Move this post back into drafts
+          </div>
+        </div>
+      </MenuItem>
+      <DeleteForeverMenuItem
+        onSelect={(e) => {
+          e.preventDefault();
+          props.setState("areYouSure");
+        }}
+        subtext="Post"
+      />
+    </>
+  );
+};
+
+const DeleteAreYouSureForm = (props: { backToMenu: () => void }) => {
+  const pubStatus = useLeafletPublicationStatus();
+  const toaster = useToaster();
+  const { removeFromLists } = useArchiveMutations();
+  const tokenId = pubStatus?.token.id;
+
+  const itemType = pubStatus?.documentUri
+    ? "Post"
+    : pubStatus?.draftInPublication
+      ? "Draft"
+      : "Leaflet";
+
+  return (
+    <div className="flex flex-col justify-center p-2 text-center">
+      <div className="text-primary font-bold"> Are you sure?</div>
+      <div className="text-sm text-secondary">
+        This will delete it forever for everyone!
+      </div>
+      <div className="flex gap-2 mx-auto items-center mt-2">
+        <ButtonTertiary onClick={() => props.backToMenu()}>
+          Nevermind
+        </ButtonTertiary>
+        <ButtonPrimary
+          onClick={async () => {
+            if (tokenId) removeFromLists(tokenId);
+            if (pubStatus?.documentUri) {
+              await deletePost(pubStatus.documentUri);
+            }
+            if (pubStatus?.token) deleteLeaflet(pubStatus.token);
+
+            toaster({
+              content: <div className="font-bold">Deleted {itemType}!</div>,
+              type: "success",
+            });
+          }}
+        >
+          Delete it!
+        </ButtonPrimary>
+      </div>
     </div>
   );
 };
+
+// Shared menu items
+const EditLinkShareButton = (props: { link: string }) => (
+  <ShareButton
+    text={
+      <div className="flex gap-2">
+        <ShareSmall />
+        Copy Edit Link
+      </div>
+    }
+    subtext=""
+    smokerText="Link copied!"
+    id="get-link"
+    link={props.link}
+  />
+);
+
+const DeleteForeverMenuItem = (props: {
+  onSelect: (e: Event) => void;
+  subtext?: string;
+}) => (
+  <MenuItem onSelect={props.onSelect}>
+    <DeleteSmall />
+    {props.subtext ? (
+      <div className="flex flex-col">
+        Delete {props.subtext}
+        <div className="text-tertiary text-sm font-normal!">
+          Unpublish AND delete
+        </div>
+      </div>
+    ) : (
+      "Delete Forever"
+    )}
+  </MenuItem>
+);
+
+// Helper to update archived state in both identity and publication data
+function useArchiveMutations() {
+  const { mutate: mutatePub } = usePublicationData();
+  const { mutate: mutateIdentity } = useIdentityData();
+
+  return {
+    setArchived: (tokenId: string, archived: boolean) => {
+      mutateIdentityData(mutateIdentity, (data) => {
+        const item = data.permission_token_on_homepage.find(
+          (p) => p.permission_tokens?.id === tokenId,
+        );
+        if (item) item.archived = archived;
+      });
+      mutatePublicationData(mutatePub, (data) => {
+        const item = data.publication?.leaflets_in_publications.find(
+          (l) => l.permission_tokens?.id === tokenId,
+        );
+        if (item) item.archived = archived;
+      });
+    },
+    removeFromLists: (tokenId: string) => {
+      mutateIdentityData(mutateIdentity, (data) => {
+        data.permission_token_on_homepage =
+          data.permission_token_on_homepage.filter(
+            (p) => p.permission_tokens?.id !== tokenId,
+          );
+      });
+      mutatePublicationData(mutatePub, (data) => {
+        if (!data.publication) return;
+        data.publication.leaflets_in_publications =
+          data.publication.leaflets_in_publications.filter(
+            (l) => l.permission_tokens?.id !== tokenId,
+          );
+      });
+    },
+  };
+}

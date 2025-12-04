@@ -22,6 +22,7 @@ import type * as PubLeafletBlocksHorizontalRule from '../blocks/horizontalRule'
 import type * as PubLeafletBlocksBskyPost from '../blocks/bskyPost'
 import type * as PubLeafletBlocksPage from '../blocks/page'
 import type * as PubLeafletBlocksPoll from '../blocks/poll'
+import type * as PubLeafletBlocksButton from '../blocks/button'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -59,6 +60,7 @@ export interface Block {
     | $Typed<PubLeafletBlocksBskyPost.Main>
     | $Typed<PubLeafletBlocksPage.Main>
     | $Typed<PubLeafletBlocksPoll.Main>
+    | $Typed<PubLeafletBlocksButton.Main>
     | { $type: string }
   alignment?:
     | 'lex:pub.leaflet.pages.linearDocument#textAlignLeft'
@@ -81,6 +83,7 @@ export function validateBlock<V>(v: V) {
 export const TEXTALIGNLEFT = `${id}#textAlignLeft`
 export const TEXTALIGNCENTER = `${id}#textAlignCenter`
 export const TEXTALIGNRIGHT = `${id}#textAlignRight`
+export const TEXTALIGNJUSTIFY = `${id}#textAlignJustify`
 
 export interface Quote {
   $type?: 'pub.leaflet.pages.linearDocument#quote'

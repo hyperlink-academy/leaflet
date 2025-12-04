@@ -1,29 +1,22 @@
 "use client";
-import { PermissionToken } from "src/replicache";
-import { useTemplateState } from "../Actions/CreateNewButton";
 import { LeafletListPreview, LeafletGridPreview } from "./LeafletPreview";
 import { LeafletInfo } from "./LeafletInfo";
 import { useState, useRef, useEffect } from "react";
+import { SpeedyLink } from "components/SpeedyLink";
+import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
 
 export const LeafletListItem = (props: {
-  token: PermissionToken;
-  leaflet_id: string;
+  archived?: boolean | null;
   loggedIn: boolean;
   display: "list" | "grid";
   cardBorderHidden: boolean;
   added_at: string;
-  title: string;
-  draft?: boolean;
-  published?: boolean;
-  publishedAt?: string;
+  title?: string;
   index: number;
   isHidden: boolean;
   showPreview?: boolean;
 }) => {
-  let isTemplate = useTemplateState(
-    (s) => !!s.templates.find((t) => t.id === props.token.id),
-  );
-
+  const pubStatus = useLeafletPublicationStatus();
   let [isOnScreen, setIsOnScreen] = useState(props.index < 16 ? true : false);
   let previewRef = useRef<HTMLDivElement | null>(null);
 
@@ -45,24 +38,34 @@ export const LeafletListItem = (props: {
     return () => observer.disconnect();
   }, [previewRef]);
 
+  const tokenId = pubStatus?.shareLink ?? "";
+
   if (props.display === "list")
     return (
       <>
         <div
           ref={previewRef}
-          className={`gap-3 w-full ${props.cardBorderHidden ? "" : "px-2 py-1 block-border hover:outline-border"}`}
+          className={`relative flex gap-3 w-full
+            ${props.isHidden ? "hidden" : "flex"}
+            ${props.cardBorderHidden ? "" : "px-2 py-1 block-border hover:outline-border relative"}`}
           style={{
             backgroundColor: props.cardBorderHidden
               ? "transparent"
               : "rgba(var(--bg-page), var(--bg-page-alpha))",
-
-            display: props.isHidden ? "none" : "flex",
           }}
         >
-          {props.showPreview && (
-            <LeafletListPreview isVisible={isOnScreen} {...props} />
-          )}
-          <LeafletInfo isTemplate={isTemplate} {...props} />
+          <SpeedyLink
+            href={`/${tokenId}`}
+            className={`absolute w-full h-full top-0 left-0 no-underline hover:no-underline! text-primary`}
+          />
+          {props.showPreview && <LeafletListPreview isVisible={isOnScreen} />}
+          <LeafletInfo
+            title={props.title}
+            display={props.display}
+            added_at={props.added_at}
+            archived={props.archived}
+            loggedIn={props.loggedIn}
+          />
         </div>
         {props.cardBorderHidden && (
           <hr
@@ -77,26 +80,42 @@ export const LeafletListItem = (props: {
   return (
     <div
       ref={previewRef}
-      className={`leafletGridListItem relative
-        flex flex-col gap-1 p-1 h-52
+      className={`
+          relative
+        flex flex-col gap-1 p-1 h-52 w-full
        block-border border-border! hover:outline-border
+       ${props.isHidden ? "hidden" : "flex"}
         `}
       style={{
         backgroundColor: props.cardBorderHidden
           ? "transparent"
           : "rgba(var(--bg-page), var(--bg-page-alpha))",
-
-        display: props.isHidden ? "none" : "flex",
       }}
     >
+      <SpeedyLink
+        href={`/${tokenId}`}
+        className={`absolute w-full h-full top-0 left-0 no-underline hover:no-underline! text-primary`}
+      />
       <div className="grow">
-        <LeafletGridPreview {...props} isVisible={isOnScreen} />
+        <LeafletGridPreview isVisible={isOnScreen} />
       </div>
       <LeafletInfo
-        isTemplate={isTemplate}
         className="px-1 pb-0.5 shrink-0"
-        {...props}
+        title={props.title}
+        display={props.display}
+        added_at={props.added_at}
+        archived={props.archived}
+        loggedIn={props.loggedIn}
       />
     </div>
+  );
+};
+
+const LeafletLink = (props: { id: string; className: string }) => {
+  return (
+    <SpeedyLink
+      href={`/${props.id}`}
+      className={`no-underline hover:no-underline! text-primary ${props.className}`}
+    />
   );
 };
