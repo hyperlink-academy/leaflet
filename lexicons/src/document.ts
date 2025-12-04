@@ -23,6 +23,7 @@ export const PubLeafletDocument: LexiconDoc = {
           publication: { type: "string", format: "at-uri" },
           author: { type: "string", format: "at-identifier" },
           theme: { type: "ref", ref: "pub.leaflet.publication#theme" },
+          tags: { type: "array", items: { type: "string", maxLength: 50 } },
           pages: {
             type: "array",
             items: {

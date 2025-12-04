@@ -20,7 +20,7 @@ export const PostListing = (props: Post) => {
   let postRecord = props.documents.data as PubLeafletDocument.Record;
   let postUri = new AtUri(props.documents.uri);
 
-  let theme = usePubTheme(pubRecord);
+  let theme = usePubTheme(pubRecord.theme);
   let backgroundImage = pubRecord?.theme?.backgroundImage?.image?.ref
     ? blobRefToSrc(
         pubRecord?.theme?.backgroundImage?.image?.ref,
@@ -38,6 +38,7 @@ export const PostListing = (props: Post) => {
     pubRecord.preferences?.showComments === false
       ? 0
       : props.documents.comments_on_documents?.[0]?.count || 0;
+  let tags = (postRecord?.tags as string[] | undefined) || [];
 
   return (
     <BaseThemeProvider {...theme} local>
@@ -86,7 +87,7 @@ export const PostListing = (props: Post) => {
                 postUrl={`${props.publication.href}/${postUri.rkey}`}
                 quotesCount={quotes}
                 commentsCount={comments}
-                tagsCount={6}
+                tags={tags}
                 showComments={pubRecord.preferences?.showComments}
                 share
               />

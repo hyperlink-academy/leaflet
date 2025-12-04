@@ -28,7 +28,9 @@ export const PublicationMetadata = () => {
     tx.get<string>("publication_description"),
   );
   let record = pub?.documents?.data as PubLeafletDocument.Record | null;
-  let pubRecord = pub?.publications?.record as PubLeafletPublication.Record;
+  let pubRecord = pub?.publications?.record as
+    | PubLeafletPublication.Record
+    | undefined;
   let publishedAt = record?.publishedAt;
 
   if (!pub) return null;
@@ -111,7 +113,7 @@ export const PublicationMetadata = () => {
             <div className="flex gap-1 items-center">
               <QuoteTiny />—
             </div>
-            {pubRecord.preferences?.showComments && (
+            {pubRecord?.preferences?.showComments && (
               <div className="flex gap-1 items-center">
                 <CommentTiny />—
               </div>
@@ -232,17 +234,44 @@ export const PublicationMetadataPreview = () => {
 };
 
 const AddTags = () => {
-  // Just update the database with tags as the user adds them, no explicit submit button
+  let { data: pub } = useLeafletPublicationData();
+  let { rep } = useReplicache();
+  let record = pub?.documents?.data as PubLeafletDocument.Record | null;
+
+  // Get tags from Replicache local state or published document
+  let replicacheTags = useSubscribe(rep, (tx) =>
+    tx.get<string[]>("publication_tags"),
+  );
+
+  // Determine which tags to use - prioritize Replicache state
+  let tags: string[] = [];
+  if (Array.isArray(replicacheTags)) {
+    tags = replicacheTags;
+  } else if (record?.tags && Array.isArray(record.tags)) {
+    tags = record.tags as string[];
+  }
+
+  // Update tags in replicache local state
+  const handleTagsChange = async (newTags: string[]) => {
+    // Store tags in replicache for next publish/update
+    await rep?.mutate.updatePublicationDraft({
+      tags: newTags,
+    });
+  };
+
   return (
     <Popover
       className="p-2! w-[1000px] max-w-sm"
       trigger={
         <div className="flex gap-1 hover:underline text-sm items-center text-tertiary">
-          <TagTiny /> Add Tags
+          <TagTiny />{" "}
+          {tags.length > 0
+            ? `${tags.length} Tag${tags.length === 1 ? "" : "s"}`
+            : "Add Tags"}
         </div>
       }
     >
-      <TagSelector />
+      <TagSelector selectedTags={tags} setSelectedTags={handleTagsChange} />
     </Popover>
   );
 };

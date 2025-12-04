@@ -61,6 +61,7 @@ export function PublishedPostsList(props: {
           let postRecord = doc.documents.data as PubLeafletDocument.Record;
           let quotes = doc.documents.document_mentions_in_bsky[0]?.count || 0;
           let comments = doc.documents.comments_on_documents[0]?.count || 0;
+          let tags = (postRecord?.tags as string[] | undefined) || [];
 
           let postLink = data?.publication
             ? `${getPublicationURL(data?.publication)}/${new AtUri(doc.documents.uri).rkey}`
@@ -137,7 +138,7 @@ export function PublishedPostsList(props: {
                     <InteractionPreview
                       quotesCount={quotes}
                       commentsCount={comments}
-                      tagsCount={6}
+                      tags={tags}
                       showComments={pubRecord?.preferences?.showComments}
                       postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
                     />

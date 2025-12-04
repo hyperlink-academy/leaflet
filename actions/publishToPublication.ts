@@ -57,6 +57,7 @@ export async function publishToPublication({
   leaflet_id,
   title,
   description,
+  tags,
   entitiesToDelete,
 }: {
   root_entity: string;
@@ -64,6 +65,7 @@ export async function publishToPublication({
   leaflet_id: string;
   title?: string;
   description?: string;
+  tags?: string[];
   entitiesToDelete?: string[];
 }) {
   const oauthClient = await createOauthClient();
@@ -143,6 +145,7 @@ export async function publishToPublication({
     ...(theme && { theme }),
     title: title || "Untitled",
     description: description || "",
+    ...(tags !== undefined && { tags }), // Include tags if provided (even if empty array to clear tags)
     pages: pages.map((p) => {
       if (p.type === "canvas") {
         return {

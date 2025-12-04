@@ -1440,6 +1440,13 @@ export const schemaDict = {
               type: 'ref',
               ref: 'lex:pub.leaflet.publication#theme',
             },
+            tags: {
+              type: 'array',
+              items: {
+                type: 'string',
+                maxLength: 50,
+              },
+            },
             pages: {
               type: 'array',
               items: {

@@ -13,6 +13,7 @@ import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/act
 import { AtUri } from "@atproto/syntax";
 import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 import { useReplicache } from "src/replicache";
+import { useSubscribe } from "src/replicache/useSubscribe";
 import {
   BlueskyPostEditorProsemirror,
   editorStateToFacetedText,
@@ -66,6 +67,19 @@ const PublishPostForm = (
   let params = useParams();
   let { rep } = useReplicache();
 
+  // Get tags from Replicache state (same as in the draft editor)
+  let tags = useSubscribe(rep, (tx) => tx.get<string[]>("publication_tags"));
+
+  // Default to empty array if undefined
+  const currentTags = Array.isArray(tags) ? tags : [];
+
+  // Update tags via the same mutation used in the editor
+  const handleTagsChange = async (newTags: string[]) => {
+    await rep?.mutate.updatePublicationDraft({
+      tags: newTags,
+    });
+  };
+
   async function submit() {
     if (isLoading) return;
     setIsLoading(true);
@@ -76,6 +90,7 @@ const PublishPostForm = (
       leaflet_id: props.leaflet_id,
       title: props.title,
       description: props.description,
+      tags: currentTags,
       entitiesToDelete: props.entitiesToDelete,
     });
     if (!doc) return;
@@ -125,6 +140,13 @@ const PublishPostForm = (
             {...props}
           />
           <hr className="border-border-light " />
+          <div className="flex flex-col gap-1">
+            <h4>Tags</h4>
+            <TagSelector
+              selectedTags={currentTags}
+              setSelectedTags={handleTagsChange}
+            />
+          </div>
           <div className="flex justify-between">
             <Link
               className="hover:no-underline! font-bold"

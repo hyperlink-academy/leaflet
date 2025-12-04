@@ -11,7 +11,7 @@ import { SpeedyLink } from "./SpeedyLink";
 export const InteractionPreview = (props: {
   quotesCount: number;
   commentsCount: number;
-  tagsCount: number;
+  tags?: string[];
   postUrl: string;
   showComments: boolean | undefined;
   share?: boolean;
@@ -21,13 +21,15 @@ export const InteractionPreview = (props: {
     props.quotesCount > 0 ||
     (props.showComments !== false && props.commentsCount > 0);
 
+  const tagsCount = props.tags?.length || 0;
+
   return (
     <div
       className={`flex gap-2 text-tertiary text-sm  items-center self-start`}
     >
-      {props.tagsCount === 0 ? null : (
+      {tagsCount === 0 ? null : (
         <>
-          <TagPopover tagsCount={props.tagsCount} />
+          <TagPopover tags={props.tags!} />
           {interactionsAvailable || props.share ? (
             <Separator classname="h-4" />
           ) : null}
@@ -86,7 +88,7 @@ export const InteractionPreview = (props: {
   );
 };
 
-const TagPopover = (props: { tagsCount: number }) => {
+const TagPopover = (props: { tags: string[] }) => {
   return (
     <Popover
       className="p-2! max-w-xs"
@@ -96,31 +98,21 @@ const TagPopover = (props: { tagsCount: number }) => {
           aria-label="Post tags"
           className="relative flex gap-1 items-center "
         >
-          <TagTiny /> {props.tagsCount}
+          <TagTiny /> {props.tags.length}
         </button>
       }
     >
-      <TagList className="text-secondary!" />
+      <TagList tags={props.tags} className="text-secondary!" />
     </Popover>
   );
 };
 
-const TagList = (props: { className?: string }) => {
+const TagList = (props: { tags: string[]; className?: string }) => {
   return (
     <div className="flex gap-1 flex-wrap">
-      {Tags.map((tag, index) => (
+      {props.tags.map((tag, index) => (
         <Tag name={tag} key={index} className={props.className} />
       ))}
     </div>
   );
 };
-
-const Tags = [
-  "Hello",
-  "these are",
-  "some tags",
-  "and I'm gonna",
-  "make",
-  "them super",
-  "long",
-];

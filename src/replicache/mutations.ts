@@ -609,19 +609,45 @@ const removePollOption: Mutation<{
 };
 
 const updatePublicationDraft: Mutation<{
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
+  tags?: string[];
 }> = async (args, ctx) => {
   await ctx.runOnServer(async (serverCtx) => {
     console.log("updating");
-    await serverCtx.supabase
-      .from("leaflets_in_publications")
-      .update({ description: args.description, title: args.title })
-      .eq("leaflet", ctx.permission_token_id);
+    const updates: {
+      description?: string;
+      title?: string;
+      tags?: string[];
+    } = {};
+    if (args.description !== undefined) updates.description = args.description;
+    if (args.title !== undefined) updates.title = args.title;
+    if (args.tags !== undefined) updates.tags = args.tags;
+
+    if (Object.keys(updates).length > 0) {
+      // First try to update leaflets_in_publications (for publications)
+      const { data: pubResult } = await serverCtx.supabase
+        .from("leaflets_in_publications")
+        .update(updates)
+        .eq("leaflet", ctx.permission_token_id)
+        .select("leaflet");
+
+      // If no rows were updated in leaflets_in_publications,
+      // try leaflets_to_documents (for standalone documents)
+      if (!pubResult || pubResult.length === 0) {
+        await serverCtx.supabase
+          .from("leaflets_to_documents")
+          .update(updates)
+          .eq("leaflet", ctx.permission_token_id);
+      }
+    }
   });
   await ctx.runOnClient(async ({ tx }) => {
-    await tx.set("publication_title", args.title);
-    await tx.set("publication_description", args.description);
+    if (args.title !== undefined)
+      await tx.set("publication_title", args.title);
+    if (args.description !== undefined)
+      await tx.set("publication_description", args.description);
+    if (args.tags !== undefined) await tx.set("publication_tags", args.tags);
   });
 };
 

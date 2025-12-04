@@ -4,17 +4,7 @@ import { Input } from "components/Input";
 import { useState, useRef, useEffect } from "react";
 import { Popover } from "components/Popover";
 import Link from "next/link";
-
-const Tags: { name: string; tagged: number }[] = [
-  { name: "dogs", tagged: 240 },
-  { name: "cats", tagged: 12 },
-  { name: "fruit enthusiam", tagged: 21 },
-  { name: "at proto", tagged: 56 },
-  { name: "events in nyc", tagged: 6 },
-  { name: "react devs", tagged: 93 },
-  { name: "fanfic", tagged: 1743 },
-  { name: "pokemon", tagged: 81 },
-];
+import { searchTags, type TagSearchResult } from "actions/searchTags";
 
 export const Tag = (props: {
   name: string;
@@ -27,7 +17,7 @@ export const Tag = (props: {
       className={`tag flex items-center text-xs  rounded-md border ${props.selected ? "bg-accent-1 text-accent-2 border-accent-1 font-bold" : "bg-bg-page text-tertiary border-border"} ${props.className}`}
     >
       <Link
-        href="/tag"
+        href={`/tag/${encodeURIComponent(props.name)}`}
         className={`px-1 py-0.5 text-tertiary hover:no-underline!`}
       >
         {props.name}{" "}
@@ -44,22 +34,25 @@ export const Tag = (props: {
   );
 };
 
-export const TagSelector = (props: {}) => {
-  let [selectedTags, setSelectedTags] = useState<string[]>([]);
+export const TagSelector = (props: {
+  selectedTags: string[];
+  setSelectedTags: (tags: string[]) => void;
+}) => {
   return (
     <div className="flex flex-col gap-2">
       <TagSearchInput
-        selectedTags={selectedTags}
-        setSelectedTags={setSelectedTags}
+        selectedTags={props.selectedTags}
+        setSelectedTags={props.setSelectedTags}
       />
-      {selectedTags.length > 0 ? (
+      {props.selectedTags.length > 0 ? (
         <div className="flex flex-wrap gap-2 ">
-          {selectedTags.map((tag) => (
+          {props.selectedTags.map((tag) => (
             <Tag
+              key={tag}
               name={tag}
               selected
               onDelete={() => {
-                setSelectedTags(selectedTags.filter((t) => t !== tag));
+                props.setSelectedTags(props.selectedTags.filter((t) => t !== tag));
               }}
             />
           ))}
@@ -78,15 +71,32 @@ export const TagSearchInput = (props: {
   let [tagInputValue, setTagInputValue] = useState("");
   let [isOpen, setIsOpen] = useState(false);
   let [highlightedIndex, setHighlightedIndex] = useState(0);
+  let [searchResults, setSearchResults] = useState<TagSearchResult[]>([]);
+  let [isSearching, setIsSearching] = useState(false);
 
   const placeholderInputRef = useRef<HTMLButtonElement | null>(null);
 
   let inputWidth = placeholderInputRef.current?.clientWidth;
 
-  const filteredTags = Tags.filter(
-    (tag) =>
-      tag.name.toLowerCase().includes(tagInputValue.toLowerCase()) &&
-      !props.selectedTags.includes(tag.name),
+  // Fetch tags whenever the input value changes
+  useEffect(() => {
+    let cancelled = false;
+    setIsSearching(true);
+
+    searchTags(tagInputValue).then((results) => {
+      if (!cancelled && results) {
+        setSearchResults(results);
+        setIsSearching(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tagInputValue]);
+
+  const filteredTags = searchResults.filter(
+    (tag) => !props.selectedTags.includes(tag.name),
   );
 
   function clearTagInput() {
@@ -225,7 +235,7 @@ export const TagSearchInput = (props: {
               key={tag.name}
               index={userInputResult ? i + 1 : i}
               name={tag.name}
-              tagged={tag.tagged}
+              tagged={tag.document_count}
               highlighted={(userInputResult ? i + 1 : i) === highlightedIndex}
               setHighlightedIndex={setHighlightedIndex}
               onSelect={() => {

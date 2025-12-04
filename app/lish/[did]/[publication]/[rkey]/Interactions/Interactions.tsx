@@ -175,12 +175,18 @@ export const Interactions = (props: {
 };
 
 const TagPopover = () => {
+  const data = useContext(PostPageContext);
+  const tags = (data?.data as any)?.tags as string[] | undefined;
+  const tagCount = tags?.length || 0;
+
+  if (tagCount === 0) return null;
+
   return (
     <Popover
       className="p-2! max-w-xs"
       trigger={
         <div className="flex gap-1 items-center ">
-          <TagTiny /> XX
+          <TagTiny /> {tagCount}
         </div>
       }
     >
@@ -190,24 +196,19 @@ const TagPopover = () => {
 };
 
 const TagList = (props: { className?: string }) => {
+  const data = useContext(PostPageContext);
+  const tags = (data?.data as any)?.tags as string[] | undefined;
+
+  if (!tags || tags.length === 0) return null;
+
   return (
     <div className="flex gap-1 flex-wrap">
-      {Tags.map((tag, index) => (
+      {tags.map((tag, index) => (
         <Tag name={tag} key={index} className={props.className} />
       ))}
     </div>
   );
 };
-
-const Tags = [
-  "Hello",
-  "these are",
-  "some tags",
-  "and I'm gonna",
-  "make",
-  "them super",
-  "long",
-];
 export function getQuoteCount(document: PostPageData, pageId?: string) {
   if (!document) return;
   return getQuoteCountFromArray(document.quotesAndMentions, pageId);
