@@ -440,6 +440,12 @@ function useMentionSuggestions(query: string | null) {
   const [suggestions, setSuggestions] = useState<Array<Mention>>([]);
   const [scope, setScope] = useState<MentionScope>({ type: "default" });
 
+  // Clear suggestions immediately when scope changes
+  const setScopeAndClear = useCallback((newScope: MentionScope) => {
+    setSuggestions([]);
+    setScope(newScope);
+  }, []);
+
   useDebouncedEffect(
     async () => {
       if (!query && scope.type === "default") {
@@ -501,6 +507,6 @@ function useMentionSuggestions(query: string | null) {
     suggestionIndex,
     setSuggestionIndex,
     scope,
-    setScope,
+    setScope: setScopeAndClear,
   };
 }
