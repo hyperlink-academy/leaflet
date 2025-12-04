@@ -21,7 +21,9 @@ export const MentionNotification = (props: HydratedMentionNotification) => {
   let mentionedDocRecord = props.mentionedDocument
     ?.data as PubLeafletDocument.Record;
 
-  let mentioner = "placeholder";
+  const mentioner = props.documentCreatorHandle
+    ? `@${props.documentCreatorHandle}`
+    : "Someone";
 
   if (props.mention_type === "did") {
     actionText = <>{mentioner} mentioned you</>;
