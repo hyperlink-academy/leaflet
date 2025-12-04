@@ -9,6 +9,9 @@ import { callRPC } from "app/api/rpc/client";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { GoBackSmall } from "components/Icons/GoBackSmall";
 import { SearchTiny } from "components/Icons/SearchTiny";
+import { CloseTiny } from "./Icons/CloseTiny";
+import { GoToArrow } from "./Icons/GoToArrow";
+import { GoBackTiny } from "./Icons/GoBackTiny";
 
 export function MentionAutocomplete(props: {
   open: boolean;
@@ -18,6 +21,7 @@ export function MentionAutocomplete(props: {
   coords: { top: number; left: number } | null;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [noResults, setNoResults] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -48,8 +52,22 @@ export function MentionAutocomplete(props: {
       setSearchQuery("");
       setScope({ type: "default" });
       setSuggestionIndex(0);
+      setNoResults(false);
     }
   }, [props.open, setScope, setSuggestionIndex]);
+
+  // Handle timeout for showing "No results found"
+  useEffect(() => {
+    if (searchQuery && suggestions.length === 0) {
+      setNoResults(false);
+      const timer = setTimeout(() => {
+        setNoResults(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    } else {
+      setNoResults(false);
+    }
+  }, [searchQuery, suggestions.length]);
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -120,14 +138,23 @@ export function MentionAutocomplete(props: {
 
   if (!props.open || !props.coords) return null;
 
-  const getHeader = (type: Mention["type"]) => {
+  const getHeader = (type: Mention["type"], scope?: MentionScope) => {
     switch (type) {
       case "did":
         return "People";
       case "publication":
         return "Publications";
       case "post":
-        return "Posts";
+        if (scope) {
+          return (
+            <ScopeHeader
+              scope={scope}
+              handleScopeChange={() => {
+                handleScopeChange({ type: "default" });
+              }}
+            />
+          );
+        } else return "Posts";
     }
   };
 
@@ -164,26 +191,13 @@ export function MentionAutocomplete(props: {
           max-h-(--radix-popover-content-available-height)
           overflow-y-scroll`}
         >
-          {/* Search input */}
-          <div className="flex items-center gap-2 px-2 py-1 border-b group-data-[side=top]/mention-menu:border-b-0 group-data-[side=top]/mention-menu:border-t border-border-light">
-            {scope.type === "publication" && (
-              <button
-                className="p-1 rounded hover:bg-accent-light text-tertiary hover:text-accent-contrast shrink-0"
-                onClick={() => handleScopeChange({ type: "default" })}
-                onMouseDown={(e) => e.preventDefault()}
-              >
-                <GoBackSmall className="w-4 h-4" />
-              </button>
-            )}
-            {scope.type === "publication" && (
-              <span className="text-sm font-bold text-secondary truncate shrink-0 max-w-[100px]">
-                {scope.name}
-              </span>
-            )}
+          {/* Dropdown Header */}
+          <div className="flex flex-col items-center gap-2 px-2 py-1 border-b group-data-[side=top]/mention-menu:border-b-0 group-data-[side=top]/mention-menu:border-t border-border-light">
             <div className="flex items-center gap-1 flex-1 min-w-0">
               <SearchTiny className="w-4 h-4 text-tertiary shrink-0" />
               <input
                 ref={inputRef}
+                size={100}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => {
@@ -197,24 +211,27 @@ export function MentionAutocomplete(props: {
                     ? "Search posts..."
                     : "Search people & publications..."
                 }
-                className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm placeholder:text-tertiary"
+                className="flex-1 w-full min-w-0 bg-transparent border-none outline-none text-sm placeholder:text-tertiary"
               />
             </div>
           </div>
           {sortedSuggestions.length === 0 ? (
-            <div className="text-sm text-tertiary italic px-3 py-2">
+            <div className="text-sm text-tertiary italic px-3 py-1 text-center">
               {searchQuery
-                ? "No results found"
+                ? noResults
+                  ? "No results found..."
+                  : "Searching..."
                 : scope.type === "publication"
-                  ? "Type to search posts"
-                  : "Type to search"}
+                  ? "Start typing to search posts"
+                  : "Start typing to search people and publications"}
             </div>
           ) : (
             <ul className="list-none p-0 text-sm flex flex-col group-data-[side=top]/mention-menu:flex-col-reverse">
               {sortedSuggestions.map((result, index) => {
                 const prevResult = sortedSuggestions[index - 1];
                 const showHeader =
-                  prevResult && prevResult.type !== result.type;
+                  index === 0 ||
+                  (prevResult && prevResult.type !== result.type);
 
                 return (
                   <Fragment
@@ -226,7 +243,7 @@ export function MentionAutocomplete(props: {
                           <hr className="border-border-light mx-1 my-1" />
                         )}
                         <div className="text-xs text-tertiary font-bold pt-1 px-2">
-                          {getHeader(result.type)}
+                          {getHeader(result.type, scope)}
                         </div>
                       </>
                     )}
@@ -387,6 +404,27 @@ const PostResult = (props: {
       selected={props.selected}
     />
   );
+};
+
+const ScopeHeader = (props: {
+  scope: MentionScope;
+  handleScopeChange: () => void;
+}) => {
+  if (props.scope.type === "default") return;
+  if (props.scope.type === "publication")
+    return (
+      <button
+        className="w-full flex flex-row gap-2 pt-1 rounded text-tertiary hover:text-accent-contrast shrink-0 text-xs"
+        onClick={() => props.handleScopeChange()}
+        onMouseDown={(e) => e.preventDefault()}
+      >
+        <GoBackTiny className="shrink-0 " />
+
+        <div className="grow w-full truncate text-left">
+          Posts from {props.scope.name}
+        </div>
+      </button>
+    );
 };
 
 export type Mention =
