@@ -61,7 +61,7 @@
     "linkifyjs": "^4.2.0",
     "luxon": "^3.7.2",
     "multiformats": "^13.3.2",
-    "next": "16.0.3",
+    "next": "^16.0.7",
     "pg": "^8.16.3",
     "prosemirror-commands": "^1.5.2",
     "prosemirror-inputrules": "^1.4.0",
