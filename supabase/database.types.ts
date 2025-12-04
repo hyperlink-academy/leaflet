@@ -1158,6 +1158,15 @@ export type Database = {
         }
         Returns: Database["public"]["CompositeTypes"]["pull_result"]
       }
+      search_tags: {
+        Args: {
+          search_query: string
+        }
+        Returns: {
+          name: string
+          document_count: number
+        }[]
+      }
     }
     Enums: {
       rsvp_status: "GOING" | "NOT_GOING" | "MAYBE"
