@@ -382,10 +382,10 @@ export const addMentionToEditor = (
   if (!view) return;
   const { from, to } = range;
   const tr = view.state.tr;
-  // Delete the query text (keep the @)
-  tr.delete(from + 1, to);
 
   if (mention.type == "did") {
+    // Delete the query text (keep the @)
+    tr.delete(from + 1, to);
     tr.insertText(mention.handle, from + 1);
     tr.addMark(
       from,
@@ -395,17 +395,17 @@ export const addMentionToEditor = (
     tr.insertText(" ", from + 1 + mention.handle.length);
   }
   if (mention.type === "publication" || mention.type === "post") {
+    // Delete the @ and any query text
+    tr.delete(from, to);
     let name = mention.type == "post" ? mention.title : mention.name;
-    tr.insertText(name, from + 1);
+    tr.insertText(name, from);
     tr.addMark(
       from,
-      from + 1 + name.length,
+      from + name.length,
       schema.marks.atMention.create({ atURI: mention.uri }),
     );
-    tr.insertText(" ", from + 1 + name.length);
+    tr.insertText(" ", from + name.length);
   }
-
-  // Insert the mention text after the @
 
   view.dispatch(tr);
   view.focus();

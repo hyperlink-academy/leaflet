@@ -144,8 +144,7 @@ let baseSchema = {
               "img",
               {
                 src: `/api/pub_icon?at_uri=${encodeURIComponent(node.attrs.atURI)}`,
-                class:
-                  "inline-block w-4 h-4 rounded-full ml-1 align-text-bottom",
+                class: "inline-block w-5 h-5 rounded-full mr-1 align-text-top",
                 alt: "",
                 width: "16",
                 height: "16",

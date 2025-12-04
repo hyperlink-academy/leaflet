@@ -336,7 +336,7 @@ const ScopeButton = (props: {
 }) => {
   return (
     <span
-      className="flex flex-row shrink-0 text-xs font-normal text-tertiary hover:text-accent-contrast cursor-pointer"
+      className="flex flex-row items-center h-full shrink-0 text-xs font-normal text-tertiary hover:text-accent-contrast cursor-pointer"
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
