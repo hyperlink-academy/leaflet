@@ -10,8 +10,11 @@ const idResolver = new IdResolver();
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
+  const searchParams = req.nextUrl.searchParams;
+  const bgColor = searchParams.get("bg") || "#0000E1";
+  const fgColor = searchParams.get("fg") || "#FFFFFF";
+
   try {
-    const searchParams = req.nextUrl.searchParams;
     const at_uri = searchParams.get("at_uri");
 
     if (!at_uri) {
@@ -43,7 +46,8 @@ export async function GET(req: NextRequest) {
       }
 
       publicationUri = docInPub.publication;
-      publicationRecord = docInPub.publications.record as PubLeafletPublication.Record;
+      publicationRecord = docInPub.publications
+        .record as PubLeafletPublication.Record;
     } else if (uri.collection === "pub.leaflet.publication") {
       // Query the publications table directly
       const { data: publication } = await supabaseServerClient
@@ -65,14 +69,34 @@ export async function GET(req: NextRequest) {
 
     // Check if the publication has an icon
     if (!publicationRecord?.icon) {
-      return new NextResponse(null, { status: 404 });
+      // Generate a placeholder with the first letter of the publication name
+      const firstLetter = (publicationRecord?.name || "?")
+        .slice(0, 1)
+        .toUpperCase();
+
+      // Create a simple SVG placeholder with theme colors
+      const svg = `<svg width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+  <rect width="96" height="96" rx="48" ry="48" fill="${bgColor}"/>
+  <text x="50%" y="50%" font-size="64" font-weight="bold" font-family="Arial, Helvetica, sans-serif" fill="${fgColor}" text-anchor="middle" dominant-baseline="central">${firstLetter}</text>
+</svg>`;
+
+      return new NextResponse(svg, {
+        headers: {
+          "Content-Type": "image/svg+xml",
+          "Cache-Control":
+            "public, max-age=3600, s-maxage=3600, stale-while-revalidate=2592000",
+          "CDN-Cache-Control": "s-maxage=3600, stale-while-revalidate=2592000",
+        },
+      });
     }
 
     // Parse the publication URI to get the DID
     const pubUri = new AtUri(publicationUri);
 
     // Get the CID from the icon blob
-    const cid = (publicationRecord.icon.ref as unknown as { $link: string })["$link"];
+    const cid = (publicationRecord.icon.ref as unknown as { $link: string })[
+      "$link"
+    ];
 
     // Fetch the blob from the PDS
     const identity = await idResolver.did.resolve(pubUri.host);
