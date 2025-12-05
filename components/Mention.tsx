@@ -258,6 +258,7 @@ export function MentionAutocomplete(props: {
                         onMouseDown={(e) => e.preventDefault()}
                         displayName={result.displayName}
                         handle={result.handle}
+                        avatar={result.avatar}
                         selected={index === suggestionIndex}
                       />
                     ) : result.type === "publication" ? (
@@ -268,6 +269,7 @@ export function MentionAutocomplete(props: {
                         }}
                         onMouseDown={(e) => e.preventDefault()}
                         pubName={result.name}
+                        uri={result.uri}
                         selected={index === suggestionIndex}
                         onPostsClick={() => {
                           handleScopeChange({
@@ -302,6 +304,7 @@ export function MentionAutocomplete(props: {
 const Result = (props: {
   result: React.ReactNode;
   subtext?: React.ReactNode;
+  icon?: React.ReactNode;
   onClick: () => void;
   onMouseDown: (e: React.MouseEvent) => void;
   selected?: boolean;
@@ -309,7 +312,7 @@ const Result = (props: {
   return (
     <button
       className={`
-        menuItem  w-full flex-col! gap-0!
+        menuItem  w-full flex-row! gap-2!
         text-secondary leading-snug text-sm
       ${props.subtext ? "py-1!" : "py-2!"}
         ${props.selected ? "bg-[var(--accent-light)]!" : ""}`}
@@ -318,16 +321,19 @@ const Result = (props: {
       }}
       onMouseDown={(e) => props.onMouseDown(e)}
     >
-      <div
-        className={`flex gap-2 items-center w-full truncate justify-between`}
-      >
-        {props.result}
-      </div>
-      {props.subtext && (
-        <div className="text-tertiary italic text-xs font-normal min-w-0 truncate pb-[1px]">
-          {props.subtext}
+      {props.icon}
+      <div className="flex flex-col min-w-0 flex-1">
+        <div
+          className={`flex gap-2 items-center w-full truncate justify-between`}
+        >
+          {props.result}
         </div>
-      )}
+        {props.subtext && (
+          <div className="text-tertiary italic text-xs font-normal min-w-0 truncate pb-[1px]">
+            {props.subtext}
+          </div>
+        )}
+      </div>
     </button>
   );
 };
@@ -357,21 +363,36 @@ const ScopeButton = (props: {
 const DidResult = (props: {
   displayName?: string;
   handle: string;
+  avatar?: string;
   onClick: () => void;
   onMouseDown: (e: React.MouseEvent) => void;
   selected?: boolean;
 }) => {
   return (
     <Result
+      icon={
+        props.avatar ? (
+          <img
+            src={props.avatar}
+            alt=""
+            className="w-5 h-5 rounded-full shrink-0"
+          />
+        ) : (
+          <div className="w-5 h-5 rounded-full bg-border shrink-0" />
+        )
+      }
       result={props.displayName ? props.displayName : props.handle}
       subtext={props.displayName && `@${props.handle}`}
-      {...props}
+      onClick={props.onClick}
+      onMouseDown={props.onMouseDown}
+      selected={props.selected}
     />
   );
 };
 
 const PublicationResult = (props: {
   pubName: string;
+  uri: string;
   onClick: () => void;
   onMouseDown: (e: React.MouseEvent) => void;
   selected?: boolean;
@@ -379,6 +400,13 @@ const PublicationResult = (props: {
 }) => {
   return (
     <Result
+      icon={
+        <img
+          src={`/api/pub_icon?at_uri=${encodeURIComponent(props.uri)}`}
+          alt=""
+          className="w-5 h-5 rounded-full shrink-0"
+        />
+      }
       result={
         <>
           <div className="truncate w-full grow min-w-0">{props.pubName}</div>
@@ -430,7 +458,7 @@ const ScopeHeader = (props: {
 };
 
 export type Mention =
-  | { type: "did"; handle: string; did: string; displayName?: string }
+  | { type: "did"; handle: string; did: string; displayName?: string; avatar?: string }
   | { type: "publication"; uri: string; name: string }
   | { type: "post"; uri: string; title: string };
 
@@ -485,6 +513,7 @@ function useMentionSuggestions(query: string | null) {
             handle: actor.handle,
             did: actor.did,
             displayName: actor.displayName,
+            avatar: actor.avatar,
           })),
           ...publications.result.publications.map((p) => ({
             type: "publication" as const,
