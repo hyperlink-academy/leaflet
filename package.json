@@ -73,7 +73,7 @@
     "react": "19.2.1",
     "react-aria-components": "^1.8.0",
     "react-day-picker": "^9.3.0",
-    "react-dom": "19.2.0",
+    "react-dom": "19.2.1",
     "react-use-measure": "^2.1.1",
     "redlock": "^5.0.0-beta.2",
     "rehype-parse": "^9.0.0",
