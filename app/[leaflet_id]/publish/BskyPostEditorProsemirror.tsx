@@ -379,6 +379,7 @@ export const addMentionToEditor = (
   range: { from: number; to: number },
   view: EditorView,
 ) => {
+  console.log("view", view);
   if (!view) return;
   const { from, to } = range;
   const tr = view.state.tr;
@@ -393,8 +394,6 @@ export const addMentionToEditor = (
       text: mentionText,
     });
     tr.insert(from, didMentionNode);
-    // Add a space after the mention
-    tr.insertText(" ", from + 1);
   }
   if (mention.type === "publication" || mention.type === "post") {
     // Delete the @ and any query text
@@ -406,9 +405,11 @@ export const addMentionToEditor = (
       text: name,
     });
     tr.insert(from, atMentionNode);
-    // Add a space after the mention
-    tr.insertText(" ", from + 1);
   }
+  console.log("yo", mention);
+
+  // Add a space after the mention
+  tr.insertText(" ", from + 1);
 
   view.dispatch(tr);
   view.focus();

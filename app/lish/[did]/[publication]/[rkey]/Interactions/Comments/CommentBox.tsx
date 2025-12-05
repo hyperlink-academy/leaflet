@@ -8,9 +8,11 @@ import { Mark, MarkType, Node } from "prosemirror-model";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { history, redo, undo } from "prosemirror-history";
+import { InputRule, inputRules } from "prosemirror-inputrules";
 import {
   MutableRefObject,
   RefObject,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -36,6 +38,48 @@ import { create } from "zustand";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { CloseFillTiny } from "components/Icons/CloseFillTiny";
 import { betterIsUrl } from "src/utils/isURL";
+import { Mention, MentionAutocomplete } from "components/Mention";
+import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
+
+const addMentionToEditor = (
+  mention: Mention,
+  range: { from: number; to: number },
+  view: EditorView,
+) => {
+  if (!view) return;
+  const { from, to } = range;
+  const tr = view.state.tr;
+
+  if (mention.type === "did") {
+    // Delete the @ and any query text
+    tr.delete(from, to);
+    // Insert didMention inline node
+    const mentionText = "@" + mention.handle;
+    const didMentionNode = multiBlockSchema.nodes.didMention.create({
+      did: mention.did,
+      text: mentionText,
+    });
+    tr.insert(from, didMentionNode);
+    // Add a space after the mention
+    tr.insertText(" ", from + 1);
+  }
+  if (mention.type === "publication" || mention.type === "post") {
+    // Delete the @ and any query text
+    tr.delete(from, to);
+    let name = mention.type === "post" ? mention.title : mention.name;
+    // Insert atMention inline node
+    const atMentionNode = multiBlockSchema.nodes.atMention.create({
+      atURI: mention.uri,
+      text: name,
+    });
+    tr.insert(from, atMentionNode);
+    // Add a space after the mention
+    tr.insertText(" ", from + 1);
+  }
+
+  view.dispatch(tr);
+  view.focus();
+};
 
 export function CommentBox(props: {
   doc_uri: string;
@@ -50,8 +94,68 @@ export function CommentBox(props: {
     commentBox: { quote },
   } = useInteractionState(props.doc_uri);
   let [loading, setLoading] = useState(false);
+  let view = useRef<null | EditorView>(null);
 
-  const handleSubmit = async () => {
+  // Mention autocomplete state
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionCoords, setMentionCoords] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  // Use a ref for insert position to avoid stale closure issues
+  const mentionInsertPosRef = useRef<number | null>(null);
+
+  // Use a ref for the callback so input rules can access it
+  const openMentionAutocompleteRef = useRef<() => void>(() => {});
+  openMentionAutocompleteRef.current = () => {
+    if (!view.current) return;
+
+    const pos = view.current.state.selection.from;
+    mentionInsertPosRef.current = pos;
+
+    // Get coordinates for the popup relative to the positioned parent
+    const coords = view.current.coordsAtPos(pos - 1);
+
+    // Find the relative positioned parent container
+    const editorEl = view.current.dom;
+    const container = editorEl.closest(".relative") as HTMLElement | null;
+
+    if (container) {
+      const containerRect = container.getBoundingClientRect();
+      setMentionCoords({
+        top: coords.bottom - containerRect.top,
+        left: coords.left - containerRect.left,
+      });
+    } else {
+      setMentionCoords({
+        top: coords.bottom,
+        left: coords.left,
+      });
+    }
+    setMentionOpen(true);
+  };
+
+  const handleMentionSelect = useCallback((mention: Mention) => {
+    if (!view.current || mentionInsertPosRef.current === null) return;
+
+    const from = mentionInsertPosRef.current - 1;
+    const to = mentionInsertPosRef.current;
+
+    addMentionToEditor(mention, { from, to }, view.current);
+    view.current.focus();
+  }, []);
+
+  const handleMentionOpenChange = useCallback((open: boolean) => {
+    setMentionOpen(open);
+    if (!open) {
+      setMentionCoords(null);
+      mentionInsertPosRef.current = null;
+    }
+  }, []);
+
+  // Use a ref for handleSubmit so keyboard shortcuts can access it
+  const handleSubmitRef = useRef<() => Promise<void>>(async () => {});
+  handleSubmitRef.current = async () => {
     if (loading || !view.current) return;
 
     setLoading(true);
@@ -114,11 +218,11 @@ export function CommentBox(props: {
           "Mod-y": redo,
           "Shift-Mod-z": redo,
           "Ctrl-Enter": () => {
-            handleSubmit();
+            handleSubmitRef.current();
             return true;
           },
           "Meta-Enter": () => {
-            handleSubmit();
+            handleSubmitRef.current();
             return true;
           },
         }),
@@ -128,11 +232,20 @@ export function CommentBox(props: {
           shouldAutoLink: () => true,
           defaultProtocol: "https",
         }),
+        // Input rules for @ mentions
+        inputRules({
+          rules: [
+            // @ at start of line or after space
+            new InputRule(/(?:^|\s)@$/, (state, match, start, end) => {
+              setTimeout(() => openMentionAutocompleteRef.current(), 0);
+              return null;
+            }),
+          ],
+        }),
         history(),
       ],
     }),
   );
-  let view = useRef<null | EditorView>(null);
   useLayoutEffect(() => {
     if (!mountRef.current) return;
     view.current = new EditorView(
@@ -187,15 +300,55 @@ export function CommentBox(props: {
         handleClickOn: (view, _pos, node, _nodePos, _event, direct) => {
           if (!direct) return;
           if (node.nodeSize - 2 <= _pos) return;
+
+          const nodeAt1 = node.nodeAt(_pos - 1);
+          const nodeAt2 = node.nodeAt(Math.max(_pos - 2, 0));
+
+          // Check for link marks
           let mark =
-            node
-              .nodeAt(_pos - 1)
-              ?.marks.find((f) => f.type === multiBlockSchema.marks.link) ||
-            node
-              .nodeAt(Math.max(_pos - 2, 0))
-              ?.marks.find((f) => f.type === multiBlockSchema.marks.link);
+            nodeAt1?.marks.find(
+              (f) => f.type === multiBlockSchema.marks.link,
+            ) ||
+            nodeAt2?.marks.find((f) => f.type === multiBlockSchema.marks.link);
           if (mark) {
             window.open(mark.attrs.href, "_blank");
+            return;
+          }
+
+          // Check for didMention inline nodes
+          if (nodeAt1?.type === multiBlockSchema.nodes.didMention) {
+            window.open(
+              didToBlueskyUrl(nodeAt1.attrs.did),
+              "_blank",
+              "noopener,noreferrer",
+            );
+            return;
+          }
+          if (nodeAt2?.type === multiBlockSchema.nodes.didMention) {
+            window.open(
+              didToBlueskyUrl(nodeAt2.attrs.did),
+              "_blank",
+              "noopener,noreferrer",
+            );
+            return;
+          }
+
+          // Check for atMention inline nodes (publications/documents)
+          if (nodeAt1?.type === multiBlockSchema.nodes.atMention) {
+            window.open(
+              atUriToUrl(nodeAt1.attrs.atURI),
+              "_blank",
+              "noopener,noreferrer",
+            );
+            return;
+          }
+          if (nodeAt2?.type === multiBlockSchema.nodes.atMention) {
+            window.open(
+              atUriToUrl(nodeAt2.attrs.atURI),
+              "_blank",
+              "noopener,noreferrer",
+            );
+            return;
           }
         },
         dispatchTransaction(tr) {
@@ -236,9 +389,28 @@ export function CommentBox(props: {
       <div className="w-full relative group">
         <pre
           ref={mountRef}
+          onFocus={() => {
+            // Close mention dropdown when editor gains focus (reset stale state)
+            handleMentionOpenChange(false);
+          }}
+          onBlur={(e) => {
+            // Close mention dropdown when editor loses focus
+            // But not if focus moved to the mention autocomplete
+            const relatedTarget = e.relatedTarget as HTMLElement | null;
+            if (!relatedTarget?.closest(".dropdownMenu")) {
+              handleMentionOpenChange(false);
+            }
+          }}
           className={`border whitespace-pre-wrap input-with-border min-h-32 h-fit px-2! py-[6px]!`}
         />
         <IOSBS view={view} />
+        <MentionAutocomplete
+          open={mentionOpen}
+          onOpenChange={handleMentionOpenChange}
+          view={view}
+          onSelect={handleMentionSelect}
+          coords={mentionCoords}
+        />
       </div>
       <div className="flex justify-between pt-1">
         <div className="flex gap-1">
@@ -261,7 +433,7 @@ export function CommentBox(props: {
             view={view}
           />
         </div>
-        <ButtonPrimary compact onClick={handleSubmit}>
+        <ButtonPrimary compact onClick={() => handleSubmitRef.current()}>
           {loading ? <DotLoader /> : <ShareSmall />}
         </ButtonPrimary>
       </div>
@@ -328,6 +500,46 @@ export function docToFacetedText(
             facets.push(facet);
           }
         }
+
+        fullText += text;
+        byteOffset += unicodeString.length;
+      } else if (node.type.name === "didMention") {
+        // Handle DID mention nodes
+        const text = node.attrs.text || "";
+        const unicodeString = new UnicodeString(text);
+
+        facets.push({
+          index: {
+            byteStart: byteOffset,
+            byteEnd: byteOffset + unicodeString.length,
+          },
+          features: [
+            {
+              $type: "pub.leaflet.richtext.facet#didMention",
+              did: node.attrs.did,
+            },
+          ],
+        });
+
+        fullText += text;
+        byteOffset += unicodeString.length;
+      } else if (node.type.name === "atMention") {
+        // Handle AT-URI mention nodes (publications and documents)
+        const text = node.attrs.text || "";
+        const unicodeString = new UnicodeString(text);
+
+        facets.push({
+          index: {
+            byteStart: byteOffset,
+            byteEnd: byteOffset + unicodeString.length,
+          },
+          features: [
+            {
+              $type: "pub.leaflet.richtext.facet#atMention",
+              atURI: node.attrs.atURI,
+            },
+          ],
+        });
 
         fullText += text;
         byteOffset += unicodeString.length;

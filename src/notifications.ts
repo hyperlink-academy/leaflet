@@ -17,26 +17,31 @@ export type NotificationData =
   | { type: "quote"; bsky_post_uri: string; document_uri: string }
   | { type: "mention"; document_uri: string; mention_type: "did" }
   | { type: "mention"; document_uri: string; mention_type: "publication"; mentioned_uri: string }
-  | { type: "mention"; document_uri: string; mention_type: "document"; mentioned_uri: string };
+  | { type: "mention"; document_uri: string; mention_type: "document"; mentioned_uri: string }
+  | { type: "comment_mention"; comment_uri: string; mention_type: "did" }
+  | { type: "comment_mention"; comment_uri: string; mention_type: "publication"; mentioned_uri: string }
+  | { type: "comment_mention"; comment_uri: string; mention_type: "document"; mentioned_uri: string };
 
 export type HydratedNotification =
   | HydratedCommentNotification
   | HydratedSubscribeNotification
   | HydratedQuoteNotification
-  | HydratedMentionNotification;
+  | HydratedMentionNotification
+  | HydratedCommentMentionNotification;
 export async function hydrateNotifications(
   notifications: NotificationRow[],
 ): Promise<Array<HydratedNotification>> {
   // Call all hydrators in parallel
-  const [commentNotifications, subscribeNotifications, quoteNotifications, mentionNotifications] = await Promise.all([
+  const [commentNotifications, subscribeNotifications, quoteNotifications, mentionNotifications, commentMentionNotifications] = await Promise.all([
     hydrateCommentNotifications(notifications),
     hydrateSubscribeNotifications(notifications),
     hydrateQuoteNotifications(notifications),
     hydrateMentionNotifications(notifications),
+    hydrateCommentMentionNotifications(notifications),
   ]);
 
   // Combine all hydrated notifications
-  const allHydrated = [...commentNotifications, ...subscribeNotifications, ...quoteNotifications, ...mentionNotifications];
+  const allHydrated = [...commentNotifications, ...subscribeNotifications, ...quoteNotifications, ...mentionNotifications, ...commentMentionNotifications];
 
   // Sort by created_at to maintain order
   allHydrated.sort(
@@ -255,6 +260,98 @@ async function hydrateMentionNotifications(notifications: NotificationRow[]) {
       mentioned_uri: mentionedUri,
       document: documents?.find((d) => d.uri === notification.data.document_uri)!,
       documentCreatorHandle,
+      mentionedPublication: mentionedUri ? mentionedPublications?.find((p) => p.uri === mentionedUri) : undefined,
+      mentionedDocument: mentionedUri ? mentionedDocuments?.find((d) => d.uri === mentionedUri) : undefined,
+    };
+  });
+}
+
+export type HydratedCommentMentionNotification = Awaited<
+  ReturnType<typeof hydrateCommentMentionNotifications>
+>[0];
+
+async function hydrateCommentMentionNotifications(notifications: NotificationRow[]) {
+  const commentMentionNotifications = notifications.filter(
+    (n): n is NotificationRow & { data: ExtractNotificationType<"comment_mention"> } =>
+      (n.data as NotificationData)?.type === "comment_mention",
+  );
+
+  if (commentMentionNotifications.length === 0) {
+    return [];
+  }
+
+  // Fetch comment data from the database
+  const commentUris = commentMentionNotifications.map((n) => n.data.comment_uri);
+  const { data: comments } = await supabaseServerClient
+    .from("comments_on_documents")
+    .select(
+      "*, bsky_profiles(*), documents(*, documents_in_publications(publications(*)))",
+    )
+    .in("uri", commentUris);
+
+  // Extract unique DIDs from comment URIs to resolve handles
+  const commenterDids = [...new Set(commentUris.map((uri) => new AtUri(uri).host))];
+
+  // Resolve DIDs to handles in parallel
+  const didToHandleMap = new Map<string, string | null>();
+  await Promise.all(
+    commenterDids.map(async (did) => {
+      try {
+        const resolved = await idResolver.did.resolve(did);
+        const handle = resolved?.alsoKnownAs?.[0]
+          ? resolved.alsoKnownAs[0].slice(5) // Remove "at://" prefix
+          : null;
+        didToHandleMap.set(did, handle);
+      } catch (error) {
+        console.error(`Failed to resolve DID ${did}:`, error);
+        didToHandleMap.set(did, null);
+      }
+    }),
+  );
+
+  // Fetch mentioned publications and documents
+  const mentionedPublicationUris = commentMentionNotifications
+    .filter((n) => n.data.mention_type === "publication")
+    .map((n) => (n.data as Extract<ExtractNotificationType<"comment_mention">, { mention_type: "publication" }>).mentioned_uri);
+
+  const mentionedDocumentUris = commentMentionNotifications
+    .filter((n) => n.data.mention_type === "document")
+    .map((n) => (n.data as Extract<ExtractNotificationType<"comment_mention">, { mention_type: "document" }>).mentioned_uri);
+
+  const [{ data: mentionedPublications }, { data: mentionedDocuments }] = await Promise.all([
+    mentionedPublicationUris.length > 0
+      ? supabaseServerClient
+          .from("publications")
+          .select("*")
+          .in("uri", mentionedPublicationUris)
+      : Promise.resolve({ data: [] }),
+    mentionedDocumentUris.length > 0
+      ? supabaseServerClient
+          .from("documents")
+          .select("*, documents_in_publications(publications(*))")
+          .in("uri", mentionedDocumentUris)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  return commentMentionNotifications.map((notification) => {
+    const mentionedUri = notification.data.mention_type !== "did"
+      ? (notification.data as Extract<ExtractNotificationType<"comment_mention">, { mentioned_uri: string }>).mentioned_uri
+      : undefined;
+
+    const commenterDid = new AtUri(notification.data.comment_uri).host;
+    const commenterHandle = didToHandleMap.get(commenterDid) ?? null;
+    const commentData = comments?.find((c) => c.uri === notification.data.comment_uri);
+
+    return {
+      id: notification.id,
+      recipient: notification.recipient,
+      created_at: notification.created_at,
+      type: "comment_mention" as const,
+      comment_uri: notification.data.comment_uri,
+      mention_type: notification.data.mention_type,
+      mentioned_uri: mentionedUri,
+      commentData: commentData!,
+      commenterHandle,
       mentionedPublication: mentionedUri ? mentionedPublications?.find((p) => p.uri === mentionedUri) : undefined,
       mentionedDocument: mentionedUri ? mentionedDocuments?.find((d) => d.uri === mentionedUri) : undefined,
     };

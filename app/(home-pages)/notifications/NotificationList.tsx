@@ -9,6 +9,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import { FollowNotification } from "./FollowNotification";
 import { QuoteNotification } from "./QuoteNotification";
 import { MentionNotification } from "./MentionNotification";
+import { CommentMentionNotification } from "./CommentMentionNotification";
 
 export function NotificationList({
   notifications,
@@ -49,6 +50,9 @@ export function NotificationList({
           }
           if (n.type === "mention") {
             return <MentionNotification key={n.id} {...n} />;
+          }
+          if (n.type === "comment_mention") {
+            return <CommentMentionNotification key={n.id} {...n} />;
           }
         })}
       </div>
