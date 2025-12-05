@@ -2,6 +2,8 @@
 
 import { supabaseServerClient } from "supabase/serverClient";
 import { Tables, TablesInsert } from "supabase/database.types";
+import { AtUri } from "@atproto/syntax";
+import { idResolver } from "app/(home-pages)/reader/idResolver";
 
 type NotificationRow = Tables<"notifications">;
 
@@ -191,6 +193,26 @@ async function hydrateMentionNotifications(notifications: NotificationRow[]) {
     .select("*, documents_in_publications(publications(*))")
     .in("uri", documentUris);
 
+  // Extract unique DIDs from document URIs to resolve handles
+  const documentCreatorDids = [...new Set(documentUris.map((uri) => new AtUri(uri).host))];
+
+  // Resolve DIDs to handles in parallel
+  const didToHandleMap = new Map<string, string | null>();
+  await Promise.all(
+    documentCreatorDids.map(async (did) => {
+      try {
+        const resolved = await idResolver.did.resolve(did);
+        const handle = resolved?.alsoKnownAs?.[0]
+          ? resolved.alsoKnownAs[0].slice(5) // Remove "at://" prefix
+          : null;
+        didToHandleMap.set(did, handle);
+      } catch (error) {
+        console.error(`Failed to resolve DID ${did}:`, error);
+        didToHandleMap.set(did, null);
+      }
+    }),
+  );
+
   // Fetch mentioned publications and documents
   const mentionedPublicationUris = mentionNotifications
     .filter((n) => n.data.mention_type === "publication")
@@ -220,6 +242,9 @@ async function hydrateMentionNotifications(notifications: NotificationRow[]) {
       ? (notification.data as Extract<ExtractNotificationType<"mention">, { mentioned_uri: string }>).mentioned_uri
       : undefined;
 
+    const documentCreatorDid = new AtUri(notification.data.document_uri).host;
+    const documentCreatorHandle = didToHandleMap.get(documentCreatorDid) ?? null;
+
     return {
       id: notification.id,
       recipient: notification.recipient,
@@ -229,6 +254,7 @@ async function hydrateMentionNotifications(notifications: NotificationRow[]) {
       mention_type: notification.data.mention_type,
       mentioned_uri: mentionedUri,
       document: documents?.find((d) => d.uri === notification.data.document_uri)!,
+      documentCreatorHandle,
       mentionedPublication: mentionedUri ? mentionedPublications?.find((p) => p.uri === mentionedUri) : undefined,
       mentionedDocument: mentionedUri ? mentionedDocuments?.find((d) => d.uri === mentionedUri) : undefined,
     };
