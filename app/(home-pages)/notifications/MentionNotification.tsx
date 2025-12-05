@@ -60,21 +60,7 @@ export const MentionNotification = (props: HydratedMentionNotification) => {
       actionText={actionText}
       content={
         <ContentLayout postTitle={docRecord.title} pubRecord={pubRecord}>
-          <div className="text-sm text-secondary">
-            ... this should be some characters in front of{" "}
-            <span
-              className={
-                props.mention_type === "document"
-                  ? "italic"
-                  : props.mention_type === "publication"
-                    ? "font-bold"
-                    : ""
-              }
-            >
-              {mentionedItemName ? mentionedItemName : "@handleplaceholder"}
-            </span>{" "}
-            and some at the end...
-          </div>
+          {docRecord.description && docRecord.description}
         </ContentLayout>
       }
     />
