@@ -39,6 +39,7 @@ export async function getWebpageImage(
       },
       body: JSON.stringify({
         url,
+        setJavaScriptEnabled: false,
         scrollPage: true,
         addStyleTag: [
           {
