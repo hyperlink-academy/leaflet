@@ -1865,6 +1865,8 @@ export const schemaDict = {
               type: 'union',
               refs: [
                 'lex:pub.leaflet.richtext.facet#link',
+                'lex:pub.leaflet.richtext.facet#didMention',
+                'lex:pub.leaflet.richtext.facet#atMention',
                 'lex:pub.leaflet.richtext.facet#code',
                 'lex:pub.leaflet.richtext.facet#highlight',
                 'lex:pub.leaflet.richtext.facet#underline',
@@ -1901,6 +1903,28 @@ export const schemaDict = {
         properties: {
           uri: {
             type: 'string',
+          },
+        },
+      },
+      didMention: {
+        type: 'object',
+        description: 'Facet feature for mentioning a did.',
+        required: ['did'],
+        properties: {
+          did: {
+            type: 'string',
+            format: 'did',
+          },
+        },
+      },
+      atMention: {
+        type: 'object',
+        description: 'Facet feature for mentioning an AT URI.',
+        required: ['atURI'],
+        properties: {
+          atURI: {
+            type: 'string',
+            format: 'uri',
           },
         },
       },

@@ -24,7 +24,6 @@ import { indent, outdent } from "src/utils/list-operations";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { UndoManager } from "src/undoManager";
-
 type PropsRef = RefObject<
   BlockProps & {
     entity_set: { set: string };
@@ -35,7 +34,7 @@ export const TextBlockKeymap = (
   propsRef: PropsRef,
   repRef: RefObject<Replicache<ReplicacheMutators> | null>,
   um: UndoManager,
-  multiLine?: boolean,
+  openMentionAutocomplete: () => void,
 ) =>
   ({
     "Meta-b": toggleMark(schema.marks.strong),
@@ -138,11 +137,9 @@ export const TextBlockKeymap = (
       ),
     "Shift-Backspace": backspace(propsRef, repRef),
     Enter: (state, dispatch, view) => {
-      if (multiLine && state.doc.content.size - state.selection.anchor > 1)
-        return false;
-      return um.withUndoGroup(() =>
-        enter(propsRef, repRef)(state, dispatch, view),
-      );
+      return um.withUndoGroup(() => {
+        return enter(propsRef, repRef)(state, dispatch, view);
+      });
     },
     "Shift-Enter": (state, dispatch, view) => {
       // Insert a hard break

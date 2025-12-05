@@ -1,16 +1,7 @@
 "use client";
-import { Agent, AppBskyRichtextFacet, UnicodeString } from "@atproto/api";
-import {
-  useState,
-  useCallback,
-  useRef,
-  useLayoutEffect,
-  useEffect,
-} from "react";
-import { createPortal } from "react-dom";
-import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
-import * as Popover from "@radix-ui/react-popover";
-import { EditorState, TextSelection, Plugin } from "prosemirror-state";
+import { AppBskyRichtextFacet, UnicodeString } from "@atproto/api";
+import { useState, useCallback, useRef, useLayoutEffect } from "react";
+import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { Schema, MarkSpec, Mark } from "prosemirror-model";
 import { baseKeymap } from "prosemirror-commands";
@@ -19,6 +10,8 @@ import { history, undo, redo } from "prosemirror-history";
 import { inputRules, InputRule } from "prosemirror-inputrules";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
 import { IOSBS } from "app/lish/[did]/[publication]/[rkey]/Interactions/Comments/CommentBox";
+import { schema } from "components/Blocks/TextBlock/schema";
+import { Mention, MentionAutocomplete } from "components/Mention";
 
 // Schema with only links, mentions, and hashtags marks
 const bskyPostSchema = new Schema({
@@ -134,59 +127,85 @@ function createHashtagInputRule() {
     return tr;
   });
 }
-
 export function BlueskyPostEditorProsemirror(props: {
-  editorStateRef: React.MutableRefObject<EditorState | null>;
+  editorStateRef: React.RefObject<EditorState | null>;
   initialContent?: string;
   onCharCountChange?: (count: number) => void;
 }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [editorState, setEditorState] = useState<EditorState | null>(null);
-  const [mentionState, setMentionState] = useState<{
-    active: boolean;
-    range: { from: number; to: number } | null;
-    selectedMention: { handle: string; did: string } | null;
-  }>({ active: false, range: null, selectedMention: null });
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionCoords, setMentionCoords] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [mentionInsertPos, setMentionInsertPos] = useState<number | null>(null);
+
+  const openMentionAutocomplete = useCallback(() => {
+    if (!viewRef.current) return;
+    const view = viewRef.current;
+    const pos = view.state.selection.from;
+    setMentionInsertPos(pos);
+    const coords = view.coordsAtPos(pos - 1);
+    setMentionCoords({
+      top: coords.bottom + window.scrollY,
+      left: coords.left + window.scrollX,
+    });
+    setMentionOpen(true);
+  }, []);
 
   const handleMentionSelect = useCallback(
-    (
-      mention: { handle: string; did: string },
-      range: { from: number; to: number },
-    ) => {
-      if (!viewRef.current) return;
+    (mention: Mention) => {
+      if (mention.type !== "did") return;
+      if (!viewRef.current || mentionInsertPos === null) return;
       const view = viewRef.current;
-      const { from, to } = range;
+      const from = mentionInsertPos - 1;
+      const to = mentionInsertPos;
       const tr = view.state.tr;
 
-      // Delete the query text (keep the @)
-      tr.delete(from + 1, to);
+      // Delete the @ symbol
+      tr.delete(from, to);
 
-      // Insert the mention text after the @
-      const mentionText = mention.handle;
-      tr.insertText(mentionText, from + 1);
+      // Insert @handle
+      const mentionText = "@" + mention.handle;
+      tr.insertText(mentionText, from);
 
-      // Apply mention mark to @ and handle
+      // Apply mention mark
       tr.addMark(
         from,
-        from + 1 + mentionText.length,
+        from + mentionText.length,
         bskyPostSchema.marks.mention.create({ did: mention.did }),
       );
 
       // Add a space after the mention
-      tr.insertText(" ", from + 1 + mentionText.length);
+      tr.insertText(" ", from + mentionText.length);
 
       view.dispatch(tr);
       view.focus();
     },
-    [],
+    [mentionInsertPos],
   );
 
-  const mentionStateRef = useRef(mentionState);
-  mentionStateRef.current = mentionState;
+  const handleMentionOpenChange = useCallback((open: boolean) => {
+    setMentionOpen(open);
+    if (!open) {
+      setMentionCoords(null);
+      setMentionInsertPos(null);
+    }
+  }, []);
 
   useLayoutEffect(() => {
     if (!mountRef.current) return;
+
+    // Input rule to trigger mention autocomplete when @ is typed
+    const mentionInputRule = new InputRule(
+      /(?:^|\s)@$/,
+      (state, match, start, end) => {
+        setTimeout(() => openMentionAutocomplete(), 0);
+        return null;
+      },
+    );
 
     const initialState = EditorState.create({
       schema: bskyPostSchema,
@@ -200,28 +219,11 @@ export function BlueskyPostEditorProsemirror(props: {
           })
         : undefined,
       plugins: [
-        inputRules({ rules: [createHashtagInputRule()] }),
+        inputRules({ rules: [createHashtagInputRule(), mentionInputRule] }),
         keymap({
           "Mod-z": undo,
           "Mod-y": redo,
           "Shift-Mod-z": redo,
-          Enter: (state, dispatch) => {
-            // Check if mention autocomplete is active
-            const currentMentionState = mentionStateRef.current;
-            if (
-              currentMentionState.active &&
-              currentMentionState.selectedMention &&
-              currentMentionState.range
-            ) {
-              handleMentionSelect(
-                currentMentionState.selectedMention,
-                currentMentionState.range,
-              );
-              return true;
-            }
-            // Otherwise let the default Enter behavior happen (new paragraph)
-            return false;
-          },
         }),
         keymap(baseKeymap),
         autolink({
@@ -258,20 +260,17 @@ export function BlueskyPostEditorProsemirror(props: {
       view.destroy();
       viewRef.current = null;
     };
-  }, [handleMentionSelect]);
+  }, [openMentionAutocomplete]);
 
   return (
     <div className="relative w-full h-full group">
-      {editorState && (
-        <MentionAutocomplete
-          editorState={editorState}
-          view={viewRef}
-          onSelect={handleMentionSelect}
-          onMentionStateChange={(active, range, selectedMention) => {
-            setMentionState({ active, range, selectedMention });
-          }}
-        />
-      )}
+      <MentionAutocomplete
+        open={mentionOpen}
+        onOpenChange={handleMentionOpenChange}
+        view={viewRef}
+        onSelect={handleMentionSelect}
+        coords={mentionCoords}
+      />
       {editorState?.doc.textContent.length === 0 && (
         <div className="italic text-tertiary absolute top-0 left-0 pointer-events-none">
           Write a post to share your writing!
@@ -288,227 +287,6 @@ export function BlueskyPostEditorProsemirror(props: {
       <IOSBS view={viewRef} />
     </div>
   );
-}
-
-function MentionAutocomplete(props: {
-  editorState: EditorState;
-  view: React.RefObject<EditorView | null>;
-  onSelect: (
-    mention: { handle: string; did: string },
-    range: { from: number; to: number },
-  ) => void;
-  onMentionStateChange: (
-    active: boolean,
-    range: { from: number; to: number } | null,
-    selectedMention: { handle: string; did: string } | null,
-  ) => void;
-}) {
-  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [mentionRange, setMentionRange] = useState<{
-    from: number;
-    to: number;
-  } | null>(null);
-  const [mentionCoords, setMentionCoords] = useState<{
-    top: number;
-    left: number;
-  } | null>(null);
-
-  const { suggestionIndex, setSuggestionIndex, suggestions } =
-    useMentionSuggestions(mentionQuery);
-
-  // Check for mention pattern whenever editor state changes
-  useEffect(() => {
-    const { $from } = props.editorState.selection;
-    const textBefore = $from.parent.textBetween(
-      Math.max(0, $from.parentOffset - 50),
-      $from.parentOffset,
-      null,
-      "\ufffc",
-    );
-
-    // Look for @ followed by word characters before cursor
-    const match = textBefore.match(/@([\w.]*)$/);
-
-    if (match && props.view.current) {
-      const queryBefore = match[1];
-      const from = $from.pos - queryBefore.length - 1;
-
-      // Get text after cursor to find the rest of the handle
-      const textAfter = $from.parent.textBetween(
-        $from.parentOffset,
-        Math.min($from.parent.content.size, $from.parentOffset + 50),
-        null,
-        "\ufffc",
-      );
-
-      // Match word characters after cursor until space or end
-      const afterMatch = textAfter.match(/^([\w.]*)/);
-      const queryAfter = afterMatch ? afterMatch[1] : "";
-
-      // Combine the full handle
-      const query = queryBefore + queryAfter;
-      const to = $from.pos + queryAfter.length;
-
-      setMentionQuery(query);
-      setMentionRange({ from, to });
-
-      // Get coordinates for the autocomplete popup
-      const coords = props.view.current.coordsAtPos(from);
-      setMentionCoords({
-        top: coords.bottom + window.scrollY,
-        left: coords.left + window.scrollX,
-      });
-      setSuggestionIndex(0);
-    } else {
-      setMentionQuery(null);
-      setMentionRange(null);
-      setMentionCoords(null);
-    }
-  }, [props.editorState, props.view, setSuggestionIndex]);
-
-  // Update parent's mention state
-  useEffect(() => {
-    const active = mentionQuery !== null && suggestions.length > 0;
-    const selectedMention =
-      active && suggestions[suggestionIndex]
-        ? suggestions[suggestionIndex]
-        : null;
-    props.onMentionStateChange(active, mentionRange, selectedMention);
-  }, [mentionQuery, suggestions, suggestionIndex, mentionRange]);
-
-  // Handle keyboard navigation for arrow keys only
-  useEffect(() => {
-    if (!mentionQuery || !props.view.current) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (suggestions.length === 0) return;
-
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        if (suggestionIndex > 0) {
-          setSuggestionIndex((i) => i - 1);
-        }
-      } else if (e.key === "ArrowDown") {
-        e.preventDefault();
-        if (suggestionIndex < suggestions.length - 1) {
-          setSuggestionIndex((i) => i + 1);
-        }
-      }
-    };
-
-    const dom = props.view.current.dom;
-    dom.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      dom.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [
-    mentionQuery,
-    suggestions,
-    suggestionIndex,
-    props.view,
-    setSuggestionIndex,
-  ]);
-
-  if (!mentionCoords || suggestions.length === 0) return null;
-
-  // The styles in this component should match the Menu styles in components/Layout.tsx
-  return (
-    <Popover.Root open>
-      {createPortal(
-        <Popover.Anchor
-          style={{
-            top: mentionCoords.top,
-            left: mentionCoords.left,
-            position: "absolute",
-          }}
-        />,
-        document.body,
-      )}
-      <Popover.Portal>
-        <Popover.Content
-          side="bottom"
-          align="start"
-          sideOffset={4}
-          collisionPadding={20}
-          onOpenAutoFocus={(e) => e.preventDefault()}
-          className={`dropdownMenu z-20 bg-bg-page flex flex-col py-1 gap-0.5 border border-border rounded-md shadow-md`}
-        >
-          <ul className="list-none p-0 text-sm">
-            {suggestions.map((result, index) => {
-              return (
-                <div
-                  className={`
-                    MenuItem
-                    font-bold z-10 py-1 px-3
-                    text-left text-secondary
-                    flex gap-2
-                    ${index === suggestionIndex ? "bg-border-light data-[highlighted]:text-secondary" : ""}
-                    hover:bg-border-light hover:text-secondary
-                    outline-none
-                    `}
-                  key={result.did}
-                  onClick={() => {
-                    if (mentionRange) {
-                      props.onSelect(result, mentionRange);
-                      setMentionQuery(null);
-                      setMentionRange(null);
-                      setMentionCoords(null);
-                    }
-                  }}
-                  onMouseDown={(e) => e.preventDefault()}
-                >
-                  @{result.handle}
-                </div>
-              );
-            })}
-          </ul>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
-  );
-}
-
-function useMentionSuggestions(query: string | null) {
-  const [suggestionIndex, setSuggestionIndex] = useState(0);
-  const [suggestions, setSuggestions] = useState<
-    { handle: string; did: string }[]
-  >([]);
-
-  useDebouncedEffect(
-    async () => {
-      if (!query) {
-        setSuggestions([]);
-        return;
-      }
-
-      const agent = new Agent("https://public.api.bsky.app");
-      const result = await agent.searchActorsTypeahead({
-        q: query,
-        limit: 8,
-      });
-      setSuggestions(
-        result.data.actors.map((actor) => ({
-          handle: actor.handle,
-          did: actor.did,
-        })),
-      );
-    },
-    300,
-    [query],
-  );
-
-  useEffect(() => {
-    if (suggestionIndex > suggestions.length - 1) {
-      setSuggestionIndex(Math.max(0, suggestions.length - 1));
-    }
-  }, [suggestionIndex, suggestions.length]);
-
-  return {
-    suggestions,
-    suggestionIndex,
-    setSuggestionIndex,
-  };
 }
 
 /**
@@ -595,3 +373,44 @@ function marksToFeatures(marks: readonly Mark[]) {
 
   return features;
 }
+
+export const addMentionToEditor = (
+  mention: Mention,
+  range: { from: number; to: number },
+  view: EditorView,
+) => {
+  console.log("view", view);
+  if (!view) return;
+  const { from, to } = range;
+  const tr = view.state.tr;
+
+  if (mention.type == "did") {
+    // Delete the @ and any query text
+    tr.delete(from, to);
+    // Insert didMention inline node
+    const mentionText = "@" + mention.handle;
+    const didMentionNode = schema.nodes.didMention.create({
+      did: mention.did,
+      text: mentionText,
+    });
+    tr.insert(from, didMentionNode);
+  }
+  if (mention.type === "publication" || mention.type === "post") {
+    // Delete the @ and any query text
+    tr.delete(from, to);
+    let name = mention.type == "post" ? mention.title : mention.name;
+    // Insert atMention inline node
+    const atMentionNode = schema.nodes.atMention.create({
+      atURI: mention.uri,
+      text: name,
+    });
+    tr.insert(from, atMentionNode);
+  }
+  console.log("yo", mention);
+
+  // Add a space after the mention
+  tr.insertText(" ", from + 1);
+
+  view.dispatch(tr);
+  view.focus();
+};

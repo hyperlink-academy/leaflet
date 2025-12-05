@@ -1,4 +1,5 @@
-import { Schema, Node, MarkSpec } from "prosemirror-model";
+import { AtUri } from "@atproto/api";
+import { Schema, Node, MarkSpec, NodeSpec } from "prosemirror-model";
 import { marks } from "prosemirror-schema-basic";
 import { theme } from "tailwind.config";
 
@@ -122,6 +123,104 @@ let baseSchema = {
       parseDOM: [{ tag: "br" }],
       toDOM: () => ["br"] as const,
     },
+    atMention: {
+      attrs: {
+        atURI: {},
+        text: { default: "" },
+      },
+      group: "inline",
+      inline: true,
+      atom: true,
+      selectable: true,
+      draggable: true,
+      parseDOM: [
+        {
+          tag: "span.atMention",
+          getAttrs(dom: HTMLElement) {
+            return {
+              atURI: dom.getAttribute("data-at-uri"),
+              text: dom.textContent || "",
+            };
+          },
+        },
+      ],
+      toDOM(node) {
+        // NOTE: This rendering should match the AtMentionLink component in
+        // components/AtMentionLink.tsx. If you update one, update the other.
+        let className = "atMention text-accent-contrast";
+        let aturi = new AtUri(node.attrs.atURI);
+        if (aturi.collection === "pub.leaflet.publication")
+          className += " font-bold";
+        if (aturi.collection === "pub.leaflet.document") className += " italic";
+
+        // For publications and documents, show icon
+        if (
+          aturi.collection === "pub.leaflet.publication" ||
+          aturi.collection === "pub.leaflet.document"
+        ) {
+          return [
+            "span",
+            {
+              class: className,
+              "data-at-uri": node.attrs.atURI,
+            },
+            [
+              "img",
+              {
+                src: `/api/pub_icon?at_uri=${encodeURIComponent(node.attrs.atURI)}`,
+                class: "inline-block w-5 h-5 rounded-full mr-1 align-text-top",
+                alt: "",
+                width: "16",
+                height: "16",
+                loading: "lazy",
+              },
+            ],
+            node.attrs.text,
+          ];
+        }
+
+        return [
+          "span",
+          {
+            class: className,
+            "data-at-uri": node.attrs.atURI,
+          },
+          node.attrs.text,
+        ];
+      },
+    } as NodeSpec,
+    didMention: {
+      attrs: {
+        did: {},
+        text: { default: "" },
+      },
+      group: "inline",
+      inline: true,
+      atom: true,
+      selectable: true,
+      draggable: true,
+      parseDOM: [
+        {
+          tag: "span.didMention",
+          getAttrs(dom: HTMLElement) {
+            return {
+              did: dom.getAttribute("data-did"),
+              text: dom.textContent || "",
+            };
+          },
+        },
+      ],
+      toDOM(node) {
+        return [
+          "span",
+          {
+            class: "didMention text-accent-contrast",
+            "data-did": node.attrs.did,
+          },
+          node.attrs.text,
+        ];
+      },
+    } as NodeSpec,
   },
 };
 export const schema = new Schema(baseSchema);

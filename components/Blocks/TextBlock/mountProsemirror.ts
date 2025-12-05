@@ -23,8 +23,15 @@ import {
 import { useHandlePaste } from "./useHandlePaste";
 import { BlockProps } from "../Block";
 import { useEntitySetContext } from "components/EntitySetProvider";
+import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
 
-export function useMountProsemirror({ props }: { props: BlockProps }) {
+export function useMountProsemirror({
+  props,
+  openMentionAutocomplete,
+}: {
+  props: BlockProps;
+  openMentionAutocomplete: () => void;
+}) {
   let { entityID, parent } = props;
   let rep = useReplicache();
   let mountRef = useRef<HTMLPreElement | null>(null);
@@ -44,13 +51,18 @@ export function useMountProsemirror({ props }: { props: BlockProps }) {
   useLayoutEffect(() => {
     if (!mountRef.current) return;
 
-    const km = TextBlockKeymap(propsRef, repRef, rep.undoManager);
+    const km = TextBlockKeymap(
+      propsRef,
+      repRef,
+      rep.undoManager,
+      openMentionAutocomplete,
+    );
     const editor = EditorState.create({
       schema: schema,
       plugins: [
         ySyncPlugin(value),
         keymap(km),
-        inputrules(propsRef, repRef),
+        inputrules(propsRef, repRef, openMentionAutocomplete),
         keymap(baseKeymap),
         highlightSelectionPlugin,
         autolink({
@@ -69,15 +81,39 @@ export function useMountProsemirror({ props }: { props: BlockProps }) {
         handleClickOn: (_view, _pos, node, _nodePos, _event, direct) => {
           if (!direct) return;
           if (node.nodeSize - 2 <= _pos) return;
-          let mark =
-            node
-              .nodeAt(_pos - 1)
-              ?.marks.find((f) => f.type === schema.marks.link) ||
-            node
-              .nodeAt(Math.max(_pos - 2, 0))
-              ?.marks.find((f) => f.type === schema.marks.link);
-          if (mark) {
-            window.open(mark.attrs.href, "_blank");
+
+          // Check for marks at the clicked position
+          const nodeAt1 = node.nodeAt(_pos - 1);
+          const nodeAt2 = node.nodeAt(Math.max(_pos - 2, 0));
+
+          // Check for link marks
+          let linkMark = nodeAt1?.marks.find((f) => f.type === schema.marks.link) ||
+            nodeAt2?.marks.find((f) => f.type === schema.marks.link);
+          if (linkMark) {
+            window.open(linkMark.attrs.href, "_blank");
+            return;
+          }
+
+          // Check for didMention inline nodes
+          if (nodeAt1?.type === schema.nodes.didMention) {
+            window.open(didToBlueskyUrl(nodeAt1.attrs.did), "_blank", "noopener,noreferrer");
+            return;
+          }
+          if (nodeAt2?.type === schema.nodes.didMention) {
+            window.open(didToBlueskyUrl(nodeAt2.attrs.did), "_blank", "noopener,noreferrer");
+            return;
+          }
+
+          // Check for atMention inline nodes
+          if (nodeAt1?.type === schema.nodes.atMention) {
+            const url = atUriToUrl(nodeAt1.attrs.atURI);
+            window.open(url, "_blank", "noopener,noreferrer");
+            return;
+          }
+          if (nodeAt2?.type === schema.nodes.atMention) {
+            const url = atUriToUrl(nodeAt2.attrs.atURI);
+            window.open(url, "_blank", "noopener,noreferrer");
+            return;
           }
         },
         dispatchTransaction,

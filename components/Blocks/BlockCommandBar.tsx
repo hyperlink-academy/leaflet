@@ -37,7 +37,7 @@ export const BlockCommandBar = ({
   const clearCommandSearchText = () => {
     if (!props.entityID) return;
     const entityID = props.entityID;
-    
+
     const existingState = useEditorStates.getState().editorStates[entityID];
     if (!existingState) return;
 
@@ -69,6 +69,7 @@ export const BlockCommandBar = ({
       setHighlighted(commandResults[0].name);
     }
   }, [commandResults, setHighlighted, highlighted]);
+
   useEffect(() => {
     let listener = async (e: KeyboardEvent) => {
       let reverseDir = ref.current?.dataset.side === "top";
@@ -118,6 +119,7 @@ export const BlockCommandBar = ({
         return;
       }
     };
+
     window.addEventListener("keydown", listener);
 
     return () => window.removeEventListener("keydown", listener);
@@ -200,7 +202,7 @@ const CommandResult = (props: {
 
   return (
     <button
-      className={`commandResult text-left flex gap-2 mx-1 pr-2 py-0.5 rounded-md text-secondary ${isHighlighted && "bg-border-light"}`}
+      className={`commandResult menuItem text-secondary font-normal! py-0.5! mx-1 pl-0! ${isHighlighted && "bg-[var(--accent-light)]!"}`}
       onMouseOver={() => {
         props.setHighlighted(props.name);
       }}
