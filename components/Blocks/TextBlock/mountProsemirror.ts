@@ -94,19 +94,24 @@ export function useMountProsemirror({
             return;
           }
 
-          // Check for didMention marks
-          let didMentionMark = nodeAt1?.marks.find((f) => f.type === schema.marks.didMention) ||
-            nodeAt2?.marks.find((f) => f.type === schema.marks.didMention);
-          if (didMentionMark) {
-            window.open(didToBlueskyUrl(didMentionMark.attrs.did), "_blank", "noopener,noreferrer");
+          // Check for didMention inline nodes
+          if (nodeAt1?.type === schema.nodes.didMention) {
+            window.open(didToBlueskyUrl(nodeAt1.attrs.did), "_blank", "noopener,noreferrer");
+            return;
+          }
+          if (nodeAt2?.type === schema.nodes.didMention) {
+            window.open(didToBlueskyUrl(nodeAt2.attrs.did), "_blank", "noopener,noreferrer");
             return;
           }
 
-          // Check for atMention marks
-          let atMentionMark = nodeAt1?.marks.find((f) => f.type === schema.marks.atMention) ||
-            nodeAt2?.marks.find((f) => f.type === schema.marks.atMention);
-          if (atMentionMark) {
-            const url = atUriToUrl(atMentionMark.attrs.atURI);
+          // Check for atMention inline nodes
+          if (nodeAt1?.type === schema.nodes.atMention) {
+            const url = atUriToUrl(nodeAt1.attrs.atURI);
+            window.open(url, "_blank", "noopener,noreferrer");
+            return;
+          }
+          if (nodeAt2?.type === schema.nodes.atMention) {
+            const url = atUriToUrl(nodeAt2.attrs.atURI);
             window.open(url, "_blank", "noopener,noreferrer");
             return;
           }

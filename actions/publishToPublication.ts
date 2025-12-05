@@ -349,7 +349,7 @@ async function processBlocksToPages(
       Y.applyUpdate(doc, update);
       let nodes = doc.getXmlElement("prosemirror").toArray();
       let stringValue = YJSFragmentToString(nodes[0]);
-      let facets = YJSFragmentToFacets(nodes[0]);
+      let { facets } = YJSFragmentToFacets(nodes[0]);
       return [stringValue, facets] as const;
     };
     if (b.type === "card") {
@@ -610,17 +610,67 @@ async function processBlocksToPages(
 
 function YJSFragmentToFacets(
   node: Y.XmlElement | Y.XmlText | Y.XmlHook,
-): PubLeafletRichtextFacet.Main[] {
+  byteOffset: number = 0,
+): { facets: PubLeafletRichtextFacet.Main[]; byteLength: number } {
   if (node.constructor === Y.XmlElement) {
-    return node
-      .toArray()
-      .map((f) => YJSFragmentToFacets(f))
-      .flat();
+    // Handle inline mention nodes
+    if (node.nodeName === "didMention") {
+      const text = node.getAttribute("text") || "";
+      const unicodestring = new UnicodeString(text);
+      const facet: PubLeafletRichtextFacet.Main = {
+        index: {
+          byteStart: byteOffset,
+          byteEnd: byteOffset + unicodestring.length,
+        },
+        features: [
+          {
+            $type: "pub.leaflet.richtext.facet#didMention",
+            did: node.getAttribute("did"),
+          },
+        ],
+      };
+      return { facets: [facet], byteLength: unicodestring.length };
+    }
+
+    if (node.nodeName === "atMention") {
+      const text = node.getAttribute("text") || "";
+      const unicodestring = new UnicodeString(text);
+      const facet: PubLeafletRichtextFacet.Main = {
+        index: {
+          byteStart: byteOffset,
+          byteEnd: byteOffset + unicodestring.length,
+        },
+        features: [
+          {
+            $type: "pub.leaflet.richtext.facet#atMention",
+            atURI: node.getAttribute("atURI"),
+          },
+        ],
+      };
+      return { facets: [facet], byteLength: unicodestring.length };
+    }
+
+    if (node.nodeName === "hard_break") {
+      const unicodestring = new UnicodeString("\n");
+      return { facets: [], byteLength: unicodestring.length };
+    }
+
+    // For other elements (like paragraph), process children
+    let allFacets: PubLeafletRichtextFacet.Main[] = [];
+    let currentOffset = byteOffset;
+    for (const child of node.toArray()) {
+      const result = YJSFragmentToFacets(child, currentOffset);
+      allFacets.push(...result.facets);
+      currentOffset += result.byteLength;
+    }
+    return { facets: allFacets, byteLength: currentOffset - byteOffset };
   }
+
   if (node.constructor === Y.XmlText) {
     let facets: PubLeafletRichtextFacet.Main[] = [];
     let delta = node.toDelta() as Delta[];
-    let byteStart = 0;
+    let byteStart = byteOffset;
+    let totalLength = 0;
     for (let d of delta) {
       let unicodestring = new UnicodeString(d.insert);
       let facet: PubLeafletRichtextFacet.Main = {
@@ -636,16 +686,6 @@ function YJSFragmentToFacets(
           $type: "pub.leaflet.richtext.facet#strikethrough",
         });
 
-      if (d.attributes?.didMention)
-        facet.features.push({
-          $type: "pub.leaflet.richtext.facet#didMention",
-          did: d.attributes.didMention.did,
-        });
-      if (d.attributes?.atMention)
-        facet.features.push({
-          $type: "pub.leaflet.richtext.facet#atMention",
-          atURI: d.attributes.atMention.atURI,
-        });
       if (d.attributes?.code)
         facet.features.push({ $type: "pub.leaflet.richtext.facet#code" });
       if (d.attributes?.highlight)
@@ -663,10 +703,11 @@ function YJSFragmentToFacets(
         });
       if (facet.features.length > 0) facets.push(facet);
       byteStart += unicodestring.length;
+      totalLength += unicodestring.length;
     }
-    return facets;
+    return { facets, byteLength: totalLength };
   }
-  return [];
+  return { facets: [], byteLength: 0 };
 }
 
 type ExcludeString<T> = T extends string

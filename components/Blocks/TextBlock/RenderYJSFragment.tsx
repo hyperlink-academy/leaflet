@@ -48,30 +48,6 @@ export function RenderYJSFragment({
                               {d.insert}
                             </a>
                           );
-                        if (d.attributes?.didMention)
-                          return (
-                            <a
-                              href={didToBlueskyUrl(d.attributes.didMention.did)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              key={index}
-                              {...attributesToStyle(d)}
-                              className={`${attributesToStyle(d).className} text-accent-contrast hover:underline cursor-pointer`}
-                            >
-                              {d.insert}
-                            </a>
-                          );
-                        if (d.attributes?.atMention) {
-                          return (
-                            <AtMentionLink
-                              key={index}
-                              atURI={d.attributes.atMention.atURI}
-                              className={attributesToStyle(d).className}
-                            >
-                              {d.insert}
-                            </AtMentionLink>
-                          );
-                        }
                         return (
                           <span
                             key={index}
@@ -88,6 +64,34 @@ export function RenderYJSFragment({
 
                 if (node.constructor === XmlElement && node.nodeName === "hard_break") {
                   return <br key={index} />;
+                }
+
+                // Handle didMention inline nodes
+                if (node.constructor === XmlElement && node.nodeName === "didMention") {
+                  const did = node.getAttribute("did") || "";
+                  const text = node.getAttribute("text") || "";
+                  return (
+                    <a
+                      href={didToBlueskyUrl(did)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      key={index}
+                      className="text-accent-contrast hover:underline cursor-pointer"
+                    >
+                      {text}
+                    </a>
+                  );
+                }
+
+                // Handle atMention inline nodes
+                if (node.constructor === XmlElement && node.nodeName === "atMention") {
+                  const atURI = node.getAttribute("atURI") || "";
+                  const text = node.getAttribute("text") || "";
+                  return (
+                    <AtMentionLink key={index} atURI={atURI}>
+                      {text}
+                    </AtMentionLink>
+                  );
                 }
 
                 return null;
@@ -133,8 +137,6 @@ export type Delta = {
     strong?: {};
     code?: {};
     em?: {};
-    didMention?: { did: string };
-    atMention?: { atURI: string };
     underline?: {};
     strikethrough?: {};
     highlight?: { color: string };
@@ -179,6 +181,10 @@ export function YJSFragmentToString(
     // Handle hard_break nodes specially
     if (node.nodeName === "hard_break") {
       return "\n";
+    }
+    // Handle inline mention nodes
+    if (node.nodeName === "didMention" || node.nodeName === "atMention") {
+      return node.getAttribute("text") || "";
     }
     return node
       .toArray()

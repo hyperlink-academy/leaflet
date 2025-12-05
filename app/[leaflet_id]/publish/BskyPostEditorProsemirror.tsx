@@ -384,27 +384,30 @@ export const addMentionToEditor = (
   const tr = view.state.tr;
 
   if (mention.type == "did") {
-    // Delete the query text (keep the @)
-    tr.delete(from + 1, to);
-    tr.insertText(mention.handle, from + 1);
-    tr.addMark(
-      from,
-      from + 1 + mention.handle.length,
-      schema.marks.didMention.create({ did: mention.did }),
-    );
-    tr.insertText(" ", from + 1 + mention.handle.length);
+    // Delete the @ and any query text
+    tr.delete(from, to);
+    // Insert didMention inline node
+    const mentionText = "@" + mention.handle;
+    const didMentionNode = schema.nodes.didMention.create({
+      did: mention.did,
+      text: mentionText,
+    });
+    tr.insert(from, didMentionNode);
+    // Add a space after the mention
+    tr.insertText(" ", from + 1);
   }
   if (mention.type === "publication" || mention.type === "post") {
     // Delete the @ and any query text
     tr.delete(from, to);
     let name = mention.type == "post" ? mention.title : mention.name;
-    tr.insertText(name, from);
-    tr.addMark(
-      from,
-      from + name.length,
-      schema.marks.atMention.create({ atURI: mention.uri }),
-    );
-    tr.insertText(" ", from + name.length);
+    // Insert atMention inline node
+    const atMentionNode = schema.nodes.atMention.create({
+      atURI: mention.uri,
+      text: name,
+    });
+    tr.insert(from, atMentionNode);
+    // Add a space after the mention
+    tr.insertText(" ", from + 1);
   }
 
   view.dispatch(tr);

@@ -1,5 +1,5 @@
 import { AtUri } from "@atproto/api";
-import { Schema, Node, MarkSpec } from "prosemirror-model";
+import { Schema, Node, MarkSpec, NodeSpec } from "prosemirror-model";
 import { marks } from "prosemirror-schema-basic";
 import { theme } from "tailwind.config";
 
@@ -104,17 +104,42 @@ let baseSchema = {
         return ["a", { href, target: "_blank" }, 0];
       },
     } as MarkSpec,
+  },
+  nodes: {
+    doc: { content: "block" },
+    paragraph: {
+      content: "inline*",
+      group: "block",
+      parseDOM: [{ tag: "p" }],
+      toDOM: () => ["p", 0] as const,
+    },
+    text: {
+      group: "inline",
+    },
+    hard_break: {
+      group: "inline",
+      inline: true,
+      selectable: false,
+      parseDOM: [{ tag: "br" }],
+      toDOM: () => ["br"] as const,
+    },
     atMention: {
       attrs: {
         atURI: {},
+        text: { default: "" },
       },
-      inclusive: false,
+      group: "inline",
+      inline: true,
+      atom: true,
+      selectable: true,
+      draggable: true,
       parseDOM: [
         {
           tag: "span.atMention",
           getAttrs(dom: HTMLElement) {
             return {
               atURI: dom.getAttribute("data-at-uri"),
+              text: dom.textContent || "",
             };
           },
         },
@@ -122,7 +147,6 @@ let baseSchema = {
       toDOM(node) {
         // NOTE: This rendering should match the AtMentionLink component in
         // components/AtMentionLink.tsx. If you update one, update the other.
-        // We can't use the React component here because ProseMirror expects DOM specs.
         let className = "atMention text-accent-contrast";
         let aturi = new AtUri(node.attrs.atURI);
         if (aturi.collection === "pub.leaflet.publication")
@@ -151,7 +175,7 @@ let baseSchema = {
                 loading: "lazy",
               },
             ],
-            ["span", 0],
+            node.attrs.text,
           ];
         }
 
@@ -161,21 +185,27 @@ let baseSchema = {
             class: className,
             "data-at-uri": node.attrs.atURI,
           },
-          0,
+          node.attrs.text,
         ];
       },
-    } as MarkSpec,
+    } as NodeSpec,
     didMention: {
       attrs: {
         did: {},
+        text: { default: "" },
       },
-      inclusive: false,
+      group: "inline",
+      inline: true,
+      atom: true,
+      selectable: true,
+      draggable: true,
       parseDOM: [
         {
           tag: "span.didMention",
           getAttrs(dom: HTMLElement) {
             return {
               did: dom.getAttribute("data-did"),
+              text: dom.textContent || "",
             };
           },
         },
@@ -187,29 +217,10 @@ let baseSchema = {
             class: "didMention text-accent-contrast",
             "data-did": node.attrs.did,
           },
-          0,
+          node.attrs.text,
         ];
       },
-    } as MarkSpec,
-  },
-  nodes: {
-    doc: { content: "block" },
-    paragraph: {
-      content: "inline*",
-      group: "block",
-      parseDOM: [{ tag: "p" }],
-      toDOM: () => ["p", 0] as const,
-    },
-    text: {
-      group: "inline",
-    },
-    hard_break: {
-      group: "inline",
-      inline: true,
-      selectable: false,
-      parseDOM: [{ tag: "br" }],
-      toDOM: () => ["br"] as const,
-    },
+    } as NodeSpec,
   },
 };
 export const schema = new Schema(baseSchema);
