@@ -192,11 +192,22 @@ export const inputrules = (
         return tr;
       }),
 
-      // Mention - @ at start of line or after space
+      // Mention - @ at start of line, after space, or after hard break
       new InputRule(/(?:^|\s)@$/, (state, match, start, end) => {
         if (!openMentionAutocomplete) return null;
         // Schedule opening the autocomplete after the transaction is applied
         setTimeout(() => openMentionAutocomplete(), 0);
+        return null; // Let the @ be inserted normally
+      }),
+      // Mention - @ immediately after a hard break (hard breaks are nodes, not text)
+      new InputRule(/@$/, (state, match, start, end) => {
+        if (!openMentionAutocomplete) return null;
+        // Check if the character before @ is a hard break node
+        const $pos = state.doc.resolve(start);
+        const nodeBefore = $pos.nodeBefore;
+        if (nodeBefore && nodeBefore.type.name === "hard_break") {
+          setTimeout(() => openMentionAutocomplete(), 0);
+        }
         return null; // Let the @ be inserted normally
       }),
     ],

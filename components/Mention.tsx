@@ -1,7 +1,6 @@
 "use client";
 import { Agent } from "@atproto/api";
 import { useState, useEffect, Fragment, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import * as Popover from "@radix-ui/react-popover";
 import { EditorView } from "prosemirror-view";
@@ -165,23 +164,20 @@ export function MentionAutocomplete(props: {
 
   return (
     <Popover.Root open>
-      {createPortal(
-        <Popover.Anchor
-          style={{
-            top: props.coords.top - 24,
-            left: props.coords.left,
-            height: 24,
-            position: "absolute",
-          }}
-        />,
-        document.body,
-      )}
+      <Popover.Anchor
+        style={{
+          top: props.coords.top - 24,
+          left: props.coords.left,
+          height: 24,
+          position: "absolute",
+        }}
+      />
       <Popover.Portal>
         <Popover.Content
           ref={contentRef}
           align="start"
           sideOffset={4}
-          collisionPadding={20}
+          collisionPadding={32}
           onOpenAutoFocus={(e) => e.preventDefault()}
           className={`dropdownMenu group/mention-menu z-20 bg-bg-page
             flex  data-[side=top]:flex-col-reverse flex-col
@@ -189,10 +185,10 @@ export function MentionAutocomplete(props: {
             border border-border rounded-md shadow-md
             sm:max-w-xs w-[1000px] max-w-(--radix-popover-content-available-width)
           max-h-(--radix-popover-content-available-height)
-          overflow-y-scroll`}
+          overflow-hidden`}
         >
-          {/* Dropdown Header */}
-          <div className="flex flex-col items-center gap-2 px-2 py-1 border-b group-data-[side=top]/mention-menu:border-b-0 group-data-[side=top]/mention-menu:border-t border-border-light">
+          {/* Dropdown Header - sticky */}
+          <div className="flex flex-col items-center gap-2 px-2 py-1 border-b group-data-[side=top]/mention-menu:border-b-0 group-data-[side=top]/mention-menu:border-t border-border-light bg-bg-page sticky top-0 group-data-[side=top]/mention-menu:sticky group-data-[side=top]/mention-menu:bottom-0 group-data-[side=top]/mention-menu:top-auto z-10 shrink-0">
             <div className="flex items-center gap-1 flex-1 min-w-0 text-primary">
               <div className="text-tertiary">
                 <SearchTiny className="w-4 h-4 shrink-0" />
@@ -217,84 +213,86 @@ export function MentionAutocomplete(props: {
               />
             </div>
           </div>
-          {sortedSuggestions.length === 0 ? (
-            <div className="text-sm text-tertiary italic px-3 py-1 text-center">
-              {searchQuery
-                ? noResults
-                  ? "No results found..."
-                  : "Searching..."
-                : scope.type === "publication"
-                  ? "Start typing to search posts"
-                  : "Start typing to search people and publications"}
-            </div>
-          ) : (
-            <ul className="list-none p-0 text-sm flex flex-col group-data-[side=top]/mention-menu:flex-col-reverse">
-              {sortedSuggestions.map((result, index) => {
-                const prevResult = sortedSuggestions[index - 1];
-                const showHeader =
-                  index === 0 ||
-                  (prevResult && prevResult.type !== result.type);
+          <div className="overflow-y-auto flex-1 min-h-0">
+            {sortedSuggestions.length === 0 ? (
+              <div className="text-sm text-tertiary italic px-3 py-1 text-center">
+                {searchQuery
+                  ? noResults
+                    ? "No results found..."
+                    : "Searching..."
+                  : scope.type === "publication"
+                    ? "Start typing to search posts"
+                    : "Start typing to search people and publications"}
+              </div>
+            ) : (
+              <ul className="list-none p-0 text-sm flex flex-col group-data-[side=top]/mention-menu:flex-col-reverse">
+                {sortedSuggestions.map((result, index) => {
+                  const prevResult = sortedSuggestions[index - 1];
+                  const showHeader =
+                    index === 0 ||
+                    (prevResult && prevResult.type !== result.type);
 
-                return (
-                  <Fragment
-                    key={result.type === "did" ? result.did : result.uri}
-                  >
-                    {showHeader && (
-                      <>
-                        {index > 0 && (
-                          <hr className="border-border-light mx-1 my-1" />
-                        )}
-                        <div className="text-xs text-tertiary font-bold pt-1 px-2">
-                          {getHeader(result.type, scope)}
-                        </div>
-                      </>
-                    )}
-                    {result.type === "did" ? (
-                      <DidResult
-                        onClick={() => {
-                          props.onSelect(result);
-                          props.onOpenChange(false);
-                        }}
-                        onMouseDown={(e) => e.preventDefault()}
-                        displayName={result.displayName}
-                        handle={result.handle}
-                        avatar={result.avatar}
-                        selected={index === suggestionIndex}
-                      />
-                    ) : result.type === "publication" ? (
-                      <PublicationResult
-                        onClick={() => {
-                          props.onSelect(result);
-                          props.onOpenChange(false);
-                        }}
-                        onMouseDown={(e) => e.preventDefault()}
-                        pubName={result.name}
-                        uri={result.uri}
-                        selected={index === suggestionIndex}
-                        onPostsClick={() => {
-                          handleScopeChange({
-                            type: "publication",
-                            uri: result.uri,
-                            name: result.name,
-                          });
-                        }}
-                      />
-                    ) : (
-                      <PostResult
-                        onClick={() => {
-                          props.onSelect(result);
-                          props.onOpenChange(false);
-                        }}
-                        onMouseDown={(e) => e.preventDefault()}
-                        title={result.title}
-                        selected={index === suggestionIndex}
-                      />
-                    )}
-                  </Fragment>
-                );
-              })}
-            </ul>
-          )}
+                  return (
+                    <Fragment
+                      key={result.type === "did" ? result.did : result.uri}
+                    >
+                      {showHeader && (
+                        <>
+                          {index > 0 && (
+                            <hr className="border-border-light mx-1 my-1" />
+                          )}
+                          <div className="text-xs text-tertiary font-bold pt-1 px-2">
+                            {getHeader(result.type, scope)}
+                          </div>
+                        </>
+                      )}
+                      {result.type === "did" ? (
+                        <DidResult
+                          onClick={() => {
+                            props.onSelect(result);
+                            props.onOpenChange(false);
+                          }}
+                          onMouseDown={(e) => e.preventDefault()}
+                          displayName={result.displayName}
+                          handle={result.handle}
+                          avatar={result.avatar}
+                          selected={index === suggestionIndex}
+                        />
+                      ) : result.type === "publication" ? (
+                        <PublicationResult
+                          onClick={() => {
+                            props.onSelect(result);
+                            props.onOpenChange(false);
+                          }}
+                          onMouseDown={(e) => e.preventDefault()}
+                          pubName={result.name}
+                          uri={result.uri}
+                          selected={index === suggestionIndex}
+                          onPostsClick={() => {
+                            handleScopeChange({
+                              type: "publication",
+                              uri: result.uri,
+                              name: result.name,
+                            });
+                          }}
+                        />
+                      ) : (
+                        <PostResult
+                          onClick={() => {
+                            props.onSelect(result);
+                            props.onOpenChange(false);
+                          }}
+                          onMouseDown={(e) => e.preventDefault()}
+                          title={result.title}
+                          selected={index === suggestionIndex}
+                        />
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
@@ -458,7 +456,13 @@ const ScopeHeader = (props: {
 };
 
 export type Mention =
-  | { type: "did"; handle: string; did: string; displayName?: string; avatar?: string }
+  | {
+      type: "did";
+      handle: string;
+      did: string;
+      displayName?: string;
+      avatar?: string;
+    }
   | { type: "publication"; uri: string; name: string }
   | { type: "post"; uri: string; title: string };
 

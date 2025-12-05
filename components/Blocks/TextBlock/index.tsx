@@ -491,12 +491,25 @@ const useMentionState = (entityID: string) => {
     const pos = view.state.selection.from;
     setMentionInsertPos(pos);
 
-    // Get coordinates for the popup
+    // Get coordinates for the popup relative to the positioned parent
     const coords = view.coordsAtPos(pos - 1); // Position of the @
-    setMentionCoords({
-      top: coords.bottom + window.scrollY,
-      left: coords.left + window.scrollX,
-    });
+
+    // Find the relative positioned parent container
+    const editorEl = view.dom;
+    const container = editorEl.closest('.relative') as HTMLElement | null;
+
+    if (container) {
+      const containerRect = container.getBoundingClientRect();
+      setMentionCoords({
+        top: coords.bottom - containerRect.top,
+        left: coords.left - containerRect.left,
+      });
+    } else {
+      setMentionCoords({
+        top: coords.bottom,
+        left: coords.left,
+      });
+    }
     setMentionOpen(true);
   }, [entityID]);
 

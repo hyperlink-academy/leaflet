@@ -291,6 +291,12 @@ pre.shiki {
   @apply py-[1.5px];
 }
 
+/* Underline mention nodes when selected in ProseMirror */
+.ProseMirror .atMention.ProseMirror-selectednode,
+.ProseMirror .didMention.ProseMirror-selectednode {
+  text-decoration: underline;
+}
+
 .ProseMirror:focus-within .selection-highlight {
   background-color: transparent;
 }
