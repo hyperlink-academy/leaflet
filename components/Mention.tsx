@@ -214,17 +214,11 @@ export function MentionAutocomplete(props: {
             </div>
           </div>
           <div className="overflow-y-auto flex-1 min-h-0">
-            {sortedSuggestions.length === 0 ? (
+            {sortedSuggestions.length === 0 && noResults && (
               <div className="text-sm text-tertiary italic px-3 py-1 text-center">
-                {searchQuery
-                  ? noResults
-                    ? "No results found..."
-                    : "Searching..."
-                  : scope.type === "publication"
-                    ? "Start typing to search posts"
-                    : "Start typing to search people and publications"}
+                No results found
               </div>
-            ) : (
+            )}
               <ul className="list-none p-0 text-sm flex flex-col group-data-[side=top]/mention-menu:flex-col-reverse">
                 {sortedSuggestions.map((result, index) => {
                   const prevResult = sortedSuggestions[index - 1];
@@ -291,7 +285,6 @@ export function MentionAutocomplete(props: {
                   );
                 })}
               </ul>
-            )}
           </div>
         </Popover.Content>
       </Popover.Portal>
