@@ -185,7 +185,7 @@ export function MentionAutocomplete(props: {
           onOpenAutoFocus={(e) => e.preventDefault()}
           className={`dropdownMenu group/mention-menu z-20 bg-bg-page
             flex  data-[side=top]:flex-col-reverse flex-col
-            p-1 gap-1
+            p-1 gap-1 text-primary
             border border-border rounded-md shadow-md
             sm:max-w-xs w-[1000px] max-w-(--radix-popover-content-available-width)
           max-h-(--radix-popover-content-available-height)
@@ -193,8 +193,10 @@ export function MentionAutocomplete(props: {
         >
           {/* Dropdown Header */}
           <div className="flex flex-col items-center gap-2 px-2 py-1 border-b group-data-[side=top]/mention-menu:border-b-0 group-data-[side=top]/mention-menu:border-t border-border-light">
-            <div className="flex items-center gap-1 flex-1 min-w-0">
-              <SearchTiny className="w-4 h-4 text-tertiary shrink-0" />
+            <div className="flex items-center gap-1 flex-1 min-w-0 text-primary">
+              <div className="text-tertiary">
+                <SearchTiny className="w-4 h-4 shrink-0" />
+              </div>
               <input
                 ref={inputRef}
                 size={100}
