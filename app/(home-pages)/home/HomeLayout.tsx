@@ -289,7 +289,8 @@ function useSearchedLeaflets(
         !!leaflet.leaflets_to_documents?.find((l) => l.document);
       let drafts = !!leaflet.leaflets_in_publications?.length && !published;
       let docs = !leaflet.leaflets_in_publications?.length && !archived;
-      // If no filters are active, show all
+
+      // If no filters are active, show everything that is not archived
       if (
         !filter.drafts &&
         !filter.published &&
@@ -298,10 +299,11 @@ function useSearchedLeaflets(
       )
         return archived === false || archived === null || archived == undefined;
 
+      //if a filter is on, return itemsd of that filter that are also NOT archived
       return (
-        (filter.drafts && drafts) ||
-        (filter.published && published) ||
-        (filter.docs && docs) ||
+        (filter.drafts && drafts && !archived) ||
+        (filter.published && published && !archived) ||
+        (filter.docs && docs && !archived) ||
         (filter.archived && archived)
       );
     },
