@@ -111,7 +111,7 @@ export const LooseleafList = (props: {
             (acc, tok) => {
               let title =
                 tok.permission_tokens.leaflets_in_publications[0]?.title ||
-                tok.permission_tokens.leaflets_to_documents[0]?.title;
+                tok.permission_tokens.leaflets_to_documents?.title;
               if (title) acc[tok.permission_tokens.root_entity] = title;
               return acc;
             },
@@ -127,7 +127,9 @@ export const LooseleafList = (props: {
   let leaflets: Leaflet[] = identity
     ? identity.permission_token_on_homepage
         .filter(
-          (ptoh) => ptoh.permission_tokens.leaflets_to_documents.length > 0,
+          (ptoh) =>
+            ptoh.permission_tokens.leaflets_to_documents &&
+            ptoh.permission_tokens.leaflets_to_documents.document,
         )
         .map((ptoh) => ({
           added_at: ptoh.created_at,

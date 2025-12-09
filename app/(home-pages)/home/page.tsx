@@ -30,7 +30,7 @@ export default async function Home() {
           (acc, tok) => {
             let title =
               tok.permission_tokens.leaflets_in_publications[0]?.title ||
-              tok.permission_tokens.leaflets_to_documents[0]?.title;
+              tok.permission_tokens.leaflets_to_documents?.title;
             if (title) acc[tok.permission_tokens.root_entity] = title;
             return acc;
           },

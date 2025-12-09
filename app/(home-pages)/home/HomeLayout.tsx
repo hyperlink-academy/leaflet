@@ -136,7 +136,7 @@ export function HomeLeafletList(props: {
             (acc, tok) => {
               let title =
                 tok.permission_tokens.leaflets_in_publications[0]?.title ||
-                tok.permission_tokens.leaflets_to_documents[0]?.title;
+                tok.permission_tokens.leaflets_to_documents?.title;
               if (title) acc[tok.permission_tokens.root_entity] = title;
               return acc;
             },
@@ -233,7 +233,7 @@ export function LeafletList(props: {
             value={{
               ...leaflet,
               leaflets_in_publications: leaflet.leaflets_in_publications || [],
-              leaflets_to_documents: leaflet.leaflets_to_documents || [],
+              leaflets_to_documents: leaflet.leaflets_to_documents || null,
               blocked_by_admin: null,
               custom_domain_routes: [],
             }}
@@ -292,7 +292,7 @@ function useSearchedLeaflets(
     ({ token: leaflet, archived: archived }) => {
       let published =
         !!leaflet.leaflets_in_publications?.find((l) => l.doc) ||
-        !!leaflet.leaflets_to_documents?.find((l) => l.document);
+        !!leaflet.leaflets_to_documents?.document;
       let drafts = !!leaflet.leaflets_in_publications?.length && !published;
       let docs = !leaflet.leaflets_in_publications?.length && !archived;
       // If no filters are active, show all

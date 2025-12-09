@@ -76,11 +76,11 @@ export default async function PublishLeafletPage(props: Props) {
   // Get title and description from either source
   let title =
     data.leaflets_in_publications[0]?.title ||
-    data.leaflets_to_documents[0]?.title ||
+    data.leaflets_to_documents?.title ||
     decodeURIComponent((await props.searchParams).title || "");
   let description =
     data.leaflets_in_publications[0]?.description ||
-    data.leaflets_to_documents[0]?.description ||
+    data.leaflets_to_documents?.description ||
     decodeURIComponent((await props.searchParams).description || "");
 
   let agent = new AtpAgent({ service: "https://public.api.bsky.app" });

@@ -53,7 +53,7 @@ const AddToHomeButton = (props: {}) => {
               archived: null,
               permission_tokens: {
                 ...permission_token,
-                leaflets_to_documents: [],
+                leaflets_to_documents: null,
                 leaflets_in_publications: [],
               },
             });

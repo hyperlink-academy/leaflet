@@ -3,28 +3,18 @@
 import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
 
-export async function moveLeafletToPublication(
+export async function saveLeafletDraft(
   leaflet_id: string,
-  publication_uri: string,
   metadata: { title: string; description: string },
   entitiesToDelete: string[],
 ) {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) return null;
 
-  // Verify publication ownership
-  let { data: publication } = await supabaseServerClient
-    .from("publications")
-    .select("*")
-    .eq("uri", publication_uri)
-    .single();
-  if (publication?.identity_did !== identity.atp_did) return;
-
-  // Save as a publication draft
-  await supabaseServerClient.from("leaflets_in_publications").insert({
-    publication: publication_uri,
+  // Save as a looseleaf draft in leaflets_to_documents with null document
+  await supabaseServerClient.from("leaflets_to_documents").upsert({
     leaflet: leaflet_id,
-    doc: null,
+    document: null,
     title: metadata.title,
     description: metadata.description,
   });

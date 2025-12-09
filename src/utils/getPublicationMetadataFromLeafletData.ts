@@ -32,19 +32,43 @@ export function getPublicationMetadataFromLeafletData(
       (p) => p.leaflets_in_publications?.length,
     )?.leaflets_in_publications?.[0];
 
-  // If not found, check for standalone documents
-  let standaloneDoc =
-    data?.leaflets_to_documents?.[0] ||
-    data?.permission_token_rights[0].entity_sets?.permission_tokens.find(
-      (p) => p.leaflets_to_documents?.length,
-    )?.leaflets_to_documents?.[0];
-  if (!pubData && standaloneDoc) {
+  // If not found, check for standalone documents (looseleafs)
+  let standaloneDoc = data?.leaflets_to_documents;
+
+  // Only use standaloneDoc if it exists and has meaningful data
+  // (either published with a document, or saved as draft with a title)
+  if (
+    !pubData &&
+    standaloneDoc &&
+    (standaloneDoc.document || standaloneDoc.title)
+  ) {
     // Transform standalone document data to match the expected format
     pubData = {
       ...standaloneDoc,
       publications: null, // No publication for standalone docs
       doc: standaloneDoc.document,
+      leaflet: data.id,
     };
   }
+
+  // Also check nested permission tokens for looseleafs
+  if (!pubData) {
+    let nestedStandaloneDoc =
+      data?.permission_token_rights[0].entity_sets?.permission_tokens?.find(
+        (p) =>
+          p.leaflets_to_documents &&
+          (p.leaflets_to_documents.document || p.leaflets_to_documents.title),
+      )?.leaflets_to_documents;
+
+    if (nestedStandaloneDoc) {
+      pubData = {
+        ...nestedStandaloneDoc,
+        publications: null,
+        doc: nestedStandaloneDoc.document,
+        leaflet: data.id,
+      };
+    }
+  }
+
   return pubData;
 }

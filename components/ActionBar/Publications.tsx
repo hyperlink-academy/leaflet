@@ -24,7 +24,9 @@ export const PublicationButtons = (props: {
 }) => {
   let { identity } = useIdentityData();
   let hasLooseleafs = identity?.permission_token_on_homepage.find(
-    (f) => f.permission_tokens.leaflets_to_documents[0],
+    (f) =>
+      f.permission_tokens.leaflets_to_documents &&
+      f.permission_tokens.leaflets_to_documents.document,
   );
   console.log(hasLooseleafs);
 

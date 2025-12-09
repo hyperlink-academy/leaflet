@@ -107,7 +107,7 @@ export function PublishedPostsList(props: {
                                     : null,
                                 },
                               ],
-                              leaflets_to_documents: [],
+                              leaflets_to_documents: null,
                               blocked_by_admin: null,
                               custom_domain_routes: [],
                             }}

@@ -631,21 +631,21 @@ export type Database = {
         Row: {
           created_at: string
           description: string
-          document: string
+          document: string | null
           leaflet: string
           title: string
         }
         Insert: {
           created_at?: string
           description?: string
-          document: string
+          document?: string | null
           leaflet: string
           title?: string
         }
         Update: {
           created_at?: string
           description?: string
-          document?: string
+          document?: string | null
           leaflet?: string
           title?: string
         }
@@ -660,7 +660,7 @@ export type Database = {
           {
             foreignKeyName: "leaflets_to_documents_leaflet_fkey"
             columns: ["leaflet"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "permission_tokens"
             referencedColumns: ["id"]
           },

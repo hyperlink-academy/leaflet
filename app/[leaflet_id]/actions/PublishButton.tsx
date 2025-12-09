@@ -37,6 +37,7 @@ import * as base64 from "base64-js";
 import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
 import { BlueskyLogin } from "app/login/LoginForm";
 import { moveLeafletToPublication } from "actions/publications/moveLeafletToPublication";
+import { saveLeafletDraft } from "actions/publications/saveLeafletDraft";
 import { AddTiny } from "components/Icons/AddTiny";
 
 export const PublishButton = (props: { entityID: string }) => {
@@ -176,7 +177,7 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
           <hr className="border-border-light mt-3 mb-2" />
 
           <div className="flex gap-2 items-center place-self-end">
-            {selectedPub !== "looseleaf" && selectedPub && (
+            {selectedPub && selectedPub !== "create" && (
               <SaveAsDraftButton
                 selectedPub={selectedPub}
                 leafletId={permission_token.id}
@@ -229,12 +230,23 @@ const SaveAsDraftButton = (props: {
         if (props.selectedPub === "create") return;
         e.preventDefault();
         setIsLoading(true);
-        await moveLeafletToPublication(
-          props.leafletId,
-          props.selectedPub,
-          props.metadata,
-          props.entitiesToDelete,
-        );
+
+        // Use different actions for looseleaf vs publication
+        if (props.selectedPub === "looseleaf") {
+          await saveLeafletDraft(
+            props.leafletId,
+            props.metadata,
+            props.entitiesToDelete,
+          );
+        } else {
+          await moveLeafletToPublication(
+            props.leafletId,
+            props.selectedPub,
+            props.metadata,
+            props.entitiesToDelete,
+          );
+        }
+
         await Promise.all([rep?.pull(), mutate()]);
         setIsLoading(false);
       }}

@@ -90,16 +90,20 @@ export function useLeafletPublicationStatus() {
   const publishedInPublication = data.leaflets_in_publications?.find(
     (l) => l.doc,
   );
-  const publishedStandalone = data.leaflets_to_documents?.find(
-    (l) => !!l.documents,
-  );
+  const publishedStandalone =
+    data.leaflets_to_documents && data.leaflets_to_documents.documents
+      ? data.leaflets_to_documents
+      : null;
 
   const documentUri =
     publishedInPublication?.documents?.uri ?? publishedStandalone?.document;
 
   // Compute the full post URL for sharing
   let postShareLink: string | undefined;
-  if (publishedInPublication?.publications && publishedInPublication.documents) {
+  if (
+    publishedInPublication?.publications &&
+    publishedInPublication.documents
+  ) {
     // Published in a publication - use publication URL + document rkey
     const docUri = new AtUri(publishedInPublication.documents.uri);
     postShareLink = `${getPublicationURL(publishedInPublication.publications)}/${docUri.rkey}`;
