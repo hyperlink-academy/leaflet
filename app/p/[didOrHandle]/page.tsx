@@ -1,12 +1,7 @@
-import { supabaseServerClient } from "supabase/serverClient";
-import { AtUri } from "@atproto/syntax";
-import { ids } from "lexicons/api/lexicons";
-import { PubLeafletDocument } from "lexicons/api";
-import { Metadata } from "next";
 import { idResolver } from "app/(home-pages)/reader/idResolver";
-import { DocumentPageRenderer } from "app/lish/[did]/[publication]/[rkey]/DocumentPageRenderer";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
-
+import { ProfilePageLayout } from "./ProfilePageLayout";
+import { supabaseServerClient } from "supabase/serverClient";
 export default async function ProfilePage(props: {
   params: Promise<{ didOrHandle: string }>;
 }) {
@@ -15,6 +10,7 @@ export default async function ProfilePage(props: {
 
   // Resolve handle to DID if necessary
   let did = didOrHandle;
+
   if (!didOrHandle.startsWith("did:")) {
     let resolved = await idResolver.handle.resolve(didOrHandle);
     if (!resolved) {
@@ -30,6 +26,11 @@ export default async function ProfilePage(props: {
     }
     did = resolved;
   }
+  let { data: profile } = await supabaseServerClient
+    .from("bsky_profiles")
+    .select(`*`)
+    .eq("did", did)
+    .single();
 
-  return <DocumentPageRenderer did={did} rkey={params.rkey} />;
+  return <ProfilePageLayout profile={profile} />;
 }
