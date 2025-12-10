@@ -13,8 +13,14 @@ import { TagTiny } from "components/Icons/TagTiny";
 import { Tag } from "components/Tags";
 import { Popover } from "components/Popover";
 import { PostPageData } from "../getPostPageData";
-import { PubLeafletComment } from "lexicons/api";
+import { PubLeafletComment, PubLeafletPublication } from "lexicons/api";
 import { prefetchQuotesData } from "./Quotes";
+import { useIdentityData } from "components/IdentityProvider";
+import { ManageSubscription, SubscribeWithBluesky } from "app/lish/Subscribe";
+import { EditTiny } from "components/Icons/EditTiny";
+import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { PubListing } from "app/(home-pages)/discover/PubListing";
+import { PubIcon } from "components/ActionBar/Publications";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -108,6 +114,7 @@ export const Interactions = (props: {
 }) => {
   const data = useContext(PostPageContext);
   const document_uri = data?.uri;
+  let { identity } = useIdentityData();
   if (!document_uri)
     throw new Error("document_uri not available in PostPageContext");
 
@@ -121,6 +128,7 @@ export const Interactions = (props: {
 
   const tags = (data?.data as any)?.tags as string[] | undefined;
   const tagCount = tags?.length || 0;
+
   return (
     <div className={`flex gap-2 text-tertiary text-sm ${props.className}`}>
       {tagCount > 0 && <TagPopover tags={tags} tagCount={tagCount} />}
@@ -165,6 +173,8 @@ export const ExpandedInteractions = (props: {
   pageId?: string;
 }) => {
   const data = useContext(PostPageContext);
+  let { identity } = useIdentityData();
+
   const document_uri = data?.uri;
   if (!document_uri)
     throw new Error("document_uri not available in PostPageContext");
@@ -176,59 +186,109 @@ export const ExpandedInteractions = (props: {
       prefetchQuotesData(data.quotesAndMentions);
     }
   };
+  let publication = data?.documents_in_publications[0]?.publications;
 
   const tags = (data?.data as any)?.tags as string[] | undefined;
   const tagCount = tags?.length || 0;
+
+  let subscribed =
+    identity?.atp_did &&
+    publication?.publication_subscriptions &&
+    publication?.publication_subscriptions.find(
+      (s) => s.identity === identity.atp_did,
+    );
+
+  let isAuthor =
+    identity &&
+    identity.atp_did ===
+      data.documents_in_publications[0]?.publications?.identity_did &&
+    data.leaflets_in_publications[0];
+
   return (
     <div
-      className={`gap-2 text-tertiary px-3 sm:px-4 flex flex-col ${props.className}`}
+      className={`text-tertiary px-3 sm:px-4 flex flex-col ${props.className}`}
     >
+      {!subscribed && !isAuthor && publication && publication.record && (
+        <div className="text-center flex flex-col accent-container rounded-md mb-3">
+          <div className="flex flex-col py-4">
+            <div className="leading-snug flex flex-col pb-2 text-sm">
+              <div className="font-bold">Subscribe to {publication.name}</div>{" "}
+              to get updates in Reader, RSS, or via Bluesky Feed
+            </div>
+            <SubscribeWithBluesky
+              pubName={publication.name}
+              pub_uri={publication.uri}
+              base_url={
+                (publication.record as PubLeafletPublication.Record)
+                  .base_path || ""
+              }
+              subscribers={publication?.publication_subscriptions}
+            />
+          </div>
+        </div>
+      )}
       {tagCount > 0 && (
         <>
-          <hr className="border-border-light mb-1 " />
-          <TagList tags={tags} />
-          <hr className="border-border-light mt-1 " />
+          <hr className="border-border-light mb-3" />
+
+          <TagList tags={tags} className="mb-3" />
         </>
       )}
-
-      {props.quotesCount > 0 && (
-        <button
-          className="flex w-fit gap-2 items-center px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
-          onClick={() => {
-            if (!drawerOpen || drawer !== "quotes")
-              openInteractionDrawer("quotes", document_uri, props.pageId);
-            else setInteractionState(document_uri, { drawerOpen: false });
-          }}
-          onMouseEnter={handleQuotePrefetch}
-          onTouchStart={handleQuotePrefetch}
-          aria-label="Post quotes"
-        >
-          <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
-          <span
-            aria-hidden
-          >{`Quote${props.quotesCount === 1 ? "" : "s"}`}</span>
-        </button>
-      )}
-      {props.showComments === false ? null : (
-        <button
-          className="flex gap-2 items-center w-fit px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
-          onClick={() => {
-            if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
-              openInteractionDrawer("comments", document_uri, props.pageId);
-            else setInteractionState(document_uri, { drawerOpen: false });
-          }}
-          aria-label="Post comments"
-        >
-          <CommentTiny aria-hidden />{" "}
-          {props.commentsCount > 0 ? (
-            <span aria-hidden>
-              {`${props.commentsCount} Comment${props.commentsCount === 1 ? "" : "s"}`}
-            </span>
-          ) : (
-            "Comment"
+      <hr className="border-border-light mb-3 " />
+      <div className="flex gap-2 justify-between">
+        <div className="flex gap-2">
+          {props.quotesCount > 0 && (
+            <button
+              className="flex w-fit gap-2 items-center px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
+              onClick={() => {
+                if (!drawerOpen || drawer !== "quotes")
+                  openInteractionDrawer("quotes", document_uri, props.pageId);
+                else setInteractionState(document_uri, { drawerOpen: false });
+              }}
+              onMouseEnter={handleQuotePrefetch}
+              onTouchStart={handleQuotePrefetch}
+              aria-label="Post quotes"
+            >
+              <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
+              <span
+                aria-hidden
+              >{`Quote${props.quotesCount === 1 ? "" : "s"}`}</span>
+            </button>
           )}
-        </button>
-      )}
+          {props.showComments === false ? null : (
+            <button
+              className="flex gap-2 items-center w-fit px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
+              onClick={() => {
+                if (
+                  !drawerOpen ||
+                  drawer !== "comments" ||
+                  pageId !== props.pageId
+                )
+                  openInteractionDrawer("comments", document_uri, props.pageId);
+                else setInteractionState(document_uri, { drawerOpen: false });
+              }}
+              aria-label="Post comments"
+            >
+              <CommentTiny aria-hidden />{" "}
+              {props.commentsCount > 0 ? (
+                <span aria-hidden>
+                  {`${props.commentsCount} Comment${props.commentsCount === 1 ? "" : "s"}`}
+                </span>
+              ) : (
+                "Comment"
+              )}
+            </button>
+          )}
+        </div>
+        <EditButton document={data} />
+        {subscribed && publication && (
+          <ManageSubscription
+            base_url={getPublicationURL(publication)}
+            pub_uri={publication.uri}
+            subscribers={publication.publication_subscriptions}
+          />
+        )}
+      </div>
     </div>
   );
 };
@@ -298,3 +358,23 @@ export function getCommentCount(document: PostPageData, pageId?: string) {
       (c) => !(c.record as PubLeafletComment.Record)?.onPage,
     ).length;
 }
+
+const EditButton = (props: { document: PostPageData }) => {
+  let { identity } = useIdentityData();
+  if (!props.document) return;
+  if (
+    identity &&
+    identity.atp_did ===
+      props.document.documents_in_publications[0]?.publications?.identity_did &&
+    props.document.leaflets_in_publications[0]
+  )
+    return (
+      <a
+        href={`https://leaflet.pub/${props.document.leaflets_in_publications[0]?.leaflet}`}
+        className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1"
+      >
+        <EditTiny /> Edit Post
+      </a>
+    );
+  return;
+};

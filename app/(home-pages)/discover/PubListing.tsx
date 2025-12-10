@@ -1,6 +1,7 @@
 "use client";
 import { AtUri } from "@atproto/syntax";
 import { PublicationSubscription } from "app/(home-pages)/reader/getSubscriptions";
+import { SubscribeWithBluesky } from "app/lish/Subscribe";
 import { PubIcon } from "components/ActionBar/Publications";
 import { Separator } from "components/Layout";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
@@ -13,6 +14,7 @@ import { Json } from "supabase/database.types";
 export const PubListing = (
   props: PublicationSubscription & {
     resizeHeight?: boolean;
+    subscribe?: boolean;
   },
 ) => {
   let record = props.record as PubLeafletPublication.Record;
@@ -60,13 +62,12 @@ export const PubListing = (
             <div className="flex flex-row gap-2 items-center">
               {props.authorProfile?.handle}
             </div>
-            <p>
-              Updated{" "}
-              {timeAgo(
-                props.documents_in_publications?.[0]?.documents?.indexed_at ||
-                  "",
-              )}
-            </p>
+            <SubscribeWithBluesky
+              pubName={record.name}
+              pub_uri={props.uri}
+              base_url={record.base_path ? record.base_path : ""}
+              subscribers={[]}
+            />
           </div>
         </div>
       </a>
