@@ -90,7 +90,6 @@ export function PostHeader(props: {
           </div>
           <Interactions
             showComments={props.preferences.showComments}
-            compact
             quotesCount={getQuoteCount(document) || 0}
             commentsCount={getCommentCount(document) || 0}
           />

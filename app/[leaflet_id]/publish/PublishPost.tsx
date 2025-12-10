@@ -125,12 +125,12 @@ const PublishPostForm = (
           submit();
         }}
       >
-        <div className="container flex flex-col gap-2 sm:p-3 p-4">
+        <div className="container flex flex-col gap-3 sm:p-3 p-4">
           <PublishingTo
             publication_uri={props.publication_uri}
             record={props.record}
           />
-          <hr className="border-border-light my-1" />
+          <hr className="border-border" />
           <ShareOptions
             setShareOption={setShareOption}
             shareOption={shareOption}
@@ -139,14 +139,16 @@ const PublishPostForm = (
             editorStateRef={editorStateRef}
             {...props}
           />
-          <hr className="border-border-light " />
-          <div className="flex flex-col gap-1">
+          <hr className="border-border " />
+          <div className="flex flex-col gap-2">
             <h4>Tags</h4>
             <TagSelector
               selectedTags={currentTags}
               setSelectedTags={handleTagsChange}
             />
           </div>
+          <hr className="border-border mb-2" />
+
           <div className="flex justify-between">
             <Link
               className="hover:no-underline! font-bold"

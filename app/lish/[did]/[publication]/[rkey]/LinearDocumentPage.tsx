@@ -11,6 +11,7 @@ import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
 import { EditTiny } from "components/Icons/EditTiny";
 import {
+  ExpandedInteractions,
   getCommentCount,
   getQuoteCount,
   Interactions,
@@ -84,7 +85,7 @@ export function LinearDocumentPage({
           did={did}
           prerenderedCodeBlocks={prerenderedCodeBlocks}
         />
-        <Interactions
+        <ExpandedInteractions
           pageId={pageId}
           showComments={preferences.showComments}
           commentsCount={getCommentCount(document, pageId) || 0}
@@ -92,7 +93,6 @@ export function LinearDocumentPage({
         />
         {!isSubpage && (
           <>
-            <hr className="border-border-light mb-4 mt-4 sm:mx-4 mx-3" />
             <div className="sm:px-4 px-3">
               {identity &&
               identity.atp_did ===

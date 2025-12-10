@@ -102,7 +102,6 @@ export function openInteractionDrawer(
 export const Interactions = (props: {
   quotesCount: number;
   commentsCount: number;
-  compact?: boolean;
   className?: string;
   showComments?: boolean;
   pageId?: string;
@@ -120,32 +119,99 @@ export const Interactions = (props: {
     }
   };
 
+  const tags = (data?.data as any)?.tags as string[] | undefined;
+  const tagCount = tags?.length || 0;
+  return (
+    <div className={`flex gap-2 text-tertiary text-sm ${props.className}`}>
+      {tagCount > 0 && <TagPopover tags={tags} tagCount={tagCount} />}
+
+      {props.quotesCount > 0 && (
+        <button
+          className="flex w-fit gap-2 items-center"
+          onClick={() => {
+            if (!drawerOpen || drawer !== "quotes")
+              openInteractionDrawer("quotes", document_uri, props.pageId);
+            else setInteractionState(document_uri, { drawerOpen: false });
+          }}
+          onMouseEnter={handleQuotePrefetch}
+          onTouchStart={handleQuotePrefetch}
+          aria-label="Post quotes"
+        >
+          <QuoteTiny aria-hidden /> {props.quotesCount}
+        </button>
+      )}
+      {props.showComments === false ? null : (
+        <button
+          className="flex gap-2 items-center w-fit"
+          onClick={() => {
+            if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
+              openInteractionDrawer("comments", document_uri, props.pageId);
+            else setInteractionState(document_uri, { drawerOpen: false });
+          }}
+          aria-label="Post comments"
+        >
+          <CommentTiny aria-hidden /> {props.commentsCount}
+        </button>
+      )}
+    </div>
+  );
+};
+
+export const ExpandedInteractions = (props: {
+  quotesCount: number;
+  commentsCount: number;
+  className?: string;
+  showComments?: boolean;
+  pageId?: string;
+}) => {
+  const data = useContext(PostPageContext);
+  const document_uri = data?.uri;
+  if (!document_uri)
+    throw new Error("document_uri not available in PostPageContext");
+
+  let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
+
+  const handleQuotePrefetch = () => {
+    if (data?.quotesAndMentions) {
+      prefetchQuotesData(data.quotesAndMentions);
+    }
+  };
+
+  const tags = (data?.data as any)?.tags as string[] | undefined;
+  const tagCount = tags?.length || 0;
   return (
     <div
-      className={`flex gap-2 text-tertiary ${props.compact ? "text-sm" : "px-3 sm:px-4"} ${props.className}`}
+      className={`gap-2 text-tertiary px-3 sm:px-4 flex flex-col ${props.className}`}
     >
-      {props.compact && <TagPopover />}
-      <button
-        className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
-        onClick={() => {
-          if (!drawerOpen || drawer !== "quotes")
-            openInteractionDrawer("quotes", document_uri, props.pageId);
-          else setInteractionState(document_uri, { drawerOpen: false });
-        }}
-        onMouseEnter={handleQuotePrefetch}
-        onTouchStart={handleQuotePrefetch}
-        aria-label="Post quotes"
-      >
-        <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
-        {!props.compact && (
+      {tagCount > 0 && (
+        <>
+          <hr className="border-border-light mb-1 " />
+          <TagList tags={tags} />
+          <hr className="border-border-light mt-1 " />
+        </>
+      )}
+
+      {props.quotesCount > 0 && (
+        <button
+          className="flex w-fit gap-2 items-center px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
+          onClick={() => {
+            if (!drawerOpen || drawer !== "quotes")
+              openInteractionDrawer("quotes", document_uri, props.pageId);
+            else setInteractionState(document_uri, { drawerOpen: false });
+          }}
+          onMouseEnter={handleQuotePrefetch}
+          onTouchStart={handleQuotePrefetch}
+          aria-label="Post quotes"
+        >
+          <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
           <span
             aria-hidden
           >{`Quote${props.quotesCount === 1 ? "" : "s"}`}</span>
-        )}
-      </button>
+        </button>
+      )}
       {props.showComments === false ? null : (
         <button
-          className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
+          className="flex gap-2 items-center w-fit px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
           onClick={() => {
             if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
               openInteractionDrawer("comments", document_uri, props.pageId);
@@ -154,9 +220,7 @@ export const Interactions = (props: {
           aria-label="Post comments"
         >
           <CommentTiny aria-hidden />{" "}
-          {props.compact ? (
-            props.commentsCount
-          ) : props.commentsCount > 0 ? (
+          {props.commentsCount > 0 ? (
             <span aria-hidden>
               {`${props.commentsCount} Comment${props.commentsCount === 1 ? "" : "s"}`}
             </span>
@@ -165,41 +229,33 @@ export const Interactions = (props: {
           )}
         </button>
       )}
-      {!props.compact && <TagList />}
     </div>
   );
 };
 
-const TagPopover = () => {
-  const data = useContext(PostPageContext);
-  const tags = (data?.data as any)?.tags as string[] | undefined;
-  const tagCount = tags?.length || 0;
-
-  if (tagCount === 0) return null;
-
+const TagPopover = (props: {
+  tagCount: number;
+  tags: string[] | undefined;
+}) => {
   return (
     <Popover
       className="p-2! max-w-xs"
       trigger={
         <div className="tags flex gap-1 items-center ">
-          <TagTiny /> {tagCount}
+          <TagTiny /> {props.tagCount}
         </div>
       }
     >
-      <TagList className="text-secondary!" />
+      <TagList tags={props.tags} className="text-secondary!" />
     </Popover>
   );
 };
 
-const TagList = (props: { className?: string }) => {
-  const data = useContext(PostPageContext);
-  const tags = (data?.data as any)?.tags as string[] | undefined;
-
-  if (!tags || tags.length === 0) return null;
-
+const TagList = (props: { className?: string; tags: string[] | undefined }) => {
+  if (!props.tags) return;
   return (
     <div className="flex gap-1 flex-wrap">
-      {tags.map((tag, index) => (
+      {props.tags.map((tag, index) => (
         <Tag name={tag} key={index} className={props.className} />
       ))}
     </div>

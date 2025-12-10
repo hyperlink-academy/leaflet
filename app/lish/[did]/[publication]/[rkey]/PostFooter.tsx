@@ -5,7 +5,7 @@ import { EditTiny } from "components/Icons/EditTiny";
 import { useIdentityData } from "components/IdentityProvider";
 import { PubLeafletComment } from "lexicons/api";
 import { PostPageData } from "./getPostPageData";
-import { Interactions } from "./Interactions/Interactions";
+import { ExpandedInteractions } from "./Interactions/Interactions";
 import { decodeQuotePosition } from "./quotePosition";
 
 export const PostFooter = (props: {
@@ -18,8 +18,7 @@ export const PostFooter = (props: {
     return;
   return (
     <div className="flex flex-col px-3 sm:px-4">
-      <hr className="border-border-light mb-4" />
-      <Interactions
+      <ExpandedInteractions
         showComments={props.preferences.showComments}
         quotesCount={
           props.data.document_mentions_in_bsky.filter((q) => {
@@ -36,7 +35,6 @@ export const PostFooter = (props: {
           ).length
         }
       />
-      <hr className="border-border-light mb-4 mt-4 " />
       {identity &&
       identity.atp_did ===
         props.data.documents_in_publications[0]?.publications?.identity_did ? (
