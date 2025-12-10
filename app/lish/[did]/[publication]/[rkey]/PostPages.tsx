@@ -21,7 +21,6 @@ import { flushSync } from "react-dom";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 import { useParams } from "next/navigation";
 import { decodeQuotePosition } from "./quotePosition";
-import { PostFooter } from "./PostFooter";
 import { PollData } from "./fetchPollData";
 import { LinearDocumentPage } from "./LinearDocumentPage";
 import { CanvasPage } from "./CanvasPage";
