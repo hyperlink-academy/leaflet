@@ -66,9 +66,9 @@ export function PostHeader(props: {
               </a>
             )}
         </div>
-        <h2 className="">{record.title}</h2>
+        <h2 className="leading-tight">{record.title}</h2>
         {record.description ? (
-          <p className="italic text-secondary">{record.description}</p>
+          <p className="italic text-secondary pt-1">{record.description}</p>
         ) : null}
         <div className="text-sm text-tertiary pt-3 flex gap-1 flex-wrap">
           {profile ? (

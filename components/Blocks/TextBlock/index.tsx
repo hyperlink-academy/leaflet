@@ -1,8 +1,9 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { elementId } from "src/utils/elementId";
 import { useReplicache, useEntity } from "src/replicache";
 import { isVisible } from "src/utils/isVisible";
 import { EditorState, TextSelection } from "prosemirror-state";
+import { EditorView } from "prosemirror-view";
 import { RenderYJSFragment } from "./RenderYJSFragment";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { BlockProps } from "../Block";
@@ -23,6 +24,10 @@ import { isIOS } from "src/utils/isDevice";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { DotLoader } from "components/utils/DotLoader";
 import { useMountProsemirror } from "./mountProsemirror";
+import { schema } from "./schema";
+
+import { Mention, MentionAutocomplete } from "components/Mention";
+import { addMentionToEditor } from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
 
 const HeadingStyle = {
   1: "text-xl font-bold",
@@ -183,9 +188,18 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
   let editorState = useEditorStates(
     (s) => s.editorStates[props.entityID],
   )?.editor;
+  const {
+    viewRef,
+    mentionOpen,
+    mentionCoords,
+    openMentionAutocomplete,
+    handleMentionSelect,
+    handleMentionOpenChange,
+  } = useMentionState(props.entityID);
 
   let { mountRef, actionTimeout } = useMountProsemirror({
     props,
+    openMentionAutocomplete,
   });
 
   return (
@@ -199,9 +213,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
                 ? "blockquote pt-3"
                 : "blockquote"
               : ""
-          }
-
-          `}
+          }`}
       >
         <pre
           data-entityid={props.entityID}
@@ -224,6 +236,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
             }
           }}
           onFocus={() => {
+            handleMentionOpenChange(false);
             setTimeout(() => {
               useUIState.getState().setSelectedBlock(props);
               useUIState.setState(() => ({
@@ -249,6 +262,15 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           ${props.className}`}
           ref={mountRef}
         />
+        {focused && (
+          <MentionAutocomplete
+            open={mentionOpen}
+            onOpenChange={handleMentionOpenChange}
+            view={viewRef}
+            onSelect={handleMentionSelect}
+            coords={mentionCoords}
+          />
+        )}
         {editorState?.doc.textContent.length === 0 &&
         props.previousBlock === null &&
         props.nextBlock === null ? (
@@ -439,14 +461,87 @@ const CommandOptions = (props: BlockProps & { className?: string }) => {
   );
 };
 
-const useMentionState = () => {
-  const [editorState, setEditorState] = useState<EditorState | null>(null);
-  const [mentionState, setMentionState] = useState<{
-    active: boolean;
-    range: { from: number; to: number } | null;
-    selectedMention: { handle: string; did: string } | null;
-  }>({ active: false, range: null, selectedMention: null });
-  const mentionStateRef = useRef(mentionState);
-  mentionStateRef.current = mentionState;
-  return { mentionStateRef };
+const useMentionState = (entityID: string) => {
+  let view = useEditorStates((s) => s.editorStates[entityID])?.view;
+  let viewRef = useRef(view || null);
+  viewRef.current = view || null;
+
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionCoords, setMentionCoords] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [mentionInsertPos, setMentionInsertPos] = useState<number | null>(null);
+
+  // Close autocomplete when this block is no longer focused
+  const isFocused = useUIState((s) => s.focusedEntity?.entityID === entityID);
+  useEffect(() => {
+    if (!isFocused) {
+      setMentionOpen(false);
+      setMentionCoords(null);
+      setMentionInsertPos(null);
+    }
+  }, [isFocused]);
+
+  const openMentionAutocomplete = useCallback(() => {
+    const view = useEditorStates.getState().editorStates[entityID]?.view;
+    if (!view) return;
+
+    // Get the position right after the @ we just inserted
+    const pos = view.state.selection.from;
+    setMentionInsertPos(pos);
+
+    // Get coordinates for the popup relative to the positioned parent
+    const coords = view.coordsAtPos(pos - 1); // Position of the @
+
+    // Find the relative positioned parent container
+    const editorEl = view.dom;
+    const container = editorEl.closest('.relative') as HTMLElement | null;
+
+    if (container) {
+      const containerRect = container.getBoundingClientRect();
+      setMentionCoords({
+        top: coords.bottom - containerRect.top,
+        left: coords.left - containerRect.left,
+      });
+    } else {
+      setMentionCoords({
+        top: coords.bottom,
+        left: coords.left,
+      });
+    }
+    setMentionOpen(true);
+  }, [entityID]);
+
+  const handleMentionSelect = useCallback(
+    (mention: Mention) => {
+      const view = useEditorStates.getState().editorStates[entityID]?.view;
+      if (!view || mentionInsertPos === null) return;
+
+      // The @ is at mentionInsertPos - 1, we need to replace it with the mention
+      const from = mentionInsertPos - 1;
+      const to = mentionInsertPos;
+
+      addMentionToEditor(mention, { from, to }, view);
+      view.focus();
+    },
+    [entityID, mentionInsertPos],
+  );
+
+  const handleMentionOpenChange = useCallback((open: boolean) => {
+    setMentionOpen(open);
+    if (!open) {
+      setMentionCoords(null);
+      setMentionInsertPos(null);
+    }
+  }, []);
+
+  return {
+    viewRef,
+    mentionOpen,
+    mentionCoords,
+    openMentionAutocomplete,
+    handleMentionSelect,
+    handleMentionOpenChange,
+  };
 };

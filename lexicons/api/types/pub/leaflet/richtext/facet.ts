@@ -20,6 +20,8 @@ export interface Main {
   index: ByteSlice
   features: (
     | $Typed<Link>
+    | $Typed<DidMention>
+    | $Typed<AtMention>
     | $Typed<Code>
     | $Typed<Highlight>
     | $Typed<Underline>
@@ -72,6 +74,38 @@ export function isLink<V>(v: V) {
 
 export function validateLink<V>(v: V) {
   return validate<Link & V>(v, id, hashLink)
+}
+
+/** Facet feature for mentioning a did. */
+export interface DidMention {
+  $type?: 'pub.leaflet.richtext.facet#didMention'
+  did: string
+}
+
+const hashDidMention = 'didMention'
+
+export function isDidMention<V>(v: V) {
+  return is$typed(v, id, hashDidMention)
+}
+
+export function validateDidMention<V>(v: V) {
+  return validate<DidMention & V>(v, id, hashDidMention)
+}
+
+/** Facet feature for mentioning an AT URI. */
+export interface AtMention {
+  $type?: 'pub.leaflet.richtext.facet#atMention'
+  atURI: string
+}
+
+const hashAtMention = 'atMention'
+
+export function isAtMention<V>(v: V) {
+  return is$typed(v, id, hashAtMention)
+}
+
+export function validateAtMention<V>(v: V) {
+  return validate<AtMention & V>(v, id, hashAtMention)
 }
 
 /** Facet feature for inline code. */

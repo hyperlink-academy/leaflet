@@ -20,6 +20,8 @@
             "type": "union",
             "refs": [
               "#link",
+              "#didMention",
+              "#atMention",
               "#code",
               "#highlight",
               "#underline",
@@ -59,6 +61,32 @@
       "properties": {
         "uri": {
           "type": "string"
+        }
+      }
+    },
+    "didMention": {
+      "type": "object",
+      "description": "Facet feature for mentioning a did.",
+      "required": [
+        "did"
+      ],
+      "properties": {
+        "did": {
+          "type": "string",
+          "format": "did"
+        }
+      }
+    },
+    "atMention": {
+      "type": "object",
+      "description": "Facet feature for mentioning an AT URI.",
+      "required": [
+        "atURI"
+      ],
+      "properties": {
+        "atURI": {
+          "type": "string",
+          "format": "uri"
         }
       }
     },

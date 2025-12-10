@@ -293,7 +293,10 @@ export let Block = ({
     }
     case PubLeafletBlocksImage.isMain(b.block): {
       return (
-        <div className={`relative flex ${alignment}`} {...blockProps}>
+        <div
+          className={`imageBlock relative flex ${alignment}`}
+          {...blockProps}
+        >
           <img
             alt={b.block.alt}
             height={b.block.aspectRatio?.height}
@@ -321,7 +324,7 @@ export let Block = ({
       return (
         // all this margin stuff is a highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
         <blockquote
-          className={` blockquote py-0! mb-2! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-2! pt-3!" : "mt-1!"}`}
+          className={`blockquoteBlock py-0! mb-2! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-2! pt-3!" : "mt-1!"}`}
           {...blockProps}
         >
           <TextBlock
@@ -336,7 +339,7 @@ export let Block = ({
     }
     case PubLeafletBlocksText.isMain(b.block):
       return (
-        <p className={` ${className}`} {...blockProps}>
+        <p className={`textBlock ${className}`} {...blockProps}>
           <TextBlock
             facets={b.block.facets}
             plaintext={b.block.plaintext}
@@ -349,7 +352,7 @@ export let Block = ({
     case PubLeafletBlocksHeader.isMain(b.block): {
       if (b.block.level === 1)
         return (
-          <h2 className={`${className}`} {...blockProps}>
+          <h2 className={`h1Block ${className}`} {...blockProps}>
             <TextBlock
               {...b.block}
               index={index}
@@ -360,7 +363,7 @@ export let Block = ({
         );
       if (b.block.level === 2)
         return (
-          <h3 className={`${className}`} {...blockProps}>
+          <h3 className={`h2Block ${className}`} {...blockProps}>
             <TextBlock
               {...b.block}
               index={index}
@@ -371,7 +374,7 @@ export let Block = ({
         );
       if (b.block.level === 3)
         return (
-          <h4 className={`${className}`} {...blockProps}>
+          <h4 className={`h3Block ${className}`} {...blockProps}>
             <TextBlock
               {...b.block}
               index={index}
@@ -383,7 +386,7 @@ export let Block = ({
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
-        <h6 className={`${className}`} {...blockProps}>
+        <h6 className={`h6Block ${className}`} {...blockProps}>
           <TextBlock
             {...b.block}
             index={index}

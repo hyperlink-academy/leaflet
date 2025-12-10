@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     let result = await get_link_metadata(url);
     return Response.json(result);
   } else {
-    let result = await get_link_image_preview(url);
+    let result = await get_link_image_preview(body.url);
     return Response.json(result);
   }
 }

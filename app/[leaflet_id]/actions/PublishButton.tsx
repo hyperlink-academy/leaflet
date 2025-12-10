@@ -114,7 +114,6 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
   let { identity } = useIdentityData();
   let { permission_token } = useReplicache();
   let query = useSearchParams();
-  console.log(query.get("publish"));
   let [open, setOpen] = useState(query.get("publish") !== null);
 
   let isMobile = useIsMobile();

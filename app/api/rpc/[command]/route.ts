@@ -11,6 +11,8 @@ import {
 } from "./domain_routes";
 import { get_leaflet_data } from "./get_leaflet_data";
 import { get_publication_data } from "./get_publication_data";
+import { search_publication_names } from "./search_publication_names";
+import { search_publication_documents } from "./search_publication_documents";
 
 let supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_API_URL as string,
@@ -35,6 +37,8 @@ let Routes = [
   get_leaflet_subdomain_status,
   get_leaflet_data,
   get_publication_data,
+  search_publication_names,
+  search_publication_documents,
 ];
 export async function POST(
   req: Request,

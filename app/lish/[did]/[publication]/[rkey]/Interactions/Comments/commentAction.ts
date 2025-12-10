@@ -10,6 +10,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import {
   Notification,
+  NotificationData,
   pingIdentityToUpdateNotification,
 } from "src/notifications";
 import { v7 } from "uuid";
@@ -84,9 +85,26 @@ export async function publishComment(args: {
         parent_uri: args.comment.replyTo,
       },
     });
+  }
+
+  // Create mention notifications from comment facets
+  const mentionNotifications = createCommentMentionNotifications(
+    args.comment.facets,
+    uri.toString(),
+    credentialSession.did!,
+  );
+  notifications.push(...mentionNotifications);
+
+  // Insert all notifications and ping recipients
+  if (notifications.length > 0) {
     // SOMEDAY: move this out the action with inngest or workflows
     await supabaseServerClient.from("notifications").insert(notifications);
-    await pingIdentityToUpdateNotification(recipient);
+
+    // Ping all unique recipients
+    const uniqueRecipients = [...new Set(notifications.map((n) => n.recipient))];
+    await Promise.all(
+      uniqueRecipients.map((r) => pingIdentityToUpdateNotification(r)),
+    );
   }
 
   return {
@@ -94,4 +112,83 @@ export async function publishComment(args: {
     profile: lexToJson(profile.value),
     uri: uri.toString(),
   };
+}
+
+/**
+ * Creates mention notifications from comment facets
+ * Handles didMention (people) and atMention (publications/documents)
+ */
+function createCommentMentionNotifications(
+  facets: PubLeafletRichtextFacet.Main[],
+  commentUri: string,
+  commenterDid: string,
+): Notification[] {
+  const notifications: Notification[] = [];
+  const notifiedRecipients = new Set<string>(); // Avoid duplicate notifications
+
+  for (const facet of facets) {
+    for (const feature of facet.features) {
+      if (PubLeafletRichtextFacet.isDidMention(feature)) {
+        // DID mention - notify the mentioned person directly
+        const recipientDid = feature.did;
+
+        // Don't notify yourself
+        if (recipientDid === commenterDid) continue;
+        // Avoid duplicate notifications to the same person
+        if (notifiedRecipients.has(recipientDid)) continue;
+        notifiedRecipients.add(recipientDid);
+
+        notifications.push({
+          id: v7(),
+          recipient: recipientDid,
+          data: {
+            type: "comment_mention",
+            comment_uri: commentUri,
+            mention_type: "did",
+          },
+        });
+      } else if (PubLeafletRichtextFacet.isAtMention(feature)) {
+        // AT-URI mention - notify the owner of the publication/document
+        try {
+          const mentionedUri = new AtUri(feature.atURI);
+          const recipientDid = mentionedUri.host;
+
+          // Don't notify yourself
+          if (recipientDid === commenterDid) continue;
+          // Avoid duplicate notifications to the same person for the same mentioned item
+          const dedupeKey = `${recipientDid}:${feature.atURI}`;
+          if (notifiedRecipients.has(dedupeKey)) continue;
+          notifiedRecipients.add(dedupeKey);
+
+          if (mentionedUri.collection === "pub.leaflet.publication") {
+            notifications.push({
+              id: v7(),
+              recipient: recipientDid,
+              data: {
+                type: "comment_mention",
+                comment_uri: commentUri,
+                mention_type: "publication",
+                mentioned_uri: feature.atURI,
+              },
+            });
+          } else if (mentionedUri.collection === "pub.leaflet.document") {
+            notifications.push({
+              id: v7(),
+              recipient: recipientDid,
+              data: {
+                type: "comment_mention",
+                comment_uri: commentUri,
+                mention_type: "document",
+                mentioned_uri: feature.atURI,
+              },
+            });
+          }
+        } catch (error) {
+          console.error("Failed to parse AT-URI for mention:", feature.atURI, error);
+        }
+      }
+    }
+  }
+
+  return notifications;
 }

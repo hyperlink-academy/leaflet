@@ -22,6 +22,7 @@ import { PostHeader } from "./PostHeader/PostHeader";
 import { useDrawerOpen } from "./Interactions/InteractionDrawer";
 import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
+import { useIsMobile } from "src/hooks/isMobile";
 
 export function CanvasPage({
   blocks,
@@ -206,8 +207,9 @@ const CanvasMetadata = (props: {
   quotesCount: number | undefined;
   commentsCount: number | undefined;
 }) => {
+  let isMobile = useIsMobile();
   return (
-    <div className="flex flex-row gap-3 items-center absolute top-6 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
+    <div className="flex flex-row gap-3 items-center absolute top-3 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
       <Interactions
         quotesCount={props.quotesCount || 0}
         commentsCount={props.commentsCount || 0}
@@ -219,9 +221,9 @@ const CanvasMetadata = (props: {
         <>
           <Separator classname="h-5" />
           <Popover
-            side="left"
-            align="start"
-            className="flex flex-col gap-2 p-0! max-w-sm w-[1000px]"
+            side="bottom"
+            align="end"
+            className={`flex flex-col gap-2 p-0! text-primary ${isMobile ? "w-full" : "max-w-sm w-[1000px] t"}`}
             trigger={<InfoSmall />}
           >
             <PostHeader

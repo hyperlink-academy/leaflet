@@ -69,13 +69,13 @@ export const ContentLayout = (props: {
     <div
       className={`border border-border-light rounded-md px-2 py-[6px] w-full ${cardBorderHidden ? "transparent" : "bg-bg-page"}`}
     >
-      <div className="text-tertiary text-sm italic font-bold pb-1">
+      <div className="text-tertiary text-sm italic font-bold ">
         {props.postTitle}
       </div>
-      {props.children}
+      {props.children && <div className="mb-2 text-sm">{props.children}</div>}
       {props.pubRecord && (
         <>
-          <hr className="mt-3 mb-1 border-border-light" />
+          <hr className="mt-1 mb-1 border-border-light" />
           <a
             href={`https://${props.pubRecord.base_path}`}
             className="relative text-xs text-tertiary flex gap-[6px] items-center font-bold hover:no-underline!"
