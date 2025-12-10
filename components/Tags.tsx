@@ -150,10 +150,10 @@ export const TagSearchInput = (props: {
   return (
     <div className="relative">
       <Input
-        className="input-with-border grow w-full bg-test"
+        className="input-with-border grow w-full outline-none!"
         id="placeholder-tag-search-input"
         value={tagInputValue}
-        placeholder="search tags..."
+        placeholder="search tags…"
         onChange={(e) => {
           setTagInputValue(e.target.value);
           setIsOpen(true);
@@ -174,7 +174,7 @@ export const TagSearchInput = (props: {
               document.getElementById("tag-search-input")?.focus();
             }, 100);
         }}
-        className="!w-full px-2! py-2!"
+        className="w-full p-2! min-w-xs"
         sideOffset={-39}
         onOpenAutoFocus={(e) => e.preventDefault()}
         asChild
@@ -190,6 +190,7 @@ export const TagSearchInput = (props: {
           <Input
             className="input-with-border grow w-full mb-2"
             id="tag-search-input"
+            placeholder="search tags…"
             value={tagInputValue}
             onChange={(e) => {
               setTagInputValue(e.target.value);
