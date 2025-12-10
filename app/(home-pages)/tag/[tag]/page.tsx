@@ -52,8 +52,8 @@ const TagContent = (props: {
 
 const TagHeader = (props: { tag: string; postCount: number }) => {
   return (
-    <div className="flex flex-col gap-2 items-center">
-      <div className="flex items-center gap-2 text-4xl font-bold text-primary">
+    <div className="flex flex-col leading-tight items-center">
+      <div className="flex items-center gap-3 text-xl font-bold text-primary">
         <TagTiny className="scale-150" />
         <h1>{props.tag}</h1>
       </div>

@@ -69,20 +69,15 @@ export const PostListing = (props: Post) => {
         >
           <h3 className="text-primary truncate">{postRecord.title}</h3>
 
-          <p className="text-secondary">{postRecord.description}</p>
-          <div className="flex flex-col-reverse md:flex-row md gap-4 md:gap-2 text-sm text-tertiary items-center justify-start pt-1.5 md:pt-3 w-full">
+          <p className="text-secondary italic">{postRecord.description}</p>
+          <div className="flex flex-col-reverse md:flex-row md gap-2 text-sm text-tertiary items-center justify-start pt-1.5 md:pt-3 w-full">
             <PubInfo
               href={props.publication.href}
-              author={props.author || ""}
               pubRecord={pubRecord}
               uri={props.publication.uri}
             />
-            <Separator classname="h-4 !min-h-0 md:block hidden" />
             <div className="flex flex-row justify-between gap-2 items-center w-full">
-              <PostInfo
-                author={props.author || ""}
-                publishedAt={postRecord.publishedAt}
-              />
+              <PostInfo publishedAt={postRecord.publishedAt} />
               <InteractionPreview
                 postUrl={`${props.publication.href}/${postUri.rkey}`}
                 quotesCount={quotes}
@@ -103,10 +98,10 @@ const PubInfo = (props: {
   href: string;
   pubRecord: PubLeafletPublication.Record;
   uri: string;
-  author: string;
 }) => {
   return (
-    <div className="flex gap-2 md:w-auto shrink-0 w-full">
+    <div className="flex flex-col md:w-auto shrink-0 w-full">
+      <hr className="md:hidden block border-border-light mb-2" />
       <Link
         href={props.href}
         className="text-accent-contrast font-bold no-underline text-sm flex gap-1 items-center md:w-fit relative shrink-0"
@@ -114,16 +109,11 @@ const PubInfo = (props: {
         <PubIcon small record={props.pubRecord} uri={props.uri} />
         {props.pubRecord.name}
       </Link>
-
-      <div className="truncate">{props.author}</div>
     </div>
   );
 };
 
-const PostInfo = (props: {
-  author: string;
-  publishedAt: string | undefined;
-}) => {
+const PostInfo = (props: { publishedAt: string | undefined }) => {
   return (
     <div className="flex gap-2 items-center shrink-0 self-start">
       {props.publishedAt && (

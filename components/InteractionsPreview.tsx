@@ -31,7 +31,7 @@ export const InteractionPreview = (props: {
         <>
           <TagPopover tags={props.tags!} />
           {interactionsAvailable || props.share ? (
-            <Separator classname="h-4" />
+            <Separator classname="h-4!" />
           ) : null}
         </>
       )}
@@ -55,7 +55,7 @@ export const InteractionPreview = (props: {
         </SpeedyLink>
       )}
       {interactionsAvailable && props.share ? (
-        <Separator classname="h-4 !min-h-0" />
+        <Separator classname="h-4! !min-h-0" />
       ) : null}
       {props.share && (
         <>

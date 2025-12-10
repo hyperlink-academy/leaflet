@@ -19,8 +19,6 @@ import { useIdentityData } from "components/IdentityProvider";
 import { ManageSubscription, SubscribeWithBluesky } from "app/lish/Subscribe";
 import { EditTiny } from "components/Icons/EditTiny";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import { PubListing } from "app/(home-pages)/discover/PubListing";
-import { PubIcon } from "components/ActionBar/Publications";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
