@@ -14,7 +14,6 @@ import { Json } from "supabase/database.types";
 export const PubListing = (
   props: PublicationSubscription & {
     resizeHeight?: boolean;
-    subscribe?: boolean;
   },
 ) => {
   let record = props.record as PubLeafletPublication.Record;
@@ -62,12 +61,13 @@ export const PubListing = (
             <div className="flex flex-row gap-2 items-center">
               {props.authorProfile?.handle}
             </div>
-            <SubscribeWithBluesky
-              pubName={record.name}
-              pub_uri={props.uri}
-              base_url={record.base_path ? record.base_path : ""}
-              subscribers={[]}
-            />
+            <p>
+              Updated{" "}
+              {timeAgo(
+                props.documents_in_publications?.[0]?.documents?.indexed_at ||
+                  "",
+              )}
+            </p>
           </div>
         </div>
       </a>
