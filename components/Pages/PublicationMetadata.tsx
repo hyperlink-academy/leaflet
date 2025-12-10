@@ -19,6 +19,7 @@ import { TagTiny } from "components/Icons/TagTiny";
 import { Popover } from "components/Popover";
 import { TagSelector } from "components/Tags";
 import { useIdentityData } from "components/IdentityProvider";
+import { PostHeaderLayout } from "app/lish/[did]/[publication]/[rkey]/PostHeader/PostHeader";
 export const PublicationMetadata = () => {
   let { rep } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
@@ -44,70 +45,80 @@ export const PublicationMetadata = () => {
   let tags = true;
 
   return (
-    <div className={`flex flex-col px-3 sm:px-4 pb-5 sm:pt-3 pt-2`}>
-      <div className="flex gap-2">
-        {pub.publications && (
-          <Link
-            href={
-              identity?.atp_did === pub.publications?.identity_did
-                ? `${getBasePublicationURL(pub.publications)}/dashboard`
-                : getPublicationURL(pub.publications)
-            }
-            className="leafletMetadata text-accent-contrast font-bold hover:no-underline"
-          >
-            {pub.publications?.name}
-          </Link>
-        )}
-        <div className="font-bold text-tertiary px-1 text-sm flex place-items-center bg-border-light rounded-md ">
-          Editor
-        </div>
-      </div>
-      <TextField
-        className="text-xl font-bold outline-hidden bg-transparent"
-        value={title}
-        onChange={async (newTitle) => {
-          await rep?.mutate.updatePublicationDraft({
-            title: newTitle,
-            description,
-          });
-        }}
-        placeholder="Untitled"
-      />
-      <TextField
-        placeholder="add an optional description..."
-        className="italic text-secondary outline-hidden bg-transparent"
-        value={description}
-        onChange={async (newDescription) => {
-          await rep?.mutate.updatePublicationDraft({
-            title,
-            description: newDescription,
-          });
-        }}
-      />
-      {pub.doc ? (
-        <div className="flex flex-row items-center justify-between gap-2 pt-3">
-          <div className="flex gap-2 items-center">
-            <p className="text-sm text-tertiary">
-              Published {publishedAt && timeAgo(publishedAt)}
-            </p>
-            <Separator classname="h-4" />
+    <PostHeaderLayout
+      pubLink={
+        <div className="flex gap-2 items-center">
+          {pub.publications && (
             <Link
-              target="_blank"
-              className="text-sm"
               href={
-                pub.publications
-                  ? `${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`
-                  : `/p/${new AtUri(pub.doc).host}/${new AtUri(pub.doc).rkey}`
+                identity?.atp_did === pub.publications?.identity_did
+                  ? `${getBasePublicationURL(pub.publications)}/dashboard`
+                  : getPublicationURL(pub.publications)
               }
+              className="leafletMetadata text-accent-contrast font-bold hover:no-underline"
             >
-              View Post
+              {pub.publications?.name}
             </Link>
+          )}
+          <div className="font-bold text-tertiary px-1 h-[20px] text-sm flex place-items-center bg-border-light rounded-md ">
+            DRAFT
           </div>
+        </div>
+      }
+      postTitle={
+        <TextField
+          className="leading-tight pt-0.5 text-xl font-bold outline-hidden bg-transparent"
+          value={title}
+          onChange={async (newTitle) => {
+            await rep?.mutate.updatePublicationDraft({
+              title: newTitle,
+              description,
+            });
+          }}
+          placeholder="Untitled"
+        />
+      }
+      postDescription={
+        <TextField
+          placeholder="add an optional description..."
+          className="pt-1 italic text-secondary outline-hidden bg-transparent"
+          value={description}
+          onChange={async (newDescription) => {
+            await rep?.mutate.updatePublicationDraft({
+              title,
+              description: newDescription,
+            });
+          }}
+        />
+      }
+      postInfo={
+        <>
+          {pub.doc ? (
+            <div className="flex gap-2 items-center">
+              <p className="text-sm text-tertiary">
+                Published {publishedAt && timeAgo(publishedAt)}
+              </p>
+
+              <Link
+                target="_blank"
+                className="text-sm"
+                href={
+                  pub.publications
+                    ? `${getPublicationURL(pub.publications)}/${new AtUri(pub.doc).rkey}`
+                    : `/p/${new AtUri(pub.doc).host}/${new AtUri(pub.doc).rkey}`
+                }
+              >
+                View
+              </Link>
+            </div>
+          ) : (
+            <p>Draft</p>
+          )}
           <div className="flex gap-2 text-border items-center">
             {tags && (
               <>
                 <AddTags />
-                <Separator classname="h-4" />
+                <Separator classname="h-4!" />
               </>
             )}
             <div className="flex gap-1 items-center">
@@ -119,11 +130,9 @@ export const PublicationMetadata = () => {
               </div>
             )}
           </div>
-        </div>
-      ) : (
-        <p className="text-sm text-tertiary pt-2">Draft</p>
-      )}
-    </div>
+        </>
+      }
+    />
   );
 };
 
@@ -206,30 +215,22 @@ export const PublicationMetadataPreview = () => {
   if (!pub) return null;
 
   return (
-    <div className={`flex flex-col px-3 sm:px-4 pb-5 sm:pt-3 pt-2`}>
-      <div className="text-accent-contrast font-bold hover:no-underline">
-        {pub.publications?.name}
-      </div>
-
-      <div
-        className={`text-xl font-bold outline-hidden bg-transparent ${!pub.title && "text-tertiary italic"}`}
-      >
-        {pub.title ? pub.title : "Untitled"}
-      </div>
-      <div className="italic text-secondary outline-hidden bg-transparent">
-        {pub.description}
-      </div>
-
-      {pub.doc ? (
-        <div className="flex flex-row items-center gap-2 pt-3">
-          <p className="text-sm text-tertiary">
-            Published {publishedAt && timeAgo(publishedAt)}
-          </p>
+    <PostHeaderLayout
+      pubLink={
+        <div className="text-accent-contrast font-bold hover:no-underline">
+          {pub.publications?.name}
         </div>
-      ) : (
-        <p className="text-sm text-tertiary pt-2">Draft</p>
-      )}
-    </div>
+      }
+      postTitle={pub.title}
+      postDescription={pub.description}
+      postInfo={
+        pub.doc ? (
+          <p>Published {publishedAt && timeAgo(publishedAt)}</p>
+        ) : (
+          <p>Draft</p>
+        )
+      }
+    />
   );
 };
 
@@ -263,7 +264,7 @@ const AddTags = () => {
     <Popover
       className="p-2! w-[1000px] max-w-sm"
       trigger={
-        <div className="flex gap-1 hover:underline text-sm items-center text-tertiary">
+        <div className="addTagTrigger flex gap-1 hover:underline text-sm items-center text-tertiary">
           <TagTiny />{" "}
           {tags.length > 0
             ? `${tags.length} Tag${tags.length === 1 ? "" : "s"}`

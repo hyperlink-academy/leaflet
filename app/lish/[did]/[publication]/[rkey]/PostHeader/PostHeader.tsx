@@ -16,6 +16,8 @@ import { useIdentityData } from "components/IdentityProvider";
 import { EditTiny } from "components/Icons/EditTiny";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import Post from "app/p/[didOrHandle]/[rkey]/l-quote/[quote]/page";
+import { Separator } from "components/Layout";
 
 export function PostHeader(props: {
   data: PostPageData;
@@ -40,12 +42,9 @@ export function PostHeader(props: {
 
   if (!document?.data) return;
   return (
-    <div
-      className="max-w-prose w-full mx-auto px-3 sm:px-4 sm:pt-3 pt-2"
-      id="post-header"
-    >
-      <div className="pubHeader flex flex-col pb-5">
-        <div className="flex justify-between w-full">
+    <PostHeaderLayout
+      pubLink={
+        <>
           {pub && (
             <SpeedyLink
               className="font-bold hover:no-underline text-accent-contrast"
@@ -65,36 +64,69 @@ export function PostHeader(props: {
                 <EditTiny className="shrink-0" />
               </a>
             )}
-        </div>
-        <h2 className="leading-tight">{record.title}</h2>
-        {record.description ? (
-          <p className="italic text-secondary pt-1">{record.description}</p>
-        ) : null}
-        <div className="text-sm text-tertiary pt-3 flex gap-1 flex-wrap">
-          {profile ? (
-            <>
-              <a
-                className="text-tertiary"
-                href={`https://bsky.app/profile/${profile.handle}`}
-              >
-                by {profile.displayName || profile.handle}
-              </a>
-            </>
-          ) : null}
-          {record.publishedAt ? (
-            <>
-              |<p>{formattedDate}</p>
-            </>
-          ) : null}
-          |{" "}
+        </>
+      }
+      postTitle={record.title}
+      postDescription={record.description}
+      postInfo={
+        <>
+          <div className="flex flex-row gap-2 items-center">
+            {profile ? (
+              <>
+                <a
+                  className="text-tertiary"
+                  href={`https://bsky.app/profile/${profile.handle}`}
+                >
+                  {profile.displayName || profile.handle}
+                </a>
+              </>
+            ) : null}
+            {record.publishedAt ? (
+              <>
+                <Separator classname="h-4!" />
+                <p>{formattedDate}</p>
+              </>
+            ) : null}
+          </div>
           <Interactions
             showComments={props.preferences.showComments}
             compact
             quotesCount={getQuoteCount(document) || 0}
             commentsCount={getCommentCount(document) || 0}
           />
-        </div>
+        </>
+      }
+    />
+  );
+}
+
+export const PostHeaderLayout = (props: {
+  pubLink: React.ReactNode;
+  postTitle: React.ReactNode | undefined;
+  postDescription: React.ReactNode | undefined;
+  postInfo: React.ReactNode;
+}) => {
+  return (
+    <div
+      className="postHeader max-w-prose w-full flex flex-col px-3 sm:px-4 sm:pt-3 pt-2 pb-5"
+      id="post-header"
+    >
+      <div className="pubInfo flex text-accent-contrast font-bold justify-between w-full">
+        {props.pubLink}
+      </div>
+      <h2
+        className={`postTitle text-xl leading-tight pt-0.5 font-bold outline-hidden bg-transparent ${!props.postTitle && "text-tertiary italic"}`}
+      >
+        {props.postTitle ? props.postTitle : "Untitled"}
+      </h2>
+      {props.postDescription ? (
+        <p className="postDescription italic text-secondary outline-hidden bg-transparent pt-1">
+          {props.postDescription}
+        </p>
+      ) : null}
+      <div className="postInfo text-sm text-tertiary pt-3 flex gap-1 flex-wrap justify-between">
+        {props.postInfo}
       </div>
     </div>
   );
-}
+};

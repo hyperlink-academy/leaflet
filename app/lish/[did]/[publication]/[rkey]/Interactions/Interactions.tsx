@@ -147,11 +147,7 @@ export const Interactions = (props: {
         <button
           className={`flex gap-1 items-center ${!props.compact && "px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"}`}
           onClick={() => {
-            if (
-              !drawerOpen ||
-              drawer !== "comments" ||
-              pageId !== props.pageId
-            )
+            if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
               openInteractionDrawer("comments", document_uri, props.pageId);
             else setInteractionState(document_uri, { drawerOpen: false });
           }}
@@ -185,7 +181,7 @@ const TagPopover = () => {
     <Popover
       className="p-2! max-w-xs"
       trigger={
-        <div className="flex gap-1 items-center ">
+        <div className="tags flex gap-1 items-center ">
           <TagTiny /> {tagCount}
         </div>
       }

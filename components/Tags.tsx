@@ -14,11 +14,11 @@ export const Tag = (props: {
 }) => {
   return (
     <div
-      className={`tag flex items-center text-xs  rounded-md border ${props.selected ? "bg-accent-1 text-accent-2 border-accent-1 font-bold" : "bg-bg-page text-tertiary border-border"} ${props.className}`}
+      className={`tag flex items-center text-xs  rounded-md border ${props.selected ? "bg-accent-1  border-accent-1 font-bold" : "bg-bg-page border-border"} ${props.className}`}
     >
       <Link
         href={`/tag/${encodeURIComponent(props.name)}`}
-        className={`px-1 py-0.5 text-tertiary hover:no-underline!`}
+        className={`px-1 py-0.5 hover:no-underline! ${props.selected ? "text-accent-2" : "text-tertiary"}`}
       >
         {props.name}{" "}
       </Link>
@@ -27,7 +27,7 @@ export const Tag = (props: {
           type="button"
           onClick={() => (props.onDelete ? props.onDelete(props.name) : null)}
         >
-          <CloseTiny className="scale-75 pr-1" />
+          <CloseTiny className="scale-75 pr-1 text-accent-2" />
         </button>
       ) : null}
     </div>
@@ -52,7 +52,9 @@ export const TagSelector = (props: {
               name={tag}
               selected
               onDelete={() => {
-                props.setSelectedTags(props.selectedTags.filter((t) => t !== tag));
+                props.setSelectedTags(
+                  props.selectedTags.filter((t) => t !== tag),
+                );
               }}
             />
           ))}
@@ -148,7 +150,7 @@ export const TagSearchInput = (props: {
   return (
     <div className="relative">
       <Input
-        className="input-with-border grow w-full"
+        className="input-with-border grow w-full bg-test"
         id="placeholder-tag-search-input"
         value={tagInputValue}
         placeholder="search tags..."
@@ -172,14 +174,14 @@ export const TagSearchInput = (props: {
               document.getElementById("tag-search-input")?.focus();
             }, 100);
         }}
-        className="!w-full px-[8px] py-2!"
+        className="!w-full px-2! py-2!"
         sideOffset={-39}
         onOpenAutoFocus={(e) => e.preventDefault()}
         asChild
         trigger={
           <button
             ref={placeholderInputRef}
-            className="hello absolute left-0 top-0 right-0 h-[30px]"
+            className="absolute left-0 top-0 right-0 h-[30px]"
           ></button>
         }
         noArrow
@@ -199,36 +201,42 @@ export const TagSearchInput = (props: {
               setIsOpen(true);
             }}
           />
-          {props.selectedTags.length > 0 && (
-            <>
-              <div className="flex flex-wrap gap-2 ">
-                {props.selectedTags.map((tag) => (
-                  <Tag
-                    name={tag}
-                    selected
-                    onDelete={() => {
-                      props.setSelectedTags(
-                        props.selectedTags.filter((t) => t !== tag),
-                      );
-                    }}
-                  />
-                ))}
-              </div>
-              <hr className="mt-[6px] mb-[2px] border-border-light" />
-            </>
+          {props.selectedTags.length > 0 ? (
+            <div className="flex flex-wrap gap-2 pb-[6px]">
+              {props.selectedTags.map((tag) => (
+                <Tag
+                  key={tag}
+                  name={tag}
+                  selected
+                  onDelete={() => {
+                    props.setSelectedTags(
+                      props.selectedTags.filter((t) => t !== tag),
+                    );
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-tertiary italic text-sm h-6">
+              no tags selected
+            </div>
           )}
+          <hr className=" mb-[2px] border-border-light" />
+
           {userInputResult && (
-            <TagResult
-              key={"userInput"}
-              index={0}
-              name={tagInputValue}
-              tagged={0}
-              highlighted={0 === highlightedIndex}
-              setHighlightedIndex={setHighlightedIndex}
-              onSelect={() => {
-                selectTag(tagInputValue);
-              }}
-            />
+            <>
+              <TagResult
+                key={"userInput"}
+                index={0}
+                name={tagInputValue}
+                tagged={0}
+                highlighted={0 === highlightedIndex}
+                setHighlightedIndex={setHighlightedIndex}
+                onSelect={() => {
+                  selectTag(tagInputValue);
+                }}
+              />
+            </>
           )}
           {filteredTags.map((tag, i) => (
             <TagResult
@@ -258,20 +266,22 @@ const TagResult = (props: {
   setHighlightedIndex: (i: number) => void;
 }) => {
   return (
-    <button
-      className={`w-full flex justify-between items-center text-left px-[6px] py-0.5 rounded-md ${props.highlighted ? "bg-border-light" : ""}`}
-      onSelect={(e) => {
-        e.preventDefault();
-        props.onSelect();
-      }}
-      onClick={(e) => {
-        e.preventDefault();
-        props.onSelect();
-      }}
-      onMouseEnter={(e) => props.setHighlightedIndex(props.index)}
-    >
-      {props.name}
-      <div className="text-tertiary text-sm"> {props.tagged}</div>
-    </button>
+    <div className="-mx-1">
+      <button
+        className={`w-full flex justify-between items-center text-left pr-1 pl-[6px]   py-0.5 rounded-md ${props.highlighted ? "bg-border-light" : ""}`}
+        onSelect={(e) => {
+          e.preventDefault();
+          props.onSelect();
+        }}
+        onClick={(e) => {
+          e.preventDefault();
+          props.onSelect();
+        }}
+        onMouseEnter={(e) => props.setHighlightedIndex(props.index)}
+      >
+        {props.name}
+        <div className="text-tertiary text-sm"> {props.tagged}</div>
+      </button>
+    </div>
   );
 };
