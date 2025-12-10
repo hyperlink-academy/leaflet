@@ -457,8 +457,8 @@ export type Mention =
       displayName?: string;
       avatar?: string;
     }
-  | { type: "publication"; uri: string; name: string }
-  | { type: "post"; uri: string; title: string };
+  | { type: "publication"; uri: string; name: string; url: string }
+  | { type: "post"; uri: string; title: string; url: string };
 
 export type MentionScope =
   | { type: "default" }
@@ -493,6 +493,7 @@ function useMentionSuggestions(query: string | null) {
             type: "post" as const,
             uri: d.uri,
             title: d.title,
+            url: d.url,
           })),
         );
       } else {
@@ -517,6 +518,7 @@ function useMentionSuggestions(query: string | null) {
             type: "publication" as const,
             uri: p.uri,
             name: p.name,
+            url: p.url,
           })),
         ]);
       }

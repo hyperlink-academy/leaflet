@@ -170,7 +170,6 @@ export function BlueskyPostEditorProsemirror(props: {
 
   const handleMentionSelect = useCallback(
     (mention: Mention) => {
-      if (mention.type !== "did") return;
       if (!viewRef.current || mentionInsertPos === null) return;
       const view = viewRef.current;
       const from = mentionInsertPos - 1;
@@ -180,19 +179,37 @@ export function BlueskyPostEditorProsemirror(props: {
       // Delete the @ symbol
       tr.delete(from, to);
 
-      // Insert @handle
-      const mentionText = "@" + mention.handle;
-      tr.insertText(mentionText, from);
-
-      // Apply mention mark
-      tr.addMark(
-        from,
-        from + mentionText.length,
-        bskyPostSchema.marks.mention.create({ did: mention.did }),
-      );
-
-      // Add a space after the mention
-      tr.insertText(" ", from + mentionText.length);
+      if (mention.type === "did") {
+        // Insert @handle with mention mark
+        const mentionText = "@" + mention.handle;
+        tr.insertText(mentionText, from);
+        tr.addMark(
+          from,
+          from + mentionText.length,
+          bskyPostSchema.marks.mention.create({ did: mention.did }),
+        );
+        tr.insertText(" ", from + mentionText.length);
+      } else if (mention.type === "publication") {
+        // Insert publication name as a link
+        const linkText = mention.name;
+        tr.insertText(linkText, from);
+        tr.addMark(
+          from,
+          from + linkText.length,
+          bskyPostSchema.marks.link.create({ href: mention.url }),
+        );
+        tr.insertText(" ", from + linkText.length);
+      } else if (mention.type === "post") {
+        // Insert post title as a link
+        const linkText = mention.title;
+        tr.insertText(linkText, from);
+        tr.addMark(
+          from,
+          from + linkText.length,
+          bskyPostSchema.marks.link.create({ href: mention.url }),
+        );
+        tr.insertText(" ", from + linkText.length);
+      }
 
       view.dispatch(tr);
       view.focus();
