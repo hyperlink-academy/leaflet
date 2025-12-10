@@ -1,7 +1,8 @@
 "use client";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { Input } from "components/Input";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
+import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { Popover } from "components/Popover";
 import Link from "next/link";
 import { searchTags, type TagSearchResult } from "actions/searchTags";
@@ -81,21 +82,18 @@ export const TagSearchInput = (props: {
   let inputWidth = placeholderInputRef.current?.clientWidth;
 
   // Fetch tags whenever the input value changes
-  useEffect(() => {
-    let cancelled = false;
-    setIsSearching(true);
-
-    searchTags(tagInputValue).then((results) => {
-      if (!cancelled && results) {
+  useDebouncedEffect(
+    async () => {
+      setIsSearching(true);
+      const results = await searchTags(tagInputValue);
+      if (results) {
         setSearchResults(results);
-        setIsSearching(false);
       }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [tagInputValue]);
+      setIsSearching(false);
+    },
+    300,
+    [tagInputValue],
+  );
 
   const filteredTags = searchResults.filter(
     (tag) => !props.selectedTags.includes(tag.name),
@@ -140,13 +138,10 @@ export const TagSearchInput = (props: {
     }
   };
 
-  const [userInputResult, setUserInputResult] = useState(false);
-  useEffect(() => {
-    const isTopResultShowing =
-      tagInputValue !== "" &&
-      !filteredTags.some((tag) => tag.name === tagInputValue);
-    setUserInputResult(isTopResultShowing);
-  }, [tagInputValue, filteredTags]);
+  const userInputResult =
+    tagInputValue !== "" &&
+    !filteredTags.some((tag) => tag.name === tagInputValue);
+
   return (
     <div className="relative">
       <Input
