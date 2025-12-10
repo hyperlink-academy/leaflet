@@ -48,7 +48,6 @@ export function LinearDocumentPage({
     fullPageScroll,
     hasPageBackground,
   } = props;
-  let { identity } = useIdentityData();
   let drawer = useDrawerOpen(document_uri);
 
   if (!document) return null;
@@ -85,49 +84,14 @@ export function LinearDocumentPage({
           did={did}
           prerenderedCodeBlocks={prerenderedCodeBlocks}
         />
+
         <ExpandedInteractions
           pageId={pageId}
           showComments={preferences.showComments}
           commentsCount={getCommentCount(document, pageId) || 0}
           quotesCount={getQuoteCount(document, pageId) || 0}
         />
-        {!isSubpage && (
-          <>
-            <div className="sm:px-4 px-3">
-              {identity &&
-              identity.atp_did ===
-                document.documents_in_publications[0]?.publications
-                  ?.identity_did &&
-              document.leaflets_in_publications[0] ? (
-                <a
-                  href={`https://leaflet.pub/${document.leaflets_in_publications[0]?.leaflet}`}
-                  className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1 mx-auto"
-                >
-                  <EditTiny /> Edit Post
-                </a>
-              ) : (
-                document.documents_in_publications[0]?.publications && (
-                  <SubscribeWithBluesky
-                    isPost
-                    base_url={getPublicationURL(
-                      document.documents_in_publications[0].publications,
-                    )}
-                    pub_uri={
-                      document.documents_in_publications[0].publications.uri
-                    }
-                    subscribers={
-                      document.documents_in_publications[0].publications
-                        .publication_subscriptions
-                    }
-                    pubName={
-                      document.documents_in_publications[0].publications.name
-                    }
-                  />
-                )
-              )}
-            </div>
-          </>
-        )}
+        {!hasPageBackground && <div className={`spacer h-8 w-full`} />}
       </PageWrapper>
     </>
   );
