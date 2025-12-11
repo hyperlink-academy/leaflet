@@ -26,12 +26,13 @@ export async function generateMetadata(props: {
   return {
     icons: {
       icon: {
-
         url:
           process.env.NODE_ENV === "development"
             ? `/lish/${did}/${params.publication}/icon`
             : "/icon",
-        , sizes: "32x32", type: "image/png" },
+        sizes: "32x32",
+        type: "image/png",
+      },
       other: {
         rel: "alternate",
         url: document.uri,
