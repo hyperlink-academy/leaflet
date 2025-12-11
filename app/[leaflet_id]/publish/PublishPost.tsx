@@ -33,6 +33,7 @@ type Props = {
   record?: PubLeafletPublication.Record;
   posts_in_pub?: number;
   entitiesToDelete?: string[];
+  hasDraft: boolean;
 };
 
 export function PublishPost(props: Props) {
@@ -67,17 +68,29 @@ const PublishPostForm = (
   let params = useParams();
   let { rep } = useReplicache();
 
-  // Get tags from Replicache state (same as in the draft editor)
-  let tags = useSubscribe(rep, (tx) => tx.get<string[]>("publication_tags"));
+  // For publications with drafts, use Replicache; otherwise use local state
+  let replicacheTags = useSubscribe(rep, (tx) =>
+    tx.get<string[]>("publication_tags"),
+  );
+  let [localTags, setLocalTags] = useState<string[]>([]);
 
-  // Default to empty array if undefined
-  const currentTags = Array.isArray(tags) ? tags : [];
+  // Use Replicache tags only when we have a draft
+  const hasDraft = props.hasDraft;
+  const currentTags = hasDraft
+    ? Array.isArray(replicacheTags)
+      ? replicacheTags
+      : []
+    : localTags;
 
-  // Update tags via the same mutation used in the editor
+  // Update tags via Replicache mutation or local state depending on context
   const handleTagsChange = async (newTags: string[]) => {
-    await rep?.mutate.updatePublicationDraft({
-      tags: newTags,
-    });
+    if (hasDraft) {
+      await rep?.mutate.updatePublicationDraft({
+        tags: newTags,
+      });
+    } else {
+      setLocalTags(newTags);
+    }
   };
 
   async function submit() {

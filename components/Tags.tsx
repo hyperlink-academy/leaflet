@@ -95,9 +95,13 @@ export const TagSearchInput = (props: {
     [tagInputValue],
   );
 
-  const filteredTags = searchResults.filter(
-    (tag) => !props.selectedTags.includes(tag.name),
-  );
+  const filteredTags = searchResults
+    .filter((tag) => !props.selectedTags.includes(tag.name))
+    .filter((tag) =>
+      tag.name.toLowerCase().includes(tagInputValue.toLowerCase()),
+    );
+
+  const showResults = tagInputValue.length >= 3;
 
   function clearTagInput() {
     setHighlightedIndex(0);
@@ -139,6 +143,7 @@ export const TagSearchInput = (props: {
   };
 
   const userInputResult =
+    showResults &&
     tagInputValue !== "" &&
     !filteredTags.some((tag) => tag.name === tagInputValue);
 
@@ -219,34 +224,42 @@ export const TagSearchInput = (props: {
           )}
           <hr className=" mb-[2px] border-border-light" />
 
-          {userInputResult && (
+          {showResults ? (
             <>
-              <TagResult
-                key={"userInput"}
-                index={0}
-                name={tagInputValue}
-                tagged={0}
-                highlighted={0 === highlightedIndex}
-                setHighlightedIndex={setHighlightedIndex}
-                onSelect={() => {
-                  selectTag(tagInputValue);
-                }}
-              />
+              {userInputResult && (
+                <TagResult
+                  key={"userInput"}
+                  index={0}
+                  name={tagInputValue}
+                  tagged={0}
+                  highlighted={0 === highlightedIndex}
+                  setHighlightedIndex={setHighlightedIndex}
+                  onSelect={() => {
+                    selectTag(tagInputValue);
+                  }}
+                />
+              )}
+              {filteredTags.map((tag, i) => (
+                <TagResult
+                  key={tag.name}
+                  index={userInputResult ? i + 1 : i}
+                  name={tag.name}
+                  tagged={tag.document_count}
+                  highlighted={
+                    (userInputResult ? i + 1 : i) === highlightedIndex
+                  }
+                  setHighlightedIndex={setHighlightedIndex}
+                  onSelect={() => {
+                    selectTag(tag.name);
+                  }}
+                />
+              ))}
             </>
+          ) : (
+            <div className="text-tertiary italic text-sm py-1">
+              type at least 3 characters to search
+            </div>
           )}
-          {filteredTags.map((tag, i) => (
-            <TagResult
-              key={tag.name}
-              index={userInputResult ? i + 1 : i}
-              name={tag.name}
-              tagged={tag.document_count}
-              highlighted={(userInputResult ? i + 1 : i) === highlightedIndex}
-              setHighlightedIndex={setHighlightedIndex}
-              onSelect={() => {
-                selectTag(tag.name);
-              }}
-            />
-          ))}
         </div>
       </Popover>
     </div>
