@@ -18,7 +18,7 @@ export const Tag = (props: {
       className={`tag flex items-center text-xs  rounded-md border ${props.selected ? "bg-accent-1  border-accent-1 font-bold" : "bg-bg-page border-border"} ${props.className}`}
     >
       <Link
-        href={`/tag/${encodeURIComponent(props.name)}`}
+        href={`https://leaflet.pub/tag/${encodeURIComponent(props.name)}`}
         className={`px-1 py-0.5 hover:no-underline! ${props.selected ? "text-accent-2" : "text-tertiary"}`}
       >
         {props.name}{" "}
