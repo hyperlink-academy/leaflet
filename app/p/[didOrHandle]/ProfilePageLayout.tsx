@@ -5,6 +5,9 @@ import { useState } from "react";
 import { ProfileTabs, TabContent } from "./ProfileTabs/Tabs";
 import { Json } from "supabase/database.types";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { Avatar } from "components/Avatar";
+import { AppBskyActorProfile } from "lexicons/api";
+import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
 export const ProfilePageLayout = (props: {
   profile: {
@@ -51,25 +54,34 @@ const ProfilePageContent = (props: {
 }) => {
   let [tab, setTab] = useState<profileTabsType>("activity");
 
-  let profileRecord = props.profile?.record as unknown as ProfileViewDetailed;
+  let profileRecord = props.profile?.record as AppBskyActorProfile.Record;
   console.log(profileRecord);
 
+  if (!props.profile) return;
   return (
     <div
       className={`
         max-w-prose mx-auto w-full h-full
         flex flex-col
-        border border-border rounded-md
+        border border-border-light rounded-lg
         text-center px-3 sm:px-4 mt-8`}
     >
-      <div className="bg-test rounded-full h-16 w-16 mx-auto -mt-8" />
-      <h3 className="pt-2">
+      <Avatar
+        src={
+          profileRecord.avatar?.ref &&
+          blobRefToSrc(profileRecord.avatar?.ref, props.profile.did)
+        }
+        displayName={profileRecord.displayName}
+        className="mx-auto -mt-8"
+        giant
+      />
+      <h3 className="pt-2 leading-tight">
         {profileRecord.displayName
           ? profileRecord.displayName
           : `@${props.profile?.handle}`}
       </h3>
       {profileRecord.displayName && (
-        <div className="text-tertiary text-sm pb-1">
+        <div className="text-tertiary text-sm pb-1 italic">
           @{props.profile?.handle}
         </div>
       )}
