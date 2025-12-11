@@ -8,15 +8,13 @@ import { redirect } from "next/navigation";
 
 let idResolver = new IdResolver();
 
-export const size = {
-  width: 32,
-  height: 32,
-};
+export const dynamic = "force-dynamic";
 
-export const contentType = "image/png";
-export default async function Icon(props: {
-  params: Promise<{ did: string; publication: string }>;
-}) {
+export async function GET(
+  request: NextRequest,
+  props: { params: Promise<{ did: string; publication: string }> }
+) {
+  console.log("are we getting here?");
   const params = await props.params;
   try {
     let did = decodeURIComponent(params.did);
@@ -63,6 +61,7 @@ export default async function Icon(props: {
       },
     });
   } catch (e) {
+    console.log(e);
     return redirect("/icon.png");
   }
 }
