@@ -28,8 +28,10 @@ export function useLocalizedDate(
 
     // On initial page load, use header timezone. After hydration, use system timezone
     const effectiveTimezone = !hasPageLoaded
-      ? timezone
+      ? timezone || "UTC"
       : Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    console.log("tz", effectiveTimezone);
 
     // Apply timezone if available
     if (effectiveTimezone) {

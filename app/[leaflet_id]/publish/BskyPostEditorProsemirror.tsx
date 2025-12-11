@@ -148,16 +148,28 @@ export function BlueskyPostEditorProsemirror(props: {
     const pos = view.state.selection.from;
     setMentionInsertPos(pos);
     const coords = view.coordsAtPos(pos - 1);
-    setMentionCoords({
-      top: coords.bottom + window.scrollY,
-      left: coords.left + window.scrollX,
-    });
+
+    // Get coordinates relative to the positioned parent container
+    const editorEl = view.dom;
+    const container = editorEl.closest(".relative") as HTMLElement | null;
+
+    if (container) {
+      const containerRect = container.getBoundingClientRect();
+      setMentionCoords({
+        top: coords.bottom - containerRect.top,
+        left: coords.left - containerRect.left,
+      });
+    } else {
+      setMentionCoords({
+        top: coords.bottom,
+        left: coords.left,
+      });
+    }
     setMentionOpen(true);
   }, []);
 
   const handleMentionSelect = useCallback(
     (mention: Mention) => {
-      if (mention.type !== "did") return;
       if (!viewRef.current || mentionInsertPos === null) return;
       const view = viewRef.current;
       const from = mentionInsertPos - 1;
@@ -167,19 +179,37 @@ export function BlueskyPostEditorProsemirror(props: {
       // Delete the @ symbol
       tr.delete(from, to);
 
-      // Insert @handle
-      const mentionText = "@" + mention.handle;
-      tr.insertText(mentionText, from);
-
-      // Apply mention mark
-      tr.addMark(
-        from,
-        from + mentionText.length,
-        bskyPostSchema.marks.mention.create({ did: mention.did }),
-      );
-
-      // Add a space after the mention
-      tr.insertText(" ", from + mentionText.length);
+      if (mention.type === "did") {
+        // Insert @handle with mention mark
+        const mentionText = "@" + mention.handle;
+        tr.insertText(mentionText, from);
+        tr.addMark(
+          from,
+          from + mentionText.length,
+          bskyPostSchema.marks.mention.create({ did: mention.did }),
+        );
+        tr.insertText(" ", from + mentionText.length);
+      } else if (mention.type === "publication") {
+        // Insert publication name as a link
+        const linkText = mention.name;
+        tr.insertText(linkText, from);
+        tr.addMark(
+          from,
+          from + linkText.length,
+          bskyPostSchema.marks.link.create({ href: mention.url }),
+        );
+        tr.insertText(" ", from + linkText.length);
+      } else if (mention.type === "post") {
+        // Insert post title as a link
+        const linkText = mention.title;
+        tr.insertText(linkText, from);
+        tr.addMark(
+          from,
+          from + linkText.length,
+          bskyPostSchema.marks.link.create({ href: mention.url }),
+        );
+        tr.insertText(" ", from + linkText.length);
+      }
 
       view.dispatch(tr);
       view.focus();
@@ -270,6 +300,7 @@ export function BlueskyPostEditorProsemirror(props: {
         view={viewRef}
         onSelect={handleMentionSelect}
         coords={mentionCoords}
+        placeholder="Search people..."
       />
       {editorState?.doc.textContent.length === 0 && (
         <div className="italic text-tertiary absolute top-0 left-0 pointer-events-none">
