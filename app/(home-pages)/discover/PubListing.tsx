@@ -1,6 +1,7 @@
 "use client";
 import { AtUri } from "@atproto/syntax";
 import { PublicationSubscription } from "app/(home-pages)/reader/getSubscriptions";
+import { SubscribeWithBluesky } from "app/lish/Subscribe";
 import { PubIcon } from "components/ActionBar/Publications";
 import { Separator } from "components/Layout";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";

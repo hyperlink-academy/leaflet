@@ -14,6 +14,7 @@ import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { SpeedyLink } from "components/SpeedyLink";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
+import { InteractionPreview } from "components/InteractionsPreview";
 import { LocalizedDate } from "./LocalizedDate";
 import { PublicationHomeLayout } from "./PublicationHomeLayout";
 
@@ -134,6 +135,7 @@ export default async function Publication(props: {
                     record?.preferences?.showComments === false
                       ? 0
                       : doc.documents.comments_on_documents[0].count || 0;
+                  let tags = (doc_record?.tags as string[] | undefined) || [];
 
                   return (
                     <React.Fragment key={doc.documents?.uri}>
@@ -162,23 +164,13 @@ export default async function Publication(props: {
                             )}{" "}
                           </p>
                           {comments > 0 || quotes > 0 ? "| " : ""}
-                          {quotes > 0 && (
-                            <SpeedyLink
-                              href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=quotes`}
-                              className="flex flex-row gap-0 text-sm text-tertiary items-center flex-wrap"
-                            >
-                              <QuoteTiny /> {quotes}
-                            </SpeedyLink>
-                          )}
-                          {comments > 0 &&
-                            record?.preferences?.showComments !== false && (
-                              <SpeedyLink
-                                href={`${getPublicationURL(publication)}/${uri.rkey}?interactionDrawer=comments`}
-                                className="flex flex-row gap-0 text-sm text-tertiary items-center flex-wrap"
-                              >
-                                <CommentTiny /> {comments}
-                              </SpeedyLink>
-                            )}
+                          <InteractionPreview
+                            quotesCount={quotes}
+                            commentsCount={comments}
+                            tags={tags}
+                            postUrl=""
+                            showComments={record?.preferences?.showComments}
+                          />
                         </div>
                       </div>
                       <hr className="last:hidden border-border-light" />

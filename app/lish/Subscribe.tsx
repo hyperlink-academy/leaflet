@@ -23,165 +23,8 @@ import { addFeed } from "./addFeed";
 import { useSearchParams } from "next/navigation";
 import LoginForm from "app/login/LoginForm";
 import { RSSSmall } from "components/Icons/RSSSmall";
-import { SpeedyLink } from "components/SpeedyLink";
-
-type State =
-  | { state: "email" }
-  | { state: "code"; token: string }
-  | { state: "success" };
-export const SubscribeButton = (props: {
-  compact?: boolean;
-  publication: string;
-}) => {
-  let { identity, mutate } = useIdentityData();
-  let [emailInputValue, setEmailInputValue] = useState("");
-  let [codeInputValue, setCodeInputValue] = useState("");
-  let [state, setState] = useState<State>({ state: "email" });
-
-  if (state.state === "email") {
-    return (
-      <div className="flex gap-2">
-        <div className="flex relative w-full max-w-sm">
-          <Input
-            type="email"
-            className="input-with-border pr-[104px]! py-1! grow w-full"
-            placeholder={
-              props.compact ? "subscribe with email..." : "email here..."
-            }
-            disabled={!!identity?.email}
-            value={identity?.email ? identity.email : emailInputValue}
-            onChange={(e) => {
-              setEmailInputValue(e.currentTarget.value);
-            }}
-          />
-          <ButtonPrimary
-            compact
-            className="absolute right-1 top-1 outline-0!"
-            onClick={async () => {
-              if (identity?.email) {
-                await subscribeToPublicationWithEmail(props.publication);
-                //optimistically could add!
-                await mutate();
-                return;
-              }
-              let tokenID = await requestAuthEmailToken(emailInputValue);
-              setState({ state: "code", token: tokenID });
-            }}
-          >
-            {props.compact ? (
-              <ArrowRightTiny className="w-4 h-6" />
-            ) : (
-              "Subscribe"
-            )}
-          </ButtonPrimary>
-        </div>
-        {/* <ShareButton /> */}
-      </div>
-    );
-  }
-  if (state.state === "code") {
-    return (
-      <div
-        className="w-full flex flex-col justify-center place-items-center p-4 rounded-md"
-        style={{
-          background:
-            "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
-        }}
-      >
-        <div className="flex flex-col leading-snug text-secondary">
-          <div>Please enter the code we sent to </div>
-          <div className="italic font-bold">{emailInputValue}</div>
-        </div>
-
-        <ConfirmCodeInput
-          publication={props.publication}
-          token={state.token}
-          codeInputValue={codeInputValue}
-          setCodeInputValue={setCodeInputValue}
-          setState={setState}
-        />
-
-        <button
-          className="text-accent-contrast text-sm mt-1"
-          onClick={() => {
-            setState({ state: "email" });
-          }}
-        >
-          Re-enter Email
-        </button>
-      </div>
-    );
-  }
-
-  if (state.state === "success") {
-    return (
-      <div
-        className={`w-full flex flex-col gap-2 justify-center place-items-center p-4 rounded-md text-secondary ${props.compact ? "py-1 animate-bounce" : "p-4"}`}
-        style={{
-          background:
-            "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
-        }}
-      >
-        <div className="flex gap-2 leading-snug font-bold italic">
-          <div>You're subscribed!</div>
-          {/* <ShareButton /> */}
-        </div>
-      </div>
-    );
-  }
-};
-
-export const ShareButton = () => {
-  return (
-    <button className="text-accent-contrast">
-      <ShareSmall />
-    </button>
-  );
-};
-
-const ConfirmCodeInput = (props: {
-  codeInputValue: string;
-  token: string;
-  setCodeInputValue: (value: string) => void;
-  setState: (state: State) => void;
-  publication: string;
-}) => {
-  let { mutate } = useIdentityData();
-  return (
-    <div className="relative w-fit mt-2">
-      <Input
-        type="text"
-        pattern="[0-9]"
-        className="input-with-border pr-[88px]! py-1! max-w-[156px]"
-        placeholder="000000"
-        value={props.codeInputValue}
-        onChange={(e) => {
-          props.setCodeInputValue(e.currentTarget.value);
-        }}
-      />
-      <ButtonPrimary
-        compact
-        className="absolute right-1 top-1 outline-0!"
-        onClick={async () => {
-          console.log(
-            await confirmEmailAuthToken(props.token, props.codeInputValue),
-          );
-
-          await subscribeToPublicationWithEmail(props.publication);
-          //optimistically could add!
-          await mutate();
-          props.setState({ state: "success" });
-          return;
-        }}
-      >
-        Confirm
-      </ButtonPrimary>
-    </div>
-  );
-};
 
 export const SubscribeWithBluesky = (props: {
-  isPost?: boolean;
   pubName: string;
   pub_uri: string;
   base_url: string;
@@ -208,11 +51,6 @@ export const SubscribeWithBluesky = (props: {
   }
   return (
     <div className="flex flex-col gap-2 text-center justify-center">
-      {props.isPost && (
-        <div className="text-sm text-tertiary font-bold">
-          Get updates from {props.pubName}!
-        </div>
-      )}
       <div className="flex flex-row gap-2 place-self-center">
         <BlueskySubscribeButton
           pub_uri={props.pub_uri}
@@ -231,9 +69,7 @@ export const SubscribeWithBluesky = (props: {
   );
 };
 
-const ManageSubscription = (props: {
-  isPost?: boolean;
-  pubName: string;
+export const ManageSubscription = (props: {
   pub_uri: string;
   subscribers: { identity: string }[];
   base_url: string;
@@ -248,56 +84,46 @@ const ManageSubscription = (props: {
     });
   }, null);
   return (
-    <div
-      className={`flex ${props.isPost ? "flex-col " : "gap-2"}  justify-center text-center`}
+    <Popover
+      trigger={
+        <div className="text-accent-contrast text-sm">Manage Subscription</div>
+      }
     >
-      <div className="font-bold text-tertiary text-sm">
-        You&apos;re Subscribed{props.isPost ? ` to ` : "!"}
-        {props.isPost && (
-          <SpeedyLink href={props.base_url} className="text-accent-contrast">
-            {props.pubName}
-          </SpeedyLink>
-        )}
-      </div>
-      <Popover
-        trigger={<div className="text-accent-contrast text-sm">Manage</div>}
-      >
-        <div className="max-w-sm flex flex-col gap-1">
-          <h4>Update Options</h4>
+      <div className="max-w-sm flex flex-col gap-1">
+        <h4>Update Options</h4>
 
-          {!hasFeed && (
-            <a
-              href="https://bsky.app/profile/leaflet.pub/feed/subscribedPublications"
-              target="_blank"
-              className=" place-self-center"
-            >
-              <ButtonPrimary fullWidth compact className="!px-4">
-                View Bluesky Custom Feed
-              </ButtonPrimary>
-            </a>
-          )}
-
+        {!hasFeed && (
           <a
-            href={`${props.base_url}/rss`}
-            className="flex"
+            href="https://bsky.app/profile/leaflet.pub/feed/subscribedPublications"
             target="_blank"
-            aria-label="Subscribe to RSS"
+            className=" place-self-center"
           >
-            <ButtonPrimary fullWidth compact>
-              Get RSS
+            <ButtonPrimary fullWidth compact className="!px-4">
+              View Bluesky Custom Feed
             </ButtonPrimary>
           </a>
+        )}
 
-          <hr className="border-border-light my-1" />
+        <a
+          href={`${props.base_url}/rss`}
+          className="flex"
+          target="_blank"
+          aria-label="Subscribe to RSS"
+        >
+          <ButtonPrimary fullWidth compact>
+            Get RSS
+          </ButtonPrimary>
+        </a>
 
-          <form action={unsubscribe}>
-            <button className="font-bold text-accent-contrast w-max place-self-center">
-              {unsubscribePending ? <DotLoader /> : "Unsubscribe"}
-            </button>
-          </form>
-        </div>{" "}
-      </Popover>
-    </div>
+        <hr className="border-border-light my-1" />
+
+        <form action={unsubscribe}>
+          <button className="font-bold text-accent-contrast w-max place-self-center">
+            {unsubscribePending ? <DotLoader /> : "Unsubscribe"}
+          </button>
+        </form>
+      </div>
+    </Popover>
   );
 };
 
@@ -429,4 +255,8 @@ const SubscribeSuccessModal = ({
       </Dialog.Portal>
     </Dialog.Root>
   );
+};
+
+export const SubscribeOnPost = () => {
+  return <div></div>;
 };

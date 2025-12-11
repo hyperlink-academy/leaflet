@@ -99,6 +99,11 @@ export default async function PublishLeafletPage(props: Props) {
     // If parsing fails, just use empty array
   }
 
+  // Check if a draft record exists (either in a publication or standalone)
+  let hasDraft =
+    data.leaflets_in_publications.length > 0 ||
+    data.leaflets_to_documents.length > 0;
+
   return (
     <ReplicacheProvider
       rootEntity={rootEntity}
@@ -116,6 +121,7 @@ export default async function PublishLeafletPage(props: Props) {
         record={publication?.record as PubLeafletPublication.Record | undefined}
         posts_in_pub={publication?.documents_in_publications[0]?.count}
         entitiesToDelete={entitiesToDelete}
+        hasDraft={hasDraft}
       />
     </ReplicacheProvider>
   );

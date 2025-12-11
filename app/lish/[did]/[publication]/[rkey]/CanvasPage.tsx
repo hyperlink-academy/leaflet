@@ -213,7 +213,6 @@ const CanvasMetadata = (props: {
       <Interactions
         quotesCount={props.quotesCount || 0}
         commentsCount={props.commentsCount || 0}
-        compact
         showComments={props.preferences.showComments}
         pageId={props.pageId}
       />

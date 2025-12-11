@@ -58,7 +58,9 @@ export const AsyncValueInput = (
   );
 };
 
-export const focusElement = (el?: HTMLInputElement | null) => {
+export const focusElement = (
+  el?: HTMLInputElement | HTMLTextAreaElement | null,
+) => {
   if (!isIOS()) {
     el?.focus();
     return;
