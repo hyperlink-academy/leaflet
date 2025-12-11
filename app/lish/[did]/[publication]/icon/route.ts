@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   request: NextRequest,
-  props: { params: Promise<{ did: string; publication: string }> }
+  props: { params: Promise<{ did: string; publication: string }> },
 ) {
   console.log("are we getting here?");
   const params = await props.params;
@@ -43,7 +43,7 @@ export async function GET(
 
     let identity = await idResolver.did.resolve(did);
     let service = identity?.service?.find((f) => f.id === "#atproto_pds");
-    if (!service) return null;
+    if (!service) return redirect("/icon.png");
     let cid = (record.icon.ref as unknown as { $link: string })["$link"];
     const response = await fetch(
       `${service.serviceEndpoint}/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${cid}`,
