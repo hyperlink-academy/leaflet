@@ -40,7 +40,7 @@ export const InteractionPreview = (props: {
         <SpeedyLink
           aria-label="Post quotes"
           href={`${props.postUrl}?interactionDrawer=quotes`}
-          className="flex flex-row gap-1 text-sm text-tertiary items-center"
+          className="flex flex-row gap-1 text-sm  items-center  text-accent-contrast!"
         >
           <QuoteTiny /> {props.quotesCount}
         </SpeedyLink>
@@ -49,7 +49,7 @@ export const InteractionPreview = (props: {
         <SpeedyLink
           aria-label="Post comments"
           href={`${props.postUrl}?interactionDrawer=comments`}
-          className="flex flex-row gap-1 text-sm text-tertiary items-center"
+          className="relative flex flex-row gap-1 text-sm  items-center hover:text-accent-contrast hover:no-underline! text-tertiary"
         >
           <CommentTiny /> {props.commentsCount}
         </SpeedyLink>
@@ -61,7 +61,7 @@ export const InteractionPreview = (props: {
         <>
           <button
             id={`copy-post-link-${props.postUrl}`}
-            className="flex gap-1 items-center hover:font-bold relative"
+            className="flex gap-1 items-center hover:text-accent-contrast relative"
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
@@ -92,14 +92,10 @@ const TagPopover = (props: { tags: string[] }) => {
   return (
     <Popover
       className="p-2! max-w-xs"
-      asChild
       trigger={
-        <button
-          aria-label="Post tags"
-          className="relative flex gap-1 items-center "
-        >
+        <div className="relative flex gap-1 items-center  hover:text-accent-contrast ">
           <TagTiny /> {props.tags.length}
-        </button>
+        </div>
       }
     >
       <TagList tags={props.tags} className="text-secondary!" />

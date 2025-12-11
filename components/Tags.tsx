@@ -40,7 +40,7 @@ export const TagSelector = (props: {
   setSelectedTags: (tags: string[]) => void;
 }) => {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 text-primary">
       <TagSearchInput
         selectedTags={props.selectedTags}
         setSelectedTags={props.setSelectedTags}
@@ -174,7 +174,7 @@ export const TagSearchInput = (props: {
               document.getElementById("tag-search-input")?.focus();
             }, 100);
         }}
-        className="w-full p-2! min-w-xs"
+        className="w-full p-2! min-w-xs text-primary"
         sideOffset={-39}
         onOpenAutoFocus={(e) => e.preventDefault()}
         asChild
