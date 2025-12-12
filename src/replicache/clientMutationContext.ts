@@ -2,7 +2,7 @@ import { Replicache, WriteTransaction } from "replicache";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { FactWithIndexes, scanIndex } from "./utils";
-import { Attribute, Attributes, FilterAttributes } from "./attributes";
+import { Attribute, Attributes, TextAttributes, CardinalityOneAttributes } from "./attributes";
 import type { Fact, ReplicacheMutators } from ".";
 import { FactInput, MutationContext } from "./mutations";
 import { supabaseBrowserClient } from "supabase/browserClient";
@@ -55,12 +55,12 @@ export function clientMutationContext(
             const oldUpdate = base64.toByteArray(
               (
                 existingFact[0]?.data as Fact<
-                  keyof FilterAttributes<{ type: "text" }>
+                  keyof TextAttributes
                 >["data"]
               ).value,
             );
             let textData = data as Fact<
-              keyof FilterAttributes<{ type: "text" }>
+              keyof TextAttributes
             >["data"];
             const newUpdate = base64.toByteArray(textData.value);
             const updateBytes = Y.mergeUpdates([oldUpdate, newUpdate]);
@@ -77,9 +77,7 @@ export function clientMutationContext(
               if (attribute.cardinality === "one" && !f.id)
                 rep.mutate.retractAttribute({
                   ignoreUndo: true,
-                  attribute: f.attribute as keyof FilterAttributes<{
-                    cardinality: "one";
-                  }>,
+                  attribute: f.attribute as keyof CardinalityOneAttributes,
                   entity: f.entity,
                 });
               rep.mutate.retractFact({ ignoreUndo: true, factID: id });

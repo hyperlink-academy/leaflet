@@ -4,7 +4,7 @@ import * as base64 from "base64-js";
 import * as Y from "yjs";
 import { MutationContext } from "./mutations";
 import { entities, facts } from "drizzle/schema";
-import { Attribute, Attributes, FilterAttributes } from "./attributes";
+import { Attribute, Attributes, TextAttributes } from "./attributes";
 import { Fact, PermissionToken } from ".";
 import { DeepReadonly } from "replicache";
 import { createClient } from "@supabase/supabase-js";
@@ -104,13 +104,13 @@ export function serverMutationContext(
             const oldUpdate = base64.toByteArray(
               (
                 existingFact[0]?.data as Fact<
-                  keyof FilterAttributes<{ type: "text" }>
+                  keyof TextAttributes
                 >["data"]
               ).value,
             );
 
             let textData = data as Fact<
-              keyof FilterAttributes<{ type: "text" }>
+              keyof TextAttributes
             >["data"];
             const newUpdate = base64.toByteArray(textData.value);
             const updateBytes = Y.mergeUpdates([oldUpdate, newUpdate]);

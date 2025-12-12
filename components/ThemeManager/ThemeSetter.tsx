@@ -13,7 +13,7 @@ import {
 import { useMemo, useState } from "react";
 import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { Replicache } from "replicache";
-import { FilterAttributes } from "src/replicache/attributes";
+import { ColorAttributes } from "src/replicache/attributes";
 import { colorToString } from "components/ThemeManager/useColorAttribute";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { ActionButton } from "components/ActionBar/ActionButton";
@@ -41,7 +41,7 @@ export function setColorAttribute(
   rep: Replicache<ReplicacheMutators> | null,
   entity: string,
 ) {
-  return (attribute: keyof FilterAttributes<{ type: "color" }>) =>
+  return (attribute: keyof ColorAttributes) =>
     (color: Color) =>
       rep?.mutate.assertFact({
         entity,

@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import { Color, parseColor } from "react-aria-components";
 import { useEntity, useReplicache } from "src/replicache";
-import { FilterAttributes } from "src/replicache/attributes";
+import { ColorOneAttributes } from "src/replicache/attributes";
 import { ThemeDefaults } from "./themeUtils";
 
 export function useColorAttribute(
   entity: string | null,
-  attribute: keyof FilterAttributes<{ type: "color"; cardinality: "one" }>,
+  attribute: keyof ColorOneAttributes,
 ) {
   // takes a color string and turns it into a react-aria Color type
   // we need it to interact with Color Pickers for themeing
@@ -20,7 +20,7 @@ export function useColorAttribute(
 }
 export function useColorAttributeNullable(
   entity: string | null,
-  attribute: keyof FilterAttributes<{ type: "color"; cardinality: "one" }>,
+  attribute: keyof ColorOneAttributes,
 ) {
   // takes a color string and turns it into a react-aria Color type
   // we need it to interact with Color Pickers for themeing

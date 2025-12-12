@@ -11,14 +11,14 @@ import { elementId } from "src/utils/elementId";
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 
-type BaseTextareaBlockProps = AutosizeTextareaProps & {
+interface BaseTextareaBlockProps extends AutosizeTextareaProps {
   block: Pick<
     BlockProps,
     "previousBlock" | "nextBlock" | "parent" | "position" | "nextPosition"
   >;
   rep?: Replicache<ReplicacheMutators> | null;
   permissionSet?: string;
-};
+}
 
 export function BaseTextareaBlock(props: BaseTextareaBlockProps) {
   let { block, rep, permissionSet, ...passDownProps } = props;

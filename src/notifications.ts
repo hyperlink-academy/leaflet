@@ -7,9 +7,9 @@ import { idResolver } from "app/(home-pages)/reader/idResolver";
 
 type NotificationRow = Tables<"notifications">;
 
-export type Notification = Omit<TablesInsert<"notifications">, "data"> & {
+export interface Notification extends Omit<TablesInsert<"notifications">, "data"> {
   data: NotificationData;
-};
+}
 
 export type NotificationData =
   | { type: "comment"; comment_uri: string; parent_uri?: string }

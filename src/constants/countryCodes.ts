@@ -298,9 +298,10 @@ type BaseCountryData = [
   string, // international dial code
 ];
 
-type FormatConfig = Record<string, string> & {
+interface FormatConfig {
+  [key: string]: string;
   default: string; // can pass any string, but "default" key is required
-};
+}
 
 type CountryDataWithFormat = [
   ...BaseCountryData,

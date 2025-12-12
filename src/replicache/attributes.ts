@@ -351,3 +351,12 @@ export type FilterAttributes<F extends Partial<Attributes[keyof Attributes]>> =
       ? A
       : never]: Attributes[A];
   };
+
+// Pre-computed FilterAttributes for common patterns to improve type-checking performance
+export type TextAttributes = FilterAttributes<{ type: "text" }>;
+export type ImageAttributes = FilterAttributes<{ type: "image" }>;
+export type ColorAttributes = FilterAttributes<{ type: "color" }>;
+export type ColorOneAttributes = FilterAttributes<{ type: "color"; cardinality: "one" }>;
+export type OrderedReferenceAttributes = FilterAttributes<{ type: "ordered-reference" }>;
+export type ReferenceOrOrderedAttributes = FilterAttributes<{ type: "reference" | "ordered-reference" }>;
+export type CardinalityOneAttributes = FilterAttributes<{ cardinality: "one" }>;

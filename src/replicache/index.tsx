@@ -18,7 +18,7 @@ import {
 } from "replicache";
 import { mutations } from "./mutations";
 import { Attributes } from "./attributes";
-import { Attribute, Data, FilterAttributes } from "./attributes";
+import { Attribute, Data, OrderedReferenceAttributes, ReferenceOrOrderedAttributes } from "./attributes";
 import { clientMutationContext } from "./clientMutationContext";
 import { supabaseBrowserClient } from "supabase/browserClient";
 import { callRPC } from "app/api/rpc/client";
@@ -244,9 +244,9 @@ export function useEntity<A extends Attribute>(
     ? ((a.type === "ordered-reference"
         ? d.sort((a, b) => {
             return (
-              a as Fact<keyof FilterAttributes<{ type: "ordered-reference" }>>
+              a as Fact<keyof OrderedReferenceAttributes>
             ).data.position >
-              (b as Fact<keyof FilterAttributes<{ type: "ordered-reference" }>>)
+              (b as Fact<keyof OrderedReferenceAttributes>)
                 .data.position
               ? 1
               : -1;
@@ -258,7 +258,7 @@ export function useEntity<A extends Attribute>(
 }
 
 export function useReferenceToEntity<
-  A extends keyof FilterAttributes<{ type: "reference" | "ordered-reference" }>,
+  A extends keyof ReferenceOrOrderedAttributes,
 >(attribute: A, entity: string) {
   let { rep, initialFacts } = useReplicache();
   let fallbackData = useMemo(

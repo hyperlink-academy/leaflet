@@ -1,7 +1,7 @@
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "../replicache";
 import { supabaseBrowserClient } from "supabase/browserClient";
-import type { FilterAttributes } from "src/replicache/attributes";
+import type { ImageAttributes } from "src/replicache/attributes";
 import { rgbaToDataURL, rgbaToThumbHash, thumbHashToDataURL } from "thumbhash";
 import { v7 } from "uuid";
 
@@ -11,7 +11,7 @@ export async function addImage(
   rep: Replicache<ReplicacheMutators>,
   args: {
     entityID: string;
-    attribute: keyof FilterAttributes<{ type: "image" }>;
+    attribute: keyof ImageAttributes;
   },
 ) {
   let client = supabaseBrowserClient();

@@ -15,15 +15,19 @@ type Toast = {
   duration?: number;
 };
 
-type Smoke = {
+interface Smoke {
   position: { x: number; y: number };
   text: React.ReactNode;
   static?: boolean;
   error?: boolean;
   alignOnMobile?: "left" | "right" | "center" | undefined;
-};
+}
 
-type Smokes = Array<Smoke & { key: string }>;
+interface SmokeWithKey extends Smoke {
+  key: string;
+}
+
+type Smokes = SmokeWithKey[];
 
 let PopUpContext = createContext({
   setSmokeState: (_f: (t: Smokes) => Smokes) => {},
