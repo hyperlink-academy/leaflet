@@ -12,10 +12,12 @@ import { PubIcon } from "components/ActionBar/Publications";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { colorToString } from "components/ThemeManager/useColorAttribute";
 import type { Post } from "app/(home-pages)/reader/getReaderFeed";
+import type { Cursor } from "./getProfilePosts";
 
 export const ProfilePageLayout = (props: {
   publications: { record: Json; uri: string }[];
   posts: Post[];
+  nextCursor: Cursor | null;
   profile: {
     did: string;
     handle: string | null;
@@ -37,6 +39,7 @@ export const ProfilePageLayout = (props: {
               profile={props.profile}
               publications={props.publications}
               posts={props.posts}
+              nextCursor={props.nextCursor}
             />
           ),
           controls: null,
@@ -52,6 +55,7 @@ export type profileTabsType = "posts" | "comments" | "subscriptions";
 const ProfilePageContent = (props: {
   publications: { record: Json; uri: string }[];
   posts: Post[];
+  nextCursor: Cursor | null;
   profile: {
     did: string;
     handle: string | null;
@@ -102,7 +106,12 @@ const ProfilePageContent = (props: {
         ))}
       </div>
       <ProfileTabs tab={tab} setTab={setTab} />
-      <TabContent tab={tab} posts={props.posts} />
+      <TabContent
+        tab={tab}
+        did={props.profile.did}
+        posts={props.posts}
+        nextCursor={props.nextCursor}
+      />
     </div>
   );
 };

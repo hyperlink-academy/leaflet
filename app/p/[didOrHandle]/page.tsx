@@ -2,8 +2,7 @@ import { idResolver } from "app/(home-pages)/reader/idResolver";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { ProfilePageLayout } from "./ProfilePageLayout";
 import { supabaseServerClient } from "supabase/serverClient";
-import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import type { Post } from "app/(home-pages)/reader/getReaderFeed";
+import { getProfilePosts } from "./getProfilePosts";
 
 export default async function ProfilePage(props: {
   params: Promise<{ didOrHandle: string }>;
@@ -30,71 +29,27 @@ export default async function ProfilePage(props: {
     did = resolved;
   }
 
-  // Fetch profile, publications, and documents in parallel
-  let [{ data: profile }, { data: pubs }, { data: docs }] = await Promise.all([
-    supabaseServerClient
-      .from("bsky_profiles")
-      .select(`*`)
-      .eq("did", did)
-      .single(),
-    supabaseServerClient
-      .from("publications")
-      .select("*")
-      .eq("identity_did", did),
-    supabaseServerClient
-      .from("documents")
-      .select(
-        `*,
-        comments_on_documents(count),
-        document_mentions_in_bsky(count),
-        documents_in_publications(publications(*))`,
-      )
-      .like("uri", `at://${did}/%`)
-      .order("indexed_at", { ascending: false }),
-  ]);
-
-  // Build a map of publications for quick lookup
-  let pubMap = new Map<string, NonNullable<typeof pubs>[number]>();
-  for (let pub of pubs || []) {
-    pubMap.set(pub.uri, pub);
-  }
-
-  // Transform data to Post[] format
-  let handle = profile?.handle ? `@${profile.handle}` : null;
-  let posts: Post[] = [];
-
-  for (let doc of docs || []) {
-    // Find the publication for this document (if any)
-    let pubFromDoc = doc.documents_in_publications?.[0]?.publications;
-    let pub = pubFromDoc ? pubMap.get(pubFromDoc.uri) || pubFromDoc : null;
-
-    let post: Post = {
-      author: handle,
-      documents: {
-        data: doc.data,
-        uri: doc.uri,
-        indexed_at: doc.indexed_at,
-        comments_on_documents: doc.comments_on_documents,
-        document_mentions_in_bsky: doc.document_mentions_in_bsky,
-      },
-    };
-
-    if (pub) {
-      post.publication = {
-        href: getPublicationURL(pub),
-        pubRecord: pub.record,
-        uri: pub.uri,
-      };
-    }
-
-    posts.push(post);
-  }
+  // Fetch profile, publications, and initial posts in parallel
+  let [{ data: profile }, { data: pubs }, { posts, nextCursor }] =
+    await Promise.all([
+      supabaseServerClient
+        .from("bsky_profiles")
+        .select(`*`)
+        .eq("did", did)
+        .single(),
+      supabaseServerClient
+        .from("publications")
+        .select("*")
+        .eq("identity_did", did),
+      getProfilePosts(did),
+    ]);
 
   return (
     <ProfilePageLayout
       profile={profile}
       publications={pubs || []}
       posts={posts}
+      nextCursor={nextCursor}
     />
   );
 }
