@@ -9,12 +9,13 @@ import { PubIcon } from "components/ActionBar/Publications";
 import { Json } from "supabase/database.types";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { SpeedyLink } from "components/SpeedyLink";
+import { ReactNode } from "react";
 
 export const ProfileHeader = (props: {
   profile: ProfileViewDetailed;
   publications: { record: Json; uri: string }[];
 }) => {
-  console.log(props.profile);
   let profileRecord = props.profile;
 
   return (
@@ -37,9 +38,11 @@ export const ProfileHeader = (props: {
             @{props.profile.handle}
           </div>
         )}
-        <div className="text-secondary px-3 sm:px-4 ">
-          {profileRecord.description}
-        </div>
+        <pre className="text-secondary px-3 sm:px-4 ">
+          {profileRecord.description
+            ? parseDescription(profileRecord.description)
+            : null}
+        </pre>
         <div className=" w-full overflow-x-scroll mt-3 mb-6 ">
           <div className="grid grid-flow-col  auto-cols-[164px] sm:auto-cols-[240px] gap-2 mx-auto w-fit px-3 sm:px-4 ">
             {/*<div className="spacer "/>*/}
@@ -103,3 +106,54 @@ const PublicationCard = (props: {
     </a>
   );
 };
+
+function parseDescription(description: string): ReactNode[] {
+  const combinedRegex = /(@\S+|https?:\/\/\S+)/g;
+
+  const parts: ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+  let key = 0;
+
+  while ((match = combinedRegex.exec(description)) !== null) {
+    // Add text before this match
+    if (match.index > lastIndex) {
+      parts.push(description.slice(lastIndex, match.index));
+    }
+
+    const matched = match[0];
+
+    if (matched.startsWith("@")) {
+      // It's a mention
+      const handle = matched.slice(1);
+      parts.push(
+        <SpeedyLink key={key++} href={`/p/${handle}`}>
+          {matched}
+        </SpeedyLink>,
+      );
+    } else {
+      // It's a URL
+      const urlWithoutProtocol = matched
+        .replace(/^https?:\/\//, "")
+        .replace(/\/+$/, "");
+      const displayText =
+        urlWithoutProtocol.length > 50
+          ? urlWithoutProtocol.slice(0, 50) + "…"
+          : urlWithoutProtocol;
+      parts.push(
+        <a key={key++} href={matched} target="_blank" rel="noopener noreferrer">
+          {displayText}
+        </a>,
+      );
+    }
+
+    lastIndex = match.index + matched.length;
+  }
+
+  // Add remaining text after last match
+  if (lastIndex < description.length) {
+    parts.push(description.slice(lastIndex));
+  }
+
+  return parts;
+}
