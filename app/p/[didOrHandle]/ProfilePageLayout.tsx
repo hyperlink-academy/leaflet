@@ -6,10 +6,14 @@ import { ProfileTabs, TabContent } from "./ProfileTabs/Tabs";
 import { Json } from "supabase/database.types";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { Avatar } from "components/Avatar";
-import { AppBskyActorProfile } from "lexicons/api";
+import { AppBskyActorProfile, PubLeafletPublication } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import { PubIcon } from "components/ActionBar/Publications";
+import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
+import { colorToString } from "components/ThemeManager/useColorAttribute";
 
 export const ProfilePageLayout = (props: {
+  publications: { record: Json; uri: string }[];
   profile: {
     did: string;
     handle: string | null;
@@ -29,7 +33,12 @@ export const ProfilePageLayout = (props: {
       defaultTab="home"
       tabs={{
         home: {
-          content: <ProfilePageContent profile={props.profile} />,
+          content: (
+            <ProfilePageContent
+              profile={props.profile}
+              publications={props.publications}
+            />
+          ),
           controls: null,
         },
       }}
@@ -41,6 +50,7 @@ export const ProfilePageLayout = (props: {
 
 export type profileTabsType = "posts" | "comments" | "subscriptions";
 const ProfilePageContent = (props: {
+  publications: { record: Json; uri: string }[];
   profile: {
     did: string;
     handle: string | null;
@@ -83,8 +93,13 @@ const ProfilePageContent = (props: {
       )}
       <div className="text-secondary">{profileRecord.description}</div>
       <div className="flex flex-row gap-2 mx-auto my-3">
-        <div>pub 1</div>
-        <div>pub 2</div>
+        {props.publications.map((p) => (
+          <PublicationCard
+            key={p.uri}
+            record={p.record as PubLeafletPublication.Record}
+            uri={p.uri}
+          />
+        ))}
       </div>
       <ProfileTabs tab={tab} setTab={setTab} />
       <TabContent tab={tab} />
@@ -94,4 +109,32 @@ const ProfilePageContent = (props: {
 
 const PubListingCompact = () => {
   return <div></div>;
+};
+
+const PublicationCard = (props: {
+  record: PubLeafletPublication.Record;
+  uri: string;
+}) => {
+  const { record, uri } = props;
+  const { bgLeaflet, bgPage } = usePubTheme(record.theme);
+
+  return (
+    <a
+      href={`https://${record.base_path}`}
+      className="border border-border p-2 rounded-lg hover:no-underline!"
+      style={{ backgroundColor: `rgb(${colorToString(bgLeaflet, "rgb")})` }}
+    >
+      <div
+        className="rounded-md p-2 flex flex-row gap-2"
+        style={{
+          backgroundColor: record.theme?.showPageBackground
+            ? `rgb(${colorToString(bgPage, "rgb")})`
+            : undefined,
+        }}
+      >
+        <PubIcon record={record} uri={uri} />
+        <h4>{record.name}</h4>
+      </div>
+    </a>
+  );
 };

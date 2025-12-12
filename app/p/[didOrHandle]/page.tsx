@@ -31,6 +31,10 @@ export default async function ProfilePage(props: {
     .select(`*`)
     .eq("did", did)
     .single();
+  let { data: pubs } = await supabaseServerClient
+    .from("publications")
+    .select("*")
+    .eq("identity_did", did);
 
-  return <ProfilePageLayout profile={profile} />;
+  return <ProfilePageLayout profile={profile} publications={pubs || []} />;
 }
