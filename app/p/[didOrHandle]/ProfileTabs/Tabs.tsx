@@ -6,6 +6,7 @@ import type { Cursor } from "../getProfilePosts";
 import { getProfilePosts } from "../getProfilePosts";
 import useSWRInfinite from "swr/infinite";
 import { useEffect, useRef } from "react";
+import { CommentTabContent } from "./TabContent.tsx/Comment";
 
 export const ProfileTabs = (props: {
   tab: profileTabsType;
@@ -38,7 +39,7 @@ export const ProfileTabs = (props: {
           }}
         />
       </div>
-      <hr className="border-border-light mb-2 mt-1" />
+      <hr className="border-border-light mt-1" />
     </div>
   );
 };
@@ -59,7 +60,7 @@ export const TabContent = (props: {
         />
       );
     case "comments":
-      return <div>comments here!</div>;
+      return <CommentTabContent />;
     case "subscriptions":
       return <div>subscriptions here!</div>;
   }

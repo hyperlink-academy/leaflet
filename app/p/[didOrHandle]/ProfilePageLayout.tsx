@@ -69,49 +69,66 @@ const ProfilePageContent = (props: {
 
   if (!props.profile) return;
   return (
-    <div
-      className={`
+    <div className="h-full">
+      <div
+        className={`
         max-w-prose mx-auto w-full h-full
         flex flex-col
         border border-border-light rounded-lg
         text-center px-3 sm:px-4 mt-8`}
-    >
-      <Avatar
-        src={
-          profileRecord.avatar?.ref &&
-          blobRefToSrc(profileRecord.avatar?.ref, props.profile.did)
-        }
-        displayName={profileRecord.displayName}
-        className="mx-auto -mt-8"
-        giant
-      />
-      <h3 className="pt-2 leading-tight">
-        {profileRecord.displayName
-          ? profileRecord.displayName
-          : `@${props.profile?.handle}`}
-      </h3>
-      {profileRecord.displayName && (
-        <div className="text-tertiary text-sm pb-1 italic">
-          @{props.profile?.handle}
+      >
+        <Avatar
+          src={
+            profileRecord.avatar?.ref &&
+            blobRefToSrc(profileRecord.avatar?.ref, props.profile.did)
+          }
+          displayName={profileRecord.displayName}
+          className="mx-auto -mt-8"
+          giant
+        />
+        <h3 className="pt-2 leading-tight">
+          {profileRecord.displayName
+            ? profileRecord.displayName
+            : `@${props.profile?.handle}`}
+        </h3>
+        {profileRecord.displayName && (
+          <div className="text-tertiary text-sm pb-1 italic">
+            @{props.profile?.handle}
+          </div>
+        )}
+        <div className="text-secondary">{profileRecord.description}</div>
+        <div className="flex flex-row gap-2 mx-auto my-3">
+          <div>pub 1</div>
+          <div>pub 2</div>
         </div>
-      )}
-      <div className="text-secondary">{profileRecord.description}</div>
-      <div className="flex flex-row gap-2 mx-auto my-3">
-        {props.publications.map((p) => (
-          <PublicationCard
-            key={p.uri}
-            record={p.record as PubLeafletPublication.Record}
-            uri={p.uri}
+        <ProfileTabs tab={tab} setTab={setTab} />
+
+        <div className="h-full overflow-y-scroll pt-2 flex flex-col">
+          <TabContent
+            tab={tab}
+            did={props.profile.did}
+            posts={props.posts}
+            nextCursor={props.nextCursor}
           />
-        ))}
+        </div>
+        <div className="text-secondary">{profileRecord.description}</div>
+        <div className="flex flex-row gap-2 mx-auto my-3">
+          {props.publications.map((p) => (
+            <PublicationCard
+              key={p.uri}
+              record={p.record as PubLeafletPublication.Record}
+              uri={p.uri}
+            />
+          ))}
+        </div>
+        <ProfileTabs tab={tab} setTab={setTab} />
+        <TabContent
+          tab={tab}
+          did={props.profile.did}
+          posts={props.posts}
+          nextCursor={props.nextCursor}
+        />
       </div>
-      <ProfileTabs tab={tab} setTab={setTab} />
-      <TabContent
-        tab={tab}
-        did={props.profile.did}
-        posts={props.posts}
-        nextCursor={props.nextCursor}
-      />
     </div>
   );
 };
