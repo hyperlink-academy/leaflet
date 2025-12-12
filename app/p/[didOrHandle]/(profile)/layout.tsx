@@ -54,7 +54,7 @@ export default async function ProfileLayout(props: {
           flex flex-col
           border border-border-light rounded-lg
           text-center
-          overflow-y-scroll`}
+          overflow-y-scroll `}
         >
           <ProfileHeader profile={profile} publications={publications || []} />
           <ProfileTabs didOrHandle={params.didOrHandle} />

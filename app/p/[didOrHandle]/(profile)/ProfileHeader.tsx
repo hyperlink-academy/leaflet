@@ -7,6 +7,7 @@ import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { colorToString } from "components/ThemeManager/useColorAttribute";
 import { PubIcon } from "components/ActionBar/Publications";
 import { Json } from "supabase/database.types";
+import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 
 export const ProfileHeader = (props: {
   profile: ProfileData;
@@ -15,7 +16,7 @@ export const ProfileHeader = (props: {
   let profileRecord = props.profile.record as AppBskyActorProfile.Record;
 
   return (
-    <div className="flex flex-col" id="profile-header">
+    <div className="flex flex-col relative" id="profile-header">
       <Avatar
         src={
           profileRecord.avatar?.ref &&
@@ -25,6 +26,7 @@ export const ProfileHeader = (props: {
         className="mx-auto mt-3 sm:mt-4"
         giant
       />
+      <ProfileLinks handle={props.profile.handle || ""} />
       <div className="flex flex-col">
         <h3 className=" px-3 sm:px-4 pt-2 leading-tight">
           {profileRecord.displayName
@@ -55,6 +57,18 @@ export const ProfileHeader = (props: {
   );
 };
 
+const ProfileLinks = (props: { handle: string }) => {
+  return (
+    <div className="absolute sm:top-4 top-3 sm:right-4 right-3 flex flex-row gap-2">
+      <a
+        className="text-tertiary hover:text-accent-contrast hover:no-underline!"
+        href={`https://bsky.app/profile/${props.handle}`}
+      >
+        <BlueskyTiny />
+      </a>
+    </div>
+  );
+};
 const PublicationCard = (props: {
   record: PubLeafletPublication.Record;
   uri: string;
