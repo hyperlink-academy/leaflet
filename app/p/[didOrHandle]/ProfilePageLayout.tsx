@@ -11,9 +11,11 @@ import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { PubIcon } from "components/ActionBar/Publications";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { colorToString } from "components/ThemeManager/useColorAttribute";
+import type { Post } from "app/(home-pages)/reader/getReaderFeed";
 
 export const ProfilePageLayout = (props: {
   publications: { record: Json; uri: string }[];
+  posts: Post[];
   profile: {
     did: string;
     handle: string | null;
@@ -23,9 +25,6 @@ export const ProfilePageLayout = (props: {
 }) => {
   if (!props.profile) return null;
 
-  let profileRecord = props.profile.record as unknown as ProfileViewDetailed;
-
-  console.log(profileRecord);
   return (
     <DashboardLayout
       id={props.profile.did}
@@ -37,6 +36,7 @@ export const ProfilePageLayout = (props: {
             <ProfilePageContent
               profile={props.profile}
               publications={props.publications}
+              posts={props.posts}
             />
           ),
           controls: null,
@@ -51,6 +51,7 @@ export const ProfilePageLayout = (props: {
 export type profileTabsType = "posts" | "comments" | "subscriptions";
 const ProfilePageContent = (props: {
   publications: { record: Json; uri: string }[];
+  posts: Post[];
   profile: {
     did: string;
     handle: string | null;
@@ -61,7 +62,6 @@ const ProfilePageContent = (props: {
   let [tab, setTab] = useState<profileTabsType>("posts");
 
   let profileRecord = props.profile?.record as AppBskyActorProfile.Record;
-  console.log(profileRecord);
 
   if (!props.profile) return;
   return (
@@ -102,7 +102,7 @@ const ProfilePageContent = (props: {
         ))}
       </div>
       <ProfileTabs tab={tab} setTab={setTab} />
-      <TabContent tab={tab} />
+      <TabContent tab={tab} posts={props.posts} />
     </div>
   );
 };

@@ -1,5 +1,7 @@
 import { Tab } from "components/Tab";
 import { profileTabsType } from "../ProfilePageLayout";
+import { PostListing } from "components/PostListing";
+import type { Post } from "app/(home-pages)/reader/getReaderFeed";
 
 export const ProfileTabs = (props: {
   tab: profileTabsType;
@@ -37,10 +39,20 @@ export const ProfileTabs = (props: {
   );
 };
 
-export const TabContent = (props: { tab: profileTabsType }) => {
+export const TabContent = (props: { tab: profileTabsType; posts: Post[] }) => {
   switch (props.tab) {
     case "posts":
-      return <div>posts here!</div>;
+      return (
+        <div className="flex flex-col gap-2 text-left">
+          {props.posts.length === 0 ? (
+            <div className="text-tertiary text-center py-4">No posts yet</div>
+          ) : (
+            props.posts.map((post) => (
+              <PostListing key={post.documents.uri} {...post} />
+            ))
+          )}
+        </div>
+      );
     case "comments":
       return <div>comments here!</div>;
     case "subscriptions":

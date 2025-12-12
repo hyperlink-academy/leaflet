@@ -83,7 +83,7 @@ export async function getReaderFeed(
 
 export type Post = {
   author: string | null;
-  publication: {
+  publication?: {
     href: string;
     pubRecord: Json;
     uri: string;
