@@ -13,7 +13,7 @@ import {
 import { useMemo, useState } from "react";
 import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { Replicache } from "replicache";
-import { FilterAttributes } from "src/replicache/attributes";
+import { ColorAttribute } from "src/replicache/attributes";
 import { colorToString } from "components/ThemeManager/useColorAttribute";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { ActionButton } from "components/ActionBar/ActionButton";
@@ -37,12 +37,12 @@ export type pickers =
   | "highlight-3"
   | "page-background-image";
 
+// Optimized: Use pre-computed ColorAttribute instead of FilterAttributes
 export function setColorAttribute(
   rep: Replicache<ReplicacheMutators> | null,
   entity: string,
 ) {
-  return (attribute: keyof FilterAttributes<{ type: "color" }>) =>
-    (color: Color) =>
+  return (attribute: ColorAttribute) => (color: Color) =>
       rep?.mutate.assertFact({
         entity,
         attribute,

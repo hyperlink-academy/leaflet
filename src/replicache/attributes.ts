@@ -268,83 +268,188 @@ export const Attributes = {
 };
 export type Attributes = typeof Attributes;
 export type Attribute = keyof Attributes;
-export type Data<A extends keyof typeof Attributes> = {
-  text: { type: "text"; value: string };
-  string: { type: "string"; value: string };
-  "spatial-reference": {
-    type: "spatial-reference";
-    position: { x: number; y: number };
-    value: string;
-  };
-  "date-time": {
-    type: "date-time";
-    value: string;
-    originalTimezone: string;
-    dateOnly?: boolean;
-  };
-  "ordered-reference": {
-    type: "ordered-reference";
-    position: string;
-    value: string;
-  };
-  "bluesky-post": {
-    type: "bluesky-post";
-    value: DeepAsReadonlyJSONValue<
-      AppBskyFeedGetPostThread.OutputSchema["thread"]
-    >;
-  };
-  image: {
-    type: "image";
-    fallback: string;
-    src: string;
-    height: number;
-    width: number;
-    local?: string;
-  };
-  boolean: {
-    type: "boolean";
-    value: boolean;
-  };
-  number: {
-    type: "number";
-    value: number;
-  };
-  awareness: {
-    type: "awareness";
-    value: string;
-  };
-  reference: { type: "reference"; value: string };
-  "text-alignment-type-union": {
-    type: "text-alignment-type-union";
-    value: "right" | "left" | "center" | "justify";
-  };
-  "page-type-union": { type: "page-type-union"; value: "doc" | "canvas" };
-  "block-type-union": {
-    type: "block-type-union";
-    value:
-      | "datetime"
-      | "rsvp"
-      | "text"
-      | "image"
-      | "card"
-      | "heading"
-      | "link"
-      | "mailbox"
-      | "embed"
-      | "button"
-      | "poll"
-      | "bluesky-post"
-      | "math"
-      | "code"
-      | "blockquote"
-      | "horizontal-rule";
-  };
-  "canvas-pattern-union": {
-    type: "canvas-pattern-union";
-    value: "dot" | "grid" | "plain";
-  };
-  color: { type: "color"; value: string };
-}[(typeof Attributes)[A]["type"]];
+
+// Pre-defined data type shapes (avoids repeated computation)
+export type TextData = { type: "text"; value: string };
+export type StringData = { type: "string"; value: string };
+export type SpatialReferenceData = {
+  type: "spatial-reference";
+  position: { x: number; y: number };
+  value: string;
+};
+export type DateTimeData = {
+  type: "date-time";
+  value: string;
+  originalTimezone: string;
+  dateOnly?: boolean;
+};
+export type OrderedReferenceData = {
+  type: "ordered-reference";
+  position: string;
+  value: string;
+};
+export type BlueskyPostData = {
+  type: "bluesky-post";
+  value: DeepAsReadonlyJSONValue<
+    AppBskyFeedGetPostThread.OutputSchema["thread"]
+  >;
+};
+export type ImageData = {
+  type: "image";
+  fallback: string;
+  src: string;
+  height: number;
+  width: number;
+  local?: string;
+};
+export type BooleanData = { type: "boolean"; value: boolean };
+export type NumberData = { type: "number"; value: number };
+export type AwarenessData = { type: "awareness"; value: string };
+export type ReferenceData = { type: "reference"; value: string };
+export type TextAlignmentData = {
+  type: "text-alignment-type-union";
+  value: "right" | "left" | "center" | "justify";
+};
+export type PageTypeData = { type: "page-type-union"; value: "doc" | "canvas" };
+export type BlockTypeData = {
+  type: "block-type-union";
+  value:
+    | "datetime"
+    | "rsvp"
+    | "text"
+    | "image"
+    | "card"
+    | "heading"
+    | "link"
+    | "mailbox"
+    | "embed"
+    | "button"
+    | "poll"
+    | "bluesky-post"
+    | "math"
+    | "code"
+    | "blockquote"
+    | "horizontal-rule";
+};
+export type CanvasPatternData = {
+  type: "canvas-pattern-union";
+  value: "dot" | "grid" | "plain";
+};
+export type ColorData = { type: "color"; value: string };
+
+// Direct mapping from attribute to data type (avoids double indirection)
+export interface AttributeDataMap {
+  // Root attributes
+  "root/page": OrderedReferenceData;
+  // Page attributes
+  "card/block": OrderedReferenceData;
+  "page/type": PageTypeData;
+  "canvas/block": SpatialReferenceData;
+  "canvas/block/width": NumberData;
+  "canvas/block/rotation": NumberData;
+  "canvas/narrow-width": BooleanData;
+  "canvas/background-pattern": CanvasPatternData;
+  // Block attributes
+  "block/type": BlockTypeData;
+  "block/is-list": BooleanData;
+  "block/is-locked": BooleanData;
+  "block/check-list": BooleanData;
+  "block/text-alignment": TextAlignmentData;
+  "block/date-time": DateTimeData;
+  "block/text": TextData;
+  "block/heading-level": NumberData;
+  "block/image": ImageData;
+  "block/card": ReferenceData;
+  "block/bluesky-post": BlueskyPostData;
+  "block/math": StringData;
+  "block/code": StringData;
+  "block/code-language": StringData;
+  // Mailbox attributes
+  "mailbox/draft": ReferenceData;
+  "mailbox/archive": ReferenceData;
+  "mailbox/subscriber-count": NumberData;
+  // Link block attributes
+  "link/preview": ImageData;
+  "link/url": StringData;
+  "link/description": StringData;
+  "link/title": StringData;
+  // Embed block attributes
+  "embed/url": StringData;
+  "embed/height": NumberData;
+  // Bluesky post block attributes
+  "bluesky-post/url": StringData;
+  // Button block attributes
+  "button/text": StringData;
+  "button/url": StringData;
+  // Image block attributes
+  "image/full-bleed": BooleanData;
+  "image/alt": StringData;
+  // Poll block attributes
+  "poll/options": OrderedReferenceData;
+  "poll-option/name": StringData;
+  // Theme attributes
+  "theme/font": StringData;
+  "theme/page-leaflet-watermark": BooleanData;
+  "theme/page-background": ColorData;
+  "theme/background-image": ImageData;
+  "theme/background-image-repeat": NumberData;
+  "theme/card-background": ColorData;
+  "theme/card-background-image": ImageData;
+  "theme/card-background-image-repeat": NumberData;
+  "theme/card-background-image-opacity": NumberData;
+  "theme/card-border-hidden": BooleanData;
+  "theme/primary": ColorData;
+  "theme/accent-background": ColorData;
+  "theme/accent-text": ColorData;
+  "theme/highlight-1": ColorData;
+  "theme/highlight-2": ColorData;
+  "theme/highlight-3": ColorData;
+  "theme/code-theme": StringData;
+}
+
+// Optimized Data type using direct lookup instead of computed indexed access
+export type Data<A extends Attribute> = AttributeDataMap[A];
+
+// Pre-computed filter results for common patterns (avoids conditional mapped types)
+export type ReferenceAttribute =
+  | "block/card"
+  | "mailbox/draft"
+  | "mailbox/archive";
+export type OrderedReferenceAttribute =
+  | "root/page"
+  | "card/block"
+  | "poll/options";
+export type SpatialReferenceAttribute = "canvas/block";
+export type AnyReferenceAttribute =
+  | ReferenceAttribute
+  | OrderedReferenceAttribute
+  | SpatialReferenceAttribute;
+export type ManyCardinalityAttribute =
+  | "root/page"
+  | "card/block"
+  | "canvas/block"
+  | "poll/options";
+export type OneCardinalityAttribute = Exclude<Attribute, ManyCardinalityAttribute>;
+
+// Additional pre-computed filter types for common patterns
+export type TextAttribute = "block/text";
+export type ImageAttribute =
+  | "block/image"
+  | "link/preview"
+  | "theme/background-image"
+  | "theme/card-background-image";
+export type ColorAttribute =
+  | "theme/page-background"
+  | "theme/card-background"
+  | "theme/primary"
+  | "theme/accent-background"
+  | "theme/accent-text"
+  | "theme/highlight-1"
+  | "theme/highlight-2"
+  | "theme/highlight-3";
+export type ColorOneCardinalityAttribute = ColorAttribute;
+
+// Keep FilterAttributes for backward compatibility but use cached results when possible
 export type FilterAttributes<F extends Partial<Attributes[keyof Attributes]>> =
   {
     [A in keyof Attributes as Attributes[A] extends F

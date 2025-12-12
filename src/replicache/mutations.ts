@@ -1,6 +1,11 @@
 import { DeepReadonly, Replicache, WriteTransaction } from "replicache";
 import type { Fact, ReplicacheMutators } from ".";
-import type { Attribute, Attributes, FilterAttributes } from "./attributes";
+import type {
+  Attribute,
+  Attributes,
+  FilterAttributes,
+  OneCardinalityAttribute,
+} from "./attributes";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 import { generateKeyBetween } from "fractional-indexing";
@@ -536,11 +541,10 @@ const archiveDraft: Mutation<{
   await ctx.retractFact(existingDraft.id);
 };
 
+// Optimized: Use pre-computed OneCardinalityAttribute instead of FilterAttributes
 const retractAttribute: Mutation<{
   entity: string;
-  attribute:
-    | keyof FilterAttributes<{ cardinality: "one" }>
-    | Array<keyof FilterAttributes<{ cardinality: "one" }>>;
+  attribute: OneCardinalityAttribute | Array<OneCardinalityAttribute>;
 }> = async (args, ctx) => {
   for (let a of [args.attribute].flat()) {
     let fact = (await ctx.scanIndex.eav(args.entity, a))[0];

@@ -2,7 +2,12 @@ import { Replicache, WriteTransaction } from "replicache";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
 import { FactWithIndexes, scanIndex } from "./utils";
-import { Attribute, Attributes, FilterAttributes } from "./attributes";
+import {
+  Attribute,
+  Attributes,
+  TextAttribute,
+  OneCardinalityAttribute,
+} from "./attributes";
 import type { Fact, ReplicacheMutators } from ".";
 import { FactInput, MutationContext } from "./mutations";
 import { supabaseBrowserClient } from "supabase/browserClient";
@@ -52,16 +57,11 @@ export function clientMutationContext(
         if (existingFact[0]) {
           id = existingFact[0].id;
           if (attribute.type === "text") {
+            // Optimized: Use pre-computed TextAttribute instead of FilterAttributes
             const oldUpdate = base64.toByteArray(
-              (
-                existingFact[0]?.data as Fact<
-                  keyof FilterAttributes<{ type: "text" }>
-                >["data"]
-              ).value,
+              (existingFact[0]?.data as Fact<TextAttribute>["data"]).value,
             );
-            let textData = data as Fact<
-              keyof FilterAttributes<{ type: "text" }>
-            >["data"];
+            let textData = data as Fact<TextAttribute>["data"];
             const newUpdate = base64.toByteArray(textData.value);
             const updateBytes = Y.mergeUpdates([oldUpdate, newUpdate]);
             textData.value = base64.fromByteArray(updateBytes);
@@ -74,12 +74,11 @@ export function clientMutationContext(
             if (existingFact[0]) {
               rep.mutate.assertFact({ ignoreUndo: true, ...existingFact[0] });
             } else {
+              // Optimized: Use pre-computed OneCardinalityAttribute instead of FilterAttributes
               if (attribute.cardinality === "one" && !f.id)
                 rep.mutate.retractAttribute({
                   ignoreUndo: true,
-                  attribute: f.attribute as keyof FilterAttributes<{
-                    cardinality: "one";
-                  }>,
+                  attribute: f.attribute as OneCardinalityAttribute,
                   entity: f.entity,
                 });
               rep.mutate.retractFact({ ignoreUndo: true, factID: id });

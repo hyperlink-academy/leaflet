@@ -2,7 +2,11 @@ import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as driz from "drizzle-orm";
 import type { Fact } from ".";
 import { replicache_clients } from "drizzle/schema";
-import type { Attribute, FilterAttributes } from "./attributes";
+import type {
+  Attribute,
+  FilterAttributes,
+  AnyReferenceAttribute,
+} from "./attributes";
 import { ReadTransaction, WriteTransaction } from "replicache";
 import { PgTransaction } from "drizzle-orm/pg-core";
 
@@ -51,11 +55,8 @@ export const scanIndex = (tx: ReadTransaction) => ({
       ).filter((f) => attribute === "" || f.attribute === attribute)
     );
   },
-  async vae<
-    A extends keyof FilterAttributes<{
-      type: "reference" | "ordered-reference" | "spatial-reference";
-    }>,
-  >(entity: string, attribute: A) {
+  // Optimized: Use pre-computed AnyReferenceAttribute instead of FilterAttributes
+  async vae<A extends AnyReferenceAttribute>(entity: string, attribute: A) {
     return (
       await tx
         .scan<Fact<A>>({ indexName: "vae", prefix: `${entity}-${attribute}` })

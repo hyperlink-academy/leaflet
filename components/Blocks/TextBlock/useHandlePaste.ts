@@ -14,7 +14,7 @@ import { Replicache } from "replicache";
 import { markdownToHtml } from "src/htmlMarkdownParsers";
 import { betterIsUrl, isUrl } from "src/utils/isURL";
 import { TextSelection } from "prosemirror-state";
-import type { FilterAttributes } from "src/replicache/attributes";
+import type { ImageAttribute } from "src/replicache/attributes";
 import { addLinkBlock } from "src/utils/addLinkBlock";
 import { UndoManager } from "src/undoManager";
 
@@ -434,8 +434,9 @@ const createBlockFromHTML = (
         attribute: "block/card",
         data: { type: "reference", value: newCardEntity },
       });
+      // Optimized: Use pre-computed ImageAttribute instead of FilterAttributes
       let images: Pick<
-        Fact<keyof FilterAttributes<{ type: "image" }>>,
+        Fact<ImageAttribute>,
         "entity" | "data" | "attribute"
       >[] = newFacts.filter((f) => f.data.type === "image");
       for (let image of images) {

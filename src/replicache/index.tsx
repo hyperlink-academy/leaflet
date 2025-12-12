@@ -18,7 +18,13 @@ import {
 } from "replicache";
 import { mutations } from "./mutations";
 import { Attributes } from "./attributes";
-import { Attribute, Data, FilterAttributes } from "./attributes";
+import {
+  Attribute,
+  Data,
+  ManyCardinalityAttribute,
+  AnyReferenceAttribute,
+  OrderedReferenceAttribute,
+} from "./attributes";
 import { clientMutationContext } from "./clientMutationContext";
 import { supabaseBrowserClient } from "supabase/browserClient";
 import { callRPC } from "app/api/rpc/client";
@@ -199,10 +205,10 @@ export function ReplicacheProvider(props: {
   );
 }
 
-type CardinalityResult<A extends Attribute> =
-  (typeof Attributes)[A]["cardinality"] extends "one"
-    ? DeepReadonlyObject<Fact<A>> | null
-    : DeepReadonlyObject<Fact<A>>[];
+// Optimized: Use pre-computed attribute types instead of conditional indexed access
+type CardinalityResult<A extends Attribute> = A extends ManyCardinalityAttribute
+  ? DeepReadonlyObject<Fact<A>>[]
+  : DeepReadonlyObject<Fact<A>> | null;
 export function useEntity<A extends Attribute>(
   entity: string | null,
   attribute: A,
@@ -240,14 +246,12 @@ export function useEntity<A extends Attribute>(
   );
   let d = data || fallbackData;
   let a = Attributes[attribute];
+  // Optimized: Use pre-computed OrderedReferenceAttribute instead of FilterAttributes
   return a.cardinality === "many"
     ? ((a.type === "ordered-reference"
         ? d.sort((a, b) => {
-            return (
-              a as Fact<keyof FilterAttributes<{ type: "ordered-reference" }>>
-            ).data.position >
-              (b as Fact<keyof FilterAttributes<{ type: "ordered-reference" }>>)
-                .data.position
+            return (a as Fact<OrderedReferenceAttribute>).data.position >
+              (b as Fact<OrderedReferenceAttribute>).data.position
               ? 1
               : -1;
           })
@@ -257,8 +261,9 @@ export function useEntity<A extends Attribute>(
       : (d[0] as CardinalityResult<A>);
 }
 
+// Optimized: Use pre-computed AnyReferenceAttribute instead of FilterAttributes
 export function useReferenceToEntity<
-  A extends keyof FilterAttributes<{ type: "reference" | "ordered-reference" }>,
+  A extends Exclude<AnyReferenceAttribute, "canvas/block">,
 >(attribute: A, entity: string) {
   let { rep, initialFacts } = useReplicache();
   let fallbackData = useMemo(

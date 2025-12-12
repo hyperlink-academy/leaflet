@@ -1,17 +1,18 @@
 import { Replicache } from "replicache";
 import { ReplicacheMutators } from "../replicache";
 import { supabaseBrowserClient } from "supabase/browserClient";
-import type { FilterAttributes } from "src/replicache/attributes";
+import type { ImageAttribute } from "src/replicache/attributes";
 import { rgbaToDataURL, rgbaToThumbHash, thumbHashToDataURL } from "thumbhash";
 import { v7 } from "uuid";
 
 export const localImages = new Map<string, boolean>();
+// Optimized: Use pre-computed ImageAttribute instead of FilterAttributes
 export async function addImage(
   file: File,
   rep: Replicache<ReplicacheMutators>,
   args: {
     entityID: string;
-    attribute: keyof FilterAttributes<{ type: "image" }>;
+    attribute: ImageAttribute;
   },
 ) {
   let client = supabaseBrowserClient();
