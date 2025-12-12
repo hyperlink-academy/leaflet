@@ -8,12 +8,21 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { idResolver } from "./idResolver";
 import { Cursor } from "./getReaderFeed";
 
-export async function getSubscriptions(cursor?: Cursor | null): Promise<{
+export async function getSubscriptions(
+  did?: string | null,
+  cursor?: Cursor | null,
+): Promise<{
   nextCursor: null | Cursor;
   subscriptions: PublicationSubscription[];
 }> {
-  let auth_res = await getIdentityData();
-  if (!auth_res?.atp_did) return { subscriptions: [], nextCursor: null };
+  // If no DID provided, use logged-in user's DID
+  let identity = did;
+  if (!identity) {
+    const auth_res = await getIdentityData();
+    if (!auth_res?.atp_did) return { subscriptions: [], nextCursor: null };
+    identity = auth_res.atp_did;
+  }
+
   let query = supabaseServerClient
     .from("publication_subscriptions")
     .select(`*, publications(*, documents_in_publications(*, documents(*)))`)
@@ -25,7 +34,7 @@ export async function getSubscriptions(cursor?: Cursor | null): Promise<{
     })
     .limit(1, { referencedTable: "publications.documents_in_publications" })
     .limit(25)
-    .eq("identity", auth_res.atp_did);
+    .eq("identity", identity);
 
   if (cursor) {
     query = query.or(

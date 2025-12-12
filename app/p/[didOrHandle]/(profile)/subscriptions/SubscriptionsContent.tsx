@@ -1,16 +1,17 @@
 "use client";
-import { PubListing } from "app/(home-pages)/discover/PubListing";
-import { ButtonPrimary } from "components/Buttons";
-import { DiscoverSmall } from "components/Icons/DiscoverSmall";
-import { Json } from "supabase/database.types";
-import { PublicationSubscription, getSubscriptions } from "./getSubscriptions";
-import useSWRInfinite from "swr/infinite";
-import { useEffect, useRef } from "react";
-import { Cursor } from "./getReaderFeed";
-import Link from "next/link";
 
-export const SubscriptionsContent = (props: {
-  publications: PublicationSubscription[];
+import { useEffect, useRef } from "react";
+import useSWRInfinite from "swr/infinite";
+import { PubListing } from "app/(home-pages)/discover/PubListing";
+import {
+  getSubscriptions,
+  type PublicationSubscription,
+} from "app/(home-pages)/reader/getSubscriptions";
+import { Cursor } from "app/(home-pages)/reader/getReaderFeed";
+
+export const ProfileSubscriptionsContent = (props: {
+  did: string;
+  subscriptions: PublicationSubscription[];
   nextCursor: Cursor | null;
 }) => {
   const getKey = (
@@ -24,18 +25,23 @@ export const SubscriptionsContent = (props: {
     if (previousPageData && !previousPageData.nextCursor) return null;
 
     // First page, we don't have previousPageData
-    if (pageIndex === 0) return ["subscriptions", null] as const;
+    if (pageIndex === 0)
+      return ["profile-subscriptions", props.did, null] as const;
 
     // Add the cursor to the key
-    return ["subscriptions", previousPageData?.nextCursor] as const;
+    return [
+      "profile-subscriptions",
+      props.did,
+      previousPageData?.nextCursor,
+    ] as const;
   };
 
-  const { data, error, size, setSize, isValidating } = useSWRInfinite(
+  const { data, size, setSize, isValidating } = useSWRInfinite(
     getKey,
-    ([_, cursor]) => getSubscriptions(null, cursor),
+    ([_, did, cursor]) => getSubscriptions(did, cursor),
     {
       fallbackData: [
-        { subscriptions: props.publications, nextCursor: props.nextCursor },
+        { subscriptions: props.subscriptions, nextCursor: props.nextCursor },
       ],
       revalidateFirstPage: false,
     },
@@ -64,17 +70,22 @@ export const SubscriptionsContent = (props: {
     return () => observer.disconnect();
   }, [data, size, setSize, isValidating]);
 
-  const allPublications = data
+  const allSubscriptions = data
     ? data.flatMap((page) => page.subscriptions)
     : [];
 
-  if (allPublications.length === 0 && !isValidating)
-    return <SubscriptionsEmpty />;
+  if (allSubscriptions.length === 0 && !isValidating) {
+    return (
+      <div className="text-tertiary text-center py-4">No subscriptions yet</div>
+    );
+  }
 
   return (
     <div className="relative">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {allPublications?.map((p, index) => <PubListing key={p.uri} {...p} />)}
+        {allSubscriptions.map((sub) => (
+          <PubListing key={sub.uri} {...sub} />
+        ))}
       </div>
       {/* Trigger element for loading more subscriptions */}
       <div
@@ -87,19 +98,6 @@ export const SubscriptionsContent = (props: {
           Loading more subscriptions...
         </div>
       )}
-    </div>
-  );
-};
-
-export const SubscriptionsEmpty = () => {
-  return (
-    <div className="flex flex-col gap-2 container bg-[rgba(var(--bg-page),.7)] sm:p-4 p-3 justify-between text-center text-tertiary">
-      You haven't subscribed to any publications yet!
-      <Link href={"/discover"}>
-        <ButtonPrimary className="mx-auto place-self-center">
-          <DiscoverSmall /> Discover Publications
-        </ButtonPrimary>
-      </Link>
     </div>
   );
 };
