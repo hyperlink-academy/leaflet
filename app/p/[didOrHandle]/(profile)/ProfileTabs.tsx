@@ -41,7 +41,7 @@ const TabLink = (props: { href: string; name: string; selected: boolean }) => {
   return (
     <SpeedyLink
       href={props.href}
-      className={`pubTabs px-1 py-0 flex gap-1 items-center rounded-md hover:cursor-pointer ${
+      className={`pubTabs px-1 py-0 flex gap-1 items-center rounded-md hover:cursor-pointer hover:no-underline! ${
         props.selected
           ? "text-accent-2 bg-accent-1 font-bold -mb-px"
           : "text-tertiary"

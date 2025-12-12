@@ -25,25 +25,30 @@ export const ProfileHeader = (props: {
         className="mx-auto -mt-8"
         giant
       />
-      <div className="px-3 sm:px-4 flex flex-col">
-        <h3 className="pt-2 leading-tight">
+      <div className="flex flex-col">
+        <h3 className=" px-3 sm:px-4 pt-2 leading-tight">
           {profileRecord.displayName
             ? profileRecord.displayName
             : `@${props.profile.handle}`}
         </h3>
         {profileRecord.displayName && (
-          <div className="text-tertiary text-sm pb-1 italic">
+          <div className="text-tertiary text-sm pb-1 italic px-3 sm:px-4 truncate">
             @{props.profile.handle}
           </div>
         )}
-        <div className="text-secondary">{profileRecord.description}</div>
-        <div className="flex flex-row gap-2 mx-auto my-3">
-          {props.publications.map((p) => (
-            <PublicationCard
-              record={p.record as PubLeafletPublication.Record}
-              uri={p.uri}
-            />
-          ))}
+        <div className="text-secondary px-3 sm:px-4 ">
+          {profileRecord.description}
+        </div>
+        <div className=" w-full overflow-x-scroll mt-3 mb-6 ">
+          <div className="grid grid-flow-col  auto-cols-[164px] sm:auto-cols-[240px] gap-2 mx-auto w-fit px-3 sm:px-4 ">
+            {/*<div className="spacer "/>*/}
+            {props.publications.map((p) => (
+              <PublicationCard
+                record={p.record as PubLeafletPublication.Record}
+                uri={p.uri}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </>
@@ -55,12 +60,12 @@ const PublicationCard = (props: {
   uri: string;
 }) => {
   const { record, uri } = props;
-  const { bgLeaflet, bgPage } = usePubTheme(record.theme);
+  const { bgLeaflet, bgPage, primary } = usePubTheme(record.theme);
 
   return (
     <a
       href={`https://${record.base_path}`}
-      className="border border-border p-2 rounded-lg hover:no-underline!"
+      className="border border-border p-2 rounded-lg hover:no-underline! text-primary basis-1/2"
       style={{ backgroundColor: `rgb(${colorToString(bgLeaflet, "rgb")})` }}
     >
       <div
@@ -72,7 +77,14 @@ const PublicationCard = (props: {
         }}
       >
         <PubIcon record={record} uri={uri} />
-        <h4>{record.name}</h4>
+        <h4
+          className="truncate min-w-0"
+          style={{
+            color: `rgb(${colorToString(primary, "rgb")})`,
+          }}
+        >
+          {record.name}
+        </h4>
       </div>
     </a>
   );
