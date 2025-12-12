@@ -13,7 +13,7 @@ export const ProfileTabs = (props: {
   setTab: (t: profileTabsType) => void;
 }) => {
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full  px-3 sm:px-4 ">
       <div className="flex gap-2 justify-between">
         <div className="flex gap-2">
           <Tab
