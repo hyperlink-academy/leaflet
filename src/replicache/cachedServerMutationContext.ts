@@ -4,7 +4,7 @@ import { MutationContext } from "./mutations";
 import { supabaseServerClient } from "supabase/serverClient";
 import { entities, facts } from "drizzle/schema";
 import * as driz from "drizzle-orm";
-import { Attribute, Attributes, FilterAttributes } from "./attributes";
+import { Attribute, Attributes } from "./attributes";
 import { v7 } from "uuid";
 import { DeepReadonly } from "replicache";
 

@@ -2,11 +2,7 @@ import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as driz from "drizzle-orm";
 import type { Fact } from ".";
 import { replicache_clients } from "drizzle/schema";
-import type {
-  Attribute,
-  FilterAttributes,
-  AnyReferenceAttribute,
-} from "./attributes";
+import type { Attribute, AnyReferenceAttribute } from "./attributes";
 import { ReadTransaction, WriteTransaction } from "replicache";
 import { PgTransaction } from "drizzle-orm/pg-core";
 

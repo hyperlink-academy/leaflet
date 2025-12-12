@@ -3,7 +3,6 @@ import type { Fact, ReplicacheMutators } from ".";
 import type {
   Attribute,
   Attributes,
-  FilterAttributes,
   OneCardinalityAttribute,
 } from "./attributes";
 import { SupabaseClient } from "@supabase/supabase-js";
