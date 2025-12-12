@@ -1,30 +1,22 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { create } from "zustand";
-import { ReplicacheMutators, useReplicache } from "src/replicache";
+import { useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { scanIndex } from "src/replicache/utils";
 import { focusBlock } from "src/utils/focusBlock";
 import { useEditorStates } from "src/state/useEditorState";
-import { useEntitySetContext } from "./EntitySetProvider";
+import { useEntitySetContext } from "../EntitySetProvider";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
-import { v7 } from "uuid";
 import { indent, outdent, outdentFull } from "src/utils/list-operations";
 import { addShortcut, Shortcut } from "src/shortcuts";
-import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 import { elementId } from "src/utils/elementId";
 import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 import { copySelection } from "src/utils/copySelection";
-import { isTextBlock } from "src/utils/isTextBlock";
 import { useIsMobile } from "src/hooks/isMobile";
-import { deleteBlock } from "./Blocks/DeleteBlock";
-import { Replicache } from "replicache";
-import { schema } from "./Blocks/TextBlock/schema";
-import { TextSelection } from "prosemirror-state";
+import { deleteBlock } from "src/utils/deleteBlock";
+import { schema } from "../Blocks/TextBlock/schema";
 import { MarkType } from "prosemirror-model";
-export const useSelectingMouse = create(() => ({
-  start: null as null | string,
-}));
+import { useSelectingMouse, getSortedSelection } from "./selectionState";
 
 //How should I model selection? As ranges w/ a start and end? Store *blocks* so that I can just construct ranges?
 // How does this relate to *when dragging* ?
@@ -632,7 +624,7 @@ type SavedRange = {
   endOffset: number;
   direction: "forward" | "backward";
 };
-export function saveSelection() {
+function saveSelection() {
   let selection = window.getSelection();
   if (selection && selection.rangeCount > 0) {
     let ranges: SavedRange[] = [];
@@ -655,7 +647,7 @@ export function saveSelection() {
   return [];
 }
 
-export function restoreSelection(savedRanges: SavedRange[]) {
+function restoreSelection(savedRanges: SavedRange[]) {
   if (savedRanges && savedRanges.length > 0) {
     let selection = window.getSelection();
     if (!selection) return;
@@ -693,44 +685,6 @@ function getContentEditableParent(e: Node | null): Node | null {
   return null;
 }
 
-export const getSortedSelection = async (
-  rep: Replicache<ReplicacheMutators>,
-) => {
-  let selectedBlocks = useUIState.getState().selectedBlocks;
-  let foldedBlocks = useUIState.getState().foldedBlocks;
-  if (!selectedBlocks[0]) return [[], []];
-  let siblings =
-    (await rep?.query((tx) =>
-      getBlocksWithType(tx, selectedBlocks[0].parent),
-    )) || [];
-  let sortedBlocks = siblings.filter((s) => {
-    let selected = selectedBlocks.find((sb) => sb.value === s.value);
-    return selected;
-  });
-  let sortedBlocksWithChildren = siblings.filter((s) => {
-    let selected = selectedBlocks.find((sb) => sb.value === s.value);
-    if (s.listData && !selected) {
-      //Select the children of folded list blocks (in order to copy them)
-      return s.listData.path.find(
-        (p) =>
-          selectedBlocks.find((sb) => sb.value === p.entity) &&
-          foldedBlocks.includes(p.entity),
-      );
-    }
-    return selected;
-  });
-  return [
-    sortedBlocks,
-    siblings.filter(
-      (f) =>
-        !f.listData ||
-        !f.listData.path.find(
-          (p) => foldedBlocks.includes(p.entity) && p.entity !== f.value,
-        ),
-    ),
-    sortedBlocksWithChildren,
-  ];
-};
 
 function toggleMarkInBlocks(blocks: string[], mark: MarkType, attrs?: any) {
   let everyBlockHasMark = blocks.reduce((acc, block) => {

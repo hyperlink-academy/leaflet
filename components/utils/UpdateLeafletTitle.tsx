@@ -8,7 +8,7 @@ import {
 import { useEntity, useReplicache } from "src/replicache";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
-import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
+import { YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { focusBlock } from "src/utils/focusBlock";
 import { useIsMobile } from "src/hooks/isMobile";

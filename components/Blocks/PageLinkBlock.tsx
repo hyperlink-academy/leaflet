@@ -2,7 +2,7 @@
 import { BlockProps, BaseBlock, ListMarker, Block } from "./Block";
 import { focusBlock } from "src/utils/focusBlock";
 
-import { focusPage } from "components/Pages";
+import { focusPage } from "src/utils/focusPage";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { RenderedTextBlock } from "components/Blocks/TextBlock";

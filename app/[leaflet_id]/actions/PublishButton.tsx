@@ -35,7 +35,7 @@ import {
 } from "src/hooks/queries/useBlocks";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
-import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
+import { YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import { BlueskyLogin } from "app/login/LoginForm";
 import { moveLeafletToPublication } from "actions/publications/moveLeafletToPublication";
 import { AddTiny } from "components/Icons/AddTiny";

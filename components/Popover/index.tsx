@@ -1,11 +1,10 @@
 "use client";
 import * as RadixPopover from "@radix-ui/react-popover";
 import { theme } from "tailwind.config";
-import { NestedCardThemeProvider } from "./ThemeManager/ThemeProvider";
-import { createContext, useEffect, useState } from "react";
-import { PopoverArrow } from "./Icons/PopoverArrow";
-
-export const PopoverOpenContext = createContext(false);
+import { NestedCardThemeProvider } from "../ThemeManager/ThemeProvider";
+import { useEffect, useState } from "react";
+import { PopoverArrow } from "../Icons/PopoverArrow";
+import { PopoverOpenContext } from "./PopoverContext";
 export const Popover = (props: {
   trigger: React.ReactNode;
   disabled?: boolean;

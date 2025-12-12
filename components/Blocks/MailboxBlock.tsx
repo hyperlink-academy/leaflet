@@ -9,7 +9,7 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { subscribeToMailboxWithEmail } from "actions/subscriptions/subscribeToMailboxWithEmail";
 import { confirmEmailSubscription } from "actions/subscriptions/confirmEmailSubscription";
-import { focusPage } from "components/Pages";
+import { focusPage } from "src/utils/focusPage";
 import { v7 } from "uuid";
 import { sendPostToSubscribers } from "actions/subscriptions/sendPostToSubscribers";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";

@@ -5,6 +5,7 @@ import { theme } from "tailwind.config";
 import * as base64 from "base64-js";
 import { didToBlueskyUrl } from "src/utils/mentionUtils";
 import { AtMentionLink } from "components/AtMentionLink";
+import { Delta } from "src/utils/yjsFragmentToString";
 
 type BlockElements = "h1" | "h2" | "h3" | null | "blockquote" | "p";
 export function RenderYJSFragment({
@@ -131,19 +132,6 @@ const BlockWrapper = (props: {
   }
 };
 
-export type Delta = {
-  insert: string;
-  attributes?: {
-    strong?: {};
-    code?: {};
-    em?: {};
-    underline?: {};
-    strikethrough?: {};
-    highlight?: { color: string };
-    link?: { href: string };
-  };
-};
-
 function attributesToStyle(d: Delta) {
   let props = {
     style: {},
@@ -174,29 +162,3 @@ function attributesToStyle(d: Delta) {
   return props;
 }
 
-export function YJSFragmentToString(
-  node: XmlElement | XmlText | XmlHook,
-): string {
-  if (node.constructor === XmlElement) {
-    // Handle hard_break nodes specially
-    if (node.nodeName === "hard_break") {
-      return "\n";
-    }
-    // Handle inline mention nodes
-    if (node.nodeName === "didMention" || node.nodeName === "atMention") {
-      return node.getAttribute("text") || "";
-    }
-    return node
-      .toArray()
-      .map((f) => YJSFragmentToString(f))
-      .join("");
-  }
-  if (node.constructor === XmlText) {
-    return (node.toDelta() as Delta[])
-      .map((d) => {
-        return d.insert;
-      })
-      .join("");
-  }
-  return "";
-}

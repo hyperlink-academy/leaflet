@@ -4,7 +4,7 @@ import * as base64 from "base64-js";
 
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
-import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
+import { YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import { Leaflet } from "./Leaflet";
 import { scanIndexLocal } from "src/replicache/utils";
 import { getRSVPData } from "actions/getRSVPData";

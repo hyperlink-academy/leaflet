@@ -2,15 +2,15 @@ import type { Fact, ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
 
 import { generateKeyBetween } from "fractional-indexing";
-import { focusPage } from "components/Pages";
+import { focusPage } from "src/utils/focusPage";
 import { v7 } from "uuid";
 import { Replicache } from "replicache";
 import { useEditorStates } from "src/state/useEditorState";
 import { elementId } from "src/utils/elementId";
 import { UndoManager } from "src/undoManager";
 import { focusBlock } from "src/utils/focusBlock";
-import { usePollBlockUIState } from "./PollBlock";
-import { focusElement } from "components/Input";
+import { usePollBlockUIState } from "./PollBlock/pollBlockState";
+import { focusElement } from "src/utils/focusElement";
 import { BlockBlueskySmall } from "components/Icons/BlockBlueskySmall";
 import { BlockButtonSmall } from "components/Icons/BlockButtonSmall";
 import { BlockCalendarSmall } from "components/Icons/BlockCalendarSmall";

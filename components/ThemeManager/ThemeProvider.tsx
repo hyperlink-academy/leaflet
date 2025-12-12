@@ -5,8 +5,6 @@ import {
   CSSProperties,
   useContext,
   useEffect,
-  useMemo,
-  useState,
 } from "react";
 import {
   colorToString,
@@ -14,7 +12,6 @@ import {
   useColorAttributeNullable,
 } from "./useColorAttribute";
 import { Color as AriaColor, parseColor } from "react-aria-components";
-import { parse, contrastLstar, ColorSpace, sRGB } from "colorjs.io/fn";
 
 import { useEntity } from "src/replicache";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
@@ -23,34 +20,7 @@ import {
   PublicationThemeProvider,
 } from "./PublicationThemeProvider";
 import { PubLeafletPublication } from "lexicons/api";
-
-type CSSVariables = {
-  "--bg-leaflet": string;
-  "--bg-page": string;
-  "--primary": string;
-  "--accent-1": string;
-  "--accent-2": string;
-  "--accent-contrast": string;
-  "--highlight-1": string;
-  "--highlight-2": string;
-  "--highlight-3": string;
-};
-
-// define the color defaults for everything
-export const ThemeDefaults = {
-  "theme/page-background": "#FDFCFA",
-  "theme/card-background": "#FFFFFF",
-  "theme/primary": "#272727",
-  "theme/highlight-1": "#FFFFFF",
-  "theme/highlight-2": "#EDD280",
-  "theme/highlight-3": "#FFCDC3",
-
-  //everywhere else, accent-background = accent-1 and accent-text = accent-2.
-  // we just need to create a migration pipeline before we can change this
-  "theme/accent-text": "#FFFFFF",
-  "theme/accent-background": "#0000FF",
-  "theme/accent-contrast": "#0000FF",
-};
+import { getColorContrast } from "./themeUtils";
 
 // define a function to set an Aria Color to a CSS Variable in RGB
 function setCSSVariableToColor(
@@ -368,12 +338,3 @@ export const ThemeBackgroundProvider = (props: {
   );
 };
 
-// used to calculate the contrast between page and accent1, accent2, and determin which is higher contrast
-export function getColorContrast(color1: string, color2: string) {
-  ColorSpace.register(sRGB);
-
-  let parsedColor1 = parse(`rgb(${color1})`);
-  let parsedColor2 = parse(`rgb(${color2})`);
-
-  return contrastLstar(parsedColor1, parsedColor2);
-}

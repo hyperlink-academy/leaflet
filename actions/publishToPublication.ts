@@ -32,10 +32,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { scanIndexLocal } from "src/replicache/utils";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
-import {
-  Delta,
-  YJSFragmentToString,
-} from "components/Blocks/TextBlock/RenderYJSFragment";
+import { Delta, YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import { ids } from "lexicons/api/lexicons";
 import { BlobRef } from "@atproto/lexicon";
 import { AtUri } from "@atproto/syntax";

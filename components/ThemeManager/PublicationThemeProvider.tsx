@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { parseColor } from "react-aria-components";
 import { useEntity } from "src/replicache";
-import { getColorContrast } from "./ThemeProvider";
+import { getColorContrast } from "./themeUtils";
 import { useColorAttribute, colorToString } from "./useColorAttribute";
 import { BaseThemeProvider } from "./ThemeProvider";
 import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
