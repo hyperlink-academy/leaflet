@@ -25,6 +25,7 @@ import { updateIdentityInterfaceState } from "actions/updateIdentityInterfaceSta
 import Link from "next/link";
 import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 import { usePreserveScroll } from "src/hooks/usePreserveScroll";
+import { Tab } from "components/Tab";
 
 export type DashboardState = {
   display?: "grid" | "list";
@@ -355,27 +356,7 @@ const DisplayToggle = (props: {
   );
 };
 
-function Tab(props: {
-  name: string;
-  selected: boolean;
-  onSelect: () => void;
-  href?: string;
-}) {
-  return (
-    <div
-      className={`pubTabs px-1 py-0 flex gap-1 items-center rounded-md hover:cursor-pointer ${props.selected ? "text-accent-2 bg-accent-1 font-bold -mb-px" : "text-tertiary"}`}
-      onClick={() => props.onSelect()}
-    >
-      {props.name}
-      {props.href && <ExternalLinkTiny />}
-    </div>
-  );
-}
-
-const FilterOptions = (props: {
-  hasPubs: boolean;
-  hasArchived: boolean;
-}) => {
+const FilterOptions = (props: { hasPubs: boolean; hasArchived: boolean }) => {
   let { filter } = useDashboardState();
   let setState = useSetDashboardState();
   let filterCount = Object.values(filter).filter(Boolean).length;

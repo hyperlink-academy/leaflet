@@ -39,11 +39,7 @@ export const ProfilePageLayout = (props: {
   );
 };
 
-export type profileTabsType =
-  | "activity"
-  | "posts"
-  | "comments"
-  | "subscriptions";
+export type profileTabsType = "posts" | "comments" | "subscriptions";
 const ProfilePageContent = (props: {
   profile: {
     did: string;
@@ -52,7 +48,7 @@ const ProfilePageContent = (props: {
     record: Json;
   } | null;
 }) => {
-  let [tab, setTab] = useState<profileTabsType>("activity");
+  let [tab, setTab] = useState<profileTabsType>("posts");
 
   let profileRecord = props.profile?.record as AppBskyActorProfile.Record;
   console.log(profileRecord);
