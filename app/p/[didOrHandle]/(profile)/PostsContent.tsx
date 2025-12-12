@@ -1,72 +1,13 @@
-import { Tab } from "components/Tab";
-import { profileTabsType } from "../ProfilePageLayout";
+"use client";
+
 import { PostListing } from "components/PostListing";
 import type { Post } from "app/(home-pages)/reader/getReaderFeed";
 import type { Cursor } from "../getProfilePosts";
 import { getProfilePosts } from "../getProfilePosts";
 import useSWRInfinite from "swr/infinite";
 import { useEffect, useRef } from "react";
-import { CommentTabContent } from "./TabContent.tsx/Comment";
 
-export const ProfileTabs = (props: {
-  tab: profileTabsType;
-  setTab: (t: profileTabsType) => void;
-}) => {
-  return (
-    <div className="flex flex-col w-full  px-3 sm:px-4 ">
-      <div className="flex gap-2 justify-between">
-        <div className="flex gap-2">
-          <Tab
-            name="Posts"
-            selected={props.tab === "posts"}
-            onSelect={() => {
-              props.setTab("posts");
-            }}
-          />
-          <Tab
-            name="Comments"
-            selected={props.tab === "comments"}
-            onSelect={() => {
-              props.setTab("comments");
-            }}
-          />
-        </div>
-        <Tab
-          name="Subscriptions"
-          selected={props.tab === "subscriptions"}
-          onSelect={() => {
-            props.setTab("subscriptions");
-          }}
-        />
-      </div>
-      <hr className="border-border-light mt-1" />
-    </div>
-  );
-};
-
-export const TabContent = (props: {
-  tab: profileTabsType;
-  did: string;
-  posts: Post[];
-  nextCursor: Cursor | null;
-}) => {
-  switch (props.tab) {
-    case "posts":
-      return (
-        <ProfilePostsContent
-          did={props.did}
-          posts={props.posts}
-          nextCursor={props.nextCursor}
-        />
-      );
-    case "comments":
-      return <CommentTabContent />;
-    case "subscriptions":
-      return <div>subscriptions here!</div>;
-  }
-};
-
-const ProfilePostsContent = (props: {
+export const ProfilePostsContent = (props: {
   did: string;
   posts: Post[];
   nextCursor: Cursor | null;

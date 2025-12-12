@@ -1,8 +1,10 @@
-import Post from "app/lish/[did]/[publication]/[rkey]/l-quote/[quote]/page";
-import { CommentTiny } from "components/Icons/CommentTiny";
 import { ReplyTiny } from "components/Icons/ReplyTiny";
 
-export const CommentTabContent = () => {
+export default function ProfileCommentsPage() {
+  return <CommentsContent />;
+}
+
+const CommentsContent = () => {
   let isReply = true;
   return (
     <>
