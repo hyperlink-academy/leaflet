@@ -31,8 +31,6 @@ export function useLocalizedDate(
       ? timezone || "UTC"
       : Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    console.log("tz", effectiveTimezone);
-
     // Apply timezone if available
     if (effectiveTimezone) {
       dateTime = dateTime.setZone(effectiveTimezone);

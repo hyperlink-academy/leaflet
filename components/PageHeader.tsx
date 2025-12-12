@@ -1,10 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useCardBorderHidden } from "./Pages/useCardBorderHidden";
 
-export const Header = (props: {
-  children: React.ReactNode;
-  cardBorderHidden: boolean;
-}) => {
+export const Header = (props: { children: React.ReactNode }) => {
+  let cardBorderHidden = useCardBorderHidden();
   let [scrollPos, setScrollPos] = useState(0);
 
   useEffect(() => {
@@ -22,7 +21,7 @@ export const Header = (props: {
     }
   }, []);
 
-  let headerBGColor = props.cardBorderHidden
+  let headerBGColor = !cardBorderHidden
     ? "var(--bg-leaflet)"
     : "var(--bg-page)";
 
@@ -54,13 +53,13 @@ export const Header = (props: {
           style={
             scrollPos < 20
               ? {
-                  backgroundColor: props.cardBorderHidden
+                  backgroundColor: !cardBorderHidden
                     ? `rgba(${headerBGColor}, ${scrollPos / 60 + 0.75})`
                     : `rgba(${headerBGColor}, ${scrollPos / 20})`,
-                  paddingLeft: props.cardBorderHidden
+                  paddingLeft: !cardBorderHidden
                     ? "4px"
                     : `calc(${scrollPos / 20}*4px)`,
-                  paddingRight: props.cardBorderHidden
+                  paddingRight: !cardBorderHidden
                     ? "8px"
                     : `calc(${scrollPos / 20}*8px)`,
                 }

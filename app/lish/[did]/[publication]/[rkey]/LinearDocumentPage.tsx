@@ -61,7 +61,6 @@ export function LinearDocumentPage({
       <PageWrapper
         pageType="doc"
         fullPageScroll={fullPageScroll}
-        cardBorderHidden={!hasPageBackground}
         id={pageId ? `post-page-${pageId}` : "post-page"}
         drawerOpen={
           !!drawer && (pageId ? drawer.pageId === pageId : !drawer.pageId)

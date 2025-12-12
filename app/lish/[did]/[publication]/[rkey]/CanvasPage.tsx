@@ -57,7 +57,6 @@ export function CanvasPage({
     <PageWrapper
       pageType="canvas"
       fullPageScroll={fullPageScroll}
-      cardBorderHidden={!hasPageBackground}
       id={pageId ? `post-page-${pageId}` : "post-page"}
       drawerOpen={
         !!drawer && (pageId ? drawer.pageId === pageId : !drawer.pageId)

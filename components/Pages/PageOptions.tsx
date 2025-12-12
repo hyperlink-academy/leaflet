@@ -21,17 +21,16 @@ import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 export const PageOptionButton = ({
   children,
   secondary,
-  cardBorderHidden,
   className,
   disabled,
   ...props
 }: {
   children: React.ReactNode;
   secondary?: boolean;
-  cardBorderHidden: boolean | undefined;
   className?: string;
   disabled?: boolean;
 } & Omit<JSX.IntrinsicElements["button"], "content">) => {
+  const cardBorderHidden = useCardBorderHidden();
   return (
     <button
       className={`
@@ -58,8 +57,6 @@ export const PageOptions = (props: {
   first: boolean | undefined;
   isFocused: boolean;
 }) => {
-  let cardBorderHidden = useCardBorderHidden(props.entityID);
-
   return (
     <div
       className={`pageOptions w-fit z-10
@@ -69,7 +66,6 @@ export const PageOptions = (props: {
     >
       {!props.first && (
         <PageOptionButton
-          cardBorderHidden={cardBorderHidden}
           secondary
           onClick={() => {
             useUIState.getState().closePage(props.entityID);
@@ -78,36 +74,25 @@ export const PageOptions = (props: {
           <CloseTiny />
         </PageOptionButton>
       )}
-      <OptionsMenu
-        entityID={props.entityID}
-        first={!!props.first}
-        cardBorderHidden={cardBorderHidden}
-      />
-      <UndoButtons cardBorderHidden={cardBorderHidden} />
+      <OptionsMenu entityID={props.entityID} first={!!props.first} />
+      <UndoButtons />
     </div>
   );
 };
 
-export const UndoButtons = (props: {
-  cardBorderHidden: boolean | undefined;
-}) => {
+export const UndoButtons = () => {
   let undoState = useUndoState();
   let { undoManager } = useReplicache();
   return (
     <Media mobile>
       {undoState.canUndo && (
         <div className="gap-1 flex sm:flex-col">
-          <PageOptionButton
-            secondary
-            cardBorderHidden={props.cardBorderHidden}
-            onClick={() => undoManager.undo()}
-          >
+          <PageOptionButton secondary onClick={() => undoManager.undo()}>
             <UndoTiny />
           </PageOptionButton>
 
           <PageOptionButton
             secondary
-            cardBorderHidden={props.cardBorderHidden}
             onClick={() => undoManager.undo()}
             disabled={!undoState.canRedo}
           >
@@ -119,11 +104,7 @@ export const UndoButtons = (props: {
   );
 };
 
-export const OptionsMenu = (props: {
-  entityID: string;
-  first: boolean;
-  cardBorderHidden: boolean | undefined;
-}) => {
+export const OptionsMenu = (props: { entityID: string; first: boolean }) => {
   let [state, setState] = useState<"normal" | "theme" | "share">("normal");
   let { permissions } = useEntitySetContext();
   if (!permissions.write) return null;
@@ -138,10 +119,7 @@ export const OptionsMenu = (props: {
         if (!open) setState("normal");
       }}
       trigger={
-        <PageOptionButton
-          cardBorderHidden={props.cardBorderHidden}
-          className="!w-8 !h-5 sm:!w-5 sm:!h-8"
-        >
+        <PageOptionButton className="!w-8 !h-5 sm:!w-5 sm:!h-8">
           <MoreOptionsTiny className="sm:rotate-90" />
         </PageOptionButton>
       }

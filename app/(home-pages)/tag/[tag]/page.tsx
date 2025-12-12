@@ -14,7 +14,6 @@ export default async function TagPage(props: {
   return (
     <DashboardLayout
       id="tag"
-      cardBorderHidden={false}
       currentPage="tag"
       defaultTab="default"
       actions={null}

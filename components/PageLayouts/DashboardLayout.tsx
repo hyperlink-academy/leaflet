@@ -134,7 +134,6 @@ export function DashboardLayout<
   },
 >(props: {
   id: string;
-  cardBorderHidden: boolean;
   tabs: T;
   defaultTab: keyof T;
   currentPage: navPages;
@@ -187,7 +186,7 @@ export function DashboardLayout<
         >
           {Object.keys(props.tabs).length <= 1 && !controls ? null : (
             <>
-              <Header cardBorderHidden={props.cardBorderHidden}>
+              <Header>
                 {headerState === "default" ? (
                   <>
                     {Object.keys(props.tabs).length > 1 && (

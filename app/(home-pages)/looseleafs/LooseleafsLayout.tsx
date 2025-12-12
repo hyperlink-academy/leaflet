@@ -1,6 +1,5 @@
 "use client";
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
-import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { Fact, PermissionToken } from "src/replicache";
@@ -30,11 +29,9 @@ export const LooseleafsLayout = (props: {
     [searchValue],
   );
 
-  let cardBorderHidden = !!useCardBorderHidden(props.entityID);
   return (
     <DashboardLayout
       id="looseleafs"
-      cardBorderHidden={cardBorderHidden}
       currentPage="looseleafs"
       defaultTab="home"
       actions={<Actions />}
@@ -45,7 +42,6 @@ export const LooseleafsLayout = (props: {
             <LooseleafList
               titles={props.titles}
               initialFacts={props.initialFacts}
-              cardBorderHidden={cardBorderHidden}
               searchValue={debouncedSearchValue}
             />
           ),
@@ -61,7 +57,6 @@ export const LooseleafList = (props: {
     [root_entity: string]: Fact<Attribute>[];
   };
   searchValue: string;
-  cardBorderHidden: boolean;
 }) => {
   let { identity } = useIdentityData();
   let { data: initialFacts } = useSWR(
@@ -108,7 +103,6 @@ export const LooseleafList = (props: {
       searchValue={props.searchValue}
       leaflets={leaflets}
       titles={initialFacts?.titles || {}}
-      cardBorderHidden={props.cardBorderHidden}
       initialFacts={initialFacts?.facts || {}}
       showPreview
     />

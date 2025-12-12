@@ -10,7 +10,6 @@ export default async function Notifications() {
   return (
     <DashboardLayout
       id="discover"
-      cardBorderHidden={true}
       currentPage="notifications"
       defaultTab="default"
       actions={null}

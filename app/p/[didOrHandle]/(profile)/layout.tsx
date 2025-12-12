@@ -52,11 +52,12 @@ export default async function ProfileLayout(props: {
           max-w-prose mx-auto w-full h-full
           flex flex-col
           border border-border-light rounded-lg
-          text-center mt-8`}
+          text-center mt-8
+          overflow-y-scroll`}
         >
           <ProfileHeader profile={profile} publications={publications || []} />
           <ProfileTabs didOrHandle={params.didOrHandle} />
-          <div className="h-full overflow-y-scroll pt-3 pb-4 px-3 sm:px-4 flex flex-col">
+          <div className="h-full pt-3 pb-4 px-3 sm:px-4 flex flex-col">
             {props.children}
           </div>
         </div>
