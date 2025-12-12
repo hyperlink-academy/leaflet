@@ -46,6 +46,7 @@ export const ProfileHeader = (props: {
             {/*<div className="spacer "/>*/}
             {props.publications.map((p) => (
               <PublicationCard
+                key={p.uri}
                 record={p.record as PubLeafletPublication.Record}
                 uri={p.uri}
               />
