@@ -1,5 +1,5 @@
 import { idResolver } from "app/(home-pages)/reader/idResolver";
-import { getProfilePosts } from "../getProfilePosts";
+import { getProfilePosts } from "./getProfilePosts";
 import { ProfilePostsContent } from "./PostsContent";
 
 export default async function ProfilePostsPage(props: {

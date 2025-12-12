@@ -4,9 +4,10 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileTabs } from "./ProfileTabs";
-import { ProfileDashboardLayout } from "./ProfileDashboardLayout";
+import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
+import { ProfileLayout } from "./ProfileLayout";
 
-export default async function ProfileLayout(props: {
+export default async function ProfilePageLayout(props: {
   params: Promise<{ didOrHandle: string }>;
   children: React.ReactNode;
 }) {
@@ -45,25 +46,29 @@ export default async function ProfileLayout(props: {
   if (!profile) return null;
 
   return (
-    <ProfileDashboardLayout did={did}>
-      <div className="h-full">
-        <div
-          id="profile-content"
-          className={`
-          max-w-prose mx-auto w-full h-full
-          flex flex-col
-          border border-border-light rounded-lg
-          text-center
-          overflow-y-scroll `}
-        >
-          <ProfileHeader profile={profile} publications={publications || []} />
-          <ProfileTabs didOrHandle={params.didOrHandle} />
-          <div className="h-full pt-3 pb-4 px-3 sm:px-4 flex flex-col">
-            {props.children}
-          </div>
-        </div>
-      </div>
-    </ProfileDashboardLayout>
+    <DashboardLayout
+      id="profile"
+      defaultTab="default"
+      currentPage="profile"
+      actions={null}
+      tabs={{
+        default: {
+          controls: null,
+          content: (
+            <ProfileLayout>
+              <ProfileHeader
+                profile={profile}
+                publications={publications || []}
+              />
+              <ProfileTabs didOrHandle={params.didOrHandle} />
+              <div className="h-full pt-3 pb-4 px-3 sm:px-4 flex flex-col">
+                {props.children}
+              </div>
+            </ProfileLayout>
+          ),
+        },
+      }}
+    />
   );
 }
 

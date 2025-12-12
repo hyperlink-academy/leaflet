@@ -2,8 +2,8 @@
 
 import { PostListing } from "components/PostListing";
 import type { Post } from "app/(home-pages)/reader/getReaderFeed";
-import type { Cursor } from "../getProfilePosts";
-import { getProfilePosts } from "../getProfilePosts";
+import type { Cursor } from "./getProfilePosts";
+import { getProfilePosts } from "./getProfilePosts";
 import useSWRInfinite from "swr/infinite";
 import { useEffect, useRef } from "react";
 
