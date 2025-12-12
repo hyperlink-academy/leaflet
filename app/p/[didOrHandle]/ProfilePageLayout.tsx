@@ -105,7 +105,7 @@ const ProfilePageContent = (props: {
         </div>
         <ProfileTabs tab={tab} setTab={setTab} />
 
-        <div className="h-full overflow-y-scroll pt-2 pb-4 px-3 sm:px-4 flex flex-col">
+        <div className="h-full overflow-y-scroll pt-3 pb-4 px-3 sm:px-4 flex flex-col">
           <TabContent
             tab={tab}
             did={props.profile.did}
