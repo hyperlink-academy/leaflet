@@ -22,9 +22,15 @@ export const ProfileTabs = (props: { didOrHandle: string }) => {
     const profileContent = document.getElementById("profile-content");
     const handleScroll = () => {
       if (profileContent) {
-        setScrollPosWithinTabContent(profileContent.scrollTop - headerHeight);
+        setScrollPosWithinTabContent(
+          profileContent.scrollTop - headerHeight > 0
+            ? profileContent.scrollTop - headerHeight
+            : 0,
+        );
       }
     };
+    console.log("content: " + profileContent);
+    console.log("header: " + headerHeight);
 
     if (profileContent) {
       profileContent.addEventListener("scroll", handleScroll);
@@ -34,20 +40,19 @@ export const ProfileTabs = (props: { didOrHandle: string }) => {
 
   const baseUrl = `/p/${props.didOrHandle}`;
   const bgColor = !cardBorderHidden ? "var(--bg-leaflet)" : "var(--bg-page)";
+
   console.log(scrollPosWithinTabContent);
 
   return (
     <div className="flex flex-col w-full sticky top-3 sm:top-4 z-10 sm:px-4 px-3">
       <div
         style={
-          scrollPosWithinTabContent < 0
-            ? { paddingLeft: "0", paddingRight: "0" }
-            : scrollPosWithinTabContent > 0 && scrollPosWithinTabContent < 20
-              ? {
-                  paddingLeft: `calc(${scrollPosWithinTabContent / 20} * 12px )`,
-                  paddingRight: `calc(${scrollPosWithinTabContent / 20} * 12px )`,
-                }
-              : { paddingLeft: "12px", paddingRight: "12px" }
+          scrollPosWithinTabContent < 20
+            ? {
+                paddingLeft: `calc(${scrollPosWithinTabContent / 20} * 12px )`,
+                paddingRight: `calc(${scrollPosWithinTabContent / 20} * 12px )`,
+              }
+            : { paddingLeft: "12px", paddingRight: "12px" }
         }
       >
         <div

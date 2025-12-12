@@ -48,6 +48,7 @@ export default async function ProfileLayout(props: {
     <ProfileDashboardLayout did={did}>
       <div className="h-full">
         <div
+          id="profile-content"
           className={`
           max-w-prose mx-auto w-full h-full
           flex flex-col
@@ -57,10 +58,7 @@ export default async function ProfileLayout(props: {
         >
           <ProfileHeader profile={profile} publications={publications || []} />
           <ProfileTabs didOrHandle={params.didOrHandle} />
-          <div
-            className="h-full pt-3 pb-4 px-3 sm:px-4 flex flex-col"
-            id="profileContent"
-          >
+          <div className="h-full pt-3 pb-4 px-3 sm:px-4 flex flex-col">
             {props.children}
           </div>
         </div>
