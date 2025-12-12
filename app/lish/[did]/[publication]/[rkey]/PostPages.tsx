@@ -19,7 +19,7 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 import { Fragment, useEffect } from "react";
 import { flushSync } from "react-dom";
 import { scrollIntoView } from "src/utils/scrollIntoView";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { decodeQuotePosition } from "./quotePosition";
 import { PollData } from "./fetchPollData";
 import { LinearDocumentPage } from "./LinearDocumentPage";
@@ -32,12 +32,21 @@ const usePostPageUIState = create(() => ({
 
 export const useOpenPages = () => {
   const { quote } = useParams();
+  const searchParams = useSearchParams();
+  const pageParam = searchParams.get("page");
   const state = usePostPageUIState((s) => s);
 
-  if (!state.initialized && quote) {
-    const decodedQuote = decodeQuotePosition(quote as string);
-    if (decodedQuote?.pageId) {
-      return [decodedQuote.pageId];
+  if (!state.initialized) {
+    // Check for page search param first (for comment links)
+    if (pageParam) {
+      return [pageParam];
+    }
+    // Then check for quote param
+    if (quote) {
+      const decodedQuote = decodeQuotePosition(quote as string);
+      if (decodedQuote?.pageId) {
+        return [decodedQuote.pageId];
+      }
     }
   }
 
@@ -46,10 +55,21 @@ export const useOpenPages = () => {
 
 export const useInitializeOpenPages = () => {
   const { quote } = useParams();
+  const searchParams = useSearchParams();
+  const pageParam = searchParams.get("page");
 
   useEffect(() => {
     const state = usePostPageUIState.getState();
     if (!state.initialized) {
+      // Check for page search param first (for comment links)
+      if (pageParam) {
+        usePostPageUIState.setState({
+          pages: [pageParam],
+          initialized: true,
+        });
+        return;
+      }
+      // Then check for quote param
       if (quote) {
         const decodedQuote = decodeQuotePosition(quote as string);
         if (decodedQuote?.pageId) {
@@ -63,7 +83,7 @@ export const useInitializeOpenPages = () => {
       // Mark as initialized even if no pageId found
       usePostPageUIState.setState({ initialized: true });
     }
-  }, [quote]);
+  }, [quote, pageParam]);
 };
 
 export const openPage = (

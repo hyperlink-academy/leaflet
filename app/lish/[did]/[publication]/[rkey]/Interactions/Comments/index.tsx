@@ -114,7 +114,7 @@ const Comment = (props: {
   pageId?: string;
 }) => {
   return (
-    <div className="comment">
+    <div id={props.comment.uri} className="comment">
       <div className="flex gap-2">
         {props.profile && (
           <ProfilePopover profile={props.profile} comment={props.comment.uri} />
