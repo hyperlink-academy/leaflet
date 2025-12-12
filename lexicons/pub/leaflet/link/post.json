@@ -1,0 +1,149 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.link.post",
+  "revision": 2,
+  "description": "A batch of shared links for link blogging",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "description": "Record containing a batch of shared links",
+      "record": {
+        "type": "object",
+        "required": [
+          "links",
+          "createdAt"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "maxGraphemes": 100,
+            "description": "Optional title for this link roundup"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 3000,
+            "maxGraphemes": 500,
+            "description": "Introduction or context for this batch of links"
+          },
+          "links": {
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 50,
+            "items": {
+              "type": "ref",
+              "ref": "#linkItem"
+            },
+            "description": "The batch of links being shared"
+          },
+          "tags": {
+            "type": "array",
+            "maxLength": 10,
+            "items": {
+              "type": "string",
+              "maxLength": 64,
+              "maxGraphemes": 32
+            },
+            "description": "Tags for the entire batch"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "When the batch was shared"
+          },
+          "via": {
+            "type": "ref",
+            "ref": "#viaRef",
+            "description": "Reference to source if aggregated from elsewhere"
+          }
+        }
+      }
+    },
+    "linkItem": {
+      "type": "object",
+      "description": "A single link within a batch",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048,
+          "description": "The URL being shared"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300,
+          "maxGraphemes": 100,
+          "description": "Title of the linked content"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000,
+          "maxGraphemes": 300,
+          "description": "User's blurb about this specific link"
+        },
+        "tags": {
+          "type": "array",
+          "maxLength": 5,
+          "items": {
+            "type": "string",
+            "maxLength": 64,
+            "maxGraphemes": 32
+          },
+          "description": "Tags for this specific link"
+        },
+        "embed": {
+          "type": "ref",
+          "ref": "#embedMeta",
+          "description": "Cached metadata from the linked page"
+        }
+      }
+    },
+    "viaRef": {
+      "type": "object",
+      "description": "Reference to source of aggregated links",
+      "properties": {
+        "type": {
+          "type": "string",
+          "knownValues": [
+            "bsky-post",
+            "bsky-posts",
+            "import"
+          ],
+          "description": "Type of source"
+        },
+        "uris": {
+          "type": "array",
+          "maxLength": 50,
+          "items": {
+            "type": "string",
+            "format": "at-uri"
+          },
+          "description": "AT URIs of source records if applicable"
+        }
+      }
+    },
+    "embedMeta": {
+      "type": "object",
+      "description": "Cached embed metadata from the linked page",
+      "properties": {
+        "image": {
+          "type": "blob",
+          "accept": [
+            "image/*"
+          ],
+          "maxSize": 1000000,
+          "description": "Thumbnail image"
+        },
+        "siteName": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Name of the source site"
+        }
+      }
+    }
+  }
+}

@@ -40,6 +40,7 @@ import * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
 import * as PubLeafletComment from './types/pub/leaflet/comment'
 import * as PubLeafletDocument from './types/pub/leaflet/document'
 import * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
+import * as PubLeafletLinkPost from './types/pub/leaflet/link/post'
 import * as PubLeafletPagesCanvas from './types/pub/leaflet/pages/canvas'
 import * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
 import * as PubLeafletPollDefinition from './types/pub/leaflet/poll/definition'
@@ -80,6 +81,7 @@ export * as PubLeafletBlocksWebsite from './types/pub/leaflet/blocks/website'
 export * as PubLeafletComment from './types/pub/leaflet/comment'
 export * as PubLeafletDocument from './types/pub/leaflet/document'
 export * as PubLeafletGraphSubscription from './types/pub/leaflet/graph/subscription'
+export * as PubLeafletLinkPost from './types/pub/leaflet/link/post'
 export * as PubLeafletPagesCanvas from './types/pub/leaflet/pages/canvas'
 export * as PubLeafletPagesLinearDocument from './types/pub/leaflet/pages/linearDocument'
 export * as PubLeafletPollDefinition from './types/pub/leaflet/poll/definition'
@@ -394,6 +396,7 @@ export class PubLeafletNS {
   publication: PubLeafletPublicationRecord
   blocks: PubLeafletBlocksNS
   graph: PubLeafletGraphNS
+  link: PubLeafletLinkNS
   pages: PubLeafletPagesNS
   poll: PubLeafletPollNS
   richtext: PubLeafletRichtextNS
@@ -403,6 +406,7 @@ export class PubLeafletNS {
     this._client = client
     this.blocks = new PubLeafletBlocksNS(client)
     this.graph = new PubLeafletGraphNS(client)
+    this.link = new PubLeafletLinkNS(client)
     this.pages = new PubLeafletPagesNS(client)
     this.poll = new PubLeafletPollNS(client)
     this.richtext = new PubLeafletRichtextNS(client)
@@ -509,6 +513,95 @@ export class PubLeafletGraphSubscriptionRecord {
       'com.atproto.repo.deleteRecord',
       undefined,
       { collection: 'pub.leaflet.graph.subscription', ...params },
+      { headers },
+    )
+  }
+}
+
+export class PubLeafletLinkNS {
+  _client: XrpcClient
+  post: PubLeafletLinkPostRecord
+
+  constructor(client: XrpcClient) {
+    this._client = client
+    this.post = new PubLeafletLinkPostRecord(client)
+  }
+}
+
+export class PubLeafletLinkPostRecord {
+  _client: XrpcClient
+
+  constructor(client: XrpcClient) {
+    this._client = client
+  }
+
+  async list(
+    params: OmitKey<ComAtprotoRepoListRecords.QueryParams, 'collection'>,
+  ): Promise<{
+    cursor?: string
+    records: { uri: string; value: PubLeafletLinkPost.Record }[]
+  }> {
+    const res = await this._client.call('com.atproto.repo.listRecords', {
+      collection: 'pub.leaflet.link.post',
+      ...params,
+    })
+    return res.data
+  }
+
+  async get(
+    params: OmitKey<ComAtprotoRepoGetRecord.QueryParams, 'collection'>,
+  ): Promise<{ uri: string; cid: string; value: PubLeafletLinkPost.Record }> {
+    const res = await this._client.call('com.atproto.repo.getRecord', {
+      collection: 'pub.leaflet.link.post',
+      ...params,
+    })
+    return res.data
+  }
+
+  async create(
+    params: OmitKey<
+      ComAtprotoRepoCreateRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletLinkPost.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.link.post'
+    const res = await this._client.call(
+      'com.atproto.repo.createRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async put(
+    params: OmitKey<
+      ComAtprotoRepoPutRecord.InputSchema,
+      'collection' | 'record'
+    >,
+    record: Un$Typed<PubLeafletLinkPost.Record>,
+    headers?: Record<string, string>,
+  ): Promise<{ uri: string; cid: string }> {
+    const collection = 'pub.leaflet.link.post'
+    const res = await this._client.call(
+      'com.atproto.repo.putRecord',
+      undefined,
+      { collection, ...params, record: { ...record, $type: collection } },
+      { encoding: 'application/json', headers },
+    )
+    return res.data
+  }
+
+  async delete(
+    params: OmitKey<ComAtprotoRepoDeleteRecord.InputSchema, 'collection'>,
+    headers?: Record<string, string>,
+  ): Promise<void> {
+    await this._client.call(
+      'com.atproto.repo.deleteRecord',
+      undefined,
+      { collection: 'pub.leaflet.link.post', ...params },
       { headers },
     )
   }
