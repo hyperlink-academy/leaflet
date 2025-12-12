@@ -1,5 +1,5 @@
 import { idResolver } from "app/(home-pages)/reader/idResolver";
-import { getProfileComments } from "../../getProfileComments";
+import { getProfileComments } from "./getProfileComments";
 import { ProfileCommentsContent } from "./CommentsContent";
 
 export default async function ProfileCommentsPage(props: {
@@ -19,6 +19,10 @@ export default async function ProfileCommentsPage(props: {
   const { comments, nextCursor } = await getProfileComments(did);
 
   return (
-    <ProfileCommentsContent did={did} comments={comments} nextCursor={nextCursor} />
+    <ProfileCommentsContent
+      did={did}
+      comments={comments}
+      nextCursor={nextCursor}
+    />
   );
 }

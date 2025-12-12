@@ -12,7 +12,7 @@ import {
   getProfileComments,
   type ProfileComment,
   type Cursor,
-} from "../getProfileComments";
+} from "./getProfileComments";
 import { timeAgo } from "src/utils/timeAgo";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 
