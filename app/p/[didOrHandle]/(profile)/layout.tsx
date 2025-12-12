@@ -57,7 +57,10 @@ export default async function ProfileLayout(props: {
         >
           <ProfileHeader profile={profile} publications={publications || []} />
           <ProfileTabs didOrHandle={params.didOrHandle} />
-          <div className="h-full pt-3 pb-4 px-3 sm:px-4 flex flex-col">
+          <div
+            className="h-full pt-3 pb-4 px-3 sm:px-4 flex flex-col"
+            id="profileContent"
+          >
             {props.children}
           </div>
         </div>

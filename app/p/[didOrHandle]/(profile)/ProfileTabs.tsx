@@ -11,16 +11,18 @@ export const ProfileTabs = (props: { didOrHandle: string }) => {
   const cardBorderHidden = useCardBorderHidden();
   const segment = useSelectedLayoutSegment();
   const currentTab = (segment || "posts") as ProfileTabType;
-  const [scrollPos, setScrollPos] = useState(0);
+  const [scrollPosWithinTabContent, setScrollPosWithinTabContent] = useState(0);
+  const [headerHeight, setHeaderHeight] = useState(0);
 
   useEffect(() => {
-    const profileContent = document.querySelector(
-      ".overflow-y-scroll",
-    ) as HTMLElement;
+    let headerHeight =
+      document.getElementById("profile-header")?.clientHeight || 0;
+    setHeaderHeight(headerHeight);
 
+    const profileContent = document.getElementById("profile-content");
     const handleScroll = () => {
       if (profileContent) {
-        setScrollPos(profileContent.scrollTop);
+        setScrollPosWithinTabContent(profileContent.scrollTop - headerHeight);
       }
     };
 
@@ -31,38 +33,41 @@ export const ProfileTabs = (props: { didOrHandle: string }) => {
   }, []);
 
   const baseUrl = `/p/${props.didOrHandle}`;
-  const bgColor = cardBorderHidden ? "var(--bg-leaflet)" : "var(--bg-page)";
+  const bgColor = !cardBorderHidden ? "var(--bg-leaflet)" : "var(--bg-page)";
+  console.log(scrollPosWithinTabContent);
 
   return (
-    <div className="flex flex-col w-full sticky top-3 sm:top-4 z-10">
+    <div className="flex flex-col w-full sticky top-3 sm:top-4 z-10 sm:px-4 px-3">
       <div
         style={
-          scrollPos < 20
-            ? {
-                paddingLeft: `calc(${scrollPos / 20} * 12px + 12px)`,
-                paddingRight: `calc(${scrollPos / 20} * 12px + 12px)`,
-              }
-            : { paddingLeft: "24px", paddingRight: "24px" }
+          scrollPosWithinTabContent < 0
+            ? { paddingLeft: "0", paddingRight: "0" }
+            : scrollPosWithinTabContent > 0 && scrollPosWithinTabContent < 20
+              ? {
+                  paddingLeft: `calc(${scrollPosWithinTabContent / 20} * 12px )`,
+                  paddingRight: `calc(${scrollPosWithinTabContent / 20} * 12px )`,
+                }
+              : { paddingLeft: "12px", paddingRight: "12px" }
         }
       >
         <div
           className={`
             border rounded-lg
-            ${scrollPos > 20 ? "border-border-light" : "border-transparent"}
+            ${scrollPosWithinTabContent > 20 ? "border-border-light" : "border-transparent"}
             py-1
             w-full `}
           style={
-            scrollPos < 20
+            scrollPosWithinTabContent < 20
               ? {
-                  backgroundColor: cardBorderHidden
-                    ? `rgba(${bgColor}, ${scrollPos / 60 + 0.75})`
-                    : `rgba(${bgColor}, ${scrollPos / 20})`,
-                  paddingLeft: cardBorderHidden
+                  backgroundColor: !cardBorderHidden
+                    ? `rgba(${bgColor}, ${scrollPosWithinTabContent / 60 + 0.75})`
+                    : `rgba(${bgColor}, ${scrollPosWithinTabContent / 20})`,
+                  paddingLeft: !cardBorderHidden
                     ? "4px"
-                    : `calc(${scrollPos / 20} * 4px)`,
-                  paddingRight: cardBorderHidden
+                    : `calc(${scrollPosWithinTabContent / 20} * 4px)`,
+                  paddingRight: !cardBorderHidden
                     ? "4px"
-                    : `calc(${scrollPos / 20} * 4px)`,
+                    : `calc(${scrollPosWithinTabContent / 20} * 4px)`,
                 }
               : {
                   backgroundColor: `rgb(${bgColor})`,

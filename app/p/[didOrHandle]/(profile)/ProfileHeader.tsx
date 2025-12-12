@@ -15,7 +15,7 @@ export const ProfileHeader = (props: {
   let profileRecord = props.profile.record as AppBskyActorProfile.Record;
 
   return (
-    <>
+    <div className="flex flex-col" id="profile-header">
       <Avatar
         src={
           profileRecord.avatar?.ref &&
@@ -51,7 +51,7 @@ export const ProfileHeader = (props: {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
