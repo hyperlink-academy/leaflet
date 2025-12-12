@@ -2,6 +2,8 @@ import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { idResolver } from "app/(home-pages)/reader/idResolver";
+import { supabaseServerClient } from "supabase/serverClient";
+import { Agent } from "@atproto/api";
 
 export type GetProfileDataReturnType = Awaited<
   ReturnType<(typeof get_profile_data)["handler"]>
@@ -24,32 +26,20 @@ export const get_profile_data = makeRoute({
       did = resolved;
     }
 
-    // Fetch profile
-    const { data: profile, error: profileError } = await supabase
-      .from("bsky_profiles")
-      .select("*")
-      .eq("did", did)
-      .single();
+    let agent = new Agent({
+      service: "https://public.api.bsky.app",
+    });
+    let profileReq = agent.app.bsky.actor.getProfile({ actor: did });
 
-    if (profileError) {
-      throw new Error(`Failed to fetch profile: ${profileError.message}`);
-    }
-
-    if (!profile) {
-      throw new Error("Profile not found");
-    }
-
-    // Fetch publications for the DID
-    const { data: publications, error: publicationsError } = await supabase
+    let publicationsReq = supabaseServerClient
       .from("publications")
       .select("*")
       .eq("identity_did", did);
 
-    if (publicationsError) {
-      throw new Error(
-        `Failed to fetch publications: ${publicationsError.message}`,
-      );
-    }
+    let [{ data: profile }, { data: publications }] = await Promise.all([
+      profileReq,
+      publicationsReq,
+    ]);
 
     return {
       result: {

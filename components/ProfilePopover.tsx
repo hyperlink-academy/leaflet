@@ -1,9 +1,9 @@
 "use client";
-import { ProfileHeader } from "app/p/[didOrHandle]/(profile)/ProfileHeader";
 import { Popover } from "./Popover";
 import useSWR from "swr";
 import { callRPC } from "app/api/rpc/client";
 import { useState } from "react";
+import { ProfileHeader } from "app/(home-pages)/p/[didOrHandle]/ProfileHeader";
 
 export const ProfilePopover = (props: {
   trigger: React.ReactNode;

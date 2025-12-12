@@ -6,6 +6,7 @@ import { ProfileHeader } from "./ProfileHeader";
 import { ProfileTabs } from "./ProfileTabs";
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
 import { ProfileLayout } from "./ProfileLayout";
+import { Agent } from "@atproto/api";
 
 export default async function ProfilePageLayout(props: {
   params: Promise<{ didOrHandle: string }>;
@@ -33,15 +34,20 @@ export default async function ProfilePageLayout(props: {
     did = resolved;
   }
 
-  let { data: profile } = await supabaseServerClient
-    .from("bsky_profiles")
-    .select(`*`)
-    .eq("did", did)
-    .single();
-  let { data: publications } = await supabaseServerClient
+  let agent = new Agent({
+    service: "https://public.api.bsky.app",
+  });
+  let profileReq = agent.app.bsky.actor.getProfile({ actor: did });
+
+  let publicationsReq = supabaseServerClient
     .from("publications")
     .select("*")
     .eq("identity_did", did);
+
+  let [{ data: profile }, { data: publications }] = await Promise.all([
+    profileReq,
+    publicationsReq,
+  ]);
 
   if (!profile) return null;
 

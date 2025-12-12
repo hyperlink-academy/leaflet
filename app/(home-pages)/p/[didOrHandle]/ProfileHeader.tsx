@@ -8,20 +8,19 @@ import { colorToString } from "components/ThemeManager/useColorAttribute";
 import { PubIcon } from "components/ActionBar/Publications";
 import { Json } from "supabase/database.types";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
+import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 
 export const ProfileHeader = (props: {
-  profile: ProfileData;
+  profile: ProfileViewDetailed;
   publications: { record: Json; uri: string }[];
 }) => {
-  let profileRecord = props.profile.record as AppBskyActorProfile.Record;
+  console.log(props.profile);
+  let profileRecord = props.profile;
 
   return (
     <div className="flex flex-col relative" id="profile-header">
       <Avatar
-        src={
-          profileRecord.avatar?.ref &&
-          blobRefToSrc(profileRecord.avatar?.ref, props.profile.did)
-        }
+        src={profileRecord.avatar}
         displayName={profileRecord.displayName}
         className="mx-auto mt-3 sm:mt-4"
         giant
