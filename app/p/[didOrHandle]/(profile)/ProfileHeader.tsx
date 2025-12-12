@@ -22,7 +22,7 @@ export const ProfileHeader = (props: {
           blobRefToSrc(profileRecord.avatar?.ref, props.profile.did)
         }
         displayName={profileRecord.displayName}
-        className="mx-auto -mt-8"
+        className="mx-auto mt-3 sm:mt-4"
         giant
       />
       <div className="flex flex-col">

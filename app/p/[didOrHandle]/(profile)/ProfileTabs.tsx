@@ -29,8 +29,6 @@ export const ProfileTabs = (props: { didOrHandle: string }) => {
         );
       }
     };
-    console.log("content: " + profileContent);
-    console.log("header: " + headerHeight);
 
     if (profileContent) {
       profileContent.addEventListener("scroll", handleScroll);
@@ -39,9 +37,8 @@ export const ProfileTabs = (props: { didOrHandle: string }) => {
   }, []);
 
   const baseUrl = `/p/${props.didOrHandle}`;
-  const bgColor = !cardBorderHidden ? "var(--bg-leaflet)" : "var(--bg-page)";
-
-  console.log(scrollPosWithinTabContent);
+  const bgColor = "255 255 255";
+  // const bgColor = !cardBorderHidden ? "var(--bg-leaflet)" : "var(--bg-page)";
 
   return (
     <div className="flex flex-col w-full sticky top-3 sm:top-4 z-10 sm:px-4 px-3">

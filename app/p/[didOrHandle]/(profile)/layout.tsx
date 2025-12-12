@@ -53,7 +53,7 @@ export default async function ProfileLayout(props: {
           max-w-prose mx-auto w-full h-full
           flex flex-col
           border border-border-light rounded-lg
-          text-center mt-8
+          text-center
           overflow-y-scroll`}
         >
           <ProfileHeader profile={profile} publications={publications || []} />
