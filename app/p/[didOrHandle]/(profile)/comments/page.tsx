@@ -58,7 +58,7 @@ const Comment = (props: {
           </div>
           {props.isReply && (
             <div className="text-xs text-tertiary flex flex-row gap-2 w-full my-0.5 items-center">
-              <ReplyTiny className="shrink-0" />
+              <ReplyTiny className="shrink-0 scale-75" />
               <div className="font-bold shrink-0">jared</div>
               <div className="grow truncate">
                 this is the content of what i was saying and its very long so i
