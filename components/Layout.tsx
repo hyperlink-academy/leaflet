@@ -3,7 +3,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { theme } from "tailwind.config";
 import { NestedCardThemeProvider } from "./ThemeManager/ThemeProvider";
 import { PopoverArrow } from "./Icons/PopoverArrow";
-import { PopoverOpenContext } from "./Popover";
+import { PopoverOpenContext } from "./Popover/PopoverContext";
 import { useState } from "react";
 
 export const Separator = (props: { classname?: string }) => {

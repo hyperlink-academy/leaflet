@@ -12,7 +12,7 @@ import { BlockProps } from "./Block";
 import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { Replicache } from "replicache";
-import { deleteBlock } from "./DeleteBlock";
+import { deleteBlock } from "src/utils/deleteBlock";
 import { entities } from "drizzle/schema";
 import { scanIndex } from "src/replicache/utils";
 

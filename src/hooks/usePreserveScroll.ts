@@ -6,9 +6,10 @@ export function usePreserveScroll<T extends HTMLElement>(key: string | null) {
   useEffect(() => {
     if (!ref.current || !key) return;
 
-    window.requestAnimationFrame(() => {
-      ref.current?.scrollTo({ top: scrollPositions[key] || 0 });
-    });
+    if (scrollPositions[key] !== undefined)
+      window.requestAnimationFrame(() => {
+        ref.current?.scrollTo({ top: scrollPositions[key] || 0 });
+      });
 
     const listener = () => {
       if (!ref.current?.scrollTop) return;

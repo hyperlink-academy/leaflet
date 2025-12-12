@@ -1,4 +1,4 @@
-import { useSelectingMouse } from "components/SelectionManager";
+import { useSelectingMouse } from "components/SelectionManager/selectionState";
 import { MouseEvent, useCallback, useRef } from "react";
 import { useUIState } from "src/useUIState";
 import { Block } from "./Block";

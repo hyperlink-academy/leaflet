@@ -3,7 +3,7 @@
 import { useContext, useEffect } from "react";
 import { SidebarContext } from "./Sidebar";
 import React, { forwardRef, type JSX } from "react";
-import { PopoverOpenContext } from "components/Popover";
+import { PopoverOpenContext } from "components/Popover/PopoverContext";
 
 type ButtonProps = Omit<JSX.IntrinsicElements["button"], "content">;
 

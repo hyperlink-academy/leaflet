@@ -32,10 +32,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { scanIndexLocal } from "src/replicache/utils";
 import type { Fact } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
-import {
-  Delta,
-  YJSFragmentToString,
-} from "components/Blocks/TextBlock/RenderYJSFragment";
+import { Delta, YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import { ids } from "lexicons/api/lexicons";
 import { BlobRef } from "@atproto/lexicon";
 import { AtUri } from "@atproto/syntax";
@@ -59,6 +56,7 @@ export async function publishToPublication({
   leaflet_id,
   title,
   description,
+  tags,
   entitiesToDelete,
 }: {
   root_entity: string;
@@ -66,6 +64,7 @@ export async function publishToPublication({
   leaflet_id: string;
   title?: string;
   description?: string;
+  tags?: string[];
   entitiesToDelete?: string[];
 }) {
   const oauthClient = await createOauthClient();
@@ -145,6 +144,7 @@ export async function publishToPublication({
     ...(theme && { theme }),
     title: title || "Untitled",
     description: description || "",
+    ...(tags !== undefined && { tags }), // Include tags if provided (even if empty array to clear tags)
     pages: pages.map((p) => {
       if (p.type === "canvas") {
         return {

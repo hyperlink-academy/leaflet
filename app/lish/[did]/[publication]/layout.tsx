@@ -47,6 +47,14 @@ export async function generateMetadata(props: {
     title: pubRecord?.name || "Untitled Publication",
     description: pubRecord?.description || "",
     icons: {
+      icon: {
+        url:
+          process.env.NODE_ENV === "development"
+            ? `/lish/${did}/${publication_name}/icon`
+            : "/icon",
+        sizes: "32x32",
+        type: "image/png",
+      },
       other: {
         rel: "alternate",
         url: publication.uri,

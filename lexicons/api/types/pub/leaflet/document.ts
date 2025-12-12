@@ -23,6 +23,7 @@ export interface Record {
   publication?: string
   author: string
   theme?: PubLeafletPublication.Theme
+  tags?: string[]
   pages: (
     | $Typed<PubLeafletPagesLinearDocument.Main>
     | $Typed<PubLeafletPagesCanvas.Main>

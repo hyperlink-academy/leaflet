@@ -108,7 +108,7 @@ const DefaultOptions = (props: {
             await archivePost(tokenId);
             toaster({
               content: (
-                <div className="font-bold flex gap-2">
+                <div className="font-bold flex gap-2 items-center">
                   Archived {itemType}!
                   <ButtonTertiary
                     className="underline text-accent-2!"

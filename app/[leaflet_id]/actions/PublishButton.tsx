@@ -27,6 +27,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState, useMemo } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useReplicache, useEntity } from "src/replicache";
+import { useSubscribe } from "src/replicache/useSubscribe";
 import { Json } from "supabase/database.types";
 import {
   useBlocks,
@@ -34,7 +35,7 @@ import {
 } from "src/hooks/queries/useBlocks";
 import * as Y from "yjs";
 import * as base64 from "base64-js";
-import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
+import { YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import { BlueskyLogin } from "app/login/LoginForm";
 import { moveLeafletToPublication } from "actions/publications/moveLeafletToPublication";
 import { AddTiny } from "components/Icons/AddTiny";
@@ -63,9 +64,13 @@ export const PublishButton = (props: { entityID: string }) => {
 const UpdateButton = () => {
   let [isLoading, setIsLoading] = useState(false);
   let { data: pub, mutate } = useLeafletPublicationData();
-  let { permission_token, rootEntity } = useReplicache();
+  let { permission_token, rootEntity, rep } = useReplicache();
   let { identity } = useIdentityData();
   let toaster = useToaster();
+
+  // Get tags from Replicache state (same as draft editor)
+  let tags = useSubscribe(rep, (tx) => tx.get<string[]>("publication_tags"));
+  const currentTags = Array.isArray(tags) ? tags : [];
 
   return (
     <ActionButton
@@ -81,6 +86,7 @@ const UpdateButton = () => {
           leaflet_id: permission_token.id,
           title: pub.title,
           description: pub.description,
+          tags: currentTags,
         });
         setIsLoading(false);
         mutate();
@@ -108,7 +114,6 @@ const PublishToPublicationButton = (props: { entityID: string }) => {
   let { identity } = useIdentityData();
   let { permission_token } = useReplicache();
   let query = useSearchParams();
-  console.log(query.get("publish"));
   let [open, setOpen] = useState(query.get("publish") !== null);
 
   let isMobile = useIsMobile();

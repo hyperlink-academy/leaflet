@@ -73,6 +73,7 @@ export const pull = makeRoute({
     let publication_data = data.publications as {
       description: string;
       title: string;
+      tags: string[];
     }[];
     let pub_patch = publication_data?.[0]
       ? [
@@ -85,6 +86,11 @@ export const pull = makeRoute({
             op: "put",
             key: "publication_title",
             value: publication_data[0].title,
+          },
+          {
+            op: "put",
+            key: "publication_tags",
+            value: publication_data[0].tags || [],
           },
         ]
       : [];

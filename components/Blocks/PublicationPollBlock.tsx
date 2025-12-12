@@ -1,7 +1,8 @@
 import { useUIState } from "src/useUIState";
 import { BlockProps } from "./Block";
 import { useMemo } from "react";
-import { focusElement, AsyncValueInput } from "components/Input";
+import { AsyncValueInput } from "components/Input";
+import { focusElement } from "src/utils/focusElement";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useEntity, useReplicache } from "src/replicache";
 import { v7 } from "uuid";

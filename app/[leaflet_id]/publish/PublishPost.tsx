@@ -6,18 +6,20 @@ import { ButtonPrimary } from "components/Buttons";
 import { Radio } from "components/Checkbox";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { AutosizeTextarea } from "components/utils/AutosizeTextarea";
+
 import { PubLeafletPublication } from "lexicons/api";
 import { publishPostToBsky } from "./publishBskyPost";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AtUri } from "@atproto/syntax";
 import { PublishIllustration } from "./PublishIllustration/PublishIllustration";
 import { useReplicache } from "src/replicache";
+import { useSubscribe } from "src/replicache/useSubscribe";
 import {
   BlueskyPostEditorProsemirror,
   editorStateToFacetedText,
 } from "./BskyPostEditorProsemirror";
 import { EditorState } from "prosemirror-state";
+import { TagSelector } from "../../../components/Tags";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { PubIcon } from "components/ActionBar/Publications";
 
@@ -31,6 +33,7 @@ type Props = {
   record?: PubLeafletPublication.Record;
   posts_in_pub?: number;
   entitiesToDelete?: string[];
+  hasDraft: boolean;
 };
 
 export function PublishPost(props: Props) {
@@ -38,7 +41,7 @@ export function PublishPost(props: Props) {
     { state: "default" } | { state: "success"; post_url: string }
   >({ state: "default" });
   return (
-    <div className="publishPage w-screen h-full bg-bg-page flex sm:pt-0 pt-4 sm:place-items-center justify-center">
+    <div className="publishPage w-screen h-full bg-bg-page flex sm:pt-0 pt-4 sm:place-items-center justify-center text-primary">
       {publishState.state === "default" ? (
         <PublishPostForm setPublishState={setPublishState} {...props} />
       ) : (
@@ -58,12 +61,37 @@ const PublishPostForm = (
     setPublishState: (s: { state: "success"; post_url: string }) => void;
   } & Props,
 ) => {
-  let [shareOption, setShareOption] = useState<"bluesky" | "quiet">("bluesky");
   let editorStateRef = useRef<EditorState | null>(null);
-  let [isLoading, setIsLoading] = useState(false);
   let [charCount, setCharCount] = useState(0);
+  let [shareOption, setShareOption] = useState<"bluesky" | "quiet">("bluesky");
+  let [isLoading, setIsLoading] = useState(false);
   let params = useParams();
   let { rep } = useReplicache();
+
+  // For publications with drafts, use Replicache; otherwise use local state
+  let replicacheTags = useSubscribe(rep, (tx) =>
+    tx.get<string[]>("publication_tags"),
+  );
+  let [localTags, setLocalTags] = useState<string[]>([]);
+
+  // Use Replicache tags only when we have a draft
+  const hasDraft = props.hasDraft;
+  const currentTags = hasDraft
+    ? Array.isArray(replicacheTags)
+      ? replicacheTags
+      : []
+    : localTags;
+
+  // Update tags via Replicache mutation or local state depending on context
+  const handleTagsChange = async (newTags: string[]) => {
+    if (hasDraft) {
+      await rep?.mutate.updatePublicationDraft({
+        tags: newTags,
+      });
+    } else {
+      setLocalTags(newTags);
+    }
+  };
 
   async function submit() {
     if (isLoading) return;
@@ -75,6 +103,7 @@ const PublishPostForm = (
       leaflet_id: props.leaflet_id,
       title: props.title,
       description: props.description,
+      tags: currentTags,
       entitiesToDelete: props.entitiesToDelete,
     });
     if (!doc) return;
@@ -109,90 +138,30 @@ const PublishPostForm = (
           submit();
         }}
       >
-        <div className="container flex flex-col gap-2 sm:p-3 p-4">
+        <div className="container flex flex-col gap-3 sm:p-3 p-4">
           <PublishingTo
             publication_uri={props.publication_uri}
             record={props.record}
           />
-          <hr className="border-border-light my-1" />
-          <Radio
-            checked={shareOption === "quiet"}
-            onChange={(e) => {
-              if (e.target === e.currentTarget) {
-                setShareOption("quiet");
-              }
-            }}
-            name="share-options"
-            id="share-quietly"
-            value="Share Quietly"
-          >
-            <div className="flex flex-col">
-              <div className="font-bold">Share Quietly</div>
-              <div className="text-sm text-tertiary font-normal">
-                No one will be notified about this post
-              </div>
-            </div>
-          </Radio>
-          <Radio
-            checked={shareOption === "bluesky"}
-            onChange={(e) => {
-              if (e.target === e.currentTarget) {
-                setShareOption("bluesky");
-              }
-            }}
-            name="share-options"
-            id="share-bsky"
-            value="Share on Bluesky"
-          >
-            <div className="flex flex-col">
-              <div className="font-bold">Share on Bluesky</div>
-              <div className="text-sm text-tertiary font-normal">
-                Pub subscribers will be updated via a custom Bluesky feed
-              </div>
-            </div>
-          </Radio>
-
-          <div
-            className={`w-full pl-5 pb-4 ${shareOption !== "bluesky" ? "opacity-50" : ""}`}
-          >
-            <div className="opaque-container p-3  rounded-lg!">
-              <div className="flex gap-2">
-                <img
-                  className="rounded-full w-[42px] h-[42px] shrink-0"
-                  src={props.profile.avatar}
-                />
-                <div className="flex flex-col w-full">
-                  <div className="flex gap-2 pb-1">
-                    <p className="font-bold">{props.profile.displayName}</p>
-                    <p className="text-tertiary">@{props.profile.handle}</p>
-                  </div>
-                  <div className="flex flex-col">
-                    <BlueskyPostEditorProsemirror
-                      editorStateRef={editorStateRef}
-                      onCharCountChange={setCharCount}
-                    />
-                  </div>
-                  <div className="opaque-container overflow-hidden flex flex-col mt-4 w-full">
-                    <div className="flex flex-col p-2">
-                      <div className="font-bold">{props.title}</div>
-                      <div className="text-tertiary">{props.description}</div>
-                      {props.record && (
-                        <>
-                          <hr className="border-border-light mt-2 mb-1" />
-                          <p className="text-xs text-tertiary">
-                            {props.record?.base_path}
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-xs text-secondary italic place-self-end pt-2">
-                    {charCount}/300
-                  </div>
-                </div>
-              </div>
-            </div>
+          <hr className="border-border" />
+          <ShareOptions
+            setShareOption={setShareOption}
+            shareOption={shareOption}
+            charCount={charCount}
+            setCharCount={setCharCount}
+            editorStateRef={editorStateRef}
+            {...props}
+          />
+          <hr className="border-border " />
+          <div className="flex flex-col gap-2">
+            <h4>Tags</h4>
+            <TagSelector
+              selectedTags={currentTags}
+              setSelectedTags={handleTagsChange}
+            />
           </div>
+          <hr className="border-border mb-2" />
+
           <div className="flex justify-between">
             <Link
               className="hover:no-underline! font-bold"
@@ -210,6 +179,97 @@ const PublishPostForm = (
           </div>
         </div>
       </form>
+    </div>
+  );
+};
+
+const ShareOptions = (props: {
+  shareOption: "quiet" | "bluesky";
+  setShareOption: (option: typeof props.shareOption) => void;
+  charCount: number;
+  setCharCount: (c: number) => void;
+  editorStateRef: React.MutableRefObject<EditorState | null>;
+  title: string;
+  profile: ProfileViewDetailed;
+  description: string;
+  record?: PubLeafletPublication.Record;
+}) => {
+  return (
+    <div className="flex flex-col gap-2">
+      <h4>Notifications</h4>
+      <Radio
+        checked={props.shareOption === "quiet"}
+        onChange={(e) => {
+          if (e.target === e.currentTarget) {
+            props.setShareOption("quiet");
+          }
+        }}
+        name="share-options"
+        id="share-quietly"
+        value="Share Quietly"
+      >
+        <div className="flex flex-col">
+          <div className="font-bold">Share Quietly</div>
+          <div className="text-sm text-tertiary font-normal">
+            No one will be notified about this post
+          </div>
+        </div>
+      </Radio>
+      <Radio
+        checked={props.shareOption === "bluesky"}
+        onChange={(e) => {
+          if (e.target === e.currentTarget) {
+            props.setShareOption("bluesky");
+          }
+        }}
+        name="share-options"
+        id="share-bsky"
+        value="Share on Bluesky"
+      >
+        <div className="flex flex-col">
+          <div className="font-bold">Share on Bluesky</div>
+          <div className="text-sm text-tertiary font-normal">
+            Pub subscribers will be updated via a custom Bluesky feed
+          </div>
+        </div>
+      </Radio>
+      <div
+        className={`w-full pl-5 pb-4 ${props.shareOption !== "bluesky" ? "opacity-50" : ""}`}
+      >
+        <div className="opaque-container py-2 px-3 text-sm rounded-lg!">
+          <div className="flex gap-2">
+            <img
+              className="rounded-full w-6 h-6 sm:w-[42px] sm:h-[42px] shrink-0"
+              src={props.profile.avatar}
+            />
+            <div className="flex flex-col w-full">
+              <div className="flex gap-2 ">
+                <p className="font-bold">{props.profile.displayName}</p>
+                <p className="text-tertiary">@{props.profile.handle}</p>
+              </div>
+              <div className="flex flex-col">
+                <BlueskyPostEditorProsemirror
+                  editorStateRef={props.editorStateRef}
+                  onCharCountChange={props.setCharCount}
+                />
+              </div>
+              <div className="opaque-container !border-border overflow-hidden flex flex-col mt-4 w-full">
+                <div className="flex flex-col p-2">
+                  <div className="font-bold">{props.title}</div>
+                  <div className="text-tertiary">{props.description}</div>
+                  <hr className="border-border mt-2 mb-1" />
+                  <p className="text-xs text-tertiary">
+                    {props.record?.base_path}
+                  </p>
+                </div>
+              </div>
+              <div className="text-xs text-secondary italic place-self-end pt-2">
+                {props.charCount}/300
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

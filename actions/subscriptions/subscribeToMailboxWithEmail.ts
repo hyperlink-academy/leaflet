@@ -11,7 +11,7 @@ import type { Fact, PermissionToken } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { Database } from "supabase/database.types";
 import * as Y from "yjs";
-import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
+import { YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import { pool } from "supabase/pool";
 
 let supabase = createServerClient<Database>(

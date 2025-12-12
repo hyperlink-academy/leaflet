@@ -12,7 +12,7 @@ import { Canvas } from "../Canvas";
 import { Blocks } from "components/Blocks";
 import { PublicationMetadata } from "./PublicationMetadata";
 import { useCardBorderHidden } from "./useCardBorderHidden";
-import { focusPage } from ".";
+import { focusPage } from "src/utils/focusPage";
 import { PageOptions } from "./PageOptions";
 import { CardThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { useDrawerOpen } from "app/lish/[did]/[publication]/[rkey]/Interactions/InteractionDrawer";

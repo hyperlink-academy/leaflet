@@ -8,7 +8,7 @@ import { Replicache } from "replicache";
 import { LockBlockButton } from "./LockBlockButton";
 import { Props } from "components/Icons/Props";
 import { TextAlignmentButton } from "./TextAlignmentToolbar";
-import { getSortedSelection } from "components/SelectionManager";
+import { getSortedSelection } from "components/SelectionManager/selectionState";
 
 export const MultiselectToolbar = (props: {
   setToolbarState: (

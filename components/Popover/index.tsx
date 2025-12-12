@@ -1,17 +1,17 @@
 "use client";
 import * as RadixPopover from "@radix-ui/react-popover";
 import { theme } from "tailwind.config";
-import { NestedCardThemeProvider } from "./ThemeManager/ThemeProvider";
-import { createContext, useEffect, useState } from "react";
-import { PopoverArrow } from "./Icons/PopoverArrow";
-
-export const PopoverOpenContext = createContext(false);
+import { NestedCardThemeProvider } from "../ThemeManager/ThemeProvider";
+import { useEffect, useState } from "react";
+import { PopoverArrow } from "../Icons/PopoverArrow";
+import { PopoverOpenContext } from "./PopoverContext";
 export const Popover = (props: {
   trigger: React.ReactNode;
   disabled?: boolean;
   children: React.ReactNode;
   align?: "start" | "end" | "center";
   side?: "top" | "bottom" | "left" | "right";
+  sideOffset?: number;
   background?: string;
   border?: string;
   className?: string;
@@ -20,6 +20,7 @@ export const Popover = (props: {
   onOpenAutoFocus?: (e: Event) => void;
   asChild?: boolean;
   arrowFill?: string;
+  noArrow?: boolean;
 }) => {
   let [open, setOpen] = useState(props.open || false);
   useEffect(() => {
@@ -51,30 +52,32 @@ export const Popover = (props: {
             `}
               side={props.side}
               align={props.align ? props.align : "center"}
-              sideOffset={4}
+              sideOffset={props.sideOffset ? props.sideOffset : 4}
               collisionPadding={16}
               onOpenAutoFocus={props.onOpenAutoFocus}
             >
               {props.children}
-              <RadixPopover.Arrow
-                asChild
-                width={16}
-                height={8}
-                viewBox="0 0 16 8"
-              >
-                <PopoverArrow
-                  arrowFill={
-                    props.arrowFill
-                      ? props.arrowFill
-                      : props.background
-                        ? props.background
-                        : theme.colors["bg-page"]
-                  }
-                  arrowStroke={
-                    props.border ? props.border : theme.colors["border"]
-                  }
-                />
-              </RadixPopover.Arrow>
+              {!props.noArrow && (
+                <RadixPopover.Arrow
+                  asChild
+                  width={16}
+                  height={8}
+                  viewBox="0 0 16 8"
+                >
+                  <PopoverArrow
+                    arrowFill={
+                      props.arrowFill
+                        ? props.arrowFill
+                        : props.background
+                          ? props.background
+                          : theme.colors["bg-page"]
+                    }
+                    arrowStroke={
+                      props.border ? props.border : theme.colors["border"]
+                    }
+                  />
+                </RadixPopover.Arrow>
+              )}
             </RadixPopover.Content>
           </NestedCardThemeProvider>
         </RadixPopover.Portal>

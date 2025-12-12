@@ -1,8 +1,9 @@
 import { useUIState } from "src/useUIState";
-import { BlockProps } from "./Block";
+import { BlockProps } from "../Block";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useCallback, useEffect, useState } from "react";
-import { focusElement, Input } from "components/Input";
+import { Input } from "components/Input";
+import { focusElement } from "src/utils/focusElement";
 import { Separator } from "components/Layout";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { theme } from "tailwind.config";
@@ -13,18 +14,11 @@ import {
   usePollData,
 } from "components/PageSWRDataProvider";
 import { voteOnPoll } from "actions/pollActions";
-import { create } from "zustand";
 import { elementId } from "src/utils/elementId";
 import { CheckTiny } from "components/Icons/CheckTiny";
 import { CloseTiny } from "components/Icons/CloseTiny";
-import { PublicationPollBlock } from "./PublicationPollBlock";
-
-export let usePollBlockUIState = create(
-  () =>
-    ({}) as {
-      [entity: string]: { state: "editing" | "voting" | "results" } | undefined;
-    },
-);
+import { PublicationPollBlock } from "../PublicationPollBlock";
+import { usePollBlockUIState } from "./pollBlockState";
 
 export const PollBlock = (props: BlockProps) => {
   let { data: pub } = useLeafletPublicationData();

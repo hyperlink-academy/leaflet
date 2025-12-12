@@ -211,6 +211,11 @@
 
   /* END GLOBAL STYLING */
 }
+
+img {
+  font-size: 0;
+}
+
 button:hover {
   cursor: pointer;
 }

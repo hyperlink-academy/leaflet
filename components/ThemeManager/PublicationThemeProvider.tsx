@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { parseColor } from "react-aria-components";
 import { useEntity } from "src/replicache";
-import { getColorContrast } from "./ThemeProvider";
+import { getColorContrast } from "./themeUtils";
 import { useColorAttribute, colorToString } from "./useColorAttribute";
 import { BaseThemeProvider } from "./ThemeProvider";
 import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
@@ -84,7 +84,9 @@ export function PublicationBackgroundProvider(props: {
     <div
       className="PubBackgroundWrapper w-full bg-bg-leaflet text-primary h-full flex flex-col bg-cover bg-center bg-no-repeat items-stretch"
       style={{
-        backgroundImage: `url(${backgroundImage})`,
+        backgroundImage: backgroundImage
+          ? `url(${backgroundImage})`
+          : undefined,
         backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
         backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
       }}

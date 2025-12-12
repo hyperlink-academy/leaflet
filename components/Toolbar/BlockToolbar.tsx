@@ -2,12 +2,12 @@ import { useEntity, useReplicache } from "src/replicache";
 import { ToolbarButton } from ".";
 import { Separator, ShortcutKey } from "components/Layout";
 import { metaKey } from "src/utils/metaKey";
-import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { useUIState } from "src/useUIState";
 import { LockBlockButton } from "./LockBlockButton";
 import { TextAlignmentButton } from "./TextAlignmentToolbar";
 import { ImageFullBleedButton, ImageAltTextButton } from "./ImageToolbar";
 import { DeleteSmall } from "components/Icons/DeleteSmall";
+import { getSortedSelection } from "components/SelectionManager/selectionState";
 
 export const BlockToolbar = (props: {
   setToolbarState: (
@@ -66,23 +66,13 @@ export const BlockToolbar = (props: {
 
 const MoveBlockButtons = () => {
   let { rep } = useReplicache();
-  const getSortedSelection = async () => {
-    let selectedBlocks = useUIState.getState().selectedBlocks;
-    let siblings =
-      (await rep?.query((tx) =>
-        getBlocksWithType(tx, selectedBlocks[0].parent),
-      )) || [];
-    let sortedBlocks = siblings.filter((s) =>
-      selectedBlocks.find((sb) => sb.value === s.value),
-    );
-    return [sortedBlocks, siblings];
-  };
   return (
     <>
       <ToolbarButton
         hiddenOnCanvas
         onClick={async () => {
-          let [sortedBlocks, siblings] = await getSortedSelection();
+          if (!rep) return;
+          let [sortedBlocks, siblings] = await getSortedSelection(rep);
           if (sortedBlocks.length > 1) return;
           let block = sortedBlocks[0];
           let previousBlock =
@@ -139,7 +129,8 @@ const MoveBlockButtons = () => {
       <ToolbarButton
         hiddenOnCanvas
         onClick={async () => {
-          let [sortedBlocks, siblings] = await getSortedSelection();
+          if (!rep) return;
+          let [sortedBlocks, siblings] = await getSortedSelection(rep);
           if (sortedBlocks.length > 1) return;
           let block = sortedBlocks[0];
           let nextBlock = siblings

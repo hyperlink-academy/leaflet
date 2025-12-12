@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Color, parseColor } from "react-aria-components";
 import { useEntity, useReplicache } from "src/replicache";
 import { FilterAttributes } from "src/replicache/attributes";
-import { ThemeDefaults } from "./ThemeProvider";
+import { ThemeDefaults } from "./themeUtils";
 
 export function useColorAttribute(
   entity: string | null,

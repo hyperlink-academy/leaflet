@@ -17,12 +17,16 @@ export async function getMicroLinkOgImage(
     hostname = "leaflet.pub";
   }
   let full_path = `${protocol}://${hostname}${path}`;
-  return getWebpageImage(full_path, options);
+  return getWebpageImage(full_path, {
+    ...options,
+    setJavaScriptEnabled: false,
+  });
 }
 
 export async function getWebpageImage(
   url: string,
   options?: {
+    setJavaScriptEnabled?: boolean;
     width?: number;
     height?: number;
     deviceScaleFactor?: number;
@@ -39,6 +43,7 @@ export async function getWebpageImage(
       },
       body: JSON.stringify({
         url,
+        setJavaScriptEnabled: options?.setJavaScriptEnabled,
         scrollPage: true,
         addStyleTag: [
           {

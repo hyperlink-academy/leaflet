@@ -5,7 +5,7 @@ import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { scanIndexLocal } from "src/replicache/utils";
 import * as base64 from "base64-js";
-import { YJSFragmentToString } from "components/Blocks/TextBlock/RenderYJSFragment";
+import { YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import { applyUpdate, Doc } from "yjs";
 
 export const getFactsFromHomeLeaflets = makeRoute({
