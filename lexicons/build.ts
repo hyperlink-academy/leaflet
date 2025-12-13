@@ -4,6 +4,7 @@ import { PubLeafletDocument } from "./src/document";
 import * as PublicationLexicons from "./src/publication";
 import * as PollLexicons from "./src/polls";
 import { ThemeLexicons } from "./src/theme";
+import * as LinkLexicons from "./src/link";
 
 import * as fs from "fs";
 import * as path from "path";
@@ -27,6 +28,7 @@ const lexicons = [
   ...BlockLexicons,
   ...Object.values(PublicationLexicons),
   ...Object.values(PollLexicons),
+  ...Object.values(LinkLexicons),
 ];
 
 // Write each lexicon to a file
