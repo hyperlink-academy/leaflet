@@ -147,7 +147,7 @@ let baseSchema = {
       toDOM(node) {
         // NOTE: This rendering should match the AtMentionLink component in
         // components/AtMentionLink.tsx. If you update one, update the other.
-        let className = "atMention text-accent-contrast";
+        let className = "atMention mention";
         let aturi = new AtUri(node.attrs.atURI);
         if (aturi.collection === "pub.leaflet.publication")
           className += " font-bold";
@@ -168,7 +168,8 @@ let baseSchema = {
               "img",
               {
                 src: `/api/pub_icon?at_uri=${encodeURIComponent(node.attrs.atURI)}`,
-                class: "inline-block w-5 h-5 rounded-full mr-1 align-text-top",
+                class:
+                  "inline-block w-4 h-4 rounded-full mt-[3px] mr-1 align-text-top",
                 alt: "",
                 width: "16",
                 height: "16",
@@ -214,7 +215,7 @@ let baseSchema = {
         return [
           "span",
           {
-            class: "didMention text-accent-contrast",
+            class: "didMention mention",
             "data-did": node.attrs.did,
           },
           node.attrs.text,

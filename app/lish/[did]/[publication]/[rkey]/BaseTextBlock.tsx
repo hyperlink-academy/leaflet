@@ -2,6 +2,7 @@ import { UnicodeString } from "@atproto/api";
 import { PubLeafletRichtextFacet } from "lexicons/api";
 import { didToBlueskyUrl } from "src/utils/mentionUtils";
 import { AtMentionLink } from "components/AtMentionLink";
+import { ProfilePopover } from "components/ProfilePopover";
 
 type Facet = PubLeafletRichtextFacet.Main;
 export function BaseTextBlock(props: {
@@ -27,9 +28,7 @@ export function BaseTextBlock(props: {
     let isDidMention = segment.facet?.find(
       PubLeafletRichtextFacet.isDidMention,
     );
-    let isAtMention = segment.facet?.find(
-      PubLeafletRichtextFacet.isAtMention,
-    );
+    let isAtMention = segment.facet?.find(PubLeafletRichtextFacet.isAtMention);
     let isUnderline = segment.facet?.find(PubLeafletRichtextFacet.isUnderline);
     let isItalic = segment.facet?.find(PubLeafletRichtextFacet.isItalic);
     let isHighlighted = segment.facet?.find(
@@ -45,9 +44,11 @@ export function BaseTextBlock(props: {
       ${isHighlighted ? "highlight bg-highlight-1" : ""}`.replaceAll("\n", " ");
 
     // Split text by newlines and insert <br> tags
-    const textParts = segment.text.split('\n');
+    const textParts = segment.text.split("\n");
     const renderedText = textParts.flatMap((part, i) =>
-      i < textParts.length - 1 ? [part, <br key={`br-${counter}-${i}`} />] : [part]
+      i < textParts.length - 1
+        ? [part, <br key={`br-${counter}-${i}`} />]
+        : [part],
     );
 
     if (isCode) {
@@ -58,15 +59,10 @@ export function BaseTextBlock(props: {
       );
     } else if (isDidMention) {
       children.push(
-        <a
-          key={counter}
-          href={didToBlueskyUrl(isDidMention.did)}
-          className={`text-accent-contrast hover:underline cursor-pointer ${className}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {renderedText}
-        </a>,
+        <ProfilePopover
+          didOrHandle={isDidMention.did}
+          trigger={<span className="mention">{renderedText}</span>}
+        />,
       );
     } else if (isAtMention) {
       children.push(

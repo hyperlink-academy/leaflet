@@ -6,6 +6,7 @@ import * as base64 from "base64-js";
 import { didToBlueskyUrl } from "src/utils/mentionUtils";
 import { AtMentionLink } from "components/AtMentionLink";
 import { Delta } from "src/utils/yjsFragmentToString";
+import { ProfilePopover } from "components/ProfilePopover";
 
 type BlockElements = "h1" | "h2" | "h3" | null | "blockquote" | "p";
 export function RenderYJSFragment({
@@ -63,12 +64,18 @@ export function RenderYJSFragment({
                   );
                 }
 
-                if (node.constructor === XmlElement && node.nodeName === "hard_break") {
+                if (
+                  node.constructor === XmlElement &&
+                  node.nodeName === "hard_break"
+                ) {
                   return <br key={index} />;
                 }
 
                 // Handle didMention inline nodes
-                if (node.constructor === XmlElement && node.nodeName === "didMention") {
+                if (
+                  node.constructor === XmlElement &&
+                  node.nodeName === "didMention"
+                ) {
                   const did = node.getAttribute("did") || "";
                   const text = node.getAttribute("text") || "";
                   return (
@@ -77,7 +84,7 @@ export function RenderYJSFragment({
                       target="_blank"
                       rel="noopener noreferrer"
                       key={index}
-                      className="text-accent-contrast hover:underline cursor-pointer"
+                      className="mention"
                     >
                       {text}
                     </a>
@@ -85,7 +92,10 @@ export function RenderYJSFragment({
                 }
 
                 // Handle atMention inline nodes
-                if (node.constructor === XmlElement && node.nodeName === "atMention") {
+                if (
+                  node.constructor === XmlElement &&
+                  node.nodeName === "atMention"
+                ) {
                   const atURI = node.getAttribute("atURI") || "";
                   const text = node.getAttribute("text") || "";
                   return (
@@ -161,4 +171,3 @@ function attributesToStyle(d: Delta) {
 
   return props;
 }
-

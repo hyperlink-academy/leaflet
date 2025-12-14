@@ -119,9 +119,9 @@ export const PostHeaderLayout = (props: {
         {props.postTitle ? props.postTitle : "Untitled"}
       </h2>
       {props.postDescription ? (
-        <p className="postDescription italic text-secondary outline-hidden bg-transparent pt-1">
+        <div className="postDescription italic text-secondary outline-hidden bg-transparent pt-1">
           {props.postDescription}
-        </p>
+        </div>
       ) : null}
       <div className="postInfo text-sm text-tertiary pt-3 flex gap-1 flex-wrap justify-between">
         {props.postInfo}

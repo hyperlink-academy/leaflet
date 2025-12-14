@@ -45,7 +45,7 @@ export const ProfilePopover = (props: {
           </div>
         </div>
       ) : (
-        <div className="text-secondary p-4">Profile not found</div>
+        <div className="text-secondary py-2 px-4">Profile not found</div>
       )}
     </Tooltip>
   );
