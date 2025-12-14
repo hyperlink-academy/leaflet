@@ -4,6 +4,8 @@ import useSWR from "swr";
 import { callRPC } from "app/api/rpc/client";
 import { useState } from "react";
 import { ProfileHeader } from "app/(home-pages)/p/[didOrHandle]/ProfileHeader";
+import { SpeedyLink } from "./SpeedyLink";
+import { Tooltip } from "./Tooltip";
 
 export const ProfilePopover = (props: {
   trigger: React.ReactNode;
@@ -22,7 +24,7 @@ export const ProfilePopover = (props: {
   );
 
   return (
-    <Popover
+    <Tooltip
       className="max-w-sm p-0! text-center"
       trigger={props.trigger}
       onOpenChange={setIsOpen}
@@ -30,13 +32,21 @@ export const ProfilePopover = (props: {
       {isLoading ? (
         <div className="text-secondary p-4">Loading...</div>
       ) : data ? (
-        <ProfileHeader
-          profile={data.profile}
-          publications={data.publications}
-        />
+        <div>
+          <ProfileHeader
+            profile={data.profile}
+            publications={data.publications}
+            popover
+          />
+          <hr className="border-border" />
+          <div className="py-2 text-sm text-tertiary">
+            Followed by{" "}
+            <button className="hover:underline">celine and 4 others</button>
+          </div>
+        </div>
       ) : (
         <div className="text-secondary p-4">Profile not found</div>
       )}
-    </Popover>
+    </Tooltip>
   );
 };

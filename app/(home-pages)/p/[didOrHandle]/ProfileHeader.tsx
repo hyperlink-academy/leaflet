@@ -15,37 +15,78 @@ import { ReactNode } from "react";
 export const ProfileHeader = (props: {
   profile: ProfileViewDetailed;
   publications: { record: Json; uri: string }[];
+  popover?: boolean;
 }) => {
   let profileRecord = props.profile;
+  const profileUrl = `/p/${props.profile.handle}`;
+
+  const avatarElement = (
+    <Avatar
+      src={profileRecord.avatar}
+      displayName={profileRecord.displayName}
+      className="mx-auto mt-3 sm:mt-4"
+      giant
+    />
+  );
+
+  const displayNameElement = (
+    <h3 className=" px-3 sm:px-4 pt-2 leading-tight">
+      {profileRecord.displayName
+        ? profileRecord.displayName
+        : `@${props.profile.handle}`}
+    </h3>
+  );
+
+  const handleElement = profileRecord.displayName && (
+    <div
+      className={`text-tertiary ${props.popover ? "text-xs" : "text-sm"} pb-1 italic px-3 sm:px-4 truncate`}
+    >
+      @{props.profile.handle}
+    </div>
+  );
 
   return (
-    <div className="flex flex-col relative" id="profile-header">
-      <Avatar
-        src={profileRecord.avatar}
-        displayName={profileRecord.displayName}
-        className="mx-auto mt-3 sm:mt-4"
-        giant
-      />
+    <div
+      className={`flex flex-col relative ${props.popover && "text-sm"}`}
+      id="profile-header"
+    >
       <ProfileLinks handle={props.profile.handle || ""} />
       <div className="flex flex-col">
-        <h3 className=" px-3 sm:px-4 pt-2 leading-tight">
-          {profileRecord.displayName
-            ? profileRecord.displayName
-            : `@${props.profile.handle}`}
-        </h3>
-        {profileRecord.displayName && (
-          <div className="text-tertiary text-sm pb-1 italic px-3 sm:px-4 truncate">
-            @{props.profile.handle}
-          </div>
-        )}
-        <pre className="text-secondary px-3 sm:px-4 ">
+        <div className="flex flex-col group">
+          {props.popover ? (
+            <SpeedyLink className={"hover:no-underline!"} href={profileUrl}>
+              {avatarElement}
+            </SpeedyLink>
+          ) : (
+            avatarElement
+          )}
+          {props.popover ? (
+            <SpeedyLink
+              className={" text-primary group-hover:underline"}
+              href={profileUrl}
+            >
+              {displayNameElement}
+            </SpeedyLink>
+          ) : (
+            displayNameElement
+          )}
+          {props.popover && handleElement ? (
+            <SpeedyLink className={"group-hover:underline"} href={profileUrl}>
+              {handleElement}
+            </SpeedyLink>
+          ) : (
+            handleElement
+          )}
+        </div>
+        <pre className="text-secondary px-3 sm:px-4 whitespace-pre-wrap">
           {profileRecord.description
             ? parseDescription(profileRecord.description)
             : null}
         </pre>
         <div className=" w-full overflow-x-scroll mt-3 mb-6 ">
-          <div className="grid grid-flow-col  auto-cols-[164px] sm:auto-cols-[240px] gap-2 mx-auto w-fit px-3 sm:px-4 ">
-            {/*<div className="spacer "/>*/}
+          <div
+            className={`grid grid-flow-col  gap-2 mx-auto w-fit px-3 sm:px-4 ${props.popover ? "auto-cols-[164px]" : "auto-cols-[164px] sm:auto-cols-[240px]"}`}
+          >
             {props.publications.map((p) => (
               <PublicationCard
                 key={p.uri}
