@@ -1,4 +1,4 @@
-import { UnicodeString } from "@atproto/api";
+import { AtUri, UnicodeString } from "@atproto/api";
 import { autolink } from "components/Blocks/TextBlock/autolink-plugin";
 import { multiBlockSchema } from "components/Blocks/TextBlock/schema";
 import { PubLeafletRichtextFacet } from "lexicons/api";
@@ -196,7 +196,10 @@ export function CommentBox(props: {
         {
           record: comment.record,
           uri: comment.uri,
-          bsky_profiles: { record: comment.profile as Json },
+          bsky_profiles: {
+            record: comment.profile as Json,
+            did: new AtUri(comment.uri).host,
+          },
         },
       ],
     }));
