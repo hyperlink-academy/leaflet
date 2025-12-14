@@ -65,7 +65,7 @@ export const ProfilePopover = (props: {
             publications={data.publications}
             popover
           />
-          <KnownFollowers viewer={data.profile.viewer} />
+          <KnownFollowers viewer={data.profile.viewer} did={data.profile.did} />
         </div>
       ) : (
         <div className="text-secondary py-2 px-4">Profile not found</div>
@@ -74,17 +74,24 @@ export const ProfilePopover = (props: {
   );
 };
 
-let KnownFollowers = (props: { viewer: ProfileViewDetailed["viewer"] }) => {
+let KnownFollowers = (props: {
+  viewer: ProfileViewDetailed["viewer"];
+  did: string;
+}) => {
   if (!props.viewer?.knownFollowers) return null;
   let count = props.viewer.knownFollowers.count;
   return (
     <>
       <hr className="border-border" />
       Followed by{" "}
-      <button className="hover:underline">
+      <a
+        className="hover:underline"
+        href={`https://bsky.social/profile/${props.did}/known-followers`}
+        target="_blank"
+      >
         {props.viewer?.knownFollowers?.followers[0]?.displayName}{" "}
         {count > 1 ? `and ${count - 1} other${count > 2 ? "s" : ""}` : ""}
-      </button>
+      </a>
     </>
   );
 };
