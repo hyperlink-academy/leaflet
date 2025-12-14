@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import { ProfileHeader } from "app/(home-pages)/p/[didOrHandle]/ProfileHeader";
 import { SpeedyLink } from "./SpeedyLink";
 import { Tooltip } from "./Tooltip";
+import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 
 export const ProfilePopover = (props: {
   trigger: React.ReactNode;
@@ -64,15 +65,26 @@ export const ProfilePopover = (props: {
             publications={data.publications}
             popover
           />
-          <hr className="border-border" />
-          <div className="py-2 text-sm text-tertiary">
-            Followed by{" "}
-            <button className="hover:underline">celine and 4 others</button>
-          </div>
+          <KnownFollowers viewer={data.profile.viewer} />
         </div>
       ) : (
         <div className="text-secondary py-2 px-4">Profile not found</div>
       )}
     </Tooltip>
+  );
+};
+
+let KnownFollowers = (props: { viewer: ProfileViewDetailed["viewer"] }) => {
+  if (!props.viewer?.knownFollowers) return null;
+  let count = props.viewer.knownFollowers.count;
+  return (
+    <>
+      <hr className="border-border" />
+      Followed by{" "}
+      <button className="hover:underline">
+        {props.viewer?.knownFollowers?.followers[0]?.displayName}{" "}
+        {count > 1 ? `and ${count - 1} other${count > 2 ? "s" : ""}` : ""}
+      </button>
+    </>
   );
 };

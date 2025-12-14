@@ -4,6 +4,8 @@ import type { Env } from "./route";
 import { idResolver } from "app/(home-pages)/reader/idResolver";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Agent } from "@atproto/api";
+import { getIdentityData } from "actions/getIdentityData";
+import { createOauthClient } from "src/atproto-oauth";
 
 export type GetProfileDataReturnType = Awaited<
   ReturnType<(typeof get_profile_data)["handler"]>
@@ -25,13 +27,29 @@ export const get_profile_data = makeRoute({
       }
       did = resolved;
     }
+    let agent;
+    let authed_identity = await getIdentityData();
+    if (authed_identity?.atp_did) {
+      try {
+        const oauthClient = await createOauthClient();
+        let credentialSession = await oauthClient.restore(
+          authed_identity.atp_did,
+        );
+        agent = new Agent(credentialSession);
+      } catch (e) {
+        agent = new Agent({
+          service: "https://public.api.bsky.app",
+        });
+      }
+    } else {
+      agent = new Agent({
+        service: "https://public.api.bsky.app",
+      });
+    }
 
-    let agent = new Agent({
-      service: "https://public.api.bsky.app",
-    });
     let profileReq = agent.app.bsky.actor.getProfile({ actor: did });
 
-    let publicationsReq = supabaseServerClient
+    let publicationsReq = supabase
       .from("publications")
       .select("*")
       .eq("identity_did", did);
