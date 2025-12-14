@@ -305,9 +305,9 @@ async function processBlocksToPages(
             if (!b) return [];
             let block: PubLeafletPagesLinearDocument.Block = {
               $type: "pub.leaflet.pages.linearDocument#block",
-              alignment,
               block: b,
             };
+            if (alignment) block.alignment = alignment;
             return [block];
           } else {
             let block: PubLeafletPagesLinearDocument.Block = {
