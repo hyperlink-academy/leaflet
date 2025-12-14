@@ -83,7 +83,7 @@ export const ProfileHeader = (props: {
             ? parseDescription(profileRecord.description)
             : null}
         </pre>
-        <div className=" w-full overflow-x-scroll mt-3 mb-6 ">
+        <div className=" w-full overflow-x-scroll py-3 mb-3 ">
           <div
             className={`grid grid-flow-col  gap-2 mx-auto w-fit px-3 sm:px-4 ${props.popover ? "auto-cols-[164px]" : "auto-cols-[164px] sm:auto-cols-[240px]"}`}
           >

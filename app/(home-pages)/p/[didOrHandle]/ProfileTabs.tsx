@@ -13,13 +13,14 @@ export const ProfileTabs = (props: { didOrHandle: string }) => {
   const currentTab = (segment || "posts") as ProfileTabType;
   const [scrollPosWithinTabContent, setScrollPosWithinTabContent] = useState(0);
   const [headerHeight, setHeaderHeight] = useState(0);
-
   useEffect(() => {
     let headerHeight =
       document.getElementById("profile-header")?.clientHeight || 0;
     setHeaderHeight(headerHeight);
 
-    const profileContent = document.getElementById("profile-content");
+    const profileContent = cardBorderHidden
+      ? document.getElementById("home-content")
+      : document.getElementById("profile-content");
     const handleScroll = () => {
       if (profileContent) {
         setScrollPosWithinTabContent(
@@ -37,8 +38,7 @@ export const ProfileTabs = (props: { didOrHandle: string }) => {
   }, []);
 
   const baseUrl = `/p/${props.didOrHandle}`;
-  const bgColor = "255 255 255";
-  // const bgColor = !cardBorderHidden ? "var(--bg-leaflet)" : "var(--bg-page)";
+  const bgColor = cardBorderHidden ? "var(--bg-leaflet)" : "var(--bg-page)";
 
   return (
     <div className="flex flex-col w-full sticky top-3 sm:top-4 z-20 sm:px-4 px-3">
