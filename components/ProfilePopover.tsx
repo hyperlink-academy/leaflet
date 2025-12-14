@@ -29,6 +29,7 @@ export const ProfilePopover = (props: {
   return (
     <Tooltip
       className="max-w-sm p-0! text-center"
+      asChild
       trigger={
         <a
           className="no-underline"

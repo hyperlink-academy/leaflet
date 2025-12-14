@@ -60,6 +60,7 @@ export function BaseTextBlock(props: {
     } else if (isDidMention) {
       children.push(
         <ProfilePopover
+          key={counter}
           didOrHandle={isDidMention.did}
           trigger={<span className="mention">{renderedText}</span>}
         />,
