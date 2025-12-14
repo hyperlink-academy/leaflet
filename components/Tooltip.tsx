@@ -26,7 +26,7 @@ export const Tooltip = (props: {
         props.skipDelayDuration ? props.skipDelayDuration : 300
       }
     >
-      <RadixTooltip.Root onOpenChange={props.onOpenChange}>
+      <RadixTooltip.Root onOpenChange={props.onOpenChange} open={props.open}>
         <RadixTooltip.Trigger disabled={props.disabled} asChild={props.asChild}>
           {props.trigger}
         </RadixTooltip.Trigger>
