@@ -4,6 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { useIdentityData } from "components/IdentityProvider";
 import Link from "next/link";
 import { DiscoverSmall } from "components/Icons/DiscoverSmall";
+import { LinkSmall } from "components/Icons/LinkSmall";
 import { PublicationButtons } from "./Publications";
 import { Popover } from "components/Popover";
 import { MenuSmall } from "components/Icons/MenuSmall";
@@ -25,7 +26,8 @@ export type navPages =
   | "discover"
   | "notifications"
   | "looseleafs"
-  | "tag";
+  | "tag"
+  | "links";
 
 export const DesktopNavigation = (props: {
   currentPage: navPages;
@@ -103,6 +105,7 @@ const NavigationOptions = (props: {
         }
       />
       <DiscoverButton current={props.currentPage === "discover"} />
+      <LinksButton current={props.currentPage === "links"} />
 
       <hr className="border-border-light my-1" />
       <PublicationButtons
@@ -147,6 +150,20 @@ const DiscoverButton = (props: { current?: boolean }) => {
         nav
         icon={<DiscoverSmall />}
         label="Discover"
+        subtext=""
+        className={props.current ? "bg-bg-page! border-border-light!" : ""}
+      />
+    </Link>
+  );
+};
+
+const LinksButton = (props: { current?: boolean }) => {
+  return (
+    <Link href={"/links"} className="hover:no-underline!">
+      <ActionButton
+        nav
+        icon={<LinkSmall />}
+        label="Links"
         subtext=""
         className={props.current ? "bg-bg-page! border-border-light!" : ""}
       />

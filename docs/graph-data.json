@@ -1,0 +1,380 @@
+{
+  "nodes": [
+    {
+      "id": 1,
+      "change_id": "4a680cff-8422-4be2-9626-accc76b47838",
+      "node_type": "goal",
+      "title": "Add link blog feature for power browsers",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:27:14.545878-05:00",
+      "updated_at": "2025-12-12T12:27:14.545878-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"User wants link blogs: lists of links with blurbs/tags, social stumbleupon-style browsing from all/followers, ATProto-based, Bluesky integration for aggregating shared links\"}"
+    },
+    {
+      "id": 2,
+      "change_id": "99fb1c1b-a3a0-4f62-bb59-04dc63806d33",
+      "node_type": "observation",
+      "title": "Leaflet is ATProto-based social publishing platform with publications, documents, subscriptions",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:29:26.403839-05:00",
+      "updated_at": "2025-12-12T12:29:26.403839-05:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 3,
+      "change_id": "f7020180-79d6-4849-8c2b-2c2ac927caab",
+      "node_type": "action",
+      "title": "Created feature/link-blog branch",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:29:51.863992-05:00",
+      "updated_at": "2025-12-12T12:29:51.863992-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":100}"
+    },
+    {
+      "id": 4,
+      "change_id": "84791a8d-ec4a-499c-a1f5-cdeb5110a406",
+      "node_type": "decision",
+      "title": "Design link record data model",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:30:20.606498-05:00",
+      "updated_at": "2025-12-12T12:30:20.606498-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":85}"
+    },
+    {
+      "id": 5,
+      "change_id": "b7ca4df0-b86c-4972-a61d-fa5572237f5e",
+      "node_type": "action",
+      "title": "Created pub.leaflet.link.post lexicon schema",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:31:02.943965-05:00",
+      "updated_at": "2025-12-12T12:31:02.943965-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":90,\"files\":[\"lexicons/pub/leaflet/link/post.json\"]}"
+    },
+    {
+      "id": 6,
+      "change_id": "80b727ce-4db6-41f8-8225-619a2da667c9",
+      "node_type": "outcome",
+      "title": "Lexicon created and TypeScript types generated successfully",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:33:33.625659-05:00",
+      "updated_at": "2025-12-12T12:33:33.625659-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":100}"
+    },
+    {
+      "id": 7,
+      "change_id": "730cf122-9021-487a-a2ab-a903f85a5e10",
+      "node_type": "action",
+      "title": "Creating database migration for links table",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:33:46.308800-05:00",
+      "updated_at": "2025-12-12T12:33:46.308800-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":85}"
+    },
+    {
+      "id": 8,
+      "change_id": "d3021b37-5f72-497b-8452-2a63010c1184",
+      "node_type": "outcome",
+      "title": "Database migration and appview indexer complete",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:34:47.190213-05:00",
+      "updated_at": "2025-12-12T12:34:47.190213-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":95}"
+    },
+    {
+      "id": 9,
+      "change_id": "4cde2b39-634c-428c-b37c-e80317af4485",
+      "node_type": "action",
+      "title": "Creating server actions for link posts",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:35:22.135016-05:00",
+      "updated_at": "2025-12-12T12:35:22.135016-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":85}"
+    },
+    {
+      "id": 10,
+      "change_id": "339f412c-58ec-4de5-b402-8f79f7883515",
+      "node_type": "observation",
+      "title": "User clarified link posts should be batches of links, not single links",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:38:36.046339-05:00",
+      "updated_at": "2025-12-12T12:38:36.046339-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":100,\"prompt\":\"User said: remember, its batches of links not just single ones that make up a post\"}"
+    },
+    {
+      "id": 11,
+      "change_id": "a10cc9c0-c6a1-4600-bb5f-777ec1292770",
+      "node_type": "outcome",
+      "title": "Core link blog feature implemented with batched model",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:42:55.514595-05:00",
+      "updated_at": "2025-12-12T12:42:55.514595-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":90}"
+    },
+    {
+      "id": 12,
+      "change_id": "56914a4d-abb4-41bf-b709-db6e1ad04afb",
+      "node_type": "action",
+      "title": "Resuming link blog work - checking test infrastructure",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:46:28.582789-05:00",
+      "updated_at": "2025-12-12T12:46:28.582789-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":90}"
+    },
+    {
+      "id": 13,
+      "change_id": "65a827ab-b0a1-4176-a92f-9af0f4642db2",
+      "node_type": "observation",
+      "title": "No test framework configured in project (no jest/vitest in package.json)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:46:36.664852-05:00",
+      "updated_at": "2025-12-12T12:46:36.664852-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":100}"
+    },
+    {
+      "id": 14,
+      "change_id": "b1d1d314-91b3-421c-bc3e-c9f6d54ee117",
+      "node_type": "action",
+      "title": "Building link blog user profile page",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:46:50.696601-05:00",
+      "updated_at": "2025-12-12T12:46:50.696601-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":85}"
+    },
+    {
+      "id": 15,
+      "change_id": "2e69249b-e875-4e5c-a4f3-41e258117be1",
+      "node_type": "outcome",
+      "title": "Link blog user profile page created",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:47:56.054749-05:00",
+      "updated_at": "2025-12-12T12:47:56.054749-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":95,\"files\":[\"app/(home-pages)/links/user/[did]/page.tsx\",\"actions/linkActions.ts\"]}"
+    },
+    {
+      "id": 16,
+      "change_id": "12bf3ceb-d5ed-42e9-bfa7-cc27e9a12ae5",
+      "node_type": "action",
+      "title": "Implementing Bluesky post aggregation for link import",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:48:11.311835-05:00",
+      "updated_at": "2025-12-12T12:48:11.311835-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":80}"
+    },
+    {
+      "id": 17,
+      "change_id": "b94b1c8b-65b3-4110-ace0-b17428b64af8",
+      "node_type": "outcome",
+      "title": "Bluesky post aggregation implemented with import UI",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T12:49:32.293184-05:00",
+      "updated_at": "2025-12-12T12:49:32.293184-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":95,\"files\":[\"actions/linkActions.ts\",\"app/(home-pages)/links/BskyImportForm.tsx\",\"app/(home-pages)/links/page.tsx\"]}"
+    },
+    {
+      "id": 18,
+      "change_id": "a44bab5a-179f-4afe-9ea8-b16bc3a3b01b",
+      "node_type": "outcome",
+      "title": "Pushed feature/link-blog to fork successfully",
+      "description": null,
+      "status": "pending",
+      "created_at": "2025-12-12T13:01:49.197760-05:00",
+      "updated_at": "2025-12-12T13:01:49.197760-05:00",
+      "metadata_json": "{\"branch\":\"feature/link-blog\",\"confidence\":100}"
+    }
+  ],
+  "edges": [
+    {
+      "id": 1,
+      "from_node_id": 1,
+      "to_node_id": 2,
+      "from_change_id": "4a680cff-8422-4be2-9626-accc76b47838",
+      "to_change_id": "99fb1c1b-a3a0-4f62-bb59-04dc63806d33",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Understanding existing architecture",
+      "created_at": "2025-12-12T12:29:50.833776-05:00"
+    },
+    {
+      "id": 2,
+      "from_node_id": 1,
+      "to_node_id": 3,
+      "from_change_id": "4a680cff-8422-4be2-9626-accc76b47838",
+      "to_change_id": "f7020180-79d6-4849-8c2b-2c2ac927caab",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Setup for development",
+      "created_at": "2025-12-12T12:29:58.389229-05:00"
+    },
+    {
+      "id": 3,
+      "from_node_id": 1,
+      "to_node_id": 4,
+      "from_change_id": "4a680cff-8422-4be2-9626-accc76b47838",
+      "to_change_id": "84791a8d-ec4a-499c-a1f5-cdeb5110a406",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Core design decision for feature",
+      "created_at": "2025-12-12T12:30:27.491392-05:00"
+    },
+    {
+      "id": 4,
+      "from_node_id": 4,
+      "to_node_id": 5,
+      "from_change_id": "84791a8d-ec4a-499c-a1f5-cdeb5110a406",
+      "to_change_id": "b7ca4df0-b86c-4972-a61d-fa5572237f5e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementing design decision",
+      "created_at": "2025-12-12T12:31:10.003598-05:00"
+    },
+    {
+      "id": 5,
+      "from_node_id": 5,
+      "to_node_id": 6,
+      "from_change_id": "b7ca4df0-b86c-4972-a61d-fa5572237f5e",
+      "to_change_id": "80b727ce-4db6-41f8-8225-619a2da667c9",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Lexicon implementation complete",
+      "created_at": "2025-12-12T12:33:39.627829-05:00"
+    },
+    {
+      "id": 6,
+      "from_node_id": 1,
+      "to_node_id": 7,
+      "from_change_id": "4a680cff-8422-4be2-9626-accc76b47838",
+      "to_change_id": "730cf122-9021-487a-a2ab-a903f85a5e10",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Database implementation for feature",
+      "created_at": "2025-12-12T12:34:06.390737-05:00"
+    },
+    {
+      "id": 7,
+      "from_node_id": 7,
+      "to_node_id": 8,
+      "from_change_id": "730cf122-9021-487a-a2ab-a903f85a5e10",
+      "to_change_id": "d3021b37-5f72-497b-8452-2a63010c1184",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Migration implementation complete",
+      "created_at": "2025-12-12T12:34:53.688900-05:00"
+    },
+    {
+      "id": 8,
+      "from_node_id": 1,
+      "to_node_id": 9,
+      "from_change_id": "4a680cff-8422-4be2-9626-accc76b47838",
+      "to_change_id": "4cde2b39-634c-428c-b37c-e80317af4485",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Server action implementation for feature",
+      "created_at": "2025-12-12T12:35:31.357301-05:00"
+    },
+    {
+      "id": 9,
+      "from_node_id": 1,
+      "to_node_id": 11,
+      "from_change_id": "4a680cff-8422-4be2-9626-accc76b47838",
+      "to_change_id": "a10cc9c0-c6a1-4600-bb5f-777ec1292770",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Feature implementation complete",
+      "created_at": "2025-12-12T12:43:01.641185-05:00"
+    },
+    {
+      "id": 10,
+      "from_node_id": 11,
+      "to_node_id": 12,
+      "from_change_id": "a10cc9c0-c6a1-4600-bb5f-777ec1292770",
+      "to_change_id": "56914a4d-abb4-41bf-b709-db6e1ad04afb",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Continuing development after context recovery",
+      "created_at": "2025-12-12T12:46:35.537356-05:00"
+    },
+    {
+      "id": 11,
+      "from_node_id": 12,
+      "to_node_id": 13,
+      "from_change_id": "56914a4d-abb4-41bf-b709-db6e1ad04afb",
+      "to_change_id": "65a827ab-b0a1-4176-a92f-9af0f4642db2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Discovered while checking test infra",
+      "created_at": "2025-12-12T12:46:45.102212-05:00"
+    },
+    {
+      "id": 12,
+      "from_node_id": 1,
+      "to_node_id": 14,
+      "from_change_id": "4a680cff-8422-4be2-9626-accc76b47838",
+      "to_change_id": "b1d1d314-91b3-421c-bc3e-c9f6d54ee117",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Building profile page for feature",
+      "created_at": "2025-12-12T12:46:57.124671-05:00"
+    },
+    {
+      "id": 13,
+      "from_node_id": 14,
+      "to_node_id": 15,
+      "from_change_id": "b1d1d314-91b3-421c-bc3e-c9f6d54ee117",
+      "to_change_id": "2e69249b-e875-4e5c-a4f3-41e258117be1",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Profile page implementation complete",
+      "created_at": "2025-12-12T12:48:04.237247-05:00"
+    },
+    {
+      "id": 14,
+      "from_node_id": 1,
+      "to_node_id": 16,
+      "from_change_id": "4a680cff-8422-4be2-9626-accc76b47838",
+      "to_change_id": "12bf3ceb-d5ed-42e9-bfa7-cc27e9a12ae5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Bluesky aggregation feature",
+      "created_at": "2025-12-12T12:48:17.117206-05:00"
+    },
+    {
+      "id": 15,
+      "from_node_id": 16,
+      "to_node_id": 17,
+      "from_change_id": "12bf3ceb-d5ed-42e9-bfa7-cc27e9a12ae5",
+      "to_change_id": "b94b1c8b-65b3-4110-ace0-b17428b64af8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Bluesky aggregation feature complete",
+      "created_at": "2025-12-12T12:49:40.228332-05:00"
+    },
+    {
+      "id": 16,
+      "from_node_id": 1,
+      "to_node_id": 18,
+      "from_change_id": "4a680cff-8422-4be2-9626-accc76b47838",
+      "to_change_id": "a44bab5a-179f-4afe-9ea8-b16bc3a3b01b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Feature ready for review",
+      "created_at": "2025-12-12T13:01:55.025601-05:00"
+    }
+  ]
+}

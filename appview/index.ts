@@ -11,6 +11,7 @@ import {
   PubLeafletComment,
   PubLeafletPollVote,
   PubLeafletPollDefinition,
+  PubLeafletLinkPost,
 } from "lexicons/api";
 import {
   AppBskyEmbedExternal,
@@ -48,6 +49,7 @@ async function main() {
       ids.PubLeafletComment,
       ids.PubLeafletPollVote,
       ids.PubLeafletPollDefinition,
+      ids.PubLeafletLinkPost,
       // ids.AppBskyActorProfile,
       "app.bsky.feed.post",
     ],
@@ -247,6 +249,74 @@ async function handleEvent(evt: Event) {
         .from("publication_subscriptions")
         .delete()
         .eq("uri", evt.uri.toString());
+    }
+  }
+  if (evt.collection === ids.PubLeafletLinkPost) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletLinkPost.validateRecord(evt.record);
+      if (!record.success) {
+        console.log("Invalid link post record:", record.error);
+        return;
+      }
+
+      const links = record.value.links || [];
+
+      // Upsert the link post
+      let { error } = await supabase.from("link_posts").upsert({
+        uri: evt.uri.toString(),
+        author_did: evt.did,
+        title: record.value.title || null,
+        description: record.value.description || null,
+        link_count: links.length,
+        record: record.value as Json,
+        created_at: record.value.createdAt,
+      });
+
+      if (error && error.code === "23503") {
+        console.log("creating identity for link post");
+        let client = new Client({ connectionString: process.env.DB_URL });
+        let db = drizzle(client);
+        await createIdentity(db, { atp_did: evt.did });
+        client.end();
+        await supabase.from("link_posts").upsert({
+          uri: evt.uri.toString(),
+          author_did: evt.did,
+          title: record.value.title || null,
+          description: record.value.description || null,
+          link_count: links.length,
+          record: record.value as Json,
+          created_at: record.value.createdAt,
+        });
+      }
+      if (error && error.code !== "23503") {
+        console.log("Error upserting link post:", error);
+      }
+
+      // Delete existing link items for this post (for updates)
+      await supabase.from("link_items").delete().eq("post_uri", evt.uri.toString());
+
+      // Insert individual link items
+      if (links.length > 0) {
+        const linkItems = links.map((link: any, index: number) => ({
+          post_uri: evt.uri.toString(),
+          author_did: evt.did,
+          url: link.url,
+          title: link.title || null,
+          description: link.description || null,
+          site_name: link.embed?.siteName || null,
+          created_at: record.value.createdAt,
+          link_index: index,
+        }));
+
+        const { error: itemsError } = await supabase.from("link_items").insert(linkItems);
+        if (itemsError) {
+          console.log("Error inserting link items:", itemsError);
+        }
+      }
+    }
+    if (evt.event === "delete") {
+      // Link items will be cascade deleted
+      await supabase.from("link_posts").delete().eq("uri", evt.uri.toString());
     }
   }
   // if (evt.collection === ids.AppBskyActorProfile) {
