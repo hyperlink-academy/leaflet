@@ -11,6 +11,7 @@ import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { SpeedyLink } from "components/SpeedyLink";
 import { ReactNode } from "react";
+import * as linkify from "linkifyjs";
 
 export const ProfileHeader = (props: {
   profile: ProfileViewDetailed;
@@ -149,32 +150,74 @@ const PublicationCard = (props: {
 };
 
 function parseDescription(description: string): ReactNode[] {
-  const combinedRegex = /(@\S+|https?:\/\/\S+)/g;
+  // Find all mentions using regex
+  const mentionRegex = /@\S+/g;
+  const mentions: { start: number; end: number; value: string }[] = [];
+  let mentionMatch;
+  while ((mentionMatch = mentionRegex.exec(description)) !== null) {
+    mentions.push({
+      start: mentionMatch.index,
+      end: mentionMatch.index + mentionMatch[0].length,
+      value: mentionMatch[0],
+    });
+  }
+
+  // Find all URLs using linkifyjs
+  const links = linkify.find(description).filter((link) => link.type === "url");
+
+  // Filter out URLs that overlap with mentions (mentions take priority)
+  const nonOverlappingLinks = links.filter((link) => {
+    return !mentions.some(
+      (mention) =>
+        (link.start >= mention.start && link.start < mention.end) ||
+        (link.end > mention.start && link.end <= mention.end) ||
+        (link.start <= mention.start && link.end >= mention.end),
+    );
+  });
+
+  // Combine into a single sorted list
+  const allMatches: Array<{
+    start: number;
+    end: number;
+    value: string;
+    href: string;
+    type: "url" | "mention";
+  }> = [
+    ...nonOverlappingLinks.map((link) => ({
+      start: link.start,
+      end: link.end,
+      value: link.value,
+      href: link.href,
+      type: "url" as const,
+    })),
+    ...mentions.map((mention) => ({
+      start: mention.start,
+      end: mention.end,
+      value: mention.value,
+      href: `/p/${mention.value.slice(1)}`,
+      type: "mention" as const,
+    })),
+  ].sort((a, b) => a.start - b.start);
 
   const parts: ReactNode[] = [];
   let lastIndex = 0;
-  let match;
   let key = 0;
 
-  while ((match = combinedRegex.exec(description)) !== null) {
+  for (const match of allMatches) {
     // Add text before this match
-    if (match.index > lastIndex) {
-      parts.push(description.slice(lastIndex, match.index));
+    if (match.start > lastIndex) {
+      parts.push(description.slice(lastIndex, match.start));
     }
 
-    const matched = match[0];
-
-    if (matched.startsWith("@")) {
-      // It's a mention
-      const handle = matched.slice(1);
+    if (match.type === "mention") {
       parts.push(
-        <SpeedyLink key={key++} href={`/p/${handle}`}>
-          {matched}
+        <SpeedyLink key={key++} href={match.href}>
+          {match.value}
         </SpeedyLink>,
       );
     } else {
       // It's a URL
-      const urlWithoutProtocol = matched
+      const urlWithoutProtocol = match.value
         .replace(/^https?:\/\//, "")
         .replace(/\/+$/, "");
       const displayText =
@@ -182,13 +225,13 @@ function parseDescription(description: string): ReactNode[] {
           ? urlWithoutProtocol.slice(0, 50) + "…"
           : urlWithoutProtocol;
       parts.push(
-        <a key={key++} href={matched} target="_blank" rel="noopener noreferrer">
+        <a key={key++} href={match.href} target="_blank" rel="noopener noreferrer">
           {displayText}
         </a>,
       );
     }
 
-    lastIndex = match.index + matched.length;
+    lastIndex = match.end;
   }
 
   // Add remaining text after last match
