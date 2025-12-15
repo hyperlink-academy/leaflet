@@ -22,7 +22,7 @@ export const PostListing = (props: Post) => {
   let postRecord = props.documents.data as PubLeafletDocument.Record;
   let postUri = new AtUri(props.documents.uri);
 
-  let theme = usePubTheme(pubRecord?.theme);
+  let theme = usePubTheme(pubRecord?.theme || postRecord?.theme);
   let backgroundImage =
     pubRecord?.theme?.backgroundImage?.image?.ref && props.publication
       ? blobRefToSrc(
@@ -46,7 +46,7 @@ export const PostListing = (props: Post) => {
   // For standalone posts, link directly to the document
   let postHref = props.publication
     ? `${props.publication.href}/${postUri.rkey}`
-    : `/doc/${postUri.host}/${postUri.rkey}`;
+    : `/p/${postUri.host}/${postUri.rkey}`;
 
   return (
     <BaseThemeProvider {...theme} local>
