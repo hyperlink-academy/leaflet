@@ -17,6 +17,7 @@ import { CommentTiny } from "components/Icons/CommentTiny";
 import { InteractionPreview } from "components/InteractionsPreview";
 import { LocalizedDate } from "./LocalizedDate";
 import { PublicationHomeLayout } from "./PublicationHomeLayout";
+import { PublicationAuthor } from "./PublicationAuthor";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -91,15 +92,11 @@ export default async function Publication(props: {
                 {record?.description}{" "}
               </p>
               {profile && (
-                <p className="italic text-tertiary sm:text-base text-sm">
-                  <strong className="">by {profile.displayName}</strong>{" "}
-                  <a
-                    className="text-tertiary"
-                    href={`https://bsky.app/profile/${profile.handle}`}
-                  >
-                    @{profile.handle}
-                  </a>
-                </p>
+                <PublicationAuthor
+                  did={profile.did}
+                  displayName={profile.displayName}
+                  handle={profile.handle}
+                />
               )}
               <div className="sm:pt-4 pt-4">
                 <SubscribeWithBluesky
