@@ -3,6 +3,15 @@ import { Tag } from "components/Tags";
 import { PostListing } from "components/PostListing";
 import { getDocumentsByTag } from "./getDocumentsByTag";
 import { TagTiny } from "components/Icons/TagTiny";
+import { Metadata } from "next";
+
+export async function generateMetadata(props: {
+  params: Promise<{ tag: string }>;
+}): Promise<Metadata> {
+  const params = await props.params;
+  const decodedTag = decodeURIComponent(params.tag);
+  return { title: `${decodedTag} - Leaflet` };
+}
 
 export default async function TagPage(props: {
   params: Promise<{ tag: string }>;

@@ -8,6 +8,38 @@ import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
 import { ProfileLayout } from "./ProfileLayout";
 import { Agent } from "@atproto/api";
 import { get_profile_data } from "app/api/rpc/[command]/get_profile_data";
+import { Metadata } from "next";
+
+export async function generateMetadata(props: {
+  params: Promise<{ didOrHandle: string }>;
+}): Promise<Metadata> {
+  let params = await props.params;
+  let didOrHandle = decodeURIComponent(params.didOrHandle);
+
+  let did = didOrHandle;
+  if (!didOrHandle.startsWith("did:")) {
+    let resolved = await idResolver.handle.resolve(didOrHandle);
+    if (!resolved) return { title: "Profile - Leaflet" };
+    did = resolved;
+  }
+
+  let profileData = await get_profile_data.handler(
+    { didOrHandle: did },
+    { supabase: supabaseServerClient },
+  );
+  let { profile } = profileData.result;
+
+  if (!profile) return { title: "Profile - Leaflet" };
+
+  const displayName = profile.displayName;
+  const handle = profile.handle;
+
+  const title = displayName
+    ? `${displayName} (@${handle}) - Leaflet`
+    : `@${handle} - Leaflet`;
+
+  return { title };
+}
 
 export default async function ProfilePageLayout(props: {
   params: Promise<{ didOrHandle: string }>;
