@@ -9,7 +9,7 @@ import { PubLeafletPublication } from "lexicons/api";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ uri: string }> }
+  { params }: { params: Promise<{ uri: string }> },
 ) {
   try {
     const { uri: uriParam } = await params;
@@ -32,7 +32,9 @@ export async function GET(
       const basePath = record.base_path;
 
       if (!basePath) {
-        return new NextResponse("Publication has no base_path", { status: 404 });
+        return new NextResponse("Publication has no base_path", {
+          status: 404,
+        });
       }
 
       // Redirect to the publication's hosted domain (temporary redirect since base_path can change)
@@ -47,11 +49,14 @@ export async function GET(
 
       if (docInPub?.publication && docInPub.publications) {
         // Document is in a publication - redirect to domain/rkey
-        const record = docInPub.publications.record as PubLeafletPublication.Record;
+        const record = docInPub.publications
+          .record as PubLeafletPublication.Record;
         const basePath = record.base_path;
 
         if (!basePath) {
-          return new NextResponse("Publication has no base_path", { status: 404 });
+          return new NextResponse("Publication has no base_path", {
+            status: 404,
+          });
         }
 
         // Ensure basePath ends without trailing slash
@@ -60,7 +65,10 @@ export async function GET(
           : basePath;
 
         // Redirect to the document on the publication's domain (temporary redirect since base_path can change)
-        return NextResponse.redirect(`${cleanBasePath}/${uri.rkey}`, 307);
+        return NextResponse.redirect(
+          `https://${cleanBasePath}/${uri.rkey}`,
+          307,
+        );
       }
 
       // If not in a publication, check if it's a standalone document
@@ -74,7 +82,7 @@ export async function GET(
         // Standalone document - redirect to /p/did/rkey (temporary redirect)
         return NextResponse.redirect(
           new URL(`/p/${uri.host}/${uri.rkey}`, request.url),
-          307
+          307,
         );
       }
 
