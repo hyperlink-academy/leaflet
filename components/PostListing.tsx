@@ -13,6 +13,7 @@ import type { Post } from "app/(home-pages)/reader/getReaderFeed";
 
 import Link from "next/link";
 import { InteractionPreview } from "./InteractionsPreview";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 export const PostListing = (props: Post) => {
   let pubRecord = props.publication?.pubRecord as
@@ -123,17 +124,16 @@ const PubInfo = (props: {
 };
 
 const PostInfo = (props: { publishedAt: string | undefined }) => {
+  let localizedDate = useLocalizedDate(props.publishedAt || "", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
   return (
     <div className="flex gap-2 items-center shrink-0 self-start">
       {props.publishedAt && (
         <>
-          <div className="shrink-0">
-            {new Date(props.publishedAt).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })}
-          </div>
+          <div className="shrink-0">{localizedDate}</div>
         </>
       )}
     </div>
