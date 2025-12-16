@@ -216,9 +216,7 @@ export const ExpandedInteractions = (props: {
             <SubscribeWithBluesky
               pubName={publication.name}
               pub_uri={publication.uri}
-              base_url={getPublicationURL(
-                publication.record as PubLeafletPublication.Record,
-              )}
+              base_url={getPublicationURL(publication)}
               subscribers={publication?.publication_subscriptions}
             />
           </div>
