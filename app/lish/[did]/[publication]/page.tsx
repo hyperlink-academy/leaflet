@@ -168,7 +168,7 @@ export default async function Publication(props: {
                             quotesCount={quotes}
                             commentsCount={comments}
                             tags={tags}
-                            postUrl=""
+                            postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
                             showComments={record?.preferences?.showComments}
                           />
                         </div>
