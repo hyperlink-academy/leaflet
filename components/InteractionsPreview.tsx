@@ -40,7 +40,7 @@ export const InteractionPreview = (props: {
         <SpeedyLink
           aria-label="Post quotes"
           href={`${props.postUrl}?interactionDrawer=quotes`}
-          className="flex flex-row gap-1 text-sm  items-center  text-accent-contrast!"
+          className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast hover:no-underline! text-tertiary"
         >
           <QuoteTiny /> {props.quotesCount}
         </SpeedyLink>
@@ -49,7 +49,7 @@ export const InteractionPreview = (props: {
         <SpeedyLink
           aria-label="Post comments"
           href={`${props.postUrl}?interactionDrawer=comments`}
-          className="relative flex flex-row gap-1 text-sm  items-center hover:text-accent-contrast hover:no-underline! text-tertiary"
+          className="relative flex flex-row gap-1 text-sm items-center hover:text-accent-contrast hover:no-underline! text-tertiary"
         >
           <CommentTiny /> {props.commentsCount}
         </SpeedyLink>
@@ -93,7 +93,7 @@ const TagPopover = (props: { tags: string[] }) => {
     <Popover
       className="p-2! max-w-xs"
       trigger={
-        <div className="relative flex gap-1 items-center  hover:text-accent-contrast ">
+        <div className="relative flex gap-1 items-center hover:text-accent-contrast">
           <TagTiny /> {props.tags.length}
         </div>
       }
