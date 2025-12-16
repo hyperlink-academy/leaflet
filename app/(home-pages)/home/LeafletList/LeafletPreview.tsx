@@ -70,11 +70,10 @@ export const LeafletListPreview = (props: { isVisible: boolean }) => {
 
   return (
     <Tooltip
-      open={true}
-      delayDuration={0}
       side="right"
+      asChild
       trigger={
-        <div className="w-12 h-full py-1">
+        <div className="w-12 h-full py-1 z-10">
           <div className="rounded-md h-full overflow-hidden">
             <ThemeProvider local entityID={root} className="">
               <ThemeBackgroundProvider entityID={root}>
