@@ -393,7 +393,7 @@ function ReplyPost(props: {
           </a>
         </div>
 
-        <div className="text-sm text-secondary mt-0.5 line-clamp-3">
+        <div className="text-sm text-secondary mt-0.5">
           <BlueskyRichText record={record} />
         </div>
 
