@@ -4,7 +4,7 @@ import { useContext } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
 import { setInteractionState } from "./Interactions";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
-import { AtUri } from "@atproto/api";
+import { AtUri, AppBskyFeedPost } from "@atproto/api";
 import { PostPageContext } from "../PostPageContext";
 import {
   PubLeafletBlocksText,
@@ -22,6 +22,8 @@ import { flushSync } from "react-dom";
 import { openPage } from "../PostPages";
 import useSWR, { mutate } from "swr";
 import { DotLoader } from "components/utils/DotLoader";
+import { CommentTiny } from "components/Icons/CommentTiny";
+import { ThreadLink } from "../ThreadPage";
 
 // Helper to get SWR key for quotes
 export function getQuotesSWRKey(uris: string[]) {
@@ -129,11 +131,13 @@ export const Quotes = (props: {
 
                 <div className="h-5 w-1 ml-5 border-l border-border-light" />
                 <BskyPost
+                  uri={pv.uri}
                   rkey={new AtUri(pv.uri).rkey}
                   content={pv.record.text as string}
                   user={pv.author.displayName || pv.author.handle}
                   profile={pv.author}
                   handle={pv.author.handle}
+                  replyCount={pv.replyCount}
                 />
               </div>
             );
@@ -150,11 +154,13 @@ export const Quotes = (props: {
                   return (
                     <BskyPost
                       key={`mention-${index}`}
+                      uri={pv.uri}
                       rkey={new AtUri(pv.uri).rkey}
                       content={pv.record.text as string}
                       user={pv.author.displayName || pv.author.handle}
                       profile={pv.author}
                       handle={pv.author.handle}
+                      replyCount={pv.replyCount}
                     />
                   );
                 })}
@@ -201,7 +207,7 @@ export const QuoteContent = (props: {
         className="quoteSectionQuote text-secondary text-sm text-left hover:cursor-pointer"
         onClick={(e) => {
           if (props.position.pageId)
-            flushSync(() => openPage(undefined, props.position.pageId!));
+            flushSync(() => openPage(undefined, { type: "doc", id: props.position.pageId! }));
           let scrollMargin = isMobile
             ? 16
             : e.currentTarget.getBoundingClientRect().top;
@@ -239,33 +245,55 @@ export const QuoteContent = (props: {
 };
 
 export const BskyPost = (props: {
+  uri: string;
   rkey: string;
   content: string;
   user: string;
   handle: string;
   profile: ProfileViewBasic;
+  replyCount?: number;
 }) => {
+  const handleOpenThread = () => {
+    openPage(undefined, { type: "thread", uri: props.uri });
+  };
+
   return (
-    <a
-      target="_blank"
-      href={`https://bsky.app/profile/${props.handle}/post/${props.rkey}`}
-      className="quoteSectionBskyItem px-2  flex gap-[6px] hover:no-underline font-normal"
+    <div
+      onClick={handleOpenThread}
+      className="quoteSectionBskyItem px-2 flex gap-[6px] hover:no-underline font-normal cursor-pointer hover:bg-bg-page rounded"
     >
       {props.profile.avatar && (
         <img
-          className="rounded-full w-6 h-6"
+          className="rounded-full w-6 h-6 shrink-0"
           src={props.profile.avatar}
           alt={props.profile.displayName}
         />
       )}
-      <div className="flex flex-col">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="font-bold">{props.user}</div>
-          <div className="text-tertiary">@{props.handle}</div>
+          <a
+            className="text-tertiary hover:underline"
+            href={`https://bsky.app/profile/${props.handle}`}
+            target="_blank"
+            onClick={(e) => e.stopPropagation()}
+          >
+            @{props.handle}
+          </a>
         </div>
         <div className="text-primary">{props.content}</div>
+        {props.replyCount != null && props.replyCount > 0 && (
+          <ThreadLink
+            threadUri={props.uri}
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-1 text-tertiary text-xs mt-1 hover:text-accent-contrast"
+          >
+            <CommentTiny />
+            {props.replyCount} {props.replyCount === 1 ? "reply" : "replies"}
+          </ThreadLink>
+        )}
       </div>
-    </a>
+    </div>
   );
 };
 

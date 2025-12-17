@@ -19,25 +19,46 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 import { Fragment, useEffect } from "react";
 import { flushSync } from "react-dom";
 import { scrollIntoView } from "src/utils/scrollIntoView";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { decodeQuotePosition } from "./quotePosition";
 import { PollData } from "./fetchPollData";
 import { LinearDocumentPage } from "./LinearDocumentPage";
 import { CanvasPage } from "./CanvasPage";
+import { ThreadPage as ThreadPageComponent } from "./ThreadPage";
+
+// Page types
+export type DocPage = { type: "doc"; id: string };
+export type ThreadPage = { type: "thread"; uri: string };
+export type OpenPage = DocPage | ThreadPage;
+
+// Get a stable key for a page
+const getPageKey = (page: OpenPage): string => {
+  if (page.type === "doc") return page.id;
+  return `thread:${page.uri}`;
+};
 
 const usePostPageUIState = create(() => ({
-  pages: [] as string[],
+  pages: [] as OpenPage[],
   initialized: false,
 }));
 
-export const useOpenPages = () => {
+export const useOpenPages = (): OpenPage[] => {
   const { quote } = useParams();
   const state = usePostPageUIState((s) => s);
+  const searchParams = useSearchParams();
+  const pageParam = searchParams.get("page");
 
-  if (!state.initialized && quote) {
-    const decodedQuote = decodeQuotePosition(quote as string);
-    if (decodedQuote?.pageId) {
-      return [decodedQuote.pageId];
+  if (!state.initialized) {
+    // Check for page search param first (for comment links)
+    if (pageParam) {
+      return [{ type: "doc", id: pageParam }];
+    }
+    // Then check for quote param
+    if (quote) {
+      const decodedQuote = decodeQuotePosition(quote as string);
+      if (decodedQuote?.pageId) {
+        return [{ type: "doc", id: decodedQuote.pageId }];
+      }
     }
   }
 
@@ -46,15 +67,27 @@ export const useOpenPages = () => {
 
 export const useInitializeOpenPages = () => {
   const { quote } = useParams();
+  const searchParams = useSearchParams();
+  const pageParam = searchParams.get("page");
 
   useEffect(() => {
     const state = usePostPageUIState.getState();
     if (!state.initialized) {
+      // Check for page search param first (for comment links)
+      if (pageParam) {
+        usePostPageUIState.setState({
+          pages: [{ type: "doc", id: pageParam }],
+          initialized: true,
+        });
+        return;
+      }
+
+      // Then check for quote param
       if (quote) {
         const decodedQuote = decodeQuotePosition(quote as string);
         if (decodedQuote?.pageId) {
           usePostPageUIState.setState({
-            pages: [decodedQuote.pageId],
+            pages: [{ type: "doc", id: decodedQuote.pageId }],
             initialized: true,
           });
           return;
@@ -67,13 +100,18 @@ export const useInitializeOpenPages = () => {
 };
 
 export const openPage = (
-  parent: string | undefined,
-  page: string,
+  parent: OpenPage | undefined,
+  page: OpenPage,
   options?: { scrollIntoView?: boolean },
 ) => {
+  const pageKey = getPageKey(page);
+  const parentKey = parent ? getPageKey(parent) : undefined;
+
   flushSync(() => {
     usePostPageUIState.setState((state) => {
-      let parentPosition = state.pages.findIndex((s) => s == parent);
+      let parentPosition = state.pages.findIndex(
+        (s) => getPageKey(s) === parentKey,
+      );
       return {
         pages:
           parentPosition === -1
@@ -85,18 +123,22 @@ export const openPage = (
   });
 
   if (options?.scrollIntoView !== false) {
-    scrollIntoView(`post-page-${page}`);
+    scrollIntoView(`post-page-${pageKey}`);
   }
 };
 
-export const closePage = (page: string) =>
+export const closePage = (page: OpenPage) => {
+  const pageKey = getPageKey(page);
   usePostPageUIState.setState((state) => {
-    let parentPosition = state.pages.findIndex((s) => s == page);
+    let parentPosition = state.pages.findIndex(
+      (s) => getPageKey(s) === pageKey,
+    );
     return {
       pages: state.pages.slice(0, parentPosition),
       initialized: true,
     };
   });
+};
 
 // Shared props type for both page components
 export type SharedPageProps = {
@@ -228,14 +270,37 @@ export function PostPages({
         />
       )}
 
-      {openPageIds.map((pageId) => {
+      {openPageIds.map((openPage) => {
+        const pageKey = getPageKey(openPage);
+
+        // Handle thread pages
+        if (openPage.type === "thread") {
+          return (
+            <Fragment key={pageKey}>
+              <SandwichSpacer />
+              <ThreadPageComponent
+                threadUri={openPage.uri}
+                pageId={pageKey}
+                hasPageBackground={hasPageBackground}
+                pageOptions={
+                  <PageOptions
+                    onClick={() => closePage(openPage)}
+                    hasPageBackground={hasPageBackground}
+                  />
+                }
+              />
+            </Fragment>
+          );
+        }
+
+        // Handle document pages
         let page = record.pages.find(
           (p) =>
             (
               p as
                 | PubLeafletPagesLinearDocument.Main
                 | PubLeafletPagesCanvas.Main
-            ).id === pageId,
+            ).id === openPage.id,
         ) as
           | PubLeafletPagesLinearDocument.Main
           | PubLeafletPagesCanvas.Main
@@ -244,7 +309,7 @@ export function PostPages({
         if (!page) return null;
 
         return (
-          <Fragment key={pageId}>
+          <Fragment key={pageKey}>
             <SandwichSpacer />
             <PageRenderer
               page={page}
@@ -253,7 +318,7 @@ export function PostPages({
               pageId={page.id}
               pageOptions={
                 <PageOptions
-                  onClick={() => closePage(page.id!)}
+                  onClick={() => closePage(openPage)}
                   hasPageBackground={hasPageBackground}
                 />
               }

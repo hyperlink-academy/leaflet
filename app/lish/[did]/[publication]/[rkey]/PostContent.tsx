@@ -173,7 +173,7 @@ export let Block = ({
       let uri = b.block.postRef.uri;
       let post = bskyPostData.find((p) => p.uri === uri);
       if (!post) return <div>no prefetched post rip</div>;
-      return <PubBlueskyPostBlock post={post} className={className} />;
+      return <PubBlueskyPostBlock post={post} className={className} pageId={pageId} />;
     }
     case PubLeafletBlocksIframe.isMain(b.block): {
       return (
