@@ -305,9 +305,9 @@ async function processBlocksToPages(
             if (!b) return [];
             let block: PubLeafletPagesLinearDocument.Block = {
               $type: "pub.leaflet.pages.linearDocument#block",
-              alignment,
               block: b,
             };
+            if (alignment) block.alignment = alignment;
             return [block];
           } else {
             let block: PubLeafletPagesLinearDocument.Block = {
@@ -405,7 +405,7 @@ async function processBlocksToPages(
       let [stringValue, facets] = getBlockContent(b.value);
       let block: $Typed<PubLeafletBlocksHeader.Main> = {
         $type: "pub.leaflet.blocks.header",
-        level: headingLevel?.data.value || 1,
+        level: Math.floor(headingLevel?.data.value || 1),
         plaintext: stringValue,
         facets,
       };
@@ -438,7 +438,7 @@ async function processBlocksToPages(
       let block: $Typed<PubLeafletBlocksIframe.Main> = {
         $type: "pub.leaflet.blocks.iframe",
         url: url.data.value,
-        height: height?.data.value || 600,
+        height: Math.floor(height?.data.value || 600),
       };
       return block;
     }
@@ -452,8 +452,8 @@ async function processBlocksToPages(
         $type: "pub.leaflet.blocks.image",
         image: blobref,
         aspectRatio: {
-          height: image.data.height,
-          width: image.data.width,
+          height: Math.floor(image.data.height),
+          width: Math.floor(image.data.width),
         },
         alt: altText ? altText.data.value : undefined,
       };
@@ -770,7 +770,7 @@ async function extractThemeFromFacts(
         image: blob.data.blob,
         repeat: backgroundImageRepeat?.data.value ? true : false,
         ...(backgroundImageRepeat?.data.value && {
-          width: backgroundImageRepeat.data.value,
+          width: Math.floor(backgroundImageRepeat.data.value),
         }),
       };
     }

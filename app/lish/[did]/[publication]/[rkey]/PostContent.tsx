@@ -173,7 +173,7 @@ export let Block = ({
       let uri = b.block.postRef.uri;
       let post = bskyPostData.find((p) => p.uri === uri);
       if (!post) return <div>no prefetched post rip</div>;
-      return <PubBlueskyPostBlock post={post} className={className} />;
+      return <PubBlueskyPostBlock post={post} className={className} pageId={pageId} />;
     }
     case PubLeafletBlocksIframe.isMain(b.block): {
       return (
@@ -324,7 +324,7 @@ export let Block = ({
       return (
         // all this margin stuff is a highly unfortunate hack so that the border-l on blockquote is the height of just the text rather than the height of the block, which includes padding.
         <blockquote
-          className={`blockquoteBlock py-0! mb-2! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-2! pt-3!" : "mt-1!"}`}
+          className={`blockquote py-0! mb-2! ${className} ${PubLeafletBlocksBlockquote.isMain(previousBlock?.block) ? "-mt-2! pt-3!" : "mt-1!"}`}
           {...blockProps}
         >
           <TextBlock

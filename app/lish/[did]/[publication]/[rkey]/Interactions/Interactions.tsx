@@ -216,10 +216,7 @@ export const ExpandedInteractions = (props: {
             <SubscribeWithBluesky
               pubName={publication.name}
               pub_uri={publication.uri}
-              base_url={
-                (publication.record as PubLeafletPublication.Record)
-                  .base_path || ""
-              }
+              base_url={getPublicationURL(publication)}
               subscribers={publication?.publication_subscriptions}
             />
           </div>
@@ -250,7 +247,7 @@ export const ExpandedInteractions = (props: {
               <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
               <span
                 aria-hidden
-              >{`Quote${props.quotesCount === 1 ? "" : "s"}`}</span>
+              >{`Mention${props.quotesCount === 1 ? "" : "s"}`}</span>
             </button>
           )}
           {props.showComments === false ? null : (

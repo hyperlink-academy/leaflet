@@ -40,7 +40,9 @@ export function PublishedPageLinkBlock(props: {
 }) {
   //switch to use actually state
   let openPages = useOpenPages();
-  let isOpen = openPages.includes(props.pageId);
+  let isOpen = openPages.some(
+    (p) => p.type === "doc" && p.id === props.pageId,
+  );
   return (
     <div
       className={`w-full cursor-pointer
@@ -57,7 +59,10 @@ export function PublishedPageLinkBlock(props: {
         e.preventDefault();
         e.stopPropagation();
 
-        openPage(props.parentPageId, props.pageId);
+        openPage(
+          props.parentPageId ? { type: "doc", id: props.parentPageId } : undefined,
+          { type: "doc", id: props.pageId },
+        );
       }}
     >
       {props.isCanvas ? (
@@ -213,9 +218,11 @@ const Interactions = (props: { pageId: string; parentPageId?: string }) => {
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            openPage(props.parentPageId, props.pageId, {
-              scrollIntoView: false,
-            });
+            openPage(
+              props.parentPageId ? { type: "doc", id: props.parentPageId } : undefined,
+              { type: "doc", id: props.pageId },
+              { scrollIntoView: false },
+            );
             if (!drawerOpen || drawer !== "quotes")
               openInteractionDrawer("quotes", document_uri, props.pageId);
             else setInteractionState(document_uri, { drawerOpen: false });
@@ -231,9 +238,11 @@ const Interactions = (props: { pageId: string; parentPageId?: string }) => {
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            openPage(props.parentPageId, props.pageId, {
-              scrollIntoView: false,
-            });
+            openPage(
+              props.parentPageId ? { type: "doc", id: props.parentPageId } : undefined,
+              { type: "doc", id: props.pageId },
+              { scrollIntoView: false },
+            );
             if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
               openInteractionDrawer("comments", document_uri, props.pageId);
             else setInteractionState(document_uri, { drawerOpen: false });

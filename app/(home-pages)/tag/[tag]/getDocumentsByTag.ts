@@ -10,9 +10,6 @@ import type { Post } from "app/(home-pages)/reader/getReaderFeed";
 export async function getDocumentsByTag(
   tag: string,
 ): Promise<{ posts: Post[] }> {
-  // Normalize tag to lowercase for case-insensitive search
-  const normalizedTag = tag.toLowerCase();
-
   // Query documents that have this tag
   const { data: documents, error } = await supabaseServerClient
     .from("documents")
@@ -22,7 +19,7 @@ export async function getDocumentsByTag(
       document_mentions_in_bsky(count),
       documents_in_publications(publications(*))`,
     )
-    .contains("data->tags", `["${normalizedTag}"]`)
+    .contains("data->tags", `["${tag}"]`)
     .order("indexed_at", { ascending: false })
     .limit(50);
 
