@@ -18,11 +18,12 @@ import { usePathname } from "next/navigation";
 import { QuoteContent } from "../Quotes";
 import { timeAgo } from "src/utils/timeAgo";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { ProfilePopover } from "components/ProfilePopover";
 
 export type Comment = {
   record: Json;
   uri: string;
-  bsky_profiles: { record: Json } | null;
+  bsky_profiles: { record: Json; did: string } | null;
 };
 export function Comments(props: {
   document_uri: string;
@@ -109,17 +110,25 @@ const Comment = (props: {
   document: string;
   comment: Comment;
   comments: Comment[];
-  profile?: AppBskyActorProfile.Record;
+  profile: AppBskyActorProfile.Record;
   record: PubLeafletComment.Record;
   pageId?: string;
 }) => {
+  const did = props.comment.bsky_profiles?.did;
+
   return (
-    <div className="comment">
+    <div id={props.comment.uri} className="comment">
       <div className="flex gap-2">
-        {props.profile && (
-          <ProfilePopover profile={props.profile} comment={props.comment.uri} />
+        {did && (
+          <ProfilePopover
+            didOrHandle={did}
+            trigger={
+              <div className="text-sm text-tertiary font-bold hover:underline">
+                {props.profile.displayName}
+              </div>
+            }
+          />
         )}
-        <DatePopover date={props.record.createdAt} />
       </div>
       {props.record.attachment &&
         PubLeafletComment.isLinearDocumentQuote(props.record.attachment) && (
@@ -289,98 +298,5 @@ const DatePopover = (props: { date: string }) => {
     >
       <div className="text-sm text-secondary">{fullDate}</div>
     </Popover>
-  );
-};
-
-const ProfilePopover = (props: {
-  profile: AppBskyActorProfile.Record;
-  comment: string;
-}) => {
-  let commenterId = new AtUri(props.comment).host;
-
-  return (
-    <>
-      <a
-        className="font-bold  text-tertiary text-sm hover:underline"
-        href={`https://bsky.app/profile/${commenterId}`}
-      >
-        {props.profile.displayName}
-      </a>
-      {/*<Media mobile={false}>
-        <Popover
-          align="start"
-          trigger={
-            <div
-              onMouseOver={() => {
-                setHovering(true);
-                hoverTimeout.current = window.setTimeout(() => {
-                  setLoadProfile(true);
-                }, 500);
-              }}
-              onMouseOut={() => {
-                setHovering(false);
-                clearTimeout(hoverTimeout.current);
-              }}
-              className="font-bold  text-tertiary text-sm hover:underline"
-            >
-              {props.profile.displayName}
-            </div>
-          }
-          className="max-w-sm"
-        >
-          {profile && (
-            <>
-              <div className="profilePopover text-sm flex gap-2">
-                <div className="w-5 h-5 bg-test rounded-full shrink-0 mt-[2px]" />
-                <div className="flex flex-col">
-                  <div className="flex justify-between">
-                    <div className="profileHeader flex gap-2 items-center">
-                      <div className="font-bold">celine</div>
-                      <a className="text-tertiary" href="/">
-                        @{profile.handle}
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="profileBio text-secondary ">
-                    {profile.description}
-                  </div>
-                  <div className="flex flex-row gap-2 items-center pt-2 font-bold">
-                    {!profile.viewer?.following ? (
-                      <div className="text-tertiary bg-border-light rounded-md px-1 py-0">
-                        Following
-                      </div>
-                    ) : (
-                      <ButtonPrimary compact className="text-sm">
-                        Follow <BlueskyTiny />
-                      </ButtonPrimary>
-                    )}
-                    {profile.viewer?.followedBy && (
-                      <div className="text-tertiary">Follows You</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <hr className="my-2 border-border-light" />
-              <div className="flex gap-2 leading-tight items-center text-tertiary text-sm">
-                <div className="flex flex-col w-6 justify-center">
-                  {profile.viewer?.knownFollowers?.followers.map((follower) => {
-                    return (
-                      <div
-                        className="w-[18px] h-[18px] bg-test rounded-full border-2 border-bg-page"
-                        key={follower.did}
-                      />
-                    );
-                  })}
-                  <div className="w-[18px] h-[18px] bg-test rounded-full -mt-2 border-2 border-bg-page" />
-                  <div className="w-[18px] h-[18px] bg-test rounded-full -mt-2 border-2 border-bg-page" />
-                </div>
-              </div>
-            </>
-          )}
-        </Popover>
-      </Media>*/}
-    </>
   );
 };

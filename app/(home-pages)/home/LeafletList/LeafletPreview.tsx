@@ -18,7 +18,8 @@ function useLeafletPreviewData() {
   const firstPage = useEntity(root, "root/page")[0];
   const page = firstPage?.data.value || root;
 
-  const cardBorderHidden = useCardBorderHidden(root);
+  const cardBorderHidden = useEntity(root, "theme/card-border-hidden")?.data
+    .value;
   const rootBackgroundImage = useEntity(root, "theme/card-background-image");
   const rootBackgroundRepeat = useEntity(
     root,
@@ -49,20 +50,30 @@ function useLeafletPreviewData() {
 
   const contentWrapperClass = `leafletContentWrapper h-full sm:w-48 w-40 mx-auto overflow-clip ${!cardBorderHidden && "border border-border-light border-b-0 rounded-t-md"}`;
 
-  return { root, page, cardBorderHidden, contentWrapperStyle, contentWrapperClass };
+  return {
+    root,
+    page,
+    cardBorderHidden,
+    contentWrapperStyle,
+    contentWrapperClass,
+  };
 }
 
 export const LeafletListPreview = (props: { isVisible: boolean }) => {
-  const { root, page, cardBorderHidden, contentWrapperStyle, contentWrapperClass } =
-    useLeafletPreviewData();
+  const {
+    root,
+    page,
+    cardBorderHidden,
+    contentWrapperStyle,
+    contentWrapperClass,
+  } = useLeafletPreviewData();
 
   return (
     <Tooltip
-      open={true}
-      delayDuration={0}
       side="right"
+      asChild
       trigger={
-        <div className="w-12 h-full py-1">
+        <div className="w-12 h-full py-1 z-10">
           <div className="rounded-md h-full overflow-hidden">
             <ThemeProvider local entityID={root} className="">
               <ThemeBackgroundProvider entityID={root}>

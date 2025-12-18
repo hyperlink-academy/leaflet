@@ -12,7 +12,6 @@ export default async function Reader(props: {}) {
   return (
     <DashboardLayout
       id="reader"
-      cardBorderHidden={false}
       currentPage="reader"
       defaultTab="Read"
       actions={null}

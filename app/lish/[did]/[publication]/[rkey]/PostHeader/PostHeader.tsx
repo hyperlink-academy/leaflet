@@ -18,6 +18,7 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import Post from "app/p/[didOrHandle]/[rkey]/l-quote/[quote]/page";
 import { Separator } from "components/Layout";
+import { ProfilePopover } from "components/ProfilePopover";
 
 export function PostHeader(props: {
   data: PostPageData;
@@ -72,14 +73,14 @@ export function PostHeader(props: {
         <>
           <div className="flex flex-row gap-2 items-center">
             {profile ? (
-              <>
-                <a
-                  className="text-tertiary"
-                  href={`https://bsky.app/profile/${profile.handle}`}
-                >
-                  {profile.displayName || profile.handle}
-                </a>
-              </>
+              <ProfilePopover
+                didOrHandle={profile.did}
+                trigger={
+                  <span className="text-tertiary hover:underline">
+                    {profile.displayName || profile.handle}
+                  </span>
+                }
+              />
             ) : null}
             {record.publishedAt ? (
               <>
@@ -119,9 +120,9 @@ export const PostHeaderLayout = (props: {
         {props.postTitle ? props.postTitle : "Untitled"}
       </h2>
       {props.postDescription ? (
-        <p className="postDescription italic text-secondary outline-hidden bg-transparent pt-1">
+        <div className="postDescription italic text-secondary outline-hidden bg-transparent pt-1">
           {props.postDescription}
-        </p>
+        </div>
       ) : null}
       <div className="postInfo text-sm text-tertiary pt-3 flex gap-1 flex-wrap justify-between">
         {props.postInfo}

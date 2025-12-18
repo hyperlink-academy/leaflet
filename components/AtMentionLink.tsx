@@ -24,7 +24,7 @@ export function AtMentionLink({
     isPublication || isDocument ? (
       <img
         src={`/api/pub_icon?at_uri=${encodeURIComponent(atURI)}`}
-        className="inline-block w-5 h-5 rounded-full mr-1 align-text-top"
+        className="inline-block w-4 h-4 rounded-full mr-1 mt-[3px] align-text-top"
         alt=""
         width="20"
         height="20"
@@ -37,7 +37,7 @@ export function AtMentionLink({
       href={atUriToUrl(atURI)}
       target="_blank"
       rel="noopener noreferrer"
-      className={`text-accent-contrast hover:underline cursor-pointer ${isPublication ? "font-bold" : ""} ${isDocument ? "italic" : ""} ${className}`}
+      className={`mention ${isPublication ? "font-bold" : ""} ${isDocument ? "italic" : ""} ${className}`}
     >
       {icon}
       {children}

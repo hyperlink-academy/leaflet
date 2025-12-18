@@ -17,7 +17,6 @@ export default async function Discover(props: {
   return (
     <DashboardLayout
       id="discover"
-      cardBorderHidden={false}
       currentPage="discover"
       defaultTab="default"
       actions={null}
@@ -32,8 +31,7 @@ export default async function Discover(props: {
 }
 
 const DiscoverContent = async (props: { order: string }) => {
-  const orderValue =
-    props.order === "popular" ? "popular" : "recentlyUpdated";
+  const orderValue = props.order === "popular" ? "popular" : "recentlyUpdated";
   let { publications, nextCursor } = await getPublications(orderValue);
 
   return (

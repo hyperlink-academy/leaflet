@@ -296,14 +296,32 @@ pre.shiki {
   @apply py-[1.5px];
 }
 
-/* Underline mention nodes when selected in ProseMirror */
-.ProseMirror .atMention.ProseMirror-selectednode,
-.ProseMirror .didMention.ProseMirror-selectednode {
-  text-decoration: underline;
-}
-
 .ProseMirror:focus-within .selection-highlight {
   background-color: transparent;
+}
+
+.ProseMirror .atMention.ProseMirror-selectednode,
+.ProseMirror .didMention.ProseMirror-selectednode {
+  @apply text-accent-contrast;
+  @apply px-0.5;
+  @apply -mx-[3px]; /* extra px to account for the border*/
+  @apply -my-px; /*to account for the border*/
+  @apply rounded-[4px];
+  @apply box-decoration-clone;
+  background-color: rgba(var(--accent-contrast), 0.2);
+  border: 1px solid rgba(var(--accent-contrast), 1);
+}
+
+.mention {
+  @apply cursor-pointer;
+  @apply text-accent-contrast;
+  @apply px-0.5;
+  @apply -mx-[3px];
+  @apply -my-px; /*to account for the border*/
+  @apply rounded-[4px];
+  @apply box-decoration-clone;
+  background-color: rgba(var(--accent-contrast), 0.2);
+  border: 1px solid transparent;
 }
 
 .multiselected:focus-within .selection-highlight {

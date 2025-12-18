@@ -1,11 +1,13 @@
 "use client";
 
-import {
-  createContext,
-  CSSProperties,
-  useContext,
-  useEffect,
-} from "react";
+import { createContext, CSSProperties, useContext, useEffect } from "react";
+
+// Context for cardBorderHidden
+export const CardBorderHiddenContext = createContext<boolean>(false);
+
+export function useCardBorderHiddenContext() {
+  return useContext(CardBorderHiddenContext);
+}
 import {
   colorToString,
   useColorAttribute,
@@ -58,10 +60,11 @@ export function LeafletThemeProvider(props: {
 }) {
   let bgLeaflet = useColorAttribute(props.entityID, "theme/page-background");
   let bgPage = useColorAttribute(props.entityID, "theme/card-background");
-  let showPageBackground = !useEntity(
+  let cardBorderHiddenValue = useEntity(
     props.entityID,
     "theme/card-border-hidden",
   )?.data.value;
+  let showPageBackground = !cardBorderHiddenValue;
   let primary = useColorAttribute(props.entityID, "theme/primary");
 
   let highlight1 = useEntity(props.entityID, "theme/highlight-1");
@@ -72,20 +75,22 @@ export function LeafletThemeProvider(props: {
   let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
 
   return (
-    <BaseThemeProvider
-      local={props.local}
-      bgLeaflet={bgLeaflet}
-      bgPage={bgPage}
-      primary={primary}
-      highlight2={highlight2}
-      highlight3={highlight3}
-      highlight1={highlight1?.data.value}
-      accent1={accent1}
-      accent2={accent2}
-      showPageBackground={showPageBackground}
-    >
-      {props.children}
-    </BaseThemeProvider>
+    <CardBorderHiddenContext.Provider value={!!cardBorderHiddenValue}>
+      <BaseThemeProvider
+        local={props.local}
+        bgLeaflet={bgLeaflet}
+        bgPage={bgPage}
+        primary={primary}
+        highlight2={highlight2}
+        highlight3={highlight3}
+        highlight1={highlight1?.data.value}
+        accent1={accent1}
+        accent2={accent2}
+        showPageBackground={showPageBackground}
+      >
+        {props.children}
+      </BaseThemeProvider>
+    </CardBorderHiddenContext.Provider>
   );
 }
 
@@ -337,4 +342,3 @@ export const ThemeBackgroundProvider = (props: {
     </div>
   );
 };
-

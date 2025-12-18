@@ -4,7 +4,7 @@ import { parseColor } from "react-aria-components";
 import { useEntity } from "src/replicache";
 import { getColorContrast } from "./themeUtils";
 import { useColorAttribute, colorToString } from "./useColorAttribute";
-import { BaseThemeProvider } from "./ThemeProvider";
+import { BaseThemeProvider, CardBorderHiddenContext } from "./ThemeProvider";
 import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
 import { usePublicationData } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
@@ -103,10 +103,13 @@ export function PublicationThemeProvider(props: {
   isStandalone?: boolean;
 }) {
   let colors = usePubTheme(props.theme, props.isStandalone);
+  let cardBorderHidden = !colors.showPageBackground;
   return (
-    <BaseThemeProvider local={props.local} {...colors}>
-      {props.children}
-    </BaseThemeProvider>
+    <CardBorderHiddenContext.Provider value={cardBorderHidden}>
+      <BaseThemeProvider local={props.local} {...colors}>
+        {props.children}
+      </BaseThemeProvider>
+    </CardBorderHiddenContext.Provider>
   );
 }
 

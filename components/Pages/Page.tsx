@@ -34,7 +34,6 @@ export function Page(props: {
     return focusedPageID === props.entityID;
   });
   let pageType = useEntity(props.entityID, "page/type")?.data.value || "doc";
-  let cardBorderHidden = useCardBorderHidden(props.entityID);
 
   let drawerOpen = useDrawerOpen(props.entityID);
   return (
@@ -49,7 +48,6 @@ export function Page(props: {
         }}
         id={elementId.page(props.entityID).container}
         drawerOpen={!!drawerOpen}
-        cardBorderHidden={!!cardBorderHidden}
         isFocused={isFocused}
         fullPageScroll={props.fullPageScroll}
         pageType={pageType}
@@ -77,13 +75,13 @@ export const PageWrapper = (props: {
   id: string;
   children: React.ReactNode;
   pageOptions?: React.ReactNode;
-  cardBorderHidden: boolean;
   fullPageScroll: boolean;
   isFocused?: boolean;
   onClickAction?: (e: React.MouseEvent) => void;
   pageType: "canvas" | "doc";
   drawerOpen: boolean | undefined;
 }) => {
+  const cardBorderHidden = useCardBorderHidden();
   let { ref } = usePreserveScroll<HTMLDivElement>(props.id);
   return (
     // this div wraps the contents AND the page options.
@@ -106,13 +104,13 @@ export const PageWrapper = (props: {
       shrink-0 snap-center
       overflow-y-scroll
       ${
-        !props.cardBorderHidden &&
+        !cardBorderHidden &&
         `h-full border
           bg-[rgba(var(--bg-page),var(--bg-page-alpha))]
           ${props.drawerOpen ? "rounded-l-lg " : "rounded-lg"}
           ${props.isFocused ? "shadow-md border-border" : "border-border-light"}`
       }
-      ${props.cardBorderHidden && "sm:h-[calc(100%+48px)] h-[calc(100%+20px)] sm:-my-6 -my-3 sm:pt-6 pt-3"}
+      ${cardBorderHidden && "sm:h-[calc(100%+48px)] h-[calc(100%+20px)] sm:-my-6 -my-3 sm:pt-6 pt-3"}
       ${props.fullPageScroll && "max-w-full "}
     ${props.pageType === "doc" && !props.fullPageScroll && "w-[10000px] sm:mx-0 max-w-[var(--page-width-units)]"}
     ${

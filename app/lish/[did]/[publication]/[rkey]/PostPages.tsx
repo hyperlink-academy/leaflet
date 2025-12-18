@@ -81,7 +81,6 @@ export const useInitializeOpenPages = () => {
         });
         return;
       }
-
       // Then check for quote param
       if (quote) {
         const decodedQuote = decodeQuotePosition(quote as string);
@@ -96,7 +95,7 @@ export const useInitializeOpenPages = () => {
       // Mark as initialized even if no pageId found
       usePostPageUIState.setState({ initialized: true });
     }
-  }, [quote]);
+  }, [quote, pageParam]);
 };
 
 export const openPage = (
@@ -355,10 +354,7 @@ const PageOptions = (props: {
       absolute sm:-right-[20px] right-3 sm:top-3 top-0
       flex sm:flex-col flex-row-reverse gap-1 items-start`}
     >
-      <PageOptionButton
-        cardBorderHidden={!props.hasPageBackground}
-        onClick={props.onClick}
-      >
+      <PageOptionButton onClick={props.onClick}>
         <CloseTiny />
       </PageOptionButton>
     </div>

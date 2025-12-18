@@ -4,18 +4,19 @@ import { LeafletInfo } from "./LeafletInfo";
 import { useState, useRef, useEffect } from "react";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useLeafletPublicationStatus } from "components/PageSWRDataProvider";
+import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 
 export const LeafletListItem = (props: {
   archived?: boolean | null;
   loggedIn: boolean;
   display: "list" | "grid";
-  cardBorderHidden: boolean;
   added_at: string;
   title?: string;
   index: number;
   isHidden: boolean;
   showPreview?: boolean;
 }) => {
+  const cardBorderHidden = useCardBorderHidden();
   const pubStatus = useLeafletPublicationStatus();
   let [isOnScreen, setIsOnScreen] = useState(props.index < 16 ? true : false);
   let previewRef = useRef<HTMLDivElement | null>(null);
@@ -47,9 +48,9 @@ export const LeafletListItem = (props: {
           ref={previewRef}
           className={`relative flex gap-3 w-full
             ${props.isHidden ? "hidden" : "flex"}
-            ${props.cardBorderHidden ? "" : "px-2 py-1 block-border hover:outline-border relative"}`}
+            ${cardBorderHidden ? "" : "px-2 py-1 block-border hover:outline-border relative"}`}
           style={{
-            backgroundColor: props.cardBorderHidden
+            backgroundColor: cardBorderHidden
               ? "transparent"
               : "rgba(var(--bg-page), var(--bg-page-alpha))",
           }}
@@ -67,7 +68,7 @@ export const LeafletListItem = (props: {
             loggedIn={props.loggedIn}
           />
         </div>
-        {props.cardBorderHidden && (
+        {cardBorderHidden && (
           <hr
             className="last:hidden border-border-light"
             style={{
@@ -87,7 +88,7 @@ export const LeafletListItem = (props: {
        ${props.isHidden ? "hidden" : "flex"}
         `}
       style={{
-        backgroundColor: props.cardBorderHidden
+        backgroundColor: cardBorderHidden
           ? "transparent"
           : "rgba(var(--bg-page), var(--bg-page-alpha))",
       }}

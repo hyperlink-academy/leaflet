@@ -23,7 +23,6 @@ export function DraftList(props: {
         searchValue={props.searchValue}
         showPreview={false}
         defaultDisplay="list"
-        cardBorderHidden={!props.showPageBackground}
         leaflets={leaflets_in_publications
           .filter((l) => !l.documents)
           .filter((l) => !l.archived)

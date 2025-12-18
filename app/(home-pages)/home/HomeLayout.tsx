@@ -20,7 +20,6 @@ import {
   useDashboardState,
 } from "components/PageLayouts/DashboardLayout";
 import { Actions } from "./Actions/Actions";
-import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
@@ -56,7 +55,6 @@ export const HomeLayout = (props: {
     props.entityID,
     "theme/background-image",
   );
-  let cardBorderHidden = !!useCardBorderHidden(props.entityID);
 
   let [searchValue, setSearchValue] = useState("");
   let [debouncedSearchValue, setDebouncedSearchValue] = useState("");
@@ -81,7 +79,6 @@ export const HomeLayout = (props: {
   return (
     <DashboardLayout
       id="home"
-      cardBorderHidden={cardBorderHidden}
       currentPage="home"
       defaultTab="home"
       actions={<Actions />}
@@ -101,7 +98,6 @@ export const HomeLayout = (props: {
             <HomeLeafletList
               titles={props.titles}
               initialFacts={props.initialFacts}
-              cardBorderHidden={cardBorderHidden}
               searchValue={debouncedSearchValue}
             />
           ),
@@ -117,7 +113,6 @@ export function HomeLeafletList(props: {
     [root_entity: string]: Fact<Attribute>[];
   };
   searchValue: string;
-  cardBorderHidden: boolean;
 }) {
   let { identity } = useIdentityData();
   let { data: initialFacts } = useSWR(
@@ -171,7 +166,6 @@ export function HomeLeafletList(props: {
         searchValue={props.searchValue}
         leaflets={leaflets}
         titles={initialFacts?.titles || {}}
-        cardBorderHidden={props.cardBorderHidden}
         initialFacts={initialFacts?.facts || {}}
         showPreview
       />
@@ -192,7 +186,6 @@ export function LeafletList(props: {
     [root_entity: string]: Fact<Attribute>[];
   };
   searchValue: string;
-  cardBorderHidden: boolean;
   showPreview?: boolean;
 }) {
   let { identity } = useIdentityData();
@@ -238,7 +231,6 @@ export function LeafletList(props: {
               loggedIn={!!identity}
               display={display}
               added_at={added_at}
-              cardBorderHidden={props.cardBorderHidden}
               index={index}
               showPreview={props.showPreview}
               isHidden={

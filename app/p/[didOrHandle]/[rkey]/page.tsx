@@ -5,6 +5,7 @@ import { PubLeafletDocument } from "lexicons/api";
 import { Metadata } from "next";
 import { idResolver } from "app/(home-pages)/reader/idResolver";
 import { DocumentPageRenderer } from "app/lish/[did]/[publication]/[rkey]/DocumentPageRenderer";
+import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 
 export async function generateMetadata(props: {
   params: Promise<{ didOrHandle: string; rkey: string }>;
@@ -34,7 +35,8 @@ export async function generateMetadata(props: {
   let docRecord = document.data as PubLeafletDocument.Record;
 
   // For documents in publications, include publication name
-  let publicationName = document.documents_in_publications[0]?.publications?.name;
+  let publicationName =
+    document.documents_in_publications[0]?.publications?.name;
 
   return {
     icons: {
@@ -63,25 +65,25 @@ export default async function StandaloneDocumentPage(props: {
       let resolved = await idResolver.handle.resolve(didOrHandle);
       if (!resolved) {
         return (
-          <div className="p-4 text-lg text-center flex flex-col gap-4">
-            <p>Sorry, can&apos;t resolve handle.</p>
+          <NotFoundLayout>
+            <p className="font-bold">Sorry, we can't find this handle!</p>
             <p>
               This may be a glitch on our end. If the issue persists please{" "}
               <a href="mailto:contact@leaflet.pub">send us a note</a>.
             </p>
-          </div>
+          </NotFoundLayout>
         );
       }
       did = resolved;
     } catch (e) {
       return (
-        <div className="p-4 text-lg text-center flex flex-col gap-4">
-          <p>Sorry, can&apos;t resolve handle.</p>
+        <NotFoundLayout>
+          <p className="font-bold">Sorry, we can't find this leaflet!</p>
           <p>
             This may be a glitch on our end. If the issue persists please{" "}
             <a href="mailto:contact@leaflet.pub">send us a note</a>.
           </p>
-        </div>
+        </NotFoundLayout>
       );
     }
   }

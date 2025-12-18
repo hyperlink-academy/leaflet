@@ -13,38 +13,49 @@ import type { Post } from "app/(home-pages)/reader/getReaderFeed";
 
 import Link from "next/link";
 import { InteractionPreview } from "./InteractionsPreview";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 export const PostListing = (props: Post) => {
-  let pubRecord = props.publication.pubRecord as PubLeafletPublication.Record;
+  let pubRecord = props.publication?.pubRecord as
+    | PubLeafletPublication.Record
+    | undefined;
 
   let postRecord = props.documents.data as PubLeafletDocument.Record;
   let postUri = new AtUri(props.documents.uri);
 
-  let theme = usePubTheme(pubRecord.theme);
-  let backgroundImage = pubRecord?.theme?.backgroundImage?.image?.ref
-    ? blobRefToSrc(
-        pubRecord?.theme?.backgroundImage?.image?.ref,
-        new AtUri(props.publication.uri).host,
-      )
-    : null;
+  let theme = usePubTheme(pubRecord?.theme || postRecord?.theme);
+  let backgroundImage =
+    pubRecord?.theme?.backgroundImage?.image?.ref && props.publication
+      ? blobRefToSrc(
+          pubRecord.theme.backgroundImage.image.ref,
+          new AtUri(props.publication.uri).host,
+        )
+      : null;
 
   let backgroundImageRepeat = pubRecord?.theme?.backgroundImage?.repeat;
   let backgroundImageSize = pubRecord?.theme?.backgroundImage?.width || 500;
 
-  let showPageBackground = pubRecord.theme?.showPageBackground;
+  let showPageBackground = pubRecord?.theme?.showPageBackground;
 
   let quotes = props.documents.document_mentions_in_bsky?.[0]?.count || 0;
   let comments =
-    pubRecord.preferences?.showComments === false
+    pubRecord?.preferences?.showComments === false
       ? 0
       : props.documents.comments_on_documents?.[0]?.count || 0;
   let tags = (postRecord?.tags as string[] | undefined) || [];
+
+  // For standalone posts, link directly to the document
+  let postHref = props.publication
+    ? `${props.publication.href}/${postUri.rkey}`
+    : `/p/${postUri.host}/${postUri.rkey}`;
 
   return (
     <BaseThemeProvider {...theme} local>
       <div
         style={{
-          backgroundImage: `url(${backgroundImage})`,
+          backgroundImage: backgroundImage
+            ? `url(${backgroundImage})`
+            : undefined,
           backgroundRepeat: backgroundImageRepeat ? "repeat" : "no-repeat",
           backgroundSize: `${backgroundImageRepeat ? `${backgroundImageSize}px` : "cover"}`,
         }}
@@ -55,10 +66,7 @@ export const PostListing = (props: Post) => {
           hover:outline-accent-contrast hover:border-accent-contrast
           `}
       >
-        <Link
-          className="h-full w-full absolute top-0 left-0"
-          href={`${props.publication.href}/${postUri.rkey}`}
-        />
+        <Link className="h-full w-full absolute top-0 left-0" href={postHref} />
         <div
           className={`${showPageBackground ? "bg-bg-page " : "bg-transparent"}  rounded-md w-full  px-[10px] pt-2 pb-2`}
           style={{
@@ -71,19 +79,21 @@ export const PostListing = (props: Post) => {
 
           <p className="text-secondary italic">{postRecord.description}</p>
           <div className="flex flex-col-reverse md:flex-row md gap-2 text-sm text-tertiary items-center justify-start pt-1.5 md:pt-3 w-full">
-            <PubInfo
-              href={props.publication.href}
-              pubRecord={pubRecord}
-              uri={props.publication.uri}
-            />
+            {props.publication && pubRecord && (
+              <PubInfo
+                href={props.publication.href}
+                pubRecord={pubRecord}
+                uri={props.publication.uri}
+              />
+            )}
             <div className="flex flex-row justify-between gap-2 items-center w-full">
               <PostInfo publishedAt={postRecord.publishedAt} />
               <InteractionPreview
-                postUrl={`${props.publication.href}/${postUri.rkey}`}
+                postUrl={postHref}
                 quotesCount={quotes}
                 commentsCount={comments}
                 tags={tags}
-                showComments={pubRecord.preferences?.showComments}
+                showComments={pubRecord?.preferences?.showComments}
                 share
               />
             </div>
@@ -114,17 +124,16 @@ const PubInfo = (props: {
 };
 
 const PostInfo = (props: { publishedAt: string | undefined }) => {
+  let localizedDate = useLocalizedDate(props.publishedAt || "", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
   return (
     <div className="flex gap-2 items-center shrink-0 self-start">
       {props.publishedAt && (
         <>
-          <div className="shrink-0">
-            {new Date(props.publishedAt).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })}
-          </div>
+          <div className="shrink-0">{localizedDate}</div>
         </>
       )}
     </div>

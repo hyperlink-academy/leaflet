@@ -94,7 +94,6 @@ export function ThreadPage(props: {
 
   return (
     <PageWrapper
-      cardBorderHidden={!!cardBorderHidden}
       pageType="doc"
       fullPageScroll={false}
       id={`post-page-${pageId}`}

@@ -193,7 +193,7 @@ export const PubIcon = (props: {
 
   return props.record.icon ? (
     <div
-      className={`${iconSizeClassName} ${props.className} relative overflow-hidden`}
+      className={`${iconSizeClassName} ${props.className} relative overflow-hidden shrink-0`}
     >
       <img
         src={`/api/atproto_images?did=${new AtUri(props.uri).host}&cid=${(props.record.icon?.ref as unknown as { $link: string })["$link"]}`}
