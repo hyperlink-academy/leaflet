@@ -23,24 +23,43 @@ export const BlueskyEmbed = (props: {
       return (
         <div className="flex flex-wrap rounded-md w-full overflow-hidden">
           {imageEmbed.images.map(
-            (image: { fullsize: string; alt?: string }, i: number) => (
-              <img
-                key={i}
-                src={image.fullsize}
-                alt={image.alt || "Post image"}
-                className={`
-                  overflow-hidden w-full object-cover
-                  ${imageEmbed.images.length === 1 && "h-auto max-h-[800px]"}
-                  ${imageEmbed.images.length === 2 && "basis-1/2 aspect-square"}
-                  ${imageEmbed.images.length === 3 && "basis-1/3 aspect-2/3"}
+            (
+              image: {
+                fullsize: string;
+                alt?: string;
+                aspectRatio?: { width: number; height: number };
+              },
+              i: number,
+            ) => {
+              const isSingle = imageEmbed.images.length === 1;
+              const aspectRatio = image.aspectRatio
+                ? image.aspectRatio.width / image.aspectRatio.height
+                : undefined;
+
+              return (
+                <img
+                  key={i}
+                  src={image.fullsize}
+                  alt={image.alt || "Post image"}
+                  style={
+                    isSingle && aspectRatio
+                      ? { aspectRatio: String(aspectRatio) }
+                      : undefined
+                  }
+                  className={`
+                    overflow-hidden w-full object-cover
+                    ${isSingle && "max-h-[800px]"}
+                    ${imageEmbed.images.length === 2 && "basis-1/2 aspect-square"}
+                    ${imageEmbed.images.length === 3 && "basis-1/3 aspect-2/3"}
                     ${
                       imageEmbed.images.length === 4
                         ? "basis-1/2 aspect-3/2"
-                        : `basis-1/${imageEmbed.images.length} `
+                        : `basis-1/${imageEmbed.images.length}`
                     }
-                `}
-              />
-            ),
+                  `}
+                />
+              );
+            },
           )}
         </div>
       );
@@ -49,11 +68,11 @@ export const BlueskyEmbed = (props: {
       let isGif = externalEmbed.external.uri.includes(".gif");
       if (isGif) {
         return (
-          <div className="flex flex-col border border-border-light rounded-md overflow-hidden">
+          <div className="flex flex-col border border-border-light rounded-md overflow-hidden aspect-video">
             <img
               src={externalEmbed.external.uri}
               alt={externalEmbed.external.title}
-              className="object-cover"
+              className="w-full h-full object-cover"
             />
           </div>
         );
@@ -66,13 +85,14 @@ export const BlueskyEmbed = (props: {
         >
           {externalEmbed.external.thumb === undefined ? null : (
             <>
-              <img
-                src={externalEmbed.external.thumb}
-                alt={externalEmbed.external.title}
-                className="object-cover"
-              />
-
-              <hr className="border-border-light " />
+              <div className="w-full aspect-[1.91/1] overflow-hidden">
+                <img
+                  src={externalEmbed.external.thumb}
+                  alt={externalEmbed.external.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <hr className="border-border-light" />
             </>
           )}
           <div className="p-2 flex flex-col gap-1">
@@ -91,16 +111,22 @@ export const BlueskyEmbed = (props: {
       );
     case AppBskyEmbedVideo.isView(props.embed):
       let videoEmbed = props.embed;
+      const videoAspectRatio = videoEmbed.aspectRatio
+        ? videoEmbed.aspectRatio.width / videoEmbed.aspectRatio.height
+        : 16 / 9;
       return (
-        <div className="rounded-md overflow-hidden relative">
+        <div
+          className="rounded-md overflow-hidden relative w-full"
+          style={{ aspectRatio: String(videoAspectRatio) }}
+        >
           <img
             src={videoEmbed.thumbnail}
             alt={
               "Thumbnail from embedded video. Go to Bluesky to see the full post."
             }
-            className={`overflow-hidden w-full object-cover`}
+            className="absolute inset-0 w-full h-full object-cover"
           />
-          <div className="overlay absolute top-0 right-0 left-0 bottom-0 bg-primary opacity-65" />
+          <div className="overlay absolute inset-0 bg-primary opacity-65" />
           <div className="absolute w-max top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-border-light rounded-md">
             <SeePostOnBluesky postUrl={props.postUrl} />
           </div>

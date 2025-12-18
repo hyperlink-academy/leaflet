@@ -130,7 +130,7 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
           <div className="w-full flex gap-2 items-center justify-between">
             {timestamp && <PostDate timestamp={timestamp} />}
             <div className="flex gap-2 items-center">
-              {post.post.replyCount && post.post.replyCount > 0 && (
+              {post.post.replyCount != null && post.post.replyCount > 0 && (
                 <>
                   <a
                     className="flex items-center gap-1 hover:no-underline"
