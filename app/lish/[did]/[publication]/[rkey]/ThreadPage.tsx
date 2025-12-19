@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useRef } from "react";
 import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api";
 import useSWR, { preload } from "swr";
 import { PageWrapper } from "components/Pages/Page";
@@ -16,6 +17,8 @@ import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { openPage, OpenPage } from "./PostPages";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
+import { useThreadState } from "src/useThreadState";
+import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 
 type ThreadViewPost = AppBskyFeedDefs.ThreadViewPost;
 type NotFoundPost = AppBskyFeedDefs.NotFoundPost;
@@ -120,6 +123,17 @@ export function ThreadPage(props: {
 
 function ThreadContent(props: { thread: ThreadType; threadUri: string }) {
   const { thread, threadUri } = props;
+  const mainPostRef = useRef<HTMLDivElement>(null);
+
+  // Scroll the main post into view when the thread loads
+  useEffect(() => {
+    if (mainPostRef.current) {
+      mainPostRef.current.scrollIntoView({
+        behavior: "instant",
+        block: "start",
+      });
+    }
+  }, []);
 
   if (AppBskyFeedDefs.isNotFoundPost(thread)) {
     return <PostNotAvailable />;
@@ -160,12 +174,14 @@ function ThreadContent(props: { thread: ThreadType; threadUri: string }) {
       ))}
 
       {/* Main post */}
-      <ThreadPost
-        post={thread}
-        isMainPost={true}
-        showReplyLine={false}
-        threadUri={threadUri}
-      />
+      <div ref={mainPostRef}>
+        <ThreadPost
+          post={thread}
+          isMainPost={true}
+          showReplyLine={false}
+          threadUri={threadUri}
+        />
+      </div>
 
       {/* Replies */}
       {thread.replies && thread.replies.length > 0 && (
@@ -280,6 +296,8 @@ function Replies(props: {
   depth: number;
 }) {
   const { replies, threadUri, depth } = props;
+  const collapsedThreads = useThreadState((s) => s.collapsedThreads);
+  const toggleCollapsed = useThreadState((s) => s.toggleCollapsed);
 
   return (
     <div className="flex flex-col gap-0">
@@ -311,6 +329,8 @@ function Replies(props: {
         }
 
         const hasReplies = reply.replies && reply.replies.length > 0;
+        const isCollapsed = collapsedThreads.has(reply.post.uri);
+        const replyCount = reply.replies?.length ?? 0;
 
         return (
           <div key={reply.post.uri} className="flex flex-col">
@@ -321,12 +341,39 @@ function Replies(props: {
               threadUri={threadUri}
             />
             {hasReplies && depth < 3 && (
-              <div className="ml-5 pl-5 border-l border-border-light">
-                <Replies
-                  replies={reply.replies as any[]}
-                  threadUri={threadUri}
-                  depth={depth + 1}
-                />
+              <div className="ml-2 flex">
+                {/* Clickable collapse line - w-8 matches avatar width, centered line aligns with avatar center */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleCollapsed(reply.post.uri);
+                  }}
+                  className="group w-8 flex justify-center cursor-pointer shrink-0"
+                  aria-label={
+                    isCollapsed ? "Expand replies" : "Collapse replies"
+                  }
+                >
+                  <div className="w-0.5 h-full bg-border-light group-hover:bg-accent-contrast group-hover:w-1 transition-all" />
+                </button>
+                {isCollapsed ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleCollapsed(reply.post.uri);
+                    }}
+                    className="text-xs text-accent-contrast hover:underline py-1 pl-1"
+                  >
+                    Show {replyCount} {replyCount === 1 ? "reply" : "replies"}
+                  </button>
+                ) : (
+                  <div className="grow">
+                    <Replies
+                      replies={reply.replies as any[]}
+                      threadUri={threadUri}
+                      depth={depth + 1}
+                    />
+                  </div>
+                )}
               </div>
             )}
             {hasReplies && depth >= 3 && (
