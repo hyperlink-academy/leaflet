@@ -12,9 +12,13 @@ import {
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { BaseTextBlock } from "./BaseTextBlock";
+import { TextBlockCore, TextBlockCoreProps } from "./TextBlockCore";
 import { StaticMathBlock } from "./StaticMathBlock";
 import { codeToHtml, bundledLanguagesInfo, bundledThemesInfo } from "shiki";
+
+function StaticBaseTextBlock(props: Omit<TextBlockCoreProps, "renderers">) {
+  return <TextBlockCore {...props} />;
+}
 
 export function StaticPostContent({
   blocks,
@@ -47,7 +51,7 @@ let Block = async ({
     case PubLeafletBlocksBlockquote.isMain(b.block): {
       return (
         <blockquote className={` blockquote `}>
-          <BaseTextBlock
+          <StaticBaseTextBlock
             facets={b.block.facets}
             plaintext={b.block.plaintext}
             index={[]}
@@ -116,7 +120,7 @@ let Block = async ({
     case PubLeafletBlocksText.isMain(b.block):
       return (
         <p>
-          <BaseTextBlock
+          <StaticBaseTextBlock
             facets={b.block.facets}
             plaintext={b.block.plaintext}
             index={[]}
@@ -127,26 +131,26 @@ let Block = async ({
       if (b.block.level === 1)
         return (
           <h1>
-            <BaseTextBlock {...b.block} index={[]} />
+            <StaticBaseTextBlock {...b.block} index={[]} />
           </h1>
         );
       if (b.block.level === 2)
         return (
           <h2>
-            <BaseTextBlock {...b.block} index={[]} />
+            <StaticBaseTextBlock {...b.block} index={[]} />
           </h2>
         );
       if (b.block.level === 3)
         return (
           <h3>
-            <BaseTextBlock {...b.block} index={[]} />
+            <StaticBaseTextBlock {...b.block} index={[]} />
           </h3>
         );
       // if (b.block.level === 4) return <h4>{b.block.plaintext}</h4>;
       // if (b.block.level === 5) return <h5>{b.block.plaintext}</h5>;
       return (
         <h6>
-          <BaseTextBlock {...b.block} index={[]} />
+          <StaticBaseTextBlock {...b.block} index={[]} />
         </h6>
       );
     }
