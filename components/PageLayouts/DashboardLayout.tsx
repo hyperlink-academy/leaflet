@@ -180,7 +180,7 @@ export function DashboardLayout<
           </div>
         </MediaContents>
         <div
-          className={`w-full h-full flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-12 px-3 sm:pt-8 sm:pb-12 sm:pl-6 sm:pr-4 `}
+          className={`w-full h-full flex flex-col gap-2 relative overflow-y-scroll pt-3 pb-3 px-3 sm:pt-8 sm:pb-3 sm:pl-6 sm:pr-4 `}
           ref={ref}
           id="home-content"
         >
