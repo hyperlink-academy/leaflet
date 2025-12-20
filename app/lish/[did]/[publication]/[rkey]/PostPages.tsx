@@ -25,15 +25,18 @@ import { PollData } from "./fetchPollData";
 import { LinearDocumentPage } from "./LinearDocumentPage";
 import { CanvasPage } from "./CanvasPage";
 import { ThreadPage as ThreadPageComponent } from "./ThreadPage";
+import { BlueskyQuotesPage } from "./BlueskyQuotesPage";
 
 // Page types
 export type DocPage = { type: "doc"; id: string };
 export type ThreadPage = { type: "thread"; uri: string };
-export type OpenPage = DocPage | ThreadPage;
+export type QuotesPage = { type: "quotes"; uri: string };
+export type OpenPage = DocPage | ThreadPage | QuotesPage;
 
 // Get a stable key for a page
 const getPageKey = (page: OpenPage): string => {
   if (page.type === "doc") return page.id;
+  if (page.type === "quotes") return `quotes:${page.uri}`;
   return `thread:${page.uri}`;
 };
 
@@ -279,6 +282,26 @@ export function PostPages({
               <SandwichSpacer />
               <ThreadPageComponent
                 threadUri={openPage.uri}
+                pageId={pageKey}
+                hasPageBackground={hasPageBackground}
+                pageOptions={
+                  <PageOptions
+                    onClick={() => closePage(openPage)}
+                    hasPageBackground={hasPageBackground}
+                  />
+                }
+              />
+            </Fragment>
+          );
+        }
+
+        // Handle quotes pages
+        if (openPage.type === "quotes") {
+          return (
+            <Fragment key={pageKey}>
+              <SandwichSpacer />
+              <BlueskyQuotesPage
+                postUri={openPage.uri}
                 pageId={pageKey}
                 hasPageBackground={hasPageBackground}
                 pageOptions={

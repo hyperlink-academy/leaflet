@@ -4,6 +4,8 @@ import { Separator } from "components/Layout";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
+import { QuoteTiny } from "components/Icons/QuoteTiny";
+import { ThreadLink, QuotesLink } from "./PostLinks";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import {
   BlueskyEmbed,
@@ -11,7 +13,6 @@ import {
 } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 import { BlueskyRichText } from "components/Blocks/BlueskyPostBlock/BlueskyRichText";
 import { openPage } from "./PostPages";
-import { ThreadLink } from "./ThreadPage";
 
 export const PubBlueskyPostBlock = (props: {
   post: PostView;
@@ -118,6 +119,20 @@ export const PubBlueskyPostBlock = (props: {
                     {post.replyCount}
                     <CommentTiny />
                   </ThreadLink>
+                  <Separator classname="h-4" />
+                </>
+              )}
+              {post.quoteCount != null && post.quoteCount > 0 && (
+                <>
+                  <QuotesLink
+                    postUri={post.uri}
+                    parent={parent}
+                    className="flex items-center gap-1 hover:text-accent-contrast"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {post.quoteCount}
+                    <QuoteTiny />
+                  </QuotesLink>
                   <Separator classname="h-4" />
                 </>
               )}

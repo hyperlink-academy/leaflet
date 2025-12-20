@@ -23,7 +23,8 @@ import { openPage } from "../PostPages";
 import useSWR, { mutate } from "swr";
 import { DotLoader } from "components/utils/DotLoader";
 import { CommentTiny } from "components/Icons/CommentTiny";
-import { ThreadLink } from "../ThreadPage";
+import { QuoteTiny } from "components/Icons/QuoteTiny";
+import { ThreadLink, QuotesLink } from "../PostLinks";
 
 // Helper to get SWR key for quotes
 export function getQuotesSWRKey(uris: string[]) {
@@ -138,6 +139,7 @@ export const Quotes = (props: {
                   profile={pv.author}
                   handle={pv.author.handle}
                   replyCount={pv.replyCount}
+                  quoteCount={pv.quoteCount}
                 />
               </div>
             );
@@ -161,6 +163,7 @@ export const Quotes = (props: {
                       profile={pv.author}
                       handle={pv.author.handle}
                       replyCount={pv.replyCount}
+                      quoteCount={pv.quoteCount}
                     />
                   );
                 })}
@@ -252,6 +255,7 @@ export const BskyPost = (props: {
   handle: string;
   profile: ProfileViewBasic;
   replyCount?: number;
+  quoteCount?: number;
 }) => {
   const handleOpenThread = () => {
     openPage(undefined, { type: "thread", uri: props.uri });
@@ -282,16 +286,28 @@ export const BskyPost = (props: {
           </a>
         </div>
         <div className="text-primary">{props.content}</div>
-        {props.replyCount != null && props.replyCount > 0 && (
-          <ThreadLink
-            threadUri={props.uri}
-            onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-1 text-tertiary text-xs mt-1 hover:text-accent-contrast"
-          >
-            <CommentTiny />
-            {props.replyCount} {props.replyCount === 1 ? "reply" : "replies"}
-          </ThreadLink>
-        )}
+        <div className="flex gap-2 items-center mt-1">
+          {props.replyCount != null && props.replyCount > 0 && (
+            <ThreadLink
+              threadUri={props.uri}
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1 text-tertiary text-xs hover:text-accent-contrast"
+            >
+              <CommentTiny />
+              {props.replyCount} {props.replyCount === 1 ? "reply" : "replies"}
+            </ThreadLink>
+          )}
+          {props.quoteCount != null && props.quoteCount > 0 && (
+            <QuotesLink
+              postUri={props.uri}
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1 text-tertiary text-xs hover:text-accent-contrast"
+            >
+              <QuoteTiny />
+              {props.quoteCount} {props.quoteCount === 1 ? "quote" : "quotes"}
+            </QuotesLink>
+          )}
+        </div>
       </div>
     </div>
   );
