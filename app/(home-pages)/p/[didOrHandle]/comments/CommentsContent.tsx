@@ -177,7 +177,7 @@ const CommentItem = ({ comment }: { comment: ProfileComment }) => {
       <div className="flex gap-2 w-full">
         <Avatar src={avatarSrc} displayName={displayName} />
         <div className="flex flex-col w-full min-w-0 grow">
-          <div className="flex flex-row gap-2">
+          <div className="flex flex-row gap-2 justify-between">
             <div className="text-tertiary text-sm truncate">
               <span className="font-bold text-secondary">{displayName}</span>{" "}
               {isReply ? "replied" : "commented"} on{" "}
@@ -191,6 +191,9 @@ const CommentItem = ({ comment }: { comment: ProfileComment }) => {
               ) : (
                 <span className="italic text-accent-contrast">{postTitle}</span>
               )}
+            </div>
+            <div className="text-tertiary text-sm shrink-0">
+              {timeAgo(record.createdAt)}
             </div>
           </div>
           {isReply && parentRecord && (
