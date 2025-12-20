@@ -99,7 +99,7 @@ export function TextBlockCore(props: TextBlockCoreProps) {
       children.push(
         <a
           key={counter}
-          href={link.uri}
+          href={link.uri.trim()}
           className={`text-accent-contrast hover:underline ${className}`}
           target="_blank"
         >
