@@ -9,6 +9,15 @@ import { ProfileLayout } from "./ProfileLayout";
 import { Agent } from "@atproto/api";
 import { get_profile_data } from "app/api/rpc/[command]/get_profile_data";
 import { Metadata } from "next";
+import { cache } from "react";
+
+// Cache the profile data call to prevent concurrent OAuth restores
+const getCachedProfileData = cache(async (did: string) => {
+  return get_profile_data.handler(
+    { didOrHandle: did },
+    { supabase: supabaseServerClient },
+  );
+});
 
 export async function generateMetadata(props: {
   params: Promise<{ didOrHandle: string }>;
@@ -23,10 +32,7 @@ export async function generateMetadata(props: {
     did = resolved;
   }
 
-  let profileData = await get_profile_data.handler(
-    { didOrHandle: did },
-    { supabase: supabaseServerClient },
-  );
+  let profileData = await getCachedProfileData(did);
   let { profile } = profileData.result;
 
   if (!profile) return { title: "Profile - Leaflet" };
@@ -66,10 +72,7 @@ export default async function ProfilePageLayout(props: {
     }
     did = resolved;
   }
-  let profileData = await get_profile_data.handler(
-    { didOrHandle: did },
-    { supabase: supabaseServerClient },
-  );
+  let profileData = await getCachedProfileData(did);
   let { publications, profile } = profileData.result;
 
   if (!profile) return null;
