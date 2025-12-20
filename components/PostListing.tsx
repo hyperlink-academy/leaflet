@@ -22,20 +22,21 @@ export const PostListing = (props: Post) => {
 
   let postRecord = props.documents.data as PubLeafletDocument.Record;
   let postUri = new AtUri(props.documents.uri);
+  let uri = props.publication ? props.publication?.uri : props.documents.uri;
 
   let theme = usePubTheme(pubRecord?.theme || postRecord?.theme);
+  let themeRecord = pubRecord?.theme || postRecord?.theme;
   let backgroundImage =
-    pubRecord?.theme?.backgroundImage?.image?.ref && props.publication
-      ? blobRefToSrc(
-          pubRecord.theme.backgroundImage.image.ref,
-          new AtUri(props.publication.uri).host,
-        )
+    themeRecord?.backgroundImage?.image?.ref && uri
+      ? blobRefToSrc(themeRecord.backgroundImage.image.ref, new AtUri(uri).host)
       : null;
 
-  let backgroundImageRepeat = pubRecord?.theme?.backgroundImage?.repeat;
-  let backgroundImageSize = pubRecord?.theme?.backgroundImage?.width || 500;
+  let backgroundImageRepeat = themeRecord?.backgroundImage?.repeat;
+  let backgroundImageSize = themeRecord?.backgroundImage?.width || 500;
 
-  let showPageBackground = pubRecord?.theme?.showPageBackground;
+  let showPageBackground = pubRecord
+    ? pubRecord?.theme?.showPageBackground
+    : postRecord.theme?.showPageBackground ?? true;
 
   let quotes = props.documents.document_mentions_in_bsky?.[0]?.count || 0;
   let comments =
