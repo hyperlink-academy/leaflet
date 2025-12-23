@@ -5,7 +5,7 @@ import { metaKey } from "src/utils/metaKey";
 import { useUIState } from "src/useUIState";
 import { LockBlockButton } from "./LockBlockButton";
 import { TextAlignmentButton } from "./TextAlignmentToolbar";
-import { ImageFullBleedButton, ImageAltTextButton } from "./ImageToolbar";
+import { ImageFullBleedButton, ImageAltTextButton, ImageCoverButton } from "./ImageToolbar";
 import { DeleteSmall } from "components/Icons/DeleteSmall";
 import { getSortedSelection } from "components/SelectionManager/selectionState";
 
@@ -44,6 +44,7 @@ export const BlockToolbar = (props: {
             <TextAlignmentButton setToolbarState={props.setToolbarState} />
             <ImageFullBleedButton />
             <ImageAltTextButton setToolbarState={props.setToolbarState} />
+            <ImageCoverButton />
             {focusedEntityType?.data.value !== "canvas" && (
               <Separator classname="h-6" />
             )}

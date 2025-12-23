@@ -57,6 +57,7 @@ export async function publishToPublication({
   title,
   description,
   tags,
+  cover_image,
   entitiesToDelete,
 }: {
   root_entity: string;
@@ -65,6 +66,7 @@ export async function publishToPublication({
   title?: string;
   description?: string;
   tags?: string[];
+  cover_image?: string | null;
   entitiesToDelete?: string[];
 }) {
   const oauthClient = await createOauthClient();
@@ -135,6 +137,23 @@ export async function publishToPublication({
     theme = await extractThemeFromFacts(facts, root_entity, agent);
   }
 
+  // Upload cover image if provided
+  let coverImageBlob: BlobRef | undefined;
+  if (cover_image) {
+    let scan = scanIndexLocal(facts);
+    let [imageData] = scan.eav(cover_image, "block/image");
+    if (imageData) {
+      let imageResponse = await fetch(imageData.data.src);
+      if (imageResponse.status === 200) {
+        let binary = await imageResponse.blob();
+        let blob = await agent.com.atproto.repo.uploadBlob(binary, {
+          headers: { "Content-Type": binary.type },
+        });
+        coverImageBlob = blob.data.blob;
+      }
+    }
+  }
+
   let record: PubLeafletDocument.Record = {
     publishedAt: new Date().toISOString(),
     ...existingRecord,
@@ -145,6 +164,7 @@ export async function publishToPublication({
     title: title || "Untitled",
     description: description || "",
     ...(tags !== undefined && { tags }), // Include tags if provided (even if empty array to clear tags)
+    ...(coverImageBlob && { coverImage: coverImageBlob }), // Include cover image if uploaded
     pages: pages.map((p) => {
       if (p.type === "canvas") {
         return {

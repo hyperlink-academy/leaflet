@@ -17,6 +17,9 @@ import { EditTiny } from "components/Icons/EditTiny";
 import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { set } from "colorjs.io/fn";
 import { ImageAltSmall } from "components/Icons/ImageAlt";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { useSubscribe } from "src/replicache/useSubscribe";
+import { ImageCoverImage } from "components/Icons/ImageCoverImage";
 
 export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let { rep } = useReplicache();
@@ -172,6 +175,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       {altText !== undefined && !props.preview ? (
         <ImageAlt entityID={props.value} />
       ) : null}
+      {!props.preview ? <CoverImageButton entityID={props.value} /> : null}
     </div>
   );
 }
@@ -188,6 +192,39 @@ export const ImageBlockContext = createContext({
   altEditorOpen: false,
   setAltEditorOpen: (s: boolean) => {},
 });
+
+const CoverImageButton = (props: { entityID: string }) => {
+  let { rep } = useReplicache();
+  let entity_set = useEntitySetContext();
+  let { data: pubData } = useLeafletPublicationData();
+  let coverImage = useSubscribe(rep, (tx) =>
+    tx.get<string | null>("publication_cover_image"),
+  );
+  let isFocused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
+
+  // Only show if focused, in a publication, has write permissions, and no cover image is set
+  if (!isFocused || !pubData?.publications || !entity_set.permissions.write || coverImage) return null;
+
+  return (
+    <div className="absolute top-2 left-2">
+      <button
+        className="flex items-center gap-1 text-xs bg-bg-page/80 hover:bg-bg-page text-secondary hover:text-primary px-2 py-1 rounded-md border border-border hover:border-primary transition-colors"
+        onClick={async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          await rep?.mutate.updatePublicationDraft({
+            cover_image: props.entityID,
+          });
+        }}
+      >
+        <span className="w-4 h-4 flex items-center justify-center">
+          <ImageCoverImage />
+        </span>
+        Set as Cover
+      </button>
+    </div>
+  );
+};
 
 const ImageAlt = (props: { entityID: string }) => {
   let { rep } = useReplicache();

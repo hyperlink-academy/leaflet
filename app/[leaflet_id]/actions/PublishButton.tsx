@@ -72,6 +72,11 @@ const UpdateButton = () => {
   let tags = useSubscribe(rep, (tx) => tx.get<string[]>("publication_tags"));
   const currentTags = Array.isArray(tags) ? tags : [];
 
+  // Get cover image from Replicache state
+  let coverImage = useSubscribe(rep, (tx) =>
+    tx.get<string | null>("publication_cover_image"),
+  );
+
   return (
     <ActionButton
       primary
@@ -87,6 +92,7 @@ const UpdateButton = () => {
           title: pub.title,
           description: pub.description,
           tags: currentTags,
+          cover_image: coverImage,
         });
         setIsLoading(false);
         mutate();

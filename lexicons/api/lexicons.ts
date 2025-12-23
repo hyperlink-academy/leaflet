@@ -1447,6 +1447,11 @@ export const schemaDict = {
                 maxLength: 50,
               },
             },
+            coverImage: {
+              type: 'blob',
+              accept: ['image/png', 'image/jpeg', 'image/webp'],
+              maxSize: 1000000,
+            },
             pages: {
               type: 'array',
               items: {

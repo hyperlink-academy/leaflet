@@ -24,6 +24,11 @@ export const PubLeafletDocument: LexiconDoc = {
           author: { type: "string", format: "at-identifier" },
           theme: { type: "ref", ref: "pub.leaflet.publication#theme" },
           tags: { type: "array", items: { type: "string", maxLength: 50 } },
+          coverImage: {
+            type: "blob",
+            accept: ["image/png", "image/jpeg", "image/webp"],
+            maxSize: 1000000,
+          },
           pages: {
             type: "array",
             items: {

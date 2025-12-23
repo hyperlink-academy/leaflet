@@ -4,6 +4,9 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { Props } from "components/Icons/Props";
 import { ImageAltSmall, ImageRemoveAltSmall } from "components/Icons/ImageAlt";
+import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { useSubscribe } from "src/replicache/useSubscribe";
+import { ImageCoverImage } from "components/Icons/ImageCoverImage";
 
 export const ImageFullBleedButton = (props: {}) => {
   let { rep } = useReplicache();
@@ -76,6 +79,40 @@ export const ImageAltTextButton = (props: {
       ) : (
         <ImageRemoveAltSmall />
       )}
+    </ToolbarButton>
+  );
+};
+
+export const ImageCoverButton = () => {
+  let { rep } = useReplicache();
+  let focusedBlock = useUIState((s) => s.focusedEntity)?.entityID || null;
+  let hasSrc = useEntity(focusedBlock, "block/image")?.data;
+  let { data: pubData } = useLeafletPublicationData();
+  let coverImage = useSubscribe(rep, (tx) =>
+    tx.get<string | null>("publication_cover_image"),
+  );
+
+  // Only show if in a publication and has an image
+  if (!pubData?.publications || !hasSrc) return null;
+
+  let isCoverImage = coverImage === focusedBlock;
+
+  return (
+    <ToolbarButton
+      active={isCoverImage}
+      onClick={async (e) => {
+        e.preventDefault();
+        if (rep && focusedBlock) {
+          await rep.mutate.updatePublicationDraft({
+            cover_image: isCoverImage ? null : focusedBlock,
+          });
+        }
+      }}
+      tooltipContent={
+        <div>{isCoverImage ? "Remove Cover Image" : "Set as Cover Image"}</div>
+      }
+    >
+      <ImageCoverImage />
     </ToolbarButton>
   );
 };

@@ -24,6 +24,7 @@ export interface Record {
   author: string
   theme?: PubLeafletPublication.Theme
   tags?: string[]
+  coverImage?: BlobRef
   pages: (
     | $Typed<PubLeafletPagesLinearDocument.Main>
     | $Typed<PubLeafletPagesCanvas.Main>

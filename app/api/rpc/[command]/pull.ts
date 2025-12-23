@@ -74,6 +74,7 @@ export const pull = makeRoute({
       description: string;
       title: string;
       tags: string[];
+      cover_image: string | null;
     }[];
     let pub_patch = publication_data?.[0]
       ? [
@@ -91,6 +92,11 @@ export const pull = makeRoute({
             op: "put",
             key: "publication_tags",
             value: publication_data[0].tags || [],
+          },
+          {
+            op: "put",
+            key: "publication_cover_image",
+            value: publication_data[0].cover_image || null,
           },
         ]
       : [];

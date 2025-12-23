@@ -74,6 +74,11 @@ const PublishPostForm = (
   );
   let [localTags, setLocalTags] = useState<string[]>([]);
 
+  // Get cover image from Replicache
+  let replicacheCoverImage = useSubscribe(rep, (tx) =>
+    tx.get<string | null>("publication_cover_image"),
+  );
+
   // Use Replicache tags only when we have a draft
   const hasDraft = props.hasDraft;
   const currentTags = hasDraft
@@ -104,6 +109,7 @@ const PublishPostForm = (
       title: props.title,
       description: props.description,
       tags: currentTags,
+      cover_image: replicacheCoverImage,
       entitiesToDelete: props.entitiesToDelete,
     });
     if (!doc) return;
