@@ -581,6 +581,7 @@ export type Database = {
       leaflets_in_publications: {
         Row: {
           archived: boolean | null
+          cover_image: string | null
           description: string
           doc: string | null
           leaflet: string
@@ -589,6 +590,7 @@ export type Database = {
         }
         Insert: {
           archived?: boolean | null
+          cover_image?: string | null
           description?: string
           doc?: string | null
           leaflet: string
@@ -597,6 +599,7 @@ export type Database = {
         }
         Update: {
           archived?: boolean | null
+          cover_image?: string | null
           description?: string
           doc?: string | null
           leaflet?: string
@@ -629,6 +632,7 @@ export type Database = {
       }
       leaflets_to_documents: {
         Row: {
+          cover_image: string | null
           created_at: string
           description: string
           document: string
@@ -636,6 +640,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          cover_image?: string | null
           created_at?: string
           description?: string
           document: string
@@ -643,6 +648,7 @@ export type Database = {
           title?: string
         }
         Update: {
+          cover_image?: string | null
           created_at?: string
           description?: string
           document?: string
