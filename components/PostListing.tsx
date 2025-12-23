@@ -24,7 +24,9 @@ export const PostListing = (props: Post) => {
   let postUri = new AtUri(props.documents.uri);
   let uri = props.publication ? props.publication?.uri : props.documents.uri;
 
-  let theme = usePubTheme(pubRecord?.theme || postRecord?.theme);
+  // For standalone documents (no publication), pass isStandalone to get correct defaults
+  let isStandalone = !pubRecord;
+  let theme = usePubTheme(pubRecord?.theme || postRecord?.theme, isStandalone);
   let themeRecord = pubRecord?.theme || postRecord?.theme;
   let backgroundImage =
     themeRecord?.backgroundImage?.image?.ref && uri
