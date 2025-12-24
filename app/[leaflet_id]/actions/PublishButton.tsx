@@ -68,6 +68,23 @@ const UpdateButton = () => {
   let { identity } = useIdentityData();
   let toaster = useToaster();
 
+  // Get title and description from Replicache state (same as draft editor)
+  // This ensures we use the latest edited values, not stale cached data
+  let replicacheTitle = useSubscribe(rep, (tx) =>
+    tx.get<string>("publication_title"),
+  );
+  let replicacheDescription = useSubscribe(rep, (tx) =>
+    tx.get<string>("publication_description"),
+  );
+
+  // Use Replicache state if available, otherwise fall back to pub data
+  const currentTitle =
+    typeof replicacheTitle === "string" ? replicacheTitle : pub?.title || "";
+  const currentDescription =
+    typeof replicacheDescription === "string"
+      ? replicacheDescription
+      : pub?.description || "";
+
   // Get tags from Replicache state (same as draft editor)
   let tags = useSubscribe(rep, (tx) => tx.get<string[]>("publication_tags"));
   const currentTags = Array.isArray(tags) ? tags : [];
@@ -89,8 +106,8 @@ const UpdateButton = () => {
           root_entity: rootEntity,
           publication_uri: pub.publications?.uri,
           leaflet_id: permission_token.id,
-          title: pub.title,
-          description: pub.description,
+          title: currentTitle,
+          description: currentDescription,
           tags: currentTags,
           cover_image: coverImage,
         });
