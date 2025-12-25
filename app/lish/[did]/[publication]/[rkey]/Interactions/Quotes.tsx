@@ -183,6 +183,7 @@ export const QuoteContent = (props: {
 }) => {
   let isMobile = useIsMobile();
   const data = useContext(PostPageContext);
+  const document_uri = data?.uri;
 
   let record = data?.data as PubLeafletDocument.Record;
   let page: PubLeafletPagesLinearDocument.Main | undefined = (
@@ -214,7 +215,8 @@ export const QuoteContent = (props: {
           let scrollMargin = isMobile
             ? 16
             : e.currentTarget.getBoundingClientRect().top;
-          let scrollContainer = window.document.getElementById("post-page");
+          let scrollContainerId = `post-page-${props.position.pageId ?? document_uri}`;
+          let scrollContainer = window.document.getElementById(scrollContainerId);
           let el = window.document.getElementById(
             props.position.start.block.join("."),
           );
