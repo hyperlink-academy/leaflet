@@ -105,7 +105,7 @@ export const ManageSubscription = (props: {
         )}
 
         <a
-          href={`https://${props.base_url}/rss`}
+          href={`${props.base_url}/rss`}
           className="flex"
           target="_blank"
           aria-label="Subscribe to RSS"
