@@ -13,6 +13,7 @@ import { getBasePublicationURL, getPublicationURL } from "./getPublicationURL";
 import { string } from "zod";
 import { DotLoader } from "components/utils/DotLoader";
 import { Checkbox } from "components/Checkbox";
+import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 
 type DomainState =
   | { status: "empty" }
@@ -32,6 +33,9 @@ export const CreatePubForm = () => {
   let [domainState, setDomainState] = useState<DomainState>({
     status: "empty",
   });
+  let [oauthError, setOauthError] = useState<
+    import("src/atproto-oauth").OAuthSessionError | null
+  >(null);
   let fileInputRef = useRef<HTMLInputElement>(null);
 
   let router = useRouter();
@@ -43,18 +47,28 @@ export const CreatePubForm = () => {
         e.preventDefault();
         if (!subdomainValidator.safeParse(domainValue).success) return;
         setFormState("loading");
-        let data = await createPublication({
+        setOauthError(null);
+        let result = await createPublication({
           name: nameValue,
           description: descriptionValue,
           iconFile: logoFile,
           subdomain: domainValue,
           preferences: { showInDiscover, showComments: true },
         });
+
+        if (!result.success) {
+          setFormState("normal");
+          if (result.error && isOAuthSessionError(result.error)) {
+            setOauthError(result.error);
+          }
+          return;
+        }
+
         // Show a spinner while this is happening! Maybe a progress bar?
         setTimeout(() => {
           setFormState("normal");
-          if (data?.publication)
-            router.push(`${getBasePublicationURL(data.publication)}/dashboard`);
+          if (result.publication)
+            router.push(`${getBasePublicationURL(result.publication)}/dashboard`);
         }, 500);
       }}
     >
@@ -139,15 +153,23 @@ export const CreatePubForm = () => {
       </Checkbox>
       <hr className="border-border-light" />
 
-      <div className="flex w-full justify-end">
-        <ButtonPrimary
-          type="submit"
-          disabled={
-            !nameValue || !domainValue || domainState.status !== "valid"
-          }
-        >
-          {formState === "loading" ? <DotLoader /> : "Create Publication!"}
-        </ButtonPrimary>
+      <div className="flex flex-col gap-2">
+        <div className="flex w-full justify-end">
+          <ButtonPrimary
+            type="submit"
+            disabled={
+              !nameValue || !domainValue || domainState.status !== "valid"
+            }
+          >
+            {formState === "loading" ? <DotLoader /> : "Create Publication!"}
+          </ButtonPrimary>
+        </div>
+        {oauthError && (
+          <OAuthErrorMessage
+            error={oauthError}
+            className="text-right text-sm text-accent-1"
+          />
+        )}
       </div>
     </form>
   );

@@ -1,6 +1,9 @@
 "use server";
 
-import { createOauthClient } from "src/atproto-oauth";
+import {
+  restoreOAuthSession,
+  OAuthSessionError,
+} from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
 import { AtpBaseClient, AtUri } from "@atproto/api";
 import { PubLeafletPollVote } from "lexicons/api";
@@ -12,7 +15,9 @@ export async function voteOnPublishedPoll(
   pollUri: string,
   pollCid: string,
   selectedOption: string,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<
+  { success: true } | { success: false; error: string | OAuthSessionError }
+> {
   try {
     const identity = await getIdentityData();
 
@@ -20,8 +25,11 @@ export async function voteOnPublishedPoll(
       return { success: false, error: "Not authenticated" };
     }
 
-    const oauthClient = await createOauthClient();
-    const session = await oauthClient.restore(identity.atp_did);
+    const sessionResult = await restoreOAuthSession(identity.atp_did);
+    if (!sessionResult.ok) {
+      return { success: false, error: sessionResult.error };
+    }
+    const session = sessionResult.value;
     let agent = new AtpBaseClient(session.fetchHandler.bind(session));
 
     const voteRecord: PubLeafletPollVote.Record = {

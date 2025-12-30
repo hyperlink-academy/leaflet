@@ -3,6 +3,7 @@ import {
   NodeSavedSession,
   NodeSavedState,
   RuntimeLock,
+  OAuthSession,
 } from "@atproto/oauth-client-node";
 import { JoseKey } from "@atproto/jwk-jose";
 import { oauth_metadata } from "app/api/oauth/[route]/oauth-metadata";
@@ -10,6 +11,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 
 import Client from "ioredis";
 import Redlock from "redlock";
+import { Result, Ok, Err } from "./result";
 export async function createOauthClient() {
   let keyset =
     process.env.NODE_ENV === "production"
@@ -90,3 +92,28 @@ let sessionStore = {
       .eq("key", key);
   },
 };
+
+export type OAuthSessionError = {
+  type: "oauth_session_expired";
+  message: string;
+  did: string;
+};
+
+export async function restoreOAuthSession(
+  did: string
+): Promise<Result<OAuthSession, OAuthSessionError>> {
+  try {
+    const oauthClient = await createOauthClient();
+    const session = await oauthClient.restore(did);
+    return Ok(session);
+  } catch (error) {
+    return Err({
+      type: "oauth_session_expired",
+      message:
+        error instanceof Error
+          ? error.message
+          : "OAuth session expired or invalid",
+      did,
+    });
+  }
+}

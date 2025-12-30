@@ -5,12 +5,19 @@ import {
   PubLeafletPublication,
   PubLeafletThemeColor,
 } from "lexicons/api";
-import { createOauthClient } from "src/atproto-oauth";
+import {
+  restoreOAuthSession,
+  OAuthSessionError,
+} from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
 import { $Typed } from "@atproto/api";
+
+type UpdatePublicationResult =
+  | { success: true; publication: any }
+  | { success: false; error?: OAuthSessionError };
 
 export async function updatePublication({
   uri,
@@ -24,12 +31,24 @@ export async function updatePublication({
   description: string;
   iconFile: File | null;
   preferences?: Omit<PubLeafletPublication.Preferences, "$type">;
-}) {
-  const oauthClient = await createOauthClient();
+}): Promise<UpdatePublicationResult> {
   let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) return;
+  if (!identity || !identity.atp_did) {
+    return {
+      success: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authenticated",
+        did: "",
+      },
+    };
+  }
 
-  let credentialSession = await oauthClient.restore(identity.atp_did);
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
@@ -38,7 +57,9 @@ export async function updatePublication({
     .select("*")
     .eq("uri", uri)
     .single();
-  if (!existingPub || existingPub.identity_did !== identity.atp_did) return;
+  if (!existingPub || existingPub.identity_did !== identity.atp_did) {
+    return { success: false };
+  }
   let aturi = new AtUri(existingPub.uri);
 
   let record: PubLeafletPublication.Record = {
@@ -94,12 +115,24 @@ export async function updatePublicationBasePath({
 }: {
   uri: string;
   base_path: string;
-}) {
-  const oauthClient = await createOauthClient();
+}): Promise<UpdatePublicationResult> {
   let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) return;
+  if (!identity || !identity.atp_did) {
+    return {
+      success: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authenticated",
+        did: "",
+      },
+    };
+  }
 
-  let credentialSession = await oauthClient.restore(identity.atp_did);
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
@@ -108,7 +141,9 @@ export async function updatePublicationBasePath({
     .select("*")
     .eq("uri", uri)
     .single();
-  if (!existingPub || existingPub.identity_did !== identity.atp_did) return;
+  if (!existingPub || existingPub.identity_did !== identity.atp_did) {
+    return { success: false };
+  }
   let aturi = new AtUri(existingPub.uri);
 
   let record: PubLeafletPublication.Record = {
@@ -155,12 +190,24 @@ export async function updatePublicationTheme({
     accentBackground: Color;
     accentText: Color;
   };
-}) {
-  const oauthClient = await createOauthClient();
+}): Promise<UpdatePublicationResult> {
   let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) return;
+  if (!identity || !identity.atp_did) {
+    return {
+      success: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authenticated",
+        did: "",
+      },
+    };
+  }
 
-  let credentialSession = await oauthClient.restore(identity.atp_did);
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
@@ -169,7 +216,9 @@ export async function updatePublicationTheme({
     .select("*")
     .eq("uri", uri)
     .single();
-  if (!existingPub || existingPub.identity_did !== identity.atp_did) return;
+  if (!existingPub || existingPub.identity_did !== identity.atp_did) {
+    return { success: false };
+  }
   let aturi = new AtUri(existingPub.uri);
 
   let oldRecord = existingPub.record as PubLeafletPublication.Record;

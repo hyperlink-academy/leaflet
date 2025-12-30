@@ -3,7 +3,10 @@
 import { AtpBaseClient, PubLeafletComment } from "lexicons/api";
 import { getIdentityData } from "actions/getIdentityData";
 import { PubLeafletRichtextFacet } from "lexicons/api";
-import { createOauthClient } from "src/atproto-oauth";
+import {
+  restoreOAuthSession,
+  OAuthSessionError,
+} from "src/atproto-oauth";
 import { TID } from "@atproto/common";
 import { AtUri, lexToJson, Un$Typed } from "@atproto/api";
 import { supabaseServerClient } from "supabase/serverClient";
@@ -15,6 +18,10 @@ import {
 } from "src/notifications";
 import { v7 } from "uuid";
 
+type PublishCommentResult =
+  | { success: true; record: Json; profile: any; uri: string }
+  | { success: false; error: OAuthSessionError };
+
 export async function publishComment(args: {
   document: string;
   pageId?: string;
@@ -24,12 +31,24 @@ export async function publishComment(args: {
     replyTo?: string;
     attachment: PubLeafletComment.Record["attachment"];
   };
-}) {
-  const oauthClient = await createOauthClient();
+}): Promise<PublishCommentResult> {
   let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) throw new Error("No Identity");
+  if (!identity || !identity.atp_did) {
+    return {
+      success: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authenticated",
+        did: "",
+      },
+    };
+  }
 
-  let credentialSession = await oauthClient.restore(identity.atp_did);
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
@@ -108,6 +127,7 @@ export async function publishComment(args: {
   }
 
   return {
+    success: true,
     record: data?.[0].record as Json,
     profile: lexToJson(profile.value),
     uri: uri.toString(),

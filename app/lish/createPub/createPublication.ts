@@ -1,7 +1,10 @@
 "use server";
 import { TID } from "@atproto/common";
 import { AtpBaseClient, PubLeafletPublication } from "lexicons/api";
-import { createOauthClient } from "src/atproto-oauth";
+import {
+  restoreOAuthSession,
+  OAuthSessionError,
+} from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Un$Typed } from "@atproto/api";
@@ -18,6 +21,10 @@ let subdomainValidator = string()
   .min(3)
   .max(63)
   .regex(/^[a-z0-9-]+$/);
+type CreatePublicationResult =
+  | { success: true; publication: any }
+  | { success: false; error?: OAuthSessionError };
+
 export async function createPublication({
   name,
   description,
@@ -30,18 +37,30 @@ export async function createPublication({
   iconFile: File | null;
   subdomain: string;
   preferences: Omit<PubLeafletPublication.Preferences, "$type">;
-}) {
+}): Promise<CreatePublicationResult> {
   let isSubdomainValid = subdomainValidator.safeParse(subdomain);
   if (!isSubdomainValid.success) {
     return { success: false };
   }
-  const oauthClient = await createOauthClient();
   let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) return;
+  if (!identity || !identity.atp_did) {
+    return {
+      success: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authenticated",
+        did: "",
+      },
+    };
+  }
 
   let domain = `${subdomain}.leaflet.pub`;
 
-  let credentialSession = await oauthClient.restore(identity.atp_did);
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
