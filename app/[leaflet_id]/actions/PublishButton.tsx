@@ -39,6 +39,7 @@ import { YJSFragmentToString } from "src/utils/yjsFragmentToString";
 import { BlueskyLogin } from "app/login/LoginForm";
 import { moveLeafletToPublication } from "actions/publications/moveLeafletToPublication";
 import { AddTiny } from "components/Icons/AddTiny";
+import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 
 export const PublishButton = (props: { entityID: string }) => {
   let { data: pub } = useLeafletPublicationData();
@@ -102,7 +103,7 @@ const UpdateButton = () => {
       onClick={async () => {
         if (!pub) return;
         setIsLoading(true);
-        let doc = await publishToPublication({
+        let result = await publishToPublication({
           root_entity: rootEntity,
           publication_uri: pub.publications?.uri,
           leaflet_id: permission_token.id,
@@ -114,10 +115,22 @@ const UpdateButton = () => {
         setIsLoading(false);
         mutate();
 
+        if (!result.success) {
+          toaster({
+            content: isOAuthSessionError(result.error) ? (
+              <OAuthErrorMessage error={result.error} />
+            ) : (
+              "Failed to publish"
+            ),
+            type: "error",
+          });
+          return;
+        }
+
         // Generate URL based on whether it's in a publication or standalone
         let docUrl = pub.publications
-          ? `${getPublicationURL(pub.publications)}/${doc?.rkey}`
-          : `https://leaflet.pub/p/${identity?.atp_did}/${doc?.rkey}`;
+          ? `${getPublicationURL(pub.publications)}/${result.rkey}`
+          : `https://leaflet.pub/p/${identity?.atp_did}/${result.rkey}`;
 
         toaster({
           content: (

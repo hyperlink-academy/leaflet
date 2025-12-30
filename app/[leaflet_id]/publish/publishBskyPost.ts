@@ -9,7 +9,10 @@ import sharp from "sharp";
 import { TID } from "@atproto/common";
 import { getIdentityData } from "actions/getIdentityData";
 import { AtpBaseClient, PubLeafletDocument } from "lexicons/api";
-import { createOauthClient } from "src/atproto-oauth";
+import {
+  restoreOAuthSession,
+  OAuthSessionError,
+} from "src/atproto-oauth";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import {
@@ -17,6 +20,10 @@ import {
   getWebpageImage,
 } from "src/utils/getMicroLinkOgImage";
 import { fetchAtprotoBlob } from "app/api/atproto_images/route";
+
+type PublishBskyResult =
+  | { success: true }
+  | { success: false; error: OAuthSessionError };
 
 export async function publishPostToBsky(args: {
   text: string;
@@ -26,12 +33,24 @@ export async function publishPostToBsky(args: {
   document_record: PubLeafletDocument.Record;
   rkey: string;
   facets: AppBskyRichtextFacet.Main[];
-}) {
-  const oauthClient = await createOauthClient();
+}): Promise<PublishBskyResult> {
   let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) return null;
+  if (!identity || !identity.atp_did) {
+    return {
+      success: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authenticated",
+        did: "",
+      },
+    };
+  }
 
-  let credentialSession = await oauthClient.restore(identity.atp_did);
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
@@ -111,5 +130,5 @@ export async function publishPostToBsky(args: {
       data: record as Json,
     })
     .eq("uri", result.uri);
-  return true;
+  return { success: true };
 }

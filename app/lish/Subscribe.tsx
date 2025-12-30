@@ -23,6 +23,7 @@ import { addFeed } from "./addFeed";
 import { useSearchParams } from "next/navigation";
 import LoginForm from "app/login/LoginForm";
 import { RSSSmall } from "components/Icons/RSSSmall";
+import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 
 export const SubscribeWithBluesky = (props: {
   pubName: string;
@@ -133,11 +134,21 @@ let BlueskySubscribeButton = (props: {
 }) => {
   let { identity } = useIdentityData();
   let toaster = useToaster();
+  let [oauthError, setOauthError] = useState<
+    import("src/atproto-oauth").OAuthSessionError | null
+  >(null);
   let [, subscribe, subscribePending] = useActionState(async () => {
+    setOauthError(null);
     let result = await subscribeToPublication(
       props.pub_uri,
       window.location.href + "?refreshAuth",
     );
+    if (!result.success) {
+      if (isOAuthSessionError(result.error)) {
+        setOauthError(result.error);
+      }
+      return;
+    }
     if (result.hasFeed === false) {
       props.setSuccessModalOpen(true);
     }
@@ -172,7 +183,7 @@ let BlueskySubscribeButton = (props: {
   }
 
   return (
-    <>
+    <div className="flex flex-col gap-2 place-self-center">
       <form
         action={subscribe}
         className="place-self-center flex flex-row gap-1"
@@ -187,7 +198,13 @@ let BlueskySubscribeButton = (props: {
           )}
         </ButtonPrimary>
       </form>
-    </>
+      {oauthError && (
+        <OAuthErrorMessage
+          error={oauthError}
+          className="text-center text-sm text-accent-1"
+        />
+      )}
+    </div>
   );
 };
 

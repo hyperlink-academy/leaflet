@@ -17,6 +17,8 @@ import { PubAccentPickers } from "./PubPickers/PubAcccentPickers";
 import { Separator } from "components/Layout";
 import { PubSettingsHeader } from "app/lish/[did]/[publication]/dashboard/PublicationSettings";
 import { ColorToRGB, ColorToRGBA } from "./colorToLexicons";
+import { useToaster } from "components/Toast";
+import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 
 export type ImageState = {
   src: string;
@@ -57,6 +59,7 @@ export const PubThemeSetter = (props: {
 
   let pubBGImage = image?.src || null;
   let leafletBGRepeat = image?.repeat || null;
+  let toaster = useToaster();
 
   return (
     <BaseThemeProvider local {...localPubTheme}>
@@ -80,8 +83,25 @@ export const PubThemeSetter = (props: {
               accentText: ColorToRGB(localPubTheme.accent2),
             },
           });
+
+          if (!result.success) {
+            props.setLoading(false);
+            if (result.error && isOAuthSessionError(result.error)) {
+              toaster({
+                content: <OAuthErrorMessage error={result.error} />,
+                type: "error",
+              });
+            } else {
+              toaster({
+                content: "Failed to update theme",
+                type: "error",
+              });
+            }
+            return;
+          }
+
           mutate((pub) => {
-            if (result?.publication && pub?.publication)
+            if (result.publication && pub?.publication)
               return {
                 ...pub,
                 publication: { ...pub.publication, ...result.publication },

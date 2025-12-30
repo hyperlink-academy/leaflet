@@ -2,7 +2,10 @@
 
 import * as Y from "yjs";
 import * as base64 from "base64-js";
-import { createOauthClient } from "src/atproto-oauth";
+import {
+  restoreOAuthSession,
+  OAuthSessionError,
+} from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
 import {
   AtpBaseClient,
@@ -50,6 +53,10 @@ import { parseColor } from "@react-stately/color";
 import { Notification, pingIdentityToUpdateNotification } from "src/notifications";
 import { v7 } from "uuid";
 
+type PublishResult =
+  | { success: true; rkey: string; record: PubLeafletDocument.Record }
+  | { success: false; error: OAuthSessionError };
+
 export async function publishToPublication({
   root_entity,
   publication_uri,
@@ -68,12 +75,24 @@ export async function publishToPublication({
   tags?: string[];
   cover_image?: string | null;
   entitiesToDelete?: string[];
-}) {
-  const oauthClient = await createOauthClient();
+}): Promise<PublishResult> {
   let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) throw new Error("No Identity");
+  if (!identity || !identity.atp_did) {
+    return {
+      success: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authenticated",
+        did: "",
+      },
+    };
+  }
 
-  let credentialSession = await oauthClient.restore(identity.atp_did);
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
@@ -237,7 +256,7 @@ export async function publishToPublication({
     await createMentionNotifications(result.uri, record, credentialSession.did!);
   }
 
-  return { rkey, record: JSON.parse(JSON.stringify(record)) };
+  return { success: true, rkey, record: JSON.parse(JSON.stringify(record)) };
 }
 
 async function processBlocksToPages(

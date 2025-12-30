@@ -2,22 +2,41 @@
 
 import { AtpBaseClient } from "lexicons/api";
 import { getIdentityData } from "actions/getIdentityData";
-import { createOauthClient } from "src/atproto-oauth";
+import {
+  restoreOAuthSession,
+  OAuthSessionError,
+} from "src/atproto-oauth";
 import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
 import { revalidatePath } from "next/cache";
 
-export async function deletePost(document_uri: string) {
+export async function deletePost(
+  document_uri: string
+): Promise<{ success: true } | { success: false; error: OAuthSessionError }> {
   let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) throw new Error("No Identity");
+  if (!identity || !identity.atp_did) {
+    return {
+      success: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authenticated",
+        did: "",
+      },
+    };
+  }
 
-  const oauthClient = await createOauthClient();
-  let credentialSession = await oauthClient.restore(identity.atp_did);
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
   let uri = new AtUri(document_uri);
-  if (uri.host !== identity.atp_did) return;
+  if (uri.host !== identity.atp_did) {
+    return { success: true };
+  }
 
   await Promise.all([
     agent.pub.leaflet.document.delete({
@@ -31,20 +50,37 @@ export async function deletePost(document_uri: string) {
       .eq("doc", document_uri),
   ]);
 
-  return revalidatePath("/lish/[did]/[publication]/dashboard", "layout");
+  revalidatePath("/lish/[did]/[publication]/dashboard", "layout");
+  return { success: true };
 }
 
-export async function unpublishPost(document_uri: string) {
+export async function unpublishPost(
+  document_uri: string
+): Promise<{ success: true } | { success: false; error: OAuthSessionError }> {
   let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) throw new Error("No Identity");
+  if (!identity || !identity.atp_did) {
+    return {
+      success: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authenticated",
+        did: "",
+      },
+    };
+  }
 
-  const oauthClient = await createOauthClient();
-  let credentialSession = await oauthClient.restore(identity.atp_did);
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
   let uri = new AtUri(document_uri);
-  if (uri.host !== identity.atp_did) return;
+  if (uri.host !== identity.atp_did) {
+    return { success: true };
+  }
 
   await Promise.all([
     agent.pub.leaflet.document.delete({
@@ -53,5 +89,6 @@ export async function unpublishPost(document_uri: string) {
     }),
     supabaseServerClient.from("documents").delete().eq("uri", document_uri),
   ]);
-  return revalidatePath("/lish/[did]/[publication]/dashboard", "layout");
+  revalidatePath("/lish/[did]/[publication]/dashboard", "layout");
+  return { success: true };
 }

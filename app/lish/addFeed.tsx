@@ -2,18 +2,33 @@
 
 import { AppBskyActorDefs, Agent as BskyAgent } from "@atproto/api";
 import { getIdentityData } from "actions/getIdentityData";
-import { createOauthClient } from "src/atproto-oauth";
+import {
+  restoreOAuthSession,
+  OAuthSessionError,
+} from "src/atproto-oauth";
 const leafletFeedURI =
   "at://did:plc:btxrwcaeyodrap5mnjw2fvmz/app.bsky.feed.generator/subscribedPublications";
 
-export async function addFeed() {
-  const oauthClient = await createOauthClient();
+export async function addFeed(): Promise<
+  { success: true } | { success: false; error: OAuthSessionError }
+> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
-    throw new Error("Invalid identity data");
+    return {
+      success: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authenticated",
+        did: "",
+      },
+    };
   }
 
-  let credentialSession = await oauthClient.restore(identity.atp_did);
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
   let bsky = new BskyAgent(credentialSession);
   let prefs = await bsky.app.bsky.actor.getPreferences();
   let savedFeeds = prefs.data.preferences.find(
@@ -23,7 +38,7 @@ export async function addFeed() {
   let hasFeed = !!savedFeeds.items.find(
     (feed) => feed.value === leafletFeedURI,
   );
-  if (hasFeed) return;
+  if (hasFeed) return { success: true };
 
   await bsky.addSavedFeeds([
     {
@@ -32,4 +47,5 @@ export async function addFeed() {
       type: "feed",
     },
   ]);
+  return { success: true };
 }

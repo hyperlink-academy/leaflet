@@ -38,6 +38,8 @@ import { create } from "zustand";
 import { CloseTiny } from "components/Icons/CloseTiny";
 import { CloseFillTiny } from "components/Icons/CloseFillTiny";
 import { betterIsUrl } from "src/utils/isURL";
+import { useToaster } from "components/Toast";
+import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { Mention, MentionAutocomplete } from "components/Mention";
 import { didToBlueskyUrl, atUriToUrl } from "src/utils/mentionUtils";
 
@@ -95,6 +97,7 @@ export function CommentBox(props: {
   } = useInteractionState(props.doc_uri);
   let [loading, setLoading] = useState(false);
   let view = useRef<null | EditorView>(null);
+  let toaster = useToaster();
 
   // Mention autocomplete state
   const [mentionOpen, setMentionOpen] = useState(false);
@@ -161,7 +164,7 @@ export function CommentBox(props: {
     setLoading(true);
     let currentState = view.current.state;
     let [plaintext, facets] = docToFacetedText(currentState.doc);
-    let comment = await publishComment({
+    let result = await publishComment({
       pageId: props.pageId,
       document: props.doc_uri,
       comment: {
@@ -177,6 +180,19 @@ export function CommentBox(props: {
           : undefined,
       },
     });
+
+    if (!result.success) {
+      setLoading(false);
+      toaster({
+        content: isOAuthSessionError(result.error) ? (
+          <OAuthErrorMessage error={result.error} />
+        ) : (
+          "Failed to post comment"
+        ),
+        type: "error",
+      });
+      return;
+    }
 
     let tr = currentState.tr;
     tr = tr.replaceWith(
@@ -194,11 +210,11 @@ export function CommentBox(props: {
       localComments: [
         ...s.localComments,
         {
-          record: comment.record,
-          uri: comment.uri,
+          record: result.record,
+          uri: result.uri,
           bsky_profiles: {
-            record: comment.profile as Json,
-            did: new AtUri(comment.uri).host,
+            record: result.profile as Json,
+            did: new AtUri(result.uri).host,
           },
         },
       ],

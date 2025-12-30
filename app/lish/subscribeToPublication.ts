@@ -3,7 +3,10 @@
 import { AtpBaseClient } from "lexicons/api";
 import { AppBskyActorDefs, Agent as BskyAgent } from "@atproto/api";
 import { getIdentityData } from "actions/getIdentityData";
-import { createOauthClient } from "src/atproto-oauth";
+import {
+  restoreOAuthSession,
+  OAuthSessionError,
+} from "src/atproto-oauth";
 import { TID } from "@atproto/common";
 import { supabaseServerClient } from "supabase/serverClient";
 import { revalidatePath } from "next/cache";
@@ -21,11 +24,15 @@ import { v7 } from "uuid";
 let leafletFeedURI =
   "at://did:plc:btxrwcaeyodrap5mnjw2fvmz/app.bsky.feed.generator/subscribedPublications";
 let idResolver = new IdResolver();
+
+type SubscribeResult =
+  | { success: true; hasFeed: boolean }
+  | { success: false; error: OAuthSessionError };
+
 export async function subscribeToPublication(
   publication: string,
   redirectRoute?: string,
-) {
-  const oauthClient = await createOauthClient();
+): Promise<SubscribeResult | never> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
     return redirect(
@@ -33,7 +40,11 @@ export async function subscribeToPublication(
     );
   }
 
-  let credentialSession = await oauthClient.restore(identity.atp_did);
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
@@ -90,16 +101,35 @@ export async function subscribeToPublication(
   ) as AppBskyActorDefs.SavedFeedsPrefV2;
   revalidatePath("/lish/[did]/[publication]", "layout");
   return {
+    success: true,
     hasFeed: !!savedFeeds.items.find((feed) => feed.value === leafletFeedURI),
   };
 }
 
-export async function unsubscribeToPublication(publication: string) {
-  const oauthClient = await createOauthClient();
-  let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) return;
+type UnsubscribeResult =
+  | { success: true }
+  | { success: false; error: OAuthSessionError };
 
-  let credentialSession = await oauthClient.restore(identity.atp_did);
+export async function unsubscribeToPublication(
+  publication: string
+): Promise<UnsubscribeResult> {
+  let identity = await getIdentityData();
+  if (!identity || !identity.atp_did) {
+    return {
+      success: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authenticated",
+        did: "",
+      },
+    };
+  }
+
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  let credentialSession = sessionResult.value;
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
@@ -109,7 +139,7 @@ export async function unsubscribeToPublication(publication: string) {
     .eq("identity", identity.atp_did)
     .eq("publication", publication)
     .single();
-  if (!existingSubscription) return;
+  if (!existingSubscription) return { success: true };
   await agent.pub.leaflet.graph.subscription.delete({
     repo: credentialSession.did!,
     rkey: new AtUri(existingSubscription.uri).rkey,
@@ -120,4 +150,5 @@ export async function unsubscribeToPublication(publication: string) {
     .eq("identity", identity.atp_did)
     .eq("publication", publication);
   revalidatePath("/lish/[did]/[publication]", "layout");
+  return { success: true };
 }

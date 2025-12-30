@@ -22,6 +22,7 @@ import { EditorState } from "prosemirror-state";
 import { TagSelector } from "../../../components/Tags";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { PubIcon } from "components/ActionBar/Publications";
+import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 
 type Props = {
   title: string;
@@ -65,6 +66,9 @@ const PublishPostForm = (
   let [charCount, setCharCount] = useState(0);
   let [shareOption, setShareOption] = useState<"bluesky" | "quiet">("bluesky");
   let [isLoading, setIsLoading] = useState(false);
+  let [oauthError, setOauthError] = useState<
+    import("src/atproto-oauth").OAuthSessionError | null
+  >(null);
   let params = useParams();
   let { rep } = useReplicache();
 
@@ -101,8 +105,9 @@ const PublishPostForm = (
   async function submit() {
     if (isLoading) return;
     setIsLoading(true);
+    setOauthError(null);
     await rep?.push();
-    let doc = await publishToPublication({
+    let result = await publishToPublication({
       root_entity: props.root_entity,
       publication_uri: props.publication_uri,
       leaflet_id: props.leaflet_id,
@@ -112,26 +117,39 @@ const PublishPostForm = (
       cover_image: replicacheCoverImage,
       entitiesToDelete: props.entitiesToDelete,
     });
-    if (!doc) return;
+
+    if (!result.success) {
+      setIsLoading(false);
+      if (isOAuthSessionError(result.error)) {
+        setOauthError(result.error);
+      }
+      return;
+    }
 
     // Generate post URL based on whether it's in a publication or standalone
     let post_url = props.record?.base_path
-      ? `https://${props.record.base_path}/${doc.rkey}`
-      : `https://leaflet.pub/p/${props.profile.did}/${doc.rkey}`;
+      ? `https://${props.record.base_path}/${result.rkey}`
+      : `https://leaflet.pub/p/${props.profile.did}/${result.rkey}`;
 
     let [text, facets] = editorStateRef.current
       ? editorStateToFacetedText(editorStateRef.current)
       : [];
-    if (shareOption === "bluesky")
-      await publishPostToBsky({
+    if (shareOption === "bluesky") {
+      let bskyResult = await publishPostToBsky({
         facets: facets || [],
         text: text || "",
         title: props.title,
         url: post_url,
         description: props.description,
-        document_record: doc.record,
-        rkey: doc.rkey,
+        document_record: result.record,
+        rkey: result.rkey,
       });
+      if (!bskyResult.success && isOAuthSessionError(bskyResult.error)) {
+        setIsLoading(false);
+        setOauthError(bskyResult.error);
+        return;
+      }
+    }
     setIsLoading(false);
     props.setPublishState({ state: "success", post_url });
   }
@@ -168,20 +186,28 @@ const PublishPostForm = (
           </div>
           <hr className="border-border mb-2" />
 
-          <div className="flex justify-between">
-            <Link
-              className="hover:no-underline! font-bold"
-              href={`/${params.leaflet_id}`}
-            >
-              Back
-            </Link>
-            <ButtonPrimary
-              type="submit"
-              className="place-self-end h-[30px]"
-              disabled={charCount > 300}
-            >
-              {isLoading ? <DotLoader /> : "Publish this Post!"}
-            </ButtonPrimary>
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between">
+              <Link
+                className="hover:no-underline! font-bold"
+                href={`/${params.leaflet_id}`}
+              >
+                Back
+              </Link>
+              <ButtonPrimary
+                type="submit"
+                className="place-self-end h-[30px]"
+                disabled={charCount > 300}
+              >
+                {isLoading ? <DotLoader /> : "Publish this Post!"}
+              </ButtonPrimary>
+            </div>
+            {oauthError && (
+              <OAuthErrorMessage
+                error={oauthError}
+                className="text-right text-sm text-accent-contrast"
+              />
+            )}
           </div>
         </div>
       </form>
