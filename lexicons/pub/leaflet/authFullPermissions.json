@@ -1,0 +1,30 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.authFullPermissions",
+  "defs": {
+    "main": {
+      "type": "permission-set",
+      "title": "Full Leaflet Permissions",
+      "detail": "Manage creating and updating leaflet documents and publications and all interactions on them.",
+      "permissions": [
+        {
+          "type": "permission",
+          "resource": "repo",
+          "action": [
+            "create",
+            "update",
+            "delete"
+          ],
+          "collection": [
+            "pub.leaflet.document",
+            "pub.leaflet.publication",
+            "pub.leaflet.comment",
+            "pub.leaflet.poll.definition",
+            "pub.leaflet.poll.vote",
+            "pub.leaflet.graph.subscription"
+          ]
+        }
+      ]
+    }
+  }
+}

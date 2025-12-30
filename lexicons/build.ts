@@ -9,6 +9,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { PubLeafletRichTextFacet } from "./src/facet";
 import { PubLeafletComment } from "./src/comment";
+import { PubLeafletAuthFullPermissions } from "./src/authFullPermissions";
 
 const outdir = path.join("lexicons", "pub", "leaflet");
 
@@ -21,6 +22,7 @@ const lexicons = [
   PubLeafletDocument,
   PubLeafletComment,
   PubLeafletRichTextFacet,
+  PubLeafletAuthFullPermissions,
   PageLexicons.PubLeafletPagesLinearDocument,
   PageLexicons.PubLeafletPagesCanvasDocument,
   ...ThemeLexicons,
