@@ -1,7 +1,6 @@
 "use client";
 
 import { OAuthSessionError } from "src/atproto-oauth";
-import { usePathname } from "next/navigation";
 
 export function OAuthErrorMessage({
   error,
@@ -10,8 +9,7 @@ export function OAuthErrorMessage({
   error: OAuthSessionError;
   className?: string;
 }) {
-  const pathname = usePathname();
-  const signInUrl = `/api/oauth/login?redirect_url=${encodeURIComponent(pathname)}${error.did ? `&handle=${encodeURIComponent(error.did)}` : ""}`;
+  const signInUrl = `/api/oauth/login?redirect_url=${encodeURIComponent(window.location.href)}${error.did ? `&handle=${encodeURIComponent(error.did)}` : ""}`;
 
   return (
     <div className={className}>
