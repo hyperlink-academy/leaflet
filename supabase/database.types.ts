@@ -556,7 +556,7 @@ export type Database = {
           atp_did?: string | null
           created_at?: string
           email?: string | null
-          home_page: string
+          home_page?: string
           id?: string
           interface_state?: Json | null
         }
@@ -1118,6 +1118,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_identity_homepage: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_facts: {
         Args: {
           root: string

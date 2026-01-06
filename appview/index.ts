@@ -20,10 +20,7 @@ import {
 } from "@atproto/api";
 import { AtUri } from "@atproto/syntax";
 import { writeFile, readFile } from "fs/promises";
-import { createIdentity } from "actions/createIdentity";
-import { drizzle } from "drizzle-orm/node-postgres";
 import { inngest } from "app/api/inngest/client";
-import { Client } from "pg";
 
 const cursorFile = process.env.CURSOR_FILE || "/cursor/cursor";
 
@@ -135,26 +132,15 @@ async function handleEvent(evt: Event) {
     if (evt.event === "create" || evt.event === "update") {
       let record = PubLeafletPublication.validateRecord(evt.record);
       if (!record.success) return;
-      let { error } = await supabase.from("publications").upsert({
+      await supabase
+        .from("identities")
+        .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
+      await supabase.from("publications").upsert({
         uri: evt.uri.toString(),
         identity_did: evt.did,
         name: record.value.name,
         record: record.value as Json,
       });
-
-      if (error && error.code === "23503") {
-        console.log("creating identity");
-        let client = new Client({ connectionString: process.env.DB_URL });
-        let db = drizzle(client);
-        await createIdentity(db, { atp_did: evt.did });
-        client.end();
-        await supabase.from("publications").upsert({
-          uri: evt.uri.toString(),
-          identity_did: evt.did,
-          name: record.value.name,
-          record: record.value as Json,
-        });
-      }
     }
     if (evt.event === "delete") {
       await supabase
@@ -222,25 +208,15 @@ async function handleEvent(evt: Event) {
     if (evt.event === "create" || evt.event === "update") {
       let record = PubLeafletGraphSubscription.validateRecord(evt.record);
       if (!record.success) return;
-      let { error } = await supabase.from("publication_subscriptions").upsert({
+      await supabase
+        .from("identities")
+        .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
+      await supabase.from("publication_subscriptions").upsert({
         uri: evt.uri.toString(),
         identity: evt.did,
         publication: record.value.publication,
         record: record.value as Json,
       });
-      if (error && error.code === "23503") {
-        console.log("creating identity");
-        let client = new Client({ connectionString: process.env.DB_URL });
-        let db = drizzle(client);
-        await createIdentity(db, { atp_did: evt.did });
-        client.end();
-        await supabase.from("publication_subscriptions").upsert({
-          uri: evt.uri.toString(),
-          identity: evt.did,
-          publication: record.value.publication,
-          record: record.value as Json,
-        });
-      }
     }
     if (evt.event === "delete") {
       await supabase

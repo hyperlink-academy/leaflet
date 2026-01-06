@@ -1,6 +1,4 @@
-import { createIdentity } from "actions/createIdentity";
 import { subscribeToPublication } from "app/lish/subscribeToPublication";
-import { drizzle } from "drizzle-orm/node-postgres";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextRequest, NextResponse } from "next/server";
@@ -13,7 +11,6 @@ import {
   ActionAfterSignIn,
   parseActionFromSearchParam,
 } from "./afterSignInActions";
-import { pool } from "supabase/pool";
 
 type OauthRequestClientState = {
   redirect: string | null;
@@ -80,15 +77,17 @@ export async function GET(
 
             return handleAction(s.action, redirectPath);
           }
-          const client = await pool.connect();
-          const db = drizzle(client);
-          identity = await createIdentity(db, { atp_did: session.did });
-          client.release();
+          const { data } = await supabaseServerClient
+            .from("identities")
+            .insert({ atp_did: session.did })
+            .select()
+            .single();
+          identity = data;
         }
         let { data: token } = await supabaseServerClient
           .from("email_auth_tokens")
           .insert({
-            identity: identity.id,
+            identity: identity!.id,
             confirmed: true,
             confirmation_code: "",
           })

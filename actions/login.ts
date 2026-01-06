@@ -4,19 +4,14 @@ import postgres from "postgres";
 import {
   email_auth_tokens,
   identities,
-  entity_sets,
-  entities,
-  permission_tokens,
-  permission_token_rights,
   permission_token_on_homepage,
   poll_votes_on_entity,
 } from "drizzle/schema";
 import { and, eq, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { v7 } from "uuid";
-import { createIdentity } from "./createIdentity";
 import { pool } from "supabase/pool";
+import { supabaseServerClient } from "supabase/serverClient";
 
 export async function loginWithEmailToken(
   localLeaflets: { token: { id: string }; added_at: string }[],
@@ -77,8 +72,12 @@ export async function loginWithEmailToken(
           identity = existingIdentityFromCookie;
         }
       } else {
-        // Create a new identity
-        identity = await createIdentity(tx, { email: token.email });
+        const { data: newIdentity } = await supabaseServerClient
+          .from("identities")
+          .insert({ email: token.email })
+          .select()
+          .single();
+        identity = newIdentity!;
       }
     }
 

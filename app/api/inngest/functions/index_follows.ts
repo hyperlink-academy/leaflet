@@ -1,9 +1,6 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtpAgent, AtUri } from "@atproto/api";
-import { createIdentity } from "actions/createIdentity";
-import { drizzle } from "drizzle-orm/node-postgres";
 import { inngest } from "../client";
-import { pool } from "supabase/pool";
 
 export const index_follows = inngest.createFunction(
   {
@@ -58,10 +55,11 @@ export const index_follows = inngest.createFunction(
           .eq("atp_did", event.data.did)
           .single();
         if (!exists) {
-          const client = await pool.connect();
-          let db = drizzle(client);
-          let identity = await createIdentity(db, { atp_did: event.data.did });
-          client.release();
+          const { data: identity } = await supabaseServerClient
+            .from("identities")
+            .insert({ atp_did: event.data.did })
+            .select()
+            .single();
           return identity;
         }
       }),

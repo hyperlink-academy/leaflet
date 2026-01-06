@@ -6,9 +6,9 @@ import postgres from "postgres";
 import { email_auth_tokens, identities } from "drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
-import { createIdentity } from "./createIdentity";
 import { setAuthToken } from "src/auth";
 import { pool } from "supabase/pool";
+import { supabaseServerClient } from "supabase/serverClient";
 
 async function sendAuthCode(email: string, code: string) {
   if (process.env.NODE_ENV === "development") {
@@ -114,8 +114,12 @@ export async function confirmEmailAuthToken(tokenId: string, code: string) {
     .from(identities)
     .where(eq(identities.email, token.email));
   if (!identity) {
-    let newIdentity = await createIdentity(db, { email: token.email });
-    identityID = newIdentity.id;
+    const { data: newIdentity } = await supabaseServerClient
+      .from("identities")
+      .insert({ email: token.email })
+      .select()
+      .single();
+    identityID = newIdentity!.id;
   } else {
     identityID = identity.id;
   }
