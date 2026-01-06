@@ -123,7 +123,8 @@ export function CodeBlock(props: BlockProps) {
       <BlockLayout
         isSelected={focusedBlock}
         hasBackground="accent"
-        className="p-0! min-h-[42px] "
+        borderOnHover
+        className="p-0! min-h-[48px]"
       >
         {focusedBlock && permissions.write ? (
           <BaseTextareaBlock

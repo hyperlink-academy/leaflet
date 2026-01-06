@@ -85,7 +85,8 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       <BlockLayout
         hasBackground="accent"
         isSelected={!!isSelected && !isLocked}
-        className=" group/image-block text-tertiary hover:text-accent-contrast hover:font-bold h-[104px]  border-dashed  hover:border-accent-contrast! hover:outline-accent-contrast! rounded-lg"
+        borderOnHover
+        className=" group/image-block text-tertiary hover:text-accent-contrast hover:font-bold h-[104px]  border-dashed rounded-lg"
       >
         <label
           className={`

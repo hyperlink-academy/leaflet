@@ -483,7 +483,7 @@ const PollStateToggle = (props: {
 }) => {
   return (
     <button
-      className="text-sm text-accent-contrast sm:hover:underline"
+      className="text-sm text-accent-contrast "
       onClick={() => {
         props.setPollState(props.pollState === "voting" ? "results" : "voting");
       }}

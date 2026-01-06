@@ -67,7 +67,8 @@ export const ExternalLinkBlock = (
     <BlockLayout
       isSelected={!!isSelected}
       hasBackground="page"
-      className="externalLinkBlock flex relative group/linkBlock h-[104px]  hover:border-accent-contrast! hover:outline-accent-contrast! p-0!"
+      borderOnHover
+      className="externalLinkBlock flex relative group/linkBlock h-[104px] p-0!"
     >
       <a
         href={url?.data.value}

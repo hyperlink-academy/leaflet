@@ -388,11 +388,13 @@ export const BlockLayout = (props: {
   children: React.ReactNode;
   className?: string;
   hasBackground?: "accent" | "page";
+  borderOnHover?: boolean;
 }) => {
   return (
     <div
       className={`block ${props.className} p-2 sm:p-3 w-full overflow-hidden
-            ${props.isSelected ? "block-border-selected " : "block-border"}`}
+         ${props.isSelected ? "block-border-selected " : "block-border"}
+         ${props.borderOnHover && "hover:border-accent-contrast! hover:outline-accent-contrast! focus-within:border-accent-contrast! focus-within:outline-accent-contrast!"}`}
       style={{
         backgroundColor:
           props.hasBackground === "accent"
