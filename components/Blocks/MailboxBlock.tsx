@@ -1,6 +1,7 @@
 import { ButtonPrimary } from "components/Buttons";
 import { Popover } from "components/Popover";
-import { Menu, MenuItem, Separator } from "components/Layout";
+import { MenuItem } from "components/Menu";
+import { Separator } from "components/Layout";
 import { useUIState } from "src/useUIState";
 import { useState } from "react";
 import { useSmoker, useToaster } from "components/Toast";

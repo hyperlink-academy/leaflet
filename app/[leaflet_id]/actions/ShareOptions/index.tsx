@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { getShareLink } from "./getShareLink";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { useSmoker } from "components/Toast";
-import { Menu, MenuItem } from "components/Layout";
+import { Menu, MenuItem } from "components/Menu";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import useSWR from "swr";
 import LoginForm from "app/login/LoginForm";

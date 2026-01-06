@@ -7,7 +7,7 @@ import { useEntitySetContext } from "../EntitySetProvider";
 import { useReplicache } from "src/replicache";
 
 import { Media } from "../Media";
-import { MenuItem, Menu } from "../Layout";
+import { MenuItem, Menu } from "../Menu";
 import { PageThemeSetter } from "../ThemeManager/PageThemeSetter";
 import { PageShareMenu } from "./PageShareMenu";
 import { useUndoState } from "src/undoManager";
@@ -61,7 +61,7 @@ export const PageOptions = (props: {
     <div
       className={`pageOptions w-fit z-10
         ${props.isFocused ? "block" : "sm:hidden block"}
-        absolute sm:-right-[20px] right-3 sm:top-3 top-0
+        absolute sm:-right-[19px] right-3 sm:top-3 top-0
         flex sm:flex-col flex-row-reverse gap-1 items-start`}
     >
       {!props.first && (
