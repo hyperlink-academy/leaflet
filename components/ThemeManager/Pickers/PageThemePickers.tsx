@@ -89,18 +89,17 @@ export const SubpageBackgroundPicker = (props: {
   // If root page border is hidden, only show color picker (no image support)
   if (!hasPageBackground) {
     return (
-      <div className="relative">
-        <ColorPicker
-          label={label}
-          value={pageValue}
-          setValue={set("theme/card-background")}
-          thisPicker="page"
-          openPicker={props.openPicker}
-          setOpenPicker={props.setOpenPicker}
-          closePicker={() => props.setOpenPicker("null")}
-          alpha
-        />
-      </div>
+      <ColorPicker
+        label={label}
+        helpText={"Affects menus, tooltips and some block backgrounds"}
+        value={pageValue}
+        setValue={set("theme/card-background")}
+        thisPicker="page"
+        openPicker={props.openPicker}
+        setOpenPicker={props.setOpenPicker}
+        closePicker={() => props.setOpenPicker("null")}
+        alpha
+      />
     );
   }
 
@@ -344,6 +343,11 @@ export const LeafletBackgroundPicker = (props: {
       {showPagePicker && (
         <ColorPicker
           label={hasPageBackground ? "Page" : "Containers"}
+          helpText={
+            hasPageBackground
+              ? undefined
+              : "Affects menus, tooltips and some block backgrounds"
+          }
           value={pageValue}
           setValue={set("theme/card-background")}
           thisPicker="page"
@@ -438,11 +442,13 @@ export const PageBackgroundColorPicker = (props: {
   setValue: (c: Color) => void;
   value: Color;
   alpha?: boolean;
+  helpText?: string;
 }) => {
   return (
     <ColorPicker
       disabled={props.disabled}
       label={props.label}
+      helpText={props.helpText}
       value={props.value}
       setValue={props.setValue}
       thisPicker={"page"}

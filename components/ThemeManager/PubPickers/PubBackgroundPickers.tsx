@@ -90,6 +90,11 @@ export const BackgroundPicker = (props: {
         // When there's a background image and page background hidden, label should say "Containers"
         <PageBackgroundColorPicker
           label={props.hasPageBackground ? "Page" : "Containers"}
+          helpText={
+            props.hasPageBackground
+              ? undefined
+              : "Affects menus, tooltips and some block backgrounds"
+          }
           value={props.pageBackground}
           setValue={props.setPageBackground}
           thisPicker={"page"}
