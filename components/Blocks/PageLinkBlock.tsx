@@ -30,14 +30,13 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
   return (
     <CardThemeProvider entityID={page?.data.value}>
       <BlockLayout
+        hasBackground="page"
         isSelected={!!isSelected}
-        className={`w-full cursor-pointer
+        className={`cursor-pointer
         pageLinkBlockWrapper relative group/pageLinkBlock
-        bg-bg-page shadow-sm
-        flex overflow-clip
-        ${isOpen && "border-tertiary!"}
+        flex overflow-clip p-0!
+        ${isOpen && "border-accent-contrast! outline-accent-contrast!"}
         `}
-        hasBackground={"page"}
       >
         <div
           className="w-full h-full"
