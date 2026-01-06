@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { addLinkBlock } from "src/utils/addLinkBlock";
-import { BlockProps } from "./Block";
+import { BlockProps, BlockLayout } from "./Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
 import { Separator } from "components/Layout";
@@ -64,52 +64,52 @@ export const ExternalLinkBlock = (
   }
 
   return (
-    <a
-      href={url?.data.value}
-      target="_blank"
-      className={`
-        externalLinkBlock flex relative group/linkBlock
-        h-[104px] w-full bg-bg-page overflow-hidden text-primary hover:no-underline no-underline
-        hover:border-accent-contrast  shadow-sm
-        ${isSelected ? "block-border-selected outline-accent-contrast! border-accent-contrast!" : "block-border"}
-
-        `}
+    <BlockLayout
+      isSelected={!!isSelected}
+      hasBackground="page"
+      className="externalLinkBlock flex relative group/linkBlock h-[104px]  hover:border-accent-contrast! hover:outline-accent-contrast! p-0!"
     >
-      <div className="pt-2 pb-2 px-3 grow min-w-0">
-        <div className="flex flex-col w-full min-w-0 h-full grow ">
-          <div
-            className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-hidden resize-none align-top border h-[24px] line-clamp-1`}
-            style={{
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              wordBreak: "break-all",
-            }}
-          >
-            {title?.data.value}
-          </div>
+      <a
+        href={url?.data.value}
+        target="_blank"
+        className="flex w-full h-full text-primary hover:no-underline no-underline"
+      >
+        <div className="pt-2 pb-2 px-3 grow min-w-0">
+          <div className="flex flex-col w-full min-w-0 h-full grow ">
+            <div
+              className={`linkBlockTitle bg-transparent -mb-0.5  border-none text-base font-bold outline-hidden resize-none align-top border h-[24px] line-clamp-1`}
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                wordBreak: "break-all",
+              }}
+            >
+              {title?.data.value}
+            </div>
 
-          <div
-            className={`linkBlockDescription text-sm bg-transparent border-none outline-hidden resize-none align-top  grow line-clamp-2`}
-          >
-            {description?.data.value}
-          </div>
-          <div
-            style={{ wordBreak: "break-word" }} // better than tailwind break-all!
-            className={`min-w-0 w-full line-clamp-1 text-xs italic group-hover/linkBlock:text-accent-contrast ${isSelected ? "text-accent-contrast" : "text-tertiary"}`}
-          >
-            {url?.data.value}
+            <div
+              className={`linkBlockDescription text-sm bg-transparent border-none outline-hidden resize-none align-top  grow line-clamp-2`}
+            >
+              {description?.data.value}
+            </div>
+            <div
+              style={{ wordBreak: "break-word" }} // better than tailwind break-all!
+              className={`min-w-0 w-full line-clamp-1 text-xs italic group-hover/linkBlock:text-accent-contrast ${isSelected ? "text-accent-contrast" : "text-tertiary"}`}
+            >
+              {url?.data.value}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div
-        className={`linkBlockPreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center`}
-        style={{
-          backgroundImage: `url(${previewImage?.data.src})`,
-          backgroundPosition: "center",
-        }}
-      />
-    </a>
+        <div
+          className={`linkBlockPreview w-[120px] m-2 -mb-2 bg-cover shrink-0 rounded-t-md border border-border rotate-[4deg] origin-center`}
+          style={{
+            backgroundImage: `url(${previewImage?.data.src})`,
+            backgroundPosition: "center",
+          }}
+        />
+      </a>
+    </BlockLayout>
   );
 };
 

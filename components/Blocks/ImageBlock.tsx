@@ -1,7 +1,7 @@
 "use client";
 
 import { useEntity, useReplicache } from "src/replicache";
-import { BlockProps } from "./Block";
+import { BlockProps, BlockLayout } from "./Block";
 import { useUIState } from "src/useUIState";
 import Image from "next/image";
 import { v7 } from "uuid";
@@ -64,10 +64,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
         factID: v7(),
         permission_set: entity_set.set,
         type: "text",
-        position: generateKeyBetween(
-          props.position,
-          props.nextPosition,
-        ),
+        position: generateKeyBetween(props.position, props.nextPosition),
         newEntityID: entity,
       });
     }
@@ -85,15 +82,16 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   if (!image) {
     if (!entity_set.permissions.write) return null;
     return (
-      <div className="grow w-full">
+      <BlockLayout
+        hasBackground="accent"
+        isSelected={!!isSelected && !isLocked}
+        className=" group/image-block text-tertiary hover:text-accent-contrast hover:font-bold h-[104px]  border-dashed  hover:border-accent-contrast! hover:outline-accent-contrast! rounded-lg"
+      >
         <label
           className={`
-            group/image-block
-            w-full h-[104px] hover:cursor-pointer p-2
-            text-tertiary hover:text-accent-contrast hover:font-bold
+
+            w-full h-full hover:cursor-pointer
             flex flex-col items-center justify-center
-            hover:border-2 border-dashed  hover:border-accent-contrast rounded-lg
-            ${isSelected && !isLocked ? "border-2 border-tertiary font-bold" : "border border-border"}
             ${props.pageType === "canvas" && "bg-bg-page"}`}
           onMouseDown={(e) => e.preventDefault()}
           onDragOver={(e) => {
@@ -107,7 +105,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             const files = e.dataTransfer.files;
             if (files && files.length > 0) {
               const file = files[0];
-              if (file.type.startsWith('image/')) {
+              if (file.type.startsWith("image/")) {
                 await handleImageUpload(file);
               }
             }
@@ -131,11 +129,11 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             }}
           />
         </label>
-      </div>
+      </BlockLayout>
     );
   }
 
-  let className = isFullBleed
+  let imageClassName = isFullBleed
     ? ""
     : isSelected
       ? "block-border-selected border-transparent! "
@@ -143,15 +141,15 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
 
   let isLocalUpload = localImages.get(image.data.src);
 
+  let blockClassName = `
+    relative group/image border-transparent! p-0! w-fit!
+    ${isFullBleed && "-mx-3 sm:-mx-4"}
+    ${isFullBleed ? (isFirst ? "-mt-3 sm:-mt-4" : prevIsFullBleed ? "-mt-1" : "") : ""}
+    ${isFullBleed ? (isLast ? "-mb-4" : nextIsFullBleed ? "-mb-2" : "") : ""}
+    `;
+
   return (
-    <div
-      className={`relative group/image
-        ${className}
-        ${isFullBleed && "-mx-3 sm:-mx-4"}
-        ${isFullBleed ? (isFirst ? "-mt-3 sm:-mt-4" : prevIsFullBleed ? "-mt-1" : "") : ""}
-        ${isFullBleed ? (isLast ? "-mb-4" : nextIsFullBleed ? "-mb-2" : "") : ""} `}
-    >
-      {isFullBleed && isSelected ? <FullBleedSelectionIndicator /> : null}
+    <BlockLayout isSelected={!!isSelected} className={blockClassName}>
       {isLocalUpload || image.data.local ? (
         <img
           loading="lazy"
@@ -169,14 +167,14 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
           }
           height={image?.data.height}
           width={image?.data.width}
-          className={className}
+          className={imageClassName}
         />
       )}
       {altText !== undefined && !props.preview ? (
         <ImageAlt entityID={props.value} />
       ) : null}
       {!props.preview ? <CoverImageButton entityID={props.value} /> : null}
-    </div>
+    </BlockLayout>
   );
 }
 
@@ -200,10 +198,18 @@ const CoverImageButton = (props: { entityID: string }) => {
   let coverImage = useSubscribe(rep, (tx) =>
     tx.get<string | null>("publication_cover_image"),
   );
-  let isFocused = useUIState((s) => s.focusedEntity?.entityID === props.entityID);
+  let isFocused = useUIState(
+    (s) => s.focusedEntity?.entityID === props.entityID,
+  );
 
   // Only show if focused, in a publication, has write permissions, and no cover image is set
-  if (!isFocused || !pubData?.publications || !entity_set.permissions.write || coverImage) return null;
+  if (
+    !isFocused ||
+    !pubData?.publications ||
+    !entity_set.permissions.write ||
+    coverImage
+  )
+    return null;
 
   return (
     <div className="absolute top-2 left-2">

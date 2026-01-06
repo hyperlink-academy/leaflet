@@ -5,7 +5,7 @@ import { Separator } from "components/Layout";
 import { useUIState } from "src/useUIState";
 import { useState } from "react";
 import { useSmoker, useToaster } from "components/Toast";
-import { BlockProps } from "./Block";
+import { BlockProps, BlockLayout } from "./Block";
 import { useEntity, useReplicache } from "src/replicache";
 import { useEntitySetContext } from "components/EntitySetProvider";
 import { subscribeToMailboxWithEmail } from "actions/subscriptions/subscribeToMailboxWithEmail";
@@ -46,40 +46,35 @@ export const MailboxBlock = (props: BlockProps) => {
 
   return (
     <div className={`mailboxContent relative w-full flex flex-col gap-1`}>
-      <div
-        className={`flex flex-col gap-2 items-center justify-center w-full
-          ${isSelected ? "block-border-selected " : "block-border"} `}
-        style={{
-          backgroundColor:
-            "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
-        }}
+      <BlockLayout
+        isSelected={!!isSelected}
+        hasBackground={"accent"}
+        className="flex  gap-2 items-center justify-center"
       >
-        <div className="flex gap-2 p-4">
-          <ButtonPrimary
-            onClick={async () => {
-              let entity;
-              if (draft) {
-                entity = draft.data.value;
-              } else {
-                entity = v7();
-                await rep?.mutate.createDraft({
-                  mailboxEntity: props.entityID,
-                  permission_set: entity_set.set,
-                  newEntity: entity,
-                  firstBlockEntity: v7(),
-                  firstBlockFactID: v7(),
-                });
-              }
-              useUIState.getState().openPage(props.parent, entity);
-              if (rep) focusPage(entity, rep, "focusFirstBlock");
-              return;
-            }}
-          >
-            {draft ? "Edit Draft" : "Write a Post"}
-          </ButtonPrimary>
-          <MailboxInfo />
-        </div>
-      </div>
+        <ButtonPrimary
+          onClick={async () => {
+            let entity;
+            if (draft) {
+              entity = draft.data.value;
+            } else {
+              entity = v7();
+              await rep?.mutate.createDraft({
+                mailboxEntity: props.entityID,
+                permission_set: entity_set.set,
+                newEntity: entity,
+                firstBlockEntity: v7(),
+                firstBlockFactID: v7(),
+              });
+            }
+            useUIState.getState().openPage(props.parent, entity);
+            if (rep) focusPage(entity, rep, "focusFirstBlock");
+            return;
+          }}
+        >
+          {draft ? "Edit Draft" : "Write a Post"}
+        </ButtonPrimary>
+        <MailboxInfo />
+      </BlockLayout>
       <div className="flex gap-3 items-center justify-between">
         {
           <>
@@ -135,69 +130,59 @@ const MailboxReaderView = (props: { entityID: string; parent: string }) => {
   let { rep } = useReplicache();
   return (
     <div className={`mailboxContent relative w-full flex flex-col gap-1 h-32`}>
-      <div
-        className={`h-full flex flex-col gap-2 items-center justify-center w-full rounded-md border outline ${
-          isSelected
-            ? "border-border outline-border"
-            : "border-border-light outline-transparent"
-        }`}
-        style={{
-          backgroundColor:
-            "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)",
-        }}
+      <BlockLayout
+        isSelected={!!isSelected}
+        hasBackground={"accent"}
+        className="`h-full flex flex-col gap-2 items-center justify-center"
       >
-        <div className="flex flex-col w-full gap-2 p-4">
-          {!isSubscribed?.confirmed ? (
-            <>
-              <SubscribeForm
-                entityID={props.entityID}
-                role={"reader"}
-                parent={props.parent}
-              />
-            </>
-          ) : (
-            <div className="flex flex-col gap-2 items-center place-self-center">
-              <div className=" font-bold text-secondary ">
-                You&apos;re Subscribed!
-              </div>
-              <div className="flex flex-col gap-1 items-center place-self-center">
-                {archive ? (
-                  <ButtonPrimary
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      if (rep) {
-                        useUIState
-                          .getState()
-                          .openPage(props.parent, archive.data.value);
-                        focusPage(archive.data.value, rep);
-                      }
-                    }}
-                  >
-                    See All Posts
-                  </ButtonPrimary>
-                ) : (
-                  <div className="text-tertiary">
-                    Nothing has been posted yet
-                  </div>
-                )}
-                <button
-                  className="text-accent-contrast hover:underline text-sm"
-                  onClick={(e) => {
-                    let rect = e.currentTarget.getBoundingClientRect();
-                    unsubscribe(isSubscribed);
-                    smoke({
-                      text: "unsubscribed!",
-                      position: { x: rect.left, y: rect.top - 8 },
-                    });
+        {!isSubscribed?.confirmed ? (
+          <>
+            <SubscribeForm
+              entityID={props.entityID}
+              role={"reader"}
+              parent={props.parent}
+            />
+          </>
+        ) : (
+          <div className="flex flex-col gap-2 items-center place-self-center">
+            <div className=" font-bold text-secondary ">
+              You&apos;re Subscribed!
+            </div>
+            <div className="flex flex-col gap-1 items-center place-self-center">
+              {archive ? (
+                <ButtonPrimary
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    if (rep) {
+                      useUIState
+                        .getState()
+                        .openPage(props.parent, archive.data.value);
+                      focusPage(archive.data.value, rep);
+                    }
                   }}
                 >
-                  unsubscribe
-                </button>
-              </div>
+                  See All Posts
+                </ButtonPrimary>
+              ) : (
+                <div className="text-tertiary">Nothing has been posted yet</div>
+              )}
+              <button
+                className="text-accent-contrast hover:underline text-sm"
+                onClick={(e) => {
+                  let rect = e.currentTarget.getBoundingClientRect();
+                  unsubscribe(isSubscribed);
+                  smoke({
+                    text: "unsubscribed!",
+                    position: { x: rect.left, y: rect.top - 8 },
+                  });
+                }}
+              >
+                unsubscribe
+              </button>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
+      </BlockLayout>
     </div>
   );
 };

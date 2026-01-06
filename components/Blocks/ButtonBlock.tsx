@@ -3,7 +3,7 @@ import { generateKeyBetween } from "fractional-indexing";
 import { useCallback, useEffect, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import { BlockProps } from "./Block";
+import { BlockProps, BlockLayout } from "./Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
 

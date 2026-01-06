@@ -1,5 +1,5 @@
 import { useUIState } from "src/useUIState";
-import { BlockProps } from "./Block";
+import { BlockLayout, BlockProps } from "./Block";
 import { useMemo } from "react";
 import { AsyncValueInput } from "components/Input";
 import { focusElement } from "src/utils/focusElement";
@@ -53,19 +53,16 @@ export const PublicationPollBlock = (props: BlockProps) => {
   }, [publicationData, props.entityID]);
 
   return (
-    <div
-      className={`poll flex flex-col gap-2 p-3 w-full
-            ${isSelected ? "block-border-selected " : "block-border"}`}
-      style={{
-        backgroundColor:
-          "color-mix(in oklab, rgb(var(--accent-1)), rgb(var(--bg-page)) 85%)",
-      }}
+    <BlockLayout
+      className="poll flex flex-col gap-2"
+      hasBackground={"accent"}
+      isSelected={!!isSelected}
     >
       <EditPollForPublication
         entityID={props.entityID}
         isPublished={isPublished}
       />
-    </div>
+    </BlockLayout>
   );
 };
 

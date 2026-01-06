@@ -3,7 +3,7 @@ import { generateKeyBetween } from "fractional-indexing";
 import { useCallback, useEffect, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import { BlockProps } from "./Block";
+import { BlockProps, BlockLayout } from "./Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
 import { Separator } from "components/Layout";
@@ -84,21 +84,18 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
     <div
       className={`w-full ${heightHandle.dragDelta ? "pointer-events-none" : ""}`}
     >
-      {/*
-	  the iframe!
-	  can also add 'allow' and 'referrerpolicy' attributes later if needed
-	  */}
-      <iframe
-        className={`
-              flex flex-col relative w-full overflow-hidden group/embedBlock
-              ${isSelected ? "block-border-selected " : "block-border"}
-              `}
-        width="100%"
-        height={height + (heightHandle.dragDelta?.y || 0)}
-        src={url?.data.value}
-        allow="fullscreen"
-        loading="lazy"
-      ></iframe>
+      <BlockLayout
+        isSelected={!!isSelected}
+        className="flex flex-col relative w-full overflow-hidden group/embedBlock p-0!"
+      >
+        <iframe
+          width="100%"
+          height={height + (heightHandle.dragDelta?.y || 0)}
+          src={url?.data.value}
+          allow="fullscreen"
+          loading="lazy"
+        ></iframe>
+      </BlockLayout>
       {/* <div className="w-full overflow-x-hidden truncate text-xs italic text-accent-contrast">
         <a
           href={url?.data.value}

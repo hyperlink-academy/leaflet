@@ -383,6 +383,30 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
     );
 };
 
+export const BlockLayout = (props: {
+  isSelected?: boolean;
+  children: React.ReactNode;
+  className?: string;
+  hasBackground?: "accent" | "page";
+}) => {
+  return (
+    <div
+      className={`block ${props.className} p-2 sm:p-3 w-full overflow-hidden
+            ${props.isSelected ? "block-border-selected " : "block-border"}`}
+      style={{
+        backgroundColor:
+          props.hasBackground === "accent"
+            ? "var(--accent-light)"
+            : props.hasBackground === "page"
+              ? "rgb(var(--bg-page))"
+              : "transparent",
+      }}
+    >
+      {props.children}
+    </div>
+  );
+};
+
 export const ListMarker = (
   props: Block & {
     previousBlock?: Block | null;

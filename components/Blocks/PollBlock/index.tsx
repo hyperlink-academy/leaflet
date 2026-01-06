@@ -1,5 +1,5 @@
 import { useUIState } from "src/useUIState";
-import { BlockProps } from "../Block";
+import { BlockProps, BlockLayout } from "../Block";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useCallback, useEffect, useState } from "react";
 import { Input } from "components/Input";
@@ -61,13 +61,10 @@ export const LeafletPollBlock = (props: BlockProps) => {
   let totalVotes = votes.length;
 
   return (
-    <div
-      className={`poll flex flex-col gap-2  p-3 w-full
-            ${isSelected ? "block-border-selected " : "block-border"}`}
-      style={{
-        backgroundColor:
-          "color-mix(in oklab, rgb(var(--accent-1)), rgb(var(--bg-page)) 85%)",
-      }}
+    <BlockLayout
+      isSelected={!!isSelected}
+      hasBackground={"accent"}
+      className="poll flex flex-col gap-2 w-full"
     >
       {pollState === "editing" ? (
         <EditPoll
@@ -95,7 +92,7 @@ export const LeafletPollBlock = (props: BlockProps) => {
           hasVoted={!!hasVoted}
         />
       )}
-    </div>
+    </BlockLayout>
   );
 };
 
