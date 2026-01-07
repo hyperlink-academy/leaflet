@@ -95,8 +95,8 @@ export const BackgroundPicker = (props: {
       <hr className="border-border-light" />
       <div className="flex gap-2 items-center">
         <Toggle
-          toggleOn={props.hasPageBackground}
-          setToggleOn={() => {
+          toggle={props.hasPageBackground}
+          onToggle={() => {
             props.setHasPageBackground(!props.hasPageBackground);
             props.hasPageBackground &&
               props.openPicker === "page" &&
@@ -104,19 +104,14 @@ export const BackgroundPicker = (props: {
           }}
           disabledColor1="#8C8C8C"
           disabledColor2="#DBDBDB"
-        />
-        <button
-          className="flex gap-2 items-center"
-          onClick={() => {
-            props.setHasPageBackground(!props.hasPageBackground);
-            props.hasPageBackground && props.setOpenPicker("null");
-          }}
         >
-          <div className="font-bold">Page Background</div>
-          <div className="italic text-[#8C8C8C]">
-            {props.hasPageBackground ? "" : "hidden"}
+          <div className="flex gap-2">
+            <div className="font-bold">Page Background</div>
+            <div className="italic text-[#8C8C8C]">
+              {props.hasPageBackground ? "" : "none"}
+            </div>
           </div>
-        </button>
+        </Toggle>
       </div>
     </>
   );

@@ -220,24 +220,18 @@ function WatermarkSetter(props: { entityID: string }) {
   return (
     <div className="flex gap-2 items-start mt-0.5">
       <Toggle
-        toggleOn={!!checked?.data.value}
-        setToggleOn={() => {
+        toggle={!!checked?.data.value}
+        onToggle={() => {
           handleToggle();
         }}
         disabledColor1="#8C8C8C"
         disabledColor2="#DBDBDB"
-      />
-      <button
-        className="flex gap-2 items-center -mt-0.5"
-        onClick={() => {
-          handleToggle();
-        }}
       >
-        <div className="flex flex-col gap-0 items-start">
+        <div className="flex flex-col gap-0 items-start ">
           <div className="font-bold">Show Leaflet Watermark</div>
           <div className="text-sm text-[#969696]">Help us spread the word!</div>
         </div>
-      </button>
+      </Toggle>
     </div>
   );
 }

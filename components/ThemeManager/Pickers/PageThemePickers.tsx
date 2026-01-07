@@ -394,27 +394,21 @@ export const PageBorderHider = (props: {
 
   return (
     <>
-      <div className="flex gap-2 items-center">
-        <Toggle
-          toggleOn={!pageBorderHidden}
-          setToggleOn={() => {
-            handleToggle();
-          }}
-          disabledColor1="#8C8C8C"
-          disabledColor2="#DBDBDB"
-        />
-        <button
-          className="flex gap-2 items-center"
-          onClick={() => {
-            handleToggle();
-          }}
-        >
+      <Toggle
+        toggle={!pageBorderHidden}
+        onToggle={() => {
+          handleToggle();
+        }}
+        disabledColor1="#8C8C8C"
+        disabledColor2="#DBDBDB"
+      >
+        <div className="flex gap-2">
           <div className="font-bold">Page Background</div>
           <div className="italic text-[#8C8C8C]">
-            {pageBorderHidden ? "hidden" : ""}
+            {pageBorderHidden ? "none" : ""}
           </div>
-        </button>
-      </div>
+        </div>
+      </Toggle>
     </>
   );
 };
