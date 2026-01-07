@@ -1,5 +1,5 @@
 import { pickers } from "../ThemeSetter";
-import { PageTextPicker } from "../Pickers/PageThemePickers";
+import { TextPickers } from "../Pickers/PageThemePickers";
 import { Color } from "react-aria-components";
 
 export const PagePickers = (props: {
@@ -20,7 +20,7 @@ export const PagePickers = (props: {
           : "transparent",
       }}
     >
-      <PageTextPicker
+      <TextPickers
         value={props.primary}
         setValue={props.setPrimary}
         openPicker={props.openPicker}

@@ -5,10 +5,7 @@ import {
   PubLeafletPublication,
   PubLeafletThemeColor,
 } from "lexicons/api";
-import {
-  restoreOAuthSession,
-  OAuthSessionError,
-} from "src/atproto-oauth";
+import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
@@ -184,6 +181,7 @@ export async function updatePublicationTheme({
     backgroundImage?: File | null;
     backgroundRepeat?: number | null;
     backgroundColor: Color;
+    pageWidth?: number;
     primary: Color;
     pageBackground: Color;
     showPageBackground: boolean;
@@ -246,6 +244,7 @@ export async function updatePublicationTheme({
             ...theme.backgroundColor,
           }
         : undefined,
+      pageWidth: theme.pageWidth,
       primary: {
         ...theme.primary,
       },

@@ -195,6 +195,10 @@ export const ThemeAttributes = {
     type: "boolean",
     cardinality: "one",
   },
+  "theme/page-width": {
+    type: "number",
+    cardinality: "one",
+  },
   "theme/page-background": {
     type: "color",
     cardinality: "one",

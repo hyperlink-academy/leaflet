@@ -106,8 +106,8 @@ export const BackgroundPicker = (props: {
       <hr className="border-border-light" />
       <div className="flex gap-2 items-center">
         <Toggle
-          toggleOn={props.hasPageBackground}
-          setToggleOn={() => {
+          toggle={props.hasPageBackground}
+          onToggle={() => {
             props.setHasPageBackground(!props.hasPageBackground);
             props.hasPageBackground &&
               props.openPicker === "page" &&
@@ -115,19 +115,14 @@ export const BackgroundPicker = (props: {
           }}
           disabledColor1="#8C8C8C"
           disabledColor2="#DBDBDB"
-        />
-        <button
-          className="flex gap-2 items-center"
-          onClick={() => {
-            props.setHasPageBackground(!props.hasPageBackground);
-            props.hasPageBackground && props.setOpenPicker("null");
-          }}
         >
-          <div className="font-bold">Page Background</div>
-          <div className="italic text-[#8C8C8C]">
-            {props.hasPageBackground ? "" : "hidden"}
+          <div className="flex gap-2">
+            <div className="font-bold">Page Background</div>
+            <div className="italic text-[#8C8C8C]">
+              {props.hasPageBackground ? "" : "none"}
+            </div>
           </div>
-        </button>
+        </Toggle>
       </div>
     </>
   );
@@ -261,7 +256,7 @@ export const ImageSettings = (props: {
               props.setBgImage({ ...props.bgImage, repeat: 500 });
             }}
           >
-            <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-col w-full">
               <div className="flex gap-2">
                 <div
                   className={`shink-0 grow-0 w-fit z-10 cursor-pointer ${props.bgImage?.repeat ? "text-[#595959]" : " text-[#969696]"}`}
@@ -300,7 +295,7 @@ export const ImageSettings = (props: {
                 }}
               >
                 <Slider.Track
-                  className={`${props.bgImage?.repeat ? "bg-[#595959]" : " bg-[#C3C3C3]"} relative grow rounded-full h-[3px]`}
+                  className={`${props.bgImage?.repeat ? "bg-[#595959]" : " bg-[#C3C3C3]"} relative grow rounded-full h-[3px] my-2`}
                 ></Slider.Track>
                 <Slider.Thumb
                   className={`

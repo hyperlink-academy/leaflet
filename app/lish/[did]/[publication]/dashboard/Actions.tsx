@@ -1,7 +1,7 @@
 "use client";
 
 import { NewDraftActionButton } from "./NewDraftButton";
-import { PublicationSettingsButton } from "./PublicationSettings";
+import { PublicationSettingsButton } from "./settings/PublicationSettings";
 import { ActionButton } from "components/ActionBar/ActionButton";
 import { ShareSmall } from "components/Icons/ShareSmall";
 import { Menu, MenuItem } from "components/Menu";

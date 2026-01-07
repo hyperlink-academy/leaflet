@@ -15,10 +15,11 @@ import { PagePickers } from "./PubPickers/PubTextPickers";
 import { BackgroundPicker } from "./PubPickers/PubBackgroundPickers";
 import { PubAccentPickers } from "./PubPickers/PubAcccentPickers";
 import { Separator } from "components/Layout";
-import { PubSettingsHeader } from "app/lish/[did]/[publication]/dashboard/PublicationSettings";
+import { PubSettingsHeader } from "app/lish/[did]/[publication]/dashboard/settings/PublicationSettings";
 import { ColorToRGB, ColorToRGBA } from "./colorToLexicons";
 import { useToaster } from "components/Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
+import { PubPageWidthSetter } from "./PubPickers/PubPageWidthSetter";
 
 export type ImageState = {
   src: string;
@@ -56,7 +57,9 @@ export const PubThemeSetter = (props: {
         }
       : null,
   );
-
+  let [pageWidth, setPageWidth] = useState<number>(
+    record?.theme?.pageWidth || 624,
+  );
   let pubBGImage = image?.src || null;
   let leafletBGRepeat = image?.repeat || null;
   let toaster = useToaster();
@@ -78,6 +81,7 @@ export const PubThemeSetter = (props: {
                 : ColorToRGB(localPubTheme.bgLeaflet),
               backgroundRepeat: image?.repeat,
               backgroundImage: image ? image.file : null,
+              pageWidth: pageWidth,
               primary: ColorToRGB(localPubTheme.primary),
               accentBackground: ColorToRGB(localPubTheme.accent1),
               accentText: ColorToRGB(localPubTheme.accent2),
@@ -116,13 +120,22 @@ export const PubThemeSetter = (props: {
           setLoadingAction={props.setLoading}
           backToMenuAction={props.backToMenu}
           state={"theme"}
-        />
+        >
+          Theme and Layout
+        </PubSettingsHeader>
       </form>
 
-      <div className="themeSetterContent flex flex-col w-full overflow-y-scroll -mb-2 ">
-        <div className="themeBGLeaflet flex">
+      <div className="themeSetterContent flex flex-col w-full overflow-y-scroll -mb-2 mt-2 ">
+        <PubPageWidthSetter
+          pageWidth={pageWidth}
+          setPageWidth={setPageWidth}
+          thisPicker="page-width"
+          openPicker={openPicker}
+          setOpenPicker={setOpenPicker}
+        />
+        <div className="themeBGLeaflet flex flex-col">
           <div
-            className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
+            className={`themeBgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}
           >
             <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md text-[#595959] bg-white">
               <BackgroundPicker

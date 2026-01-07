@@ -37,6 +37,11 @@ export const PubLeafletPublication: LexiconDoc = {
           type: "ref",
           ref: PubLeafletThemeBackgroundImage.id,
         },
+        pageWidth: {
+          type: "integer",
+          minimum: 0,
+          maximum: 1600,
+        },
         primary: ColorUnion,
         pageBackground: ColorUnion,
         showPageBackground: { type: "boolean", default: false },

@@ -20,7 +20,7 @@ import { Verification } from "@vercel/sdk/esm/models/getprojectdomainop";
 import Link from "next/link";
 import { Checkbox } from "components/Checkbox";
 import type { GetDomainConfigResponseBody } from "@vercel/sdk/esm/models/getdomainconfigop";
-import { PubSettingsHeader } from "../[did]/[publication]/dashboard/PublicationSettings";
+import { PubSettingsHeader } from "../[did]/[publication]/dashboard/settings/PublicationSettings";
 
 export const EditPubForm = (props: {
   backToMenuAction: () => void;
@@ -86,7 +86,9 @@ export const EditPubForm = (props: {
         setLoadingAction={props.setLoadingAction}
         backToMenuAction={props.backToMenuAction}
         state={"theme"}
-      />
+      >
+        General Settings
+      </PubSettingsHeader>
       <div className="flex flex-col gap-3 w-[1000px] max-w-full pb-2">
         <div className="flex items-center justify-between gap-2 ">
           <p className="pl-0.5 pb-0.5 text-tertiary italic text-sm font-bold">

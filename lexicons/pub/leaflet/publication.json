@@ -8,9 +8,7 @@
       "description": "Record declaring a publication",
       "record": {
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "properties": {
           "name": {
             "type": "string",
@@ -25,9 +23,7 @@
           },
           "icon": {
             "type": "blob",
-            "accept": [
-              "image/*"
-            ],
+            "accept": ["image/*"],
             "maxSize": 1000000
           },
           "theme": {
@@ -67,6 +63,11 @@
         "backgroundImage": {
           "type": "ref",
           "ref": "pub.leaflet.theme.backgroundImage"
+        },
+        "pageWidth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1600
         },
         "primary": {
           "type": "union",
