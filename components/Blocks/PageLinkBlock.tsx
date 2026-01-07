@@ -1,5 +1,5 @@
 "use client";
-import { BlockProps, BaseBlock, ListMarker, Block } from "./Block";
+import { BlockProps, ListMarker, Block, BlockLayout } from "./Block";
 import { focusBlock } from "src/utils/focusBlock";
 
 import { focusPage } from "src/utils/focusPage";
@@ -29,30 +29,34 @@ export function PageLinkBlock(props: BlockProps & { preview?: boolean }) {
 
   return (
     <CardThemeProvider entityID={page?.data.value}>
-      <div
-        className={`w-full cursor-pointer
+      <BlockLayout
+        hasBackground="page"
+        isSelected={!!isSelected}
+        className={`cursor-pointer
         pageLinkBlockWrapper relative group/pageLinkBlock
-        bg-bg-page shadow-sm
-        flex overflow-clip
-        ${isSelected ? "block-border-selected " : "block-border"}
-        ${isOpen && "border-tertiary!"}
+        flex overflow-clip p-0!
+        ${isOpen && "border-accent-contrast! outline-accent-contrast!"}
         `}
-        onClick={(e) => {
-          if (!page) return;
-          if (e.isDefaultPrevented()) return;
-          if (e.shiftKey) return;
-          e.preventDefault();
-          e.stopPropagation();
-          useUIState.getState().openPage(props.parent, page.data.value);
-          if (rep) focusPage(page.data.value, rep);
-        }}
       >
-        {type === "canvas" && page ? (
-          <CanvasLinkBlock entityID={page?.data.value} />
-        ) : (
-          <DocLinkBlock {...props} />
-        )}
-      </div>
+        <div
+          className="w-full h-full"
+          onClick={(e) => {
+            if (!page) return;
+            if (e.isDefaultPrevented()) return;
+            if (e.shiftKey) return;
+            e.preventDefault();
+            e.stopPropagation();
+            useUIState.getState().openPage(props.parent, page.data.value);
+            if (rep) focusPage(page.data.value, rep);
+          }}
+        >
+          {type === "canvas" && page ? (
+            <CanvasLinkBlock entityID={page?.data.value} />
+          ) : (
+            <DocLinkBlock {...props} />
+          )}
+        </div>
+      </BlockLayout>
     </CardThemeProvider>
   );
 }

@@ -2,7 +2,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { useEffect, useState } from "react";
 import { useEntity } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import { BlockProps } from "../Block";
+import { BlockProps, BlockLayout } from "../Block";
 import { elementId } from "src/utils/elementId";
 import { focusBlock } from "src/utils/focusBlock";
 import { AppBskyFeedDefs, AppBskyFeedPost, RichText } from "@atproto/api";
@@ -56,11 +56,9 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
       AppBskyFeedDefs.isBlockedAuthor(post) ||
       AppBskyFeedDefs.isNotFoundPost(post):
       return (
-        <div
-          className={`w-full ${isSelected ? "block-border-selected" : "block-border"}`}
-        >
+        <BlockLayout isSelected={!!isSelected} className="w-full">
           <PostNotAvailable />
-        </div>
+        </BlockLayout>
       );
 
     case AppBskyFeedDefs.isThreadViewPost(post):
@@ -81,11 +79,10 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
       let url = `https://bsky.app/profile/${post.post.author.handle}/post/${postId}`;
 
       return (
-        <div
-          className={`
-      flex flex-col gap-2 relative w-full overflow-hidden group/blueskyPostBlock sm:p-3 p-2 text-sm text-secondary bg-bg-page
-      ${isSelected ? "block-border-selected " : "block-border"}
-      `}
+        <BlockLayout
+          isSelected={!!isSelected}
+          hasBackground="page"
+          className="flex flex-col gap-2 relative overflow-hidden group/blueskyPostBlock text-sm text-secondary"
         >
           {post.post.author && record && (
             <>
@@ -149,7 +146,7 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
               </a>
             </div>
           </div>
-        </div>
+        </BlockLayout>
       );
   }
 };

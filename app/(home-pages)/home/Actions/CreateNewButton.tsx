@@ -5,7 +5,7 @@ import { ActionButton } from "components/ActionBar/ActionButton";
 import { AddTiny } from "components/Icons/AddTiny";
 import { BlockCanvasPageSmall } from "components/Icons/BlockCanvasPageSmall";
 import { BlockDocPageSmall } from "components/Icons/BlockDocPageSmall";
-import { Menu, MenuItem } from "components/Layout";
+import { Menu, MenuItem } from "components/Menu";
 import { useIsMobile } from "src/hooks/isMobile";
 
 export const CreateNewLeafletButton = (props: {}) => {

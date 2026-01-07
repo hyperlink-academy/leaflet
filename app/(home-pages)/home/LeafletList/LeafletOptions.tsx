@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, MenuItem } from "components/Layout";
+import { Menu, MenuItem } from "components/Menu";
 import { useState } from "react";
 import { ButtonPrimary, ButtonTertiary } from "components/Buttons";
 import { useToaster } from "components/Toast";

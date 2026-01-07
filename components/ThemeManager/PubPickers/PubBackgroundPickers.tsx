@@ -24,6 +24,9 @@ export const BackgroundPicker = (props: {
   hasPageBackground: boolean;
   setHasPageBackground: (s: boolean) => void;
 }) => {
+  // When showPageBackground is false (hasPageBackground=false) and no background image, show leafletBg picker
+  let showLeafletBgPicker = !props.hasPageBackground && !props.bgImage;
+
   return (
     <>
       {props.bgImage && props.bgImage !== null ? (
@@ -83,15 +86,23 @@ export const BackgroundPicker = (props: {
           )}
         </div>
       )}
-      <PageBackgroundColorPicker
-        label={"Containers"}
-        value={props.pageBackground}
-        setValue={props.setPageBackground}
-        thisPicker={"page"}
-        openPicker={props.openPicker}
-        setOpenPicker={props.setOpenPicker}
-        alpha={props.hasPageBackground ? true : false}
-      />
+      {!showLeafletBgPicker && (
+        // When there's a background image and page background hidden, label should say "Containers"
+        <PageBackgroundColorPicker
+          label={props.hasPageBackground ? "Page" : "Containers"}
+          helpText={
+            props.hasPageBackground
+              ? undefined
+              : "Affects menus, tooltips and some block backgrounds"
+          }
+          value={props.pageBackground}
+          setValue={props.setPageBackground}
+          thisPicker={"page"}
+          openPicker={props.openPicker}
+          setOpenPicker={props.setOpenPicker}
+          alpha={props.hasPageBackground ? true : false}
+        />
+      )}
       <hr className="border-border-light" />
       <div className="flex gap-2 items-center">
         <Toggle

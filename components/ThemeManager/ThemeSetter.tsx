@@ -4,10 +4,8 @@ import { theme } from "../../tailwind.config";
 
 import { Color } from "react-aria-components";
 
-import { LeafletBGPicker } from "./Pickers/LeafletBGPicker";
 import {
-  PageBackgroundPicker,
-  PageBorderHider,
+  LeafletBackgroundPicker,
   PageThemePickers,
 } from "./Pickers/PageThemePickers";
 import { useMemo, useState } from "react";
@@ -117,23 +115,7 @@ export const ThemeSetterContent = (props: {
       <div className="themeBGLeaflet flex">
         <div className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}>
           <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md">
-            <LeafletBGPicker
-              entityID={props.entityID}
-              thisPicker={"leaflet"}
-              openPicker={openPicker}
-              setOpenPicker={setOpenPicker}
-              closePicker={() => setOpenPicker("null")}
-              setValue={set("theme/page-background")}
-            />
-            <PageBackgroundPicker
-              entityID={props.entityID}
-              setValue={set("theme/card-background")}
-              openPicker={openPicker}
-              setOpenPicker={setOpenPicker}
-              home={props.home}
-            />
-            <hr className=" border-[#CCCCCC]" />
-            <PageBorderHider
+            <LeafletBackgroundPicker
               entityID={props.entityID}
               openPicker={openPicker}
               setOpenPicker={setOpenPicker}

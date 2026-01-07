@@ -13,7 +13,7 @@ import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { useIdentityData } from "components/IdentityProvider";
 import { InputWithLabel } from "components/Input";
-import { Menu, MenuItem } from "components/Layout";
+import { Menu, MenuItem } from "components/Menu";
 import {
   useLeafletDomains,
   useLeafletPublicationData,

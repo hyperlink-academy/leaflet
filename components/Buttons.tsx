@@ -38,7 +38,7 @@ export const ButtonPrimary = forwardRef<
         ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
         bg-accent-1 disabled:bg-border-light
         border border-accent-1 rounded-md disabled:border-border-light
-        outline outline-transparent outline-offset-1 focus:outline-accent-1 hover:outline-accent-1
+        outline-2 outline-transparent outline-offset-1 focus:outline-accent-1 hover:outline-accent-1
         text-base font-bold text-accent-2 disabled:text-border disabled:hover:text-border
         flex gap-2 items-center justify-center shrink-0
         ${className}
@@ -77,7 +77,7 @@ export const ButtonSecondary = forwardRef<
         ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
         bg-bg-page disabled:bg-border-light
         border border-accent-contrast rounded-md
-        outline outline-transparent focus:outline-accent-contrast hover:outline-accent-contrast outline-offset-1
+        outline-2 outline-transparent focus:outline-accent-contrast hover:outline-accent-contrast outline-offset-1
         text-base font-bold text-accent-contrast disabled:text-border disabled:hover:text-border
         flex gap-2 items-center justify-center shrink-0
         ${props.className}
@@ -116,7 +116,7 @@ export const ButtonTertiary = forwardRef<
         ${compact ? "py-0 px-1" : "px-2 py-0.5 "}
          bg-transparent hover:bg-[var(--accent-light)]
          border border-transparent rounded-md hover:border-[var(--accent-light)]
-         outline outline-transparent focus:outline-[var(--accent-light)] hover:outline-[var(--accent-light)] outline-offset-1
+         outline-2 outline-transparent focus:outline-[var(--accent-light)] hover:outline-[var(--accent-light)] outline-offset-1
          text-base font-bold text-accent-contrast disabled:text-border
          flex gap-2 items-center justify-center shrink-0
          ${props.className}
@@ -165,7 +165,11 @@ export const TooltipButton = (props: {
               side={props.side ? props.side : undefined}
               sideOffset={6}
               alignOffset={12}
-              className="z-10 bg-border rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
+              className="z-10  rounded-md py-1 px-[6px] font-bold text-secondary text-sm"
+              style={{
+                backgroundColor:
+                  "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 85%)",
+              }}
             >
               {props.tooltipContent}
               <RadixTooltip.Arrow
@@ -175,7 +179,9 @@ export const TooltipButton = (props: {
                 viewBox="0 0 16 8"
               >
                 <PopoverArrow
-                  arrowFill={theme.colors["border"]}
+                  arrowFill={
+                    "color-mix(in oklab, rgb(var(--primary)), rgb(var(--bg-page)) 85%)"
+                  }
                   arrowStroke="transparent"
                 />
               </RadixTooltip.Arrow>
