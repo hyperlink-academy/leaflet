@@ -132,6 +132,7 @@
 
   @media (min-width: 640px) {
     :root {
+      /*picks between max width and screen width with 64px of padding*/
       --page-width-unitless: min(
         var(--page-max-width-unitless),
         calc(var(--leaflet-width-unitless) - 128)
@@ -139,19 +140,6 @@
       --page-width-units: min(
         calc(var(--page-max-width-unitless) * 1px),
         calc(100vw - 128px)
-      );
-    }
-  }
-
-  @media (min-width: 1280px) {
-    :root {
-      --page-width-unitless: min(
-        var(--page-max-width-unitless),
-        calc((var(--leaflet-width-unitless) / 2) - 32)
-      );
-      --page-width-units: min(
-        calc(var(--page-max-width-unitless) * 1px),
-        calc((100vw / 2) - 32px)
       );
     }
   }
