@@ -73,7 +73,7 @@ export const ImageSettings = (props: {
               });
             }}
           >
-            <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-col w-full">
               <div className="flex gap-2">
                 <div
                   className={`shink-0 grow-0 w-fit z-10 cursor-pointer ${repeat ? "text-[#595959]" : " text-[#969696]"}`}
@@ -122,7 +122,7 @@ export const ImageSettings = (props: {
                 }}
               >
                 <Slider.Track
-                  className={`${repeat ? "bg-[#595959]" : " bg-[#C3C3C3]"} relative grow rounded-full h-[3px]`}
+                  className={`${repeat ? "bg-[#595959]" : " bg-[#C3C3C3]"} relative grow rounded-full h-[3px] my-2`}
                 ></Slider.Track>
                 <Slider.Thumb
                   className={`

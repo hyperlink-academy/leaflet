@@ -13,15 +13,22 @@ export const PageWidthSetter = (props: {
   closePicker: () => void;
 }) => {
   let { rep } = useReplicache();
+
+  let defaultPreset = 624;
+  let widePreset = 768;
   let pageWidth = useEntity(props.entityID, "theme/page-width")?.data.value;
-  let currentValue = pageWidth || 624;
+  let currentValue = pageWidth || defaultPreset;
   let [interimValue, setInterimValue] = useState<number>(currentValue);
   let [selectedPreset, setSelectedPreset] = useState<
     "default" | "wide" | "custom"
   >(
-    currentValue === 624 ? "default" : currentValue === 756 ? "wide" : "custom",
+    currentValue === defaultPreset
+      ? "default"
+      : currentValue === widePreset
+        ? "wide"
+        : "custom",
   );
-  let min = 324;
+  let min = 320;
   let max = 1200;
 
   let open = props.openPicker == props.thisPicker;
@@ -47,7 +54,7 @@ export const PageWidthSetter = (props: {
       <div className="flex flex-col gap-2">
         <div className="flex gap-2 items-center">
           <button
-            className="font-bold text-[#000000] shrink-0 grow-0 w-fit"
+            className="font-bold text-[#000000] shrink-0 grow-0 w-full flex gap-2 items-start text-left"
             onClick={() => {
               if (props.openPicker === props.thisPicker) {
                 props.setOpenPicker("null");
@@ -57,10 +64,10 @@ export const PageWidthSetter = (props: {
             }}
           >
             Max Page Width
+            <span className="flex font-normal text-[#969696]">
+              {currentValue}px
+            </span>
           </button>
-          <div className="flex font-normal text-[#969696]">
-            {currentValue}px
-          </div>
         </div>
         {open && (
           <div className="flex flex-col gap-1 px-3">
@@ -76,7 +83,7 @@ export const PageWidthSetter = (props: {
                 onChange={(e) => {
                   if (!e.currentTarget.checked) return;
                   setSelectedPreset("default");
-                  setPageWidth(624);
+                  setPageWidth(defaultPreset);
                 }}
               >
                 <div
@@ -98,7 +105,7 @@ export const PageWidthSetter = (props: {
                 onChange={(e) => {
                   if (!e.currentTarget.checked) return;
                   setSelectedPreset("wide");
-                  setPageWidth(756);
+                  setPageWidth(widePreset);
                 }}
               >
                 <div
@@ -126,7 +133,7 @@ export const PageWidthSetter = (props: {
                   }
                 }}
               >
-                <div className="flex flex-col gap-2 w-full">
+                <div className="flex flex-col w-full">
                   <div className="flex gap-2">
                     <div
                       className={`shrink-0 grow-0 w-fit z-10 cursor-pointer ${selectedPreset === "custom" ? "text-[#595959]" : "text-[#969696]"}`}
@@ -188,7 +195,7 @@ export const PageWidthSetter = (props: {
                     }}
                   >
                     <Slider.Track
-                      className={`${selectedPreset === "custom" ? "bg-[#595959]" : "bg-[#C3C3C3]"} relative grow rounded-full h-[3px]`}
+                      className={`${selectedPreset === "custom" ? "bg-[#595959]" : "bg-[#C3C3C3]"} relative grow rounded-full h-[3px] my-2`}
                     />
                     <Slider.Thumb
                       className={`flex w-4 h-4 rounded-full border-2 border-white cursor-pointer
