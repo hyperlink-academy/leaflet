@@ -102,11 +102,11 @@ export function PublicationThemeProvider(props: {
   pub_creator: string;
   isStandalone?: boolean;
 }) {
-  let colors = usePubTheme(props.theme, props.isStandalone);
-  let cardBorderHidden = !colors.showPageBackground;
+  let theme = usePubTheme(props.theme, props.isStandalone);
+  let cardBorderHidden = !theme.showPageBackground;
   return (
     <CardBorderHiddenContext.Provider value={cardBorderHidden}>
-      <BaseThemeProvider local={props.local} {...colors}>
+      <BaseThemeProvider local={props.local} {...theme}>
         {props.children}
       </BaseThemeProvider>
     </CardBorderHiddenContext.Provider>
@@ -127,6 +127,7 @@ export const usePubTheme = (
     bgPage = bgLeaflet;
   }
   let showPageBackground = theme?.showPageBackground;
+  let pageWidth = theme?.pageWidth;
 
   let primary = useColor(theme, "primary");
 
@@ -147,6 +148,7 @@ export const usePubTheme = (
     highlight2,
     highlight3,
     showPageBackground,
+    pageWidth,
   };
 };
 

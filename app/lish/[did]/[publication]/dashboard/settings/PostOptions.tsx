@@ -29,22 +29,22 @@ export const PostOptions = (props: {
   return (
     <form
       onSubmit={async (e) => {
-        if (!pubData) return;
-        e.preventDefault();
-        props.setLoading(true);
-        let data = await updatePublication({
-          uri: pubData.uri,
-          name: nameValue,
-          description: descriptionValue,
-          iconFile: iconFile,
-          preferences: {
-            showInDiscover: showInDiscover,
-            showComments: showComments,
-          },
-        });
-        toast({ type: "success", content: "Posts Updated!" });
-        props.setLoading(false);
-        mutate("publication-data");
+        // if (!pubData) return;
+        // e.preventDefault();
+        // props.setLoading(true);
+        // let data = await updatePublication({
+        //   uri: pubData.uri,
+        //   name: nameValue,
+        //   description: descriptionValue,
+        //   iconFile: iconFile,
+        //   preferences: {
+        //     showInDiscover: showInDiscover,
+        //     showComments: showComments,
+        //   },
+        // });
+        // toast({ type: "success", content: "Posts Updated!" });
+        // props.setLoading(false);
+        // mutate("publication-data");
       }}
       className="text-primary flex flex-col"
     >
@@ -57,7 +57,7 @@ export const PostOptions = (props: {
         Post Options
       </PubSettingsHeader>
       <h4 className="mb-1">Layout</h4>
-      <div>Max Post Width</div>
+      {/*<div>Max Post Width</div>*/}
       <Toggle
         toggle={showPrevNext}
         onToggle={() => {

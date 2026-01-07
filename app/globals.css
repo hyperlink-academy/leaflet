@@ -107,13 +107,13 @@
     --highlight-3: 255, 205, 195;
 
     --list-marker-width: 36px;
-    --page-max-width-unitless: 624;
+    --page-width-unitless: 624;
     --page-width-unitless: min(
-      var(--page-max-width-unitless),
+      var(--page-width-unitless),
       calc(var(--leaflet-width-unitless) - 12)
     );
     --page-width-units: min(
-      calc(var(--page-max-width-unitless) * 1px),
+      calc(var(--page-width-unitless) * 1px),
       calc(100vw - 12px)
     );
 
@@ -134,11 +134,11 @@
     :root {
       /*picks between max width and screen width with 64px of padding*/
       --page-width-unitless: min(
-        var(--page-max-width-unitless),
+        var(--page-width-unitless),
         calc(var(--leaflet-width-unitless) - 128)
       );
       --page-width-units: min(
-        calc(var(--page-max-width-unitless) * 1px),
+        calc(var(--page-width-unitless) * 1px),
         calc(100vw - 128px)
       );
     }
