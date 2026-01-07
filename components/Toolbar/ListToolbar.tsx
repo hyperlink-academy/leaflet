@@ -131,13 +131,13 @@ export const ListToolbar = (props: { onClose: () => void }) => {
       >
         <ListIndentIncreaseSmall />
       </ToolbarButton>
-      <Separator classname="h-6" />
+      <Separator classname="h-6!" />
       <ToolbarButton
         disabled={!isList?.data.value}
         tooltipContent=<div className="flex flex-col gap-1 justify-center">
           <div className="text-center">Add a Checkbox</div>
           <div className="flex gap-1 font-normal">
-            start line with <ShortcutKey>[</ShortcutKey>
+            <ShortcutKey>[</ShortcutKey>
             <ShortcutKey>]</ShortcutKey>
           </div>
         </div>
