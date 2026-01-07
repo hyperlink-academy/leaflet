@@ -65,7 +65,7 @@ export const PubThemeSetter = (props: {
   let toaster = useToaster();
 
   return (
-    <BaseThemeProvider local {...localPubTheme}>
+    <BaseThemeProvider local {...localPubTheme} hasBackgroundImage={!!image}>
       <form
         onSubmit={async (e) => {
           e.preventDefault();

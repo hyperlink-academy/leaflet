@@ -3,7 +3,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { pickers, SectionArrow, setColorAttribute } from "./ThemeSetter";
 
 import {
-  PageBackgroundPicker,
+  SubpageBackgroundPicker,
   PageThemePickers,
 } from "./Pickers/PageThemePickers";
 import { useMemo, useState } from "react";
@@ -54,11 +54,10 @@ export const PageThemeSetter = (props: { entityID: string }) => {
           className="pageThemeBG flex flex-col gap-2 h-full text-primary bg-bg-leaflet p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))]"
           style={{ backgroundColor: "rgba(var(--bg-page), 0.6)" }}
         >
-          <PageBackgroundPicker
+          <SubpageBackgroundPicker
             entityID={props.entityID}
             openPicker={openPicker}
-            setOpenPicker={(pickers) => setOpenPicker(pickers)}
-            setValue={set("theme/card-background")}
+            setOpenPicker={setOpenPicker}
           />
         </div>
 
@@ -147,7 +146,7 @@ const SamplePage = (props: { entityID: string }) => {
     <div
       className={
         pageBorderHidden
-          ? "py-2 px-0 border border-transparent"
+          ? "relative py-2 px-0 border border-transparent"
           : `relative rounded-t-lg p-2 shadow-md text-primary border border-border border-b-transparent`
       }
       style={

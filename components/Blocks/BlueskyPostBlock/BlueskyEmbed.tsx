@@ -148,17 +148,17 @@ export const BlueskyEmbed = (props: {
         }
         return (
           <div
-            className={`flex flex-col gap-1 relative w-full overflow-hidden sm:p-3 p-2 text-xs  block-border`}
+            className={`flex flex-col gap-0.5 relative w-full overflow-hidden p-2! text-xs  block-border`}
           >
-            <div className="bskyAuthor w-full flex items-center gap-1">
+            <div className="bskyAuthor w-full flex items-center ">
               {record.author.avatar && (
                 <img
                   src={record.author?.avatar}
                   alt={`${record.author?.displayName}'s avatar`}
-                  className="shink-0 w-6 h-6 rounded-full border border-border-light"
+                  className="shink-0 w-6 h-6 rounded-full border border-border-light mr-[6px]"
                 />
               )}
-              <div className=" font-bold text-secondary">
+              <div className=" font-bold text-secondary mr-1">
                 {record.author?.displayName}
               </div>
               <a
@@ -171,7 +171,9 @@ export const BlueskyEmbed = (props: {
             </div>
 
             <div className="flex flex-col gap-2 ">
-              {text && <pre className="whitespace-pre-wrap">{text}</pre>}
+              {text && (
+                <pre className="whitespace-pre-wrap text-secondary">{text}</pre>
+              )}
               {record.embeds !== undefined
                 ? record.embeds.map((embed, index) => (
                     <BlueskyEmbed embed={embed} key={index} />

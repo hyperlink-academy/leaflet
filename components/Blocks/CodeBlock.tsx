@@ -6,7 +6,7 @@ import {
 } from "shiki";
 import { useEntity, useReplicache } from "src/replicache";
 import "katex/dist/katex.min.css";
-import { BlockProps } from "./Block";
+import { BlockLayout, BlockProps } from "./Block";
 import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import { useUIState } from "src/useUIState";
 import { BaseTextareaBlock } from "./BaseTextareaBlock";
@@ -119,9 +119,16 @@ export function CodeBlock(props: BlockProps) {
           </select>
         </div>
       )}
-      <div className="w-full min-h-[42px] rounded-md border-border-light outline-border-light selected-outline">
+
+      <BlockLayout
+        isSelected={focusedBlock}
+        hasBackground="accent"
+        borderOnHover
+        className="p-0! min-h-[48px]"
+      >
         {focusedBlock && permissions.write ? (
           <BaseTextareaBlock
+            placeholder="write some code…"
             data-editable-block
             data-entityid={props.entityID}
             id={elementId.block(props.entityID).input}
@@ -131,7 +138,7 @@ export function CodeBlock(props: BlockProps) {
             spellCheck={false}
             autoCapitalize="none"
             autoCorrect="off"
-            className="codeBlockEditor whitespace-nowrap! overflow-auto! font-mono p-2"
+            className="codeBlockEditor whitespace-nowrap! overflow-auto! font-mono p-2 sm:p-3"
             value={content?.data.value}
             onChange={async (e) => {
               // Update the entity with the new value
@@ -146,9 +153,13 @@ export function CodeBlock(props: BlockProps) {
           <pre
             onClick={onClick}
             onMouseDown={(e) => e.stopPropagation()}
-            className="codeBlockRendered overflow-auto! font-mono p-2 w-full h-full"
+            className="codeBlockRendered overflow-auto! font-mono p-2 sm:p-3 w-full h-full"
           >
-            {content?.data.value}
+            {content?.data.value === "" || content?.data.value === undefined ? (
+              <div className="text-tertiary italic">write some code…</div>
+            ) : (
+              content?.data.value
+            )}
           </pre>
         ) : (
           <div
@@ -159,7 +170,7 @@ export function CodeBlock(props: BlockProps) {
             dangerouslySetInnerHTML={{ __html: html || "" }}
           />
         )}
-      </div>
+      </BlockLayout>
     </div>
   );
 }

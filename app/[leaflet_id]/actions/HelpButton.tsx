@@ -161,7 +161,7 @@ const HelpLink = (props: { url: string; text: string }) => {
       className="py-2 px-2 rounded-md flex flex-col gap-1 bg-border-light hover:bg-border hover:no-underline"
       style={{
         backgroundColor: isHovered
-          ? "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 85%)"
+          ? "rgb(var(--accent-light))"
           : "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 75%)",
       }}
       onMouseEnter={handleMouseEnter}

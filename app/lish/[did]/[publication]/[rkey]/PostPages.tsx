@@ -374,7 +374,7 @@ const PageOptions = (props: {
   return (
     <div
       className={`pageOptions w-fit z-10
-      absolute sm:-right-[20px] right-3 sm:top-3 top-0
+      absolute sm:-right-[19px] right-3 sm:top-3 top-0
       flex sm:flex-col flex-row-reverse gap-1 items-start`}
     >
       <PageOptionButton onClick={props.onClick}>

@@ -7,7 +7,7 @@ import { usePublicationData } from "./PublicationSWRProvider";
 import { Fragment, useState } from "react";
 import { useParams } from "next/navigation";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import { Menu, MenuItem } from "components/Layout";
+import { Menu, MenuItem } from "components/Menu";
 import { deletePost } from "./deletePost";
 import { ButtonPrimary } from "components/Buttons";
 import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";

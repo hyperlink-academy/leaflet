@@ -3,7 +3,7 @@ import { generateKeyBetween } from "fractional-indexing";
 import { useCallback, useEffect, useState } from "react";
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import { BlockProps } from "./Block";
+import { BlockProps, BlockLayout } from "./Block";
 import { v7 } from "uuid";
 import { useSmoker } from "components/Toast";
 
@@ -106,113 +106,113 @@ const ButtonBlockSettings = (props: BlockProps) => {
   };
 
   return (
-    <div className="buttonBlockSettingsWrapper flex flex-col gap-2 w-full">
+    <div className="buttonBlockSettingsWrapper flex flex-col gap-2 w-full ">
       <ButtonPrimary className="mx-auto">
         {text !== "" ? text : "Button"}
       </ButtonPrimary>
-
-      <form
-        className={`
-        buttonBlockSettingsBorder
-        w-full bg-bg-page
-    		text-tertiary hover:text-accent-contrast hover:cursor-pointer hover:p-0
-    		flex flex-col gap-2 items-center justify-center hover:border-2 border-dashed rounded-lg
-  		  ${isSelected ? "border-2 border-tertiary p-0" : "border border-border p-px"}
-  		  `}
-        onSubmit={(e) => {
-          e.preventDefault();
-          let rect = document
-            .getElementById("button-block-settings")
-            ?.getBoundingClientRect();
-          if (!textValue) {
-            smoker({
-              error: true,
-              text: "missing button text!",
-              position: {
-                y: rect ? rect.top : 0,
-                x: rect ? rect.left + 12 : 0,
-              },
-            });
-            return;
-          }
-          if (!urlValue) {
-            smoker({
-              error: true,
-              text: "missing url!",
-              position: {
-                y: rect ? rect.top : 0,
-                x: rect ? rect.left + 12 : 0,
-              },
-            });
-            return;
-          }
-          if (!isUrl(urlValue)) {
-            smoker({
-              error: true,
-              text: "invalid url!",
-              position: {
-                y: rect ? rect.top : 0,
-                x: rect ? rect.left + 12 : 0,
-              },
-            });
-            return;
-          }
-          submit();
-        }}
+      <BlockLayout
+        isSelected={!!isSelected}
+        borderOnHover
+        hasBackground="accent"
+        className="buttonBlockSettings text-tertiar hover:cursor-pointer border-dashed! p-0!"
       >
-        <div className="buttonBlockSettingsContent w-full flex flex-col sm:flex-row gap-2 text-secondary px-2 py-3 sm:pb-3 pb-1">
-          <div className="buttonBlockSettingsTitleInput flex gap-2 w-full sm:w-52">
-            <BlockButtonSmall
-              className={`shrink-0  ${isSelected ? "text-tertiary" : "text-border"} `}
-            />
-            <Separator />
-            <Input
-              type="text"
-              autoFocus
-              className="w-full grow border-none outline-hidden bg-transparent"
-              placeholder="button text"
-              value={textValue}
-              disabled={isLocked}
-              onChange={(e) => setTextValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (
-                  e.key === "Backspace" &&
-                  !e.currentTarget.value &&
-                  urlValue !== ""
-                )
-                  e.preventDefault();
-              }}
-            />
+        <form
+          className={`w-full`}
+          onSubmit={(e) => {
+            e.preventDefault();
+            let rect = document
+              .getElementById("button-block-settings")
+              ?.getBoundingClientRect();
+            if (!textValue) {
+              smoker({
+                error: true,
+                text: "missing button text!",
+                position: {
+                  y: rect ? rect.top : 0,
+                  x: rect ? rect.left + 12 : 0,
+                },
+              });
+              return;
+            }
+            if (!urlValue) {
+              smoker({
+                error: true,
+                text: "missing url!",
+                position: {
+                  y: rect ? rect.top : 0,
+                  x: rect ? rect.left + 12 : 0,
+                },
+              });
+              return;
+            }
+            if (!isUrl(urlValue)) {
+              smoker({
+                error: true,
+                text: "invalid url!",
+                position: {
+                  y: rect ? rect.top : 0,
+                  x: rect ? rect.left + 12 : 0,
+                },
+              });
+              return;
+            }
+            submit();
+          }}
+        >
+          <div className="buttonBlockSettingsContent w-full flex flex-col sm:flex-row gap-2 text-secondary px-2 py-3 sm:pb-3 pb-1">
+            <div className="buttonBlockSettingsTitleInput flex gap-2 w-full sm:w-52">
+              <BlockButtonSmall
+                className={`shrink-0  ${isSelected ? "text-tertiary" : "text-border"} `}
+              />
+              <Separator />
+              <Input
+                type="text"
+                autoFocus
+                className="w-full grow border-none outline-hidden bg-transparent"
+                placeholder="button text"
+                value={textValue}
+                disabled={isLocked}
+                onChange={(e) => setTextValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (
+                    e.key === "Backspace" &&
+                    !e.currentTarget.value &&
+                    urlValue !== ""
+                  )
+                    e.preventDefault();
+                }}
+              />
+            </div>
+            <div className="buttonBlockSettingsLinkInput grow flex gap-2 w-full">
+              <LinkSmall
+                className={`shrink-0  ${isSelected ? "text-tertiary" : "text-border"} `}
+              />
+              <Separator />
+              <Input
+                type="text"
+                id="button-block-url-input"
+                className="w-full grow border-none outline-hidden bg-transparent"
+                placeholder="www.example.com"
+                value={urlValue}
+                disabled={isLocked}
+                onChange={(e) => setUrlValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Backspace" && !e.currentTarget.value)
+                    e.preventDefault();
+                }}
+              />
+            </div>
+            <button
+              id="button-block-settings"
+              type="submit"
+              className={`p-1 shrink-0 w-fit flex gap-2 items-center place-self-end ${isSelected && !isLocked ? "text-accent-contrast" : "text-accent-contrast sm:text-border"}`}
+            >
+              <div className="sm:hidden block">Save</div>
+              <CheckTiny />
+            </button>
           </div>
-          <div className="buttonBlockSettingsLinkInput grow flex gap-2 w-full">
-            <LinkSmall
-              className={`shrink-0  ${isSelected ? "text-tertiary" : "text-border"} `}
-            />
-            <Separator />
-            <Input
-              type="text"
-              id="button-block-url-input"
-              className="w-full grow border-none outline-hidden bg-transparent"
-              placeholder="www.example.com"
-              value={urlValue}
-              disabled={isLocked}
-              onChange={(e) => setUrlValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Backspace" && !e.currentTarget.value)
-                  e.preventDefault();
-              }}
-            />
-          </div>
-          <button
-            id="button-block-settings"
-            type="submit"
-            className={`p-1 shrink-0 w-fit flex gap-2 items-center place-self-end ${isSelected && !isLocked ? "text-accent-contrast" : "text-accent-contrast sm:text-border"}`}
-          >
-            <div className="sm:hidden block">Save</div>
-            <CheckTiny />
-          </button>
-        </div>
-      </form>
+        </form>
+      </BlockLayout>
     </div>
   );
 };

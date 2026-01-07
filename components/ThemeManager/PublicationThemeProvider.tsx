@@ -104,9 +104,15 @@ export function PublicationThemeProvider(props: {
 }) {
   let theme = usePubTheme(props.theme, props.isStandalone);
   let cardBorderHidden = !theme.showPageBackground;
+  let hasBackgroundImage = !!props.theme?.backgroundImage?.image?.ref;
+
   return (
     <CardBorderHiddenContext.Provider value={cardBorderHidden}>
-      <BaseThemeProvider local={props.local} {...theme}>
+      <BaseThemeProvider
+        local={props.local}
+        {...theme}
+        hasBackgroundImage={hasBackgroundImage}
+      >
         {props.children}
       </BaseThemeProvider>
     </CardBorderHiddenContext.Provider>

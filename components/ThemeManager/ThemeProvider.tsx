@@ -65,6 +65,8 @@ export function LeafletThemeProvider(props: {
     "theme/card-border-hidden",
   )?.data.value;
   let showPageBackground = !cardBorderHiddenValue;
+  let backgroundImage = useEntity(props.entityID, "theme/background-image");
+  let hasBackgroundImage = !!backgroundImage;
   let primary = useColorAttribute(props.entityID, "theme/primary");
 
   let highlight1 = useEntity(props.entityID, "theme/highlight-1");
@@ -90,6 +92,7 @@ export function LeafletThemeProvider(props: {
         accent2={accent2}
         showPageBackground={showPageBackground}
         pageWidth={pageWidth?.data.value}
+        hasBackgroundImage={hasBackgroundImage}
       >
         {props.children}
       </BaseThemeProvider>
@@ -101,7 +104,7 @@ export function LeafletThemeProvider(props: {
 export const BaseThemeProvider = ({
   local,
   bgLeaflet,
-  bgPage,
+  bgPage: bgPageProp,
   primary,
   accent1,
   accent2,
@@ -110,10 +113,12 @@ export const BaseThemeProvider = ({
   highlight3,
   showPageBackground,
   pageWidth,
+  hasBackgroundImage,
   children,
 }: {
   local?: boolean;
   showPageBackground?: boolean;
+  hasBackgroundImage?: boolean;
   bgLeaflet: AriaColor;
   bgPage: AriaColor;
   primary: AriaColor;
@@ -125,6 +130,10 @@ export const BaseThemeProvider = ({
   pageWidth?: number;
   children: React.ReactNode;
 }) => {
+  // When showPageBackground is false and there's no background image,
+  // pageBg should inherit from leafletBg
+  const bgPage =
+    !showPageBackground && !hasBackgroundImage ? bgLeaflet : bgPageProp;
   // set accent contrast to the accent color that has the highest contrast with the page background
   let accentContrast;
 

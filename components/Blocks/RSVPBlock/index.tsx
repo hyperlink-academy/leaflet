@@ -1,6 +1,6 @@
 "use client";
 import { Database } from "supabase/database.types";
-import { BlockProps } from "components/Blocks/Block";
+import { BlockProps, BlockLayout } from "components/Blocks/Block";
 import { useState } from "react";
 import { submitRSVP } from "actions/phone_rsvp_to_event";
 import { useRSVPData } from "components/PageSWRDataProvider";
@@ -29,15 +29,13 @@ export function RSVPBlock(props: BlockProps) {
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
   return (
-    <div
-      className={`rsvp relative flex flex-col gap-1 border  p-3 w-full rounded-lg  place-items-center justify-center ${isSelected ? "block-border-selected " : "block-border"}`}
-      style={{
-        backgroundColor:
-          "color-mix(in oklab, rgb(var(--accent-1)), rgb(var(--bg-page)) 85%)",
-      }}
+    <BlockLayout
+      isSelected={!!isSelected}
+      hasBackground={"accent"}
+      className="rsvp relative flex flex-col gap-1 w-full rounded-lg place-items-center justify-center"
     >
       <RSVPForm entityID={props.entityID} />
-    </div>
+    </BlockLayout>
   );
 }
 

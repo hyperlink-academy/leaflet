@@ -1,5 +1,5 @@
 import { useEntity, useReplicache } from "src/replicache";
-import { BlockProps } from "./Block";
+import { BlockProps, BlockLayout } from "./Block";
 import { ChevronProps, DayPicker } from "react-day-picker";
 import { Popover } from "components/Popover";
 import { useEffect, useMemo, useState } from "react";
@@ -121,9 +121,9 @@ export function BaseDateTimeBlock(
       disabled={isLocked || !permissions.write}
       className="w-64 z-10 px-2!"
       trigger={
-        <div
-          className={`flex flex-row gap-2 group/date w-64 z-1
-      ${isSelected ? "block-border-selected border-transparent!" : "border border-transparent"}
+        <BlockLayout
+          isSelected={!!isSelected}
+          className={`flex flex-row gap-2 group/date w-64 z-1 border-transparent!
       ${alignment === "center" ? "justify-center" : alignment === "right" ? "justify-end" : "justify-start"}
       `}
         >
@@ -163,7 +163,7 @@ export function BaseDateTimeBlock(
               </div>
             )}
           </FadeIn>
-        </div>
+        </BlockLayout>
       }
     >
       <div className="flex flex-col gap-3 ">

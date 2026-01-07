@@ -21,6 +21,7 @@ export let thumbStyle =
 
 export const ColorPicker = (props: {
   label?: string;
+  helpText?: string;
   value: Color | undefined;
   alpha?: boolean;
   image?: boolean;
@@ -116,6 +117,11 @@ export const ColorPicker = (props: {
           <div className="w-full flex flex-col gap-2 px-1 pb-2">
             {
               <>
+                {props.helpText && (
+                  <div className="text-sm leading-tight text-tertiary pl-7 -mt-2.5">
+                    {props.helpText}
+                  </div>
+                )}
                 <ColorArea
                   className="w-full h-[128px] rounded-md"
                   colorSpace="hsb"
