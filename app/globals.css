@@ -107,9 +107,8 @@
     --highlight-3: 255, 205, 195;
 
     --list-marker-width: 36px;
-    --page-width-unitless: 624;
     --page-width-unitless: min(
-      var(--page-width-unitless),
+      var(--page-width-setting),
       calc(var(--leaflet-width-unitless) - 12)
     );
     --page-width-units: min(
@@ -134,7 +133,7 @@
     :root {
       /*picks between max width and screen width with 64px of padding*/
       --page-width-unitless: min(
-        var(--page-width-unitless),
+        var(--page-width-setting),
         calc(var(--leaflet-width-unitless) - 128)
       );
       --page-width-units: min(

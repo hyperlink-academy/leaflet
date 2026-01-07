@@ -204,7 +204,7 @@ export const BaseThemeProvider = ({
 
     // Set page width CSS variable
     el?.style.setProperty(
-      "--page-width-unitless",
+      "--page-width-setting",
       (pageWidth || 624).toString(),
     );
   }, [
@@ -238,7 +238,9 @@ export const BaseThemeProvider = ({
             : "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 75%)",
           "--highlight-2": colorToString(highlight2, "rgb"),
           "--highlight-3": colorToString(highlight3, "rgb"),
+          "--page-width-setting": pageWidth || 624,
           "--page-width-unitless": pageWidth || 624,
+          "--page-width-units": `min(${pageWidth || 624}px, calc(100vw - 12px))`,
         } as CSSProperties
       }
     >
