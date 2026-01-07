@@ -121,7 +121,7 @@ export const PubThemeSetter = (props: {
           backToMenuAction={props.backToMenu}
           state={"theme"}
         >
-          Theme
+          Theme and Layout
         </PubSettingsHeader>
       </form>
 
