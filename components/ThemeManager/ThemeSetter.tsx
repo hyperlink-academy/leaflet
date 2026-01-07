@@ -116,16 +116,18 @@ export const ThemeSetterContent = (props: {
   if (pub?.publications) return null;
   return (
     <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
-      <PageWidthSetter
-        entityID={props.entityID}
-        thisPicker={"page-width"}
-        openPicker={openPicker}
-        setOpenPicker={setOpenPicker}
-        closePicker={() => setOpenPicker("null")}
-      />
+      {!props.home && (
+        <PageWidthSetter
+          entityID={props.entityID}
+          thisPicker={"page-width"}
+          openPicker={openPicker}
+          setOpenPicker={setOpenPicker}
+          closePicker={() => setOpenPicker("null")}
+        />
+      )}
       <div className="themeBGLeaflet flex">
         <div className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}>
-          <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md">
+          <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-[6px] border border-[#CCCCCC] rounded-md">
             <LeafletBGPicker
               entityID={props.entityID}
               thisPicker={"leaflet"}
