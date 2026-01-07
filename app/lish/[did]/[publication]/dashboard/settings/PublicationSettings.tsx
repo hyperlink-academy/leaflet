@@ -12,10 +12,13 @@ import { theme } from "tailwind.config";
 import { ButtonPrimary } from "components/Buttons";
 import { DotLoader } from "components/utils/DotLoader";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
+import { PostOptions } from "./PostOptions";
+
+type menuState = "menu" | "general" | "theme" | "post-options";
 
 export function PublicationSettingsButton(props: { publication: string }) {
   let isMobile = useIsMobile();
-  let [state, setState] = useState<"menu" | "general" | "theme">("menu");
+  let [state, setState] = useState<menuState>("menu");
   let [loading, setLoading] = useState(false);
 
   return (
@@ -46,6 +49,12 @@ export function PublicationSettingsButton(props: { publication: string }) {
           loading={loading}
           setLoading={setLoading}
         />
+      ) : state === "post-options" ? (
+        <PostOptions
+          backToMenu={() => setState("menu")}
+          loading={loading}
+          setLoading={setLoading}
+        />
       ) : (
         <PubSettingsMenu
           state={state}
@@ -59,8 +68,8 @@ export function PublicationSettingsButton(props: { publication: string }) {
 }
 
 const PubSettingsMenu = (props: {
-  state: "menu" | "general" | "theme";
-  setState: (s: typeof props.state) => void;
+  state: menuState;
+  setState: (s: menuState) => void;
   loading: boolean;
   setLoading: (l: boolean) => void;
 }) => {
@@ -73,7 +82,9 @@ const PubSettingsMenu = (props: {
         loading={props.loading}
         setLoadingAction={props.setLoading}
         state={"menu"}
-      />
+      >
+        Settings
+      </PubSettingsHeader>
       <button
         className={menuItemClassName}
         type="button"
@@ -81,7 +92,7 @@ const PubSettingsMenu = (props: {
           props.setState("general");
         }}
       >
-        Publication Settings
+        General Settings
         <ArrowRightTiny />
       </button>
       <button
@@ -89,7 +100,15 @@ const PubSettingsMenu = (props: {
         type="button"
         onClick={() => props.setState("theme")}
       >
-        Publication Theme
+        Theme
+        <ArrowRightTiny />
+      </button>
+      <button
+        className={menuItemClassName}
+        type="button"
+        onClick={() => props.setState("post-options")}
+      >
+        Post Layout
         <ArrowRightTiny />
       </button>
     </div>
@@ -97,20 +116,15 @@ const PubSettingsMenu = (props: {
 };
 
 export const PubSettingsHeader = (props: {
-  state: "menu" | "general" | "theme";
+  state: menuState;
   backToMenuAction?: () => void;
   loading: boolean;
   setLoadingAction: (l: boolean) => void;
+  children: React.ReactNode;
 }) => {
   return (
     <div className="flex justify-between font-bold text-secondary bg-border-light -mx-3 -mt-2 px-3 py-2 mb-1">
-      {props.state === "menu"
-        ? "Settings"
-        : props.state === "general"
-          ? "General"
-          : props.state === "theme"
-            ? "Publication Theme"
-            : ""}
+      {props.children}
       {props.state !== "menu" && (
         <div className="flex gap-2">
           <button
