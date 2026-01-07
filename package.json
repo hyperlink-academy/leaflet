@@ -7,7 +7,7 @@
     "dev": "TZ=UTC next dev --turbo",
     "publish-lexicons": "tsx lexicons/publish.ts",
     "generate-db-types": "supabase gen types --local > supabase/database.types.ts && drizzle-kit introspect && rm -rf ./drizzle/*.sql ./drizzle/meta",
-    "lexgen": "tsx ./lexicons/build.ts && lex gen-api ./lexicons/api ./lexicons/pub/leaflet/document.json ./lexicons/pub/leaflet/comment.json ./lexicons/pub/leaflet/publication.json ./lexicons/pub/leaflet/*/* ./lexicons/com/atproto/*/* ./lexicons/app/bsky/*/* --yes && find './lexicons/api' -type f -exec sed -i 's/\\.js'/'/g' {} \\;",
+    "lexgen": "tsx ./lexicons/build.ts && lex gen-api ./lexicons/api ./lexicons/pub/leaflet/document.json ./lexicons/pub/leaflet/comment.json ./lexicons/pub/leaflet/publication.json ./lexicons/pub/leaflet/*/* ./lexicons/com/atproto/*/* ./lexicons/app/bsky/*/* --yes && tsx ./lexicons/fix-extensions.ts ./lexicons/api",
     "wrangler-dev": "wrangler dev",
     "build-appview": "esbuild appview/index.ts --outfile=appview/dist/index.js --bundle --platform=node",
     "build-feed-service": "esbuild feeds/index.ts --outfile=feeds/dist/index.js --bundle --platform=node",

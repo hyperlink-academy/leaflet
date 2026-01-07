@@ -108,7 +108,7 @@ export const PostHeaderLayout = (props: {
 }) => {
   return (
     <div
-      className="postHeader max-w-prose w-full flex flex-col px-3 sm:px-4 sm:pt-3 pt-2 pb-5"
+      className="postHeader w-full flex flex-col px-3 sm:px-4 sm:pt-3 pt-2 pb-5"
       id="post-header"
     >
       <div className="pubInfo flex text-accent-contrast font-bold justify-between w-full">

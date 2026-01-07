@@ -76,6 +76,8 @@ export function LeafletThemeProvider(props: {
   let accent1 = useColorAttribute(props.entityID, "theme/accent-background");
   let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
 
+  let pageWidth = useEntity(props.entityID, "theme/page-width");
+
   return (
     <CardBorderHiddenContext.Provider value={!!cardBorderHiddenValue}>
       <BaseThemeProvider
@@ -89,6 +91,7 @@ export function LeafletThemeProvider(props: {
         accent1={accent1}
         accent2={accent2}
         showPageBackground={showPageBackground}
+        pageWidth={pageWidth?.data.value}
         hasBackgroundImage={hasBackgroundImage}
       >
         {props.children}
@@ -109,6 +112,7 @@ export const BaseThemeProvider = ({
   highlight2,
   highlight3,
   showPageBackground,
+  pageWidth,
   hasBackgroundImage,
   children,
 }: {
@@ -123,6 +127,7 @@ export const BaseThemeProvider = ({
   highlight1?: string;
   highlight2: AriaColor;
   highlight3: AriaColor;
+  pageWidth?: number;
   children: React.ReactNode;
 }) => {
   // When showPageBackground is false and there's no background image,
@@ -205,6 +210,12 @@ export const BaseThemeProvider = ({
       "--accent-1-is-contrast",
       accentContrast === accent1 ? "1" : "0",
     );
+
+    // Set page width CSS variable
+    el?.style.setProperty(
+      "--page-width-setting",
+      (pageWidth || 624).toString(),
+    );
   }, [
     local,
     bgLeaflet,
@@ -216,6 +227,7 @@ export const BaseThemeProvider = ({
     accent1,
     accent2,
     accentContrast,
+    pageWidth,
   ]);
   return (
     <div
@@ -235,6 +247,9 @@ export const BaseThemeProvider = ({
             : "color-mix(in oklab, rgb(var(--accent-contrast)), rgb(var(--bg-page)) 75%)",
           "--highlight-2": colorToString(highlight2, "rgb"),
           "--highlight-3": colorToString(highlight3, "rgb"),
+          "--page-width-setting": pageWidth || 624,
+          "--page-width-unitless": pageWidth || 624,
+          "--page-width-units": `min(${pageWidth || 624}px, calc(100vw - 12px))`,
         } as CSSProperties
       }
     >
