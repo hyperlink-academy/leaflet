@@ -51,7 +51,7 @@ export const PageThemePickers = (props: {
           <hr className="border-border-light w-full" />
         </>
       )}
-      <PageTextPicker
+      <TextPickers
         value={primaryValue}
         setValue={set("theme/primary")}
         openPicker={props.openPicker}
@@ -347,7 +347,7 @@ const CanvasBGPatternPicker = (props: {
   );
 };
 
-export const PageTextPicker = (props: {
+export const TextPickers = (props: {
   openPicker: pickers;
   setOpenPicker: (thisPicker: pickers) => void;
   value: Color;

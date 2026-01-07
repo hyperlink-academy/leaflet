@@ -10,6 +10,7 @@ import {
   PageBorderHider,
   PageThemePickers,
 } from "./Pickers/PageThemePickers";
+import { PageWidthSetter } from "./Pickers/PageWidthSetter";
 import { useMemo, useState } from "react";
 import { ReplicacheMutators, useEntity, useReplicache } from "src/replicache";
 import { Replicache } from "replicache";
@@ -35,7 +36,8 @@ export type pickers =
   | "highlight-1"
   | "highlight-2"
   | "highlight-3"
-  | "page-background-image";
+  | "page-background-image"
+  | "page-width";
 
 export function setColorAttribute(
   rep: Replicache<ReplicacheMutators> | null,
@@ -75,7 +77,7 @@ export const ThemePopover = (props: { entityID: string; home?: boolean }) => {
   return (
     <>
       <Popover
-        className="w-80 bg-white"
+        className="w-80 bg-white py-3!"
         arrowFill="#FFFFFF"
         asChild
         side={isMobile ? "top" : "right"}
@@ -114,6 +116,13 @@ export const ThemeSetterContent = (props: {
   if (pub?.publications) return null;
   return (
     <div className="themeSetterContent flex flex-col w-full overflow-y-scroll no-scrollbar">
+      <PageWidthSetter
+        entityID={props.entityID}
+        thisPicker={"page-width"}
+        openPicker={openPicker}
+        setOpenPicker={setOpenPicker}
+        closePicker={() => setOpenPicker("null")}
+      />
       <div className="themeBGLeaflet flex">
         <div className={`bgPicker flex flex-col gap-0 -mb-[6px] z-10 w-full `}>
           <div className="bgPickerBody w-full flex flex-col gap-2 p-2 mt-1 border border-[#CCCCCC] rounded-md">

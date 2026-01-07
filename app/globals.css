@@ -107,8 +107,15 @@
     --highlight-3: 255, 205, 195;
 
     --list-marker-width: 36px;
-    --page-width-unitless: min(624, calc(var(--leaflet-width-unitless) - 12));
-    --page-width-units: min(624px, calc(100vw - 12px));
+    --page-max-width-unitless: 624;
+    --page-width-unitless: min(
+      var(--page-max-width-unitless),
+      calc(var(--leaflet-width-unitless) - 12)
+    );
+    --page-width-units: min(
+      calc(var(--page-max-width-unitless) * 1px),
+      calc(100vw - 12px)
+    );
 
     --gripperSVG: url("/gripperPattern.svg");
     --gripperSVG2: url("/gripperPattern2.svg");
@@ -126,20 +133,26 @@
   @media (min-width: 640px) {
     :root {
       --page-width-unitless: min(
-        624,
+        var(--page-max-width-unitless),
         calc(var(--leaflet-width-unitless) - 128)
       );
-      --page-width-units: min(624px, calc(100vw - 128px));
+      --page-width-units: min(
+        calc(var(--page-max-width-unitless) * 1px),
+        calc(100vw - 128px)
+      );
     }
   }
 
   @media (min-width: 1280px) {
     :root {
       --page-width-unitless: min(
-        624,
+        var(--page-max-width-unitless),
         calc((var(--leaflet-width-unitless) / 2) - 32)
       );
-      --page-width-units: min(624px, calc((100vw / 2) - 32px));
+      --page-width-units: min(
+        calc(var(--page-max-width-unitless) * 1px),
+        calc((100vw / 2) - 32px)
+      );
     }
   }
 

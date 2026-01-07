@@ -127,8 +127,8 @@ export const ImageSettings = (props: {
                 <Slider.Thumb
                   className={`
                     flex w-4 h-4 rounded-full border-2 border-white cursor-pointer
-                    ${repeat ? "bg-[#595959]" : " bg-[#C3C3C3] "}
-                    ${repeat && "shadow-[0_0_0_1px_#8C8C8C,inset_0_0_0_1px_#8C8C8C]"} `}
+                    ${repeat ? "bg-[#595959] shadow-[0_0_0_1px_#8C8C8C,inset_0_0_0_1px_#8C8C8C]" : " bg-[#C3C3C3] "}
+                   `}
                   aria-label="Volume"
                 />
               </Slider.Root>
