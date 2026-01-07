@@ -11,6 +11,13 @@
         "plaintext": {
           "type": "string"
         },
+        "textSize": {
+          "type": "string",
+          "enum": [
+            "default",
+            "small"
+          ]
+        },
         "facets": {
           "type": "array",
           "items": {
