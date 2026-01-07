@@ -4,7 +4,7 @@ import {
   Header3Small,
 } from "components/Icons/BlockTextSmall";
 import { Props } from "components/Icons/Props";
-import { ShortcutKey } from "components/Layout";
+import { ShortcutKey, Separator } from "components/Layout";
 import { ToolbarButton } from "components/Toolbar";
 import { TextSelection } from "prosemirror-state";
 import { useCallback } from "react";
@@ -22,6 +22,8 @@ export const TextBlockTypeToolbar = (props: {
     focusedBlock?.entityID || null,
     "block/heading-level",
   );
+
+  let textSize = useEntity(focusedBlock?.entityID || null, "block/text-size");
   let { rep } = useReplicache();
 
   let setLevel = useCallback(
@@ -51,106 +53,133 @@ export const TextBlockTypeToolbar = (props: {
   );
   return (
     // This Toolbar should close once the user starts typing again
-    <div className="flex w-full justify-between items-center gap-4">
-      <div className="flex items-center gap-[6px]">
-        <ToolbarButton
-          className={props.className}
-          onClick={() => {
-            setLevel(1);
-          }}
-          active={
-            blockType?.data.value === "heading" &&
-            headingLevel?.data.value === 1
-          }
-          tooltipContent={
-            <div className="flex flex-col justify-center">
-              <div className="font-bold text-center">Title</div>
-              <div className="flex gap-1 font-normal">
-                start line with
-                <ShortcutKey>#</ShortcutKey>
-              </div>
+    <>
+      <ToolbarButton
+        className={props.className}
+        onClick={() => {
+          setLevel(1);
+        }}
+        active={
+          blockType?.data.value === "heading" && headingLevel?.data.value === 1
+        }
+        tooltipContent={
+          <div className="flex flex-col justify-center">
+            <div className="font-bold text-center">Title</div>
+            <div className="flex gap-1 font-normal">
+              start line with
+              <ShortcutKey>#</ShortcutKey>
             </div>
-          }
-        >
-          <Header1Small />
-        </ToolbarButton>
-        <ToolbarButton
-          className={props.className}
-          onClick={() => {
-            setLevel(2);
-          }}
-          active={
-            blockType?.data.value === "heading" &&
-            headingLevel?.data.value === 2
-          }
-          tooltipContent={
-            <div className="flex flex-col justify-center">
-              <div className="font-bold text-center">Heading</div>
-              <div className="flex gap-1 font-normal">
-                start line with
-                <ShortcutKey>##</ShortcutKey>
-              </div>
+          </div>
+        }
+      >
+        <Header1Small />
+      </ToolbarButton>
+      <ToolbarButton
+        className={props.className}
+        onClick={() => {
+          setLevel(2);
+        }}
+        active={
+          blockType?.data.value === "heading" && headingLevel?.data.value === 2
+        }
+        tooltipContent={
+          <div className="flex flex-col justify-center">
+            <div className="font-bold text-center">Heading</div>
+            <div className="flex gap-1 font-normal">
+              start line with
+              <ShortcutKey>##</ShortcutKey>
             </div>
-          }
-        >
-          <Header2Small />
-        </ToolbarButton>
-        <ToolbarButton
-          className={props.className}
-          onClick={() => {
-            setLevel(3);
-          }}
-          active={
-            blockType?.data.value === "heading" &&
-            headingLevel?.data.value === 3
-          }
-          tooltipContent={
-            <div className="flex flex-col justify-center">
-              <div className="font-bold text-center">Subheading</div>
-              <div className="flex gap-1 font-normal">
-                start line with
-                <ShortcutKey>###</ShortcutKey>
-              </div>
+          </div>
+        }
+      >
+        <Header2Small />
+      </ToolbarButton>
+      <ToolbarButton
+        className={props.className}
+        onClick={() => {
+          setLevel(3);
+        }}
+        active={
+          blockType?.data.value === "heading" && headingLevel?.data.value === 3
+        }
+        tooltipContent={
+          <div className="flex flex-col justify-center">
+            <div className="font-bold text-center">Subheading</div>
+            <div className="flex gap-1 font-normal">
+              start line with
+              <ShortcutKey>###</ShortcutKey>
             </div>
+          </div>
+        }
+      >
+        <Header3Small />
+      </ToolbarButton>
+      <Separator classname="h-6!!" />
+      <ToolbarButton
+        className={`px-[6px] ${props.className}`}
+        onClick={async () => {
+          if (headingLevel)
+            await rep?.mutate.retractFact({ factID: headingLevel.id });
+          if (textSize) await rep?.mutate.retractFact({ factID: textSize.id });
+          if (!focusedBlock || !blockType) return;
+          if (blockType.data.value !== "text") {
+            let existingEditor =
+              useEditorStates.getState().editorStates[focusedBlock.entityID];
+            let selection = existingEditor?.editor.selection;
+            await rep?.mutate.assertFact({
+              entity: focusedBlock?.entityID,
+              attribute: "block/type",
+              data: { type: "block-type-union", value: "text" },
+            });
+
+            let newEditor =
+              useEditorStates.getState().editorStates[focusedBlock.entityID];
+            if (!newEditor || !selection) return;
+            newEditor.view?.dispatch(
+              newEditor.editor.tr.setSelection(
+                TextSelection.create(newEditor.editor.doc, selection.anchor),
+              ),
+            );
+
+            newEditor.view?.focus();
           }
-        >
-          <Header3Small />
-        </ToolbarButton>
-        <ToolbarButton
-          className={`px-[6px] ${props.className}`}
-          onClick={async () => {
+        }}
+        active={
+          blockType?.data.value === "text" && textSize?.data.value !== "small"
+        }
+        tooltipContent={<div>Normal Text</div>}
+      >
+        Text
+      </ToolbarButton>
+      <ToolbarButton
+        className={`px-[6px] text-sm text-secondary ${props.className}`}
+        onClick={async () => {
+          if (!focusedBlock || !blockType) return;
+          if (blockType.data.value !== "text") {
+            // Convert to text block first if it's a heading
             if (headingLevel)
               await rep?.mutate.retractFact({ factID: headingLevel.id });
-            if (!focusedBlock || !blockType) return;
-            if (blockType.data.value !== "text") {
-              let existingEditor =
-                useEditorStates.getState().editorStates[focusedBlock.entityID];
-              let selection = existingEditor?.editor.selection;
-              await rep?.mutate.assertFact({
-                entity: focusedBlock?.entityID,
-                attribute: "block/type",
-                data: { type: "block-type-union", value: "text" },
-              });
-
-              let newEditor =
-                useEditorStates.getState().editorStates[focusedBlock.entityID];
-              if (!newEditor || !selection) return;
-              newEditor.view?.dispatch(
-                newEditor.editor.tr.setSelection(
-                  TextSelection.create(newEditor.editor.doc, selection.anchor),
-                ),
-              );
-
-              newEditor.view?.focus();
-            }
-          }}
-          active={blockType?.data.value === "text"}
-          tooltipContent={<div>Paragraph</div>}
-        >
-          Paragraph
-        </ToolbarButton>
-      </div>
-    </div>
+            await rep?.mutate.assertFact({
+              entity: focusedBlock.entityID,
+              attribute: "block/type",
+              data: { type: "block-type-union", value: "text" },
+            });
+          }
+          // Set text size to small
+          await rep?.mutate.assertFact({
+            entity: focusedBlock.entityID,
+            attribute: "block/text-size",
+            data: { type: "text-size-union", value: "small" },
+          });
+        }}
+        active={
+          blockType?.data.value === "text" && textSize?.data.value === "small"
+        }
+        tooltipContent={<div>Small Text</div>}
+      >
+        Small
+      </ToolbarButton>
+    </>
   );
 };
 

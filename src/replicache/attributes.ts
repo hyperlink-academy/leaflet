@@ -71,6 +71,10 @@ const BlockAttributes = {
     type: "number",
     cardinality: "one",
   },
+  "block/text-size": {
+    type: "text-size-union",
+    cardinality: "one",
+  },
   "block/image": {
     type: "image",
     cardinality: "one",
@@ -317,6 +321,10 @@ export type Data<A extends keyof typeof Attributes> = {
   "text-alignment-type-union": {
     type: "text-alignment-type-union";
     value: "right" | "left" | "center" | "justify";
+  };
+  "text-size-union": {
+    type: "text-size-union";
+    value: "default" | "small";
   };
   "page-type-union": { type: "page-type-union"; value: "doc" | "canvas" };
   "block-type-union": {
