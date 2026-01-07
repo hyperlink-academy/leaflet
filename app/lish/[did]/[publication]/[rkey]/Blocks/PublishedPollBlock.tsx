@@ -9,12 +9,12 @@ import { useState, useEffect } from "react";
 import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useIdentityData } from "components/IdentityProvider";
 import { AtpAgent } from "@atproto/api";
-import { voteOnPublishedPoll } from "./voteOnPublishedPoll";
-import { PollData } from "./fetchPollData";
+import { voteOnPublishedPoll } from "../voteOnPublishedPoll";
+import { PollData } from "../fetchPollData";
 import { Popover } from "components/Popover";
 import LoginForm from "app/login/LoginForm";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
-import { getVoterIdentities, VoterIdentity } from "./getVoterIdentities";
+import { getVoterIdentities, VoterIdentity } from "../getVoterIdentities";
 import { Json } from "supabase/database.types";
 import { InfoSmall } from "components/Icons/InfoSmall";
 

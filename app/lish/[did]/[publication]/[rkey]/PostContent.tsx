@@ -20,18 +20,18 @@ import {
 } from "lexicons/api";
 
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { TextBlock } from "./TextBlock";
+import { TextBlock } from "./Blocks/TextBlock";
 import { Popover } from "components/Popover";
 import { theme } from "tailwind.config";
 import { ImageAltSmall } from "components/Icons/ImageAlt";
-import { StaticMathBlock } from "./StaticMathBlock";
-import { PubCodeBlock } from "./PubCodeBlock";
+import { StaticMathBlock } from "./Blocks/StaticMathBlock";
+import { PubCodeBlock } from "./Blocks/PubCodeBlock";
 import { AppBskyFeedDefs } from "@atproto/api";
-import { PubBlueskyPostBlock } from "./PublishBskyPostBlock";
+import { PubBlueskyPostBlock } from "./Blocks/PublishBskyPostBlock";
 import { openPage } from "./PostPages";
 import { PageLinkBlock } from "components/Blocks/PageLinkBlock";
-import { PublishedPageLinkBlock } from "./PublishedPageBlock";
-import { PublishedPollBlock } from "./PublishedPollBlock";
+import { PublishedPageLinkBlock } from "./Blocks/PublishedPageBlock";
+import { PublishedPollBlock } from "./Blocks/PublishedPollBlock";
 import { PollData } from "./fetchPollData";
 import { ButtonPrimary } from "components/Buttons";
 
@@ -173,7 +173,13 @@ export let Block = ({
       let uri = b.block.postRef.uri;
       let post = bskyPostData.find((p) => p.uri === uri);
       if (!post) return <div>no prefetched post rip</div>;
-      return <PubBlueskyPostBlock post={post} className={className} pageId={pageId} />;
+      return (
+        <PubBlueskyPostBlock
+          post={post}
+          className={className}
+          pageId={pageId}
+        />
+      );
     }
     case PubLeafletBlocksIframe.isMain(b.block): {
       return (

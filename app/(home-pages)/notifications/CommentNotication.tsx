@@ -1,4 +1,4 @@
-import { BaseTextBlock } from "app/lish/[did]/[publication]/[rkey]/BaseTextBlock";
+import { BaseTextBlock } from "app/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
 import {
   AppBskyActorProfile,
   PubLeafletComment,

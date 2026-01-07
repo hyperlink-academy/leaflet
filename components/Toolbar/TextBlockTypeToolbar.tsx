@@ -114,7 +114,7 @@ export const TextBlockTypeToolbar = (props: {
       >
         <Header3Small />
       </ToolbarButton>
-      <Separator classname="h-6!!" />
+      <Separator classname="h-6!" />
       <ToolbarButton
         className={`px-[6px] ${props.className}`}
         onClick={async () => {

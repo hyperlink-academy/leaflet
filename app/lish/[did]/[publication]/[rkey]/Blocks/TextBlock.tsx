@@ -1,13 +1,14 @@
 "use client";
 import { UnicodeString } from "@atproto/api";
-import { PubLeafletRichtextFacet } from "lexicons/api";
+import { PubLeafletRichtextFacet, PubLeafletBlocksText } from "lexicons/api";
 import { useMemo } from "react";
-import { useHighlight } from "./useHighlight";
+import { useHighlight } from "../useHighlight";
 import { BaseTextBlock } from "./BaseTextBlock";
 
 type Facet = PubLeafletRichtextFacet.Main;
 export function TextBlock(props: {
   plaintext: string;
+  textSize?: PubLeafletBlocksText.Main["textSize"];
   facets?: Facet[];
   index: number[];
   preview?: boolean;
