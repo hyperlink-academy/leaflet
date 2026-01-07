@@ -467,10 +467,12 @@ async function processBlocksToPages(
 
     if (b.type == "text") {
       let [stringValue, facets] = getBlockContent(b.value);
+      let [textSize] = scan.eav(b.value, "block/text-size");
       let block: $Typed<PubLeafletBlocksText.Main> = {
         $type: ids.PubLeafletBlocksText,
         plaintext: stringValue,
         facets,
+        ...(textSize && { textSize: textSize.data.value }),
       };
       return block;
     }

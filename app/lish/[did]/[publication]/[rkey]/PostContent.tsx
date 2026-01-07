@@ -345,7 +345,10 @@ export let Block = ({
     }
     case PubLeafletBlocksText.isMain(b.block):
       return (
-        <p className={`textBlock ${className}`} {...blockProps}>
+        <p
+          className={`textBlock ${className} ${b.block.textSize === "small" ? "text-sm text-secondary" : ""}`}
+          {...blockProps}
+        >
           <TextBlock
             facets={b.block.facets}
             plaintext={b.block.plaintext}
@@ -355,6 +358,7 @@ export let Block = ({
           />
         </p>
       );
+
     case PubLeafletBlocksHeader.isMain(b.block): {
       if (b.block.level === 1)
         return (
