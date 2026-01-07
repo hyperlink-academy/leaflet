@@ -1824,8 +1824,8 @@ export const schemaDict = {
           },
           pageWidth: {
             type: "integer",
-            minimum: 0,
-            maximum: 1600,
+            minimum: 324,
+            maximum: 1200,
           },
           primary: {
             type: "union",
