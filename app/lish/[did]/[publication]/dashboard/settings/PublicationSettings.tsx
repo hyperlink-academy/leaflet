@@ -103,14 +103,14 @@ const PubSettingsMenu = (props: {
         Theme and Layout
         <ArrowRightTiny />
       </button>
-      {/*<button
+      <button
         className={menuItemClassName}
         type="button"
         onClick={() => props.setState("post-options")}
       >
         Post Options
         <ArrowRightTiny />
-      </button>*/}
+      </button>
     </div>
   );
 };

@@ -27,6 +27,8 @@ export const PubLeafletPublication: LexiconDoc = {
       properties: {
         showInDiscover: { type: "boolean", default: true },
         showComments: { type: "boolean", default: true },
+        showMentions: { type: "boolean", default: true },
+        showPrevNext: { type: "boolean", default: true },
       },
     },
     theme: {

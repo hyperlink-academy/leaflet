@@ -33,12 +33,13 @@ export const PostOptions = (props: {
         // e.preventDefault();
         // props.setLoading(true);
         // let data = await updatePublication({
+        //   name: record.name,
         //   uri: pubData.uri,
-        //   name: nameValue,
-        //   description: descriptionValue,
-        //   iconFile: iconFile,
         //   preferences: {
-        //     showInDiscover: showInDiscover,
+        //     showInDiscover:
+        //       record?.preferences?.showInDiscover === undefined
+        //         ? true
+        //         : record.preferences.showInDiscover,
         //     showComments: showComments,
         //   },
         // });
@@ -57,7 +58,6 @@ export const PostOptions = (props: {
         Post Options
       </PubSettingsHeader>
       <h4 className="mb-1">Layout</h4>
-      {/*<div>Max Post Width</div>*/}
       <Toggle
         toggle={showPrevNext}
         onToggle={() => {
