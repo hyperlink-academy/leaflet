@@ -275,7 +275,11 @@ export function PostPages({
               ? []
               : document.comments_on_documents
           }
-          quotesAndMentions={quotesAndMentions}
+          quotesAndMentions={
+            pubRecord?.preferences?.showMentions === false
+              ? []
+              : quotesAndMentions
+          }
           did={did}
         />
       )}
@@ -362,7 +366,11 @@ export function PostPages({
                     ? []
                     : document.comments_on_documents
                 }
-                quotesAndMentions={quotesAndMentions}
+                quotesAndMentions={
+                  pubRecord?.preferences?.showMentions === false
+                    ? []
+                    : quotesAndMentions
+                }
                 did={did}
               />
             )}

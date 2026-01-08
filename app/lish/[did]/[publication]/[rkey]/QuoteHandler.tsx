@@ -186,7 +186,7 @@ export const QuoteOptionButtons = (props: { position: string }) => {
         <BlueskyLinkTiny className="shrink-0" />
         Bluesky
       </a>
-      <Separator classname="h-4" />
+      <Separator classname="h-4!" />
       <button
         id="copy-quote-link"
         className="flex gap-1 items-center hover:font-bold px-1"
@@ -211,7 +211,8 @@ export const QuoteOptionButtons = (props: { position: string }) => {
       </button>
       {pubRecord?.preferences?.showComments !== false && identity?.atp_did && (
         <>
-          <Separator classname="h-4" />
+          <Separator classname="h-4! " />
+
           <button
             className="flex gap-1 items-center hover:font-bold px-1"
             onClick={() => {

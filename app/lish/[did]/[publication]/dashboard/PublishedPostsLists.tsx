@@ -140,6 +140,7 @@ export function PublishedPostsList(props: {
                       commentsCount={comments}
                       tags={tags}
                       showComments={pubRecord?.preferences?.showComments}
+                      showMentions={pubRecord?.preferences?.showMentions}
                       postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
                     />
                   </div>

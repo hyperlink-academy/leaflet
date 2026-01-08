@@ -14,11 +14,13 @@ export const InteractionPreview = (props: {
   tags?: string[];
   postUrl: string;
   showComments: boolean | undefined;
+  showMentions: boolean | undefined;
+
   share?: boolean;
 }) => {
   let smoker = useSmoker();
   let interactionsAvailable =
-    props.quotesCount > 0 ||
+    (props.quotesCount > 0 && props.showMentions !== false) ||
     (props.showComments !== false && props.commentsCount > 0);
 
   const tagsCount = props.tags?.length || 0;
@@ -36,7 +38,7 @@ export const InteractionPreview = (props: {
         </>
       )}
 
-      {props.quotesCount === 0 ? null : (
+      {props.showMentions === false || props.quotesCount === 0 ? null : (
         <SpeedyLink
           aria-label="Post quotes"
           href={`${props.postUrl}?interactionDrawer=quotes`}

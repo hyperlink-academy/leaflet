@@ -14,7 +14,6 @@ import {
   ExpandedInteractions,
   getCommentCount,
   getQuoteCount,
-  Interactions,
 } from "./Interactions/Interactions";
 import { PostContent } from "./PostContent";
 import { PostHeader } from "./PostHeader/PostHeader";
@@ -92,6 +91,7 @@ export function LinearDocumentPage({
         <ExpandedInteractions
           pageId={pageId}
           showComments={preferences.showComments}
+          showMentions={preferences.showMentions}
           commentsCount={getCommentCount(document, pageId) || 0}
           quotesCount={getQuoteCount(document, pageId) || 0}
         />
