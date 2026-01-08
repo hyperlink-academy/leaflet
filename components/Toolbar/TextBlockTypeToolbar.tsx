@@ -145,11 +145,41 @@ export const TextBlockTypeToolbar = (props: {
           }
         }}
         active={
-          blockType?.data.value === "text" && textSize?.data.value !== "small"
+          blockType?.data.value === "text" &&
+          textSize?.data.value !== "small" &&
+          textSize?.data.value !== "large"
         }
         tooltipContent={<div>Normal Text</div>}
       >
         Text
+      </ToolbarButton>
+      <ToolbarButton
+        className={`px-[6px] text-lg ${props.className}`}
+        onClick={async () => {
+          if (!focusedBlock || !blockType) return;
+          if (blockType.data.value !== "text") {
+            // Convert to text block first if it's a heading
+            if (headingLevel)
+              await rep?.mutate.retractFact({ factID: headingLevel.id });
+            await rep?.mutate.assertFact({
+              entity: focusedBlock.entityID,
+              attribute: "block/type",
+              data: { type: "block-type-union", value: "text" },
+            });
+          }
+          // Set text size to large
+          await rep?.mutate.assertFact({
+            entity: focusedBlock.entityID,
+            attribute: "block/text-size",
+            data: { type: "text-size-union", value: "large" },
+          });
+        }}
+        active={
+          blockType?.data.value === "text" && textSize?.data.value === "large"
+        }
+        tooltipContent={<div>Large Text</div>}
+      >
+        <div className="leading-[1.625rem]">Large</div>
       </ToolbarButton>
       <ToolbarButton
         className={`px-[6px] text-sm text-secondary ${props.className}`}
@@ -177,7 +207,7 @@ export const TextBlockTypeToolbar = (props: {
         }
         tooltipContent={<div>Small Text</div>}
       >
-        Small
+        <div className="leading-[1.625rem]">Small</div>
       </ToolbarButton>
     </>
   );

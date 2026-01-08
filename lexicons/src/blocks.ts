@@ -10,7 +10,7 @@ export const PubLeafletBlocksText: LexiconDoc = {
       required: ["plaintext"],
       properties: {
         plaintext: { type: "string" },
-        textSize: { type: "string", enum: ["default", "small"] },
+        textSize: { type: "string", enum: ["default", "small", "large"] },
         facets: {
           type: "array",
           items: { type: "ref", ref: PubLeafletRichTextFacet.id },

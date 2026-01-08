@@ -129,7 +129,12 @@ export function RenderedTextBlock(props: {
     center: "text-center",
     justify: "text-justify",
   }[alignment];
-  let textStyle = textSize?.data.value === "small" ? "text-sm" : "";
+  let textStyle =
+    textSize?.data.value === "small"
+      ? "text-sm"
+      : textSize?.data.value === "large"
+        ? "text-lg"
+        : "";
   let { permissions } = useEntitySetContext();
 
   let content = <br />;
@@ -190,7 +195,9 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
   let textStyle =
     textSize?.data.value === "small"
       ? "text-sm text-secondary"
-      : "text-base text-primary";
+      : textSize?.data.value === "large"
+        ? "text-lg text-primary"
+        : "text-base text-primary";
 
   let editorState = useEditorStates(
     (s) => s.editorStates[props.entityID],

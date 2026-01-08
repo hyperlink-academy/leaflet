@@ -346,7 +346,7 @@ export let Block = ({
     case PubLeafletBlocksText.isMain(b.block):
       return (
         <p
-          className={`textBlock ${className} ${b.block.textSize === "small" ? "text-sm text-secondary" : ""}`}
+          className={`textBlock ${className} ${b.block.textSize === "small" ? "text-sm text-secondary" : b.block.textSize === "large" ? "text-lg" : ""}`}
           {...blockProps}
         >
           <TextBlock

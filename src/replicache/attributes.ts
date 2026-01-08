@@ -328,7 +328,7 @@ export type Data<A extends keyof typeof Attributes> = {
   };
   "text-size-union": {
     type: "text-size-union";
-    value: "default" | "small";
+    value: "default" | "small" | "large";
   };
   "page-type-union": { type: "page-type-union"; value: "doc" | "canvas" };
   "block-type-union": {
