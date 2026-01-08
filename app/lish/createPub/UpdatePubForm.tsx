@@ -43,6 +43,15 @@ export const EditPubForm = (props: {
       ? true
       : record.preferences.showComments,
   );
+  let showMentions =
+    record?.preferences?.showMentions === undefined
+      ? true
+      : record.preferences.showMentions;
+  let showPrevNext =
+    record?.preferences?.showPrevNext === undefined
+      ? true
+      : record.preferences.showPrevNext;
+
   let [descriptionValue, setDescriptionValue] = useState(
     record?.description || "",
   );
@@ -74,6 +83,8 @@ export const EditPubForm = (props: {
           preferences: {
             showInDiscover: showInDiscover,
             showComments: showComments,
+            showMentions: showMentions,
+            showPrevNext: showPrevNext,
           },
         });
         toast({ type: "success", content: "Updated!" });

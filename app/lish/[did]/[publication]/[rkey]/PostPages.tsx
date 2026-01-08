@@ -147,7 +147,11 @@ export type SharedPageProps = {
   document: PostPageData;
   did: string;
   profile: ProfileViewDetailed;
-  preferences: { showComments?: boolean };
+  preferences: {
+    showComments?: boolean;
+    showMentions?: boolean;
+    showPrevNext?: boolean;
+  };
   pubRecord?: PubLeafletPublication.Record;
   theme?: PubLeafletPublication.Theme | null;
   prerenderedCodeBlocks?: Map<string, string>;
@@ -206,7 +210,11 @@ export function PostPages({
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
-  preferences: { showComments?: boolean };
+  preferences: {
+    showComments?: boolean;
+    showMentions?: boolean;
+    showPrevNext?: boolean;
+  };
   pollData: PollData[];
 }) {
   let drawer = useDrawerOpen(document_uri);
