@@ -1,6 +1,5 @@
 "use client";
 import { Popover } from "components/Popover";
-import { theme } from "../../tailwind.config";
 
 import { Color } from "react-aria-components";
 
@@ -166,8 +165,8 @@ export const ThemeSetterContent = (props: {
               setOpenPicker={(pickers) => setOpenPicker(pickers)}
             />
             <SectionArrow
-              fill={theme.colors["accent-2"]}
-              stroke={theme.colors["accent-1"]}
+              fill="rgb(var(--accent-2))"
+              stroke="rgb(var(--accent-1))"
               className="ml-2"
             />
           </div>
