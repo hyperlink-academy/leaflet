@@ -22,30 +22,40 @@ export const PostOptions = (props: {
       ? true
       : record.preferences.showComments,
   );
-  let [showMentions, setShowMentions] = useState(true);
-  let [showPrevNext, setShowPrevNext] = useState(true);
+  let [showMentions, setShowMentions] = useState(
+    record?.preferences?.showMentions === undefined
+      ? true
+      : record.preferences.showMentions,
+  );
+  let [showPrevNext, setShowPrevNext] = useState(
+    record?.preferences?.showPrevNext === undefined
+      ? true
+      : record.preferences.showPrevNext,
+  );
 
   let toast = useToaster();
   return (
     <form
       onSubmit={async (e) => {
-        // if (!pubData) return;
-        // e.preventDefault();
-        // props.setLoading(true);
-        // let data = await updatePublication({
-        //   name: record.name,
-        //   uri: pubData.uri,
-        //   preferences: {
-        //     showInDiscover:
-        //       record?.preferences?.showInDiscover === undefined
-        //         ? true
-        //         : record.preferences.showInDiscover,
-        //     showComments: showComments,
-        //   },
-        // });
-        // toast({ type: "success", content: "Posts Updated!" });
-        // props.setLoading(false);
-        // mutate("publication-data");
+        if (!pubData) return;
+        e.preventDefault();
+        props.setLoading(true);
+        let data = await updatePublication({
+          name: record.name,
+          uri: pubData.uri,
+          preferences: {
+            showInDiscover:
+              record?.preferences?.showInDiscover === undefined
+                ? true
+                : record.preferences.showInDiscover,
+            showComments: showComments,
+            showMentions: showMentions,
+            showPrevNext: showPrevNext,
+          },
+        });
+        toast({ type: "success", content: "Posts Updated!" });
+        props.setLoading(false);
+        mutate("publication-data");
       }}
       className="text-primary flex flex-col"
     >
@@ -67,7 +77,8 @@ export const PostOptions = (props: {
         <div className="flex flex-col justify-start">
           <div className="font-bold">Show Prev/Next Buttons</div>
           <div className="text-tertiary text-sm leading-tight">
-            Show buttons that navigate to the previous and next posts
+            Buttons at the bottom of each post navigate to the previous and next
+            posts
           </div>
         </div>
       </Toggle>
@@ -92,7 +103,8 @@ export const PostOptions = (props: {
           <div className="flex flex-col justify-start">
             <div className="font-bold">Show Mentions</div>
             <div className="text-tertiary text-sm leading-tight">
-              Display a list of posts on Bluesky that mention your post
+              Display a list of posts on Bluesky and Leaflet that mention your
+              post
             </div>
           </div>
         </Toggle>
