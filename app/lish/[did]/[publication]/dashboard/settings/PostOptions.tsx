@@ -53,7 +53,8 @@ export const PostOptions = (props: {
             showPrevNext: showPrevNext,
           },
         });
-        toast({ type: "success", content: "Posts Updated!" });
+        toast({ type: "success", content: <strong>Posts Updated!</strong> });
+        console.log(record.preferences?.showPrevNext);
         props.setLoading(false);
         mutate("publication-data");
       }}
