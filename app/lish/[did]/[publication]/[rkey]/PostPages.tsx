@@ -269,6 +269,7 @@ export function PostPages({
 
       {drawer && !drawer.pageId && (
         <InteractionDrawer
+          showPageBackground={pubRecord?.theme?.showPageBackground}
           document_uri={document.uri}
           comments={
             pubRecord?.preferences?.showComments === false
@@ -359,6 +360,7 @@ export function PostPages({
             />
             {drawer && drawer.pageId === page.id && (
               <InteractionDrawer
+                showPageBackground={pubRecord?.theme?.showPageBackground}
                 pageId={page.id}
                 document_uri={document.uri}
                 comments={
