@@ -1,4 +1,4 @@
-import { parse, contrastLstar, ColorSpace, sRGB } from "colorjs.io/fn";
+import { parse, ColorSpace, sRGB, distance, OKLab } from "colorjs.io/fn";
 
 // define the color defaults for everything
 export const ThemeDefaults = {
@@ -17,11 +17,12 @@ export const ThemeDefaults = {
 };
 
 // used to calculate the contrast between page and accent1, accent2, and determin which is higher contrast
-export function getColorContrast(color1: string, color2: string) {
+export function getColorDifference(color1: string, color2: string) {
   ColorSpace.register(sRGB);
+  ColorSpace.register(OKLab);
 
   let parsedColor1 = parse(`rgb(${color1})`);
   let parsedColor2 = parse(`rgb(${color2})`);
 
-  return contrastLstar(parsedColor1, parsedColor2);
+  return distance(parsedColor1, parsedColor2, "oklab");
 }
