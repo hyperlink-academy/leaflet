@@ -18,7 +18,7 @@ const id = 'pub.leaflet.blocks.text'
 export interface Main {
   $type?: 'pub.leaflet.blocks.text'
   plaintext: string
-  textSize?: 'default' | 'small'
+  textSize?: 'default' | 'small' | 'large'
   facets?: PubLeafletRichtextFacet.Main[]
 }
 

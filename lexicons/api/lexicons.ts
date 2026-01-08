@@ -1248,7 +1248,7 @@ export const schemaDict = {
           },
           textSize: {
             type: 'string',
-            enum: ['default', 'small'],
+            enum: ['default', 'small', 'large'],
           },
           facets: {
             type: 'array',

@@ -15,7 +15,8 @@
           "type": "string",
           "enum": [
             "default",
-            "small"
+            "small",
+            "large"
           ]
         },
         "facets": {
