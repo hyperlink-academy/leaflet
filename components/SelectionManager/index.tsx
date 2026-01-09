@@ -150,7 +150,7 @@ export function SelectionManager() {
       {
         metaKey: true,
         altKey: true,
-        key: ["p", "π"],
+        key: ["0", "º"],
         handler: async () => {
           let [sortedBlocks] = await getSortedSelectionBound();
           for (let block of sortedBlocks) {

@@ -72,7 +72,7 @@ export const HelpButton = (props: { noShortcuts?: boolean }) => {
                 />
                 <KeyboardShortcut
                   name="Regular Text"
-                  keys={[metaKey(), isMac() ? "Opt" : "Alt", "P"]}
+                  keys={[metaKey(), isMac() ? "Opt" : "Alt", "0"]}
                 />
                 <KeyboardShortcut
                   name="Large Text"
