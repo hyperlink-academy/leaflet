@@ -2,10 +2,7 @@
 
 import * as Y from "yjs";
 import * as base64 from "base64-js";
-import {
-  restoreOAuthSession,
-  OAuthSessionError,
-} from "src/atproto-oauth";
+import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
 import {
   AtpBaseClient,
@@ -50,7 +47,10 @@ import {
   ColorToRGBA,
 } from "components/ThemeManager/colorToLexicons";
 import { parseColor } from "@react-stately/color";
-import { Notification, pingIdentityToUpdateNotification } from "src/notifications";
+import {
+  Notification,
+  pingIdentityToUpdateNotification,
+} from "src/notifications";
 import { v7 } from "uuid";
 
 type PublishResult =
@@ -253,7 +253,11 @@ export async function publishToPublication({
 
   // Create notifications for mentions (only on first publish)
   if (!existingDocUri) {
-    await createMentionNotifications(result.uri, record, credentialSession.did!);
+    await createMentionNotifications(
+      result.uri,
+      record,
+      credentialSession.did!,
+    );
   }
 
   return { success: true, rkey, record: JSON.parse(JSON.stringify(record)) };
@@ -463,10 +467,12 @@ async function processBlocksToPages(
 
     if (b.type == "text") {
       let [stringValue, facets] = getBlockContent(b.value);
+      let [textSize] = scan.eav(b.value, "block/text-size");
       let block: $Typed<PubLeafletBlocksText.Main> = {
         $type: ids.PubLeafletBlocksText,
         plaintext: stringValue,
         facets,
+        ...(textSize && { textSize: textSize.data.value }),
       };
       return block;
     }
@@ -865,7 +871,10 @@ async function createMentionNotifications(
                       .single();
 
                     if (publication && publication.identity_did !== authorDid) {
-                      mentionedPublications.set(publication.identity_did, feature.atURI);
+                      mentionedPublications.set(
+                        publication.identity_did,
+                        feature.atURI,
+                      );
                     }
                   } else if (uri.collection === "pub.leaflet.document") {
                     // Get the document owner's DID
@@ -876,7 +885,8 @@ async function createMentionNotifications(
                       .single();
 
                     if (document) {
-                      const docRecord = document.data as PubLeafletDocument.Record;
+                      const docRecord =
+                        document.data as PubLeafletDocument.Record;
                       if (docRecord.author !== authorDid) {
                         mentionedDocuments.set(docRecord.author, feature.atURI);
                       }

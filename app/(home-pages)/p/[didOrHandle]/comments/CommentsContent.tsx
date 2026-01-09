@@ -6,7 +6,7 @@ import { AppBskyActorProfile, AtUri } from "@atproto/api";
 import { PubLeafletComment, PubLeafletDocument } from "lexicons/api";
 import { ReplyTiny } from "components/Icons/ReplyTiny";
 import { Avatar } from "components/Avatar";
-import { BaseTextBlock } from "app/lish/[did]/[publication]/[rkey]/BaseTextBlock";
+import { BaseTextBlock } from "app/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import {
   getProfileComments,

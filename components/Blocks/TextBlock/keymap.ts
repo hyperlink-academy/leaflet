@@ -555,6 +555,20 @@ const enter =
           },
         });
       }
+      let [textSize] =
+        (await repRef.current?.query((tx) =>
+          scanIndex(tx).eav(propsRef.current.entityID, "block/text-size"),
+        )) || [];
+      if (textSize) {
+        await repRef.current?.mutate.assertFact({
+          entity: newEntityID,
+          attribute: "block/text-size",
+          data: {
+            type: "text-size-union",
+            value: textSize.data.value,
+          },
+        });
+      }
     };
     asyncRun().then(() => {
       useUIState.getState().setSelectedBlock({

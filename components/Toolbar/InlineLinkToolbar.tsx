@@ -132,7 +132,7 @@ export function InlineLinkToolbar(props: { onClose: () => void }) {
   return (
     <div className="w-full flex items-center gap-[6px]  grow">
       <LinkSmall />
-      <Separator classname="h-6" />
+      <Separator classname="h-6!" />
       <Input
         autoFocus
         className="w-full grow bg-transparent border-none outline-hidden "

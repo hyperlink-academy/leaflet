@@ -1,5 +1,5 @@
 import { Avatar } from "components/Avatar";
-import { BaseTextBlock } from "app/lish/[did]/[publication]/[rkey]/BaseTextBlock";
+import { BaseTextBlock } from "app/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
 import { ReplyTiny } from "components/Icons/ReplyTiny";
 import {
   CommentInNotification,

@@ -120,6 +120,7 @@ export function RenderedTextBlock(props: {
 }) {
   let initialFact = useEntity(props.entityID, "block/text");
   let headingLevel = useEntity(props.entityID, "block/heading-level");
+  let textSize = useEntity(props.entityID, "block/text-size");
   let alignment =
     useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
   let alignmentClass = {
@@ -128,6 +129,12 @@ export function RenderedTextBlock(props: {
     center: "text-center",
     justify: "text-justify",
   }[alignment];
+  let textStyle =
+    textSize?.data.value === "small"
+      ? "text-sm"
+      : textSize?.data.value === "large"
+        ? "text-lg"
+        : "";
   let { permissions } = useEntitySetContext();
 
   let content = <br />;
@@ -159,7 +166,7 @@ export function RenderedTextBlock(props: {
       className={`
         ${alignmentClass}
         ${props.type === "blockquote" ? (props.previousBlock?.type === "blockquote" ? `blockquote pt-3 ` : "blockquote") : ""}
-        ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
+        ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : textStyle}
       w-full whitespace-pre-wrap outline-hidden ${props.className} `}
     >
       {content}
@@ -169,6 +176,7 @@ export function RenderedTextBlock(props: {
 
 export function BaseTextBlock(props: BlockProps & { className?: string }) {
   let headingLevel = useEntity(props.entityID, "block/heading-level");
+  let textSize = useEntity(props.entityID, "block/text-size");
   let alignment =
     useEntity(props.entityID, "block/text-alignment")?.data.value || "left";
 
@@ -184,6 +192,12 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
     center: "text-center",
     justify: "text-justify",
   }[alignment];
+  let textStyle =
+    textSize?.data.value === "small"
+      ? "text-sm text-secondary"
+      : textSize?.data.value === "large"
+        ? "text-lg text-primary"
+        : "text-base text-primary";
 
   let editorState = useEditorStates(
     (s) => s.editorStates[props.entityID],
@@ -258,7 +272,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           grow resize-none align-top whitespace-pre-wrap bg-transparent
           outline-hidden
 
-          ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
+          ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : textStyle}
           ${props.className}`}
           ref={mountRef}
         />
@@ -277,7 +291,7 @@ export function BaseTextBlock(props: BlockProps & { className?: string }) {
           // if this is the only block on the page and is empty or is a canvas, show placeholder
           <div
             className={`${props.className} ${alignmentClass} w-full pointer-events-none absolute top-0 left-0  italic text-tertiary flex flex-col
-              ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : ""}
+              ${props.type === "heading" ? HeadingStyle[headingLevel?.data.value || 1] : textStyle}
               `}
           >
             {props.type === "text"
@@ -496,7 +510,7 @@ const useMentionState = (entityID: string) => {
 
     // Find the relative positioned parent container
     const editorEl = view.dom;
-    const container = editorEl.closest('.relative') as HTMLElement | null;
+    const container = editorEl.closest(".relative") as HTMLElement | null;
 
     if (container) {
       const containerRect = container.getBoundingClientRect();

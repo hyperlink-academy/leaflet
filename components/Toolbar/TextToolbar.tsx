@@ -74,13 +74,13 @@ export const TextToolbar = (props: {
         lastUsedHighlight={props.lastUsedHighlight}
         setToolbarState={props.setToolbarState}
       />
-      <Separator classname="h-6" />
+      <Separator classname="h-6!" />
       <LinkButton setToolbarState={props.setToolbarState} />
-      <Separator classname="h-6" />
+      <Separator classname="h-6!" />
       <TextBlockTypeButton setToolbarState={props.setToolbarState} />
       <TextAlignmentButton setToolbarState={props.setToolbarState} />
       <ListButton setToolbarState={props.setToolbarState} />
-      <Separator classname="h-6" />
+      <Separator classname="h-6!" />
 
       <LockBlockButton />
     </>

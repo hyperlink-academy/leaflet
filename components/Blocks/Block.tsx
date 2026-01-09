@@ -10,7 +10,7 @@ import { focusBlock } from "src/utils/focusBlock";
 import { useHandleDrop } from "./useHandleDrop";
 import { useEntitySetContext } from "components/EntitySetProvider";
 
-import { TextBlock } from "components/Blocks/TextBlock";
+import { TextBlock } from "./TextBlock/index";
 import { ImageBlock } from "./ImageBlock";
 import { PageLinkBlock } from "./PageLinkBlock";
 import { ExternalLinkBlock } from "./ExternalLinkBlock";

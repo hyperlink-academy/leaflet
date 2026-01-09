@@ -4,7 +4,7 @@ import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { CSSProperties, useContext, useRef } from "react";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
-import { PostContent, Block } from "./PostContent";
+import { PostContent, Block } from "../PostContent";
 import {
   PubLeafletBlocksHeader,
   PubLeafletBlocksText,
@@ -15,13 +15,13 @@ import {
 } from "lexicons/api";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { TextBlock } from "./TextBlock";
-import { PostPageContext } from "./PostPageContext";
-import { openPage, useOpenPages } from "./PostPages";
+import { PostPageContext } from "../PostPageContext";
+import { openPage, useOpenPages } from "../PostPages";
 import {
   openInteractionDrawer,
   setInteractionState,
   useInteractionState,
-} from "./Interactions/Interactions";
+} from "../Interactions/Interactions";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { CanvasBackgroundPattern } from "components/Canvas";
@@ -40,9 +40,7 @@ export function PublishedPageLinkBlock(props: {
 }) {
   //switch to use actually state
   let openPages = useOpenPages();
-  let isOpen = openPages.some(
-    (p) => p.type === "doc" && p.id === props.pageId,
-  );
+  let isOpen = openPages.some((p) => p.type === "doc" && p.id === props.pageId);
   return (
     <div
       className={`w-full cursor-pointer
@@ -60,7 +58,9 @@ export function PublishedPageLinkBlock(props: {
         e.stopPropagation();
 
         openPage(
-          props.parentPageId ? { type: "doc", id: props.parentPageId } : undefined,
+          props.parentPageId
+            ? { type: "doc", id: props.parentPageId }
+            : undefined,
           { type: "doc", id: props.pageId },
         );
       }}
@@ -219,7 +219,9 @@ const Interactions = (props: { pageId: string; parentPageId?: string }) => {
             e.preventDefault();
             e.stopPropagation();
             openPage(
-              props.parentPageId ? { type: "doc", id: props.parentPageId } : undefined,
+              props.parentPageId
+                ? { type: "doc", id: props.parentPageId }
+                : undefined,
               { type: "doc", id: props.pageId },
               { scrollIntoView: false },
             );
@@ -239,7 +241,9 @@ const Interactions = (props: { pageId: string; parentPageId?: string }) => {
             e.preventDefault();
             e.stopPropagation();
             openPage(
-              props.parentPageId ? { type: "doc", id: props.parentPageId } : undefined,
+              props.parentPageId
+                ? { type: "doc", id: props.parentPageId }
+                : undefined,
               { type: "doc", id: props.pageId },
               { scrollIntoView: false },
             );
