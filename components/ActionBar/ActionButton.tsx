@@ -72,7 +72,7 @@ export const ActionButton = (
       <div
         className={`flex flex-col pr-1 ${subtext && "leading-snug"} max-w-full min-w-0  ${sidebar.open ? "block" : showLabelOnMobile ? "sm:hidden block" : "hidden"}`}
       >
-        <div className="truncate text-left pt-[1px]">{label}</div>
+        <div className="truncate text-left">{label}</div>
         {subtext && (
           <div className="text-xs text-tertiary font-normal text-left">
             {subtext}

@@ -199,7 +199,11 @@ const PublishPostForm = (
                 className="place-self-end h-[30px]"
                 disabled={charCount > 300}
               >
-                {isLoading ? <DotLoader /> : "Publish this Post!"}
+                {isLoading ? (
+                  <DotLoader className="h-[23px]" />
+                ) : (
+                  "Publish this Post!"
+                )}
               </ButtonPrimary>
             </div>
             {oauthError && (
