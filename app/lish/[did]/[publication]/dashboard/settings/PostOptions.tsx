@@ -75,13 +75,7 @@ export const PostOptions = (props: {
           setShowPrevNext(!showPrevNext);
         }}
       >
-        <div className="flex flex-col justify-start">
-          <div className="font-bold">Show Prev/Next Buttons</div>
-          <div className="text-tertiary text-sm leading-tight">
-            Buttons at the bottom of each post navigate to the previous and next
-            posts
-          </div>
-        </div>
+        <div className="font-bold">Show Prev/Next Buttons</div>
       </Toggle>
       <hr className="my-2 border-border-light" />
       <h4 className="mb-1">Interactions</h4>
@@ -104,8 +98,7 @@ export const PostOptions = (props: {
           <div className="flex flex-col justify-start">
             <div className="font-bold">Show Mentions</div>
             <div className="text-tertiary text-sm leading-tight">
-              Display a list of posts on Bluesky and Leaflet that mention your
-              post
+              Display a list of posts on Bluesky that mention your post
             </div>
           </div>
         </Toggle>
