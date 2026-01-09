@@ -89,6 +89,154 @@ export function SelectionManager() {
       },
       {
         metaKey: true,
+        altKey: true,
+        key: ["1", "¡"],
+        handler: async () => {
+          let [sortedBlocks] = await getSortedSelectionBound();
+          for (let block of sortedBlocks) {
+            await rep?.mutate.assertFact({
+              entity: block.value,
+              attribute: "block/heading-level",
+              data: { type: "number", value: 1 },
+            });
+            await rep?.mutate.assertFact({
+              entity: block.value,
+              attribute: "block/type",
+              data: { type: "block-type-union", value: "heading" },
+            });
+          }
+        },
+      },
+      {
+        metaKey: true,
+        altKey: true,
+        key: ["2", "™"],
+        handler: async () => {
+          let [sortedBlocks] = await getSortedSelectionBound();
+          for (let block of sortedBlocks) {
+            await rep?.mutate.assertFact({
+              entity: block.value,
+              attribute: "block/heading-level",
+              data: { type: "number", value: 2 },
+            });
+            await rep?.mutate.assertFact({
+              entity: block.value,
+              attribute: "block/type",
+              data: { type: "block-type-union", value: "heading" },
+            });
+          }
+        },
+      },
+      {
+        metaKey: true,
+        altKey: true,
+        key: ["3", "£"],
+        handler: async () => {
+          let [sortedBlocks] = await getSortedSelectionBound();
+          for (let block of sortedBlocks) {
+            await rep?.mutate.assertFact({
+              entity: block.value,
+              attribute: "block/heading-level",
+              data: { type: "number", value: 3 },
+            });
+            await rep?.mutate.assertFact({
+              entity: block.value,
+              attribute: "block/type",
+              data: { type: "block-type-union", value: "heading" },
+            });
+          }
+        },
+      },
+      {
+        metaKey: true,
+        altKey: true,
+        key: ["p", "π"],
+        handler: async () => {
+          let [sortedBlocks] = await getSortedSelectionBound();
+          for (let block of sortedBlocks) {
+            // Convert to text block
+            await rep?.mutate.assertFact({
+              entity: block.value,
+              attribute: "block/type",
+              data: { type: "block-type-union", value: "text" },
+            });
+            // Remove heading level if exists
+            let headingLevel = await rep?.query((tx) =>
+              scanIndex(tx).eav(block.value, "block/heading-level"),
+            );
+            if (headingLevel?.[0]) {
+              await rep?.mutate.retractFact({ factID: headingLevel[0].id });
+            }
+            // Remove text-size to make it default
+            let textSizeFact = await rep?.query((tx) =>
+              scanIndex(tx).eav(block.value, "block/text-size"),
+            );
+            if (textSizeFact?.[0]) {
+              await rep?.mutate.retractFact({ factID: textSizeFact[0].id });
+            }
+          }
+        },
+      },
+      {
+        metaKey: true,
+        altKey: true,
+        key: ["+", "≠"],
+        handler: async () => {
+          let [sortedBlocks] = await getSortedSelectionBound();
+          for (let block of sortedBlocks) {
+            // Convert to text block
+            await rep?.mutate.assertFact({
+              entity: block.value,
+              attribute: "block/type",
+              data: { type: "block-type-union", value: "text" },
+            });
+            // Remove heading level if exists
+            let headingLevel = await rep?.query((tx) =>
+              scanIndex(tx).eav(block.value, "block/heading-level"),
+            );
+            if (headingLevel?.[0]) {
+              await rep?.mutate.retractFact({ factID: headingLevel[0].id });
+            }
+            // Set text size to large
+            await rep?.mutate.assertFact({
+              entity: block.value,
+              attribute: "block/text-size",
+              data: { type: "text-size-union", value: "large" },
+            });
+          }
+        },
+      },
+      {
+        metaKey: true,
+        altKey: true,
+        key: ["-", "–"],
+        handler: async () => {
+          let [sortedBlocks] = await getSortedSelectionBound();
+          for (let block of sortedBlocks) {
+            // Convert to text block
+            await rep?.mutate.assertFact({
+              entity: block.value,
+              attribute: "block/type",
+              data: { type: "block-type-union", value: "text" },
+            });
+            // Remove heading level if exists
+            let headingLevel = await rep?.query((tx) =>
+              scanIndex(tx).eav(block.value, "block/heading-level"),
+            );
+            if (headingLevel?.[0]) {
+              await rep?.mutate.retractFact({ factID: headingLevel[0].id });
+            }
+            // Set text size to small
+            await rep?.mutate.assertFact({
+              entity: block.value,
+              attribute: "block/text-size",
+              data: { type: "text-size-union", value: "small" },
+            });
+          }
+        },
+      },
+      {
+        metaKey: true,
         shift: true,
         key: ["ArrowDown", "J"],
         handler: async () => {
@@ -684,7 +832,6 @@ function getContentEditableParent(e: Node | null): Node | null {
   }
   return null;
 }
-
 
 function toggleMarkInBlocks(blocks: string[], mark: MarkType, attrs?: any) {
   let everyBlockHasMark = blocks.reduce((acc, block) => {
