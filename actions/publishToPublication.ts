@@ -784,11 +784,13 @@ async function extractThemeFromFacts(
     root_entity,
     "theme/background-image-repeat",
   )?.[0];
+  let pageWidth = scan.eav(root_entity, "theme/page-width")?.[0];
 
   let theme: PubLeafletPublication.Theme = {
     showPageBackground: showPageBackground ?? true,
   };
 
+  if (pageWidth) theme.pageWidth = pageWidth.data.value;
   if (pageBackground)
     theme.backgroundColor = ColorToRGBA(parseColor(`hsba(${pageBackground})`));
   if (cardBackground)
