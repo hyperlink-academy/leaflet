@@ -53,7 +53,12 @@ export const CreatePubForm = () => {
           description: descriptionValue,
           iconFile: logoFile,
           subdomain: domainValue,
-          preferences: { showInDiscover, showComments: true },
+          preferences: {
+            showInDiscover,
+            showComments: true,
+            showMentions: true,
+            showPrevNext: false,
+          },
         });
 
         if (!result.success) {
@@ -68,7 +73,9 @@ export const CreatePubForm = () => {
         setTimeout(() => {
           setFormState("normal");
           if (result.publication)
-            router.push(`${getBasePublicationURL(result.publication)}/dashboard`);
+            router.push(
+              `${getBasePublicationURL(result.publication)}/dashboard`,
+            );
         }, 500);
       }}
     >

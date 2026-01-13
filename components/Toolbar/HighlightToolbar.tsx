@@ -126,7 +126,7 @@ export const HighlightToolbar = (props: {
           setLastUsedHightlight={props.setLastUsedHighlight}
         />
 
-        <Separator classname="h-6" />
+        <Separator classname="h-6!" />
         <HighlightColorSettings pageID={props.pageID} />
       </div>
     </div>

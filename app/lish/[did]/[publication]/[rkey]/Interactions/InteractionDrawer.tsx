@@ -9,6 +9,7 @@ import { SandwichSpacer } from "components/LeafletLayout";
 import { decodeQuotePosition } from "../quotePosition";
 
 export const InteractionDrawer = (props: {
+  showPageBackground: boolean | undefined;
   document_uri: string;
   quotesAndMentions: { uri: string; link?: string }[];
   comments: Comment[];
@@ -38,7 +39,7 @@ export const InteractionDrawer = (props: {
       <div className="snap-center h-full  flex z-10 shrink-0  w-[calc(var(--page-width-units)-6px)] sm:w-[calc(var(--page-width-units))]">
         <div
           id="interaction-drawer"
-          className="opaque-container rounded-l-none! rounded-r-lg! h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll -ml-[1px] "
+          className={`opaque-container  h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll -ml-[1px] ${props.showPageBackground ? "rounded-l-none! rounded-r-lg!" : "rounded-lg! sm:mx-2"}`}
         >
           {drawer.drawer === "quotes" ? (
             <Quotes {...props} quotesAndMentions={filteredQuotesAndMentions} />

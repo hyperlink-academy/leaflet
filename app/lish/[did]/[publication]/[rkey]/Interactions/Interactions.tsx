@@ -108,6 +108,7 @@ export const Interactions = (props: {
   commentsCount: number;
   className?: string;
   showComments?: boolean;
+  showMentions?: boolean;
   pageId?: string;
 }) => {
   const data = useContext(PostPageContext);
@@ -131,7 +132,7 @@ export const Interactions = (props: {
     <div className={`flex gap-2 text-tertiary text-sm ${props.className}`}>
       {tagCount > 0 && <TagPopover tags={tags} tagCount={tagCount} />}
 
-      {props.quotesCount > 0 && (
+      {props.quotesCount === 0 || props.showMentions === false ? null : (
         <button
           className="flex w-fit gap-2 items-center"
           onClick={() => {
@@ -168,6 +169,7 @@ export const ExpandedInteractions = (props: {
   commentsCount: number;
   className?: string;
   showComments?: boolean;
+  showMentions?: boolean;
   pageId?: string;
 }) => {
   const data = useContext(PostPageContext);
@@ -188,6 +190,8 @@ export const ExpandedInteractions = (props: {
 
   const tags = (data?.data as any)?.tags as string[] | undefined;
   const tagCount = tags?.length || 0;
+
+  let noInteractions = !props.showComments && !props.showMentions;
 
   let subscribed =
     identity?.atp_did &&
@@ -229,52 +233,72 @@ export const ExpandedInteractions = (props: {
           <TagList tags={tags} className="mb-3" />
         </>
       )}
+
       <hr className="border-border-light mb-3 " />
+
       <div className="flex gap-2 justify-between">
-        <div className="flex gap-2">
-          {props.quotesCount > 0 && (
-            <button
-              className="flex w-fit gap-2 items-center px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
-              onClick={() => {
-                if (!drawerOpen || drawer !== "quotes")
-                  openInteractionDrawer("quotes", document_uri, props.pageId);
-                else setInteractionState(document_uri, { drawerOpen: false });
-              }}
-              onMouseEnter={handleQuotePrefetch}
-              onTouchStart={handleQuotePrefetch}
-              aria-label="Post quotes"
-            >
-              <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
-              <span
-                aria-hidden
-              >{`Mention${props.quotesCount === 1 ? "" : "s"}`}</span>
-            </button>
-          )}
-          {props.showComments === false ? null : (
-            <button
-              className="flex gap-2 items-center w-fit px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
-              onClick={() => {
-                if (
-                  !drawerOpen ||
-                  drawer !== "comments" ||
-                  pageId !== props.pageId
-                )
-                  openInteractionDrawer("comments", document_uri, props.pageId);
-                else setInteractionState(document_uri, { drawerOpen: false });
-              }}
-              aria-label="Post comments"
-            >
-              <CommentTiny aria-hidden />{" "}
-              {props.commentsCount > 0 ? (
-                <span aria-hidden>
-                  {`${props.commentsCount} Comment${props.commentsCount === 1 ? "" : "s"}`}
-                </span>
-              ) : (
-                "Comment"
+        {noInteractions ? (
+          <div />
+        ) : (
+          <>
+            <div className="flex gap-2">
+              {props.quotesCount === 0 ||
+              props.showMentions === false ? null : (
+                <button
+                  className="flex w-fit gap-2 items-center px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
+                  onClick={() => {
+                    if (!drawerOpen || drawer !== "quotes")
+                      openInteractionDrawer(
+                        "quotes",
+                        document_uri,
+                        props.pageId,
+                      );
+                    else
+                      setInteractionState(document_uri, { drawerOpen: false });
+                  }}
+                  onMouseEnter={handleQuotePrefetch}
+                  onTouchStart={handleQuotePrefetch}
+                  aria-label="Post quotes"
+                >
+                  <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
+                  <span
+                    aria-hidden
+                  >{`Mention${props.quotesCount === 1 ? "" : "s"}`}</span>
+                </button>
               )}
-            </button>
-          )}
-        </div>
+              {props.showComments === false ? null : (
+                <button
+                  className="flex gap-2 items-center w-fit px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
+                  onClick={() => {
+                    if (
+                      !drawerOpen ||
+                      drawer !== "comments" ||
+                      pageId !== props.pageId
+                    )
+                      openInteractionDrawer(
+                        "comments",
+                        document_uri,
+                        props.pageId,
+                      );
+                    else
+                      setInteractionState(document_uri, { drawerOpen: false });
+                  }}
+                  aria-label="Post comments"
+                >
+                  <CommentTiny aria-hidden />{" "}
+                  {props.commentsCount > 0 ? (
+                    <span aria-hidden>
+                      {`${props.commentsCount} Comment${props.commentsCount === 1 ? "" : "s"}`}
+                    </span>
+                  ) : (
+                    "Comment"
+                  )}
+                </button>
+              )}
+            </div>
+          </>
+        )}
+
         <EditButton document={data} />
         {subscribed && publication && (
           <ManageSubscription

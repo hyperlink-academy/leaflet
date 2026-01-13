@@ -25,8 +25,8 @@ export async function updatePublication({
 }: {
   uri: string;
   name: string;
-  description: string;
-  iconFile: File | null;
+  description?: string;
+  iconFile?: File | null;
   preferences?: Omit<PubLeafletPublication.Preferences, "$type">;
 }): Promise<UpdatePublicationResult> {
   let identity = await getIdentityData();

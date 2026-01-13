@@ -171,11 +171,14 @@ const BlockTypeToHTML: {
   },
   text: async (b, tx, a) => {
     let [value] = await scanIndex(tx).eav(b.value, "block/text");
+    let [textSize] = await scanIndex(tx).eav(b.value, "block/text-size");
+
     return (
       <RenderYJSFragment
         value={value?.data.value}
         attrs={{
           "data-alignment": a,
+          "data-text-size": textSize?.data.value,
         }}
         wrapper="p"
       />

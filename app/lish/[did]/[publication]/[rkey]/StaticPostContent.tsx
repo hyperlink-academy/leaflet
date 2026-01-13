@@ -12,8 +12,8 @@ import {
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { TextBlockCore, TextBlockCoreProps } from "./TextBlockCore";
-import { StaticMathBlock } from "./StaticMathBlock";
+import { TextBlockCore, TextBlockCoreProps } from "./Blocks/TextBlockCore";
+import { StaticMathBlock } from "./Blocks/StaticMathBlock";
 import { codeToHtml, bundledLanguagesInfo, bundledThemesInfo } from "shiki";
 
 function StaticBaseTextBlock(props: Omit<TextBlockCoreProps, "renderers">) {

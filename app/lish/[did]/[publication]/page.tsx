@@ -18,6 +18,7 @@ import { InteractionPreview } from "components/InteractionsPreview";
 import { LocalizedDate } from "./LocalizedDate";
 import { PublicationHomeLayout } from "./PublicationHomeLayout";
 import { PublicationAuthor } from "./PublicationAuthor";
+import { Separator } from "components/Layout";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -147,7 +148,7 @@ export default async function Publication(props: {
                           </p>
                         </SpeedyLink>
 
-                        <div className="text-sm text-tertiary flex gap-1 flex-wrap pt-2">
+                        <div className="text-sm text-tertiary flex gap-1 flex-wrap pt-2 items-center">
                           <p className="text-sm text-tertiary ">
                             {doc_record.publishedAt && (
                               <LocalizedDate
@@ -160,13 +161,18 @@ export default async function Publication(props: {
                               />
                             )}{" "}
                           </p>
-                          {comments > 0 || quotes > 0 ? "| " : ""}
+                          {comments > 0 || quotes > 0 || tags.length > 0 ? (
+                            <Separator classname="h-4! mx-1" />
+                          ) : (
+                            ""
+                          )}
                           <InteractionPreview
                             quotesCount={quotes}
                             commentsCount={comments}
                             tags={tags}
                             postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
                             showComments={record?.preferences?.showComments}
+                            showMentions={record?.preferences?.showMentions}
                           />
                         </div>
                       </div>

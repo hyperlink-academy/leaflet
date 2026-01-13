@@ -136,7 +136,9 @@ const UpdateButton = () => {
           content: (
             <div>
               {pub.doc ? "Updated! " : "Published! "}
-              <SpeedyLink href={docUrl}>link</SpeedyLink>
+              <SpeedyLink className="underline" href={docUrl}>
+                See Published Post
+              </SpeedyLink>
             </div>
           ),
           type: "success",
