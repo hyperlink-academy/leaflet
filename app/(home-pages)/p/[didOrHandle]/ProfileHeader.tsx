@@ -1,8 +1,6 @@
 "use client";
 import { Avatar } from "components/Avatar";
-import { AppBskyActorProfile, PubLeafletPublication } from "lexicons/api";
-import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import type { ProfileData } from "./layout";
+import { PubLeafletPublication } from "lexicons/api";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { colorToString } from "components/ThemeManager/useColorAttribute";
 import { PubIcon } from "components/ActionBar/Publications";
@@ -25,13 +23,13 @@ export const ProfileHeader = (props: {
     <Avatar
       src={profileRecord.avatar}
       displayName={profileRecord.displayName}
-      className="mx-auto mt-3 sm:mt-4"
+      className="profileAvatar mx-auto mt-3 sm:mt-4"
       giant
     />
   );
 
   const displayNameElement = (
-    <h3 className=" px-3 sm:px-4 pt-2 leading-tight">
+    <h3 className="profileName px-3 sm:px-4 pt-2 leading-tight">
       {profileRecord.displayName
         ? profileRecord.displayName
         : `@${props.profile.handle}`}
@@ -40,20 +38,21 @@ export const ProfileHeader = (props: {
 
   const handleElement = profileRecord.displayName && (
     <div
-      className={`text-tertiary ${props.popover ? "text-xs" : "text-sm"} pb-1 italic px-3 sm:px-4 truncate`}
+      className={`profileHandle text-secondary ${props.popover ? "text-sm" : "text-sm"}  px-3 sm:px-4 truncate`}
     >
       @{props.profile.handle}
     </div>
   );
+  console.log(props.profile);
 
   return (
     <div
-      className={`flex flex-col relative ${props.popover && "text-sm"}`}
+      className={`profileHeader flex flex-col relative `}
       id="profile-header"
     >
-      <ProfileLinks handle={props.profile.handle || ""} />
-      <div className="flex flex-col">
-        <div className="flex flex-col group">
+      {!props.popover && <ProfileLinks handle={props.profile.handle || ""} />}
+      <div className="profileInfo flex flex-col gap-3">
+        <div className="profileNameAndHandle flex flex-col ">
           {props.popover ? (
             <SpeedyLink className={"hover:no-underline!"} href={profileUrl}>
               {avatarElement}
@@ -61,30 +60,22 @@ export const ProfileHeader = (props: {
           ) : (
             avatarElement
           )}
-          {props.popover ? (
-            <SpeedyLink
-              className={" text-primary group-hover:underline"}
-              href={profileUrl}
-            >
-              {displayNameElement}
-            </SpeedyLink>
-          ) : (
-            displayNameElement
-          )}
-          {props.popover && handleElement ? (
-            <SpeedyLink className={"group-hover:underline"} href={profileUrl}>
-              {handleElement}
-            </SpeedyLink>
-          ) : (
-            handleElement
-          )}
+          {displayNameElement}
+
+          {handleElement}
+          <KnownFollowers
+            viewer={props.profile.viewer}
+            did={props.profile.did}
+          />
+
+          <pre className="profileDescription pt-1 px-3 sm:px-4 whitespace-pre-wrap">
+            {profileRecord.description
+              ? parseDescription(profileRecord.description)
+              : null}
+          </pre>
         </div>
-        <pre className="text-secondary px-3 sm:px-4 whitespace-pre-wrap">
-          {profileRecord.description
-            ? parseDescription(profileRecord.description)
-            : null}
-        </pre>
-        <div className=" w-full overflow-x-scroll py-3 mb-3 ">
+
+        <div className="profilePublicationCards w-full overflow-x-scroll">
           <div
             className={`grid grid-flow-col  gap-2 mx-auto w-fit px-3 sm:px-4 ${props.popover ? "auto-cols-[164px]" : "auto-cols-[164px] sm:auto-cols-[240px]"}`}
           >
@@ -104,7 +95,7 @@ export const ProfileHeader = (props: {
 
 const ProfileLinks = (props: { handle: string }) => {
   return (
-    <div className="absolute sm:top-4 top-3 sm:right-4 right-3 flex flex-row gap-2">
+    <div className="profileLinks absolute sm:top-4 top-3 sm:right-4 right-3 flex flex-row gap-2">
       <a
         className="text-tertiary hover:text-accent-contrast hover:no-underline!"
         href={`https://bsky.app/profile/${props.handle}`}
@@ -124,7 +115,7 @@ const PublicationCard = (props: {
   return (
     <a
       href={`https://${record.base_path}`}
-      className="border border-border p-2 rounded-lg hover:no-underline! text-primary basis-1/2"
+      className="profilePublicationCard border border-border p-2 rounded-lg hover:no-underline! text-primary basis-1/2 "
       style={{ backgroundColor: `rgb(${colorToString(bgLeaflet, "rgb")})` }}
     >
       <div
@@ -225,7 +216,12 @@ function parseDescription(description: string): ReactNode[] {
           ? urlWithoutProtocol.slice(0, 50) + "…"
           : urlWithoutProtocol;
       parts.push(
-        <a key={key++} href={match.href} target="_blank" rel="noopener noreferrer">
+        <a
+          key={key++}
+          href={match.href}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           {displayText}
         </a>,
       );
@@ -241,3 +237,27 @@ function parseDescription(description: string): ReactNode[] {
 
   return parts;
 }
+
+const KnownFollowers = (props: {
+  viewer: ProfileViewDetailed["viewer"];
+  did: string;
+}) => {
+  if (!props.viewer?.knownFollowers) return null;
+  let count = props.viewer.knownFollowers.count;
+
+  return (
+    <>
+      <div className="profileKnownFollowers sm:px-4 px-3 text-xs text-tertiary  italic">
+        Followed by{" "}
+        <a
+          className="hover:underline"
+          href={`https://bsky.social/profile/${props.did}/known-followers`}
+          target="_blank"
+        >
+          {props.viewer?.knownFollowers?.followers[0]?.displayName}{" "}
+          {count > 1 ? `and ${count - 1} other${count > 2 ? "s" : ""}` : ""}
+        </a>
+      </div>
+    </>
+  );
+};
