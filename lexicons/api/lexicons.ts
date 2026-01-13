@@ -1810,6 +1810,14 @@ export const schemaDict = {
             type: 'boolean',
             default: true,
           },
+          showMentions: {
+            type: 'boolean',
+            default: true,
+          },
+          showPrevNext: {
+            type: 'boolean',
+            default: false,
+          },
         },
       },
       theme: {

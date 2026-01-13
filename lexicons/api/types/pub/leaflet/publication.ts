@@ -37,6 +37,8 @@ export interface Preferences {
   $type?: 'pub.leaflet.publication#preferences'
   showInDiscover: boolean
   showComments: boolean
+  showMentions: boolean
+  showPrevNext: boolean
 }
 
 const hashPreferences = 'preferences'

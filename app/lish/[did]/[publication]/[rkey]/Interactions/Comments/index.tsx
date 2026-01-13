@@ -51,7 +51,10 @@ export function Comments(props: {
   }, []);
 
   return (
-    <div id={"commentsDrawer"} className="flex flex-col gap-2 relative">
+    <div
+      id={"commentsDrawer"}
+      className="flex flex-col gap-2 relative text-sm text-secondary"
+    >
       <div className="w-full flex justify-between text-secondary font-bold">
         Comments
         <button

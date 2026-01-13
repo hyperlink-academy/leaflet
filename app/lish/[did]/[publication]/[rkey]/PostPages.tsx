@@ -147,7 +147,11 @@ export type SharedPageProps = {
   document: PostPageData;
   did: string;
   profile: ProfileViewDetailed;
-  preferences: { showComments?: boolean };
+  preferences: {
+    showComments?: boolean;
+    showMentions?: boolean;
+    showPrevNext?: boolean;
+  };
   pubRecord?: PubLeafletPublication.Record;
   theme?: PubLeafletPublication.Theme | null;
   prerenderedCodeBlocks?: Map<string, string>;
@@ -206,7 +210,11 @@ export function PostPages({
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
-  preferences: { showComments?: boolean };
+  preferences: {
+    showComments?: boolean;
+    showMentions?: boolean;
+    showPrevNext?: boolean;
+  };
   pollData: PollData[];
 }) {
   let drawer = useDrawerOpen(document_uri);
@@ -261,13 +269,18 @@ export function PostPages({
 
       {drawer && !drawer.pageId && (
         <InteractionDrawer
+          showPageBackground={pubRecord?.theme?.showPageBackground}
           document_uri={document.uri}
           comments={
             pubRecord?.preferences?.showComments === false
               ? []
               : document.comments_on_documents
           }
-          quotesAndMentions={quotesAndMentions}
+          quotesAndMentions={
+            pubRecord?.preferences?.showMentions === false
+              ? []
+              : quotesAndMentions
+          }
           did={did}
         />
       )}
@@ -347,6 +360,7 @@ export function PostPages({
             />
             {drawer && drawer.pageId === page.id && (
               <InteractionDrawer
+                showPageBackground={pubRecord?.theme?.showPageBackground}
                 pageId={page.id}
                 document_uri={document.uri}
                 comments={
@@ -354,7 +368,11 @@ export function PostPages({
                     ? []
                     : document.comments_on_documents
                 }
-                quotesAndMentions={quotesAndMentions}
+                quotesAndMentions={
+                  pubRecord?.preferences?.showMentions === false
+                    ? []
+                    : quotesAndMentions
+                }
                 did={did}
               />
             )}

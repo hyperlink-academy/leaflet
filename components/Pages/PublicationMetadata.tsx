@@ -121,9 +121,11 @@ export const PublicationMetadata = () => {
                 <Separator classname="h-4!" />
               </>
             )}
-            <div className="flex gap-1 items-center">
-              <QuoteTiny />—
-            </div>
+            {pubRecord?.preferences?.showMentions && (
+              <div className="flex gap-1 items-center">
+                <QuoteTiny />—
+              </div>
+            )}
             {pubRecord?.preferences?.showComments && (
               <div className="flex gap-1 items-center">
                 <CommentTiny />—

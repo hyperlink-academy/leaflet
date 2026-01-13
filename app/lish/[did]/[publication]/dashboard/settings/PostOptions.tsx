@@ -22,29 +22,41 @@ export const PostOptions = (props: {
       ? true
       : record.preferences.showComments,
   );
-  let [showMentions, setShowMentions] = useState(true);
-  let [showPrevNext, setShowPrevNext] = useState(true);
+  let [showMentions, setShowMentions] = useState(
+    record?.preferences?.showMentions === undefined
+      ? true
+      : record.preferences.showMentions,
+  );
+  let [showPrevNext, setShowPrevNext] = useState(
+    record?.preferences?.showPrevNext === undefined
+      ? true
+      : record.preferences.showPrevNext,
+  );
 
   let toast = useToaster();
   return (
     <form
       onSubmit={async (e) => {
-        // if (!pubData) return;
-        // e.preventDefault();
-        // props.setLoading(true);
-        // let data = await updatePublication({
-        //   uri: pubData.uri,
-        //   name: nameValue,
-        //   description: descriptionValue,
-        //   iconFile: iconFile,
-        //   preferences: {
-        //     showInDiscover: showInDiscover,
-        //     showComments: showComments,
-        //   },
-        // });
-        // toast({ type: "success", content: "Posts Updated!" });
-        // props.setLoading(false);
-        // mutate("publication-data");
+        if (!pubData) return;
+        e.preventDefault();
+        props.setLoading(true);
+        let data = await updatePublication({
+          name: record.name,
+          uri: pubData.uri,
+          preferences: {
+            showInDiscover:
+              record?.preferences?.showInDiscover === undefined
+                ? true
+                : record.preferences.showInDiscover,
+            showComments: showComments,
+            showMentions: showMentions,
+            showPrevNext: showPrevNext,
+          },
+        });
+        toast({ type: "success", content: <strong>Posts Updated!</strong> });
+        console.log(record.preferences?.showPrevNext);
+        props.setLoading(false);
+        mutate("publication-data");
       }}
       className="text-primary flex flex-col"
     >
@@ -57,19 +69,13 @@ export const PostOptions = (props: {
         Post Options
       </PubSettingsHeader>
       <h4 className="mb-1">Layout</h4>
-      {/*<div>Max Post Width</div>*/}
       <Toggle
         toggle={showPrevNext}
         onToggle={() => {
           setShowPrevNext(!showPrevNext);
         }}
       >
-        <div className="flex flex-col justify-start">
-          <div className="font-bold">Show Prev/Next Buttons</div>
-          <div className="text-tertiary text-sm leading-tight">
-            Show buttons that navigate to the previous and next posts
-          </div>
-        </div>
+        <div className="font-bold">Show Prev/Next Buttons</div>
       </Toggle>
       <hr className="my-2 border-border-light" />
       <h4 className="mb-1">Interactions</h4>
