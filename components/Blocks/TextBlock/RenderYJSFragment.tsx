@@ -8,7 +8,7 @@ import { AtMentionLink } from "components/AtMentionLink";
 import { Delta } from "src/utils/yjsFragmentToString";
 import { ProfilePopover } from "components/ProfilePopover";
 
-type BlockElements = "h1" | "h2" | "h3" | null | "blockquote" | "p";
+type BlockElements = "h1" | "h2" | "h3" | null | "blockquote" | "p" | "small";
 export function RenderYJSFragment({
   value,
   wrapper,

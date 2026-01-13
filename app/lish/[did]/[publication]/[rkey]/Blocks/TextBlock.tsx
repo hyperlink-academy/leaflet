@@ -2,7 +2,7 @@
 import { UnicodeString } from "@atproto/api";
 import { PubLeafletRichtextFacet } from "lexicons/api";
 import { useMemo } from "react";
-import { useHighlight } from "./useHighlight";
+import { useHighlight } from "../useHighlight";
 import { BaseTextBlock } from "./BaseTextBlock";
 
 type Facet = PubLeafletRichtextFacet.Main;

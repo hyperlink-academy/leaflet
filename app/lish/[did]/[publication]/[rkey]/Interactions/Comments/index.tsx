@@ -5,7 +5,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import { CommentBox } from "./CommentBox";
 import { Json } from "supabase/database.types";
 import { PubLeafletComment } from "lexicons/api";
-import { BaseTextBlock } from "../../BaseTextBlock";
+import { BaseTextBlock } from "../../Blocks/BaseTextBlock";
 import { useMemo, useState } from "react";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { Separator } from "components/Layout";

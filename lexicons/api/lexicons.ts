@@ -1246,6 +1246,10 @@ export const schemaDict = {
           plaintext: {
             type: 'string',
           },
+          textSize: {
+            type: 'string',
+            enum: ['default', 'small', 'large'],
+          },
           facets: {
             type: 'array',
             items: {
@@ -1812,7 +1816,7 @@ export const schemaDict = {
           },
           showPrevNext: {
             type: 'boolean',
-            default: true,
+            default: false,
           },
         },
       },

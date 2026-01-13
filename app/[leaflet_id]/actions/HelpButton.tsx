@@ -58,6 +58,30 @@ export const HelpButton = (props: { noShortcuts?: boolean }) => {
                   keys={[metaKey(), isMac() ? "Ctrl" : "Meta", "X"]}
                 />
                 <KeyboardShortcut name="Inline Link" keys={[metaKey(), "K"]} />
+                <KeyboardShortcut
+                  name="Make Title"
+                  keys={[metaKey(), isMac() ? "Opt" : "Alt", "1"]}
+                />
+                <KeyboardShortcut
+                  name="Make Heading"
+                  keys={[metaKey(), isMac() ? "Opt" : "Alt", "2"]}
+                />
+                <KeyboardShortcut
+                  name="Make Subheading"
+                  keys={[metaKey(), isMac() ? "Opt" : "Alt", "3"]}
+                />
+                <KeyboardShortcut
+                  name="Regular Text"
+                  keys={[metaKey(), isMac() ? "Opt" : "Alt", "0"]}
+                />
+                <KeyboardShortcut
+                  name="Large Text"
+                  keys={[metaKey(), isMac() ? "Opt" : "Alt", "+"]}
+                />
+                <KeyboardShortcut
+                  name="Small Text"
+                  keys={[metaKey(), isMac() ? "Opt" : "Alt", "-"]}
+                />
 
                 <Label>Block Shortcuts</Label>
                 {/* shift + up/down arrows (or click + drag): select multiple blocks */}

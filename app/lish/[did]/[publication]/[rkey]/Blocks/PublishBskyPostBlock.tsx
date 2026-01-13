@@ -5,14 +5,14 @@ import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
-import { ThreadLink, QuotesLink } from "./PostLinks";
+import { ThreadLink, QuotesLink } from "../PostLinks";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import {
   BlueskyEmbed,
   PostNotAvailable,
 } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 import { BlueskyRichText } from "components/Blocks/BlueskyPostBlock/BlueskyRichText";
-import { openPage } from "./PostPages";
+import { openPage } from "../PostPages";
 
 export const PubBlueskyPostBlock = (props: {
   post: PostView;
@@ -22,10 +22,10 @@ export const PubBlueskyPostBlock = (props: {
   let post = props.post;
 
   const handleOpenThread = () => {
-    openPage(
-      props.pageId ? { type: "doc", id: props.pageId } : undefined,
-      { type: "thread", uri: post.uri },
-    );
+    openPage(props.pageId ? { type: "doc", id: props.pageId } : undefined, {
+      type: "thread",
+      uri: post.uri,
+    });
   };
 
   switch (true) {
@@ -51,7 +51,9 @@ export const PubBlueskyPostBlock = (props: {
       let postId = post.uri.split("/")[4];
       let url = `https://bsky.app/profile/${post.author.handle}/post/${postId}`;
 
-      const parent = props.pageId ? { type: "doc" as const, id: props.pageId } : undefined;
+      const parent = props.pageId
+        ? { type: "doc" as const, id: props.pageId }
+        : undefined;
 
       return (
         <div

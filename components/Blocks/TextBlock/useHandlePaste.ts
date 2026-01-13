@@ -299,6 +299,17 @@ const createBlockFromHTML = (
       },
     });
   }
+  let textSize = child.getAttribute("data-text-size");
+  if (textSize && ["default", "small", "large"].includes(textSize)) {
+    rep.mutate.assertFact({
+      entity: entityID,
+      attribute: "block/text-size",
+      data: {
+        type: "text-size-union",
+        value: textSize as "default" | "small" | "large",
+      },
+    });
+  }
   if (child.tagName === "A") {
     let href = child.getAttribute("href");
     let dataType = child.getAttribute("data-type");

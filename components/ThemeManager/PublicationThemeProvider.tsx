@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { parseColor } from "react-aria-components";
 import { useEntity } from "src/replicache";
-import { getColorContrast } from "./themeUtils";
+import { getColorDifference } from "./themeUtils";
 import { useColorAttribute, colorToString } from "./useColorAttribute";
 import { BaseThemeProvider, CardBorderHiddenContext } from "./ThemeProvider";
 import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
@@ -174,14 +174,14 @@ export const useLocalPubTheme = (
     let newAccentContrast;
     let sortedAccents = [newTheme.accent1, newTheme.accent2].sort((a, b) => {
       return (
-        getColorContrast(
+        getColorDifference(
           colorToString(b, "rgb"),
           colorToString(
             showPageBackground ? newTheme.bgPage : newTheme.bgLeaflet,
             "rgb",
           ),
         ) -
-        getColorContrast(
+        getColorDifference(
           colorToString(a, "rgb"),
           colorToString(
             showPageBackground ? newTheme.bgPage : newTheme.bgLeaflet,
@@ -191,17 +191,17 @@ export const useLocalPubTheme = (
       );
     });
     if (
-      getColorContrast(
+      getColorDifference(
         colorToString(sortedAccents[0], "rgb"),
         colorToString(newTheme.primary, "rgb"),
-      ) < 30 &&
-      getColorContrast(
+      ) < 0.15 &&
+      getColorDifference(
         colorToString(sortedAccents[1], "rgb"),
         colorToString(
           showPageBackground ? newTheme.bgPage : newTheme.bgLeaflet,
           "rgb",
         ),
-      ) > 12
+      ) > 0.08
     ) {
       newAccentContrast = sortedAccents[1];
     } else newAccentContrast = sortedAccents[0];

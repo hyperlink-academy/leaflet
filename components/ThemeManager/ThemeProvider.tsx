@@ -22,7 +22,7 @@ import {
   PublicationThemeProvider,
 } from "./PublicationThemeProvider";
 import { PubLeafletPublication } from "lexicons/api";
-import { getColorContrast } from "./themeUtils";
+import { getColorDifference } from "./themeUtils";
 
 // define a function to set an Aria Color to a CSS Variable in RGB
 function setCSSVariableToColor(
@@ -140,11 +140,11 @@ export const BaseThemeProvider = ({
   //sorting the accents by contrast on background
   let sortedAccents = [accent1, accent2].sort((a, b) => {
     return (
-      getColorContrast(
+      getColorDifference(
         colorToString(b, "rgb"),
         colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
       ) -
-      getColorContrast(
+      getColorDifference(
         colorToString(a, "rgb"),
         colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
       )
@@ -156,14 +156,14 @@ export const BaseThemeProvider = ({
   // then use the not contrasty option
 
   if (
-    getColorContrast(
+    getColorDifference(
       colorToString(sortedAccents[0], "rgb"),
       colorToString(primary, "rgb"),
-    ) < 30 &&
-    getColorContrast(
+    ) < 0.15 &&
+    getColorDifference(
       colorToString(sortedAccents[1], "rgb"),
       colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
-    ) > 12
+    ) > 0.08
   ) {
     accentContrast = sortedAccents[1];
   } else accentContrast = sortedAccents[0];
@@ -286,11 +286,11 @@ export function CardThemeProvider(props: {
     bgPage && accent1 && accent2
       ? [accent1, accent2].sort((a, b) => {
           return (
-            getColorContrast(
+            getColorDifference(
               colorToString(b, "rgb"),
               colorToString(bgPage, "rgb"),
             ) -
-            getColorContrast(
+            getColorDifference(
               colorToString(a, "rgb"),
               colorToString(bgPage, "rgb"),
             )
