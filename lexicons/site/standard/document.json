@@ -1,0 +1,68 @@
+{
+  "defs": {
+    "main": {
+      "key": "tid",
+      "record": {
+        "properties": {
+          "bskyPostRef": {
+            "ref": "com.atproto.repo.strongRef",
+            "type": "ref"
+          },
+          "content": {
+            "closed": false,
+            "refs": ["pub.leaflet.content"],
+            "type": "union"
+          },
+          "coverImage": {
+            "accept": ["image/*"],
+            "maxSize": 1000000,
+            "type": "blob"
+          },
+          "description": {
+            "maxGraphemes": 300,
+            "maxLength": 3000,
+            "type": "string"
+          },
+          "path": {
+            "description": "combine with the publication url or the document site to construct a full url to the document",
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "datetime",
+            "type": "string"
+          },
+          "site": {
+            "description": "URI to the site or publication this document belongs to (https or at-uri)",
+            "format": "uri",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "maxGraphemes": 50,
+              "maxLength": 100,
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "textContent": {
+            "type": "string"
+          },
+          "title": {
+            "maxGraphemes": 128,
+            "maxLength": 1280,
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "datetime",
+            "type": "string"
+          }
+        },
+        "required": ["site", "title", "publishedAt"],
+        "type": "object"
+      },
+      "type": "record"
+    }
+  },
+  "id": "site.standard.document",
+  "lexicon": 1
+}

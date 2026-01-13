@@ -580,30 +580,30 @@ export type Database = {
       }
       leaflets_in_publications: {
         Row: {
-          archived: boolean | null
           cover_image: string | null
           description: string
           doc: string | null
           leaflet: string
           publication: string
+          tags: string[] | null
           title: string
         }
         Insert: {
-          archived?: boolean | null
           cover_image?: string | null
           description?: string
           doc?: string | null
           leaflet: string
           publication: string
+          tags?: string[] | null
           title?: string
         }
         Update: {
-          archived?: boolean | null
           cover_image?: string | null
           description?: string
           doc?: string | null
           leaflet?: string
           publication?: string
+          tags?: string[] | null
           title?: string
         }
         Relationships: [
@@ -637,6 +637,7 @@ export type Database = {
           description: string
           document: string
           leaflet: string
+          tags: string[] | null
           title: string
         }
         Insert: {
@@ -645,6 +646,7 @@ export type Database = {
           description?: string
           document: string
           leaflet: string
+          tags?: string[] | null
           title?: string
         }
         Update: {
@@ -653,6 +655,7 @@ export type Database = {
           description?: string
           document?: string
           leaflet?: string
+          tags?: string[] | null
           title?: string
         }
         Relationships: [
@@ -736,19 +739,16 @@ export type Database = {
       }
       permission_token_on_homepage: {
         Row: {
-          archived: boolean | null
           created_at: string
           identity: string
           token: string
         }
         Insert: {
-          archived?: boolean | null
           created_at?: string
           identity: string
           token: string
         }
         Update: {
-          archived?: boolean | null
           created_at?: string
           identity?: string
           token?: string
@@ -762,7 +762,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "permission_token_creator_token_fkey"
+            foreignKeyName: "permission_token_on_homepage_token_fkey"
             columns: ["token"]
             isOneToOne: false
             referencedRelation: "permission_tokens"
@@ -1079,6 +1079,136 @@ export type Database = {
           last_mutation?: number
         }
         Relationships: []
+      }
+      site_standard_documents: {
+        Row: {
+          data: Json
+          identity_did: string
+          indexed_at: string
+          uri: string
+        }
+        Insert: {
+          data: Json
+          identity_did: string
+          indexed_at?: string
+          uri: string
+        }
+        Update: {
+          data?: Json
+          identity_did?: string
+          indexed_at?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_standard_documents_identity_did_fkey"
+            columns: ["identity_did"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+        ]
+      }
+      site_standard_documents_in_publications: {
+        Row: {
+          document: string
+          indexed_at: string
+          publication: string
+        }
+        Insert: {
+          document: string
+          indexed_at?: string
+          publication: string
+        }
+        Update: {
+          document?: string
+          indexed_at?: string
+          publication?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_standard_documents_in_publications_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "site_standard_documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "site_standard_documents_in_publications_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "site_standard_publications"
+            referencedColumns: ["uri"]
+          },
+        ]
+      }
+      site_standard_publications: {
+        Row: {
+          data: Json
+          identity_did: string
+          indexed_at: string
+          uri: string
+        }
+        Insert: {
+          data: Json
+          identity_did: string
+          indexed_at?: string
+          uri: string
+        }
+        Update: {
+          data?: Json
+          identity_did?: string
+          indexed_at?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_standard_publications_identity_did_fkey"
+            columns: ["identity_did"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+        ]
+      }
+      site_standard_subscriptions: {
+        Row: {
+          created_at: string
+          identity: string
+          publication: string
+          record: Json
+          uri: string
+        }
+        Insert: {
+          created_at?: string
+          identity: string
+          publication: string
+          record: Json
+          uri: string
+        }
+        Update: {
+          created_at?: string
+          identity?: string
+          publication?: string
+          record?: Json
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_standard_subscriptions_identity_fkey"
+            columns: ["identity"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+          {
+            foreignKeyName: "site_standard_subscriptions_publication_fkey"
+            columns: ["publication"]
+            isOneToOne: false
+            referencedRelation: "site_standard_publications"
+            referencedColumns: ["uri"]
+          },
+        ]
       }
       subscribers_to_publications: {
         Row: {

@@ -1,0 +1,27 @@
+{
+  "lexicon": 1,
+  "id": "pub.leaflet.content",
+  "revision": 1,
+  "description": "A lexicon for long form rich media documents",
+  "defs": {
+    "main": {
+      "type": "object",
+      "description": "Content format for leaflet documents",
+      "required": [
+        "pages"
+      ],
+      "properties": {
+        "pages": {
+          "type": "array",
+          "items": {
+            "type": "union",
+            "refs": [
+              "pub.leaflet.pages.linearDocument",
+              "pub.leaflet.pages.canvas"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

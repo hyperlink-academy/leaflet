@@ -10,6 +10,7 @@ import * as path from "path";
 import { PubLeafletRichTextFacet } from "./src/facet";
 import { PubLeafletComment } from "./src/comment";
 import { PubLeafletAuthFullPermissions } from "./src/authFullPermissions";
+import { PubLeafletContent } from "./src/content";
 
 const outdir = path.join("lexicons", "pub", "leaflet");
 
@@ -20,6 +21,7 @@ fs.mkdirSync(outdir, { recursive: true });
 
 const lexicons = [
   PubLeafletDocument,
+  PubLeafletContent,
   PubLeafletComment,
   PubLeafletRichTextFacet,
   PubLeafletAuthFullPermissions,
