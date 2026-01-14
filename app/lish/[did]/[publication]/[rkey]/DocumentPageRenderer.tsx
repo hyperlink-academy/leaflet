@@ -3,10 +3,8 @@ import { AtUri } from "@atproto/syntax";
 import { ids } from "lexicons/api/lexicons";
 import {
   PubLeafletBlocksBskyPost,
-  PubLeafletDocument,
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
-  PubLeafletPublication,
 } from "lexicons/api";
 import { QuoteHandler } from "./QuoteHandler";
 import {
@@ -14,11 +12,13 @@ import {
   PublicationThemeProvider,
 } from "components/ThemeManager/PublicationThemeProvider";
 import { getPostPageData } from "./getPostPageData";
-import { PostPageContextProvider } from "./PostPageContext";
 import { PostPages } from "./PostPages";
 import { extractCodeBlocks } from "./extractCodeBlocks";
 import { LeafletLayout } from "components/LeafletLayout";
 import { fetchPollData } from "./fetchPollData";
+import { getDocumentPages, hasLeafletContent } from "src/utils/normalizeRecords";
+import { DocumentProvider } from "contexts/DocumentContext";
+import { LeafletContentProvider } from "contexts/LeafletContentContext";
 
 export async function DocumentPageRenderer({
   did,
@@ -41,7 +41,10 @@ export async function DocumentPageRenderer({
     agent.getProfile({ actor: did }),
   ]);
 
-  if (!document?.data)
+  const record = document?.normalizedDocument;
+  const pages = record ? getDocumentPages(record) : undefined;
+
+  if (!document?.data || !record || !pages)
     return (
       <div className="bg-bg-leaflet h-full p-3 text-center relative">
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-md w-full">
@@ -55,10 +58,8 @@ export async function DocumentPageRenderer({
         </div>
       </div>
     );
-
-  let record = document.data as PubLeafletDocument.Record;
   let bskyPosts =
-    record.pages.flatMap((p) => {
+    pages.flatMap((p) => {
       let page = p as PubLeafletPagesLinearDocument.Main;
       return page.blocks?.filter(
         (b) => b.block.$type === ids.PubLeafletBlocksBskyPost,
@@ -91,7 +92,7 @@ export async function DocumentPageRenderer({
       : [];
 
   // Extract poll blocks and fetch vote data
-  let pollBlocks = record.pages.flatMap((p) => {
+  let pollBlocks = pages.flatMap((p) => {
     let page = p as PubLeafletPagesLinearDocument.Main;
     return (
       page.blocks?.filter((b) => b.block.$type === ids.PubLeafletBlocksPoll) ||
@@ -102,16 +103,11 @@ export async function DocumentPageRenderer({
     pollBlocks.map((b) => (b.block as any).pollRef.uri),
   );
 
-  // Get theme from publication or document (for standalone docs)
-  let pubRecord = document.documents_in_publications[0]?.publications
-    ?.record as PubLeafletPublication.Record | undefined;
-  let theme = pubRecord?.theme || record.theme || null;
-  let pub_creator =
-    document.documents_in_publications[0]?.publications?.identity_did || did;
+  const pubRecord = document.normalizedPublication;
+  let pub_creator = document.publication?.identity_did || did;
   let isStandalone = !pubRecord;
 
-  let firstPage = record.pages[0];
-
+  let firstPage = pages[0];
   let firstPageBlocks =
     (
       firstPage as
@@ -121,26 +117,28 @@ export async function DocumentPageRenderer({
   let prerenderedCodeBlocks = await extractCodeBlocks(firstPageBlocks);
 
   return (
-    <PostPageContextProvider value={document}>
-      <PublicationThemeProvider theme={theme} pub_creator={pub_creator} isStandalone={isStandalone}>
-        <PublicationBackgroundProvider theme={theme} pub_creator={pub_creator}>
-          <LeafletLayout>
-            <PostPages
-              document_uri={document.uri}
-              preferences={pubRecord?.preferences || {}}
-              pubRecord={pubRecord}
-              profile={JSON.parse(JSON.stringify(profile.data))}
-              document={document}
-              bskyPostData={bskyPostData}
-              did={did}
-              prerenderedCodeBlocks={prerenderedCodeBlocks}
-              pollData={pollData}
-            />
-          </LeafletLayout>
+    <DocumentProvider value={document}>
+      <LeafletContentProvider value={{ pages }}>
+        <PublicationThemeProvider theme={document.theme} pub_creator={pub_creator} isStandalone={isStandalone}>
+          <PublicationBackgroundProvider theme={document.theme} pub_creator={pub_creator}>
+            <LeafletLayout>
+              <PostPages
+                document_uri={document.uri}
+                preferences={pubRecord?.preferences || {}}
+                pubRecord={pubRecord}
+                profile={JSON.parse(JSON.stringify(profile.data))}
+                document={document}
+                bskyPostData={bskyPostData}
+                did={did}
+                prerenderedCodeBlocks={prerenderedCodeBlocks}
+                pollData={pollData}
+              />
+            </LeafletLayout>
 
-          <QuoteHandler />
-        </PublicationBackgroundProvider>
-      </PublicationThemeProvider>
-    </PostPageContextProvider>
+            <QuoteHandler />
+          </PublicationBackgroundProvider>
+        </PublicationThemeProvider>
+      </LeafletContentProvider>
+    </DocumentProvider>
   );
 }

@@ -580,6 +580,7 @@ export type Database = {
       }
       leaflets_in_publications: {
         Row: {
+          archived: boolean | null
           cover_image: string | null
           description: string
           doc: string | null
@@ -589,6 +590,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          archived?: boolean | null
           cover_image?: string | null
           description?: string
           doc?: string | null
@@ -598,6 +600,7 @@ export type Database = {
           title?: string
         }
         Update: {
+          archived?: boolean | null
           cover_image?: string | null
           description?: string
           doc?: string | null
@@ -632,6 +635,7 @@ export type Database = {
       }
       leaflets_to_documents: {
         Row: {
+          archived: boolean | null
           cover_image: string | null
           created_at: string
           description: string
@@ -641,6 +645,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          archived?: boolean | null
           cover_image?: string | null
           created_at?: string
           description?: string
@@ -650,6 +655,7 @@ export type Database = {
           title?: string
         }
         Update: {
+          archived?: boolean | null
           cover_image?: string | null
           created_at?: string
           description?: string
@@ -739,16 +745,19 @@ export type Database = {
       }
       permission_token_on_homepage: {
         Row: {
+          archived: boolean | null
           created_at: string
           identity: string
           token: string
         }
         Insert: {
+          archived?: boolean | null
           created_at?: string
           identity: string
           token: string
         }
         Update: {
+          archived?: boolean | null
           created_at?: string
           identity?: string
           token?: string

@@ -1,9 +1,9 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
 import { ids } from "lexicons/api/lexicons";
-import { PubLeafletDocument } from "lexicons/api";
 import { Metadata } from "next";
 import { DocumentPageRenderer } from "./DocumentPageRenderer";
+import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -21,7 +21,8 @@ export async function generateMetadata(props: {
   ]);
   if (!document) return { title: "404" };
 
-  let docRecord = document.data as PubLeafletDocument.Record;
+  const docRecord = normalizeDocumentRecord(document.data);
+  if (!docRecord) return { title: "404" };
 
   return {
     icons: {

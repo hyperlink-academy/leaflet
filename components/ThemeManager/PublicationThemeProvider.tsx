@@ -6,7 +6,10 @@ import { getColorDifference } from "./themeUtils";
 import { useColorAttribute, colorToString } from "./useColorAttribute";
 import { BaseThemeProvider, CardBorderHiddenContext } from "./ThemeProvider";
 import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
-import { usePublicationData } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+import {
+  usePublicationData,
+  useNormalizedPublicationRecord,
+} from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 
 const PubThemeDefaults = {
@@ -53,13 +56,14 @@ export function PublicationThemeProviderDashboard(props: {
 }) {
   let { data } = usePublicationData();
   let { publication: pub } = data || {};
+  const normalizedPub = useNormalizedPublicationRecord();
   return (
     <PublicationThemeProvider
       pub_creator={pub?.identity_did || ""}
-      theme={(pub?.record as PubLeafletPublication.Record)?.theme}
+      theme={normalizedPub?.theme}
     >
       <PublicationBackgroundProvider
-        theme={(pub?.record as PubLeafletPublication.Record)?.theme}
+        theme={normalizedPub?.theme}
         pub_creator={pub?.identity_did || ""}
       >
         {props.children}

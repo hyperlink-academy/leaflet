@@ -6,18 +6,16 @@ import { PubIcon } from "components/ActionBar/Publications";
 import { Separator } from "components/Layout";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
-import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { timeAgo } from "src/utils/timeAgo";
-import { Json } from "supabase/database.types";
 
 export const PubListing = (
   props: PublicationSubscription & {
     resizeHeight?: boolean;
   },
 ) => {
-  let record = props.record as PubLeafletPublication.Record;
-  let theme = usePubTheme(record.theme);
+  let record = props.record;
+  let theme = usePubTheme(record?.theme);
   let backgroundImage = record?.theme?.backgroundImage?.image?.ref
     ? blobRefToSrc(
         record?.theme?.backgroundImage?.image?.ref,
@@ -31,7 +29,7 @@ export const PubListing = (
   return (
     <BaseThemeProvider {...theme} local>
       <a
-        href={`https://${record.base_path}`}
+        href={record.url}
         className={`no-underline! flex flex-row gap-2
           bg-bg-leaflet
           border border-border-light rounded-lg

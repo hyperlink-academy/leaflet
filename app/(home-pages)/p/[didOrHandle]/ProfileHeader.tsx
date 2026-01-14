@@ -1,12 +1,11 @@
 "use client";
 import { Avatar } from "components/Avatar";
-import { AppBskyActorProfile, PubLeafletPublication } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import type { ProfileData } from "./layout";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { colorToString } from "components/ThemeManager/useColorAttribute";
 import { PubIcon } from "components/ActionBar/Publications";
-import { Json } from "supabase/database.types";
+import { type NormalizedPublication } from "src/utils/normalizeRecords";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { SpeedyLink } from "components/SpeedyLink";
@@ -15,7 +14,7 @@ import * as linkify from "linkifyjs";
 
 export const ProfileHeader = (props: {
   profile: ProfileViewDetailed;
-  publications: { record: Json; uri: string }[];
+  publications: { record: NormalizedPublication; uri: string }[];
   popover?: boolean;
 }) => {
   let profileRecord = props.profile;
@@ -89,11 +88,7 @@ export const ProfileHeader = (props: {
             className={`grid grid-flow-col  gap-2 mx-auto w-fit px-3 sm:px-4 ${props.popover ? "auto-cols-[164px]" : "auto-cols-[164px] sm:auto-cols-[240px]"}`}
           >
             {props.publications.map((p) => (
-              <PublicationCard
-                key={p.uri}
-                record={p.record as PubLeafletPublication.Record}
-                uri={p.uri}
-              />
+              <PublicationCard key={p.uri} record={p.record} uri={p.uri} />
             ))}
           </div>
         </div>
@@ -114,16 +109,13 @@ const ProfileLinks = (props: { handle: string }) => {
     </div>
   );
 };
-const PublicationCard = (props: {
-  record: PubLeafletPublication.Record;
-  uri: string;
-}) => {
+const PublicationCard = (props: { record: NormalizedPublication; uri: string }) => {
   const { record, uri } = props;
   const { bgLeaflet, bgPage, primary } = usePubTheme(record.theme);
 
   return (
     <a
-      href={`https://${record.base_path}`}
+      href={record.url}
       className="border border-border p-2 rounded-lg hover:no-underline! text-primary basis-1/2"
       style={{ backgroundColor: `rgb(${colorToString(bgLeaflet, "rgb")})` }}
     >

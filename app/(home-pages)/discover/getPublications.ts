@@ -1,6 +1,10 @@
 "use server";
 
 import { supabaseServerClient } from "supabase/serverClient";
+import {
+  normalizePublicationRow,
+  hasValidPublication,
+} from "src/utils/normalizeRecords";
 
 export type Cursor = {
   indexed_at?: string;
@@ -98,22 +102,28 @@ export async function getPublications(
   // Get the page
   const page = allPubs.slice(startIndex, startIndex + limit);
 
-  // Create next cursor
+  // Normalize publication records
+  const normalizedPage = page
+    .map(normalizePublicationRow)
+    .filter(hasValidPublication);
+
+  // Create next cursor based on last item in normalizedPage
+  const lastItem = normalizedPage[normalizedPage.length - 1];
   const nextCursor =
-    page.length === limit && startIndex + limit < allPubs.length
+    normalizedPage.length > 0 && startIndex + limit < allPubs.length
       ? order === "recentlyUpdated"
         ? {
-            indexed_at: page[page.length - 1].documents_in_publications[0]?.indexed_at,
-            uri: page[page.length - 1].uri,
+            indexed_at: lastItem.documents_in_publications[0]?.indexed_at,
+            uri: lastItem.uri,
           }
         : {
-            count: page[page.length - 1].publication_subscriptions[0]?.count || 0,
-            uri: page[page.length - 1].uri,
+            count: lastItem.publication_subscriptions[0]?.count || 0,
+            uri: lastItem.uri,
           }
       : null;
 
   return {
-    publications: page,
+    publications: normalizedPage,
     nextCursor,
   };
 }

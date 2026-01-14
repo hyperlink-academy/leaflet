@@ -1,8 +1,11 @@
 import { AtUri } from "@atproto/syntax";
 import { IdResolver } from "@atproto/identity";
 import { NextRequest, NextResponse } from "next/server";
-import { PubLeafletPublication } from "lexicons/api";
 import { supabaseServerClient } from "supabase/serverClient";
+import {
+  normalizePublicationRecord,
+  type NormalizedPublication,
+} from "src/utils/normalizeRecords";
 import sharp from "sharp";
 
 const idResolver = new IdResolver();
@@ -29,7 +32,7 @@ export async function GET(req: NextRequest) {
       return new NextResponse(null, { status: 400 });
     }
 
-    let publicationRecord: PubLeafletPublication.Record | null = null;
+    let normalizedPub: NormalizedPublication | null = null;
     let publicationUri: string;
 
     // Check if it's a document or publication
@@ -46,8 +49,7 @@ export async function GET(req: NextRequest) {
       }
 
       publicationUri = docInPub.publication;
-      publicationRecord = docInPub.publications
-        .record as PubLeafletPublication.Record;
+      normalizedPub = normalizePublicationRecord(docInPub.publications.record);
     } else if (uri.collection === "pub.leaflet.publication") {
       // Query the publications table directly
       const { data: publication } = await supabaseServerClient
@@ -61,16 +63,16 @@ export async function GET(req: NextRequest) {
       }
 
       publicationUri = publication.uri;
-      publicationRecord = publication.record as PubLeafletPublication.Record;
+      normalizedPub = normalizePublicationRecord(publication.record);
     } else {
       // Not a supported collection
       return new NextResponse(null, { status: 404 });
     }
 
     // Check if the publication has an icon
-    if (!publicationRecord?.icon) {
+    if (!normalizedPub?.icon) {
       // Generate a placeholder with the first letter of the publication name
-      const firstLetter = (publicationRecord?.name || "?")
+      const firstLetter = (normalizedPub?.name || "?")
         .slice(0, 1)
         .toUpperCase();
 
@@ -94,7 +96,7 @@ export async function GET(req: NextRequest) {
     const pubUri = new AtUri(publicationUri);
 
     // Get the CID from the icon blob
-    const cid = (publicationRecord.icon.ref as unknown as { $link: string })[
+    const cid = (normalizedPub.icon.ref as unknown as { $link: string })[
       "$link"
     ];
 

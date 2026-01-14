@@ -5,21 +5,19 @@ import { GetPublicationDataReturnType } from "app/api/rpc/[command]/get_publicat
 import { Actions } from "./Actions";
 import React, { useState } from "react";
 import { PublishedPostsList } from "./PublishedPostsLists";
-import { PubLeafletPublication } from "lexicons/api";
 import { PublicationSubscribers } from "./PublicationSubscribers";
-import { AtUri } from "@atproto/syntax";
 import {
-  HomeDashboardControls,
   DashboardLayout,
   PublicationDashboardControls,
 } from "components/PageLayouts/DashboardLayout";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
+import { type NormalizedPublication } from "src/utils/normalizeRecords";
 
 export default function PublicationDashboard({
   publication,
   record,
 }: {
-  record: PubLeafletPublication.Record;
+  record: NormalizedPublication;
   publication: Exclude<
     GetPublicationDataReturnType["result"]["publication"],
     null

@@ -1,7 +1,5 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
-import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
-import Link from "next/link";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
@@ -12,13 +10,15 @@ import {
 } from "components/ThemeManager/PublicationThemeProvider";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { SpeedyLink } from "components/SpeedyLink";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
-import { CommentTiny } from "components/Icons/CommentTiny";
 import { InteractionPreview } from "components/InteractionsPreview";
 import { LocalizedDate } from "./LocalizedDate";
 import { PublicationHomeLayout } from "./PublicationHomeLayout";
 import { PublicationAuthor } from "./PublicationAuthor";
 import { Separator } from "components/Layout";
+import {
+  normalizePublicationRecord,
+  normalizeDocumentRecord,
+} from "src/utils/normalizeRecords";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -55,7 +55,7 @@ export default async function Publication(props: {
     agent.getProfile({ actor: did }),
   ]);
 
-  let record = publication?.record as PubLeafletPublication.Record | null;
+  const record = normalizePublicationRecord(publication?.record);
 
   let showPageBackground = record?.theme?.showPageBackground;
 
@@ -112,28 +112,28 @@ export default async function Publication(props: {
               {publication.documents_in_publications
                 .filter((d) => !!d?.documents)
                 .sort((a, b) => {
-                  let aRecord = a.documents?.data! as PubLeafletDocument.Record;
-                  let bRecord = b.documents?.data! as PubLeafletDocument.Record;
-                  const aDate = aRecord.publishedAt
+                  const aRecord = normalizeDocumentRecord(a.documents?.data);
+                  const bRecord = normalizeDocumentRecord(b.documents?.data);
+                  const aDate = aRecord?.publishedAt
                     ? new Date(aRecord.publishedAt)
                     : new Date(0);
-                  const bDate = bRecord.publishedAt
+                  const bDate = bRecord?.publishedAt
                     ? new Date(bRecord.publishedAt)
                     : new Date(0);
                   return bDate.getTime() - aDate.getTime(); // Sort by most recent first
                 })
                 .map((doc) => {
                   if (!doc.documents) return null;
+                  const doc_record = normalizeDocumentRecord(doc.documents.data);
+                  if (!doc_record) return null;
                   let uri = new AtUri(doc.documents.uri);
-                  let doc_record = doc.documents
-                    .data as PubLeafletDocument.Record;
                   let quotes =
                     doc.documents.document_mentions_in_bsky[0].count || 0;
                   let comments =
                     record?.preferences?.showComments === false
                       ? 0
                       : doc.documents.comments_on_documents[0].count || 0;
-                  let tags = (doc_record?.tags as string[] | undefined) || [];
+                  let tags = doc_record.tags || [];
 
                   return (
                     <React.Fragment key={doc.documents?.uri}>

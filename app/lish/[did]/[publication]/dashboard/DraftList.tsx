@@ -2,7 +2,10 @@
 
 import { NewDraftSecondaryButton } from "./NewDraftButton";
 import React from "react";
-import { usePublicationData } from "./PublicationSWRProvider";
+import {
+  usePublicationData,
+  useNormalizedPublicationRecord,
+} from "./PublicationSWRProvider";
 import { LeafletList } from "app/(home-pages)/home/HomeLayout";
 
 export function DraftList(props: {
@@ -10,8 +13,14 @@ export function DraftList(props: {
   showPageBackground: boolean;
 }) {
   let { data: pub_data } = usePublicationData();
+  // Normalize the publication record - skip rendering if unrecognized format
+  const normalizedPubRecord = useNormalizedPublicationRecord();
   if (!pub_data?.publication) return null;
-  let { leaflets_in_publications, ...publication } = pub_data.publication;
+  const { drafts, leaflet_data } = pub_data;
+  const { leaflets_in_publications, ...publication } = pub_data.publication;
+
+  if (!normalizedPubRecord) return null;
+
   return (
     <div className="flex flex-col gap-4">
       <NewDraftSecondaryButton
@@ -23,33 +32,28 @@ export function DraftList(props: {
         searchValue={props.searchValue}
         showPreview={false}
         defaultDisplay="list"
-        leaflets={leaflets_in_publications
-          .filter((l) => !l.documents)
-          .filter((l) => !l.archived)
-          .map((l) => {
-            return {
-              archived: l.archived,
-              added_at: "",
-              token: {
-                ...l.permission_tokens!,
-                leaflets_in_publications: [
-                  {
-                    ...l,
-                    publications: {
-                      ...publication,
-                    },
-                  },
-                ],
-              },
-            };
-          })}
-        initialFacts={pub_data.leaflet_data.facts || {}}
+        leaflets={drafts
+          .filter((d) => d.permission_tokens)
+          .map((d) => ({
+            archived: (d._raw as { archived?: boolean }).archived,
+            added_at: "",
+            token: {
+              ...d.permission_tokens!,
+              leaflets_in_publications: [
+                {
+                  ...d._raw,
+                  publications: publication,
+                },
+              ],
+            },
+          }))}
+        initialFacts={leaflet_data.facts || {}}
         titles={{
-          ...leaflets_in_publications.reduce(
-            (acc, leaflet) => {
-              if (leaflet.permission_tokens)
-                acc[leaflet.permission_tokens.root_entity] =
-                  leaflet.title || "Untitled";
+          ...drafts.reduce(
+            (acc, draft) => {
+              if (draft.permission_tokens)
+                acc[draft.permission_tokens.root_entity] =
+                  draft.title || "Untitled";
               return acc;
             },
             {} as { [l: string]: string },

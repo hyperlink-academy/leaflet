@@ -1,7 +1,7 @@
-import { PubLeafletPublication } from "lexicons/api";
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
 import { AtUri } from "@atproto/syntax";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 
 export default async function PublicationLayout(props: {
   children: React.ReactNode;
@@ -41,7 +41,7 @@ export async function generateMetadata(props: {
     .single();
   if (!publication) return { title: "Publication 404" };
 
-  let pubRecord = publication?.record as PubLeafletPublication.Record;
+  const pubRecord = normalizePublicationRecord(publication?.record);
 
   return {
     title: pubRecord?.name || "Untitled Publication",
@@ -60,12 +60,12 @@ export async function generateMetadata(props: {
         url: publication.uri,
       },
     },
-    alternates: pubRecord?.base_path
+    alternates: pubRecord?.url
       ? {
           types: {
-            "application/rss+xml": `https://${pubRecord?.base_path}/rss`,
-            "application/atom+xml": `https://${pubRecord?.base_path}/atom`,
-            "application/json": `https://${pubRecord?.base_path}/json`,
+            "application/rss+xml": `${pubRecord.url}/rss`,
+            "application/atom+xml": `${pubRecord.url}/atom`,
+            "application/json": `${pubRecord.url}/json`,
           },
         }
       : undefined,

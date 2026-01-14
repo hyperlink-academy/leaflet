@@ -3,7 +3,10 @@ import { serve } from "@hono/node-server";
 import { DidResolver } from "@atproto/identity";
 import { parseReqNsid, verifyJwt } from "@atproto/xrpc-server";
 import { supabaseServerClient } from "supabase/serverClient";
-import { PubLeafletDocument } from "lexicons/api";
+import {
+  normalizeDocumentRecord,
+  type NormalizedDocument,
+} from "src/utils/normalizeRecords";
 import { inngest } from "app/api/inngest/client";
 import { AtUri } from "@atproto/api";
 
@@ -133,9 +136,9 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
     cursor: newCursor || cursor,
     feed: posts.flatMap((p) => {
       if (!p.data) return [];
-      let record = p.data as PubLeafletDocument.Record;
-      if (!record.postRef) return [];
-      return { post: record.postRef.uri };
+      const normalizedDoc = normalizeDocumentRecord(p.data);
+      if (!normalizedDoc?.bskyPostRef) return [];
+      return { post: normalizedDoc.bskyPostRef.uri };
     }),
   });
 });

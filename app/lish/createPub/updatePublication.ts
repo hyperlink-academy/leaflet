@@ -11,6 +11,10 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Json } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
 import { $Typed } from "@atproto/api";
+import {
+  normalizePublicationRecord,
+  type NormalizedPublication,
+} from "src/utils/normalizeRecords";
 
 type UpdatePublicationResult =
   | { success: true; publication: any }
@@ -143,8 +147,28 @@ export async function updatePublicationBasePath({
   }
   let aturi = new AtUri(existingPub.uri);
 
+  // Normalize the existing record to read its properties, then build a new pub.leaflet record
+  const normalizedPub = normalizePublicationRecord(existingPub.record);
+  // Extract base_path from url if it exists (url format is https://domain, base_path is just domain)
+  const existingBasePath = normalizedPub?.url
+    ? normalizedPub.url.replace(/^https?:\/\//, "")
+    : undefined;
+
   let record: PubLeafletPublication.Record = {
-    ...(existingPub.record as PubLeafletPublication.Record),
+    $type: "pub.leaflet.publication",
+    name: normalizedPub?.name || "",
+    description: normalizedPub?.description,
+    icon: normalizedPub?.icon,
+    theme: normalizedPub?.theme,
+    preferences: normalizedPub?.preferences
+      ? {
+          $type: "pub.leaflet.publication#preferences" as const,
+          showInDiscover: normalizedPub.preferences.showInDiscover,
+          showComments: normalizedPub.preferences.showComments,
+          showMentions: normalizedPub.preferences.showMentions,
+          showPrevNext: normalizedPub.preferences.showPrevNext,
+        }
+      : undefined,
     base_path,
   };
 
@@ -219,10 +243,28 @@ export async function updatePublicationTheme({
   }
   let aturi = new AtUri(existingPub.uri);
 
-  let oldRecord = existingPub.record as PubLeafletPublication.Record;
+  // Normalize the existing record to read its properties
+  const normalizedPub = normalizePublicationRecord(existingPub.record);
+  // Extract base_path from url if it exists (url format is https://domain, base_path is just domain)
+  const existingBasePath = normalizedPub?.url
+    ? normalizedPub.url.replace(/^https?:\/\//, "")
+    : undefined;
+
   let record: PubLeafletPublication.Record = {
-    ...oldRecord,
     $type: "pub.leaflet.publication",
+    name: normalizedPub?.name || "",
+    description: normalizedPub?.description,
+    icon: normalizedPub?.icon,
+    base_path: existingBasePath,
+    preferences: normalizedPub?.preferences
+      ? {
+          $type: "pub.leaflet.publication#preferences" as const,
+          showInDiscover: normalizedPub.preferences.showInDiscover,
+          showComments: normalizedPub.preferences.showComments,
+          showMentions: normalizedPub.preferences.showMentions,
+          showPrevNext: normalizedPub.preferences.showPrevNext,
+        }
+      : undefined,
     theme: {
       backgroundImage: theme.backgroundImage
         ? {
@@ -238,7 +280,7 @@ export async function updatePublicationTheme({
           }
         : theme.backgroundImage === null
           ? undefined
-          : oldRecord.theme?.backgroundImage,
+          : normalizedPub?.theme?.backgroundImage,
       backgroundColor: theme.backgroundColor
         ? {
             ...theme.backgroundColor,

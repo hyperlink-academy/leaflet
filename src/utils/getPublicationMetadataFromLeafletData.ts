@@ -1,30 +1,40 @@
 import { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { Json } from "supabase/database.types";
 
+/**
+ * Return type for publication metadata extraction.
+ * Note: `publications.record` and `documents.data` are raw JSON from the database.
+ * Consumers should use `normalizePublicationRecord()` and `normalizeDocumentRecord()`
+ * from `src/utils/normalizeRecords` to get properly typed data.
+ */
+export type PublicationMetadata = {
+  description: string;
+  title: string;
+  leaflet: string;
+  doc: string | null;
+  publications: {
+    identity_did: string;
+    name: string;
+    indexed_at: string;
+    /** Raw record - use normalizePublicationRecord() to get typed data */
+    record: Json | null;
+    uri: string;
+  } | null;
+  documents: {
+    /** Raw data - use normalizeDocumentRecord() to get typed data */
+    data: Json;
+    indexed_at: string;
+    uri: string;
+  } | null;
+} | null;
+
 export function getPublicationMetadataFromLeafletData(
   data?: GetLeafletDataReturnType["result"]["data"],
-) {
+): PublicationMetadata {
   if (!data) return null;
 
   let pubData:
-    | {
-        description: string;
-        title: string;
-        leaflet: string;
-        doc: string | null;
-        publications: {
-          identity_did: string;
-          name: string;
-          indexed_at: string;
-          record: Json | null;
-          uri: string;
-        } | null;
-        documents: {
-          data: Json;
-          indexed_at: string;
-          uri: string;
-        } | null;
-      }
+    | NonNullable<PublicationMetadata>
     | undefined
     | null =
     data?.leaflets_in_publications?.[0] ||
@@ -46,5 +56,5 @@ export function getPublicationMetadataFromLeafletData(
       doc: standaloneDoc.document,
     };
   }
-  return pubData;
+  return pubData || null;
 }

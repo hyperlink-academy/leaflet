@@ -1,9 +1,4 @@
 "use client";
-import {
-  PubLeafletComment,
-  PubLeafletDocument,
-  PubLeafletPublication,
-} from "lexicons/api";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import {
   Interactions,
@@ -28,12 +23,12 @@ export function PostHeader(props: {
   let { identity } = useIdentityData();
   let document = props.data;
 
-  let record = document?.data as PubLeafletDocument.Record;
+  const record = document?.normalizedDocument;
   let profile = props.profile;
   let pub = props.data?.documents_in_publications[0]?.publications;
 
   const formattedDate = useLocalizedDate(
-    record.publishedAt || new Date().toISOString(),
+    record?.publishedAt || new Date().toISOString(),
     {
       year: "numeric",
       month: "long",
@@ -41,7 +36,7 @@ export function PostHeader(props: {
     },
   );
 
-  if (!document?.data) return;
+  if (!document?.data || !record) return null;
   return (
     <PostHeaderLayout
       pubLink={
@@ -92,8 +87,8 @@ export function PostHeader(props: {
           <Interactions
             showComments={props.preferences.showComments}
             showMentions={props.preferences.showMentions}
-            quotesCount={getQuoteCount(document) || 0}
-            commentsCount={getCommentCount(document) || 0}
+            quotesCount={getQuoteCount(document?.quotesAndMentions || []) || 0}
+            commentsCount={getCommentCount(document?.comments_on_documents || []) || 0}
           />
         </>
       }

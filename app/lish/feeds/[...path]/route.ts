@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { DidResolver } from "@atproto/identity";
 import { parseReqNsid, verifyJwt } from "@atproto/xrpc-server";
 import { supabaseServerClient } from "supabase/serverClient";
-import { PubLeafletDocument } from "lexicons/api";
+import {
+  normalizeDocumentRecord,
+  type NormalizedDocument,
+} from "src/utils/normalizeRecords";
 
 const serviceDid = "did:web:leaflet.pub:lish:feeds";
 export async function GET(
@@ -34,9 +37,9 @@ export async function GET(
         let posts = pub.publications?.documents_in_publications || [];
         return posts.flatMap((p) => {
           if (!p.documents?.data) return [];
-          let record = p.documents.data as PubLeafletDocument.Record;
-          if (!record.postRef) return [];
-          return { post: record.postRef.uri };
+          const normalizedDoc = normalizeDocumentRecord(p.documents.data);
+          if (!normalizedDoc?.bskyPostRef) return [];
+          return { post: normalizedDoc.bskyPostRef.uri };
         });
       }),
     ],

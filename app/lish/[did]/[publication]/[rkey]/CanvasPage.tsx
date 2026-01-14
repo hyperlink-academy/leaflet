@@ -69,8 +69,8 @@ export function CanvasPage({
         data={document}
         profile={profile}
         preferences={preferences}
-        commentsCount={getCommentCount(document, pageId)}
-        quotesCount={getQuoteCount(document, pageId)}
+        commentsCount={getCommentCount(document.comments_on_documents, pageId)}
+        quotesCount={getQuoteCount(document.quotesAndMentions, pageId)}
       />
       <CanvasContent
         blocks={blocks}

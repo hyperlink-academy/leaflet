@@ -6,10 +6,16 @@ import useSWR from "swr";
 import { callRPC } from "app/api/rpc/client";
 import { getPollData } from "actions/pollActions";
 import type { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useMemo } from "react";
 import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { AtUri } from "@atproto/syntax";
+import {
+  normalizeDocumentRecord,
+  normalizePublicationRecord,
+  type NormalizedDocument,
+  type NormalizedPublication,
+} from "src/utils/normalizeRecords";
 
 export const StaticLeafletDataContext = createContext<
   null | GetLeafletDataReturnType["result"]["data"]
@@ -73,8 +79,21 @@ export function useLeafletPublicationData() {
   // First check for leaflets in publications
   let pubData = getPublicationMetadataFromLeafletData(data);
 
+  // Normalize records so consumers don't have to
+  const normalizedPublication = useMemo(
+    () => normalizePublicationRecord(pubData?.publications?.record),
+    [pubData?.publications?.record]
+  );
+  const normalizedDocument = useMemo(
+    () => normalizeDocumentRecord(pubData?.documents?.data),
+    [pubData?.documents?.data]
+  );
+
   return {
     data: pubData || null,
+    // Pre-normalized data - consumers should use these instead of normalizing themselves
+    normalizedPublication,
+    normalizedDocument,
     mutate,
   };
 }

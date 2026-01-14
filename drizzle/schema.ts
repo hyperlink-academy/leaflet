@@ -173,6 +173,13 @@ export const phone_rsvps_to_entity = pgTable("phone_rsvps_to_entity", {
 	}
 });
 
+export const site_standard_publications = pgTable("site_standard_publications", {
+	uri: text("uri").primaryKey().notNull(),
+	data: jsonb("data").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	identity_did: text("identity_did").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
+});
+
 export const custom_domain_routes = pgTable("custom_domain_routes", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	domain: text("domain").notNull().references(() => custom_domains.domain),
@@ -186,6 +193,13 @@ export const custom_domain_routes = pgTable("custom_domain_routes", {
 		edit_permission_token_idx: index("custom_domain_routes_edit_permission_token_idx").on(table.edit_permission_token),
 		custom_domain_routes_domain_route_key: unique("custom_domain_routes_domain_route_key").on(table.domain, table.route),
 	}
+});
+
+export const site_standard_documents = pgTable("site_standard_documents", {
+	uri: text("uri").primaryKey().notNull(),
+	data: jsonb("data").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	identity_did: text("identity_did").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
 });
 
 export const custom_domains = pgTable("custom_domains", {
@@ -260,6 +274,17 @@ export const subscribers_to_publications = pgTable("subscribers_to_publications"
 	}
 });
 
+export const site_standard_documents_in_publications = pgTable("site_standard_documents_in_publications", {
+	publication: text("publication").notNull().references(() => site_standard_publications.uri, { onDelete: "cascade" } ),
+	document: text("document").notNull().references(() => site_standard_documents.uri, { onDelete: "cascade" } ),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		site_standard_documents_in_publications_pkey: primaryKey({ columns: [table.publication, table.document], name: "site_standard_documents_in_publications_pkey"}),
+	}
+});
+
 export const documents_in_publications = pgTable("documents_in_publications", {
 	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
 	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade" } ),
@@ -321,6 +346,20 @@ export const publication_subscriptions = pgTable("publication_subscriptions", {
 		publication_idx: index("publication_subscriptions_publication_idx").on(table.publication),
 		publication_subscriptions_pkey: primaryKey({ columns: [table.publication, table.identity], name: "publication_subscriptions_pkey"}),
 		publication_subscriptions_uri_key: unique("publication_subscriptions_uri_key").on(table.uri),
+	}
+});
+
+export const site_standard_subscriptions = pgTable("site_standard_subscriptions", {
+	publication: text("publication").notNull().references(() => site_standard_publications.uri, { onDelete: "cascade" } ),
+	identity: text("identity").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	record: jsonb("record").notNull(),
+	uri: text("uri").notNull(),
+},
+(table) => {
+	return {
+		site_standard_subscriptions_pkey: primaryKey({ columns: [table.publication, table.identity], name: "site_standard_subscriptions_pkey"}),
+		site_standard_subscriptions_uri_key: unique("site_standard_subscriptions_uri_key").on(table.uri),
 	}
 });
 

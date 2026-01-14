@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { identities, notifications, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, poll_votes_on_entity, permission_tokens, phone_rsvps_to_entity, custom_domains, custom_domain_routes, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, bsky_follows, subscribers_to_publications, documents_in_publications, document_mentions_in_bsky, bsky_posts, permission_token_on_homepage, publication_domains, publication_subscriptions, leaflets_to_documents, permission_token_rights, leaflets_in_publications } from "./schema";
+import { identities, notifications, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, poll_votes_on_entity, permission_tokens, phone_rsvps_to_entity, site_standard_publications, custom_domains, custom_domain_routes, site_standard_documents, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, bsky_follows, subscribers_to_publications, site_standard_documents_in_publications, documents_in_publications, document_mentions_in_bsky, bsky_posts, permission_token_on_homepage, publication_domains, publication_subscriptions, site_standard_subscriptions, leaflets_to_documents, permission_token_rights, leaflets_in_publications } from "./schema";
 
 export const notificationsRelations = relations(notifications, ({one}) => ({
 	identity: one(identities, {
@@ -17,6 +17,8 @@ export const identitiesRelations = relations(identities, ({one, many}) => ({
 		fields: [identities.home_page],
 		references: [permission_tokens.id]
 	}),
+	site_standard_publications: many(site_standard_publications),
+	site_standard_documents: many(site_standard_documents),
 	custom_domains_identity: many(custom_domains, {
 		relationName: "custom_domains_identity_identities_email"
 	}),
@@ -33,6 +35,7 @@ export const identitiesRelations = relations(identities, ({one, many}) => ({
 	permission_token_on_homepages: many(permission_token_on_homepage),
 	publication_domains: many(publication_domains),
 	publication_subscriptions: many(publication_subscriptions),
+	site_standard_subscriptions: many(site_standard_subscriptions),
 }));
 
 export const publicationsRelations = relations(publications, ({one, many}) => ({
@@ -149,6 +152,15 @@ export const phone_rsvps_to_entityRelations = relations(phone_rsvps_to_entity, (
 	}),
 }));
 
+export const site_standard_publicationsRelations = relations(site_standard_publications, ({one, many}) => ({
+	identity: one(identities, {
+		fields: [site_standard_publications.identity_did],
+		references: [identities.atp_did]
+	}),
+	site_standard_documents_in_publications: many(site_standard_documents_in_publications),
+	site_standard_subscriptions: many(site_standard_subscriptions),
+}));
+
 export const custom_domain_routesRelations = relations(custom_domain_routes, ({one}) => ({
 	custom_domain: one(custom_domains, {
 		fields: [custom_domain_routes.domain],
@@ -179,6 +191,14 @@ export const custom_domainsRelations = relations(custom_domains, ({one, many}) =
 		relationName: "custom_domains_identity_id_identities_id"
 	}),
 	publication_domains: many(publication_domains),
+}));
+
+export const site_standard_documentsRelations = relations(site_standard_documents, ({one, many}) => ({
+	identity: one(identities, {
+		fields: [site_standard_documents.identity_did],
+		references: [identities.atp_did]
+	}),
+	site_standard_documents_in_publications: many(site_standard_documents_in_publications),
 }));
 
 export const email_subscriptions_to_entityRelations = relations(email_subscriptions_to_entity, ({one}) => ({
@@ -224,6 +244,17 @@ export const subscribers_to_publicationsRelations = relations(subscribers_to_pub
 	publication: one(publications, {
 		fields: [subscribers_to_publications.publication],
 		references: [publications.uri]
+	}),
+}));
+
+export const site_standard_documents_in_publicationsRelations = relations(site_standard_documents_in_publications, ({one}) => ({
+	site_standard_document: one(site_standard_documents, {
+		fields: [site_standard_documents_in_publications.document],
+		references: [site_standard_documents.uri]
+	}),
+	site_standard_publication: one(site_standard_publications, {
+		fields: [site_standard_documents_in_publications.publication],
+		references: [site_standard_publications.uri]
 	}),
 }));
 
@@ -287,6 +318,17 @@ export const publication_subscriptionsRelations = relations(publication_subscrip
 	publication: one(publications, {
 		fields: [publication_subscriptions.publication],
 		references: [publications.uri]
+	}),
+}));
+
+export const site_standard_subscriptionsRelations = relations(site_standard_subscriptions, ({one}) => ({
+	identity: one(identities, {
+		fields: [site_standard_subscriptions.identity],
+		references: [identities.atp_did]
+	}),
+	site_standard_publication: one(site_standard_publications, {
+		fields: [site_standard_subscriptions.publication],
+		references: [site_standard_publications.uri]
 	}),
 }));
 

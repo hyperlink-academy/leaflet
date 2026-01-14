@@ -22,7 +22,7 @@ import { Popover } from "components/Popover";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
-import { PubLeafletPublication } from "lexicons/api";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState, useMemo } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
@@ -370,7 +370,7 @@ const PubSelector = (props: {
           </PubOption>
           <hr className="border-border-light border-dashed " />
           {props.publications.map((p) => {
-            let pubRecord = p.record as PubLeafletPublication.Record;
+            let pubRecord = normalizePublicationRecord(p.record);
             return (
               <PubOption
                 key={p.uri}

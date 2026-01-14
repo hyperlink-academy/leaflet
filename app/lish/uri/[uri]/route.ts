@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AtUri } from "@atproto/api";
 import { supabaseServerClient } from "supabase/serverClient";
-import { PubLeafletPublication } from "lexicons/api";
+import {
+  normalizePublicationRecord,
+  type NormalizedPublication,
+} from "src/utils/normalizeRecords";
 
 /**
  * Redirect route for AT URIs (publications and documents)
@@ -28,17 +31,15 @@ export async function GET(
         return new NextResponse("Publication not found", { status: 404 });
       }
 
-      const record = publication.record as PubLeafletPublication.Record;
-      const basePath = record.base_path;
-
-      if (!basePath) {
-        return new NextResponse("Publication has no base_path", {
+      const normalizedPub = normalizePublicationRecord(publication.record);
+      if (!normalizedPub?.url) {
+        return new NextResponse("Publication has no url", {
           status: 404,
         });
       }
 
-      // Redirect to the publication's hosted domain (temporary redirect since base_path can change)
-      return NextResponse.redirect(basePath, 307);
+      // Redirect to the publication's hosted domain (temporary redirect since url can change)
+      return NextResponse.redirect(normalizedPub.url, 307);
     } else if (uri.collection === "pub.leaflet.document") {
       // Document link - need to find the publication it belongs to
       const { data: docInPub } = await supabaseServerClient
@@ -49,26 +50,23 @@ export async function GET(
 
       if (docInPub?.publication && docInPub.publications) {
         // Document is in a publication - redirect to domain/rkey
-        const record = docInPub.publications
-          .record as PubLeafletPublication.Record;
-        const basePath = record.base_path;
+        const normalizedPub = normalizePublicationRecord(
+          docInPub.publications.record,
+        );
 
-        if (!basePath) {
-          return new NextResponse("Publication has no base_path", {
+        if (!normalizedPub?.url) {
+          return new NextResponse("Publication has no url", {
             status: 404,
           });
         }
 
-        // Ensure basePath ends without trailing slash
-        const cleanBasePath = basePath.endsWith("/")
-          ? basePath.slice(0, -1)
-          : basePath;
+        // Ensure url ends without trailing slash
+        const cleanUrl = normalizedPub.url.endsWith("/")
+          ? normalizedPub.url.slice(0, -1)
+          : normalizedPub.url;
 
-        // Redirect to the document on the publication's domain (temporary redirect since base_path can change)
-        return NextResponse.redirect(
-          `https://${cleanBasePath}/${uri.rkey}`,
-          307,
-        );
+        // Redirect to the document on the publication's domain (temporary redirect since url can change)
+        return NextResponse.redirect(`${cleanUrl}/${uri.rkey}`, 307);
       }
 
       // If not in a publication, check if it's a standalone document

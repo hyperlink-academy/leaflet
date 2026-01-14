@@ -1,7 +1,6 @@
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { ContentLayout, Notification } from "./Notification";
 import { HydratedQuoteNotification } from "src/notifications";
-import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import { AtUri } from "@atproto/api";
 import { Avatar } from "components/Avatar";
 
@@ -9,16 +8,18 @@ export const QuoteNotification = (props: HydratedQuoteNotification) => {
   const postView = props.bskyPost.post_view as any;
   const author = postView.author;
   const displayName = author.displayName || author.handle || "Someone";
-  const docRecord = props.document.data as PubLeafletDocument.Record;
-  const pubRecord = props.document.documents_in_publications[0]?.publications
-    ?.record as PubLeafletPublication.Record | undefined;
+  const docRecord = props.normalizedDocument;
+  const pubRecord = props.normalizedPublication;
+
+  if (!docRecord) return null;
+
   const docUri = new AtUri(props.document.uri);
   const rkey = docUri.rkey;
   const did = docUri.host;
   const postText = postView.record?.text || "";
 
   const href = pubRecord
-    ? `https://${pubRecord.base_path}/${rkey}`
+    ? `${pubRecord.url}/${rkey}`
     : `/p/${did}/${rkey}`;
 
   return (

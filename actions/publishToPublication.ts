@@ -43,6 +43,10 @@ import { getBlocksWithTypeLocal } from "src/hooks/queries/useBlocks";
 import { Lock } from "src/utils/lock";
 import type { PubLeafletPublication } from "lexicons/api";
 import {
+  normalizeDocumentRecord,
+  type NormalizedDocument,
+} from "src/utils/normalizeRecords";
+import {
   ColorToRGB,
   ColorToRGBA,
 } from "components/ThemeManager/colorToLexicons";
@@ -147,8 +151,20 @@ export async function publishToPublication({
     credentialSession.did!,
   );
 
-  let existingRecord =
-    (draft?.documents?.data as PubLeafletDocument.Record | undefined) || {};
+  let existingRecord: Partial<PubLeafletDocument.Record> = {};
+  const normalizedDoc = normalizeDocumentRecord(draft?.documents?.data);
+  if (normalizedDoc) {
+    // When reading existing data, use normalized format to extract fields
+    // The theme is preserved in NormalizedDocument for backward compatibility
+    existingRecord = {
+      publishedAt: normalizedDoc.publishedAt,
+      title: normalizedDoc.title,
+      description: normalizedDoc.description,
+      tags: normalizedDoc.tags,
+      coverImage: normalizedDoc.coverImage,
+      theme: normalizedDoc.theme,
+    };
+  }
 
   // Extract theme for standalone documents (not for publications)
   let theme: PubLeafletPublication.Theme | undefined;
@@ -887,10 +903,14 @@ async function createMentionNotifications(
                       .single();
 
                     if (document) {
-                      const docRecord =
-                        document.data as PubLeafletDocument.Record;
-                      if (docRecord.author !== authorDid) {
-                        mentionedDocuments.set(docRecord.author, feature.atURI);
+                      const normalizedMentionedDoc = normalizeDocumentRecord(
+                        document.data,
+                      );
+                      // Get the author from the document URI (the DID is the host part)
+                      const mentionedUri = new AtUri(feature.atURI);
+                      const docAuthor = mentionedUri.host;
+                      if (normalizedMentionedDoc && docAuthor !== authorDid) {
+                        mentionedDocuments.set(docAuthor, feature.atURI);
                       }
                     }
                   }

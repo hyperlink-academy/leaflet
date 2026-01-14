@@ -1,6 +1,12 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
-import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
+import {
+  normalizeDocumentRecord,
+  normalizePublicationRecord,
+  type NormalizedDocument,
+  type NormalizedPublication,
+} from "src/utils/normalizeRecords";
+import { PubLeafletPublication } from "lexicons/api";
 
 export async function getPostPageData(uri: string) {
   let { data: document } = await supabaseServerClient
@@ -23,12 +29,19 @@ export async function getPostPageData(uri: string) {
 
   if (!document) return null;
 
+  // Normalize the document record - this is the primary way consumers should access document data
+  const normalizedDocument = normalizeDocumentRecord(document.data);
+  if (!normalizedDocument) return null;
+
+  // Normalize the publication record - this is the primary way consumers should access publication data
+  const normalizedPublication = normalizePublicationRecord(
+    document.documents_in_publications[0]?.publications?.record
+  );
+
   // Fetch constellation backlinks for mentions
-  const pubRecord = document.documents_in_publications[0]?.publications
-    ?.record as PubLeafletPublication.Record;
   let aturi = new AtUri(uri);
-  const postUrl = pubRecord
-    ? `https://${pubRecord?.base_path}/${aturi.rkey}`
+  const postUrl = normalizedPublication
+    ? `${normalizedPublication.url}/${aturi.rkey}`
     : `https://leaflet.pub/p/${aturi.host}/${aturi.rkey}`;
   const constellationBacklinks = await getConstellationBacklinks(postUrl);
 
@@ -48,11 +61,7 @@ export async function getPostPageData(uri: string) {
     ...uniqueBacklinks,
   ];
 
-  let theme =
-    (
-      document?.documents_in_publications[0]?.publications
-        ?.record as PubLeafletPublication.Record
-    )?.theme || (document?.data as PubLeafletDocument.Record)?.theme;
+  let theme = normalizedPublication?.theme || normalizedDocument?.theme;
 
   // Calculate prev/next documents from the fetched publication documents
   let prevNext:
@@ -62,8 +71,7 @@ export async function getPostPageData(uri: string) {
       }
     | undefined;
 
-  const currentPublishedAt = (document.data as PubLeafletDocument.Record)
-    ?.publishedAt;
+  const currentPublishedAt = normalizedDocument.publishedAt;
   const allDocs =
     document.documents_in_publications[0]?.publications
       ?.documents_in_publications;
@@ -71,13 +79,15 @@ export async function getPostPageData(uri: string) {
   if (currentPublishedAt && allDocs) {
     // Filter and sort documents by publishedAt
     const sortedDocs = allDocs
-      .map((dip) => ({
-        uri: dip?.documents?.uri,
-        title: (dip?.documents?.data as PubLeafletDocument.Record).title,
-        publishedAt: (dip?.documents?.data as PubLeafletDocument.Record)
-          .publishedAt,
-      }))
-      .filter((doc) => doc.publishedAt) // Only include docs with publishedAt
+      .map((dip) => {
+        const normalizedData = normalizeDocumentRecord(dip?.documents?.data);
+        return {
+          uri: dip?.documents?.uri,
+          title: normalizedData?.title,
+          publishedAt: normalizedData?.publishedAt,
+        };
+      })
+      .filter((doc) => doc.publishedAt && doc.title) // Only include docs with publishedAt and valid data
       .sort(
         (a, b) =>
           new Date(a.publishedAt!).getTime() -
@@ -93,25 +103,43 @@ export async function getPostPageData(uri: string) {
           currentIndex > 0
             ? {
                 uri: sortedDocs[currentIndex - 1].uri || "",
-                title: sortedDocs[currentIndex - 1].title,
+                title: sortedDocs[currentIndex - 1].title || "",
               }
             : undefined,
         next:
           currentIndex < sortedDocs.length - 1
             ? {
                 uri: sortedDocs[currentIndex + 1].uri || "",
-                title: sortedDocs[currentIndex + 1].title,
+                title: sortedDocs[currentIndex + 1].title || "",
               }
             : undefined,
       };
     }
   }
 
+  // Build explicit publication context for consumers
+  const rawPub = document.documents_in_publications[0]?.publications;
+  const publication = rawPub ? {
+    uri: rawPub.uri,
+    name: rawPub.name,
+    identity_did: rawPub.identity_did,
+    record: rawPub.record as PubLeafletPublication.Record | null,
+    publication_subscriptions: rawPub.publication_subscriptions || [],
+  } : null;
+
   return {
     ...document,
+    // Pre-normalized data - consumers should use these instead of normalizing themselves
+    normalizedDocument,
+    normalizedPublication,
     quotesAndMentions,
     theme,
     prevNext,
+    // Explicit relational data for DocumentContext
+    publication,
+    comments: document.comments_on_documents,
+    mentions: document.document_mentions_in_bsky,
+    leafletId: document.leaflets_in_publications[0]?.leaflet || null,
   };
 }
 

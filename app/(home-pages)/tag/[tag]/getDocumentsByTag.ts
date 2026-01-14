@@ -3,9 +3,12 @@
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/api";
-import { Json } from "supabase/database.types";
 import { idResolver } from "app/(home-pages)/reader/idResolver";
 import type { Post } from "app/(home-pages)/reader/getReaderFeed";
+import {
+  normalizeDocumentRecord,
+  normalizePublicationRecord,
+} from "src/utils/normalizeRecords";
 
 export async function getDocumentsByTag(
   tag: string,
@@ -37,13 +40,21 @@ export async function getDocumentsByTag(
         return null;
       }
 
+      // Normalize the document data - skip unrecognized formats
+      const normalizedData = normalizeDocumentRecord(doc.data);
+      if (!normalizedData) {
+        return null;
+      }
+
+      const normalizedPubRecord = normalizePublicationRecord(pub?.record);
+
       const uri = new AtUri(doc.uri);
       const handle = await idResolver.did.resolve(uri.host);
 
       const post: Post = {
         publication: {
           href: getPublicationURL(pub),
-          pubRecord: pub?.record || null,
+          pubRecord: normalizedPubRecord,
           uri: pub?.uri || "",
         },
         author: handle?.alsoKnownAs?.[0]
@@ -52,7 +63,7 @@ export async function getDocumentsByTag(
         documents: {
           comments_on_documents: doc.comments_on_documents,
           document_mentions_in_bsky: doc.document_mentions_in_bsky,
-          data: doc.data,
+          data: normalizedData,
           uri: doc.uri,
           indexed_at: doc.indexed_at,
         },

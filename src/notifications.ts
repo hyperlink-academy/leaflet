@@ -4,6 +4,12 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Tables, TablesInsert } from "supabase/database.types";
 import { AtUri } from "@atproto/syntax";
 import { idResolver } from "app/(home-pages)/reader/idResolver";
+import {
+  normalizeDocumentRecord,
+  normalizePublicationRecord,
+  type NormalizedDocument,
+  type NormalizedPublication,
+} from "src/utils/normalizeRecords";
 
 type NotificationRow = Tables<"notifications">;
 
@@ -99,6 +105,10 @@ async function hydrateCommentNotifications(notifications: NotificationRow[]) {
           ? comments?.find((c) => c.uri === notification.data.parent_uri)
           : undefined,
         commentData,
+        normalizedDocument: normalizeDocumentRecord(commentData.documents?.data),
+        normalizedPublication: normalizePublicationRecord(
+          commentData.documents?.documents_in_publications[0]?.publications?.record,
+        ),
       };
     })
     .filter((n) => n !== null);
@@ -140,6 +150,7 @@ async function hydrateSubscribeNotifications(notifications: NotificationRow[]) {
         type: "subscribe" as const,
         subscription_uri: notification.data.subscription_uri,
         subscriptionData,
+        normalizedPublication: normalizePublicationRecord(subscriptionData.publications?.record),
       };
     })
     .filter((n) => n !== null);
@@ -187,6 +198,10 @@ async function hydrateQuoteNotifications(notifications: NotificationRow[]) {
         document_uri: notification.data.document_uri,
         bskyPost,
         document,
+        normalizedDocument: normalizeDocumentRecord(document.data),
+        normalizedPublication: normalizePublicationRecord(
+          document.documents_in_publications[0]?.publications?.record,
+        ),
       };
     })
     .filter((n) => n !== null);
@@ -269,6 +284,9 @@ async function hydrateMentionNotifications(notifications: NotificationRow[]) {
       const documentCreatorDid = new AtUri(notification.data.document_uri).host;
       const documentCreatorHandle = didToHandleMap.get(documentCreatorDid) ?? null;
 
+      const mentionedPublication = mentionedUri ? mentionedPublications?.find((p) => p.uri === mentionedUri) : undefined;
+      const mentionedDoc = mentionedUri ? mentionedDocuments?.find((d) => d.uri === mentionedUri) : undefined;
+
       return {
         id: notification.id,
         recipient: notification.recipient,
@@ -279,8 +297,14 @@ async function hydrateMentionNotifications(notifications: NotificationRow[]) {
         mentioned_uri: mentionedUri,
         document,
         documentCreatorHandle,
-        mentionedPublication: mentionedUri ? mentionedPublications?.find((p) => p.uri === mentionedUri) : undefined,
-        mentionedDocument: mentionedUri ? mentionedDocuments?.find((d) => d.uri === mentionedUri) : undefined,
+        mentionedPublication,
+        mentionedDocument: mentionedDoc,
+        normalizedDocument: normalizeDocumentRecord(document.data),
+        normalizedPublication: normalizePublicationRecord(
+          document.documents_in_publications[0]?.publications?.record,
+        ),
+        normalizedMentionedPublication: normalizePublicationRecord(mentionedPublication?.record),
+        normalizedMentionedDocument: normalizeDocumentRecord(mentionedDoc?.data),
       };
     })
     .filter((n) => n !== null);
@@ -365,6 +389,9 @@ async function hydrateCommentMentionNotifications(notifications: NotificationRow
       const commenterDid = new AtUri(notification.data.comment_uri).host;
       const commenterHandle = didToHandleMap.get(commenterDid) ?? null;
 
+      const mentionedPublication = mentionedUri ? mentionedPublications?.find((p) => p.uri === mentionedUri) : undefined;
+      const mentionedDoc = mentionedUri ? mentionedDocuments?.find((d) => d.uri === mentionedUri) : undefined;
+
       return {
         id: notification.id,
         recipient: notification.recipient,
@@ -375,8 +402,14 @@ async function hydrateCommentMentionNotifications(notifications: NotificationRow
         mentioned_uri: mentionedUri,
         commentData,
         commenterHandle,
-        mentionedPublication: mentionedUri ? mentionedPublications?.find((p) => p.uri === mentionedUri) : undefined,
-        mentionedDocument: mentionedUri ? mentionedDocuments?.find((d) => d.uri === mentionedUri) : undefined,
+        mentionedPublication,
+        mentionedDocument: mentionedDoc,
+        normalizedDocument: normalizeDocumentRecord(commentData.documents?.data),
+        normalizedPublication: normalizePublicationRecord(
+          commentData.documents?.documents_in_publications[0]?.publications?.record,
+        ),
+        normalizedMentionedPublication: normalizePublicationRecord(mentionedPublication?.record),
+        normalizedMentionedDocument: normalizeDocumentRecord(mentionedDoc?.data),
       };
     })
     .filter((n) => n !== null);

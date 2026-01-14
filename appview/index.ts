@@ -231,6 +231,8 @@ async function handleEvent(evt: Event) {
         .eq("uri", evt.uri.toString());
     }
   }
+  // site.standard.document records go into the main "documents" table
+  // The normalization layer handles reading both pub.leaflet and site.standard formats
   if (evt.collection === ids.SiteStandardDocument) {
     if (evt.event === "create" || evt.event === "update") {
       let record = SiteStandardDocument.validateRecord(evt.record);
@@ -238,15 +240,13 @@ async function handleEvent(evt: Event) {
         console.log(record.error);
         return;
       }
-      await supabase
-        .from("identities")
-        .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
-      let docResult = await supabase.from("site_standard_documents").upsert({
+      let docResult = await supabase.from("documents").upsert({
         uri: evt.uri.toString(),
         data: record.value as Json,
-        identity_did: evt.did,
       });
       if (docResult.error) console.log(docResult.error);
+
+      // site.standard.document uses "site" field to reference the publication
       if (record.value.site) {
         let siteURI = new AtUri(record.value.site);
 
@@ -255,13 +255,13 @@ async function handleEvent(evt: Event) {
           return;
         }
         let docInPublicationResult = await supabase
-          .from("site_standard_documents_in_publications")
+          .from("documents_in_publications")
           .upsert({
             publication: record.value.site,
             document: evt.uri.toString(),
           });
         await supabase
-          .from("site_standard_documents_in_publications")
+          .from("documents_in_publications")
           .delete()
           .neq("publication", record.value.site)
           .eq("document", evt.uri.toString());
@@ -271,12 +271,11 @@ async function handleEvent(evt: Event) {
       }
     }
     if (evt.event === "delete") {
-      await supabase
-        .from("site_standard_documents")
-        .delete()
-        .eq("uri", evt.uri.toString());
+      await supabase.from("documents").delete().eq("uri", evt.uri.toString());
     }
   }
+
+  // site.standard.publication records go into the main "publications" table
   if (evt.collection === ids.SiteStandardPublication) {
     if (evt.event === "create" || evt.event === "update") {
       let record = SiteStandardPublication.validateRecord(evt.record);
@@ -284,19 +283,22 @@ async function handleEvent(evt: Event) {
       await supabase
         .from("identities")
         .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
-      await supabase.from("site_standard_publications").upsert({
+      await supabase.from("publications").upsert({
         uri: evt.uri.toString(),
         identity_did: evt.did,
-        data: record.value as Json,
+        name: record.value.name,
+        record: record.value as Json,
       });
     }
     if (evt.event === "delete") {
       await supabase
-        .from("site_standard_publications")
+        .from("publications")
         .delete()
         .eq("uri", evt.uri.toString());
     }
   }
+
+  // site.standard.graph.subscription records go into the main "publication_subscriptions" table
   if (evt.collection === ids.SiteStandardGraphSubscription) {
     if (evt.event === "create" || evt.event === "update") {
       let record = SiteStandardGraphSubscription.validateRecord(evt.record);
@@ -304,7 +306,7 @@ async function handleEvent(evt: Event) {
       await supabase
         .from("identities")
         .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
-      await supabase.from("site_standard_subscriptions").upsert({
+      await supabase.from("publication_subscriptions").upsert({
         uri: evt.uri.toString(),
         identity: evt.did,
         publication: record.value.publication,
@@ -313,7 +315,7 @@ async function handleEvent(evt: Event) {
     }
     if (evt.event === "delete") {
       await supabase
-        .from("site_standard_subscriptions")
+        .from("publication_subscriptions")
         .delete()
         .eq("uri", evt.uri.toString());
     }

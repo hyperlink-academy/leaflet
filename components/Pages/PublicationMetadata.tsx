@@ -5,7 +5,6 @@ import { useReplicache } from "src/replicache";
 import { AsyncValueAutosizeTextarea } from "components/utils/AutosizeTextarea";
 import { Separator } from "components/Layout";
 import { AtUri } from "@atproto/syntax";
-import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import {
   getBasePublicationURL,
   getPublicationURL,
@@ -22,17 +21,13 @@ import { useIdentityData } from "components/IdentityProvider";
 import { PostHeaderLayout } from "app/lish/[did]/[publication]/[rkey]/PostHeader/PostHeader";
 export const PublicationMetadata = () => {
   let { rep } = useReplicache();
-  let { data: pub } = useLeafletPublicationData();
+  let { data: pub, normalizedDocument, normalizedPublication } = useLeafletPublicationData();
   let { identity } = useIdentityData();
   let title = useSubscribe(rep, (tx) => tx.get<string>("publication_title"));
   let description = useSubscribe(rep, (tx) =>
     tx.get<string>("publication_description"),
   );
-  let record = pub?.documents?.data as PubLeafletDocument.Record | null;
-  let pubRecord = pub?.publications?.record as
-    | PubLeafletPublication.Record
-    | undefined;
-  let publishedAt = record?.publishedAt;
+  let publishedAt = normalizedDocument?.publishedAt;
 
   if (!pub) return null;
 
@@ -121,12 +116,12 @@ export const PublicationMetadata = () => {
                 <Separator classname="h-4!" />
               </>
             )}
-            {pubRecord?.preferences?.showMentions && (
+            {normalizedPublication?.preferences?.showMentions && (
               <div className="flex gap-1 items-center">
                 <QuoteTiny />—
               </div>
             )}
-            {pubRecord?.preferences?.showComments && (
+            {normalizedPublication?.preferences?.showComments && (
               <div className="flex gap-1 items-center">
                 <CommentTiny />—
               </div>
@@ -210,9 +205,8 @@ export const TextField = ({
 };
 
 export const PublicationMetadataPreview = () => {
-  let { data: pub } = useLeafletPublicationData();
-  let record = pub?.documents?.data as PubLeafletDocument.Record | null;
-  let publishedAt = record?.publishedAt;
+  let { data: pub, normalizedDocument } = useLeafletPublicationData();
+  let publishedAt = normalizedDocument?.publishedAt;
 
   if (!pub) return null;
 
@@ -237,9 +231,8 @@ export const PublicationMetadataPreview = () => {
 };
 
 const AddTags = () => {
-  let { data: pub } = useLeafletPublicationData();
+  let { data: pub, normalizedDocument } = useLeafletPublicationData();
   let { rep } = useReplicache();
-  let record = pub?.documents?.data as PubLeafletDocument.Record | null;
 
   // Get tags from Replicache local state or published document
   let replicacheTags = useSubscribe(rep, (tx) =>
@@ -250,8 +243,8 @@ const AddTags = () => {
   let tags: string[] = [];
   if (Array.isArray(replicacheTags)) {
     tags = replicacheTags;
-  } else if (record?.tags && Array.isArray(record.tags)) {
-    tags = record.tags as string[];
+  } else if (normalizedDocument?.tags && Array.isArray(normalizedDocument.tags)) {
+    tags = normalizedDocument.tags as string[];
   }
 
   // Update tags in replicache local state

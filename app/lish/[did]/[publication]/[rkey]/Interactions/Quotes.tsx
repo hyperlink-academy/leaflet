@@ -1,19 +1,18 @@
 "use client";
 import { CloseTiny } from "components/Icons/CloseTiny";
-import { useContext } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
 import { setInteractionState } from "./Interactions";
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { AtUri, AppBskyFeedPost } from "@atproto/api";
-import { PostPageContext } from "../PostPageContext";
 import {
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletBlocksHeader,
-  PubLeafletDocument,
   PubLeafletPagesLinearDocument,
   PubLeafletBlocksCode,
 } from "lexicons/api";
+import { useDocument } from "contexts/DocumentContext";
+import { useLeafletContent } from "contexts/LeafletContentContext";
 import { decodeQuotePosition, QuotePosition } from "../quotePosition";
 import { useActiveHighlightState } from "../useHighlight";
 import { PostContent } from "../PostContent";
@@ -66,10 +65,7 @@ export const Quotes = (props: {
   quotesAndMentions: { uri: string; link?: string }[];
   did: string;
 }) => {
-  let data = useContext(PostPageContext);
-  const document_uri = data?.uri;
-  if (!document_uri)
-    throw new Error("document_uri not available in PostPageContext");
+  const { uri: document_uri } = useDocument();
 
   // Fetch Bluesky post data for all URIs
   const uris = props.quotesAndMentions.map((q) => q.uri);
@@ -182,18 +178,17 @@ export const QuoteContent = (props: {
   did: string;
 }) => {
   let isMobile = useIsMobile();
-  const data = useContext(PostPageContext);
-  const document_uri = data?.uri;
+  const { uri: document_uri } = useDocument();
+  const { pages } = useLeafletContent();
 
-  let record = data?.data as PubLeafletDocument.Record;
   let page: PubLeafletPagesLinearDocument.Main | undefined = (
     props.position.pageId
-      ? record.pages.find(
+      ? pages.find(
           (p) =>
             (p as PubLeafletPagesLinearDocument.Main).id ===
             props.position.pageId,
         )
-      : record.pages[0]
+      : pages[0]
   ) as PubLeafletPagesLinearDocument.Main;
   // Extract blocks within the quote range
   const content = extractQuotedBlocks(page.blocks || [], props.position, []);

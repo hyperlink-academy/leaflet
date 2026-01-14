@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import { IdResolver } from "@atproto/identity";
 import { AtUri } from "@atproto/syntax";
-import { PubLeafletPublication } from "lexicons/api";
 import { supabaseServerClient } from "supabase/serverClient";
 import sharp from "sharp";
 import { redirect } from "next/navigation";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 
 let idResolver = new IdResolver();
 
@@ -38,7 +38,7 @@ export async function GET(
       .or(`name.eq."${params.publication}", uri.eq."${uri}"`)
       .single();
 
-    let record = publication?.record as PubLeafletPublication.Record | null;
+    const record = normalizePublicationRecord(publication?.record);
     if (!record?.icon) return redirect("/icon.png");
 
     let identity = await idResolver.did.resolve(did);

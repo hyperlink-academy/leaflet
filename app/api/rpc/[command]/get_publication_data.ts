@@ -3,6 +3,7 @@ import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { AtUri } from "@atproto/syntax";
 import { getFactsFromHomeLeaflets } from "./getFactsFromHomeLeaflets";
+import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
 
 export type GetPublicationDataReturnType = Awaited<
   ReturnType<(typeof get_publication_data)["handler"]>
@@ -58,6 +59,42 @@ export const get_publication_data = makeRoute({
       { supabase },
     );
 
-    return { result: { publication, leaflet_data: leaflet_data.result } };
+    // Pre-normalize documents from documents_in_publications
+    const documents = (publication?.documents_in_publications || [])
+      .map((dip) => {
+        if (!dip.documents) return null;
+        const normalized = normalizeDocumentRecord(dip.documents.data);
+        if (!normalized) return null;
+        return {
+          uri: dip.documents.uri,
+          record: normalized,
+          indexed_at: dip.documents.indexed_at,
+          data: dip.documents.data,
+          commentsCount: dip.documents.comments_on_documents[0]?.count || 0,
+          mentionsCount: dip.documents.document_mentions_in_bsky[0]?.count || 0,
+        };
+      })
+      .filter((d): d is NonNullable<typeof d> => d !== null);
+
+    // Pre-filter drafts (leaflets without published documents, not archived)
+    const drafts = (publication?.leaflets_in_publications || [])
+      .filter((l) => !l.documents)
+      .filter((l) => !(l as { archived?: boolean }).archived)
+      .map((l) => ({
+        leaflet: l.leaflet,
+        title: l.title,
+        permission_tokens: l.permission_tokens,
+        // Keep the full leaflet data for LeafletList compatibility
+        _raw: l,
+      }));
+
+    return {
+      result: {
+        publication,
+        documents,
+        drafts,
+        leaflet_data: leaflet_data.result,
+      },
+    };
   },
 });
