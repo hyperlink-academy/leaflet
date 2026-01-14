@@ -251,7 +251,7 @@ const KnownFollowers = (props: {
         Followed by{" "}
         <a
           className="hover:underline"
-          href={`https://bsky.social/profile/${props.did}/known-followers`}
+          href={`https://bsky.app/profile/${props.did}/known-followers`}
           target="_blank"
         >
           {props.viewer?.knownFollowers?.followers[0]?.displayName}{" "}

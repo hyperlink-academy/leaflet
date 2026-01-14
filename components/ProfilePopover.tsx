@@ -69,38 +69,36 @@ export const ProfilePopover = (props: {
           <ProfileLinks handle={data.profile.handle} />
         </div>
       ) : (
-        <div className="text-secondary py-2 px-4">Profile not found</div>
+        <div className="text-secondary py-2 px-4">No profile found...</div>
       )}
     </Popover>
   );
 };
 
 const ProfileLinks = (props: { handle: string }) => {
+  let linkClassName =
+    "flex gap-1.5 text-tertiary items-center border border-transparent px-1  rounded-md hover:bg-[var(--accent-light)] hover:border-accent-contrast hover:text-accent-contrast no-underline hover:no-underline";
   return (
     <div className="w-full flex-col">
       <hr className="border-border-light mt-3" />
       <div className="flex gap-2 justify-between sm:px-4 px-3 py-2">
         <div className="flex gap-2">
-          <ProfileLink href={`https://bsky.app/profile/${props.handle}`}>
+          <a
+            href={`https://bsky.app/profile/${props.handle}`}
+            target="_blank"
+            className={linkClassName}
+          >
             <BlueskyTiny />
             Bluesky
-          </ProfileLink>
+          </a>
         </div>
-        <ProfileLink href={"/"}>
+        <SpeedyLink
+          href={`https://leaflet.pub/p/${props.handle}`}
+          className={linkClassName}
+        >
           Full profile <ArrowRightTiny />
-        </ProfileLink>
+        </SpeedyLink>
       </div>
     </div>
-  );
-};
-
-const ProfileLink = (props: { children: React.ReactNode; href: string }) => {
-  return (
-    <a
-      href={props.href}
-      className="flex gap-1.5 text-tertiary items-center border border-transparent px-1  rounded-md hover:bg-[var(--accent-light)] hover:border-accent-contrast hover:text-accent-contrast no-underline hover:no-underline"
-    >
-      {props.children}
-    </a>
   );
 };
