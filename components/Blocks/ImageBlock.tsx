@@ -150,7 +150,11 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     `;
 
   return (
-    <BlockLayout isSelected={!!isSelected} className={blockClassName}>
+    <BlockLayout
+      hasAlignment
+      isSelected={!!isSelected}
+      className={blockClassName}
+    >
       {isLocalUpload || image.data.local ? (
         <img
           loading="lazy"

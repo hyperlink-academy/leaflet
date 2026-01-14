@@ -33,6 +33,7 @@ import { HorizontalRule } from "./HorizontalRule";
 import { deepEquals } from "src/utils/deepEquals";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { focusPage } from "src/utils/focusPage";
+import { DeleteTiny } from "components/Icons/DeleteTiny";
 
 export type Block = {
   factID: string;
@@ -85,6 +86,20 @@ export const Block = memo(function Block(
   let selected = useUIState(
     (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
   );
+  let alignment = useEntity(props.value, "block/text-alignment")?.data.value;
+
+  let alignmentStyle =
+    props.type === "button" || props.type === "image"
+      ? "justify-center"
+      : "justify-start";
+
+  if (alignment)
+    alignmentStyle = {
+      left: "justify-start",
+      right: "justify-end",
+      center: "justify-center",
+      justify: "justify-start",
+    }[alignment];
 
   let [areYouSure, setAreYouSure] = useState(false);
   useEffect(() => {
@@ -120,6 +135,8 @@ export const Block = memo(function Block(
         blockWrapper relative
         flex flex-row gap-2
         px-3 sm:px-4
+        z-1 w-full
+      ${alignmentStyle}
       ${
         !props.nextBlock
           ? "pb-3 sm:pb-4"
@@ -258,26 +275,10 @@ export const BaseBlock = (
 ) => {
   // BaseBlock renders the actual block content, delete states, controls spacing between block and list markers
   let BlockTypeComponent = BlockTypeComponents[props.type];
-  let alignment = useEntity(props.value, "block/text-alignment")?.data.value;
-
-  let alignmentStyle =
-    props.type === "button" || props.type === "image"
-      ? "justify-center"
-      : "justify-start";
-
-  if (alignment)
-    alignmentStyle = {
-      left: "justify-start",
-      right: "justify-end",
-      center: "justify-center",
-      justify: "justify-start",
-    }[alignment];
 
   if (!BlockTypeComponent) return <div>unknown block</div>;
   return (
-    <div
-      className={`blockContentWrapper w-full grow flex gap-2 z-1 ${alignmentStyle}`}
-    >
+    <>
       {props.listData && <ListMarker {...props} />}
       {props.areYouSure ? (
         <AreYouSure
@@ -290,7 +291,7 @@ export const BaseBlock = (
       ) : (
         <BlockTypeComponent {...props} preview={props.preview} />
       )}
-    </div>
+    </>
   );
 };
 
@@ -393,22 +394,41 @@ export const BlockLayout = (props: {
   className?: string;
   hasBackground?: "accent" | "page";
   borderOnHover?: boolean;
+  hasAlignment?: boolean;
 }) => {
+  // this is used to wrap non-text blocks in consistent selected styling, spacing, and top level options like delete
   return (
-    <div
-      className={`block ${props.className} p-2 sm:p-3 w-full overflow-hidden
+    <div className={`relative ${props.hasAlignment ? "w-fit" : "w-full"}`}>
+      <div
+        className={`nonTextBlock ${props.className} p-2 sm:p-3 overflow-hidden
+          ${props.hasAlignment ? "w-fit" : "w-full"}
          ${props.isSelected ? "block-border-selected " : "block-border"}
          ${props.borderOnHover && "hover:border-accent-contrast! hover:outline-accent-contrast! focus-within:border-accent-contrast! focus-within:outline-accent-contrast!"}`}
-      style={{
-        backgroundColor:
-          props.hasBackground === "accent"
-            ? "var(--accent-light)"
-            : props.hasBackground === "page"
-              ? "rgb(var(--bg-page))"
-              : "transparent",
-      }}
-    >
-      {props.children}
+        style={{
+          backgroundColor:
+            props.hasBackground === "accent"
+              ? "var(--accent-light)"
+              : props.hasBackground === "page"
+                ? "rgb(var(--bg-page))"
+                : "transparent",
+        }}
+      >
+        {props.children}
+      </div>
+      {props.isSelected && <DeleteBlock />}
+    </div>
+  );
+};
+
+const DeleteBlock = () => {
+  return (
+    <div className="absolute -top-4 right-2">
+      <button
+        className="bg-border border-2 border-bg-page rounded-full p-1 text-bg-page"
+        onClick={() => {}}
+      >
+        <DeleteTiny />
+      </button>
     </div>
   );
 };
