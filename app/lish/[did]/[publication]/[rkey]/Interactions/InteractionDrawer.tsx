@@ -36,10 +36,10 @@ export const InteractionDrawer = (props: {
   return (
     <>
       <SandwichSpacer noWidth />
-      <div className="snap-center h-full  flex z-10 shrink-0  w-[calc(var(--page-width-units)-6px)] sm:w-[calc(var(--page-width-units))]">
+      <div className="snap-center h-full  flex z-10 shrink-0 sm:max-w-prose sm:w-full w-[calc(100vw-12px)]">
         <div
           id="interaction-drawer"
-          className={`opaque-container  h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll -ml-[1px] ${props.showPageBackground ? "rounded-l-none! rounded-r-lg!" : "rounded-lg! sm:mx-2"}`}
+          className={`opaque-container  h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll  ${props.showPageBackground ? "rounded-l-none! rounded-r-lg! -ml-[1px]" : "rounded-lg! sm:ml-4"}`}
         >
           {drawer.drawer === "quotes" ? (
             <Quotes {...props} quotesAndMentions={filteredQuotesAndMentions} />
