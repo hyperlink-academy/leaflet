@@ -17,6 +17,10 @@ import {
   pingIdentityToUpdateNotification,
 } from "src/notifications";
 import { v7 } from "uuid";
+import {
+  isDocumentCollection,
+  isPublicationCollection,
+} from "src/utils/collectionHelpers";
 
 type PublishCommentResult =
   | { success: true; record: Json; profile: any; uri: string }
@@ -180,7 +184,7 @@ function createCommentMentionNotifications(
           if (notifiedRecipients.has(dedupeKey)) continue;
           notifiedRecipients.add(dedupeKey);
 
-          if (mentionedUri.collection === "pub.leaflet.publication") {
+          if (isPublicationCollection(mentionedUri.collection)) {
             notifications.push({
               id: v7(),
               recipient: recipientDid,
@@ -191,7 +195,7 @@ function createCommentMentionNotifications(
                 mentioned_uri: feature.atURI,
               },
             });
-          } else if (mentionedUri.collection === "pub.leaflet.document") {
+          } else if (isDocumentCollection(mentionedUri.collection)) {
             notifications.push({
               id: v7(),
               recipient: recipientDid,

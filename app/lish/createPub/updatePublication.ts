@@ -15,6 +15,7 @@ import {
   normalizePublicationRecord,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
+import { getPublicationType } from "src/utils/collectionHelpers";
 
 type UpdatePublicationResult =
   | { success: true; publication: any }
@@ -62,12 +63,14 @@ export async function updatePublication({
     return { success: false };
   }
   let aturi = new AtUri(existingPub.uri);
+  // Preserve existing schema when updating
+  const publicationType = getPublicationType(aturi.collection);
 
-  let record: PubLeafletPublication.Record = {
-    $type: "pub.leaflet.publication",
+  let record = {
+    $type: publicationType,
     ...(existingPub.record as object),
     name,
-  };
+  } as PubLeafletPublication.Record;
   if (preferences) {
     record.preferences = preferences;
   }
@@ -93,7 +96,7 @@ export async function updatePublication({
     repo: credentialSession.did!,
     rkey: aturi.rkey,
     record,
-    collection: record.$type,
+    collection: publicationType,
     validate: false,
   });
 
@@ -146,16 +149,18 @@ export async function updatePublicationBasePath({
     return { success: false };
   }
   let aturi = new AtUri(existingPub.uri);
+  // Preserve existing schema when updating
+  const publicationType = getPublicationType(aturi.collection);
 
-  // Normalize the existing record to read its properties, then build a new pub.leaflet record
+  // Normalize the existing record to read its properties
   const normalizedPub = normalizePublicationRecord(existingPub.record);
   // Extract base_path from url if it exists (url format is https://domain, base_path is just domain)
   const existingBasePath = normalizedPub?.url
     ? normalizedPub.url.replace(/^https?:\/\//, "")
     : undefined;
 
-  let record: PubLeafletPublication.Record = {
-    $type: "pub.leaflet.publication",
+  let record = {
+    $type: publicationType,
     name: normalizedPub?.name || "",
     description: normalizedPub?.description,
     icon: normalizedPub?.icon,
@@ -170,13 +175,13 @@ export async function updatePublicationBasePath({
         }
       : undefined,
     base_path,
-  };
+  } as PubLeafletPublication.Record;
 
   let result = await agent.com.atproto.repo.putRecord({
     repo: credentialSession.did!,
     rkey: aturi.rkey,
     record,
-    collection: record.$type,
+    collection: publicationType,
     validate: false,
   });
 
@@ -242,6 +247,8 @@ export async function updatePublicationTheme({
     return { success: false };
   }
   let aturi = new AtUri(existingPub.uri);
+  // Preserve existing schema when updating
+  const publicationType = getPublicationType(aturi.collection);
 
   // Normalize the existing record to read its properties
   const normalizedPub = normalizePublicationRecord(existingPub.record);
@@ -250,8 +257,8 @@ export async function updatePublicationTheme({
     ? normalizedPub.url.replace(/^https?:\/\//, "")
     : undefined;
 
-  let record: PubLeafletPublication.Record = {
-    $type: "pub.leaflet.publication",
+  let record = {
+    $type: publicationType,
     name: normalizedPub?.name || "",
     description: normalizedPub?.description,
     icon: normalizedPub?.icon,
@@ -301,13 +308,13 @@ export async function updatePublicationTheme({
         ...theme.accentText,
       },
     },
-  };
+  } as PubLeafletPublication.Record;
 
   let result = await agent.com.atproto.repo.putRecord({
     repo: credentialSession.did!,
     rkey: aturi.rkey,
     record,
-    collection: record.$type,
+    collection: publicationType,
     validate: false,
   });
 

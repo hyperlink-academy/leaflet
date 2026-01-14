@@ -1,7 +1,7 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { Metadata } from "next";
-import { AtUri } from "@atproto/syntax";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 
 export default async function PublicationLayout(props: {
   children: React.ReactNode;
@@ -19,16 +19,8 @@ export async function generateMetadata(props: {
   let did = decodeURIComponent(params.did);
   if (!params.did || !params.publication) return { title: "Publication 404" };
 
-  let uri;
   let publication_name = decodeURIComponent(params.publication);
-  if (/^(?!\.$|\.\.S)[A-Za-z0-9._:~-]{1,512}$/.test(publication_name)) {
-    uri = AtUri.make(
-      did,
-      "pub.leaflet.publication",
-      publication_name,
-    ).toString();
-  }
-  let { data: publication } = await supabaseServerClient
+  let { data: publications } = await supabaseServerClient
     .from("publications")
     .select(
       `*,
@@ -37,8 +29,10 @@ export async function generateMetadata(props: {
       `,
     )
     .eq("identity_did", did)
-    .or(`name.eq."${publication_name}", uri.eq."${uri}"`)
-    .single();
+    .or(publicationNameOrUriFilter(did, publication_name))
+    .order("uri", { ascending: false })
+    .limit(1);
+  let publication = publications?.[0];
   if (!publication) return { title: "Publication 404" };
 
   const pubRecord = normalizePublicationRecord(publication?.record);

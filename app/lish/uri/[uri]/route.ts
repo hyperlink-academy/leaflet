@@ -5,6 +5,10 @@ import {
   normalizePublicationRecord,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
+import {
+  isDocumentCollection,
+  isPublicationCollection,
+} from "src/utils/collectionHelpers";
 
 /**
  * Redirect route for AT URIs (publications and documents)
@@ -19,7 +23,7 @@ export async function GET(
     const atUriString = decodeURIComponent(uriParam);
     const uri = new AtUri(atUriString);
 
-    if (uri.collection === "pub.leaflet.publication") {
+    if (isPublicationCollection(uri.collection)) {
       // Get the publication record to retrieve base_path
       const { data: publication } = await supabaseServerClient
         .from("publications")
@@ -40,7 +44,7 @@ export async function GET(
 
       // Redirect to the publication's hosted domain (temporary redirect since url can change)
       return NextResponse.redirect(normalizedPub.url, 307);
-    } else if (uri.collection === "pub.leaflet.document") {
+    } else if (isDocumentCollection(uri.collection)) {
       // Document link - need to find the publication it belongs to
       const { data: docInPub } = await supabaseServerClient
         .from("documents_in_publications")

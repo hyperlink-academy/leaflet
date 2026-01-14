@@ -6,6 +6,7 @@ import { ids } from "lexicons/api/lexicons";
 import { Notification, pingIdentityToUpdateNotification } from "src/notifications";
 import { v7 } from "uuid";
 import { idResolver } from "app/(home-pages)/reader/idResolver";
+import { documentUriFilter } from "src/utils/uriHelpers";
 
 export const index_post_mention = inngest.createFunction(
   { id: "index_post_mention" },
@@ -37,7 +38,20 @@ export const index_post_mention = inngest.createFunction(
         did = resolved;
       }
 
-      documentUri = AtUri.make(did, ids.PubLeafletDocument, rkey).toString();
+      // Query the database to find the actual document URI (could be either namespace)
+      const { data: docDataArr } = await supabaseServerClient
+        .from("documents")
+        .select("uri")
+        .or(documentUriFilter(did, rkey))
+        .order("uri", { ascending: false })
+        .limit(1);
+      const docData = docDataArr?.[0];
+
+      if (!docData) {
+        return { message: `No document found for did:${did} rkey:${rkey}` };
+      }
+
+      documentUri = docData.uri;
       authorDid = did;
     } else {
       // Publication post: look up by custom domain
@@ -54,11 +68,20 @@ export const index_post_mention = inngest.createFunction(
         };
       }
 
-      documentUri = AtUri.make(
-        pub.identity_did,
-        ids.PubLeafletDocument,
-        path[0],
-      ).toString();
+      // Query the database to find the actual document URI (could be either namespace)
+      const { data: docDataArr } = await supabaseServerClient
+        .from("documents")
+        .select("uri")
+        .or(documentUriFilter(pub.identity_did, path[0]))
+        .order("uri", { ascending: false })
+        .limit(1);
+      const docData = docDataArr?.[0];
+
+      if (!docData) {
+        return { message: `No document found for publication ${url.host}/${path[0]}` };
+      }
+
+      documentUri = docData.uri;
       authorDid = pub.identity_did;
     }
 

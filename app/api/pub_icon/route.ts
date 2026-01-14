@@ -6,6 +6,11 @@ import {
   normalizePublicationRecord,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
+import {
+  isDocumentCollection,
+  isPublicationCollection,
+} from "src/utils/collectionHelpers";
+import { publicationUriFilter } from "src/utils/uriHelpers";
 import sharp from "sharp";
 
 const idResolver = new IdResolver();
@@ -36,7 +41,7 @@ export async function GET(req: NextRequest) {
     let publicationUri: string;
 
     // Check if it's a document or publication
-    if (uri.collection === "pub.leaflet.document") {
+    if (isDocumentCollection(uri.collection)) {
       // Query the documents_in_publications table to get the publication
       const { data: docInPub } = await supabaseServerClient
         .from("documents_in_publications")
@@ -50,13 +55,15 @@ export async function GET(req: NextRequest) {
 
       publicationUri = docInPub.publication;
       normalizedPub = normalizePublicationRecord(docInPub.publications.record);
-    } else if (uri.collection === "pub.leaflet.publication") {
+    } else if (isPublicationCollection(uri.collection)) {
       // Query the publications table directly
-      const { data: publication } = await supabaseServerClient
+      const { data: publications } = await supabaseServerClient
         .from("publications")
         .select("record, uri")
-        .eq("uri", at_uri)
-        .single();
+        .or(publicationUriFilter(uri.host, uri.rkey))
+        .order("uri", { ascending: false })
+        .limit(1);
+      const publication = publications?.[0];
 
       if (!publication || !publication.record) {
         return new NextResponse(null, { status: 404 });

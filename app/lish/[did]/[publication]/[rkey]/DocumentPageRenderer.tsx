@@ -1,5 +1,4 @@
 import { AtpAgent } from "@atproto/api";
-import { AtUri } from "@atproto/syntax";
 import { ids } from "lexicons/api/lexicons";
 import {
   PubLeafletBlocksBskyPost,
@@ -37,7 +36,7 @@ export async function DocumentPageRenderer({
   });
 
   let [document, profile] = await Promise.all([
-    getPostPageData(AtUri.make(did, ids.PubLeafletDocument, rkey).toString()),
+    getPostPageData(did, rkey),
     agent.getProfile({ actor: did }),
   ]);
 

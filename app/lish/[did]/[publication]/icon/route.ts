@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import { IdResolver } from "@atproto/identity";
-import { AtUri } from "@atproto/syntax";
 import { supabaseServerClient } from "supabase/serverClient";
 import sharp from "sharp";
 import { redirect } from "next/navigation";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 
 let idResolver = new IdResolver();
 
@@ -18,15 +18,8 @@ export async function GET(
   const params = await props.params;
   try {
     let did = decodeURIComponent(params.did);
-    let uri;
-    if (/^(?!\.$|\.\.S)[A-Za-z0-9._:~-]{1,512}$/.test(params.publication)) {
-      uri = AtUri.make(
-        did,
-        "pub.leaflet.publication",
-        params.publication,
-      ).toString();
-    }
-    let { data: publication } = await supabaseServerClient
+    let publication_name = decodeURIComponent(params.publication);
+    let { data: publications } = await supabaseServerClient
       .from("publications")
       .select(
         `*,
@@ -35,8 +28,10 @@ export async function GET(
         `,
       )
       .eq("identity_did", did)
-      .or(`name.eq."${params.publication}", uri.eq."${uri}"`)
-      .single();
+      .or(publicationNameOrUriFilter(did, publication_name))
+      .order("uri", { ascending: false })
+      .limit(1);
+    let publication = publications?.[0];
 
     const record = normalizePublicationRecord(publication?.record);
     if (!record?.icon) return redirect("/icon.png");

@@ -1,4 +1,8 @@
 import { AtUri } from "@atproto/api";
+import {
+  isDocumentCollection,
+  isPublicationCollection,
+} from "src/utils/collectionHelpers";
 
 /**
  * Converts a DID to a Bluesky profile URL
@@ -14,10 +18,10 @@ export function atUriToUrl(atUri: string): string {
   try {
     const uri = new AtUri(atUri);
 
-    if (uri.collection === "pub.leaflet.publication") {
+    if (isPublicationCollection(uri.collection)) {
       // Publication URL: /lish/{did}/{rkey}
       return `/lish/${uri.host}/${uri.rkey}`;
-    } else if (uri.collection === "pub.leaflet.document") {
+    } else if (isDocumentCollection(uri.collection)) {
       // Document URL - we need to resolve this via the API
       // For now, create a redirect route that will handle it
       return `/lish/uri/${encodeURIComponent(atUri)}`;

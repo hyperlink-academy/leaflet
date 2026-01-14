@@ -7,9 +7,10 @@ import {
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
 import { PubLeafletPublication } from "lexicons/api";
+import { documentUriFilter } from "src/utils/uriHelpers";
 
-export async function getPostPageData(uri: string) {
-  let { data: document } = await supabaseServerClient
+export async function getPostPageData(did: string, rkey: string) {
+  let { data: documents } = await supabaseServerClient
     .from("documents")
     .select(
       `
@@ -24,8 +25,10 @@ export async function getPostPageData(uri: string) {
         leaflets_in_publications(*)
         `,
     )
-    .eq("uri", uri)
-    .single();
+    .or(documentUriFilter(did, rkey))
+    .order("uri", { ascending: false })
+    .limit(1);
+  let document = documents?.[0];
 
   if (!document) return null;
 
@@ -39,7 +42,7 @@ export async function getPostPageData(uri: string) {
   );
 
   // Fetch constellation backlinks for mentions
-  let aturi = new AtUri(uri);
+  let aturi = new AtUri(document.uri);
   const postUrl = normalizedPublication
     ? `${normalizedPublication.url}/${aturi.rkey}`
     : `https://leaflet.pub/p/${aturi.host}/${aturi.rkey}`;
@@ -95,7 +98,7 @@ export async function getPostPageData(uri: string) {
       );
 
     // Find current document index
-    const currentIndex = sortedDocs.findIndex((doc) => doc.uri === uri);
+    const currentIndex = sortedDocs.findIndex((doc) => doc.uri === document.uri);
 
     if (currentIndex !== -1) {
       prevNext = {

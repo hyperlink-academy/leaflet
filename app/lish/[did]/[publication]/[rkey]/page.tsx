@@ -1,9 +1,8 @@
 import { supabaseServerClient } from "supabase/serverClient";
-import { AtUri } from "@atproto/syntax";
-import { ids } from "lexicons/api/lexicons";
 import { Metadata } from "next";
 import { DocumentPageRenderer } from "./DocumentPageRenderer";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
+import { documentUriFilter } from "src/utils/uriHelpers";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string; rkey: string }>;
@@ -12,13 +11,15 @@ export async function generateMetadata(props: {
   let did = decodeURIComponent(params.did);
   if (!did) return { title: "Publication 404" };
 
-  let [{ data: document }] = await Promise.all([
+  let [{ data: documents }] = await Promise.all([
     supabaseServerClient
       .from("documents")
       .select("*, documents_in_publications(publications(*))")
-      .eq("uri", AtUri.make(did, ids.PubLeafletDocument, params.rkey))
-      .single(),
+      .or(documentUriFilter(did, params.rkey))
+      .order("uri", { ascending: false })
+      .limit(1),
   ]);
+  let document = documents?.[0];
   if (!document) return { title: "404" };
 
   const docRecord = normalizeDocumentRecord(document.data);

@@ -2,6 +2,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
+import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
 import React from "react";
 import {
@@ -27,16 +28,8 @@ export default async function Publication(props: {
   let did = decodeURIComponent(params.did);
   if (!did) return <PubNotFound />;
   let agent = new BskyAgent({ service: "https://public.api.bsky.app" });
-  let uri;
   let publication_name = decodeURIComponent(params.publication);
-  if (/^(?!\.$|\.\.S)[A-Za-z0-9._:~-]{1,512}$/.test(publication_name)) {
-    uri = AtUri.make(
-      did,
-      "pub.leaflet.publication",
-      publication_name,
-    ).toString();
-  }
-  let [{ data: publication }, { data: profile }] = await Promise.all([
+  let [{ data: publications }, { data: profile }] = await Promise.all([
     supabaseServerClient
       .from("publications")
       .select(
@@ -50,10 +43,12 @@ export default async function Publication(props: {
       `,
       )
       .eq("identity_did", did)
-      .or(`name.eq."${publication_name}", uri.eq."${uri}"`)
-      .single(),
+      .or(publicationNameOrUriFilter(did, publication_name))
+      .order("uri", { ascending: false })
+      .limit(1),
     agent.getProfile({ actor: did }),
   ]);
+  let publication = publications?.[0];
 
   const record = normalizePublicationRecord(publication?.record);
 

@@ -1,11 +1,10 @@
 import { getMicroLinkOgImage } from "src/utils/getMicroLinkOgImage";
 import { supabaseServerClient } from "supabase/serverClient";
-import { AtUri } from "@atproto/syntax";
-import { ids } from "lexicons/api/lexicons";
 import { jsonToLex } from "@atproto/lexicon";
 import { idResolver } from "app/(home-pages)/reader/idResolver";
 import { fetchAtprotoBlob } from "app/api/atproto_images/route";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
+import { documentUriFilter } from "src/utils/uriHelpers";
 
 export const revalidate = 60;
 
@@ -28,11 +27,13 @@ export default async function OpenGraphImage(props: {
 
   if (did) {
     // Try to get the document's cover image
-    let { data: document } = await supabaseServerClient
+    let { data: documents } = await supabaseServerClient
       .from("documents")
       .select("data")
-      .eq("uri", AtUri.make(did, ids.PubLeafletDocument, params.rkey).toString())
-      .single();
+      .or(documentUriFilter(did, params.rkey))
+      .order("uri", { ascending: false })
+      .limit(1);
+    let document = documents?.[0];
 
     if (document) {
       const docRecord = normalizeDocumentRecord(jsonToLex(document.data));

@@ -10,6 +10,7 @@ import {
   normalizeDocumentRecord,
   hasLeafletContent,
 } from "src/utils/normalizeRecords";
+import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 
 export async function generateFeed(
   did: string,
@@ -18,15 +19,7 @@ export async function generateFeed(
   let renderToReadableStream = await import("react-dom/server").then(
     (module) => module.renderToReadableStream,
   );
-  let uri;
-  if (/^(?!\.$|\.\.S)[A-Za-z0-9._:~-]{1,512}$/.test(publication_name)) {
-    uri = AtUri.make(
-      did,
-      "pub.leaflet.publication",
-      publication_name,
-    ).toString();
-  }
-  let { data: publication } = await supabaseServerClient
+  let { data: publications } = await supabaseServerClient
     .from("publications")
     .select(
       `*,
@@ -35,8 +28,10 @@ export async function generateFeed(
       `,
     )
     .eq("identity_did", did)
-    .or(`name.eq."${publication_name}", uri.eq."${uri}"`)
-    .single();
+    .or(publicationNameOrUriFilter(did, publication_name))
+    .order("uri", { ascending: false })
+    .limit(1);
+  let publication = publications?.[0];
 
   const pubRecord = normalizePublicationRecord(publication?.record);
   if (!publication || !pubRecord)
