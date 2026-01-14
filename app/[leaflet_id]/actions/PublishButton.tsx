@@ -95,6 +95,12 @@ const UpdateButton = () => {
     tx.get<string | null>("publication_cover_image"),
   );
 
+  // Get localPublishedAt from Replicache state
+  let localPublishedAt = useSubscribe(rep, (tx) =>
+    tx.get<string | null>("publication_local_published_at"),
+  );
+  console.log("local: " + localPublishedAt);
+
   return (
     <ActionButton
       primary
@@ -111,6 +117,7 @@ const UpdateButton = () => {
           description: currentDescription,
           tags: currentTags,
           cover_image: coverImage,
+          ...(localPublishedAt && { publishedAt: localPublishedAt }),
         });
         setIsLoading(false);
         mutate();

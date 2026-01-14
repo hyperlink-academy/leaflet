@@ -92,8 +92,7 @@ const PublishPostForm = (
   );
 
   // Use Replicache tags only when we have a draft
-  const hasDraft = props.hasDraft;
-  const currentTags = hasDraft
+  const currentTags = props.hasDraft
     ? Array.isArray(replicacheTags)
       ? replicacheTags
       : []
@@ -101,7 +100,7 @@ const PublishPostForm = (
 
   // Update tags via Replicache mutation or local state depending on context
   const handleTagsChange = async (newTags: string[]) => {
-    if (hasDraft) {
+    if (props.hasDraft) {
       await rep?.mutate.updatePublicationDraft({
         tags: newTags,
       });

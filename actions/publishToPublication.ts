@@ -201,7 +201,7 @@ export async function publishToPublication({
       }
     }),
     publishedAt:
-      existingRecord?.publishedAt || publishedAt || new Date().toISOString(),
+      publishedAt || existingRecord?.publishedAt || new Date().toISOString(),
   };
 
   // Keep the same rkey if updating an existing document

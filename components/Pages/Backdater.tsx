@@ -4,8 +4,10 @@ import { useState } from "react";
 import { timeAgo } from "src/utils/timeAgo";
 import { Popover } from "components/Popover";
 import { Separator } from "react-aria-components";
+import { useReplicache } from "src/replicache";
 
 export const Backdater = (props: { publishedAt: string }) => {
+  let { rep } = useReplicache();
   let [localPublishedAt, setLocalPublishedAt] = useState(
     new Date(props.publishedAt),
   );
@@ -16,7 +18,7 @@ export const Backdater = (props: { publishedAt: string }) => {
 
   let currentTime = `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`;
 
-  const handleTimeChange = (time: string) => {
+  const handleTimeChange = async (time: string) => {
     setTimeValue(time);
     const [hours, minutes] = time.split(":").map((str) => parseInt(str, 10));
     const newDate = new Date(localPublishedAt);
@@ -27,10 +29,18 @@ export const Backdater = (props: { publishedAt: string }) => {
     if (newDate > currentDate) {
       setLocalPublishedAt(currentDate);
       setTimeValue(currentTime);
-    } else setLocalPublishedAt(newDate);
+      await rep?.mutate.updatePublicationDraft({
+        localPublishedAt: currentDate.toISOString(),
+      });
+    } else {
+      setLocalPublishedAt(newDate);
+      await rep?.mutate.updatePublicationDraft({
+        localPublishedAt: newDate.toISOString(),
+      });
+    }
   };
 
-  const handleDateChange = (date: Date | undefined) => {
+  const handleDateChange = async (date: Date | undefined) => {
     if (!date) return;
     const [hours, minutes] = timeValue
       .split(":")
@@ -43,9 +53,16 @@ export const Backdater = (props: { publishedAt: string }) => {
     if (newDate > currentDate) {
       setLocalPublishedAt(currentDate);
       setTimeValue(currentTime);
-    } else setLocalPublishedAt(newDate);
+      await rep?.mutate.updatePublicationDraft({
+        localPublishedAt: currentDate.toISOString(),
+      });
+    } else {
+      setLocalPublishedAt(newDate);
+      await rep?.mutate.updatePublicationDraft({
+        localPublishedAt: newDate.toISOString(),
+      });
+    }
   };
-  console.log(localPublishedAt);
 
   return (
     <Popover
