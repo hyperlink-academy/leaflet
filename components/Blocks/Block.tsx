@@ -88,9 +88,6 @@ export const Block = memo(function Block(
 
   let [areYouSure, setAreYouSure] = useState(false);
   useEffect(() => {
-    if (selected && rep) {
-      focusPage(props.parent, rep);
-    }
     if (!selected) {
       setAreYouSure(false);
     }

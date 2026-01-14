@@ -8,6 +8,8 @@ import { useReplicache } from "src/replicache";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { focusBlock } from "src/utils/focusBlock";
 import { useIsMobile } from "src/hooks/isMobile";
+import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
+import { elementId } from "src/utils/elementId";
 
 let debounce: number | null = null;
 export function useBlockMouseHandlers(props: Block) {
@@ -39,6 +41,16 @@ export function useBlockMouseHandlers(props: Block) {
           parent: props.parent,
         });
         useUIState.getState().setSelectedBlock(props);
+
+        // scroll to the page containing the block, if offscreen
+        let parentPage = elementId.page(props.parent).container;
+        setTimeout(() => {
+          scrollIntoViewIfNeeded(
+            document.getElementById(parentPage),
+            false,
+            "smooth",
+          );
+        }, 50);
       }
     },
     [props, entity_set.permissions.write, isMobile],
