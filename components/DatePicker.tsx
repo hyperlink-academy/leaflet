@@ -13,14 +13,12 @@ interface DayPickerProps {
   selected: Date | undefined;
   onSelect: (date: Date | undefined) => void;
   disabled?: (date: Date) => boolean;
-  toDate?: Date;
 }
 
-export const DayPicker = ({
+export const DatePicker = ({
   selected,
   onSelect,
   disabled,
-  toDate,
 }: DayPickerProps) => {
   return (
     <ReactDayPicker
@@ -48,7 +46,25 @@ export const DayPicker = ({
       selected={selected}
       onSelect={onSelect}
       disabled={disabled}
-      toDate={toDate}
+    />
+  );
+};
+
+export const TimePicker = (props: {
+  value: string;
+  onChange: (time: string) => void;
+  className?: string;
+}) => {
+  let handleTimeChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    props.onChange(e.target.value);
+  };
+
+  return (
+    <input
+      type="time"
+      value={props.value}
+      onChange={handleTimeChange}
+      className={`dateBlockTimeInput input-with-border bg-bg-page text-primary w-full ${props.className}`}
     />
   );
 };

@@ -10,7 +10,7 @@ import { Checkbox } from "components/Checkbox";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { useSpring, animated } from "@react-spring/web";
 import { BlockCalendarSmall } from "components/Icons/BlockCalendarSmall";
-import { DayPicker } from "components/DatePicker";
+import { DatePicker } from "components/DatePicker";
 
 export function DateTimeBlock(props: BlockProps) {
   const [isClient, setIsClient] = useState(false);
@@ -166,7 +166,7 @@ export function BaseDateTimeBlock(
       }
     >
       <div className="flex flex-col gap-3 ">
-        <DayPicker
+        <DatePicker
           selected={dateFact ? selectedDate : undefined}
           onSelect={handleDaySelect}
         />

@@ -1,69 +1,72 @@
 "use client";
-import { DayPicker } from "components/DatePicker";
-import { backdatePost } from "actions/backdatePost";
-import { mutate } from "swr";
-import { DotLoader } from "components/utils/DotLoader";
-import { useToaster } from "components/Toast";
-import { useLeafletPublicationData } from "components/PageSWRDataProvider";
+import { DatePicker, TimePicker } from "components/DatePicker";
 import { useState } from "react";
 import { timeAgo } from "src/utils/timeAgo";
 import { Popover } from "components/Popover";
+import { Separator } from "react-aria-components";
 
 export const Backdater = (props: { publishedAt: string }) => {
-  let { data: pub } = useLeafletPublicationData();
-  let [isUpdating, setIsUpdating] = useState(false);
-  let [localPublishedAt, setLocalPublishedAt] = useState(props.publishedAt);
-  let toaster = useToaster();
+  let [localPublishedAt, setLocalPublishedAt] = useState(
+    new Date(props.publishedAt),
+  );
 
-  const handleDaySelect = async (date: Date | undefined) => {
-    if (!date || !pub?.doc || isUpdating) return;
+  let [timeValue, setTimeValue] = useState(
+    `${localPublishedAt.getHours().toString().padStart(2, "0")}:${localPublishedAt.getMinutes().toString().padStart(2, "0")}`,
+  );
 
-    // Prevent future dates
-    if (date > new Date()) return;
+  let currentTime = `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`;
 
-    setIsUpdating(true);
-    try {
-      const result = await backdatePost({
-        uri: pub.doc,
-        publishedAt: date.toISOString(),
-      });
+  const handleTimeChange = (time: string) => {
+    setTimeValue(time);
+    const [hours, minutes] = time.split(":").map((str) => parseInt(str, 10));
+    const newDate = new Date(localPublishedAt);
+    newDate.setHours(hours);
+    newDate.setMinutes(minutes);
 
-      if (result.success) {
-        // Update local state immediately
-        setLocalPublishedAt(date.toISOString());
-        // Refresh the publication data
-        await mutate(`/api/pub/${pub.doc}`);
-      }
-    } catch (error) {
-      console.error("Failed to backdate document:", error);
-    } finally {
-      toaster({
-        content: <div className="font-bold">Updated publish date!</div>,
-        type: "success",
-      });
-      setIsUpdating(false);
-    }
+    let currentDate = new Date();
+    if (newDate > currentDate) {
+      setLocalPublishedAt(currentDate);
+      setTimeValue(currentTime);
+    } else setLocalPublishedAt(newDate);
   };
 
-  const selectedDate = new Date(localPublishedAt);
+  const handleDateChange = (date: Date | undefined) => {
+    if (!date) return;
+    const [hours, minutes] = timeValue
+      .split(":")
+      .map((str) => parseInt(str, 10));
+    const newDate = new Date(date);
+    newDate.setHours(hours);
+    newDate.setMinutes(minutes);
+
+    let currentDate = new Date();
+    if (newDate > currentDate) {
+      setLocalPublishedAt(currentDate);
+      setTimeValue(currentTime);
+    } else setLocalPublishedAt(newDate);
+  };
+  console.log(localPublishedAt);
 
   return (
     <Popover
       className="w-64 z-10 px-2!"
       trigger={
-        isUpdating ? (
-          <DotLoader className="h-[21px]!" />
-        ) : (
-          <div className="underline">{timeAgo(localPublishedAt)}</div>
-        )
+        <div className="underline">
+          {timeAgo(localPublishedAt.toISOString())}
+        </div>
       }
     >
-      <DayPicker
-        selected={selectedDate}
-        onSelect={handleDaySelect}
-        disabled={(date) => date > new Date()}
-        toDate={new Date()}
-      />
+      <div className="flex flex-col gap-3">
+        <DatePicker
+          selected={localPublishedAt}
+          onSelect={handleDateChange}
+          disabled={(date) => date > new Date()}
+        />
+        <Separator className="border-border" />
+        <div className="flex gap-4 pb-1 items-center">
+          <TimePicker value={timeValue} onChange={handleTimeChange} />
+        </div>
+      </div>
     </Popover>
   );
 };
