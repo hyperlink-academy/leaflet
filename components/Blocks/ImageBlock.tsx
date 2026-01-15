@@ -133,17 +133,11 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     );
   }
 
-  let imageClassName = isFullBleed
-    ? ""
-    : isSelected
-      ? "block-border-selected border-transparent! "
-      : "block-border border-transparent!";
-
   let isLocalUpload = localImages.get(image.data.src);
 
   let blockClassName = `
     relative group/image border-transparent! p-0! w-fit!
-    ${isFullBleed && "-mx-3 sm:-mx-4"}
+    ${isFullBleed && "-mx-[14px] sm:-mx-[18px] rounded-[0px]! sm:outline-offset-[-16px]! -outline-offset[-12px]!"}
     ${isFullBleed ? (isFirst ? "-mt-3 sm:-mt-4" : prevIsFullBleed ? "-mt-1" : "") : ""}
     ${isFullBleed ? (isLast ? "-mb-4" : nextIsFullBleed ? "-mb-2" : "") : ""}
     `;
@@ -153,6 +147,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       hasAlignment
       isSelected={!!isSelected}
       className={blockClassName}
+      optionsClassName="top-[-8px]!"
     >
       {isLocalUpload || image.data.local ? (
         <img
@@ -171,7 +166,6 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
           }
           height={image?.data.height}
           width={image?.data.width}
-          className={imageClassName}
         />
       )}
       {altText !== undefined && !props.preview ? (

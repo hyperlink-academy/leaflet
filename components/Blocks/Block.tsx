@@ -393,6 +393,7 @@ export const BlockLayout = (props: {
   isSelected?: boolean;
   children: React.ReactNode;
   className?: string;
+  optionsClassName?: string;
   hasBackground?: "accent" | "page";
   borderOnHover?: boolean;
   hasAlignment?: boolean;
@@ -422,6 +423,7 @@ export const BlockLayout = (props: {
       </div>
       {props.isSelected && (
         <NonTextBlockOptions
+          optionsClassName={props.optionsClassName}
           areYouSure={props.areYouSure}
           setAreYouSure={props.setAreYouSure}
         />
@@ -433,9 +435,9 @@ export const BlockLayout = (props: {
 let debounced: null | number = null;
 
 const NonTextBlockOptions = (props: {
-  isCanvas?: boolean;
   areYouSure?: boolean;
   setAreYouSure?: (value: boolean) => void;
+  optionsClassName?: string;
 }) => {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
@@ -453,7 +455,9 @@ const NonTextBlockOptions = (props: {
   if (isMultiselected) return;
 
   return (
-    <div className="flex gap-1 absolute -top-[25px] right-2 pb-0.5 pt-1 px-1 rounded-t-md bg-border text-bg-page">
+    <div
+      className={`flex gap-1 absolute -top-[25px] right-2 pb-0.5 pt-1 px-1 rounded-t-md bg-border text-bg-page ${props.optionsClassName}`}
+    >
       {focusedEntityType?.data.value !== "canvas" && (
         <>
           <button
