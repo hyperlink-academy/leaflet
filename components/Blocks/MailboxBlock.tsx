@@ -26,7 +26,12 @@ import { usePageTitle } from "components/utils/UpdateLeafletTitle";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { InfoSmall } from "components/Icons/InfoSmall";
 
-export const MailboxBlock = (props: BlockProps) => {
+export const MailboxBlock = (
+  props: BlockProps & {
+    areYouSure?: boolean;
+    setAreYouSure?: (value: boolean) => void;
+  },
+) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
@@ -41,7 +46,10 @@ export const MailboxBlock = (props: BlockProps) => {
   let subscriber_count = useEntity(props.entityID, "mailbox/subscriber-count");
   if (!permission)
     return (
-      <MailboxReaderView entityID={props.entityID} parent={props.parent} />
+      <MailboxReaderView
+        entityID={props.entityID}
+        parent={props.parent}
+      />
     );
 
   return (
@@ -49,6 +57,8 @@ export const MailboxBlock = (props: BlockProps) => {
       <BlockLayout
         isSelected={!!isSelected}
         hasBackground={"accent"}
+        areYouSure={props.areYouSure}
+        setAreYouSure={props.setAreYouSure}
         className="flex  gap-2 items-center justify-center"
       >
         <ButtonPrimary
@@ -120,7 +130,11 @@ export const MailboxBlock = (props: BlockProps) => {
   );
 };
 
-const MailboxReaderView = (props: { entityID: string; parent: string }) => {
+const MailboxReaderView = (props: {
+  entityID: string;
+  parent: string;
+
+}) => {
   let isSubscribed = useSubscriptionStatus(props.entityID);
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
@@ -133,6 +147,7 @@ const MailboxReaderView = (props: { entityID: string; parent: string }) => {
       <BlockLayout
         isSelected={!!isSelected}
         hasBackground={"accent"}
+      
         className="`h-full flex flex-col gap-2 items-center justify-center"
       >
         {!isSubscribed?.confirmed ? (

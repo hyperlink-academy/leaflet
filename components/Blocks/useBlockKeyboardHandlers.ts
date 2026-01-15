@@ -154,11 +154,12 @@ async function Backspace({
     if ((el as HTMLInputElement).value !== "") return;
   }
 
-  // if the block is a card or mailbox...
+  // if the block is a card, mailbox, rsvp, or poll...
   if (
     props.type === "card" ||
     props.type === "mailbox" ||
-    props.type === "rsvp"
+    props.type === "rsvp" ||
+    props.type === "poll"
   ) {
     // ...and areYouSure state is false, set it to true
     if (!areYouSure) {

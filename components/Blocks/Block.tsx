@@ -37,6 +37,7 @@ import { DeleteTiny } from "components/Icons/DeleteTiny";
 import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
 import { Separator } from "components/Layout";
 import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
+import { deleteBlock } from "src/utils/deleteBlock";
 
 export type Block = {
   factID: string;
@@ -395,6 +396,8 @@ export const BlockLayout = (props: {
   hasBackground?: "accent" | "page";
   borderOnHover?: boolean;
   hasAlignment?: boolean;
+  areYouSure?: boolean;
+  setAreYouSure?: (value: boolean) => void;
 }) => {
   // this is used to wrap non-text blocks in consistent selected styling, spacing, and top level options like delete
   return (
@@ -417,12 +420,23 @@ export const BlockLayout = (props: {
       >
         {props.children}
       </div>
-      {props.isSelected && <NonTextBlockOptions />}
+      {props.isSelected && (
+        <NonTextBlockOptions
+          areYouSure={props.areYouSure}
+          setAreYouSure={props.setAreYouSure}
+        />
+      )}
     </div>
   );
 };
 
-const NonTextBlockOptions = (props: { isCanvas?: boolean }) => {
+let debounced: null | number = null;
+
+const NonTextBlockOptions = (props: {
+  isCanvas?: boolean;
+  areYouSure?: boolean;
+  setAreYouSure?: (value: boolean) => void;
+}) => {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
   let focusedEntity = useUIState((s) => s.focusedEntity);
@@ -443,7 +457,9 @@ const NonTextBlockOptions = (props: { isCanvas?: boolean }) => {
       {focusedEntityType?.data.value !== "canvas" && (
         <>
           <button
-            onClick={async () => {
+            onClick={async (e) => {
+              e.stopPropagation();
+
               if (!rep) return;
               await moveBlockDown(rep, entity_set.set);
             }}
@@ -451,7 +467,9 @@ const NonTextBlockOptions = (props: { isCanvas?: boolean }) => {
             <ArrowDownTiny />
           </button>
           <button
-            onClick={async () => {
+            onClick={async (e) => {
+              e.stopPropagation();
+
               if (!rep) return;
               await moveBlockUp(rep);
             }}
@@ -461,7 +479,35 @@ const NonTextBlockOptions = (props: { isCanvas?: boolean }) => {
           <Separator classname="border-bg-page! h-4! mx-0.5" />
         </>
       )}
-      <button onClick={() => {}}>
+      <button
+        onClick={async (e) => {
+          e.stopPropagation();
+          if (!rep || !focusedEntity) return;
+
+          if (props.areYouSure !== undefined && props.setAreYouSure) {
+            if (!props.areYouSure) {
+              props.setAreYouSure(true);
+              debounced = window.setTimeout(() => {
+                debounced = null;
+              }, 300);
+              return;
+            }
+
+            if (props.areYouSure) {
+              if (debounced) {
+                window.clearTimeout(debounced);
+                debounced = window.setTimeout(() => {
+                  debounced = null;
+                }, 300);
+                return;
+              }
+              await deleteBlock([focusedEntity.entityID], rep);
+            }
+          } else {
+            await deleteBlock([focusedEntity.entityID], rep);
+          }
+        }}
+      >
         <DeleteTiny />
       </button>
     </div>
