@@ -4,6 +4,7 @@ import type { Env } from "./route";
 import { AtUri } from "@atproto/syntax";
 import { getFactsFromHomeLeaflets } from "./getFactsFromHomeLeaflets";
 import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
+import { ids } from "lexicons/api/lexicons";
 
 export type GetPublicationDataReturnType = Awaited<
   ReturnType<(typeof get_publication_data)["handler"]>
@@ -18,11 +19,17 @@ export const get_publication_data = makeRoute({
     { did, publication_name },
     { supabase }: Pick<Env, "supabase">,
   ) => {
-    let uri;
+    let pubLeafletUri;
+    let siteStandardUri;
     if (/^(?!\.$|\.\.S)[A-Za-z0-9._:~-]{1,512}$/.test(publication_name)) {
-      uri = AtUri.make(
+      pubLeafletUri = AtUri.make(
         did,
-        "pub.leaflet.publication",
+        ids.PubLeafletPublication,
+        publication_name,
+      ).toString();
+      siteStandardUri = AtUri.make(
+        did,
+        ids.SiteStandardPublication,
         publication_name,
       ).toString();
     }
@@ -45,7 +52,7 @@ export const get_publication_data = makeRoute({
          )
         )`,
       )
-      .or(`name.eq."${publication_name}", uri.eq."${uri}"`)
+      .or(`name.eq."${publication_name}", uri.eq."${pubLeafletUri}", uri.eq."${siteStandardUri}"`)
       .eq("identity_did", did)
       .single();
 

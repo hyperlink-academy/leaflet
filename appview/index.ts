@@ -247,7 +247,10 @@ async function handleEvent(evt: Event) {
       if (docResult.error) console.log(docResult.error);
 
       // site.standard.document uses "site" field to reference the publication
-      if (record.value.site) {
+      // For documents in publications, site is an AT-URI (at://did:plc:xxx/site.standard.publication/rkey)
+      // For standalone documents, site is an HTTPS URL (https://leaflet.pub/p/did:plc:xxx)
+      // Only link to publications table for AT-URI sites
+      if (record.value.site && record.value.site.startsWith("at://")) {
         let siteURI = new AtUri(record.value.site);
 
         if (siteURI.host !== evt.uri.host) {

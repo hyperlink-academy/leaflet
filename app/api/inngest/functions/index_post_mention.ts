@@ -55,10 +55,12 @@ export const index_post_mention = inngest.createFunction(
       authorDid = did;
     } else {
       // Publication post: look up by custom domain
+      // Support both old format (pub.leaflet.publication with base_path) and
+      // new format (site.standard.publication with url as https://domain)
       let { data: pub, error } = await supabaseServerClient
         .from("publications")
         .select("*")
-        .eq("record->>base_path", url.host)
+        .or(`record->>base_path.eq.${url.host},record->>url.eq.https://${url.host}`)
         .single();
 
       if (!pub) {

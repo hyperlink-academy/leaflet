@@ -4,6 +4,7 @@ import {
   AtpBaseClient,
   PubLeafletPublication,
   PubLeafletThemeColor,
+  SiteStandardPublication,
 } from "lexicons/api";
 import { restoreOAuthSession, OAuthSessionError } from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
@@ -66,20 +67,15 @@ export async function updatePublication({
   // Preserve existing schema when updating
   const publicationType = getPublicationType(aturi.collection);
 
-  let record = {
-    $type: publicationType,
-    ...(existingPub.record as object),
-    name,
-  } as PubLeafletPublication.Record;
-  if (preferences) {
-    record.preferences = preferences;
-  }
+  // Normalize the existing record to read its properties
+  const normalizedPub = normalizePublicationRecord(existingPub.record);
+  // Extract base_path from url if it exists (url format is https://domain, base_path is just domain)
+  const existingBasePath = normalizedPub?.url
+    ? normalizedPub.url.replace(/^https?:\/\//, "")
+    : undefined;
 
-  if (description !== undefined) {
-    record.description = description;
-  }
-
-  // Upload the icon if provided How do I tell if there isn't a new one?
+  // Upload the icon if provided
+  let iconBlob = normalizedPub?.icon;
   if (iconFile && iconFile.size > 0) {
     const buffer = await iconFile.arrayBuffer();
     const uploadResult = await agent.com.atproto.repo.uploadBlob(
@@ -88,9 +84,50 @@ export async function updatePublication({
     );
 
     if (uploadResult.data.blob) {
-      record.icon = uploadResult.data.blob;
+      iconBlob = uploadResult.data.blob;
     }
   }
+
+  // Build preferences based on input or existing normalized preferences
+  const preferencesData = preferences || normalizedPub?.preferences;
+
+  // Build the record with the correct field based on publication type
+  const record =
+    publicationType === "site.standard.publication"
+      ? ({
+          $type: publicationType,
+          name,
+          description: description !== undefined ? description : normalizedPub?.description,
+          icon: iconBlob,
+          theme: normalizedPub?.theme,
+          preferences: preferencesData
+            ? {
+                $type: "site.standard.publication#preferences" as const,
+                showInDiscover: preferencesData.showInDiscover,
+                showComments: preferencesData.showComments,
+                showMentions: preferencesData.showMentions,
+                showPrevNext: preferencesData.showPrevNext,
+              }
+            : undefined,
+          url: normalizedPub?.url || "",
+        } as SiteStandardPublication.Record)
+      : ({
+          $type: publicationType,
+          name,
+          description: description !== undefined ? description : normalizedPub?.description,
+          icon: iconBlob,
+          theme: normalizedPub?.theme,
+          preferences: preferencesData
+            ? {
+                $type: "pub.leaflet.publication#preferences" as const,
+                showInDiscover: preferencesData.showInDiscover,
+                showComments: preferencesData.showComments,
+                showMentions: preferencesData.showMentions,
+                showPrevNext: preferencesData.showPrevNext,
+              }
+            : undefined,
+          base_path: existingBasePath,
+        } as PubLeafletPublication.Record);
 
   let result = await agent.com.atproto.repo.putRecord({
     repo: credentialSession.did!,
@@ -159,23 +196,43 @@ export async function updatePublicationBasePath({
     ? normalizedPub.url.replace(/^https?:\/\//, "")
     : undefined;
 
-  let record = {
-    $type: publicationType,
-    name: normalizedPub?.name || "",
-    description: normalizedPub?.description,
-    icon: normalizedPub?.icon,
-    theme: normalizedPub?.theme,
-    preferences: normalizedPub?.preferences
-      ? {
-          $type: "pub.leaflet.publication#preferences" as const,
-          showInDiscover: normalizedPub.preferences.showInDiscover,
-          showComments: normalizedPub.preferences.showComments,
-          showMentions: normalizedPub.preferences.showMentions,
-          showPrevNext: normalizedPub.preferences.showPrevNext,
-        }
-      : undefined,
-    base_path,
-  } as PubLeafletPublication.Record;
+  // Build the record with the correct field based on publication type
+  const record =
+    publicationType === "site.standard.publication"
+      ? ({
+          $type: publicationType,
+          name: normalizedPub?.name || "",
+          description: normalizedPub?.description,
+          icon: normalizedPub?.icon,
+          theme: normalizedPub?.theme,
+          preferences: normalizedPub?.preferences
+            ? {
+                $type: "site.standard.publication#preferences" as const,
+                showInDiscover: normalizedPub.preferences.showInDiscover,
+                showComments: normalizedPub.preferences.showComments,
+                showMentions: normalizedPub.preferences.showMentions,
+                showPrevNext: normalizedPub.preferences.showPrevNext,
+              }
+            : undefined,
+          url: `https://${base_path}`,
+        } as SiteStandardPublication.Record)
+      : ({
+          $type: publicationType,
+          name: normalizedPub?.name || "",
+          description: normalizedPub?.description,
+          icon: normalizedPub?.icon,
+          theme: normalizedPub?.theme,
+          preferences: normalizedPub?.preferences
+            ? {
+                $type: "pub.leaflet.publication#preferences" as const,
+                showInDiscover: normalizedPub.preferences.showInDiscover,
+                showComments: normalizedPub.preferences.showComments,
+                showMentions: normalizedPub.preferences.showMentions,
+                showPrevNext: normalizedPub.preferences.showPrevNext,
+              }
+            : undefined,
+          base_path,
+        } as PubLeafletPublication.Record);
 
   let result = await agent.com.atproto.repo.putRecord({
     repo: credentialSession.did!,
@@ -257,58 +314,81 @@ export async function updatePublicationTheme({
     ? normalizedPub.url.replace(/^https?:\/\//, "")
     : undefined;
 
-  let record = {
-    $type: publicationType,
-    name: normalizedPub?.name || "",
-    description: normalizedPub?.description,
-    icon: normalizedPub?.icon,
-    base_path: existingBasePath,
-    preferences: normalizedPub?.preferences
+  // Build theme object (shared between both publication types)
+  const themeData = {
+    backgroundImage: theme.backgroundImage
       ? {
-          $type: "pub.leaflet.publication#preferences" as const,
-          showInDiscover: normalizedPub.preferences.showInDiscover,
-          showComments: normalizedPub.preferences.showComments,
-          showMentions: normalizedPub.preferences.showMentions,
-          showPrevNext: normalizedPub.preferences.showPrevNext,
+          $type: "pub.leaflet.theme.backgroundImage",
+          image: (
+            await agent.com.atproto.repo.uploadBlob(
+              new Uint8Array(await theme.backgroundImage.arrayBuffer()),
+              { encoding: theme.backgroundImage.type },
+            )
+          )?.data.blob,
+          width: theme.backgroundRepeat || undefined,
+          repeat: !!theme.backgroundRepeat,
+        }
+      : theme.backgroundImage === null
+        ? undefined
+        : normalizedPub?.theme?.backgroundImage,
+    backgroundColor: theme.backgroundColor
+      ? {
+          ...theme.backgroundColor,
         }
       : undefined,
-    theme: {
-      backgroundImage: theme.backgroundImage
-        ? {
-            $type: "pub.leaflet.theme.backgroundImage",
-            image: (
-              await agent.com.atproto.repo.uploadBlob(
-                new Uint8Array(await theme.backgroundImage.arrayBuffer()),
-                { encoding: theme.backgroundImage.type },
-              )
-            )?.data.blob,
-            width: theme.backgroundRepeat || undefined,
-            repeat: !!theme.backgroundRepeat,
-          }
-        : theme.backgroundImage === null
-          ? undefined
-          : normalizedPub?.theme?.backgroundImage,
-      backgroundColor: theme.backgroundColor
-        ? {
-            ...theme.backgroundColor,
-          }
-        : undefined,
-      pageWidth: theme.pageWidth,
-      primary: {
-        ...theme.primary,
-      },
-      pageBackground: {
-        ...theme.pageBackground,
-      },
-      showPageBackground: theme.showPageBackground,
-      accentBackground: {
-        ...theme.accentBackground,
-      },
-      accentText: {
-        ...theme.accentText,
-      },
+    pageWidth: theme.pageWidth,
+    primary: {
+      ...theme.primary,
     },
-  } as PubLeafletPublication.Record;
+    pageBackground: {
+      ...theme.pageBackground,
+    },
+    showPageBackground: theme.showPageBackground,
+    accentBackground: {
+      ...theme.accentBackground,
+    },
+    accentText: {
+      ...theme.accentText,
+    },
+  };
+
+  // Build the record with the correct field based on publication type
+  const record =
+    publicationType === "site.standard.publication"
+      ? ({
+          $type: publicationType,
+          name: normalizedPub?.name || "",
+          description: normalizedPub?.description,
+          icon: normalizedPub?.icon,
+          url: normalizedPub?.url || "",
+          preferences: normalizedPub?.preferences
+            ? {
+                $type: "site.standard.publication#preferences" as const,
+                showInDiscover: normalizedPub.preferences.showInDiscover,
+                showComments: normalizedPub.preferences.showComments,
+                showMentions: normalizedPub.preferences.showMentions,
+                showPrevNext: normalizedPub.preferences.showPrevNext,
+              }
+            : undefined,
+          theme: themeData,
+        } as SiteStandardPublication.Record)
+      : ({
+          $type: publicationType,
+          name: normalizedPub?.name || "",
+          description: normalizedPub?.description,
+          icon: normalizedPub?.icon,
+          base_path: existingBasePath,
+          preferences: normalizedPub?.preferences
+            ? {
+                $type: "pub.leaflet.publication#preferences" as const,
+                showInDiscover: normalizedPub.preferences.showInDiscover,
+                showComments: normalizedPub.preferences.showComments,
+                showMentions: normalizedPub.preferences.showMentions,
+                showPrevNext: normalizedPub.preferences.showPrevNext,
+              }
+            : undefined,
+          theme: themeData,
+        } as PubLeafletPublication.Record);
 
   let result = await agent.com.atproto.repo.putRecord({
     repo: credentialSession.did!,
