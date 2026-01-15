@@ -1,5 +1,4 @@
 "use server";
-import { TID } from "@atproto/common";
 import {
   AtpBaseClient,
   PubLeafletPublication,
@@ -42,7 +41,7 @@ type RecordBuilder = (args: {
  */
 async function withPublicationUpdate(
   uri: string,
-  buildRecord: RecordBuilder,
+  recordBuilder: RecordBuilder,
 ): Promise<UpdatePublicationResult> {
   // Get identity and validate authentication
   const identity = await getIdentityData();
@@ -87,7 +86,7 @@ async function withPublicationUpdate(
     : undefined;
 
   // Build the updated record
-  const record = await buildRecord({
+  const record = await recordBuilder({
     normalizedPub,
     existingBasePath,
     publicationType,
@@ -117,83 +116,92 @@ async function withPublicationUpdate(
   return { success: true, publication };
 }
 
+/** Fields that can be overridden when building a record */
+interface RecordOverrides {
+  name?: string;
+  description?: string;
+  icon?: any;
+  theme?: any;
+  basicTheme?: NormalizedPublication["basicTheme"];
+  preferences?: NormalizedPublication["preferences"];
+  basePath?: string;
+}
+
+/** Merges override with existing value, respecting explicit undefined */
+function resolveField<T>(override: T | undefined, existing: T | undefined, hasOverride: boolean): T | undefined {
+  return hasOverride ? override : existing;
+}
+
 /**
- * Helper to build preferences object with correct $type based on publication type.
- * site.standard.publication preferences is a simple object type, no $type needed.
- * pub.leaflet.publication preferences requires $type.
+ * Builds a pub.leaflet.publication record.
+ * Uses base_path for the URL path component.
  */
-function buildPreferences(
-  preferencesData: NormalizedPublication["preferences"] | undefined,
-  publicationType: PublicationType,
-): SiteStandardPublication.Preferences | PubLeafletPublication.Preferences | undefined {
-  if (!preferencesData) return undefined;
-
-  const basePreferences = {
-    showInDiscover: preferencesData.showInDiscover,
-    showComments: preferencesData.showComments,
-    showMentions: preferencesData.showMentions,
-    showPrevNext: preferencesData.showPrevNext,
-  };
-
-  if (publicationType === "site.standard.publication") {
-    return basePreferences;
-  }
+function buildLeafletRecord(
+  normalizedPub: NormalizedPublication | null,
+  existingBasePath: string | undefined,
+  overrides: RecordOverrides,
+): PubLeafletPublication.Record {
+  const preferences = overrides.preferences ?? normalizedPub?.preferences;
 
   return {
-    $type: "pub.leaflet.publication#preferences" as const,
-    ...basePreferences,
+    $type: "pub.leaflet.publication",
+    name: overrides.name ?? normalizedPub?.name ?? "",
+    description: resolveField(overrides.description, normalizedPub?.description, "description" in overrides),
+    icon: resolveField(overrides.icon, normalizedPub?.icon, "icon" in overrides),
+    theme: resolveField(overrides.theme, normalizedPub?.theme, "theme" in overrides),
+    base_path: overrides.basePath ?? existingBasePath,
+    preferences: preferences ? {
+      $type: "pub.leaflet.publication#preferences",
+      showInDiscover: preferences.showInDiscover,
+      showComments: preferences.showComments,
+      showMentions: preferences.showMentions,
+      showPrevNext: preferences.showPrevNext,
+    } : undefined,
   };
 }
 
 /**
- * Helper to build the base record fields (shared between all update functions)
+ * Builds a site.standard.publication record.
+ * Uses url for the full URL. Also supports basicTheme.
  */
-function buildBaseRecord(
+function buildStandardRecord(
+  normalizedPub: NormalizedPublication | null,
+  existingBasePath: string | undefined,
+  overrides: RecordOverrides,
+): SiteStandardPublication.Record {
+  const preferences = overrides.preferences ?? normalizedPub?.preferences;
+  const basePath = overrides.basePath ?? existingBasePath;
+
+  return {
+    $type: "site.standard.publication",
+    name: overrides.name ?? normalizedPub?.name ?? "",
+    description: resolveField(overrides.description, normalizedPub?.description, "description" in overrides),
+    icon: resolveField(overrides.icon, normalizedPub?.icon, "icon" in overrides),
+    theme: resolveField(overrides.theme, normalizedPub?.theme, "theme" in overrides),
+    basicTheme: resolveField(overrides.basicTheme, normalizedPub?.basicTheme, "basicTheme" in overrides),
+    url: basePath ? `https://${basePath}` : normalizedPub?.url || "",
+    preferences: preferences ? {
+      showInDiscover: preferences.showInDiscover,
+      showComments: preferences.showComments,
+      showMentions: preferences.showMentions,
+      showPrevNext: preferences.showPrevNext,
+    } : undefined,
+  };
+}
+
+/**
+ * Builds a record for the appropriate publication type.
+ */
+function buildRecord(
   normalizedPub: NormalizedPublication | null,
   existingBasePath: string | undefined,
   publicationType: PublicationType,
-  overrides: {
-    name?: string;
-    description?: string;
-    icon?: any;
-    theme?: any;
-    basicTheme?: NormalizedPublication["basicTheme"];
-    preferences?: NormalizedPublication["preferences"];
-    basePath?: string;
-  },
+  overrides: RecordOverrides,
 ): PubLeafletPublication.Record | SiteStandardPublication.Record {
-  const name = overrides.name ?? normalizedPub?.name ?? "";
-  const description = overrides.description !== undefined
-    ? overrides.description
-    : normalizedPub?.description;
-  const icon = overrides.icon !== undefined ? overrides.icon : normalizedPub?.icon;
-  const theme = overrides.theme !== undefined ? overrides.theme : normalizedPub?.theme;
-  const basicTheme = overrides.basicTheme !== undefined ? overrides.basicTheme : normalizedPub?.basicTheme;
-  const preferencesData = overrides.preferences ?? normalizedPub?.preferences;
-  const basePath = overrides.basePath ?? existingBasePath;
-
-  if (publicationType === "site.standard.publication") {
-    return {
-      $type: publicationType,
-      name,
-      description,
-      icon,
-      theme,
-      basicTheme,
-      preferences: buildPreferences(preferencesData, publicationType),
-      url: basePath ? `https://${basePath}` : normalizedPub?.url || "",
-    } as SiteStandardPublication.Record;
+  if (publicationType === "pub.leaflet.publication") {
+    return buildLeafletRecord(normalizedPub, existingBasePath, overrides);
   }
-
-  return {
-    $type: publicationType,
-    name,
-    description,
-    icon,
-    theme,
-    preferences: buildPreferences(preferencesData, publicationType),
-    base_path: basePath,
-  } as PubLeafletPublication.Record;
+  return buildStandardRecord(normalizedPub, existingBasePath, overrides);
 }
 
 export async function updatePublication({
@@ -223,7 +231,7 @@ export async function updatePublication({
       }
     }
 
-    return buildBaseRecord(normalizedPub, existingBasePath, publicationType, {
+    return buildRecord(normalizedPub, existingBasePath, publicationType, {
       name,
       description,
       icon: iconBlob,
@@ -240,7 +248,7 @@ export async function updatePublicationBasePath({
   base_path: string;
 }): Promise<UpdatePublicationResult> {
   return withPublicationUpdate(uri, async ({ normalizedPub, existingBasePath, publicationType }) => {
-    return buildBaseRecord(normalizedPub, existingBasePath, publicationType, {
+    return buildRecord(normalizedPub, existingBasePath, publicationType, {
       basePath: base_path,
     });
   });
@@ -306,7 +314,7 @@ export async function updatePublicationTheme({
       },
     };
 
-    return buildBaseRecord(normalizedPub, existingBasePath, publicationType, {
+    return buildRecord(normalizedPub, existingBasePath, publicationType, {
       theme: themeData,
     });
   });
