@@ -34,6 +34,9 @@ import { deepEquals } from "src/utils/deepEquals";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { focusPage } from "src/utils/focusPage";
 import { DeleteTiny } from "components/Icons/DeleteTiny";
+import { ArrowDownTiny } from "components/Icons/ArrowDownTiny";
+import { Separator } from "components/Layout";
+import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 
 export type Block = {
   factID: string;
@@ -395,7 +398,9 @@ export const BlockLayout = (props: {
 }) => {
   // this is used to wrap non-text blocks in consistent selected styling, spacing, and top level options like delete
   return (
-    <div className={`relative ${props.hasAlignment ? "w-fit" : "w-full"}`}>
+    <div
+      className={`nonTextBlockAndControls relative ${props.hasAlignment ? "w-fit" : "w-full"}`}
+    >
       <div
         className={`nonTextBlock ${props.className} p-2 sm:p-3 overflow-hidden
           ${props.hasAlignment ? "w-fit" : "w-full"}
@@ -412,18 +417,51 @@ export const BlockLayout = (props: {
       >
         {props.children}
       </div>
-      {props.isSelected && <DeleteBlock />}
+      {props.isSelected && <NonTextBlockOptions />}
     </div>
   );
 };
 
-const DeleteBlock = () => {
+const NonTextBlockOptions = (props: { isCanvas?: boolean }) => {
+  let { rep } = useReplicache();
+  let entity_set = useEntitySetContext();
+  let focusedEntity = useUIState((s) => s.focusedEntity);
+
+  let focusedEntityType = useEntity(
+    focusedEntity?.entityType === "page"
+      ? focusedEntity.entityID
+      : focusedEntity?.parent || null,
+    "page/type",
+  );
+
+  let isMultiselected = useUIState((s) => s.selectedBlocks.length > 1);
+
+  if (isMultiselected) return;
+
   return (
-    <div className="absolute -top-4 right-2">
-      <button
-        className="bg-border border-2 border-bg-page rounded-full p-1 text-bg-page"
-        onClick={() => {}}
-      >
+    <div className="flex gap-1 absolute -top-[25px] right-2 pb-0.5 pt-1 px-1 rounded-t-md bg-border text-bg-page">
+      {focusedEntityType?.data.value !== "canvas" && (
+        <>
+          <button
+            onClick={async () => {
+              if (!rep) return;
+              await moveBlockDown(rep, entity_set.set);
+            }}
+          >
+            <ArrowDownTiny />
+          </button>
+          <button
+            onClick={async () => {
+              if (!rep) return;
+              await moveBlockUp(rep);
+            }}
+          >
+            <ArrowDownTiny className="rotate-180" />
+          </button>
+          <Separator classname="border-bg-page! h-4! mx-0.5" />
+        </>
+      )}
+      <button onClick={() => {}}>
         <DeleteTiny />
       </button>
     </div>

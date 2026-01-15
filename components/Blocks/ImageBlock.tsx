@@ -90,10 +90,9 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       >
         <label
           className={`
-
             w-full h-full hover:cursor-pointer
             flex flex-col items-center justify-center
-            ${props.pageType === "canvas" && "bg-bg-page"}`}
+           `}
           onMouseDown={(e) => e.preventDefault()}
           onDragOver={(e) => {
             e.preventDefault();

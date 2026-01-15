@@ -17,6 +17,7 @@ import { deleteBlock } from "src/utils/deleteBlock";
 import { schema } from "../Blocks/TextBlock/schema";
 import { MarkType } from "prosemirror-model";
 import { useSelectingMouse, getSortedSelection } from "./selectionState";
+import { moveBlockUp, moveBlockDown } from "src/utils/moveBlock";
 
 //How should I model selection? As ranges w/ a start and end? Store *blocks* so that I can just construct ranges?
 // How does this relate to *when dragging* ?
@@ -240,35 +241,8 @@ export function SelectionManager() {
         shift: true,
         key: ["ArrowDown", "J"],
         handler: async () => {
-          let [sortedBlocks, siblings] = await getSortedSelectionBound();
-          let block = sortedBlocks[0];
-          let nextBlock = siblings
-            .slice(siblings.findIndex((s) => s.value === block.value) + 1)
-            .find(
-              (f) =>
-                f.listData &&
-                block.listData &&
-                !f.listData.path.find((f) => f.entity === block.value),
-            );
-          if (
-            nextBlock?.listData &&
-            block.listData &&
-            nextBlock.listData.depth === block.listData.depth - 1
-          ) {
-            if (useUIState.getState().foldedBlocks.includes(nextBlock.value))
-              useUIState.getState().toggleFold(nextBlock.value);
-            await rep?.mutate.moveBlock({
-              block: block.value,
-              oldParent: block.listData?.parent,
-              newParent: nextBlock.value,
-              position: { type: "first" },
-            });
-          } else {
-            await rep?.mutate.moveBlockDown({
-              entityID: block.value,
-              parent: block.listData?.parent || block.parent,
-            });
-          }
+          if (!rep) return;
+          await moveBlockDown(rep, entity_set.set);
         },
       },
       {
@@ -276,44 +250,8 @@ export function SelectionManager() {
         shift: true,
         key: ["ArrowUp", "K"],
         handler: async () => {
-          let [sortedBlocks, siblings] = await getSortedSelectionBound();
-          let block = sortedBlocks[0];
-          let previousBlock =
-            siblings?.[siblings.findIndex((s) => s.value === block.value) - 1];
-          if (previousBlock.value === block.listData?.parent) {
-            previousBlock =
-              siblings?.[
-                siblings.findIndex((s) => s.value === block.value) - 2
-              ];
-          }
-
-          if (
-            previousBlock?.listData &&
-            block.listData &&
-            block.listData.depth > 1 &&
-            !previousBlock.listData.path.find(
-              (f) => f.entity === block.listData?.parent,
-            )
-          ) {
-            let depth = block.listData.depth;
-            let newParent = previousBlock.listData.path.find(
-              (f) => f.depth === depth - 1,
-            );
-            if (!newParent) return;
-            if (useUIState.getState().foldedBlocks.includes(newParent.entity))
-              useUIState.getState().toggleFold(newParent.entity);
-            rep?.mutate.moveBlock({
-              block: block.value,
-              oldParent: block.listData?.parent,
-              newParent: newParent.entity,
-              position: { type: "end" },
-            });
-          } else {
-            rep?.mutate.moveBlockUp({
-              entityID: block.value,
-              parent: block.listData?.parent || block.parent,
-            });
-          }
+          if (!rep) return;
+          await moveBlockUp(rep);
         },
       },
 
