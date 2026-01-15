@@ -128,25 +128,40 @@ export const migrate_user_to_standard = inngest.createFunction(
       }
     }
 
-    // Step 4: Get and migrate documents for these publications
+    // Step 4: Get ALL user's pub.leaflet.document records (both in publications and standalone)
     const oldDocuments = await step.run("fetch-old-documents", async () => {
-      const oldPubUris = Object.keys(publicationUriMap);
-      if (oldPubUris.length === 0) return [];
-
       const { data, error } = await supabaseServerClient
-        .from("documents_in_publications")
-        .select("document, publication, documents(uri, data)")
-        .in("publication", oldPubUris);
+        .from("documents")
+        .select("uri, data")
+        .like("uri", `at://${did}/pub.leaflet.document/%`);
 
       if (error) throw new Error(`Failed to fetch documents: ${error.message}`);
       return data || [];
     });
 
+    // Also fetch publication associations for documents
+    const documentPublicationMap = await step.run("fetch-document-publications", async () => {
+      const docUris = oldDocuments.map(d => d.uri);
+      if (docUris.length === 0) return {};
+
+      const { data, error } = await supabaseServerClient
+        .from("documents_in_publications")
+        .select("document, publication")
+        .in("document", docUris);
+
+      if (error) throw new Error(`Failed to fetch document publications: ${error.message}`);
+
+      // Create a map of document URI -> publication URI
+      const map: Record<string, string> = {};
+      for (const row of data || []) {
+        map[row.document] = row.publication;
+      }
+      return map;
+    });
+
     const documentUriMap: Record<string, string> = {}; // old URI -> new URI
 
-    for (const docRow of oldDocuments) {
-      if (!docRow.documents) continue;
-      const doc = docRow.documents as { uri: string; data: Json };
+    for (const doc of oldDocuments) {
       const aturi = new AtUri(doc.uri);
 
       // Skip if already a site.standard.document
@@ -163,18 +178,25 @@ export const migrate_user_to_standard = inngest.createFunction(
         continue;
       }
 
-      // Get the new publication URI
-      const newPubUri = publicationUriMap[docRow.publication];
-      if (!newPubUri) {
-        stats.errors.push(`Document ${doc.uri}: No migrated publication found`);
-        continue;
+      // Determine the site field:
+      // - If document is in a publication, use the new publication URI (if migrated) or old URI
+      // - If standalone, use the HTTPS URL format
+      const oldPubUri = documentPublicationMap[doc.uri];
+      let siteValue: string;
+
+      if (oldPubUri) {
+        // Document is in a publication - use new URI if migrated, otherwise keep old
+        siteValue = publicationUriMap[oldPubUri] || oldPubUri;
+      } else {
+        // Standalone document - use HTTPS URL format
+        siteValue = `https://leaflet.pub/p/${did}`;
       }
 
       // Build site.standard.document record
       const newRecord: SiteStandardDocument.Record = {
         $type: "site.standard.document",
         title: normalized.title || "Untitled",
-        site: newPubUri,
+        site: siteValue,
         publishedAt: normalized.publishedAt || new Date().toISOString(),
         description: normalized.description,
         content: normalized.content,
@@ -212,13 +234,16 @@ export const migrate_user_to_standard = inngest.createFunction(
           return { success: false as const, error: dbError.message };
         }
 
-        // Add to documents_in_publications with new URIs
-        await supabaseServerClient
-          .from("documents_in_publications")
-          .upsert({
-            publication: newPubUri,
-            document: newUri,
-          });
+        // If document was in a publication, add to documents_in_publications with new URIs
+        if (oldPubUri) {
+          const newPubUri = publicationUriMap[oldPubUri] || oldPubUri;
+          await supabaseServerClient
+            .from("documents_in_publications")
+            .upsert({
+              publication: newPubUri,
+              document: newUri,
+            });
+        }
 
         return { success: true as const };
       });
