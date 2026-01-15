@@ -99,7 +99,9 @@ export const PublicationMetadata = () => {
             <div className="flex gap-2 items-center">
               <p className="text-sm text-tertiary">
                 Published{" "}
-                {publishedAt && <Backdater publishedAt={publishedAt} />}
+                {publishedAt && (
+                  <Backdater publishedAt={publishedAt} docURI={pub.doc} />
+                )}
               </p>
 
               <Link

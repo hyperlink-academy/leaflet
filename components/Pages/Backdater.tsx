@@ -1,15 +1,21 @@
 "use client";
 import { DatePicker, TimePicker } from "components/DatePicker";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { timeAgo } from "src/utils/timeAgo";
 import { Popover } from "components/Popover";
 import { Separator } from "react-aria-components";
 import { useReplicache } from "src/replicache";
+import { create } from "zustand";
 
-export const Backdater = (props: { publishedAt: string }) => {
+export const useLocalPublishedAt = create<{ [uri: string]: Date }>(() => ({}));
+export const Backdater = (props: { publishedAt: string; docURI: string }) => {
   let { rep } = useReplicache();
-  let [localPublishedAt, setLocalPublishedAt] = useState(
-    new Date(props.publishedAt),
+  let localPublishedAtDate = useLocalPublishedAt((s) =>
+    s[props.docURI] ? s[props.docURI] : null,
+  );
+  let localPublishedAt = useMemo(
+    () => localPublishedAtDate || new Date(props.publishedAt),
+    [localPublishedAtDate, props.publishedAt],
   );
 
   let [timeValue, setTimeValue] = useState(
@@ -27,16 +33,10 @@ export const Backdater = (props: { publishedAt: string }) => {
 
     let currentDate = new Date();
     if (newDate > currentDate) {
-      setLocalPublishedAt(currentDate);
+      useLocalPublishedAt.setState({ [props.docURI]: currentDate });
       setTimeValue(currentTime);
-      await rep?.mutate.updatePublicationDraft({
-        localPublishedAt: currentDate.toISOString(),
-      });
     } else {
-      setLocalPublishedAt(newDate);
-      await rep?.mutate.updatePublicationDraft({
-        localPublishedAt: newDate.toISOString(),
-      });
+      useLocalPublishedAt.setState({ [props.docURI]: newDate });
     }
   };
 
@@ -51,16 +51,11 @@ export const Backdater = (props: { publishedAt: string }) => {
 
     let currentDate = new Date();
     if (newDate > currentDate) {
-      setLocalPublishedAt(currentDate);
+      useLocalPublishedAt.setState({ [props.docURI]: currentDate });
+
       setTimeValue(currentTime);
-      await rep?.mutate.updatePublicationDraft({
-        localPublishedAt: currentDate.toISOString(),
-      });
     } else {
-      setLocalPublishedAt(newDate);
-      await rep?.mutate.updatePublicationDraft({
-        localPublishedAt: newDate.toISOString(),
-      });
+      useLocalPublishedAt.setState({ [props.docURI]: newDate });
     }
   };
 

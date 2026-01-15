@@ -24,7 +24,7 @@ import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
 import { PubLeafletPublication } from "lexicons/api";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useReplicache, useEntity } from "src/replicache";
 import { useSubscribe } from "src/replicache/useSubscribe";
@@ -40,6 +40,7 @@ import { BlueskyLogin } from "app/login/LoginForm";
 import { moveLeafletToPublication } from "actions/publications/moveLeafletToPublication";
 import { AddTiny } from "components/Icons/AddTiny";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
+import { useLocalPublishedAt } from "components/Pages/Backdater";
 
 export const PublishButton = (props: { entityID: string }) => {
   let { data: pub } = useLeafletPublicationData();
@@ -95,11 +96,10 @@ const UpdateButton = () => {
     tx.get<string | null>("publication_cover_image"),
   );
 
-  // Get localPublishedAt from Replicache state
-  let localPublishedAt = useSubscribe(rep, (tx) =>
-    tx.get<string | null>("publication_local_published_at"),
+  // Get local published at from Replicache (session-only state, not persisted to DB)
+  let publishedAt = useLocalPublishedAt((s) =>
+    pub?.doc ? s[pub?.doc] : undefined,
   );
-  console.log("local: " + localPublishedAt);
 
   return (
     <ActionButton
@@ -117,7 +117,7 @@ const UpdateButton = () => {
           description: currentDescription,
           tags: currentTags,
           cover_image: coverImage,
-          ...(localPublishedAt && { publishedAt: localPublishedAt }),
+          publishedAt: publishedAt?.toISOString(),
         });
         setIsLoading(false);
         mutate();
