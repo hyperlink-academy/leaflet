@@ -385,36 +385,12 @@ export const migrate_user_to_standard = inngest.createFunction(
       }
     }
 
-    // Step 7: Delete old records from our database tables
-    await step.run("delete-old-db-records", async () => {
-      const oldPubUris = Object.keys(publicationUriMap).filter(uri =>
-        new AtUri(uri).collection === "pub.leaflet.publication"
-      );
-      const oldDocUris = Object.keys(documentUriMap).filter(uri =>
-        new AtUri(uri).collection === "pub.leaflet.document"
-      );
-
-      // NOTE: We intentionally keep old documents_in_publications entries.
-      // New entries are created in Step 4 with the new URIs, but the old entries
-      // should remain so that notifications and other references that point to
-      // old document/publication URIs can still look up the relationship.
-
-      // Delete from documents (old document URIs)
-      if (oldDocUris.length > 0) {
-        await supabaseServerClient
-          .from("documents")
-          .delete()
-          .in("uri", oldDocUris);
-      }
-
-      // Delete from publications (old publication URIs)
-      if (oldPubUris.length > 0) {
-        await supabaseServerClient
-          .from("publications")
-          .delete()
-          .in("uri", oldPubUris);
-      }
-    });
+    // NOTE: We intentionally keep old documents, publications, and documents_in_publications entries.
+    // New entries are created with the new URIs, but the old entries remain so that:
+    // 1. Notifications referencing old document/publication URIs can still resolve
+    // 2. External references (e.g., from other AT Proto apps) to old URIs continue to work
+    // 3. The normalization layer handles both schemas transparently for reads
+    // Old records are also kept on the user's PDS so existing AT-URI references remain valid.
 
     return {
       success: stats.errors.length === 0,
