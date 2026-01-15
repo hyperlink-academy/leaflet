@@ -22,6 +22,172 @@ type UpdatePublicationResult =
   | { success: true; publication: any }
   | { success: false; error?: OAuthSessionError };
 
+type PublicationType = "pub.leaflet.publication" | "site.standard.publication";
+
+type RecordBuilder = (args: {
+  normalizedPub: NormalizedPublication | null;
+  existingBasePath: string | undefined;
+  publicationType: PublicationType;
+  agent: AtpBaseClient;
+}) => Promise<PubLeafletPublication.Record | SiteStandardPublication.Record>;
+
+/**
+ * Shared helper for publication updates. Handles:
+ * - Authentication and session restoration
+ * - Fetching existing publication from database
+ * - Normalizing the existing record
+ * - Calling the record builder to create the updated record
+ * - Writing to PDS via putRecord
+ * - Writing to database
+ */
+async function withPublicationUpdate(
+  uri: string,
+  buildRecord: RecordBuilder,
+): Promise<UpdatePublicationResult> {
+  // Get identity and validate authentication
+  const identity = await getIdentityData();
+  if (!identity || !identity.atp_did) {
+    return {
+      success: false,
+      error: {
+        type: "oauth_session_expired",
+        message: "Not authenticated",
+        did: "",
+      },
+    };
+  }
+
+  // Restore OAuth session
+  const sessionResult = await restoreOAuthSession(identity.atp_did);
+  if (!sessionResult.ok) {
+    return { success: false, error: sessionResult.error };
+  }
+  const credentialSession = sessionResult.value;
+  const agent = new AtpBaseClient(
+    credentialSession.fetchHandler.bind(credentialSession),
+  );
+
+  // Fetch existing publication from database
+  const { data: existingPub } = await supabaseServerClient
+    .from("publications")
+    .select("*")
+    .eq("uri", uri)
+    .single();
+  if (!existingPub || existingPub.identity_did !== identity.atp_did) {
+    return { success: false };
+  }
+
+  const aturi = new AtUri(existingPub.uri);
+  const publicationType = getPublicationType(aturi.collection) as PublicationType;
+
+  // Normalize existing record
+  const normalizedPub = normalizePublicationRecord(existingPub.record);
+  const existingBasePath = normalizedPub?.url
+    ? normalizedPub.url.replace(/^https?:\/\//, "")
+    : undefined;
+
+  // Build the updated record
+  const record = await buildRecord({
+    normalizedPub,
+    existingBasePath,
+    publicationType,
+    agent,
+  });
+
+  // Write to PDS
+  await agent.com.atproto.repo.putRecord({
+    repo: credentialSession.did!,
+    rkey: aturi.rkey,
+    record,
+    collection: publicationType,
+    validate: false,
+  });
+
+  // Optimistically write to database
+  const { data: publication } = await supabaseServerClient
+    .from("publications")
+    .update({
+      name: record.name,
+      record: record as Json,
+    })
+    .eq("uri", uri)
+    .select()
+    .single();
+
+  return { success: true, publication };
+}
+
+/**
+ * Helper to build preferences object with correct $type based on publication type
+ */
+function buildPreferences(
+  preferencesData: NormalizedPublication["preferences"] | undefined,
+  publicationType: PublicationType,
+) {
+  if (!preferencesData) return undefined;
+
+  const $type =
+    publicationType === "site.standard.publication"
+      ? ("site.standard.publication#preferences" as const)
+      : ("pub.leaflet.publication#preferences" as const);
+
+  return {
+    $type,
+    showInDiscover: preferencesData.showInDiscover,
+    showComments: preferencesData.showComments,
+    showMentions: preferencesData.showMentions,
+    showPrevNext: preferencesData.showPrevNext,
+  };
+}
+
+/**
+ * Helper to build the base record fields (shared between all update functions)
+ */
+function buildBaseRecord(
+  normalizedPub: NormalizedPublication | null,
+  existingBasePath: string | undefined,
+  publicationType: PublicationType,
+  overrides: {
+    name?: string;
+    description?: string;
+    icon?: any;
+    theme?: any;
+    preferences?: NormalizedPublication["preferences"];
+    basePath?: string;
+  },
+): PubLeafletPublication.Record | SiteStandardPublication.Record {
+  const name = overrides.name ?? normalizedPub?.name ?? "";
+  const description = overrides.description !== undefined
+    ? overrides.description
+    : normalizedPub?.description;
+  const icon = overrides.icon !== undefined ? overrides.icon : normalizedPub?.icon;
+  const theme = overrides.theme !== undefined ? overrides.theme : normalizedPub?.theme;
+  const preferencesData = overrides.preferences ?? normalizedPub?.preferences;
+  const basePath = overrides.basePath ?? existingBasePath;
+
+  if (publicationType === "site.standard.publication") {
+    return {
+      $type: publicationType,
+      name,
+      description,
+      icon,
+      theme,
+      preferences: buildPreferences(preferencesData, publicationType),
+      url: basePath ? `https://${basePath}` : normalizedPub?.url || "",
+    } as SiteStandardPublication.Record;
+  }
+
+  return {
+    $type: publicationType,
+    name,
+    description,
+    icon,
+    theme,
+    preferences: buildPreferences(preferencesData, publicationType),
+    base_path: basePath,
+  } as PubLeafletPublication.Record;
+}
+
 export async function updatePublication({
   uri,
   name,
@@ -35,119 +201,27 @@ export async function updatePublication({
   iconFile?: File | null;
   preferences?: Omit<PubLeafletPublication.Preferences, "$type">;
 }): Promise<UpdatePublicationResult> {
-  let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) {
-    return {
-      success: false,
-      error: {
-        type: "oauth_session_expired",
-        message: "Not authenticated",
-        did: "",
-      },
-    };
-  }
-
-  const sessionResult = await restoreOAuthSession(identity.atp_did);
-  if (!sessionResult.ok) {
-    return { success: false, error: sessionResult.error };
-  }
-  let credentialSession = sessionResult.value;
-  let agent = new AtpBaseClient(
-    credentialSession.fetchHandler.bind(credentialSession),
-  );
-  let { data: existingPub } = await supabaseServerClient
-    .from("publications")
-    .select("*")
-    .eq("uri", uri)
-    .single();
-  if (!existingPub || existingPub.identity_did !== identity.atp_did) {
-    return { success: false };
-  }
-  let aturi = new AtUri(existingPub.uri);
-  // Preserve existing schema when updating
-  const publicationType = getPublicationType(aturi.collection);
-
-  // Normalize the existing record to read its properties
-  const normalizedPub = normalizePublicationRecord(existingPub.record);
-  // Extract base_path from url if it exists (url format is https://domain, base_path is just domain)
-  const existingBasePath = normalizedPub?.url
-    ? normalizedPub.url.replace(/^https?:\/\//, "")
-    : undefined;
-
-  // Upload the icon if provided
-  let iconBlob = normalizedPub?.icon;
-  if (iconFile && iconFile.size > 0) {
-    const buffer = await iconFile.arrayBuffer();
-    const uploadResult = await agent.com.atproto.repo.uploadBlob(
-      new Uint8Array(buffer),
-      { encoding: iconFile.type },
-    );
-
-    if (uploadResult.data.blob) {
-      iconBlob = uploadResult.data.blob;
+  return withPublicationUpdate(uri, async ({ normalizedPub, existingBasePath, publicationType, agent }) => {
+    // Upload icon if provided
+    let iconBlob = normalizedPub?.icon;
+    if (iconFile && iconFile.size > 0) {
+      const buffer = await iconFile.arrayBuffer();
+      const uploadResult = await agent.com.atproto.repo.uploadBlob(
+        new Uint8Array(buffer),
+        { encoding: iconFile.type },
+      );
+      if (uploadResult.data.blob) {
+        iconBlob = uploadResult.data.blob;
+      }
     }
-  }
 
-  // Build preferences based on input or existing normalized preferences
-  const preferencesData = preferences || normalizedPub?.preferences;
-
-  // Build the record with the correct field based on publication type
-  const record =
-    publicationType === "site.standard.publication"
-      ? ({
-          $type: publicationType,
-          name,
-          description: description !== undefined ? description : normalizedPub?.description,
-          icon: iconBlob,
-          theme: normalizedPub?.theme,
-          preferences: preferencesData
-            ? {
-                $type: "site.standard.publication#preferences" as const,
-                showInDiscover: preferencesData.showInDiscover,
-                showComments: preferencesData.showComments,
-                showMentions: preferencesData.showMentions,
-                showPrevNext: preferencesData.showPrevNext,
-              }
-            : undefined,
-          url: normalizedPub?.url || "",
-        } as SiteStandardPublication.Record)
-      : ({
-          $type: publicationType,
-          name,
-          description: description !== undefined ? description : normalizedPub?.description,
-          icon: iconBlob,
-          theme: normalizedPub?.theme,
-          preferences: preferencesData
-            ? {
-                $type: "pub.leaflet.publication#preferences" as const,
-                showInDiscover: preferencesData.showInDiscover,
-                showComments: preferencesData.showComments,
-                showMentions: preferencesData.showMentions,
-                showPrevNext: preferencesData.showPrevNext,
-              }
-            : undefined,
-          base_path: existingBasePath,
-        } as PubLeafletPublication.Record);
-
-  let result = await agent.com.atproto.repo.putRecord({
-    repo: credentialSession.did!,
-    rkey: aturi.rkey,
-    record,
-    collection: publicationType,
-    validate: false,
+    return buildBaseRecord(normalizedPub, existingBasePath, publicationType, {
+      name,
+      description,
+      icon: iconBlob,
+      preferences,
+    });
   });
-
-  //optimistically write to our db!
-  let { data: publication, error } = await supabaseServerClient
-    .from("publications")
-    .update({
-      name: record.name,
-      record: record as Json,
-    })
-    .eq("uri", uri)
-    .select()
-    .single();
-  return { success: true, publication };
 }
 
 export async function updatePublicationBasePath({
@@ -157,107 +231,17 @@ export async function updatePublicationBasePath({
   uri: string;
   base_path: string;
 }): Promise<UpdatePublicationResult> {
-  let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) {
-    return {
-      success: false,
-      error: {
-        type: "oauth_session_expired",
-        message: "Not authenticated",
-        did: "",
-      },
-    };
-  }
-
-  const sessionResult = await restoreOAuthSession(identity.atp_did);
-  if (!sessionResult.ok) {
-    return { success: false, error: sessionResult.error };
-  }
-  let credentialSession = sessionResult.value;
-  let agent = new AtpBaseClient(
-    credentialSession.fetchHandler.bind(credentialSession),
-  );
-  let { data: existingPub } = await supabaseServerClient
-    .from("publications")
-    .select("*")
-    .eq("uri", uri)
-    .single();
-  if (!existingPub || existingPub.identity_did !== identity.atp_did) {
-    return { success: false };
-  }
-  let aturi = new AtUri(existingPub.uri);
-  // Preserve existing schema when updating
-  const publicationType = getPublicationType(aturi.collection);
-
-  // Normalize the existing record to read its properties
-  const normalizedPub = normalizePublicationRecord(existingPub.record);
-  // Extract base_path from url if it exists (url format is https://domain, base_path is just domain)
-  const existingBasePath = normalizedPub?.url
-    ? normalizedPub.url.replace(/^https?:\/\//, "")
-    : undefined;
-
-  // Build the record with the correct field based on publication type
-  const record =
-    publicationType === "site.standard.publication"
-      ? ({
-          $type: publicationType,
-          name: normalizedPub?.name || "",
-          description: normalizedPub?.description,
-          icon: normalizedPub?.icon,
-          theme: normalizedPub?.theme,
-          preferences: normalizedPub?.preferences
-            ? {
-                $type: "site.standard.publication#preferences" as const,
-                showInDiscover: normalizedPub.preferences.showInDiscover,
-                showComments: normalizedPub.preferences.showComments,
-                showMentions: normalizedPub.preferences.showMentions,
-                showPrevNext: normalizedPub.preferences.showPrevNext,
-              }
-            : undefined,
-          url: `https://${base_path}`,
-        } as SiteStandardPublication.Record)
-      : ({
-          $type: publicationType,
-          name: normalizedPub?.name || "",
-          description: normalizedPub?.description,
-          icon: normalizedPub?.icon,
-          theme: normalizedPub?.theme,
-          preferences: normalizedPub?.preferences
-            ? {
-                $type: "pub.leaflet.publication#preferences" as const,
-                showInDiscover: normalizedPub.preferences.showInDiscover,
-                showComments: normalizedPub.preferences.showComments,
-                showMentions: normalizedPub.preferences.showMentions,
-                showPrevNext: normalizedPub.preferences.showPrevNext,
-              }
-            : undefined,
-          base_path,
-        } as PubLeafletPublication.Record);
-
-  let result = await agent.com.atproto.repo.putRecord({
-    repo: credentialSession.did!,
-    rkey: aturi.rkey,
-    record,
-    collection: publicationType,
-    validate: false,
+  return withPublicationUpdate(uri, async ({ normalizedPub, existingBasePath, publicationType }) => {
+    return buildBaseRecord(normalizedPub, existingBasePath, publicationType, {
+      basePath: base_path,
+    });
   });
-
-  //optimistically write to our db!
-  let { data: publication, error } = await supabaseServerClient
-    .from("publications")
-    .update({
-      name: record.name,
-      record: record as Json,
-    })
-    .eq("uri", uri)
-    .select()
-    .single();
-  return { success: true, publication };
 }
 
 type Color =
   | $Typed<PubLeafletThemeColor.Rgb, "pub.leaflet.theme.color#rgb">
   | $Typed<PubLeafletThemeColor.Rgba, "pub.leaflet.theme.color#rgba">;
+
 export async function updatePublicationTheme({
   uri,
   theme,
@@ -275,138 +259,47 @@ export async function updatePublicationTheme({
     accentText: Color;
   };
 }): Promise<UpdatePublicationResult> {
-  let identity = await getIdentityData();
-  if (!identity || !identity.atp_did) {
-    return {
-      success: false,
-      error: {
-        type: "oauth_session_expired",
-        message: "Not authenticated",
-        did: "",
+  return withPublicationUpdate(uri, async ({ normalizedPub, existingBasePath, publicationType, agent }) => {
+    // Build theme object
+    const themeData = {
+      backgroundImage: theme.backgroundImage
+        ? {
+            $type: "pub.leaflet.theme.backgroundImage",
+            image: (
+              await agent.com.atproto.repo.uploadBlob(
+                new Uint8Array(await theme.backgroundImage.arrayBuffer()),
+                { encoding: theme.backgroundImage.type },
+              )
+            )?.data.blob,
+            width: theme.backgroundRepeat || undefined,
+            repeat: !!theme.backgroundRepeat,
+          }
+        : theme.backgroundImage === null
+          ? undefined
+          : normalizedPub?.theme?.backgroundImage,
+      backgroundColor: theme.backgroundColor
+        ? {
+            ...theme.backgroundColor,
+          }
+        : undefined,
+      pageWidth: theme.pageWidth,
+      primary: {
+        ...theme.primary,
+      },
+      pageBackground: {
+        ...theme.pageBackground,
+      },
+      showPageBackground: theme.showPageBackground,
+      accentBackground: {
+        ...theme.accentBackground,
+      },
+      accentText: {
+        ...theme.accentText,
       },
     };
-  }
 
-  const sessionResult = await restoreOAuthSession(identity.atp_did);
-  if (!sessionResult.ok) {
-    return { success: false, error: sessionResult.error };
-  }
-  let credentialSession = sessionResult.value;
-  let agent = new AtpBaseClient(
-    credentialSession.fetchHandler.bind(credentialSession),
-  );
-  let { data: existingPub } = await supabaseServerClient
-    .from("publications")
-    .select("*")
-    .eq("uri", uri)
-    .single();
-  if (!existingPub || existingPub.identity_did !== identity.atp_did) {
-    return { success: false };
-  }
-  let aturi = new AtUri(existingPub.uri);
-  // Preserve existing schema when updating
-  const publicationType = getPublicationType(aturi.collection);
-
-  // Normalize the existing record to read its properties
-  const normalizedPub = normalizePublicationRecord(existingPub.record);
-  // Extract base_path from url if it exists (url format is https://domain, base_path is just domain)
-  const existingBasePath = normalizedPub?.url
-    ? normalizedPub.url.replace(/^https?:\/\//, "")
-    : undefined;
-
-  // Build theme object (shared between both publication types)
-  const themeData = {
-    backgroundImage: theme.backgroundImage
-      ? {
-          $type: "pub.leaflet.theme.backgroundImage",
-          image: (
-            await agent.com.atproto.repo.uploadBlob(
-              new Uint8Array(await theme.backgroundImage.arrayBuffer()),
-              { encoding: theme.backgroundImage.type },
-            )
-          )?.data.blob,
-          width: theme.backgroundRepeat || undefined,
-          repeat: !!theme.backgroundRepeat,
-        }
-      : theme.backgroundImage === null
-        ? undefined
-        : normalizedPub?.theme?.backgroundImage,
-    backgroundColor: theme.backgroundColor
-      ? {
-          ...theme.backgroundColor,
-        }
-      : undefined,
-    pageWidth: theme.pageWidth,
-    primary: {
-      ...theme.primary,
-    },
-    pageBackground: {
-      ...theme.pageBackground,
-    },
-    showPageBackground: theme.showPageBackground,
-    accentBackground: {
-      ...theme.accentBackground,
-    },
-    accentText: {
-      ...theme.accentText,
-    },
-  };
-
-  // Build the record with the correct field based on publication type
-  const record =
-    publicationType === "site.standard.publication"
-      ? ({
-          $type: publicationType,
-          name: normalizedPub?.name || "",
-          description: normalizedPub?.description,
-          icon: normalizedPub?.icon,
-          url: normalizedPub?.url || "",
-          preferences: normalizedPub?.preferences
-            ? {
-                $type: "site.standard.publication#preferences" as const,
-                showInDiscover: normalizedPub.preferences.showInDiscover,
-                showComments: normalizedPub.preferences.showComments,
-                showMentions: normalizedPub.preferences.showMentions,
-                showPrevNext: normalizedPub.preferences.showPrevNext,
-              }
-            : undefined,
-          theme: themeData,
-        } as SiteStandardPublication.Record)
-      : ({
-          $type: publicationType,
-          name: normalizedPub?.name || "",
-          description: normalizedPub?.description,
-          icon: normalizedPub?.icon,
-          base_path: existingBasePath,
-          preferences: normalizedPub?.preferences
-            ? {
-                $type: "pub.leaflet.publication#preferences" as const,
-                showInDiscover: normalizedPub.preferences.showInDiscover,
-                showComments: normalizedPub.preferences.showComments,
-                showMentions: normalizedPub.preferences.showMentions,
-                showPrevNext: normalizedPub.preferences.showPrevNext,
-              }
-            : undefined,
-          theme: themeData,
-        } as PubLeafletPublication.Record);
-
-  let result = await agent.com.atproto.repo.putRecord({
-    repo: credentialSession.did!,
-    rkey: aturi.rkey,
-    record,
-    collection: publicationType,
-    validate: false,
+    return buildBaseRecord(normalizedPub, existingBasePath, publicationType, {
+      theme: themeData,
+    });
   });
-
-  //optimistically write to our db!
-  let { data: publication, error } = await supabaseServerClient
-    .from("publications")
-    .update({
-      name: record.name,
-      record: record as Json,
-    })
-    .eq("uri", uri)
-    .select()
-    .single();
-  return { success: true, publication };
 }
