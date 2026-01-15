@@ -7,6 +7,34 @@ import { ImageAltSmall, ImageRemoveAltSmall } from "components/Icons/ImageAlt";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useSubscribe } from "src/replicache/useSubscribe";
 import { ImageCoverImage } from "components/Icons/ImageCoverImage";
+import { Separator } from "components/Layout";
+import { TextAlignmentButton } from "./TextAlignmentToolbar";
+
+export const ImageToolbar = (props: {
+  setToolbarState: (state: "image" | "text-alignment") => void;
+}) => {
+  let focusedEntity = useUIState((s) => s.focusedEntity);
+  let focusedEntityType = useEntity(
+    focusedEntity?.entityType === "page"
+      ? focusedEntity.entityID
+      : focusedEntity?.parent || null,
+    "page/type",
+  );
+
+  return (
+    <div className="flex items-center gap-2 justify-between w-full">
+      <div className="flex items-center gap-2">
+        <TextAlignmentButton setToolbarState={props.setToolbarState} />
+        <ImageAltTextButton />
+        <ImageFullBleedButton />
+        <ImageCoverButton />
+        {focusedEntityType?.data.value !== "canvas" && (
+          <Separator classname="h-6!" />
+        )}
+      </div>
+    </div>
+  );
+};
 
 export const ImageFullBleedButton = (props: {}) => {
   let { rep } = useReplicache();
@@ -46,7 +74,6 @@ export const ImageAltTextButton = (props: {}) => {
   let altEditorOpen = useUIState((s) => s.openPopover === focusedBlock);
   let hasSrc = useEntity(focusedBlock, "block/image")?.data;
   if (!hasSrc) return null;
-  console.log("alt: " + altText);
   return (
     <ToolbarButton
       active={altText !== undefined}

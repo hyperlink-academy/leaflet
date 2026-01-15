@@ -11,10 +11,8 @@ import { addShortcut } from "src/shortcuts";
 import { ListToolbar } from "./ListToolbar";
 import { HighlightToolbar } from "./HighlightToolbar";
 import { TextToolbar } from "./TextToolbar";
-import { ImageToolbar } from "./BlockToolbar";
+import { ImageToolbar } from "./ImageToolbar";
 import { MultiselectToolbar } from "./MultiSelectToolbar";
-import { AreYouSure } from "components/Blocks/DeleteBlock";
-import { deleteBlock } from "src/utils/deleteBlock";
 import { TooltipButton } from "components/Buttons";
 import { TextAlignmentToolbar } from "./TextAlignmentToolbar";
 import { useIsMobile } from "src/hooks/isMobile";
@@ -32,16 +30,14 @@ export type ToolbarTypes =
   | "img-alt-text"
   | "image";
 
-export const Toolbar = (props: { pageID: string; blockID: string }) => {
-  let { rep } = useReplicache();
-
+export const Toolbar = (props: {
+  pageID: string;
+  blockID: string;
+  blockType: string | null | undefined;
+}) => {
   let [toolbarState, setToolbarState] = useState<ToolbarTypes>("default");
 
-  let focusedEntity = useUIState((s) => s.focusedEntity);
-  let selectedBlocks = useUIState((s) => s.selectedBlocks);
   let activeEditor = useEditorStates((s) => s.editorStates[props.blockID]);
-
-  let blockType = useEntity(props.blockID, "block/type")?.data.value;
 
   let lastUsedHighlight = useUIState((s) => s.lastUsedHighlight);
   let setLastUsedHighlight = (color: "1" | "2" | "3") =>
@@ -64,34 +60,23 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
   }, [toolbarState]);
 
   let isTextBlock =
-    blockType === "heading" ||
-    blockType === "text" ||
-    blockType === "blockquote";
+    props.blockType === "heading" ||
+    props.blockType === "text" ||
+    props.blockType === "blockquote";
 
   useEffect(() => {
     if (isTextBlock) {
       setToolbarState("default");
     }
-    if (blockType === "image") {
+    if (props.blockType === "image") {
       setToolbarState("image");
     }
-    if (blockType === "button" || blockType === "datetime") {
+    if (props.blockType === "button" || props.blockType === "datetime") {
       setToolbarState("text-alignment");
-    } else return;
-  }, [blockType]);
+    } else null;
+  }, [props.blockType]);
 
-  useEffect(() => {
-    if (
-      selectedBlocks.length > 1 &&
-      !["areYousure", "text-alignment"].includes(toolbarState)
-    ) {
-      setToolbarState("multiselect");
-    } else if (toolbarState === "multiselect") {
-      setToolbarState("default");
-    }
-  }, [selectedBlocks.length, toolbarState]);
   let isMobile = useIsMobile();
-
   return (
     <Tooltip.Provider>
       <div
@@ -154,7 +139,7 @@ export const Toolbar = (props: { pageID: string; blockID: string }) => {
                 selectedBlocks: [],
               }));
             } else {
-              if (blockType === "image") {
+              if (props.blockType === "image") {
                 setToolbarState("image");
               }
               if (isTextBlock) {
