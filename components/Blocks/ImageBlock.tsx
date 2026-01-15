@@ -28,7 +28,6 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.value),
   );
-  let isLocked = useEntity(props.value, "block/is-locked")?.data.value;
   let isFullBleed = useEntity(props.value, "image/full-bleed")?.data.value;
   let isFirst = props.previousBlock === null;
   let isLast = props.nextBlock === null;
@@ -84,7 +83,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
     return (
       <BlockLayout
         hasBackground="accent"
-        isSelected={!!isSelected && !isLocked}
+        isSelected={!!isSelected}
         borderOnHover
         className=" group/image-block text-tertiary hover:text-accent-contrast hover:font-bold h-[104px]  border-dashed rounded-lg"
       >
@@ -101,7 +100,6 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
           onDrop={async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (isLocked) return;
             const files = e.dataTransfer.files;
             if (files && files.length > 0) {
               const file = files[0];
@@ -118,7 +116,6 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
             Upload An Image
           </div>
           <input
-            disabled={isLocked}
             className="h-0 w-0 hidden"
             type="file"
             accept="image/*"

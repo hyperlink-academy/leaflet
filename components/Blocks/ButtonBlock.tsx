@@ -56,7 +56,6 @@ const ButtonBlockSettings = (props: BlockProps) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
-  let isLocked = useEntity(props.entityID, "block/is-locked")?.data.value;
 
   let [textValue, setTextValue] = useState("");
   let [urlValue, setUrlValue] = useState("");
@@ -191,7 +190,6 @@ const ButtonBlockSettings = (props: BlockProps) => {
                 className="w-full grow border-none outline-hidden bg-transparent"
                 placeholder="button text"
                 value={textValue}
-                disabled={isLocked}
                 onChange={(e) => setTextValue(e.target.value)}
                 onKeyDown={(e) => {
                   if (
@@ -214,7 +212,6 @@ const ButtonBlockSettings = (props: BlockProps) => {
                 className="w-full grow border-none outline-hidden bg-transparent"
                 placeholder="www.example.com"
                 value={urlValue}
-                disabled={isLocked}
                 onChange={(e) => setUrlValue(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Backspace" && !e.currentTarget.value)
@@ -225,7 +222,7 @@ const ButtonBlockSettings = (props: BlockProps) => {
             <button
               id="button-block-settings"
               type="submit"
-              className={`p-1 shrink-0 w-fit flex gap-2 items-center place-self-end ${isSelected && !isLocked ? "text-accent-contrast" : "text-accent-contrast sm:text-border"}`}
+              className={`p-1 shrink-0 w-fit flex gap-2 items-center place-self-end ${isSelected ? "text-accent-contrast" : "text-accent-contrast sm:text-border"}`}
             >
               <div className="sm:hidden block">Save</div>
               <CheckTiny />

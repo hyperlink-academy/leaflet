@@ -334,7 +334,6 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
-  let isLocked = useEntity(props.value, "block/is-locked");
 
   let nextBlockSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.nextBlock?.value),
@@ -343,10 +342,7 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
     s.selectedBlocks.find((b) => b.value === props.previousBlock?.value),
   );
 
-  if (isMultiselected || (isLocked?.data.value && isSelected))
-    // not sure what multiselected and selected classes are doing (?)
-    // use a hashed pattern for locked things. show this pattern if the block is selected, even if it isn't multiselected
-
+  if (isMultiselected)
     return (
       <>
         <div
@@ -359,32 +355,7 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
           ${!prevBlockSelected && "rounded-t-md"}
           ${!nextBlockSelected && "rounded-b-md"}
           `}
-          style={
-            isLocked?.data.value
-              ? {
-                  maskImage: "var(--hatchSVG)",
-                  maskRepeat: "repeat repeat",
-                }
-              : {}
-          }
-        ></div>
-        {isLocked?.data.value && (
-          <div
-            className={`
-            blockSelectionLockIndicator z-10
-            flex items-center
-            text-border rounded-full
-            absolute right-3
-
-            ${
-              props.type === "heading" || props.type === "text"
-                ? "top-[6px]"
-                : "top-0"
-            }`}
-          >
-            <LockTiny className="bg-bg-page p-0.5 rounded-full w-5 h-5" />
-          </div>
-        )}
+        />
       </>
     );
 };

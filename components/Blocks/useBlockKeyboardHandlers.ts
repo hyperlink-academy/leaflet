@@ -23,7 +23,6 @@ export function useBlockKeyboardHandlers(
 ) {
   let { rep, undoManager } = useReplicache();
   let entity_set = useEntitySetContext();
-  let isLocked = !!useEntity(props.entityID, "block/is-locked")?.data.value;
 
   let isSelected = useUIState((s) => {
     let selectedBlocks = s.selectedBlocks;
@@ -70,18 +69,16 @@ export function useBlockKeyboardHandlers(
         entity_set,
         areYouSure,
         setAreYouSure,
-        isLocked,
       });
       undoManager.endGroup();
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, [entity_set, isSelected, props, rep, areYouSure, setAreYouSure, isLocked]);
+  }, [entity_set, isSelected, props, rep, areYouSure, setAreYouSure]);
 }
 
 type Args = {
   e: KeyboardEvent;
-  isLocked: boolean;
   props: BlockProps;
   rep: Replicache<ReplicacheMutators>;
   entity_set: { set: string };
@@ -133,16 +130,8 @@ function ArrowUp({ e, props }: Args) {
 }
 
 let debounced: null | number = null;
-async function Backspace({
-  e,
-  props,
-  rep,
-  areYouSure,
-  setAreYouSure,
-  isLocked,
-}: Args) {
+async function Backspace({ e, props, rep, areYouSure, setAreYouSure }: Args) {
   // if this is a textBlock, let the textBlock/keymap handle the backspace
-  if (isLocked) return;
   // if its an input, label, or teatarea with content, do nothing (do the broswer default instead)
   let el = e.target as HTMLElement;
   if (

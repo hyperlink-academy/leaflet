@@ -308,11 +308,6 @@ const removeBlock: Mutation<
   { blockEntity: string } | { blockEntity: string }[]
 > = async (args, ctx) => {
   for (let block of [args].flat()) {
-    let [isLocked] = await ctx.scanIndex.eav(
-      block.blockEntity,
-      "block/is-locked",
-    );
-    if (isLocked?.data.value) continue;
     let [image] = await ctx.scanIndex.eav(block.blockEntity, "block/image");
     await ctx.runOnServer(async ({ supabase }) => {
       if (image) {

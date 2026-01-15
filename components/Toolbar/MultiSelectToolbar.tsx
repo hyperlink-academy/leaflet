@@ -3,14 +3,12 @@ import { ReplicacheMutators, useReplicache } from "src/replicache";
 import { ToolbarButton } from "./index";
 import { copySelection } from "src/utils/copySelection";
 import { useSmoker, useToaster } from "components/Toast";
-import { getBlocksWithType } from "src/hooks/queries/useBlocks";
-import { Replicache } from "replicache";
-import { LockBlockButton } from "./LockBlockButton";
+
 import { Props } from "components/Icons/Props";
 import { TextAlignmentButton } from "./TextAlignmentToolbar";
 import { getSortedSelection } from "components/SelectionManager/selectionState";
 import { deleteBlock } from "src/utils/deleteBlock";
-import { ShortcutKey } from "components/Layout";
+import { Separator, ShortcutKey } from "components/Layout";
 
 export const MultiselectToolbar = (props: {
   setToolbarState: (state: "multiselect" | "text-alignment") => void;
@@ -69,7 +67,7 @@ export const MultiselectToolbar = (props: {
           <CopySmall />
         </ToolbarButton>
         <TextAlignmentButton setToolbarState={props.setToolbarState} />
-        <LockBlockButton />
+        <Separator classname="h-6!" />
       </div>
     </div>
   );

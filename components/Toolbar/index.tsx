@@ -38,6 +38,7 @@ export const Toolbar = (props: {
   let [toolbarState, setToolbarState] = useState<ToolbarTypes>("default");
 
   let activeEditor = useEditorStates((s) => s.editorStates[props.blockID]);
+  let selectedBlocks = useUIState((s) => s.selectedBlocks);
 
   let lastUsedHighlight = useUIState((s) => s.lastUsedHighlight);
   let setLastUsedHighlight = (color: "1" | "2" | "3") =>
@@ -65,6 +66,10 @@ export const Toolbar = (props: {
     props.blockType === "blockquote";
 
   useEffect(() => {
+    if (selectedBlocks.length > 1) {
+      setToolbarState("multiselect");
+      return;
+    }
     if (isTextBlock) {
       setToolbarState("default");
     }
@@ -74,7 +79,7 @@ export const Toolbar = (props: {
     if (props.blockType === "button" || props.blockType === "datetime") {
       setToolbarState("text-alignment");
     } else null;
-  }, [props.blockType]);
+  }, [props.blockType, selectedBlocks]);
 
   let isMobile = useIsMobile();
   return (
@@ -165,9 +170,7 @@ export const ToolbarButton = (props: {
   hiddenOnCanvas?: boolean;
 }) => {
   let focusedEntity = useUIState((s) => s.focusedEntity);
-  let isLocked = useEntity(focusedEntity?.entityID || null, "block/is-locked");
-  let isDisabled =
-    props.disabled === undefined ? !!isLocked?.data.value : props.disabled;
+  let isDisabled = props.disabled;
 
   let focusedEntityType = useEntity(
     focusedEntity?.entityType === "page"
