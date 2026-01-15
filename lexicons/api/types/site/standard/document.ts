@@ -7,6 +7,7 @@ import { validate as _validate } from '../../../lexicons'
 import { type $Typed, is$typed as _is$typed, type OmitKey } from '../../../util'
 import type * as ComAtprotoRepoStrongRef from '../../com/atproto/repo/strongRef'
 import type * as PubLeafletContent from '../../pub/leaflet/content'
+import type * as PubLeafletPublication from '../../pub/leaflet/publication'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -21,10 +22,11 @@ export interface Record {
   /** combine with the publication url or the document site to construct a full url to the document */
   path?: string
   publishedAt: string
-  /** URI to the site or publication this document belongs to (https or at-uri) */
+  /** URI to the site or publication this document belongs to. Supports both AT-URIs (at://did/collection/rkey) for publication references and HTTPS URLs (https://example.com) for standalone documents or external sites. */
   site: string
   tags?: string[]
   textContent?: string
+  theme?: PubLeafletPublication.Theme
   title: string
   updatedAt?: string
   [k: string]: unknown

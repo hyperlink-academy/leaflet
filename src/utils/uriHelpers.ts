@@ -30,5 +30,5 @@ export function publicationUriFilter(did: string, rkey: string): string {
 export function publicationNameOrUriFilter(did: string, nameOrRkey: string): string {
   const standard = AtUri.make(did, ids.SiteStandardPublication, nameOrRkey).toString();
   const legacy = AtUri.make(did, ids.PubLeafletPublication, nameOrRkey).toString();
-  return `name.eq."${nameOrRkey}",uri.eq.${standard},uri.eq.${legacy}`;
+  return `name.eq.${nameOrRkey},uri.eq.${standard},uri.eq.${legacy}`;
 }

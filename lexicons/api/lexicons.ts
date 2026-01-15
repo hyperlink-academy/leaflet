@@ -2143,7 +2143,7 @@ export const schemaDict = {
             },
             site: {
               description:
-                'URI to the site or publication this document belongs to (https or at-uri)',
+                'URI to the site or publication this document belongs to. Supports both AT-URIs (at://did/collection/rkey) for publication references and HTTPS URLs (https://example.com) for standalone documents or external sites.',
               format: 'uri',
               type: 'string',
             },
@@ -2157,6 +2157,12 @@ export const schemaDict = {
             },
             textContent: {
               type: 'string',
+            },
+            theme: {
+              description:
+                'Theme for standalone documents. For documents in publications, theme is inherited from the publication.',
+              ref: 'lex:pub.leaflet.publication#theme',
+              type: 'ref',
             },
             title: {
               maxGraphemes: 128,

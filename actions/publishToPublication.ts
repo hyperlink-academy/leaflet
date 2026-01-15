@@ -233,6 +233,8 @@ export async function publishToPublication({
       ...(description && { description }),
       ...(tags !== undefined && { tags }),
       ...(coverImageBlob && { coverImage: coverImageBlob }),
+      // Include theme for standalone documents (not for publication documents)
+      ...(!publication_uri && theme && { theme }),
       content: {
         $type: "pub.leaflet.content" as const,
         pages: pagesArray,

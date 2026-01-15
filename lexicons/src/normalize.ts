@@ -3,6 +3,14 @@
  *
  * The standard format (site.standard.*) is used as the canonical representation for
  * reading data from the database, while both formats are accepted for storage.
+ *
+ * ## Site Field Format
+ *
+ * The `site` field in site.standard.document supports two URI formats:
+ * - AT-URIs (at://did/collection/rkey) - Used when document belongs to an AT Protocol publication
+ * - HTTPS URLs (https://example.com) - Used for standalone documents or external sites
+ *
+ * Both formats are valid and should be handled by consumers.
  */
 
 import type * as PubLeafletDocument from "../api/types/pub/leaflet/document";
@@ -140,19 +148,25 @@ export function leafletThemeToBasicTheme(
 export function normalizeDocument(record: unknown): NormalizedDocument | null {
   if (!record || typeof record !== "object") return null;
 
-  // Pass through site.standard records directly
+  // Pass through site.standard records directly (theme is already in correct format if present)
   if (isStandardDocument(record)) {
-    return record as NormalizedDocument;
+    return {
+      ...record,
+      theme: record.theme,
+    } as NormalizedDocument;
   }
 
   if (isLeafletDocument(record)) {
     // Convert from pub.leaflet to site.standard
-    const site = record.publication;
     const publishedAt = record.publishedAt;
 
-    if (!site || !publishedAt) {
+    if (!publishedAt) {
       return null;
     }
+
+    // For standalone documents (no publication), construct a site URL from the author
+    // This matches the pattern used in publishToPublication.ts for new standalone docs
+    const site = record.publication || `https://leaflet.pub/p/${record.author}`;
 
     // Wrap pages in pub.leaflet.content structure
     const content: $Typed<PubLeafletContent.Main> | undefined = record.pages

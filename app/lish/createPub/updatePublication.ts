@@ -118,25 +118,30 @@ async function withPublicationUpdate(
 }
 
 /**
- * Helper to build preferences object with correct $type based on publication type
+ * Helper to build preferences object with correct $type based on publication type.
+ * site.standard.publication preferences is a simple object type, no $type needed.
+ * pub.leaflet.publication preferences requires $type.
  */
 function buildPreferences(
   preferencesData: NormalizedPublication["preferences"] | undefined,
   publicationType: PublicationType,
-) {
+): SiteStandardPublication.Preferences | PubLeafletPublication.Preferences | undefined {
   if (!preferencesData) return undefined;
 
-  const $type =
-    publicationType === "site.standard.publication"
-      ? ("site.standard.publication#preferences" as const)
-      : ("pub.leaflet.publication#preferences" as const);
-
-  return {
-    $type,
+  const basePreferences = {
     showInDiscover: preferencesData.showInDiscover,
     showComments: preferencesData.showComments,
     showMentions: preferencesData.showMentions,
     showPrevNext: preferencesData.showPrevNext,
+  };
+
+  if (publicationType === "site.standard.publication") {
+    return basePreferences;
+  }
+
+  return {
+    $type: "pub.leaflet.publication#preferences" as const,
+    ...basePreferences,
   };
 }
 
@@ -152,6 +157,7 @@ function buildBaseRecord(
     description?: string;
     icon?: any;
     theme?: any;
+    basicTheme?: NormalizedPublication["basicTheme"];
     preferences?: NormalizedPublication["preferences"];
     basePath?: string;
   },
@@ -162,6 +168,7 @@ function buildBaseRecord(
     : normalizedPub?.description;
   const icon = overrides.icon !== undefined ? overrides.icon : normalizedPub?.icon;
   const theme = overrides.theme !== undefined ? overrides.theme : normalizedPub?.theme;
+  const basicTheme = overrides.basicTheme !== undefined ? overrides.basicTheme : normalizedPub?.basicTheme;
   const preferencesData = overrides.preferences ?? normalizedPub?.preferences;
   const basePath = overrides.basePath ?? existingBasePath;
 
@@ -172,6 +179,7 @@ function buildBaseRecord(
       description,
       icon,
       theme,
+      basicTheme,
       preferences: buildPreferences(preferencesData, publicationType),
       url: basePath ? `https://${basePath}` : normalizedPub?.url || "",
     } as SiteStandardPublication.Record;

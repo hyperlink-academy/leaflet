@@ -6,7 +6,7 @@ import {
   type NormalizedDocument,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
-import { PubLeafletPublication } from "lexicons/api";
+import { PubLeafletPublication, SiteStandardPublication } from "lexicons/api";
 import { documentUriFilter } from "src/utils/uriHelpers";
 
 export async function getPostPageData(did: string, rkey: string) {
@@ -126,7 +126,7 @@ export async function getPostPageData(did: string, rkey: string) {
     uri: rawPub.uri,
     name: rawPub.name,
     identity_did: rawPub.identity_did,
-    record: rawPub.record as PubLeafletPublication.Record | null,
+    record: rawPub.record as PubLeafletPublication.Record | SiteStandardPublication.Record | null,
     publication_subscriptions: rawPub.publication_subscriptions || [],
   } : null;
 
