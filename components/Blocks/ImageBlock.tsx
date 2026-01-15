@@ -147,7 +147,7 @@ export function ImageBlock(props: BlockProps & { preview?: boolean }) {
       hasAlignment
       isSelected={!!isSelected}
       className={blockClassName}
-      optionsClassName="top-[-8px]!"
+      optionsClassName={isFullBleed ? "top-[-8px]!" : ""}
     >
       {isLocalUpload || image.data.local ? (
         <img

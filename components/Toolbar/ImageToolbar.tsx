@@ -36,9 +36,7 @@ export const ImageFullBleedButton = (props: {}) => {
   );
 };
 
-export const ImageAltTextButton = (props: {
-  setToolbarState: (s: "img-alt-text") => void;
-}) => {
+export const ImageAltTextButton = (props: {}) => {
   let { rep } = useReplicache();
   let focusedBlock = useUIState((s) => s.focusedEntity)?.entityID || null;
 
@@ -48,14 +46,14 @@ export const ImageAltTextButton = (props: {
   let altEditorOpen = useUIState((s) => s.openPopover === focusedBlock);
   let hasSrc = useEntity(focusedBlock, "block/image")?.data;
   if (!hasSrc) return null;
-
+  console.log("alt: " + altText);
   return (
     <ToolbarButton
       active={altText !== undefined}
       onClick={async (e) => {
         e.preventDefault();
         if (!focusedBlock) return;
-        if (!altText) {
+        if (altText === undefined) {
           await rep?.mutate.assertFact({
             entity: focusedBlock,
             attribute: "image/alt",
