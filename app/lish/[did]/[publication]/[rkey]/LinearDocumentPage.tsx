@@ -25,6 +25,7 @@ import { decodeQuotePosition } from "./quotePosition";
 import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
 import { PostPrevNextButtons } from "./PostPrevNextButtons";
+import { PostSubscribe } from "./PostSubscribe";
 
 export function LinearDocumentPage({
   blocks,
@@ -56,8 +57,6 @@ export function LinearDocumentPage({
 
   const isSubpage = !!pageId;
 
-  console.log("prev/next?: " + preferences.showPrevNext);
-
   return (
     <>
       <PageWrapper
@@ -85,13 +84,14 @@ export function LinearDocumentPage({
           did={did}
           prerenderedCodeBlocks={prerenderedCodeBlocks}
         />
+        <PostSubscribe />
         <PostPrevNextButtons
-          showPrevNext={preferences.showPrevNext && !isSubpage}
+          showPrevNext={preferences.showPrevNext !== false && !isSubpage}
         />
         <ExpandedInteractions
           pageId={pageId}
-          showComments={preferences.showComments}
-          showMentions={preferences.showMentions}
+          showComments={preferences.showComments !== false}
+          showMentions={preferences.showMentions !== false}
           commentsCount={getCommentCount(document, pageId) || 0}
           quotesCount={getQuoteCount(document, pageId) || 0}
         />

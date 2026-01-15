@@ -10,9 +10,7 @@ import { useContext } from "react";
 import { SpeedyLink } from "components/SpeedyLink";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 
-export const PostPrevNextButtons = (props: {
-  showPrevNext: boolean | undefined;
-}) => {
+export const PostPrevNextButtons = (props: { showPrevNext: boolean }) => {
   let postData = useContext(PostPageContext);
   let pub = postData?.documents_in_publications[0]?.publications;
 

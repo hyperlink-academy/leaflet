@@ -57,7 +57,7 @@ export const CreatePubForm = () => {
             showInDiscover,
             showComments: true,
             showMentions: true,
-            showPrevNext: false,
+            showPrevNext: true,
           },
         });
 
