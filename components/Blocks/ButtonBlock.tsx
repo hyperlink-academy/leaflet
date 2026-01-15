@@ -29,14 +29,19 @@ export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
     if (!permissions.write) return null;
     return <ButtonBlockSettings {...props} />;
   }
+  let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   return (
     <a
       href={url?.data.value}
       target="_blank"
-      className={`hover:outline-accent-contrast rounded-md!  ${isSelected ? "block-border-selected border-0!" : "block-border border-transparent! border-0!"}`}
+      className={`relative hover:outline-accent-contrast rounded-md! ${alignment === "justify" && "w-full"} ${isSelected ? "block-border-selected border-0!" : "block-border border-transparent! border-0!"}`}
     >
-      <ButtonPrimary role="link" type="submit">
+      <ButtonPrimary
+        role="link"
+        type="submit"
+        fullWidth={alignment === "justify"}
+      >
         {text?.data.value}
       </ButtonPrimary>
     </a>
@@ -57,6 +62,7 @@ const ButtonBlockSettings = (props: BlockProps) => {
   let [urlValue, setUrlValue] = useState("");
   let text = textValue;
   let url = urlValue;
+  let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   let submit = async () => {
     let entity = props.entityID;
@@ -106,8 +112,22 @@ const ButtonBlockSettings = (props: BlockProps) => {
   };
 
   return (
-    <div className="buttonBlockSettingsWrapper flex flex-col gap-2 w-full ">
-      <ButtonPrimary className="mx-auto">
+    <div
+      className={`buttonBlockSettingsWrapper flex flex-col gap-2 w-full
+     `}
+    >
+      <ButtonPrimary
+        className={`relative  ${
+          alignment === "center"
+            ? "place-self-center"
+            : alignment === "left"
+              ? "place-self-start"
+              : alignment === "right"
+                ? "place-self-end"
+                : "place-self-center"
+        }`}
+        fullWidth={alignment === "justify"}
+      >
         {text !== "" ? text : "Button"}
       </ButtonPrimary>
       <BlockLayout
