@@ -1,5 +1,5 @@
 import { useSelectingMouse } from "components/SelectionManager/selectionState";
-import { MouseEvent, useCallback, useRef } from "react";
+import { MouseEvent, useCallback } from "react";
 import { useUIState } from "src/useUIState";
 import { Block } from "./Block";
 import { isTextBlock } from "src/utils/isTextBlock";
@@ -12,6 +12,24 @@ import { scrollIntoViewIfNeeded } from "src/utils/scrollIntoViewIfNeeded";
 import { elementId } from "src/utils/elementId";
 
 let debounce: number | null = null;
+
+// Track scrolling state for mobile
+let isScrolling = false;
+let scrollTimeout: number | null = null;
+
+if (typeof window !== "undefined") {
+  window.addEventListener(
+    "scroll",
+    () => {
+      isScrolling = true;
+      if (scrollTimeout) window.clearTimeout(scrollTimeout);
+      scrollTimeout = window.setTimeout(() => {
+        isScrolling = false;
+      }, 150);
+    },
+    true,
+  );
+}
 export function useBlockMouseHandlers(props: Block) {
   let entity_set = useEntitySetContext();
   let isMobile = useIsMobile();
@@ -22,7 +40,7 @@ export function useBlockMouseHandlers(props: Block) {
       if ((e.target as Element).tagName === "BUTTON") return;
       if ((e.target as Element).tagName === "SELECT") return;
       if ((e.target as Element).tagName === "OPTION") return;
-      if (isMobile) return;
+      if (isMobile && isScrolling) return;
       if (!entity_set.permissions.write) return;
       useSelectingMouse.setState({ start: props.value });
       if (e.shiftKey) {
@@ -57,7 +75,7 @@ export function useBlockMouseHandlers(props: Block) {
   );
   let onMouseEnter = useCallback(
     async (e: MouseEvent) => {
-      if (isMobile) return;
+      if (isMobile && isScrolling) return;
       if (!entity_set.permissions.write) return;
       if (debounce) window.clearTimeout(debounce);
       debounce = window.setTimeout(async () => {

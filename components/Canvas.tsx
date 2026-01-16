@@ -290,7 +290,7 @@ function CanvasBlock(props: {
     },
     [props, rep, permissions],
   );
-  let { dragDelta, handlers } = useDrag({
+  let { dragDelta, handlers: dragHandlers } = useDrag({
     onDragEnd,
     delay: isMobile,
   });
@@ -339,18 +339,20 @@ function CanvasBlock(props: {
   );
   let rotateHandle = useDrag({ onDragEnd: RotateOnDragEnd });
 
-  let { isLongPress, handlers: longPressHandlers } = useLongPress(() => {
-    if (isLongPress.current && permissions.write) {
-      focusBlock(
-        {
-          type: type?.data.value || "text",
-          value: props.entityID,
-          parent: props.parent,
-        },
-        { type: "start" },
-      );
-    }
-  });
+  let { isLongPress, longPressHandlers: longPressHandlers } = useLongPress(
+    () => {
+      if (isLongPress.current && permissions.write) {
+        focusBlock(
+          {
+            type: type?.data.value || "text",
+            value: props.entityID,
+            parent: props.parent,
+          },
+          { type: "start" },
+        );
+      }
+    },
+  );
   let angle = 0;
   if (rotateHandle.dragDelta) {
     let originX = rect.x + rect.width / 2;
@@ -395,8 +397,7 @@ function CanvasBlock(props: {
   return (
     <div
       ref={ref}
-      {...(!props.preview ? { ...longPressHandlers } : {})}
-      {...(isMobile && permissions.write ? { ...handlers } : {})}
+      {...(isMobile && permissions.write ? { ...dragHandlers } : {})}
       id={props.preview ? undefined : elementId.block(props.entityID).container}
       className={`absolute group/canvas-block will-change-transform rounded-lg flex items-stretch origin-center p-3        `}
       style={{
@@ -408,7 +409,7 @@ function CanvasBlock(props: {
       }}
     >
       {/* the gripper show on hover, but longpress logic needs to be added for mobile*/}
-      {!props.preview && permissions.write && <Gripper {...handlers} />}
+      {!props.preview && permissions.write && <Gripper {...dragHandlers} />}
       <div
         className={`contents ${dragDelta || widthHandle.dragDelta || rotateHandle.dragDelta ? "pointer-events-none" : ""} `}
       >

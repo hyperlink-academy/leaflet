@@ -77,16 +77,6 @@ export const Block = memo(function Block(
   });
   let entity_set = useEntitySetContext();
 
-  let { isLongPress, handlers } = useLongPress(() => {
-    if (isTextBlock[props.type]) return;
-    if (isLongPress.current) {
-      focusBlock(
-        { type: props.type, value: props.entityID, parent: props.parent },
-        { type: "start" },
-      );
-    }
-  });
-
   let selected = useUIState(
     (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
   );
@@ -117,7 +107,7 @@ export const Block = memo(function Block(
 
   return (
     <div
-      {...(!props.preview ? { ...mouseHandlers, ...handlers } : {})}
+      {...(!props.preview ? { ...mouseHandlers } : {})}
       id={
         !props.preview ? elementId.block(props.entityID).container : undefined
       }
