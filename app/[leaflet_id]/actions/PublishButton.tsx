@@ -141,7 +141,7 @@ const UpdateButton = () => {
 
         toaster({
           content: (
-            <div>
+            <div className="font-bold">
               {pub.doc ? "Updated! " : "Published! "}
               <SpeedyLink className="underline" href={docUrl}>
                 See Published Post
