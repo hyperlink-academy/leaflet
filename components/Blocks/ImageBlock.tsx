@@ -19,7 +19,16 @@ import { set } from "colorjs.io/fn";
 import { ImageAltSmall } from "components/Icons/ImageAlt";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useSubscribe } from "src/replicache/useSubscribe";
-import { ImageCoverImage } from "components/Icons/ImageCoverImage";
+import {
+  ImageCoverImage,
+  ImageCoverImageRemove,
+} from "components/Icons/ImageCoverImage";
+import {
+  ButtonPrimary,
+  ButtonSecondary,
+  ButtonTertiary,
+} from "components/Buttons";
+import { CheckTiny } from "components/Icons/CheckTiny";
 
 export function ImageBlock(props: BlockProps & { preview?: boolean }) {
   let { rep } = useReplicache();
@@ -198,32 +207,38 @@ const CoverImageButton = (props: { entityID: string }) => {
   );
 
   // Only show if focused, in a publication, has write permissions, and no cover image is set
-  if (
-    !isFocused ||
-    !pubData?.publications ||
-    !entity_set.permissions.write ||
-    coverImage
-  )
+  if (!isFocused || !pubData?.publications || !entity_set.permissions.write)
     return null;
-
-  return (
-    <div className="absolute top-2 left-2">
-      <button
-        className="flex items-center gap-1 text-xs bg-bg-page/80 hover:bg-bg-page text-secondary hover:text-primary px-2 py-1 rounded-md border border-border hover:border-primary transition-colors"
+  if (coverImage)
+    return (
+      <ButtonSecondary
+        className="absolute top-2 right-2"
         onClick={async (e) => {
           e.preventDefault();
           e.stopPropagation();
           await rep?.mutate.updatePublicationDraft({
-            cover_image: props.entityID,
+            cover_image: null,
           });
         }}
       >
-        <span className="w-4 h-4 flex items-center justify-center">
-          <ImageCoverImage />
-        </span>
-        Set as Cover
-      </button>
-    </div>
+        Remove Cover Image
+        <ImageCoverImageRemove />
+      </ButtonSecondary>
+    );
+  return (
+    <ButtonPrimary
+      className="absolute top-2 right-2"
+      onClick={async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        await rep?.mutate.updatePublicationDraft({
+          cover_image: props.entityID,
+        });
+      }}
+    >
+      Use as Cover Image
+      <ImageCoverImage />
+    </ButtonPrimary>
   );
 };
 

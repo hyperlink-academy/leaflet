@@ -6,7 +6,10 @@ import { Props } from "components/Icons/Props";
 import { ImageAltSmall, ImageRemoveAltSmall } from "components/Icons/ImageAlt";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useSubscribe } from "src/replicache/useSubscribe";
-import { ImageCoverImage } from "components/Icons/ImageCoverImage";
+import {
+  ImageCoverImage,
+  ImageCoverImageRemove,
+} from "components/Icons/ImageCoverImage";
 import { Separator } from "components/Layout";
 import { TextAlignmentButton } from "./TextAlignmentToolbar";
 
@@ -134,10 +137,10 @@ export const ImageCoverButton = () => {
         }
       }}
       tooltipContent={
-        <div>{isCoverImage ? "Remove Cover Image" : "Set as Cover Image"}</div>
+        <div>{isCoverImage ? "Remove Cover Image" : "Use as Cover Image"}</div>
       }
     >
-      <ImageCoverImage />
+      {isCoverImage ? <ImageCoverImageRemove /> : <ImageCoverImage />}
     </ToolbarButton>
   );
 };
