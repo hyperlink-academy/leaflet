@@ -171,43 +171,9 @@ export const useLocalPubTheme = (
       ...localOverrides,
       showPageBackground,
     };
-    let newAccentContrast;
-    let sortedAccents = [newTheme.accent1, newTheme.accent2].sort((a, b) => {
-      return (
-        getColorDifference(
-          colorToString(b, "rgb"),
-          colorToString(
-            showPageBackground ? newTheme.bgPage : newTheme.bgLeaflet,
-            "rgb",
-          ),
-        ) -
-        getColorDifference(
-          colorToString(a, "rgb"),
-          colorToString(
-            showPageBackground ? newTheme.bgPage : newTheme.bgLeaflet,
-            "rgb",
-          ),
-        )
-      );
-    });
-    if (
-      getColorDifference(
-        colorToString(sortedAccents[0], "rgb"),
-        colorToString(newTheme.primary, "rgb"),
-      ) < 0.15 &&
-      getColorDifference(
-        colorToString(sortedAccents[1], "rgb"),
-        colorToString(
-          showPageBackground ? newTheme.bgPage : newTheme.bgLeaflet,
-          "rgb",
-        ),
-      ) > 0.08
-    ) {
-      newAccentContrast = sortedAccents[1];
-    } else newAccentContrast = sortedAccents[0];
+
     return {
       ...newTheme,
-      accentContrast: newAccentContrast,
     };
   }, [pubTheme, localOverrides, showPageBackground]);
   return {
