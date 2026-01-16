@@ -38,7 +38,7 @@ export const InteractionPreview = (props: {
         </>
       )}
 
-      {props.showMentions || props.quotesCount === 0 ? null : (
+      {!props.showMentions || props.quotesCount === 0 ? null : (
         <SpeedyLink
           aria-label="Post quotes"
           href={`${props.postUrl}?interactionDrawer=quotes`}
@@ -47,7 +47,7 @@ export const InteractionPreview = (props: {
           <QuoteTiny /> {props.quotesCount}
         </SpeedyLink>
       )}
-      {props.showComments === false || props.commentsCount === 0 ? null : (
+      {!props.showComments || props.commentsCount === 0 ? null : (
         <SpeedyLink
           aria-label="Post comments"
           href={`${props.postUrl}?interactionDrawer=comments`}
