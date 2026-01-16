@@ -351,7 +351,7 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
 };
 
 export const BlockLayout = (props: {
-  isSelected?: boolean;
+  isSelected: boolean;
   children: React.ReactNode;
   className?: string;
   optionsClassName?: string;
@@ -368,7 +368,7 @@ export const BlockLayout = (props: {
     >
       <div
         className={`nonTextBlock ${props.className} p-2 sm:p-3 overflow-hidden
-          ${props.hasAlignment ? "w-fit" : "w-full"}
+        ${props.hasAlignment ? "w-fit" : "w-full"}
          ${props.isSelected ? "block-border-selected " : "block-border"}
          ${props.borderOnHover && "hover:border-accent-contrast! hover:outline-accent-contrast! focus-within:border-accent-contrast! focus-within:outline-accent-contrast!"}`}
         style={{

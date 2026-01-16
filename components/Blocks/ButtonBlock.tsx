@@ -32,19 +32,26 @@ export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
   let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   return (
-    <a
-      href={url?.data.value}
-      target="_blank"
-      className={`relative hover:outline-accent-contrast rounded-md! ${alignment === "justify" && "w-full"} ${isSelected ? "block-border-selected border-0!" : "block-border border-transparent! border-0!"}`}
+    <BlockLayout
+      isSelected={!!isSelected}
+      borderOnHover
+      hasAlignment={alignment !== "justify"}
+      className={`p-0! rounded-md! border-none!`}
     >
-      <ButtonPrimary
-        role="link"
-        type="submit"
-        fullWidth={alignment === "justify"}
+      <a
+        href={url?.data.value}
+        target="_blank"
+        className={` ${alignment === "justify" ? "w-full" : "w-fit"}`}
       >
-        {text?.data.value}
-      </ButtonPrimary>
-    </a>
+        <ButtonPrimary
+          role="link"
+          type="submit"
+          fullWidth={alignment === "justify"}
+        >
+          {text?.data.value}
+        </ButtonPrimary>
+      </a>
+    </BlockLayout>
   );
 };
 
