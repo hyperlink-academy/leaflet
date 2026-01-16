@@ -13,7 +13,7 @@ import { Separator, ShortcutKey } from "components/Layout";
 export const MultiselectToolbar = (props: {
   setToolbarState: (state: "multiselect" | "text-alignment") => void;
 }) => {
-  const { rep } = useReplicache();
+  const { rep, undoManager } = useReplicache();
   const smoker = useSmoker();
   const toaster = useToaster();
 
@@ -39,6 +39,7 @@ export const MultiselectToolbar = (props: {
             await deleteBlock(
               sortedSelection.map((b) => b.value),
               rep,
+              undoManager,
             );
 
             toaster({
