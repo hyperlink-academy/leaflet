@@ -44,6 +44,7 @@ export const DatePicker = ({
       }}
       mode="single"
       selected={selected}
+      defaultMonth={selected}
       onSelect={onSelect}
       disabled={disabled}
     />

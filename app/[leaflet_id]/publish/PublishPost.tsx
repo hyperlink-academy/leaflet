@@ -251,8 +251,8 @@ const BackdateOptions = (props: {
   );
 
   const [timeValue, setTimeValue] = useState<string>(() => {
-    if (!props.publishedAt) return "12:00";
-    return `${props.publishedAt.getHours().toString().padStart(2, "0")}:${props.publishedAt.getMinutes().toString().padStart(2, "0")}`;
+    const date = props.publishedAt || new Date();
+    return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
   });
 
   let currentTime = `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`;
