@@ -29,44 +29,62 @@ Read ours here: [Leaflet Lab Notes](https://lab.leaflet.pub/).
 
 #### Prerequisites
 
-- [NodeJS](https://nodejs.org/en)
-- [Supabase](https://supabase.com)
-- [Docker](https://docker.com)
- 
-#### App setup
+- [NodeJS](https://nodejs.org/en) (version 20 or later)
+- [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started)
+- [Docker](https://docker.com) (required for local Supabase)
+
+#### Installation
 
 1. Clone the repository `git clone https://tangled.org/leaflet.pub/leaflet.git`
    1. If using WSL, it's recommended to install in the native file structure vs in a mounted Windows file structure (i.e, prefer installing at `~/code/leaflet` vs `/mnt/c/code/leaflet`)
 2. Install the dependencies: `npm install`
-3. Create a new Supabase project via the Supabase web dashboard.
-   1. Your `API URL`, `ANON KEY`, and `SERVICE ROLE KEY` are found in the `Project Settings --> API Keys` menu. This project uses legacy keys not the publishable/secret API key system.
-   2. The Database URL is found by pressing the `Connect` button at the top of the screen. The direct connection string by default uses the IPv6 systems which can cause issues in default local setups. If that is the case, the Shared Pool connection string will work for IPv4 local development.
-4. Create an `.env.local` file in the root folder with the following configuration:
+3. Install the Supabase CLI:
+   - **macOS:** `brew install supabase/tap/supabase`
+   - **Windows:** `scoop bucket add supabase https://github.com/supabase/scoop-bucket.git && scoop install supabase`
+   - **Linux:** Use Homebrew or download packages from [releases page](https://github.com/supabase/cli/releases)
+   - **Via npm:** The CLI is already included in package.json, use `npx supabase` for commands
+
+#### Local Supabase Setup
+
+1. Start the local Supabase stack: `npx supabase start`
+   - First run takes longer while Docker images download
+   - Once complete, you'll see connection details in the terminal output
+   - Keep note of the `API URL`, `anon key`, `service_role key`, and `DB URL`
+2. Copy the `.env` file example to `.env.local` and update with your local values from the previous step:
 
 ```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_API_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+# Supabase Configuration (from `supabase start` output)
+NEXT_PUBLIC_SUPABASE_API_URL=http://localhost:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key-from-terminal
+SUPABASE_SERVICE_ROLE_KEY=your-local-service-role-key-from-terminal
 
-# Database
-DB_URL=postgresql://postgres:your-password@db.your-project.supabase.co:5432/postgres
+# Database (default local connection)
+DB_URL=postgresql://postgres:postgres@localhost:54322/postgres
 
 # Leaflet specific
 LEAFLET_APP_PASSWORD=any-password-you-want
 
-# Feed Service (for publication features)
-FEED_SERVICE_URL=https://localhost:3001
+# Feed Service (for publication features, optional)
+FEED_SERVICE_URL=http://localhost:3001
 ```
-5. `npm run dev` to run the project
 
 #### Database Migrations
 
-1. Install the supabase CLI `npm install supabase`
-   1. You can install it globally with the -g flag, in which case you can omit the `npx` from the following commands
-2. Login to the CLI `npx supabase login`
-3. Link to your database project `npx supabase link --project-ref <project-id>`
-4. Run migrations `npx supabase db push`
+1. Apply migrations to your local database:
+   - First time setup: `npx supabase db reset` (resets database and applies all migrations)
+   - Apply new migrations only: `npx supabase migration up` (applies unapplied migrations)
+   - Note: You don't need to link to a remote project for local development
+2. Access Supabase Studio at `http://localhost:54323` to view your local database
+
+#### Running the App
+
+1. `npm run dev` to start the development server
+2. Visit `http://localhost:3000` in your browser
+
+#### Stopping Local Supabase
+
+- Run `npx supabase stop` to stop the local Supabase stack
+- Add `--no-backup` flag to reset the database on next start
 
 #### Feed service setup (optional)
 
@@ -76,6 +94,11 @@ Setup instructions to run a local feed service from a docker container. This ste
 2. Update your `.env.local` to include the FEED_SERVICE_URL (if not already set): `git clone https://github.com/hyperlink-academy/leaflet-feeds.git`
 3. Change to the directory and build the docker container `docker build -t leaflet-feeds .`
 4. Run the docker container on port 3001 (to avoid conflicts with the main app): `docker run -p 3001:3000 leaflet-feeds`
+
+#### Troubleshooting
+
+- Persisting articles on a fresh install over a fresh DB are usually due to stale Replicache entrys. To clear, open your browser DevTools and delete Replicache entries (usually under IndexedDB Storage)
+- Supabase settings will get cached in `.next`; if you change where you're pointing your supabase connections to you may need to delete the `.next` folder (it will rebuild next time you start the app).
 
 ## Technical details
 
