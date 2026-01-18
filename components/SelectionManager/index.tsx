@@ -6,7 +6,7 @@ import { scanIndex } from "src/replicache/utils";
 import { focusBlock } from "src/utils/focusBlock";
 import { useEditorStates } from "src/state/useEditorState";
 import { useEntitySetContext } from "../EntitySetProvider";
-import { getBlocksWithType } from "src/hooks/queries/useBlocks";
+import { getBlocksWithType } from "src/replicache/getBlocks";
 import { indent, outdent, outdentFull } from "src/utils/list-operations";
 import { addShortcut, Shortcut } from "src/shortcuts";
 import { elementId } from "src/utils/elementId";
@@ -567,7 +567,8 @@ export function SelectionManager() {
                 previousBlock = siblings[i - parentoffset];
               }
               if (!block.listData || !previousBlock.listData) continue;
-              outdent(block, previousBlock, rep);
+              let { foldedBlocks, toggleFold } = useUIState.getState();
+              await outdent(block, previousBlock, rep, { foldedBlocks, toggleFold });
             }
           } else {
             for (let i = 0; i < siblings.length; i++) {
@@ -588,7 +589,8 @@ export function SelectionManager() {
                 previousBlock = siblings[i - parentoffset];
               }
               if (!block.listData || !previousBlock.listData) continue;
-              indent(block, previousBlock, rep);
+              let { foldedBlocks, toggleFold } = useUIState.getState();
+              indent(block, previousBlock, rep, { foldedBlocks, toggleFold });
             }
           }
         }

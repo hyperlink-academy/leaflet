@@ -33,6 +33,7 @@ import { HorizontalRule } from "./HorizontalRule";
 import { deepEquals } from "src/utils/deepEquals";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { focusPage } from "src/utils/focusPage";
+import { getBlocksWithType } from "src/replicache/getBlocks";
 
 export type Block = {
   factID: string;
@@ -42,6 +43,8 @@ export type Block = {
   type: Fact<"block/type">["data"]["value"];
   listData?: {
     checklist?: boolean;
+    listStyle?: "ordered" | "unordered";
+    listNumber?: number;
     path: { depth: number; entity: string }[];
     parent: string;
     depth: number;
@@ -172,7 +175,9 @@ function deepEqualsBlockProps(
     if (
       prevProps.listData.checklist !== nextProps.listData.checklist ||
       prevProps.listData.parent !== nextProps.listData.parent ||
-      prevProps.listData.depth !== nextProps.listData.depth
+      prevProps.listData.depth !== nextProps.listData.depth ||
+      prevProps.listData.listNumber !== nextProps.listData.listNumber ||
+      prevProps.listData.listStyle !== nextProps.listData.listStyle
     ) {
       return false;
     }
@@ -420,6 +425,7 @@ export const ListMarker = (
 ) => {
   let isMobile = useIsMobile();
   let checklist = useEntity(props.value, "block/check-list");
+  let listStyle = useEntity(props.value, "block/list-style");
   let headingLevel = useEntity(props.value, "block/heading-level")?.data.value;
   let children = useEntity(props.value, "card/block");
   let folded =
@@ -429,6 +435,62 @@ export const ListMarker = (
   let depth = props.listData?.depth;
   let { permissions } = useEntitySetContext();
   let { rep } = useReplicache();
+
+  let [editingNumber, setEditingNumber] = useState(false);
+  let [numberInputValue, setNumberInputValue] = useState("");
+
+  useEffect(() => {
+    if (!editingNumber) {
+      setNumberInputValue("");
+    }
+  }, [editingNumber]);
+
+  const handleNumberSave = async () => {
+    if (!rep || !props.listData) return;
+
+    const newNumber = parseInt(numberInputValue, 10);
+    if (isNaN(newNumber) || newNumber < 1) {
+      setEditingNumber(false);
+      return;
+    }
+
+    const oldNumber = props.listData.listNumber || 1;
+    const difference = newNumber - oldNumber;
+
+    if (difference === 0) {
+      setEditingNumber(false);
+      return;
+    }
+
+    // Update this block's number
+    await rep.mutate.assertFact({
+      entity: props.value,
+      attribute: "block/list-number",
+      data: { type: "number", value: newNumber },
+    });
+
+    // Cascade to following blocks at the same depth
+    const allBlocks = await rep.query((tx) => getBlocksWithType(tx, props.parent));
+    if (allBlocks) {
+      const currentIndex = allBlocks.findIndex((b) => b.value === props.value);
+      for (let i = currentIndex + 1; i < allBlocks.length; i++) {
+        const block = allBlocks[i];
+        if (
+          block.listData?.listStyle === "ordered" &&
+          block.listData?.depth === props.listData.depth
+        ) {
+          const currentNumber = block.listData.listNumber || 1;
+          await rep.mutate.assertFact({
+            entity: block.value,
+            attribute: "block/list-number",
+            data: { type: "number", value: currentNumber + difference },
+          });
+        }
+      }
+    }
+
+    setEditingNumber(false);
+  };
   return (
     <div
       className={`shrink-0  flex justify-end items-center h-3 z-1
@@ -456,14 +518,49 @@ export const ListMarker = (
         }}
         className={`listMarker group/list-marker p-2 ${children.length > 0 ? "cursor-pointer" : "cursor-default"}`}
       >
-        <div
-          className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline  outline-offset-1
-                      ${
-                        folded
-                          ? "outline-secondary"
-                          : ` ${children.length > 0 ? "sm:group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`
-                      }`}
-        />
+        {listStyle?.data.value === "ordered" ? (
+          editingNumber ? (
+            <input
+              type="text"
+              value={numberInputValue}
+              onChange={(e) => setNumberInputValue(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onBlur={handleNumberSave}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleNumberSave();
+                } else if (e.key === "Escape") {
+                  setEditingNumber(false);
+                }
+              }}
+              autoFocus
+              className="text-secondary font-normal text-right min-w-[2rem] w-[2.2rem] bg-transparent border border-accent focus:outline-none px-1"
+            />
+          ) : (
+            <div
+              className="text-secondary font-normal text-right min-w-[2rem] cursor-pointer hover:text-primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (permissions.write && listStyle?.data.value === "ordered") {
+                  setNumberInputValue(String(props.listData?.listNumber || 1));
+                  setEditingNumber(true);
+                }
+              }}
+            >
+              {props.listData?.listNumber || 1}.
+            </div>
+          )
+        ) : (
+          <div
+            className={`h-[5px] w-[5px] rounded-full bg-secondary shrink-0 right-0 outline  outline-offset-1
+                        ${
+                          folded
+                            ? "outline-secondary"
+                            : ` ${children.length > 0 ? "sm:group-hover/list-marker:outline-secondary outline-transparent" : "outline-transparent"}`
+                        }`}
+          />
+        )}
       </button>
       {checklist && (
         <button

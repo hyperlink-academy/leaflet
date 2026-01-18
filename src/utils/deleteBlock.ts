@@ -2,7 +2,7 @@ import { Replicache } from "replicache";
 import { ReplicacheMutators } from "src/replicache";
 import { useUIState } from "src/useUIState";
 import { scanIndex } from "src/replicache/utils";
-import { getBlocksWithType } from "src/hooks/queries/useBlocks";
+import { getBlocksWithType } from "src/replicache/getBlocks";
 import { focusBlock } from "src/utils/focusBlock";
 
 export async function deleteBlock(
