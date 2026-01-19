@@ -20,6 +20,8 @@ import { Popover } from "components/Popover";
 import { TagSelector } from "components/Tags";
 import { useIdentityData } from "components/IdentityProvider";
 import { PostHeaderLayout } from "app/lish/[did]/[publication]/[rkey]/PostHeader/PostHeader";
+import { Backdater } from "./Backdater";
+
 export const PublicationMetadata = () => {
   let { rep } = useReplicache();
   let { data: pub } = useLeafletPublicationData();
@@ -96,7 +98,10 @@ export const PublicationMetadata = () => {
           {pub.doc ? (
             <div className="flex gap-2 items-center">
               <p className="text-sm text-tertiary">
-                Published {publishedAt && timeAgo(publishedAt)}
+                Published{" "}
+                {publishedAt && (
+                  <Backdater publishedAt={publishedAt} docURI={pub.doc} />
+                )}
               </p>
 
               <Link

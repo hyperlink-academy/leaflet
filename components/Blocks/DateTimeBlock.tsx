@@ -1,6 +1,5 @@
 import { useEntity, useReplicache } from "src/replicache";
 import { BlockProps, BlockLayout } from "./Block";
-import { ChevronProps, DayPicker } from "react-day-picker";
 import { Popover } from "components/Popover";
 import { useEffect, useMemo, useState } from "react";
 import { useEntitySetContext } from "components/EntitySetProvider";
@@ -10,8 +9,8 @@ import { Separator } from "react-aria-components";
 import { Checkbox } from "components/Checkbox";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { useSpring, animated } from "@react-spring/web";
-import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 import { BlockCalendarSmall } from "components/Icons/BlockCalendarSmall";
+import { DatePicker } from "components/DatePicker";
 
 export function DateTimeBlock(props: BlockProps) {
   const [isClient, setIsClient] = useState(false);
@@ -167,28 +166,7 @@ export function BaseDateTimeBlock(
       }
     >
       <div className="flex flex-col gap-3 ">
-        <DayPicker
-          components={{
-            Chevron: (props: ChevronProps) => <CustomChevron {...props} />,
-          }}
-          classNames={{
-            months: "relative",
-            month_caption:
-              "font-bold text-center w-full bg-border-light mb-2 py-1 rounded-md",
-            button_next:
-              "absolute right-0 top-1 p-1 text-secondary hover:text-accent-contrast  flex align-center",
-            button_previous:
-              "absolute left-0 top-1  p-1 text-secondary hover:text-accent-contrast rotate-180 flex align-center ",
-            chevron: "text-inherit",
-            month_grid: "w-full table-fixed",
-            weekdays: "text-secondary text-sm",
-            selected: "bg-accent-1! text-accent-2 rounded-md font-bold",
-
-            day: "h-[34px]  text-center rounded-md sm:hover:bg-border-light",
-            outside: "text-border",
-            today: "font-bold",
-          }}
-          mode="single"
+        <DatePicker
           selected={dateFact ? selectedDate : undefined}
           onSelect={handleDaySelect}
         />
@@ -229,12 +207,4 @@ export function BaseDateTimeBlock(
 let FadeIn = (props: { children: React.ReactNode; active: boolean }) => {
   let spring = useSpring({ opacity: props.active ? 1 : 0 });
   return <animated.div style={spring}>{props.children}</animated.div>;
-};
-
-const CustomChevron = (props: ChevronProps) => {
-  return (
-    <div {...props} className="w-full  pointer-events-none">
-      <ArrowRightTiny />
-    </div>
-  );
 };

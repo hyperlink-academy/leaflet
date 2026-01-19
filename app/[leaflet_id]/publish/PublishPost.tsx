@@ -23,6 +23,11 @@ import { TagSelector } from "../../../components/Tags";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { PubIcon } from "components/ActionBar/Publications";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
+import { DatePicker, TimePicker } from "components/DatePicker";
+import { Popover } from "components/Popover";
+import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { Separator } from "react-aria-components";
+import { setHours, setMinutes } from "date-fns";
 
 type Props = {
   title: string;
@@ -78,14 +83,16 @@ const PublishPostForm = (
   );
   let [localTags, setLocalTags] = useState<string[]>([]);
 
+  let [localPublishedAt, setLocalPublishedAt] = useState<Date | undefined>(
+    undefined,
+  );
   // Get cover image from Replicache
   let replicacheCoverImage = useSubscribe(rep, (tx) =>
     tx.get<string | null>("publication_cover_image"),
   );
 
   // Use Replicache tags only when we have a draft
-  const hasDraft = props.hasDraft;
-  const currentTags = hasDraft
+  const currentTags = props.hasDraft
     ? Array.isArray(replicacheTags)
       ? replicacheTags
       : []
@@ -93,7 +100,7 @@ const PublishPostForm = (
 
   // Update tags via Replicache mutation or local state depending on context
   const handleTagsChange = async (newTags: string[]) => {
-    if (hasDraft) {
+    if (props.hasDraft) {
       await rep?.mutate.updatePublicationDraft({
         tags: newTags,
       });
@@ -116,6 +123,7 @@ const PublishPostForm = (
       tags: currentTags,
       cover_image: replicacheCoverImage,
       entitiesToDelete: props.entitiesToDelete,
+      publishedAt: localPublishedAt?.toISOString() || new Date().toISOString(),
     });
 
     if (!result.success) {
@@ -168,6 +176,21 @@ const PublishPostForm = (
             record={props.record}
           />
           <hr className="border-border" />
+
+          <BackdateOptions
+            publishedAt={localPublishedAt}
+            setPublishedAt={setLocalPublishedAt}
+          />
+          <hr className="border-border " />
+
+          <div className="flex flex-col gap-2">
+            <h4>Tags</h4>
+            <TagSelector
+              selectedTags={currentTags}
+              setSelectedTags={handleTagsChange}
+            />
+          </div>
+          <hr className="border-border" />
           <ShareOptions
             setShareOption={setShareOption}
             shareOption={shareOption}
@@ -176,14 +199,6 @@ const PublishPostForm = (
             editorStateRef={editorStateRef}
             {...props}
           />
-          <hr className="border-border " />
-          <div className="flex flex-col gap-2">
-            <h4>Tags</h4>
-            <TagSelector
-              selectedTags={currentTags}
-              setSelectedTags={handleTagsChange}
-            />
-          </div>
           <hr className="border-border mb-2" />
 
           <div className="flex flex-col gap-2">
@@ -219,6 +234,94 @@ const PublishPostForm = (
   );
 };
 
+const BackdateOptions = (props: {
+  publishedAt: Date | undefined;
+  setPublishedAt: (date: Date | undefined) => void;
+}) => {
+  const formattedDate = useLocalizedDate(
+    props.publishedAt?.toISOString() || "",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true,
+    },
+  );
+
+  const [timeValue, setTimeValue] = useState<string>(() => {
+    const date = props.publishedAt || new Date();
+    return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+  });
+
+  let currentTime = `${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`;
+
+  const handleTimeChange = (time: string) => {
+    setTimeValue(time);
+    if (!props.publishedAt) return;
+
+    const [hours, minutes] = time.split(":").map((str) => parseInt(str, 10));
+    const newDate = setHours(setMinutes(props.publishedAt, minutes), hours);
+    const currentDate = new Date();
+
+    if (newDate > currentDate) {
+      props.setPublishedAt(currentDate);
+      setTimeValue(currentTime);
+    } else props.setPublishedAt(newDate);
+  };
+
+  const handleDateChange = (date: Date | undefined) => {
+    if (!date) {
+      props.setPublishedAt(undefined);
+      return;
+    }
+    const [hours, minutes] = timeValue
+      .split(":")
+      .map((str) => parseInt(str, 10));
+    const newDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      hours,
+      minutes,
+    );
+    const currentDate = new Date();
+    if (newDate > currentDate) {
+      props.setPublishedAt(currentDate);
+      setTimeValue(currentTime);
+    } else props.setPublishedAt(newDate);
+  };
+
+  return (
+    <div className="flex justify-between gap-2">
+      <h4>Publish Date</h4>
+      <Popover
+        className="w-64 px-2!"
+        trigger={
+          props.publishedAt ? (
+            <div className="text-secondary">{formattedDate}</div>
+          ) : (
+            <div className="text-tertiary italic">now</div>
+          )
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <DatePicker
+            selected={props.publishedAt}
+            onSelect={handleDateChange}
+            disabled={(date) => date > new Date()}
+          />
+          <Separator className="border-border" />
+          <div className="flex gap-4 pb-1 items-center">
+            <TimePicker value={timeValue} onChange={handleTimeChange} />
+          </div>
+        </div>
+      </Popover>
+    </div>
+  );
+};
+
 const ShareOptions = (props: {
   shareOption: "quiet" | "bluesky";
   setShareOption: (option: typeof props.shareOption) => void;
@@ -232,7 +335,7 @@ const ShareOptions = (props: {
 }) => {
   return (
     <div className="flex flex-col gap-2">
-      <h4>Notifications</h4>
+      <h4>Share and Notify</h4>
       <Radio
         checked={props.shareOption === "quiet"}
         onChange={(e) => {

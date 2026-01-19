@@ -66,6 +66,7 @@ export async function publishToPublication({
   tags,
   cover_image,
   entitiesToDelete,
+  publishedAt,
 }: {
   root_entity: string;
   publication_uri?: string;
@@ -75,6 +76,7 @@ export async function publishToPublication({
   tags?: string[];
   cover_image?: string | null;
   entitiesToDelete?: string[];
+  publishedAt?: string;
 }): Promise<PublishResult> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
@@ -147,8 +149,9 @@ export async function publishToPublication({
     credentialSession.did!,
   );
 
-  let existingRecord =
-    (draft?.documents?.data as PubLeafletDocument.Record | undefined) || {};
+  let existingRecord = draft?.documents?.data as
+    | PubLeafletDocument.Record
+    | undefined;
 
   // Extract theme for standalone documents (not for publications)
   let theme: PubLeafletPublication.Theme | undefined;
@@ -174,8 +177,6 @@ export async function publishToPublication({
   }
 
   let record: PubLeafletDocument.Record = {
-    publishedAt: new Date().toISOString(),
-    ...existingRecord,
     $type: "pub.leaflet.document",
     author: credentialSession.did!,
     ...(publication_uri && { publication: publication_uri }),
@@ -199,6 +200,8 @@ export async function publishToPublication({
         };
       }
     }),
+    publishedAt:
+      publishedAt || existingRecord?.publishedAt || new Date().toISOString(),
   };
 
   // Keep the same rkey if updating an existing document
