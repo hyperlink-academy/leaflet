@@ -1816,7 +1816,7 @@ export const schemaDict = {
           },
           showPrevNext: {
             type: 'boolean',
-            default: false,
+            default: true,
           },
         },
       },

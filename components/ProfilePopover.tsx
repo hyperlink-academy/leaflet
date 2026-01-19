@@ -7,6 +7,8 @@ import { ProfileHeader } from "app/(home-pages)/p/[didOrHandle]/ProfileHeader";
 import { SpeedyLink } from "./SpeedyLink";
 import { Tooltip } from "./Tooltip";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
+import { BlueskyTiny } from "./Icons/BlueskyTiny";
+import { ArrowRightTiny } from "./Icons/ArrowRightTiny";
 
 export const ProfilePopover = (props: {
   trigger: React.ReactNode;
@@ -27,14 +29,11 @@ export const ProfilePopover = (props: {
   );
 
   return (
-    <Tooltip
+    <Popover
       className="max-w-sm p-0! text-center"
-      asChild
       trigger={
-        <a
+        <div
           className="no-underline"
-          href={`https://leaflet.pub/p/${props.didOrHandle}`}
-          target="_blank"
           onPointerEnter={(e) => {
             if (hoverTimeout.current) {
               window.clearTimeout(hoverTimeout.current);
@@ -53,7 +52,7 @@ export const ProfilePopover = (props: {
           }}
         >
           {props.trigger}
-        </a>
+        </div>
       }
       onOpenChange={setIsOpen}
     >
@@ -66,33 +65,40 @@ export const ProfilePopover = (props: {
             publications={data.publications}
             popover
           />
-          <KnownFollowers viewer={data.profile.viewer} did={data.profile.did} />
+
+          <ProfileLinks handle={data.profile.handle} />
         </div>
       ) : (
-        <div className="text-secondary py-2 px-4">Profile not found</div>
+        <div className="text-secondary py-2 px-4">No profile found...</div>
       )}
-    </Tooltip>
+    </Popover>
   );
 };
 
-let KnownFollowers = (props: {
-  viewer: ProfileViewDetailed["viewer"];
-  did: string;
-}) => {
-  if (!props.viewer?.knownFollowers) return null;
-  let count = props.viewer.knownFollowers.count;
+const ProfileLinks = (props: { handle: string }) => {
+  let linkClassName =
+    "flex gap-1.5 text-tertiary items-center border border-transparent px-1  rounded-md hover:bg-[var(--accent-light)] hover:border-accent-contrast hover:text-accent-contrast no-underline hover:no-underline";
   return (
-    <>
-      <hr className="border-border" />
-      Followed by{" "}
-      <a
-        className="hover:underline"
-        href={`https://bsky.social/profile/${props.did}/known-followers`}
-        target="_blank"
-      >
-        {props.viewer?.knownFollowers?.followers[0]?.displayName}{" "}
-        {count > 1 ? `and ${count - 1} other${count > 2 ? "s" : ""}` : ""}
-      </a>
-    </>
+    <div className="w-full flex-col">
+      <hr className="border-border-light mt-3" />
+      <div className="flex gap-2 justify-between sm:px-4 px-3 py-2">
+        <div className="flex gap-2">
+          <a
+            href={`https://bsky.app/profile/${props.handle}`}
+            target="_blank"
+            className={linkClassName}
+          >
+            <BlueskyTiny />
+            Bluesky
+          </a>
+        </div>
+        <SpeedyLink
+          href={`https://leaflet.pub/p/${props.handle}`}
+          className={linkClassName}
+        >
+          Full profile <ArrowRightTiny />
+        </SpeedyLink>
+      </div>
+    </div>
   );
 };

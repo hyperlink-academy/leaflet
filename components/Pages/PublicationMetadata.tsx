@@ -123,15 +123,18 @@ export const PublicationMetadata = () => {
             {tags && (
               <>
                 <AddTags />
-                <Separator classname="h-4!" />
+                {pubRecord?.preferences?.showMentions !== false ||
+                pubRecord?.preferences?.showComments !== false ? (
+                  <Separator classname="h-4!" />
+                ) : null}
               </>
             )}
-            {pubRecord?.preferences?.showMentions && (
+            {pubRecord?.preferences?.showMentions !== false && (
               <div className="flex gap-1 items-center">
                 <QuoteTiny />—
               </div>
             )}
-            {pubRecord?.preferences?.showComments && (
+            {pubRecord?.preferences?.showComments !== false && (
               <div className="flex gap-1 items-center">
                 <CommentTiny />—
               </div>

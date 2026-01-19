@@ -89,7 +89,7 @@ export const PageWidthSetter = (props: {
                 <div
                   className={`w-full cursor-pointer ${selectedPreset === "default" ? "text-[#595959]" : "text-[#969696]"}`}
                 >
-                  default (624px)
+                  default ({defaultPreset}px)
                 </div>
               </Radio>
             </label>
@@ -111,7 +111,7 @@ export const PageWidthSetter = (props: {
                 <div
                   className={`w-full cursor-pointer ${selectedPreset === "wide" ? "text-[#595959]" : "text-[#969696]"}`}
                 >
-                  wide (756px)
+                  wide ({widePreset}px)
                 </div>
               </Radio>
             </label>

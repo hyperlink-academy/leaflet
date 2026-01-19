@@ -169,8 +169,8 @@ const CanvasMetadata = (props: { isSubpage: boolean | undefined }) => {
   if (!pub || !pub.publications) return null;
 
   let pubRecord = pub.publications.record as PubLeafletPublication.Record;
-  let showComments = pubRecord.preferences?.showComments;
-  let showMentions = pubRecord.preferences?.showMentions;
+  let showComments = pubRecord.preferences?.showComments !== false;
+  let showMentions = pubRecord.preferences?.showMentions !== false;
 
   return (
     <div className="flex flex-row gap-3 items-center absolute top-6 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">

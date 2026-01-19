@@ -32,6 +32,7 @@ import { CodeBlock } from "./CodeBlock";
 import { HorizontalRule } from "./HorizontalRule";
 import { deepEquals } from "src/utils/deepEquals";
 import { isTextBlock } from "src/utils/isTextBlock";
+import { focusPage } from "src/utils/focusPage";
 
 export type Block = {
   factID: string;
@@ -62,7 +63,7 @@ export const Block = memo(function Block(
   // Block handles all block level events like
   // mouse events, keyboard events and longPress, and setting AreYouSure state
   // and shared styling like padding and flex for list layouting
-
+  let { rep } = useReplicache();
   let mouseHandlers = useBlockMouseHandlers(props);
   let handleDrop = useHandleDrop({
     parent: props.parent,
