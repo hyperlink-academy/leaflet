@@ -11,14 +11,7 @@ import {
   useNormalizedPublicationRecord,
 } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-
-const PubThemeDefaults = {
-  backgroundColor: "#FDFCFA",
-  pageBackground: "#FDFCFA",
-  primary: "#272727",
-  accentText: "#FFFFFF",
-  accentBackground: "#0000FF",
-};
+import { PubThemeDefaults } from "./themeDefaults";
 
 // Default page background for standalone leaflets (matches editor default)
 const StandalonePageBackground = "#FFFFFF";

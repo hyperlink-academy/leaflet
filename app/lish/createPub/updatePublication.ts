@@ -314,8 +314,18 @@ export async function updatePublicationTheme({
       },
     };
 
+    // Derive basicTheme from the theme colors for site.standard.publication
+    const basicTheme: NormalizedPublication["basicTheme"] = {
+      $type: "site.standard.theme.basic",
+      background: { $type: "site.standard.theme.color#rgb", r: theme.backgroundColor.r, g: theme.backgroundColor.g, b: theme.backgroundColor.b },
+      foreground: { $type: "site.standard.theme.color#rgb", r: theme.primary.r, g: theme.primary.g, b: theme.primary.b },
+      accent: { $type: "site.standard.theme.color#rgb", r: theme.accentBackground.r, g: theme.accentBackground.g, b: theme.accentBackground.b },
+      accentForeground: { $type: "site.standard.theme.color#rgb", r: theme.accentText.r, g: theme.accentText.g, b: theme.accentText.b },
+    };
+
     return buildRecord(normalizedPub, existingBasePath, publicationType, {
       theme: themeData,
+      basicTheme,
     });
   });
 }

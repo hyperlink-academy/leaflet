@@ -16,6 +16,7 @@ import { Vercel } from "@vercel/sdk";
 import { isProductionDomain } from "src/utils/isProductionDeployment";
 import { string } from "zod";
 import { getPublicationType } from "src/utils/collectionHelpers";
+import { PubThemeDefaultsRGB } from "components/ThemeManager/themeDefaults";
 
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 const vercel = new Vercel({
@@ -94,6 +95,13 @@ export async function createPublication({
       url,
       ...(description && { description }),
       ...(iconBlob && { icon: iconBlob }),
+      basicTheme: {
+        $type: "site.standard.theme.basic",
+        background: { $type: "site.standard.theme.color#rgb", ...PubThemeDefaultsRGB.background },
+        foreground: { $type: "site.standard.theme.color#rgb", ...PubThemeDefaultsRGB.foreground },
+        accent: { $type: "site.standard.theme.color#rgb", ...PubThemeDefaultsRGB.accent },
+        accentForeground: { $type: "site.standard.theme.color#rgb", ...PubThemeDefaultsRGB.accentForeground },
+      },
       preferences: {
         showInDiscover: preferences.showInDiscover,
         showComments: preferences.showComments,
