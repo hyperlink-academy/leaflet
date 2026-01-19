@@ -68,7 +68,6 @@ export const Block = memo(function Block(
   // Block handles all block level events like
   // mouse events, keyboard events and longPress, and setting AreYouSure state
   // and shared styling like padding and flex for list layouting
-  let { rep } = useReplicache();
   let mouseHandlers = useBlockMouseHandlers(props);
   let handleDrop = useHandleDrop({
     parent: props.parent,
@@ -76,6 +75,16 @@ export const Block = memo(function Block(
     nextPosition: props.nextPosition,
   });
   let entity_set = useEntitySetContext();
+
+  let { isLongPress, longPressHandlers } = useLongPress(() => {
+    if (isTextBlock[props.type]) return;
+    if (isLongPress.current) {
+      focusBlock(
+        { type: props.type, value: props.entityID, parent: props.parent },
+        { type: "start" },
+      );
+    }
+  });
 
   let selected = useUIState(
     (s) => !!s.selectedBlocks.find((b) => b.value === props.entityID),
@@ -107,7 +116,7 @@ export const Block = memo(function Block(
 
   return (
     <div
-      {...(!props.preview ? { ...mouseHandlers } : {})}
+      {...(!props.preview ? { ...mouseHandlers, ...longPressHandlers } : {})}
       id={
         !props.preview ? elementId.block(props.entityID).container : undefined
       }

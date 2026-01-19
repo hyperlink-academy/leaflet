@@ -193,7 +193,6 @@ const ButtonBlockSettings = (props: BlockProps) => {
               <Separator />
               <Input
                 type="text"
-                autoFocus
                 className="w-full grow border-none outline-hidden bg-transparent"
                 placeholder="button text"
                 value={textValue}
