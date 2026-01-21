@@ -399,8 +399,7 @@ function CanvasBlock(props: {
   return (
     <div
       ref={ref}
-      {...(!props.preview ? { ...longPressHandlers } : {})}
-      // {...(isMobile && permissions.write ? { ...dragHandlers } : {})}
+      {...(!props.preview ? { ...longPressHandlers, ...mouseHandlers } : {})}
       id={props.preview ? undefined : elementId.block(props.entityID).container}
       className={`canvasBlockWrapper absolute group/canvas-block will-change-transform rounded-lg flex items-stretch origin-center p-3        `}
       style={{
@@ -411,15 +410,12 @@ function CanvasBlock(props: {
         transform,
       }}
     >
-      {/* the gripper show on hover, but longpress logic needs to be added for mobile*/}
       {!props.preview && permissions.write && (
         <Gripper isFocused={isFocused} {...dragHandlers} />
       )}
 
-      {/*mouseHandlers are being added here so they don't interfere with the dragHandlers in the div above*/}
       <div
         className={` w-full ${dragDelta || widthHandle.dragDelta || rotateHandle.dragDelta ? "pointer-events-none" : ""} `}
-        {...(!props.preview ? { ...mouseHandlers } : {})}
       >
         <BaseBlock
           {...blockProps}
