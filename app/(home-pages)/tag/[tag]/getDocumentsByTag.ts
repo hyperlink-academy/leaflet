@@ -41,7 +41,7 @@ export async function getDocumentsByTag(
       }
 
       // Normalize the document data - skip unrecognized formats
-      const normalizedData = normalizeDocumentRecord(doc.data);
+      const normalizedData = normalizeDocumentRecord(doc.data, doc.uri);
       if (!normalizedData) {
         return null;
       }

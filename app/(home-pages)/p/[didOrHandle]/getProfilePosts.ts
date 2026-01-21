@@ -63,7 +63,7 @@ export async function getProfilePosts(
 
   for (let doc of docs || []) {
     // Normalize records - filter out unrecognized formats
-    const normalizedData = normalizeDocumentRecord(doc.data);
+    const normalizedData = normalizeDocumentRecord(doc.data, doc.uri);
     if (!normalizedData) continue;
 
     let pubFromDoc = doc.documents_in_publications?.[0]?.publications;

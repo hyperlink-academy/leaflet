@@ -54,7 +54,7 @@ export async function generateFeed(
   await Promise.all(
     publication.documents_in_publications.map(async (doc) => {
       if (!doc.documents) return;
-      const record = normalizeDocumentRecord(doc.documents?.data);
+      const record = normalizeDocumentRecord(doc.documents?.data, doc.documents?.uri);
       const uri = new AtUri(doc.documents?.uri);
       const rkey = uri.rkey;
       if (!record) return;

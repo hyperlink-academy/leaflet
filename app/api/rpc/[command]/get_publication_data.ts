@@ -70,7 +70,7 @@ export const get_publication_data = makeRoute({
     const documents = (publication?.documents_in_publications || [])
       .map((dip) => {
         if (!dip.documents) return null;
-        const normalized = normalizeDocumentRecord(dip.documents.data);
+        const normalized = normalizeDocumentRecord(dip.documents.data, dip.documents.uri);
         if (!normalized) return null;
         return {
           uri: dip.documents.uri,

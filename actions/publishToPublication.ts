@@ -217,18 +217,22 @@ export async function publishToPublication({
     }
   });
 
+  // Determine the rkey early since we need it for the path field
+  const rkey = existingDocUri ? new AtUri(existingDocUri).rkey : TID.nextStr();
+
   // Create record based on the document type
   let record: PubLeafletDocument.Record | SiteStandardDocument.Record;
 
   if (documentType === "site.standard.document") {
     // site.standard.document format
-    // For standalone docs, use a constructed site URI; for publication docs, use the publication URI
+    // For standalone docs, use HTTPS URL; for publication docs, use the publication AT-URI
     const siteUri = publication_uri || `https://leaflet.pub/p/${credentialSession.did}`;
 
     record = {
       $type: "site.standard.document",
       title: title || "Untitled",
       site: siteUri,
+      path: rkey,
       publishedAt: existingRecord.publishedAt || new Date().toISOString(),
       ...(description && { description }),
       ...(tags !== undefined && { tags }),
@@ -257,8 +261,6 @@ export async function publishToPublication({
     } satisfies PubLeafletDocument.Record;
   }
 
-  // Keep the same rkey if updating an existing document
-  let rkey = existingDocUri ? new AtUri(existingDocUri).rkey : TID.nextStr();
   let { data: result } = await agent.com.atproto.repo.putRecord({
     rkey,
     repo: credentialSession.did!,

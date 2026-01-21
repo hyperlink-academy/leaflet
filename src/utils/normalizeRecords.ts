@@ -17,17 +17,21 @@ import type { Json } from "supabase/database.types";
  * Normalizes a document record from a database query result.
  * Returns the normalized document or null if the record is invalid/unrecognized.
  *
+ * @param data - The document record data from the database
+ * @param uri - Optional document URI, used to extract the rkey for the path field when normalizing pub.leaflet records
+ *
  * @example
- * const doc = normalizeDocumentRecord(dbResult.data);
+ * const doc = normalizeDocumentRecord(dbResult.data, dbResult.uri);
  * if (doc) {
  *   // doc is NormalizedDocument with proper typing
  *   console.log(doc.title, doc.site, doc.publishedAt);
  * }
  */
 export function normalizeDocumentRecord(
-  data: Json | unknown
+  data: Json | unknown,
+  uri?: string
 ): NormalizedDocument | null {
-  return normalizeDocument(data);
+  return normalizeDocument(data, uri);
 }
 
 /**
@@ -69,13 +73,14 @@ export type PublicationRowWithNormalizedRecord<
 
 /**
  * Normalizes a document row in place, returning a properly typed row.
+ * If the row has a `uri` field, it will be used to extract the path.
  */
-export function normalizeDocumentRow<T extends { data: Json | unknown }>(
+export function normalizeDocumentRow<T extends { data: Json | unknown; uri?: string }>(
   row: T
 ): DocumentRowWithNormalizedData<T> {
   return {
     ...row,
-    data: normalizeDocumentRecord(row.data),
+    data: normalizeDocumentRecord(row.data, row.uri),
   };
 }
 

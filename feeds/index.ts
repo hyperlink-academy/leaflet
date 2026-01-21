@@ -136,7 +136,7 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
     cursor: newCursor || cursor,
     feed: posts.flatMap((p) => {
       if (!p.data) return [];
-      const normalizedDoc = normalizeDocumentRecord(p.data);
+      const normalizedDoc = normalizeDocumentRecord(p.data, p.uri);
       if (!normalizedDoc?.bskyPostRef) return [];
       return { post: normalizedDoc.bskyPostRef.uri };
     }),

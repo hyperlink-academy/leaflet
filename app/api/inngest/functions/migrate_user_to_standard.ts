@@ -171,7 +171,7 @@ export const migrate_user_to_standard = inngest.createFunction(
       }
 
       const rkey = aturi.rkey;
-      const normalized = normalizeDocumentRecord(doc.data);
+      const normalized = normalizeDocumentRecord(doc.data, doc.uri);
 
       if (!normalized) {
         stats.errors.push(`Document ${doc.uri}: Failed to normalize document record`);
@@ -197,10 +197,10 @@ export const migrate_user_to_standard = inngest.createFunction(
         $type: "site.standard.document",
         title: normalized.title || "Untitled",
         site: siteValue,
+        path: rkey,
         publishedAt: normalized.publishedAt || new Date().toISOString(),
         description: normalized.description,
         content: normalized.content,
-        path: normalized.path,
         tags: normalized.tags,
         coverImage: normalized.coverImage,
         bskyPostRef: normalized.bskyPostRef,

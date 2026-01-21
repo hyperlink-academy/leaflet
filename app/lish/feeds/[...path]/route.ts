@@ -37,7 +37,7 @@ export async function GET(
         let posts = pub.publications?.documents_in_publications || [];
         return posts.flatMap((p) => {
           if (!p.documents?.data) return [];
-          const normalizedDoc = normalizeDocumentRecord(p.documents.data);
+          const normalizedDoc = normalizeDocumentRecord(p.documents.data, p.documents.uri);
           if (!normalizedDoc?.bskyPostRef) return [];
           return { post: normalizedDoc.bskyPostRef.uri };
         });

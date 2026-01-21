@@ -105,7 +105,7 @@ async function hydrateCommentNotifications(notifications: NotificationRow[]) {
           ? comments?.find((c) => c.uri === notification.data.parent_uri)
           : undefined,
         commentData,
-        normalizedDocument: normalizeDocumentRecord(commentData.documents?.data),
+        normalizedDocument: normalizeDocumentRecord(commentData.documents?.data, commentData.documents?.uri),
         normalizedPublication: normalizePublicationRecord(
           commentData.documents?.documents_in_publications[0]?.publications?.record,
         ),
@@ -198,7 +198,7 @@ async function hydrateQuoteNotifications(notifications: NotificationRow[]) {
         document_uri: notification.data.document_uri,
         bskyPost,
         document,
-        normalizedDocument: normalizeDocumentRecord(document.data),
+        normalizedDocument: normalizeDocumentRecord(document.data, document.uri),
         normalizedPublication: normalizePublicationRecord(
           document.documents_in_publications[0]?.publications?.record,
         ),
@@ -299,12 +299,12 @@ async function hydrateMentionNotifications(notifications: NotificationRow[]) {
         documentCreatorHandle,
         mentionedPublication,
         mentionedDocument: mentionedDoc,
-        normalizedDocument: normalizeDocumentRecord(document.data),
+        normalizedDocument: normalizeDocumentRecord(document.data, document.uri),
         normalizedPublication: normalizePublicationRecord(
           document.documents_in_publications[0]?.publications?.record,
         ),
         normalizedMentionedPublication: normalizePublicationRecord(mentionedPublication?.record),
-        normalizedMentionedDocument: normalizeDocumentRecord(mentionedDoc?.data),
+        normalizedMentionedDocument: normalizeDocumentRecord(mentionedDoc?.data, mentionedDoc?.uri),
       };
     })
     .filter((n) => n !== null);
@@ -404,12 +404,12 @@ async function hydrateCommentMentionNotifications(notifications: NotificationRow
         commenterHandle,
         mentionedPublication,
         mentionedDocument: mentionedDoc,
-        normalizedDocument: normalizeDocumentRecord(commentData.documents?.data),
+        normalizedDocument: normalizeDocumentRecord(commentData.documents?.data, commentData.documents?.uri),
         normalizedPublication: normalizePublicationRecord(
           commentData.documents?.documents_in_publications[0]?.publications?.record,
         ),
         normalizedMentionedPublication: normalizePublicationRecord(mentionedPublication?.record),
-        normalizedMentionedDocument: normalizeDocumentRecord(mentionedDoc?.data),
+        normalizedMentionedDocument: normalizeDocumentRecord(mentionedDoc?.data, mentionedDoc?.uri),
       };
     })
     .filter((n) => n !== null);

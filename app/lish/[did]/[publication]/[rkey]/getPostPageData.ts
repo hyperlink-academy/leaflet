@@ -33,7 +33,7 @@ export async function getPostPageData(did: string, rkey: string) {
   if (!document) return null;
 
   // Normalize the document record - this is the primary way consumers should access document data
-  const normalizedDocument = normalizeDocumentRecord(document.data);
+  const normalizedDocument = normalizeDocumentRecord(document.data, document.uri);
   if (!normalizedDocument) return null;
 
   // Normalize the publication record - this is the primary way consumers should access publication data
@@ -83,7 +83,7 @@ export async function getPostPageData(did: string, rkey: string) {
     // Filter and sort documents by publishedAt
     const sortedDocs = allDocs
       .map((dip) => {
-        const normalizedData = normalizeDocumentRecord(dip?.documents?.data);
+        const normalizedData = normalizeDocumentRecord(dip?.documents?.data, dip?.documents?.uri);
         return {
           uri: dip?.documents?.uri,
           title: normalizedData?.title,

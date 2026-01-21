@@ -55,7 +55,7 @@ export async function getReaderFeed(
         let handle = await idResolver.did.resolve(uri.host);
 
         // Normalize records - filter out unrecognized formats
-        const normalizedData = normalizeDocumentRecord(post.data);
+        const normalizedData = normalizeDocumentRecord(post.data, post.uri);
         if (!normalizedData) return null;
 
         const normalizedPubRecord = normalizePublicationRecord(pub?.record);

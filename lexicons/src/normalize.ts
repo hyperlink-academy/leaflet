@@ -21,6 +21,7 @@ import type * as SiteStandardPublication from "../api/types/site/standard/public
 import type * as SiteStandardThemeBasic from "../api/types/site/standard/theme/basic";
 import type * as PubLeafletThemeColor from "../api/types/pub/leaflet/theme/color";
 import type { $Typed } from "../api/util";
+import { AtUri } from "@atproto/syntax";
 
 // Normalized document type - uses the generated site.standard.document type
 // with an additional optional theme field for backwards compatibility
@@ -143,9 +144,10 @@ export function leafletThemeToBasicTheme(
  * Normalizes a document record from either format to the standard format.
  *
  * @param record - The document record from the database (either pub.leaflet or site.standard)
+ * @param uri - Optional document URI, used to extract the rkey for the path field when normalizing pub.leaflet records
  * @returns A normalized document in site.standard format, or null if invalid/unrecognized
  */
-export function normalizeDocument(record: unknown): NormalizedDocument | null {
+export function normalizeDocument(record: unknown, uri?: string): NormalizedDocument | null {
   if (!record || typeof record !== "object") return null;
 
   // Pass through site.standard records directly (theme is already in correct format if present)
@@ -168,6 +170,9 @@ export function normalizeDocument(record: unknown): NormalizedDocument | null {
     // This matches the pattern used in publishToPublication.ts for new standalone docs
     const site = record.publication || `https://leaflet.pub/p/${record.author}`;
 
+    // Extract path from URI if available
+    const path = uri ? new AtUri(uri).rkey : undefined;
+
     // Wrap pages in pub.leaflet.content structure
     const content: $Typed<PubLeafletContent.Main> | undefined = record.pages
       ? {
@@ -180,6 +185,7 @@ export function normalizeDocument(record: unknown): NormalizedDocument | null {
       $type: "site.standard.document",
       title: record.title,
       site,
+      path,
       publishedAt,
       description: record.description,
       tags: record.tags,
