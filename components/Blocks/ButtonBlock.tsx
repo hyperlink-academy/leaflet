@@ -24,12 +24,12 @@ export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
+  let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   if (!url) {
     if (!permissions.write) return null;
     return <ButtonBlockSettings {...props} />;
   }
-  let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   return (
     <BlockLayout

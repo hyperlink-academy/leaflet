@@ -14,6 +14,7 @@ import { useEntitySetContext } from "components/EntitySetProvider";
 import { flushSync } from "react-dom";
 import { elementId } from "src/utils/elementId";
 import { LAST_USED_CODE_LANGUAGE_KEY } from "src/utils/codeLanguageStorage";
+import { focusBlock } from "src/utils/focusBlock";
 
 export function CodeBlock(props: BlockProps) {
   let { rep, rootEntity } = useReplicache();
@@ -42,29 +43,10 @@ export function CodeBlock(props: BlockProps) {
   }, [content, lang, theme]);
 
   const onClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    let selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-    let range = selection.getRangeAt(0);
-    if (!range) return;
-    let length = range.toString().length;
-    range.setStart(e.currentTarget, 0);
-    let end = range.toString().length;
-    let start = end - length;
-
-    flushSync(() => {
-      useUIState.getState().setSelectedBlock(props);
-      useUIState.getState().setFocusedBlock({
-        entityType: "block",
-        entityID: props.value,
-        parent: props.parent,
-      });
-    });
-    let el = document.getElementById(
-      elementId.block(props.entityID).input,
-    ) as HTMLTextAreaElement;
-    if (!el) return;
-    el.focus();
-    el.setSelectionRange(start, end);
+    focusBlock(
+      { parent: props.parent, value: props.value, type: "code" },
+      { type: "end" },
+    );
   }, []);
   return (
     <div className="codeBlock w-full flex flex-col rounded-md gap-0.5 ">
@@ -120,11 +102,11 @@ export function CodeBlock(props: BlockProps) {
         )}
       </BlockLayout>
       {permissions.write && (
-        <div className="text-sm text-tertiary flex justify-between">
-          <div className="flex gap-1">
+        <div className="text-sm text-tertiary flex w-full justify-between">
+          <div className="codeBlockTheme grow flex gap-1">
             Theme:{" "}
             <select
-              className="codeBlockLang text-left bg-transparent pr-1 sm:max-w-none max-w-24"
+              className="codeBlockThemeSelect text-left bg-transparent pr-1 sm:max-w-none max-w-24 w-full"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -146,7 +128,7 @@ export function CodeBlock(props: BlockProps) {
             </select>
           </div>
           <select
-            className="codeBlockLang text-right bg-transparent pr-1 sm:max-w-none max-w-24"
+            className="codeBlockLang grow text-right bg-transparent pr-1 sm:max-w-none max-w-24 w-full"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
