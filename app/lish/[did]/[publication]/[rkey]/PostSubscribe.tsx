@@ -1,15 +1,15 @@
 "use client";
-import { useContext } from "react";
-import { PostPageContext } from "./PostPageContext";
+import { useDocumentOptional } from "contexts/DocumentContext";
 import { useIdentityData } from "components/IdentityProvider";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 
 export const PostSubscribe = () => {
-  const data = useContext(PostPageContext);
+  const data = useDocumentOptional();
   let { identity } = useIdentityData();
 
-  let publication = data?.documents_in_publications[0]?.publications;
+  let publication = data?.publication;
+  let normalizedPublication = data?.normalizedPublication;
 
   let subscribed =
     identity?.atp_did &&
@@ -20,11 +20,10 @@ export const PostSubscribe = () => {
 
   let isAuthor =
     identity &&
-    identity.atp_did ===
-      data?.documents_in_publications[0]?.publications?.identity_did &&
-    data?.leaflets_in_publications[0];
+    identity.atp_did === publication?.identity_did &&
+    data?.leafletId;
 
-  if (!subscribed && !isAuthor && publication && publication.record)
+  if (!subscribed && !isAuthor && publication && normalizedPublication)
     return (
       <div className="text-center flex flex-col accent-container rounded-md mb-3 mx-3 sm:mx-4">
         <div className="flex flex-col py-4">
@@ -41,5 +40,5 @@ export const PostSubscribe = () => {
         </div>
       </div>
     );
-  else return;
+  else return null;
 };

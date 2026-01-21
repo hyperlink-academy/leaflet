@@ -113,8 +113,8 @@ export const PublicationMetadata = () => {
             {tags && (
               <>
                 <AddTags />
-                {pubRecord?.preferences?.showMentions ||
-                pubRecord?.preferences?.showComments ? (
+                {normalizedPublication?.preferences?.showMentions ||
+                normalizedPublication?.preferences?.showComments ? (
                   <Separator classname="h-4!" />
                 ) : null}
               </>
