@@ -18,7 +18,11 @@ export function documentUriFilter(did: string, rkey: string): string {
  * or site.standard.publication namespaces.
  */
 export function publicationUriFilter(did: string, rkey: string): string {
-  const standard = AtUri.make(did, ids.SiteStandardPublication, rkey).toString();
+  const standard = AtUri.make(
+    did,
+    ids.SiteStandardPublication,
+    rkey,
+  ).toString();
   const legacy = AtUri.make(did, ids.PubLeafletPublication, rkey).toString();
   return `uri.eq.${standard},uri.eq.${legacy}`;
 }
@@ -27,8 +31,18 @@ export function publicationUriFilter(did: string, rkey: string): string {
  * Returns an OR filter string for Supabase queries to match a publication by name
  * or by either namespace URI. Used when the rkey might be the publication name.
  */
-export function publicationNameOrUriFilter(did: string, nameOrRkey: string): string {
-  const standard = AtUri.make(did, ids.SiteStandardPublication, nameOrRkey).toString();
-  const legacy = AtUri.make(did, ids.PubLeafletPublication, nameOrRkey).toString();
-  return `name.eq.${nameOrRkey},uri.eq.${standard},uri.eq.${legacy}`;
+export function publicationNameOrUriFilter(
+  did: string,
+  nameOrRkey: string,
+): string {
+  let standard, legacy;
+  if (/^(?!\.$|\.\.S)[A-Za-z0-9._:~-]{1,512}$/.test(nameOrRkey)) {
+    standard = AtUri.make(
+      did,
+      ids.SiteStandardPublication,
+      nameOrRkey,
+    ).toString();
+    legacy = AtUri.make(did, ids.PubLeafletPublication, nameOrRkey).toString();
+  }
+  return `name.eq."${nameOrRkey}"",uri.eq."${standard}"",uri.eq."${legacy}"`;
 }
