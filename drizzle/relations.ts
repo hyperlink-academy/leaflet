@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { identities, notifications, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, poll_votes_on_entity, permission_tokens, phone_rsvps_to_entity, custom_domains, custom_domain_routes, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, bsky_follows, subscribers_to_publications, permission_token_on_homepage, documents_in_publications, document_mentions_in_bsky, bsky_posts, publication_domains, leaflets_in_publications, publication_subscriptions, permission_token_rights } from "./schema";
+import { identities, notifications, publications, documents, comments_on_documents, bsky_profiles, entity_sets, entities, facts, email_auth_tokens, poll_votes_on_entity, permission_tokens, phone_rsvps_to_entity, site_standard_publications, custom_domains, custom_domain_routes, site_standard_documents, email_subscriptions_to_entity, atp_poll_records, atp_poll_votes, bsky_follows, subscribers_to_publications, site_standard_documents_in_publications, documents_in_publications, document_mentions_in_bsky, bsky_posts, permission_token_on_homepage, publication_domains, publication_subscriptions, site_standard_subscriptions, leaflets_to_documents, permission_token_rights, leaflets_in_publications } from "./schema";
 
 export const notificationsRelations = relations(notifications, ({one}) => ({
 	identity: one(identities, {
@@ -17,6 +17,8 @@ export const identitiesRelations = relations(identities, ({one, many}) => ({
 		fields: [identities.home_page],
 		references: [permission_tokens.id]
 	}),
+	site_standard_publications: many(site_standard_publications),
+	site_standard_documents: many(site_standard_documents),
 	custom_domains_identity: many(custom_domains, {
 		relationName: "custom_domains_identity_identities_email"
 	}),
@@ -33,6 +35,7 @@ export const identitiesRelations = relations(identities, ({one, many}) => ({
 	permission_token_on_homepages: many(permission_token_on_homepage),
 	publication_domains: many(publication_domains),
 	publication_subscriptions: many(publication_subscriptions),
+	site_standard_subscriptions: many(site_standard_subscriptions),
 }));
 
 export const publicationsRelations = relations(publications, ({one, many}) => ({
@@ -43,8 +46,8 @@ export const publicationsRelations = relations(publications, ({one, many}) => ({
 	subscribers_to_publications: many(subscribers_to_publications),
 	documents_in_publications: many(documents_in_publications),
 	publication_domains: many(publication_domains),
-	leaflets_in_publications: many(leaflets_in_publications),
 	publication_subscriptions: many(publication_subscriptions),
+	leaflets_in_publications: many(leaflets_in_publications),
 }));
 
 export const comments_on_documentsRelations = relations(comments_on_documents, ({one}) => ({
@@ -62,6 +65,7 @@ export const documentsRelations = relations(documents, ({many}) => ({
 	comments_on_documents: many(comments_on_documents),
 	documents_in_publications: many(documents_in_publications),
 	document_mentions_in_bskies: many(document_mentions_in_bsky),
+	leaflets_to_documents: many(leaflets_to_documents),
 	leaflets_in_publications: many(leaflets_in_publications),
 }));
 
@@ -136,8 +140,9 @@ export const permission_tokensRelations = relations(permission_tokens, ({one, ma
 	}),
 	email_subscriptions_to_entities: many(email_subscriptions_to_entity),
 	permission_token_on_homepages: many(permission_token_on_homepage),
-	leaflets_in_publications: many(leaflets_in_publications),
+	leaflets_to_documents: many(leaflets_to_documents),
 	permission_token_rights: many(permission_token_rights),
+	leaflets_in_publications: many(leaflets_in_publications),
 }));
 
 export const phone_rsvps_to_entityRelations = relations(phone_rsvps_to_entity, ({one}) => ({
@@ -145,6 +150,15 @@ export const phone_rsvps_to_entityRelations = relations(phone_rsvps_to_entity, (
 		fields: [phone_rsvps_to_entity.entity],
 		references: [entities.id]
 	}),
+}));
+
+export const site_standard_publicationsRelations = relations(site_standard_publications, ({one, many}) => ({
+	identity: one(identities, {
+		fields: [site_standard_publications.identity_did],
+		references: [identities.atp_did]
+	}),
+	site_standard_documents_in_publications: many(site_standard_documents_in_publications),
+	site_standard_subscriptions: many(site_standard_subscriptions),
 }));
 
 export const custom_domain_routesRelations = relations(custom_domain_routes, ({one}) => ({
@@ -177,6 +191,14 @@ export const custom_domainsRelations = relations(custom_domains, ({one, many}) =
 		relationName: "custom_domains_identity_id_identities_id"
 	}),
 	publication_domains: many(publication_domains),
+}));
+
+export const site_standard_documentsRelations = relations(site_standard_documents, ({one, many}) => ({
+	identity: one(identities, {
+		fields: [site_standard_documents.identity_did],
+		references: [identities.atp_did]
+	}),
+	site_standard_documents_in_publications: many(site_standard_documents_in_publications),
 }));
 
 export const email_subscriptions_to_entityRelations = relations(email_subscriptions_to_entity, ({one}) => ({
@@ -225,14 +247,14 @@ export const subscribers_to_publicationsRelations = relations(subscribers_to_pub
 	}),
 }));
 
-export const permission_token_on_homepageRelations = relations(permission_token_on_homepage, ({one}) => ({
-	identity: one(identities, {
-		fields: [permission_token_on_homepage.identity],
-		references: [identities.id]
+export const site_standard_documents_in_publicationsRelations = relations(site_standard_documents_in_publications, ({one}) => ({
+	site_standard_document: one(site_standard_documents, {
+		fields: [site_standard_documents_in_publications.document],
+		references: [site_standard_documents.uri]
 	}),
-	permission_token: one(permission_tokens, {
-		fields: [permission_token_on_homepage.token],
-		references: [permission_tokens.id]
+	site_standard_publication: one(site_standard_publications, {
+		fields: [site_standard_documents_in_publications.publication],
+		references: [site_standard_publications.uri]
 	}),
 }));
 
@@ -262,6 +284,17 @@ export const bsky_postsRelations = relations(bsky_posts, ({many}) => ({
 	document_mentions_in_bskies: many(document_mentions_in_bsky),
 }));
 
+export const permission_token_on_homepageRelations = relations(permission_token_on_homepage, ({one}) => ({
+	identity: one(identities, {
+		fields: [permission_token_on_homepage.identity],
+		references: [identities.id]
+	}),
+	permission_token: one(permission_tokens, {
+		fields: [permission_token_on_homepage.token],
+		references: [permission_tokens.id]
+	}),
+}));
+
 export const publication_domainsRelations = relations(publication_domains, ({one}) => ({
 	custom_domain: one(custom_domains, {
 		fields: [publication_domains.domain],
@@ -277,6 +310,50 @@ export const publication_domainsRelations = relations(publication_domains, ({one
 	}),
 }));
 
+export const publication_subscriptionsRelations = relations(publication_subscriptions, ({one}) => ({
+	identity: one(identities, {
+		fields: [publication_subscriptions.identity],
+		references: [identities.atp_did]
+	}),
+	publication: one(publications, {
+		fields: [publication_subscriptions.publication],
+		references: [publications.uri]
+	}),
+}));
+
+export const site_standard_subscriptionsRelations = relations(site_standard_subscriptions, ({one}) => ({
+	identity: one(identities, {
+		fields: [site_standard_subscriptions.identity],
+		references: [identities.atp_did]
+	}),
+	site_standard_publication: one(site_standard_publications, {
+		fields: [site_standard_subscriptions.publication],
+		references: [site_standard_publications.uri]
+	}),
+}));
+
+export const leaflets_to_documentsRelations = relations(leaflets_to_documents, ({one}) => ({
+	document: one(documents, {
+		fields: [leaflets_to_documents.document],
+		references: [documents.uri]
+	}),
+	permission_token: one(permission_tokens, {
+		fields: [leaflets_to_documents.leaflet],
+		references: [permission_tokens.id]
+	}),
+}));
+
+export const permission_token_rightsRelations = relations(permission_token_rights, ({one}) => ({
+	entity_set: one(entity_sets, {
+		fields: [permission_token_rights.entity_set],
+		references: [entity_sets.id]
+	}),
+	permission_token: one(permission_tokens, {
+		fields: [permission_token_rights.token],
+		references: [permission_tokens.id]
+	}),
+}));
+
 export const leaflets_in_publicationsRelations = relations(leaflets_in_publications, ({one}) => ({
 	document: one(documents, {
 		fields: [leaflets_in_publications.doc],
@@ -289,27 +366,5 @@ export const leaflets_in_publicationsRelations = relations(leaflets_in_publicati
 	publication: one(publications, {
 		fields: [leaflets_in_publications.publication],
 		references: [publications.uri]
-	}),
-}));
-
-export const publication_subscriptionsRelations = relations(publication_subscriptions, ({one}) => ({
-	identity: one(identities, {
-		fields: [publication_subscriptions.identity],
-		references: [identities.atp_did]
-	}),
-	publication: one(publications, {
-		fields: [publication_subscriptions.publication],
-		references: [publications.uri]
-	}),
-}));
-
-export const permission_token_rightsRelations = relations(permission_token_rights, ({one}) => ({
-	entity_set: one(entity_sets, {
-		fields: [permission_token_rights.entity_set],
-		references: [entity_sets.id]
-	}),
-	permission_token: one(permission_tokens, {
-		fields: [permission_token_rights.token],
-		references: [permission_tokens.id]
 	}),
 }));

@@ -21,7 +21,6 @@ import {
   PublicationBackgroundProvider,
   PublicationThemeProvider,
 } from "./PublicationThemeProvider";
-import { PubLeafletPublication } from "lexicons/api";
 import { getColorDifference } from "./themeUtils";
 
 // define a function to set an Aria Color to a CSS Variable in RGB
@@ -40,12 +39,12 @@ export function ThemeProvider(props: {
   children: React.ReactNode;
   className?: string;
 }) {
-  let { data: pub } = useLeafletPublicationData();
+  let { data: pub, normalizedPublication } = useLeafletPublicationData();
   if (!pub || !pub.publications) return <LeafletThemeProvider {...props} />;
   return (
     <PublicationThemeProvider
       {...props}
-      theme={(pub.publications?.record as PubLeafletPublication.Record)?.theme}
+      theme={normalizedPublication?.theme}
       pub_creator={pub.publications?.identity_did}
     />
   );
@@ -328,7 +327,7 @@ export const ThemeBackgroundProvider = (props: {
   entityID: string;
   children: React.ReactNode;
 }) => {
-  let { data: pub } = useLeafletPublicationData();
+  let { data: pub, normalizedPublication } = useLeafletPublicationData();
   let backgroundImage = useEntity(props.entityID, "theme/background-image");
   let backgroundImageRepeat = useEntity(
     props.entityID,
@@ -338,9 +337,7 @@ export const ThemeBackgroundProvider = (props: {
     return (
       <PublicationBackgroundProvider
         pub_creator={pub?.publications.identity_did || ""}
-        theme={
-          (pub.publications?.record as PubLeafletPublication.Record)?.theme
-        }
+        theme={normalizedPublication?.theme}
       >
         {props.children}
       </PublicationBackgroundProvider>

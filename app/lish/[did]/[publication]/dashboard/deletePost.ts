@@ -39,10 +39,15 @@ export async function deletePost(
   }
 
   await Promise.all([
+    // Delete from both PDS collections (document exists in one or the other)
     agent.pub.leaflet.document.delete({
       repo: credentialSession.did,
       rkey: uri.rkey,
-    }),
+    }).catch(() => {}),
+    agent.site.standard.document.delete({
+      repo: credentialSession.did,
+      rkey: uri.rkey,
+    }).catch(() => {}),
     supabaseServerClient.from("documents").delete().eq("uri", document_uri),
     supabaseServerClient
       .from("leaflets_in_publications")
@@ -83,10 +88,15 @@ export async function unpublishPost(
   }
 
   await Promise.all([
+    // Delete from both PDS collections (document exists in one or the other)
     agent.pub.leaflet.document.delete({
       repo: credentialSession.did,
       rkey: uri.rkey,
-    }),
+    }).catch(() => {}),
+    agent.site.standard.document.delete({
+      repo: credentialSession.did,
+      rkey: uri.rkey,
+    }).catch(() => {}),
     supabaseServerClient.from("documents").delete().eq("uri", document_uri),
   ]);
   revalidatePath("/lish/[did]/[publication]/dashboard", "layout");

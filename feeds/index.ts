@@ -3,7 +3,10 @@ import { serve } from "@hono/node-server";
 import { DidResolver } from "@atproto/identity";
 import { parseReqNsid, verifyJwt } from "@atproto/xrpc-server";
 import { supabaseServerClient } from "supabase/serverClient";
-import { PubLeafletDocument } from "lexicons/api";
+import {
+  normalizeDocumentRecord,
+  type NormalizedDocument,
+} from "src/utils/normalizeRecords";
 import { inngest } from "app/api/inngest/client";
 import { AtUri } from "@atproto/api";
 
@@ -112,7 +115,7 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
       );
   }
   query = query
-    .not("data -> postRef", "is", null)
+    .or("data->postRef.not.is.null,data->bskyPostRef.not.is.null")
     .order("indexed_at", { ascending: false })
     .order("uri", { ascending: false })
     .limit(25);
@@ -133,9 +136,9 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
     cursor: newCursor || cursor,
     feed: posts.flatMap((p) => {
       if (!p.data) return [];
-      let record = p.data as PubLeafletDocument.Record;
-      if (!record.postRef) return [];
-      return { post: record.postRef.uri };
+      const normalizedDoc = normalizeDocumentRecord(p.data, p.uri);
+      if (!normalizedDoc?.bskyPostRef) return [];
+      return { post: normalizedDoc.bskyPostRef.uri };
     }),
   });
 });

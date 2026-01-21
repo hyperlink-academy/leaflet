@@ -1,5 +1,9 @@
 import { AtUri } from "@atproto/api";
 import { atUriToUrl } from "src/utils/mentionUtils";
+import {
+  isDocumentCollection,
+  isPublicationCollection,
+} from "src/utils/collectionHelpers";
 
 /**
  * Component for rendering at-uri mentions (publications and documents) as clickable links.
@@ -16,8 +20,8 @@ export function AtMentionLink({
   className?: string;
 }) {
   const aturi = new AtUri(atURI);
-  const isPublication = aturi.collection === "pub.leaflet.publication";
-  const isDocument = aturi.collection === "pub.leaflet.document";
+  const isPublication = isPublicationCollection(aturi.collection);
+  const isDocument = isDocumentCollection(aturi.collection);
 
   // Show publication icon if available
   const icon =

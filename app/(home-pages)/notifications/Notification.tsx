@@ -1,9 +1,10 @@
 "use client";
 import { Avatar } from "components/Avatar";
 import { BaseTextBlock } from "app/lish/[did]/[publication]/[rkey]/Blocks/BaseTextBlock";
-import { PubLeafletPublication, PubLeafletRichtextFacet } from "lexicons/api";
+import { PubLeafletRichtextFacet } from "lexicons/api";
 import { timeAgo } from "src/utils/timeAgo";
 import { useReplicache, useEntity } from "src/replicache";
+import type { NormalizedPublication } from "src/utils/normalizeRecords";
 
 export const Notification = (props: {
   icon: React.ReactNode;
@@ -58,8 +59,8 @@ export const Notification = (props: {
 
 export const ContentLayout = (props: {
   children: React.ReactNode;
-  postTitle: string;
-  pubRecord?: PubLeafletPublication.Record;
+  postTitle: string | undefined;
+  pubRecord?: NormalizedPublication | null;
 }) => {
   let { rootEntity } = useReplicache();
   let cardBorderHidden = useEntity(rootEntity, "theme/card-border-hidden")?.data
@@ -77,7 +78,7 @@ export const ContentLayout = (props: {
         <>
           <hr className="mt-1 mb-1 border-border-light" />
           <a
-            href={`https://${props.pubRecord.base_path}`}
+            href={props.pubRecord.url}
             className="relative text-xs text-tertiary flex gap-[6px] items-center font-bold hover:no-underline!"
           >
             {props.pubRecord.name}

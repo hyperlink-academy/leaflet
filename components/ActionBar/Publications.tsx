@@ -5,9 +5,12 @@ import { useIdentityData } from "components/IdentityProvider";
 import { theme } from "tailwind.config";
 import { getBasePublicationURL } from "app/lish/createPub/getPublicationURL";
 import { Json } from "supabase/database.types";
-import { PubLeafletPublication } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { ActionButton } from "./ActionButton";
+import {
+  normalizePublicationRecord,
+  type NormalizedPublication,
+} from "src/utils/normalizeRecords";
 import { SpeedyLink } from "components/SpeedyLink";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { Popover } from "components/Popover";
@@ -85,7 +88,7 @@ export const PublicationOption = (props: {
   record: Json;
   current?: boolean;
 }) => {
-  let record = props.record as PubLeafletPublication.Record | null;
+  let record = normalizePublicationRecord(props.record);
   if (!record) return;
 
   return (
@@ -181,13 +184,13 @@ export const PubListEmptyContent = (props: { compact?: boolean }) => {
 };
 
 export const PubIcon = (props: {
-  record: PubLeafletPublication.Record;
+  record: NormalizedPublication | null;
   uri: string;
   small?: boolean;
   large?: boolean;
   className?: string;
 }) => {
-  if (!props.record) return;
+  if (!props.record) return null;
 
   let iconSizeClassName = `${props.small ? "w-4 h-4" : props.large ? "w-12 h-12" : "w-6 h-6"} rounded-full`;
 

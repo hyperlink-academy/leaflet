@@ -1,6 +1,6 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { PublishPost } from "./PublishPost";
-import { PubLeafletPublication } from "lexicons/api";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { getIdentityData } from "actions/getIdentityData";
 
 import { AtpAgent } from "@atproto/api";
@@ -118,7 +118,7 @@ export default async function PublishLeafletPage(props: Props) {
         title={title}
         description={description}
         publication_uri={publication?.uri}
-        record={publication?.record as PubLeafletPublication.Record | undefined}
+        record={normalizePublicationRecord(publication?.record)}
         posts_in_pub={publication?.documents_in_publications[0]?.count}
         entitiesToDelete={entitiesToDelete}
         hasDraft={hasDraft}

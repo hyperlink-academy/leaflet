@@ -1,14 +1,16 @@
 import { AtUri } from "@atproto/syntax";
 import { Feed } from "feed";
-import {
-  PubLeafletDocument,
-  PubLeafletPagesLinearDocument,
-  PubLeafletPublication,
-} from "lexicons/api";
+import { PubLeafletPagesLinearDocument } from "lexicons/api";
 import { createElement } from "react";
 import { StaticPostContent } from "./[rkey]/StaticPostContent";
 import { supabaseServerClient } from "supabase/serverClient";
 import { NextResponse } from "next/server";
+import {
+  normalizePublicationRecord,
+  normalizeDocumentRecord,
+  hasLeafletContent,
+} from "src/utils/normalizeRecords";
+import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 
 export async function generateFeed(
   did: string,
@@ -17,15 +19,7 @@ export async function generateFeed(
   let renderToReadableStream = await import("react-dom/server").then(
     (module) => module.renderToReadableStream,
   );
-  let uri;
-  if (/^(?!\.$|\.\.S)[A-Za-z0-9._:~-]{1,512}$/.test(publication_name)) {
-    uri = AtUri.make(
-      did,
-      "pub.leaflet.publication",
-      publication_name,
-    ).toString();
-  }
-  let { data: publication } = await supabaseServerClient
+  let { data: publications } = await supabaseServerClient
     .from("publications")
     .select(
       `*,
@@ -34,40 +28,45 @@ export async function generateFeed(
       `,
     )
     .eq("identity_did", did)
-    .or(`name.eq."${publication_name}", uri.eq."${uri}"`)
-    .single();
+    .or(publicationNameOrUriFilter(did, publication_name))
+    .order("uri", { ascending: false })
+    .limit(1);
+  let publication = publications?.[0];
 
-  let pubRecord = publication?.record as PubLeafletPublication.Record;
+  const pubRecord = normalizePublicationRecord(publication?.record);
   if (!publication || !pubRecord)
     return new NextResponse(null, { status: 404 });
 
   const feed = new Feed({
     title: pubRecord.name,
     description: pubRecord.description,
-    id: `https://${pubRecord.base_path}`,
-    link: `https://${pubRecord.base_path}`,
+    id: pubRecord.url,
+    link: pubRecord.url,
     language: "en", // optional, used only in RSS 2.0, possible values: http://www.w3.org/TR/REC-html40/struct/dirlang.html#langcodes
     copyright: "",
     feedLinks: {
-      rss: `https://${pubRecord.base_path}/rss`,
-      atom: `https://${pubRecord.base_path}/atom`,
-      json: `https://${pubRecord.base_path}/json`,
+      rss: `${pubRecord.url}/rss`,
+      atom: `${pubRecord.url}/atom`,
+      json: `${pubRecord.url}/json`,
     },
   });
 
   await Promise.all(
     publication.documents_in_publications.map(async (doc) => {
       if (!doc.documents) return;
-      let record = doc.documents?.data as PubLeafletDocument.Record;
-      let uri = new AtUri(doc.documents?.uri);
-      let rkey = uri.rkey;
+      const record = normalizeDocumentRecord(doc.documents?.data, doc.documents?.uri);
+      const uri = new AtUri(doc.documents?.uri);
+      const rkey = uri.rkey;
       if (!record) return;
-      let firstPage = record.pages[0];
+
       let blocks: PubLeafletPagesLinearDocument.Block[] = [];
-      if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
-        blocks = firstPage.blocks || [];
+      if (hasLeafletContent(record) && record.content.pages[0]) {
+        const firstPage = record.content.pages[0];
+        if (PubLeafletPagesLinearDocument.isMain(firstPage)) {
+          blocks = firstPage.blocks || [];
+        }
       }
-      let stream = await renderToReadableStream(
+      const stream = await renderToReadableStream(
         createElement(StaticPostContent, { blocks, did: uri.host }),
       );
       const reader = stream.getReader();
@@ -85,8 +84,8 @@ export async function generateFeed(
         title: record.title,
         description: record.description,
         date: record.publishedAt ? new Date(record.publishedAt) : new Date(),
-        id: `https://${pubRecord.base_path}/${rkey}`,
-        link: `https://${pubRecord.base_path}/${rkey}`,
+        id: `${pubRecord.url}/${rkey}`,
+        link: `${pubRecord.url}/${rkey}`,
         content: chunks.join(""),
       });
     }),

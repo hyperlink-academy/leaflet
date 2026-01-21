@@ -2,8 +2,6 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useContext } from "react";
-import { PostPageContext } from "./PostPageContext";
 import { create } from "zustand";
 import { decodeQuotePosition, QuotePosition } from "./quotePosition";
 
@@ -12,7 +10,6 @@ export const useActiveHighlightState = create(() => ({
 }));
 
 export const useHighlight = (pos: number[], pageId?: string) => {
-  let doc = useContext(PostPageContext);
   let { quote } = useParams();
   let activeHighlight = useActiveHighlightState(
     (state) => state.activeHighlight,

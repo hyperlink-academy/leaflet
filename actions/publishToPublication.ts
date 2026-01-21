@@ -11,6 +11,8 @@ import {
   PubLeafletBlocksText,
   PubLeafletBlocksUnorderedList,
   PubLeafletDocument,
+  SiteStandardDocument,
+  PubLeafletContent,
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
   PubLeafletRichtextFacet,
@@ -43,6 +45,10 @@ import { getBlocksWithTypeLocal } from "src/hooks/queries/useBlocks";
 import { Lock } from "src/utils/lock";
 import type { PubLeafletPublication } from "lexicons/api";
 import {
+  normalizeDocumentRecord,
+  type NormalizedDocument,
+} from "src/utils/normalizeRecords";
+import {
   ColorToRGB,
   ColorToRGBA,
 } from "components/ThemeManager/colorToLexicons";
@@ -52,6 +58,11 @@ import {
   pingIdentityToUpdateNotification,
 } from "src/notifications";
 import { v7 } from "uuid";
+import {
+  isDocumentCollection,
+  isPublicationCollection,
+  getDocumentType,
+} from "src/utils/collectionHelpers";
 
 type PublishResult =
   | { success: true; rkey: string; record: PubLeafletDocument.Record }
@@ -149,9 +160,20 @@ export async function publishToPublication({
     credentialSession.did!,
   );
 
-  let existingRecord = draft?.documents?.data as
-    | PubLeafletDocument.Record
-    | undefined;
+  let existingRecord: Partial<PubLeafletDocument.Record> = {};
+  const normalizedDoc = normalizeDocumentRecord(draft?.documents?.data);
+  if (normalizedDoc) {
+    // When reading existing data, use normalized format to extract fields
+    // The theme is preserved in NormalizedDocument for backward compatibility
+    existingRecord = {
+      publishedAt: normalizedDoc.publishedAt,
+      title: normalizedDoc.title,
+      description: normalizedDoc.description,
+      tags: normalizedDoc.tags,
+      coverImage: normalizedDoc.coverImage,
+      theme: normalizedDoc.theme,
+    };
+  }
 
   // Extract theme for standalone documents (not for publications)
   let theme: PubLeafletPublication.Theme | undefined;
@@ -176,36 +198,72 @@ export async function publishToPublication({
     }
   }
 
-  let record: PubLeafletDocument.Record = {
-    $type: "pub.leaflet.document",
-    author: credentialSession.did!,
-    ...(publication_uri && { publication: publication_uri }),
-    ...(theme && { theme }),
-    title: title || "Untitled",
-    description: description || "",
-    ...(tags !== undefined && { tags }), // Include tags if provided (even if empty array to clear tags)
-    ...(coverImageBlob && { coverImage: coverImageBlob }), // Include cover image if uploaded
-    pages: pages.map((p) => {
-      if (p.type === "canvas") {
-        return {
-          $type: "pub.leaflet.pages.canvas" as const,
-          id: p.id,
-          blocks: p.blocks as PubLeafletPagesCanvas.Block[],
-        };
-      } else {
-        return {
-          $type: "pub.leaflet.pages.linearDocument" as const,
-          id: p.id,
-          blocks: p.blocks as PubLeafletPagesLinearDocument.Block[],
-        };
-      }
-    }),
-    publishedAt:
-      publishedAt || existingRecord?.publishedAt || new Date().toISOString(),
-  };
+  // Determine the collection to use - preserve existing schema if updating
+  const existingCollection = existingDocUri ? new AtUri(existingDocUri).collection : undefined;
+  const documentType = getDocumentType(existingCollection);
 
-  // Keep the same rkey if updating an existing document
-  let rkey = existingDocUri ? new AtUri(existingDocUri).rkey : TID.nextStr();
+  // Build the pages array (used by both formats)
+  const pagesArray = pages.map((p) => {
+    if (p.type === "canvas") {
+      return {
+        $type: "pub.leaflet.pages.canvas" as const,
+        id: p.id,
+        blocks: p.blocks as PubLeafletPagesCanvas.Block[],
+      };
+    } else {
+      return {
+        $type: "pub.leaflet.pages.linearDocument" as const,
+        id: p.id,
+        blocks: p.blocks as PubLeafletPagesLinearDocument.Block[],
+      };
+    }
+  });
+
+  // Determine the rkey early since we need it for the path field
+  const rkey = existingDocUri ? new AtUri(existingDocUri).rkey : TID.nextStr();
+
+  // Create record based on the document type
+  let record: PubLeafletDocument.Record | SiteStandardDocument.Record;
+
+  if (documentType === "site.standard.document") {
+    // site.standard.document format
+    // For standalone docs, use HTTPS URL; for publication docs, use the publication AT-URI
+    const siteUri = publication_uri || `https://leaflet.pub/p/${credentialSession.did}`;
+
+    record = {
+      $type: "site.standard.document",
+      title: title || "Untitled",
+      site: siteUri,
+      path: rkey,
+      publishedAt:
+        publishedAt || existingRecord.publishedAt || new Date().toISOString(),
+      ...(description && { description }),
+      ...(tags !== undefined && { tags }),
+      ...(coverImageBlob && { coverImage: coverImageBlob }),
+      // Include theme for standalone documents (not for publication documents)
+      ...(!publication_uri && theme && { theme }),
+      content: {
+        $type: "pub.leaflet.content" as const,
+        pages: pagesArray,
+      },
+    } satisfies SiteStandardDocument.Record;
+  } else {
+    // pub.leaflet.document format (legacy)
+    record = {
+      $type: "pub.leaflet.document",
+      author: credentialSession.did!,
+      ...(publication_uri && { publication: publication_uri }),
+      ...(theme && { theme }),
+      title: title || "Untitled",
+      description: description || "",
+      ...(tags !== undefined && { tags }),
+      ...(coverImageBlob && { coverImage: coverImageBlob }),
+      pages: pagesArray,
+      publishedAt:
+        publishedAt || existingRecord.publishedAt || new Date().toISOString(),
+    } satisfies PubLeafletDocument.Record;
+  }
+
   let { data: result } = await agent.com.atproto.repo.putRecord({
     rkey,
     repo: credentialSession.did!,
@@ -217,7 +275,7 @@ export async function publishToPublication({
   // Optimistically create database entries
   await supabaseServerClient.from("documents").upsert({
     uri: result.uri,
-    data: record as Json,
+    data: record as unknown as Json,
   });
 
   if (publication_uri) {
@@ -839,15 +897,28 @@ async function extractThemeFromFacts(
  */
 async function createMentionNotifications(
   documentUri: string,
-  record: PubLeafletDocument.Record,
+  record: PubLeafletDocument.Record | SiteStandardDocument.Record,
   authorDid: string,
 ) {
   const mentionedDids = new Set<string>();
   const mentionedPublications = new Map<string, string>(); // Map of DID -> publication URI
   const mentionedDocuments = new Map<string, string>(); // Map of DID -> document URI
 
+  // Extract pages from either format
+  let pages: PubLeafletContent.Main["pages"] | undefined;
+  if (record.$type === "site.standard.document") {
+    const content = record.content;
+    if (content && PubLeafletContent.isMain(content)) {
+      pages = content.pages;
+    }
+  } else {
+    pages = record.pages;
+  }
+
+  if (!pages) return;
+
   // Extract mentions from all text blocks in all pages
-  for (const page of record.pages) {
+  for (const page of pages) {
     if (page.$type === "pub.leaflet.pages.linearDocument") {
       const linearPage = page as PubLeafletPagesLinearDocument.Main;
       for (const blockWrapper of linearPage.blocks) {
@@ -867,7 +938,7 @@ async function createMentionNotifications(
                 if (PubLeafletRichtextFacet.isAtMention(feature)) {
                   const uri = new AtUri(feature.atURI);
 
-                  if (uri.collection === "pub.leaflet.publication") {
+                  if (isPublicationCollection(uri.collection)) {
                     // Get the publication owner's DID
                     const { data: publication } = await supabaseServerClient
                       .from("publications")
@@ -881,7 +952,7 @@ async function createMentionNotifications(
                         feature.atURI,
                       );
                     }
-                  } else if (uri.collection === "pub.leaflet.document") {
+                  } else if (isDocumentCollection(uri.collection)) {
                     // Get the document owner's DID
                     const { data: document } = await supabaseServerClient
                       .from("documents")
@@ -890,10 +961,14 @@ async function createMentionNotifications(
                       .single();
 
                     if (document) {
-                      const docRecord =
-                        document.data as PubLeafletDocument.Record;
-                      if (docRecord.author !== authorDid) {
-                        mentionedDocuments.set(docRecord.author, feature.atURI);
+                      const normalizedMentionedDoc = normalizeDocumentRecord(
+                        document.data,
+                      );
+                      // Get the author from the document URI (the DID is the host part)
+                      const mentionedUri = new AtUri(feature.atURI);
+                      const docAuthor = mentionedUri.host;
+                      if (normalizedMentionedDoc && docAuthor !== authorDid) {
+                        mentionedDocuments.set(docAuthor, feature.atURI);
                       }
                     }
                   }

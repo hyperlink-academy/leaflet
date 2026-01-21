@@ -2,7 +2,7 @@ import { Avatar } from "components/Avatar";
 import { Notification } from "./Notification";
 import { HydratedSubscribeNotification } from "src/notifications";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-import { AppBskyActorProfile, PubLeafletPublication } from "lexicons/api";
+import { AppBskyActorProfile } from "lexicons/api";
 
 export const FollowNotification = (props: HydratedSubscribeNotification) => {
   const profileRecord = props.subscriptionData?.identities?.bsky_profiles
@@ -11,8 +11,7 @@ export const FollowNotification = (props: HydratedSubscribeNotification) => {
     profileRecord?.displayName ||
     props.subscriptionData?.identities?.bsky_profiles?.handle ||
     "Someone";
-  const pubRecord = props.subscriptionData?.publications
-    ?.record as PubLeafletPublication.Record;
+  const pubRecord = props.normalizedPublication;
   const avatarSrc =
     profileRecord?.avatar?.ref &&
     blobRefToSrc(
@@ -23,7 +22,7 @@ export const FollowNotification = (props: HydratedSubscribeNotification) => {
   return (
     <Notification
       timestamp={props.created_at}
-      href={`https://${pubRecord?.base_path}`}
+      href={pubRecord ? pubRecord.url : "#"}
       icon={<Avatar src={avatarSrc} displayName={displayName} tiny />}
       actionText={
         <>

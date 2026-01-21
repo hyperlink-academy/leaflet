@@ -6,16 +6,12 @@ import { getColorDifference } from "./themeUtils";
 import { useColorAttribute, colorToString } from "./useColorAttribute";
 import { BaseThemeProvider, CardBorderHiddenContext } from "./ThemeProvider";
 import { PubLeafletPublication, PubLeafletThemeColor } from "lexicons/api";
-import { usePublicationData } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+import {
+  usePublicationData,
+  useNormalizedPublicationRecord,
+} from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
-
-const PubThemeDefaults = {
-  backgroundColor: "#FDFCFA",
-  pageBackground: "#FDFCFA",
-  primary: "#272727",
-  accentText: "#FFFFFF",
-  accentBackground: "#0000FF",
-};
+import { PubThemeDefaults } from "./themeDefaults";
 
 // Default page background for standalone leaflets (matches editor default)
 const StandalonePageBackground = "#FFFFFF";
@@ -53,13 +49,14 @@ export function PublicationThemeProviderDashboard(props: {
 }) {
   let { data } = usePublicationData();
   let { publication: pub } = data || {};
+  const normalizedPub = useNormalizedPublicationRecord();
   return (
     <PublicationThemeProvider
       pub_creator={pub?.identity_did || ""}
-      theme={(pub?.record as PubLeafletPublication.Record)?.theme}
+      theme={normalizedPub?.theme}
     >
       <PublicationBackgroundProvider
-        theme={(pub?.record as PubLeafletPublication.Record)?.theme}
+        theme={normalizedPub?.theme}
         pub_creator={pub?.identity_did || ""}
       >
         {props.children}

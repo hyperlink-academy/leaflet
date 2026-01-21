@@ -7,7 +7,7 @@ import { Radio } from "components/Checkbox";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
-import { PubLeafletPublication } from "lexicons/api";
+import type { NormalizedPublication } from "src/utils/normalizeRecords";
 import { publishPostToBsky } from "./publishBskyPost";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AtUri } from "@atproto/syntax";
@@ -36,7 +36,7 @@ type Props = {
   profile: ProfileViewDetailed;
   description: string;
   publication_uri?: string;
-  record?: PubLeafletPublication.Record;
+  record?: NormalizedPublication | null;
   posts_in_pub?: number;
   entitiesToDelete?: string[];
   hasDraft: boolean;
@@ -135,8 +135,8 @@ const PublishPostForm = (
     }
 
     // Generate post URL based on whether it's in a publication or standalone
-    let post_url = props.record?.base_path
-      ? `https://${props.record.base_path}/${result.rkey}`
+    let post_url = props.record?.url
+      ? `${props.record.url}/${result.rkey}`
       : `https://leaflet.pub/p/${props.profile.did}/${result.rkey}`;
 
     let [text, facets] = editorStateRef.current
@@ -331,7 +331,7 @@ const ShareOptions = (props: {
   title: string;
   profile: ProfileViewDetailed;
   description: string;
-  record?: PubLeafletPublication.Record;
+  record?: NormalizedPublication | null;
 }) => {
   return (
     <div className="flex flex-col gap-2">
@@ -398,7 +398,7 @@ const ShareOptions = (props: {
                   <div className="text-tertiary">{props.description}</div>
                   <hr className="border-border mt-2 mb-1" />
                   <p className="text-xs text-tertiary">
-                    {props.record?.base_path}
+                    {props.record?.url?.replace(/^https?:\/\//, "")}
                   </p>
                 </div>
               </div>
@@ -415,7 +415,7 @@ const ShareOptions = (props: {
 
 const PublishingTo = (props: {
   publication_uri?: string;
-  record?: PubLeafletPublication.Record;
+  record?: NormalizedPublication | null;
 }) => {
   if (props.publication_uri && props.record) {
     return (

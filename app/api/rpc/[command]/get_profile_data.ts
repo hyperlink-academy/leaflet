@@ -6,6 +6,10 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Agent } from "@atproto/api";
 import { getIdentityData } from "actions/getIdentityData";
 import { createOauthClient } from "src/atproto-oauth";
+import {
+  normalizePublicationRow,
+  hasValidPublication,
+} from "src/utils/normalizeRecords";
 
 export type GetProfileDataReturnType = Awaited<
   ReturnType<(typeof get_profile_data)["handler"]>
@@ -59,10 +63,15 @@ export const get_profile_data = makeRoute({
       publicationsReq,
     ]);
 
+    // Normalize publication records before returning
+    const normalizedPublications = (publications || [])
+      .map(normalizePublicationRow)
+      .filter(hasValidPublication);
+
     return {
       result: {
         profile,
-        publications: publications || [],
+        publications: normalizedPublications,
       },
     };
   },

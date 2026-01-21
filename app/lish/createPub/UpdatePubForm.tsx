@@ -7,8 +7,10 @@ import {
   updatePublication,
   updatePublicationBasePath,
 } from "./updatePublication";
-import { usePublicationData } from "../[did]/[publication]/dashboard/PublicationSWRProvider";
-import { PubLeafletPublication } from "lexicons/api";
+import {
+  usePublicationData,
+  useNormalizedPublicationRecord,
+} from "../[did]/[publication]/dashboard/PublicationSWRProvider";
 import useSWR, { mutate } from "swr";
 import { AddTiny } from "components/Icons/AddTiny";
 import { DotLoader } from "components/utils/DotLoader";
@@ -30,7 +32,7 @@ export const EditPubForm = (props: {
 }) => {
   let { data } = usePublicationData();
   let { publication: pubData } = data || {};
-  let record = pubData?.record as PubLeafletPublication.Record;
+  let record = useNormalizedPublicationRecord();
   let [formState, setFormState] = useState<"normal" | "loading">("normal");
 
   let [nameValue, setNameValue] = useState(record?.name || "");
@@ -60,14 +62,14 @@ export const EditPubForm = (props: {
   let [iconPreview, setIconPreview] = useState<string | null>(null);
   let fileInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (!pubData || !pubData.record) return;
+    if (!pubData || !pubData.record || !record) return;
     setNameValue(record.name);
     setDescriptionValue(record.description || "");
     if (record.icon)
       setIconPreview(
         `/api/atproto_images?did=${pubData.identity_did}&cid=${(record.icon.ref as unknown as { $link: string })["$link"]}`,
       );
-  }, [pubData]);
+  }, [pubData, record]);
   let toast = useToaster();
 
   return (
@@ -202,8 +204,9 @@ export const EditPubForm = (props: {
 export function CustomDomainForm() {
   let { data } = usePublicationData();
   let { publication: pubData } = data || {};
+  let record = useNormalizedPublicationRecord();
   if (!pubData) return null;
-  let record = pubData?.record as PubLeafletPublication.Record;
+  if (!record) return null;
   let [state, setState] = useState<
     | { type: "default" }
     | { type: "addDomain" }
@@ -243,7 +246,7 @@ export function CustomDomainForm() {
                 <Domain
                   domain={d.domain}
                   publication_uri={pubData.uri}
-                  base_path={record.base_path || ""}
+                  base_path={record.url.replace(/^https?:\/\//, "")}
                   setDomain={(v) => {
                     setState({
                       type: "domainSettings",

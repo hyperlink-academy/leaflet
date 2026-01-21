@@ -1,11 +1,10 @@
 import { supabaseServerClient } from "supabase/serverClient";
-import { AtUri } from "@atproto/syntax";
-import { ids } from "lexicons/api/lexicons";
-import { PubLeafletDocument } from "lexicons/api";
 import { Metadata } from "next";
 import { idResolver } from "app/(home-pages)/reader/idResolver";
 import { DocumentPageRenderer } from "app/lish/[did]/[publication]/[rkey]/DocumentPageRenderer";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
+import { normalizeDocumentRecord } from "src/utils/normalizeRecords";
+import { documentUriFilter } from "src/utils/uriHelpers";
 
 export async function generateMetadata(props: {
   params: Promise<{ didOrHandle: string; rkey: string }>;
@@ -24,19 +23,18 @@ export async function generateMetadata(props: {
     }
   }
 
-  let { data: document } = await supabaseServerClient
+  let { data: documents } = await supabaseServerClient
     .from("documents")
-    .select("*, documents_in_publications(publications(*))")
-    .eq("uri", AtUri.make(did, ids.PubLeafletDocument, params.rkey))
-    .single();
+    .select("*")
+    .or(documentUriFilter(did, params.rkey))
+    .order("uri", { ascending: false })
+    .limit(1);
+  let document = documents?.[0];
 
   if (!document) return { title: "404" };
 
-  let docRecord = document.data as PubLeafletDocument.Record;
-
-  // For documents in publications, include publication name
-  let publicationName =
-    document.documents_in_publications[0]?.publications?.name;
+  const docRecord = normalizeDocumentRecord(document.data);
+  if (!docRecord) return { title: "404" };
 
   return {
     icons: {
@@ -45,9 +43,7 @@ export async function generateMetadata(props: {
         url: document.uri,
       },
     },
-    title: publicationName
-      ? `${docRecord.title} - ${publicationName}`
-      : docRecord.title,
+    title: docRecord.title,
     description: docRecord?.description || "",
   };
 }

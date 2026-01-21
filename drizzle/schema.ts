@@ -136,7 +136,7 @@ export const permission_tokens = pgTable("permission_tokens", {
 export const identities = pgTable("identities", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	home_page: uuid("home_page").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
+	home_page: uuid("home_page").default(sql`create_identity_homepage()`).notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
 	email: text("email"),
 	atp_did: text("atp_did"),
 	interface_state: jsonb("interface_state"),
@@ -173,6 +173,13 @@ export const phone_rsvps_to_entity = pgTable("phone_rsvps_to_entity", {
 	}
 });
 
+export const site_standard_publications = pgTable("site_standard_publications", {
+	uri: text("uri").primaryKey().notNull(),
+	data: jsonb("data").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	identity_did: text("identity_did").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
+});
+
 export const custom_domain_routes = pgTable("custom_domain_routes", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	domain: text("domain").notNull().references(() => custom_domains.domain),
@@ -186,6 +193,13 @@ export const custom_domain_routes = pgTable("custom_domain_routes", {
 		edit_permission_token_idx: index("custom_domain_routes_edit_permission_token_idx").on(table.edit_permission_token),
 		custom_domain_routes_domain_route_key: unique("custom_domain_routes_domain_route_key").on(table.domain, table.route),
 	}
+});
+
+export const site_standard_documents = pgTable("site_standard_documents", {
+	uri: text("uri").primaryKey().notNull(),
+	data: jsonb("data").notNull(),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	identity_did: text("identity_did").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
 });
 
 export const custom_domains = pgTable("custom_domains", {
@@ -260,14 +274,14 @@ export const subscribers_to_publications = pgTable("subscribers_to_publications"
 	}
 });
 
-export const permission_token_on_homepage = pgTable("permission_token_on_homepage", {
-	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
-	identity: uuid("identity").notNull().references(() => identities.id, { onDelete: "cascade" } ),
-	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+export const site_standard_documents_in_publications = pgTable("site_standard_documents_in_publications", {
+	publication: text("publication").notNull().references(() => site_standard_publications.uri, { onDelete: "cascade" } ),
+	document: text("document").notNull().references(() => site_standard_documents.uri, { onDelete: "cascade" } ),
+	indexed_at: timestamp("indexed_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 },
 (table) => {
 	return {
-		permission_token_creator_pkey: primaryKey({ columns: [table.token, table.identity], name: "permission_token_creator_pkey"}),
+		site_standard_documents_in_publications_pkey: primaryKey({ columns: [table.publication, table.document], name: "site_standard_documents_in_publications_pkey"}),
 	}
 });
 
@@ -295,6 +309,18 @@ export const document_mentions_in_bsky = pgTable("document_mentions_in_bsky", {
 	}
 });
 
+export const permission_token_on_homepage = pgTable("permission_token_on_homepage", {
+	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	identity: uuid("identity").notNull().references(() => identities.id, { onDelete: "cascade" } ),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	archived: boolean("archived"),
+},
+(table) => {
+	return {
+		permission_token_creator_pkey: primaryKey({ columns: [table.token, table.identity], name: "permission_token_creator_pkey"}),
+	}
+});
+
 export const publication_domains = pgTable("publication_domains", {
 	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
 	domain: text("domain").notNull().references(() => custom_domains.domain, { onDelete: "cascade" } ),
@@ -305,21 +331,6 @@ export const publication_domains = pgTable("publication_domains", {
 	return {
 		publication_idx: index("publication_domains_publication_idx").on(table.publication),
 		publication_domains_pkey: primaryKey({ columns: [table.publication, table.domain], name: "publication_domains_pkey"}),
-	}
-});
-
-export const leaflets_in_publications = pgTable("leaflets_in_publications", {
-	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
-	doc: text("doc").default('').references(() => documents.uri, { onDelete: "set null" } ),
-	leaflet: uuid("leaflet").notNull().references(() => permission_tokens.id, { onDelete: "cascade" } ),
-	description: text("description").default('').notNull(),
-	title: text("title").default('').notNull(),
-},
-(table) => {
-	return {
-		leaflet_idx: index("leaflets_in_publications_leaflet_idx").on(table.leaflet),
-		publication_idx: index("leaflets_in_publications_publication_idx").on(table.publication),
-		leaflets_in_publications_pkey: primaryKey({ columns: [table.publication, table.leaflet], name: "leaflets_in_publications_pkey"}),
 	}
 });
 
@@ -338,6 +349,35 @@ export const publication_subscriptions = pgTable("publication_subscriptions", {
 	}
 });
 
+export const site_standard_subscriptions = pgTable("site_standard_subscriptions", {
+	publication: text("publication").notNull().references(() => site_standard_publications.uri, { onDelete: "cascade" } ),
+	identity: text("identity").notNull().references(() => identities.atp_did, { onDelete: "cascade" } ),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	record: jsonb("record").notNull(),
+	uri: text("uri").notNull(),
+},
+(table) => {
+	return {
+		site_standard_subscriptions_pkey: primaryKey({ columns: [table.publication, table.identity], name: "site_standard_subscriptions_pkey"}),
+		site_standard_subscriptions_uri_key: unique("site_standard_subscriptions_uri_key").on(table.uri),
+	}
+});
+
+export const leaflets_to_documents = pgTable("leaflets_to_documents", {
+	leaflet: uuid("leaflet").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	document: text("document").notNull().references(() => documents.uri, { onDelete: "cascade", onUpdate: "cascade" } ),
+	created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	title: text("title").default('').notNull(),
+	description: text("description").default('').notNull(),
+	tags: text("tags").default('RRAY[').array(),
+	cover_image: text("cover_image"),
+},
+(table) => {
+	return {
+		leaflets_to_documents_pkey: primaryKey({ columns: [table.leaflet, table.document], name: "leaflets_to_documents_pkey"}),
+	}
+});
+
 export const permission_token_rights = pgTable("permission_token_rights", {
 	token: uuid("token").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 	entity_set: uuid("entity_set").notNull().references(() => entity_sets.id, { onDelete: "cascade", onUpdate: "cascade" } ),
@@ -352,5 +392,23 @@ export const permission_token_rights = pgTable("permission_token_rights", {
 		token_idx: index("permission_token_rights_token_idx").on(table.token),
 		entity_set_idx: index("permission_token_rights_entity_set_idx").on(table.entity_set),
 		permission_token_rights_pkey: primaryKey({ columns: [table.token, table.entity_set], name: "permission_token_rights_pkey"}),
+	}
+});
+
+export const leaflets_in_publications = pgTable("leaflets_in_publications", {
+	publication: text("publication").notNull().references(() => publications.uri, { onDelete: "cascade" } ),
+	doc: text("doc").default('').references(() => documents.uri, { onDelete: "set null" } ),
+	leaflet: uuid("leaflet").notNull().references(() => permission_tokens.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	description: text("description").default('').notNull(),
+	title: text("title").default('').notNull(),
+	archived: boolean("archived"),
+	tags: text("tags").default('RRAY[').array(),
+	cover_image: text("cover_image"),
+},
+(table) => {
+	return {
+		leaflet_idx: index("leaflets_in_publications_leaflet_idx").on(table.leaflet),
+		publication_idx: index("leaflets_in_publications_publication_idx").on(table.publication),
+		leaflets_in_publications_pkey: primaryKey({ columns: [table.publication, table.leaflet], name: "leaflets_in_publications_pkey"}),
 	}
 });

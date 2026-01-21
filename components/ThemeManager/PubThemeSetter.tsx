@@ -1,11 +1,11 @@
-import { usePublicationData } from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
+import {
+  usePublicationData,
+  useNormalizedPublicationRecord,
+} from "app/lish/[did]/[publication]/dashboard/PublicationSWRProvider";
 import { useState } from "react";
 import { pickers, SectionArrow } from "./ThemeSetter";
 import { Color } from "react-aria-components";
-import {
-  PubLeafletPublication,
-  PubLeafletThemeBackgroundImage,
-} from "lexicons/api";
+import { PubLeafletThemeBackgroundImage } from "lexicons/api";
 import { AtUri } from "@atproto/syntax";
 import { useLocalPubTheme } from "./PublicationThemeProvider";
 import { BaseThemeProvider } from "./ThemeProvider";
@@ -35,7 +35,7 @@ export const PubThemeSetter = (props: {
   let [openPicker, setOpenPicker] = useState<pickers>("null");
   let { data, mutate } = usePublicationData();
   let { publication: pub } = data || {};
-  let record = pub?.record as PubLeafletPublication.Record | undefined;
+  let record = useNormalizedPublicationRecord();
   let [showPageBackground, setShowPageBackground] = useState(
     !!record?.theme?.showPageBackground,
   );
@@ -246,7 +246,7 @@ const SamplePub = (props: {
 }) => {
   let { data } = usePublicationData();
   let { publication } = data || {};
-  let record = publication?.record as PubLeafletPublication.Record | null;
+  let record = useNormalizedPublicationRecord();
 
   return (
     <div
@@ -314,7 +314,7 @@ const SamplePost = (props: {
 }) => {
   let { data } = usePublicationData();
   let { publication } = data || {};
-  let record = publication?.record as PubLeafletPublication.Record | null;
+  let record = useNormalizedPublicationRecord();
   return (
     <div
       style={{

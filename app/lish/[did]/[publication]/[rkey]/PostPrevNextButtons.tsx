@@ -1,28 +1,22 @@
 "use client";
-import { PubLeafletDocument } from "lexicons/api";
-import { usePublicationData } from "../dashboard/PublicationSWRProvider";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { AtUri } from "@atproto/api";
-import { useParams } from "next/navigation";
-import { getPostPageData } from "./getPostPageData";
-import { PostPageContext } from "./PostPageContext";
-import { useContext } from "react";
+import { useDocument } from "contexts/DocumentContext";
 import { SpeedyLink } from "components/SpeedyLink";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 
 export const PostPrevNextButtons = (props: { showPrevNext: boolean }) => {
-  let postData = useContext(PostPageContext);
-  let pub = postData?.documents_in_publications[0]?.publications;
+  const { prevNext, publication } = useDocument();
 
-  if (!props.showPrevNext || !pub || !postData) return;
+  if (!props.showPrevNext || !publication) return null;
 
   function getPostLink(uri: string) {
-    return pub && uri
-      ? `${getPublicationURL(pub)}/${new AtUri(uri).rkey}`
+    return publication && uri
+      ? `${getPublicationURL(publication)}/${new AtUri(uri).rkey}`
       : "leaflet.pub/not-found";
   }
-  let prevPost = postData?.prevNext?.prev;
-  let nextPost = postData?.prevNext?.next;
+  let prevPost = prevNext?.prev;
+  let nextPost = prevNext?.next;
 
   return (
     <div className="flex flex-col gap-1 w-full px-3 sm:px-4 pb-2 pt-2">

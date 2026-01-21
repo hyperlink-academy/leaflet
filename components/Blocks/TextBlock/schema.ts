@@ -2,6 +2,10 @@ import { AtUri } from "@atproto/api";
 import { Schema, Node, MarkSpec, NodeSpec } from "prosemirror-model";
 import { marks } from "prosemirror-schema-basic";
 import { theme } from "tailwind.config";
+import {
+  isDocumentCollection,
+  isPublicationCollection,
+} from "src/utils/collectionHelpers";
 
 let baseSchema = {
   marks: {
@@ -149,14 +153,14 @@ let baseSchema = {
         // components/AtMentionLink.tsx. If you update one, update the other.
         let className = "atMention mention";
         let aturi = new AtUri(node.attrs.atURI);
-        if (aturi.collection === "pub.leaflet.publication")
+        if (isPublicationCollection(aturi.collection))
           className += " font-bold";
-        if (aturi.collection === "pub.leaflet.document") className += " italic";
+        if (isDocumentCollection(aturi.collection)) className += " italic";
 
         // For publications and documents, show icon
         if (
-          aturi.collection === "pub.leaflet.publication" ||
-          aturi.collection === "pub.leaflet.document"
+          isPublicationCollection(aturi.collection) ||
+          isDocumentCollection(aturi.collection)
         ) {
           return [
             "span",

@@ -21,6 +21,11 @@ export type Events = {
     };
   };
   "appview/come-online": { data: {} };
+  "user/migrate-to-standard": {
+    data: {
+      did: string;
+    };
+  };
 };
 
 // Create a client to send and receive events

@@ -3,6 +3,10 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import type { Post } from "app/(home-pages)/reader/getReaderFeed";
+import {
+  normalizeDocumentRecord,
+  normalizePublicationRecord,
+} from "src/utils/normalizeRecords";
 
 export type Cursor = {
   indexed_at: string;
@@ -58,13 +62,17 @@ export async function getProfilePosts(
   let posts: Post[] = [];
 
   for (let doc of docs || []) {
+    // Normalize records - filter out unrecognized formats
+    const normalizedData = normalizeDocumentRecord(doc.data, doc.uri);
+    if (!normalizedData) continue;
+
     let pubFromDoc = doc.documents_in_publications?.[0]?.publications;
     let pub = pubFromDoc ? pubMap.get(pubFromDoc.uri) || pubFromDoc : null;
 
     let post: Post = {
       author: handle,
       documents: {
-        data: doc.data,
+        data: normalizedData,
         uri: doc.uri,
         indexed_at: doc.indexed_at,
         comments_on_documents: doc.comments_on_documents,
@@ -75,7 +83,7 @@ export async function getProfilePosts(
     if (pub) {
       post.publication = {
         href: getPublicationURL(pub),
-        pubRecord: pub.record,
+        pubRecord: normalizePublicationRecord(pub.record),
         uri: pub.uri,
       };
     }
