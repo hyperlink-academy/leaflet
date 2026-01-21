@@ -41,7 +41,7 @@ export const ProfileTabs = (props: { didOrHandle: string }) => {
   const bgColor = cardBorderHidden ? "var(--bg-leaflet)" : "var(--bg-page)";
 
   return (
-    <div className="flex flex-col w-full sticky top-3 sm:top-4 z-20 sm:px-4 px-3">
+    <div className="flex flex-col w-full sticky top-3 sm:top-4 z-20 sm:px-4 px-3 pt-6">
       <div
         style={
           scrollPosWithinTabContent < 20

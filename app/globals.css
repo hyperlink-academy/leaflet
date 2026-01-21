@@ -309,8 +309,6 @@ pre.shiki {
 .ProseMirror .didMention.ProseMirror-selectednode {
   @apply text-accent-contrast;
   @apply px-0.5;
-  @apply -mx-[3px]; /* extra px to account for the border*/
-  @apply -my-px; /*to account for the border*/
   @apply rounded-[4px];
   @apply box-decoration-clone;
   background-color: rgba(var(--accent-contrast), 0.2);
@@ -321,12 +319,12 @@ pre.shiki {
   @apply cursor-pointer;
   @apply text-accent-contrast;
   @apply px-0.5;
-  @apply -mx-[3px];
-  @apply -my-px; /*to account for the border*/
   @apply rounded-[4px];
   @apply box-decoration-clone;
   background-color: rgba(var(--accent-contrast), 0.2);
   border: 1px solid transparent;
+  display: inline;
+  white-space: normal;
 }
 
 .multiselected:focus-within .selection-highlight {

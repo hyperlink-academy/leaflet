@@ -216,8 +216,8 @@ const CanvasMetadata = (props: {
       <Interactions
         quotesCount={props.quotesCount || 0}
         commentsCount={props.commentsCount || 0}
-        showComments={props.preferences.showComments}
-        showMentions={props.preferences.showMentions}
+        showComments={props.preferences.showComments !== false}
+        showMentions={props.preferences.showMentions !== false}
         pageId={props.pageId}
       />
       {!props.isSubpage && (

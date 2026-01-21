@@ -140,8 +140,8 @@ function PublishedPostItem(props: {
               quotesCount={doc.mentionsCount}
               commentsCount={doc.commentsCount}
               tags={doc.record.tags || []}
-              showComments={pubRecord?.preferences?.showComments}
-              showMentions={pubRecord?.preferences?.showMentions}
+              showComments={pubRecord?.preferences?.showComments !== false}
+              showMentions={pubRecord?.preferences?.showMentions !== false}
               postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
             />
           </div>

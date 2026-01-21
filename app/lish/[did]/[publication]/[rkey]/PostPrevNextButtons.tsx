@@ -5,9 +5,7 @@ import { useDocument } from "contexts/DocumentContext";
 import { SpeedyLink } from "components/SpeedyLink";
 import { ArrowRightTiny } from "components/Icons/ArrowRightTiny";
 
-export const PostPrevNextButtons = (props: {
-  showPrevNext: boolean | undefined;
-}) => {
+export const PostPrevNextButtons = (props: { showPrevNext: boolean }) => {
   const { prevNext, publication } = useDocument();
 
   if (!props.showPrevNext || !publication) return null;

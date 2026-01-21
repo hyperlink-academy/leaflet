@@ -106,8 +106,8 @@ export const Interactions = (props: {
   quotesCount: number;
   commentsCount: number;
   className?: string;
-  showComments?: boolean;
-  showMentions?: boolean;
+  showComments: boolean;
+  showMentions: boolean;
   pageId?: string;
 }) => {
   const { uri: document_uri, quotesAndMentions, normalizedDocument } = useDocument();
@@ -164,8 +164,8 @@ export const ExpandedInteractions = (props: {
   quotesCount: number;
   commentsCount: number;
   className?: string;
-  showComments?: boolean;
-  showMentions?: boolean;
+  showComments: boolean;
+  showMentions: boolean;
   pageId?: string;
 }) => {
   const { uri: document_uri, quotesAndMentions, normalizedDocument, publication, leafletId } = useDocument();
@@ -200,22 +200,6 @@ export const ExpandedInteractions = (props: {
     <div
       className={`text-tertiary px-3 sm:px-4 flex flex-col ${props.className}`}
     >
-      {!subscribed && !isAuthor && publication && publication.record && (
-        <div className="text-center flex flex-col accent-container rounded-md mb-3">
-          <div className="flex flex-col py-4">
-            <div className="leading-snug flex flex-col pb-2 text-sm">
-              <div className="font-bold">Subscribe to {publication.name}</div>{" "}
-              to get updates in Reader, RSS, or via Bluesky Feed
-            </div>
-            <SubscribeWithBluesky
-              pubName={publication.name}
-              pub_uri={publication.uri}
-              base_url={getPublicationURL(publication)}
-              subscribers={publication?.publication_subscriptions}
-            />
-          </div>
-        </div>
-      )}
       {tagCount > 0 && (
         <>
           <hr className="border-border-light mb-3" />
@@ -232,8 +216,7 @@ export const ExpandedInteractions = (props: {
         ) : (
           <>
             <div className="flex gap-2">
-              {props.quotesCount === 0 ||
-              props.showMentions === false ? null : (
+              {props.quotesCount === 0 || !props.showMentions ? null : (
                 <button
                   className="flex w-fit gap-2 items-center px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
                   onClick={() => {
@@ -256,7 +239,7 @@ export const ExpandedInteractions = (props: {
                   >{`Mention${props.quotesCount === 1 ? "" : "s"}`}</span>
                 </button>
               )}
-              {props.showComments === false ? null : (
+              {!props.showComments ? null : (
                 <button
                   className="flex gap-2 items-center w-fit px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
                   onClick={() => {

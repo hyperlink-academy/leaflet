@@ -85,8 +85,8 @@ export function PostHeader(props: {
             ) : null}
           </div>
           <Interactions
-            showComments={props.preferences.showComments}
-            showMentions={props.preferences.showMentions}
+            showComments={props.preferences.showComments !== false}
+            showMentions={props.preferences.showMentions !== false}
             quotesCount={getQuoteCount(document?.quotesAndMentions || []) || 0}
             commentsCount={getCommentCount(document?.comments_on_documents || []) || 0}
           />
