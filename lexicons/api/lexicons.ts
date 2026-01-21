@@ -1441,8 +1441,8 @@ export const schemaDict = {
           properties: {
             title: {
               type: 'string',
-              maxLength: 1280,
-              maxGraphemes: 128,
+              maxLength: 5000,
+              maxGraphemes: 500,
             },
             postRef: {
               type: 'ref',
@@ -1450,8 +1450,8 @@ export const schemaDict = {
             },
             description: {
               type: 'string',
-              maxLength: 3000,
-              maxGraphemes: 300,
+              maxLength: 30000,
+              maxGraphemes: 3000,
             },
             publishedAt: {
               type: 'string',
@@ -2128,8 +2128,8 @@ export const schemaDict = {
               type: 'blob',
             },
             description: {
-              maxGraphemes: 300,
-              maxLength: 3000,
+              maxGraphemes: 3000,
+              maxLength: 30000,
               type: 'string',
             },
             path: {
@@ -2165,8 +2165,8 @@ export const schemaDict = {
               type: 'ref',
             },
             title: {
-              maxGraphemes: 128,
-              maxLength: 1280,
+              maxGraphemes: 500,
+              maxLength: 5000,
               type: 'string',
             },
             updatedAt: {

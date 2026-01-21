@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { supabaseServerClient } from "supabase/serverClient";
 import { cache } from "react";
+import { deduplicateByUri } from "src/utils/deduplicateRecords";
 export const getIdentityData = cache(uncachedGetIdentityData);
 export async function uncachedGetIdentityData() {
   let cookieStore = await cookies();
@@ -44,13 +45,15 @@ export async function uncachedGetIdentityData() {
   if (!auth_res?.data?.identities) return null;
   if (auth_res.data.identities.atp_did) {
     //I should create a relationship table so I can do this in the above query
-    let { data: publications } = await supabaseServerClient
+    let { data: rawPublications } = await supabaseServerClient
       .from("publications")
       .select("*")
       .eq("identity_did", auth_res.data.identities.atp_did);
+    // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
+    const publications = deduplicateByUri(rawPublications || []);
     return {
       ...auth_res.data.identities,
-      publications: publications || [],
+      publications,
     };
   }
 

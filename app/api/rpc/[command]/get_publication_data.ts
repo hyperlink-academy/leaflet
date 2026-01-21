@@ -52,8 +52,12 @@ export const get_publication_data = makeRoute({
          )
         )`,
       )
-      .or(`name.eq."${publication_name}", uri.eq."${pubLeafletUri}", uri.eq."${siteStandardUri}"`)
+      .or(
+        `name.eq."${publication_name}", uri.eq."${pubLeafletUri}", uri.eq."${siteStandardUri}"`,
+      )
       .eq("identity_did", did)
+      .order("uri", { ascending: false })
+      .limit(1)
       .single();
 
     let leaflet_data = await getFactsFromHomeLeaflets.handler(
@@ -70,7 +74,10 @@ export const get_publication_data = makeRoute({
     const documents = (publication?.documents_in_publications || [])
       .map((dip) => {
         if (!dip.documents) return null;
-        const normalized = normalizeDocumentRecord(dip.documents.data, dip.documents.uri);
+        const normalized = normalizeDocumentRecord(
+          dip.documents.data,
+          dip.documents.uri,
+        );
         if (!normalized) return null;
         return {
           uri: dip.documents.uri,

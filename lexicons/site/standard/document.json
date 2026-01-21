@@ -19,8 +19,8 @@
             "type": "blob"
           },
           "description": {
-            "maxGraphemes": 300,
-            "maxLength": 3000,
+            "maxGraphemes": 3000,
+            "maxLength": 30000,
             "type": "string"
           },
           "path": {
@@ -53,8 +53,8 @@
             "type": "ref"
           },
           "title": {
-            "maxGraphemes": 128,
-            "maxLength": 1280,
+            "maxGraphemes": 500,
+            "maxLength": 5000,
             "type": "string"
           },
           "updatedAt": {

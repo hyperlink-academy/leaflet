@@ -18,8 +18,8 @@
         "properties": {
           "title": {
             "type": "string",
-            "maxLength": 1280,
-            "maxGraphemes": 128
+            "maxLength": 5000,
+            "maxGraphemes": 500
           },
           "postRef": {
             "type": "ref",
@@ -27,8 +27,8 @@
           },
           "description": {
             "type": "string",
-            "maxLength": 3000,
-            "maxGraphemes": 300
+            "maxLength": 30000,
+            "maxGraphemes": 3000
           },
           "publishedAt": {
             "type": "string",

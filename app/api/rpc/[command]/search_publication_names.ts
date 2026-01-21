@@ -2,6 +2,7 @@ import { z } from "zod";
 import { makeRoute } from "../lib";
 import type { Env } from "./route";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { deduplicateByUri } from "src/utils/deduplicateRecords";
 
 export type SearchPublicationNamesReturnType = Awaited<
   ReturnType<(typeof search_publication_names)["handler"]>
@@ -15,7 +16,7 @@ export const search_publication_names = makeRoute({
   }),
   handler: async ({ query, limit }, { supabase }: Pick<Env, "supabase">) => {
     // Search publications by name in record (case-insensitive partial match)
-    const { data: publications, error } = await supabase
+    const { data: rawPublications, error } = await supabase
       .from("publications")
       .select("uri, record")
       .ilike("record->>name", `%${query}%`)
@@ -24,6 +25,9 @@ export const search_publication_names = makeRoute({
     if (error) {
       throw new Error(`Failed to search publications: ${error.message}`);
     }
+
+    // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
+    const publications = deduplicateByUri(rawPublications || []);
 
     const result = publications.map((p) => {
       const record = p.record as { name?: string };

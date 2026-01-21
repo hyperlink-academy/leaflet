@@ -5,6 +5,7 @@ import {
   normalizePublicationRow,
   hasValidPublication,
 } from "src/utils/normalizeRecords";
+import { deduplicateByUri } from "src/utils/deduplicateRecords";
 
 export type Cursor = {
   indexed_at?: string;
@@ -42,8 +43,11 @@ export async function getPublications(
     return { publications: [], nextCursor: null };
   }
 
+  // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
+  const dedupedPublications = deduplicateByUri(publications || []);
+
   // Filter out publications without documents
-  const allPubs = (publications || []).filter(
+  const allPubs = dedupedPublications.filter(
     (pub) => pub.documents_in_publications.length > 0,
   );
 

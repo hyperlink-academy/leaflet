@@ -14,6 +14,7 @@ import {
   type NormalizedDocument,
   type NormalizedPublication,
 } from "src/utils/normalizeRecords";
+import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 
 export type Cursor = {
   timestamp: string;
@@ -45,11 +46,14 @@ export async function getReaderFeed(
       `indexed_at.lt.${cursor.timestamp},and(indexed_at.eq.${cursor.timestamp},uri.lt.${cursor.uri})`,
     );
   }
-  let { data: feed, error } = await query;
+  let { data: rawFeed, error } = await query;
+
+  // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
+  const feed = deduplicateByUriOrdered(rawFeed || []);
 
   let posts = (
     await Promise.all(
-      feed?.map(async (post) => {
+      feed.map(async (post) => {
         let pub = post.documents_in_publications[0].publications!;
         let uri = new AtUri(post.uri);
         let handle = await idResolver.did.resolve(uri.host);

@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "lint": "next lint",
     "dev": "TZ=UTC next dev --turbo",
     "publish-lexicons": "tsx lexicons/publish.ts",
     "generate-db-types": "supabase gen types --local > supabase/database.types.ts && drizzle-kit introspect && rm -rf ./drizzle/*.sql ./drizzle/meta",

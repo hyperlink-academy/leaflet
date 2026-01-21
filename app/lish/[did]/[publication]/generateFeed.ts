@@ -19,7 +19,7 @@ export async function generateFeed(
   let renderToReadableStream = await import("react-dom/server").then(
     (module) => module.renderToReadableStream,
   );
-  let { data: publications } = await supabaseServerClient
+  let { data: publications, error } = await supabaseServerClient
     .from("publications")
     .select(
       `*,
@@ -31,6 +31,7 @@ export async function generateFeed(
     .or(publicationNameOrUriFilter(did, publication_name))
     .order("uri", { ascending: false })
     .limit(1);
+  console.log(error);
   let publication = publications?.[0];
 
   const pubRecord = normalizePublicationRecord(publication?.record);
@@ -54,7 +55,10 @@ export async function generateFeed(
   await Promise.all(
     publication.documents_in_publications.map(async (doc) => {
       if (!doc.documents) return;
-      const record = normalizeDocumentRecord(doc.documents?.data, doc.documents?.uri);
+      const record = normalizeDocumentRecord(
+        doc.documents?.data,
+        doc.documents?.uri,
+      );
       const uri = new AtUri(doc.documents?.uri);
       const rkey = uri.rkey;
       if (!record) return;

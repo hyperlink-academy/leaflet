@@ -9,12 +9,13 @@ import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
+import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 
 export async function getDocumentsByTag(
   tag: string,
 ): Promise<{ posts: Post[] }> {
   // Query documents that have this tag
-  const { data: documents, error } = await supabaseServerClient
+  const { data: rawDocuments, error } = await supabaseServerClient
     .from("documents")
     .select(
       `*,
@@ -30,6 +31,9 @@ export async function getDocumentsByTag(
     console.error("Error fetching documents by tag:", error);
     return { posts: [] };
   }
+
+  // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
+  const documents = deduplicateByUriOrdered(rawDocuments || []);
 
   const posts = await Promise.all(
     documents.map(async (doc) => {

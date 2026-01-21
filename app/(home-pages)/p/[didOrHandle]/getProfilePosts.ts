@@ -7,6 +7,7 @@ import {
   normalizeDocumentRecord,
   normalizePublicationRecord,
 } from "src/utils/normalizeRecords";
+import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 
 export type Cursor = {
   indexed_at: string;
@@ -38,7 +39,7 @@ export async function getProfilePosts(
     );
   }
 
-  let [{ data: docs }, { data: pubs }, { data: profile }] = await Promise.all([
+  let [{ data: rawDocs }, { data: rawPubs }, { data: profile }] = await Promise.all([
     query,
     supabaseServerClient
       .from("publications")
@@ -50,6 +51,10 @@ export async function getProfilePosts(
       .eq("did", did)
       .single(),
   ]);
+
+  // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
+  const docs = deduplicateByUriOrdered(rawDocs || []);
+  const pubs = deduplicateByUriOrdered(rawPubs || []);
 
   // Build a map of publications for quick lookup
   let pubMap = new Map<string, NonNullable<typeof pubs>[number]>();
