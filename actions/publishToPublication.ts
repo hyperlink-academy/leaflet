@@ -77,6 +77,7 @@ export async function publishToPublication({
   tags,
   cover_image,
   entitiesToDelete,
+  publishedAt,
 }: {
   root_entity: string;
   publication_uri?: string;
@@ -86,6 +87,7 @@ export async function publishToPublication({
   tags?: string[];
   cover_image?: string | null;
   entitiesToDelete?: string[];
+  publishedAt?: string;
 }): Promise<PublishResult> {
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
@@ -233,7 +235,8 @@ export async function publishToPublication({
       title: title || "Untitled",
       site: siteUri,
       path: rkey,
-      publishedAt: existingRecord.publishedAt || new Date().toISOString(),
+      publishedAt:
+        publishedAt || existingRecord.publishedAt || new Date().toISOString(),
       ...(description && { description }),
       ...(tags !== undefined && { tags }),
       ...(coverImageBlob && { coverImage: coverImageBlob }),
@@ -248,8 +251,6 @@ export async function publishToPublication({
     // pub.leaflet.document format (legacy)
     record = {
       $type: "pub.leaflet.document",
-      publishedAt: new Date().toISOString(),
-      ...existingRecord,
       author: credentialSession.did!,
       ...(publication_uri && { publication: publication_uri }),
       ...(theme && { theme }),
@@ -258,6 +259,8 @@ export async function publishToPublication({
       ...(tags !== undefined && { tags }),
       ...(coverImageBlob && { coverImage: coverImageBlob }),
       pages: pagesArray,
+      publishedAt:
+        publishedAt || existingRecord.publishedAt || new Date().toISOString(),
     } satisfies PubLeafletDocument.Record;
   }
 
