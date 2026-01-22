@@ -903,6 +903,7 @@ async function createMentionNotifications(
   const mentionedDids = new Set<string>();
   const mentionedPublications = new Map<string, string>(); // Map of DID -> publication URI
   const mentionedDocuments = new Map<string, string>(); // Map of DID -> document URI
+  const embeddedBskyPosts = new Map<string, string>(); // Map of author DID -> post URI
 
   // Extract pages from either format
   let pages: PubLeafletContent.Main["pages"] | undefined;
@@ -917,60 +918,89 @@ async function createMentionNotifications(
 
   if (!pages) return;
 
-  // Extract mentions from all text blocks in all pages
-  for (const page of pages) {
-    if (page.$type === "pub.leaflet.pages.linearDocument") {
-      const linearPage = page as PubLeafletPagesLinearDocument.Main;
-      for (const blockWrapper of linearPage.blocks) {
-        const block = blockWrapper.block;
-        if (block.$type === "pub.leaflet.blocks.text") {
-          const textBlock = block as PubLeafletBlocksText.Main;
-          if (textBlock.facets) {
-            for (const facet of textBlock.facets) {
-              for (const feature of facet.features) {
-                // Check for DID mentions
-                if (PubLeafletRichtextFacet.isDidMention(feature)) {
-                  if (feature.did !== authorDid) {
-                    mentionedDids.add(feature.did);
-                  }
+  // Helper to extract blocks from all pages (both linear and canvas)
+  function getAllBlocks(pages: PubLeafletContent.Main["pages"]) {
+    const blocks: (
+      | PubLeafletPagesLinearDocument.Block["block"]
+      | PubLeafletPagesCanvas.Block["block"]
+    )[] = [];
+    for (const page of pages) {
+      if (page.$type === "pub.leaflet.pages.linearDocument") {
+        const linearPage = page as PubLeafletPagesLinearDocument.Main;
+        for (const blockWrapper of linearPage.blocks) {
+          blocks.push(blockWrapper.block);
+        }
+      } else if (page.$type === "pub.leaflet.pages.canvas") {
+        const canvasPage = page as PubLeafletPagesCanvas.Main;
+        for (const blockWrapper of canvasPage.blocks) {
+          blocks.push(blockWrapper.block);
+        }
+      }
+    }
+    return blocks;
+  }
+
+  const allBlocks = getAllBlocks(pages);
+
+  // Extract mentions from all text blocks and embedded Bluesky posts
+  for (const block of allBlocks) {
+    // Check for embedded Bluesky posts
+    if (PubLeafletBlocksBskyPost.isMain(block)) {
+      const bskyPostUri = block.postRef.uri;
+      // Extract the author DID from the post URI (at://did:xxx/app.bsky.feed.post/xxx)
+      const postAuthorDid = new AtUri(bskyPostUri).host;
+      if (postAuthorDid !== authorDid) {
+        embeddedBskyPosts.set(postAuthorDid, bskyPostUri);
+      }
+    }
+
+    // Check for text blocks with mentions
+    if (block.$type === "pub.leaflet.blocks.text") {
+      const textBlock = block as PubLeafletBlocksText.Main;
+      if (textBlock.facets) {
+        for (const facet of textBlock.facets) {
+          for (const feature of facet.features) {
+            // Check for DID mentions
+            if (PubLeafletRichtextFacet.isDidMention(feature)) {
+              if (feature.did !== authorDid) {
+                mentionedDids.add(feature.did);
+              }
+            }
+            // Check for AT URI mentions (publications and documents)
+            if (PubLeafletRichtextFacet.isAtMention(feature)) {
+              const uri = new AtUri(feature.atURI);
+
+              if (isPublicationCollection(uri.collection)) {
+                // Get the publication owner's DID
+                const { data: publication } = await supabaseServerClient
+                  .from("publications")
+                  .select("identity_did")
+                  .eq("uri", feature.atURI)
+                  .single();
+
+                if (publication && publication.identity_did !== authorDid) {
+                  mentionedPublications.set(
+                    publication.identity_did,
+                    feature.atURI,
+                  );
                 }
-                // Check for AT URI mentions (publications and documents)
-                if (PubLeafletRichtextFacet.isAtMention(feature)) {
-                  const uri = new AtUri(feature.atURI);
+              } else if (isDocumentCollection(uri.collection)) {
+                // Get the document owner's DID
+                const { data: document } = await supabaseServerClient
+                  .from("documents")
+                  .select("uri, data")
+                  .eq("uri", feature.atURI)
+                  .single();
 
-                  if (isPublicationCollection(uri.collection)) {
-                    // Get the publication owner's DID
-                    const { data: publication } = await supabaseServerClient
-                      .from("publications")
-                      .select("identity_did")
-                      .eq("uri", feature.atURI)
-                      .single();
-
-                    if (publication && publication.identity_did !== authorDid) {
-                      mentionedPublications.set(
-                        publication.identity_did,
-                        feature.atURI,
-                      );
-                    }
-                  } else if (isDocumentCollection(uri.collection)) {
-                    // Get the document owner's DID
-                    const { data: document } = await supabaseServerClient
-                      .from("documents")
-                      .select("uri, data")
-                      .eq("uri", feature.atURI)
-                      .single();
-
-                    if (document) {
-                      const normalizedMentionedDoc = normalizeDocumentRecord(
-                        document.data,
-                      );
-                      // Get the author from the document URI (the DID is the host part)
-                      const mentionedUri = new AtUri(feature.atURI);
-                      const docAuthor = mentionedUri.host;
-                      if (normalizedMentionedDoc && docAuthor !== authorDid) {
-                        mentionedDocuments.set(docAuthor, feature.atURI);
-                      }
-                    }
+                if (document) {
+                  const normalizedMentionedDoc = normalizeDocumentRecord(
+                    document.data,
+                  );
+                  // Get the author from the document URI (the DID is the host part)
+                  const mentionedUri = new AtUri(feature.atURI);
+                  const docAuthor = mentionedUri.host;
+                  if (normalizedMentionedDoc && docAuthor !== authorDid) {
+                    mentionedDocuments.set(docAuthor, feature.atURI);
                   }
                 }
               }
@@ -1026,5 +1056,33 @@ async function createMentionNotifications(
     };
     await supabaseServerClient.from("notifications").insert(notification);
     await pingIdentityToUpdateNotification(recipientDid);
+  }
+
+  // Create notifications for embedded Bluesky posts (only if the author has a Leaflet account)
+  if (embeddedBskyPosts.size > 0) {
+    // Check which of the Bluesky post authors have Leaflet accounts
+    const { data: identities } = await supabaseServerClient
+      .from("identities")
+      .select("atp_did")
+      .in("atp_did", Array.from(embeddedBskyPosts.keys()));
+
+    const leafletUserDids = new Set(identities?.map((i) => i.atp_did) ?? []);
+
+    for (const [postAuthorDid, bskyPostUri] of embeddedBskyPosts) {
+      // Only notify if the post author has a Leaflet account
+      if (leafletUserDids.has(postAuthorDid)) {
+        const notification: Notification = {
+          id: v7(),
+          recipient: postAuthorDid,
+          data: {
+            type: "bsky_post_embed",
+            document_uri: documentUri,
+            bsky_post_uri: bskyPostUri,
+          },
+        };
+        await supabaseServerClient.from("notifications").insert(notification);
+        await pingIdentityToUpdateNotification(postAuthorDid);
+      }
+    }
   }
 }
