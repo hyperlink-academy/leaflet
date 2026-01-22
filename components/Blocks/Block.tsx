@@ -330,10 +330,6 @@ export const BlockMultiselectIndicator = (props: BlockProps) => {
       s.selectedBlocks.length > 1,
   );
 
-  let isSelected = useUIState((s) =>
-    s.selectedBlocks.find((b) => b.value === props.entityID),
-  );
-
   let nextBlockSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.nextBlock?.value),
   );
@@ -412,7 +408,6 @@ const NonTextBlockOptions = (props: {
   let { rep } = useReplicache();
   let entity_set = useEntitySetContext();
   let focusedEntity = useUIState((s) => s.focusedEntity);
-
   let focusedEntityType = useEntity(
     focusedEntity?.entityType === "page"
       ? focusedEntity.entityID
@@ -421,6 +416,7 @@ const NonTextBlockOptions = (props: {
   );
 
   let isMultiselected = useUIState((s) => s.selectedBlocks.length > 1);
+  if (focusedEntity?.entityType === "page") return;
 
   if (isMultiselected) return;
 
