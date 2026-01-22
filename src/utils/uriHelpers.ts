@@ -44,5 +44,5 @@ export function publicationNameOrUriFilter(
     ).toString();
     legacy = AtUri.make(did, ids.PubLeafletPublication, nameOrRkey).toString();
   }
-  return `name.eq."${nameOrRkey}"",uri.eq."${standard}"",uri.eq."${legacy}"`;
+  return `name.eq."${nameOrRkey}"",uri.eq."${standard}",uri.eq."${legacy}"`;
 }
