@@ -24,6 +24,7 @@ export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
+  let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   if (!url) {
     if (!permissions.write) return null;
@@ -31,15 +32,26 @@ export const ButtonBlock = (props: BlockProps & { preview?: boolean }) => {
   }
 
   return (
-    <a
-      href={url?.data.value}
-      target="_blank"
-      className={`hover:outline-accent-contrast rounded-md!  ${isSelected ? "block-border-selected border-0!" : "block-border border-transparent! border-0!"}`}
+    <BlockLayout
+      isSelected={!!isSelected}
+      borderOnHover
+      hasAlignment={alignment !== "justify"}
+      className={`p-0! rounded-md! border-none!`}
     >
-      <ButtonPrimary role="link" type="submit">
-        {text?.data.value}
-      </ButtonPrimary>
-    </a>
+      <a
+        href={url?.data.value}
+        target="_blank"
+        className={` ${alignment === "justify" ? "w-full" : "w-fit"}`}
+      >
+        <ButtonPrimary
+          role="link"
+          type="submit"
+          fullWidth={alignment === "justify"}
+        >
+          {text?.data.value}
+        </ButtonPrimary>
+      </a>
+    </BlockLayout>
   );
 };
 
@@ -51,12 +63,12 @@ const ButtonBlockSettings = (props: BlockProps) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
-  let isLocked = useEntity(props.entityID, "block/is-locked")?.data.value;
 
   let [textValue, setTextValue] = useState("");
   let [urlValue, setUrlValue] = useState("");
   let text = textValue;
   let url = urlValue;
+  let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   let submit = async () => {
     let entity = props.entityID;
@@ -106,8 +118,22 @@ const ButtonBlockSettings = (props: BlockProps) => {
   };
 
   return (
-    <div className="buttonBlockSettingsWrapper flex flex-col gap-2 w-full ">
-      <ButtonPrimary className="mx-auto">
+    <div
+      className={`buttonBlockSettingsWrapper flex flex-col gap-2 w-full
+     `}
+    >
+      <ButtonPrimary
+        className={`relative  ${
+          alignment === "center"
+            ? "place-self-center"
+            : alignment === "left"
+              ? "place-self-start"
+              : alignment === "right"
+                ? "place-self-end"
+                : "place-self-center"
+        }`}
+        fullWidth={alignment === "justify"}
+      >
         {text !== "" ? text : "Button"}
       </ButtonPrimary>
       <BlockLayout
@@ -167,11 +193,9 @@ const ButtonBlockSettings = (props: BlockProps) => {
               <Separator />
               <Input
                 type="text"
-                autoFocus
                 className="w-full grow border-none outline-hidden bg-transparent"
                 placeholder="button text"
                 value={textValue}
-                disabled={isLocked}
                 onChange={(e) => setTextValue(e.target.value)}
                 onKeyDown={(e) => {
                   if (
@@ -194,7 +218,6 @@ const ButtonBlockSettings = (props: BlockProps) => {
                 className="w-full grow border-none outline-hidden bg-transparent"
                 placeholder="www.example.com"
                 value={urlValue}
-                disabled={isLocked}
                 onChange={(e) => setUrlValue(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Backspace" && !e.currentTarget.value)
@@ -205,7 +228,7 @@ const ButtonBlockSettings = (props: BlockProps) => {
             <button
               id="button-block-settings"
               type="submit"
-              className={`p-1 shrink-0 w-fit flex gap-2 items-center place-self-end ${isSelected && !isLocked ? "text-accent-contrast" : "text-accent-contrast sm:text-border"}`}
+              className={`p-1 shrink-0 w-fit flex gap-2 items-center place-self-end ${isSelected ? "text-accent-contrast" : "text-accent-contrast sm:text-border"}`}
             >
               <div className="sm:hidden block">Save</div>
               <CheckTiny />

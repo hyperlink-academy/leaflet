@@ -53,7 +53,6 @@ export function BaseDateTimeBlock(
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
 
-  let isLocked = !!useEntity(props.entityID, "block/is-locked")?.data.value;
   let alignment = useEntity(props.entityID, "block/text-alignment")?.data.value;
 
   const handleTimeChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
@@ -117,7 +116,7 @@ export function BaseDateTimeBlock(
 
   return (
     <Popover
-      disabled={isLocked || !permissions.write}
+      disabled={!permissions.write}
       className="w-64 z-10 px-2!"
       trigger={
         <BlockLayout
@@ -133,7 +132,7 @@ export function BaseDateTimeBlock(
             {dateFact ? (
               <div
                 className={`font-bold
-              ${!permissions.write || isLocked ? "" : "group-hover/date:underline"}
+              ${!permissions.write ? "" : "group-hover/date:underline"}
               `}
               >
                 {selectedDate.toLocaleDateString(undefined, {

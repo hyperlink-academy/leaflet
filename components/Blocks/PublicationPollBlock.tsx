@@ -21,8 +21,13 @@ import { ids } from "lexicons/api/lexicons";
  * It allows adding/editing options when the poll hasn't been published yet,
  * but disables adding new options once the poll record exists (indicated by pollUri).
  */
-export const PublicationPollBlock = (props: BlockProps) => {
-  let { data: publicationData, normalizedDocument } = useLeafletPublicationData();
+export const PublicationPollBlock = (
+  props: BlockProps & {
+    areYouSure?: boolean;
+    setAreYouSure?: (value: boolean) => void;
+  },
+) => {
+  let { data: publicationData } = useLeafletPublicationData();
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
@@ -57,6 +62,8 @@ export const PublicationPollBlock = (props: BlockProps) => {
       className="poll flex flex-col gap-2"
       hasBackground={"accent"}
       isSelected={!!isSelected}
+      areYouSure={props.areYouSure}
+      setAreYouSure={props.setAreYouSure}
     >
       <EditPollForPublication
         entityID={props.entityID}

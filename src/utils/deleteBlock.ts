@@ -4,10 +4,12 @@ import { useUIState } from "src/useUIState";
 import { scanIndex } from "src/replicache/utils";
 import { getBlocksWithType } from "src/hooks/queries/useBlocks";
 import { focusBlock } from "src/utils/focusBlock";
+import { UndoManager } from "src/undoManager";
 
 export async function deleteBlock(
   entities: string[],
   rep: Replicache<ReplicacheMutators>,
+  undoManager?: UndoManager,
 ) {
   // get what pagess we need to close as a result of deleting this block
   let pagesToClose = [] as string[];
@@ -32,8 +34,7 @@ export async function deleteBlock(
     }
   }
 
-  //  the next and previous blocks in the block list
-  // if the focused thing is a page and not a block, return
+  // figure out what to focus
   let focusedBlock = useUIState.getState().focusedEntity;
   let parent =
     focusedBlock?.entityType === "page"
@@ -44,12 +45,14 @@ export async function deleteBlock(
     let parentType = await rep?.query((tx) =>
       scanIndex(tx).eav(parent, "page/type"),
     );
+    // if the page is a canvas, focus the page
     if (parentType[0]?.data.value === "canvas") {
       useUIState
         .getState()
         .setFocusedBlock({ entityType: "page", entityID: parent });
       useUIState.getState().setSelectedBlocks([]);
     } else {
+      // if the page is a doc, focus the previous block (or if there isn't a prev block, focus the next block)
       let siblings =
         (await rep?.query((tx) => getBlocksWithType(tx, parent))) || [];
 
@@ -105,7 +108,11 @@ export async function deleteBlock(
     }
   }
 
+  // close the pages
   pagesToClose.forEach((page) => page && useUIState.getState().closePage(page));
+  undoManager && undoManager.startGroup();
+
+  // delete the blocks
   await Promise.all(
     entities.map((entity) =>
       rep?.mutate.removeBlock({
@@ -113,4 +120,5 @@ export async function deleteBlock(
       }),
     ),
   );
+  undoManager && undoManager.endGroup();
 }

@@ -274,6 +274,8 @@ pre.shiki {
   @apply p-2;
   @apply rounded-md;
   @apply overflow-auto;
+  @apply sm:min-h-12;
+  @apply min-h-10;
 
   @media (min-width: 640px) {
     @apply p-3;

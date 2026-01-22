@@ -4,6 +4,7 @@ import type { Attribute, Attributes, FilterAttributes } from "./attributes";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "supabase/database.types";
 import { generateKeyBetween } from "fractional-indexing";
+import { v7 } from "uuid";
 
 export type MutationContext = {
   permission_token_id: string;
@@ -307,11 +308,6 @@ const removeBlock: Mutation<
   { blockEntity: string } | { blockEntity: string }[]
 > = async (args, ctx) => {
   for (let block of [args].flat()) {
-    let [isLocked] = await ctx.scanIndex.eav(
-      block.blockEntity,
-      "block/is-locked",
-    );
-    if (isLocked?.data.value) continue;
     let [image] = await ctx.scanIndex.eav(block.blockEntity, "block/image");
     await ctx.runOnServer(async ({ supabase }) => {
       if (image) {
@@ -427,17 +423,42 @@ const moveBlockUp: Mutation<{ entityID: string; parent: string }> = async (
     },
   });
 };
-const moveBlockDown: Mutation<{ entityID: string; parent: string }> = async (
-  args,
-  ctx,
-) => {
+const moveBlockDown: Mutation<{
+  entityID: string;
+  parent: string;
+  permission_set?: string;
+}> = async (args, ctx) => {
   let children = (await ctx.scanIndex.eav(args.parent, "card/block")).toSorted(
     (a, b) => (a.data.position > b.data.position ? 1 : -1),
   );
   let index = children.findIndex((f) => f.data.value === args.entityID);
   if (index === -1) return;
   let next = children[index + 1];
-  if (!next) return;
+  if (!next) {
+    // If this is the last block, create a new empty block above it using the addBlock helper
+    if (!args.permission_set) return; // Can't create block without permission_set
+
+    let newEntityID = v7();
+    let previousBlock = children[index - 1];
+    let position = generateKeyBetween(
+      previousBlock?.data.position || null,
+      children[index].data.position,
+    );
+
+    // Call the addBlock mutation helper directly
+    await addBlock(
+      {
+        parent: args.parent,
+        permission_set: args.permission_set,
+        factID: v7(),
+        type: "text",
+        newEntityID: newEntityID,
+        position: position,
+      },
+      ctx,
+    );
+    return;
+  }
   await ctx.retractFact(children[index].id);
   await ctx.assertFact({
     id: children[index].id,

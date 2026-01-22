@@ -111,8 +111,10 @@ export const EmbedBlock = (props: BlockProps & { preview?: boolean }) => {
           <div
             data-draggable
             className={`resizeHandle
+
+
           cursor-ns-resize shrink-0 z-10 w-6 h-[5px]
-          absolute bottom-2 right-1/2 translate-x-1/2 translate-y-[2px]
+          absolute bottom-[3px] right-1/2 translate-x-1/2
           rounded-full bg-white  border-2 border-[#8C8C8C] shadow-[0_0_0_1px_white,inset_0_0_0_1px_white]
           ${isCanvasBlock ? "hidden group-hover/canvas-block:block" : ""}`}
             {...heightHandle.handlers}
@@ -129,7 +131,6 @@ const BlockLinkInput = (props: BlockProps) => {
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
-  let isLocked = useEntity(props.entityID, "block/is-locked")?.data.value;
 
   let entity_set = useEntitySetContext();
   let [linkValue, setLinkValue] = useState("");
@@ -250,14 +251,13 @@ const BlockLinkInput = (props: BlockProps) => {
           className="w-full grow border-none outline-hidden bg-transparent "
           placeholder="www.example.com"
           value={linkValue}
-          disabled={isLocked}
           onChange={(e) => setLinkValue(e.target.value)}
         />
         <button
           type="submit"
           id="embed-block-submit"
           disabled={loading}
-          className={`p-1 ${isSelected && !isLocked ? "text-accent-contrast" : "text-border"}`}
+          className={`p-1 ${isSelected ? "text-accent-contrast" : "text-border"}`}
           onMouseDown={(e) => {
             e.preventDefault();
             if (loading) return;

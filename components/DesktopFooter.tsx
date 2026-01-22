@@ -4,6 +4,8 @@ import { Media } from "./Media";
 import { Toolbar } from "./Toolbar";
 import { useEntitySetContext } from "./EntitySetProvider";
 import { focusBlock } from "src/utils/focusBlock";
+import { hasBlockToolbar } from "app/[leaflet_id]/Footer";
+import { useEntity } from "src/replicache";
 
 export function DesktopPageFooter(props: { pageID: string }) {
   let focusedEntity = useUIState((s) => s.focusedEntity);
@@ -13,6 +15,9 @@ export function DesktopPageFooter(props: { pageID: string }) {
       : focusedEntity?.parent;
   let entity_set = useEntitySetContext();
 
+  let blockType = useEntity(focusedEntity?.entityID || null, "block/type")?.data
+    .value;
+
   return (
     <Media
       mobile={false}
@@ -20,6 +25,7 @@ export function DesktopPageFooter(props: { pageID: string }) {
     >
       {focusedEntity &&
         focusedEntity.entityType === "block" &&
+        hasBlockToolbar(blockType) &&
         entity_set.permissions.write &&
         focusedBlockParentID === props.pageID && (
           <div
@@ -29,6 +35,7 @@ export function DesktopPageFooter(props: { pageID: string }) {
             }}
           >
             <Toolbar
+              blockType={blockType}
               pageID={focusedBlockParentID}
               blockID={focusedEntity.entityID}
             />

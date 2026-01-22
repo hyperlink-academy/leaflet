@@ -2,25 +2,24 @@ import { useUIState } from "src/useUIState";
 import { ReplicacheMutators, useReplicache } from "src/replicache";
 import { ToolbarButton } from "./index";
 import { copySelection } from "src/utils/copySelection";
-import { useSmoker } from "components/Toast";
-import { getBlocksWithType } from "src/hooks/queries/useBlocks";
-import { Replicache } from "replicache";
-import { LockBlockButton } from "./LockBlockButton";
+import { useSmoker, useToaster } from "components/Toast";
+
 import { Props } from "components/Icons/Props";
 import { TextAlignmentButton } from "./TextAlignmentToolbar";
 import { getSortedSelection } from "components/SelectionManager/selectionState";
+import { deleteBlock } from "src/utils/deleteBlock";
+import { Separator, ShortcutKey } from "components/Layout";
 
 export const MultiselectToolbar = (props: {
-  setToolbarState: (
-    state: "areYouSure" | "multiselect" | "text-alignment",
-  ) => void;
+  setToolbarState: (state: "multiselect" | "text-alignment") => void;
 }) => {
-  const { rep } = useReplicache();
+  const { rep, undoManager } = useReplicache();
   const smoker = useSmoker();
+  const toaster = useToaster();
 
   const handleCopy = async (event: React.MouseEvent) => {
     if (!rep) return;
-    const [sortedSelection] = await getSortedSelection(rep);
+    let [sortedSelection] = await getSortedSelection(rep);
     await copySelection(rep, sortedSelection);
     smoker({
       position: { x: event.clientX, y: event.clientY },
@@ -33,8 +32,30 @@ export const MultiselectToolbar = (props: {
       <div className="flex items-center gap-2">
         <ToolbarButton
           tooltipContent="Delete Selected Blocks"
-          onClick={() => {
-            props.setToolbarState("areYouSure");
+          onClick={async (e) => {
+            e.stopPropagation();
+            if (!rep) return;
+            let [sortedSelection] = await getSortedSelection(rep);
+            await deleteBlock(
+              sortedSelection.map((b) => b.value),
+              rep,
+              undoManager,
+            );
+
+            toaster({
+              content: (
+                <div className="font-bold items-center flex">
+                  {sortedSelection.length} block
+                  {sortedSelection.length === 1 ? "" : "s"} deleted!{" "}
+                  <span className="px-2 flex">
+                    <ShortcutKey>Ctrl</ShortcutKey>
+                    <ShortcutKey>Z</ShortcutKey>{" "}
+                  </span>
+                  to undo.
+                </div>
+              ),
+              type: "success",
+            });
           }}
         >
           <TrashSmall />
@@ -47,7 +68,7 @@ export const MultiselectToolbar = (props: {
           <CopySmall />
         </ToolbarButton>
         <TextAlignmentButton setToolbarState={props.setToolbarState} />
-        <LockBlockButton />
+        <Separator classname="h-6!" />
       </div>
     </div>
   );

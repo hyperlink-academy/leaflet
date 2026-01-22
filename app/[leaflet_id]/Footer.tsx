@@ -8,22 +8,37 @@ import { ShareOptions } from "app/[leaflet_id]/actions/ShareOptions";
 import { HomeButton } from "app/[leaflet_id]/actions/HomeButton";
 import { PublishButton } from "./actions/PublishButton";
 import { useEntitySetContext } from "components/EntitySetProvider";
-import { HelpButton } from "app/[leaflet_id]/actions/HelpButton";
 import { Watermark } from "components/Watermark";
 import { BackToPubButton } from "./actions/BackToPubButton";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useIdentityData } from "components/IdentityProvider";
+import { useEntity } from "src/replicache";
+import { block } from "sharp";
 
+export function hasBlockToolbar(blockType: string | null | undefined) {
+  return (
+    blockType === "text" ||
+    blockType === "heading" ||
+    blockType === "blockquote" ||
+    blockType === "button" ||
+    blockType === "datetime" ||
+    blockType === "image"
+  );
+}
 export function LeafletFooter(props: { entityID: string }) {
   let focusedBlock = useUIState((s) => s.focusedEntity);
+
   let entity_set = useEntitySetContext();
   let { identity } = useIdentityData();
   let { data: pub } = useLeafletPublicationData();
+  let blockType = useEntity(focusedBlock?.entityID || null, "block/type")?.data
+    .value;
 
   return (
     <Media mobile className="mobileFooter w-full z-10 touch-none -mt-[54px] ">
       {focusedBlock &&
       focusedBlock.entityType == "block" &&
+      hasBlockToolbar(blockType) &&
       entity_set.permissions.write ? (
         <div
           className="w-full z-10 p-2 flex bg-bg-page pwa-padding-bottom"
@@ -34,6 +49,7 @@ export function LeafletFooter(props: { entityID: string }) {
           <Toolbar
             pageID={focusedBlock.parent}
             blockID={focusedBlock.entityID}
+            blockType={blockType}
           />
         </div>
       ) : entity_set.permissions.write ? (

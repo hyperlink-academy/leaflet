@@ -6,7 +6,38 @@ import { Props } from "components/Icons/Props";
 import { ImageAltSmall, ImageRemoveAltSmall } from "components/Icons/ImageAlt";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useSubscribe } from "src/replicache/useSubscribe";
-import { ImageCoverImage } from "components/Icons/ImageCoverImage";
+import {
+  ImageCoverImage,
+  ImageCoverImageRemove,
+} from "components/Icons/ImageCoverImage";
+import { Separator } from "components/Layout";
+import { TextAlignmentButton } from "./TextAlignmentToolbar";
+
+export const ImageToolbar = (props: {
+  setToolbarState: (state: "image" | "text-alignment") => void;
+}) => {
+  let focusedEntity = useUIState((s) => s.focusedEntity);
+  let focusedEntityType = useEntity(
+    focusedEntity?.entityType === "page"
+      ? focusedEntity.entityID
+      : focusedEntity?.parent || null,
+    "page/type",
+  );
+
+  return (
+    <div className="flex items-center gap-2 justify-between w-full">
+      <div className="flex items-center gap-2">
+        <TextAlignmentButton setToolbarState={props.setToolbarState} />
+        <ImageAltTextButton />
+        <ImageFullBleedButton />
+        <ImageCoverButton />
+        {focusedEntityType?.data.value !== "canvas" && (
+          <Separator classname="h-6!" />
+        )}
+      </div>
+    </div>
+  );
+};
 
 export const ImageFullBleedButton = (props: {}) => {
   let { rep } = useReplicache();
@@ -36,9 +67,7 @@ export const ImageFullBleedButton = (props: {}) => {
   );
 };
 
-export const ImageAltTextButton = (props: {
-  setToolbarState: (s: "img-alt-text") => void;
-}) => {
+export const ImageAltTextButton = (props: {}) => {
   let { rep } = useReplicache();
   let focusedBlock = useUIState((s) => s.focusedEntity)?.entityID || null;
 
@@ -48,14 +77,13 @@ export const ImageAltTextButton = (props: {
   let altEditorOpen = useUIState((s) => s.openPopover === focusedBlock);
   let hasSrc = useEntity(focusedBlock, "block/image")?.data;
   if (!hasSrc) return null;
-
   return (
     <ToolbarButton
       active={altText !== undefined}
       onClick={async (e) => {
         e.preventDefault();
         if (!focusedBlock) return;
-        if (!altText) {
+        if (altText === undefined) {
           await rep?.mutate.assertFact({
             entity: focusedBlock,
             attribute: "image/alt",
@@ -109,10 +137,10 @@ export const ImageCoverButton = () => {
         }
       }}
       tooltipContent={
-        <div>{isCoverImage ? "Remove Cover Image" : "Set as Cover Image"}</div>
+        <div>{isCoverImage ? "Remove Cover Image" : "Use as Cover Image"}</div>
       }
     >
-      <ImageCoverImage />
+      {isCoverImage ? <ImageCoverImageRemove /> : <ImageCoverImage />}
     </ToolbarButton>
   );
 };
