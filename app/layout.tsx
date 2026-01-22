@@ -36,11 +36,11 @@ export const preferredRegion = ["sfo1"];
 const quattro = localFont({
   src: [
     {
-      path: "../public/fonts/iAWriterQuattroV.ttf",
+      path: "../public/fonts/iaw-quattro-vf.woff2",
       style: "normal",
     },
     {
-      path: "../public/fonts/iAWriterQuattroV-Italic.ttf",
+      path: "../public/fonts/iaw-quattro-vf-Italic.woff2",
       style: "italic",
     },
   ],
@@ -48,13 +48,11 @@ const quattro = localFont({
   variable: "--font-quattro",
 });
 
-export default async function RootLayout(
-  {
-    children,
-  }: {
-    children: React.ReactNode;
-  }
-) {
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   let headersList = await headers();
   let ipLocation = headersList.get("X-Vercel-IP-Country");
   let acceptLanguage = headersList.get("accept-language");
@@ -80,7 +78,11 @@ export default async function RootLayout(
         <InitialPageLoad>
           <PopUpProvider>
             <IdentityProviderServer>
-              <RequestHeadersProvider country={ipLocation} language={acceptLanguage} timezone={ipTimezone}>
+              <RequestHeadersProvider
+                country={ipLocation}
+                language={acceptLanguage}
+                timezone={ipTimezone}
+              >
                 <ViewportSizeLayout>{children}</ViewportSizeLayout>
                 <RouteUIStateManager />
               </RequestHeadersProvider>

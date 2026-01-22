@@ -22,7 +22,7 @@ import { AccentPickers } from "./Pickers/AccentPickers";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import { useIsMobile } from "src/hooks/isMobile";
 import { Toggle } from "components/Toggle";
-import { fonts, defaultFontId } from "src/fonts";
+import { FontPicker } from "./Pickers/TextPickers";
 
 export type pickers =
   | "null"
@@ -158,6 +158,12 @@ export const ThemeSetterContent = (props: {
           openPicker={openPicker}
           setOpenPicker={(pickers) => setOpenPicker(pickers)}
         />
+        {!props.home && (
+          <div className="flex flex-col gap-1 bg-bg-page p-2 rounded-md border border-primary -mt-2">
+            <FontPicker label="Heading" entityID={props.entityID} attribute="theme/heading-font" />
+            <FontPicker label="Body" entityID={props.entityID} attribute="theme/body-font" />
+          </div>
+        )}
         <div className="flex flex-col -gap-[6px]">
           <div className={`flex flex-col z-10  -mb-[6px] `}>
             <AccentPickers
@@ -185,38 +191,9 @@ export const ThemeSetterContent = (props: {
         />
       </div>
       {!props.home && <WatermarkSetter entityID={props.entityID} />}
-      {!props.home && <FontPicker entityID={props.entityID} />}
     </div>
   );
 };
-
-function FontPicker(props: { entityID: string }) {
-  let { rep } = useReplicache();
-  let currentFont = useEntity(props.entityID, "theme/font");
-
-  return (
-    <div className="flex flex-col gap-1 mt-2">
-      <label className="font-bold text-sm">Font</label>
-      <select
-        className="input-with-border w-full"
-        value={currentFont?.data.value || defaultFontId}
-        onChange={(e) => {
-          rep?.mutate.assertFact({
-            entity: props.entityID,
-            attribute: "theme/font",
-            data: { type: "string", value: e.target.value },
-          });
-        }}
-      >
-        {Object.values(fonts).map((font) => (
-          <option key={font.id} value={font.id}>
-            {font.displayName}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
 
 function WatermarkSetter(props: { entityID: string }) {
   let { rep } = useReplicache();
@@ -331,7 +308,7 @@ const SamplePage = (props: {
           onClick={() => {
             props.setOpenPicker("text");
           }}
-          className="cursor-pointer font-bold w-fit"
+          className="cursor-pointer font-bold w-fit [font-family:var(--theme-heading-font)]"
         >
           Hello!
         </p>

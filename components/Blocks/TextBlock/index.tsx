@@ -30,9 +30,9 @@ import { Mention, MentionAutocomplete } from "components/Mention";
 import { addMentionToEditor } from "app/[leaflet_id]/publish/BskyPostEditorProsemirror";
 
 const HeadingStyle = {
-  1: "text-xl font-bold",
-  2: "text-lg font-bold",
-  3: "text-base font-bold text-secondary ",
+  1: "text-xl font-bold [font-family:var(--theme-heading-font)]",
+  2: "text-lg font-bold [font-family:var(--theme-heading-font)]",
+  3: "text-base font-bold text-secondary [font-family:var(--theme-heading-font)]",
 } as { [level: number]: string };
 
 export function TextBlock(

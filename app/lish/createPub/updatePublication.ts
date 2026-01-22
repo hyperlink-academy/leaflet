@@ -273,6 +273,8 @@ export async function updatePublicationTheme({
     showPageBackground: boolean;
     accentBackground: Color;
     accentText: Color;
+    headingFont?: string;
+    bodyFont?: string;
   };
 }): Promise<UpdatePublicationResult> {
   return withPublicationUpdate(uri, async ({ normalizedPub, existingBasePath, publicationType, agent }) => {
@@ -312,6 +314,8 @@ export async function updatePublicationTheme({
       accentText: {
         ...theme.accentText,
       },
+      headingFont: theme.headingFont,
+      bodyFont: theme.bodyFont,
     };
 
     // Derive basicTheme from the theme colors for site.standard.publication

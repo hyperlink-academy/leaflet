@@ -76,6 +76,8 @@ export interface Theme {
     | $Typed<PubLeafletThemeColor.Rgba>
     | $Typed<PubLeafletThemeColor.Rgb>
     | { $type: string }
+  headingFont?: string
+  bodyFont?: string
 }
 
 const hashTheme = 'theme'

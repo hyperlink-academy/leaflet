@@ -20,6 +20,7 @@ import { ColorToRGB, ColorToRGBA } from "./colorToLexicons";
 import { useToaster } from "components/Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
 import { PubPageWidthSetter } from "./PubPickers/PubPageWidthSetter";
+import { PubFontPicker } from "./PubPickers/PubFontPicker";
 
 export type ImageState = {
   src: string;
@@ -60,6 +61,8 @@ export const PubThemeSetter = (props: {
   let [pageWidth, setPageWidth] = useState<number>(
     record?.theme?.pageWidth || 624,
   );
+  let [headingFont, setHeadingFont] = useState<string | undefined>(record?.theme?.headingFont);
+  let [bodyFont, setBodyFont] = useState<string | undefined>(record?.theme?.bodyFont);
   let pubBGImage = image?.src || null;
   let leafletBGRepeat = image?.repeat || null;
   let toaster = useToaster();
@@ -85,6 +88,8 @@ export const PubThemeSetter = (props: {
               primary: ColorToRGB(localPubTheme.primary),
               accentBackground: ColorToRGB(localPubTheme.accent1),
               accentText: ColorToRGB(localPubTheme.accent2),
+              headingFont: headingFont,
+              bodyFont: bodyFont,
             },
           });
 
@@ -189,6 +194,18 @@ export const PubThemeSetter = (props: {
               setOpenPicker={(pickers) => setOpenPicker(pickers)}
               hasPageBackground={showPageBackground}
             />
+            <div className="bg-bg-page p-2 rounded-md border border-primary shadow-[0_0_0_1px_rgb(var(--bg-page))] flex flex-col gap-1">
+              <PubFontPicker
+                label="Heading"
+                value={headingFont}
+                onChange={setHeadingFont}
+              />
+              <PubFontPicker
+                label="Body"
+                value={bodyFont}
+                onChange={setBodyFont}
+              />
+            </div>
             <PubAccentPickers
               accent1={localPubTheme.accent1}
               setAccent1={(color) => {

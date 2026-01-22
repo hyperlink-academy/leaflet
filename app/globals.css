@@ -158,6 +158,13 @@
   }
 
   /* START FONT STYLING */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--theme-heading-font, var(--theme-font));
+  }
+
   h1 {
     @apply text-2xl;
     @apply font-bold;

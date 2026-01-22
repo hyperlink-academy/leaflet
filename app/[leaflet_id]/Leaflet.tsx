@@ -18,7 +18,8 @@ export function Leaflet(props: {
   token: PermissionToken;
   initialFacts: Fact<Attribute>[];
   leaflet_id: string;
-  initialFontId?: string;
+  initialHeadingFontId?: string;
+  initialBodyFontId?: string;
 }) {
   return (
     <ReplicacheProvider
@@ -30,7 +31,11 @@ export function Leaflet(props: {
       <EntitySetProvider
         set={props.token.permission_token_rights[0].entity_set}
       >
-        <ThemeProvider entityID={props.leaflet_id} initialFontId={props.initialFontId}>
+        <ThemeProvider
+          entityID={props.leaflet_id}
+          initialHeadingFontId={props.initialHeadingFontId}
+          initialBodyFontId={props.initialBodyFontId}
+        >
           <ThemeBackgroundProvider entityID={props.leaflet_id}>
             <UpdateLeafletTitle entityID={props.leaflet_id} />
             <AddLeafletToHomepage />

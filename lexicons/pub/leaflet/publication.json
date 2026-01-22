@@ -112,6 +112,14 @@
             "pub.leaflet.theme.color#rgba",
             "pub.leaflet.theme.color#rgb"
           ]
+        },
+        "headingFont": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "bodyFont": {
+          "type": "string",
+          "maxLength": 100
         }
       }
     }

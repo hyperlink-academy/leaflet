@@ -14,7 +14,7 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { get_leaflet_data } from "app/api/rpc/[command]/get_leaflet_data";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { getPublicationMetadataFromLeafletData } from "src/utils/getPublicationMetadataFromLeafletData";
-import { FontLoader, extractFontFromFacts } from "components/FontLoader";
+import { FontLoader, extractFontsFromFacts } from "components/FontLoader";
 
 export const preferredRegion = ["sfo1"];
 export const dynamic = "force-dynamic";
@@ -50,13 +50,13 @@ export default async function LeafletPage(props: Props) {
   ]);
   let initialFacts = (data as unknown as Fact<Attribute>[]) || [];
 
-  // Extract font setting from facts for server-side font loading
-  const fontId = extractFontFromFacts(initialFacts as any, rootEntity);
+  // Extract font settings from facts for server-side font loading
+  const { headingFontId, bodyFontId } = extractFontsFromFacts(initialFacts as any, rootEntity);
 
   return (
     <>
       {/* Server-side font loading with preload and @font-face */}
-      <FontLoader fontId={fontId} />
+      <FontLoader headingFontId={headingFontId} bodyFontId={bodyFontId} />
       <PageSWRDataProvider
         rsvp_data={rsvp_data}
         poll_data={poll_data}
@@ -67,7 +67,8 @@ export default async function LeafletPage(props: Props) {
           initialFacts={initialFacts}
           leaflet_id={rootEntity}
           token={res.data}
-          initialFontId={fontId}
+          initialHeadingFontId={headingFontId}
+          initialBodyFontId={bodyFontId}
         />
       </PageSWRDataProvider>
     </>
