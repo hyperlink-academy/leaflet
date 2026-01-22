@@ -93,7 +93,7 @@ export const UndoButtons = () => {
 
           <PageOptionButton
             secondary
-            onClick={() => undoManager.undo()}
+            onClick={() => undoManager.redo()}
             disabled={!undoState.canRedo}
           >
             <RedoTiny />
