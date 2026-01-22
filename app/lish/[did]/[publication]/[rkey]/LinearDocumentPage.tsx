@@ -1,10 +1,6 @@
 "use client";
-import {
-  PubLeafletComment,
-  PubLeafletDocument,
-  PubLeafletPagesLinearDocument,
-  PubLeafletPublication,
-} from "lexicons/api";
+import { PubLeafletPagesLinearDocument } from "lexicons/api";
+import { useLeafletContent } from "contexts/LeafletContentContext";
 import { PostPageData } from "./getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
@@ -25,6 +21,7 @@ import { decodeQuotePosition } from "./quotePosition";
 import { PollData } from "./fetchPollData";
 import { SharedPageProps } from "./PostPages";
 import { PostPrevNextButtons } from "./PostPrevNextButtons";
+import { PostSubscribe } from "./PostSubscribe";
 
 export function LinearDocumentPage({
   blocks,
@@ -49,14 +46,11 @@ export function LinearDocumentPage({
     hasPageBackground,
   } = props;
   let drawer = useDrawerOpen(document_uri);
+  const { pages } = useLeafletContent();
 
   if (!document) return null;
 
-  let record = document.data as PubLeafletDocument.Record;
-
   const isSubpage = !!pageId;
-
-  console.log("prev/next?: " + preferences.showPrevNext);
 
   return (
     <>
@@ -78,22 +72,23 @@ export function LinearDocumentPage({
         )}
         <PostContent
           pollData={pollData}
-          pages={record.pages as PubLeafletPagesLinearDocument.Main[]}
+          pages={pages as PubLeafletPagesLinearDocument.Main[]}
           pageId={pageId}
           bskyPostData={bskyPostData}
           blocks={blocks}
           did={did}
           prerenderedCodeBlocks={prerenderedCodeBlocks}
         />
+        <PostSubscribe />
         <PostPrevNextButtons
-          showPrevNext={preferences.showPrevNext && !isSubpage}
+          showPrevNext={preferences.showPrevNext !== false && !isSubpage}
         />
         <ExpandedInteractions
           pageId={pageId}
-          showComments={preferences.showComments}
-          showMentions={preferences.showMentions}
-          commentsCount={getCommentCount(document, pageId) || 0}
-          quotesCount={getQuoteCount(document, pageId) || 0}
+          showComments={preferences.showComments !== false}
+          showMentions={preferences.showMentions !== false}
+          commentsCount={getCommentCount(document.comments_on_documents, pageId) || 0}
+          quotesCount={getQuoteCount(document.quotesAndMentions, pageId) || 0}
         />
         {!hasPageBackground && <div className={`spacer h-8 w-full`} />}
       </PageWrapper>

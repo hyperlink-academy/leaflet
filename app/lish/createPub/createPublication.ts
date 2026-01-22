@@ -1,17 +1,22 @@
 "use server";
 import { TID } from "@atproto/common";
-import { AtpBaseClient, PubLeafletPublication } from "lexicons/api";
+import {
+  AtpBaseClient,
+  PubLeafletPublication,
+  SiteStandardPublication,
+} from "lexicons/api";
 import {
   restoreOAuthSession,
   OAuthSessionError,
 } from "src/atproto-oauth";
 import { getIdentityData } from "actions/getIdentityData";
 import { supabaseServerClient } from "supabase/serverClient";
-import { Un$Typed } from "@atproto/api";
 import { Json } from "supabase/database.types";
 import { Vercel } from "@vercel/sdk";
 import { isProductionDomain } from "src/utils/isProductionDeployment";
 import { string } from "zod";
+import { getPublicationType } from "src/utils/collectionHelpers";
+import { PubThemeDefaultsRGB } from "components/ThemeManager/themeDefaults";
 
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN;
 const vercel = new Vercel({
@@ -64,15 +69,14 @@ export async function createPublication({
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
-  let record: Un$Typed<PubLeafletPublication.Record> = {
-    name,
-    base_path: domain,
-    preferences,
-  };
 
-  if (description) {
-    record.description = description;
-  }
+  // Use site.standard.publication for new publications
+  const publicationType = getPublicationType();
+  const url = `https://${domain}`;
+
+  // Build record based on publication type
+  let record: SiteStandardPublication.Record | PubLeafletPublication.Record;
+  let iconBlob: Awaited<ReturnType<typeof agent.com.atproto.repo.uploadBlob>>["data"]["blob"] | undefined;
 
   // Upload the icon if provided
   if (iconFile && iconFile.size > 0) {
@@ -81,16 +85,48 @@ export async function createPublication({
       new Uint8Array(buffer),
       { encoding: iconFile.type },
     );
-
-    if (uploadResult.data.blob) {
-      record.icon = uploadResult.data.blob;
-    }
+    iconBlob = uploadResult.data.blob;
   }
 
-  let result = await agent.pub.leaflet.publication.create(
-    { repo: credentialSession.did!, rkey: TID.nextStr(), validate: false },
+  if (publicationType === "site.standard.publication") {
+    record = {
+      $type: "site.standard.publication",
+      name,
+      url,
+      ...(description && { description }),
+      ...(iconBlob && { icon: iconBlob }),
+      basicTheme: {
+        $type: "site.standard.theme.basic",
+        background: { $type: "site.standard.theme.color#rgb", ...PubThemeDefaultsRGB.background },
+        foreground: { $type: "site.standard.theme.color#rgb", ...PubThemeDefaultsRGB.foreground },
+        accent: { $type: "site.standard.theme.color#rgb", ...PubThemeDefaultsRGB.accent },
+        accentForeground: { $type: "site.standard.theme.color#rgb", ...PubThemeDefaultsRGB.accentForeground },
+      },
+      preferences: {
+        showInDiscover: preferences.showInDiscover,
+        showComments: preferences.showComments,
+        showMentions: preferences.showMentions,
+        showPrevNext: preferences.showPrevNext,
+      },
+    } satisfies SiteStandardPublication.Record;
+  } else {
+    record = {
+      $type: "pub.leaflet.publication",
+      name,
+      base_path: domain,
+      ...(description && { description }),
+      ...(iconBlob && { icon: iconBlob }),
+      preferences,
+    } satisfies PubLeafletPublication.Record;
+  }
+
+  let { data: result } = await agent.com.atproto.repo.putRecord({
+    repo: credentialSession.did!,
+    rkey: TID.nextStr(),
+    collection: publicationType,
     record,
-  );
+    validate: false,
+  });
 
   //optimistically write to our db!
   let { data: publication } = await supabaseServerClient
@@ -98,11 +134,8 @@ export async function createPublication({
     .upsert({
       uri: result.uri,
       identity_did: credentialSession.did!,
-      name: record.name,
-      record: {
-        ...record,
-        $type: "pub.leaflet.publication",
-      } as unknown as Json,
+      name,
+      record: record as unknown as Json,
     })
     .select()
     .single();

@@ -7,8 +7,11 @@ import { Separator } from "components/Layout";
 import { usePubTheme } from "components/ThemeManager/PublicationThemeProvider";
 import { BaseThemeProvider } from "components/ThemeManager/ThemeProvider";
 import { useSmoker } from "components/Toast";
-import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
+import type {
+  NormalizedDocument,
+  NormalizedPublication,
+} from "src/utils/normalizeRecords";
 import type { Post } from "app/(home-pages)/reader/getReaderFeed";
 
 import Link from "next/link";
@@ -17,10 +20,15 @@ import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 
 export const PostListing = (props: Post) => {
   let pubRecord = props.publication?.pubRecord as
-    | PubLeafletPublication.Record
+    | NormalizedPublication
     | undefined;
 
-  let postRecord = props.documents.data as PubLeafletDocument.Record;
+  let postRecord = props.documents.data as NormalizedDocument | null;
+
+  // Don't render anything for records that can't be normalized (e.g., site.standard records without expected fields)
+  if (!postRecord) {
+    return null;
+  }
   let postUri = new AtUri(props.documents.uri);
   let uri = props.publication ? props.publication?.uri : props.documents.uri;
 
@@ -96,8 +104,8 @@ export const PostListing = (props: Post) => {
                 quotesCount={quotes}
                 commentsCount={comments}
                 tags={tags}
-                showComments={pubRecord?.preferences?.showComments}
-                showMentions={pubRecord?.preferences?.showMentions}
+                showComments={pubRecord?.preferences?.showComments !== false}
+                showMentions={pubRecord?.preferences?.showMentions !== false}
                 share
               />
             </div>
@@ -110,7 +118,7 @@ export const PostListing = (props: Post) => {
 
 const PubInfo = (props: {
   href: string;
-  pubRecord: PubLeafletPublication.Record;
+  pubRecord: NormalizedPublication;
   uri: string;
 }) => {
   return (

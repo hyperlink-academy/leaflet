@@ -3,12 +3,11 @@ import { Metadata } from "next";
 import { getIdentityData } from "actions/getIdentityData";
 import { get_publication_data } from "app/api/rpc/[command]/get_publication_data";
 import { PublicationSWRDataProvider } from "./PublicationSWRProvider";
-import { PubLeafletPublication } from "lexicons/api";
 import { PublicationThemeProviderDashboard } from "components/ThemeManager/PublicationThemeProvider";
 import { AtUri } from "@atproto/syntax";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import PublicationDashboard from "./PublicationDashboard";
-import Link from "next/link";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 
 export async function generateMetadata(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -24,8 +23,7 @@ export async function generateMetadata(props: {
     { supabase: supabaseServerClient },
   );
   let { publication } = publication_data;
-  let record =
-    (publication?.record as PubLeafletPublication.Record) || undefined;
+  const record = normalizePublicationRecord(publication?.record);
   if (!publication) return { title: "404 Publication" };
   return { title: record?.name || "Untitled Publication" };
 }
@@ -56,7 +54,7 @@ export default async function Publication(props: {
     { supabase: supabaseServerClient },
   );
   let { publication, leaflet_data } = publication_data;
-  let record = publication?.record as PubLeafletPublication.Record | null;
+  const record = normalizePublicationRecord(publication?.record);
 
   if (!publication || identity.atp_did !== publication.identity_did || !record)
     return <PubNotFound />;

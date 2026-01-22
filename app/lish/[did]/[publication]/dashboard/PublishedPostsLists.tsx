@@ -1,22 +1,16 @@
 "use client";
 import { AtUri } from "@atproto/syntax";
-import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
 import { EditTiny } from "components/Icons/EditTiny";
 
-import { usePublicationData } from "./PublicationSWRProvider";
-import { Fragment, useState } from "react";
+import {
+  usePublicationData,
+  useNormalizedPublicationRecord,
+  type PublishedDocument,
+} from "./PublicationSWRProvider";
+import { Fragment } from "react";
 import { useParams } from "next/navigation";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
-import { Menu, MenuItem } from "components/Menu";
-import { deletePost } from "./deletePost";
-import { ButtonPrimary } from "components/Buttons";
-import { MoreOptionsVerticalTiny } from "components/Icons/MoreOptionsVerticalTiny";
-import { DeleteSmall } from "components/Icons/DeleteSmall";
-import { ShareSmall } from "components/Icons/ShareSmall";
-import { ShareButton } from "app/[leaflet_id]/actions/ShareOptions";
 import { SpeedyLink } from "components/SpeedyLink";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
-import { CommentTiny } from "components/Icons/CommentTiny";
 import { InteractionPreview } from "components/InteractionsPreview";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { LeafletOptions } from "app/(home-pages)/home/LeafletList/LeafletOptions";
@@ -27,132 +21,136 @@ export function PublishedPostsList(props: {
   showPageBackground: boolean;
 }) {
   let { data } = usePublicationData();
-  let params = useParams();
-  let { publication } = data!;
-  let pubRecord = publication?.record as PubLeafletPublication.Record;
+  let { publication, documents } = data || {};
+  const pubRecord = useNormalizedPublicationRecord();
 
   if (!publication) return null;
-  if (publication.documents_in_publications.length === 0)
+  if (!documents || documents.length === 0)
     return (
       <div className="italic text-tertiary w-full container text-center place-items-center flex flex-col gap-3 p-3">
         Nothing's been published yet...
       </div>
     );
+
+  // Sort by publishedAt (most recent first)
+  const sortedDocuments = [...documents].sort((a, b) => {
+    const aDate = a.record.publishedAt
+      ? new Date(a.record.publishedAt)
+      : new Date(0);
+    const bDate = b.record.publishedAt
+      ? new Date(b.record.publishedAt)
+      : new Date(0);
+    return bDate.getTime() - aDate.getTime();
+  });
+
   return (
     <div className="publishedList w-full flex flex-col gap-2 pb-4">
-      {publication.documents_in_publications
-        .sort((a, b) => {
-          let aRecord = a.documents?.data! as PubLeafletDocument.Record;
-          let bRecord = b.documents?.data! as PubLeafletDocument.Record;
-          const aDate = aRecord.publishedAt
-            ? new Date(aRecord.publishedAt)
-            : new Date(0);
-          const bDate = bRecord.publishedAt
-            ? new Date(bRecord.publishedAt)
-            : new Date(0);
-          return bDate.getTime() - aDate.getTime(); // Sort by most recent first
-        })
-        .map((doc) => {
-          if (!doc.documents) return null;
-          let leaflet = publication.leaflets_in_publications.find(
-            (l) => doc.documents && l.doc === doc.documents.uri,
-          );
-          let uri = new AtUri(doc.documents.uri);
-          let postRecord = doc.documents.data as PubLeafletDocument.Record;
-          let quotes = doc.documents.document_mentions_in_bsky[0]?.count || 0;
-          let comments = doc.documents.comments_on_documents[0]?.count || 0;
-          let tags = (postRecord?.tags as string[] | undefined) || [];
-
-          let postLink = data?.publication
-            ? `${getPublicationURL(data?.publication)}/${new AtUri(doc.documents.uri).rkey}`
-            : "";
-
-          return (
-            <Fragment key={doc.documents?.uri}>
-              <div className="flex gap-2 w-full ">
-                <div
-                  className={`publishedPost grow flex flex-col  hover:no-underline! rounded-lg border ${props.showPageBackground ? "border-border-light py-1 px-2" : "border-transparent px-1"}`}
-                  style={{
-                    backgroundColor: props.showPageBackground
-                      ? "rgba(var(--bg-page), var(--bg-page-alpha))"
-                      : "transparent",
-                  }}
-                >
-                  <div className="flex justify-between gap-2">
-                    <a
-                      className="hover:no-underline!"
-                      target="_blank"
-                      href={`${getPublicationURL(publication)}/${uri.rkey}`}
-                    >
-                      <h3 className="text-primary grow leading-snug">
-                        {postRecord.title}
-                      </h3>
-                    </a>
-                    <div className="flex justify-start align-top flex-row gap-1">
-                      {leaflet && leaflet.permission_tokens && (
-                        <>
-                          <SpeedyLink
-                            className="pt-[6px]"
-                            href={`/${leaflet.leaflet}`}
-                          >
-                            <EditTiny />
-                          </SpeedyLink>
-
-                          <StaticLeafletDataContext
-                            value={{
-                              ...leaflet.permission_tokens,
-                              leaflets_in_publications: [
-                                {
-                                  ...leaflet,
-                                  publications: publication,
-                                  documents: doc.documents
-                                    ? {
-                                        uri: doc.documents.uri,
-                                        indexed_at: doc.documents.indexed_at,
-                                        data: doc.documents.data,
-                                      }
-                                    : null,
-                                },
-                              ],
-                              leaflets_to_documents: [],
-                              blocked_by_admin: null,
-                              custom_domain_routes: [],
-                            }}
-                          >
-                            <LeafletOptions loggedIn={true} />
-                          </StaticLeafletDataContext>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {postRecord.description ? (
-                    <p className="italic text-secondary">
-                      {postRecord.description}
-                    </p>
-                  ) : null}
-                  <div className="text-sm text-tertiary flex gap-3 justify-between sm:justify-start items-center pt-3">
-                    {postRecord.publishedAt ? (
-                      <PublishedDate dateString={postRecord.publishedAt} />
-                    ) : null}
-                    <InteractionPreview
-                      quotesCount={quotes}
-                      commentsCount={comments}
-                      tags={tags}
-                      showComments={pubRecord?.preferences?.showComments}
-                      showMentions={pubRecord?.preferences?.showMentions}
-                      postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
-                    />
-                  </div>
-                </div>
-              </div>
-              {!props.showPageBackground && (
-                <hr className="last:hidden border-border-light" />
-              )}
-            </Fragment>
-          );
-        })}
+      {sortedDocuments.map((doc) => (
+        <PublishedPostItem
+          key={doc.uri}
+          doc={doc}
+          publication={publication}
+          pubRecord={pubRecord}
+          showPageBackground={props.showPageBackground}
+        />
+      ))}
     </div>
+  );
+}
+
+function PublishedPostItem(props: {
+  doc: PublishedDocument;
+  publication: NonNullable<NonNullable<ReturnType<typeof usePublicationData>["data"]>["publication"]>;
+  pubRecord: ReturnType<typeof useNormalizedPublicationRecord>;
+  showPageBackground: boolean;
+}) {
+  const { doc, publication, pubRecord, showPageBackground } = props;
+  const uri = new AtUri(doc.uri);
+  const leaflet = publication.leaflets_in_publications.find(
+    (l) => l.doc === doc.uri,
+  );
+
+  return (
+    <Fragment>
+      <div className="flex gap-2 w-full ">
+        <div
+          className={`publishedPost grow flex flex-col  hover:no-underline! rounded-lg border ${showPageBackground ? "border-border-light py-1 px-2" : "border-transparent px-1"}`}
+          style={{
+            backgroundColor: showPageBackground
+              ? "rgba(var(--bg-page), var(--bg-page-alpha))"
+              : "transparent",
+          }}
+        >
+          <div className="flex justify-between gap-2">
+            <a
+              className="hover:no-underline!"
+              target="_blank"
+              href={`${getPublicationURL(publication)}/${uri.rkey}`}
+            >
+              <h3 className="text-primary grow leading-snug">
+                {doc.record.title}
+              </h3>
+            </a>
+            <div className="flex justify-start align-top flex-row gap-1">
+              {leaflet && leaflet.permission_tokens && (
+                <>
+                  <SpeedyLink
+                    className="pt-[6px]"
+                    href={`/${leaflet.leaflet}`}
+                  >
+                    <EditTiny />
+                  </SpeedyLink>
+
+                  <StaticLeafletDataContext
+                    value={{
+                      ...leaflet.permission_tokens,
+                      leaflets_in_publications: [
+                        {
+                          ...leaflet,
+                          publications: publication,
+                          documents: {
+                            uri: doc.uri,
+                            indexed_at: doc.indexed_at,
+                            data: doc.data,
+                          },
+                        },
+                      ],
+                      leaflets_to_documents: [],
+                      blocked_by_admin: null,
+                      custom_domain_routes: [],
+                    }}
+                  >
+                    <LeafletOptions loggedIn={true} />
+                  </StaticLeafletDataContext>
+                </>
+              )}
+            </div>
+          </div>
+
+          {doc.record.description ? (
+            <p className="italic text-secondary">
+              {doc.record.description}
+            </p>
+          ) : null}
+          <div className="text-sm text-tertiary flex gap-3 justify-between sm:justify-start items-center pt-3">
+            {doc.record.publishedAt ? (
+              <PublishedDate dateString={doc.record.publishedAt} />
+            ) : null}
+            <InteractionPreview
+              quotesCount={doc.mentionsCount}
+              commentsCount={doc.commentsCount}
+              tags={doc.record.tags || []}
+              showComments={pubRecord?.preferences?.showComments !== false}
+              showMentions={pubRecord?.preferences?.showMentions !== false}
+              postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
+            />
+          </div>
+        </div>
+      </div>
+      {!showPageBackground && (
+        <hr className="last:hidden border-border-light" />
+      )}
+    </Fragment>
   );
 }
 

@@ -16,9 +16,9 @@ export const PubLeafletDocument: LexiconDoc = {
         type: "object",
         required: ["pages", "author", "title"],
         properties: {
-          title: { type: "string", maxLength: 1280, maxGraphemes: 128 },
+          title: { type: "string", maxLength: 5000, maxGraphemes: 500 },
           postRef: { type: "ref", ref: "com.atproto.repo.strongRef" },
-          description: { type: "string", maxLength: 3000, maxGraphemes: 300 },
+          description: { type: "string", maxLength: 30000, maxGraphemes: 3000 },
           publishedAt: { type: "string", format: "datetime" },
           publication: { type: "string", format: "at-uri" },
           author: { type: "string", format: "at-identifier" },

@@ -2,16 +2,41 @@ import { AtUri } from "@atproto/syntax";
 import { PubLeafletPublication } from "lexicons/api";
 import { isProductionDomain } from "src/utils/isProductionDeployment";
 import { Json } from "supabase/database.types";
+import {
+  normalizePublicationRecord,
+  isLeafletPublication,
+  type NormalizedPublication,
+} from "src/utils/normalizeRecords";
 
-export function getPublicationURL(pub: { uri: string; record: Json }) {
-  let record = pub.record as PubLeafletPublication.Record;
-  if (isProductionDomain() && record?.base_path)
-    return `https://${record.base_path}`;
-  else return getBasePublicationURL(pub);
+type PublicationInput =
+  | { uri: string; record: Json | NormalizedPublication | null }
+  | { uri: string; record: unknown };
+
+/**
+ * Gets the public URL for a publication.
+ * Works with both pub.leaflet.publication and site.standard.publication records.
+ */
+export function getPublicationURL(pub: PublicationInput): string {
+  const normalized = normalizePublicationRecord(pub.record);
+
+  // If we have a normalized record with a URL (site.standard format), use it
+  if (normalized?.url && isProductionDomain()) {
+    return normalized.url;
+  }
+
+  // Fall back to checking raw record for legacy base_path
+  if (isLeafletPublication(pub.record) && pub.record.base_path && isProductionDomain()) {
+    return `https://${pub.record.base_path}`;
+  }
+
+  return getBasePublicationURL(pub);
 }
 
-export function getBasePublicationURL(pub: { uri: string; record: Json }) {
-  let record = pub.record as PubLeafletPublication.Record;
-  let aturi = new AtUri(pub.uri);
-  return `/lish/${aturi.host}/${encodeURIComponent(aturi.rkey || record?.name)}`;
+export function getBasePublicationURL(pub: PublicationInput): string {
+  const normalized = normalizePublicationRecord(pub.record);
+  const aturi = new AtUri(pub.uri);
+
+  // Use normalized name if available, fall back to rkey
+  const name = normalized?.name || aturi.rkey;
+  return `/lish/${aturi.host}/${encodeURIComponent(name || "")}`;
 }

@@ -1400,6 +1400,31 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletContent: {
+    lexicon: 1,
+    id: 'pub.leaflet.content',
+    revision: 1,
+    description: 'A lexicon for long form rich media documents',
+    defs: {
+      main: {
+        type: 'object',
+        description: 'Content format for leaflet documents',
+        required: ['pages'],
+        properties: {
+          pages: {
+            type: 'array',
+            items: {
+              type: 'union',
+              refs: [
+                'lex:pub.leaflet.pages.linearDocument',
+                'lex:pub.leaflet.pages.canvas',
+              ],
+            },
+          },
+        },
+      },
+    },
+  },
   PubLeafletDocument: {
     lexicon: 1,
     id: 'pub.leaflet.document',
@@ -1416,8 +1441,8 @@ export const schemaDict = {
           properties: {
             title: {
               type: 'string',
-              maxLength: 1280,
-              maxGraphemes: 128,
+              maxLength: 5000,
+              maxGraphemes: 500,
             },
             postRef: {
               type: 'ref',
@@ -1425,8 +1450,8 @@ export const schemaDict = {
             },
             description: {
               type: 'string',
-              maxLength: 3000,
-              maxGraphemes: 300,
+              maxLength: 30000,
+              maxGraphemes: 3000,
             },
             publishedAt: {
               type: 'string',
@@ -1816,7 +1841,7 @@ export const schemaDict = {
           },
           showPrevNext: {
             type: 'boolean',
-            default: false,
+            default: true,
           },
         },
       },
@@ -2082,6 +2107,252 @@ export const schemaDict = {
       },
     },
   },
+  SiteStandardDocument: {
+    defs: {
+      main: {
+        key: 'tid',
+        record: {
+          properties: {
+            bskyPostRef: {
+              ref: 'lex:com.atproto.repo.strongRef',
+              type: 'ref',
+            },
+            content: {
+              closed: false,
+              refs: ['lex:pub.leaflet.content'],
+              type: 'union',
+            },
+            coverImage: {
+              accept: ['image/*'],
+              maxSize: 1000000,
+              type: 'blob',
+            },
+            description: {
+              maxGraphemes: 3000,
+              maxLength: 30000,
+              type: 'string',
+            },
+            path: {
+              description:
+                'combine with the publication url or the document site to construct a full url to the document',
+              type: 'string',
+            },
+            publishedAt: {
+              format: 'datetime',
+              type: 'string',
+            },
+            site: {
+              description:
+                'URI to the site or publication this document belongs to. Supports both AT-URIs (at://did/collection/rkey) for publication references and HTTPS URLs (https://example.com) for standalone documents or external sites.',
+              format: 'uri',
+              type: 'string',
+            },
+            tags: {
+              items: {
+                maxGraphemes: 50,
+                maxLength: 100,
+                type: 'string',
+              },
+              type: 'array',
+            },
+            textContent: {
+              type: 'string',
+            },
+            theme: {
+              description:
+                'Theme for standalone documents. For documents in publications, theme is inherited from the publication.',
+              ref: 'lex:pub.leaflet.publication#theme',
+              type: 'ref',
+            },
+            title: {
+              maxGraphemes: 500,
+              maxLength: 5000,
+              type: 'string',
+            },
+            updatedAt: {
+              format: 'datetime',
+              type: 'string',
+            },
+          },
+          required: ['site', 'title', 'publishedAt'],
+          type: 'object',
+        },
+        type: 'record',
+      },
+    },
+    id: 'site.standard.document',
+    lexicon: 1,
+  },
+  SiteStandardGraphSubscription: {
+    defs: {
+      main: {
+        description: 'Record declaring a subscription to a publication',
+        key: 'tid',
+        record: {
+          properties: {
+            publication: {
+              format: 'at-uri',
+              type: 'string',
+            },
+          },
+          required: ['publication'],
+          type: 'object',
+        },
+        type: 'record',
+      },
+    },
+    id: 'site.standard.graph.subscription',
+    lexicon: 1,
+  },
+  SiteStandardPublication: {
+    defs: {
+      main: {
+        key: 'tid',
+        record: {
+          properties: {
+            basicTheme: {
+              ref: 'lex:site.standard.theme.basic',
+              type: 'ref',
+            },
+            theme: {
+              type: 'ref',
+              ref: 'lex:pub.leaflet.publication#theme',
+            },
+            description: {
+              maxGraphemes: 300,
+              maxLength: 3000,
+              type: 'string',
+            },
+            icon: {
+              accept: ['image/*'],
+              maxSize: 1000000,
+              type: 'blob',
+            },
+            name: {
+              maxGraphemes: 128,
+              maxLength: 1280,
+              type: 'string',
+            },
+            preferences: {
+              ref: 'lex:site.standard.publication#preferences',
+              type: 'ref',
+            },
+            url: {
+              format: 'uri',
+              type: 'string',
+            },
+          },
+          required: ['url', 'name'],
+          type: 'object',
+        },
+        type: 'record',
+      },
+      preferences: {
+        properties: {
+          showInDiscover: {
+            default: true,
+            type: 'boolean',
+          },
+          showComments: {
+            default: true,
+            type: 'boolean',
+          },
+          showMentions: {
+            default: true,
+            type: 'boolean',
+          },
+          showPrevNext: {
+            default: false,
+            type: 'boolean',
+          },
+        },
+        type: 'object',
+      },
+    },
+    id: 'site.standard.publication',
+    lexicon: 1,
+  },
+  SiteStandardThemeBasic: {
+    defs: {
+      main: {
+        properties: {
+          accent: {
+            refs: ['lex:site.standard.theme.color#rgb'],
+            type: 'union',
+          },
+          accentForeground: {
+            refs: ['lex:site.standard.theme.color#rgb'],
+            type: 'union',
+          },
+          background: {
+            refs: ['lex:site.standard.theme.color#rgb'],
+            type: 'union',
+          },
+          foreground: {
+            refs: ['lex:site.standard.theme.color#rgb'],
+            type: 'union',
+          },
+        },
+        required: ['background', 'foreground', 'accent', 'accentForeground'],
+        type: 'object',
+      },
+    },
+    id: 'site.standard.theme.basic',
+    lexicon: 1,
+  },
+  SiteStandardThemeColor: {
+    lexicon: 1,
+    id: 'site.standard.theme.color',
+    defs: {
+      rgb: {
+        type: 'object',
+        required: ['r', 'g', 'b'],
+        properties: {
+          r: {
+            type: 'integer',
+            minimum: 0,
+            maximum: 255,
+          },
+          g: {
+            type: 'integer',
+            minimum: 0,
+            maximum: 255,
+          },
+          b: {
+            type: 'integer',
+            minimum: 0,
+            maximum: 255,
+          },
+        },
+      },
+      rgba: {
+        type: 'object',
+        required: ['r', 'g', 'b', 'a'],
+        properties: {
+          r: {
+            type: 'integer',
+            minimum: 0,
+            maximum: 255,
+          },
+          g: {
+            type: 'integer',
+            minimum: 0,
+            maximum: 255,
+          },
+          b: {
+            type: 'integer',
+            minimum: 0,
+            maximum: 255,
+          },
+          a: {
+            type: 'integer',
+            minimum: 0,
+            maximum: 100,
+          },
+        },
+      },
+    },
+  },
 } as const satisfies Record<string, LexiconDoc>
 export const schemas = Object.values(schemaDict) satisfies LexiconDoc[]
 export const lexicons: Lexicons = new Lexicons(schemas)
@@ -2144,6 +2415,7 @@ export const ids = {
   PubLeafletBlocksUnorderedList: 'pub.leaflet.blocks.unorderedList',
   PubLeafletBlocksWebsite: 'pub.leaflet.blocks.website',
   PubLeafletComment: 'pub.leaflet.comment',
+  PubLeafletContent: 'pub.leaflet.content',
   PubLeafletDocument: 'pub.leaflet.document',
   PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
   PubLeafletPagesCanvas: 'pub.leaflet.pages.canvas',
@@ -2154,4 +2426,9 @@ export const ids = {
   PubLeafletRichtextFacet: 'pub.leaflet.richtext.facet',
   PubLeafletThemeBackgroundImage: 'pub.leaflet.theme.backgroundImage',
   PubLeafletThemeColor: 'pub.leaflet.theme.color',
+  SiteStandardDocument: 'site.standard.document',
+  SiteStandardGraphSubscription: 'site.standard.graph.subscription',
+  SiteStandardPublication: 'site.standard.publication',
+  SiteStandardThemeBasic: 'site.standard.theme.basic',
+  SiteStandardThemeColor: 'site.standard.theme.color',
 } as const

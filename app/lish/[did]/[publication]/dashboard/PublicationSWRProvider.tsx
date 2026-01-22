@@ -2,11 +2,18 @@
 
 import type { GetPublicationDataReturnType } from "app/api/rpc/[command]/get_publication_data";
 import { callRPC } from "app/api/rpc/client";
-import { createContext, useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, useMemo } from "react";
 import useSWR, { SWRConfig, KeyedMutator, mutate } from "swr";
-import { produce, Draft } from "immer";
+import { produce, Draft as ImmerDraft } from "immer";
+import {
+  normalizePublicationRecord,
+  type NormalizedPublication,
+} from "src/utils/normalizeRecords";
 
+// Derive all types from the RPC return type
 export type PublicationData = GetPublicationDataReturnType["result"];
+export type PublishedDocument = NonNullable<PublicationData>["documents"][number];
+export type PublicationDraft = NonNullable<PublicationData>["drafts"][number];
 
 const PublicationContext = createContext({ name: "", did: "" });
 export function PublicationSWRDataProvider(props: {
@@ -49,9 +56,21 @@ export function usePublicationData() {
   return { data, mutate };
 }
 
+/**
+ * Returns the normalized publication record from the publication data.
+ * Use this instead of manually calling normalizePublicationRecord on data.publication.record
+ */
+export function useNormalizedPublicationRecord(): NormalizedPublication | null {
+  const { data } = usePublicationData();
+  return useMemo(
+    () => normalizePublicationRecord(data?.publication?.record),
+    [data?.publication?.record]
+  );
+}
+
 export function mutatePublicationData(
   mutate: KeyedMutator<PublicationData>,
-  recipe: (draft: Draft<NonNullable<PublicationData>>) => void,
+  recipe: (draft: ImmerDraft<NonNullable<PublicationData>>) => void,
 ) {
   mutate(
     (data) => {

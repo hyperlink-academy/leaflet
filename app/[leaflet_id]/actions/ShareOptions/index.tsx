@@ -14,7 +14,6 @@ import {
   useLeafletPublicationData,
 } from "components/PageSWRDataProvider";
 import { ShareSmall } from "components/Icons/ShareSmall";
-import { PubLeafletDocument } from "lexicons/api";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { AtUri } from "@atproto/syntax";
 import { useIsMobile } from "src/hooks/isMobile";
@@ -88,9 +87,7 @@ const ShareMenu = (props: {
   isPub?: boolean;
 }) => {
   let { permission_token } = useReplicache();
-  let { data: pub } = useLeafletPublicationData();
-
-  let record = pub?.documents?.data as PubLeafletDocument.Record | null;
+  let { data: pub, normalizedDocument } = useLeafletPublicationData();
 
   let docURI = pub?.documents ? new AtUri(pub?.documents.uri) : null;
   let postLink = !docURI

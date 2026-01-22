@@ -21,7 +21,6 @@ import {
   PublicationBackgroundProvider,
   PublicationThemeProvider,
 } from "./PublicationThemeProvider";
-import { PubLeafletPublication } from "lexicons/api";
 import { getColorDifference } from "./themeUtils";
 
 // define a function to set an Aria Color to a CSS Variable in RGB
@@ -40,12 +39,12 @@ export function ThemeProvider(props: {
   children: React.ReactNode;
   className?: string;
 }) {
-  let { data: pub } = useLeafletPublicationData();
+  let { data: pub, normalizedPublication } = useLeafletPublicationData();
   if (!pub || !pub.publications) return <LeafletThemeProvider {...props} />;
   return (
     <PublicationThemeProvider
       {...props}
-      theme={(pub.publications?.record as PubLeafletPublication.Record)?.theme}
+      theme={normalizedPublication?.theme}
       pub_creator={pub.publications?.identity_did}
     />
   );
@@ -134,11 +133,10 @@ export const BaseThemeProvider = ({
   // pageBg should inherit from leafletBg
   const bgPage =
     !showPageBackground && !hasBackgroundImage ? bgLeaflet : bgPageProp;
-  // set accent contrast to the accent color that has the highest contrast with the page background
-  let accentContrast;
 
-  //sorting the accents by contrast on background
+  let accentContrast;
   let sortedAccents = [accent1, accent2].sort((a, b) => {
+    // sort accents by contrast against the background
     return (
       getColorDifference(
         colorToString(b, "rgb"),
@@ -150,23 +148,24 @@ export const BaseThemeProvider = ({
       )
     );
   });
-
-  // if the contrast-y accent is too similar to the primary text color,
-  // and the not contrast-y option is different from the backgrond,
-  // then use the not contrasty option
-
   if (
+    // if the contrast-y accent is too similar to text color
     getColorDifference(
       colorToString(sortedAccents[0], "rgb"),
       colorToString(primary, "rgb"),
     ) < 0.15 &&
+    // and if the other accent is different enough from the background
     getColorDifference(
       colorToString(sortedAccents[1], "rgb"),
       colorToString(showPageBackground ? bgPage : bgLeaflet, "rgb"),
-    ) > 0.08
+    ) > 0.31
   ) {
+    //then choose the less contrast-y accent
     accentContrast = sortedAccents[1];
-  } else accentContrast = sortedAccents[0];
+  } else {
+    // otherwise, choose the more contrast-y option
+    accentContrast = sortedAccents[0];
+  }
 
   useEffect(() => {
     if (local) return;
@@ -328,7 +327,7 @@ export const ThemeBackgroundProvider = (props: {
   entityID: string;
   children: React.ReactNode;
 }) => {
-  let { data: pub } = useLeafletPublicationData();
+  let { data: pub, normalizedPublication } = useLeafletPublicationData();
   let backgroundImage = useEntity(props.entityID, "theme/background-image");
   let backgroundImageRepeat = useEntity(
     props.entityID,
@@ -338,9 +337,7 @@ export const ThemeBackgroundProvider = (props: {
     return (
       <PublicationBackgroundProvider
         pub_creator={pub?.publications.identity_did || ""}
-        theme={
-          (pub.publications?.record as PubLeafletPublication.Record)?.theme
-        }
+        theme={normalizedPublication?.theme}
       >
         {props.children}
       </PublicationBackgroundProvider>

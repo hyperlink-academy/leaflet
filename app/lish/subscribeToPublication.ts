@@ -48,7 +48,7 @@ export async function subscribeToPublication(
   let agent = new AtpBaseClient(
     credentialSession.fetchHandler.bind(credentialSession),
   );
-  let record = await agent.pub.leaflet.graph.subscription.create(
+  let record = await agent.site.standard.graph.subscription.create(
     { repo: credentialSession.did!, rkey: TID.nextStr() },
     {
       publication,
@@ -140,10 +140,14 @@ export async function unsubscribeToPublication(
     .eq("publication", publication)
     .single();
   if (!existingSubscription) return { success: true };
-  await agent.pub.leaflet.graph.subscription.delete({
-    repo: credentialSession.did!,
-    rkey: new AtUri(existingSubscription.uri).rkey,
-  });
+
+  // Delete from both collections (old and new schema) - one or both may exist
+  let rkey = new AtUri(existingSubscription.uri).rkey;
+  await Promise.all([
+    agent.pub.leaflet.graph.subscription.delete({ repo: credentialSession.did!, rkey }).catch(() => {}),
+    agent.site.standard.graph.subscription.delete({ repo: credentialSession.did!, rkey }).catch(() => {}),
+  ]);
+
   await supabaseServerClient
     .from("publication_subscriptions")
     .delete()

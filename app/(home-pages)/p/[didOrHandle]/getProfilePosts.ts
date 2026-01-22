@@ -3,6 +3,11 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import type { Post } from "app/(home-pages)/reader/getReaderFeed";
+import {
+  normalizeDocumentRecord,
+  normalizePublicationRecord,
+} from "src/utils/normalizeRecords";
+import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 
 export type Cursor = {
   indexed_at: string;
@@ -34,7 +39,7 @@ export async function getProfilePosts(
     );
   }
 
-  let [{ data: docs }, { data: pubs }, { data: profile }] = await Promise.all([
+  let [{ data: rawDocs }, { data: rawPubs }, { data: profile }] = await Promise.all([
     query,
     supabaseServerClient
       .from("publications")
@@ -47,6 +52,10 @@ export async function getProfilePosts(
       .single(),
   ]);
 
+  // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
+  const docs = deduplicateByUriOrdered(rawDocs || []);
+  const pubs = deduplicateByUriOrdered(rawPubs || []);
+
   // Build a map of publications for quick lookup
   let pubMap = new Map<string, NonNullable<typeof pubs>[number]>();
   for (let pub of pubs || []) {
@@ -58,13 +67,17 @@ export async function getProfilePosts(
   let posts: Post[] = [];
 
   for (let doc of docs || []) {
+    // Normalize records - filter out unrecognized formats
+    const normalizedData = normalizeDocumentRecord(doc.data, doc.uri);
+    if (!normalizedData) continue;
+
     let pubFromDoc = doc.documents_in_publications?.[0]?.publications;
     let pub = pubFromDoc ? pubMap.get(pubFromDoc.uri) || pubFromDoc : null;
 
     let post: Post = {
       author: handle,
       documents: {
-        data: doc.data,
+        data: normalizedData,
         uri: doc.uri,
         indexed_at: doc.indexed_at,
         comments_on_documents: doc.comments_on_documents,
@@ -75,7 +88,7 @@ export async function getProfilePosts(
     if (pub) {
       post.publication = {
         href: getPublicationURL(pub),
-        pubRecord: pub.record,
+        pubRecord: normalizePublicationRecord(pub.record),
         uri: pub.uri,
       };
     }

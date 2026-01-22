@@ -658,6 +658,7 @@ const updatePublicationDraft: Mutation<{
   description?: string;
   tags?: string[];
   cover_image?: string | null;
+  localPublishedAt?: string | null;
 }> = async (args, ctx) => {
   await ctx.runOnServer(async (serverCtx) => {
     console.log("updating");
@@ -697,6 +698,8 @@ const updatePublicationDraft: Mutation<{
     if (args.tags !== undefined) await tx.set("publication_tags", args.tags);
     if (args.cover_image !== undefined)
       await tx.set("publication_cover_image", args.cover_image);
+    if (args.localPublishedAt !== undefined)
+      await tx.set("publication_local_published_at", args.localPublishedAt);
   });
 };
 

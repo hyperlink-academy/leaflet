@@ -119,10 +119,17 @@ const Comment = (props: {
 }) => {
   const did = props.comment.bsky_profiles?.did;
 
+  let timeAgoDate = timeAgo(props.record.createdAt);
+  const formattedDate = useLocalizedDate(props.record.createdAt, {
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+  });
+
   return (
     <div id={props.comment.uri} className="comment">
       <div className="flex gap-2">
-        {did && (
+        {did ? (
           <ProfilePopover
             didOrHandle={did}
             trigger={
@@ -131,7 +138,8 @@ const Comment = (props: {
               </div>
             }
           />
-        )}
+        ) : null}
+        <div className="text-sm text-tertiary">{timeAgoDate}</div>
       </div>
       {props.record.attachment &&
         PubLeafletComment.isLinearDocumentQuote(props.record.attachment) && (

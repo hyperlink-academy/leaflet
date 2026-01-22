@@ -1,5 +1,7 @@
-import { PubLeafletPublication } from "lexicons/api";
-import { usePublicationData } from "../PublicationSWRProvider";
+import {
+  usePublicationData,
+  useNormalizedPublicationRecord,
+} from "../PublicationSWRProvider";
 import { PubSettingsHeader } from "./PublicationSettings";
 import { useState } from "react";
 import { Toggle } from "components/Toggle";
@@ -15,7 +17,7 @@ export const PostOptions = (props: {
   let { data } = usePublicationData();
 
   let { publication: pubData } = data || {};
-  let record = pubData?.record as PubLeafletPublication.Record;
+  const record = useNormalizedPublicationRecord();
 
   let [showComments, setShowComments] = useState(
     record?.preferences?.showComments === undefined
@@ -37,7 +39,7 @@ export const PostOptions = (props: {
   return (
     <form
       onSubmit={async (e) => {
-        if (!pubData) return;
+        if (!pubData || !record) return;
         e.preventDefault();
         props.setLoading(true);
         let data = await updatePublication({
@@ -54,7 +56,6 @@ export const PostOptions = (props: {
           },
         });
         toast({ type: "success", content: <strong>Posts Updated!</strong> });
-        console.log(record.preferences?.showPrevNext);
         props.setLoading(false);
         mutate("publication-data");
       }}

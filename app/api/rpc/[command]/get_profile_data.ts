@@ -6,6 +6,11 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { Agent } from "@atproto/api";
 import { getIdentityData } from "actions/getIdentityData";
 import { createOauthClient } from "src/atproto-oauth";
+import {
+  normalizePublicationRow,
+  hasValidPublication,
+} from "src/utils/normalizeRecords";
+import { deduplicateByUri } from "src/utils/deduplicateRecords";
 
 export type GetProfileDataReturnType = Awaited<
   ReturnType<(typeof get_profile_data)["handler"]>
@@ -54,15 +59,23 @@ export const get_profile_data = makeRoute({
       .select("*")
       .eq("identity_did", did);
 
-    let [{ data: profile }, { data: publications }] = await Promise.all([
+    let [{ data: profile }, { data: rawPublications }] = await Promise.all([
       profileReq,
       publicationsReq,
     ]);
 
+    // Deduplicate records that may exist under both pub.leaflet and site.standard namespaces
+    const publications = deduplicateByUri(rawPublications || []);
+
+    // Normalize publication records before returning
+    const normalizedPublications = publications
+      .map(normalizePublicationRow)
+      .filter(hasValidPublication);
+
     return {
       result: {
         profile,
-        publications: publications || [],
+        publications: normalizedPublications,
       },
     };
   },

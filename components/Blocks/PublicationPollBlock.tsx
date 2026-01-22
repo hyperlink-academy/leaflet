@@ -11,9 +11,9 @@ import { CloseTiny } from "components/Icons/CloseTiny";
 import { useLeafletPublicationData } from "components/PageSWRDataProvider";
 import {
   PubLeafletBlocksPoll,
-  PubLeafletDocument,
   PubLeafletPagesLinearDocument,
 } from "lexicons/api";
+import { getDocumentPages } from "src/utils/normalizeRecords";
 import { ids } from "lexicons/api/lexicons";
 
 /**
@@ -33,13 +33,13 @@ export const PublicationPollBlock = (
   );
   // Check if this poll has been published in a publication document
   const isPublished = useMemo(() => {
-    if (!publicationData?.documents?.data) return false;
+    if (!normalizedDocument) return false;
 
-    const docRecord = publicationData.documents
-      .data as PubLeafletDocument.Record;
+    const pages = getDocumentPages(normalizedDocument);
+    if (!pages) return false;
 
     // Search through all pages and blocks to find if this poll entity has been published
-    for (const page of docRecord.pages || []) {
+    for (const page of pages) {
       if (page.$type === "pub.leaflet.pages.linearDocument") {
         const linearPage = page as PubLeafletPagesLinearDocument.Main;
         for (const blockWrapper of linearPage.blocks || []) {
@@ -55,7 +55,7 @@ export const PublicationPollBlock = (
       }
     }
     return false;
-  }, [publicationData, props.entityID]);
+  }, [normalizedDocument, props.entityID]);
 
   return (
     <BlockLayout

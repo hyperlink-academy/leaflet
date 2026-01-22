@@ -3,7 +3,7 @@ import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
 import { CopyTiny } from "components/Icons/CopyTiny";
 import { Separator } from "components/Layout";
 import { useSmoker } from "components/Toast";
-import { useEffect, useMemo, useState, useContext } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   encodeQuotePosition,
   decodeQuotePosition,
@@ -12,8 +12,7 @@ import {
 import { useIdentityData } from "components/IdentityProvider";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { setInteractionState } from "./Interactions/Interactions";
-import { PostPageContext } from "./PostPageContext";
-import { PubLeafletPublication } from "lexicons/api";
+import { useDocument } from "contexts/DocumentContext";
 import { flushSync } from "react-dom";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 
@@ -148,10 +147,7 @@ export function QuoteHandler() {
 export const QuoteOptionButtons = (props: { position: string }) => {
   let smoker = useSmoker();
   let { identity } = useIdentityData();
-  const data = useContext(PostPageContext);
-  const document_uri = data?.uri;
-  if (!document_uri)
-    throw new Error("document_uri not available in PostPageContext");
+  const { uri: document_uri, publication } = useDocument();
   let [url, position] = useMemo(() => {
     let currentUrl = new URL(window.location.href);
     let pos = decodeQuotePosition(props.position);
@@ -169,9 +165,7 @@ export const QuoteOptionButtons = (props: { position: string }) => {
     currentUrl.hash = `#${fragmentId}`;
     return [currentUrl.toString(), pos];
   }, [props.position]);
-  let pubRecord = data.documents_in_publications[0]?.publications?.record as
-    | PubLeafletPublication.Record
-    | undefined;
+  let pubRecord = publication?.record;
 
   return (
     <>

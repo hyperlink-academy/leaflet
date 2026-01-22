@@ -22,9 +22,9 @@ import { Popover } from "components/Popover";
 import { SpeedyLink } from "components/SpeedyLink";
 import { useToaster } from "components/Toast";
 import { DotLoader } from "components/utils/DotLoader";
-import { PubLeafletPublication } from "lexicons/api";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useReplicache, useEntity } from "src/replicache";
 import { useSubscribe } from "src/replicache/useSubscribe";
@@ -40,6 +40,7 @@ import { BlueskyLogin } from "app/login/LoginForm";
 import { moveLeafletToPublication } from "actions/publications/moveLeafletToPublication";
 import { AddTiny } from "components/Icons/AddTiny";
 import { OAuthErrorMessage, isOAuthSessionError } from "components/OAuthError";
+import { useLocalPublishedAt } from "components/Pages/Backdater";
 
 export const PublishButton = (props: { entityID: string }) => {
   let { data: pub } = useLeafletPublicationData();
@@ -95,6 +96,11 @@ const UpdateButton = () => {
     tx.get<string | null>("publication_cover_image"),
   );
 
+  // Get local published at from Replicache (session-only state, not persisted to DB)
+  let publishedAt = useLocalPublishedAt((s) =>
+    pub?.doc ? s[pub?.doc] : undefined,
+  );
+
   return (
     <ActionButton
       primary
@@ -111,6 +117,7 @@ const UpdateButton = () => {
           description: currentDescription,
           tags: currentTags,
           cover_image: coverImage,
+          publishedAt: publishedAt?.toISOString(),
         });
         setIsLoading(false);
         mutate();
@@ -134,7 +141,7 @@ const UpdateButton = () => {
 
         toaster({
           content: (
-            <div>
+            <div className="font-bold">
               {pub.doc ? "Updated! " : "Published! "}
               <SpeedyLink className="underline" href={docUrl}>
                 See Published Post
@@ -370,7 +377,7 @@ const PubSelector = (props: {
           </PubOption>
           <hr className="border-border-light border-dashed " />
           {props.publications.map((p) => {
-            let pubRecord = p.record as PubLeafletPublication.Record;
+            let pubRecord = normalizePublicationRecord(p.record);
             return (
               <PubOption
                 key={p.uri}

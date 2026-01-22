@@ -6,14 +6,13 @@ import type { Json } from "supabase/database.types";
 import { create } from "zustand";
 import type { Comment } from "./Comments";
 import { decodeQuotePosition, QuotePosition } from "../quotePosition";
-import { useContext } from "react";
-import { PostPageContext } from "../PostPageContext";
+import { useDocument } from "contexts/DocumentContext";
 import { scrollIntoView } from "src/utils/scrollIntoView";
 import { TagTiny } from "components/Icons/TagTiny";
 import { Tag } from "components/Tags";
 import { Popover } from "components/Popover";
-import { PostPageData } from "../getPostPageData";
-import { PubLeafletComment, PubLeafletPublication } from "lexicons/api";
+import { PubLeafletComment } from "lexicons/api";
+import { type CommentOnDocument } from "contexts/DocumentContext";
 import { prefetchQuotesData } from "./Quotes";
 import { useIdentityData } from "components/IdentityProvider";
 import { ManageSubscription, SubscribeWithBluesky } from "app/lish/Subscribe";
@@ -107,25 +106,22 @@ export const Interactions = (props: {
   quotesCount: number;
   commentsCount: number;
   className?: string;
-  showComments?: boolean;
-  showMentions?: boolean;
+  showComments: boolean;
+  showMentions: boolean;
   pageId?: string;
 }) => {
-  const data = useContext(PostPageContext);
-  const document_uri = data?.uri;
+  const { uri: document_uri, quotesAndMentions, normalizedDocument } = useDocument();
   let { identity } = useIdentityData();
-  if (!document_uri)
-    throw new Error("document_uri not available in PostPageContext");
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
 
   const handleQuotePrefetch = () => {
-    if (data?.quotesAndMentions) {
-      prefetchQuotesData(data.quotesAndMentions);
+    if (quotesAndMentions) {
+      prefetchQuotesData(quotesAndMentions);
     }
   };
 
-  const tags = (data?.data as any)?.tags as string[] | undefined;
+  const tags = normalizedDocument.tags;
   const tagCount = tags?.length || 0;
 
   return (
@@ -168,27 +164,22 @@ export const ExpandedInteractions = (props: {
   quotesCount: number;
   commentsCount: number;
   className?: string;
-  showComments?: boolean;
-  showMentions?: boolean;
+  showComments: boolean;
+  showMentions: boolean;
   pageId?: string;
 }) => {
-  const data = useContext(PostPageContext);
+  const { uri: document_uri, quotesAndMentions, normalizedDocument, publication, leafletId } = useDocument();
   let { identity } = useIdentityData();
-
-  const document_uri = data?.uri;
-  if (!document_uri)
-    throw new Error("document_uri not available in PostPageContext");
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
 
   const handleQuotePrefetch = () => {
-    if (data?.quotesAndMentions) {
-      prefetchQuotesData(data.quotesAndMentions);
+    if (quotesAndMentions) {
+      prefetchQuotesData(quotesAndMentions);
     }
   };
-  let publication = data?.documents_in_publications[0]?.publications;
 
-  const tags = (data?.data as any)?.tags as string[] | undefined;
+  const tags = normalizedDocument.tags;
   const tagCount = tags?.length || 0;
 
   let noInteractions = !props.showComments && !props.showMentions;
@@ -202,30 +193,13 @@ export const ExpandedInteractions = (props: {
 
   let isAuthor =
     identity &&
-    identity.atp_did ===
-      data.documents_in_publications[0]?.publications?.identity_did &&
-    data.leaflets_in_publications[0];
+    identity.atp_did === publication?.identity_did &&
+    leafletId;
 
   return (
     <div
       className={`text-tertiary px-3 sm:px-4 flex flex-col ${props.className}`}
     >
-      {!subscribed && !isAuthor && publication && publication.record && (
-        <div className="text-center flex flex-col accent-container rounded-md mb-3">
-          <div className="flex flex-col py-4">
-            <div className="leading-snug flex flex-col pb-2 text-sm">
-              <div className="font-bold">Subscribe to {publication.name}</div>{" "}
-              to get updates in Reader, RSS, or via Bluesky Feed
-            </div>
-            <SubscribeWithBluesky
-              pubName={publication.name}
-              pub_uri={publication.uri}
-              base_url={getPublicationURL(publication)}
-              subscribers={publication?.publication_subscriptions}
-            />
-          </div>
-        </div>
-      )}
       {tagCount > 0 && (
         <>
           <hr className="border-border-light mb-3" />
@@ -242,8 +216,7 @@ export const ExpandedInteractions = (props: {
         ) : (
           <>
             <div className="flex gap-2">
-              {props.quotesCount === 0 ||
-              props.showMentions === false ? null : (
+              {props.quotesCount === 0 || !props.showMentions ? null : (
                 <button
                   className="flex w-fit gap-2 items-center px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
                   onClick={() => {
@@ -266,7 +239,7 @@ export const ExpandedInteractions = (props: {
                   >{`Mention${props.quotesCount === 1 ? "" : "s"}`}</span>
                 </button>
               )}
-              {props.showComments === false ? null : (
+              {!props.showComments ? null : (
                 <button
                   className="flex gap-2 items-center w-fit px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
                   onClick={() => {
@@ -299,7 +272,7 @@ export const ExpandedInteractions = (props: {
           </>
         )}
 
-        <EditButton document={data} />
+        <EditButton publication={publication} leafletId={leafletId} />
         {subscribed && publication && (
           <ManageSubscription
             base_url={getPublicationURL(publication)}
@@ -340,9 +313,8 @@ const TagList = (props: { className?: string; tags: string[] | undefined }) => {
     </div>
   );
 };
-export function getQuoteCount(document: PostPageData, pageId?: string) {
-  if (!document) return;
-  return getQuoteCountFromArray(document.quotesAndMentions, pageId);
+export function getQuoteCount(quotesAndMentions: { uri: string; link?: string }[], pageId?: string) {
+  return getQuoteCountFromArray(quotesAndMentions, pageId);
 }
 
 export function getQuoteCountFromArray(
@@ -366,34 +338,34 @@ export function getQuoteCountFromArray(
   }
 }
 
-export function getCommentCount(document: PostPageData, pageId?: string) {
-  if (!document) return;
+export function getCommentCount(comments: CommentOnDocument[], pageId?: string) {
   if (pageId)
-    return document.comments_on_documents.filter(
+    return comments.filter(
       (c) => (c.record as PubLeafletComment.Record)?.onPage === pageId,
     ).length;
   else
-    return document.comments_on_documents.filter(
+    return comments.filter(
       (c) => !(c.record as PubLeafletComment.Record)?.onPage,
     ).length;
 }
 
-const EditButton = (props: { document: PostPageData }) => {
+const EditButton = (props: {
+  publication: { identity_did: string } | null;
+  leafletId: string | null;
+}) => {
   let { identity } = useIdentityData();
-  if (!props.document) return;
   if (
     identity &&
-    identity.atp_did ===
-      props.document.documents_in_publications[0]?.publications?.identity_did &&
-    props.document.leaflets_in_publications[0]
+    identity.atp_did === props.publication?.identity_did &&
+    props.leafletId
   )
     return (
       <a
-        href={`https://leaflet.pub/${props.document.leaflets_in_publications[0]?.leaflet}`}
+        href={`https://leaflet.pub/${props.leafletId}`}
         className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1"
       >
         <EditTiny /> Edit Post
       </a>
     );
-  return;
+  return null;
 };

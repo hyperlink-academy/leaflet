@@ -1,10 +1,12 @@
 "use client";
 import {
-  PubLeafletDocument,
   PubLeafletPagesLinearDocument,
   PubLeafletPagesCanvas,
   PubLeafletPublication,
 } from "lexicons/api";
+import { type NormalizedPublication } from "src/utils/normalizeRecords";
+import { useLeafletContent } from "contexts/LeafletContentContext";
+import { useDocument } from "contexts/DocumentContext";
 import { PostPageData } from "./getPostPageData";
 import { ProfileViewDetailed } from "@atproto/api/dist/client/types/app/bsky/actor/defs";
 import { AppBskyFeedDefs } from "@atproto/api";
@@ -152,7 +154,7 @@ export type SharedPageProps = {
     showMentions?: boolean;
     showPrevNext?: boolean;
   };
-  pubRecord?: PubLeafletPublication.Record;
+  pubRecord?: NormalizedPublication | null;
   theme?: PubLeafletPublication.Theme | null;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
@@ -206,7 +208,7 @@ export function PostPages({
   document_uri: string;
   document: PostPageData;
   profile: ProfileViewDetailed;
-  pubRecord?: PubLeafletPublication.Record;
+  pubRecord?: NormalizedPublication | null;
   did: string;
   prerenderedCodeBlocks?: Map<string, string>;
   bskyPostData: AppBskyFeedDefs.PostView[];
@@ -220,17 +222,18 @@ export function PostPages({
   let drawer = useDrawerOpen(document_uri);
   useInitializeOpenPages();
   let openPageIds = useOpenPages();
-  if (!document) return null;
+  const { pages } = useLeafletContent();
+  const { quotesAndMentions } = useDocument();
+  const record = document?.normalizedDocument;
+  if (!document || !record) return null;
 
-  let record = document.data as PubLeafletDocument.Record;
   let theme = pubRecord?.theme || record.theme || null;
   // For publication posts, respect the publication's showPageBackground setting
   // For standalone documents, default to showing page background
   let isInPublication = !!pubRecord;
   let hasPageBackground = isInPublication ? !!theme?.showPageBackground : true;
-  let quotesAndMentions = document.quotesAndMentions;
 
-  let firstPage = record.pages[0] as
+  let firstPage = pages[0] as
     | PubLeafletPagesLinearDocument.Main
     | PubLeafletPagesCanvas.Main;
 
@@ -250,7 +253,7 @@ export function PostPages({
     pollData,
     document_uri,
     hasPageBackground,
-    allPages: record.pages as (
+    allPages: pages as (
       | PubLeafletPagesLinearDocument.Main
       | PubLeafletPagesCanvas.Main
     )[],
@@ -329,7 +332,7 @@ export function PostPages({
         }
 
         // Handle document pages
-        let page = record.pages.find(
+        let page = pages.find(
           (p) =>
             (
               p as

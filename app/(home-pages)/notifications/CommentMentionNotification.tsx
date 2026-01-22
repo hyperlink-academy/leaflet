@@ -1,9 +1,4 @@
-import {
-  AppBskyActorProfile,
-  PubLeafletComment,
-  PubLeafletDocument,
-  PubLeafletPublication,
-} from "lexicons/api";
+import { AppBskyActorProfile, PubLeafletComment } from "lexicons/api";
 import { HydratedCommentMentionNotification } from "src/notifications";
 import { blobRefToSrc } from "src/utils/blobRefToSrc";
 import { MentionTiny } from "components/Icons/MentionTiny";
@@ -17,19 +12,19 @@ import { AtUri } from "@atproto/api";
 export const CommentMentionNotification = (
   props: HydratedCommentMentionNotification,
 ) => {
-  const docRecord = props.commentData.documents
-    ?.data as PubLeafletDocument.Record;
+  const docRecord = props.normalizedDocument;
+  if (!docRecord) return null;
+
   const commentRecord = props.commentData.record as PubLeafletComment.Record;
   const profileRecord = props.commentData.bsky_profiles
     ?.record as AppBskyActorProfile.Record;
-  const pubRecord = props.commentData.documents?.documents_in_publications[0]
-    ?.publications?.record as PubLeafletPublication.Record | undefined;
+  const pubRecord = props.normalizedPublication;
   const docUri = new AtUri(props.commentData.documents?.uri!);
   const rkey = docUri.rkey;
   const did = docUri.host;
 
   const href = pubRecord
-    ? `https://${pubRecord.base_path}/${rkey}?interactionDrawer=comments`
+    ? `${pubRecord.url}/${rkey}?interactionDrawer=comments`
     : `/p/${did}/${rkey}?interactionDrawer=comments`;
 
   const commenter = props.commenterHandle
@@ -37,8 +32,7 @@ export const CommentMentionNotification = (
     : "Someone";
 
   let actionText: React.ReactNode;
-  let mentionedDocRecord = props.mentionedDocument
-    ?.data as PubLeafletDocument.Record;
+  const mentionedDocRecord = props.normalizedMentionedDocument;
 
   if (props.mention_type === "did") {
     actionText = <>{commenter} mentioned you in a comment</>;
@@ -46,15 +40,14 @@ export const CommentMentionNotification = (
     props.mention_type === "publication" &&
     props.mentionedPublication
   ) {
-    const mentionedPubRecord = props.mentionedPublication
-      .record as PubLeafletPublication.Record;
+    const mentionedPubRecord = props.normalizedMentionedPublication;
     actionText = (
       <>
         {commenter} mentioned your publication{" "}
-        <span className="italic">{mentionedPubRecord.name}</span> in a comment
+        <span className="italic">{mentionedPubRecord?.name}</span> in a comment
       </>
     );
-  } else if (props.mention_type === "document" && props.mentionedDocument) {
+  } else if (props.mention_type === "document" && mentionedDocRecord) {
     actionText = (
       <>
         {commenter} mentioned your post{" "}
@@ -72,7 +65,7 @@ export const CommentMentionNotification = (
       icon={<MentionTiny />}
       actionText={actionText}
       content={
-        <ContentLayout postTitle={docRecord?.title} pubRecord={pubRecord}>
+        <ContentLayout postTitle={docRecord.title} pubRecord={pubRecord}>
           <CommentInNotification
             className=""
             avatar={

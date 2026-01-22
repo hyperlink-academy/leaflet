@@ -2,7 +2,7 @@
 
 import { useEntity, useReplicache } from "src/replicache";
 import { useUIState } from "src/useUIState";
-import { CSSProperties, useContext, useRef } from "react";
+import { CSSProperties, useRef } from "react";
 import { useCardBorderHidden } from "components/Pages/useCardBorderHidden";
 import { PostContent, Block } from "../PostContent";
 import {
@@ -15,7 +15,7 @@ import {
 } from "lexicons/api";
 import { AppBskyFeedDefs } from "@atproto/api";
 import { TextBlock } from "./TextBlock";
-import { PostPageContext } from "../PostPageContext";
+import { useDocument } from "contexts/DocumentContext";
 import { openPage, useOpenPages } from "../PostPages";
 import {
   openInteractionDrawer,
@@ -155,8 +155,7 @@ export function PagePreview(props: {
 }) {
   let previewRef = useRef<HTMLDivElement | null>(null);
   let { rootEntity } = useReplicache();
-  let data = useContext(PostPageContext);
-  let theme = data?.theme;
+  const { theme } = useDocument();
   let pageWidth = `var(--page-width-unitless)`;
   let cardBorderHidden = !theme?.showPageBackground;
   return (
@@ -195,14 +194,11 @@ export function PagePreview(props: {
 }
 
 const Interactions = (props: { pageId: string; parentPageId?: string }) => {
-  const data = useContext(PostPageContext);
-  const document_uri = data?.uri;
-  if (!document_uri)
-    throw new Error("document_uri not available in PostPageContext");
-  let comments = data.comments_on_documents.filter(
+  const { uri: document_uri, comments: allComments, mentions } = useDocument();
+  let comments = allComments.filter(
     (c) => (c.record as PubLeafletComment.Record)?.onPage === props.pageId,
   ).length;
-  let quotes = data.document_mentions_in_bsky.filter((q) =>
+  let quotes = mentions.filter((q) =>
     q.link.includes(props.pageId),
   ).length;
 

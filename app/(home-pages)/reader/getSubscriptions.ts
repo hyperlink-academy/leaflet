@@ -7,6 +7,10 @@ import { Json } from "supabase/database.types";
 import { supabaseServerClient } from "supabase/serverClient";
 import { idResolver } from "./idResolver";
 import { Cursor } from "./getReaderFeed";
+import {
+  normalizePublicationRecord,
+  type NormalizedPublication,
+} from "src/utils/normalizeRecords";
 
 export async function getSubscriptions(
   did?: string | null,
@@ -43,17 +47,24 @@ export async function getSubscriptions(
   }
   let { data: pubs, error } = await query;
 
-  const hydratedSubscriptions: PublicationSubscription[] = await Promise.all(
-    pubs?.map(async (pub) => {
-      let id = await idResolver.did.resolve(pub.publications?.identity_did!);
-      return {
-        ...pub.publications!,
-        authorProfile: id?.alsoKnownAs?.[0]
-          ? { handle: `@${id.alsoKnownAs[0].slice(5)}` }
-          : undefined,
-      };
-    }) || [],
-  );
+  const hydratedSubscriptions = (
+    await Promise.all(
+      pubs?.map(async (pub) => {
+        const normalizedRecord = normalizePublicationRecord(
+          pub.publications?.record
+        );
+        if (!normalizedRecord) return null;
+        let id = await idResolver.did.resolve(pub.publications?.identity_did!);
+        return {
+          ...pub.publications!,
+          record: normalizedRecord,
+          authorProfile: id?.alsoKnownAs?.[0]
+            ? { handle: `@${id.alsoKnownAs[0].slice(5)}` }
+            : undefined,
+        } as PublicationSubscription;
+      }) || []
+    )
+  ).filter((sub): sub is PublicationSubscription => sub !== null);
 
   const nextCursor =
     pubs && pubs.length > 0
@@ -71,7 +82,7 @@ export async function getSubscriptions(
 
 export type PublicationSubscription = {
   authorProfile?: { handle: string };
-  record: Json;
+  record: NormalizedPublication;
   uri: string;
   documents_in_publications: {
     documents: { data?: Json; indexed_at: string } | null;

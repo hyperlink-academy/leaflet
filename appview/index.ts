@@ -11,6 +11,9 @@ import {
   PubLeafletComment,
   PubLeafletPollVote,
   PubLeafletPollDefinition,
+  SiteStandardDocument,
+  SiteStandardPublication,
+  SiteStandardGraphSubscription,
 } from "lexicons/api";
 import {
   AppBskyEmbedExternal,
@@ -47,6 +50,9 @@ async function main() {
       ids.PubLeafletPollDefinition,
       // ids.AppBskyActorProfile,
       "app.bsky.feed.post",
+      ids.SiteStandardDocument,
+      ids.SiteStandardPublication,
+      ids.SiteStandardGraphSubscription,
     ],
     handleEvent,
     onError: (err) => {
@@ -207,6 +213,98 @@ async function handleEvent(evt: Event) {
   if (evt.collection === ids.PubLeafletGraphSubscription) {
     if (evt.event === "create" || evt.event === "update") {
       let record = PubLeafletGraphSubscription.validateRecord(evt.record);
+      if (!record.success) return;
+      await supabase
+        .from("identities")
+        .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
+      await supabase.from("publication_subscriptions").upsert({
+        uri: evt.uri.toString(),
+        identity: evt.did,
+        publication: record.value.publication,
+        record: record.value as Json,
+      });
+    }
+    if (evt.event === "delete") {
+      await supabase
+        .from("publication_subscriptions")
+        .delete()
+        .eq("uri", evt.uri.toString());
+    }
+  }
+  // site.standard.document records go into the main "documents" table
+  // The normalization layer handles reading both pub.leaflet and site.standard formats
+  if (evt.collection === ids.SiteStandardDocument) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = SiteStandardDocument.validateRecord(evt.record);
+      if (!record.success) {
+        console.log(record.error);
+        return;
+      }
+      let docResult = await supabase.from("documents").upsert({
+        uri: evt.uri.toString(),
+        data: record.value as Json,
+      });
+      if (docResult.error) console.log(docResult.error);
+
+      // site.standard.document uses "site" field to reference the publication
+      // For documents in publications, site is an AT-URI (at://did:plc:xxx/site.standard.publication/rkey)
+      // For standalone documents, site is an HTTPS URL (https://leaflet.pub/p/did:plc:xxx)
+      // Only link to publications table for AT-URI sites
+      if (record.value.site && record.value.site.startsWith("at://")) {
+        let siteURI = new AtUri(record.value.site);
+
+        if (siteURI.host !== evt.uri.host) {
+          console.log("Unauthorized to create document in site!");
+          return;
+        }
+        let docInPublicationResult = await supabase
+          .from("documents_in_publications")
+          .upsert({
+            publication: record.value.site,
+            document: evt.uri.toString(),
+          });
+        await supabase
+          .from("documents_in_publications")
+          .delete()
+          .neq("publication", record.value.site)
+          .eq("document", evt.uri.toString());
+
+        if (docInPublicationResult.error)
+          console.log(docInPublicationResult.error);
+      }
+    }
+    if (evt.event === "delete") {
+      await supabase.from("documents").delete().eq("uri", evt.uri.toString());
+    }
+  }
+
+  // site.standard.publication records go into the main "publications" table
+  if (evt.collection === ids.SiteStandardPublication) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = SiteStandardPublication.validateRecord(evt.record);
+      if (!record.success) return;
+      await supabase
+        .from("identities")
+        .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
+      await supabase.from("publications").upsert({
+        uri: evt.uri.toString(),
+        identity_did: evt.did,
+        name: record.value.name,
+        record: record.value as Json,
+      });
+    }
+    if (evt.event === "delete") {
+      await supabase
+        .from("publications")
+        .delete()
+        .eq("uri", evt.uri.toString());
+    }
+  }
+
+  // site.standard.graph.subscription records go into the main "publication_subscriptions" table
+  if (evt.collection === ids.SiteStandardGraphSubscription) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = SiteStandardGraphSubscription.validateRecord(evt.record);
       if (!record.success) return;
       await supabase
         .from("identities")

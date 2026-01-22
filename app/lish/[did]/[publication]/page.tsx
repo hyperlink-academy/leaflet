@@ -1,9 +1,8 @@
 import { supabaseServerClient } from "supabase/serverClient";
 import { AtUri } from "@atproto/syntax";
-import { PubLeafletDocument, PubLeafletPublication } from "lexicons/api";
-import Link from "next/link";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { BskyAgent } from "@atproto/api";
+import { publicationNameOrUriFilter } from "src/utils/uriHelpers";
 import { SubscribeWithBluesky } from "app/lish/Subscribe";
 import React from "react";
 import {
@@ -12,13 +11,15 @@ import {
 } from "components/ThemeManager/PublicationThemeProvider";
 import { NotFoundLayout } from "components/PageLayouts/NotFoundLayout";
 import { SpeedyLink } from "components/SpeedyLink";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
-import { CommentTiny } from "components/Icons/CommentTiny";
 import { InteractionPreview } from "components/InteractionsPreview";
 import { LocalizedDate } from "./LocalizedDate";
 import { PublicationHomeLayout } from "./PublicationHomeLayout";
 import { PublicationAuthor } from "./PublicationAuthor";
 import { Separator } from "components/Layout";
+import {
+  normalizePublicationRecord,
+  normalizeDocumentRecord,
+} from "src/utils/normalizeRecords";
 
 export default async function Publication(props: {
   params: Promise<{ publication: string; did: string }>;
@@ -27,16 +28,8 @@ export default async function Publication(props: {
   let did = decodeURIComponent(params.did);
   if (!did) return <PubNotFound />;
   let agent = new BskyAgent({ service: "https://public.api.bsky.app" });
-  let uri;
   let publication_name = decodeURIComponent(params.publication);
-  if (/^(?!\.$|\.\.S)[A-Za-z0-9._:~-]{1,512}$/.test(publication_name)) {
-    uri = AtUri.make(
-      did,
-      "pub.leaflet.publication",
-      publication_name,
-    ).toString();
-  }
-  let [{ data: publication }, { data: profile }] = await Promise.all([
+  let [{ data: publications }, { data: profile }] = await Promise.all([
     supabaseServerClient
       .from("publications")
       .select(
@@ -50,12 +43,14 @@ export default async function Publication(props: {
       `,
       )
       .eq("identity_did", did)
-      .or(`name.eq."${publication_name}", uri.eq."${uri}"`)
-      .single(),
+      .or(publicationNameOrUriFilter(did, publication_name))
+      .order("uri", { ascending: false })
+      .limit(1),
     agent.getProfile({ actor: did }),
   ]);
+  let publication = publications?.[0];
 
-  let record = publication?.record as PubLeafletPublication.Record | null;
+  const record = normalizePublicationRecord(publication?.record);
 
   let showPageBackground = record?.theme?.showPageBackground;
 
@@ -112,28 +107,28 @@ export default async function Publication(props: {
               {publication.documents_in_publications
                 .filter((d) => !!d?.documents)
                 .sort((a, b) => {
-                  let aRecord = a.documents?.data! as PubLeafletDocument.Record;
-                  let bRecord = b.documents?.data! as PubLeafletDocument.Record;
-                  const aDate = aRecord.publishedAt
+                  const aRecord = normalizeDocumentRecord(a.documents?.data);
+                  const bRecord = normalizeDocumentRecord(b.documents?.data);
+                  const aDate = aRecord?.publishedAt
                     ? new Date(aRecord.publishedAt)
                     : new Date(0);
-                  const bDate = bRecord.publishedAt
+                  const bDate = bRecord?.publishedAt
                     ? new Date(bRecord.publishedAt)
                     : new Date(0);
                   return bDate.getTime() - aDate.getTime(); // Sort by most recent first
                 })
                 .map((doc) => {
                   if (!doc.documents) return null;
+                  const doc_record = normalizeDocumentRecord(doc.documents.data);
+                  if (!doc_record) return null;
                   let uri = new AtUri(doc.documents.uri);
-                  let doc_record = doc.documents
-                    .data as PubLeafletDocument.Record;
                   let quotes =
                     doc.documents.document_mentions_in_bsky[0].count || 0;
                   let comments =
                     record?.preferences?.showComments === false
                       ? 0
                       : doc.documents.comments_on_documents[0].count || 0;
-                  let tags = (doc_record?.tags as string[] | undefined) || [];
+                  let tags = doc_record.tags || [];
 
                   return (
                     <React.Fragment key={doc.documents?.uri}>
@@ -171,8 +166,12 @@ export default async function Publication(props: {
                             commentsCount={comments}
                             tags={tags}
                             postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
-                            showComments={record?.preferences?.showComments}
-                            showMentions={record?.preferences?.showMentions}
+                            showComments={
+                              record?.preferences?.showComments !== false
+                            }
+                            showMentions={
+                              record?.preferences?.showMentions !== false
+                            }
                           />
                         </div>
                       </div>

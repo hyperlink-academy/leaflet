@@ -21,10 +21,6 @@ import { CommentTiny } from "./Icons/CommentTiny";
 import { QuoteTiny } from "./Icons/QuoteTiny";
 import { PublicationMetadata } from "./Pages/PublicationMetadata";
 import { useLeafletPublicationData } from "./PageSWRDataProvider";
-import {
-  PubLeafletPublication,
-  PubLeafletPublicationRecord,
-} from "lexicons/api";
 import { useHandleCanvasDrop } from "./Blocks/useHandleCanvasDrop";
 import { useBlockMouseHandlers } from "./Blocks/useBlockMouseHandlers";
 
@@ -166,12 +162,12 @@ export function CanvasContent(props: { entityID: string; preview?: boolean }) {
 }
 
 const CanvasMetadata = (props: { isSubpage: boolean | undefined }) => {
-  let { data: pub } = useLeafletPublicationData();
+  let { data: pub, normalizedPublication } = useLeafletPublicationData();
   if (!pub || !pub.publications) return null;
 
-  let pubRecord = pub.publications.record as PubLeafletPublication.Record;
-  let showComments = pubRecord.preferences?.showComments;
-  let showMentions = pubRecord.preferences?.showMentions;
+  if (!normalizedPublication) return null;
+  let showComments = normalizedPublication.preferences?.showComments !== false;
+  let showMentions = normalizedPublication.preferences?.showMentions !== false;
 
   return (
     <div className="flex flex-row gap-3 items-center absolute top-6 right-3 sm:top-4 sm:right-4 bg-bg-page border-border-light rounded-md px-2 py-1 h-fit z-20">
