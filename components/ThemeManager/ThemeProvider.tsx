@@ -22,6 +22,7 @@ import {
   PublicationThemeProvider,
 } from "./PublicationThemeProvider";
 import { getColorDifference } from "./themeUtils";
+import { getFontConfig, defaultFontId } from "src/fonts";
 
 // define a function to set an Aria Color to a CSS Variable in RGB
 function setCSSVariableToColor(
@@ -38,6 +39,7 @@ export function ThemeProvider(props: {
   local?: boolean;
   children: React.ReactNode;
   className?: string;
+  initialFontId?: string;
 }) {
   let { data: pub, normalizedPublication } = useLeafletPublicationData();
   if (!pub || !pub.publications) return <LeafletThemeProvider {...props} />;
@@ -56,6 +58,7 @@ export function LeafletThemeProvider(props: {
   entityID: string | null;
   local?: boolean;
   children: React.ReactNode;
+  initialFontId?: string;
 }) {
   let bgLeaflet = useColorAttribute(props.entityID, "theme/page-background");
   let bgPage = useColorAttribute(props.entityID, "theme/card-background");
@@ -76,6 +79,8 @@ export function LeafletThemeProvider(props: {
   let accent2 = useColorAttribute(props.entityID, "theme/accent-text");
 
   let pageWidth = useEntity(props.entityID, "theme/page-width");
+  // Use initialFontId as fallback until Replicache syncs
+  let fontId = useEntity(props.entityID, "theme/font")?.data.value ?? props.initialFontId;
 
   return (
     <CardBorderHiddenContext.Provider value={!!cardBorderHiddenValue}>
@@ -92,6 +97,7 @@ export function LeafletThemeProvider(props: {
         showPageBackground={showPageBackground}
         pageWidth={pageWidth?.data.value}
         hasBackgroundImage={hasBackgroundImage}
+        fontId={fontId}
       >
         {props.children}
       </BaseThemeProvider>
@@ -113,6 +119,7 @@ export const BaseThemeProvider = ({
   showPageBackground,
   pageWidth,
   hasBackgroundImage,
+  fontId,
   children,
 }: {
   local?: boolean;
@@ -127,6 +134,7 @@ export const BaseThemeProvider = ({
   highlight2: AriaColor;
   highlight3: AriaColor;
   pageWidth?: number;
+  fontId?: string;
   children: React.ReactNode;
 }) => {
   // When showPageBackground is false and there's no background image,
@@ -166,6 +174,10 @@ export const BaseThemeProvider = ({
     // otherwise, choose the more contrast-y option
     accentContrast = sortedAccents[0];
   }
+
+  // Get font config for CSS variable
+  const fontConfig = getFontConfig(fontId);
+  const themeFontValue = `'${fontConfig.fontFamily}', ${fontConfig.fallback.join(", ")}`;
 
   useEffect(() => {
     if (local) return;
@@ -215,6 +227,9 @@ export const BaseThemeProvider = ({
       "--page-width-setting",
       (pageWidth || 624).toString(),
     );
+
+    // Set theme font CSS variable
+    el?.style.setProperty("--theme-font", themeFontValue);
   }, [
     local,
     bgLeaflet,
@@ -227,6 +242,7 @@ export const BaseThemeProvider = ({
     accent2,
     accentContrast,
     pageWidth,
+    themeFontValue,
   ]);
   return (
     <div
@@ -249,6 +265,7 @@ export const BaseThemeProvider = ({
           "--page-width-setting": pageWidth || 624,
           "--page-width-unitless": pageWidth || 624,
           "--page-width-units": `min(${pageWidth || 624}px, calc(100vw - 12px))`,
+          "--theme-font": themeFontValue,
         } as CSSProperties
       }
     >
