@@ -16,7 +16,7 @@ export const ProfileHeader = (props: {
   popover?: boolean;
 }) => {
   let profileRecord = props.profile;
-  const profileUrl = `/p/${props.profile.handle}`;
+  const profileUrl = `https://leaflet.pub/p/${props.profile.handle}`;
 
   const avatarElement = (
     <Avatar
