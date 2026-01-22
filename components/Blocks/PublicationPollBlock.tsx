@@ -27,7 +27,8 @@ export const PublicationPollBlock = (
     setAreYouSure?: (value: boolean) => void;
   },
 ) => {
-  let { data: publicationData } = useLeafletPublicationData();
+  let { data: publicationData, normalizedDocument } =
+    useLeafletPublicationData();
   let isSelected = useUIState((s) =>
     s.selectedBlocks.find((b) => b.value === props.entityID),
   );
