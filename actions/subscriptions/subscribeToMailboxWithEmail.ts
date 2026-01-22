@@ -6,7 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { email_subscriptions_to_entity } from "drizzle/schema";
 import postgres from "postgres";
-import { getBlocksWithTypeLocal } from "src/hooks/queries/useBlocks";
+import { getBlocksWithTypeLocal } from "src/replicache/getBlocks";
 import type { Fact, PermissionToken } from "src/replicache";
 import type { Attribute } from "src/replicache/attributes";
 import { Database } from "supabase/database.types";

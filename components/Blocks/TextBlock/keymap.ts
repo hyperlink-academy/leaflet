@@ -21,7 +21,7 @@ import { focusPage } from "src/utils/focusPage";
 import { v7 } from "uuid";
 import { scanIndex } from "src/replicache/utils";
 import { indent, outdent } from "src/utils/list-operations";
-import { getBlocksWithType } from "src/hooks/queries/useBlocks";
+import { getBlocksWithType } from "src/replicache/getBlocks";
 import { isTextBlock } from "src/utils/isTextBlock";
 import { UndoManager } from "src/undoManager";
 type PropsRef = RefObject<
@@ -369,11 +369,15 @@ const shifttab =
     propsRef: RefObject<BlockProps & { entity_set: { set: string } }>,
     repRef: RefObject<Replicache<ReplicacheMutators> | null>,
   ) =>
-  () => {
+  async () => {
     if (useUIState.getState().selectedBlocks.length > 1) return false;
     if (!repRef.current) return false;
     if (!repRef.current) return false;
-    outdent(propsRef.current, propsRef.current.previousBlock, repRef.current);
+    let { foldedBlocks, toggleFold } = useUIState.getState();
+    await outdent(propsRef.current, propsRef.current.previousBlock, repRef.current, {
+      foldedBlocks,
+      toggleFold,
+    });
     return true;
   };
 
@@ -423,12 +427,40 @@ const enter =
             y: position.data.position.y + box.height,
           },
         });
-        if (propsRef.current.listData)
+        if (propsRef.current.listData) {
           await repRef.current?.mutate.assertFact({
             entity: newEntityID,
             attribute: "block/is-list",
             data: { type: "boolean", value: true },
           });
+          // Copy list style for canvas blocks
+          let listStyle = await repRef.current?.query((tx) =>
+            scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
+          );
+          if (listStyle?.[0])
+            await repRef.current?.mutate.assertFact({
+              entity: newEntityID,
+              attribute: "block/list-style",
+              data: {
+                type: "list-style-union",
+                value: listStyle[0].data.value,
+              },
+            });
+          // Set list number to next number if this is an ordered list
+          if (listStyle?.[0]) {
+            let listNumber = await repRef.current?.query((tx) =>
+              scanIndex(tx).eav(propsRef.current.entityID, "block/list-number"),
+            );
+            await repRef.current?.mutate.assertFact({
+              entity: newEntityID,
+              attribute: "block/list-number",
+              data: {
+                type: "number",
+                value: (listNumber?.[0]?.data.value || 0) + 1,
+              },
+            });
+          }
+        }
         return;
       }
       if (propsRef.current.listData) {
@@ -499,6 +531,33 @@ const enter =
           attribute: "block/is-list",
           data: { type: "boolean", value: true },
         });
+        // Copy list style (ordered/unordered) to new list item
+        let listStyle = await repRef.current?.query((tx) =>
+          scanIndex(tx).eav(propsRef.current.entityID, "block/list-style"),
+        );
+        if (listStyle?.[0])
+          await repRef.current?.mutate.assertFact({
+            entity: newEntityID,
+            attribute: "block/list-style",
+            data: {
+              type: "list-style-union",
+              value: listStyle[0].data.value,
+            },
+          });
+        // Set list number to next number if this is an ordered list
+        if (listStyle?.[0]) {
+          let listNumber = await repRef.current?.query((tx) =>
+            scanIndex(tx).eav(propsRef.current.entityID, "block/list-number"),
+          );
+          await repRef.current?.mutate.assertFact({
+            entity: newEntityID,
+            attribute: "block/list-number",
+            data: {
+              type: "number",
+              value: (listNumber?.[0]?.data.value || 0) + 1,
+            },
+          });
+        }
         let checked = await repRef.current?.query((tx) =>
           scanIndex(tx).eav(propsRef.current.entityID, "block/check-list"),
         );

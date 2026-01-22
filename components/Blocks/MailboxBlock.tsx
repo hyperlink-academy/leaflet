@@ -13,7 +13,7 @@ import { confirmEmailSubscription } from "actions/subscriptions/confirmEmailSubs
 import { focusPage } from "src/utils/focusPage";
 import { v7 } from "uuid";
 import { sendPostToSubscribers } from "actions/subscriptions/sendPostToSubscribers";
-import { getBlocksWithType } from "src/hooks/queries/useBlocks";
+import { getBlocksWithType } from "src/replicache/getBlocks";
 import { getBlocksAsHTML } from "src/utils/getBlocksAsHTML";
 import { htmlToMarkdown } from "src/htmlMarkdownParsers";
 import {

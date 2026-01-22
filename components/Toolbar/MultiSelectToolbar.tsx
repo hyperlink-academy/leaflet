@@ -3,7 +3,7 @@ import { ReplicacheMutators, useReplicache } from "src/replicache";
 import { ToolbarButton } from "./index";
 import { copySelection } from "src/utils/copySelection";
 import { useSmoker } from "components/Toast";
-import { getBlocksWithType } from "src/hooks/queries/useBlocks";
+import { getBlocksWithType } from "src/replicache/getBlocks";
 import { Replicache } from "replicache";
 import { LockBlockButton } from "./LockBlockButton";
 import { Props } from "components/Icons/Props";
