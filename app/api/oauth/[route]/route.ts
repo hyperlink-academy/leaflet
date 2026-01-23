@@ -11,6 +11,7 @@ import {
   ActionAfterSignIn,
   parseActionFromSearchParam,
 } from "./afterSignInActions";
+import { inngest } from "app/api/inngest/client";
 
 type OauthRequestClientState = {
   redirect: string | null;
@@ -84,6 +85,16 @@ export async function GET(
             .single();
           identity = data;
         }
+
+        // Trigger migration if identity needs it
+        const metadata = identity?.metadata as Record<string, unknown> | null;
+        if (metadata?.needsStandardSiteMigration) {
+          await inngest.send({
+            name: "user/migrate-to-standard",
+            data: { did: session.did },
+          });
+        }
+
         let { data: token } = await supabaseServerClient
           .from("email_auth_tokens")
           .insert({

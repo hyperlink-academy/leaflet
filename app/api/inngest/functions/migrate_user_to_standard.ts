@@ -44,15 +44,32 @@ export const migrate_user_to_standard = inngest.createFunction(
     };
 
     // Step 1: Verify OAuth session is valid
-    await step.run("verify-oauth-session", async () => {
+    const oauthValid = await step.run("verify-oauth-session", async () => {
       const result = await restoreOAuthSession(did);
       if (!result.ok) {
-        throw new Error(
-          `Failed to restore OAuth session: ${result.error.message}`,
-        );
+        // Mark identity as needing migration so we can retry later
+        await supabaseServerClient
+          .from("identities")
+          .update({
+            metadata: { needsStandardSiteMigration: true },
+          })
+          .eq("atp_did", did);
+
+        return { success: false, error: result.error.message };
       }
       return { success: true };
     });
+
+    if (!oauthValid.success) {
+      return {
+        success: false,
+        error: `Failed to restore OAuth session`,
+        stats,
+        publicationUriMap: {},
+        documentUriMap: {},
+        userSubscriptionUriMap: {},
+      };
+    }
 
     // Step 2: Get user's pub.leaflet.publication records
     const oldPublications = await step.run(
@@ -471,6 +488,16 @@ export const migrate_user_to_standard = inngest.createFunction(
     // 2. External references (e.g., from other AT Proto apps) to old URIs continue to work
     // 3. The normalization layer handles both schemas transparently for reads
     // Old records are also kept on the user's PDS so existing AT-URI references remain valid.
+
+    // Clear the migration flag on success
+    if (stats.errors.length === 0) {
+      await step.run("clear-migration-flag", async () => {
+        await supabaseServerClient
+          .from("identities")
+          .update({ metadata: null })
+          .eq("atp_did", did);
+      });
+    }
 
     return {
       success: stats.errors.length === 0,

@@ -551,6 +551,7 @@ export type Database = {
           home_page: string
           id: string
           interface_state: Json | null
+          metadata: Json | null
         }
         Insert: {
           atp_did?: string | null
@@ -559,6 +560,7 @@ export type Database = {
           home_page?: string
           id?: string
           interface_state?: Json | null
+          metadata?: Json | null
         }
         Update: {
           atp_did?: string | null
@@ -567,6 +569,7 @@ export type Database = {
           home_page?: string
           id?: string
           interface_state?: Json | null
+          metadata?: Json | null
         }
         Relationships: [
           {
