@@ -29,6 +29,13 @@ export type Events = {
   "user/cleanup-expired-oauth-sessions": {
     data: {};
   };
+  "user/check-oauth-session": {
+    data: {
+      identityId: string;
+      did: string;
+      tokenCount: number;
+    };
+  };
 };
 
 // Create a client to send and receive events

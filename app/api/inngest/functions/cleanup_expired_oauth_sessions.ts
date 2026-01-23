@@ -2,19 +2,12 @@ import { supabaseServerClient } from "supabase/serverClient";
 import { inngest } from "../client";
 import { restoreOAuthSession } from "src/atproto-oauth";
 
+// Main function that fetches identities and publishes events for each one
 export const cleanup_expired_oauth_sessions = inngest.createFunction(
   { id: "cleanup_expired_oauth_sessions" },
   { event: "user/cleanup-expired-oauth-sessions" },
   async ({ step }) => {
-    const stats = {
-      totalIdentities: 0,
-      validSessions: 0,
-      expiredSessions: 0,
-      tokensDeleted: 0,
-      errors: [] as string[],
-    };
-
-    // Step 1: Get all identities with an atp_did (OAuth users) that have at least one auth token
+    // Get all identities with an atp_did (OAuth users) that have at least one auth token
     const identities = await step.run("fetch-oauth-identities", async () => {
       const { data, error } = await supabaseServerClient
         .from("identities")
@@ -33,102 +26,98 @@ export const cleanup_expired_oauth_sessions = inngest.createFunction(
         })
         .map((identity) => ({
           id: identity.id,
-          atp_did: identity.atp_did,
+          atp_did: identity.atp_did!,
           tokenCount: identity.email_auth_tokens?.[0]?.count ?? 0,
         }));
     });
 
-    stats.totalIdentities = identities.length;
-    console.log(`Found ${identities.length} OAuth identities with active sessions to check`);
+    console.log(
+      `Found ${identities.length} OAuth identities with active sessions to check`,
+    );
 
-    // Step 2: Check identities' OAuth sessions in batched parallel and cleanup if expired
-    const BATCH_SIZE = 150;
-    const allResults: {
-      identityId: string;
-      valid: boolean;
-      tokensDeleted: number;
-      error?: string;
-    }[] = [];
+    // Publish events for each identity in batches
+    const BATCH_SIZE = 100;
+    let totalSent = 0;
 
     for (let i = 0; i < identities.length; i += BATCH_SIZE) {
       const batch = identities.slice(i, i + BATCH_SIZE);
-      const batchNum = Math.floor(i / BATCH_SIZE) + 1;
-      const totalBatches = Math.ceil(identities.length / BATCH_SIZE);
 
-      console.log(
-        `Processing batch ${batchNum}/${totalBatches} (${batch.length} identities)`,
-      );
+      await step.run(`send-events-batch-${i}`, async () => {
+        const events = batch.map((identity) => ({
+          name: "user/check-oauth-session" as const,
+          data: {
+            identityId: identity.id,
+            did: identity.atp_did,
+            tokenCount: identity.tokenCount,
+          },
+        }));
 
-      const batchResults = await Promise.all(
-        batch.map((identity) =>
-          step.run(`check-session-${identity.id}`, async () => {
-            console.log(
-              `Checking OAuth session for DID: ${identity.atp_did} (${identity.tokenCount} tokens)`,
-            );
+        await inngest.send(events);
+        return events.length;
+      });
 
-            const sessionResult = await restoreOAuthSession(identity.atp_did!);
-
-            if (sessionResult.ok) {
-              console.log(`  Session valid for ${identity.atp_did}`);
-              return { identityId: identity.id, valid: true, tokensDeleted: 0 };
-            }
-
-            // Session is expired/invalid - delete associated auth tokens
-            console.log(
-              `  Session expired for ${identity.atp_did}: ${sessionResult.error.message}`,
-            );
-
-            const { error: deleteError } = await supabaseServerClient
-              .from("email_auth_tokens")
-              .delete()
-              .eq("identity", identity.id);
-
-            if (deleteError) {
-              console.error(
-                `  Error deleting tokens for identity ${identity.id}: ${deleteError.message}`,
-              );
-              return {
-                identityId: identity.id,
-                valid: false,
-                tokensDeleted: 0,
-                error: deleteError.message,
-              };
-            }
-
-            console.log(
-              `  Deleted ${identity.tokenCount} auth tokens for identity ${identity.id}`,
-            );
-
-            return {
-              identityId: identity.id,
-              valid: false,
-              tokensDeleted: identity.tokenCount,
-            };
-          }),
-        ),
-      );
-
-      allResults.push(...batchResults);
+      totalSent += batch.length;
     }
 
-    // Aggregate results
-    for (const result of allResults) {
-      if (result.valid) {
-        stats.validSessions++;
-      } else {
-        stats.expiredSessions++;
-        stats.tokensDeleted += result.tokensDeleted;
-        if ("error" in result && result.error) {
-          stats.errors.push(`Identity ${result.identityId}: ${result.error}`);
-        }
-      }
-    }
-
-    console.log("Cleanup completed:", stats);
+    console.log(`Published ${totalSent} check-oauth-session events`);
 
     return {
-      success: stats.errors.length === 0,
-      stats,
+      success: true,
+      identitiesQueued: totalSent,
+    };
+  },
+);
+
+// Function that checks a single identity's OAuth session and cleans up if expired
+export const check_oauth_session = inngest.createFunction(
+  { id: "check_oauth_session" },
+  { event: "user/check-oauth-session" },
+  async ({ event, step }) => {
+    const { identityId, did, tokenCount } = event.data;
+
+    const result = await step.run("check-and-cleanup", async () => {
+      console.log(`Checking OAuth session for DID: ${did} (${tokenCount} tokens)`);
+
+      const sessionResult = await restoreOAuthSession(did);
+
+      if (sessionResult.ok) {
+        console.log(`  Session valid for ${did}`);
+        return { valid: true, tokensDeleted: 0 };
+      }
+
+      // Session is expired/invalid - delete associated auth tokens
+      console.log(
+        `  Session expired for ${did}: ${sessionResult.error.message}`,
+      );
+
+      const { error: deleteError } = await supabaseServerClient
+        .from("email_auth_tokens")
+        .delete()
+        .eq("identity", identityId);
+
+      if (deleteError) {
+        console.error(
+          `  Error deleting tokens for identity ${identityId}: ${deleteError.message}`,
+        );
+        return {
+          valid: false,
+          tokensDeleted: 0,
+          error: deleteError.message,
+        };
+      }
+
+      console.log(`  Deleted ${tokenCount} auth tokens for identity ${identityId}`);
+
+      return {
+        valid: false,
+        tokensDeleted: tokenCount,
+      };
+    });
+
+    return {
+      identityId,
+      did,
+      ...result,
     };
   },
 );
