@@ -2215,8 +2215,8 @@ export const schemaDict = {
               type: 'ref',
             },
             theme: {
-              type: 'ref',
-              ref: 'lex:pub.leaflet.publication#theme',
+              type: 'union',
+              refs: ['lex:pub.leaflet.publication#theme'],
             },
             description: {
               maxGraphemes: 300,

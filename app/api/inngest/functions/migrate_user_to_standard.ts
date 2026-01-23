@@ -109,10 +109,11 @@ export const migrate_user_to_standard = inngest.createFunction(
       })
       .filter((x) => x !== null);
 
-    // Run all PDS writes in parallel
-    const pubPdsResults = await Promise.all(
-      publicationsToMigrate.map(({ pub, rkey, newRecord }) =>
-        step.run(`pds-write-publication-${pub.uri}`, async () => {
+    // Run PDS + DB writes together for each publication
+    const pubResults = await Promise.all(
+      publicationsToMigrate.map(({ pub, rkey, normalized, newRecord }) =>
+        step.run(`migrate-publication-${pub.uri}`, async () => {
+          // PDS write
           const agent = await createAuthenticatedAgent(did);
           const putResult = await agent.com.atproto.repo.putRecord({
             repo: did,
@@ -121,16 +122,9 @@ export const migrate_user_to_standard = inngest.createFunction(
             record: newRecord,
             validate: false,
           });
-          return { oldUri: pub.uri, newUri: putResult.data.uri };
-        }),
-      ),
-    );
+          const newUri = putResult.data.uri;
 
-    // Run all DB writes in parallel
-    const pubDbResults = await Promise.all(
-      publicationsToMigrate.map(({ pub, normalized, newRecord }, index) => {
-        const newUri = pubPdsResults[index].newUri;
-        return step.run(`db-write-publication-${pub.uri}`, async () => {
+          // DB write
           const { error: dbError } = await supabaseServerClient
             .from("publications")
             .upsert({
@@ -149,12 +143,12 @@ export const migrate_user_to_standard = inngest.createFunction(
             };
           }
           return { success: true as const, oldUri: pub.uri, newUri };
-        });
-      }),
+        }),
+      ),
     );
 
     // Process results
-    for (const result of pubDbResults) {
+    for (const result of pubResults) {
       if (result.success) {
         publicationUriMap[result.oldUri] = result.newUri;
         stats.publicationsMigrated++;
@@ -239,7 +233,7 @@ export const migrate_user_to_standard = inngest.createFunction(
           $type: "site.standard.document",
           title: normalized.title || "Untitled",
           site: siteValue,
-          path: rkey,
+          path: "/" + rkey,
           publishedAt: normalized.publishedAt || new Date().toISOString(),
           description: normalized.description,
           content: normalized.content,
@@ -252,10 +246,11 @@ export const migrate_user_to_standard = inngest.createFunction(
       })
       .filter((x) => x !== null);
 
-    // Run all PDS writes in parallel
-    const docPdsResults = await Promise.all(
-      documentsToMigrate.map(({ doc, rkey, newRecord }) =>
-        step.run(`pds-write-document-${doc.uri}`, async () => {
+    // Run PDS + DB writes together for each document
+    const docResults = await Promise.all(
+      documentsToMigrate.map(({ doc, rkey, newRecord, oldPubUri }) =>
+        step.run(`migrate-document-${doc.uri}`, async () => {
+          // PDS write
           const agent = await createAuthenticatedAgent(did);
           const putResult = await agent.com.atproto.repo.putRecord({
             repo: did,
@@ -264,16 +259,9 @@ export const migrate_user_to_standard = inngest.createFunction(
             record: newRecord,
             validate: false,
           });
-          return { oldUri: doc.uri, newUri: putResult.data.uri };
-        }),
-      ),
-    );
+          const newUri = putResult.data.uri;
 
-    // Run all DB writes in parallel
-    const docDbResults = await Promise.all(
-      documentsToMigrate.map(({ doc, newRecord, oldPubUri }, index) => {
-        const newUri = docPdsResults[index].newUri;
-        return step.run(`db-write-document-${doc.uri}`, async () => {
+          // DB write
           const { error: dbError } = await supabaseServerClient
             .from("documents")
             .upsert({
@@ -302,12 +290,12 @@ export const migrate_user_to_standard = inngest.createFunction(
           }
 
           return { success: true as const, oldUri: doc.uri, newUri };
-        });
-      }),
+        }),
+      ),
     );
 
     // Process results
-    for (const result of docDbResults) {
+    for (const result of docResults) {
       if (result.success) {
         documentUriMap[result.oldUri] = result.newUri;
         stats.documentsMigrated++;
@@ -428,10 +416,11 @@ export const migrate_user_to_standard = inngest.createFunction(
       })
       .filter((x) => x !== null);
 
-    // Run all PDS writes in parallel
-    const subPdsResults = await Promise.all(
+    // Run PDS + DB writes together for each subscription
+    const subResults = await Promise.all(
       subscriptionsToMigrate.map(({ sub, rkey, newRecord }) =>
-        step.run(`pds-write-subscription-${sub.uri}`, async () => {
+        step.run(`migrate-subscription-${sub.uri}`, async () => {
+          // PDS write
           const agent = await createAuthenticatedAgent(did);
           const putResult = await agent.com.atproto.repo.putRecord({
             repo: did,
@@ -440,16 +429,9 @@ export const migrate_user_to_standard = inngest.createFunction(
             record: newRecord,
             validate: false,
           });
-          return { oldUri: sub.uri, newUri: putResult.data.uri };
-        }),
-      ),
-    );
+          const newUri = putResult.data.uri;
 
-    // Run all DB writes in parallel
-    const subDbResults = await Promise.all(
-      subscriptionsToMigrate.map(({ sub, newRecord }, index) => {
-        const newUri = subPdsResults[index].newUri;
-        return step.run(`db-write-subscription-${sub.uri}`, async () => {
+          // DB write
           const { error: dbError } = await supabaseServerClient
             .from("publication_subscriptions")
             .update({
@@ -467,12 +449,12 @@ export const migrate_user_to_standard = inngest.createFunction(
             };
           }
           return { success: true as const, oldUri: sub.uri, newUri };
-        });
-      }),
+        }),
+      ),
     );
 
     // Process results
-    for (const result of subDbResults) {
+    for (const result of subResults) {
       if (result.success) {
         userSubscriptionUriMap[result.oldUri] = result.newUri;
         stats.userSubscriptionsMigrated++;

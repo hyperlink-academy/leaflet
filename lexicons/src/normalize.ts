@@ -14,7 +14,7 @@
  */
 
 import type * as PubLeafletDocument from "../api/types/pub/leaflet/document";
-import type * as PubLeafletPublication from "../api/types/pub/leaflet/publication";
+import * as PubLeafletPublication from "../api/types/pub/leaflet/publication";
 import type * as PubLeafletContent from "../api/types/pub/leaflet/content";
 import type * as SiteStandardDocument from "../api/types/site/standard/document";
 import type * as SiteStandardPublication from "../api/types/site/standard/publication";
@@ -31,7 +31,20 @@ export type NormalizedDocument = SiteStandardDocument.Record & {
 };
 
 // Normalized publication type - uses the generated site.standard.publication type
-export type NormalizedPublication = SiteStandardPublication.Record;
+// with the theme narrowed to only the valid pub.leaflet.publication#theme type
+// (isTheme validates that $type is present, so we use $Typed)
+// Note: We explicitly list fields rather than using Omit because the generated Record type
+// has an index signature [k: string]: unknown that interferes with property typing
+export type NormalizedPublication = {
+  $type: "site.standard.publication";
+  name: string;
+  url: string;
+  description?: string;
+  icon?: SiteStandardPublication.Record["icon"];
+  basicTheme?: SiteStandardThemeBasic.Main;
+  theme?: $Typed<PubLeafletPublication.Theme>;
+  preferences?: SiteStandardPublication.Preferences;
+};
 
 /**
  * Checks if the record is a pub.leaflet.document
@@ -210,9 +223,16 @@ export function normalizePublication(
 ): NormalizedPublication | null {
   if (!record || typeof record !== "object") return null;
 
-  // Pass through site.standard records directly
+  // Pass through site.standard records directly, but validate the theme
   if (isStandardPublication(record)) {
-    return record;
+    // Validate theme - only keep if it's a valid pub.leaflet.publication#theme
+    const theme = PubLeafletPublication.isTheme(record.theme)
+      ? (record.theme as $Typed<PubLeafletPublication.Theme>)
+      : undefined;
+    return {
+      ...record,
+      theme,
+    };
   }
 
   if (isLeafletPublication(record)) {
@@ -224,6 +244,21 @@ export function normalizePublication(
     }
 
     const basicTheme = leafletThemeToBasicTheme(record.theme);
+
+    // Validate theme - only keep if it's a valid pub.leaflet.publication#theme with $type set
+    // For legacy records without $type, add it during normalization
+    let theme: $Typed<PubLeafletPublication.Theme> | undefined;
+    if (record.theme) {
+      if (PubLeafletPublication.isTheme(record.theme)) {
+        theme = record.theme as $Typed<PubLeafletPublication.Theme>;
+      } else {
+        // Legacy theme without $type - add it
+        theme = {
+          ...record.theme,
+          $type: "pub.leaflet.publication#theme",
+        };
+      }
+    }
 
     // Convert preferences to site.standard format (strip/replace $type)
     const preferences: SiteStandardPublication.Preferences | undefined =
@@ -243,7 +278,7 @@ export function normalizePublication(
       description: record.description,
       icon: record.icon,
       basicTheme,
-      theme: record.theme,
+      theme,
       preferences,
     };
   }
