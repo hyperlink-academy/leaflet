@@ -14,6 +14,7 @@ import {
 export const BlueskyEmbed = (props: {
   embed: Exclude<AppBskyFeedDefs.PostView["embed"], undefined>;
   postUrl?: string;
+  className?: string;
 }) => {
   // check this file from bluesky for ref
   // https://github.com/bluesky-social/social-app/blob/main/bskyembed/src/components/embed.tsx
@@ -81,7 +82,7 @@ export const BlueskyEmbed = (props: {
         <a
           href={externalEmbed.external.uri}
           target="_blank"
-          className="group flex flex-col border border-border-light rounded-md overflow-hidden hover:no-underline sm:hover:border-accent-contrast selected-border"
+          className={`blueskyPostEmbed group flex flex-col border border-border-light rounded-md overflow-hidden hover:no-underline sm:hover:border-accent-contrast selected-border ${props.className}`}
         >
           {externalEmbed.external.thumb === undefined ? null : (
             <>
@@ -116,7 +117,7 @@ export const BlueskyEmbed = (props: {
         : 16 / 9;
       return (
         <div
-          className="rounded-md overflow-hidden relative w-full"
+          className={`rounded-md overflow-hidden relative w-full ${props.className}`}
           style={{ aspectRatio: String(videoAspectRatio) }}
         >
           <img
@@ -207,7 +208,7 @@ export const BlueskyEmbed = (props: {
     case AppBskyEmbedRecordWithMedia.isView(props.embed) &&
       AppBskyEmbedRecord.isViewRecord(props.embed.record.record):
       return (
-        <div className={`flex flex-col gap-2`}>
+        <div className={`bskyEmbed flex flex-col gap-2`}>
           <BlueskyEmbed embed={props.embed.media} />
           <BlueskyEmbed
             embed={{

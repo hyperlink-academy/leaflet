@@ -104,7 +104,6 @@ export function QuotesLink(props: {
   const handlePrefetch = () => {
     prefetchQuotes(postUri);
   };
-
   return (
     <button
       className={className}

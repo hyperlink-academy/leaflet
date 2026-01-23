@@ -4,14 +4,25 @@ export const Avatar = (props: {
   src: string | undefined;
   displayName: string | undefined;
   className?: string;
-  tiny?: boolean;
-  large?: boolean;
-  giant?: boolean;
+  size?: "tiny" | "small" | "medium" | "large" | "giant";
 }) => {
+  let sizeClassName =
+    props.size === "tiny"
+      ? "w-4 h-4"
+      : props.size === "small"
+        ? "w-5 h-5"
+        : props.size === "medium"
+          ? "h-6 w-6"
+          : props.size === "large"
+            ? "w-8 h-8"
+            : props.size === "giant"
+              ? "h-16 w-16"
+              : "w-6 h-6";
+
   if (props.src)
     return (
       <img
-        className={`${props.tiny ? "w-4 h-4" : props.large ? "h-8 w-8" : props.giant ? "h-16 w-16" : "w-5 h-5"} rounded-full shrink-0 border border-border-light ${props.className}`}
+        className={`${sizeClassName} relative rounded-full shrink-0 border border-border-light ${props.className}`}
         src={props.src}
         alt={
           props.displayName
@@ -23,9 +34,17 @@ export const Avatar = (props: {
   else
     return (
       <div
-        className={`bg-[var(--accent-light)] flex rounded-full shrink-0 border border-border-light place-items-center justify-center text-accent-1 ${props.tiny ? "w-4 h-4" : "w-5 h-5"}`}
+        className={` relative bg-[var(--accent-light)] flex rounded-full shrink-0 border border-border-light place-items-center justify-center text-accent-1 ${sizeClassName}`}
       >
-        <AccountTiny className={props.tiny ? "scale-80" : "scale-90"} />
+        <AccountTiny
+          className={
+            props.size === "tiny"
+              ? "scale-80"
+              : props.size === "small"
+                ? "scale-90"
+                : ""
+          }
+        />
       </div>
     );
 };

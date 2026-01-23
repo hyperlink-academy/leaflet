@@ -7,7 +7,12 @@ import { DotLoader } from "components/utils/DotLoader";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { openPage } from "./PostPages";
 import { BskyPostContent } from "./BskyPostContent";
-import { QuotesLink, getQuotesKey, fetchQuotes, prefetchQuotes } from "./PostLinks";
+import {
+  QuotesLink,
+  getQuotesKey,
+  fetchQuotes,
+  prefetchQuotes,
+} from "./PostLinks";
 
 // Re-export for backwards compatibility
 export { QuotesLink, getQuotesKey, fetchQuotes, prefetchQuotes };
@@ -27,7 +32,9 @@ export function BlueskyQuotesPage(props: {
     data: quotesData,
     isLoading,
     error,
-  } = useSWR(postUri ? getQuotesKey(postUri) : null, () => fetchQuotes(postUri));
+  } = useSWR(postUri ? getQuotesKey(postUri) : null, () =>
+    fetchQuotes(postUri),
+  );
 
   return (
     <PageWrapper
@@ -69,20 +76,13 @@ function QuotesContent(props: { posts: PostView[]; postUri: string }) {
   return (
     <div className="flex flex-col gap-0">
       {posts.map((post) => (
-        <QuotePost
-          key={post.uri}
-          post={post}
-          quotesUri={postUri}
-        />
+        <QuotePost key={post.uri} post={post} quotesUri={postUri} />
       ))}
     </div>
   );
 }
 
-function QuotePost(props: {
-  post: PostView;
-  quotesUri: string;
-}) {
+function QuotePost(props: { post: PostView; quotesUri: string }) {
   const { post, quotesUri } = props;
   const parent = { type: "quotes" as const, uri: quotesUri };
 
@@ -94,10 +94,8 @@ function QuotePost(props: {
       <BskyPostContent
         post={post}
         parent={parent}
-        linksEnabled={true}
         showEmbed={true}
         showBlueskyLink={true}
-        onLinkClick={(e) => e.stopPropagation()}
         onEmbedClick={(e) => e.stopPropagation()}
       />
     </div>

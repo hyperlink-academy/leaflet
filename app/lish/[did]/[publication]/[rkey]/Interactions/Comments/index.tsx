@@ -25,7 +25,7 @@ export type Comment = {
   uri: string;
   bsky_profiles: { record: Json; did: string } | null;
 };
-export function Comments(props: {
+export function CommentsDrawerContent(props: {
   document_uri: string;
   comments: Comment[];
   pageId?: string;

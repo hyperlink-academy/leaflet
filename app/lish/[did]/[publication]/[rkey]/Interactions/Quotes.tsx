@@ -24,6 +24,7 @@ import { DotLoader } from "components/utils/DotLoader";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { ThreadLink, QuotesLink } from "../PostLinks";
+import { BskyPostContent } from "../BskyPostContent";
 
 // Helper to get SWR key for quotes
 export function getQuotesSWRKey(uris: string[]) {
@@ -61,7 +62,7 @@ export function prefetchQuotesData(
   }
 }
 
-export const Quotes = (props: {
+export const MentionsDrawerContent = (props: {
   quotesAndMentions: { uri: string; link?: string }[];
   did: string;
 }) => {
@@ -85,18 +86,13 @@ export const Quotes = (props: {
   });
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="w-full flex justify-between text-secondary font-bold">
-        Quotes
-        <button
-          className="text-tertiary"
-          onClick={() =>
-            setInteractionState(document_uri, { drawerOpen: false })
-          }
-        >
-          <CloseTiny />
-        </button>
-      </div>
+    <div className="relative w-full flex justify-between ">
+      <button
+        className="text-tertiary absolute top-0 right-0"
+        onClick={() => setInteractionState(document_uri, { drawerOpen: false })}
+      >
+        <CloseTiny />
+      </button>
       {props.quotesAndMentions.length === 0 ? (
         <div className="opaque-container flex flex-col gap-0.5 p-[6px] text-tertiary italic text-sm text-center">
           <div className="font-bold">no quotes yet!</div>
@@ -108,59 +104,58 @@ export const Quotes = (props: {
           <DotLoader />
         </div>
       ) : (
-        <div className="quotes flex flex-col gap-8">
-          {/* Quotes with links (quoted content) */}
-          {quotesWithLinks.map((q, index) => {
-            const pv = postViewMap.get(q.uri);
-            if (!pv || !q.link) return null;
-            const url = new URL(q.link);
-            const quoteParam = url.pathname.split("/l-quote/")[1];
-            if (!quoteParam) return null;
-            const quotePosition = decodeQuotePosition(quoteParam);
-            if (!quotePosition) return null;
-            return (
-              <div key={`quote-${index}`} className="flex flex-col ">
-                <QuoteContent
-                  index={index}
-                  did={props.did}
-                  position={quotePosition}
-                />
-
-                <div className="h-5 w-1 ml-5 border-l border-border-light" />
-                <BskyPost
-                  uri={pv.uri}
-                  rkey={new AtUri(pv.uri).rkey}
-                  content={pv.record.text as string}
-                  user={pv.author.displayName || pv.author.handle}
-                  profile={pv.author}
-                  handle={pv.author.handle}
-                  replyCount={pv.replyCount}
-                  quoteCount={pv.quoteCount}
-                />
-              </div>
-            );
-          })}
-
+        <div className="flex flex-col gap-8">
+          {quotesWithLinks.length > 0 && (
+            <div className="flex flex-col gap-4">
+              Quotes
+              {/* Quotes with links (quoted content) */}
+              {quotesWithLinks.map((q, index) => {
+                return (
+                  <div className="flex gap-2">
+                    <Quote
+                      q={q}
+                      index={index}
+                      did={props.did}
+                      postViewMap={postViewMap}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
           {/* Direct post mentions (without quoted content) */}
           {directMentions.length > 0 && (
             <div className="flex flex-col gap-4">
-              <div className="text-secondary font-bold">Post Mentions</div>
+              <div className="text-secondary font-bold">
+                Mentions on Bluesky
+              </div>
               <div className="flex flex-col gap-8">
                 {directMentions.map((q, index) => {
-                  const pv = postViewMap.get(q.uri);
-                  if (!pv) return null;
+                  const post = postViewMap.get(q.uri);
+                  if (!post) return null;
+
+                  const parent = { type: "thread" as const, uri: q.uri };
                   return (
-                    <BskyPost
-                      key={`mention-${index}`}
-                      uri={pv.uri}
-                      rkey={new AtUri(pv.uri).rkey}
-                      content={pv.record.text as string}
-                      user={pv.author.displayName || pv.author.handle}
-                      profile={pv.author}
-                      handle={pv.author.handle}
-                      replyCount={pv.replyCount}
-                      quoteCount={pv.quoteCount}
-                    />
+                    <button
+                      className="flex gap-2 text-left"
+                      onClick={() => {
+                        openPage(undefined, { type: "thread", uri: q.uri });
+                      }}
+                    >
+                      <BskyPostContent
+                        key={`mention-${index}`}
+                        post={post}
+                        parent={parent}
+                        showBlueskyLink={true}
+                        showEmbed={true}
+                        avatarSize="large"
+                        quoteCountOnClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          openPage(undefined, { type: "quotes", uri: q.uri });
+                        }}
+                      />
+                    </button>
                   );
                 })}
               </div>
@@ -168,6 +163,44 @@ export const Quotes = (props: {
           )}
         </div>
       )}
+    </div>
+  );
+};
+
+const Quote = (props: {
+  q: {
+    uri: string;
+    link?: string;
+  };
+  index: number;
+  did: string;
+  postViewMap: Map<string, PostView>;
+}) => {
+  const post = props.postViewMap.get(props.q.uri);
+  if (!post || !props.q.link) return null;
+  const parent = { type: "thread" as const, uri: props.q.uri };
+  const url = new URL(props.q.link);
+  const quoteParam = url.pathname.split("/l-quote/")[1];
+  if (!quoteParam) return null;
+  const quotePosition = decodeQuotePosition(quoteParam);
+  if (!quotePosition) return null;
+
+  return (
+    <div key={`quote-${props.index}`} className="flex flex-col ">
+      <QuoteContent
+        index={props.index}
+        did={props.did}
+        position={quotePosition}
+      />
+
+      <div className="h-5 w-1 ml-5 border-l border-border-light" />
+      <BskyPostContent
+        post={post}
+        parent={parent}
+        showBlueskyLink={true}
+        showEmbed={true}
+        avatarSize="large"
+      />
     </div>
   );
 };
@@ -206,12 +239,15 @@ export const QuoteContent = (props: {
         className="quoteSectionQuote text-secondary text-sm text-left hover:cursor-pointer"
         onClick={(e) => {
           if (props.position.pageId)
-            flushSync(() => openPage(undefined, { type: "doc", id: props.position.pageId! }));
+            flushSync(() =>
+              openPage(undefined, { type: "doc", id: props.position.pageId! }),
+            );
           let scrollMargin = isMobile
             ? 16
             : e.currentTarget.getBoundingClientRect().top;
           let scrollContainerId = `post-page-${props.position.pageId ?? document_uri}`;
-          let scrollContainer = window.document.getElementById(scrollContainerId);
+          let scrollContainer =
+            window.document.getElementById(scrollContainerId);
           let el = window.document.getElementById(
             props.position.start.block.join("."),
           );
@@ -238,72 +274,6 @@ export const QuoteContent = (props: {
             preview
             className="py-0!"
           />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export const BskyPost = (props: {
-  uri: string;
-  rkey: string;
-  content: string;
-  user: string;
-  handle: string;
-  profile: ProfileViewBasic;
-  replyCount?: number;
-  quoteCount?: number;
-}) => {
-  const handleOpenThread = () => {
-    openPage(undefined, { type: "thread", uri: props.uri });
-  };
-
-  return (
-    <div
-      onClick={handleOpenThread}
-      className="quoteSectionBskyItem px-2 flex gap-[6px] hover:no-underline font-normal cursor-pointer hover:bg-bg-page rounded"
-    >
-      {props.profile.avatar && (
-        <img
-          className="rounded-full w-6 h-6 shrink-0"
-          src={props.profile.avatar}
-          alt={props.profile.displayName}
-        />
-      )}
-      <div className="flex flex-col min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="font-bold">{props.user}</div>
-          <a
-            className="text-tertiary hover:underline"
-            href={`https://bsky.app/profile/${props.handle}`}
-            target="_blank"
-            onClick={(e) => e.stopPropagation()}
-          >
-            @{props.handle}
-          </a>
-        </div>
-        <div className="text-primary">{props.content}</div>
-        <div className="flex gap-2 items-center mt-1">
-          {props.replyCount != null && props.replyCount > 0 && (
-            <ThreadLink
-              threadUri={props.uri}
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 text-tertiary text-xs hover:text-accent-contrast"
-            >
-              <CommentTiny />
-              {props.replyCount} {props.replyCount === 1 ? "reply" : "replies"}
-            </ThreadLink>
-          )}
-          {props.quoteCount != null && props.quoteCount > 0 && (
-            <QuotesLink
-              postUri={props.uri}
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 text-tertiary text-xs hover:text-accent-contrast"
-            >
-              <QuoteTiny />
-              {props.quoteCount} {props.quoteCount === 1 ? "quote" : "quotes"}
-            </QuotesLink>
-          )}
         </div>
       </div>
     </div>

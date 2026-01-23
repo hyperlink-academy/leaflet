@@ -1,8 +1,6 @@
 "use client";
 import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api";
-import {
-  BlueskyEmbed,
-} from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
+import { BlueskyEmbed } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 import { BlueskyRichText } from "components/Blocks/BlueskyPostBlock/BlueskyRichText";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
@@ -12,86 +10,104 @@ import { useLocalizedDate } from "src/hooks/useLocalizedDate";
 import { useHasPageLoaded } from "components/InitialPageLoadProvider";
 import { OpenPage } from "./PostPages";
 import { ThreadLink, QuotesLink } from "./PostLinks";
+import { BlueskyLinkTiny } from "components/Icons/BlueskyLinkTiny";
+import { Avatar } from "components/Avatar";
+import { timeAgo } from "src/utils/timeAgo";
+import { ProfilePopover } from "components/ProfilePopover";
 
 type PostView = AppBskyFeedDefs.PostView;
 
 export function BskyPostContent(props: {
   post: PostView;
   parent?: OpenPage;
-  linksEnabled?: boolean;
-  avatarSize?: "sm" | "md";
+  avatarSize?: "tiny" | "medium" | "large" | "giant";
+  className?: string;
   showEmbed?: boolean;
   showBlueskyLink?: boolean;
   onEmbedClick?: (e: React.MouseEvent) => void;
-  onLinkClick?: (e: React.MouseEvent) => void;
+  quoteCountOnClick?: (e: React.MouseEvent) => void;
+  replyCountOnClick?: (e: React.MouseEvent) => void;
 }) {
   const {
     post,
     parent,
-    linksEnabled = true,
     avatarSize = "md",
     showEmbed = true,
     showBlueskyLink = true,
     onEmbedClick,
-    onLinkClick,
+    quoteCountOnClick,
+    replyCountOnClick,
   } = props;
 
   const record = post.record as AppBskyFeedPost.Record;
   const postId = post.uri.split("/")[4];
   const url = `https://bsky.app/profile/${post.author.handle}/post/${postId}`;
 
-  const avatarClass = avatarSize === "sm" ? "w-8 h-8" : "w-10 h-10";
-
   return (
     <>
-      <div className="flex flex-col items-center shrink-0">
-        {post.author.avatar ? (
-          <img
-            src={post.author.avatar}
-            alt={`${post.author.displayName}'s avatar`}
-            className={`${avatarClass} rounded-full border border-border-light`}
-          />
-        ) : (
-          <div className={`${avatarClass} rounded-full border border-border-light bg-border`} />
-        )}
-      </div>
+      <Avatar
+        src={post.author.avatar}
+        displayName={post.author.displayName}
+        size={props.avatarSize ? props.avatarSize : "medium"}
+      />
 
-      <div className="flex flex-col grow min-w-0">
-        <div className={`flex items-center gap-2 leading-tight ${avatarSize === "sm" ? "text-sm" : ""}`}>
-          <div className="font-bold text-secondary">
-            {post.author.displayName}
+      <div className={`flex flex-col grow min-w-0 ${props.className}`}>
+        <div
+          className={`flex justify-between items-center gap-2 leading-tight `}
+        >
+          <div className="flex gap-2 items-center">
+            <div className="font-bold text-secondary">
+              {post.author.displayName}
+            </div>
+            <ProfilePopover
+              trigger={
+                <div className="text-sm text-tertiary hover:underline">
+                  @{post.author.handle}
+                </div>
+              }
+              didOrHandle={post.author.handle}
+            />
           </div>
-          <a
-            className="text-xs text-tertiary hover:underline"
-            target="_blank"
-            href={`https://bsky.app/profile/${post.author.handle}`}
-            onClick={onLinkClick}
-          >
-            @{post.author.handle}
-          </a>
+          <div className="text-sm text-tertiary">
+            {timeAgo(record.createdAt, { compact: true })}
+          </div>
         </div>
 
-        <div className={`flex flex-col gap-2 ${avatarSize === "sm" ? "mt-0.5" : "mt-1"}`}>
+        <div
+          className={`flex flex-col gap-2 ${avatarSize === "large" ? "mt-0.5" : "mt-1"}`}
+        >
           <div className="text-sm text-secondary">
             <BlueskyRichText record={record} />
           </div>
           {showEmbed && post.embed && (
             <div onClick={onEmbedClick}>
-              <BlueskyEmbed embed={post.embed} postUrl={url} />
+              <BlueskyEmbed
+                embed={post.embed}
+                postUrl={url}
+                className="text-sm"
+              />
             </div>
           )}
         </div>
 
-        <div className={`flex gap-2 items-center ${avatarSize === "sm" ? "mt-1" : "mt-2"}`}>
-          <ClientDate date={record.createdAt} />
+        <div className={`flex gap-2 items-center justify-between mt-2`}>
           <PostCounts
             post={post}
             parent={parent}
-            linksEnabled={linksEnabled}
+            replyCountOnClick={replyCountOnClick}
+            quoteCountOnClick={quoteCountOnClick}
             showBlueskyLink={showBlueskyLink}
             url={url}
-            onLinkClick={onLinkClick}
           />
+          <div className="flex gap-3 items-center">
+            {showBlueskyLink && (
+              <>
+                <a className="text-tertiary" target="_blank" href={url}>
+                  <BlueskyLinkTiny />
+                </a>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </>
@@ -101,61 +117,51 @@ export function BskyPostContent(props: {
 function PostCounts(props: {
   post: PostView;
   parent?: OpenPage;
-  linksEnabled: boolean;
+  quoteCountOnClick?: (e: React.MouseEvent) => void;
+  replyCountOnClick?: (e: React.MouseEvent) => void;
   showBlueskyLink: boolean;
   url: string;
-  onLinkClick?: (e: React.MouseEvent) => void;
 }) {
-  const { post, parent, linksEnabled, showBlueskyLink, url, onLinkClick } = props;
-
   return (
-    <div className="flex gap-2 items-center">
-      {post.replyCount != null && post.replyCount > 0 && (
+    <div className="postCounts flex gap-2 items-center">
+      {props.post.replyCount != null && props.post.replyCount > 0 && (
         <>
-          <Separator classname="h-3" />
-          {linksEnabled ? (
+          {props.replyCountOnClick ? (
             <ThreadLink
-              threadUri={post.uri}
+              threadUri={props.post.uri}
               parent={parent}
-              className="flex items-center gap-1 text-tertiary text-xs hover:text-accent-contrast"
-              onClick={onLinkClick}
+              className="relative postRepliesLink flex items-center gap-1 text-tertiary text-xs hover:text-accent-contrast"
+              onClick={props.replyCountOnClick}
             >
-              {post.replyCount}
               <CommentTiny />
+              {props.post.replyCount}
             </ThreadLink>
           ) : (
-            <div className="flex items-center gap-1 text-tertiary text-xs">
-              {post.replyCount}
+            <div className="postRepliesCount flex items-center gap-1 text-tertiary text-xs">
               <CommentTiny />
+              {props.post.replyCount}
             </div>
           )}
         </>
       )}
-      {post.quoteCount != null && post.quoteCount > 0 && (
+      {props.post.quoteCount != null && props.post.quoteCount > 0 && (
         <>
-          <Separator classname="h-3" />
-          <QuotesLink
-            postUri={post.uri}
-            parent={parent}
-            className="flex items-center gap-1 text-tertiary text-xs hover:text-accent-contrast"
-            onClick={onLinkClick}
-          >
-            {post.quoteCount}
-            <QuoteTiny />
-          </QuotesLink>
-        </>
-      )}
-      {showBlueskyLink && (
-        <>
-          <Separator classname="h-3" />
-          <a
-            className="text-tertiary"
-            target="_blank"
-            href={url}
-            onClick={onLinkClick}
-          >
-            <BlueskyTiny />
-          </a>
+          {props.quoteCountOnClick ? (
+            <QuotesLink
+              postUri={props.post.uri}
+              parent={parent}
+              className="relative flex items-center gap-1 text-tertiary text-xs hover:text-accent-contrast"
+              onClick={props.quoteCountOnClick}
+            >
+              <QuoteTiny />
+              {props.post.quoteCount}
+            </QuotesLink>
+          ) : (
+            <div className="postQuoteCount flex items-center gap-1 text-tertiary text-xs">
+              <QuoteTiny />
+              {props.post.quoteCount}
+            </div>
+          )}
         </>
       )}
     </div>

@@ -106,8 +106,8 @@ function ThreadContent(props: { thread: ThreadType; threadUri: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-0">
-      {/* Parent posts */}
+    <div className="threadContent flex flex-col gap-0">
+      {/* grandparent posts, if any */}
       {parents.map((parent, index) => (
         <div key={parent.post.uri} className="flex flex-col">
           <ThreadPost
@@ -131,10 +131,7 @@ function ThreadContent(props: { thread: ThreadType; threadUri: string }) {
 
       {/* Replies */}
       {thread.replies && thread.replies.length > 0 && (
-        <div className="flex flex-col mt-2 pt-2 border-t border-border-light">
-          <div className="text-tertiary text-xs font-bold mb-2 px-2">
-            Replies
-          </div>
+        <div className="threadReplies flex flex-col mt-2 pt-2 border-t border-border-light">
           <Replies
             replies={thread.replies as any[]}
             threadUri={threadUri}
@@ -158,18 +155,25 @@ function ThreadPost(props: {
   const parent = { type: "thread" as const, uri: threadUri };
 
   return (
-    <div className="flex gap-2 relative">
+    <div className="threadPost flex gap-2 relative">
       {/* Reply line connector */}
       {showReplyLine && (
         <div className="absolute left-[19px] top-10 bottom-0 w-0.5 bg-border-light" />
       )}
-
       <BskyPostContent
         post={postView}
         parent={parent}
-        linksEnabled={!isMainPost}
         showBlueskyLink={true}
         showEmbed={true}
+        quoteCountOnClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          openPage(parent, { type: "quotes", uri: postView.uri });
+        }}
+        replyCountOnClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
       />
     </div>
   );
@@ -180,8 +184,9 @@ function Replies(props: {
   threadUri: string;
   depth: number;
   parentAuthorDid?: string;
+  parentUri?: string;
 }) {
-  const { replies, threadUri, depth, parentAuthorDid } = props;
+  const { replies, threadUri, depth, parentAuthorDid, parentUri } = props;
   const collapsedThreads = useThreadState((s) => s.collapsedThreads);
   const toggleCollapsed = useThreadState((s) => s.toggleCollapsed);
 
@@ -201,13 +206,13 @@ function Replies(props: {
     : replies;
 
   return (
-    <div className="flex flex-col gap-0">
+    <div className="threadPageReplies flex flex-col gap-0">
       {sortedReplies.map((reply, index) => {
         if (AppBskyFeedDefs.isNotFoundPost(reply)) {
           return (
             <div
               key={`not-found-${index}`}
-              className="text-tertiary italic text-xs py-2 px-2"
+              className="text-tertiary italic text-sm px-t py-6 opaque-container text-center justify-center my-2"
             >
               Post not found
             </div>
@@ -218,7 +223,7 @@ function Replies(props: {
           return (
             <div
               key={`blocked-${index}`}
-              className="text-tertiary italic text-xs py-2 px-2"
+              className="text-tertiary italic text-sm px-t py-6 opaque-container text-center justify-center my-2"
             >
               Post blocked
             </div>
@@ -231,94 +236,119 @@ function Replies(props: {
 
         const hasReplies = reply.replies && reply.replies.length > 0;
         const isCollapsed = collapsedThreads.has(reply.post.uri);
-        const replyCount = reply.replies?.length ?? 0;
 
         return (
-          <div key={reply.post.uri} className="flex flex-col">
-            <ReplyPost
-              post={reply}
-              showReplyLine={hasReplies || index < replies.length - 1}
-              isLast={index === replies.length - 1 && !hasReplies}
-              threadUri={threadUri}
-            />
-            {hasReplies && depth < 3 && (
-              <div className="ml-2 flex">
-                {/* Clickable collapse line - w-8 matches avatar width, centered line aligns with avatar center */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleCollapsed(reply.post.uri);
-                  }}
-                  className="group w-8 flex justify-center cursor-pointer shrink-0"
-                  aria-label={
-                    isCollapsed ? "Expand replies" : "Collapse replies"
-                  }
-                >
-                  <div className="w-0.5 h-full bg-border-light group-hover:bg-accent-contrast group-hover:w-1 transition-all" />
-                </button>
-                {isCollapsed ? (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleCollapsed(reply.post.uri);
-                    }}
-                    className="text-xs text-accent-contrast hover:underline py-1 pl-1"
-                  >
-                    Show {replyCount} {replyCount === 1 ? "reply" : "replies"}
-                  </button>
-                ) : (
-                  <div className="grow">
-                    <Replies
-                      replies={reply.replies as any[]}
-                      threadUri={threadUri}
-                      depth={depth + 1}
-                      parentAuthorDid={reply.post.author.did}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-            {hasReplies && depth >= 3 && (
-              <ThreadLink
-                threadUri={reply.post.uri}
-                parent={{ type: "thread", uri: threadUri }}
-                className="ml-12 text-xs text-accent-contrast hover:underline py-1"
-              >
-                View more replies
-              </ThreadLink>
-            )}
-          </div>
+          <ReplyPost
+            post={reply}
+            isLast={index === replies.length - 1 && !hasReplies}
+            threadUri={threadUri}
+            toggleCollapsed={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (parentUri) toggleCollapsed(parentUri);
+              console.log("collapse?");
+            }}
+            isCollapsed={isCollapsed}
+            depth={props.depth}
+          />
         );
       })}
+      {parentUri && depth > 0 && replies.length > 3 && (
+        <ThreadLink
+          threadUri={parentUri}
+          parent={{ type: "thread", uri: threadUri }}
+          className="flex justify-start text-sm text-accent-contrast h-fit hover:underline"
+        >
+          <div className="mx-[19px] w-0.5 h-[24px] bg-border-light" />
+          View {replies.length - 3} more{" "}
+          {replies.length === 4 ? "reply" : "replies"}
+        </ThreadLink>
+      )}
     </div>
   );
 }
 
-function ReplyPost(props: {
+const ReplyPost = (props: {
   post: ThreadViewPost;
-  showReplyLine: boolean;
   isLast: boolean;
   threadUri: string;
-}) {
+  toggleCollapsed: (e: React.MouseEvent) => void;
+  isCollapsed: boolean;
+  depth: number;
+}) => {
   const { post, threadUri } = props;
   const postView = post.post;
   const parent = { type: "thread" as const, uri: threadUri };
 
+  const hasReplies = props.post.replies && props.post.replies.length > 0;
+
+  // was in the middle of trying to get the right set of comments to close when this line is clicked
+  // then i really need to style the parent and grandparent threads, hide some of the content unless its the main post
+  // the thread line on them is also weird
   return (
-    <div
-      className="flex gap-2 relative py-2 px-2 hover:bg-bg-page rounded cursor-pointer"
-      onClick={() => openPage(parent, { type: "thread", uri: postView.uri })}
-    >
-      <BskyPostContent
-        post={postView}
-        parent={parent}
-        linksEnabled={true}
-        avatarSize="sm"
-        showEmbed={false}
-        showBlueskyLink={false}
-        onLinkClick={(e) => e.stopPropagation()}
-        onEmbedClick={(e) => e.stopPropagation()}
-      />
+    <div className="threadReply relative flex flex-col">
+      {props.depth > 0 && (
+        <button
+          onClick={(e) => {
+            props.toggleCollapsed(e);
+          }}
+          className="replyThreadLine absolute top-0 bottom-0 left-1 z-0 cursor-pointer shrink-0 "
+          aria-label={"Toggle replies"}
+        >
+          <div className="mx-[15px] w-0.5 h-full bg-border-light" />
+        </button>
+      )}
+
+      <button
+        className="replyThreadPost flex gap-2  text-left relative py-2 px-2  rounded cursor-pointer"
+        onClick={() => {
+          openPage(parent, { type: "thread", uri: postView.uri });
+        }}
+      >
+        <BskyPostContent
+          post={postView}
+          parent={parent}
+          showEmbed={false}
+          showBlueskyLink={false}
+          quoteCountOnClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openPage(parent, { type: "quotes", uri: postView.uri });
+          }}
+          replyCountOnClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            props.toggleCollapsed();
+          }}
+          onEmbedClick={(e) => e.stopPropagation()}
+          className="text-sm z-10"
+        />
+      </button>
+      {hasReplies && props.depth < 3 && (
+        <div className="ml-[28px] flex">
+          {!props.isCollapsed && (
+            <div className="grow">
+              <Replies
+                parentUri={postView.uri}
+                replies={props.post.replies as any[]}
+                threadUri={threadUri}
+                depth={props.depth + 1}
+                parentAuthorDid={props.post.post.author.did}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {hasReplies && props.depth >= 3 && (
+        <ThreadLink
+          threadUri={props.post.post.uri}
+          parent={{ type: "thread", uri: threadUri }}
+          className="text-left ml-10 text-sm text-accent-contrast hover:underline"
+        >
+          View more replies
+        </ThreadLink>
+      )}
     </div>
   );
-}
+};
