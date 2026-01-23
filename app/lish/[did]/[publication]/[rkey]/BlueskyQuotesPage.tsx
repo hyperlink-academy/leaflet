@@ -87,17 +87,13 @@ function QuotePost(props: { post: PostView; quotesUri: string }) {
   const parent = { type: "quotes" as const, uri: quotesUri };
 
   return (
-    <div
-      className="flex gap-2 relative py-2 px-2 hover:bg-bg-page rounded cursor-pointer"
-      onClick={() => openPage(parent, { type: "thread", uri: post.uri })}
-    >
-      <BskyPostContent
-        post={post}
-        parent={parent}
-        showEmbed={true}
-        showBlueskyLink={true}
-        onEmbedClick={(e) => e.stopPropagation()}
-      />
-    </div>
+    <BskyPostContent
+      post={post}
+      parent={parent}
+      showEmbed={true}
+      showBlueskyLink={true}
+      onEmbedClick={(e) => e.stopPropagation()}
+      className="relative py-2 px-2 hover:bg-bg-page rounded cursor-pointer"
+    />
   );
 }

@@ -113,7 +113,7 @@ export const PubBlueskyPostBlock = (props: {
               {post.replyCount != null && post.replyCount > 0 && (
                 <>
                   <ThreadLink
-                    threadUri={post.uri}
+                    postUri={post.uri}
                     parent={parent}
                     className="flex items-center gap-1 hover:text-accent-contrast"
                     onClick={(e) => e.stopPropagation()}

@@ -25,20 +25,20 @@ type BlockedPost = AppBskyFeedDefs.BlockedPost;
 type ThreadType = ThreadViewPost | NotFoundPost | BlockedPost;
 
 export function ThreadPage(props: {
-  threadUri: string;
+  parentUri: string;
   pageId: string;
   pageOptions?: React.ReactNode;
   hasPageBackground: boolean;
 }) {
-  const { threadUri, pageId, pageOptions } = props;
-  const drawer = useDrawerOpen(threadUri);
+  const { parentUri: parentUri, pageId, pageOptions } = props;
+  const drawer = useDrawerOpen(parentUri);
 
   const {
     data: thread,
     isLoading,
     error,
-  } = useSWR(threadUri ? getThreadKey(threadUri) : null, () =>
-    fetchThread(threadUri),
+  } = useSWR(parentUri ? getThreadKey(parentUri) : null, () =>
+    fetchThread(parentUri),
   );
 
   return (
@@ -60,15 +60,15 @@ export function ThreadPage(props: {
             Failed to load thread
           </div>
         ) : thread ? (
-          <ThreadContent thread={thread} threadUri={threadUri} />
+          <ThreadContent thread={thread} parentUri={parentUri} />
         ) : null}
       </div>
     </PageWrapper>
   );
 }
 
-function ThreadContent(props: { thread: ThreadType; threadUri: string }) {
-  const { thread, threadUri } = props;
+function ThreadContent(props: { thread: ThreadType; parentUri: string }) {
+  const { thread, parentUri: parentUri } = props;
   const mainPostRef = useRef<HTMLDivElement>(null);
 
   // Scroll the main post into view when the thread loads
@@ -114,7 +114,7 @@ function ThreadContent(props: { thread: ThreadType; threadUri: string }) {
             post={parent}
             isMainPost={false}
             showReplyLine={index < parents.length - 1 || true}
-            threadUri={threadUri}
+            parentUri={parentUri}
           />
         </div>
       ))}
@@ -125,7 +125,7 @@ function ThreadContent(props: { thread: ThreadType; threadUri: string }) {
           post={thread}
           isMainPost={true}
           showReplyLine={false}
-          threadUri={threadUri}
+          parentUri={parentUri}
         />
       </div>
 
@@ -134,7 +134,7 @@ function ThreadContent(props: { thread: ThreadType; threadUri: string }) {
         <div className="threadReplies flex flex-col mt-2 pt-2 border-t border-border-light">
           <Replies
             replies={thread.replies as any[]}
-            threadUri={threadUri}
+            parentUri={parentUri}
             depth={0}
             parentAuthorDid={thread.post.author.did}
           />
@@ -148,11 +148,11 @@ function ThreadPost(props: {
   post: ThreadViewPost;
   isMainPost: boolean;
   showReplyLine: boolean;
-  threadUri: string;
+  parentUri: string;
 }) {
-  const { post, isMainPost, showReplyLine, threadUri } = props;
+  const { post, isMainPost, showReplyLine, parentUri } = props;
   const postView = post.post;
-  const parent = { type: "thread" as const, uri: threadUri };
+  const parent = { type: "thread" as const, uri: parentUri };
 
   return (
     <div className="threadPost flex gap-2 relative">
@@ -165,15 +165,8 @@ function ThreadPost(props: {
         parent={parent}
         showBlueskyLink={true}
         showEmbed={true}
-        quoteCountOnClick={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          openPage(parent, { type: "quotes", uri: postView.uri });
-        }}
-        replyCountOnClick={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }}
+        quoteEnabled
+        replyEnabled
       />
     </div>
   );
@@ -181,12 +174,11 @@ function ThreadPost(props: {
 
 function Replies(props: {
   replies: (ThreadViewPost | NotFoundPost | BlockedPost)[];
-  threadUri: string;
   depth: number;
   parentAuthorDid?: string;
-  parentUri?: string;
+  parentUri: string;
 }) {
-  const { replies, threadUri, depth, parentAuthorDid, parentUri } = props;
+  const { replies, depth, parentAuthorDid, parentUri } = props;
   const collapsedThreads = useThreadState((s) => s.collapsedThreads);
   const toggleCollapsed = useThreadState((s) => s.toggleCollapsed);
 
@@ -241,13 +233,8 @@ function Replies(props: {
           <ReplyPost
             post={reply}
             isLast={index === replies.length - 1 && !hasReplies}
-            threadUri={threadUri}
-            toggleCollapsed={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              if (parentUri) toggleCollapsed(parentUri);
-              console.log("collapse?");
-            }}
+            parentUri={parentUri}
+            toggleCollapsed={(uri) => toggleCollapsed(uri)}
             isCollapsed={isCollapsed}
             depth={props.depth}
           />
@@ -255,8 +242,8 @@ function Replies(props: {
       })}
       {parentUri && depth > 0 && replies.length > 3 && (
         <ThreadLink
-          threadUri={parentUri}
-          parent={{ type: "thread", uri: threadUri }}
+          postUri={parentUri}
+          parent={{ type: "thread", uri: parentUri }}
           className="flex justify-start text-sm text-accent-contrast h-fit hover:underline"
         >
           <div className="mx-[19px] w-0.5 h-[24px] bg-border-light" />
@@ -271,59 +258,42 @@ function Replies(props: {
 const ReplyPost = (props: {
   post: ThreadViewPost;
   isLast: boolean;
-  threadUri: string;
-  toggleCollapsed: (e: React.MouseEvent) => void;
+  parentUri: string;
+  toggleCollapsed: (uri: string) => void;
   isCollapsed: boolean;
   depth: number;
 }) => {
-  const { post, threadUri } = props;
+  const { post, parentUri } = props;
   const postView = post.post;
-  const parent = { type: "thread" as const, uri: threadUri };
 
   const hasReplies = props.post.replies && props.post.replies.length > 0;
 
-  // was in the middle of trying to get the right set of comments to close when this line is clicked
-  // then i really need to style the parent and grandparent threads, hide some of the content unless its the main post
-  // the thread line on them is also weird
   return (
     <div className="threadReply relative flex flex-col">
-      {props.depth > 0 && (
-        <button
-          onClick={(e) => {
-            props.toggleCollapsed(e);
-          }}
-          className="replyThreadLine absolute top-0 bottom-0 left-1 z-0 cursor-pointer shrink-0 "
-          aria-label={"Toggle replies"}
-        >
-          <div className="mx-[15px] w-0.5 h-full bg-border-light" />
-        </button>
-      )}
-
-      <button
-        className="replyThreadPost flex gap-2  text-left relative py-2 px-2  rounded cursor-pointer"
-        onClick={() => {
-          openPage(parent, { type: "thread", uri: postView.uri });
+      <BskyPostContent
+        post={postView}
+        parent={{ type: "thread", uri: parentUri }}
+        showEmbed={false}
+        showBlueskyLink={false}
+        replyLine={
+          props.depth > 0
+            ? {
+                onToggle: () => {
+                  props.toggleCollapsed(props.parentUri);
+                  console.log("click click");
+                },
+              }
+            : undefined
+        }
+        quoteEnabled
+        replyEnabled
+        replyOnClick={(e) => {
+          e.preventDefault();
+          props.toggleCollapsed(post.post.uri);
         }}
-      >
-        <BskyPostContent
-          post={postView}
-          parent={parent}
-          showEmbed={false}
-          showBlueskyLink={false}
-          quoteCountOnClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openPage(parent, { type: "quotes", uri: postView.uri });
-          }}
-          replyCountOnClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            props.toggleCollapsed();
-          }}
-          onEmbedClick={(e) => e.stopPropagation()}
-          className="text-sm z-10"
-        />
-      </button>
+        onEmbedClick={(e) => e.stopPropagation()}
+        className="text-sm z-10"
+      />
       {hasReplies && props.depth < 3 && (
         <div className="ml-[28px] flex">
           {!props.isCollapsed && (
@@ -331,7 +301,6 @@ const ReplyPost = (props: {
               <Replies
                 parentUri={postView.uri}
                 replies={props.post.replies as any[]}
-                threadUri={threadUri}
                 depth={props.depth + 1}
                 parentAuthorDid={props.post.post.author.did}
               />
@@ -342,8 +311,8 @@ const ReplyPost = (props: {
 
       {hasReplies && props.depth >= 3 && (
         <ThreadLink
-          threadUri={props.post.post.uri}
-          parent={{ type: "thread", uri: threadUri }}
+          postUri={props.post.post.uri}
+          parent={{ type: "thread", uri: parentUri }}
           className="text-left ml-10 text-sm text-accent-contrast hover:underline"
         >
           View more replies

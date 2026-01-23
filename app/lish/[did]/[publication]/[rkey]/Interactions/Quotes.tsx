@@ -136,26 +136,15 @@ export const MentionsDrawerContent = (props: {
 
                   const parent = { type: "thread" as const, uri: q.uri };
                   return (
-                    <button
-                      className="flex gap-2 text-left"
-                      onClick={() => {
-                        openPage(undefined, { type: "thread", uri: q.uri });
-                      }}
-                    >
-                      <BskyPostContent
-                        key={`mention-${index}`}
-                        post={post}
-                        parent={parent}
-                        showBlueskyLink={true}
-                        showEmbed={true}
-                        avatarSize="large"
-                        quoteCountOnClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          openPage(undefined, { type: "quotes", uri: q.uri });
-                        }}
-                      />
-                    </button>
+                    <BskyPostContent
+                      key={`mention-${index}`}
+                      post={post}
+                      parent={parent}
+                      showBlueskyLink={true}
+                      showEmbed={true}
+                      avatarSize="large"
+                      quoteEnabled={true}
+                    />
                   );
                 })}
               </div>

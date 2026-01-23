@@ -297,7 +297,7 @@ export function PostPages({
             <Fragment key={pageKey}>
               <SandwichSpacer />
               <ThreadPageComponent
-                threadUri={openPage.uri}
+                parentUri={openPage.uri}
                 pageId={pageKey}
                 hasPageBackground={hasPageBackground}
                 pageOptions={

@@ -55,22 +55,23 @@ export const prefetchQuotes = (uri: string) => {
 
 // Link component for opening thread pages with prefetching
 export function ThreadLink(props: {
-  threadUri: string;
+  postUri: string;
   parent?: OpenPage;
   children: React.ReactNode;
   className?: string;
   onClick?: (e: React.MouseEvent) => void;
 }) {
-  const { threadUri, parent, children, className, onClick } = props;
+  const { postUri, parent, children, className, onClick } = props;
 
   const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     onClick?.(e);
     if (e.defaultPrevented) return;
-    openPage(parent, { type: "thread", uri: threadUri });
+    openPage(parent, { type: "thread", uri: postUri });
   };
 
   const handlePrefetch = () => {
-    prefetchThread(threadUri);
+    prefetchThread(postUri);
   };
 
   return (
@@ -96,6 +97,7 @@ export function QuotesLink(props: {
   const { postUri, parent, children, className, onClick } = props;
 
   const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     onClick?.(e);
     if (e.defaultPrevented) return;
     openPage(parent, { type: "quotes", uri: postUri });
