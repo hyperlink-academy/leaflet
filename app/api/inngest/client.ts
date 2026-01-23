@@ -26,6 +26,9 @@ export type Events = {
       did: string;
     };
   };
+  "user/cleanup-expired-oauth-sessions": {
+    data: {};
+  };
 };
 
 // Create a client to send and receive events
