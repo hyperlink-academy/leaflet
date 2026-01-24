@@ -38,6 +38,7 @@ export const migrate_user_to_standard = inngest.createFunction(
     const stats = {
       publicationsMigrated: 0,
       documentsMigrated: 0,
+      standardDocumentsFixed: 0,
       userSubscriptionsMigrated: 0,
       referencesUpdated: 0,
       errors: [] as string[],
@@ -320,6 +321,130 @@ export const migrate_user_to_standard = inngest.createFunction(
         stats.errors.push(
           `Document ${result.oldUri}: Database error: ${result.error}`,
         );
+      }
+    }
+
+    // Step 4b: Fix existing site.standard.document records that reference pub.leaflet.publication
+    // This handles the case where site.standard.document records were created pointing to
+    // pub.leaflet.publication URIs before the publication was migrated to site.standard.publication
+    const existingStandardDocs = await step.run(
+      "fetch-existing-standard-documents",
+      async () => {
+        const { data, error } = await supabaseServerClient
+          .from("documents")
+          .select("uri, data")
+          .like("uri", `at://${did}/site.standard.document/%`);
+
+        if (error)
+          throw new Error(
+            `Failed to fetch existing standard documents: ${error.message}`,
+          );
+        return data || [];
+      },
+    );
+
+    // Find documents that reference pub.leaflet.publication and need their site field updated
+    const standardDocsToFix = existingStandardDocs
+      .map((doc) => {
+        const data = doc.data as SiteStandardDocument.Record;
+        const site = data?.site;
+
+        // Check if site field references a pub.leaflet.publication
+        if (!site || !site.includes("/pub.leaflet.publication/")) {
+          return null;
+        }
+
+        try {
+          const oldPubAturi = new AtUri(site);
+          const newPubUri = `at://${oldPubAturi.hostname}/site.standard.publication/${oldPubAturi.rkey}`;
+
+          // Only fix if we have the new publication in our map (meaning it was migrated)
+          // or if the new publication exists (check against all migrated publications)
+          if (
+            publicationUriMap[site] ||
+            Object.values(publicationUriMap).includes(newPubUri)
+          ) {
+            const docAturi = new AtUri(doc.uri);
+            const updatedRecord: SiteStandardDocument.Record = {
+              ...data,
+              site: newPubUri,
+            };
+
+            return {
+              doc,
+              rkey: docAturi.rkey,
+              oldSite: site,
+              newSite: newPubUri,
+              updatedRecord,
+            };
+          }
+        } catch (e) {
+          stats.errors.push(`Invalid site URI in document ${doc.uri}: ${site}`);
+        }
+
+        return null;
+      })
+      .filter((x) => x !== null);
+
+    // Update these documents on PDS and in database
+    if (standardDocsToFix.length > 0) {
+      const fixResults = await Promise.all(
+        standardDocsToFix.map(({ doc, rkey, oldSite, newSite, updatedRecord }) =>
+          step.run(`fix-standard-document-${doc.uri}`, async () => {
+            // PDS write to update the site field
+            const agent = await createAuthenticatedAgent(did);
+            await agent.com.atproto.repo.putRecord({
+              repo: did,
+              collection: "site.standard.document",
+              rkey,
+              record: updatedRecord,
+              validate: false,
+            });
+
+            // DB write
+            const { error: dbError } = await supabaseServerClient
+              .from("documents")
+              .update({ data: updatedRecord as Json })
+              .eq("uri", doc.uri);
+
+            if (dbError) {
+              return {
+                success: false as const,
+                uri: doc.uri,
+                error: dbError.message,
+              };
+            }
+
+            // Update documents_in_publications to point to new publication URI
+            await supabaseServerClient
+              .from("documents_in_publications")
+              .upsert({
+                publication: newSite,
+                document: doc.uri,
+              });
+
+            // Remove old publication reference if different
+            if (oldSite !== newSite) {
+              await supabaseServerClient
+                .from("documents_in_publications")
+                .delete()
+                .eq("publication", oldSite)
+                .eq("document", doc.uri);
+            }
+
+            return { success: true as const, uri: doc.uri };
+          }),
+        ),
+      );
+
+      for (const result of fixResults) {
+        if (result.success) {
+          stats.standardDocumentsFixed++;
+        } else {
+          stats.errors.push(
+            `Fix standard document ${result.uri}: Database error: ${result.error}`,
+          );
+        }
       }
     }
 
