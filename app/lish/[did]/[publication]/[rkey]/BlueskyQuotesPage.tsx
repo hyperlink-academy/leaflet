@@ -92,6 +92,8 @@ function QuotePost(props: { post: PostView; quotesUri: string }) {
       parent={parent}
       showEmbed={true}
       showBlueskyLink={true}
+      quoteEnabled
+      replyEnabled
       onEmbedClick={(e) => e.stopPropagation()}
       className="relative py-2 px-2 hover:bg-bg-page rounded cursor-pointer"
     />

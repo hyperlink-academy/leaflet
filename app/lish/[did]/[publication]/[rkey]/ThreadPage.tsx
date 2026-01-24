@@ -60,15 +60,15 @@ export function ThreadPage(props: {
             Failed to load thread
           </div>
         ) : thread ? (
-          <ThreadContent thread={thread} parentUri={parentUri} />
+          <ThreadContent post={thread} parentUri={parentUri} />
         ) : null}
       </div>
     </PageWrapper>
   );
 }
 
-function ThreadContent(props: { thread: ThreadType; parentUri: string }) {
-  const { thread, parentUri: parentUri } = props;
+function ThreadContent(props: { post: ThreadType; parentUri: string }) {
+  const { post, parentUri } = props;
   const mainPostRef = useRef<HTMLDivElement>(null);
 
   // Scroll the main post into view when the thread loads
@@ -81,11 +81,11 @@ function ThreadContent(props: { thread: ThreadType; parentUri: string }) {
     }
   }, []);
 
-  if (AppBskyFeedDefs.isNotFoundPost(thread)) {
+  if (AppBskyFeedDefs.isNotFoundPost(post)) {
     return <PostNotAvailable />;
   }
 
-  if (AppBskyFeedDefs.isBlockedPost(thread)) {
+  if (AppBskyFeedDefs.isBlockedPost(post)) {
     return (
       <div className="text-tertiary italic text-sm text-center py-8">
         This post is blocked
@@ -93,13 +93,13 @@ function ThreadContent(props: { thread: ThreadType; parentUri: string }) {
     );
   }
 
-  if (!AppBskyFeedDefs.isThreadViewPost(thread)) {
+  if (!AppBskyFeedDefs.isThreadViewPost(post)) {
     return <PostNotAvailable />;
   }
 
   // Collect all parent posts in order (oldest first)
   const parents: ThreadViewPost[] = [];
-  let currentParent = thread.parent;
+  let currentParent = post.parent;
   while (currentParent && AppBskyFeedDefs.isThreadViewPost(currentParent)) {
     parents.unshift(currentParent);
     currentParent = currentParent.parent;
@@ -122,7 +122,7 @@ function ThreadContent(props: { thread: ThreadType; parentUri: string }) {
       {/* Main post */}
       <div ref={mainPostRef}>
         <ThreadPost
-          post={thread}
+          post={post}
           isMainPost={true}
           showReplyLine={false}
           parentUri={parentUri}
@@ -130,13 +130,13 @@ function ThreadContent(props: { thread: ThreadType; parentUri: string }) {
       </div>
 
       {/* Replies */}
-      {thread.replies && thread.replies.length > 0 && (
+      {post.replies && post.replies.length > 0 && (
         <div className="threadReplies flex flex-col mt-2 pt-2 border-t border-border-light">
           <Replies
-            replies={thread.replies as any[]}
-            parentUri={parentUri}
+            replies={post.replies as any[]}
+            parentUri={post.post.uri}
             depth={0}
-            parentAuthorDid={thread.post.author.did}
+            parentAuthorDid={post.post.author.did}
           />
         </div>
       )}
@@ -166,7 +166,7 @@ function ThreadPost(props: {
         showBlueskyLink={true}
         showEmbed={true}
         quoteEnabled
-        replyEnabled
+        replyEnabled={!isMainPost}
       />
     </div>
   );
@@ -269,7 +269,9 @@ const ReplyPost = (props: {
   const hasReplies = props.post.replies && props.post.replies.length > 0;
 
   return (
-    <div className="threadReply relative flex flex-col">
+    <div
+      className={`threadReply relative flex flex-col ${props.depth === 0 && "mb-2"}`}
+    >
       <BskyPostContent
         post={postView}
         parent={{ type: "thread", uri: parentUri }}
@@ -280,7 +282,6 @@ const ReplyPost = (props: {
             ? {
                 onToggle: () => {
                   props.toggleCollapsed(props.parentUri);
-                  console.log("click click");
                 },
               }
             : undefined
@@ -299,7 +300,7 @@ const ReplyPost = (props: {
           {!props.isCollapsed && (
             <div className="grow">
               <Replies
-                parentUri={postView.uri}
+                parentUri={parentUri}
                 replies={props.post.replies as any[]}
                 depth={props.depth + 1}
                 parentAuthorDid={props.post.post.author.did}

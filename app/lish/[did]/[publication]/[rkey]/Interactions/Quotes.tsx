@@ -143,7 +143,8 @@ export const MentionsDrawerContent = (props: {
                       showBlueskyLink={true}
                       showEmbed={true}
                       avatarSize="large"
-                      quoteEnabled={true}
+                      quoteEnabled
+                      replyEnabled
                     />
                   );
                 })}
