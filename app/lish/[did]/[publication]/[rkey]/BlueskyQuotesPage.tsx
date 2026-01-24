@@ -45,10 +45,9 @@ export function BlueskyQuotesPage(props: {
       pageOptions={pageOptions}
     >
       <div className="flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-1 sm:pb-4">
-        <div className="text-secondary font-bold mb-3 flex items-center gap-2">
-          <QuoteTiny />
+        <h3 className="text-secondary font-bold flex items-center gap-2">
           Bluesky Quotes
-        </div>
+        </h3>
         {isLoading ? (
           <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm py-8">
             <span>loading quotes</span>
@@ -75,8 +74,13 @@ function QuotesContent(props: { posts: PostView[]; postUri: string }) {
 
   return (
     <div className="flex flex-col gap-0">
-      {posts.map((post) => (
-        <QuotePost key={post.uri} post={post} quotesUri={postUri} />
+      {posts.map((post, index) => (
+        <>
+          <QuotePost key={post.uri} post={post} quotesUri={postUri} />
+          {posts.length !== index + 1 && (
+            <hr className="border-border-light my-2" />
+          )}
+        </>
       ))}
     </div>
   );
@@ -91,11 +95,12 @@ function QuotePost(props: { post: PostView; quotesUri: string }) {
       post={post}
       parent={parent}
       showEmbed={true}
+      compactEmbed
       showBlueskyLink={true}
       quoteEnabled
       replyEnabled
       onEmbedClick={(e) => e.stopPropagation()}
-      className="relative py-2 px-2 hover:bg-bg-page rounded cursor-pointer"
+      className="relative py-2 px-2 hover:bg-bg-page rounded cursor-pointer text-sm"
     />
   );
 }

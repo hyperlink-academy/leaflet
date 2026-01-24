@@ -92,26 +92,11 @@ export function BskyPostContent(props: {
               openPage(parent, { type: "thread", uri: post.uri });
             }}
           >
-            <div
-              className={`postInfo flex justify-between items-center gap-2 leading-tight `}
-            >
-              <div className={`flex gap-2 items-center `}>
-                <div className="font-bold text-secondary">
-                  {post.author.displayName}
-                </div>
-                <ProfilePopover
-                  trigger={
-                    <div className="text-sm text-tertiary hover:underline">
-                      @{post.author.handle}
-                    </div>
-                  }
-                  didOrHandle={post.author.handle}
-                />
-              </div>
-              <div className="text-sm text-tertiary">
-                {timeAgo(record.createdAt, { compact: true })}
-              </div>
-            </div>
+            <PostInfo
+              displayName={post.author.displayName}
+              handle={post.author.handle}
+              createdAt={record.createdAt}
+            />
 
             <div className={`postContent flex flex-col gap-2 mt-0.5`}>
               <div className="text-secondary text-sm">
@@ -210,24 +195,12 @@ export function CompactBskyPostContent(props: {
               openPage(parent, { type: "thread", uri: post.uri });
             }}
           >
-            <div className="postInfo flex justify-between items-center gap-2 leading-tight">
-              <div className="flex gap-2 items-center">
-                <div className="font-bold text-secondary">
-                  {post.author.displayName}
-                </div>
-                <ProfilePopover
-                  trigger={
-                    <div className="text-xs text-tertiary hover:underline">
-                      @{post.author.handle}
-                    </div>
-                  }
-                  didOrHandle={post.author.handle}
-                />
-              </div>
-              <div className="text-xs text-tertiary">
-                {timeAgo(record.createdAt, { compact: true })}
-              </div>
-            </div>
+            <PostInfo
+              displayName={post.author.displayName}
+              handle={post.author.handle}
+              createdAt={record.createdAt}
+              compact
+            />
 
             <div className="postContent flex flex-col gap-2 mt-0.5">
               <div className="line-clamp-3 text-tertiary text-xs">
@@ -250,6 +223,42 @@ export function CompactBskyPostContent(props: {
             </div>
           ) : null}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PostInfo(props: {
+  displayName?: string;
+  handle: string;
+  createdAt: string;
+  compact?: boolean;
+}) {
+  const { displayName, handle, createdAt, compact = false } = props;
+
+  return (
+    <div className="postInfo flex justify-between items-center gap-4 leading-tight w-full">
+      <div className="flex gap-2 items-center grow min-w-0">
+        <div className={`font-bold text-secondary  truncate`}>
+          {displayName}
+        </div>
+        <div className="truncate items-end flex">
+          <ProfilePopover
+            trigger={
+              <div
+                className={`${compact ? "text-xs" : "text-sm"} text-tertiary hover:underline w-full truncate `}
+              >
+                @{handle}
+              </div>
+            }
+            didOrHandle={handle}
+          />
+        </div>
+      </div>
+      <div
+        className={`${compact ? "text-xs" : "text-sm"} text-tertiary shrink-0`}
+      >
+        {timeAgo(createdAt, { compact: true })}
       </div>
     </div>
   );

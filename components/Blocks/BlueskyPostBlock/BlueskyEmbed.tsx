@@ -10,6 +10,7 @@ import {
   AppBskyGraphDefs,
   AppBskyLabelerDefs,
 } from "@atproto/api";
+import { Avatar } from "components/Avatar";
 
 export const BlueskyEmbed = (props: {
   embed: Exclude<AppBskyFeedDefs.PostView["embed"], undefined>;
@@ -154,38 +155,39 @@ export const BlueskyEmbed = (props: {
           text = (record.value as AppBskyFeedPost.Record).text;
         }
         return (
-          <div
-            className={`bskyPostEmbed flex flex-col gap-0.5 relative w-full overflow-hidden p-2! text-xs  block-border`}
-          >
-            <div className="bskyAuthor w-full flex items-center ">
-              {record.author.avatar && (
-                <img
-                  src={record.author?.avatar}
-                  alt={`${record.author?.displayName}'s avatar`}
-                  className="shink-0 w-6 h-6 rounded-full border border-border-light mr-[6px]"
-                />
-              )}
-              <div className=" font-bold text-secondary mr-1">
-                {record.author?.displayName}
+          <div className="bskyPostEmbed w-full flex gap-2 items-start relative  overflow-hidden p-2! text-xs  block-border">
+            <Avatar
+              src={record.author?.avatar}
+              displayName={record.author?.displayName}
+              size="small"
+            />
+            <div className="flex flex-col ">
+              <div className="flex gap-1">
+                <div className=" font-bold text-secondary mr-1">
+                  {record.author?.displayName}
+                </div>
+                <a
+                  className="text-xs text-tertiary hover:underline"
+                  target="_blank"
+                  href={`https://bsky.app/profile/${record.author?.handle}`}
+                >
+                  @{record.author?.handle}
+                </a>
               </div>
-              <a
-                className="text-xs text-tertiary hover:underline"
-                target="_blank"
-                href={`https://bsky.app/profile/${record.author?.handle}`}
-              >
-                @{record.author?.handle}
-              </a>
-            </div>
-
-            <div className="flex flex-col gap-2 ">
-              {text && (
-                <pre className="whitespace-pre-wrap text-secondary">{text}</pre>
-              )}
-              {record.embeds !== undefined
-                ? record.embeds.map((embed, index) => (
-                    <BlueskyEmbed embed={embed} key={index} />
-                  ))
-                : null}
+              <div className="flex flex-col gap-2 ">
+                {text && (
+                  <pre
+                    className={`whitespace-pre-wrap text-secondary ${props.compact ? "line-clamp-6" : ""}`}
+                  >
+                    {text}
+                  </pre>
+                )}
+                {/*{record.embeds !== undefined
+                  ? record.embeds.map((embed, index) => (
+                      <BlueskyEmbed embed={embed} key={index} compact />
+                    ))
+                  : null}*/}
+              </div>
             </div>
           </div>
         );

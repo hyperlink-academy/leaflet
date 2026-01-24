@@ -49,7 +49,7 @@ export function ThreadPage(props: {
       pageType="doc"
       fullPageScroll={false}
       id={`post-page-${pageId}`}
-      drawerOpen={!!drawer}
+      drawerOpen={false}
       pageOptions={pageOptions}
     >
       <div className="flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-1 sm:pb-4 w-full">
