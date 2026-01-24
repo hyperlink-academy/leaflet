@@ -278,6 +278,7 @@ export async function updatePublicationTheme({
   return withPublicationUpdate(uri, async ({ normalizedPub, existingBasePath, publicationType, agent }) => {
     // Build theme object
     const themeData = {
+      $type: "pub.leaflet.publication#theme" as const,
       backgroundImage: theme.backgroundImage
         ? {
             $type: "pub.leaflet.theme.backgroundImage",

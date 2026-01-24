@@ -26,6 +26,21 @@ export type Events = {
       did: string;
     };
   };
+  "user/cleanup-expired-oauth-sessions": {
+    data: {};
+  };
+  "user/check-oauth-session": {
+    data: {
+      identityId: string;
+      did: string;
+      tokenCount: number;
+    };
+  };
+  "documents/fix-publication-references": {
+    data: {
+      documentUris: string[];
+    };
+  };
 };
 
 // Create a client to send and receive events

@@ -199,7 +199,9 @@ export async function publishToPublication({
   }
 
   // Determine the collection to use - preserve existing schema if updating
-  const existingCollection = existingDocUri ? new AtUri(existingDocUri).collection : undefined;
+  const existingCollection = existingDocUri
+    ? new AtUri(existingDocUri).collection
+    : undefined;
   const documentType = getDocumentType(existingCollection);
 
   // Build the pages array (used by both formats)
@@ -228,13 +230,14 @@ export async function publishToPublication({
   if (documentType === "site.standard.document") {
     // site.standard.document format
     // For standalone docs, use HTTPS URL; for publication docs, use the publication AT-URI
-    const siteUri = publication_uri || `https://leaflet.pub/p/${credentialSession.did}`;
+    const siteUri =
+      publication_uri || `https://leaflet.pub/p/${credentialSession.did}`;
 
     record = {
       $type: "site.standard.document",
       title: title || "Untitled",
       site: siteUri,
-      path: rkey,
+      path: "/" + rkey,
       publishedAt:
         publishedAt || existingRecord.publishedAt || new Date().toISOString(),
       ...(description && { description }),

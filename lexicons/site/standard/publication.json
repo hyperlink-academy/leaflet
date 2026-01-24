@@ -9,8 +9,8 @@
             "type": "ref"
           },
           "theme": {
-            "type": "ref",
-            "ref": "pub.leaflet.publication#theme"
+            "type": "union",
+            "refs": ["pub.leaflet.publication#theme"]
           },
           "description": {
             "maxGraphemes": 300,

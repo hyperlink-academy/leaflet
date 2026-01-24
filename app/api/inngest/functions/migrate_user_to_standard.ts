@@ -38,21 +38,39 @@ export const migrate_user_to_standard = inngest.createFunction(
     const stats = {
       publicationsMigrated: 0,
       documentsMigrated: 0,
+      standardDocumentsFixed: 0,
       userSubscriptionsMigrated: 0,
       referencesUpdated: 0,
       errors: [] as string[],
     };
 
     // Step 1: Verify OAuth session is valid
-    await step.run("verify-oauth-session", async () => {
+    const oauthValid = await step.run("verify-oauth-session", async () => {
       const result = await restoreOAuthSession(did);
       if (!result.ok) {
-        throw new Error(
-          `Failed to restore OAuth session: ${result.error.message}`,
-        );
+        // Mark identity as needing migration so we can retry later
+        await supabaseServerClient
+          .from("identities")
+          .update({
+            metadata: { needsStandardSiteMigration: true },
+          })
+          .eq("atp_did", did);
+
+        return { success: false, error: result.error.message };
       }
       return { success: true };
     });
+
+    if (!oauthValid.success) {
+      return {
+        success: false,
+        error: `Failed to restore OAuth session`,
+        stats,
+        publicationUriMap: {},
+        documentUriMap: {},
+        userSubscriptionUriMap: {},
+      };
+    }
 
     // Step 2: Get user's pub.leaflet.publication records
     const oldPublications = await step.run(
@@ -109,10 +127,11 @@ export const migrate_user_to_standard = inngest.createFunction(
       })
       .filter((x) => x !== null);
 
-    // Run all PDS writes in parallel
-    const pubPdsResults = await Promise.all(
-      publicationsToMigrate.map(({ pub, rkey, newRecord }) =>
-        step.run(`pds-write-publication-${pub.uri}`, async () => {
+    // Run PDS + DB writes together for each publication
+    const pubResults = await Promise.all(
+      publicationsToMigrate.map(({ pub, rkey, normalized, newRecord }) =>
+        step.run(`migrate-publication-${pub.uri}`, async () => {
+          // PDS write
           const agent = await createAuthenticatedAgent(did);
           const putResult = await agent.com.atproto.repo.putRecord({
             repo: did,
@@ -121,16 +140,9 @@ export const migrate_user_to_standard = inngest.createFunction(
             record: newRecord,
             validate: false,
           });
-          return { oldUri: pub.uri, newUri: putResult.data.uri };
-        }),
-      ),
-    );
+          const newUri = putResult.data.uri;
 
-    // Run all DB writes in parallel
-    const pubDbResults = await Promise.all(
-      publicationsToMigrate.map(({ pub, normalized, newRecord }, index) => {
-        const newUri = pubPdsResults[index].newUri;
-        return step.run(`db-write-publication-${pub.uri}`, async () => {
+          // DB write
           const { error: dbError } = await supabaseServerClient
             .from("publications")
             .upsert({
@@ -149,12 +161,12 @@ export const migrate_user_to_standard = inngest.createFunction(
             };
           }
           return { success: true as const, oldUri: pub.uri, newUri };
-        });
-      }),
+        }),
+      ),
     );
 
     // Process results
-    for (const result of pubDbResults) {
+    for (const result of pubResults) {
       if (result.success) {
         publicationUriMap[result.oldUri] = result.newUri;
         stats.publicationsMigrated++;
@@ -239,7 +251,7 @@ export const migrate_user_to_standard = inngest.createFunction(
           $type: "site.standard.document",
           title: normalized.title || "Untitled",
           site: siteValue,
-          path: rkey,
+          path: "/" + rkey,
           publishedAt: normalized.publishedAt || new Date().toISOString(),
           description: normalized.description,
           content: normalized.content,
@@ -252,10 +264,11 @@ export const migrate_user_to_standard = inngest.createFunction(
       })
       .filter((x) => x !== null);
 
-    // Run all PDS writes in parallel
-    const docPdsResults = await Promise.all(
-      documentsToMigrate.map(({ doc, rkey, newRecord }) =>
-        step.run(`pds-write-document-${doc.uri}`, async () => {
+    // Run PDS + DB writes together for each document
+    const docResults = await Promise.all(
+      documentsToMigrate.map(({ doc, rkey, newRecord, oldPubUri }) =>
+        step.run(`migrate-document-${doc.uri}`, async () => {
+          // PDS write
           const agent = await createAuthenticatedAgent(did);
           const putResult = await agent.com.atproto.repo.putRecord({
             repo: did,
@@ -264,16 +277,9 @@ export const migrate_user_to_standard = inngest.createFunction(
             record: newRecord,
             validate: false,
           });
-          return { oldUri: doc.uri, newUri: putResult.data.uri };
-        }),
-      ),
-    );
+          const newUri = putResult.data.uri;
 
-    // Run all DB writes in parallel
-    const docDbResults = await Promise.all(
-      documentsToMigrate.map(({ doc, newRecord, oldPubUri }, index) => {
-        const newUri = docPdsResults[index].newUri;
-        return step.run(`db-write-document-${doc.uri}`, async () => {
+          // DB write
           const { error: dbError } = await supabaseServerClient
             .from("documents")
             .upsert({
@@ -302,12 +308,12 @@ export const migrate_user_to_standard = inngest.createFunction(
           }
 
           return { success: true as const, oldUri: doc.uri, newUri };
-        });
-      }),
+        }),
+      ),
     );
 
     // Process results
-    for (const result of docDbResults) {
+    for (const result of docResults) {
       if (result.success) {
         documentUriMap[result.oldUri] = result.newUri;
         stats.documentsMigrated++;
@@ -315,6 +321,130 @@ export const migrate_user_to_standard = inngest.createFunction(
         stats.errors.push(
           `Document ${result.oldUri}: Database error: ${result.error}`,
         );
+      }
+    }
+
+    // Step 4b: Fix existing site.standard.document records that reference pub.leaflet.publication
+    // This handles the case where site.standard.document records were created pointing to
+    // pub.leaflet.publication URIs before the publication was migrated to site.standard.publication
+    const existingStandardDocs = await step.run(
+      "fetch-existing-standard-documents",
+      async () => {
+        const { data, error } = await supabaseServerClient
+          .from("documents")
+          .select("uri, data")
+          .like("uri", `at://${did}/site.standard.document/%`);
+
+        if (error)
+          throw new Error(
+            `Failed to fetch existing standard documents: ${error.message}`,
+          );
+        return data || [];
+      },
+    );
+
+    // Find documents that reference pub.leaflet.publication and need their site field updated
+    const standardDocsToFix = existingStandardDocs
+      .map((doc) => {
+        const data = doc.data as SiteStandardDocument.Record;
+        const site = data?.site;
+
+        // Check if site field references a pub.leaflet.publication
+        if (!site || !site.includes("/pub.leaflet.publication/")) {
+          return null;
+        }
+
+        try {
+          const oldPubAturi = new AtUri(site);
+          const newPubUri = `at://${oldPubAturi.hostname}/site.standard.publication/${oldPubAturi.rkey}`;
+
+          // Only fix if we have the new publication in our map (meaning it was migrated)
+          // or if the new publication exists (check against all migrated publications)
+          if (
+            publicationUriMap[site] ||
+            Object.values(publicationUriMap).includes(newPubUri)
+          ) {
+            const docAturi = new AtUri(doc.uri);
+            const updatedRecord: SiteStandardDocument.Record = {
+              ...data,
+              site: newPubUri,
+            };
+
+            return {
+              doc,
+              rkey: docAturi.rkey,
+              oldSite: site,
+              newSite: newPubUri,
+              updatedRecord,
+            };
+          }
+        } catch (e) {
+          stats.errors.push(`Invalid site URI in document ${doc.uri}: ${site}`);
+        }
+
+        return null;
+      })
+      .filter((x) => x !== null);
+
+    // Update these documents on PDS and in database
+    if (standardDocsToFix.length > 0) {
+      const fixResults = await Promise.all(
+        standardDocsToFix.map(({ doc, rkey, oldSite, newSite, updatedRecord }) =>
+          step.run(`fix-standard-document-${doc.uri}`, async () => {
+            // PDS write to update the site field
+            const agent = await createAuthenticatedAgent(did);
+            await agent.com.atproto.repo.putRecord({
+              repo: did,
+              collection: "site.standard.document",
+              rkey,
+              record: updatedRecord,
+              validate: false,
+            });
+
+            // DB write
+            const { error: dbError } = await supabaseServerClient
+              .from("documents")
+              .update({ data: updatedRecord as Json })
+              .eq("uri", doc.uri);
+
+            if (dbError) {
+              return {
+                success: false as const,
+                uri: doc.uri,
+                error: dbError.message,
+              };
+            }
+
+            // Update documents_in_publications to point to new publication URI
+            await supabaseServerClient
+              .from("documents_in_publications")
+              .upsert({
+                publication: newSite,
+                document: doc.uri,
+              });
+
+            // Remove old publication reference if different
+            if (oldSite !== newSite) {
+              await supabaseServerClient
+                .from("documents_in_publications")
+                .delete()
+                .eq("publication", oldSite)
+                .eq("document", doc.uri);
+            }
+
+            return { success: true as const, uri: doc.uri };
+          }),
+        ),
+      );
+
+      for (const result of fixResults) {
+        if (result.success) {
+          stats.standardDocumentsFixed++;
+        } else {
+          stats.errors.push(
+            `Fix standard document ${result.uri}: Database error: ${result.error}`,
+          );
+        }
       }
     }
 
@@ -428,10 +558,11 @@ export const migrate_user_to_standard = inngest.createFunction(
       })
       .filter((x) => x !== null);
 
-    // Run all PDS writes in parallel
-    const subPdsResults = await Promise.all(
+    // Run PDS + DB writes together for each subscription
+    const subResults = await Promise.all(
       subscriptionsToMigrate.map(({ sub, rkey, newRecord }) =>
-        step.run(`pds-write-subscription-${sub.uri}`, async () => {
+        step.run(`migrate-subscription-${sub.uri}`, async () => {
+          // PDS write
           const agent = await createAuthenticatedAgent(did);
           const putResult = await agent.com.atproto.repo.putRecord({
             repo: did,
@@ -440,16 +571,9 @@ export const migrate_user_to_standard = inngest.createFunction(
             record: newRecord,
             validate: false,
           });
-          return { oldUri: sub.uri, newUri: putResult.data.uri };
-        }),
-      ),
-    );
+          const newUri = putResult.data.uri;
 
-    // Run all DB writes in parallel
-    const subDbResults = await Promise.all(
-      subscriptionsToMigrate.map(({ sub, newRecord }, index) => {
-        const newUri = subPdsResults[index].newUri;
-        return step.run(`db-write-subscription-${sub.uri}`, async () => {
+          // DB write
           const { error: dbError } = await supabaseServerClient
             .from("publication_subscriptions")
             .update({
@@ -467,12 +591,12 @@ export const migrate_user_to_standard = inngest.createFunction(
             };
           }
           return { success: true as const, oldUri: sub.uri, newUri };
-        });
-      }),
+        }),
+      ),
     );
 
     // Process results
-    for (const result of subDbResults) {
+    for (const result of subResults) {
       if (result.success) {
         userSubscriptionUriMap[result.oldUri] = result.newUri;
         stats.userSubscriptionsMigrated++;
@@ -489,6 +613,16 @@ export const migrate_user_to_standard = inngest.createFunction(
     // 2. External references (e.g., from other AT Proto apps) to old URIs continue to work
     // 3. The normalization layer handles both schemas transparently for reads
     // Old records are also kept on the user's PDS so existing AT-URI references remain valid.
+
+    // Clear the migration flag on success
+    if (stats.errors.length === 0) {
+      await step.run("clear-migration-flag", async () => {
+        await supabaseServerClient
+          .from("identities")
+          .update({ metadata: null })
+          .eq("atp_did", did);
+      });
+    }
 
     return {
       success: stats.errors.length === 0,
