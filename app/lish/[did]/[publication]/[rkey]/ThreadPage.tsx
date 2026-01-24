@@ -130,7 +130,7 @@ function ThreadContent(props: { post: ThreadType; parentUri: string }) {
 
       {/* Replies */}
       {post.replies && post.replies.length > 0 && (
-        <div className="threadReplies flex flex-col mt-4 pt-3  border-t border-border-light w-full">
+        <div className="threadReplies flex flex-col mt-4 pt-1  border-t border-border-light w-full">
           <Replies
             replies={post.replies as any[]}
             pageUri={post.post.uri}
@@ -155,7 +155,7 @@ function ThreadPost(props: {
 
   if (isMainPost) {
     return (
-      <div className="threadPost flex gap-2 relative w-full">
+      <div className="threadMainPost flex gap-2 relative w-full">
         <BskyPostContent
           post={postView}
           parent={page}
@@ -170,15 +170,15 @@ function ThreadPost(props: {
   }
 
   return (
-    <div className="threadPost flex gap-2 relative w-full pl-1">
+    <div className="threadGrandparentPost flex gap-2 relative w-full pl-1">
+      <div className="absolute top-0 bottom-0 left-1 w-5 ">
+        <div className="bg-border-light w-[2px] h-full mx-auto" />
+      </div>
       <CompactBskyPostContent
         post={postView}
         parent={page}
         quoteEnabled
         replyEnabled
-        replyLine={{
-          onToggle: () => {},
-        }}
       />
     </div>
   );
@@ -211,7 +211,7 @@ function Replies(props: {
     : replies;
 
   return (
-    <div className="threadPageReplies flex flex-col gap-0 pt-1 pb-2">
+    <div className="replies flex flex-col gap-0 pt-2 pb-1 pointer-events-none">
       {sortedReplies.map((reply, index) => {
         if (AppBskyFeedDefs.isNotFoundPost(reply)) {
           return (
@@ -285,48 +285,51 @@ const ReplyPost = (props: {
   const hasReplies = props.post.replies && props.post.replies.length > 0;
 
   return (
-    <div
-      className={`threadReply relative flex flex-col ${props.depth === 0 && "mb-2"}`}
-    >
-      <BskyPostContent
-        post={postView}
-        parent={{ type: "thread", uri: pageUri }}
-        showEmbed={false}
-        showBlueskyLink={false}
-        replyLine={
-          props.depth > 0
-            ? {
-                onToggle: () => {
-                  props.toggleCollapsed(parentPostUri);
-                },
-              }
-            : undefined
-        }
-        quoteEnabled
-        replyEnabled
-        replyOnClick={(e) => {
-          e.preventDefault();
-          props.toggleCollapsed(post.post.uri);
-          console.log(post.post.uri);
-        }}
-        onEmbedClick={(e) => e.stopPropagation()}
-        className="text-sm z-10"
-      />
-      {hasReplies && props.depth < 3 && (
-        <div className="ml-[28px] flex">
-          {!props.isCollapsed && (
-            <div className="grow">
-              <Replies
-                pageUri={pageUri}
-                parentPostUri={post.post.uri}
-                replies={props.post.replies as any[]}
-                depth={props.depth + 1}
-                parentAuthorDid={props.post.post.author.did}
-              />
-            </div>
-          )}
-        </div>
+    <div className="flex h-fit">
+      {props.depth > 0 && (
+        <button
+          className="replyLine relative w-6 h-auto -mr-6 pointer-events-auto"
+          onClick={() => {
+            props.toggleCollapsed(parentPostUri);
+          }}
+        >
+          <div className="bg-border-light w-[2px] h-full mx-auto" />
+        </button>
       )}
+      <div
+        className={`reply relative flex flex-col w-full ${props.depth === 0 && "mb-2"} ${props.depth > 0 && "pointer-events-none"}`}
+      >
+        <BskyPostContent
+          post={postView}
+          parent={{ type: "thread", uri: pageUri }}
+          showEmbed={false}
+          showBlueskyLink={false}
+          quoteEnabled
+          replyEnabled
+          replyOnClick={(e) => {
+            e.preventDefault();
+            props.toggleCollapsed(post.post.uri);
+            console.log(post.post.uri);
+          }}
+          onEmbedClick={(e) => e.stopPropagation()}
+          className="text-sm"
+        />
+        {hasReplies && props.depth < 3 && (
+          <div className="ml-[28px] flex pointer-events-none">
+            {!props.isCollapsed && (
+              <div className="grow pointer-events-none">
+                <Replies
+                  pageUri={pageUri}
+                  parentPostUri={post.post.uri}
+                  replies={props.post.replies as any[]}
+                  depth={props.depth + 1}
+                  parentAuthorDid={props.post.post.author.did}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

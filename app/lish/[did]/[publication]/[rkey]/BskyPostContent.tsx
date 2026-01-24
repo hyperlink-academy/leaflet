@@ -52,42 +52,21 @@ export function BskyPostContent(props: {
   const url = `https://bsky.app/profile/${post.author.handle}/post/${postId}`;
 
   return (
-    <div className="bskyPost relative flex flex-col w-full">
+    // pointer events non so that is there is a replyLine, it can be clicked even though its underneath the postContent (buttons here have pointer-events-auto applied to make them clickable)
+    <div className="bskyPost relative flex flex-col w-full pointer-events-none">
       <div className={`flex gap-2 text-left w-full ${props.className}`}>
-        <div className="flex flex-col items-start  shrink-0 w-fit ">
-          {replyLine && (
-            <button
-              onClick={(e) => {
-                replyLine.onToggle(e);
-              }}
-              className="w-full h-2 shrink-0 flex place"
-              aria-label="Toggle replies"
-            >
-              <div className="w-0.5 h-full bg-border-light mx-auto" />
-            </button>
-          )}
+        <div className="flex flex-col items-start shrink-0 w-fit">
           <Avatar
             src={post.author.avatar}
             displayName={post.author.displayName}
             size={avatarSize ? avatarSize : "medium"}
           />
-          {replyLine && (
-            <button
-              onClick={(e) => {
-                replyLine.onToggle(e);
-              }}
-              className="relative w-full grow flex "
-              aria-label="Toggle replies"
-            >
-              <div className="w-0.5 h-full bg-border-light mx-auto" />
-            </button>
-          )}
         </div>
         <div
           className={`flex flex-col min-w-0 w-full z-0 ${props.replyLine ? "mt-2" : ""}`}
         >
           <button
-            className={`bskyPostTextContent flex flex-col grow text-left ${props.avatarSize === "small" ? "mt-0.5" : props.avatarSize === "large" ? "mt-2" : "mt-1"}`}
+            className={`bskyPostTextContent flex flex-col grow text-left w-full pointer-events-auto ${props.avatarSize === "small" ? "mt-0.5" : props.avatarSize === "large" ? "mt-2" : "mt-1"}`}
             onClick={() => {
               openPage(parent, { type: "thread", uri: post.uri });
             }}
@@ -118,7 +97,7 @@ export function BskyPostContent(props: {
           (props.post.quoteCount && props.post.quoteCount > 0) ||
           (props.post.replyCount && props.post.replyCount > 0) ? (
             <div
-              className={`postCountsAndLink flex gap-2 items-center justify-between mt-2`}
+              className={`postCountsAndLink flex gap-2 items-center justify-between mt-2 pointer-events-auto`}
             >
               <PostCounts
                 post={post}
