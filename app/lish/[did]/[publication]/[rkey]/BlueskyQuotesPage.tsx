@@ -43,6 +43,7 @@ export function BlueskyQuotesPage(props: {
       id={`post-page-${pageId}`}
       drawerOpen={false}
       pageOptions={pageOptions}
+      fixedWidth
     >
       <div className="flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-1 sm:pb-4">
         <h4 className="text-secondary font-bold mb-2">Bluesky Quotes</h4>

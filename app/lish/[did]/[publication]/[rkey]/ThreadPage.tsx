@@ -51,6 +51,7 @@ export function ThreadPage(props: {
       id={`post-page-${pageId}`}
       drawerOpen={false}
       pageOptions={pageOptions}
+      fixedWidth
     >
       <div className="flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-1 sm:pb-4 w-full">
         {isLoading ? (
