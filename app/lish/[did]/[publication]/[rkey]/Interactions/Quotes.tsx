@@ -104,51 +104,57 @@ export const MentionsDrawerContent = (props: {
           <DotLoader />
         </div>
       ) : (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-8 w-full">
           {quotesWithLinks.length > 0 && (
-            <div className="flex flex-col gap-4">
-              Quotes
+            <div className="flex flex-col  w-full">
+              <h4 className="mb-2">Quotes on Bluesky</h4>
               {/* Quotes with links (quoted content) */}
               {quotesWithLinks.map((q, index) => {
                 return (
-                  <div className="flex gap-2">
+                  <>
                     <Quote
                       q={q}
                       index={index}
                       did={props.did}
                       postViewMap={postViewMap}
                     />
-                  </div>
+                    {quotesWithLinks.length !== index + 1 && (
+                      <hr className="border-border-light my-4" />
+                    )}
+                  </>
                 );
               })}
             </div>
           )}
           {/* Direct post mentions (without quoted content) */}
           {directMentions.length > 0 && (
-            <div className="flex flex-col gap-4">
-              <div className="text-secondary font-bold">
-                Mentions on Bluesky
-              </div>
-              <div className="flex flex-col gap-8">
-                {directMentions.map((q, index) => {
-                  const post = postViewMap.get(q.uri);
-                  if (!post) return null;
+            <div className="flex flex-col">
+              <h4 className="mb-2">Mentions on Bluesky</h4>
+              {directMentions.map((q, index) => {
+                const post = postViewMap.get(q.uri);
+                if (!post) return null;
 
-                  const parent = { type: "thread" as const, uri: q.uri };
-                  return (
+                const parent = { type: "thread" as const, uri: q.uri };
+                return (
+                  <>
                     <BskyPostContent
                       key={`mention-${index}`}
                       post={post}
                       parent={parent}
                       showBlueskyLink={true}
                       showEmbed={true}
-                      avatarSize="large"
+                      avatarSize="medium"
                       quoteEnabled
                       replyEnabled
+                      className="text-sm"
+                      compactEmbed
                     />
-                  );
-                })}
-              </div>
+                    {directMentions.length !== index + 1 && (
+                      <hr className="border-border-light my-4" />
+                    )}
+                  </>
+                );
+              })}
             </div>
           )}
         </div>
@@ -176,20 +182,23 @@ const Quote = (props: {
   if (!quotePosition) return null;
 
   return (
-    <div key={`quote-${props.index}`} className="flex flex-col ">
+    <div key={`quote-${props.index}`} className="flex flex-col w-full">
       <QuoteContent
         index={props.index}
         did={props.did}
         position={quotePosition}
       />
 
-      <div className="h-5 w-1 ml-5 border-l border-border-light" />
+      <div className="h-3 w-1 ml-[11px] border-l border-border-light" />
       <BskyPostContent
         post={post}
         parent={parent}
         showBlueskyLink={true}
-        showEmbed={true}
-        avatarSize="large"
+        showEmbed={false}
+        avatarSize="medium"
+        quoteEnabled
+        replyEnabled
+        className="text-sm"
       />
     </div>
   );
@@ -262,7 +271,7 @@ export const QuoteContent = (props: {
             blocks={content}
             did={props.did}
             preview
-            className="py-0!"
+            className="py-0! px-0! text-tertiary"
           />
         </div>
       </div>

@@ -237,8 +237,8 @@ function PostInfo(props: {
   const { displayName, handle, createdAt, compact = false } = props;
 
   return (
-    <div className="postInfo flex justify-between items-center gap-4 leading-tight w-full">
-      <div className="flex gap-2 items-center grow min-w-0">
+    <div className="postInfo flex items-center gap-2 leading-tight w-full">
+      <div className="flex gap-2 items-center min-w-0">
         <div className={`font-bold text-secondary  truncate`}>
           {displayName}
         </div>
@@ -255,6 +255,7 @@ function PostInfo(props: {
           />
         </div>
       </div>
+      <div className="w-1 h-1 rounded-full bg-border shrink-0" />
       <div
         className={`${compact ? "text-xs" : "text-sm"} text-tertiary shrink-0`}
       >
