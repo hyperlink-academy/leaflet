@@ -113,6 +113,7 @@ export const MentionsDrawerContent = (props: {
                 return (
                   <>
                     <Quote
+                      key={q.uri}
                       q={q}
                       index={index}
                       did={props.did}

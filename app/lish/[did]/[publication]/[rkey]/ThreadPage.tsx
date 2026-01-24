@@ -326,16 +326,6 @@ const ReplyPost = (props: {
           )}
         </div>
       )}
-
-      {hasReplies && props.depth >= 3 && (
-        <ThreadLink
-          postUri={props.post.post.uri}
-          parent={{ type: "thread", uri: pageUri }}
-          className="text-left ml-10 text-sm text-accent-contrast hover:underline"
-        >
-          View more replies
-        </ThreadLink>
-      )}
     </div>
   );
 };

@@ -13,6 +13,8 @@ import { Separator } from "components/Layout";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";
 import { useLocalizedDate } from "src/hooks/useLocalizedDate";
+import { BskyPostContent } from "app/lish/[did]/[publication]/[rkey]/BskyPostContent";
+import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 
 export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
   let { permissions } = useEntitySetContext();
@@ -76,76 +78,24 @@ export const BlueskyPostBlock = (props: BlockProps & { preview?: boolean }) => {
 
       //getting the url to the post
       let postId = post.post.uri.split("/")[4];
+      let postView = post.post as PostView;
       let url = `https://bsky.app/profile/${post.post.author.handle}/post/${postId}`;
 
       return (
         <BlockLayout
           isSelected={!!isSelected}
           hasBackground="page"
-          className="flex flex-col gap-2 relative overflow-hidden group/blueskyPostBlock text-sm text-secondary"
+          borderOnHover
+          className="blueskyPostBlock sm:px-3! sm:py-2! px-2! py-1!"
         >
-          {post.post.author && record && (
-            <>
-              <div className="bskyAuthor w-full flex items-center gap-2">
-                {post.post.author?.avatar ? (
-                  <img
-                    src={post.post.author?.avatar}
-                    alt={`${post.post.author?.displayName}'s avatar`}
-                    className="shrink-0 w-8 h-8 rounded-full border border-border-light"
-                  />
-                ) : (
-                  <div className="shrink-0 w-8 h-8 rounded-full border border-border-light bg-border"></div>
-                )}
-                <div className="grow flex flex-col gap-0.5 leading-tight">
-                  <div className=" font-bold text-secondary">
-                    {post.post.author?.displayName}
-                  </div>
-                  <a
-                    className="text-xs text-tertiary hover:underline"
-                    target="_blank"
-                    href={`https://bsky.app/profile/${post.post.author?.handle}`}
-                  >
-                    @{post.post.author?.handle}
-                  </a>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2 ">
-                <div>
-                  <pre className="whitespace-pre-wrap">
-                    {BlueskyRichText({
-                      record: record as AppBskyFeedPost.Record | null,
-                    })}
-                  </pre>
-                </div>
-                {post.post.embed && (
-                  <BlueskyEmbed embed={post.post.embed} postUrl={url} />
-                )}
-              </div>
-            </>
-          )}
-          <div className="w-full flex gap-2 items-center justify-between">
-            {timestamp && <PostDate timestamp={timestamp} />}
-            <div className="flex gap-2 items-center">
-              {post.post.replyCount != null && post.post.replyCount > 0 && (
-                <>
-                  <a
-                    className="flex items-center gap-1 hover:no-underline"
-                    target="_blank"
-                    href={url}
-                  >
-                    {post.post.replyCount}
-                    <CommentTiny />
-                  </a>
-                  <Separator classname="h-4" />
-                </>
-              )}
-
-              <a className="" target="_blank" href={url}>
-                <BlueskyTiny />
-              </a>
-            </div>
-          </div>
+          <BskyPostContent
+            post={postView}
+            parent={undefined}
+            showBlueskyLink={true}
+            showEmbed={true}
+            avatarSize="large"
+            className="text-sm text-secondary  "
+          />
         </BlockLayout>
       );
   }

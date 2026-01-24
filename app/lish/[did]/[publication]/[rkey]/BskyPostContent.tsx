@@ -19,7 +19,7 @@ type PostView = AppBskyFeedDefs.PostView;
 
 export function BskyPostContent(props: {
   post: PostView;
-  parent: OpenPage;
+  parent: OpenPage | undefined;
   avatarSize?: "tiny" | "small" | "medium" | "large" | "giant";
   className?: string;
   showEmbed?: boolean;
@@ -87,7 +87,7 @@ export function BskyPostContent(props: {
           className={`flex flex-col min-w-0 w-full z-0 ${props.replyLine ? "mt-2" : ""}`}
         >
           <button
-            className="bskyPostTextContent flex flex-col grow mt-1 text-left"
+            className={`bskyPostTextContent flex flex-col grow text-left ${props.avatarSize === "small" ? "mt-0.5" : props.avatarSize === "large" ? "mt-2" : "mt-1"}`}
             onClick={() => {
               openPage(parent, { type: "thread", uri: post.uri });
             }}
@@ -99,7 +99,7 @@ export function BskyPostContent(props: {
             />
 
             <div className={`postContent flex flex-col gap-2 mt-0.5`}>
-              <div className="text-secondary text-sm">
+              <div className="text-secondary">
                 <BlueskyRichText record={record} />
               </div>
               {showEmbed && post.embed && (
@@ -133,7 +133,11 @@ export function BskyPostContent(props: {
               <div className="flex gap-3 items-center">
                 {showBlueskyLink && (
                   <>
-                    <a className="text-tertiary" target="_blank" href={url}>
+                    <a
+                      className="text-tertiary hover:text-accent-contrast"
+                      target="_blank"
+                      href={url}
+                    >
                       <BlueskyLinkTiny />
                     </a>
                   </>
@@ -276,7 +280,7 @@ function PostCounts(props: {
 }) {
   const replyContent = props.post.replyCount != null &&
     props.post.replyCount > 0 && (
-      <div className="postRepliesCount flex items-center gap-1 text-tertiary text-xs">
+      <div className="postRepliesCount flex items-center gap-1 text-xs">
         <CommentTiny />
         {props.post.replyCount}
       </div>
@@ -284,14 +288,14 @@ function PostCounts(props: {
 
   const quoteContent = props.post.quoteCount != null &&
     props.post.quoteCount > 0 && (
-      <div className="postQuoteCount flex items-center gap-1 text-tertiary text-xs">
+      <div className="postQuoteCount flex items-center gap-1  text-xs">
         <QuoteTiny />
         {props.post.quoteCount}
       </div>
     );
 
   return (
-    <div className="postCounts flex gap-2 items-center w-full">
+    <div className="postCounts flex gap-2 items-center w-full text-tertiary">
       {replyContent &&
         (props.replyEnabled ? (
           <ThreadLink
