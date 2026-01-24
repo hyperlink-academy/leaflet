@@ -20,9 +20,10 @@ type PostView = AppBskyFeedDefs.PostView;
 export function BskyPostContent(props: {
   post: PostView;
   parent: OpenPage;
-  avatarSize?: "tiny" | "medium" | "large" | "giant";
+  avatarSize?: "tiny" | "small" | "medium" | "large" | "giant";
   className?: string;
   showEmbed?: boolean;
+  compactEmbed?: boolean;
   showBlueskyLink?: boolean;
   onEmbedClick?: (e: React.MouseEvent) => void;
   quoteEnabled?: boolean;
@@ -35,8 +36,9 @@ export function BskyPostContent(props: {
   const {
     post,
     parent,
-    avatarSize = "md",
+    avatarSize = "medium",
     showEmbed = true,
+    compactEmbed = false,
     showBlueskyLink = true,
     onEmbedClick,
     quoteEnabled,
@@ -67,7 +69,7 @@ export function BskyPostContent(props: {
           <Avatar
             src={post.author.avatar}
             displayName={post.author.displayName}
-            size={props.avatarSize ? props.avatarSize : "medium"}
+            size={avatarSize ? avatarSize : "medium"}
           />
           {replyLine && (
             <button
@@ -82,10 +84,10 @@ export function BskyPostContent(props: {
           )}
         </div>
         <div
-          className={`flex flex-col w-full z-0 ${props.replyLine ? "mt-2" : ""}`}
+          className={`flex flex-col min-w-0 w-full z-0 ${props.replyLine ? "mt-2" : ""}`}
         >
           <button
-            className={`bskyPostTextContent flex flex-col grow min-w-0 mt-1 text-left`}
+            className="bskyPostTextContent flex flex-col grow mt-1 text-left"
             onClick={() => {
               openPage(parent, { type: "thread", uri: post.uri });
             }}
@@ -93,7 +95,7 @@ export function BskyPostContent(props: {
             <div
               className={`postInfo flex justify-between items-center gap-2 leading-tight `}
             >
-              <div className="flex gap-2 items-center">
+              <div className={`flex gap-2 items-center `}>
                 <div className="font-bold text-secondary">
                   {post.author.displayName}
                 </div>
@@ -112,13 +114,14 @@ export function BskyPostContent(props: {
             </div>
 
             <div className={`postContent flex flex-col gap-2 mt-0.5`}>
-              <div className="text-sm text-secondary">
+              <div className="text-secondary text-sm">
                 <BlueskyRichText record={record} />
               </div>
               {showEmbed && post.embed && (
                 <div onClick={onEmbedClick}>
                   <BlueskyEmbed
                     embed={post.embed}
+                    compact={compactEmbed}
                     postUrl={url}
                     className="text-sm"
                   />
@@ -151,6 +154,99 @@ export function BskyPostContent(props: {
                   </>
                 )}
               </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function CompactBskyPostContent(props: {
+  post: PostView;
+  parent: OpenPage;
+  className?: string;
+  quoteEnabled?: boolean;
+  replyEnabled?: boolean;
+  replyOnClick?: (e: React.MouseEvent) => void;
+  replyLine?: {
+    onToggle: (e: React.MouseEvent) => void;
+  };
+}) {
+  const { post, parent, quoteEnabled, replyEnabled, replyOnClick, replyLine } =
+    props;
+
+  const record = post.record as AppBskyFeedPost.Record;
+  const postId = post.uri.split("/")[4];
+  const url = `https://bsky.app/profile/${post.author.handle}/post/${postId}`;
+
+  return (
+    <div className="bskyPost relative flex flex-col w-full">
+      <div className={`flex gap-2 text-left w-full ${props.className}`}>
+        <div className="flex flex-col items-start shrink-0 w-fit">
+          <Avatar
+            src={post.author.avatar}
+            displayName={post.author.displayName}
+            size="small"
+          />
+          {replyLine && (
+            <button
+              onClick={(e) => {
+                replyLine.onToggle(e);
+              }}
+              className="relative w-full grow flex"
+              aria-label="Toggle replies"
+            >
+              <div className="w-0.5 h-full bg-border-light mx-auto" />
+            </button>
+          )}
+        </div>
+        <div
+          className={`flex flex-col min-w-0 w-full z-0 ${replyLine ? "mb-2" : ""}`}
+        >
+          <button
+            className="bskyPostTextContent flex flex-col grow mt-0.5 text-left text-xs text-tertiary"
+            onClick={() => {
+              openPage(parent, { type: "thread", uri: post.uri });
+            }}
+          >
+            <div className="postInfo flex justify-between items-center gap-2 leading-tight">
+              <div className="flex gap-2 items-center">
+                <div className="font-bold text-secondary">
+                  {post.author.displayName}
+                </div>
+                <ProfilePopover
+                  trigger={
+                    <div className="text-xs text-tertiary hover:underline">
+                      @{post.author.handle}
+                    </div>
+                  }
+                  didOrHandle={post.author.handle}
+                />
+              </div>
+              <div className="text-xs text-tertiary">
+                {timeAgo(record.createdAt, { compact: true })}
+              </div>
+            </div>
+
+            <div className="postContent flex flex-col gap-2 mt-0.5">
+              <div className="line-clamp-3 text-tertiary text-xs">
+                <BlueskyRichText record={record} />
+              </div>
+            </div>
+          </button>
+          {(post.quoteCount && post.quoteCount > 0) ||
+          (post.replyCount && post.replyCount > 0) ? (
+            <div className="postCountsAndLink flex gap-2 items-center justify-between mt-2">
+              <PostCounts
+                post={post}
+                parent={parent}
+                replyEnabled={replyEnabled}
+                replyOnClick={replyOnClick}
+                quoteEnabled={quoteEnabled}
+                showBlueskyLink={false}
+                url={url}
+              />
             </div>
           ) : null}
         </div>
