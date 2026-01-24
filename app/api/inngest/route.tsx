@@ -5,6 +5,7 @@ import { come_online } from "./functions/come_online";
 import { batched_update_profiles } from "./functions/batched_update_profiles";
 import { index_follows } from "./functions/index_follows";
 import { migrate_user_to_standard } from "./functions/migrate_user_to_standard";
+import { fix_standard_document_publications } from "./functions/fix_standard_document_publications";
 import {
   cleanup_expired_oauth_sessions,
   check_oauth_session,
@@ -18,6 +19,7 @@ export const { GET, POST, PUT } = serve({
     batched_update_profiles,
     index_follows,
     migrate_user_to_standard,
+    fix_standard_document_publications,
     cleanup_expired_oauth_sessions,
     check_oauth_session,
   ],

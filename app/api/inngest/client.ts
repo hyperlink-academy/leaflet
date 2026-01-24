@@ -36,6 +36,11 @@ export type Events = {
       tokenCount: number;
     };
   };
+  "documents/fix-publication-references": {
+    data: {
+      documentUris: string[];
+    };
+  };
 };
 
 // Create a client to send and receive events
