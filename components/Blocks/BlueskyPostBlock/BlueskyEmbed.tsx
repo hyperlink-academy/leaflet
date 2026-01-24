@@ -84,7 +84,7 @@ export const BlueskyEmbed = (props: {
         <a
           href={externalEmbed.external.uri}
           target="_blank"
-          className={`externalLinkEmbed group  border border-border-light rounded-md overflow-hidden hover:no-underline sm:hover:border-accent-contrast selected-border w-full ${props.compact ? "flex" : "flex flex-col"}
+          className={`externalLinkEmbed group  border border-border-light rounded-md overflow-hidden hover:no-underline sm:hover:border-accent-contrast selected-border w-full ${props.compact ? "flex items-stretch" : "flex flex-col"}
             ${props.className}`}
         >
           {externalEmbed.external.thumb === undefined ? null : (
@@ -102,15 +102,18 @@ export const BlueskyEmbed = (props: {
             </>
           )}
           <div
-            className={`p-2 flex flex-col gap-1 w-full min-w-0 ${props.compact && "sm:pl-3 py-1"}`}
+            className={`p-2 flex flex-col w-full min-w-0  ${props.compact && "sm:pl-3 py-1"}`}
           >
-            <div className="flex flex-col shrink-0">
-              <h4 className="truncate">{externalEmbed.external.title} </h4>
-              <p className="text-secondary line-clamp-2 grow">
+            <h4 className="truncate shrink-0" style={{ fontSize: "inherit" }}>
+              {externalEmbed.external.title}{" "}
+            </h4>
+            <div className="grow">
+              <p className="text-secondary line-clamp-2">
                 {externalEmbed.external.description}
               </p>
             </div>
-            <hr className="border-border-light mt-1" />
+
+            <hr className="border-border-light my-1" />
             <div className="text-tertiary text-xs shrink-0 sm:group-hover:text-accent-contrast truncate">
               {externalEmbed.external.uri}
             </div>
