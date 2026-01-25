@@ -41,6 +41,11 @@ export type Events = {
       documentUris: string[];
     };
   };
+  "documents/fix-incorrect-site-values": {
+    data: {
+      did: string;
+    };
+  };
 };
 
 // Create a client to send and receive events
