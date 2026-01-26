@@ -32,7 +32,7 @@ export async function getSubscriptions(
     .select(`*, publications(*, documents_in_publications(*, documents(*)))`)
     .order(`created_at`, { ascending: false })
     .order(`uri`, { ascending: false })
-    .order("indexed_at", {
+    .order("documents(sort_date)", {
       ascending: false,
       referencedTable: "publications.documents_in_publications",
     })
@@ -85,6 +85,6 @@ export type PublicationSubscription = {
   record: NormalizedPublication;
   uri: string;
   documents_in_publications: {
-    documents: { data?: Json; indexed_at: string } | null;
+    documents: { data?: Json; sort_date: string } | null;
   }[];
 };
