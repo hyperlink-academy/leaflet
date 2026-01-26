@@ -25,7 +25,11 @@ export function getPublicationURL(pub: PublicationInput): string {
   }
 
   // Fall back to checking raw record for legacy base_path
-  if (isLeafletPublication(pub.record) && pub.record.base_path && isProductionDomain()) {
+  if (
+    isLeafletPublication(pub.record) &&
+    pub.record.base_path &&
+    isProductionDomain()
+  ) {
     return `https://${pub.record.base_path}`;
   }
 
@@ -36,7 +40,7 @@ export function getBasePublicationURL(pub: PublicationInput): string {
   const normalized = normalizePublicationRecord(pub.record);
   const aturi = new AtUri(pub.uri);
 
-  // Use normalized name if available, fall back to rkey
-  const name = normalized?.name || aturi.rkey;
+  //use rkey, fallback to name
+  const name = aturi.rkey || normalized?.name;
   return `/lish/${aturi.host}/${encodeURIComponent(name || "")}`;
 }
