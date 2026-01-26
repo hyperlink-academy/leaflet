@@ -111,6 +111,7 @@ function PublishedPostItem(props: {
                           documents: {
                             uri: doc.uri,
                             indexed_at: doc.indexed_at,
+                            sort_date: doc.sort_date,
                             data: doc.data,
                           },
                         },

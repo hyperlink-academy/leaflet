@@ -337,6 +337,7 @@ export type Database = {
         Row: {
           data: Json
           indexed_at: string
+          sort_date: string
           uri: string
         }
         Insert: {
