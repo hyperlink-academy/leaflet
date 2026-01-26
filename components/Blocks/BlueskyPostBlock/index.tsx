@@ -6,9 +6,9 @@ import { BlockProps, BlockLayout } from "../Block";
 import { elementId } from "src/utils/elementId";
 import { focusBlock } from "src/utils/focusBlock";
 import { AppBskyFeedDefs, AppBskyFeedPost, RichText } from "@atproto/api";
-import { BlueskyEmbed, PostNotAvailable } from "./BlueskyEmbed";
+import { PostNotAvailable } from "./BlueskyEmbed";
 import { BlueskyPostEmpty } from "./BlueskyEmpty";
-import { BlueskyRichText } from "./BlueskyRichText";
+
 import { Separator } from "components/Layout";
 import { BlueskyTiny } from "components/Icons/BlueskyTiny";
 import { CommentTiny } from "components/Icons/CommentTiny";

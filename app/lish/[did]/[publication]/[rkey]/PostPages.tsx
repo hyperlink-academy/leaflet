@@ -111,11 +111,26 @@ export const openPage = (
   const pageKey = getPageKey(page);
   const parentKey = parent ? getPageKey(parent) : undefined;
 
+  // Check if the page is already open
+  const currentState = usePostPageUIState.getState();
+  const existingPageIndex = currentState.pages.findIndex(
+    (p) => getPageKey(p) === pageKey,
+  );
+
+  // If page is already open, just scroll to it
+  if (existingPageIndex !== -1) {
+    if (options?.scrollIntoView !== false) {
+      scrollIntoView(`post-page-${pageKey}`);
+    }
+    return;
+  }
+
   flushSync(() => {
     usePostPageUIState.setState((state) => {
       let parentPosition = state.pages.findIndex(
         (s) => getPageKey(s) === parentKey,
       );
+      // Close any pages after the parent and add the new page
       return {
         pages:
           parentPosition === -1
@@ -127,7 +142,10 @@ export const openPage = (
   });
 
   if (options?.scrollIntoView !== false) {
-    scrollIntoView(`post-page-${pageKey}`);
+    // Use requestAnimationFrame to ensure the DOM has been painted before scrolling
+    requestAnimationFrame(() => {
+      scrollIntoView(`post-page-${pageKey}`);
+    });
   }
 };
 

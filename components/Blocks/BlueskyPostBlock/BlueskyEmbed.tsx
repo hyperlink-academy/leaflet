@@ -11,12 +11,17 @@ import {
   AppBskyLabelerDefs,
 } from "@atproto/api";
 import { Avatar } from "components/Avatar";
+import {
+  OpenPage,
+  openPage,
+} from "app/lish/[did]/[publication]/[rkey]/PostPages";
 
 export const BlueskyEmbed = (props: {
   embed: Exclude<AppBskyFeedDefs.PostView["embed"], undefined>;
   postUrl?: string;
   className?: string;
   compact?: boolean;
+  parent?: OpenPage;
 }) => {
   // check this file from bluesky for ref
   // https://github.com/bluesky-social/social-app/blob/main/bskyembed/src/components/embed.tsx
@@ -158,7 +163,15 @@ export const BlueskyEmbed = (props: {
           text = (record.value as AppBskyFeedPost.Record).text;
         }
         return (
-          <div className="bskyPostEmbed w-full flex gap-2 items-start relative  overflow-hidden p-2! text-xs  block-border">
+          <button
+            className={`bskyPostEmbed text-left w-full flex gap-2 items-start relative  overflow-hidden p-2! text-xs  block-border hover:border-accent-contrast! `}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+
+              openPage(props.parent, { type: "thread", uri: record.uri });
+            }}
+          >
             <Avatar
               src={record.author?.avatar}
               displayName={record.author?.displayName}
@@ -192,7 +205,7 @@ export const BlueskyEmbed = (props: {
                   : null}*/}
               </div>
             </div>
-          </div>
+          </button>
         );
       }
 

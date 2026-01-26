@@ -1,18 +1,6 @@
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs";
 import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api";
-import { Separator } from "components/Layout";
-import { useHasPageLoaded } from "components/InitialPageLoadProvider";
-import { BlueskyTiny } from "components/Icons/BlueskyTiny";
-import { CommentTiny } from "components/Icons/CommentTiny";
-import { QuoteTiny } from "components/Icons/QuoteTiny";
-import { ThreadLink, QuotesLink } from "../PostLinks";
-import { useLocalizedDate } from "src/hooks/useLocalizedDate";
-import {
-  BlueskyEmbed,
-  PostNotAvailable,
-} from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
-import { BlueskyRichText } from "components/Blocks/BlueskyPostBlock/BlueskyRichText";
-import { openPage } from "../PostPages";
+import { PostNotAvailable } from "components/Blocks/BlueskyPostBlock/BlueskyEmbed";
 import { BskyPostContent } from "../BskyPostContent";
 
 export const PubBlueskyPostBlock = (props: {
@@ -21,13 +9,6 @@ export const PubBlueskyPostBlock = (props: {
   pageId?: string;
 }) => {
   let post = props.post;
-
-  const handleOpenThread = () => {
-    openPage(props.pageId ? { type: "doc", id: props.pageId } : undefined, {
-      type: "thread",
-      uri: post.uri,
-    });
-  };
 
   switch (true) {
     case AppBskyFeedDefs.isBlockedPost(post) ||

@@ -98,8 +98,7 @@ function QuotePost(props: { post: PostView; quotesUri: string }) {
       showBlueskyLink={true}
       quoteEnabled
       replyEnabled
-      onEmbedClick={(e) => e.stopPropagation()}
-      className="relative rounded cursor-pointer text-sm"
+      className="relative rounded text-sm"
     />
   );
 }

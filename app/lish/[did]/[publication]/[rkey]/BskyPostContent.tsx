@@ -25,13 +25,9 @@ export function BskyPostContent(props: {
   showEmbed?: boolean;
   compactEmbed?: boolean;
   showBlueskyLink?: boolean;
-  onEmbedClick?: (e: React.MouseEvent) => void;
   quoteEnabled?: boolean;
   replyEnabled?: boolean;
   replyOnClick?: (e: React.MouseEvent) => void;
-  replyLine?: {
-    onToggle: (e: React.MouseEvent) => void;
-  };
 }) {
   const {
     post,
@@ -40,11 +36,9 @@ export function BskyPostContent(props: {
     showEmbed = true,
     compactEmbed = false,
     showBlueskyLink = true,
-    onEmbedClick,
     quoteEnabled,
     replyEnabled,
     replyOnClick,
-    replyLine,
   } = props;
 
   const record = post.record as AppBskyFeedPost.Record;
@@ -52,24 +46,27 @@ export function BskyPostContent(props: {
   const url = `https://bsky.app/profile/${post.author.handle}/post/${postId}`;
 
   return (
-    // pointer events non so that is there is a replyLine, it can be clicked even though its underneath the postContent (buttons here have pointer-events-auto applied to make them clickable)
-    <div className="bskyPost relative flex flex-col w-full pointer-events-none">
-      <div className={`flex gap-2 text-left w-full ${props.className}`}>
-        <div className="flex flex-col items-start shrink-0 w-fit">
+    <div className={`bskyPost relative flex flex-col w-full `}>
+      <button
+        className="absolute inset-0"
+        onClick={() => {
+          openPage(parent, { type: "thread", uri: post.uri });
+        }}
+      />
+
+      <div
+        className={`flex gap-2 text-left w-full pointer-events-none ${props.className}`}
+      >
+        <div className="flex flex-col items-start shrink-0 w-fit pointer-events-auto">
           <Avatar
             src={post.author.avatar}
             displayName={post.author.displayName}
             size={avatarSize ? avatarSize : "medium"}
           />
         </div>
-        <div
-          className={`flex flex-col min-w-0 w-full z-0 ${props.replyLine ? "mt-2" : ""}`}
-        >
-          <button
-            className={`bskyPostTextContent flex flex-col grow text-left w-full pointer-events-auto ${props.avatarSize === "small" ? "mt-0.5" : props.avatarSize === "large" ? "mt-2" : "mt-1"}`}
-            onClick={() => {
-              openPage(parent, { type: "thread", uri: post.uri });
-            }}
+        <div className={`flex flex-col min-w-0 w-full mb-2`}>
+          <div
+            className={`bskyPostTextContent flex flex-col grow text-left w-full ${props.avatarSize === "small" ? "mt-0.5" : props.avatarSize === "large" ? "mt-2" : "mt-1"}`}
           >
             <PostInfo
               displayName={post.author.displayName}
@@ -82,8 +79,12 @@ export function BskyPostContent(props: {
                 <BlueskyRichText record={record} />
               </div>
               {showEmbed && post.embed && (
-                <div onClick={onEmbedClick}>
+                <div
+                  className="pointer-events-auto relative"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <BlueskyEmbed
+                    parent={parent}
                     embed={post.embed}
                     compact={compactEmbed}
                     postUrl={url}
@@ -92,7 +93,7 @@ export function BskyPostContent(props: {
                 </div>
               )}
             </div>
-          </button>
+          </div>
           {props.showBlueskyLink ||
           (props.post.quoteCount && props.post.quoteCount > 0) ||
           (props.post.replyCount && props.post.replyCount > 0) ? (
@@ -137,12 +138,8 @@ export function CompactBskyPostContent(props: {
   quoteEnabled?: boolean;
   replyEnabled?: boolean;
   replyOnClick?: (e: React.MouseEvent) => void;
-  replyLine?: {
-    onToggle: (e: React.MouseEvent) => void;
-  };
 }) {
-  const { post, parent, quoteEnabled, replyEnabled, replyOnClick, replyLine } =
-    props;
+  const { post, parent, quoteEnabled, replyEnabled, replyOnClick } = props;
 
   const record = post.record as AppBskyFeedPost.Record;
   const postId = post.uri.split("/")[4];
@@ -150,28 +147,19 @@ export function CompactBskyPostContent(props: {
 
   return (
     <div className="bskyPost relative flex flex-col w-full">
+      <button
+        className="absolute inset-0 "
+        onClick={() => {
+          openPage(parent, { type: "thread", uri: post.uri });
+        }}
+      />
       <div className={`flex gap-2 text-left w-full ${props.className}`}>
-        <div className="flex flex-col items-start shrink-0 w-fit">
-          <Avatar
-            src={post.author.avatar}
-            displayName={post.author.displayName}
-            size="small"
-          />
-          {replyLine && (
-            <button
-              onClick={(e) => {
-                replyLine.onToggle(e);
-              }}
-              className="relative w-full grow flex"
-              aria-label="Toggle replies"
-            >
-              <div className="w-0.5 h-full bg-border-light mx-auto" />
-            </button>
-          )}
-        </div>
-        <div
-          className={`flex flex-col min-w-0 w-full z-0 ${replyLine ? "mb-2" : ""}`}
-        >
+        <Avatar
+          src={post.author.avatar}
+          displayName={post.author.displayName}
+          size="small"
+        />
+        <div className={`flex flex-col min-w-0 w-full`}>
           <button
             className="bskyPostTextContent flex flex-col grow mt-0.5 text-left text-xs text-tertiary"
             onClick={() => {
@@ -225,7 +213,7 @@ function PostInfo(props: {
         <div className={`font-bold text-secondary  truncate`}>
           {displayName}
         </div>
-        <div className="truncate items-end flex">
+        <div className="truncate items-end flex pointer-events-auto">
           <ProfilePopover
             trigger={
               <div
