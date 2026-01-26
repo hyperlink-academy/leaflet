@@ -38,12 +38,12 @@ export async function getReaderFeed(
       "documents_in_publications.publications.publication_subscriptions.identity",
       auth_res.atp_did,
     )
-    .order("indexed_at", { ascending: false })
+    .order("sort_date", { ascending: false })
     .order("uri", { ascending: false })
     .limit(25);
   if (cursor) {
     query = query.or(
-      `indexed_at.lt.${cursor.timestamp},and(indexed_at.eq.${cursor.timestamp},uri.lt.${cursor.uri})`,
+      `sort_date.lt.${cursor.timestamp},and(sort_date.eq.${cursor.timestamp},uri.lt.${cursor.uri})`,
     );
   }
   let { data: rawFeed, error } = await query;
@@ -78,7 +78,7 @@ export async function getReaderFeed(
             document_mentions_in_bsky: post.document_mentions_in_bsky,
             data: normalizedData,
             uri: post.uri,
-            indexed_at: post.indexed_at,
+            sort_date: post.sort_date,
           },
         };
         return p;
@@ -88,7 +88,7 @@ export async function getReaderFeed(
   const nextCursor =
     posts.length > 0
       ? {
-          timestamp: posts[posts.length - 1].documents.indexed_at,
+          timestamp: posts[posts.length - 1].documents.sort_date,
           uri: posts[posts.length - 1].documents.uri,
         }
       : null;
@@ -109,7 +109,7 @@ export type Post = {
   documents: {
     data: NormalizedDocument | null;
     uri: string;
-    indexed_at: string;
+    sort_date: string;
     comments_on_documents: { count: number }[] | undefined;
     document_mentions_in_bsky: { count: number }[] | undefined;
   };

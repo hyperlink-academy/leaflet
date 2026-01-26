@@ -62,7 +62,7 @@ export const PubListing = (
             <p>
               Updated{" "}
               {timeAgo(
-                props.documents_in_publications?.[0]?.documents?.indexed_at ||
+                props.documents_in_publications?.[0]?.documents?.sort_date ||
                   "",
               )}
             </p>

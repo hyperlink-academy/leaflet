@@ -24,7 +24,7 @@ export async function getDocumentsByTag(
       documents_in_publications(publications(*))`,
     )
     .contains("data->tags", `["${tag}"]`)
-    .order("indexed_at", { ascending: false })
+    .order("sort_date", { ascending: false })
     .limit(50);
 
   if (error) {
@@ -69,7 +69,7 @@ export async function getDocumentsByTag(
           document_mentions_in_bsky: doc.document_mentions_in_bsky,
           data: normalizedData,
           uri: doc.uri,
-          indexed_at: doc.indexed_at,
+          sort_date: doc.sort_date,
         },
       };
       return post;

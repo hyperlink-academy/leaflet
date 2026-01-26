@@ -83,6 +83,7 @@ export const get_publication_data = makeRoute({
           uri: dip.documents.uri,
           record: normalized,
           indexed_at: dip.documents.indexed_at,
+          sort_date: dip.documents.sort_date,
           data: dip.documents.data,
           commentsCount: dip.documents.comments_on_documents[0]?.count || 0,
           mentionsCount: dip.documents.document_mentions_in_bsky[0]?.count || 0,

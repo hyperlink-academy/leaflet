@@ -116,12 +116,12 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
   }
   query = query
     .or("data->postRef.not.is.null,data->bskyPostRef.not.is.null")
-    .order("indexed_at", { ascending: false })
+    .order("sort_date", { ascending: false })
     .order("uri", { ascending: false })
     .limit(25);
   if (parsedCursor)
     query = query.or(
-      `indexed_at.lt.${parsedCursor.date},and(indexed_at.eq.${parsedCursor.date},uri.lt.${parsedCursor.uri})`,
+      `sort_date.lt.${parsedCursor.date},and(sort_date.eq.${parsedCursor.date},uri.lt.${parsedCursor.uri})`,
     );
 
   let { data, error } = await query;
@@ -131,7 +131,7 @@ app.get("/xrpc/app.bsky.feed.getFeedSkeleton", async (c) => {
   posts = posts || [];
 
   let lastPost = posts[posts.length - 1];
-  let newCursor = lastPost ? `${lastPost.indexed_at}::${lastPost.uri}` : null;
+  let newCursor = lastPost ? `${lastPost.sort_date}::${lastPost.uri}` : null;
   return c.json({
     cursor: newCursor || cursor,
     feed: posts.flatMap((p) => {

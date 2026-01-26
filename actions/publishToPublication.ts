@@ -65,7 +65,7 @@ import {
 } from "src/utils/collectionHelpers";
 
 type PublishResult =
-  | { success: true; rkey: string; record: PubLeafletDocument.Record }
+  | { success: true; rkey: string; record: SiteStandardDocument.Record }
   | { success: false; error: OAuthSessionError };
 
 export async function publishToPublication({

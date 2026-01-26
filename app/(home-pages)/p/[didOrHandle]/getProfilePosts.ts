@@ -10,7 +10,7 @@ import {
 import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 
 export type Cursor = {
-  indexed_at: string;
+  sort_date: string;
   uri: string;
 };
 
@@ -29,13 +29,13 @@ export async function getProfilePosts(
       documents_in_publications(publications(*))`,
     )
     .like("uri", `at://${did}/%`)
-    .order("indexed_at", { ascending: false })
+    .order("sort_date", { ascending: false })
     .order("uri", { ascending: false })
     .limit(limit);
 
   if (cursor) {
     query = query.or(
-      `indexed_at.lt.${cursor.indexed_at},and(indexed_at.eq.${cursor.indexed_at},uri.lt.${cursor.uri})`,
+      `sort_date.lt.${cursor.sort_date},and(sort_date.eq.${cursor.sort_date},uri.lt.${cursor.uri})`,
     );
   }
 
@@ -79,7 +79,7 @@ export async function getProfilePosts(
       documents: {
         data: normalizedData,
         uri: doc.uri,
-        indexed_at: doc.indexed_at,
+        sort_date: doc.sort_date,
         comments_on_documents: doc.comments_on_documents,
         document_mentions_in_bsky: doc.document_mentions_in_bsky,
       },
@@ -99,7 +99,7 @@ export async function getProfilePosts(
   const nextCursor =
     posts.length === limit
       ? {
-          indexed_at: posts[posts.length - 1].documents.indexed_at,
+          sort_date: posts[posts.length - 1].documents.sort_date,
           uri: posts[posts.length - 1].documents.uri,
         }
       : null;

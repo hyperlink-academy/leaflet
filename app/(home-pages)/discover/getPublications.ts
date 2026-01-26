@@ -8,7 +8,7 @@ import {
 import { deduplicateByUri } from "src/utils/deduplicateRecords";
 
 export type Cursor = {
-  indexed_at?: string;
+  sort_date?: string;
   count?: number;
   uri: string;
 };
@@ -32,7 +32,7 @@ export async function getPublications(
     .or(
       "record->preferences->showInDiscover.is.null,record->preferences->>showInDiscover.eq.true",
     )
-    .order("indexed_at", {
+    .order("documents(sort_date)", {
       referencedTable: "documents_in_publications",
       ascending: false,
     })
@@ -64,10 +64,10 @@ export async function getPublications(
     } else {
       // recentlyUpdated
       const aDate = new Date(
-        a.documents_in_publications[0]?.indexed_at || 0,
+        a.documents_in_publications[0]?.documents?.sort_date || 0,
       ).getTime();
       const bDate = new Date(
-        b.documents_in_publications[0]?.indexed_at || 0,
+        b.documents_in_publications[0]?.documents?.sort_date || 0,
       ).getTime();
       if (bDate !== aDate) {
         return bDate - aDate;
@@ -89,11 +89,11 @@ export async function getPublications(
           (pubCount === cursor.count && pub.uri < cursor.uri)
         );
       } else {
-        const pubDate = pub.documents_in_publications[0]?.indexed_at || "";
+        const pubDate = pub.documents_in_publications[0]?.documents?.sort_date || "";
         // Find first pub after cursor
         return (
-          pubDate < (cursor.indexed_at || "") ||
-          (pubDate === cursor.indexed_at && pub.uri < cursor.uri)
+          pubDate < (cursor.sort_date || "") ||
+          (pubDate === cursor.sort_date && pub.uri < cursor.uri)
         );
       }
     });
@@ -117,7 +117,7 @@ export async function getPublications(
     normalizedPage.length > 0 && startIndex + limit < allPubs.length
       ? order === "recentlyUpdated"
         ? {
-            indexed_at: lastItem.documents_in_publications[0]?.indexed_at,
+            sort_date: lastItem.documents_in_publications[0]?.documents?.sort_date,
             uri: lastItem.uri,
           }
         : {
