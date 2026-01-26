@@ -80,6 +80,7 @@ export const PageWrapper = (props: {
   onClickAction?: (e: React.MouseEvent) => void;
   pageType: "canvas" | "doc";
   drawerOpen: boolean | undefined;
+  fixedWidth?: boolean;
 }) => {
   const cardBorderHidden = useCardBorderHidden();
   let { ref } = usePreserveScroll<HTMLDivElement>(props.id);
@@ -112,7 +113,7 @@ export const PageWrapper = (props: {
       }
       ${cardBorderHidden && "sm:h-[calc(100%+48px)] h-[calc(100%+20px)] sm:-my-6 -my-3 sm:pt-6 pt-3"}
       ${props.fullPageScroll && "max-w-full "}
-    ${props.pageType === "doc" && !props.fullPageScroll && "w-[10000px] sm:mx-0 max-w-[var(--page-width-units)]"}
+    ${props.pageType === "doc" && !props.fullPageScroll ? (props.fixedWidth ? "w-[10000px] sm:max-w-prose max-w-[var(--page-width-units)]" : "w-[10000px] sm:mx-0 max-w-[var(--page-width-units)]") : ""}
     ${
       props.pageType === "canvas" &&
       !props.fullPageScroll &&

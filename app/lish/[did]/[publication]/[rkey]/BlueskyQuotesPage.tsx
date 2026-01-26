@@ -7,7 +7,12 @@ import { DotLoader } from "components/utils/DotLoader";
 import { QuoteTiny } from "components/Icons/QuoteTiny";
 import { openPage } from "./PostPages";
 import { BskyPostContent } from "./BskyPostContent";
-import { QuotesLink, getQuotesKey, fetchQuotes, prefetchQuotes } from "./PostLinks";
+import {
+  QuotesLink,
+  getQuotesKey,
+  fetchQuotes,
+  prefetchQuotes,
+} from "./PostLinks";
 
 // Re-export for backwards compatibility
 export { QuotesLink, getQuotesKey, fetchQuotes, prefetchQuotes };
@@ -27,21 +32,21 @@ export function BlueskyQuotesPage(props: {
     data: quotesData,
     isLoading,
     error,
-  } = useSWR(postUri ? getQuotesKey(postUri) : null, () => fetchQuotes(postUri));
+  } = useSWR(postUri ? getQuotesKey(postUri) : null, () =>
+    fetchQuotes(postUri),
+  );
 
   return (
     <PageWrapper
       pageType="doc"
       fullPageScroll={false}
       id={`post-page-${pageId}`}
-      drawerOpen={!!drawer}
+      drawerOpen={false}
       pageOptions={pageOptions}
+      fixedWidth
     >
       <div className="flex flex-col sm:px-4 px-3 sm:pt-3 pt-2 pb-1 sm:pb-4">
-        <div className="text-secondary font-bold mb-3 flex items-center gap-2">
-          <QuoteTiny />
-          Bluesky Quotes
-        </div>
+        <h4 className="text-secondary font-bold mb-2">Bluesky Quotes</h4>
         {isLoading ? (
           <div className="flex items-center justify-center gap-1 text-tertiary italic text-sm py-8">
             <span>loading quotes</span>
@@ -68,38 +73,32 @@ function QuotesContent(props: { posts: PostView[]; postUri: string }) {
 
   return (
     <div className="flex flex-col gap-0">
-      {posts.map((post) => (
-        <QuotePost
-          key={post.uri}
-          post={post}
-          quotesUri={postUri}
-        />
+      {posts.map((post, index) => (
+        <>
+          <QuotePost key={post.uri} post={post} quotesUri={postUri} />
+          {posts.length !== index + 1 && (
+            <hr className="border-border-light my-4" />
+          )}
+        </>
       ))}
     </div>
   );
 }
 
-function QuotePost(props: {
-  post: PostView;
-  quotesUri: string;
-}) {
+function QuotePost(props: { post: PostView; quotesUri: string }) {
   const { post, quotesUri } = props;
   const parent = { type: "quotes" as const, uri: quotesUri };
 
   return (
-    <div
-      className="flex gap-2 relative py-2 px-2 hover:bg-bg-page rounded cursor-pointer"
-      onClick={() => openPage(parent, { type: "thread", uri: post.uri })}
-    >
-      <BskyPostContent
-        post={post}
-        parent={parent}
-        linksEnabled={true}
-        showEmbed={true}
-        showBlueskyLink={true}
-        onLinkClick={(e) => e.stopPropagation()}
-        onEmbedClick={(e) => e.stopPropagation()}
-      />
-    </div>
+    <BskyPostContent
+      post={post}
+      parent={parent}
+      showEmbed={true}
+      compactEmbed
+      showBlueskyLink={true}
+      quoteEnabled
+      replyEnabled
+      className="relative rounded text-sm"
+    />
   );
 }

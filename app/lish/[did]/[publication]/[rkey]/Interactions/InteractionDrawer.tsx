@@ -1,9 +1,9 @@
 "use client";
 import { Media } from "components/Media";
-import { Quotes } from "./Quotes";
+import { MentionsDrawerContent } from "./Quotes";
 import { InteractionState, useInteractionState } from "./Interactions";
 import { Json } from "supabase/database.types";
-import { Comment, Comments } from "./Comments";
+import { Comment, CommentsDrawerContent } from "./Comments";
 import { useSearchParams } from "next/navigation";
 import { SandwichSpacer } from "components/LeafletLayout";
 import { decodeQuotePosition } from "../quotePosition";
@@ -42,9 +42,12 @@ export const InteractionDrawer = (props: {
           className={`opaque-container  h-full w-full px-3 sm:px-4 pt-2 sm:pt-3 pb-6  overflow-scroll  ${props.showPageBackground ? "rounded-l-none! rounded-r-lg! -ml-[1px]" : "rounded-lg! sm:ml-4"}`}
         >
           {drawer.drawer === "quotes" ? (
-            <Quotes {...props} quotesAndMentions={filteredQuotesAndMentions} />
+            <MentionsDrawerContent
+              {...props}
+              quotesAndMentions={filteredQuotesAndMentions}
+            />
           ) : (
-            <Comments
+            <CommentsDrawerContent
               document_uri={props.document_uri}
               comments={filteredComments}
               pageId={props.pageId}

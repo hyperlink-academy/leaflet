@@ -15,7 +15,10 @@ import { PostPages } from "./PostPages";
 import { extractCodeBlocks } from "./extractCodeBlocks";
 import { LeafletLayout } from "components/LeafletLayout";
 import { fetchPollData } from "./fetchPollData";
-import { getDocumentPages, hasLeafletContent } from "src/utils/normalizeRecords";
+import {
+  getDocumentPages,
+  hasLeafletContent,
+} from "src/utils/normalizeRecords";
 import { DocumentProvider } from "contexts/DocumentContext";
 import { LeafletContentProvider } from "contexts/LeafletContentContext";
 
@@ -118,8 +121,15 @@ export async function DocumentPageRenderer({
   return (
     <DocumentProvider value={document}>
       <LeafletContentProvider value={{ pages }}>
-        <PublicationThemeProvider theme={document.theme} pub_creator={pub_creator} isStandalone={isStandalone}>
-          <PublicationBackgroundProvider theme={document.theme} pub_creator={pub_creator}>
+        <PublicationThemeProvider
+          theme={document.theme}
+          pub_creator={pub_creator}
+          isStandalone={isStandalone}
+        >
+          <PublicationBackgroundProvider
+            theme={document.theme}
+            pub_creator={pub_creator}
+          >
             <LeafletLayout>
               <PostPages
                 document_uri={document.uri}
@@ -127,7 +137,7 @@ export async function DocumentPageRenderer({
                 pubRecord={pubRecord}
                 profile={JSON.parse(JSON.stringify(profile.data))}
                 document={document}
-                bskyPostData={bskyPostData}
+                bskyPostData={JSON.parse(JSON.stringify(bskyPostData))}
                 did={did}
                 prerenderedCodeBlocks={prerenderedCodeBlocks}
                 pollData={pollData}

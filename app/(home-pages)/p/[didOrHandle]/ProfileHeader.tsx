@@ -23,7 +23,7 @@ export const ProfileHeader = (props: {
       src={profileRecord.avatar}
       displayName={profileRecord.displayName}
       className="profileAvatar mx-auto mt-3 sm:mt-4"
-      giant
+      size="giant"
     />
   );
 
@@ -100,7 +100,10 @@ const ProfileLinks = (props: { handle: string }) => {
     </div>
   );
 };
-const PublicationCard = (props: { record: NormalizedPublication; uri: string }) => {
+const PublicationCard = (props: {
+  record: NormalizedPublication;
+  uri: string;
+}) => {
   const { record, uri } = props;
   const { bgLeaflet, bgPage, primary } = usePubTheme(record.theme);
 

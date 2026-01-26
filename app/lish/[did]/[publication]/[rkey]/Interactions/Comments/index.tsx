@@ -25,7 +25,7 @@ export type Comment = {
   uri: string;
   bsky_profiles: { record: Json; did: string } | null;
 };
-export function Comments(props: {
+export function CommentsDrawerContent(props: {
   document_uri: string;
   comments: Comment[];
   pageId?: string;
@@ -55,8 +55,8 @@ export function Comments(props: {
       id={"commentsDrawer"}
       className="flex flex-col gap-2 relative text-sm text-secondary"
     >
-      <div className="w-full flex justify-between text-secondary font-bold">
-        Comments
+      <div className="w-full flex justify-between">
+        <h4> Comments</h4>
         <button
           className="text-tertiary"
           onClick={() =>
@@ -75,7 +75,7 @@ export function Comments(props: {
         </div>
       )}
       <hr className="border-border-light" />
-      <div className="flex flex-col gap-6 py-2">
+      <div className="flex flex-col gap-4 py-2">
         {comments
           .sort((a, b) => {
             let aRecord = a.record as PubLeafletComment.Record;
@@ -119,26 +119,23 @@ const Comment = (props: {
 }) => {
   const did = props.comment.bsky_profiles?.did;
 
-  let timeAgoDate = timeAgo(props.record.createdAt);
-  const formattedDate = useLocalizedDate(props.record.createdAt, {
-    year: "numeric",
-    month: "long",
-    day: "2-digit",
-  });
+  let timeAgoDate = timeAgo(props.record.createdAt, { compact: true });
 
   return (
     <div id={props.comment.uri} className="comment">
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
         {did ? (
           <ProfilePopover
             didOrHandle={did}
             trigger={
-              <div className="text-sm text-tertiary font-bold hover:underline">
+              <div className="text-sm text-secondary font-bold hover:underline">
                 {props.profile.displayName}
               </div>
             }
           />
         ) : null}
+
+        <div className="w-1 h-1 rounded-full bg-border shrink-0" />
         <div className="text-sm text-tertiary">{timeAgoDate}</div>
       </div>
       {props.record.attachment &&
@@ -210,7 +207,8 @@ const Replies = (props: {
             setReplyBoxOpen(false);
           }}
         >
-          <CommentTiny className="text-border" /> {replies.length}
+          <CommentTiny className="text-border" />{" "}
+          {replies.length !== 0 && replies.length}
         </button>
         {identity?.atp_did && (
           <>
