@@ -2,10 +2,12 @@
 -- This column stores the older of publishedAt (from JSON data) or indexed_at
 -- Used for sorting feeds chronologically by when content was actually published
 
+-- Note: We use ::timestamp AT TIME ZONE 'UTC' to make the expression immutable
+-- (direct ::timestamptz cast is not immutable as it depends on session timezone)
 ALTER TABLE documents
 ADD COLUMN sort_date timestamptz GENERATED ALWAYS AS (
   LEAST(
-    COALESCE((data->>'publishedAt')::timestamptz, indexed_at),
+    COALESCE((data->>'publishedAt')::timestamp AT TIME ZONE 'UTC', indexed_at),
     indexed_at
   )
 ) STORED;
