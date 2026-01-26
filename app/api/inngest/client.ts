@@ -46,6 +46,11 @@ export type Events = {
       did: string;
     };
   };
+  "documents/fix-postref": {
+    data: {
+      documentUris?: string[];
+    };
+  };
 };
 
 // Create a client to send and receive events
