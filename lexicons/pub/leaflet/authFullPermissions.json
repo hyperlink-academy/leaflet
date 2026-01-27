@@ -21,7 +21,8 @@
             "pub.leaflet.comment",
             "pub.leaflet.poll.definition",
             "pub.leaflet.poll.vote",
-            "pub.leaflet.graph.subscription"
+            "pub.leaflet.graph.subscription",
+            "pub.leaflet.interactions.recommend"
           ]
         }
       ]
