@@ -1075,6 +1075,45 @@ export type Database = {
           },
         ]
       }
+      recommends_on_documents: {
+        Row: {
+          document: string
+          indexed_at: string
+          recommender_did: string
+          record: Json
+          uri: string
+        }
+        Insert: {
+          document: string
+          indexed_at?: string
+          recommender_did: string
+          record: Json
+          uri: string
+        }
+        Update: {
+          document?: string
+          indexed_at?: string
+          recommender_did?: string
+          record?: Json
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommends_on_documents_document_fkey"
+            columns: ["document"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["uri"]
+          },
+          {
+            foreignKeyName: "recommends_on_documents_recommender_did_fkey"
+            columns: ["recommender_did"]
+            isOneToOne: false
+            referencedRelation: "identities"
+            referencedColumns: ["atp_did"]
+          },
+        ]
+      }
       replicache_clients: {
         Row: {
           client_group: string
@@ -1303,6 +1342,12 @@ export type Database = {
         Returns: {
           like: unknown
         }[]
+      }
+      parse_iso_timestamp: {
+        Args: {
+          "": string
+        }
+        Returns: string
       }
       pull_data: {
         Args: {
