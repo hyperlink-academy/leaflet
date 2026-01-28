@@ -30,15 +30,6 @@ export const InteractionPreview = (props: {
 
   return (
     <div className={`flex gap-2 text-tertiary text-sm  items-center`}>
-      {tagsCount === 0 ? null : (
-        <>
-          <TagPopover tags={props.tags!} />
-          {interactionsAvailable || props.share ? (
-            <Separator classname="h-4!" />
-          ) : null}
-        </>
-      )}
-
       <RecommendButton
         documentUri={props.documentUri}
         recommendsCount={props.recommendsCount}
@@ -62,11 +53,16 @@ export const InteractionPreview = (props: {
           <CommentTiny /> {props.commentsCount}
         </SpeedyLink>
       )}
-      {interactionsAvailable && props.share ? (
-        <Separator classname="h-4! !min-h-0" />
-      ) : null}
+      {tagsCount === 0 ? null : (
+        <>
+          {interactionsAvailable ? <Separator classname="h-4!" /> : null}
+          <TagPopover tags={props.tags!} />
+        </>
+      )}
       {props.share && (
         <>
+          <Separator classname="h-4!" />
+
           <button
             id={`copy-post-link-${props.postUrl}`}
             className="flex gap-1 items-center hover:text-accent-contrast relative"

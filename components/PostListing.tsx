@@ -89,7 +89,9 @@ export const PostListing = (props: Post) => {
         >
           <h3 className="text-primary truncate">{postRecord.title}</h3>
 
-          <p className="text-secondary italic">{postRecord.description}</p>
+          <p className="text-secondary italic line-clamp-3">
+            {postRecord.description}
+          </p>
           <div className="flex flex-col-reverse md:flex-row md gap-2 text-sm text-tertiary items-center justify-start pt-1.5 md:pt-3 w-full">
             {props.publication && pubRecord && (
               <PubInfo

@@ -148,7 +148,7 @@ export default async function Publication(props: {
                           </p>
                         </SpeedyLink>
 
-                        <div className="text-sm text-tertiary flex gap-1 flex-wrap pt-2 items-center">
+                        <div className="justify-between w-full text-sm text-tertiary flex gap-1 flex-wrap pt-2 items-center">
                           <p className="text-sm text-tertiary ">
                             {doc_record.publishedAt && (
                               <LocalizedDate
@@ -161,11 +161,7 @@ export default async function Publication(props: {
                               />
                             )}{" "}
                           </p>
-                          {comments > 0 || quotes > 0 || tags.length > 0 ? (
-                            <Separator classname="h-4! mx-1" />
-                          ) : (
-                            ""
-                          )}
+
                           <InteractionPreview
                             quotesCount={quotes}
                             commentsCount={comments}

@@ -19,6 +19,8 @@ import { ManageSubscription, SubscribeWithBluesky } from "app/lish/Subscribe";
 import { EditTiny } from "components/Icons/EditTiny";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
 import { RecommendButton } from "components/RecommendButton";
+import { ButtonSecondary } from "components/Buttons";
+import { Separator } from "components/Layout";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -130,15 +132,28 @@ export const Interactions = (props: {
   const tags = normalizedDocument.tags;
   const tagCount = tags?.length || 0;
 
+  let interactionsAvailable = props.showComments || props.showMentions;
+
   return (
-    <div className={`flex gap-2 text-tertiary text-sm ${props.className}`}>
-      {tagCount > 0 && <TagPopover tags={tags} tagCount={tagCount} />}
+    <div
+      className={`flex gap-2 text-tertiary text-sm item-center ${props.className}`}
+    >
+      {/*COMMENT BUTTON*/}
+      {props.showComments === false ? null : (
+        <button
+          className="flex gap-2 items-center w-fit"
+          onClick={() => {
+            if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
+              openInteractionDrawer("comments", document_uri, props.pageId);
+            else setInteractionState(document_uri, { drawerOpen: false });
+          }}
+          aria-label="Post comments"
+        >
+          <CommentTiny aria-hidden /> {props.commentsCount}
+        </button>
+      )}
 
-      <RecommendButton
-        documentUri={document_uri}
-        recommendsCount={props.recommendsCount}
-      />
-
+      {/*MENTIONS BUTTON*/}
       {props.quotesCount === 0 || props.showMentions === false ? null : (
         <button
           className="flex w-fit gap-2 items-center"
@@ -154,19 +169,12 @@ export const Interactions = (props: {
           <QuoteTiny aria-hidden /> {props.quotesCount}
         </button>
       )}
-      {props.showComments === false ? null : (
-        <button
-          className="flex gap-2 items-center w-fit"
-          onClick={() => {
-            if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
-              openInteractionDrawer("comments", document_uri, props.pageId);
-            else setInteractionState(document_uri, { drawerOpen: false });
-          }}
-          aria-label="Post comments"
-        >
-          <CommentTiny aria-hidden /> {props.commentsCount}
-        </button>
-      )}
+      <RecommendButton
+        documentUri={document_uri}
+        recommendsCount={props.recommendsCount}
+      />
+      <Separator classname="h-4!" />
+      {tagCount > 0 && <TagPopover tags={tags} tagCount={tagCount} />}
     </div>
   );
 };
@@ -209,9 +217,6 @@ export const ExpandedInteractions = (props: {
       (s) => s.identity === identity.atp_did,
     );
 
-  let isAuthor =
-    identity && identity.atp_did === publication?.identity_did && leafletId;
-
   return (
     <div
       className={`text-tertiary px-3 sm:px-4 flex flex-col ${props.className}`}
@@ -231,14 +236,14 @@ export const ExpandedInteractions = (props: {
           <div />
         ) : (
           <>
-            <div className="flex gap-2">
+            <div className="flex gap-2 sm:flex-row flex-col">
               <RecommendButton
                 documentUri={document_uri}
                 recommendsCount={props.recommendsCount}
+                expanded
               />
               {props.quotesCount === 0 || !props.showMentions ? null : (
-                <button
-                  className="flex w-fit gap-2 items-center px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
+                <ButtonSecondary
                   onClick={() => {
                     if (!drawerOpen || drawer !== "quotes")
                       openInteractionDrawer(
@@ -253,15 +258,21 @@ export const ExpandedInteractions = (props: {
                   onTouchStart={handleQuotePrefetch}
                   aria-label="Post quotes"
                 >
-                  <QuoteTiny aria-hidden /> {props.quotesCount}{" "}
+                  <QuoteTiny aria-hidden /> {props.quotesCount}
+                  {props.quotesCount > 0 && (
+                    <>
+                      {props.quotesCount}
+                      <Separator classname="h-4! text-accent-contrast!" />
+                    </>
+                  )}
+                  Mention
                   <span
                     aria-hidden
                   >{`Mention${props.quotesCount === 1 ? "" : "s"}`}</span>
-                </button>
+                </ButtonSecondary>
               )}
               {!props.showComments ? null : (
-                <button
-                  className="flex gap-2 items-center w-fit px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
+                <ButtonSecondary
                   onClick={() => {
                     if (
                       !drawerOpen ||
@@ -279,14 +290,14 @@ export const ExpandedInteractions = (props: {
                   aria-label="Post comments"
                 >
                   <CommentTiny aria-hidden />{" "}
-                  {props.commentsCount > 0 ? (
-                    <span aria-hidden>
-                      {`${props.commentsCount} Comment${props.commentsCount === 1 ? "" : "s"}`}
-                    </span>
-                  ) : (
-                    "Comment"
+                  {props.commentsCount > 0 && (
+                    <>
+                      {props.commentsCount}
+                      <Separator classname="h-4! text-accent-contrast!" />
+                    </>
                   )}
-                </button>
+                  Comment
+                </ButtonSecondary>
               )}
             </div>
           </>
@@ -388,7 +399,7 @@ const EditButton = (props: {
     return (
       <a
         href={`https://leaflet.pub/${props.leafletId}`}
-        className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-lg !border-accent-1 !outline-accent-1"
+        className="flex gap-2 items-center hover:!no-underline selected-outline px-2 py-0.5 bg-accent-1 text-accent-2 font-bold w-fit rounded-md !border-accent-1 !outline-accent-1 h-fit"
       >
         <EditTiny /> Edit Post
       </a>

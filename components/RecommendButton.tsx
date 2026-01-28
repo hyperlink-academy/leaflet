@@ -11,12 +11,16 @@ import {
 import { callRPC } from "app/api/rpc/client";
 import { useToaster } from "./Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "./OAuthError";
+import { ButtonSecondary } from "./Buttons";
+import { Separator } from "./Layout";
 
 // Create a batcher for recommendation checks
 // Batches requests made within 10ms window
 const recommendationBatcher = create({
   fetcher: async (documentUris: string[]) => {
-    const response = await callRPC("get_user_recommendations", { documentUris });
+    const response = await callRPC("get_user_recommendations", {
+      documentUris,
+    });
     return response.result;
   },
   resolver: (results, documentUri) => results[documentUri] ?? false,
@@ -52,9 +56,11 @@ export function RecommendButton(props: {
   documentUri: string;
   recommendsCount: number;
   className?: string;
-  showCount?: boolean;
+  expanded?: boolean;
 }) {
-  const { hasRecommended, isLoading } = useUserRecommendation(props.documentUri);
+  const { hasRecommended, isLoading } = useUserRecommendation(
+    props.documentUri,
+  );
   const [count, setCount] = useState(props.recommendsCount);
   const [isPending, setIsPending] = useState(false);
   const [optimisticRecommended, setOptimisticRecommended] = useState<
@@ -101,7 +107,35 @@ export function RecommendButton(props: {
     setIsPending(false);
   };
 
-  const showCount = props.showCount !== false;
+  if (props.expanded)
+    return (
+      <ButtonSecondary
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleClick();
+        }}
+      >
+        {displayRecommended ? (
+          <RecommendTinyFilled className="text-accent-contrast" />
+        ) : (
+          <RecommendTinyEmpty />
+        )}
+        <div className="flex gap-2 items-center">
+          {count > 0 && (
+            <>
+              <span
+                className={`${displayRecommended && "text-accent-contrast"}`}
+              >
+                {count}
+              </span>
+              <Separator classname="h-4! text-accent-contrast!" />
+            </>
+          )}
+          {displayRecommended ? "You recommend!" : "Recommend"}
+        </div>
+      </ButtonSecondary>
+    );
 
   return (
     <button
@@ -111,7 +145,7 @@ export function RecommendButton(props: {
         handleClick();
       }}
       disabled={isPending || isLoading}
-      className={`recommendButton flex gap-1  items-center hover:text-accent-contrast ${props.className || ""}`}
+      className={`recommendButton relative flex gap-1  items-center hover:text-accent-contrast ${props.className || ""}`}
       aria-label={displayRecommended ? "Remove recommend" : "Recommend"}
     >
       {displayRecommended ? (
@@ -119,7 +153,7 @@ export function RecommendButton(props: {
       ) : (
         <RecommendTinyEmpty />
       )}
-      {showCount && count > 0 && (
+      {count > 0 && (
         <span className={`${displayRecommended && "text-accent-contrast"}`}>
           {count}
         </span>
