@@ -89,10 +89,11 @@ export async function GET(
         // Trigger migration if identity needs it
         const metadata = identity?.metadata as Record<string, unknown> | null;
         if (metadata?.needsStandardSiteMigration) {
-          await inngest.send({
-            name: "user/migrate-to-standard",
-            data: { did: session.did },
-          });
+          if (process.env.NODE_ENV === "production")
+            await inngest.send({
+              name: "user/migrate-to-standard",
+              data: { did: session.did },
+            });
         }
 
         let { data: token } = await supabaseServerClient
@@ -104,7 +105,7 @@ export async function GET(
           })
           .select()
           .single();
-
+        console.log({ token });
         if (token) await setAuthToken(token.id);
 
         // Process successful authentication here
@@ -113,6 +114,7 @@ export async function GET(
         console.log("User authenticated as:", session.did);
         return handleAction(s.action, redirectPath);
       } catch (e) {
+        console.log(e);
         redirect(redirectPath);
       }
     }

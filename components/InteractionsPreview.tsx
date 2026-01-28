@@ -7,10 +7,14 @@ import { Tag } from "./Tags";
 import { Popover } from "./Popover";
 import { TagTiny } from "./Icons/TagTiny";
 import { SpeedyLink } from "./SpeedyLink";
+import { RecommendButton } from "./RecommendButton";
 
 export const InteractionPreview = (props: {
   quotesCount: number;
   commentsCount: number;
+  recommendsCount: number;
+  hasRecommended: boolean;
+  documentUri: string;
   tags?: string[];
   postUrl: string;
   showComments: boolean;
@@ -26,9 +30,7 @@ export const InteractionPreview = (props: {
   const tagsCount = props.tags?.length || 0;
 
   return (
-    <div
-      className={`flex gap-2 text-tertiary text-sm  items-center self-start`}
-    >
+    <div className={`flex gap-2 text-tertiary text-sm  items-center`}>
       {tagsCount === 0 ? null : (
         <>
           <TagPopover tags={props.tags!} />
@@ -37,6 +39,12 @@ export const InteractionPreview = (props: {
           ) : null}
         </>
       )}
+
+      <RecommendButton
+        documentUri={props.documentUri}
+        recommendsCount={props.recommendsCount}
+        hasRecommended={props.hasRecommended}
+      />
 
       {!props.showMentions || props.quotesCount === 0 ? null : (
         <SpeedyLink

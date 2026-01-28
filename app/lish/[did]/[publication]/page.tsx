@@ -38,7 +38,8 @@ export default async function Publication(props: {
         documents_in_publications(documents(
           *,
           comments_on_documents(count),
-          document_mentions_in_bsky(count)
+          document_mentions_in_bsky(count),
+          recommends_on_documents(count)
         ))
       `,
       )
@@ -119,7 +120,9 @@ export default async function Publication(props: {
                 })
                 .map((doc) => {
                   if (!doc.documents) return null;
-                  const doc_record = normalizeDocumentRecord(doc.documents.data);
+                  const doc_record = normalizeDocumentRecord(
+                    doc.documents.data,
+                  );
                   if (!doc_record) return null;
                   let uri = new AtUri(doc.documents.uri);
                   let quotes =
@@ -128,6 +131,8 @@ export default async function Publication(props: {
                     record?.preferences?.showComments === false
                       ? 0
                       : doc.documents.comments_on_documents[0].count || 0;
+                  let recommends =
+                    doc.documents.recommends_on_documents?.[0]?.count || 0;
                   let tags = doc_record.tags || [];
 
                   return (
@@ -164,6 +169,9 @@ export default async function Publication(props: {
                           <InteractionPreview
                             quotesCount={quotes}
                             commentsCount={comments}
+                            recommendsCount={recommends}
+                            hasRecommended={false}
+                            documentUri={doc.documents.uri}
                             tags={tags}
                             postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}
                             showComments={

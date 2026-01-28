@@ -53,6 +53,7 @@ export const PostListing = (props: Post) => {
     pubRecord?.preferences?.showComments === false
       ? 0
       : props.documents.comments_on_documents?.[0]?.count || 0;
+  let recommends = props.documents.recommends_on_documents?.[0]?.count || 0;
   let tags = (postRecord?.tags as string[] | undefined) || [];
 
   // For standalone posts, link directly to the document
@@ -103,6 +104,9 @@ export const PostListing = (props: Post) => {
                 postUrl={postHref}
                 quotesCount={quotes}
                 commentsCount={comments}
+                recommendsCount={recommends}
+                hasRecommended={false}
+                documentUri={props.documents.uri}
                 tags={tags}
                 showComments={pubRecord?.preferences?.showComments !== false}
                 showMentions={pubRecord?.preferences?.showMentions !== false}

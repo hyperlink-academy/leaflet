@@ -8,8 +8,12 @@ import {
 } from "src/utils/normalizeRecords";
 import { PubLeafletPublication, SiteStandardPublication } from "lexicons/api";
 import { documentUriFilter } from "src/utils/uriHelpers";
+import { getIdentityData } from "actions/getIdentityData";
 
 export async function getPostPageData(did: string, rkey: string) {
+  const identity = await getIdentityData();
+  const currentUserDid = identity?.atp_did;
+
   let { data: documents } = await supabaseServerClient
     .from("documents")
     .select(
@@ -22,7 +26,8 @@ export async function getPostPageData(did: string, rkey: string) {
           publication_subscriptions(*))
         ),
         document_mentions_in_bsky(*),
-        leaflets_in_publications(*)
+        leaflets_in_publications(*),
+        recommends_on_documents(count)
         `,
     )
     .or(documentUriFilter(did, rkey))
@@ -32,13 +37,28 @@ export async function getPostPageData(did: string, rkey: string) {
 
   if (!document) return null;
 
+  // Check if current user has recommended this document
+  let hasRecommended = false;
+  if (currentUserDid) {
+    const { data: userRecommend } = await supabaseServerClient
+      .from("recommends_on_documents")
+      .select("uri")
+      .eq("document", document.uri)
+      .eq("recommender_did", currentUserDid)
+      .limit(1);
+    hasRecommended = (userRecommend?.length ?? 0) > 0;
+  }
+
   // Normalize the document record - this is the primary way consumers should access document data
-  const normalizedDocument = normalizeDocumentRecord(document.data, document.uri);
+  const normalizedDocument = normalizeDocumentRecord(
+    document.data,
+    document.uri,
+  );
   if (!normalizedDocument) return null;
 
   // Normalize the publication record - this is the primary way consumers should access publication data
   const normalizedPublication = normalizePublicationRecord(
-    document.documents_in_publications[0]?.publications?.record
+    document.documents_in_publications[0]?.publications?.record,
   );
 
   // Fetch constellation backlinks for mentions
@@ -83,7 +103,10 @@ export async function getPostPageData(did: string, rkey: string) {
     // Filter and sort documents by publishedAt
     const sortedDocs = allDocs
       .map((dip) => {
-        const normalizedData = normalizeDocumentRecord(dip?.documents?.data, dip?.documents?.uri);
+        const normalizedData = normalizeDocumentRecord(
+          dip?.documents?.data,
+          dip?.documents?.uri,
+        );
         return {
           uri: dip?.documents?.uri,
           title: normalizedData?.title,
@@ -98,7 +121,9 @@ export async function getPostPageData(did: string, rkey: string) {
       );
 
     // Find current document index
-    const currentIndex = sortedDocs.findIndex((doc) => doc.uri === document.uri);
+    const currentIndex = sortedDocs.findIndex(
+      (doc) => doc.uri === document.uri,
+    );
 
     if (currentIndex !== -1) {
       prevNext = {
@@ -122,13 +147,21 @@ export async function getPostPageData(did: string, rkey: string) {
 
   // Build explicit publication context for consumers
   const rawPub = document.documents_in_publications[0]?.publications;
-  const publication = rawPub ? {
-    uri: rawPub.uri,
-    name: rawPub.name,
-    identity_did: rawPub.identity_did,
-    record: rawPub.record as PubLeafletPublication.Record | SiteStandardPublication.Record | null,
-    publication_subscriptions: rawPub.publication_subscriptions || [],
-  } : null;
+  const publication = rawPub
+    ? {
+        uri: rawPub.uri,
+        name: rawPub.name,
+        identity_did: rawPub.identity_did,
+        record: rawPub.record as
+          | PubLeafletPublication.Record
+          | SiteStandardPublication.Record
+          | null,
+        publication_subscriptions: rawPub.publication_subscriptions || [],
+      }
+    : null;
+
+  // Get recommends count from the aggregated query result
+  const recommendsCount = document.recommends_on_documents?.[0]?.count ?? 0;
 
   return {
     ...document,
@@ -143,6 +176,9 @@ export async function getPostPageData(did: string, rkey: string) {
     comments: document.comments_on_documents,
     mentions: document.document_mentions_in_bsky,
     leafletId: document.leaflets_in_publications[0]?.leaflet || null,
+    // Recommends data
+    recommendsCount,
+    hasRecommended,
   };
 }
 

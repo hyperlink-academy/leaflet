@@ -18,6 +18,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import { ManageSubscription, SubscribeWithBluesky } from "app/lish/Subscribe";
 import { EditTiny } from "components/Icons/EditTiny";
 import { getPublicationURL } from "app/lish/createPub/getPublicationURL";
+import { RecommendButton } from "components/RecommendButton";
 
 export type InteractionState = {
   drawerOpen: undefined | boolean;
@@ -105,12 +106,18 @@ export function openInteractionDrawer(
 export const Interactions = (props: {
   quotesCount: number;
   commentsCount: number;
+  recommendsCount: number;
+  hasRecommended: boolean;
   className?: string;
   showComments: boolean;
   showMentions: boolean;
   pageId?: string;
 }) => {
-  const { uri: document_uri, quotesAndMentions, normalizedDocument } = useDocument();
+  const {
+    uri: document_uri,
+    quotesAndMentions,
+    normalizedDocument,
+  } = useDocument();
   let { identity } = useIdentityData();
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
@@ -127,6 +134,12 @@ export const Interactions = (props: {
   return (
     <div className={`flex gap-2 text-tertiary text-sm ${props.className}`}>
       {tagCount > 0 && <TagPopover tags={tags} tagCount={tagCount} />}
+
+      <RecommendButton
+        documentUri={document_uri}
+        recommendsCount={props.recommendsCount}
+        hasRecommended={props.hasRecommended}
+      />
 
       {props.quotesCount === 0 || props.showMentions === false ? null : (
         <button
@@ -163,12 +176,20 @@ export const Interactions = (props: {
 export const ExpandedInteractions = (props: {
   quotesCount: number;
   commentsCount: number;
+  recommendsCount: number;
+  hasRecommended: boolean;
   className?: string;
   showComments: boolean;
   showMentions: boolean;
   pageId?: string;
 }) => {
-  const { uri: document_uri, quotesAndMentions, normalizedDocument, publication, leafletId } = useDocument();
+  const {
+    uri: document_uri,
+    quotesAndMentions,
+    normalizedDocument,
+    publication,
+    leafletId,
+  } = useDocument();
   let { identity } = useIdentityData();
 
   let { drawerOpen, drawer, pageId } = useInteractionState(document_uri);
@@ -192,9 +213,7 @@ export const ExpandedInteractions = (props: {
     );
 
   let isAuthor =
-    identity &&
-    identity.atp_did === publication?.identity_did &&
-    leafletId;
+    identity && identity.atp_did === publication?.identity_did && leafletId;
 
   return (
     <div
@@ -216,6 +235,11 @@ export const ExpandedInteractions = (props: {
         ) : (
           <>
             <div className="flex gap-2">
+              <RecommendButton
+                documentUri={document_uri}
+                recommendsCount={props.recommendsCount}
+                hasRecommended={props.hasRecommended}
+              />
               {props.quotesCount === 0 || !props.showMentions ? null : (
                 <button
                   className="flex w-fit gap-2 items-center px-1 py-0.5 border border-border-light rounded-lg trasparent-outline selected-outline"
@@ -313,7 +337,10 @@ const TagList = (props: { className?: string; tags: string[] | undefined }) => {
     </div>
   );
 };
-export function getQuoteCount(quotesAndMentions: { uri: string; link?: string }[], pageId?: string) {
+export function getQuoteCount(
+  quotesAndMentions: { uri: string; link?: string }[],
+  pageId?: string,
+) {
   return getQuoteCountFromArray(quotesAndMentions, pageId);
 }
 
@@ -338,7 +365,10 @@ export function getQuoteCountFromArray(
   }
 }
 
-export function getCommentCount(comments: CommentOnDocument[], pageId?: string) {
+export function getCommentCount(
+  comments: CommentOnDocument[],
+  pageId?: string,
+) {
   if (pageId)
     return comments.filter(
       (c) => (c.record as PubLeafletComment.Record)?.onPage === pageId,
