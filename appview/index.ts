@@ -11,6 +11,7 @@ import {
   PubLeafletComment,
   PubLeafletPollVote,
   PubLeafletPollDefinition,
+  PubLeafletInteractionsRecommend,
   SiteStandardDocument,
   SiteStandardPublication,
   SiteStandardGraphSubscription,
@@ -48,6 +49,7 @@ async function main() {
       ids.PubLeafletComment,
       ids.PubLeafletPollVote,
       ids.PubLeafletPollDefinition,
+      ids.PubLeafletInteractionsRecommend,
       // ids.AppBskyActorProfile,
       "app.bsky.feed.post",
       ids.SiteStandardDocument,
@@ -206,6 +208,28 @@ async function handleEvent(evt: Event) {
     if (evt.event === "delete") {
       await supabase
         .from("atp_poll_records")
+        .delete()
+        .eq("uri", evt.uri.toString());
+    }
+  }
+  if (evt.collection === ids.PubLeafletInteractionsRecommend) {
+    if (evt.event === "create" || evt.event === "update") {
+      let record = PubLeafletInteractionsRecommend.validateRecord(evt.record);
+      if (!record.success) return;
+      await supabase
+        .from("identities")
+        .upsert({ atp_did: evt.did }, { onConflict: "atp_did" });
+      let { error } = await supabase.from("recommends_on_documents").upsert({
+        uri: evt.uri.toString(),
+        recommender_did: evt.did,
+        document: record.value.subject,
+        record: record.value as Json,
+      });
+      if (error) console.log("Error upserting recommend:", error);
+    }
+    if (evt.event === "delete") {
+      await supabase
+        .from("recommends_on_documents")
         .delete()
         .eq("uri", evt.uri.toString());
     }

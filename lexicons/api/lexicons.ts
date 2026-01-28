@@ -1517,6 +1517,31 @@ export const schemaDict = {
       },
     },
   },
+  PubLeafletInteractionsRecommend: {
+    lexicon: 1,
+    id: 'pub.leaflet.interactions.recommend',
+    defs: {
+      main: {
+        type: 'record',
+        key: 'tid',
+        description: 'Record representing a recommend on a document',
+        record: {
+          type: 'object',
+          required: ['subject', 'createdAt'],
+          properties: {
+            subject: {
+              type: 'string',
+              format: 'at-uri',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'datetime',
+            },
+          },
+        },
+      },
+    },
+  },
   PubLeafletPagesCanvas: {
     lexicon: 1,
     id: 'pub.leaflet.pages.canvas',
@@ -2418,6 +2443,7 @@ export const ids = {
   PubLeafletContent: 'pub.leaflet.content',
   PubLeafletDocument: 'pub.leaflet.document',
   PubLeafletGraphSubscription: 'pub.leaflet.graph.subscription',
+  PubLeafletInteractionsRecommend: 'pub.leaflet.interactions.recommend',
   PubLeafletPagesCanvas: 'pub.leaflet.pages.canvas',
   PubLeafletPagesLinearDocument: 'pub.leaflet.pages.linearDocument',
   PubLeafletPollDefinition: 'pub.leaflet.poll.definition',
