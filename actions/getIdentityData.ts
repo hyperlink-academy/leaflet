@@ -42,7 +42,6 @@ export async function uncachedGetIdentityData() {
         .eq("confirmed", true)
         .single()
     : null;
-  console.log(auth_res);
   if (!auth_res?.data?.identities) return null;
   if (auth_res.data.identities.atp_did) {
     //I should create a relationship table so I can do this in the above query

@@ -92,7 +92,6 @@ export function PostHeader(props: {
               getCommentCount(document?.comments_on_documents || []) || 0
             }
             recommendsCount={document?.recommendsCount || 0}
-            hasRecommended={document?.hasRecommended || false}
           />
         </>
       }

@@ -13,7 +13,6 @@ export const InteractionPreview = (props: {
   quotesCount: number;
   commentsCount: number;
   recommendsCount: number;
-  hasRecommended: boolean;
   documentUri: string;
   tags?: string[];
   postUrl: string;
@@ -43,7 +42,6 @@ export const InteractionPreview = (props: {
       <RecommendButton
         documentUri={props.documentUri}
         recommendsCount={props.recommendsCount}
-        hasRecommended={props.hasRecommended}
       />
 
       {!props.showMentions || props.quotesCount === 0 ? null : (

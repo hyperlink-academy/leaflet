@@ -107,7 +107,6 @@ export const Interactions = (props: {
   quotesCount: number;
   commentsCount: number;
   recommendsCount: number;
-  hasRecommended: boolean;
   className?: string;
   showComments: boolean;
   showMentions: boolean;
@@ -138,7 +137,6 @@ export const Interactions = (props: {
       <RecommendButton
         documentUri={document_uri}
         recommendsCount={props.recommendsCount}
-        hasRecommended={props.hasRecommended}
       />
 
       {props.quotesCount === 0 || props.showMentions === false ? null : (
@@ -177,7 +175,6 @@ export const ExpandedInteractions = (props: {
   quotesCount: number;
   commentsCount: number;
   recommendsCount: number;
-  hasRecommended: boolean;
   className?: string;
   showComments: boolean;
   showMentions: boolean;
@@ -238,7 +235,6 @@ export const ExpandedInteractions = (props: {
               <RecommendButton
                 documentUri={document_uri}
                 recommendsCount={props.recommendsCount}
-                hasRecommended={props.hasRecommended}
               />
               {props.quotesCount === 0 || !props.showMentions ? null : (
                 <button

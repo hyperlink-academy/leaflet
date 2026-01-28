@@ -170,7 +170,6 @@ export default async function Publication(props: {
                             quotesCount={quotes}
                             commentsCount={comments}
                             recommendsCount={recommends}
-                            hasRecommended={false}
                             documentUri={doc.documents.uri}
                             tags={tags}
                             postUrl={`${getPublicationURL(publication)}/${uri.rkey}`}

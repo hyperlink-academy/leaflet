@@ -1,44 +1,104 @@
 "use client";
 
 import { useState } from "react";
+import useSWR, { mutate } from "swr";
+import { create, windowScheduler } from "@yornaath/batshit";
 import { RecommendTinyEmpty, RecommendTinyFilled } from "./Icons/RecommendTiny";
 import {
   recommendAction,
   unrecommendAction,
 } from "app/lish/[did]/[publication]/[rkey]/Interactions/recommendAction";
+import { callRPC } from "app/api/rpc/client";
+import { useToaster } from "./Toast";
+import { OAuthErrorMessage, isOAuthSessionError } from "./OAuthError";
 
+// Create a batcher for recommendation checks
+// Batches requests made within 10ms window
+const recommendationBatcher = create({
+  fetcher: async (documentUris: string[]) => {
+    const response = await callRPC("get_user_recommendations", { documentUris });
+    return response.result;
+  },
+  resolver: (results, documentUri) => results[documentUri] ?? false,
+  scheduler: windowScheduler(10),
+});
+
+const getRecommendationKey = (documentUri: string) =>
+  `recommendation:${documentUri}`;
+
+function useUserRecommendation(documentUri: string) {
+  const { data: hasRecommended, isLoading } = useSWR(
+    getRecommendationKey(documentUri),
+    () => recommendationBatcher.fetch(documentUri),
+  );
+
+  return {
+    hasRecommended: hasRecommended ?? false,
+    isLoading,
+  };
+}
+
+function mutateRecommendation(documentUri: string, hasRecommended: boolean) {
+  mutate(getRecommendationKey(documentUri), hasRecommended, {
+    revalidate: false,
+  });
+}
+
+/**
+ * RecommendButton that fetches the user's recommendation status asynchronously.
+ * Uses SWR with batched requests for efficient fetching when many buttons are rendered.
+ */
 export function RecommendButton(props: {
   documentUri: string;
   recommendsCount: number;
-  hasRecommended: boolean;
   className?: string;
   showCount?: boolean;
 }) {
-  const [hasRecommended, setHasRecommended] = useState(props.hasRecommended);
+  const { hasRecommended, isLoading } = useUserRecommendation(props.documentUri);
   const [count, setCount] = useState(props.recommendsCount);
   const [isPending, setIsPending] = useState(false);
+  const [optimisticRecommended, setOptimisticRecommended] = useState<
+    boolean | null
+  >(null);
+  const toaster = useToaster();
+
+  // Use optimistic state if set, otherwise use fetched state
+  const displayRecommended =
+    optimisticRecommended !== null ? optimisticRecommended : hasRecommended;
 
   const handleClick = async () => {
-    if (isPending) return;
+    if (isPending || isLoading) return;
 
-    const currentlyRecommended = hasRecommended;
+    const currentlyRecommended = displayRecommended;
     setIsPending(true);
-    setHasRecommended(!currentlyRecommended);
+    setOptimisticRecommended(!currentlyRecommended);
     setCount((c) => (currentlyRecommended ? c - 1 : c + 1));
 
-    try {
-      if (currentlyRecommended) {
-        await unrecommendAction({ document: props.documentUri });
-      } else {
-        await recommendAction({ document: props.documentUri });
-      }
-    } catch (error) {
-      // Revert on error
-      setHasRecommended(currentlyRecommended);
+    const result = currentlyRecommended
+      ? await unrecommendAction({ document: props.documentUri })
+      : await recommendAction({ document: props.documentUri });
+
+    if (!result.success) {
+      // Revert optimistic update
+      setOptimisticRecommended(null);
       setCount((c) => (currentlyRecommended ? c + 1 : c - 1));
-    } finally {
       setIsPending(false);
+
+      toaster({
+        content: isOAuthSessionError(result.error) ? (
+          <OAuthErrorMessage error={result.error} />
+        ) : (
+          "Failed to update recommendation"
+        ),
+        type: "error",
+      });
+      return;
     }
+
+    // Update the SWR cache to match the new state
+    mutateRecommendation(props.documentUri, !currentlyRecommended);
+    setOptimisticRecommended(null);
+    setIsPending(false);
   };
 
   const showCount = props.showCount !== false;
@@ -50,17 +110,17 @@ export function RecommendButton(props: {
         e.stopPropagation();
         handleClick();
       }}
-      disabled={isPending}
+      disabled={isPending || isLoading}
       className={`recommendButton flex gap-1  items-center hover:text-accent-contrast ${props.className || ""}`}
-      aria-label={hasRecommended ? "Remove recommend" : "Recommend"}
+      aria-label={displayRecommended ? "Remove recommend" : "Recommend"}
     >
-      {hasRecommended ? (
+      {displayRecommended ? (
         <RecommendTinyFilled className="text-accent-contrast" />
       ) : (
         <RecommendTinyEmpty />
       )}
       {showCount && count > 0 && (
-        <span className={`${hasRecommended && "text-accent-contrast"}`}>
+        <span className={`${displayRecommended && "text-accent-contrast"}`}>
           {count}
         </span>
       )}

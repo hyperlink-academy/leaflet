@@ -8,12 +8,8 @@ import {
 } from "src/utils/normalizeRecords";
 import { PubLeafletPublication, SiteStandardPublication } from "lexicons/api";
 import { documentUriFilter } from "src/utils/uriHelpers";
-import { getIdentityData } from "actions/getIdentityData";
 
 export async function getPostPageData(did: string, rkey: string) {
-  const identity = await getIdentityData();
-  const currentUserDid = identity?.atp_did;
-
   let { data: documents } = await supabaseServerClient
     .from("documents")
     .select(
@@ -36,18 +32,6 @@ export async function getPostPageData(did: string, rkey: string) {
   let document = documents?.[0];
 
   if (!document) return null;
-
-  // Check if current user has recommended this document
-  let hasRecommended = false;
-  if (currentUserDid) {
-    const { data: userRecommend } = await supabaseServerClient
-      .from("recommends_on_documents")
-      .select("uri")
-      .eq("document", document.uri)
-      .eq("recommender_did", currentUserDid)
-      .limit(1);
-    hasRecommended = (userRecommend?.length ?? 0) > 0;
-  }
 
   // Normalize the document record - this is the primary way consumers should access document data
   const normalizedDocument = normalizeDocumentRecord(
@@ -178,7 +162,6 @@ export async function getPostPageData(did: string, rkey: string) {
     leafletId: document.leaflets_in_publications[0]?.leaflet || null,
     // Recommends data
     recommendsCount,
-    hasRecommended,
   };
 }
 

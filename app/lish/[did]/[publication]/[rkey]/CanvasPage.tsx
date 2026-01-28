@@ -72,7 +72,6 @@ export function CanvasPage({
         commentsCount={getCommentCount(document.comments_on_documents, pageId)}
         quotesCount={getQuoteCount(document.quotesAndMentions, pageId)}
         recommendsCount={document.recommendsCount}
-        hasRecommended={document.hasRecommended}
       />
       <CanvasContent
         blocks={blocks}
@@ -212,7 +211,6 @@ const CanvasMetadata = (props: {
   quotesCount: number | undefined;
   commentsCount: number | undefined;
   recommendsCount: number;
-  hasRecommended: boolean;
 }) => {
   let isMobile = useIsMobile();
   return (
@@ -221,7 +219,6 @@ const CanvasMetadata = (props: {
         quotesCount={props.quotesCount || 0}
         commentsCount={props.commentsCount || 0}
         recommendsCount={props.recommendsCount}
-        hasRecommended={props.hasRecommended}
         showComments={props.preferences.showComments !== false}
         showMentions={props.preferences.showMentions !== false}
         pageId={props.pageId}

@@ -92,7 +92,6 @@ export function LinearDocumentPage({
           }
           quotesCount={getQuoteCount(document.quotesAndMentions, pageId) || 0}
           recommendsCount={document.recommendsCount}
-          hasRecommended={document.hasRecommended}
         />
         {!hasPageBackground && <div className={`spacer h-8 w-full`} />}
       </PageWrapper>

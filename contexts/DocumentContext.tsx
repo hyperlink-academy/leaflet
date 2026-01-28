@@ -22,7 +22,6 @@ export type DocumentContextValue = Pick<
   | "mentions"
   | "leafletId"
   | "recommendsCount"
-  | "hasRecommended"
 >;
 
 const DocumentContext = createContext<DocumentContextValue | null>(null);

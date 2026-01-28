@@ -105,7 +105,6 @@ export const PostListing = (props: Post) => {
                 quotesCount={quotes}
                 commentsCount={comments}
                 recommendsCount={recommends}
-                hasRecommended={false}
                 documentUri={props.documents.uri}
                 tags={tags}
                 showComments={pubRecord?.preferences?.showComments !== false}

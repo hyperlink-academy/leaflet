@@ -21,13 +21,12 @@ export async function recommendAction(args: {
   console.log("recommend action...");
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
-    console.log("recommended");
-
     return {
       success: false,
       error: {
         type: "oauth_session_expired",
         message: "Not authenticated",
+        did: "",
       },
     };
   }
@@ -58,7 +57,7 @@ export async function recommendAction(args: {
     record,
   );
 
-  await supabaseServerClient.from("recommends_on_documents").upsert({
+  let res = await supabaseServerClient.from("recommends_on_documents").upsert({
     uri: uri.toString(),
     document: args.document,
     recommender_did: credentialSession.did!,
@@ -67,6 +66,7 @@ export async function recommendAction(args: {
       ...record,
     } as unknown as Json,
   });
+  console.log(res);
 
   return {
     success: true,
@@ -84,6 +84,7 @@ export async function unrecommendAction(args: {
       error: {
         type: "oauth_session_expired",
         message: "Not authenticated",
+        did: "",
       },
     };
   }
