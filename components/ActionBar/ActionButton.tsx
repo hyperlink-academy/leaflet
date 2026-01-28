@@ -55,7 +55,7 @@ export const ActionButton = (
       rounded-md border
       flex gap-2 items-start sm:justify-start justify-center
       p-1 sm:mx-0
-      ${showLabelOnMobile && !secondary ? "w-full" : "sm:w-full w-max"}
+      ${showLabelOnMobile && "sm:w-full w-max"}
       ${
         primary
           ? "bg-accent-1 border-accent-1 text-accent-2 transparent-outline sm:hover:outline-accent-contrast focus:outline-accent-1 outline-offset-1 mx-1 first:ml-0"

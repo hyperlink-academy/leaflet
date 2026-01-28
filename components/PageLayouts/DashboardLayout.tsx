@@ -4,12 +4,13 @@ import { useSearchParams } from "next/navigation";
 import { Header } from "../PageHeader";
 import { Footer } from "components/ActionBar/Footer";
 import { Sidebar } from "components/ActionBar/Sidebar";
+import { DesktopNavigation } from "components/ActionBar/DesktopNavigation";
+
+import { MobileNavigation } from "components/ActionBar/MobileNavigation";
 import {
-  DesktopNavigation,
-  MobileNavigation,
   navPages,
   NotificationButton,
-} from "components/ActionBar/Navigation";
+} from "components/ActionBar/NavigationButtons";
 import { create } from "zustand";
 import { Popover } from "components/Popover";
 import { Checkbox } from "components/Checkbox";
@@ -138,6 +139,7 @@ export function DashboardLayout<
   defaultTab: keyof T;
   currentPage: navPages;
   publication?: string;
+  profileDid?: string;
   actions: React.ReactNode;
 }) {
   const searchParams = useSearchParams();
@@ -240,13 +242,11 @@ export function DashboardLayout<
         <Footer>
           <MobileNavigation
             currentPage={props.currentPage}
-            publication={props.publication}
+            currentPublicationUri={props.publication}
+            currentProfileDid={props.profileDid}
           />
           {props.actions && (
-            <>
-              <Separator />
-              {props.actions}
-            </>
+            <div className="place-self-end flex gap-2">{props.actions}</div>
           )}
         </Footer>
       </div>

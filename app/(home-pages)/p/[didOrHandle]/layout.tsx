@@ -82,6 +82,7 @@ export default async function ProfilePageLayout(props: {
       id="profile"
       defaultTab="default"
       currentPage="profile"
+      profileDid={did}
       actions={null}
       tabs={{
         default: {

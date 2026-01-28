@@ -19,7 +19,7 @@ import { ButtonSecondary } from "components/Buttons";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useState } from "react";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
-import { navPages } from "./Navigation";
+import { navPages } from "./NavigationButtons";
 
 export const PublicationButtons = (props: {
   currentPage: navPages;
@@ -38,7 +38,7 @@ export const PublicationButtons = (props: {
     return <PubListEmpty />;
 
   return (
-    <div className="pubListWrapper w-full  flex flex-col gap-1 sm:bg-transparent sm:border-0">
+    <div className="pubListWrapper w-full  flex flex-col sm:bg-transparent sm:border-0">
       {hasLooseleafs && (
         <>
           <SpeedyLink
@@ -58,7 +58,6 @@ export const PublicationButtons = (props: {
               }
             />
           </SpeedyLink>
-          <hr className="border-border-light border-dashed mx-1" />
         </>
       )}
 
