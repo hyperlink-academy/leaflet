@@ -70,7 +70,7 @@ export function useBlockKeyboardHandlers(
         areYouSure,
         setAreYouSure,
       });
-      undoManager.endGroup();
+      setTimeout(() => undoManager.endGroup(), 100);
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
