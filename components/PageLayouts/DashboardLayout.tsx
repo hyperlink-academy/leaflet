@@ -246,7 +246,9 @@ export function DashboardLayout<
             currentProfileDid={props.profileDid}
           />
           {props.actions && (
-            <div className="place-self-end flex gap-2">{props.actions}</div>
+            <div className="place-self-end flex flex-row-reverse gap-2 ">
+              {props.actions}
+            </div>
           )}
         </Footer>
       </div>
