@@ -87,13 +87,27 @@ If your lexicon is at the top level of `pub/leaflet/` (not in a subdirectory), a
 
 Note: Files in subdirectories (`pub/leaflet/*/*`) are automatically included.
 
-### 4. Regenerate Types
+### 4. Add to authFullPermissions (for record types)
+
+If your lexicon is a record type that users should be able to create/update/delete, add it to the `authFullPermissions` permission set in `lexicons/src/authFullPermissions.ts`:
+
+```typescript
+import { PubLeafletMyLexicon } from "./myLexicon";
+
+// In the permissions collection array:
+collection: [
+  // ... existing lexicons
+  PubLeafletMyLexicon.id,
+],
+```
+
+### 5. Regenerate Types
 
 ```bash
 npm run lexgen
 ```
 
-### 5. Use the Generated Types
+### 6. Use the Generated Types
 
 ```typescript
 import { PubLeafletMyLexicon } from "lexicons/api";
