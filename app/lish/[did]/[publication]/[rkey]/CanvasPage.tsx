@@ -238,6 +238,7 @@ const CanvasMetadata = (props: {
               data={props.data}
               profile={props.profile}
               preferences={props.preferences}
+              isCanvas
             />
           </Popover>
         </>

@@ -140,19 +140,11 @@ export const Interactions = (props: {
     <div
       className={`flex gap-2 text-tertiary text-sm item-center ${props.className}`}
     >
-      {/*COMMENT BUTTON*/}
-      {props.showComments === false ? null : (
-        <button
-          className="flex gap-2 items-center w-fit"
-          onClick={() => {
-            if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
-              openInteractionDrawer("comments", document_uri, props.pageId);
-            else setInteractionState(document_uri, { drawerOpen: false });
-          }}
-          aria-label="Post comments"
-        >
-          <CommentTiny aria-hidden /> {props.commentsCount}
-        </button>
+      {props.showRecommends === false ? null : (
+        <RecommendButton
+          documentUri={document_uri}
+          recommendsCount={props.recommendsCount}
+        />
       )}
 
       {/*MENTIONS BUTTON*/}
@@ -171,14 +163,27 @@ export const Interactions = (props: {
           <QuoteTiny aria-hidden /> {props.quotesCount}
         </button>
       )}
-      {props.showRecommends === false ? null : (
-        <RecommendButton
-          documentUri={document_uri}
-          recommendsCount={props.recommendsCount}
-        />
+      {/*COMMENT BUTTON*/}
+      {props.showComments === false ? null : (
+        <button
+          className="flex gap-2 items-center w-fit"
+          onClick={() => {
+            if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
+              openInteractionDrawer("comments", document_uri, props.pageId);
+            else setInteractionState(document_uri, { drawerOpen: false });
+          }}
+          aria-label="Post comments"
+        >
+          <CommentTiny aria-hidden /> {props.commentsCount}
+        </button>
       )}
-      <Separator classname="h-4!" />
-      {tagCount > 0 && <TagPopover tags={tags} tagCount={tagCount} />}
+
+      {tagCount > 0 && (
+        <>
+          interactionsAvailable && <Separator classname="h-4!" />
+          <TagPopover tags={tags} tagCount={tagCount} />
+        </>
+      )}
     </div>
   );
 };

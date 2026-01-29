@@ -20,10 +20,15 @@ import { TagSelector } from "components/Tags";
 import { useIdentityData } from "components/IdentityProvider";
 import { PostHeaderLayout } from "app/lish/[did]/[publication]/[rkey]/PostHeader/PostHeader";
 import { Backdater } from "./Backdater";
+import { RecommendTinyEmpty } from "components/Icons/RecommendTiny";
 
-export const PublicationMetadata = () => {
+export const PublicationMetadata = (props: { noInteractions?: boolean }) => {
   let { rep } = useReplicache();
-  let { data: pub, normalizedDocument, normalizedPublication } = useLeafletPublicationData();
+  let {
+    data: pub,
+    normalizedDocument,
+    normalizedPublication,
+  } = useLeafletPublicationData();
   let { identity } = useIdentityData();
   let title = useSubscribe(rep, (tx) => tx.get<string>("publication_title"));
   let description = useSubscribe(rep, (tx) =>
@@ -114,27 +119,37 @@ export const PublicationMetadata = () => {
           ) : (
             <p>Draft</p>
           )}
-          <div className="flex gap-2 text-border items-center">
-            {tags && (
-              <>
-                <AddTags />
-                {normalizedPublication?.preferences?.showMentions !== false ||
-                normalizedPublication?.preferences?.showComments !== false ? (
-                  <Separator classname="h-4!" />
-                ) : null}
-              </>
-            )}
-            {normalizedPublication?.preferences?.showMentions !== false && (
-              <div className="flex gap-1 items-center">
-                <QuoteTiny />—
-              </div>
-            )}
-            {normalizedPublication?.preferences?.showComments !== false && (
-              <div className="flex gap-1 items-center">
-                <CommentTiny />—
-              </div>
-            )}
-          </div>
+          {!props.noInteractions && (
+            <div className="flex gap-2 text-border items-center">
+              {normalizedPublication?.preferences?.showRecommends !== false && (
+                <div className="flex gap-1 items-center">
+                  <RecommendTinyEmpty />—
+                </div>
+              )}
+
+              {normalizedPublication?.preferences?.showMentions !== false && (
+                <div className="flex gap-1 items-center">
+                  <QuoteTiny />—
+                </div>
+              )}
+              {normalizedPublication?.preferences?.showComments !== false && (
+                <div className="flex gap-1 items-center">
+                  <CommentTiny />—
+                </div>
+              )}
+              {tags && (
+                <>
+                  {normalizedPublication?.preferences?.showRecommends !==
+                    false ||
+                  normalizedPublication?.preferences?.showMentions !== false ||
+                  normalizedPublication?.preferences?.showComments !== false ? (
+                    <Separator classname="h-4!" />
+                  ) : null}
+                  <AddTags />
+                </>
+              )}
+            </div>
+          )}
         </>
       }
     />
@@ -238,7 +253,7 @@ export const PublicationMetadataPreview = () => {
   );
 };
 
-const AddTags = () => {
+export const AddTags = () => {
   let { data: pub, normalizedDocument } = useLeafletPublicationData();
   let { rep } = useReplicache();
 
@@ -251,7 +266,10 @@ const AddTags = () => {
   let tags: string[] = [];
   if (Array.isArray(replicacheTags)) {
     tags = replicacheTags;
-  } else if (normalizedDocument?.tags && Array.isArray(normalizedDocument.tags)) {
+  } else if (
+    normalizedDocument?.tags &&
+    Array.isArray(normalizedDocument.tags)
+  ) {
     tags = normalizedDocument.tags as string[];
   }
 
