@@ -18,7 +18,11 @@ import { ProfilePopover } from "components/ProfilePopover";
 export function PostHeader(props: {
   data: PostPageData;
   profile: ProfileViewDetailed;
-  preferences: { showComments?: boolean; showMentions?: boolean };
+  preferences: {
+    showComments?: boolean;
+    showMentions?: boolean;
+    showRecommends?: boolean;
+  };
 }) {
   let { identity } = useIdentityData();
   let document = props.data;
@@ -87,6 +91,7 @@ export function PostHeader(props: {
           <Interactions
             showComments={props.preferences.showComments !== false}
             showMentions={props.preferences.showMentions !== false}
+            showRecommends={props.preferences.showRecommends !== false}
             quotesCount={getQuoteCount(document?.quotesAndMentions || []) || 0}
             commentsCount={
               getCommentCount(document?.comments_on_documents || []) || 0

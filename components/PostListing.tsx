@@ -111,6 +111,9 @@ export const PostListing = (props: Post) => {
                 tags={tags}
                 showComments={pubRecord?.preferences?.showComments !== false}
                 showMentions={pubRecord?.preferences?.showMentions !== false}
+                showRecommends={
+                  pubRecord?.preferences?.showRecommends !== false
+                }
                 share
               />
             </div>

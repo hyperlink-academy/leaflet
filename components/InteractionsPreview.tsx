@@ -18,22 +18,26 @@ export const InteractionPreview = (props: {
   postUrl: string;
   showComments: boolean;
   showMentions: boolean;
+  showRecommends: boolean;
 
   share?: boolean;
 }) => {
   let smoker = useSmoker();
   let interactionsAvailable =
     (props.quotesCount > 0 && props.showMentions) ||
-    (props.showComments !== false && props.commentsCount > 0);
+    (props.showComments !== false && props.commentsCount > 0) ||
+    (props.showRecommends !== false && props.recommendsCount > 0);
 
   const tagsCount = props.tags?.length || 0;
 
   return (
     <div className={`flex gap-2 text-tertiary text-sm  items-center`}>
-      <RecommendButton
-        documentUri={props.documentUri}
-        recommendsCount={props.recommendsCount}
-      />
+      {props.showRecommends === false ? null : (
+        <RecommendButton
+          documentUri={props.documentUri}
+          recommendsCount={props.recommendsCount}
+        />
+      )}
 
       {!props.showMentions || props.quotesCount === 0 ? null : (
         <SpeedyLink

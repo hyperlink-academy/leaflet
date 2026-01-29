@@ -175,6 +175,9 @@ export default async function Publication(props: {
                             showMentions={
                               record?.preferences?.showMentions !== false
                             }
+                            showRecommends={
+                              record?.preferences?.showRecommends !== false
+                            }
                           />
                         </div>
                       </div>

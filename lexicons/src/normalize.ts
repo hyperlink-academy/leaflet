@@ -50,7 +50,7 @@ export type NormalizedPublication = {
  * Checks if the record is a pub.leaflet.document
  */
 export function isLeafletDocument(
-  record: unknown
+  record: unknown,
 ): record is PubLeafletDocument.Record {
   if (!record || typeof record !== "object") return false;
   const r = record as Record<string, unknown>;
@@ -65,7 +65,7 @@ export function isLeafletDocument(
  * Checks if the record is a site.standard.document
  */
 export function isStandardDocument(
-  record: unknown
+  record: unknown,
 ): record is SiteStandardDocument.Record {
   if (!record || typeof record !== "object") return false;
   const r = record as Record<string, unknown>;
@@ -76,7 +76,7 @@ export function isStandardDocument(
  * Checks if the record is a pub.leaflet.publication
  */
 export function isLeafletPublication(
-  record: unknown
+  record: unknown,
 ): record is PubLeafletPublication.Record {
   if (!record || typeof record !== "object") return false;
   const r = record as Record<string, unknown>;
@@ -91,7 +91,7 @@ export function isLeafletPublication(
  * Checks if the record is a site.standard.publication
  */
 export function isStandardPublication(
-  record: unknown
+  record: unknown,
 ): record is SiteStandardPublication.Record {
   if (!record || typeof record !== "object") return false;
   const r = record as Record<string, unknown>;
@@ -106,7 +106,7 @@ function extractRgb(
     | $Typed<PubLeafletThemeColor.Rgba>
     | $Typed<PubLeafletThemeColor.Rgb>
     | { $type: string }
-    | undefined
+    | undefined,
 ): { r: number; g: number; b: number } | undefined {
   if (!color || typeof color !== "object") return undefined;
   const c = color as Record<string, unknown>;
@@ -124,12 +124,13 @@ function extractRgb(
  * Converts a pub.leaflet theme to a site.standard.theme.basic format
  */
 export function leafletThemeToBasicTheme(
-  theme: PubLeafletPublication.Theme | undefined
+  theme: PubLeafletPublication.Theme | undefined,
 ): SiteStandardThemeBasic.Main | undefined {
   if (!theme) return undefined;
 
   const background = extractRgb(theme.backgroundColor);
-  const accent = extractRgb(theme.accentBackground) || extractRgb(theme.primary);
+  const accent =
+    extractRgb(theme.accentBackground) || extractRgb(theme.primary);
   const accentForeground = extractRgb(theme.accentText);
 
   // If we don't have the required colors, return undefined
@@ -160,7 +161,10 @@ export function leafletThemeToBasicTheme(
  * @param uri - Optional document URI, used to extract the rkey for the path field when normalizing pub.leaflet records
  * @returns A normalized document in site.standard format, or null if invalid/unrecognized
  */
-export function normalizeDocument(record: unknown, uri?: string): NormalizedDocument | null {
+export function normalizeDocument(
+  record: unknown,
+  uri?: string,
+): NormalizedDocument | null {
   if (!record || typeof record !== "object") return null;
 
   // Pass through site.standard records directly (theme is already in correct format if present)
@@ -219,7 +223,7 @@ export function normalizeDocument(record: unknown, uri?: string): NormalizedDocu
  * @returns A normalized publication in site.standard format, or null if invalid/unrecognized
  */
 export function normalizePublication(
-  record: unknown
+  record: unknown,
 ): NormalizedPublication | null {
   if (!record || typeof record !== "object") return null;
 
@@ -268,6 +272,7 @@ export function normalizePublication(
             showComments: record.preferences.showComments,
             showMentions: record.preferences.showMentions,
             showPrevNext: record.preferences.showPrevNext,
+            showRecommends: record.preferences.showRecommends,
           }
         : undefined;
 
@@ -290,7 +295,7 @@ export function normalizePublication(
  * Type guard to check if a normalized document has leaflet content
  */
 export function hasLeafletContent(
-  doc: NormalizedDocument
+  doc: NormalizedDocument,
 ): doc is NormalizedDocument & {
   content: $Typed<PubLeafletContent.Main>;
 } {
@@ -304,7 +309,7 @@ export function hasLeafletContent(
  * Gets the pages array from a normalized document, handling both formats
  */
 export function getDocumentPages(
-  doc: NormalizedDocument
+  doc: NormalizedDocument,
 ): PubLeafletContent.Main["pages"] | undefined {
   if (!doc.content) return undefined;
 

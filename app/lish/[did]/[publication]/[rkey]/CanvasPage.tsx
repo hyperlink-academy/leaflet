@@ -206,6 +206,7 @@ const CanvasMetadata = (props: {
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;
+    showRecommends?: boolean;
     showPrevNext?: boolean;
   };
   quotesCount: number | undefined;
@@ -221,6 +222,7 @@ const CanvasMetadata = (props: {
         recommendsCount={props.recommendsCount}
         showComments={props.preferences.showComments !== false}
         showMentions={props.preferences.showMentions !== false}
+        showRecommends={props.preferences.showRecommends !== false}
         pageId={props.pageId}
       />
       {!props.isSubpage && (

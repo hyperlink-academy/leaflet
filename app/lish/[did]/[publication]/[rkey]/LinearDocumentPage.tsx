@@ -87,6 +87,7 @@ export function LinearDocumentPage({
           pageId={pageId}
           showComments={preferences.showComments !== false}
           showMentions={preferences.showMentions !== false}
+          showRecommends={preferences.showRecommends !== false}
           commentsCount={
             getCommentCount(document.comments_on_documents, pageId) || 0
           }

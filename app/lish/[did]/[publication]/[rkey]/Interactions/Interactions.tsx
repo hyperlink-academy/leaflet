@@ -112,6 +112,7 @@ export const Interactions = (props: {
   className?: string;
   showComments: boolean;
   showMentions: boolean;
+  showRecommends: boolean;
   pageId?: string;
 }) => {
   const {
@@ -132,7 +133,8 @@ export const Interactions = (props: {
   const tags = normalizedDocument.tags;
   const tagCount = tags?.length || 0;
 
-  let interactionsAvailable = props.showComments || props.showMentions;
+  let interactionsAvailable =
+    props.showComments || props.showMentions || props.showRecommends;
 
   return (
     <div
@@ -169,10 +171,12 @@ export const Interactions = (props: {
           <QuoteTiny aria-hidden /> {props.quotesCount}
         </button>
       )}
-      <RecommendButton
-        documentUri={document_uri}
-        recommendsCount={props.recommendsCount}
-      />
+      {props.showRecommends === false ? null : (
+        <RecommendButton
+          documentUri={document_uri}
+          recommendsCount={props.recommendsCount}
+        />
+      )}
       <Separator classname="h-4!" />
       {tagCount > 0 && <TagPopover tags={tags} tagCount={tagCount} />}
     </div>
@@ -186,6 +190,7 @@ export const ExpandedInteractions = (props: {
   className?: string;
   showComments: boolean;
   showMentions: boolean;
+  showRecommends: boolean;
   pageId?: string;
 }) => {
   const {
@@ -208,7 +213,8 @@ export const ExpandedInteractions = (props: {
   const tags = normalizedDocument.tags;
   const tagCount = tags?.length || 0;
 
-  let noInteractions = !props.showComments && !props.showMentions;
+  let noInteractions =
+    !props.showComments && !props.showMentions && !props.showRecommends;
 
   let subscribed =
     identity?.atp_did &&
@@ -237,11 +243,13 @@ export const ExpandedInteractions = (props: {
         ) : (
           <>
             <div className="flex gap-2 sm:flex-row flex-col">
-              <RecommendButton
-                documentUri={document_uri}
-                recommendsCount={props.recommendsCount}
-                expanded
-              />
+              {props.showRecommends === false ? null : (
+                <RecommendButton
+                  documentUri={document_uri}
+                  recommendsCount={props.recommendsCount}
+                  expanded
+                />
+              )}
               {props.quotesCount === 0 || !props.showMentions ? null : (
                 <ButtonSecondary
                   onClick={() => {

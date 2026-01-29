@@ -170,6 +170,7 @@ export type SharedPageProps = {
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;
+    showRecommends?: boolean;
     showPrevNext?: boolean;
   };
   pubRecord?: NormalizedPublication | null;
@@ -233,6 +234,7 @@ export function PostPages({
   preferences: {
     showComments?: boolean;
     showMentions?: boolean;
+    showRecommends?: boolean;
     showPrevNext?: boolean;
   };
   pollData: PollData[];
