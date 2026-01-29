@@ -9,7 +9,7 @@ import {
   unrecommendAction,
 } from "app/lish/[did]/[publication]/[rkey]/Interactions/recommendAction";
 import { callRPC } from "app/api/rpc/client";
-import { useToaster } from "./Toast";
+import { useSmoker, useToaster } from "./Toast";
 import { OAuthErrorMessage, isOAuthSessionError } from "./OAuthError";
 import { ButtonSecondary } from "./Buttons";
 import { Separator } from "./Layout";
@@ -67,12 +67,13 @@ export function RecommendButton(props: {
     boolean | null
   >(null);
   const toaster = useToaster();
+  const smoker = useSmoker();
 
   // Use optimistic state if set, otherwise use fetched state
   const displayRecommended =
     optimisticRecommended !== null ? optimisticRecommended : hasRecommended;
 
-  const handleClick = async () => {
+  const handleClick = async (e: React.MouseEvent) => {
     if (isPending || isLoading) return;
 
     const currentlyRecommended = displayRecommended;
@@ -80,10 +81,19 @@ export function RecommendButton(props: {
     setOptimisticRecommended(!currentlyRecommended);
     setCount((c) => (currentlyRecommended ? c - 1 : c + 1));
 
+    if (!currentlyRecommended) {
+      smoker({
+        position: {
+          x: e.clientX,
+          y: e.clientY - 16,
+        },
+        text: <div className="text-xs">thanks!</div>,
+      });
+    }
+
     const result = currentlyRecommended
       ? await unrecommendAction({ document: props.documentUri })
       : await recommendAction({ document: props.documentUri });
-
     if (!result.success) {
       // Revert optimistic update
       setOptimisticRecommended(null);
@@ -94,7 +104,7 @@ export function RecommendButton(props: {
         content: isOAuthSessionError(result.error) ? (
           <OAuthErrorMessage error={result.error} />
         ) : (
-          "Failed to update recommendation"
+          "oh no! error!"
         ),
         type: "error",
       });
@@ -113,7 +123,7 @@ export function RecommendButton(props: {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          handleClick();
+          handleClick(e);
         }}
       >
         {displayRecommended ? (
@@ -142,7 +152,7 @@ export function RecommendButton(props: {
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        handleClick();
+        handleClick(e);
       }}
       disabled={isPending || isLoading}
       className={`recommendButton relative flex gap-1  items-center hover:text-accent-contrast ${props.className || ""}`}
