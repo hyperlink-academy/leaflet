@@ -62,16 +62,28 @@ export const PublicationButtons = (props: {
         </>
       )}
 
-      {identity.publications?.map((d) => {
-        return (
-          <PublicationOption
-            {...d}
-            key={d.uri}
-            record={d.record}
-            current={d.uri === props.currentPubUri}
-          />
-        );
-      })}
+      {identity.publications
+        ?.filter((p) => {
+          let record = p.record as any;
+          if (record.preferences?.greengale) return false;
+          if (
+            record.theme &&
+            record.theme.$type &&
+            record.theme.$type !== "pub.leaflet.publication#theme"
+          )
+            return false;
+          return true;
+        })
+        .map((d) => {
+          return (
+            <PublicationOption
+              {...d}
+              key={d.uri}
+              record={d.record}
+              current={d.uri === props.currentPubUri}
+            />
+          );
+        })}
       <Link
         href={"/lish/createPub"}
         className="pubListCreateNew  text-accent-contrast text-sm place-self-end hover:text-accent-contrast"
