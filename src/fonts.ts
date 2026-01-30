@@ -35,8 +35,16 @@ export const fonts: Record<string, FontConfig> = {
     fontFamily: "iA Writer Quattro V",
     type: "local",
     files: [
-      { path: "/fonts/iaw-quattro-vf.woff2", style: "normal", weight: "400 700" },
-      { path: "/fonts/iaw-quattro-vf-Italic.woff2", style: "italic", weight: "400 700" },
+      {
+        path: "/fonts/iaw-quattro-vf.woff2",
+        style: "normal",
+        weight: "400 700",
+      },
+      {
+        path: "/fonts/iaw-quattro-vf-Italic.woff2",
+        style: "italic",
+        weight: "400 700",
+      },
     ],
     fallback: ["system-ui", "sans-serif"],
   },
@@ -46,8 +54,16 @@ export const fonts: Record<string, FontConfig> = {
     fontFamily: "Lora",
     type: "local",
     files: [
-      { path: "/fonts/Lora-Variable.woff2", style: "normal", weight: "400 700" },
-      { path: "/fonts/Lora-Italic-Variable.woff2", style: "italic", weight: "400 700" },
+      {
+        path: "/fonts/Lora-Variable.woff2",
+        style: "normal",
+        weight: "400 700",
+      },
+      {
+        path: "/fonts/Lora-Italic-Variable.woff2",
+        style: "italic",
+        weight: "400 700",
+      },
     ],
     fallback: ["Georgia", "serif"],
   },
@@ -57,8 +73,16 @@ export const fonts: Record<string, FontConfig> = {
     fontFamily: "Source Sans 3",
     type: "local",
     files: [
-      { path: "/fonts/SourceSans3-Variable.woff2", style: "normal", weight: "200 900" },
-      { path: "/fonts/SourceSans3-Italic-Variable.woff2", style: "italic", weight: "200 900" },
+      {
+        path: "/fonts/SourceSans3-Variable.woff2",
+        style: "normal",
+        weight: "200 900",
+      },
+      {
+        path: "/fonts/SourceSans3-Italic-Variable.woff2",
+        style: "italic",
+        weight: "200 900",
+      },
     ],
     fallback: ["system-ui", "sans-serif"],
   },
@@ -68,30 +92,17 @@ export const fonts: Record<string, FontConfig> = {
     fontFamily: "Atkinson Hyperlegible Next",
     type: "local",
     files: [
-      { path: "/fonts/AtkinsonHyperlegibleNext-Variable.woff2", style: "normal", weight: "200 800" },
-      { path: "/fonts/AtkinsonHyperlegibleNext-Italic-Variable.woff2", style: "italic", weight: "200 800" },
+      {
+        path: "/fonts/AtkinsonHyperlegibleNext-Variable.woff2",
+        style: "normal",
+        weight: "200 800",
+      },
+      {
+        path: "/fonts/AtkinsonHyperlegibleNext-Italic-Variable.woff2",
+        style: "italic",
+        weight: "200 800",
+      },
     ],
-    fallback: ["system-ui", "sans-serif"],
-  },
-  "noto-sans": {
-    id: "noto-sans",
-    displayName: "Noto Sans",
-    fontFamily: "Noto Sans",
-    type: "local",
-    files: [
-      { path: "/fonts/NotoSans-Variable.woff2", style: "normal", weight: "100 900" },
-      { path: "/fonts/NotoSans-Italic-Variable.woff2", style: "italic", weight: "100 900" },
-    ],
-    fallback: ["Arial", "sans-serif"],
-  },
-
-  // Google Fonts (no variable version available)
-  "alegreya-sans": {
-    id: "alegreya-sans",
-    displayName: "Alegreya Sans",
-    fontFamily: "Alegreya Sans",
-    type: "google",
-    googleFontsFamily: "Alegreya+Sans:ital,wght@0,400;0,700;1,400;1,700",
     fallback: ["system-ui", "sans-serif"],
   },
   "space-mono": {
@@ -106,8 +117,90 @@ export const fonts: Record<string, FontConfig> = {
 
 export const defaultFontId = "quattro";
 
+// Parse a Google Fonts URL or string to extract the font name and family parameter
+// Supports various formats:
+// - Full URL: https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap
+// - Family param: Open+Sans:ital,wght@0,400;0,700
+// - Just font name: Open Sans
+export function parseGoogleFontInput(input: string): {
+  fontName: string;
+  googleFontsFamily: string;
+} | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  // Try to parse as full URL
+  try {
+    const url = new URL(trimmed);
+    const family = url.searchParams.get("family");
+    if (family) {
+      // Extract font name from family param (before the colon if present)
+      const fontName = family.split(":")[0].replace(/\+/g, " ");
+      return { fontName, googleFontsFamily: family };
+    }
+  } catch {
+    // Not a valid URL, continue with other parsing
+  }
+
+  // Check if it's a family parameter with weight/style specifiers (contains : or @)
+  if (trimmed.includes(":") || trimmed.includes("@")) {
+    const fontName = trimmed.split(":")[0].replace(/\+/g, " ");
+    // Ensure plus signs are used for spaces in the family param
+    const googleFontsFamily = trimmed.includes("+")
+      ? trimmed
+      : trimmed.replace(/ /g, "+");
+    return { fontName, googleFontsFamily };
+  }
+
+  // Treat as just a font name - construct a basic family param with common weights
+  const fontName = trimmed.replace(/\+/g, " ");
+  const googleFontsFamily = `${trimmed.replace(/ /g, "+")}:wght@400;700`;
+  return { fontName, googleFontsFamily };
+}
+
+// Custom font ID format: "custom:FontName:googleFontsFamily"
+export function createCustomFontId(
+  fontName: string,
+  googleFontsFamily: string,
+): string {
+  return `custom:${fontName}:${googleFontsFamily}`;
+}
+
+export function isCustomFontId(fontId: string): boolean {
+  return fontId.startsWith("custom:");
+}
+
+export function parseCustomFontId(fontId: string): {
+  fontName: string;
+  googleFontsFamily: string;
+} | null {
+  if (!isCustomFontId(fontId)) return null;
+  const parts = fontId.slice("custom:".length).split(":");
+  if (parts.length < 2) return null;
+  const fontName = parts[0];
+  const googleFontsFamily = parts.slice(1).join(":");
+  return { fontName, googleFontsFamily };
+}
+
 export function getFontConfig(fontId: string | undefined): FontConfig {
-  return fonts[fontId || defaultFontId] || fonts[defaultFontId];
+  if (!fontId) return fonts[defaultFontId];
+
+  // Check for custom font
+  if (isCustomFontId(fontId)) {
+    const parsed = parseCustomFontId(fontId);
+    if (parsed) {
+      return {
+        id: fontId,
+        displayName: parsed.fontName,
+        fontFamily: parsed.fontName,
+        type: "google",
+        googleFontsFamily: parsed.googleFontsFamily,
+        fallback: ["system-ui", "sans-serif"],
+      };
+    }
+  }
+
+  return fonts[fontId] || fonts[defaultFontId];
 }
 
 // Generate @font-face CSS for a local font
@@ -129,7 +222,9 @@ export function generateFontFaceCSS(font: FontConfig): string {
 }
 
 // Generate preload link attributes for a local font
-export function getFontPreloadLinks(font: FontConfig): { href: string; type: string }[] {
+export function getFontPreloadLinks(
+  font: FontConfig,
+): { href: string; type: string }[] {
   if (font.type !== "local") return [];
   return font.files.map((file) => ({
     href: file.path,
