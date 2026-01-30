@@ -19,7 +19,7 @@ import { ButtonSecondary } from "components/Buttons";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useState } from "react";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
-import { navPages } from "./NavigationButtons";
+import type { navPages } from "./NavigationButtons";
 
 export const PublicationButtons = (props: {
   currentPage: navPages;

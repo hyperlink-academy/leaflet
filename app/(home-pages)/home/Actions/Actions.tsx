@@ -13,11 +13,7 @@ export const Actions = () => {
   return (
     <>
       <CreateNewLeafletButton />
-      {identity ? (
-        <AccountSettings entityID={rootEntity} />
-      ) : (
-        <LoginActionButton />
-      )}
+      {identity && <AccountSettings entityID={rootEntity} />}
     </>
   );
 };

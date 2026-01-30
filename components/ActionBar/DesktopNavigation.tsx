@@ -4,6 +4,7 @@ import {
   HomeButton,
   ReaderButton,
   NotificationButton,
+  WriterButton,
 } from "./NavigationButtons";
 import { PublicationButtons } from "./Publications";
 import { Sidebar } from "./Sidebar";
@@ -16,10 +17,19 @@ export const DesktopNavigation = (props: {
   let thisPublication = identity?.publications?.find(
     (pub) => pub.uri === props.publication,
   );
+
+  let currentlyWriter =
+    props.currentPage === "home" ||
+    props.currentPage === "looseleafs" ||
+    props.currentPage === "pub";
   return (
     <div className="flex flex-col gap-3">
+      {identity?.atp_did && (
+        <Sidebar alwaysOpen>
+          <NotificationButton current={props.currentPage === "notifications"} />
+        </Sidebar>
+      )}
       <Sidebar alwaysOpen>
-        <HomeButton current={props.currentPage === "home"} />
         <ReaderButton
           current={props.currentPage === "reader"}
           subs={
@@ -27,15 +37,21 @@ export const DesktopNavigation = (props: {
             identity?.publication_subscriptions?.length !== undefined
           }
         />
-        {identity?.atp_did && (
-          <NotificationButton current={props.currentPage === "notifications"} />
+        {currentlyWriter ? (
+          <>
+            <HomeButton current={props.currentPage === "home"} />
+            <hr className="border-border-light border-dashed" />
+            <PublicationButtons
+              currentPage={props.currentPage}
+              currentPubUri={thisPublication?.uri}
+            />
+          </>
+        ) : (
+          <WriterButton
+            currentPage={props.currentPage}
+            currentPubUri={thisPublication?.uri}
+          />
         )}
-      </Sidebar>
-      <Sidebar alwaysOpen>
-        <PublicationButtons
-          currentPage={props.currentPage}
-          currentPubUri={thisPublication?.uri}
-        />
       </Sidebar>
     </div>
   );

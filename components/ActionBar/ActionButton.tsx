@@ -62,13 +62,14 @@ export const ActionButton = (
           : secondary
             ? " bg-bg-page border-accent-contrast text-accent-contrast transparent-outline focus:outline-accent-contrast sm:hover:outline-accent-contrast outline-offset-1 mx-1 first:ml-0"
             : nav
-              ? "border-transparent text-secondary sm:hover:border-border justify-start!"
+              ? "border-transparent text-secondary sm:hover:border-border justify-start! max-w-full"
               : "border-transparent text-accent-contrast sm:hover:border-accent-contrast"
       }
       ${className}
       `}
+      style={nav ? { width: "-webkit-fill-available" } : {}}
     >
-      <div className="shrink-0">{icon}</div>
+      <div className="shrink-0 flex flex-row gap-0.5">{icon}</div>
       <div
         className={`flex flex-col pr-1 ${subtext && "leading-snug"} max-w-full min-w-0  ${sidebar.open ? "block" : showLabelOnMobile ? "sm:hidden block" : "hidden"}`}
       >
