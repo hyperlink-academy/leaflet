@@ -23,16 +23,20 @@ export type navPages =
   | "notifications"
   | "looseleafs"
   | "tag"
-  | "profile";
+  | "profile"
+  | "discover";
 
-export const HomeButton = (props: { current?: boolean }) => {
+export const HomeButton = (props: {
+  current?: boolean;
+  className?: string;
+}) => {
   return (
     <SpeedyLink href={"/home"} className="hover:!no-underline">
       <ActionButton
         nav
         icon={<HomeSmall />}
-        label="Writer Home"
-        className={props.current ? "bg-bg-page! border-border-light!" : ""}
+        label="Write"
+        className={`${props.current ? "bg-bg-page! border-border-light!" : ""} ${props.className}`}
       />
     </SpeedyLink>
   );
@@ -82,14 +86,7 @@ export const WriterButton = (props: {
             nav
             labelOnMobile={true}
             icon={<WriterSmall />}
-            label=<div className="flex flex-row gap-1">
-              Writer
-              {current && (
-                <>
-                  <Divider /> {currentIcon}
-                </>
-              )}
-            </div>
+            label=<div className="flex flex-row gap-1">Write</div>
             className={current ? "bg-bg-page! border-border-light!" : ""}
           />
         ) : (
@@ -99,11 +96,6 @@ export const WriterButton = (props: {
             icon={
               <>
                 <WriterSmall />
-                {current && (
-                  <>
-                    <Divider /> {currentIcon}
-                  </>
-                )}
               </>
             }
             label=<div className="flex flex-row gap-1">Writer</div>
@@ -116,7 +108,7 @@ export const WriterButton = (props: {
         <ActionButton
           nav
           icon={<HomeSmall />}
-          label="Writer Home"
+          label="Write"
           className={
             props.currentPage === "home"
               ? "bg-bg-page! border-border-light!"
@@ -145,7 +137,7 @@ export const ReaderButton = (props: {
         nav
         labelOnMobile={props.compactOnMobile}
         icon={<ReaderUnreadSmall />}
-        label="Reader"
+        label="Read"
         className={props.current ? "bg-bg-page! border-border-light!" : ""}
       />
     </SpeedyLink>

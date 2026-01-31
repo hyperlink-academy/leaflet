@@ -18,6 +18,7 @@ import {
   DashboardLayout,
   DashboardState,
   useDashboardState,
+  PageTitle,
 } from "components/PageLayouts/DashboardLayout";
 import { Actions } from "./Actions/Actions";
 import { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
@@ -28,6 +29,12 @@ import {
   HomeEmptyState,
   PublicationBanner,
 } from "./HomeEmpty/HomeEmpty";
+import { Popover } from "components/Popover";
+import { PubIcon, PublicationButtons } from "components/ActionBar/Publications";
+import { normalizePublicationRecord } from "src/utils/normalizeRecords";
+import { ButtonPrimary } from "components/Buttons";
+import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
+import { HomeButton } from "components/ActionBar/NavigationButtons";
 
 export type Leaflet = {
   added_at: string;
@@ -76,6 +83,43 @@ export const HomeLayout = (props: {
       (leaflet) => leaflet.archived === true,
     ).length > 0;
 
+  function getPubIcons() {
+    let hasLooseleafs = !!identity?.permission_token_on_homepage.find(
+      (f) =>
+        f.permission_tokens.leaflets_to_documents &&
+        f.permission_tokens.leaflets_to_documents[0]?.document,
+    );
+
+    if (identity && identity.publications.length >= 1) {
+      return (
+        <div className="flex gap-1">
+          {identity.publications.map((pub, index) => {
+            if (index <= 3)
+              return (
+                <PubIcon
+                  key={pub.uri}
+                  record={normalizePublicationRecord(pub.record)}
+                  uri={pub.uri}
+                />
+              );
+          })}
+        </div>
+      );
+    }
+    if (identity && hasLooseleafs) {
+      return (
+        <div className="bg-bg-leaflet rounded-full  ">
+          <LooseLeafSmall className="scale-[75%]" />
+        </div>
+      );
+    } else
+      return (
+        <ButtonPrimary compact className="text-sm!">
+          Create a Publication!
+        </ButtonPrimary>
+      );
+  }
+
   return (
     <DashboardLayout
       id="home"
@@ -103,6 +147,26 @@ export const HomeLayout = (props: {
           ),
         },
       }}
+      pageTitle={
+        <PageTitle
+          pageTitle={"Home"}
+          controls={
+            <Popover
+              trigger={<div>{getPubIcons()}</div>}
+              className="pt-1 px-2!"
+            >
+              <HomeButton current className="flex-row-reverse! justify-end!" />
+              <hr className="my-1 border-border-light" />
+              <PublicationButtons
+                currentPage={"home"}
+                currentPubUri={undefined}
+                className="justify-end!"
+                optionClassName=" flex-row-reverse!"
+              />
+            </Popover>
+          }
+        />
+      }
     />
   );
 };

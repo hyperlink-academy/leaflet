@@ -20,10 +20,13 @@ import { useIsMobile } from "src/hooks/isMobile";
 import { useState } from "react";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import type { navPages } from "./NavigationButtons";
+import { AddTiny } from "components/Icons/AddTiny";
 
 export const PublicationButtons = (props: {
   currentPage: navPages;
   currentPubUri: string | undefined;
+  className?: string;
+  optionClassName?: string;
 }) => {
   let { identity } = useIdentityData();
   let hasLooseleafs = !!identity?.permission_token_on_homepage.find(
@@ -38,12 +41,14 @@ export const PublicationButtons = (props: {
     return <PubListEmpty />;
 
   return (
-    <div className="pubListWrapper w-full  flex flex-col sm:bg-transparent sm:border-0">
+    <div
+      className={`pubListWrapper w-full  flex flex-col sm:bg-transparent sm:border-0 ${props.className}`}
+    >
       {hasLooseleafs && (
         <>
           <SpeedyLink
             href={`/looseleafs`}
-            className="flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full"
+            className={`flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full `}
           >
             {/*TODO How should i get if this is the current page or not?
               theres not "pub" to check the uri for. Do i need to add it as an option to NavPages? thats kinda annoying*/}
@@ -51,11 +56,12 @@ export const PublicationButtons = (props: {
               label="Looseleafs"
               icon={<LooseLeafSmall />}
               nav
-              className={
+              className={`${
                 props.currentPage === "looseleafs"
                   ? "bg-bg-page! border-border!"
                   : ""
               }
+                ${props.optionClassName}`}
             />
           </SpeedyLink>
         </>
@@ -68,14 +74,16 @@ export const PublicationButtons = (props: {
             key={d.uri}
             record={d.record}
             current={d.uri === props.currentPubUri}
+            className={props.optionClassName}
           />
         );
       })}
       <Link
         href={"/lish/createPub"}
-        className="pubListCreateNew  text-accent-contrast text-sm place-self-end hover:text-accent-contrast"
+        className={`pubListCreateNew group/new-pub text-tertiary hover:text-accent-contrast flex gap-2 items-center p-1 no-underline! ${props.optionClassName}`}
       >
-        New
+        <div className="group-hover/new-pub:border-accent-contrast w-6 h-6 border-border-light border-2 border-dashed rounded-full" />
+        New Publication
       </Link>
     </div>
   );
@@ -86,6 +94,7 @@ export const PublicationOption = (props: {
   name: string;
   record: Json;
   current?: boolean;
+  className?: string;
 }) => {
   let record = normalizePublicationRecord(props.record);
   if (!record) return;
@@ -93,13 +102,13 @@ export const PublicationOption = (props: {
   return (
     <SpeedyLink
       href={`${getBasePublicationURL(props)}/dashboard`}
-      className="flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full"
+      className={`flex gap-2 items-start text-secondary font-bold hover:no-underline! hover:text-accent-contrast w-full `}
     >
       <ActionButton
         label={record.name}
         icon={<PubIcon record={record} uri={props.uri} />}
         nav
-        className={props.current ? "bg-bg-page! border-border!" : ""}
+        className={`${props.current ? "bg-bg-page! border-border!" : ""} ${props.className}`}
       />
     </SpeedyLink>
   );

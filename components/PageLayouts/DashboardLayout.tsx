@@ -27,6 +27,7 @@ import Link from "next/link";
 import { ExternalLinkTiny } from "components/Icons/ExternalLinkTiny";
 import { usePreserveScroll } from "src/hooks/usePreserveScroll";
 import { Tab } from "components/Tab";
+import { PubIcon, PublicationButtons } from "components/ActionBar/Publications";
 
 export type DashboardState = {
   display?: "grid" | "list";
@@ -141,6 +142,7 @@ export function DashboardLayout<
   publication?: string;
   profileDid?: string;
   actions: React.ReactNode;
+  pageTitle?: React.ReactNode;
 }) {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -167,6 +169,7 @@ export function DashboardLayout<
   let [headerState, setHeaderState] = useState<"default" | "controls">(
     "default",
   );
+
   return (
     <DashboardIdContext.Provider value={props.id}>
       <div
@@ -186,6 +189,8 @@ export function DashboardLayout<
           ref={ref}
           id="home-content"
         >
+          {props.pageTitle}
+
           {Object.keys(props.tabs).length <= 1 && !controls ? null : (
             <>
               <Header>
@@ -255,6 +260,21 @@ export function DashboardLayout<
     </DashboardIdContext.Provider>
   );
 }
+
+export const PageTitle = (props: {
+  pageTitle: string;
+  controls: React.ReactNode;
+}) => {
+  return (
+    <MediaContents
+      mobile={true}
+      className="flex justify-between items-center px-1 mt-1 -mb-1 w-full "
+    >
+      <h4 className="grow truncate">{props.pageTitle}</h4>
+      <div className="shrink-0 h-6">{props.controls}</div>
+    </MediaContents>
+  );
+};
 
 export const HomeDashboardControls = (props: {
   searchValue: string;
@@ -449,7 +469,7 @@ const SearchInput = (props: {
         className={`dashboardSearchInput
           appearance-none! outline-hidden!
           w-full min-w-0 text-primary relative pl-7  pr-1 -my-px
-          border rounded-md border-transparent focus-within:border-border
+          border rounded-md border-border-light focus-within:border-border
           bg-transparent ${props.hasBackgroundImage ? "focus-within:bg-bg-page" : "focus-within:bg-bg-leaflet"} `}
         type="text"
         id="pubName"

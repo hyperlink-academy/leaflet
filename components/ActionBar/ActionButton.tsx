@@ -71,7 +71,7 @@ export const ActionButton = (
     >
       <div className="shrink-0 flex flex-row gap-0.5">{icon}</div>
       <div
-        className={`flex flex-col pr-1 ${subtext && "leading-snug"} max-w-full min-w-0  ${sidebar.open ? "block" : showLabelOnMobile ? "sm:hidden block" : "hidden"}`}
+        className={`flex flex-col ${subtext && "leading-snug"} max-w-full min-w-0  ${sidebar.open ? "block" : showLabelOnMobile ? "sm:hidden block" : "hidden"}`}
       >
         <div className="truncate text-left">{label}</div>
         {subtext && (

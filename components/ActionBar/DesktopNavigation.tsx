@@ -8,6 +8,7 @@ import {
 } from "./NavigationButtons";
 import { PublicationButtons } from "./Publications";
 import { Sidebar } from "./Sidebar";
+import { LoginActionButton, LoginButton } from "components/LoginButton";
 
 export const DesktopNavigation = (props: {
   currentPage: navPages;
@@ -24,11 +25,14 @@ export const DesktopNavigation = (props: {
     props.currentPage === "pub";
   return (
     <div className="flex flex-col gap-3">
-      {identity?.atp_did && (
-        <Sidebar alwaysOpen>
+      <Sidebar alwaysOpen>
+        {identity?.atp_did ? (
           <NotificationButton current={props.currentPage === "notifications"} />
-        </Sidebar>
-      )}
+        ) : (
+          <LoginActionButton />
+        )}
+      </Sidebar>
+
       <Sidebar alwaysOpen>
         <ReaderButton
           current={props.currentPage === "reader"}
