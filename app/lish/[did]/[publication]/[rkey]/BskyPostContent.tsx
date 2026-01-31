@@ -48,7 +48,7 @@ export function BskyPostContent(props: {
   return (
     <div className={`bskyPost relative flex flex-col w-full `}>
       <button
-        className="absolute inset-0"
+        className="absolute inset-0 z-[-1]"
         onClick={() => {
           openPage(parent, { type: "thread", uri: post.uri });
         }}
@@ -148,7 +148,7 @@ export function CompactBskyPostContent(props: {
   return (
     <div className="bskyPost relative flex flex-col w-full">
       <button
-        className="absolute inset-0 "
+        className="absolute inset-0 z-[-1]"
         onClick={() => {
           openPage(parent, { type: "thread", uri: post.uri });
         }}
