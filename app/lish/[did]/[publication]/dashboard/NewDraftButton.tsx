@@ -17,28 +17,7 @@ export function NewDraftActionButton(props: { publication: string }) {
         router.push(`/${newLeaflet}`);
       }}
       icon=<AddTiny className="m-1 shrink-0" />
-      label="New"
+      label="New Draft"
     />
-  );
-}
-
-export function NewDraftSecondaryButton(props: {
-  publication: string;
-  fullWidth?: boolean;
-}) {
-  let router = useRouter();
-
-  return (
-    <ButtonSecondary
-      fullWidth={props.fullWidth}
-      id="new-leaflet-button"
-      onClick={async () => {
-        let newLeaflet = await createPublicationDraft(props.publication);
-        router.push(`/${newLeaflet}`);
-      }}
-    >
-      <AddTiny className="m-1 shrink-0" />
-      <span>New Draft</span>
-    </ButtonSecondary>
   );
 }

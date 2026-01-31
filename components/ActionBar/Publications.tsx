@@ -303,7 +303,7 @@ export const PublicationNavigation = (props: {
   }
 
   // Only looseleafs, no pubs - just link to looseleafs
-  if (!onlyLooseleafs) {
+  if (onlyLooseleafs) {
     if (props.currentPage === "looseleafs")
       return (
         <SpeedyLink
