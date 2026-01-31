@@ -33,7 +33,7 @@ export const ProfilePopover = (props: {
       className="max-w-sm p-0! text-center"
       trigger={
         <div
-          className="no-underline"
+          className="no-underline relative"
           onPointerEnter={(e) => {
             if (hoverTimeout.current) {
               window.clearTimeout(hoverTimeout.current);
