@@ -1,5 +1,8 @@
 "use client";
-import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
+import {
+  DashboardLayout,
+  PageTitle,
+} from "components/PageLayouts/DashboardLayout";
 import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { Fact, PermissionToken } from "src/replicache";
@@ -10,6 +13,7 @@ import { useIdentityData } from "components/IdentityProvider";
 import useSWR from "swr";
 import { getHomeDocs } from "../home/storage";
 import { Leaflet, LeafletList } from "../home/HomeLayout";
+import { PublicationNavigation } from "components/ActionBar/Publications";
 
 export const LooseleafsLayout = (props: {
   entityID: string | null;
@@ -47,6 +51,12 @@ export const LooseleafsLayout = (props: {
           ),
         },
       }}
+      pageTitle={
+        <PageTitle
+          pageTitle={"Looseleafs"}
+          controls={<PublicationNavigation currentPage="looseleafs" />}
+        />
+      }
     />
   );
 };

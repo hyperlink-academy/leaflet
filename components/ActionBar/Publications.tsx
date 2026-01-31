@@ -15,12 +15,15 @@ import { SpeedyLink } from "components/SpeedyLink";
 import { PublishSmall } from "components/Icons/PublishSmall";
 import { Popover } from "components/Popover";
 import { BlueskyLogin } from "app/login/LoginForm";
-import { ButtonSecondary } from "components/Buttons";
+import { ButtonPrimary, ButtonSecondary } from "components/Buttons";
 import { useIsMobile } from "src/hooks/isMobile";
 import { useState } from "react";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
-import type { navPages } from "./NavigationButtons";
+import { HomeButton, type navPages } from "./NavigationButtons";
 import { AddTiny } from "components/Icons/AddTiny";
+import { HomeSmall } from "components/Icons/HomeSmall";
+import { HomeTiny } from "components/Icons/HomeTiny";
+import { LooseleafTiny } from "components/Icons/LooseleafTiny";
 
 export const PublicationButtons = (props: {
   currentPage: navPages;
@@ -222,6 +225,117 @@ export const PubIcon = (props: {
         {props.record?.name.slice(0, 1).toUpperCase()}
       </div>
     </div>
+  );
+};
+
+export const PublicationNavigation = (props: {
+  currentPage: navPages;
+  currentPubUri?: string;
+}) => {
+  let { identity } = useIdentityData();
+
+  let hasLooseleafs = !!identity?.permission_token_on_homepage.find(
+    (f) =>
+      f.permission_tokens.leaflets_to_documents &&
+      f.permission_tokens.leaflets_to_documents[0]?.document,
+  );
+
+  let pubCount = identity?.publications.length ?? 0;
+  let onlyOnePub = pubCount === 1 && !hasLooseleafs;
+  let onlyLooseleafs = pubCount === 0 && hasLooseleafs;
+
+  function getTriggerIcons() {
+    if (identity && pubCount >= 1) {
+      return (
+        <div className="flex gap-1">
+          {identity.publications.map((pub, index) => {
+            if (index <= 2)
+              return (
+                <PubIcon
+                  key={pub.uri}
+                  record={normalizePublicationRecord(pub.record)}
+                  uri={pub.uri}
+                />
+              );
+          })}
+        </div>
+      );
+    }
+    if (identity && hasLooseleafs) {
+      return (
+        <div className="bg-bg-leaflet rounded-full">
+          <LooseLeafSmall className="scale-[75%]" />
+        </div>
+      );
+    } else
+      return (
+        <ButtonPrimary compact className="text-sm!">
+          Create a Publication!
+        </ButtonPrimary>
+      );
+  }
+
+  // Single pub, no looseleafs - just link to that pub
+  if (onlyOnePub && identity) {
+    let pub = identity.publications[0];
+    if (props.currentPage === "pub")
+      return (
+        <SpeedyLink
+          href={`/home`}
+          className="hover:no-underline! text-tertiary text-bold flex gap-2 text-sm border border-border-light rounded-md px-1 py-[px] items-center"
+        >
+          Home <HomeTiny />
+        </SpeedyLink>
+      );
+    return (
+      <SpeedyLink
+        href={`${getBasePublicationURL(pub)}/dashboard`}
+        className="hover:no-underline! text-tertiary text-bold flex gap-2 text-sm border border-border-light rounded-md px-1 py-[px] items-center max-w-32 "
+      >
+        <div className="truncate">{pub.name}</div>
+        <PubIcon
+          small
+          record={normalizePublicationRecord(pub.record)}
+          uri={pub.uri}
+        />
+      </SpeedyLink>
+    );
+  }
+
+  // Only looseleafs, no pubs - just link to looseleafs
+  if (!onlyLooseleafs) {
+    if (props.currentPage === "looseleafs")
+      return (
+        <SpeedyLink
+          href={`/home`}
+          className="hover:no-underline! text-tertiary text-bold flex gap-2 text-sm border border-border-light rounded-md px-1 py-[px] items-center"
+        >
+          Home <HomeTiny />
+        </SpeedyLink>
+      );
+    return (
+      <SpeedyLink href="/looseleafs" className="hover:no-underline!">
+        <div className="hover:no-underline! text-tertiary text-bold flex gap-2 text-sm border border-border-light rounded-md px-1 py-[px] items-center max-w-32 ">
+          Looseleafs <LooseleafTiny />
+        </div>
+      </SpeedyLink>
+    );
+  }
+
+  return (
+    <Popover trigger={<div>{getTriggerIcons()}</div>} className="pt-1 px-2!">
+      <HomeButton
+        current={props.currentPage === "home"}
+        className="flex-row-reverse! justify-end!"
+      />
+      <hr className="my-1 border-border-light" />
+      <PublicationButtons
+        currentPage={props.currentPage}
+        currentPubUri={props.currentPubUri}
+        className="justify-end!"
+        optionClassName=" flex-row-reverse!"
+      />
+    </Popover>
   );
 };
 

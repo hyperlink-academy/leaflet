@@ -13,8 +13,7 @@ import {
 } from "components/PageLayouts/DashboardLayout";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
-import { PublicationButtons } from "components/ActionBar/Publications";
-import { Popover } from "components/Popover";
+import { PublicationNavigation } from "components/ActionBar/Publications";
 
 export default function PublicationDashboard({
   publication,
@@ -83,14 +82,10 @@ export default function PublicationDashboard({
         <PageTitle
           pageTitle={record.name}
           controls={
-            <Popover trigger={<div>pubs</div>} className="pt-1 px-2!">
-              <PublicationButtons
-                currentPage={"pub"}
-                currentPubUri={publication.uri}
-                className="justify-end!"
-                optionClassName=" flex-row-reverse!"
-              />
-            </Popover>
+            <PublicationNavigation
+              currentPage="pub"
+              currentPubUri={publication.uri}
+            />
           }
         />
       }
