@@ -8,12 +8,10 @@ import { PublishedPostsList } from "./PublishedPostsLists";
 import { PublicationSubscribers } from "./PublicationSubscribers";
 import {
   DashboardLayout,
-  PageTitle,
   PublicationDashboardControls,
 } from "components/PageLayouts/DashboardLayout";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
 import { type NormalizedPublication } from "src/utils/normalizeRecords";
-import { PublicationNavigation } from "components/ActionBar/Publications";
 
 export default function PublicationDashboard({
   publication,
@@ -78,17 +76,7 @@ export default function PublicationDashboard({
       actions={<Actions publication={publication.uri} />}
       currentPage="pub"
       publication={publication.uri}
-      pageTitle={
-        <PageTitle
-          pageTitle={record.name}
-          controls={
-            <PublicationNavigation
-              currentPage="pub"
-              currentPubUri={publication.uri}
-            />
-          }
-        />
-      }
+      pageTitle={record.name}
     />
   );
 }

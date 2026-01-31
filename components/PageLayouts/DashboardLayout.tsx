@@ -141,8 +141,8 @@ export function DashboardLayout<
   currentPage: navPages;
   publication?: string;
   profileDid?: string;
-  actions: React.ReactNode;
-  pageTitle?: React.ReactNode;
+  actions?: React.ReactNode;
+  pageTitle?: string;
 }) {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -189,7 +189,9 @@ export function DashboardLayout<
           ref={ref}
           id="home-content"
         >
-          {props.pageTitle}
+          {props.pageTitle && (
+            <PageTitle pageTitle={props.pageTitle} actions={props.actions} />
+          )}
 
           {Object.keys(props.tabs).length <= 1 && !controls ? null : (
             <>
@@ -250,11 +252,6 @@ export function DashboardLayout<
             currentPublicationUri={props.publication}
             currentProfileDid={props.profileDid}
           />
-          {props.actions && (
-            <div className="place-self-end flex flex-row-reverse gap-2 ">
-              {props.actions}
-            </div>
-          )}
         </Footer>
       </div>
     </DashboardIdContext.Provider>
@@ -263,7 +260,7 @@ export function DashboardLayout<
 
 export const PageTitle = (props: {
   pageTitle: string;
-  controls: React.ReactNode;
+  actions: React.ReactNode;
 }) => {
   return (
     <MediaContents
@@ -271,7 +268,8 @@ export const PageTitle = (props: {
       className="flex justify-between items-center px-1 mt-1 -mb-1 w-full "
     >
       <h4 className="grow truncate">{props.pageTitle}</h4>
-      <div className="shrink-0 h-6">{props.controls}</div>
+      <div className="flex flex-row-reverse! gap-1">{props.actions}</div>
+      {/* <div className="shrink-0 h-6">{props.controls}</div> */}
     </MediaContents>
   );
 };

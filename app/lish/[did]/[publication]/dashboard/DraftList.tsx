@@ -1,6 +1,5 @@
 "use client";
 
-import { NewDraftSecondaryButton } from "./NewDraftButton";
 import React from "react";
 import {
   usePublicationData,

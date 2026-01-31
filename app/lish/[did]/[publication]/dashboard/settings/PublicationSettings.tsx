@@ -34,6 +34,7 @@ export function PublicationSettingsButton(props: { publication: string }) {
           id="pub-settings-button"
           icon=<SettingsSmall />
           label="Settings"
+          smallOnMobile
         />
       }
     >

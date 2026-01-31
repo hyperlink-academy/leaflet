@@ -23,7 +23,9 @@ export const AccountSettings = (props: { entityID: string }) => {
       side={isMobile ? "top" : "right"}
       align={isMobile ? "center" : "start"}
       className={`max-w-xs w-[1000px] ${state === "theme" && "bg-white!"}`}
-      trigger={<ActionButton icon=<AccountSmall /> label="Settings" />}
+      trigger={
+        <ActionButton smallOnMobile icon=<AccountSmall /> label="Settings" />
+      }
     >
       {state === "general" ? (
         <GeneralSettings backToMenu={() => setState("menu")} />

@@ -18,7 +18,6 @@ import {
   DashboardLayout,
   DashboardState,
   useDashboardState,
-  PageTitle,
 } from "components/PageLayouts/DashboardLayout";
 import { Actions } from "./Actions/Actions";
 import { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
@@ -29,7 +28,6 @@ import {
   HomeEmptyState,
   PublicationBanner,
 } from "./HomeEmpty/HomeEmpty";
-import { PublicationNavigation } from "components/ActionBar/Publications";
 
 export type Leaflet = {
   added_at: string;
@@ -105,12 +103,7 @@ export const HomeLayout = (props: {
           ),
         },
       }}
-      pageTitle={
-        <PageTitle
-          pageTitle={"Home"}
-          controls={<PublicationNavigation currentPage="home" />}
-        />
-      }
+      pageTitle="Home"
     />
   );
 };
