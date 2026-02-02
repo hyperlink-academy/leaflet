@@ -86,10 +86,3 @@ export const ActionButton = (
     </button>
   );
 };
-
-// ok currently in the middle of making the actions on home, looseleaf, and pub appear at the top by the page title 
-// i then need to find a good place for the publication list in the footer 
-// but first i really need to refactor action button
-// 1) make a primary variant
-// 2) make a secondary variant 
-// 

@@ -1,9 +1,7 @@
 import { HomeSmall } from "components/Icons/HomeSmall";
 import { ActionButton } from "./ActionButton";
 import { useIdentityData } from "components/IdentityProvider";
-import Link from "next/link";
-import { DiscoverSmall } from "components/Icons/DiscoverSmall";
-import { PubIcon, PublicationButtons } from "./Publications";
+import { PublicationButtons } from "./Publications";
 import { ReaderUnreadSmall } from "components/Icons/ReaderSmall";
 import {
   NotificationsReadSmall,
@@ -12,10 +10,6 @@ import {
 import { SpeedyLink } from "components/SpeedyLink";
 import { Popover } from "components/Popover";
 import { WriterSmall } from "components/Icons/WriterSmall";
-import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
-import { normalizePublicationRecord } from "src/utils/normalizeRecords";
-import { theme } from "tailwind.config";
-
 export type navPages =
   | "home"
   | "reader"
@@ -47,61 +41,24 @@ export const WriterButton = (props: {
   currentPubUri?: string;
   compactOnMobile?: boolean;
 }) => {
-  let { identity } = useIdentityData();
-
-  let currentPub = identity?.publications?.find(
-    (pub) => pub.uri === props.currentPubUri,
-  );
-  let pubRecord = currentPub
-    ? normalizePublicationRecord(currentPub.record)
-    : null;
-
+  console.log(props.currentPage);
   let current =
     props.currentPage === "home" ||
     props.currentPage === "looseleafs" ||
     props.currentPage === "pub";
-  console.log(current);
-
-  let currentPubIcon =
-    currentPub && pubRecord ? (
-      <PubIcon record={pubRecord} uri={currentPub.uri} />
-    ) : null;
-
-  let currentIcon =
-    props.currentPage === "home" ? (
-      <HomeSmall className="text-tertiary" />
-    ) : props.currentPage === "looseleafs" ? (
-      <LooseLeafSmall className="text-tertiary" />
-    ) : props.currentPage === "pub" ? (
-      currentPubIcon
-    ) : null;
 
   return (
     <Popover
       className="p-2!"
       asChild
       trigger={
-        props.compactOnMobile ? (
-          <ActionButton
-            nav
-            labelOnMobile={true}
-            icon={<WriterSmall />}
-            label=<div className="flex flex-row gap-1">Write</div>
-            className={current ? "bg-bg-page! border-border-light!" : ""}
-          />
-        ) : (
-          <ActionButton
-            nav
-            labelOnMobile={false}
-            icon={
-              <>
-                <WriterSmall />
-              </>
-            }
-            label=<div className="flex flex-row gap-1">Writer</div>
-            className={current ? "bg-bg-page! border-border-light!" : ""}
-          />
-        )
+        <ActionButton
+          nav
+          labelOnMobile={!props.compactOnMobile}
+          icon={<WriterSmall />}
+          label="Write"
+          className={` w-fit! ${current ? "bg-bg-page! border-border-light!" : ""}`}
+        />
       }
     >
       <SpeedyLink href={"/home"} className="hover:!no-underline">
@@ -110,9 +67,7 @@ export const WriterButton = (props: {
           icon={<HomeSmall />}
           label="Write"
           className={
-            props.currentPage === "home"
-              ? "bg-bg-page! border-border-light!"
-              : ""
+            props.currentPage === "home" ? "bg-bg-page! border-border!" : ""
           }
         />
       </SpeedyLink>
@@ -135,7 +90,7 @@ export const ReaderButton = (props: {
     <SpeedyLink href={"/reader"} className="hover:no-underline!">
       <ActionButton
         nav
-        labelOnMobile={props.compactOnMobile}
+        labelOnMobile={!props.compactOnMobile}
         icon={<ReaderUnreadSmall />}
         label="Read"
         className={props.current ? "bg-bg-page! border-border-light!" : ""}
@@ -166,22 +121,3 @@ export function NotificationButton(props: { current?: boolean }) {
     </SpeedyLink>
   );
 }
-
-const Divider = () => {
-  return (
-    <svg
-      width="6"
-      height="25"
-      viewBox="0 0 6 25"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M0.5 0.5V7.5L5 12.5L0.5 17.5L0.5 24.5"
-        stroke={theme.colors["border-light"]}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-};
