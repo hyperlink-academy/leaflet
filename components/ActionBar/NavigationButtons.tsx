@@ -41,7 +41,6 @@ export const WriterButton = (props: {
   currentPubUri?: string;
   compactOnMobile?: boolean;
 }) => {
-  console.log(props.currentPage);
   let current =
     props.currentPage === "home" ||
     props.currentPage === "looseleafs" ||

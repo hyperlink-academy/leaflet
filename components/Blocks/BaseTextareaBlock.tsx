@@ -83,7 +83,6 @@ export function BaseTextareaBlock(props: BaseTextareaBlockProps) {
           let block = props.block.nextBlock;
 
           let coord = getCoordinatesInTextarea(e.currentTarget, selection);
-          console.log(coord);
           if (block) {
             focusBlock(block, {
               left: coord.left + e.currentTarget.getBoundingClientRect().left,
