@@ -55,10 +55,6 @@ export function HomeEmptyState() {
 
       <PublicationBanner />
       <DiscoverBanner />
-      <div className="text-tertiary italic text-sm font-normal -mt-2">
-        Right now docs and publications are separate. Soon you'll be able to add
-        docs to pubs!
-      </div>
     </div>
   );
 }

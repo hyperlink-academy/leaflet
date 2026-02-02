@@ -85,7 +85,6 @@ export const ReaderButton = (props: {
   subs: boolean;
   compactOnMobile?: boolean;
 }) => {
-  if (!props.subs) return;
   return (
     <SpeedyLink href={"/reader"} className="hover:no-underline!">
       <ActionButton

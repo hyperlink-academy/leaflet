@@ -1,4 +1,3 @@
-import { MenuSmall } from "components/Icons/MenuSmall";
 import { useIdentityData } from "components/IdentityProvider";
 import { Popover } from "components/Popover";
 import { Separator } from "components/Layout";
@@ -10,17 +9,8 @@ import {
   WriterButton,
 } from "./NavigationButtons";
 import { PubIcon, PublicationButtons } from "./Publications";
-import { HomeSmall } from "components/Icons/HomeSmall";
-import { ReaderReadSmall } from "components/Icons/ReaderSmall";
 import { LooseLeafSmall } from "components/Icons/LooseleafSmall";
 import { normalizePublicationRecord } from "src/utils/normalizeRecords";
-import {
-  NotificationsReadSmall,
-  NotificationsUnreadSmall,
-} from "components/Icons/NotificationSmall";
-import { TagSmall } from "components/Icons/TagSmall";
-import { Avatar } from "components/Avatar";
-import { useProfileFromDid } from "src/utils/getRecordFromDid";
 import { LoginActionButton } from "components/LoginButton";
 import { ButtonPrimary } from "components/Buttons";
 
@@ -68,12 +58,10 @@ export const MobileNavigation = (props: {
           <LooseLeafSmall className="scale-[75%]" />
         </div>
       );
-    } else
-      return (
-        <ButtonPrimary compact className="text-sm!">
-          Create a Publication!
-        </ButtonPrimary>
-      );
+    }
+    if (identity) {
+      return <ButtonPrimary>Create a Pub!</ButtonPrimary>;
+    } else return;
   }
 
   return (
