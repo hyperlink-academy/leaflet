@@ -378,7 +378,10 @@ async function handleEvent(evt: Event) {
 
     // Now validate the record since we know it contains our quote param
     let record = AppBskyFeedPost.validateRecord(evt.record);
-    if (!record.success) return;
+    if (!record.success) {
+      console.log(record.error);
+      return;
+    }
 
     let embed: string | null = null;
     if (
