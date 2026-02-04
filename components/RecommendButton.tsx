@@ -87,7 +87,7 @@ export function RecommendButton(props: {
           x: e.clientX,
           y: e.clientY - 16,
         },
-        text: <div className="text-xs">thanks!</div>,
+        text: <div className="text-xs">recc'd!</div>,
       });
     }
 

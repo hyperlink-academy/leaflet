@@ -180,7 +180,7 @@ export const Interactions = (props: {
 
       {tagCount > 0 && (
         <>
-          interactionsAvailable && <Separator classname="h-4!" />
+          {interactionsAvailable && <Separator classname="h-4!" />}
           <TagPopover tags={tags} tagCount={tagCount} />
         </>
       )}
@@ -272,16 +272,9 @@ export const ExpandedInteractions = (props: {
                   aria-label="Post quotes"
                 >
                   <QuoteTiny aria-hidden /> {props.quotesCount}
-                  {props.quotesCount > 0 && (
-                    <>
-                      {props.quotesCount}
-                      <Separator classname="h-4! text-accent-contrast!" />
-                    </>
-                  )}
-                  Mention
-                  <span
-                    aria-hidden
-                  >{`Mention${props.quotesCount === 1 ? "" : "s"}`}</span>
+                  {props.quotesCount}
+                  <Separator classname="h-4! text-accent-contrast!" />
+                  Mention{props.quotesCount > 1 ? "" : "s"}
                 </ButtonSecondary>
               )}
               {!props.showComments ? null : (
@@ -309,7 +302,7 @@ export const ExpandedInteractions = (props: {
                       <Separator classname="h-4! text-accent-contrast!" />
                     </>
                   )}
-                  Comment
+                  Comment{props.commentsCount > 1 ? "" : "s"}
                 </ButtonSecondary>
               )}
             </div>
