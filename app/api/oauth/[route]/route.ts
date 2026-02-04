@@ -89,10 +89,11 @@ export async function GET(
         // Trigger migration if identity needs it
         const metadata = identity?.metadata as Record<string, unknown> | null;
         if (metadata?.needsStandardSiteMigration) {
-          await inngest.send({
-            name: "user/migrate-to-standard",
-            data: { did: session.did },
-          });
+          if (process.env.NODE_ENV === "production")
+            await inngest.send({
+              name: "user/migrate-to-standard",
+              data: { did: session.did },
+            });
         }
 
         let { data: token } = await supabaseServerClient
