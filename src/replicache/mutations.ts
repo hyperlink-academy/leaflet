@@ -660,6 +660,9 @@ const updatePublicationDraft: Mutation<{
   cover_image?: string | null;
   localPublishedAt?: string | null;
 }> = async (args, ctx) => {
+  // Normalize tags to lowercase for consistent storage and querying
+  const normalizedTags = args.tags?.map((tag) => tag.toLowerCase());
+
   await ctx.runOnServer(async (serverCtx) => {
     console.log("updating");
     const updates: {
@@ -670,7 +673,7 @@ const updatePublicationDraft: Mutation<{
     } = {};
     if (args.description !== undefined) updates.description = args.description;
     if (args.title !== undefined) updates.title = args.title;
-    if (args.tags !== undefined) updates.tags = args.tags;
+    if (normalizedTags !== undefined) updates.tags = normalizedTags;
     if (args.cover_image !== undefined) updates.cover_image = args.cover_image;
 
     if (Object.keys(updates).length > 0) {
@@ -695,7 +698,8 @@ const updatePublicationDraft: Mutation<{
     if (args.title !== undefined) await tx.set("publication_title", args.title);
     if (args.description !== undefined)
       await tx.set("publication_description", args.description);
-    if (args.tags !== undefined) await tx.set("publication_tags", args.tags);
+    if (normalizedTags !== undefined)
+      await tx.set("publication_tags", normalizedTags);
     if (args.cover_image !== undefined)
       await tx.set("publication_cover_image", args.cover_image);
     if (args.localPublishedAt !== undefined)

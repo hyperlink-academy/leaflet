@@ -109,8 +109,10 @@ export const TagSearchInput = (props: {
   }
 
   function selectTag(tag: string) {
-    console.log("selected " + tag);
-    props.setSelectedTags([...props.selectedTags, tag]);
+    // Normalize tag to lowercase for consistent storage and querying
+    const normalizedTag = tag.toLowerCase();
+    console.log("selected " + normalizedTag);
+    props.setSelectedTags([...props.selectedTags, normalizedTag]);
     clearTagInput();
   }
 
@@ -150,12 +152,12 @@ export const TagSearchInput = (props: {
   return (
     <div className="relative">
       <Input
-        className="input-with-border grow w-full outline-none!"
+        className="input-with-border grow w-full outline-none! lowercase"
         id="placeholder-tag-search-input"
         value={tagInputValue}
         placeholder="search tags…"
         onChange={(e) => {
-          setTagInputValue(e.target.value);
+          setTagInputValue(e.target.value.toLowerCase());
           setIsOpen(true);
           setHighlightedIndex(0);
         }}
@@ -193,7 +195,7 @@ export const TagSearchInput = (props: {
             placeholder="search tags…"
             value={tagInputValue}
             onChange={(e) => {
-              setTagInputValue(e.target.value);
+              setTagInputValue(e.target.value.toLowerCase());
               setIsOpen(true);
               setHighlightedIndex(0);
             }}

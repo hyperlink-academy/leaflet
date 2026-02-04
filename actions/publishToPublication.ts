@@ -89,6 +89,8 @@ export async function publishToPublication({
   entitiesToDelete?: string[];
   publishedAt?: string;
 }): Promise<PublishResult> {
+  // Normalize tags to lowercase for consistent storage and querying
+  const normalizedTags = tags?.map((tag) => tag.toLowerCase());
   let identity = await getIdentityData();
   if (!identity || !identity.atp_did) {
     return {
@@ -241,7 +243,7 @@ export async function publishToPublication({
       publishedAt:
         publishedAt || existingRecord.publishedAt || new Date().toISOString(),
       ...(description && { description }),
-      ...(tags !== undefined && { tags }),
+      ...(normalizedTags !== undefined && { tags: normalizedTags }),
       ...(coverImageBlob && { coverImage: coverImageBlob }),
       // Include theme for standalone documents (not for publication documents)
       ...(!publication_uri && theme && { theme }),
@@ -259,7 +261,7 @@ export async function publishToPublication({
       ...(theme && { theme }),
       title: title || "Untitled",
       description: description || "",
-      ...(tags !== undefined && { tags }),
+      ...(normalizedTags !== undefined && { tags: normalizedTags }),
       ...(coverImageBlob && { coverImage: coverImageBlob }),
       pages: pagesArray,
       publishedAt:

@@ -14,7 +14,11 @@ import { deduplicateByUriOrdered } from "src/utils/deduplicateRecords";
 export async function getDocumentsByTag(
   tag: string,
 ): Promise<{ posts: Post[] }> {
-  // Query documents that have this tag
+  // Normalize tag to lowercase for case-insensitive matching
+  const normalizedTag = tag.toLowerCase();
+
+  // Query documents that have this tag (case-insensitive)
+  // Use ilike on the JSONB text cast to match regardless of stored case
   const { data: rawDocuments, error } = await supabaseServerClient
     .from("documents")
     .select(
@@ -23,7 +27,7 @@ export async function getDocumentsByTag(
       document_mentions_in_bsky(count),
       documents_in_publications(publications(*))`,
     )
-    .contains("data->tags", `["${tag}"]`)
+    .filter("data->>tags", "ilike", `%"${normalizedTag}"%`)
     .order("sort_date", { ascending: false })
     .limit(50);
 
