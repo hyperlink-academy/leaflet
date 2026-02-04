@@ -7,8 +7,9 @@ import { PopoverOpenContext } from "components/Popover/PopoverContext";
 
 type ButtonProps = Omit<JSX.IntrinsicElements["button"], "content">;
 
-export const ActionButton = (
-  _props: ButtonProps & {
+export const ActionButton = forwardRef<
+  HTMLButtonElement,
+  ButtonProps & {
     id?: string;
     icon: React.ReactNode;
     label: React.ReactNode;
@@ -19,8 +20,8 @@ export const ActionButton = (
     subtext?: string;
     labelOnMobile?: boolean;
     z?: boolean;
-  },
-) => {
+  }
+>((_props, ref) => {
   let {
     id,
     icon,
@@ -50,6 +51,7 @@ export const ActionButton = (
   return (
     <button
       {...buttonProps}
+      ref={ref}
       className={`
       actionButton relative font-bold
       rounded-md border
@@ -81,4 +83,5 @@ export const ActionButton = (
       </div>
     </button>
   );
-};
+});
+ActionButton.displayName = "ActionButton";
