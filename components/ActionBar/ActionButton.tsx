@@ -58,9 +58,8 @@ export const ActionButton = forwardRef<
       actionButton relative font-bold
       rounded-md border
       flex gap-2 items-center justify-start
-      p-1 sm:mx-0
-      ${showLabelOnMobile && "sm:w-full w-max"}
-      ${smallOnMobile && "sm:text-base text-sm py-0 sm:py-1 sm:h-fit h-6"}
+      w-max sm:w-[1000px] sm:max-w-full p-1
+      ${smallOnMobile && "sm:text-base text-sm py-0! sm:py-1! sm:h-fit h-6"}
       ${
         primary
           ? "bg-accent-1 border-accent-1 text-accent-2 transparent-outline sm:hover:outline-accent-contrast focus:outline-accent-1 outline-offset-1 "
@@ -72,7 +71,6 @@ export const ActionButton = forwardRef<
       }
       ${className}
       `}
-      style={nav ? { width: "-webkit-fill-available" } : {}}
     >
       <div className="shrink-0 flex flex-row gap-0.5">{icon}</div>
       <div

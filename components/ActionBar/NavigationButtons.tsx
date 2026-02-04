@@ -47,35 +47,15 @@ export const WriterButton = (props: {
     props.currentPage === "pub";
 
   return (
-    <Popover
-      className="p-2!"
-      asChild
-      trigger={
-        <ActionButton
-          nav
-          labelOnMobile={!props.compactOnMobile}
-          icon={<WriterSmall />}
-          label="Write"
-          className={` w-fit! ${current ? "bg-bg-page! border-border-light!" : ""}`}
-        />
-      }
-    >
-      <SpeedyLink href={"/home"} className="hover:!no-underline">
-        <ActionButton
-          nav
-          icon={<HomeSmall />}
-          label="Write"
-          className={
-            props.currentPage === "home" ? "bg-bg-page! border-border!" : ""
-          }
-        />
-      </SpeedyLink>
-      <hr className="border-border-light border-dashed my-2" />
-      <PublicationButtons
-        currentPage={props.currentPage}
-        currentPubUri={props.currentPubUri}
+    <SpeedyLink href={"/home"} className="hover:!no-underline">
+      <ActionButton
+        nav
+        labelOnMobile={!props.compactOnMobile}
+        icon={<WriterSmall />}
+        label="Write"
+        className={` w-fit! ${current ? "bg-bg-page! border-border-light!" : ""}`}
       />
-    </Popover>
+    </SpeedyLink>
   );
 };
 
