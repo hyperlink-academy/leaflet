@@ -114,7 +114,7 @@ export function BskyPostContent(props: {
                 {showBlueskyLink && (
                   <>
                     <a
-                      className="text-tertiary hover:text-accent-contrast"
+                      className="text-tertiary relative hover:text-accent-contrast"
                       target="_blank"
                       href={url}
                     >

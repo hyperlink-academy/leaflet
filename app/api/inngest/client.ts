@@ -51,6 +51,16 @@ export type Events = {
       documentUris?: string[];
     };
   };
+  "user/write-records-to-pds": {
+    data: {
+      did: string;
+      records: Array<{
+        collection: string;
+        rkey: string;
+        record: unknown;
+      }>;
+    };
+  };
 };
 
 // Create a client to send and receive events
