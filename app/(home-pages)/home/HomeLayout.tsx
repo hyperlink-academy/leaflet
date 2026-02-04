@@ -23,11 +23,7 @@ import { Actions } from "./Actions/Actions";
 import { GetLeafletDataReturnType } from "app/api/rpc/[command]/get_leaflet_data";
 import { useState } from "react";
 import { useDebouncedEffect } from "src/hooks/useDebouncedEffect";
-import {
-  DiscoverBanner,
-  HomeEmptyState,
-  PublicationBanner,
-} from "./HomeEmpty/HomeEmpty";
+import { HomeEmptyState } from "./HomeEmpty/HomeEmpty";
 
 export type Leaflet = {
   added_at: string;
@@ -103,7 +99,7 @@ export const HomeLayout = (props: {
           ),
         },
       }}
-      pageTitle="Home"
+      pageTitle={"Home"}
     />
   );
 };
@@ -171,10 +167,6 @@ export function HomeLeafletList(props: {
         showPreview
       />
       <div className="spacer h-4 w-full bg-transparent shrink-0 " />
-
-      {leaflets.filter((l) => !!l.token.leaflets_in_publications).length ===
-        0 && <PublicationBanner small />}
-      <DiscoverBanner small />
     </>
   );
 }

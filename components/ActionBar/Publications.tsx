@@ -245,6 +245,8 @@ export const PublicationNavigation = (props: {
 }) => {
   let { identity } = useIdentityData();
 
+  if (!identity) return;
+
   let hasLooseleafs = !!identity?.permission_token_on_homepage.find(
     (f) =>
       f.permission_tokens.leaflets_to_documents &&
@@ -280,9 +282,11 @@ export const PublicationNavigation = (props: {
       );
     } else
       return (
-        <ButtonPrimary compact className="text-sm!">
-          Create a Publication!
-        </ButtonPrimary>
+        <SpeedyLink href="/lish/createPub">
+          <ButtonPrimary compact className="text-sm!">
+            Create a Publication!
+          </ButtonPrimary>
+        </SpeedyLink>
       );
   }
 
