@@ -87,7 +87,7 @@ export function RecommendButton(props: {
           x: e.clientX,
           y: e.clientY - 16,
         },
-        text: <div className="text-xs">recc'd!</div>,
+        text: <div className="text-xs">Recc'd!</div>,
       });
     }
 
@@ -142,7 +142,7 @@ export function RecommendButton(props: {
               <Separator classname="h-4! text-accent-contrast!" />
             </>
           )}
-          {displayRecommended ? "You recommend!" : "Recommend"}
+          {displayRecommended ? "Recommended!" : "Recommend"}
         </div>
       </ButtonSecondary>
     );

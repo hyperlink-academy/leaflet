@@ -138,7 +138,7 @@ export const Interactions = (props: {
 
   return (
     <div
-      className={`flex gap-2 text-tertiary text-sm item-center ${props.className}`}
+      className={`flex gap-[10px] text-tertiary text-sm item-center ${props.className}`}
     >
       {props.showRecommends === false ? null : (
         <RecommendButton
@@ -150,7 +150,7 @@ export const Interactions = (props: {
       {/*MENTIONS BUTTON*/}
       {props.quotesCount === 0 || props.showMentions === false ? null : (
         <button
-          className="flex w-fit gap-2 items-center"
+          className="flex w-fit gap-1 items-center"
           onClick={() => {
             if (!drawerOpen || drawer !== "quotes")
               openInteractionDrawer("quotes", document_uri, props.pageId);
@@ -166,7 +166,7 @@ export const Interactions = (props: {
       {/*COMMENT BUTTON*/}
       {props.showComments === false ? null : (
         <button
-          className="flex gap-2 items-center w-fit"
+          className="flex gap-1 items-center w-fit"
           onClick={() => {
             if (!drawerOpen || drawer !== "comments" || pageId !== props.pageId)
               openInteractionDrawer("comments", document_uri, props.pageId);
@@ -246,7 +246,7 @@ export const ExpandedInteractions = (props: {
         {noInteractions ? (
           <div />
         ) : (
-          <>
+          <div className="flex flex-col gap-2 just">
             <div className="flex gap-2 sm:flex-row flex-col">
               {props.showRecommends === false ? null : (
                 <RecommendButton
@@ -272,9 +272,8 @@ export const ExpandedInteractions = (props: {
                   aria-label="Post quotes"
                 >
                   <QuoteTiny aria-hidden /> {props.quotesCount}
-                  {props.quotesCount}
                   <Separator classname="h-4! text-accent-contrast!" />
-                  Mention{props.quotesCount > 1 ? "" : "s"}
+                  Mention{props.quotesCount > 1 ? "s" : ""}
                 </ButtonSecondary>
               )}
               {!props.showComments ? null : (
@@ -302,21 +301,21 @@ export const ExpandedInteractions = (props: {
                       <Separator classname="h-4! text-accent-contrast!" />
                     </>
                   )}
-                  Comment{props.commentsCount > 1 ? "" : "s"}
+                  Comment{props.commentsCount > 1 ? "s" : ""}
                 </ButtonSecondary>
               )}
             </div>
-          </>
+            {subscribed && publication && (
+              <ManageSubscription
+                base_url={getPublicationURL(publication)}
+                pub_uri={publication.uri}
+                subscribers={publication.publication_subscriptions}
+              />
+            )}
+          </div>
         )}
 
         <EditButton publication={publication} leafletId={leafletId} />
-        {subscribed && publication && (
-          <ManageSubscription
-            base_url={getPublicationURL(publication)}
-            pub_uri={publication.uri}
-            subscribers={publication.publication_subscriptions}
-          />
-        )}
       </div>
     </div>
   );
