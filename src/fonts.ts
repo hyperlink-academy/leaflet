@@ -113,6 +113,84 @@ export const fonts: Record<string, FontConfig> = {
     googleFontsFamily: "Space+Mono:ital,wght@0,400;0,700;1,400;1,700",
     fallback: ["monospace"],
   },
+
+  // Additional Google Fonts - Mono
+  "sometype-mono": {
+    id: "sometype-mono",
+    displayName: "Sometype Mono",
+    fontFamily: "Sometype Mono",
+    type: "google",
+    googleFontsFamily: "Sometype+Mono:ital,wght@0,400;0,700;1,400;1,700",
+    fallback: ["monospace"],
+  },
+
+  // Additional Google Fonts - Sans
+  "pt-sans": {
+    id: "pt-sans",
+    displayName: "PT Sans",
+    fontFamily: "PT Sans",
+    type: "google",
+    googleFontsFamily: "PT+Sans:ital,wght@0,400;0,700;1,400;1,700",
+    fallback: ["system-ui", "sans-serif"],
+  },
+  montserrat: {
+    id: "montserrat",
+    displayName: "Montserrat",
+    fontFamily: "Montserrat",
+    type: "google",
+    googleFontsFamily: "Montserrat:ital,wght@0,400;0,700;1,400;1,700",
+    fallback: ["system-ui", "sans-serif"],
+  },
+  "alegreya-sans": {
+    id: "alegreya-sans",
+    displayName: "Alegreya Sans",
+    fontFamily: "Alegreya Sans",
+    type: "google",
+    googleFontsFamily: "Alegreya+Sans:ital,wght@0,400;0,700;1,400;1,700",
+    fallback: ["system-ui", "sans-serif"],
+  },
+
+  // Additional Google Fonts - Serif
+  "pt-serif": {
+    id: "pt-serif",
+    displayName: "PT Serif",
+    fontFamily: "PT Serif",
+    type: "google",
+    googleFontsFamily: "PT+Serif:ital,wght@0,400;0,700;1,400;1,700",
+    fallback: ["Georgia", "serif"],
+  },
+  "crimson-text": {
+    id: "crimson-text",
+    displayName: "Crimson Text",
+    fontFamily: "Crimson Text",
+    type: "google",
+    googleFontsFamily: "Crimson+Text:ital,wght@0,400;0,700;1,400;1,700",
+    fallback: ["Georgia", "serif"],
+  },
+  cardo: {
+    id: "cardo",
+    displayName: "Cardo",
+    fontFamily: "Cardo",
+    type: "google",
+    googleFontsFamily: "Cardo:ital,wght@0,400;0,700;1,400",
+    fallback: ["Georgia", "serif"],
+  },
+  "ibm-plex-serif": {
+    id: "ibm-plex-serif",
+    displayName: "IBM Plex Serif",
+    fontFamily: "IBM Plex Serif",
+    type: "google",
+    googleFontsFamily: "IBM+Plex+Serif:ital,wght@0,400;0,700;1,400;1,700",
+    fallback: ["Georgia", "serif"],
+  },
+  "source-serif": {
+    id: "source-serif",
+    displayName: "Source Serif 4",
+    fontFamily: "Source Serif 4",
+    type: "google",
+    googleFontsFamily: "Source+Serif+4:ital,wght@0,400;0,700;1,400;1,700",
+    fallback: ["Georgia", "serif"],
+  },
 };
 
 export const defaultFontId = "quattro";
