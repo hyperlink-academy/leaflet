@@ -128,7 +128,7 @@ const PubInfo = (props: {
         href={props.href}
         className="text-accent-contrast font-bold no-underline text-sm flex gap-1 items-center md:w-fit relative shrink-0"
       >
-        <PubIcon small record={props.pubRecord} uri={props.uri} />
+        <PubIcon tiny record={props.pubRecord} uri={props.uri} />
         {props.pubRecord.name}
       </Link>
     </div>
