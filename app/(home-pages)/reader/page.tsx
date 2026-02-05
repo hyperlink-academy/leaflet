@@ -1,35 +1,31 @@
-import { getIdentityData } from "actions/getIdentityData";
-
 import { DashboardLayout } from "components/PageLayouts/DashboardLayout";
-import { ReaderContent } from "./ReaderContent";
-import { SubscriptionsContent } from "./SubscriptionsContent";
+import { InboxContent } from "./InboxContent";
+import { LocalContent } from "./LocalContent";
+import { GlobalContent } from "./GlobalContent";
 import { getReaderFeed } from "./getReaderFeed";
-import { getSubscriptions } from "./getSubscriptions";
 
 export default async function Reader(props: {}) {
   let posts = await getReaderFeed();
-  let publications = await getSubscriptions();
   return (
     <DashboardLayout
       id="reader"
       currentPage="reader"
-      defaultTab="Read"
+      defaultTab="Inbox"
       actions={null}
       tabs={{
-        Read: {
+        Inbox: {
           controls: null,
           content: (
-            <ReaderContent nextCursor={posts.nextCursor} posts={posts.posts} />
+            <InboxContent nextCursor={posts.nextCursor} posts={posts.posts} />
           ),
         },
-        Subscriptions: {
+        Friends: {
           controls: null,
-          content: (
-            <SubscriptionsContent
-              publications={publications.subscriptions}
-              nextCursor={publications.nextCursor}
-            />
-          ),
+          content: <LocalContent />,
+        },
+        Global: {
+          controls: null,
+          content: <GlobalContent />,
         },
       }}
     />
