@@ -19,11 +19,8 @@ export function atUriToUrl(atUri: string): string {
     const uri = new AtUri(atUri);
 
     if (isPublicationCollection(uri.collection)) {
-      // Publication URL: /lish/{did}/{rkey}
-      return `/lish/${uri.host}/${uri.rkey}`;
+      return `/lish/uri/${encodeURIComponent(atUri)}`;
     } else if (isDocumentCollection(uri.collection)) {
-      // Document URL - we need to resolve this via the API
-      // For now, create a redirect route that will handle it
       return `/lish/uri/${encodeURIComponent(atUri)}`;
     }
 
@@ -42,7 +39,7 @@ export function atUriToUrl(atUri: string): string {
 export function handleMentionClick(
   e: MouseEvent | React.MouseEvent,
   type: "did" | "at-uri",
-  value: string
+  value: string,
 ) {
   e.preventDefault();
   e.stopPropagation();

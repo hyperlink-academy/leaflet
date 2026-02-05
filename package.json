@@ -23,7 +23,7 @@
     "@atproto/api": "^0.16.9",
     "@atproto/common": "^0.4.8",
     "@atproto/identity": "^0.4.6",
-    "@atproto/lexicon": "^0.5.1",
+    "@atproto/lexicon": "^0.6.1",
     "@atproto/oauth-client-node": "^0.3.8",
     "@atproto/sync": "^0.1.34",
     "@atproto/syntax": "^0.3.3",
@@ -125,6 +125,7 @@
     "ajv": "^8.17.1",
     "whatwg-url": "^14.0.0",
     "@types/react": "19.2.6",
-    "@types/react-dom": "19.2.3"
+    "@types/react-dom": "19.2.3",
+    "@atproto/lexicon": "^0.6.1"
   }
 }

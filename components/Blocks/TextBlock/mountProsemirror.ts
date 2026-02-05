@@ -80,6 +80,23 @@ export function useMountProsemirror({
         handlePaste,
         handleClickOn: (_view, _pos, node, _nodePos, _event, direct) => {
           if (!direct) return;
+
+          // Check for didMention inline nodes
+          if (node?.type === schema.nodes.didMention) {
+            window.open(
+              didToBlueskyUrl(node.attrs.did),
+              "_blank",
+              "noopener,noreferrer",
+            );
+            return;
+          }
+
+          // Check for atMention inline nodes
+          if (node?.type === schema.nodes.atMention) {
+            const url = atUriToUrl(node.attrs.atURI);
+            window.open(url, "_blank", "noopener,noreferrer");
+            return;
+          }
           if (node.nodeSize - 2 <= _pos) return;
 
           // Check for marks at the clicked position
@@ -87,32 +104,11 @@ export function useMountProsemirror({
           const nodeAt2 = node.nodeAt(Math.max(_pos - 2, 0));
 
           // Check for link marks
-          let linkMark = nodeAt1?.marks.find((f) => f.type === schema.marks.link) ||
+          let linkMark =
+            nodeAt1?.marks.find((f) => f.type === schema.marks.link) ||
             nodeAt2?.marks.find((f) => f.type === schema.marks.link);
           if (linkMark) {
             window.open(linkMark.attrs.href, "_blank");
-            return;
-          }
-
-          // Check for didMention inline nodes
-          if (nodeAt1?.type === schema.nodes.didMention) {
-            window.open(didToBlueskyUrl(nodeAt1.attrs.did), "_blank", "noopener,noreferrer");
-            return;
-          }
-          if (nodeAt2?.type === schema.nodes.didMention) {
-            window.open(didToBlueskyUrl(nodeAt2.attrs.did), "_blank", "noopener,noreferrer");
-            return;
-          }
-
-          // Check for atMention inline nodes
-          if (nodeAt1?.type === schema.nodes.atMention) {
-            const url = atUriToUrl(nodeAt1.attrs.atURI);
-            window.open(url, "_blank", "noopener,noreferrer");
-            return;
-          }
-          if (nodeAt2?.type === schema.nodes.atMention) {
-            const url = atUriToUrl(nodeAt2.attrs.atURI);
-            window.open(url, "_blank", "noopener,noreferrer");
             return;
           }
         },
