@@ -6,7 +6,7 @@ import {
   ReaderButton,
   WriterButton,
 } from "./NavigationButtons";
-import { PublicationNavigation } from "./Publications";
+import { PublicationNavigation } from "./PublicationNavigation";
 import { LoginActionButton } from "components/LoginButton";
 
 export const MobileNavigation = (props: {
@@ -23,9 +23,9 @@ export const MobileNavigation = (props: {
 
   return (
     <div
-      className={`mobileFooter  flex gap-2 px-1 text-secondary grow items-center justify-between`}
+      className={`mobileFooter w-full flex gap-4 px-1 text-secondary grow items-center justify-between`}
     >
-      <div className="mobileNav flex gap-2 items-center justify-start">
+      <div className="mobileNav flex gap-2 items-center justify-start min-w-0">
         <ReaderButton
           compactOnMobile={compactOnMobile}
           current={props.currentPage === "reader"}
@@ -42,7 +42,6 @@ export const MobileNavigation = (props: {
 
         {compactOnMobile && (
           <>
-            {identity && <Separator classname="h-6!" />}
             <PublicationNavigation
               currentPage={props.currentPage}
               currentPubUri={props.currentPublicationUri}
@@ -52,7 +51,6 @@ export const MobileNavigation = (props: {
       </div>
       {identity?.atp_did ? (
         <>
-          {compactOnMobile && <Separator classname="h-6!" />}
           <NotificationButton />
         </>
       ) : (

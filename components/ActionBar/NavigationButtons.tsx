@@ -30,7 +30,7 @@ export const HomeButton = (props: {
         nav
         icon={<HomeSmall />}
         label="Write"
-        className={`${props.current ? "bg-bg-page! border-border-light!" : ""} ${props.className}`}
+        className={`${props.current ? "bg-bg-page! border-border-light!" : ""} w-full! ${props.className}`}
       />
     </SpeedyLink>
   );
