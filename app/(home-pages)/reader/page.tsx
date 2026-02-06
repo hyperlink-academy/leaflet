@@ -6,6 +6,7 @@ import { getReaderFeed } from "./getReaderFeed";
 
 export default async function Reader(props: {}) {
   let posts = await getReaderFeed();
+
   return (
     <DashboardLayout
       id="reader"

@@ -53,7 +53,7 @@ export const WriterButton = (props: {
         labelOnMobile={!props.compactOnMobile}
         icon={<WriterSmall />}
         label="Write"
-        className={` w-fit! ${current ? "bg-bg-page! border-border-light!" : ""}`}
+        className={`${current ? "bg-bg-page! border-border-light!" : ""}`}
       />
     </SpeedyLink>
   );
